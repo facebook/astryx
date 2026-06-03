@@ -154,6 +154,16 @@ const styles = stylex.create({
     flex: 1,
     minWidth: 0,
     maxWidth: 680,
+    // Explicit start alignment so the heading + description anchor
+    // to the column's left edge regardless of any inherited
+    // text-align cascade from ancestor surfaces (the docsite hero
+    // chrome above this section sets text-align:center on its own
+    // sticky block, which has been observed to inherit into sibling
+    // trees in some browsers). Lives on the heading column container
+    // rather than as an !important wildcard descendant rule so the
+    // override is locally scoped and doesn't fight the buttons in
+    // the sibling HeaderLinks column.
+    textAlign: 'start',
   },
   fillWidth: {
     width: '100%',
@@ -289,8 +299,7 @@ export function ThemingShowcase() {
         gap={6}
         align="stretch"
         hAlign="between"
-        xstyle={styles.headerRow}
-        data-theming-heading-row="true">
+        xstyle={styles.headerRow}>
         <ShowcaseHeading />
         <HeaderLinks />
       </XDSHStack>
@@ -300,6 +309,11 @@ export function ThemingShowcase() {
           *this* carousel so other XDSCarousel elsewhere in the
           docsite are unaffected. Rules only exist while
           ThemingShowcase is mounted (landing route only).
+
+          TODO(xds#2509): Remove this block once XDSCarousel ships
+          `hasEdgeFade` / `hasScaleAnimation` props and a reliable
+          `hasButtons={false}`. Tracking issue:
+          https://github.com/facebookexperimental/xds/issues/2509
 
           1. Hide XDSCarousel's built-in prev/next pills — our own
              controls render in the header row. `hasButtons={false}`
@@ -322,21 +336,6 @@ export function ThemingShowcase() {
              signalling "more").
        */}
       <style>{`
-        /* Force left-align on the section heading + description so
-           they anchor to the same leading edge as the first
-           carousel tile. The docsite landing's hero scope above
-           sets text-align:center on a sibling, which the browser
-           cascades into our header even though we're not a
-           descendant — and we can't override it via the XDSText /
-           XDSHeading justify="start" prop because the component
-           treats start as "no class needed" and skips applying
-           the rule entirely. Scoped to the data attribute so it
-           only touches text in the header row, never the theme
-           tiles below. */
-        [data-theming-heading-row="true"],
-        [data-theming-heading-row="true"] * {
-          text-align: start !important;
-        }
         [popover]:has([aria-label="Scroll left"]),
         [popover]:has([aria-label="Scroll right"]) {
           display: none !important;
