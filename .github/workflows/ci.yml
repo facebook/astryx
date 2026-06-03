@@ -59,7 +59,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 22
@@ -107,7 +107,7 @@ jobs:
       - uses: actions/checkout@v6
         if: needs.check-scope.outputs.docsite_only != 'true'
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         if: needs.check-scope.outputs.docsite_only != 'true'
       - uses: actions/setup-node@v6
         if: needs.check-scope.outputs.docsite_only != 'true'
@@ -160,7 +160,7 @@ jobs:
 
       - name: Setup pnpm
         if: needs.check-scope.outputs.docsite_only != 'true'
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
         if: needs.check-scope.outputs.docsite_only != 'true'
@@ -422,7 +422,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
