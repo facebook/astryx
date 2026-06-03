@@ -23,6 +23,21 @@ import {ThemeShowcasePreview} from './ThemeShowcasePreview';
 import {ThemeCardShowcase} from './ThemeCardShowcase';
 import {getThemeImages} from './themeImages';
 
+// Entrance keyframes for the floating footer pill — translates up
+// from below its resting position into place. Starts fully off-
+// screen (translateY(100% + bottom inset) so the entire pill is
+// hidden during the pre-animation delay) and slides into its
+// final resting position. No opacity transition — the toolbar
+// reads as opaque chrome rising into view rather than fading.
+const floatingFooterEntrance = stylex.keyframes({
+  from: {
+    transform: 'translateY(calc(100% + var(--spacing-4)))',
+  },
+  to: {
+    transform: 'translateY(0)',
+  },
+});
+
 const styles = stylex.create({
   // Reserves bottom space equal to the floating footer's height +
   // surrounding margin so the last card row can scroll clear of the
@@ -57,6 +72,13 @@ const styles = stylex.create({
   // viewport bottom. `pointerEvents: 'none'` lets clicks pass
   // through the empty space on either side of the centered pill;
   // the pill itself overrides this back to 'auto'.
+  //
+  // Subtle "rise from below + fade in" entrance plays once on
+  // mount with a ~300ms delay so the toolbar reads as deliberately
+  // arriving after the page content settles, instead of being part
+  // of the initial paint. animation-fill-mode: both holds the
+  // pre-animation state (translateY(8px) + opacity 0) during the
+  // delay so the toolbar isn't visible-but-static before it slides.
   floatingFooter: {
     position: 'fixed',
     bottom: 'var(--spacing-4)',
@@ -64,14 +86,29 @@ const styles = stylex.create({
     right: 'var(--spacing-4)',
     zIndex: 100,
     pointerEvents: 'none',
+    animationName: floatingFooterEntrance,
+    animationDuration: '520ms',
+    animationDelay: '800ms',
+    animationTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+    animationFillMode: 'both',
+    '@media (prefers-reduced-motion: reduce)': {
+      animationName: 'none',
+    },
   },
   // Pill chrome — uses XDSCard default variant (which already
   // applies --color-background-card + --color-border) wrapped in
   // an XDSToolbar for layout + a11y. We layer max-width, centering,
   // pill radius, and shadow on top via xstyle.
+  //
+  // max-width is intentionally wider than the page's content cap
+  // (~960px) so the footer extends past the column of theme content
+  // above it — making the floating chrome obvious rather than
+  // appearing to "belong" to the content column above. User
+  // feedback noted the footer was easy to miss when it matched
+  // the content width.
   floatingFooterCard: {
     pointerEvents: 'auto',
-    maxWidth: 960,
+    maxWidth: 1280,
     marginInline: 'auto',
     borderRadius: 'var(--radius-full)',
     boxShadow: 'var(--shadow-high)',

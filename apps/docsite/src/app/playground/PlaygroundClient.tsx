@@ -122,7 +122,7 @@ export default function Demo() {
       <XDSVStack gap={4}>
         <XDSVStack>
           <XDSHeading level={3}>
-            XDS Playground
+            Astryx Playground
           </XDSHeading>
           <XDSText color="secondary">
             Edit the code and see live changes.

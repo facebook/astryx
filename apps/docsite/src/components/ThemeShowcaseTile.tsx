@@ -434,10 +434,14 @@ export function ThemeShowcaseTile({
   }, [themeName]);
   const imageSrc = candidates[candidateIndex];
   const showImage = imageSrc !== undefined;
-  // Theme detail page URL. Strip the @xds/ scope from the package
-  // name to match the [name] segment of /packages/[name].
+  // Theme detail page URL. Strip the `@xds/theme-` prefix from the
+  // package name to match the [name] segment of /themes/[name],
+  // which is the canonical destination. Linking directly here
+  // avoids a client-side redirect from the old /packages/theme-*
+  // route (which redirects to /themes/*) — that redirect was
+  // surfacing as a visible layout shift on click.
   const themeHref = themeName
-    ? `/packages/${themeName.replace('@xds/', '')}`
+    ? `/themes/${themeName.replace(/^@xds\/theme-/, '')}`
     : undefined;
 
   return (
