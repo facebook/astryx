@@ -1,22 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {XDSChatLayout} from './XDSChatLayout';
-
-class FakeResizeObserver {
-  callback: ResizeObserverCallback;
-  constructor(cb: ResizeObserverCallback) {
-    this.callback = cb;
-  }
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-}
-
-beforeEach(() => {
-  vi.stubGlobal('ResizeObserver', FakeResizeObserver);
-});
 
 describe('XDSChatLayout', () => {
   it('renders children', () => {
