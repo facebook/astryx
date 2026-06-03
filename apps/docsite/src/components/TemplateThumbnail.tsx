@@ -2,13 +2,7 @@
 
 'use client';
 
-import {
-  Suspense,
-  useRef,
-  useState,
-  useEffect,
-  useCallback,
-} from 'react';
+import {Suspense, useRef, useState, useEffect, useCallback} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSSkeleton} from '@xds/core/Skeleton';
 import {XDSTheme} from '@xds/core/theme';
@@ -99,11 +93,12 @@ export function TemplateThumbnail({slug}: {slug: string}) {
   }
 
   return (
-    <div ref={containerRef} {...stylex.props(styles.container)} inert>
+    <div ref={containerRef} {...stylex.props(styles.container)}>
       {renderWidth > 0 && isVisible && (
         <div
           {...stylex.props(styles.scaler)}
-          style={{width: renderWidth, transform: `scale(${FIXED_SCALE})`}}>
+          style={{width: renderWidth, transform: `scale(${FIXED_SCALE})`}}
+          inert>
           <Suspense
             fallback={
               <div {...stylex.props(styles.skeleton)}>
