@@ -105,9 +105,10 @@ export function DocsShell({
   const isTheme = (p: PackageMeta) => p.name.includes('theme-');
   const libraryPackages = packages.filter(p => !isTheme(p));
 
-  // Classify doc topics by category (from data)
+  // Classify doc topics by category (from data). Getting Started is promoted
+  // to a top-level nav item, so it is excluded from the Guide section.
   const guideTopics = docTopics
-    .filter(d => d.category === 'guide')
+    .filter(d => d.category === 'guide' && d.topic !== 'getting-started')
     .sort((a, b) => a.title.localeCompare(b.title));
   const foundationTopics = docTopics
     .filter(d => d.category === 'foundations')
@@ -129,12 +130,12 @@ export function DocsShell({
         <XDSSideNav>
           {!isOnComponentsRoute && (
             <>
-              {/* Documentation */}
-              <XDSSideNavSection title="Documentation" isHeaderHidden>
+              {/* Getting Started */}
+              <XDSSideNavSection title="Getting Started" isHeaderHidden>
                 <XDSSideNavItem
-                  label="Documentation"
-                  href="/docs"
-                  isSelected={pathname === '/docs'}
+                  label="Getting Started"
+                  href="/docs/getting-started"
+                  isSelected={pathname === '/docs/getting-started'}
                 />
               </XDSSideNavSection>
 
