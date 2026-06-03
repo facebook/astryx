@@ -89,9 +89,24 @@ const CARD_HEIGHT = 620;
 // the heading text above it. Used via the --theming-gutter CSS
 // variable set on the showcase root below, so the header row and
 // the carousel's nested scroller dom both read the same value.
-const PAGE_GUTTER = 64;
-const CONTENT_MAX_WIDTH = 1440;
-const CONTENT_GUTTER_FORMULA = `max(${PAGE_GUTTER}px, calc((100vw - ${CONTENT_MAX_WIDTH}px) / 2 + ${PAGE_GUTTER}px))`;
+// Aligns the carousel's content rail (heading + buttons + first
+// tile leading edge) with the standard 1200px-wide section
+// column used by every other landing-page section (Features,
+// About, Discover) and the community page. PAGE_GUTTER matches
+// the showcaseOverlay's paddingInline (--spacing-6 = 24px), so
+// at viewports narrower than the 1200px column the carousel
+// content sits flush with the same 24px page rim as the other
+// sections.
+const PAGE_GUTTER = 24;
+const CONTENT_MAX_WIDTH = 1200;
+// At wide viewports, the gutter resolves to the empty space
+// between the viewport edge and the centered 1200px content
+// column — same horizontal start as the other 1200px-centered
+// sections on the page (FeaturesShowcase, AboutShowcase, etc.).
+// At narrower viewports, the max() clamp kicks in and pads the
+// content by PAGE_GUTTER from the viewport edge so things don't
+// touch the screen rim.
+const CONTENT_GUTTER_FORMULA = `max(${PAGE_GUTTER}px, calc((100vw - ${CONTENT_MAX_WIDTH}px) / 2))`;
 
 const styles = stylex.create({
   // Section root — adds breathing room above the heading so the

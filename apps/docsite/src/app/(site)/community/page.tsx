@@ -77,8 +77,10 @@ const styles = stylex.create({
     // so every section (Hero, Wall, How we build, Engage,
     // Resources) shares one consistent visual column down the
     // middle of the page instead of each section finding its
-    // own width.
-    maxWidth: 920,
+    // own width. Matches the 1200px max-width used by the home
+    // page's section grids (FeaturesShowcase, AboutShowcase,
+    // DiscoverShowcase) so the two pages feel visually aligned.
+    maxWidth: 1200,
     width: '100%',
     marginInline: 'auto',
     // Add the same section gap as bottom padding so the
@@ -203,6 +205,14 @@ const styles = stylex.create({
     // ancestor and the avatars scatter across the whole page
     // instead of staying inside the wall card. XDSCard's root
     // doesn't set position by default, so we set it here.
+    //
+    // isolation:isolate establishes a NEW stacking context here
+    // so the inner z-indexed children (wordmark, avatars, link)
+    // stack ONLY against each other inside this card, never
+    // against ancestors. Without it the children compete with
+    // the AppShell's sticky top nav (also at zIndex:1) when
+    // scrolled, causing the wordmark to render above the nav.
+    isolation: 'isolate',
     position: 'relative',
     backgroundColor: 'var(--color-background-body)',
     borderColor: 'transparent',
@@ -324,165 +334,163 @@ const styles = stylex.create({
   // Top editorial row — headline + paragraph on the left,
   // brand-shape composition on the right. 1:1 split at wide
   // widths; stacks vertically at <760px.
-  // Editorial header — centered headline + description on top
-  // (spans full width); the 3-column channel-card grid sits
-  // below it. Centered text contrasts with the rest of the page's
-  // left-aligned section headings and frames the channel grid
-  // like the reference's "Newest Collection" product layout.
-  endBlockHeader: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 'var(--spacing-8)',
-  },
+  // Editorial header text styles — applied to the heading + intro
+  // paragraph stack at the top of the Resources block.
   endBlockHeaderText: {
-    textAlign: 'center' as const,
     maxWidth: 680,
   },
-
-  // 3-column channel grid below the centered editorial header.
-  // Auto-fit with a generous minWidth so columns stay readable
-  // and reflow gracefully to 2 / 1 columns on narrower viewports.
-  channelGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: 'var(--spacing-6)',
-    width: '100%',
-    '@media (max-width: 760px)': {
-      gridTemplateColumns: '1fr',
-    },
-  },
-
-  // Single channel card — tall pastel-filled block with title
-  // anchored to the top-left and description anchored to the
-  // bottom-left, leaving a generous open middle. The whole card
-  // is the click target via XDSClickableCard with its default
-  // border zeroed (the pastel fill carries the visual identity).
-  channelCard: {
-    overflow: 'hidden',
-    borderColor: 'transparent',
-    // Each card gets its color via inline style based on the
-    // channel data (see CHANNELS.bgColor). Done inline so the
-    // shared style here stays color-agnostic.
-  },
-  // Tall portrait inner stack — XDSVStack handles direction +
-  // gap + vAlign:between (so title pins to top and description
-  // pins to bottom). aspectRatio drives the portrait shape.
-  channelCardInner: {
-    aspectRatio: '4 / 5',
-  },
-  // Resources section below the editorial header — two XDSList
-  // groups (Documentation + Legal) side-by-side under one shared
-  // section heading. Sub-stacks reflow to a single column under
-  // 760px.
+  // Resources block — editorial header + categorized resource
+  // grid, stacked vertically.
   endBlockResources: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 'var(--spacing-6)',
-    // Match the parent sectionStack's calc(var(--spacing-12) * 2)
-    // = 96px so the Engage → Resources gap inside the end block
-    // reads the same as the gaps between all the other top-level
-    // sections on the page.
-    paddingBlockStart: 'calc(var(--spacing-12) * 2)',
+    gap: 'var(--spacing-8)',
   },
-  endBlockResourcesGrid: {
+  // Each resource category wraps its eyebrow label + items in a
+  // small vertical stack so the label optically aligns with the
+  // list's leading icon glyph below.
+  resourceColumn: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'var(--spacing-3)',
+    minWidth: 0,
+  },
+  // XDSList wrapper inside each category — turned into a 3-column
+  // grid so items render as a balanced row instead of a tall
+  // vertical strip. <ul> + <li> grid directly (the <li> children
+  // become grid cells). Collapses to 2 cols on tablet, 1 on mobile.
+  // The optical alignment shift pulls items left by the XDSListItem's
+  // internal start padding (≈ 12px = --spacing-3) so the row icons
+  // sit flush with the page's left reading rail and the category
+  // eyebrow label above.
+  resourceList: {
     display: 'grid',
-    // minmax(0, 1fr) is load-bearing — without it, columns
-    // refuse to shrink below their content's min-content width
-    // (long resource titles like "How we settle design
-    // disagreements..."), which forces the whole grid to
-    // overflow its parent. minmax(0, 1fr) lets columns shrink
-    // to whatever the parent allows, so the grid stays within
-    // the parent's bounds and descriptions wrap normally.
     gridTemplateColumns: {
       default: 'repeat(3, minmax(0, 1fr))',
       '@media (max-width: 900px)': 'repeat(2, minmax(0, 1fr))',
       '@media (max-width: 600px)': '1fr',
     },
-    gap: 'var(--spacing-2)',
-    alignItems: 'flex-start',
-    // Optical alignment shift: pull the grid left by the
-    // XDSListItem's internal start padding (~12px = --spacing-3)
-    // so the leading icon glyph of each row optically aligns
-    // with the "Resources" section heading's left edge above.
-    // Same width compensation as the wall-card alignment trick
-    // earlier — content shifts left, total grid width grows by
-    // the same amount on the right so the rightmost column
-    // doesn't lose space.
+    gap: 'var(--spacing-2) var(--spacing-6)',
     marginInlineStart: 'calc(-1 * var(--spacing-3))',
     width: 'calc(100% + var(--spacing-3))',
   },
+  // Icon tile — wraps each resource row's leading glyph in a
+  // square rounded background so the icon reads as a deliberately
+  // anchored element rather than a floating glyph next to the
+  // text. Uses the subtle "muted" surface so the tile recedes
+  // and the icon itself stays the focal point. Sized to match the
+  // height of a 2-line description so the tile vertically centers
+  // against the label/description block.
+  iconTile: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 36,
+    height: 36,
+    borderRadius: 'var(--radius-element)',
+    backgroundColor: 'var(--color-background-muted)',
+    color: 'var(--color-text-primary)',
+    flexShrink: 0,
+  },
+  // Resource description text — clamped to 2 lines so short
+  // descriptions render naturally on 1 line and longer ones wrap
+  // to 2 lines (anything beyond gets a "…" ellipsis). Prevents
+  // both the mid-character single-line truncation that XDSItem
+  // defaults to on string descriptions AND prevents long
+  // descriptions from running 4+ lines and breaking the visual
+  // rhythm of the grid.
+  resourceDescription: {
+    display: '-webkit-box',
+    WebkitBoxOrient: 'vertical',
+    WebkitLineClamp: 2,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  // Style applied to the H4 heading above each resource category.
+  // Plain sentence case (no uppercase transform) so labels read as
+  // calm section titles rather than eyebrow markers.
+  resourceColumnLabel: {},
+  // Vertical stack of resource categories. Each category fills
+  // the full reading column width with its eyebrow label + list
+  // of items, and categories stack one after the other so the
+  // reading order is unambiguous (instead of wrapping into 3 grid
+  // columns that left awkward empty cells when categories had
+  // different item counts). The XDSList inside still gets the
+  // optical-alignment shift so list items sit flush with the
+  // page's left reading rail.
+  endBlockResourcesGrid: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'var(--spacing-8)',
+    width: '100%',
+  },
   // -------------------------------------------------------------------------
-  // BlockCard — color-blocked contribution-type cards
+  // BlockCard — feature-card-style contribution paths
   // -------------------------------------------------------------------------
-  // 4 quadrants of a single grouped block (see blockGrid below).
-  // Each quadrant has a soft pastel fill, a big heading anchored
-  // to bottom-left, an effort badge under the heading, and a
-  // small arrow chip anchored to bottom-right. Each quadrant is
-  // still its own click target via XDSClickableCard, but visually
-  // they read as one grouped object because the outer blockGrid
-  // clips to a single rounded shape with no gap between cells.
+  // Mirrors the home page's FeaturesShowcase cards (see
+  // apps/docsite/src/app/(site)/_landing/FeaturesShowcase.tsx).
+  // Each card is independent (no fused quadrant block), with
+  // text + Explore link at the top and an optional image
+  // bottom-anchored with bleed margins so the artwork renders
+  // at natural aspect ratio without cropping.
 
-  // Outer grid wrapper — fuses the 4 quadrants into one visual
-  // block. radius + overflow:hidden on the wrapper means each
-  // quadrant's individual sharp corners get clipped to the
-  // wrapper's rounded outer shape. No gap so the 4 pastel fills
-  // touch directly at the inner seams.
+  // 2-column grid. Independent cards size to their own content;
+  // grid uses auto rows so cards never get stretched to absurd
+  // heights to match a tall neighbor.
   blockGrid: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gridTemplateRows: '1fr 1fr',
-    gap: 0,
-    borderRadius: 'var(--radius-container)',
-    overflow: 'hidden',
+    gridTemplateColumns: {
+      default: 'repeat(2, 1fr)',
+      '@media (max-width: 720px)': '1fr',
+    },
+    gap: 'var(--spacing-4)',
+    width: '100%',
   },
 
-  // Outer card — no padding (the inner zones manage their own
-  // spacing). overflow:hidden so the white placeholder's rounded
-  // corners (set via inset spacing on blockCardImage instead of
-  // a radius) clip cleanly to the card's quadrant edge.
+  // Individual card chrome — overflow:hidden lets the bleeding
+  // image (negative margin) clip cleanly at the rounded corners.
+  // height:100% so cards in the same grid row stretch to the
+  // tallest one (grid default), keeping the row visually aligned.
   blockCard: {
-    position: 'relative',
+    height: '100%',
     overflow: 'hidden',
-    borderColor: 'transparent',
-    borderRadius: 0,
-    color: 'var(--color-text-primary)',
-    minHeight: 280,
-    display: 'flex',
-    flexDirection: 'column',
   },
-  // White placeholder image area above the title. Uses
-  // --color-background-card (theme-aware lifted tone, usually
-  // white) so it reads as a distinct content slot against the
-  // card's body-tone fill. Inset slightly from the card edges
-  // (via margin) so it reads as a contained content slot rather
-  // than touching the quadrant seams.
+  // Inner VStack of the card — height:100% so the auto margins
+  // on the image wrapper below have a known parent height to
+  // push against, anchoring images to the card's bottom.
+  blockCardStack: {
+    height: '100%',
+  },
+  // Explore link spacing — adds the extra +12px past the 4px
+  // stack gap to land at 16px between the description and the
+  // link (same treatment as the home page feature cards).
+  blockCardExplore: {
+    marginTop: 'calc(var(--spacing-3))',
+  },
+  // Image wrapper — bottom-anchored via marginTop:auto so text
+  // stays at the top of the card and the image floats to the
+  // bottom. paddingTop:16 guarantees a 16px gap between the
+  // Explore link and the image content above. Negative margins
+  // (start/end/bottom) bleed the image to within 16px of the
+  // card's outer edges, matching the home page's bleed treatment.
   blockCardImage: {
-    flex: '1 1 auto',
-    minHeight: 100,
-    backgroundColor: 'var(--color-background-card)',
-    borderRadius: 'var(--radius-container)',
-    margin: 'var(--spacing-5)',
-    marginBottom: 0,
+    marginTop: 'auto',
+    paddingTop: 16,
+    marginBottom: 'calc(var(--spacing-5) * -1)',
+    marginInlineStart: 'calc(var(--spacing-5) * -1)',
+    marginInlineEnd: 'calc(var(--spacing-5) * -1)',
+    alignSelf: 'stretch',
+    overflow: 'hidden',
   },
-  // Bottom-anchored title + effort badge cluster. Padding lives
-  // here (not on the outer card) so the placeholder image above
-  // can be inset independently from the card edges.
-  blockCardBottom: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 'var(--spacing-1)',
-    padding: 'var(--spacing-5)',
+  // Image element — full container width, natural height so each
+  // composition renders at its own proportions (no cropping, no
+  // distortion). Same approach the home page uses.
+  blockCardImageImg: {
+    width: '100%',
+    height: 'auto',
+    display: 'block',
   },
-  // Heading uses --color-text-primary — the card backgrounds
-  // are alpha-tinted pastels (--color-background-{hue} resolves
-  // to the hue at ~20% opacity), so the underlying body color
-  // shows through enough that the standard dark text color
-  // reads cleanly.
-  blockCardTitle: {
-    color: 'var(--color-text-primary)',
-  },
-  // Effort badge — a quiet inline pill under the heading.
+  // Effort badge — a quiet inline pill under the description.
   blockCardEffort: {
     color: 'var(--color-text-secondary)',
     fontSize: 'var(--text-supporting-size, 13px)',
@@ -603,7 +611,7 @@ function WallCard({contributors}: {contributors: ReadonlyArray<Contributor>}) {
           alt="Astryx"
           {...stylex.props(styles.wallWordmark)}
         />
-        <XDSText type="body" color="secondary" xstyle={styles.wallDescription}>
+        <XDSText type="body" color="primary" xstyle={styles.wallDescription}>
           A growing community of designers and engineers ship Astryx together.
           <br />
           Your name could be next.
@@ -628,28 +636,28 @@ interface BlockCardProps {
   label: string;
   description: string;
   href: string;
-  /** Soft pastel background (--color-background-{hue}). */
-  bgColor: string;
   badge?: string;
+  /** Optional preview image rendered in the image slot. */
+  image?: {src: string; alt: string};
 }
 
-function BlockCard({label, description, href, bgColor, badge}: BlockCardProps) {
+function BlockCard({label, description, href, badge, image}: BlockCardProps) {
+  const showImage = image != null;
   return (
     <XDSClickableCard
       label={`Open ${label}`}
       href={href}
-      padding={0}
-      xstyle={styles.blockCard}
-      style={{backgroundColor: bgColor}}>
-      {/* White placeholder image slot above the title — empty for
-          now; later this can hold a real preview image, an
-          illustration, or a contextual screenshot per card. */}
-      <div {...stylex.props(styles.blockCardImage)} aria-hidden="true" />
-      <div {...stylex.props(styles.blockCardBottom)}>
-        <XDSHeading level={3} xstyle={styles.blockCardTitle}>
+      variant="gray"
+      padding={5}
+      xstyle={styles.blockCard}>
+      <XDSVStack
+        gap={1}
+        align="start"
+        xstyle={showImage ? styles.blockCardStack : undefined}>
+        <XDSHeading level={3} color="primary">
           {label}
         </XDSHeading>
-        <XDSText type="supporting" xstyle={styles.blockCardEffort}>
+        <XDSText type="body" color="primary">
           {description}
         </XDSText>
         {badge && (
@@ -657,7 +665,16 @@ function BlockCard({label, description, href, bgColor, badge}: BlockCardProps) {
             {badge}
           </XDSText>
         )}
-      </div>
+        {showImage && image && (
+          <div {...stylex.props(styles.blockCardImage)}>
+            <img
+              src={image.src}
+              alt={image.alt}
+              {...stylex.props(styles.blockCardImageImg)}
+            />
+          </div>
+        )}
+      </XDSVStack>
     </XDSClickableCard>
   );
 }
@@ -666,43 +683,93 @@ function BlockCard({label, description, href, bgColor, badge}: BlockCardProps) {
 // Data
 // =============================================================================
 
-// Channels — where the community talks. Each entry renders as one
-// rich card in the channels grid. Tint is hand-assigned per card
-// so the row has visual variety; keep this list short (3–5 max)
-// so each option feels like a deliberate path, not a link dump.
-interface Channel {
-  name: string;
+// Brand glyphs for the Communications section's channel rows.
+// Each icon matches the XDSListItem startContent slot's expected
+// size (~20px). Inline SVGs keep the bundle lean and avoid
+// pulling in a brand-icon package for just three glyphs.
+
+const GitHubGlyph = ({width = 20, height = 20}) => (
+  <svg
+    width={width}
+    height={height}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true">
+    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12Z" />
+  </svg>
+);
+
+// X (formerly Twitter) glyph — the post-2023 wordmark/logo.
+const TwitterGlyph = ({width = 20, height = 20}) => (
+  <svg
+    width={width}
+    height={height}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
+
+const DiscordGlyph = ({width = 20, height = 20}) => (
+  <svg
+    width={width}
+    height={height}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true">
+    <path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.74 19.74 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.548-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
+  </svg>
+);
+
+// Shared shape for any titled link rendered in the bottom-of-page
+// Resources grid (long-form guides, legal pages, and community
+// channels all use this). title/description/href feed the
+// XDSListItem chrome; icon renders in the startContent slot at
+// ~20px (Heroicons + the brand glyphs above are interchangeable
+// since both accept the same width/height prop shape).
+interface Resource {
+  title: string;
   description: string;
   href: string;
-  /** XDSClickableCard color variant — uses XDS's built-in
-   * categorical color variants (the XDS-correct way to color a
-   * card; inline `style={{backgroundColor}}` is silently
-   * dropped by XDSClickableCard, which only honors its own
-   * `variant` prop for backgrounds). */
-  variant: 'yellow' | 'green' | 'blue';
+  icon: React.ComponentType<{width?: number; height?: number}>;
 }
 
-const CHANNELS: ReadonlyArray<Channel> = [
+// Communications channels — where the community talks. Same
+// Resource shape as the documentation/legal lists below so the
+// whole bottom-of-page area renders with one consistent
+// list-item treatment (small icon + title + description) instead
+// of competing visual languages. Channels carry brand glyphs
+// (GitHub, X, Discord) so they're instantly recognizable in the
+// list.
+const CHANNELS: ReadonlyArray<Resource> = [
   {
-    name: 'GitHub Discussions',
-    description:
-      'Ask questions, share what you built, and talk through ideas with the maintainers.',
-    href: `${GITHUB_REPO}/discussions`,
-    variant: 'yellow',
-  },
-  {
-    name: 'GitHub Issues',
+    title: 'GitHub Issues',
     description:
       'File bugs and feature requests. Triaged weekly with response within a few days.',
     href: `${GITHUB_REPO}/issues`,
-    variant: 'green',
+    icon: GitHubGlyph,
   },
   {
-    name: 'Wiki & Decisions',
+    title: 'Twitter',
     description:
-      'Architecture decisions, API conventions, and research notes from how Astryx gets built.',
-    href: WIKI_BASE,
-    variant: 'blue',
+      'Follow along for release notes, design notes, and behind-the-scenes from the team.',
+    // TODO: replace with the real Astryx Twitter URL once the
+    // account is live.
+    href: '#',
+    icon: TwitterGlyph,
+  },
+  {
+    title: 'Discord',
+    description:
+      'Hang out with the community in real time. Ask questions, share work, and trade ideas.',
+    // TODO: replace with the real Astryx Discord invite URL once
+    // the server is live.
+    href: '#',
+    icon: DiscordGlyph,
   },
 ];
 
@@ -751,10 +818,10 @@ interface StartHerePath {
   description: string;
   href: string;
   effort: string;
-  /** Card fill color — the soft pastel --color-background-{hue}
-   * (categorical badge backdrop). Resolves to the hue at ~20%
-   * alpha, so the body color shows through. */
-  bgColor: string;
+  /** Optional preview image rendered in the card's image slot.
+   * When omitted, the card renders with text only — no image
+   * placeholder, so empty cards stay visually clean. */
+  image?: {src: string; alt: string};
 }
 
 const START_HERE: ReadonlyArray<StartHerePath> = [
@@ -764,15 +831,21 @@ const START_HERE: ReadonlyArray<StartHerePath> = [
       'Spot something broken? File an issue to confirm it, then submit a change with a clear reproduction.',
     href: `${GITHUB_REPO}/issues/new?template=bug.yml`,
     effort: '~2 hours',
-    bgColor: 'var(--color-background-body)',
+    image: {
+      src: '/feature-bug.png',
+      alt: 'Bug report illustration with issue tracker and code snippet',
+    },
   },
   {
     title: 'Improve the docs',
     description:
-      'Fix typos, improve examples, fill gaps. Reviewed for correctness — precision over comprehensiveness.',
+      'Fix typos, improve examples, and fill gaps. Reviewed for correctness and clarity.',
     href: '/docs',
     effort: '~30 min',
-    bgColor: 'var(--color-background-body)',
+    image: {
+      src: '/feature-docs.png',
+      alt: 'Docs page preview showing the Astryx documentation site',
+    },
   },
   {
     title: 'Add a template',
@@ -780,84 +853,95 @@ const START_HERE: ReadonlyArray<StartHerePath> = [
       'Show components in realistic context. Templates are training signal for both humans and LLMs.',
     href: `${WIKI_BASE}/Contributing-Templates`,
     effort: '~half day',
-    bgColor: 'var(--color-background-body)',
+    image: {
+      src: '/feature-templates.png',
+      alt: 'Stacked theme preview pages cascading toward a fully designed Butter theme example',
+    },
   },
   {
     title: 'Build a theme',
     description:
-      'Full visual control through defineTheme() — tokens, component overrides, and mode switching.',
+      'Full visual control through defineTheme(). Tokens, component overrides, and mode switching.',
     href: '/docs/theme',
     effort: '~1 day',
-    bgColor: 'var(--color-background-body)',
+    image: {
+      src: '/feature-brand.png',
+      alt: 'Butter theme applied to a full product landing page with display script, primary CTA, and three product cards',
+    },
   },
 ];
 
-// Long-form references — guides, conventions, dev setup. Rendered
-// as a compact link list (not cards) because they're references,
-// not action paths. Visual weight matches their navigational role.
-interface Resource {
-  title: string;
-  description: string;
-  href: string;
-  /** Heroicon component rendered in each resource row's
-   * startContent slot. Docs entries use DocumentTextIcon;
-   * legal/policy entries use ScaleIcon. */
-  icon: React.ComponentType<{width?: number; height?: number}>;
+// Categorized resource groups — each renders as one column under
+// the shared "Resources" section heading, with its own small
+// uppercase eyebrow label so readers can scan by topic before
+// drilling into individual items.
+interface ResourceCategory {
+  /** Eyebrow label shown above the column (uppercase, tracked). */
+  label: string;
+  items: ReadonlyArray<Resource>;
 }
 
-const RESOURCES: ReadonlyArray<Resource> = [
+const RESOURCE_CATEGORIES: ReadonlyArray<ResourceCategory> = [
   {
-    title: 'Contributing Guide',
-    description:
-      'The full process, what we accept, and how proposals get reviewed.',
-    href: `${WIKI_BASE}/Contributing`,
-    icon: DocumentTextIcon,
+    label: 'Communications',
+    items: CHANNELS,
   },
   {
-    title: 'Contributing with AI',
-    description:
-      'Using AI assistants effectively within Astryx conventions — safe zones and common pitfalls.',
-    href: `${WIKI_BASE}/Contributing-with-AI-Assistants`,
-    icon: DocumentTextIcon,
+    label: 'Contributing',
+    items: [
+      {
+        title: 'Contributing Guide',
+        description:
+          'The full process, what we accept, and how proposals get reviewed.',
+        href: `${WIKI_BASE}/Contributing`,
+        icon: DocumentTextIcon,
+      },
+      {
+        title: 'Contributing with AI',
+        description:
+          'How to use AI assistants effectively within Astryx conventions.',
+        href: `${WIKI_BASE}/Contributing-with-AI-Assistants`,
+        icon: DocumentTextIcon,
+      },
+      {
+        title: 'Dev Setup',
+        description: 'Clone, install, build, and run Storybook locally.',
+        href: `${GITHUB_REPO}/blob/main/CONTRIBUTING.md`,
+        icon: DocumentTextIcon,
+      },
+      {
+        title: 'API Conventions',
+        description:
+          'How components in Astryx are named, shaped, and composed.',
+        href: `${WIKI_BASE}/API-Conventions`,
+        icon: DocumentTextIcon,
+      },
+      {
+        title: 'API Arbitration',
+        description: 'How we settle design disagreements using vibe testing.',
+        href: `${WIKI_BASE}/API-Arbitration`,
+        icon: DocumentTextIcon,
+      },
+    ],
   },
   {
-    title: 'API Conventions',
-    description:
-      'How components in Astryx are named, shaped, and composed. Worth a skim before sharing a proposal.',
-    href: `${WIKI_BASE}/API-Conventions`,
-    icon: DocumentTextIcon,
-  },
-  {
-    title: 'API Arbitration',
-    description:
-      'How we settle design disagreements using vibe testing. Includes a sample prompt you can borrow.',
-    href: `${WIKI_BASE}/API-Arbitration`,
-    icon: DocumentTextIcon,
-  },
-  {
-    title: 'Dev Setup',
-    description: 'Clone, install, build, and run Storybook locally.',
-    href: `${GITHUB_REPO}/blob/main/CONTRIBUTING.md`,
-    icon: DocumentTextIcon,
-  },
-];
-
-// Legal resources — same Resource shape as documentation above,
-// just with a different icon to visually distinguish policy
-// entries from long-form guides.
-const LEGAL_RESOURCES: ReadonlyArray<Resource> = [
-  {
-    title: 'Code of Conduct',
-    description:
-      'Our standards for respectful collaboration and how we handle reports.',
-    href: `${GITHUB_REPO}/blob/main/CODE_OF_CONDUCT.md`,
-    icon: ScaleIcon,
-  },
-  {
-    title: 'MIT License',
-    description: 'Astryx is open source under the MIT License — free to use.',
-    href: `${GITHUB_REPO}/blob/main/LICENSE`,
-    icon: ScaleIcon,
+    label: 'Legal',
+    items: [
+      {
+        title: 'Code of Conduct',
+        description:
+          'Our standards for respectful collaboration and how we handle reports.',
+        href: `${GITHUB_REPO}/blob/main/CODE_OF_CONDUCT.md`,
+        icon: ScaleIcon,
+      },
+      {
+        title: 'MIT License',
+        description:
+          'Astryx is open source under the MIT License. Free to use.',
+        href: `${GITHUB_REPO}/blob/main/LICENSE`,
+        icon: ScaleIcon,
+      },
+    ],
   },
 ];
 
@@ -989,13 +1073,12 @@ export default async function CommunityPage() {
                 </div>
               ))}
             </div>
-            {/* Right column: contribution-type cards as one fused
-              2×2 quadrant block. Each quadrant is still its own
-              click target via XDSClickableCard, but the colors
-              touch directly at the inner seams (no gap, no
-              divider) and the outer wrapper clips them to a
-              single rounded shape so the four quadrants read as
-              one grouped object. */}
+            {/* Right column: contribution-type cards as a 2-col
+              grid of independent feature-style cards (mirrors
+              the home page's FeaturesShowcase pattern). Each
+              card has a heading, description, effort badge, an
+              Explore link, and an optional bottom-anchored
+              image with bleed margins. */}
             <div {...stylex.props(styles.contribTypes)}>
               <div {...stylex.props(styles.blockGrid)}>
                 {START_HERE.map(path => (
@@ -1004,117 +1087,76 @@ export default async function CommunityPage() {
                     label={path.title}
                     description={path.description}
                     href={path.href}
-                    bgColor={path.bgColor}
                     badge={path.effort}
+                    image={path.image}
                   />
                 ))}
               </div>
             </div>
           </div>
 
-          {/* End-of-page block — Poliform-style unified treatment
-              that fuses Channels + References + Legal into one
-              cohesive bottom-of-page chapter. Editorial header
-              on top (headline + paragraph + brand-shape art);
-              3-column link list below; giant "astryx" wordmark
-              anchors the bottom-right corner. */}
+          {/* End-of-page Resources block — unifies Communications
+              (Issues, Twitter, Discord) + Contributing + Design +
+              Legal into one categorized list grid. Editorial
+              header sets the intent; the grid below scans by
+              category. */}
           <div {...stylex.props(styles.endBlock)}>
-            <div {...stylex.props(styles.endBlockHeader)}>
-              <XDSVStack gap={3} xstyle={styles.endBlockHeaderText}>
-                <XDSHeading level={2} type="display-2">
-                  Engage with us in conversation
-                </XDSHeading>
-                <XDSText type="body" color="secondary">
-                  In a global community built on shared craft, a system gets
-                  better when its users open up to new perspectives. The
-                  brightest minds shape Astryx together — pick a channel, read
-                  the references, or just say hi.
-                </XDSText>
-              </XDSVStack>
-
-              {/* 3-column channel grid — tall portrait cards with
-                  a pastel categorical fill, title anchored top-
-                  left, description anchored bottom-left, and a
-                  generous open middle. Whole card is the click
-                  target via XDSClickableCard. */}
-              <div {...stylex.props(styles.channelGrid)}>
-                {CHANNELS.map(channel => (
-                  <XDSClickableCard
-                    key={channel.name}
-                    label={`Open ${channel.name}`}
-                    href={channel.href}
-                    target="_blank"
-                    padding={6}
-                    variant={channel.variant}
-                    xstyle={styles.channelCard}>
-                    <XDSVStack
-                      gap={2}
-                      vAlign="end"
-                      height="100%"
-                      xstyle={styles.channelCardInner}>
-                      <XDSHeading level={3}>{channel.name}</XDSHeading>
-                      <XDSText type="supporting" color="secondary">
-                        {channel.description}
-                      </XDSText>
-                    </XDSVStack>
-                  </XDSClickableCard>
-                ))}
-              </div>
-            </div>
-
-            {/* Resources — Documentation + Legal as two Pill
-                sub-stacks under one shared section heading. Each
-                pill is the same XDSClickableCard chrome the
-                channels above use, so the whole bottom of the
-                page shares one visual language. Documentation
-                takes the wider column (it has 5 items); Legal
-                sits to the right (2 items). */}
             <div {...stylex.props(styles.endBlockResources)}>
-              <XDSVStack gap={1}>
-                <XDSHeading level={2} type="display-2">
-                  Resources
-                </XDSHeading>
-                <XDSText type="body" color="secondary">
-                  Long-form guides, conventions, and policies. Skim what's
-                  relevant before sharing a proposal, or come back when you need
-                  to look something up.
-                </XDSText>
-              </XDSVStack>
-              {/* All resources (docs + legal) flattened into one
-                  list, then chunked into 3 column-groups so the
-                  7 items flow as a 3 / 3 / 1 layout across the
-                  3-column grid. Each chunk is its own XDSList so
-                  items in a column stack vertically as one
-                  logical list (rather than CSS-columns breaking
-                  description text mid-item). */}
+              <XDSHeading
+                level={2}
+                type="display-2"
+                xstyle={styles.endBlockHeaderText}>
+                Resources
+              </XDSHeading>
+              {/* Categorized resource columns — each category
+                  (Contributing, Design, Legal) gets its own
+                  column with a small uppercase eyebrow label
+                  above its XDSList. Readers can scan by topic
+                  before drilling into individual items. */}
               <div {...stylex.props(styles.endBlockResourcesGrid)}>
-                {(() => {
-                  const allResources = [...RESOURCES, ...LEGAL_RESOURCES];
-                  // Split into 3 chunks as evenly as possible.
-                  // ceil(N/3) per chunk fills columns left-to-right.
-                  const chunkSize = Math.ceil(allResources.length / 3);
-                  const chunks: Resource[][] = [];
-                  for (let i = 0; i < allResources.length; i += chunkSize) {
-                    chunks.push(allResources.slice(i, i + chunkSize));
-                  }
-                  return chunks.map((chunk, columnIndex) => (
-                    <XDSList key={columnIndex}>
-                      {chunk.map(resource => {
+                {RESOURCE_CATEGORIES.map(category => (
+                  <div
+                    key={category.label}
+                    {...stylex.props(styles.resourceColumn)}>
+                    <XDSHeading
+                      level={4}
+                      color="primary"
+                      xstyle={styles.resourceColumnLabel}>
+                      {category.label}
+                    </XDSHeading>
+                    <XDSList xstyle={styles.resourceList}>
+                      {category.items.map(resource => {
                         const Icon = resource.icon;
                         return (
                           <XDSListItem
                             key={resource.title}
                             label={resource.title}
-                            description={resource.description}
+                            // Wrap the description string in a span
+                            // (ReactNode, not plain string) so XDSItem
+                            // skips its automatic single-line truncation
+                            // and the description wraps to 2 lines
+                            // naturally — the resourceDescription style
+                            // below clamps at 2 lines so it never grows
+                            // unbounded across short columns.
+                            description={
+                              <span
+                                {...stylex.props(styles.resourceDescription)}>
+                                {resource.description}
+                              </span>
+                            }
                             href={resource.href}
                             target="_blank"
-                            startContent={<Icon width={20} height={20} />}
+                            startContent={
+                              <span {...stylex.props(styles.iconTile)}>
+                                <Icon width={18} height={18} />
+                              </span>
+                            }
                           />
                         );
                       })}
                     </XDSList>
-                  ));
-                })()}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
