@@ -796,8 +796,8 @@ export default function DashboardTemplate() {
     <XDSAppShell
       sideNav={<DashboardSideNav />}
       variant="elevated"
-      height="fill"
-      contentPadding={0}>
+      height="auto"
+      contentPadding={6}>
       <XDSVStack gap={6}>
         {/* Active Users Chart */}
         <XDSVStack gap={6}>

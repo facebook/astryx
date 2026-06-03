@@ -16,7 +16,13 @@
  * so they sit in the backdrop gutters outside the dialog box.
  */
 
-import {useCallback, useEffect, useDeferredValue, useState, useTransition} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useDeferredValue,
+  useState,
+  useTransition,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSText, XDSHeading} from '@xds/core/Text';
@@ -98,11 +104,13 @@ const styles = stylex.create({
     userSelect: 'none',
     transitionProperty: 'background-color, border-color',
     transitionDuration: 'var(--duration-fast-min, 130ms)',
-    transitionTimingFunction: 'var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
+    transitionTimingFunction:
+      'var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
   },
   copyPillHover: {
     backgroundColor: {
-      ':hover': 'var(--color-background-card-hover, var(--color-background-muted))',
+      ':hover':
+        'var(--color-background-card-hover, var(--color-background-muted))',
     },
   },
   copyPillText: {
@@ -199,6 +207,10 @@ export function TemplatePreviewDialog({
   }
 
   const useCommand = `npx xds template ${current.slug} ./src/app/${current.slug}`;
+  // Capture in a local const so the narrowing survives into the onClick
+  // closure below (property access on `current` widens back to
+  // `string | undefined` inside a deferred callback).
+  const playgroundSource = current.source;
 
   const handleCopyCmd = useCallback(() => {
     navigator.clipboard.writeText(useCommand).then(() => {
@@ -275,15 +287,14 @@ export function TemplatePreviewDialog({
                     color="inherit"
                   />
                 </button>
-                {current.source && (
+                {playgroundSource && (
                   <XDSButton
                     label="Open in Playground"
                     variant="primary"
                     size="lg"
                     onClick={() => {
-                      window.location.href = buildPlaygroundHref(
-                        current.source,
-                      );
+                      window.location.href =
+                        buildPlaygroundHref(playgroundSource);
                     }}
                   />
                 )}
