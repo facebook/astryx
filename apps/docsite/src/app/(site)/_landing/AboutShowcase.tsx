@@ -32,6 +32,11 @@ const styles = stylex.create({
     textTransform: 'uppercase',
     letterSpacing: '0.08em',
   },
+  // Constrain the description copy under the section heading so it
+  // doesn't run too wide; 560px reads as ~70 characters per line.
+  descriptionWidth: {
+    maxWidth: 560,
+  },
 });
 
 type AboutItem = {
@@ -138,7 +143,7 @@ function AboutHeading() {
       <XDSHeading level={2} type="display-2" color="primary">
         Astryx powers over 13,000 apps
       </XDSHeading>
-      <XDSText type="body" color="secondary" style={{maxWidth: 560}}>
+      <XDSText type="body" color="secondary" xstyle={styles.descriptionWidth}>
         Astryx has grown inside Meta over the last eight years, shaped by the
         engineers, designers, and product teams who depend on it every day.
       </XDSText>

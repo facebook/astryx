@@ -37,11 +37,16 @@ const styles = stylex.create({
     width: '100%',
     maxWidth: 1200,
   },
+  // Feature cards use the categorical "gray" variant, which Astryx
+  // re-tints to a warm beige via --color-background-gray (see
+  // astryxTheme.ts) so the cards sit as a recessed beige surface
+  // on the cream body background.
+  //
+  // overflow:hidden lets bleeding images (negative margin) clip
+  // cleanly at the rounded corners.
   cardTall: {
     height: '100%',
     overflow: 'hidden',
-    backgroundColor: 'var(--color-background-body)',
-    borderColor: 'transparent',
     gridRow: {
       default: 'auto',
       '@media (min-width: 720px)': 'span 2',
@@ -50,8 +55,6 @@ const styles = stylex.create({
   card: {
     height: '100%',
     overflow: 'hidden',
-    backgroundColor: 'var(--color-background-body)',
-    borderColor: 'transparent',
   },
   // "KEY FEATURES" eyebrow heading above the section title. Uppercase
   // + tracked, replacing the previous XDSBadge for a flatter editorial
@@ -60,6 +63,14 @@ const styles = stylex.create({
   eyebrow: {
     textTransform: 'uppercase',
     letterSpacing: '0.08em',
+  },
+  // Constrain the description copy under the section heading so it
+  // doesn't run too wide. 420px reads as ~55 characters per line —
+  // a tighter cap than the other sections because the Features
+  // heading is short and a narrow description column visually
+  // balances it.
+  descriptionWidth: {
+    maxWidth: 420,
   },
   // Inner stack of the tall card — pushes the heading/text block to
   // the top and lets the image grow into the leftover vertical space.
@@ -226,7 +237,7 @@ function FeatureCard({feature, isTall}: {feature: Feature; isTall?: boolean}) {
   const showImage = feature.image != null;
   return (
     <XDSCard
-      variant="default"
+      variant="gray"
       padding={5}
       xstyle={isTall ? styles.cardTall : styles.card}>
       <XDSVStack
@@ -280,7 +291,7 @@ function FeaturesHeading() {
         display="block"
         type="body"
         color="secondary"
-        style={{maxWidth: 420}}>
+        xstyle={styles.descriptionWidth}>
         A design system that adapts to your workflow, not the other way around.
         Built for speed, clarity, and creative freedom.
       </XDSText>

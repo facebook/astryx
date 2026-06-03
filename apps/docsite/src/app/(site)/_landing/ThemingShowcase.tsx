@@ -94,6 +94,13 @@ const CONTENT_MAX_WIDTH = 1440;
 const CONTENT_GUTTER_FORMULA = `max(${PAGE_GUTTER}px, calc((100vw - ${CONTENT_MAX_WIDTH}px) / 2 + ${PAGE_GUTTER}px))`;
 
 const styles = stylex.create({
+  // Section root — adds breathing room above the heading so the
+  // showcase doesn't feel cramped against whatever sits above it
+  // (on the docsite landing that's the sticky hero block).
+  section: {
+    paddingBlockStart: 'var(--spacing-12)',
+  },
+
   // Header row — title on the left, "Explore all themes" /
   // "Create a custom theme" links on the right. Full-bleed so it
   // sits on the same horizontal axis as the carousel; inline
@@ -109,12 +116,24 @@ const styles = stylex.create({
   //
   // padding-inline-end uses the same formula so the links cluster
   // sits at the symmetric inset from the right viewport edge.
+  //
+  // Below 720px viewport the row collapses to a vertical stack so
+  // the buttons drop below the description instead of getting
+  // squeezed beside it.
   headerRow: {
     width: '100vw',
     marginInline: 'calc(50% - 50vw)',
     paddingInlineStart: CONTENT_GUTTER_FORMULA,
     paddingInlineEnd: CONTENT_GUTTER_FORMULA,
     boxSizing: 'border-box',
+    flexDirection: {
+      default: 'row',
+      '@media (max-width: 720px)': 'column',
+    },
+    alignItems: {
+      default: 'stretch',
+      '@media (max-width: 720px)': 'flex-start',
+    },
   },
   headingBlock: {
     flex: 1,
@@ -125,18 +144,24 @@ const styles = stylex.create({
     width: '100%',
   },
   // Cluster on the right of the header row — "Create a custom theme"
-  // text link first, then "Explore all themes" as a secondary
-  // button. Strictly the XDSButton docs discourage button-for-
-  // navigation, but the same docsite uses this pattern on the
-  // hero CTAs (`Get started` / `Browse components`) so the visual
-  // treatment is consistent with the rest of the landing.
-  // Anchored to the bottom of the header row so the cluster sits
-  // on the same baseline as the last line of the description text.
-  // flexShrink:0 keeps the cluster from compressing when the
-  // heading text wraps.
+  // ghost button + "Explore all themes" secondary button. Strictly
+  // the XDSButton docs discourage button-for-navigation, but the
+  // same docsite uses this pattern on the hero CTAs (`Get started`
+  // / `Browse components`) so the visual treatment is consistent
+  // with the rest of the landing.
+  //
+  // Default (row mode): alignSelf:end pins the cluster to the
+  // bottom of the row so the buttons sit on the same baseline as
+  // the last line of the description text. Below the 720px
+  // breakpoint the row collapses to a column (see headerRow) and
+  // the cluster shifts to the start so the buttons sit naturally
+  // under the description.
   headerLinks: {
     flexShrink: 0,
-    alignSelf: 'end',
+    alignSelf: {
+      default: 'end',
+      '@media (max-width: 720px)': 'flex-start',
+    },
   },
 
   // Full-bleed carousel wrapper — bleeds past parent padding so the
@@ -189,7 +214,7 @@ function ShowcaseHeading() {
         type="body"
         color="secondary"
         justify="start"
-        style={{maxWidth: 560}}>
+        xstyle={styles.descriptionWidth}>
         Astryx makes it effortless to apply your brand — no rewrites needed.
         Customize your theme at the token level: color, typography, radius, and
         motion.
@@ -221,6 +246,7 @@ export function ThemingShowcase() {
       as="section"
       gap={10}
       align="stretch"
+      xstyle={styles.section}
       data-theming-showcase="true">
       {/* Header row — heading on the left, "Explore all themes" /
           "Create a custom theme" links on the right. Both clusters
@@ -295,6 +321,12 @@ export function ThemingShowcase() {
              leading edges to the gutter, not the viewport edge. */
           padding-inline-start: ${CONTENT_GUTTER_FORMULA} !important;
           scroll-padding-inline-start: ${CONTENT_GUTTER_FORMULA} !important;
+          /* Matching trailing padding so the last tile doesn't sit
+             flush against the viewport's right edge when fully
+             scrolled — gives the gallery a symmetric inset that
+             frames the row of tiles inside the page rim. */
+          padding-inline-end: ${CONTENT_GUTTER_FORMULA} !important;
+          scroll-padding-inline-end: ${CONTENT_GUTTER_FORMULA} !important;
         }
         [aria-label="Available themes"] > div > div {
           animation: none !important;
