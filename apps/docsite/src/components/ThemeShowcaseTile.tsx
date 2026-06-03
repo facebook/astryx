@@ -3,7 +3,7 @@
 'use client';
 
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {PlusIcon} from '@heroicons/react/24/outline';
+import {Plus} from 'lucide-react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -627,7 +627,7 @@ export function ThemeShowcaseTile({
                   size="sm"
                   label="Add"
                   isIconOnly
-                  icon={<PlusIcon />}
+                  icon={<Plus />}
                 />
               </XDSTableCell>
             </XDSTableRow>
@@ -642,7 +642,7 @@ export function ThemeShowcaseTile({
                   size="sm"
                   label="Add"
                   isIconOnly
-                  icon={<PlusIcon />}
+                  icon={<Plus />}
                 />
               </XDSTableCell>
             </XDSTableRow>

@@ -11,7 +11,7 @@
 import * as stylex from '@stylexjs/stylex';
 import {XDSChatMessageList, XDSChatComposer} from '@xds/core/Chat';
 import {XDSEmptyState} from '@xds/core/EmptyState';
-import {SparklesIcon} from '@heroicons/react/24/outline';
+import {Sparkles} from 'lucide-react';
 
 const s = stylex.create({
   root: {
@@ -48,7 +48,7 @@ export function CraftPanel() {
           <XDSEmptyState
             icon={
               <span aria-hidden="true" {...stylex.props(s.icon)}>
-                <SparklesIcon width={24} height={24} />
+                <Sparkles size={24} />
               </span>
             }
             title="Craft with AI"

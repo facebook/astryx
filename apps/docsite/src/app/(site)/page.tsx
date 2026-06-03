@@ -4,10 +4,10 @@
 
 import {useEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSText, XDSHeading} from '@xds/core/Text';
+import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {XDSBadge} from '@xds/core/Badge';
+import {XDSVStack} from '@xds/core/Layout';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
@@ -29,17 +29,43 @@ const styles = stylex.create({
   heroContent: {
     position: 'sticky',
     top: 'var(--appshell-header-height, 0px)',
-    maxWidth: 680,
+    maxWidth: 800,
     marginInline: 'auto',
-    paddingBlock: `calc(${spacingVars['--spacing-12']} * 2)`,
+    paddingBlock: `calc(${spacingVars['--spacing-12']} * 3)`,
     paddingInline: spacingVars['--spacing-6'],
     textAlign: 'center',
     gap: spacingVars['--spacing-12'],
+  },
+  // Wrapper around the wordmark + floating Beta badge. Sized
+  // exactly to the wordmark image (display:inline-block with no
+  // explicit width, so the inline element shrinks to the image's
+  // natural rendered width) and centered horizontally by the
+  // parent VStack's align:stretch + the wrapper's marginInline:
+  // auto. position:relative establishes the positioning context
+  // for the absolutely-positioned Beta badge.
+  heroWordmarkWrap: {
+    position: 'relative',
+    display: 'inline-block',
+    alignSelf: 'center',
   },
   heroWordmark: {
     display: 'block',
     height: 42,
     width: 'auto',
+  },
+  // Floating Beta badge wrapper — positions the XDSBadge above
+  // the wordmark (bottom anchored to the wordmark's top edge)
+  // and offset right so it reads as a callout attached to the
+  // brand mark without overlapping any of the glyphs. The XDS
+  // Badge component carries the pill chrome (background, radius,
+  // typography); only positioning + rotation lives here.
+  heroWordmarkBeta: {
+    position: 'absolute',
+    bottom: '100%',
+    right: -24,
+    marginBottom: 4,
+    transform: 'rotate(8deg)',
+    transformOrigin: 'bottom right',
   },
   heroButtons: {
     width: '100%',
@@ -104,15 +130,20 @@ export default function HomePage() {
         data-home-page="true"
         align="stretch"
         xstyle={styles.heroContent}>
-        <img
-          src="/astryx-logo.svg"
-          alt="Astryx"
-          {...stylex.props(styles.heroWordmark)}
-        />
+        <div {...stylex.props(styles.heroWordmarkWrap)}>
+          <img
+            src="/astryx-logo.svg"
+            alt="Astryx"
+            {...stylex.props(styles.heroWordmark)}
+          />
+          <span {...stylex.props(styles.heroWordmarkBeta)}>
+            <XDSBadge label="Beta" variant="blue" />
+          </span>
+        </div>
         <XDSHeading level={1} type="display-1" color="primary">
-          Fully customizable, no-forking, open source design system
+          An open source design system that's fully customizable and agent ready
         </XDSHeading>
-        <XDSVStack gap={6} align="center">
+        <XDSVStack gap={4} align="center">
           <XDSGrid columns={2} gap={3} xstyle={styles.heroButtons}>
             <XDSButton
               variant="primary"
@@ -127,41 +158,18 @@ export default function HomePage() {
               href="/components"
             />
           </XDSGrid>
-          <XDSHStack gap={4} align="center" hAlign="center">
-            <XDSText display="block">
-              Currently in{' '}
-              <XDSText as="span" weight="bold">
-                Beta
-              </XDSText>
-            </XDSText>
-            <XDSDivider
-              orientation="vertical"
-              variant="strong"
-              style={{height: '1em'}}
-            />
-            <XDSText display="block">
-              Built on{' '}
-              <XDSLink
-                type="body"
-                color="primary"
-                href="https://react.dev"
-                target="_blank"
-                rel="noopener noreferrer"
-                hasUnderline>
-                React
-              </XDSLink>{' '}
-              and{' '}
-              <XDSLink
-                type="body"
-                color="primary"
-                href="https://stylexjs.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                hasUnderline>
-                StyleX
-              </XDSLink>
-            </XDSText>
-          </XDSHStack>
+          <XDSText display="block">
+            Built on{' '}
+            <XDSLink
+              type="body"
+              color="primary"
+              href="https://react.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              hasUnderline>
+              React
+            </XDSLink>
+          </XDSText>
         </XDSVStack>
       </XDSVStack>
       <XDSVStack ref={showcaseRef} xstyle={styles.showcaseOverlay}>

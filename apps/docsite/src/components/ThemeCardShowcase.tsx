@@ -18,23 +18,23 @@
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
-  PlusIcon,
-  MagnifyingGlassIcon,
-  TagIcon,
-  FolderIcon,
-  MapPinIcon,
-  ListBulletIcon,
-  Squares2X2Icon,
-  ShoppingBagIcon,
-  BanknotesIcon,
-  MicrophoneIcon,
-  CreditCardIcon,
-  LockClosedIcon,
-  XMarkIcon,
-  ArrowDownTrayIcon,
-  DevicePhoneMobileIcon,
-  WalletIcon,
-} from '@heroicons/react/24/outline';
+  Plus,
+  Search,
+  Tag,
+  Folder,
+  MapPin,
+  List,
+  LayoutGrid,
+  ShoppingBag,
+  Banknote,
+  Mic,
+  CreditCard,
+  Lock,
+  X,
+  Download,
+  Smartphone,
+  Wallet,
+} from 'lucide-react';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
@@ -443,7 +443,7 @@ function CheckoutCard() {
                   gap={1}
                   hAlign="center"
                   xstyle={styles.paymentCardContent}>
-                  <CreditCardIcon width={20} height={20} />
+                  <CreditCard size={20} />
                   <XDSText type="supporting" weight="bold">
                     Card
                   </XDSText>
@@ -458,7 +458,7 @@ function CheckoutCard() {
                   gap={1}
                   hAlign="center"
                   xstyle={styles.paymentCardContent}>
-                  <DevicePhoneMobileIcon width={20} height={20} />
+                  <Smartphone size={20} />
                   <XDSText type="supporting" weight="bold">
                     Apple Pay
                   </XDSText>
@@ -473,7 +473,7 @@ function CheckoutCard() {
                   gap={1}
                   hAlign="center"
                   xstyle={styles.paymentCardContent}>
-                  <WalletIcon width={20} height={20} />
+                  <Wallet size={20} />
                   <XDSText type="supporting" weight="bold">
                     Google Pay
                   </XDSText>
@@ -487,7 +487,7 @@ function CheckoutCard() {
             placeholder="1234 1234 1234 1234"
             value=""
             onChange={() => {}}
-            startIcon={<CreditCardIcon width={16} height={16} />}
+            startIcon={<CreditCard size={16} />}
             size="lg"
           />
 
@@ -546,7 +546,7 @@ function CheckoutCard() {
           variant="primary"
           size="lg"
           label="Pay now"
-          icon={<LockClosedIcon width={16} height={16} />}
+          icon={<Lock size={16} />}
         />
       </XDSVStack>
     </XDSCard>
@@ -596,14 +596,16 @@ function ChatCard() {
             size="sm"
             isIconOnly
             label="Export conversation"
-            icon={<ArrowDownTrayIcon width={16} height={16} />}
+            tooltip="Export conversation"
+            icon={<Download size={16} />}
           />
           <XDSButton
             variant="ghost"
             size="sm"
             isIconOnly
             label="Close chat"
-            icon={<XMarkIcon width={16} height={16} />}
+            tooltip="Close chat"
+            icon={<X size={16} />}
           />
         </XDSHStack>
       </XDSHStack>
@@ -725,7 +727,8 @@ function ChatCard() {
               size="md"
               isIconOnly
               label="Attach"
-              icon={<PlusIcon width={16} height={16} />}
+              tooltip="Attach"
+              icon={<Plus size={16} />}
             />
           }
           sendActions={
@@ -734,7 +737,8 @@ function ChatCard() {
               size="md"
               isIconOnly
               label="Voice input"
-              icon={<MicrophoneIcon width={16} height={16} />}
+              tooltip="Voice input"
+              icon={<Mic size={16} />}
             />
           }
         />
@@ -774,7 +778,7 @@ interface ActivityRow {
 const ACTIVITY: ActivityRow[] = [
   {
     id: '1',
-    icon: <ShoppingBagIcon width={16} height={16} />,
+    icon: <ShoppingBag size={16} />,
     label: 'Order #1043',
     detail: 'Placed · 1:59 pm',
     time: '1:59 pm',
@@ -782,7 +786,7 @@ const ACTIVITY: ActivityRow[] = [
   },
   {
     id: '2',
-    icon: <BanknotesIcon width={16} height={16} />,
+    icon: <Banknote size={16} />,
     label: 'Order #1041',
     detail: 'Refunded · 12:40 pm',
     time: '12:40 pm',
@@ -790,7 +794,7 @@ const ACTIVITY: ActivityRow[] = [
   },
   {
     id: '3',
-    icon: <ShoppingBagIcon width={16} height={16} />,
+    icon: <ShoppingBag size={16} />,
     label: 'Order #1040',
     detail: 'Placed · 10:30 am',
     time: '10:30 am',
@@ -798,7 +802,7 @@ const ACTIVITY: ActivityRow[] = [
   },
   {
     id: '4',
-    icon: <ShoppingBagIcon width={16} height={16} />,
+    icon: <ShoppingBag size={16} />,
     label: 'Order #1038',
     detail: 'Placed · 9:11 am',
     time: '9:11 am',
@@ -806,7 +810,7 @@ const ACTIVITY: ActivityRow[] = [
   },
   {
     id: '5',
-    icon: <ShoppingBagIcon width={16} height={16} />,
+    icon: <ShoppingBag size={16} />,
     label: 'Order #1037',
     detail: 'Placed · 8:42 am',
     time: '8:42 am',
@@ -909,7 +913,7 @@ function LatestActivityCard() {
 // XDSTextInput (with start icon), XDSCheckboxInput, XDSTable (custom
 // renderers + proportional widths + dividers + hover), XDSBadge
 // (categorical variants), XDSMoreMenu, XDSCard, XDSDivider, XDSIcon
-// (via heroicons).
+// (via lucide-react).
 // =============================================================================
 
 type TagSpec = {label: string; variant: 'blue' | 'green' | 'orange' | 'yellow'};
@@ -1091,7 +1095,7 @@ function InventoryCard({images}: {images: ThemeImageSet}) {
           label="Add item"
           variant="primary"
           size="sm"
-          icon={<PlusIcon width={16} height={16} />}
+          icon={<Plus size={16} />}
         />
       </XDSHStack>
 
@@ -1110,7 +1114,7 @@ function InventoryCard({images}: {images: ThemeImageSet}) {
             placeholder="Type and hit enter…"
             value=""
             onChange={() => {}}
-            startIcon={<MagnifyingGlassIcon width={16} height={16} />}
+            startIcon={<Search size={16} />}
             xstyle={styles.searchInput}
           />
           <XDSSelector
@@ -1118,7 +1122,7 @@ function InventoryCard({images}: {images: ThemeImageSet}) {
             isLabelHidden
             placeholder="Categories"
             size="sm"
-            startIcon={<FolderIcon width={16} height={16} />}
+            startIcon={<Folder size={16} />}
             value={undefined}
             onChange={() => {}}
             options={['Wearables', 'Audio', 'Bags', 'Drinkware', 'Home']}
@@ -1128,7 +1132,7 @@ function InventoryCard({images}: {images: ThemeImageSet}) {
             isLabelHidden
             placeholder="Locations"
             size="sm"
-            startIcon={<MapPinIcon width={16} height={16} />}
+            startIcon={<MapPin size={16} />}
             value={undefined}
             onChange={() => {}}
             options={[
@@ -1145,7 +1149,7 @@ function InventoryCard({images}: {images: ThemeImageSet}) {
             isLabelHidden
             placeholder="Tags"
             size="sm"
-            startIcon={<TagIcon width={16} height={16} />}
+            startIcon={<Tag size={16} />}
             value={undefined}
             onChange={() => {}}
             options={[
@@ -1164,14 +1168,16 @@ function InventoryCard({images}: {images: ThemeImageSet}) {
             size="sm"
             isIconOnly
             label="List view"
-            icon={<ListBulletIcon width={18} height={18} />}
+            tooltip="List view"
+            icon={<List size={18} />}
           />
           <XDSButton
             variant="ghost"
             size="sm"
             isIconOnly
             label="Grid view"
-            icon={<Squares2X2Icon width={18} height={18} />}
+            tooltip="Grid view"
+            icon={<LayoutGrid size={18} />}
           />
         </XDSHStack>
       </XDSHStack>

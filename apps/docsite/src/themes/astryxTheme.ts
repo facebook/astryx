@@ -36,6 +36,13 @@ export const astryxTheme = defineTheme({
     // warm Astryx cream; dark falls back to the XDS default body color
     // (a flat static value here would freeze the page in light mode).
     '--color-background-body': 'light-dark(#F8F4ED, #111112)',
+    // Re-tint the categorical "gray" surface to match the page body
+    // background. Cards rendered with `variant="gray"` (e.g. landing
+    // feature cards) blend into the body, reading as content groups
+    // shaped by padding + corners rather than as a coloured surface.
+    // Dark mode keeps the default --color-background-gray tint so
+    // recessed surfaces stay readable against the dark body.
+    '--color-background-gray': 'light-dark(#F8F4ED, rgba(102, 106, 114, 0.30))',
     // Astryx display headings render semibold (XDS default is normal weight).
     '--text-display-1-weight': 'var(--font-weight-semibold)',
     '--text-display-2-weight': 'var(--font-weight-semibold)',

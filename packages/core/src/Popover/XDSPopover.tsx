@@ -26,7 +26,7 @@ import React, {
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import {xdsClassName, mergeProps} from '../utils';
-import type {StyleXStyles} from '@stylexjs/stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSPopover} from './useXDSPopover';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useXDSLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
@@ -54,7 +54,10 @@ function findTriggerButton(el: HTMLElement): HTMLElement | null {
 // Types
 // =============================================================================
 
-export interface XDSPopoverProps {
+export interface XDSPopoverProps extends Pick<
+  XDSBaseProps,
+  'xstyle' | 'className' | 'style'
+> {
   /**
    * The trigger element. Must contain a `<button>` or `[role="button"]`
    * element — the popover locates it and applies click/keydown handlers
@@ -126,28 +129,6 @@ export interface XDSPopoverProps {
    * Recommended for accessibility (used as aria-label on the dialog).
    */
   label?: string;
-
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
 
   /**
    * Whether to include a hidden close button for accessibility.

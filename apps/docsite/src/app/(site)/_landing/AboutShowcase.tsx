@@ -9,7 +9,6 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
-import {XDSBadge} from '@xds/core/Badge';
 
 const styles = stylex.create({
   headingBlock: {
@@ -25,6 +24,18 @@ const styles = stylex.create({
   },
   iconSlot: {
     height: 40,
+  },
+  // "ABOUT US" eyebrow heading above the section title. Uppercase +
+  // tracked, matching the editorial treatment on the Features
+  // section above.
+  eyebrow: {
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+  },
+  // Constrain the description copy under the section heading so it
+  // doesn't run too wide; 560px reads as ~70 characters per line.
+  descriptionWidth: {
+    maxWidth: 560,
   },
 });
 
@@ -89,7 +100,11 @@ const items: AboutItem[] = [
     description:
       'Foundations you can trust, speed you can feel. The system is built so teams stop reinventing the basics and start shipping the ideas that matter.',
     link: (
-      <XDSLink type="body" href="/docs/getting-started" hasUnderline>
+      <XDSLink
+        type="body"
+        color="primary"
+        href="/docs/getting-started"
+        hasUnderline>
         Get started in minutes
       </XDSLink>
     ),
@@ -100,7 +115,7 @@ const items: AboutItem[] = [
     description:
       'The system gets sharper when we put it to work in the real world. Using it in context strengthens the whole system for everyone.',
     link: (
-      <XDSLink type="body" href="/community" hasUnderline>
+      <XDSLink type="body" color="primary" href="/community" hasUnderline>
         Learn how to contribute
       </XDSLink>
     ),
@@ -111,7 +126,7 @@ const items: AboutItem[] = [
     description:
       'The quality bar is accelerating. Astryx pairs opinionated foundations with flexible patterns so your system keeps pace — no matter how the craft evolves.',
     link: (
-      <XDSLink type="body" href="/changelog" hasUnderline>
+      <XDSLink type="body" color="primary" href="/changelog" hasUnderline>
         See what&apos;s new
       </XDSLink>
     ),
@@ -122,11 +137,13 @@ const items: AboutItem[] = [
 function AboutHeading() {
   return (
     <XDSVStack gap={4} align="center" xstyle={styles.headingBlock}>
-      <XDSBadge variant="orange" label="About us" />
+      <XDSHeading level={4} color="primary" xstyle={styles.eyebrow}>
+        About us
+      </XDSHeading>
       <XDSHeading level={2} type="display-2" color="primary">
         Astryx powers over 13,000 apps
       </XDSHeading>
-      <XDSText type="body" color="secondary" style={{maxWidth: 560}}>
+      <XDSText type="body" color="secondary" xstyle={styles.descriptionWidth}>
         Astryx has grown inside Meta over the last eight years, shaped by the
         engineers, designers, and product teams who depend on it every day.
       </XDSText>
