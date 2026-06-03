@@ -69,9 +69,16 @@ const styles = stylex.create({
   // applies --color-background-card + --color-border) wrapped in
   // an XDSToolbar for layout + a11y. We layer max-width, centering,
   // pill radius, and shadow on top via xstyle.
+  //
+  // max-width is intentionally wider than the page's content cap
+  // (~960px) so the footer extends past the column of theme content
+  // above it — making the floating chrome obvious rather than
+  // appearing to "belong" to the content column above. User
+  // feedback noted the footer was easy to miss when it matched
+  // the content width.
   floatingFooterCard: {
     pointerEvents: 'auto',
-    maxWidth: 960,
+    maxWidth: 1280,
     marginInline: 'auto',
     borderRadius: 'var(--radius-full)',
     boxShadow: 'var(--shadow-high)',
