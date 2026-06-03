@@ -23,7 +23,7 @@ import {
 } from '../../lib/component-format.mjs';
 import {resolveTheme} from '../../lib/resolve-theme.mjs';
 import {getRunPrefix} from '../../utils/package-manager.mjs';
-import {jsonOut, jsonError} from '../../lib/json.mjs';
+import {jsonOut, jsonError, humanLog} from '../../lib/json.mjs';
 import {component as componentApi} from '../../api/component.mjs';
 import {findRelatedBlocks} from '../../api/template.mjs';
 
@@ -90,34 +90,34 @@ export function registerComponent(program) {
         case 'component.list': {
           if (options.category) {
             const [cat, comps] = Object.entries(result.data)[0];
-            console.log(`\n${cat}:`);
-            for (const comp of comps) console.log(`  ${comp}`);
-            console.log('');
+            humanLog(`\n${cat}:`);
+            for (const comp of comps) humanLog(`  ${comp}`);
+            humanLog('');
           } else {
-            console.log('');
+            humanLog('');
             for (const [key, comps] of Object.entries(result.data)) {
               const isUngrouped = comps.length === 1 && comps[0] === key;
               if (isUngrouped) {
-                console.log(key);
+                humanLog(key);
               } else {
-                console.log(key);
-                for (const comp of comps) console.log(`  ${comp}`);
+                humanLog(key);
+                for (const comp of comps) humanLog(`  ${comp}`);
               }
             }
-            console.log('');
-            console.log(`Usage: ${run} xds component <name>`);
-            console.log('');
+            humanLog('');
+            humanLog(`Usage: ${run} xds component <name>`);
+            humanLog('');
           }
           break;
         }
 
         case 'component.brief': {
           if (options.category || options.list || !name) {
-            console.log(await formatBriefAll(coreDir, {zh, lang, themeData}));
+            humanLog(await formatBriefAll(coreDir, {zh, lang, themeData}));
           } else {
             const resolvedName = (name || '').replace(/^XDS/, '');
             const importHint = resolveImportPath(coreDir, resolvedName);
-            console.log(formatBrief(result.data, resolvedName, importHint, {themeData}));
+            humanLog(formatBrief(result.data, resolvedName, importHint, {themeData}));
           }
           break;
         }
@@ -126,66 +126,66 @@ export function registerComponent(program) {
           if (detail === 'brief') {
             const resolvedName = (name || '').replace(/^XDS/, '');
             const importHint = resolveImportPath(coreDir, resolvedName);
-            console.log(formatBrief(result.data, resolvedName, importHint, {themeData}));
+            humanLog(formatBrief(result.data, resolvedName, importHint, {themeData}));
           } else if (detail === 'compact') {
             const resolvedName = (name || '').replace(/^XDS/, '');
             const importHint = resolveImportPath(coreDir, resolvedName);
-            console.log(formatCompact(result.data, resolvedName, importHint));
+            humanLog(formatCompact(result.data, resolvedName, importHint));
           } else {
-            console.log(formatFull(result.data, {themeData}));
+            humanLog(formatFull(result.data, {themeData}));
           }
           const compName = (name || '').replace(/^XDS/, '');
           const related = await findRelatedBlocks(compName);
           if (related.length > 0) {
-            console.log('\nRelated block templates:\n');
+            humanLog('\nRelated block templates:\n');
             for (const b of related) {
-              console.log(`  ${b.dirName}`);
-              if (b.description) console.log(`    ${b.description}`);
+              humanLog(`  ${b.dirName}`);
+              if (b.description) humanLog(`    ${b.description}`);
             }
-            console.log('');
+            humanLog('');
           }
           break;
         }
 
         case 'component.detail.props': {
           const resolvedName = (name || '').replace(/^XDS/, '');
-          console.log(formatProps({props: result.data}, resolvedName));
+          humanLog(formatProps({props: result.data}, resolvedName));
           break;
         }
 
         case 'component.detail.source': {
-          console.log(result.data.source);
+          humanLog(result.data.source);
           break;
         }
 
         case 'component.detail.showcase': {
-          console.log(result.data.source);
+          humanLog(result.data.source);
           break;
         }
 
         case 'component.detail.blocks': {
           const {showcase, examples, related} = result.data;
           if (showcase) {
-            console.log(`\nShowcase: ${showcase.displayName}`);
-            if (showcase.description) console.log(`  ${showcase.description}`);
+            humanLog(`\nShowcase: ${showcase.displayName}`);
+            if (showcase.description) humanLog(`  ${showcase.description}`);
           }
           if (examples.length > 0) {
-            console.log('\nExamples:\n');
+            humanLog('\nExamples:\n');
             for (const b of examples) {
-              console.log(`  ${b.name}`);
-              if (b.description) console.log(`    ${b.description}`);
+              humanLog(`  ${b.name}`);
+              if (b.description) humanLog(`    ${b.description}`);
             }
           }
           if (related.length > 0) {
-            console.log(`\nRelated: ${related.length} blocks that use ${result.data.component}\n`);
+            humanLog(`\nRelated: ${related.length} blocks that use ${result.data.component}\n`);
             for (const b of related) {
-              console.log(`  ${b.name}`);
+              humanLog(`  ${b.name}`);
             }
           }
           if (!showcase && examples.length === 0 && related.length === 0) {
-            console.log(`\nNo blocks found for ${result.data.component}`);
+            humanLog(`\nNo blocks found for ${result.data.component}`);
           }
-          console.log('');
+          humanLog('');
           break;
         }
       }

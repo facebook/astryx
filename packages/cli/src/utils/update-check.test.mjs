@@ -170,4 +170,30 @@ describe('checkForUpdate', () => {
     expect(hint).toContain('0.0.9');
     expect(hint).toContain('FYI');
   });
+
+  it('uses semver (not lexicographic) comparison for double-digit patches', () => {
+    // Regression: with string compare, '0.0.20' > '0.0.5' is false because
+    // '2' < '5' lexicographically. Users on 0.0.5 would never be told that
+    // 0.0.20 is available.
+    process.env.XDS_LATEST_VERSION = '0.0.20';
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({dependencies: {'@xds/core': '^0.0.5'}}),
+    );
+
+    const hint = checkForUpdate(tmpDir);
+    expect(hint).toContain('0.0.20');
+  });
+
+  it('does not suggest an upgrade when latest < installed (semver)', () => {
+    // The mirror-image bug: '0.0.9' > '0.0.10' is true under string compare,
+    // so a stale env hint of 0.0.9 would falsely claim it's "newer" than 0.0.10.
+    process.env.XDS_LATEST_VERSION = '0.0.9';
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({dependencies: {'@xds/core': '^0.0.10'}}),
+    );
+
+    expect(checkForUpdate(tmpDir)).toBeNull();
+  });
 });

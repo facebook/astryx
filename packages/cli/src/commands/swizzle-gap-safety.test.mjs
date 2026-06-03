@@ -20,7 +20,7 @@
  * called `gh issue create` with no confirmation.
  */
 
-import {describe, it, expect, beforeAll, afterAll} from 'vitest';
+import {describe, it, expect, beforeAll, afterAll, beforeEach, afterEach} from 'vitest';
 import {spawnSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
@@ -178,12 +178,29 @@ describe('gap-report: dry-run by default in non-interactive mode', () => {
 });
 
 describe('swizzle --gap respects safety gates', () => {
+  // swizzle's --output is path-safety guarded: absolute paths and `..`
+  // traversal are rejected (see swizzle.path-safety.test.mjs). These gap
+  // tests only care about the gh-call / status gates, so they write into a
+  // *relative* output dir created under the repo root (a valid, in-root
+  // target) and clean it up afterward. The CLI still resolves @xds/core via
+  // findCoreDir walking up from the cwd.
+  let swizzleOutDir;
+  beforeEach(() => {
+    swizzleOutDir = fs.mkdtempSync(path.join(repoRoot, '.xds-swizzle-gap-test-'));
+  });
+  afterEach(() => {
+    if (swizzleOutDir) fs.rmSync(swizzleOutDir, {recursive: true, force: true});
+  });
+  // Relative path into the temp dir, so it passes the path-safety guard
+  // (cwd === repoRoot for runXds by default).
+  const relOut = () => path.relative(repoRoot, swizzleOutDir);
+
   it('swizzle --gap in non-TTY → dry-run, no gh call', () => {
     const r = runXds([
       'swizzle',
       'Button',
       '--output',
-      path.join(os.tmpdir(), 'xds-swizzle-test-' + Date.now()),
+      relOut(),
       '--gap',
       'Need a compact variant',
       '--gap-category',
@@ -195,12 +212,11 @@ describe('swizzle --gap respects safety gates', () => {
   });
 
   it('swizzle --gap --no-report → never engages gap reporting at all', () => {
-    const outDir = path.join(os.tmpdir(), 'xds-swizzle-noreport-' + Date.now());
     const r = runXds([
       'swizzle',
       'Button',
       '--output',
-      outDir,
+      relOut(),
       '--gap',
       'Should be suppressed entirely',
       '--gap-category',
@@ -217,13 +233,12 @@ describe('swizzle --gap respects safety gates', () => {
   it('swizzle --gap --no-report --commit → STILL no gh call (no-report wins)', () => {
     // Critical regression test: --no-report must beat --commit for the
     // --gap auto-file path. Otherwise CI scripts could file issues.
-    const outDir = path.join(os.tmpdir(), 'xds-swizzle-norep2-' + Date.now());
     const r = runXds(
       [
         'swizzle',
         'Button',
         '--output',
-        outDir,
+        relOut(),
         '--gap',
         'should never file',
         '--gap-category',
@@ -238,13 +253,12 @@ describe('swizzle --gap respects safety gates', () => {
   });
 
   it('swizzle --gap with XDS_GAP_REPORT=off → no gh call', () => {
-    const outDir = path.join(os.tmpdir(), 'xds-swizzle-envoff-' + Date.now());
     const r = runXds(
       [
         'swizzle',
         'Button',
         '--output',
-        outDir,
+        relOut(),
         '--gap',
         'should be disabled by env',
         '--gap-category',

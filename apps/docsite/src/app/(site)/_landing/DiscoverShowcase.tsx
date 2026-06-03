@@ -25,13 +25,6 @@ const CORE_COMPONENT_COUNT_ROUNDED =
 const styles = stylex.create({
   section: {
     width: '100%',
-    paddingBlock: spacingVars['--spacing-12'],
-    paddingInline: spacingVars['--spacing-6'],
-    backgroundColor: 'var(--color-background-surface)',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-10'],
     overflowX: 'clip',
   },
   stage: {
@@ -114,26 +107,19 @@ const styles = stylex.create({
     right: -32,
     transform: 'rotate(-6deg)',
   },
-  content: {
-    textAlign: 'center',
-    maxWidth: 680,
-  },
-  headlineRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    columnGap: spacingVars['--spacing-3'],
-    rowGap: spacingVars['--spacing-2'],
-  },
   inlineWordmark: {
     display: 'inline-block',
-    height: '0.6em',
+    verticalAlign: 'baseline',
+    height: '.625em',
     width: 'auto',
-    verticalAlign: '0.06em',
-    marginTop: 8,
+    marginInline: 16,
   },
-  buttons: {
+  cardContent: {
+    maxWidth: 560,
+    textAlign: 'center',
+    marginInline: 'auto',
+  },
+  buttonGrid: {
     width: '100%',
     maxWidth: 360,
   },
@@ -165,7 +151,7 @@ export function DiscoverShowcase() {
   }, []);
 
   return (
-    <section {...stylex.props(styles.section)}>
+    <XDSVStack as="section" gap={10} align="center" xstyle={styles.section}>
       <div ref={stageRef} {...stylex.props(styles.stage)}>
         <img
           src="/discover-card-1.png"
@@ -204,28 +190,24 @@ export function DiscoverShowcase() {
           )}
         />
         <XDSCard variant="blue" padding={0} xstyle={styles.card}>
-          <XDSVStack
-            gap={4}
-            align="center"
-            xstyle={styles.content}
-            style={{textAlign: 'center', marginInline: 'auto'}}>
-            <XDSHeading level={2} type="display-1" color="primary">
-              <span {...stylex.props(styles.headlineRow)}>
-                <span>Discover the full</span>
+          <XDSVStack gap={10} align="center" xstyle={styles.cardContent}>
+            <XDSVStack gap={4} align="center">
+              <XDSHeading level={2} type="display-1" color="primary">
+                Discover the full
                 <img
                   src="/astryx-logo.svg"
                   alt="Astryx"
                   {...stylex.props(styles.inlineWordmark)}
                 />
-                <span>design system.</span>
-              </span>
-            </XDSHeading>
-            <XDSText type="body" color="secondary">
-              Browse {CORE_COMPONENT_COUNT_ROUNDED}+ components, explore
-              production-ready templates, and tune themes to match your brand —
-              pick a starting point and go.
-            </XDSText>
-            <XDSGrid columns={2} gap={3} xstyle={styles.buttons}>
+                design system.
+              </XDSHeading>
+              <XDSText type="body" color="secondary" style={{maxWidth: 480}}>
+                Browse {CORE_COMPONENT_COUNT_ROUNDED}+ components, explore
+                production-ready templates, and tune themes to match your brand
+                — pick a starting point and go.
+              </XDSText>
+            </XDSVStack>
+            <XDSGrid columns={2} gap={3} xstyle={styles.buttonGrid}>
               <XDSButton
                 variant="primary"
                 size="lg"
@@ -242,6 +224,6 @@ export function DiscoverShowcase() {
           </XDSVStack>
         </XDSCard>
       </div>
-    </section>
+    </XDSVStack>
   );
 }

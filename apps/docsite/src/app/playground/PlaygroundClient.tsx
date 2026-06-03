@@ -118,15 +118,17 @@ export default function Demo() {
   const [count, setCount] = useState(0);
 
   return (
-    <XDSCard padding={5} maxWidth={400}>
-      <XDSVStack gap={12}>
-        <XDSHeading level={3}>
-          XDS Playground
-        </XDSHeading>
-        <XDSText color="secondary">
-          Edit the code and see live changes.
-        </XDSText>
-        <XDSHStack gap={8} align="center">
+    <XDSCard maxWidth={400}>
+      <XDSVStack gap={4}>
+        <XDSVStack>
+          <XDSHeading level={3}>
+            XDS Playground
+          </XDSHeading>
+          <XDSText color="secondary">
+            Edit the code and see live changes.
+          </XDSText>
+        </XDSVStack>
+        <XDSHStack gap={2} align="center">
           <XDSButton
             label={\`Count: \${count}\`}
             onClick={() => setCount(c => c + 1)}
@@ -217,6 +219,13 @@ function configureMonaco(monaco: MonacoInstance) {
           content,
           `file:///node_modules/@types/react/${fileName}`,
         );
+        // Also register react/jsx-runtime as a resolvable module path
+        if (fileName === 'jsx-runtime.d.ts') {
+          ts.addExtraLib(
+            content,
+            'file:///node_modules/react/jsx-runtime.d.ts',
+          );
+        }
       }
 
       const stylexFiles = packages['@stylexjs/stylex'] ?? {};

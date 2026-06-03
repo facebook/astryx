@@ -41,13 +41,13 @@ export async function discover(query, options = {}) {
   });
 
   if (config.packages.length === 0) {
-    return {type: 'discover.list', data: []};
+    return {type: 'discover.list', data: [], meta: {configured: false}};
   }
 
   const packages = scanAllPackages(config.packages);
 
   if (packages.length === 0) {
-    return {type: 'discover.list', data: []};
+    return {type: 'discover.list', data: [], meta: {configured: true}};
   }
 
   if (!query) {

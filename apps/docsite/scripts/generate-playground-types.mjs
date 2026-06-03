@@ -51,6 +51,23 @@ const xdsTypes = collectDts(distDir);
 const fileCount = Object.keys(xdsTypes).length;
 
 // Also generate a minimal React types stub
+const reactJsxRuntimeTypes = `
+declare module 'react/jsx-runtime' {
+  export namespace JSX {
+    type Element = any;
+    interface IntrinsicElements {
+      [elemName: string]: any;
+    }
+    interface ElementChildrenAttribute {
+      children: {};
+    }
+  }
+  export function jsx(type: any, props: any, key?: string): JSX.Element;
+  export function jsxs(type: any, props: any, key?: string): JSX.Element;
+  export const Fragment: any;
+}
+`;
+
 const reactTypes = `
 declare module 'react' {
   export type ReactNode = any;
@@ -128,7 +145,7 @@ declare module '@stylexjs/stylex' {
 
 const output = {
   '@xds/core': xdsTypes,
-  react: {'index.d.ts': reactTypes},
+  react: {'index.d.ts': reactTypes, 'jsx-runtime.d.ts': reactJsxRuntimeTypes},
   '@stylexjs/stylex': {'index.d.ts': stylexTypes},
 };
 
