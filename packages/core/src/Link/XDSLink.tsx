@@ -73,6 +73,17 @@ const styles = stylex.create({
       ':focus-visible': '2px',
     },
   },
+  /**
+   * Reset styles for rendering as a <button> when href is undefined.
+   * Strips all native button chrome so it looks identical to a link.
+   */
+  buttonReset: {
+    backgroundColor: 'transparent',
+    borderStyle: 'none',
+    padding: 0,
+    pointerEvents: 'auto',
+    position: 'relative',
+  },
   hasUnderline: {
     textDecoration: 'underline',
   },
@@ -112,13 +123,16 @@ const linkColorStyles = stylex.create({
   },
 });
 
-export interface XDSLinkProps extends XDSBaseProps<HTMLAnchorElement> {
+export interface XDSLinkProps extends XDSBaseProps<
+  HTMLAnchorElement | HTMLButtonElement
+> {
   /** Ref forwarded to the root element */
-  ref?: React.Ref<HTMLAnchorElement>;
+  ref?: React.Ref<HTMLAnchorElement | HTMLButtonElement>;
   /**
    * Custom component to render instead of `<a>`.
    * Overrides the provider-level default set by XDSLinkProvider.
    * Must accept href, className, style, and children props.
+   * Only used when href is provided.
    */
   as?: XDSLinkComponentType;
   /**
@@ -130,6 +144,8 @@ export interface XDSLinkProps extends XDSBaseProps<HTMLAnchorElement> {
   label?: string;
   /**
    * Link destination URL.
+   * When undefined, renders as a `<button>` with link styling
+   * for semantic correctness and accessibility.
    */
   href?: string;
   /**
@@ -169,9 +185,10 @@ export interface XDSLinkProps extends XDSBaseProps<HTMLAnchorElement> {
    */
   referrerPolicy?: React.HTMLAttributeReferrerPolicy;
   /**
-   * Click handler. Fires before navigation.
+   * Click handler. Fires before navigation (when href is set),
+   * or as the primary action (when href is undefined).
    */
-  onClick?: React.MouseEventHandler<HTMLAnchorElement>;
+  onClick?: React.MouseEventHandler<HTMLAnchorElement | HTMLButtonElement>;
   /**
    * Tooltip text to display on hover.
    */
@@ -263,30 +280,11 @@ export function XDSLink({
     relFromProps,
   );
 
-  const linkElement = (
-    <LinkComponent
-      ref={ref}
-      href={href}
-      target={target}
-      rel={rel}
-      onClick={onClick}
-      aria-label={label || undefined}
-      aria-disabled={isDisabled || undefined}
-      tabIndex={isDisabled ? -1 : undefined}
-      {...mergeProps(
-        xdsClassName('link', {color}),
-        stylex.props(
-          styles.base,
-          linkColorStyles[color],
-          hasUnderline && styles.hasUnderline,
-          isStandalone && styles.standalone,
-          isDisabled && styles.disabled,
-          xstyle,
-        ),
-        className,
-        style,
-      )}
-      {...props}>
+  // When href is undefined, render as a <button> for semantic correctness
+  const renderAsButton = href == null;
+
+  const sharedContent = (
+    <>
       <XDSText
         type={type}
         size={size}
@@ -296,11 +294,75 @@ export function XDSLink({
         maxLines={maxLines}>
         {children}
       </XDSText>
-      {isExternalLink && (
+      {isExternalLink && !renderAsButton && (
         <XDSIcon icon="externalLink" size="xsm" color="inherit" />
       )}
-    </LinkComponent>
+    </>
   );
+
+  let linkElement: React.ReactElement;
+
+  if (renderAsButton) {
+    linkElement = (
+      <button
+        ref={ref as React.Ref<HTMLButtonElement>}
+        type="button"
+        onClick={
+          onClick
+        }
+        aria-label={label || undefined}
+        aria-disabled={isDisabled || undefined}
+        tabIndex={isDisabled ? -1 : undefined}
+        disabled={isDisabled}
+        {...mergeProps(
+          xdsClassName('link', {color}),
+          stylex.props(
+            styles.base,
+            styles.buttonReset,
+            linkColorStyles[color],
+            hasUnderline && styles.hasUnderline,
+            isStandalone && styles.standalone,
+            isDisabled && styles.disabled,
+            xstyle,
+          ),
+          className,
+          style,
+        )}
+        {...(props)}>
+        {sharedContent}
+      </button>
+    );
+  } else {
+    linkElement = (
+      <LinkComponent
+        ref={ref as React.Ref<HTMLAnchorElement>}
+        href={href}
+        target={target}
+        rel={rel}
+        onClick={
+          onClick
+        }
+        aria-label={label || undefined}
+        aria-disabled={isDisabled || undefined}
+        tabIndex={isDisabled ? -1 : undefined}
+        {...mergeProps(
+          xdsClassName('link', {color}),
+          stylex.props(
+            styles.base,
+            linkColorStyles[color],
+            hasUnderline && styles.hasUnderline,
+            isStandalone && styles.standalone,
+            isDisabled && styles.disabled,
+            xstyle,
+          ),
+          className,
+          style,
+        )}
+        {...props}>
+        {sharedContent}
+      </LinkComponent>
+    );
+  }
 
   // Wrap with tooltip if provided
   if (tooltip) {
