@@ -9,9 +9,6 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
 import {XDSBadge} from '@xds/core/Badge';
-import {XDSTheme} from '@xds/core/theme';
-import {neutralTheme} from '@xds/theme-neutral/built';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {components} from '../../../generated/componentRegistry';
 
 // Count of public @xds/core components (excluding hooks and hidden entries).
@@ -26,23 +23,10 @@ const CORE_COMPONENT_COUNT = (components['@xds/core'] ?? []).filter(
 const CORE_COMPONENT_COUNT_ROUNDED = Math.floor(CORE_COMPONENT_COUNT / 10) * 10;
 
 const styles = stylex.create({
-  section: {
-    width: '100%',
-    paddingBlock: spacingVars['--spacing-12'],
-    paddingInline: spacingVars['--spacing-6'],
-    backgroundColor: 'var(--color-background-surface)',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-10'],
-  },
   headingBlock: {
     textAlign: 'center',
     width: '100%',
     maxWidth: 680,
-  },
-  fillWidth: {
-    width: '100%',
   },
   // Layout glue for the XDSGrid: cap at 1200px and force every row to the
   // same height so the tall first card and the regular cards line up.
@@ -131,24 +115,17 @@ function FeatureCard({feature, isTall}: {feature: Feature; isTall?: boolean}) {
 
 function FeaturesHeading() {
   return (
-    <XDSVStack
-      gap={2}
-      align="center"
-      xstyle={styles.headingBlock}
-      style={{textAlign: 'center'}}>
+    <XDSVStack gap={4} align="center" xstyle={styles.headingBlock}>
       <XDSBadge variant="blue" label="Key features" />
-      <XDSHeading
-        level={2}
-        type="display-2"
-        color="primary"
-        xstyle={styles.fillWidth}>
-        Start anywhere.
-        <br />
-        Change anything. Ship faster.
+      <XDSHeading level={2} type="display-2" color="primary">
+        Start&nbsp;anywhere. Change&nbsp;anything.&nbsp;Ship&nbsp;faster.
       </XDSHeading>
-      <XDSText type="body" color="secondary" xstyle={styles.fillWidth}>
+      <XDSText
+        display="block"
+        type="body"
+        color="secondary"
+        style={{maxWidth: 420}}>
         A design system that adapts to your workflow, not the other way around.
-        <br />
         Built for speed, clarity, and creative freedom.
       </XDSText>
     </XDSVStack>
@@ -157,22 +134,16 @@ function FeaturesHeading() {
 
 export function FeaturesShowcase() {
   return (
-    <section {...stylex.props(styles.section)}>
+    <XDSVStack as="section" align="center" gap={10} width="100%">
       <FeaturesHeading />
-      <XDSTheme theme={neutralTheme} mode="light">
-        <XDSGrid
-          columns={{minWidth: 280, repeat: 'fit'}}
-          gap={4}
-          xstyle={styles.gridLayout}>
-          {features.map((feature, i) => (
-            <FeatureCard
-              key={feature.title}
-              feature={feature}
-              isTall={i === 0}
-            />
-          ))}
-        </XDSGrid>
-      </XDSTheme>
-    </section>
+      <XDSGrid
+        columns={{minWidth: 320, repeat: 'fit'}}
+        gap={4}
+        xstyle={styles.gridLayout}>
+        {features.map((feature, i) => (
+          <FeatureCard key={feature.title} feature={feature} isTall={i === 0} />
+        ))}
+      </XDSGrid>
+    </XDSVStack>
   );
 }

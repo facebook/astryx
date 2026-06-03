@@ -7,10 +7,11 @@
  * Auto-discovers components and doc topics (same as cli-smoke-test.mjs)
  * then runs every command with --json and validates:
  * 1. Output is valid JSON
- * 2. Success responses have `type` (string) and `data` fields
- * 3. Error responses have `error` (string) field
+ * 2. Success responses have `apiVersion` (=== 1), `type` (string) and `data`
+ * 3. Error responses have `apiVersion` (=== 1) and `error` (string) field
  * 4. `type` values follow the dot-separated naming pattern
- * 5. Envelope shape is consistent across all commands
+ * 5. Envelope shape is consistent across all commands (allowed success keys:
+ *    apiVersion, type, data, and optional sidecar meta)
  *
  * No hardcoded type allowlist — validates shape, not specific strings.
  * The .d.ts type declarations are the source of truth for valid types.
@@ -75,6 +76,12 @@ function checkJson(label, args, {expectError = false, expectType = null} = {}) {
       failed++;
       return;
     }
+    if (parsed.apiVersion !== 1) {
+      console.log(`  FAIL  ${label}  (error envelope missing apiVersion === 1, got ${parsed.apiVersion})`);
+      failures.push({label, reason: `error envelope apiVersion !== 1 (${parsed.apiVersion})`});
+      failed++;
+      return;
+    }
     console.log(`  ok    ${label}  (error: "${parsed.error.slice(0, 60)}")`);
     passed++;
     return;
@@ -85,6 +92,12 @@ function checkJson(label, args, {expectError = false, expectType = null} = {}) {
     if (typeof parsed.error !== 'string') {
       console.log(`  FAIL  ${label}  (error field is not a string)`);
       failures.push({label, reason: 'error field not a string'});
+      failed++;
+      return;
+    }
+    if (parsed.apiVersion !== 1) {
+      console.log(`  FAIL  ${label}  (error envelope missing apiVersion === 1, got ${parsed.apiVersion})`);
+      failures.push({label, reason: `error envelope apiVersion !== 1 (${parsed.apiVersion})`});
       failed++;
       return;
     }
@@ -99,7 +112,14 @@ function checkJson(label, args, {expectError = false, expectType = null} = {}) {
     return;
   }
 
-  // Success responses must have type + data
+  // Success responses must have apiVersion + type + data
+  if (parsed.apiVersion !== 1) {
+    console.log(`  FAIL  ${label}  (missing apiVersion === 1, got ${parsed.apiVersion})`);
+    failures.push({label, reason: `apiVersion !== 1 (${parsed.apiVersion})`});
+    failed++;
+    return;
+  }
+
   if (typeof parsed.type !== 'string') {
     console.log(`  FAIL  ${label}  (missing or non-string type field)`);
     failures.push({label, reason: 'missing type field'});
@@ -122,8 +142,11 @@ function checkJson(label, args, {expectError = false, expectType = null} = {}) {
     return;
   }
 
-  // Envelope should only have type + data keys (no extra fields)
-  const extraKeys = Object.keys(parsed).filter(k => k !== 'type' && k !== 'data');
+  // Envelope success keys are limited to the contract's fields: the
+  // apiVersion stamp, the type discriminator, the data payload, and an
+  // optional sidecar `meta` (emitted as a sibling of data, never merged in).
+  const allowedKeys = new Set(['apiVersion', 'type', 'data', 'meta']);
+  const extraKeys = Object.keys(parsed).filter(k => !allowedKeys.has(k));
   if (extraKeys.length > 0) {
     console.log(`  FAIL  ${label}  (extra fields in envelope: ${extraKeys.join(', ')})`);
     failures.push({label, reason: `extra envelope fields: ${extraKeys.join(', ')}`});

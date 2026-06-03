@@ -7,6 +7,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {CLI_ROOT, discoverExternalPackages} from '../utils/paths.mjs';
+import {assertWithin, isFilePathArg, PathSafetyError} from '../utils/path-safety.mjs';
 import {XDSError} from './error.mjs';
 import {loadConfig} from '../lib/config.mjs';
 
@@ -484,19 +485,49 @@ export async function template(name, options = {}) {
     };
   }
 
-  const outputDir = path.resolve(cwd, targetPath);
-  const outputFileName = match.type === 'block'
-    ? path.basename(match.filePath)
-    : 'page.tsx';
+  // Path-safety: resolve the user-supplied targetPath relative to cwd,
+  // rejecting absolute paths and any traversal that escapes the project
+  // root. This guard runs BEFORE any mkdir/copyFile so we never create
+  // directories outside the root just to fail on the file write.
+  let resolvedTarget;
+  try {
+    resolvedTarget = assertWithin(targetPath, cwd, {
+      label: 'template target path',
+    });
+  } catch (err) {
+    if (err instanceof PathSafetyError) {
+      throw new XDSError(err.message);
+    }
+    throw err;
+  }
+
+  // If targetPath looks like a file (e.g. `./foo.tsx`), write directly to
+  // it. Previously this path was treated as a directory and the file was
+  // written as `./foo.tsx/page.tsx`, which is wrong and surprising.
+  let outputDir;
+  let outputFileName;
+  let outputFilePath;
+  if (isFilePathArg(targetPath)) {
+    outputDir = path.dirname(resolvedTarget);
+    outputFileName = path.basename(resolvedTarget);
+    outputFilePath = resolvedTarget;
+  } else {
+    outputDir = resolvedTarget;
+    outputFileName = match.type === 'block'
+      ? path.basename(match.filePath)
+      : 'page.tsx';
+    outputFilePath = path.join(outputDir, outputFileName);
+  }
+
   fs.mkdirSync(outputDir, {recursive: true});
 
   // Strip docsite-only /template-assets references so the scaffolded file
   // renders in the user's project without copying demo images.
   const source = fs.readFileSync(match.filePath, 'utf-8');
   const outputSource = stripTemplateAssetRefs(source);
-  fs.writeFileSync(path.join(outputDir, outputFileName), outputSource);
+  fs.writeFileSync(outputFilePath, outputSource);
 
-  const relOutput = path.relative(cwd, outputDir);
+  const relOutput = path.relative(cwd, outputDir) || '.';
   return {
     type: 'template.copy',
     data: {template: name, outputDir: relOutput, fileName: outputFileName, filesCopied: 1},

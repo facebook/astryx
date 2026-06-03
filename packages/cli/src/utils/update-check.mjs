@@ -14,6 +14,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {semverGt} from './semver.mjs';
 
 /**
  * Read the latest available version from local signals.
@@ -93,8 +94,9 @@ export function checkForUpdate(cwd = process.cwd()) {
   const installed = getInstalledVersion(cwd);
   if (!installed) return null;
 
-  // Simple string comparison works for our semver scheme (0.0.x)
-  if (latest > installed) {
+  // Use semver-aware comparison so '0.0.20' is correctly treated as greater
+  // than '0.0.5' (lexicographic compare gets that backwards).
+  if (semverGt(latest, installed)) {
     return `FYI: A newer version of @xds/core (${latest}) is available. You can upgrade with: xds upgrade --apply --to ${latest}`;
   }
 

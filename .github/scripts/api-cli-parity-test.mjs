@@ -32,7 +32,20 @@ function cliJson(args, cwd = ROOT) {
     cwd, encoding: 'utf8', timeout: 30_000,
   });
   try {
-    return JSON.parse(r.stdout);
+    const parsed = JSON.parse(r.stdout);
+    // Normalize to the {type, data} / {error, suggestions} shape the API side
+    // produces (see apiCall). The CLI envelope also carries transport metadata
+    // (apiVersion, and an optional meta sidecar) that the API functions don't
+    // return; strip it so parity compares semantics, not envelope framing.
+    if (parsed && typeof parsed === 'object' && !parsed.__parse_error) {
+      if (parsed.error !== undefined) {
+        return {error: parsed.error, suggestions: parsed.suggestions};
+      }
+      if (parsed.type !== undefined) {
+        return {type: parsed.type, data: parsed.data};
+      }
+    }
+    return parsed;
   } catch {
     return {__parse_error: true, raw: r.stdout?.slice(0, 200)};
   }

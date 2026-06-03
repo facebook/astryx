@@ -13,13 +13,49 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {checkForUpdate} from './utils/update-check.mjs';
 import {getRunPrefix} from './utils/package-manager.mjs';
+import {API_VERSION, setJsonMode} from './lib/json.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Read version from package.json so it stays in sync
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf-8'));
 
+// Intercept `xds --version --json` (or `-V --json`) before Commander processes
+// the version flag and exits. Commander's built-in version handler prints the
+// raw version string and calls process.exit, bypassing our hooks — so the
+// only correct place to JSON-ify it is here.
+const _argv = process.argv.slice(2);
+if (
+  (_argv.includes('--version') || _argv.includes('-V')) &&
+  _argv.includes('--json')
+) {
+  process.__xdsJsonHandled = true;
+  console.log(JSON.stringify({apiVersion: API_VERSION, type: 'version', data: {version: pkg.version}}, null, 2));
+  process.exit(0);
+}
+
 export const program = new Command();
+
+/**
+ * Allowlist of fully-qualified command names that natively support --json.
+ * Subcommands are listed by their full path (parent + leaf), e.g. "theme build".
+ *
+ * Commands NOT in this set will be rejected by the preAction hook below
+ * BEFORE any side effects can run. This protects users from partial state
+ * (e.g. files written, then --json error printed) on commands that don't
+ * yet support structured output.
+ */
+export const JSON_SUPPORTED = new Set([
+  'component',
+  'docs',
+  'discover',
+  'swizzle',
+  'template',
+  'hook',
+  'theme build',
+  'gap-report',
+  'upgrade',
+]);
 
 program
   .name('xds')
@@ -29,31 +65,94 @@ program
   .option('--dense', 'Output docs in compressed dense format (token-efficient)')
   .option('--lang <locale>', 'Output docs in specified language/format (en, zh, dense)')
   .option('--detail <level>', 'Output detail level (full, compact, brief)', 'full')
-  .option('--json', 'Output as typed JSON (envelope: { type, data })')
+  .option(
+    '--json',
+    'Output as typed JSON. Success envelope: { type, data }. Error envelope: { error, suggestions? }.',
+  )
   .addHelpCommand('help', 'Show all commands')
   .action(() => {
+    // `xds` (no subcommand) — print help, or emit a JSON envelope when --json.
+    if (program.opts().json) {
+      // Emit a JSON help envelope. Treat the bare invocation as supported.
+      process.__xdsJsonHandled = true;
+      console.log(JSON.stringify({
+        apiVersion: API_VERSION,
+        type: 'help',
+        data: {
+          name: 'xds',
+          version: pkg.version,
+          commands: [
+            'component', 'docs', 'discover', 'swizzle', 'template',
+            'hook', 'theme', 'gap-report', 'upgrade', 'init',
+          ],
+          jsonSupported: [...JSON_SUPPORTED].sort(),
+        },
+      }, null, 2));
+      return;
+    }
     program.help();
   });
 
 /**
- * Fallback hook: if --json was requested but the command didn't call
- * jsonOut/jsonError, return a structured "not supported" error.
- * Registered BEFORE the update-check hook so it fires first.
+ * Compute the fully qualified command name, e.g. "theme build" or "gap-report".
+ * @param {import('commander').Command} actionCommand
+ * @returns {string}
+ */
+function fullCommandName(actionCommand) {
+  const parts = [];
+  let cmd = actionCommand;
+  while (cmd && cmd !== program) {
+    parts.unshift(cmd.name());
+    cmd = cmd.parent;
+  }
+  return parts.join(' ');
+}
+
+/**
+ * Pre-action hook: gate --json BEFORE any command body runs.
+ *
+ * If --json is set on a command that is not on the JSON_SUPPORTED allowlist,
+ * emit a structured error envelope and exit 1 — without running the command's
+ * action (so no filesystem mutations, no clack prompts, no spawned processes).
+ *
+ * This is the single source of truth for "command does not support --json".
+ * Individual commands should NOT re-check this; they may assume that if their
+ * action runs with --json, they are responsible for emitting an envelope on
+ * every code path.
+ */
+program.hook('preAction', (thisCommand, actionCommand) => {
+  if (!program.opts().json) return;
+  // Engage global JSON mode so humanLog()/humanWarn() across commands become
+  // no-ops — stdout now carries only the JSON envelope.
+  setJsonMode(true);
+  // The root program's own action (no subcommand) is handled directly in
+  // its action handler — let it through. fullCommandName is '' there.
+  if (actionCommand === program) return;
+  const fullName = fullCommandName(actionCommand);
+  if (JSON_SUPPORTED.has(fullName)) return;
+  process.__xdsJsonHandled = true;
+  console.log(JSON.stringify({
+    apiVersion: API_VERSION,
+    error: `JSON output is not supported for the '${fullName}' command`,
+  }, null, 2));
+  process.exit(1);
+});
+
+/**
+ * Belt-and-suspenders postAction: if a "supported" command somehow forgot
+ * to emit a JSON envelope on a code path, surface that as a structured error
+ * rather than silent stdout corruption. This should never fire in practice;
+ * if it does, it's a bug in the command implementation.
  */
 program.hook('postAction', (thisCommand, actionCommand) => {
-  if (program.opts().json && !process.__xdsJsonHandled) {
-    const parts = [];
-    let cmd = actionCommand;
-    while (cmd && cmd !== program) {
-      parts.unshift(cmd.name());
-      cmd = cmd.parent;
-    }
-    const fullName = parts.join(' ');
-    console.log(JSON.stringify({
-      error: `JSON output is not supported for the '${fullName}' command`,
-    }, null, 2));
-    process.exit(1);
-  }
+  if (!program.opts().json) return;
+  if (process.__xdsJsonHandled) return;
+  const fullName = fullCommandName(actionCommand);
+  console.log(JSON.stringify({
+    apiVersion: API_VERSION,
+    error: `Internal: '${fullName}' completed without emitting a JSON envelope`,
+  }, null, 2));
+  process.exit(1);
 });
 
 /**
