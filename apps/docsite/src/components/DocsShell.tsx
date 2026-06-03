@@ -4,7 +4,7 @@
 
 import {useState, useMemo} from 'react';
 import {usePathname} from 'next/navigation';
-import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
+import {Search} from 'lucide-react';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
 import {XDSTextInput} from '@xds/core/TextInput';
@@ -210,7 +210,7 @@ export function DocsShell({
                   value={componentQuery}
                   onChange={setComponentQuery}
                   placeholder="Search components…"
-                  startIcon={MagnifyingGlassIcon}
+                  startIcon={Search}
                   hasClear
                   style={{marginBottom: 'var(--spacing-3)'}}
                 />

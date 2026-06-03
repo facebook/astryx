@@ -4,7 +4,7 @@ import type {Metadata} from 'next';
 import {PlaygroundClient} from './PlaygroundClient';
 
 export const metadata: Metadata = {
-  title: 'Playground',
+  title: 'Astryx Playground',
   description: 'Interactive code playground for Astryx components',
 };
 

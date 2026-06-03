@@ -119,6 +119,11 @@ import type {XDSDefinedTheme} from '@xds/core/theme';
 import {createElement, type ComponentProps} from 'react';
 import * as xdsTokens from '@xds/core/theme/tokens.stylex';
 
+import * as LucideIcons from 'lucide-react';
+// Heroicons kept available in the playground scope alongside Lucide
+// so template / example code that still imports from
+// '@heroicons/react/*' continues to render. New docsite code authors
+// against Lucide; these entries are purely for backwards compat.
 import * as Heroicons16Solid from '@heroicons/react/16/solid';
 import * as Heroicons20Solid from '@heroicons/react/20/solid';
 import * as Heroicons24Outline from '@heroicons/react/24/outline';
@@ -324,6 +329,7 @@ export const scope: Record<string, Record<string, unknown>> = {
     ...TreeList,
     ...Typeahead,
   },
+  'lucide-react': LucideIcons,
   '@heroicons/react/16/solid': Heroicons16Solid,
   '@heroicons/react/20/solid': Heroicons20Solid,
   '@heroicons/react/24/outline': Heroicons24Outline,

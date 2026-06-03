@@ -13,7 +13,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@heroicons/react": "^2.2.0",
     "@monaco-editor/react": "^4.7.0",
     "@stylexjs/stylex": "^0.18.3",
     "@xds/cli": "*",
@@ -25,6 +24,8 @@
     "@xds/theme-neutral": "*",
     "@xds/theme-stone": "*",
     "@xds/theme-y2k": "*",
+    "@heroicons/react": "^2.2.0",
+    "lucide-react": "^1.17.0",
     "lz-string": "^1.5.0",
     "monaco-editor": "^0.55.1",
     "next": "^15.5.16",

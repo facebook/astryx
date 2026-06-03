@@ -105,7 +105,7 @@ const linkColorStyles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   active: {
-    color: colorVars['--color-accent'],
+    color: colorVars['--color-text-accent'],
   },
   inherit: {
     color: 'inherit',

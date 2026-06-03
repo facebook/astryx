@@ -5,8 +5,8 @@
  * Source check: verify files using React client APIs have "use client"
  * as their FIRST LINE (before any comments or JSDoc).
  *
- * This ensures tsup (with splitting: false) preserves the directive
- * in each self-contained entry point.
+ * This ensures the Babel CLI 1:1 build preserves the directive
+ * in each output file.
  *
  * Usage: node scripts/check-use-client.mjs
  */

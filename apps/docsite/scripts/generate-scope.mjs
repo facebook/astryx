@@ -41,13 +41,18 @@ const SCOPE_THEMES = [
   {pkg: '@xds/theme-matcha', name: 'matchaTheme', subpath: '/built'},
 ];
 
-// Heroicons variants
+// Heroicons variants — exposed alongside Lucide so playground snippets
+// and shared template code that still import from '@heroicons/react/*'
+// keep rendering. The docsite itself authors new code against Lucide;
+// these entries are purely for playground runtime compatibility with
+// template / example code that hasn't been migrated.
 const HEROICON_VARIANTS = [
   {path: '16/solid', alias: 'Heroicons16Solid'},
   {path: '20/solid', alias: 'Heroicons20Solid'},
   {path: '24/outline', alias: 'Heroicons24Outline'},
   {path: '24/solid', alias: 'Heroicons24Solid'},
 ];
+
 
 // Build output
 const lines = [HEADER, ''];
@@ -83,7 +88,10 @@ lines.push("import {XDSTheme} from '@xds/core/theme';");
 lines.push("import * as xdsTokens from '@xds/core/theme/tokens.stylex';");
 lines.push('');
 
-// Heroicons
+// Lucide icons (the docsite's primary icon library going forward)
+// plus Heroicons (kept for backward compatibility with template /
+// example code that still imports from '@heroicons/react/*').
+lines.push("import * as LucideIcons from 'lucide-react';");
 for (const h of HEROICON_VARIANTS) {
   lines.push(`import * as ${h.alias} from '@heroicons/react/${h.path}';`);
 }
@@ -133,7 +141,8 @@ for (const name of components) {
 // Barrel export — all components spread
 lines.push(`  '@xds/core': {${components.map((n) => `...${n}`).join(', ')}},`);
 
-// Heroicons
+// Lucide icons + Heroicons (both available to playground code)
+lines.push("  'lucide-react': LucideIcons,");
 for (const h of HEROICON_VARIANTS) {
   lines.push(`  '@heroicons/react/${h.path}': ${h.alias},`);
 }
@@ -150,4 +159,4 @@ writeFileSync(OUT, lines.join('\n'));
 console.log(`✓ Generated ${OUT}`);
 console.log(`  ${components.length} components`);
 console.log(`  ${SCOPE_THEMES.length} themes`);
-console.log(`  ${HEROICON_VARIANTS.length} heroicon variants`);
+console.log(`  lucide-react icons + ${HEROICON_VARIANTS.length} heroicon variants`);

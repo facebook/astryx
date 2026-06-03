@@ -42,14 +42,14 @@ import {
 } from '@xds/core/SegmentedControl';
 import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
 import {
-  ArrowLeftIcon,
-  MoonIcon,
-  SunIcon,
-  ComputerDesktopIcon,
-  DevicePhoneMobileIcon,
-  ArrowsPointingOutIcon,
-  ArrowPathIcon,
-} from '@heroicons/react/24/outline';
+  ArrowLeft,
+  Moon,
+  Sun,
+  Monitor,
+  Smartphone,
+  Maximize2,
+  RotateCw,
+} from 'lucide-react';
 import githubLight from './themes/github-light.json';
 import githubDark from './themes/github-dark.json';
 import {useThemeMode} from '../providers';
@@ -122,7 +122,7 @@ export default function Demo() {
       <XDSVStack gap={4}>
         <XDSVStack>
           <XDSHeading level={3}>
-            Playground
+            Astryx Playground
           </XDSHeading>
           <XDSText color="secondary">
             Edit the code and see live changes.
@@ -200,13 +200,12 @@ function configureMonaco(monaco: MonacoInstance) {
     'file:///globals.d.ts',
   );
 
-  // Heroicons wildcard stub
+  // Lucide icons wildcard stub — gives Monaco a sense of the
+  // module's shape so import { Icon } from 'lucide-react' doesn't
+  // light up with red squigglies in the playground editor.
   ts.addExtraLib(
-    `declare module '@heroicons/react/16/solid' { const icons: Record<string, React.ComponentType<{width?: number; height?: number; className?: string}>>; export = icons; }
-    declare module '@heroicons/react/20/solid' { const icons: Record<string, React.ComponentType<{width?: number; height?: number; className?: string}>>; export = icons; }
-    declare module '@heroicons/react/24/outline' { const icons: Record<string, React.ComponentType<{width?: number; height?: number; className?: string}>>; export = icons; }
-    declare module '@heroicons/react/24/solid' { const icons: Record<string, React.ComponentType<{width?: number; height?: number; className?: string}>>; export = icons; }`,
-    'file:///node_modules/@heroicons/react/index.d.ts',
+    `declare module 'lucide-react' { const icons: Record<string, React.ComponentType<{size?: number | string; color?: string; strokeWidth?: number | string; className?: string}>>; export = icons; }`,
+    'file:///node_modules/lucide-react/index.d.ts',
   );
 
   // Load real type definitions from the pre-built JSON bundle
@@ -645,7 +644,7 @@ export function PlaygroundClient() {
             variant="ghost"
             size="md"
             isIconOnly
-            icon={<ArrowLeftIcon width={20} height={20} />}
+            icon={<ArrowLeft size={20} />}
             onClick={() => router.back()}
           />
           <XDSTabList
@@ -710,13 +709,7 @@ export function PlaygroundClient() {
                 variant="ghost"
                 size="md"
                 isIconOnly
-                icon={
-                  mode === 'light' ? (
-                    <MoonIcon width={20} height={20} />
-                  ) : (
-                    <SunIcon width={20} height={20} />
-                  )
-                }
+                icon={mode === 'light' ? <Moon size={20} /> : <Sun size={20} />}
                 onClick={() => setMode(m => (m === 'light' ? 'dark' : 'light'))}
               />
             </XDSHStack>
@@ -731,13 +724,13 @@ export function PlaygroundClient() {
                 value="desktop"
                 label="Desktop"
                 isLabelHidden
-                icon={<ComputerDesktopIcon width={20} height={20} />}
+                icon={<Monitor size={20} />}
               />
               <XDSSegmentedControlItem
                 value="phone"
                 label="Phone"
                 isLabelHidden
-                icon={<DevicePhoneMobileIcon width={20} height={20} />}
+                icon={<Smartphone size={20} />}
               />
             </XDSSegmentedControl>
           }
@@ -762,7 +755,7 @@ export function PlaygroundClient() {
                       variant="ghost"
                       size="sm"
                       isIconOnly
-                      icon={<ArrowPathIcon width={16} height={16} />}
+                      icon={<RotateCw size={16} />}
                       onClick={handleRebuild}
                     />
                   )}
@@ -774,7 +767,7 @@ export function PlaygroundClient() {
                 variant="ghost"
                 size="md"
                 isIconOnly
-                icon={<ArrowsPointingOutIcon width={20} height={20} />}
+                icon={<Maximize2 size={20} />}
                 onClick={() => setIsFullscreen(true)}
               />
               <XDSButton
