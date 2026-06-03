@@ -41,6 +41,7 @@ import {
   XDSSegmentedControlItem,
 } from '@xds/core/SegmentedControl';
 import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
+import {XDSToggleButton} from '@xds/core/ToggleButton';
 import {
   ArrowLeftIcon,
   MoonIcon,
@@ -49,6 +50,7 @@ import {
   DevicePhoneMobileIcon,
   ArrowsPointingOutIcon,
   ArrowPathIcon,
+  CursorArrowRaysIcon,
 } from '@heroicons/react/24/outline';
 import githubLight from './themes/github-light.json';
 import githubDark from './themes/github-dark.json';
@@ -347,6 +349,9 @@ export function PlaygroundClient() {
   const [statusFading, setStatusFading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [previewReady, setPreviewReady] = useState(false);
+  const [isTargeting, setIsTargeting] = useState(false);
+  const [targetedComponent, setTargetedComponent] = useState<string | null>(null);
+  const [targetedInstance, setTargetedInstance] = useState(0);
 
   // The code the playground was seeded with (a shared/example snippet from the
   // URL hash, or the default). Reset restores this — not the hardcoded default.
@@ -412,12 +417,23 @@ export function PlaygroundClient() {
     [send],
   );
 
-  // Flash a focus ring on the DOM node for a given component instance.
-  const flashInstance = useCallback((component: string, index: number) => {
+  // Persistently highlight the DOM node for a given component instance.
+  const selectInstance = useCallback((component: string, index: number) => {
     iframeRef.current?.contentWindow?.postMessage(
-      {type: 'preview-highlight', id: `${component}#${index}`},
+      {type: 'preview-select', id: `${component}#${index}`},
       window.location.origin,
     );
+  }, []);
+
+  const toggleTargeting = useCallback((pressed?: boolean) => {
+    setIsTargeting(prev => {
+      const next = pressed ?? !prev;
+      iframeRef.current?.contentWindow?.postMessage(
+        {type: next ? 'targeting-enable' : 'targeting-disable'},
+        window.location.origin,
+      );
+      return next;
+    });
   }, []);
 
   useEffect(() => {
@@ -438,6 +454,19 @@ export function PlaygroundClient() {
       }
       if (e.data?.type === 'preview-error') {
         setBuildStatus('error');
+      }
+      if (e.data?.type === 'targeting-select') {
+        setTargetedComponent(e.data.component);
+        setTargetedInstance(e.data.index);
+        setActiveTab('property');
+        setIsTargeting(false);
+        iframeRef.current?.contentWindow?.postMessage(
+          {type: 'targeting-disable'},
+          window.location.origin,
+        );
+      }
+      if (e.data?.type === 'targeting-exit') {
+        setIsTargeting(false);
       }
     };
     window.addEventListener('message', handler);
@@ -669,7 +698,14 @@ export function PlaygroundClient() {
               code={code}
               onCodeChange={setCode}
               onRevealInCode={revealInCode}
-              onFlashInstance={flashInstance}
+              onFlashInstance={selectInstance}
+              externalSelection={targetedComponent != null ? {
+                component: targetedComponent,
+                instanceIndex: targetedInstance,
+              } : undefined}
+              onExternalSelectionConsumed={() => {
+                setTargetedComponent(null);
+              }}
             />
           )}
         </div>
@@ -709,6 +745,15 @@ export function PlaygroundClient() {
                   )
                 }
                 onClick={() => setMode(m => (m === 'light' ? 'dark' : 'light'))}
+              />
+              <XDSToggleButton
+                label="Target element"
+                tooltip={isTargeting ? 'Exit targeting (Esc)' : 'Click to select an element'}
+                isPressed={isTargeting}
+                onPressedChange={toggleTargeting}
+                size="md"
+                isIconOnly
+                icon={<CursorArrowRaysIcon width={20} height={20} />}
               />
             </XDSHStack>
           }
