@@ -81,6 +81,13 @@ const CARD_WIDTH = 800;
 // height that fits all themes' right-column content without clipping
 // at base XDS sizing.
 const CARD_HEIGHT = 620;
+// Stacked-tile height (below 800px viewport, where ThemeShowcaseTile
+// collapses its 2-column layout to a single column). Set to roughly
+// the natural rendered height of the tallest stacked theme so every
+// slide stays uniform at narrow widths without clipping the longest
+// theme. 1180px chosen empirically to fit Matcha (the tallest stack)
+// with a comfortable bottom rim.
+const CARD_HEIGHT_STACKED = 1180;
 
 // Horizontal gutter that defines the page's content rim. The
 // header row's content (title + links) starts at this offset from
@@ -202,10 +209,23 @@ const styles = stylex.create({
 
   // Each slide is sized to CARD_WIDTH on desktop; clamps to fit
   // the viewport (with a comfortable gutter) on narrower screens.
-  // Height is fixed so all tiles match (see CARD_HEIGHT comment).
+  // Height is fixed at CARD_HEIGHT on wider viewports so all tiles
+  // match. Below the tile's stack breakpoint (800px), the inner
+  // ThemeShowcaseTile collapses from 2 columns to 1 column, which
+  // makes its natural height roughly double — so we use a taller
+  // fixed height (CARD_HEIGHT_STACKED) that fits the tallest
+  // stacked theme, keeping every slide the same height so the
+  // carousel reads as a clean uniform row at every breakpoint.
   slide: {
     width: `min(${CARD_WIDTH}px, 100vw - var(--spacing-6, 24px) * 2)`,
-    height: CARD_HEIGHT,
+    height: {
+      default: CARD_HEIGHT,
+      // 1180px = CARD_HEIGHT_STACKED — inlined here because StyleX's
+      // compile-time evaluator can't resolve named constants inside
+      // an @media object value (see the matching constant at the top
+      // of this file for the rationale).
+      '@media (max-width: 800px)': 1180,
+    },
   },
   // The XDSCard host inside each slide. Fills the slide width and
   // height so the inner ThemeShowcaseTile stretches to match.
