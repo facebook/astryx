@@ -25,7 +25,7 @@
  * is Astryx.
  */
 
-import {DocumentTextIcon, ScaleIcon} from '@heroicons/react/24/outline';
+import {FileText, Scale} from 'lucide-react';
 import {NavSurfaceMode} from './NavSurfaceMode';
 import * as stylex from '@stylexjs/stylex';
 import {XDSCard} from '@xds/core/Card';
@@ -677,10 +677,14 @@ function BlockCard({label, description, href, badge, image}: BlockCardProps) {
 // size (~20px). Inline SVGs keep the bundle lean and avoid
 // pulling in a brand-icon package for just three glyphs.
 
-const GitHubGlyph = ({width = 20, height = 20}) => (
+// Brand glyphs accept the same `size` prop as Lucide icons so all
+// three of them slot uniformly into the Resource.icon shape (see
+// the interface comment below) and the render site can call any
+// icon component with `<Icon size={n} />` regardless of source.
+const GitHubGlyph = ({size = 20}: {size?: number}) => (
   <svg
-    width={width}
-    height={height}
+    width={size}
+    height={size}
     viewBox="0 0 24 24"
     fill="currentColor"
     xmlns="http://www.w3.org/2000/svg"
@@ -690,10 +694,10 @@ const GitHubGlyph = ({width = 20, height = 20}) => (
 );
 
 // X (formerly Twitter) glyph — the post-2023 wordmark/logo.
-const TwitterGlyph = ({width = 20, height = 20}) => (
+const TwitterGlyph = ({size = 20}: {size?: number}) => (
   <svg
-    width={width}
-    height={height}
+    width={size}
+    height={size}
     viewBox="0 0 24 24"
     fill="currentColor"
     xmlns="http://www.w3.org/2000/svg"
@@ -702,10 +706,10 @@ const TwitterGlyph = ({width = 20, height = 20}) => (
   </svg>
 );
 
-const DiscordGlyph = ({width = 20, height = 20}) => (
+const DiscordGlyph = ({size = 20}: {size?: number}) => (
   <svg
-    width={width}
-    height={height}
+    width={size}
+    height={size}
     viewBox="0 0 24 24"
     fill="currentColor"
     xmlns="http://www.w3.org/2000/svg"
@@ -718,13 +722,20 @@ const DiscordGlyph = ({width = 20, height = 20}) => (
 // Resources grid (long-form guides, legal pages, and community
 // channels all use this). title/description/href feed the
 // XDSListItem chrome; icon renders in the startContent slot at
-// ~20px (Heroicons + the brand glyphs above are interchangeable
-// since both accept the same width/height prop shape).
+// ~20px (Lucide icons + the brand glyphs above are interchangeable
+// since both accept the same `size` prop shape).
 interface Resource {
   title: string;
   description: string;
   href: string;
-  icon: React.ComponentType<{width?: number; height?: number}>;
+  /**
+   * Icon component rendered in each resource row's startContent
+   * slot. Accepts `size` so Lucide icons (FileText / Scale / etc.)
+   * and the hand-rolled brand glyphs below (GitHubGlyph /
+   * TwitterGlyph / DiscordGlyph) can be called with the same prop
+   * shape at the render site.
+   */
+  icon: React.ComponentType<{size?: number}>;
 }
 
 // Communications channels — where the community talks. Same
@@ -883,33 +894,33 @@ const RESOURCE_CATEGORIES: ReadonlyArray<ResourceCategory> = [
         description:
           'The full process, what we accept, and how proposals get reviewed.',
         href: `${WIKI_BASE}/Contributing`,
-        icon: DocumentTextIcon,
+        icon: FileText,
       },
       {
         title: 'Contributing with AI',
         description:
           'How to use AI assistants effectively within Astryx conventions.',
         href: `${WIKI_BASE}/Contributing-with-AI-Assistants`,
-        icon: DocumentTextIcon,
+        icon: FileText,
       },
       {
         title: 'Dev Setup',
         description: 'Clone, install, build, and run Storybook locally.',
         href: `${GITHUB_REPO}/blob/main/CONTRIBUTING.md`,
-        icon: DocumentTextIcon,
+        icon: FileText,
       },
       {
         title: 'API Conventions',
         description:
           'How components in Astryx are named, shaped, and composed.',
         href: `${WIKI_BASE}/API-Conventions`,
-        icon: DocumentTextIcon,
+        icon: FileText,
       },
       {
         title: 'API Arbitration',
         description: 'How we settle design disagreements using vibe testing.',
         href: `${WIKI_BASE}/API-Arbitration`,
-        icon: DocumentTextIcon,
+        icon: FileText,
       },
     ],
   },
@@ -921,14 +932,14 @@ const RESOURCE_CATEGORIES: ReadonlyArray<ResourceCategory> = [
         description:
           'Our standards for respectful collaboration and how we handle reports.',
         href: `${GITHUB_REPO}/blob/main/CODE_OF_CONDUCT.md`,
-        icon: ScaleIcon,
+        icon: Scale,
       },
       {
         title: 'MIT License',
         description:
           'Astryx is open source under the MIT License. Free to use.',
         href: `${GITHUB_REPO}/blob/main/LICENSE`,
-        icon: ScaleIcon,
+        icon: Scale,
       },
     ],
   },
@@ -1138,7 +1149,7 @@ export default async function CommunityPage() {
                             target="_blank"
                             startContent={
                               <span {...stylex.props(styles.iconTile)}>
-                                <Icon width={18} height={18} />
+                                <Icon size={18} />
                               </span>
                             }
                           />

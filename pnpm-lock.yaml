@@ -130,6 +130,9 @@ importers:
       '@xds/theme-y2k':
         specifier: '*'
         version: link:../../packages/themes/y2k
+      lucide-react:
+        specifier: ^1.17.0
+        version: 1.17.0(react@19.2.6)
       lz-string:
         specifier: ^1.5.0
         version: 1.5.0

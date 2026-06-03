@@ -3,11 +3,7 @@
 'use client';
 
 import stylex from '@stylexjs/stylex';
-import {
-  MagnifyingGlassIcon,
-  UserIcon,
-  ShoppingBagIcon,
-} from '@heroicons/react/24/outline';
+import {Search, User, ShoppingBag} from 'lucide-react';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
@@ -156,23 +152,26 @@ export function ThemeShowcasePreview({
               <XDSHStack gap={0.5}>
                 <XDSButton
                   label="Search"
+                  tooltip="Search"
                   variant="ghost"
                   isIconOnly
-                  icon={<MagnifyingGlassIcon width={20} height={20} />}
+                  icon={<Search size={20} />}
                   href="#"
                 />
                 <XDSButton
                   label="Account"
+                  tooltip="Account"
                   variant="ghost"
                   isIconOnly
-                  icon={<UserIcon width={20} height={20} />}
+                  icon={<User size={20} />}
                   href="#"
                 />
                 <XDSButton
                   label="Cart"
+                  tooltip="Cart"
                   variant="ghost"
                   isIconOnly
-                  icon={<ShoppingBagIcon width={20} height={20} />}
+                  icon={<ShoppingBag size={20} />}
                   href="#"
                 />
               </XDSHStack>
