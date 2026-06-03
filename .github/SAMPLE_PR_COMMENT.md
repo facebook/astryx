@@ -11,28 +11,26 @@ This is an example of what the PR enrichment workflow will post as a comment on 
 <details>
 <summary><strong>DatePicker</strong></summary>
 
-| Metric | Value |
-|--------|-------|
-| Bundle Size (ESM) | 4.2KB |
-| Bundle Size (CJS) | 4.8KB |
-| Exports | XDSDatePicker, DatePickerProps |
-| Props Count | 12 |
-| Has Tests | Yes |
-| Has Stories | Yes |
+| Metric            | Value                          |
+| ----------------- | ------------------------------ |
+| Bundle Size (ESM) | 4.2KB                          |
+| Exports           | XDSDatePicker, DatePickerProps |
+| Props Count       | 12                             |
+| Has Tests         | Yes                            |
+| Has Stories       | Yes                            |
 
 </details>
 
 <details>
 <summary><strong>TimePicker</strong></summary>
 
-| Metric | Value |
-|--------|-------|
-| Bundle Size (ESM) | 3.1KB |
-| Bundle Size (CJS) | 3.5KB |
-| Exports | XDSTimePicker |
-| Props Count | 8 |
-| Has Tests | No |
-| Has Stories | Yes |
+| Metric            | Value         |
+| ----------------- | ------------- |
+| Bundle Size (ESM) | 3.1KB         |
+| Exports           | XDSTimePicker |
+| Props Count       | 8             |
+| Has Tests         | No            |
+| Has Stories       | Yes           |
 
 </details>
 
@@ -41,26 +39,26 @@ This is an example of what the PR enrichment workflow will post as a comment on 
 <details>
 <summary><strong>Button</strong></summary>
 
-| Metric | Before | After | Delta |
-|--------|--------|-------|-------|
-| Bundle Size (ESM) | 2.2KB | 2.4KB | +200B |
+| Metric            | Before | After | Delta |
+| ----------------- | ------ | ----- | ----- |
+| Bundle Size (ESM) | 2.2KB  | 2.4KB | +200B |
 
 </details>
 
 <details>
 <summary><strong>TextInput</strong></summary>
 
-| Metric | Before | After | Delta |
-|--------|--------|-------|-------|
-| Bundle Size (ESM) | 2.9KB | 3.0KB | +130B |
+| Metric            | Before | After | Delta |
+| ----------------- | ------ | ----- | ----- |
+| Bundle Size (ESM) | 2.9KB  | 3.0KB | +130B |
 
 </details>
 
 ### Bundle Size Summary
 
-| Package | Size (ESM) | Size (CJS) | Gzipped |
-|---------|------------|------------|----------|
-| @xds/core | 45.2KB | 52.1KB | 12.4KB |
+| Package   | Size (ESM) | Gzipped |
+| --------- | ---------- | ------- |
+| @xds/core | 45.2KB     | 12.4KB  |
 
 **Bundle size increased:** +850 bytes
 

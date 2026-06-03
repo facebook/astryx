@@ -5,7 +5,7 @@
  * @file sync-exports.js
  * @description Auto-generates the "exports" map in packages/core/package.json
  *   from the source tree. Ensures every component with src/Component/index.ts
- *   has correct export entries with source, types, import, and require conditions.
+ *   has correct export entries with source, types, and default conditions.
  *
  * Usage:
  *   node scripts/sync-exports.js          # Update package.json in place
@@ -19,8 +19,7 @@
  * Condition ordering matters — Node.js resolves top-to-bottom:
  *   1. "source"  — for bundlers configured with the "source" condition
  *   2. "types"   — for TypeScript
- *   3. "import"  — for ESM consumers
- *   4. "require" — for CJS consumers
+ *   3. "default" — for all JS consumers (ESM-only)
  */
 
 const fs = require('fs');
@@ -66,14 +65,12 @@ const STATIC_EXPORTS = {
   './theme/tokens.stylex': {
     source: './src/theme/tokens.stylex.ts',
     types: './dist/theme/tokens.stylex.d.ts',
-    import: './dist/theme/tokens.stylex.mjs',
-    require: './dist/theme/tokens.stylex.js',
+    default: './dist/theme/tokens.stylex.js',
   },
   './theme/syntax': {
     source: './src/theme/syntax/index.ts',
     types: './dist/theme/syntax/index.d.ts',
-    import: './dist/theme/syntax/index.mjs',
-    require: './dist/theme/syntax/index.js',
+    default: './dist/theme/syntax/index.js',
   },
   './docs.mjs': './docs.mjs',
   './groups.doc.mjs': './groups.doc.mjs',
@@ -121,14 +118,13 @@ function discoverExportDirs() {
 
 /**
  * Generate the export entry for a directory.
- * Condition order: source → types → import → require
+ * Condition order: source → types → default
  */
 function makeExportEntry(dirName) {
   return {
     source: `./src/${dirName}/index.ts`,
     types: `./dist/${dirName}/index.d.ts`,
-    import: `./dist/${dirName}/index.mjs`,
-    require: `./dist/${dirName}/index.js`,
+    default: `./dist/${dirName}/index.js`,
   };
 }
 
@@ -142,8 +138,7 @@ function buildExports() {
   exports['.'] = {
     source: './src/index.ts',
     types: './dist/index.d.ts',
-    import: './dist/index.mjs',
-    require: './dist/index.js',
+    default: './dist/index.js',
   };
 
   // Static exports (CSS, markdown, etc.)
@@ -165,8 +160,7 @@ function buildExports() {
     exports[`./${dir}/utils`] = {
       source: `./src/${dir}/utils.ts`,
       types: `./dist/${dir}/utils.d.ts`,
-      import: `./dist/${dir}/utils.mjs`,
-      require: `./dist/${dir}/utils.js`,
+      default: `./dist/${dir}/utils.js`,
     };
   }
 
