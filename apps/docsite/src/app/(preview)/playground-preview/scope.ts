@@ -119,10 +119,7 @@ import type {XDSDefinedTheme} from '@xds/core/theme';
 import {createElement, type ComponentProps} from 'react';
 import * as xdsTokens from '@xds/core/theme/tokens.stylex';
 
-import * as Heroicons16Solid from '@heroicons/react/16/solid';
-import * as Heroicons20Solid from '@heroicons/react/20/solid';
-import * as Heroicons24Outline from '@heroicons/react/24/outline';
-import * as Heroicons24Solid from '@heroicons/react/24/solid';
+import * as LucideIcons from 'lucide-react';
 
 const SCOPE_THEMES: Record<string, XDSDefinedTheme> = {
   default: defaultTheme,
@@ -324,10 +321,7 @@ export const scope: Record<string, Record<string, unknown>> = {
     ...TreeList,
     ...Typeahead,
   },
-  '@heroicons/react/16/solid': Heroicons16Solid,
-  '@heroicons/react/20/solid': Heroicons20Solid,
-  '@heroicons/react/24/outline': Heroicons24Outline,
-  '@heroicons/react/24/solid': Heroicons24Solid,
+  'lucide-react': LucideIcons,
   'next/image': {
     default: (props: Record<string, unknown>) =>
       React.createElement('img', props),

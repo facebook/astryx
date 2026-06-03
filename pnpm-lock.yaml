@@ -94,9 +94,6 @@ importers:
 
   apps/docsite:
     dependencies:
-      '@heroicons/react':
-        specifier: ^2.2.0
-        version: 2.2.0(react@19.2.6)
       '@monaco-editor/react':
         specifier: ^4.7.0
         version: 4.7.0(monaco-editor@0.55.1)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -130,6 +127,9 @@ importers:
       '@xds/theme-y2k':
         specifier: '*'
         version: link:../../packages/themes/y2k
+      lucide-react:
+        specifier: ^1.17.0
+        version: 1.17.0(react@19.2.6)
       lz-string:
         specifier: ^1.5.0
         version: 1.5.0

@@ -41,13 +41,6 @@ const SCOPE_THEMES = [
   {pkg: '@xds/theme-matcha', name: 'matchaTheme', subpath: '/built'},
 ];
 
-// Heroicons variants
-const HEROICON_VARIANTS = [
-  {path: '16/solid', alias: 'Heroicons16Solid'},
-  {path: '20/solid', alias: 'Heroicons20Solid'},
-  {path: '24/outline', alias: 'Heroicons24Outline'},
-  {path: '24/solid', alias: 'Heroicons24Solid'},
-];
 
 // Build output
 const lines = [HEADER, ''];
@@ -83,10 +76,9 @@ lines.push("import {XDSTheme} from '@xds/core/theme';");
 lines.push("import * as xdsTokens from '@xds/core/theme/tokens.stylex';");
 lines.push('');
 
-// Heroicons
-for (const h of HEROICON_VARIANTS) {
-  lines.push(`import * as ${h.alias} from '@heroicons/react/${h.path}';`);
-}
+// Lucide icons (the docsite's icon library — replaces the previous
+// Heroicons variants exposed under '@heroicons/react/*')
+lines.push("import * as LucideIcons from 'lucide-react';");
 lines.push('');
 
 // ControlledXDSTheme wrapper
@@ -133,10 +125,8 @@ for (const name of components) {
 // Barrel export — all components spread
 lines.push(`  '@xds/core': {${components.map((n) => `...${n}`).join(', ')}},`);
 
-// Heroicons
-for (const h of HEROICON_VARIANTS) {
-  lines.push(`  '@heroicons/react/${h.path}': ${h.alias},`);
-}
+// Lucide icons (replaces the previous Heroicons entries)
+lines.push("  'lucide-react': LucideIcons,");
 
 // next/image stub
 lines.push("  'next/image': {default: (props: Record<string, unknown>) => React.createElement('img', props)},");
@@ -150,4 +140,4 @@ writeFileSync(OUT, lines.join('\n'));
 console.log(`✓ Generated ${OUT}`);
 console.log(`  ${components.length} components`);
 console.log(`  ${SCOPE_THEMES.length} themes`);
-console.log(`  ${HEROICON_VARIANTS.length} heroicon variants`);
+console.log(`  lucide-react icons`);

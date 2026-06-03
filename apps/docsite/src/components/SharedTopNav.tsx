@@ -7,12 +7,7 @@ import {usePathname} from 'next/navigation';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {XDSButton} from '@xds/core/Button';
 import {XDSHStack} from '@xds/core/Layout';
-import {
-  MagnifyingGlassIcon,
-  HeartIcon,
-  SunIcon,
-  MoonIcon,
-} from '@heroicons/react/24/outline';
+import {Search, Heart, Sun, Moon} from 'lucide-react';
 import {GITHUB_REPO} from '../constants';
 import {XDS_BRAND_ICON} from './XDSWordmark';
 import {SearchPalette} from './SearchPalette';
@@ -110,7 +105,7 @@ export function SharedTopNav() {
                 label="Search"
                 variant="ghost"
                 isIconOnly
-                icon={<MagnifyingGlassIcon width={20} height={20} />}
+                icon={<Search size={20} />}
                 onClick={() => setIsSearchOpen(true)}
               />
               <XDSButton
@@ -121,20 +116,14 @@ export function SharedTopNav() {
                 }
                 variant="ghost"
                 isIconOnly
-                icon={
-                  mode === 'light' ? (
-                    <MoonIcon width={20} height={20} />
-                  ) : (
-                    <SunIcon width={20} height={20} />
-                  )
-                }
+                icon={mode === 'light' ? <Moon size={20} /> : <Sun size={20} />}
                 onClick={toggleMode}
               />
               <XDSButton
                 label="Community"
                 variant="ghost"
                 isIconOnly
-                icon={<HeartIcon width={20} height={20} />}
+                icon={<Heart size={20} />}
                 href="/community"
               />
               <XDSButton

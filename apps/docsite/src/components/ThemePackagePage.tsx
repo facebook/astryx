@@ -4,7 +4,7 @@
 
 import {useState} from 'react';
 import stylex from '@stylexjs/stylex';
-import {ArrowLeftIcon, SunIcon, MoonIcon} from '@heroicons/react/24/outline';
+import {ArrowLeft, Sun, Moon} from 'lucide-react';
 import {XDSText} from '@xds/core/Text';
 import {
   XDSVStack,
@@ -211,7 +211,7 @@ export function ThemePackagePage({
                   size="md"
                   label="Back to all themes"
                   isIconOnly
-                  icon={<ArrowLeftIcon />}
+                  icon={<ArrowLeft />}
                   href="/themes"
                 />
                 <XDSVStack gap={0} xstyle={styles.floatingFooterTitle}>
@@ -240,11 +240,7 @@ export function ThemePackagePage({
                       : 'Switch preview to light mode'
                   }
                   icon={
-                    mode === 'light' ? (
-                      <MoonIcon width={20} height={20} />
-                    ) : (
-                      <SunIcon width={20} height={20} />
-                    )
+                    mode === 'light' ? <Moon size={20} /> : <Sun size={20} />
                   }
                   onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
                 />

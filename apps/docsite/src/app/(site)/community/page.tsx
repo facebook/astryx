@@ -25,7 +25,7 @@
  * is Astryx.
  */
 
-import {DocumentTextIcon, ScaleIcon} from '@heroicons/react/24/outline';
+import {FileText, Scale} from 'lucide-react';
 import {NavSurfaceMode} from './NavSurfaceMode';
 import * as stylex from '@stylexjs/stylex';
 import {XDSCard} from '@xds/core/Card';
@@ -799,10 +799,10 @@ interface Resource {
   title: string;
   description: string;
   href: string;
-  /** Heroicon component rendered in each resource row's
-   * startContent slot. Docs entries use DocumentTextIcon;
-   * legal/policy entries use ScaleIcon. */
-  icon: React.ComponentType<{width?: number; height?: number}>;
+  /** Lucide icon component rendered in each resource row's
+   * startContent slot. Docs entries use FileText; legal/policy
+   * entries use Scale. */
+  icon: React.ComponentType<{size?: number}>;
 }
 
 const RESOURCES: ReadonlyArray<Resource> = [
@@ -811,34 +811,34 @@ const RESOURCES: ReadonlyArray<Resource> = [
     description:
       'The full process, what we accept, and how proposals get reviewed.',
     href: `${WIKI_BASE}/Contributing`,
-    icon: DocumentTextIcon,
+    icon: FileText,
   },
   {
     title: 'Contributing with AI',
     description:
       'Using AI assistants effectively within Astryx conventions — safe zones and common pitfalls.',
     href: `${WIKI_BASE}/Contributing-with-AI-Assistants`,
-    icon: DocumentTextIcon,
+    icon: FileText,
   },
   {
     title: 'API Conventions',
     description:
       'How components in Astryx are named, shaped, and composed. Worth a skim before sharing a proposal.',
     href: `${WIKI_BASE}/API-Conventions`,
-    icon: DocumentTextIcon,
+    icon: FileText,
   },
   {
     title: 'API Arbitration',
     description:
       'How we settle design disagreements using vibe testing. Includes a sample prompt you can borrow.',
     href: `${WIKI_BASE}/API-Arbitration`,
-    icon: DocumentTextIcon,
+    icon: FileText,
   },
   {
     title: 'Dev Setup',
     description: 'Clone, install, build, and run Storybook locally.',
     href: `${GITHUB_REPO}/blob/main/CONTRIBUTING.md`,
-    icon: DocumentTextIcon,
+    icon: FileText,
   },
 ];
 
@@ -851,13 +851,13 @@ const LEGAL_RESOURCES: ReadonlyArray<Resource> = [
     description:
       'Our standards for respectful collaboration and how we handle reports.',
     href: `${GITHUB_REPO}/blob/main/CODE_OF_CONDUCT.md`,
-    icon: ScaleIcon,
+    icon: Scale,
   },
   {
     title: 'MIT License',
     description: 'Astryx is open source under the MIT License — free to use.',
     href: `${GITHUB_REPO}/blob/main/LICENSE`,
-    icon: ScaleIcon,
+    icon: Scale,
   },
 ];
 
@@ -1108,7 +1108,7 @@ export default async function CommunityPage() {
                             description={resource.description}
                             href={resource.href}
                             target="_blank"
-                            startContent={<Icon width={20} height={20} />}
+                            startContent={<Icon size={20} />}
                           />
                         );
                       })}
