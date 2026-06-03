@@ -94,19 +94,21 @@ function FeatureCard({feature, isTall}: {feature: Feature; isTall?: boolean}) {
       variant="default"
       padding={5}
       xstyle={isTall ? styles.cardTall : styles.card}>
-      <XDSVStack gap={3} align="start">
-        <XDSHeading level={3} color="primary">
-          {feature.title}
-        </XDSHeading>
-        <XDSText type="body" color="secondary">
-          {feature.description}
-        </XDSText>
+      <XDSVStack gap={6}>
+        <XDSVStack gap={1} align="start">
+          <XDSHeading level={3} color="primary">
+            {feature.title}
+          </XDSHeading>
+          <XDSText type="body" color="secondary">
+            {feature.description}
+          </XDSText>
+        </XDSVStack>
         <XDSLink
           type="body"
-          color="active"
+          color="primary"
           href={feature.href}
-          hasUnderline={false}>
-          Explore →
+          hasUnderline={true}>
+          Explore
         </XDSLink>
       </XDSVStack>
     </XDSCard>

@@ -148,11 +148,11 @@ function ShowcaseHeading() {
           and motion.
         </XDSText>
         <XDSHStack gap={4} align="center">
-          <XDSLink type="body" href="/themes" hasUnderline>
+          <XDSLink type="body" href="/themes" color="primary" hasUnderline>
             Explore all themes
           </XDSLink>
           <XDSDivider orientation="vertical" xstyle={styles.captionDivider} />
-          <XDSLink type="body" href="/docs/theme" hasUnderline>
+          <XDSLink type="body" href="/docs/theme" color="primary" hasUnderline>
             Create a custom theme
           </XDSLink>
         </XDSHStack>

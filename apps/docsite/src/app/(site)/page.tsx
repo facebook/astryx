@@ -4,7 +4,7 @@
 
 import {useEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSText, XDSHeading} from '@xds/core/Text';
+import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
@@ -29,9 +29,9 @@ const styles = stylex.create({
   heroContent: {
     position: 'sticky',
     top: 'var(--appshell-header-height, 0px)',
-    maxWidth: 680,
+    maxWidth: 800,
     marginInline: 'auto',
-    paddingBlock: `calc(${spacingVars['--spacing-12']} * 2)`,
+    paddingBlock: `calc(${spacingVars['--spacing-12']} * 3)`,
     paddingInline: spacingVars['--spacing-6'],
     textAlign: 'center',
     gap: spacingVars['--spacing-12'],
@@ -110,9 +110,9 @@ export default function HomePage() {
           {...stylex.props(styles.heroWordmark)}
         />
         <XDSHeading level={1} type="display-1" color="primary">
-          Fully customizable, no-forking, open source design system
+          An open source design system that's fully customizable and agent ready
         </XDSHeading>
-        <XDSVStack gap={6} align="center">
+        <XDSVStack gap={8} align="center">
           <XDSGrid columns={2} gap={3} xstyle={styles.heroButtons}>
             <XDSButton
               variant="primary"
@@ -127,38 +127,26 @@ export default function HomePage() {
               href="/components"
             />
           </XDSGrid>
-          <XDSHStack gap={4} align="center" hAlign="center">
-            <XDSText display="block">
+          <XDSHStack gap={2} align="center">
+            <XDSText display="block" type="supporting">
               Currently in{' '}
-              <XDSText as="span" weight="bold">
+              <XDSText type="inherit" weight="bold">
                 Beta
               </XDSText>
             </XDSText>
             <XDSDivider
               orientation="vertical"
               variant="strong"
-              style={{height: '1em'}}
+              style={{height: '0.75em'}}
             />
-            <XDSText display="block">
+            <XDSText display="block" type="supporting">
               Built on{' '}
               <XDSLink
-                type="body"
-                color="primary"
-                href="https://react.dev"
-                target="_blank"
-                rel="noopener noreferrer"
+                type="inherit"
+                color="inherit"
+                href="https://react.dev/"
                 hasUnderline>
                 React
-              </XDSLink>{' '}
-              and{' '}
-              <XDSLink
-                type="body"
-                color="primary"
-                href="https://stylexjs.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                hasUnderline>
-                StyleX
               </XDSLink>
             </XDSText>
           </XDSHStack>
