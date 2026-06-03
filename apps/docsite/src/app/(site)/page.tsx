@@ -155,16 +155,6 @@ export default function HomePage() {
               rel="noopener noreferrer"
               hasUnderline>
               React
-            </XDSLink>{' '}
-            and{' '}
-            <XDSLink
-              type="body"
-              color="primary"
-              href="https://stylexjs.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              hasUnderline>
-              StyleX
             </XDSLink>
           </XDSText>
         </XDSVStack>
