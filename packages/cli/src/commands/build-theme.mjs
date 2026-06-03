@@ -23,6 +23,8 @@ import {cliError} from '../lib/cli-error.mjs';
 
 // Import shared theme processing from core — ensures build and runtime
 // use the same logic for typography.scale expansion, prose, and component rules.
+// When available, these imports supersede all local fallback implementations
+// (parsePadding, expandContainerPadding, parseStyleKey, generateCSS, generateProseCSS).
 let _defineTheme = null;
 let _generateThemeRules = null;
 let _generateThemeRulesSplit = null;
@@ -297,6 +299,18 @@ function resolveTokenValue(value) {
 
 // =============================================================================
 // Container padding mapping
+//
+// LEGACY FALLBACK: The functions below (parsePadding, expandContainerPadding,
+// parseStyleKey, generateCSS, generateProseCSS) duplicate logic from
+// @xds/core/theme (packages/core/src/theme/generateThemeRules.ts).
+//
+// When @xds/core is built, the CLI imports and uses the shared implementation
+// from core (see _generateThemeRules / _generateThemeRulesSplit at top of file).
+// These local copies exist only as a fallback for when core hasn't been built yet
+// (e.g., first-time bootstrap or CI environments where core builds after CLI).
+//
+// TODO: Remove this fallback once the monorepo build order guarantees core
+// is always available before CLI runs. Track in issue backlog.
 // =============================================================================
 
 const CONTAINER_COMPONENTS = new Set(['card', 'section', 'dialog']);
@@ -456,6 +470,7 @@ const PROSE_COMPONENT_MAP = {
 
 /**
  * Generate CSS from a theme definition object.
+ * @deprecated Legacy fallback — see generateThemeRules.ts in @xds/core.
  *
  * When prose is enabled, component overrides for prose-related components
  * (heading, text, kbd, link, divider) co-select their HTML element
