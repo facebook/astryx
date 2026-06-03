@@ -4,7 +4,6 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSLink} from '@xds/core/Link';
 import {XDSHStack, XDSVStack} from '@xds/core/Stack';
 import {XDSCard} from '@xds/core/Card';
 import {XDSCarousel} from '@xds/core/Carousel';
@@ -201,10 +200,12 @@ function ShowcaseHeading() {
 
 function HeaderLinks() {
   return (
-    <XDSHStack gap={4} align="center" xstyle={styles.headerLinks}>
-      <XDSLink type="body" href="/docs/theme" hasUnderline>
-        Create a custom theme
-      </XDSLink>
+    <XDSHStack gap={2} align="center" xstyle={styles.headerLinks}>
+      <XDSButton
+        variant="ghost"
+        label="Create a custom theme"
+        href="/docs/theme"
+      />
       <XDSButton
         variant="secondary"
         label="Explore all themes"
