@@ -109,22 +109,38 @@ function score(text: string, query: string): number {
   const lower = text.toLowerCase();
   const queryLower = query.toLowerCase();
 
-  if (lower === queryLower) {return 100;}
-  if (lower.startsWith(queryLower)) {return 90;}
-  if (lower.includes(queryLower)) {return 85;}
+  if (lower === queryLower) {
+    return 100;
+  }
+  if (lower.startsWith(queryLower)) {
+    return 90;
+  }
+  if (lower.includes(queryLower)) {
+    return 85;
+  }
 
   const words = queryLower.split(/\s+/).filter(w => w.length > 1);
-  if (words.length === 0) {return 0;}
+  if (words.length === 0) {
+    return 0;
+  }
 
   let matched = 0;
   for (const word of words) {
-    if (lower.includes(word)) {matched++;}
+    if (lower.includes(word)) {
+      matched++;
+    }
   }
 
   const ratio = matched / words.length;
-  if (ratio === 1) {return 75;}
-  if (ratio >= 0.5) {return 50;}
-  if (ratio > 0) {return 30;}
+  if (ratio === 1) {
+    return 75;
+  }
+  if (ratio >= 0.5) {
+    return 50;
+  }
+  if (ratio > 0) {
+    return 30;
+  }
   return 0;
 }
 
@@ -299,9 +315,7 @@ const handler = createMcpHandler(
         });
 
         return {
-          content: [
-            {type: 'text' as const, text: JSON.stringify(results, null, 2)},
-          ],
+          content: [{type: 'text' as const, text: JSON.stringify(results)}],
         };
       },
     );
@@ -430,9 +444,7 @@ const handler = createMcpHandler(
           };
 
           return {
-            content: [
-              {type: 'text' as const, text: JSON.stringify(result, null, 2)},
-            ],
+            content: [{type: 'text' as const, text: JSON.stringify(result)}],
           };
         }
 
@@ -462,9 +474,7 @@ const handler = createMcpHandler(
               };
             }
             return {
-              content: [
-                {type: 'text' as const, text: JSON.stringify(match, null, 2)},
-              ],
+              content: [{type: 'text' as const, text: JSON.stringify(match)}],
             };
           }
 
@@ -494,9 +504,7 @@ const handler = createMcpHandler(
           }
 
           return {
-            content: [
-              {type: 'text' as const, text: JSON.stringify(doc, null, 2)},
-            ],
+            content: [{type: 'text' as const, text: JSON.stringify(doc)}],
           };
         }
 
