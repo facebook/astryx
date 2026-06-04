@@ -59,6 +59,12 @@ const containerStyles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     borderColor: 'transparent',
+    // Transparent background so the block blends into the surface it's
+    // embedded in (a card or panel) instead of painting its own muted layer,
+    // which would compound with a muted parent into a darker grey. Override
+    // the syntax-background var so both the root and the sticky header inherit
+    // it. Consumers can still set an explicit background via xstyle.
+    '--color-syntax-background': 'transparent',
   },
 });
 
@@ -349,8 +355,11 @@ export interface XDSCodeBlockProps extends XDSBaseProps<HTMLPreElement> {
   width?: string;
   /**
    * Container presentation style.
-   * - `'card'` (default): border-radius and border — standalone card look.
-   * - `'section'`: no border-radius, no border — for embedding inside cards or panels.
+   * - `'card'` (default): border-radius and border with the muted syntax
+   *   background — standalone card look.
+   * - `'section'`: no border-radius, no border, and a transparent background
+   *   so the block blends into the card or panel it's embedded in. Set an
+   *   explicit background via `xstyle` if you need one.
    * @default 'card'
    */
   container?: 'card' | 'section';

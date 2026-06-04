@@ -102,7 +102,7 @@ export function ExampleBlock({entry}: ExampleBlockProps) {
           )}
         </XDSHStack>
       </XDSSection>
-      <XDSSection variant="muted">
+      <XDSSection variant="muted" padding={tab === 'code' ? 0 : 4}>
         {tab === 'description' ? (
           <XDSText type="body">
             {entry.description || 'No description available.'}
