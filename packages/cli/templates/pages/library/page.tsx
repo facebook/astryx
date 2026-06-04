@@ -15,28 +15,8 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSHStack, XDSVStack, XDSStackItem} from '@xds/core/Stack';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSOverflowList} from '@xds/core/OverflowList';
-import {XDSAppShell} from '@xds/core/AppShell';
-import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavSection,
-  XDSSideNavItem,
-} from '@xds/core/SideNav';
-import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSIcon} from '@xds/core/Icon';
 import {XDSCenter} from '@xds/core/Center';
-import {
-  HomeIcon,
-  BookOpenIcon,
-  CubeIcon,
-  Squares2X2Icon,
-  WrenchScrewdriverIcon,
-  MagnifyingGlassIcon,
-} from '@heroicons/react/24/outline';
-import {
-  HomeIcon as HomeIconSolid,
-  BookOpenIcon as BookOpenIconSolid,
-} from '@heroicons/react/24/solid';
+import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
 interface LibraryItem {
   id: string;
@@ -360,47 +340,6 @@ const styles = stylex.create({
 // Side Nav
 // =============================================================================
 
-function LibraryNav() {
-  return (
-    <XDSSideNav
-      header={
-        <XDSSideNavHeading
-          icon={
-            <XDSNavIcon
-              icon={<XDSIcon icon={CubeIcon} size="sm" color="inherit" />}
-            />
-          }
-          heading="My App"
-          headingHref="#"
-        />
-      }>
-      <XDSSideNavSection title="Main">
-        <XDSSideNavItem
-          label="Home"
-          href="#"
-          icon={HomeIcon}
-          selectedIcon={HomeIconSolid}
-        />
-        <XDSSideNavItem
-          label="Library"
-          href="#"
-          icon={BookOpenIcon}
-          selectedIcon={BookOpenIconSolid}
-          isSelected
-        />
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Browse">
-        <XDSSideNavItem label="Components" href="#" icon={Squares2X2Icon} />
-        <XDSSideNavItem
-          label="Templates"
-          href="#"
-          icon={WrenchScrewdriverIcon}
-        />
-      </XDSSideNavSection>
-    </XDSSideNav>
-  );
-}
-
 function LibraryCard({item}: {item: LibraryItem}) {
   return (
     <XDSCard padding={0}>
@@ -489,96 +428,94 @@ export default function LibraryPage() {
   }, [activeTab, filtered]);
 
   return (
-    <XDSAppShell sideNav={<LibraryNav />} contentPadding={0}>
-      <XDSLayout
-        header={
-          <XDSLayoutHeader hasDivider padding={6}>
-            <XDSHeading level={1}>Library</XDSHeading>
-          </XDSLayoutHeader>
-        }
-        content={
-          <XDSLayoutContent padding={6}>
-            <XDSVStack gap={6}>
-              <XDSVStack gap={4}>
-                <XDSTextInput
-                  label="Search"
-                  isLabelHidden
-                  placeholder="Search..."
-                  value={search}
-                  onChange={setSearch}
-                  startIcon={MagnifyingGlassIcon}
-                  size="lg"
+    <XDSLayout
+      header={
+        <XDSLayoutHeader hasDivider padding={6}>
+          <XDSHeading level={1}>Library</XDSHeading>
+        </XDSLayoutHeader>
+      }
+      content={
+        <XDSLayoutContent padding={6}>
+          <XDSVStack gap={6}>
+            <XDSVStack gap={4}>
+              <XDSTextInput
+                label="Search"
+                isLabelHidden
+                placeholder="Search..."
+                value={search}
+                onChange={setSearch}
+                startIcon={MagnifyingGlassIcon}
+                size="lg"
+              />
+              <XDSHStack vAlign="center" gap={4}>
+                <XDSStackItem size="fill">
+                  <XDSVStack>
+                    <XDSToggleButtonGroup
+                      label="Filter by category"
+                      value={activeTab}
+                      onChange={v => setActiveTab(v ?? 'All')}>
+                      <XDSOverflowList
+                        gap={1}
+                        behavior="observeParent"
+                        overflowRenderer={overflowItems => (
+                          <XDSDropdownMenu
+                            button={{
+                              label: `+${overflowItems.length}`,
+                              variant: 'ghost',
+                              size: 'lg',
+                            }}
+                            items={overflowItems.map(({index}) => ({
+                              label: CATEGORIES[index],
+                              onClick: () => setActiveTab(CATEGORIES[index]),
+                            }))}
+                          />
+                        )}>
+                        {CATEGORIES.map(cat => (
+                          <XDSToggleButton
+                            key={cat}
+                            label={cat}
+                            value={cat}
+                            size="lg"
+                          />
+                        ))}
+                      </XDSOverflowList>
+                    </XDSToggleButtonGroup>
+                  </XDSVStack>
+                </XDSStackItem>
+                <XDSDropdownMenu
+                  button={{label: sortOrder, size: 'lg'}}
+                  items={[
+                    {label: 'A-Z', onClick: () => setSortOrder('A-Z')},
+                    {label: 'Z-A', onClick: () => setSortOrder('Z-A')},
+                    {label: 'Newest', onClick: () => setSortOrder('Newest')},
+                  ]}
                 />
-                <XDSHStack vAlign="center" gap={4}>
-                  <XDSStackItem size="fill">
-                    <XDSVStack>
-                      <XDSToggleButtonGroup
-                        label="Filter by category"
-                        value={activeTab}
-                        onChange={v => setActiveTab(v ?? 'All')}>
-                        <XDSOverflowList
-                          gap={1}
-                          behavior="observeParent"
-                          overflowRenderer={overflowItems => (
-                            <XDSDropdownMenu
-                              button={{
-                                label: `+${overflowItems.length}`,
-                                variant: 'ghost',
-                                size: 'lg',
-                              }}
-                              items={overflowItems.map(({index}) => ({
-                                label: CATEGORIES[index],
-                                onClick: () => setActiveTab(CATEGORIES[index]),
-                              }))}
-                            />
-                          )}>
-                          {CATEGORIES.map(cat => (
-                            <XDSToggleButton
-                              key={cat}
-                              label={cat}
-                              value={cat}
-                              size="lg"
-                            />
-                          ))}
-                        </XDSOverflowList>
-                      </XDSToggleButtonGroup>
-                    </XDSVStack>
-                  </XDSStackItem>
-                  <XDSDropdownMenu
-                    button={{label: sortOrder, size: 'lg'}}
-                    items={[
-                      {label: 'A-Z', onClick: () => setSortOrder('A-Z')},
-                      {label: 'Z-A', onClick: () => setSortOrder('Z-A')},
-                      {label: 'Newest', onClick: () => setSortOrder('Newest')},
-                    ]}
-                  />
-                </XDSHStack>
-              </XDSVStack>
-
-              {filtered.length === 0 ? (
-                <XDSCenter>
-                  <XDSText type="supporting" color="secondary">
-                    No results found.
-                  </XDSText>
-                </XDSCenter>
-              ) : (
-                <XDSVStack gap={6}>
-                  {(
-                    groupedSections ?? [{category: activeTab, items: filtered}]
-                  ).flatMap(section => [
-                    <XDSDivider key={`d-${section.category}`} />,
-                    <LibrarySection
-                      key={section.category}
-                      category={section.category}
-                      items={section.items}
-                    />,
-                  ])}
-                </XDSVStack>
-              )}
+              </XDSHStack>
             </XDSVStack>
-          </XDSLayoutContent>
-        }
-      />
-    </XDSAppShell>
+
+            {filtered.length === 0 ? (
+              <XDSCenter>
+                <XDSText type="supporting" color="secondary">
+                  No results found.
+                </XDSText>
+              </XDSCenter>
+            ) : (
+              <XDSVStack gap={6}>
+                {(
+                  groupedSections ?? [{category: activeTab, items: filtered}]
+                ).flatMap(section => [
+                  <XDSDivider key={`d-${section.category}`} />,
+                  <LibrarySection
+                    key={section.category}
+                    category={section.category}
+                    items={section.items}
+                  />,
+                ])}
+              </XDSVStack>
+            )}
+          </XDSVStack>
+        </XDSLayoutContent>
+      }
+    />
   );
 }
