@@ -3,7 +3,9 @@
 'use client';
 
 import * as React from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {useRouter} from 'next/navigation';
+import {durationVars, easeVars} from '@xds/core/theme/tokens.stylex';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSHStack, XDSVStack} from '@xds/core/Stack';
@@ -79,6 +81,50 @@ interface ThemeEditorViewProps {
   initialTheme: XDSDefinedTheme;
 }
 
+// Entry animations played when the user arrived from /themes via
+// the Customize CTA. The picker sidebar slides out on the source
+// page (see ThemePackagePage's sidebarLeaving rule); these two
+// keyframes provide the matching entry on this side so the two
+// halves chain into a single "panel swap" rather than reading as
+// a hard cut. Same XDS motion tokens (--duration-medium +
+// --ease-standard) keep the leave + enter visually in sync.
+const editorSlideInKeyframes = stylex.keyframes({
+  from: {transform: 'translateX(-100%)', opacity: 0},
+  to: {transform: 'translateX(0)', opacity: 1},
+});
+
+// Preview entry — scale + fade. Starts at 95% scale to mirror the
+// canonical XDS layerAnimations pattern (used for popovers, dropdown
+// menus, hover cards, tooltips). Reads as the preview "settling
+// into place" rather than just fading in flat. transform-origin
+// stays at the default 50% 50% so the scale-up reads as growing
+// outward from the preview's visual center.
+const previewFadeInKeyframes = stylex.keyframes({
+  from: {opacity: 0, transform: 'scale(0.95)'},
+  to: {opacity: 1, transform: 'scale(1)'},
+});
+
+const entryStyles = stylex.create({
+  editor: {
+    animationName: editorSlideInKeyframes,
+    animationDuration: durationVars['--duration-medium'],
+    animationTimingFunction: easeVars['--ease-standard'],
+    animationFillMode: 'backwards',
+    '@media (prefers-reduced-motion: reduce)': {
+      animationDuration: '0.01ms',
+    },
+  },
+  preview: {
+    animationName: previewFadeInKeyframes,
+    animationDuration: durationVars['--duration-medium'],
+    animationTimingFunction: easeVars['--ease-standard'],
+    animationFillMode: 'backwards',
+    '@media (prefers-reduced-motion: reduce)': {
+      animationDuration: '0.01ms',
+    },
+  },
+});
+
 export function ThemeEditorView({
   themeId,
   themeLabel,
@@ -86,6 +132,23 @@ export function ThemeEditorView({
 }: ThemeEditorViewProps) {
   const router = useRouter();
   const themeList = React.useMemo(() => getThemeList(), []);
+  // Whether to play the "arrived from /themes" entry animation
+  // (left editor slides in from the left + right preview fades in).
+  // Reads the flag set by ThemePackagePage's Customize click handler,
+  // clears it immediately so refresh / browser-back skip the
+  // animation. Initialized in a layout effect so we can read
+  // sessionStorage on the client without hydration mismatches.
+  const [playEntry, setPlayEntry] = React.useState(false);
+  React.useEffect(() => {
+    try {
+      if (window.sessionStorage.getItem('xds-themes-leave') === '1') {
+        window.sessionStorage.removeItem('xds-themes-leave');
+        setPlayEntry(true);
+      }
+    } catch {
+      // sessionStorage unavailable (private browsing) — skip entry.
+    }
+  }, []);
   const [tokens, setTokens] = React.useState<Record<string, string>>(() => ({
     ...ALL_DEFAULTS,
     ...initialTheme.tokens,
@@ -414,6 +477,7 @@ export function ThemeEditorView({
 
       {/* Left Panel — Editor */}
       <div
+        {...(playEntry ? stylex.props(entryStyles.editor) : {})}
         style={{
           width: editor.size || 400,
           minWidth: 348,
@@ -498,6 +562,7 @@ export function ThemeEditorView({
 
       {/* Right Panel — Preview */}
       <div
+        {...(playEntry ? stylex.props(entryStyles.preview) : {})}
         style={{
           flex: 1,
           display: 'flex',
