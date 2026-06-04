@@ -19,6 +19,7 @@ import {createJiti} from 'jiti';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {sanitizeName, PathSafetyError} from '../utils/path-safety.mjs';
 import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
+import {cliError} from '../lib/cli-error.mjs';
 
 // Import shared theme processing from core — ensures build and runtime
 // use the same logic for typography.scale expansion, prose, and component rules.
@@ -973,11 +974,19 @@ export function registerTheme(program) {
   const theme = program
     .command('theme')
     .description('Theme tools — build, export, and manage XDS themes')
-    .action(() => {
-      // Parent group has no default behaviour. When invoked without a
-      // subcommand, the preAction hook (in index.mjs) will reject --json
-      // because 'theme' (parent) is not on the JSON_SUPPORTED allowlist —
-      // only 'theme build' is. For the human path, fall through to help.
+    .action((options, cmd) => {
+      // Parent group has no default behaviour. If the user passed an
+      // unknown subcommand (e.g. `xds theme bogus`), Commander hands it to
+      // us as a positional in cmd.args — exit 1 with a clear error.
+      const extras = (cmd && cmd.args) || [];
+      if (extras.length > 0) {
+        const unknown = String(extras[0]);
+        const known = (theme.commands || []).map((c) => c.name());
+        const suggestions = known.map((name) => ({name, reason: 'available subcommand'}));
+        cliError(`unknown subcommand 'theme ${unknown}'`, {suggestions});
+        return;
+      }
+      // Bare `xds theme` — show the subcommand list. Exit 0 (help is success).
       theme.help();
     });
 
@@ -991,9 +1000,8 @@ export function registerTheme(program) {
       const json = program.opts().json || false;
 
       if (!fs.existsSync(filePath)) {
-        if (json) return jsonError('File not found: ' + filePath);
-        console.error(`Error: File not found: ${filePath}`);
-        process.exit(1);
+        cliError(`File not found: ${filePath}`);
+        return;
       }
 
       if (!json) humanLog(`\nBuilding theme from ${path.relative(process.cwd(), filePath)}...`);
@@ -1003,15 +1011,13 @@ export function registerTheme(program) {
       try {
         themeDef = await extractThemeDefinition(filePath);
       } catch (e) {
-        if (json) return jsonError(e.message);
-        console.error(`Error: ${e.message}`);
-        process.exit(1);
+        cliError(e.message);
+        return;
       }
 
       if (!themeDef.name) {
-        if (json) return jsonError('Theme must have a name property.');
-        console.error('Error: Theme must have a name property.');
-        process.exit(1);
+        cliError('Theme must have a name property.');
+        return;
       }
 
       // Path-safety: the theme name is used to derive output filenames
@@ -1022,9 +1028,8 @@ export function registerTheme(program) {
         sanitizeName(themeDef.name, {label: 'theme name'});
       } catch (err) {
         if (err instanceof PathSafetyError) {
-          if (json) return jsonError(err.message);
-          console.error(`Error: ${err.message}`);
-          process.exit(1);
+          cliError(err.message);
+          return;
         }
         throw err;
       }
@@ -1199,9 +1204,8 @@ export function registerTheme(program) {
           try { fs.rmSync(s.tmp, {force: true}); } catch { /* best-effort */ }
         }
         const msg = `Failed to write theme outputs: ${err.message}`;
-        if (json) return jsonError(msg);
-        console.error(`Error: ${msg}`);
-        process.exit(1);
+        cliError(msg);
+        return;
       }
 
       if (!json) {

@@ -24,6 +24,7 @@ import {
 import {resolveTheme} from '../../lib/resolve-theme.mjs';
 import {getRunPrefix} from '../../utils/package-manager.mjs';
 import {jsonOut, jsonError, humanLog} from '../../lib/json.mjs';
+import {cliError} from '../../lib/cli-error.mjs';
 import {component as componentApi} from '../../api/component.mjs';
 import {findRelatedBlocks} from '../../api/template.mjs';
 
@@ -48,10 +49,8 @@ export function registerComponent(program) {
 
       const validDetails = ['full', 'compact', 'brief'];
       if (!validDetails.includes(detail)) {
-        if (json) return jsonError(`Invalid --detail value "${detail}". Valid levels: ${validDetails.join(', ')}`);
-        console.error(`Error: Invalid --detail value "${detail}".`);
-        console.error(`Valid levels: ${validDetails.join(', ')}`);
-        process.exit(1);
+        cliError(`Invalid --detail value "${detail}". Valid levels: ${validDetails.join(', ')}`);
+        return;
       }
 
       let result;
@@ -69,15 +68,8 @@ export function registerComponent(program) {
           lang, zh, dense,
         });
       } catch (e) {
-        if (json) return jsonError(e.message, e.suggestions);
-        console.error(`Error: ${e.message}`);
-        if (e.suggestions?.length) {
-          console.error('');
-          for (const s of e.suggestions) {
-            console.error(`  ${s.name}  (${s.reason})`);
-          }
-        }
-        process.exit(1);
+        cliError(e.message, {suggestions: e.suggestions});
+        return;
       }
 
       if (json) return jsonOut(result.type, result.data);

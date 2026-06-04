@@ -14,6 +14,8 @@ import * as path from 'node:path';
 import {checkForUpdate} from './utils/update-check.mjs';
 import {getRunPrefix} from './utils/package-manager.mjs';
 import {API_VERSION, setJsonMode} from './lib/json.mjs';
+import {cliError} from './lib/cli-error.mjs';
+import {levenshteinDistance} from './lib/string-utils.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -70,7 +72,25 @@ program
     'Output as typed JSON. Success envelope: { type, data }. Error envelope: { error, suggestions? }.',
   )
   .addHelpCommand('help', 'Show all commands')
-  .action(() => {
+  .action((options, cmd) => {
+    // If Commander handed us a positional that didn't match any subcommand,
+    // treat it as "unknown command" — exit 1 with a helpful suggestion.
+    // This is the bare-invocation handler; if cmd.args has content here,
+    // none of the registered subcommands matched.
+    const extras = (cmd && cmd.args) || [];
+    if (extras.length > 0) {
+      const unknown = String(extras[0]);
+      const known = (program.commands || []).map((c) => c.name());
+      const suggestions = known
+        .map((name) => ({name, distance: levenshteinDistance(unknown.toLowerCase(), name.toLowerCase())}))
+        .filter((s) => s.distance <= 3)
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, 3)
+        .map((s) => ({name: s.name, reason: 'did you mean this?'}));
+      cliError(`unknown command '${unknown}'`, {suggestions});
+      return;
+    }
+
     // `xds` (no subcommand) — print help, or emit a JSON envelope when --json.
     if (program.opts().json) {
       // Emit a JSON help envelope. Treat the bare invocation as supported.
