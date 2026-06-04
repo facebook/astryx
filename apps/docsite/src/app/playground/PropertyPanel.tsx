@@ -315,7 +315,7 @@ export function PropertyPanel({
       <div {...stylex.props(s.emptyWrap)}>
         <XDSEmptyState
           title="No components detected"
-          description="Add an XDS component in the Code tab to edit its props here."
+          description="Add a component in the Code tab to view properties."
           isCompact
         />
       </div>

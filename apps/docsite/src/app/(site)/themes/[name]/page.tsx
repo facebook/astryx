@@ -11,8 +11,8 @@
  * the destination for the "Preview" affordance on the /themes
  * gallery cards.
  *
- * The /packages/theme-* route redirects here so there is a single
- * canonical URL per theme (see (docs)/packages/[name]/page.tsx).
+ * This is the canonical URL per theme. Theme entry points (gallery
+ * cards, sidebar, search) link here directly.
  */
 
 import {notFound} from 'next/navigation';
