@@ -135,18 +135,18 @@ const styles = stylex.create({
   imageWrapBleedBottom: {
     marginBottom: 'calc(var(--spacing-5) * -1)',
   },
-  // Image: full container width, natural height capped at 120px so
-  // regular cards stay compact. Wide compositions (CLI / Components)
-  // would otherwise render at their full aspect-ratio-derived
-  // height (~280px+ at desktop card widths) and pad the cards out
-  // taller than they need to be. object-fit:contain inside the
-  // capped height keeps each composition undistorted.
+  // Image: full container width, natural aspect-ratio-derived
+  // height. No maxHeight cap — each composition was sized at design
+  // time to render correctly inside its card variant (the tall
+  // card's composition is intentionally taller than the regular
+  // cards' wide-and-short compositions). A blanket maxHeight cap
+  // shrinks the tall + bleed images to a tiny strip in the corner
+  // because object-fit:contain inside the cap can't enlarge a
+  // smaller image — the wrappers (imageWrap + variants) already
+  // handle the positioning + bleed at the card edges.
   tallImage: {
     width: '100%',
     height: 'auto',
-    maxHeight: 120,
-    objectFit: 'contain',
-    objectPosition: 'bottom left',
     display: 'block',
   },
 });
