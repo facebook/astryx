@@ -25,6 +25,7 @@ import {getRunPrefix} from '../utils/package-manager.mjs';
 import {discoverComponents} from '../lib/component-discovery.mjs';
 import {discoverHooks} from '../lib/hook-discovery.mjs';
 import {humanLog} from '../lib/json.mjs';
+import {cliError} from '../lib/cli-error.mjs';
 
 const AGENTS_MD = 'AGENTS.md';
 const CLAUDE_MD = 'CLAUDE.md';
@@ -431,8 +432,7 @@ export function registerAgentDocs(program) {
 
       // Validate --agent
       if (options.agent && !VALID_AGENTS.includes(options.agent)) {
-        console.error(`Error: Unknown agent "${options.agent}". Valid: ${VALID_AGENTS.join(', ')}`);
-        process.exitCode = 1;
+        cliError(`Unknown agent "${options.agent}". Valid: ${VALID_AGENTS.join(', ')}`);
         return;
       }
 
@@ -455,8 +455,7 @@ export function registerAgentDocs(program) {
         });
       } catch (err) {
         if (err instanceof PathSafetyError) {
-          console.error(`Error: ${err.message}`);
-          process.exitCode = 1;
+          cliError(err.message);
           return;
         }
         throw err;
