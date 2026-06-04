@@ -14,6 +14,7 @@
 
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
+import {cliError} from '../lib/cli-error.mjs';
 import {docs as docsApi} from '../api/docs.mjs';
 
 // ─── Formatting ──────────────────────────────────────────────────────────────
@@ -113,12 +114,12 @@ export function registerDocs(program) {
       try {
         result = await docsApi(topic, section, {lang, zh, dense});
       } catch (e) {
-        if (json) return jsonError(e.message, e.suggestions);
-        console.error(`Error: ${e.message}`);
-        if (e.suggestions?.length) {
-          console.error(`Available: ${e.suggestions.map(s => s.name).join(', ')}`);
-        }
-        process.exit(1);
+        // docs API uses {name} suggestion shape (just topic names, no reasons),
+        // but cliError accepts suggestions with optional reason — preserve
+        // the existing "Available: a, b, c" line by mapping name → reason.
+        const suggestions = (e.suggestions || []).map((s) => ({name: s.name}));
+        cliError(e.message, {suggestions});
+        return;
       }
 
       if (json) return jsonOut(result.type, result.data);

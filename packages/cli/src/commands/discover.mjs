@@ -14,6 +14,7 @@ import {loadConfig} from '../lib/config.mjs';
 import {scanAllPackages} from '../lib/package-scanner.mjs';
 import {formatFull, formatBrief, formatCompact} from '../lib/component-format.mjs';
 import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
+import {cliError} from '../lib/cli-error.mjs';
 import {discover as discoverApi} from '../api/discover.mjs';
 
 export function registerDiscover(program) {
@@ -31,15 +32,8 @@ export function registerDiscover(program) {
       try {
         result = await discoverApi(query, {components: options.components, lang, zh});
       } catch (e) {
-        if (json) return jsonError(e.message, e.suggestions);
-        console.error(`Error: ${e.message}`);
-        if (e.suggestions?.length) {
-          console.error('');
-          for (const s of e.suggestions) {
-            console.error(`  ${s.name}  (${s.reason})`);
-          }
-        }
-        process.exit(1);
+        cliError(e.message, {suggestions: e.suggestions});
+        return;
       }
 
       if (json) {
