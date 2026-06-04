@@ -692,10 +692,10 @@ export const AutoHeightStickyFooter: Story = {
           </XDSText>
         </div>
         <div {...stylex.props(styles.footer)}>
-          <XDSText type="caption" color="secondary">
+          <XDSText type="supporting" color="secondary">
             © 2025 Acme Inc.
           </XDSText>
-          <XDSText type="caption" color="secondary">
+          <XDSText type="supporting" color="secondary">
             Privacy · Terms · Status
           </XDSText>
         </div>
@@ -724,10 +724,10 @@ export const AutoHeightStickyFooterWithSideNav: Story = {
           </XDSText>
         </div>
         <div {...stylex.props(styles.footer)}>
-          <XDSText type="caption" color="secondary">
+          <XDSText type="supporting" color="secondary">
             © 2025 Acme Inc. All rights reserved.
           </XDSText>
-          <XDSText type="caption" color="secondary">
+          <XDSText type="supporting" color="secondary">
             v2.4.1
           </XDSText>
         </div>
@@ -749,10 +749,10 @@ export const AutoHeightLongPageWithFooter: Story = {
           <MockContent paragraphs={20} />
         </div>
         <div {...stylex.props(styles.footer)}>
-          <XDSText type="caption" color="secondary">
+          <XDSText type="supporting" color="secondary">
             © 2025 Acme Inc.
           </XDSText>
-          <XDSText type="caption" color="secondary">
+          <XDSText type="supporting" color="secondary">
             Privacy · Terms · Status
           </XDSText>
         </div>
