@@ -27,10 +27,9 @@ import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSEmptyState} from '@xds/core/EmptyState';
-import {
-  XDSSegmentedControl,
-  XDSSegmentedControlItem,
-} from '@xds/core/SegmentedControl';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
+// SegmentedControl removed — targeting selects the exact instance.
+import {ChevronDown} from 'lucide-react';
 import {
   coerceDefault,
   parsePropType,
@@ -255,11 +254,19 @@ function PropRow({
   );
 }
 
+interface ExternalSelection {
+  component: string;
+  instanceIndex: number;
+}
+
 interface PropertyPanelProps {
   code: string;
   onCodeChange: (code: string) => void;
   onRevealInCode?: (offset: number) => void;
   onFlashInstance?: (component: string, index: number) => void;
+  /** Driven by the targeting system — overrides the current selection once. */
+  externalSelection?: ExternalSelection;
+  onExternalSelectionConsumed?: () => void;
 }
 
 export function PropertyPanel({
@@ -267,6 +274,8 @@ export function PropertyPanel({
   onCodeChange,
   onRevealInCode,
   onFlashInstance,
+  externalSelection,
+  onExternalSelectionConsumed,
 }: PropertyPanelProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const [instanceIndex, setInstanceIndex] = useState(0);
@@ -310,6 +319,19 @@ export function PropertyPanel({
     }
   }, [componentInstances, instanceIndex]);
 
+  // Apply external selection from the targeting system.
+  useEffect(() => {
+    if (!externalSelection) {
+      return;
+    }
+    const {component, instanceIndex: idx} = externalSelection;
+    if (used.some(u => u.module === component)) {
+      setSelected(component);
+      setInstanceIndex(idx);
+    }
+    onExternalSelectionConsumed?.();
+  }, [externalSelection, used, onExternalSelectionConsumed]);
+
   if (used.length === 0) {
     return (
       <div {...stylex.props(s.emptyWrap)}>
@@ -329,48 +351,42 @@ export function PropertyPanel({
   const required = props.filter(p => p.required);
   const optional = props.filter(p => !p.required);
 
-  const componentOptions = used.map(u => ({
-    value: u.module,
-    label: u.count > 1 ? `${u.label} (${u.count})` : u.label,
-  }));
+  const selectedLabel = used.find(u => u.module === selected)?.label ?? selected;
+
+  const menuItems = used.length > 1
+    ? used.map(u => ({
+        label: u.count > 1 ? `${u.label} (${u.count})` : u.label,
+        onClick: () => {
+          setSelected(u.module);
+          setInstanceIndex(0);
+          onFlashInstance?.(u.module, 0);
+        },
+      }))
+    : [];
 
   return (
     <div {...stylex.props(s.root)}>
       <div {...stylex.props(s.header)}>
         <XDSVStack gap={2}>
-          <XDSSelector
-            label="Component"
-            options={componentOptions}
-            value={selected ?? undefined}
-            onChange={value => {
-              setSelected(value);
-              setInstanceIndex(0);
-              onFlashInstance?.(value, 0);
-            }}
-            size="sm"
-          />
-          {componentInstances.length > 1 && (
-            <XDSSegmentedControl
-              label="Instance"
-              size="sm"
-              layout="fill"
-              value={String(instanceIndex)}
-              onChange={value => {
-                const index = Number(value);
-                setInstanceIndex(index);
-                if (selected) {
-                  onFlashInstance?.(selected, index);
-                }
-              }}>
-              {componentInstances.map((_, i) => (
-                <XDSSegmentedControlItem
-                  key={i}
-                  value={String(i)}
-                  label={`${i + 1}`}
-                />
-              ))}
-            </XDSSegmentedControl>
-          )}
+          <XDSHStack gap={0} vAlign="center">
+            <XDSHeading level={3}>
+              {selectedLabel}
+            </XDSHeading>
+            {menuItems.length > 0 && (
+              <XDSDropdownMenu
+                button={{
+                  label: 'Switch component',
+                  tooltip: 'Switch component',
+                  variant: 'ghost',
+                  size: 'sm',
+                  isIconOnly: true,
+                  icon: <ChevronDown size={16} />,
+                }}
+                hasChevron={false}
+                items={menuItems}
+              />
+            )}
+          </XDSHStack>
         </XDSVStack>
       </div>
 
