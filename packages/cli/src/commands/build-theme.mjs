@@ -33,12 +33,11 @@ try {
   _generateThemeRules = coreTheme.generateThemeRules;
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
-} catch (e) {
-  // Silent under --json so we don't break the JSON contract (clean stderr).
-  // The fallback path below works without core when theme build isn't invoked.
-  if (!process.argv.includes('--json')) {
-    console.warn('Warning: could not load @xds/core/theme:', e.message);
-  }
+} catch (_e) {
+  // Silent fallback. The theme command surfaces a clear error if it's actually
+  // invoked without core being available; emitting a stderr warning at module-
+  // load time would leak into every other command's output and break the
+  // clean-stderr contract under --json (and breaks tests that assert it).
 }
 
 /**
