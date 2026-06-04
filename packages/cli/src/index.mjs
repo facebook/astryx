@@ -88,12 +88,17 @@ program
       const known = (program.commands || [])
         .filter((c) => !c._hidden && c.name() !== 'help')
         .map((c) => c.name());
-      const suggestions = known
+      const close = known
         .map((name) => ({name, distance: levenshteinDistance(unknown.toLowerCase(), name.toLowerCase())}))
         .filter((s) => s.distance <= 3)
         .sort((a, b) => a.distance - b.distance)
         .slice(0, 3)
         .map((s) => ({name: s.name, reason: 'did you mean this?'}));
+      // If we have close matches, surface those. Otherwise list all known commands
+      // so callers (including AI agents) can see what's available.
+      const suggestions = close.length > 0
+        ? close
+        : known.map((name) => ({name, reason: 'available command'}));
       cliError(`unknown command '${unknown}'`, {suggestions});
       return;
     }
