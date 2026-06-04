@@ -3,8 +3,14 @@
 'use client';
 
 import {useState, useMemo} from 'react';
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Layout';
+import {
+  XDSVStack,
+  XDSHStack,
+  XDSStackItem,
+  XDSLayout,
+  XDSLayoutContent,
+  XDSLayoutHeader,
+} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIconButton} from '@xds/core/IconButton';
@@ -382,42 +388,54 @@ export default function TablePageTemplate() {
   }, [filters, applyFilters]);
 
   return (
-    <XDSAppShell variant="elevated" contentPadding={3} height="auto">
-      <XDSVStack gap={4}>
-        <XDSHStack gap={2} vAlign="center">
-          <XDSStackItem size="fill">
-            <XDSHeading level={1}>Dogs</XDSHeading>
-          </XDSStackItem>
-          <XDSIconButton
-            label="Filter"
-            icon={<XDSIcon icon={FunnelIcon} size="sm" />}
-            variant="ghost"
-          />
-          <XDSIconButton
-            label="Download"
-            icon={<XDSIcon icon={ArrowDownTrayIcon} size="sm" />}
-            variant="ghost"
-          />
-          <XDSButton label="Add" icon={<XDSIcon icon={PlusIcon} size="sm" />} />
-        </XDSHStack>
-        <XDSPowerSearch
-          config={config}
-          filters={filters}
-          onChange={newFilters => {
-            setFilters([...newFilters]);
-          }}
-          placeholder="Search dogs..."
-          resultCount={filtered.length}
-        />
-        <XDSTable<DogRow>
-          data={filtered}
-          columns={columns}
-          idKey="id"
-          density="balanced"
-          dividers="rows"
-          hasHover
-        />
-      </XDSVStack>
-    </XDSAppShell>
+    <XDSLayout
+      height="auto"
+      header={
+        <XDSLayoutHeader hasDivider>
+          <XDSHStack gap={2} vAlign="center">
+            <XDSStackItem size="fill">
+              <XDSHeading level={1}>Dogs</XDSHeading>
+            </XDSStackItem>
+            <XDSIconButton
+              label="Filter"
+              icon={<XDSIcon icon={FunnelIcon} size="sm" />}
+              variant="ghost"
+            />
+            <XDSIconButton
+              label="Download"
+              icon={<XDSIcon icon={ArrowDownTrayIcon} size="sm" />}
+              variant="ghost"
+            />
+            <XDSButton
+              label="Add"
+              icon={<XDSIcon icon={PlusIcon} size="sm" />}
+            />
+          </XDSHStack>
+        </XDSLayoutHeader>
+      }
+      content={
+        <XDSLayoutContent padding={3}>
+          <XDSVStack gap={4}>
+            <XDSPowerSearch
+              config={config}
+              filters={filters}
+              onChange={newFilters => {
+                setFilters([...newFilters]);
+              }}
+              placeholder="Search dogs..."
+              resultCount={filtered.length}
+            />
+            <XDSTable<DogRow>
+              data={filtered}
+              columns={columns}
+              idKey="id"
+              density="balanced"
+              dividers="rows"
+              hasHover
+            />
+          </XDSVStack>
+        </XDSLayoutContent>
+      }
+    />
   );
 }
