@@ -52,6 +52,7 @@
     "typecheck:json-api": "tsc --project tsconfig.json-api.json"
   },
   "dependencies": {
+    "@babel/parser": "^7.29.0",
     "@clack/prompts": "^1.5.0",
     "commander": "^12.1.0",
     "jiti": "^2.7.0"
