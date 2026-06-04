@@ -19,6 +19,7 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
 import {XDSOverlay} from '@xds/core/Overlay';
 import {XDSBadge} from '@xds/core/Badge';
+import {XDSMediaTheme} from '@xds/core/theme';
 import {templates} from '../../../generated/templateRegistry';
 import {TemplateThumbnail} from '../../../components/TemplateThumbnail';
 import {buildPlaygroundHref} from '../../../components/playgroundLink';
@@ -281,44 +282,42 @@ export default function TemplatesPage() {
                           showOn="hover"
                           scrim="dark"
                           content={
-                            <div {...stylex.props(styles.overlayInner)}>
-                              <XDSVStack gap={2}>
-                                <XDSVStack gap={0.5}>
-                                  <XDSHeading level={3} style={{color: '#fff'}}>
-                                    {item.name}
-                                  </XDSHeading>
-                                  <XDSText
-                                    type="body"
-                                    style={{color: 'rgba(255,255,255,0.7)'}}>
-                                    {item.description.slice(0, 80)}
-                                    {item.description.length > 80
-                                      ? '\u2026'
-                                      : ''}
-                                  </XDSText>
-                                </XDSVStack>
-                                <XDSHStack gap={2}>
-                                  <XDSButton
-                                    label="Preview"
-                                    variant="secondary"
-                                    onClick={() => openPreview(item.slug)}
-                                  />
-                                  {item.source && (
+                            <XDSMediaTheme mode="dark">
+                              <div {...stylex.props(styles.overlayInner)}>
+                                <XDSVStack gap={2}>
+                                  <XDSVStack gap={0.5}>
+                                    <XDSHeading level={3}>{item.name}</XDSHeading>
+                                    <XDSText type="body" color="secondary">
+                                      {item.description.slice(0, 80)}
+                                      {item.description.length > 80
+                                        ? '\u2026'
+                                        : ''}
+                                    </XDSText>
+                                  </XDSVStack>
+                                  <XDSHStack gap={2}>
                                     <XDSButton
-                                      label="Open in Playground"
+                                      label="Preview"
                                       variant="secondary"
-                                      href={buildPlaygroundHref(item.source)}
-                                      onClick={() => {
-                                        trackOpenPlayground({
-                                          page: 'templates',
-                                          item: item.slug,
-                                          category: groupOf(item.category),
-                                        });
-                                      }}
+                                      onClick={() => openPreview(item.slug)}
                                     />
-                                  )}
-                                </XDSHStack>
-                              </XDSVStack>
-                            </div>
+                                    {item.source && (
+                                      <XDSButton
+                                        label="Open in Playground"
+                                        variant="secondary"
+                                        href={buildPlaygroundHref(item.source)}
+                                        onClick={() => {
+                                          trackOpenPlayground({
+                                            page: 'templates',
+                                            item: item.slug,
+                                            category: groupOf(item.category),
+                                          });
+                                        }}
+                                      />
+                                    )}
+                                  </XDSHStack>
+                                </XDSVStack>
+                              </div>
+                            </XDSMediaTheme>
                           }>
                           {templateContent}
                         </XDSOverlay>
