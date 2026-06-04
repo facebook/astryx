@@ -6,7 +6,7 @@
  * TemplatePreviewSurface — the live preview "window" for one template.
  *
  * Renders the template's real page.tsx component (shared
- * TEMPLATE_COMPONENTS map) at true scale inside the framed, internally-
+ * templateComponents map) at true scale inside the framed, internally-
  * scrollable surface (see TemplatePreviewSurface.module.css `.frame`).
  * Used by the preview dialog (TemplatePreviewDialog).
  */
@@ -18,7 +18,7 @@ import {XDSSkeleton} from '@xds/core/Skeleton';
 import {XDSTheme} from '@xds/core/theme';
 import {neutralTheme} from '@xds/theme-neutral/built';
 import {useThemeMode} from '../app/providers';
-import {getTemplateComponent} from './templateComponents';
+import {getTemplateComponent} from '../generated/templateComponentRegistry';
 import css from './TemplatePreviewSurface.module.css';
 
 const styles = stylex.create({

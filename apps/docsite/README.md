@@ -24,16 +24,17 @@ from the monorepo and writes typed TypeScript registries to `src/generated/`.
 
 `scripts/generate-data.mjs` scans the monorepo and produces:
 
-| Registry               | Source                            | What it contains                                              |
-| ---------------------- | --------------------------------- | ------------------------------------------------------------- |
-| `packageRegistry.ts`   | `packages/*/package.json`         | Name, version, description, README for each published package |
-| `componentRegistry.ts` | `*.doc.mjs` files                 | Props, usage docs, hooks, groups, per package                 |
-| `blockRegistry.ts`     | CLI `templates/blocks/`           | Showcase and example blocks with metadata                     |
-| `templateRegistry.ts`  | CLI `templates/pages/`            | Page-level templates (e.g. dashboard, settings)               |
-| `docsRegistry.ts`      | CLI `docs/`                       | Long-form guide and foundation topics                         |
-| `themeRegistry.ts`     | Installed `@xds/theme-*` packages | Built theme objects, keyed by package name                    |
-| `showcaseRegistry.ts`  | Blocks with `isShowcase`          | Copied showcase source files                                  |
-| `exampleRegistry.ts`   | Blocks with `exampleFor`          | Copied example blocks per component                           |
+| Registry                       | Source                            | What it contains                                                      |
+| ------------------------------ | --------------------------------- | --------------------------------------------------------------------- |
+| `packageRegistry.ts`           | `packages/*/package.json`         | Name, version, description, README for each published package         |
+| `componentRegistry.ts`         | `*.doc.mjs` files                 | Props, usage docs, hooks, groups, per package                         |
+| `blockRegistry.ts`             | CLI `templates/blocks/`           | Showcase and example blocks with metadata                             |
+| `templateRegistry.ts`          | CLI `templates/pages/`            | Page-level templates (e.g. dashboard, settings)                       |
+| `templateComponentRegistry.ts` | CLI `templates/pages/`            | Lazy `import()` map of each template's live `page.tsx`, keyed by slug |
+| `docsRegistry.ts`              | CLI `docs/`                       | Long-form guide and foundation topics                                 |
+| `themeRegistry.ts`             | Installed `@xds/theme-*` packages | Built theme objects, keyed by package name                            |
+| `showcaseRegistry.ts`          | Blocks with `isShowcase`          | Copied showcase source files                                          |
+| `exampleRegistry.ts`           | Blocks with `exampleFor`          | Copied example blocks per component                                   |
 
 The `src/generated/` directory is gitignored. Pages import from these registries
 and render whatever the pipeline found, with no manual wiring needed.

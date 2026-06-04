@@ -8,7 +8,7 @@ import {XDSSkeleton} from '@xds/core/Skeleton';
 import {XDSTheme} from '@xds/core/theme';
 import {neutralTheme} from '@xds/theme-neutral/built';
 import {useThemeMode} from '../app/providers';
-import {TEMPLATE_COMPONENTS} from './templateComponents';
+import {templateComponents} from '../generated/templateComponentRegistry';
 
 const FIXED_SCALE = 0.5;
 
@@ -87,7 +87,7 @@ export function TemplateThumbnail({slug}: {slug: string}) {
     return () => ro.disconnect();
   }, [updateWidth]);
 
-  const Component = TEMPLATE_COMPONENTS[slug];
+  const Component = templateComponents[slug];
   if (!Component) {
     return null;
   }

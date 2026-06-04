@@ -13,6 +13,7 @@ import {packages} from '../generated/packageRegistry';
 import {components, componentCount} from '../generated/componentRegistry';
 import {blocks, blockCount, showcaseCount} from '../generated/blockRegistry';
 import {templates, templateCount} from '../generated/templateRegistry';
+import {templateComponents} from '../generated/templateComponentRegistry';
 import {docTopics, docsCount} from '../generated/docsRegistry';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
 import {exampleRegistry} from '../generated/exampleRegistry';
@@ -457,6 +458,26 @@ describe('templateRegistry', () => {
   it('no duplicate template slugs', () => {
     const slugs = templates.map(t => t.slug);
     expect(new Set(slugs).size).toBe(slugs.length);
+  });
+});
+
+// ── Template Component Registry ─────────────────────────────────────────
+
+describe('templateComponentRegistry', () => {
+  it('is generated, not hand-maintained, and stays in sync with templates', () => {
+    // Every gallery template must have a lazy component loader, and the
+    // map must not contain stale entries — both come from the same
+    // directory scan in generate-data.mjs, so they should match exactly.
+    const templateSlugs = templates.map(t => t.slug).sort();
+    const componentSlugs = Object.keys(templateComponents).sort();
+    expect(componentSlugs).toEqual(templateSlugs);
+  });
+
+  it('every entry is a lazy component loader', () => {
+    for (const [slug, Component] of Object.entries(templateComponents)) {
+      expect(slug).toBeTruthy();
+      expect(typeof Component).toBe('object');
+    }
   });
 });
 
