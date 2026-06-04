@@ -56,20 +56,6 @@ function getInstallSteps(pkgName: string): InstallStep[] {
 /** Sections to remove from the @xds/core README on the package page. */
 const CORE_STRIP_SECTIONS = ['Quick Start', 'Resources', 'XDS CLI'];
 
-/**
- * Rewrite the @xds/core README intro to incorporate the package description
- * and remove the now-dead Quick Start cross-reference.
- */
-function rewriteCoreReadme(readme: string | null): string | null {
-  if (!readme) {
-    return null;
-  }
-  return readme.replace(
-    /Core UI components, theme system, and utilities for the XDS design system\..*?(?=\n)/,
-    'Accessible, themeable React components with built-in spacing, dark mode, and StyleX styling — the core building blocks of the Astryx design system.',
-  );
-}
-
 export function generateStaticParams() {
   return [
     ...docTopics.map(d => ({topic: d.topic})),
@@ -120,7 +106,7 @@ export default async function DocPage({
       name={pkg.name}
       description={pkg.description}
       version={pkg.version}
-      readme={isComponentPkg ? rewriteCoreReadme(pkg.readme) : pkg.readme}
+      readme={pkg.readme}
       installSteps={getInstallSteps(pkg.name)}
       cta={
         isComponentPkg
@@ -128,6 +114,7 @@ export default async function DocPage({
           : undefined
       }
       stripSections={isComponentPkg ? CORE_STRIP_SECTIONS : undefined}
+      stripIntro={isComponentPkg}
     />
   );
 }

@@ -17,6 +17,13 @@ interface PackageStubPageProps {
   cta?: {label: string; href: string};
   /** Markdown section headings (## level) to strip from the README */
   stripSections?: string[];
+  /**
+   * Drop the README's leading intro prose (everything before the first `##`
+   * section). The canonical short description already renders as the page
+   * subtitle via `description`, so this avoids duplicating it — and removes any
+   * cross-references in the intro that point at stripped sections.
+   */
+  stripIntro?: boolean;
 }
 
 export function PackageStubPage({
@@ -27,8 +34,14 @@ export function PackageStubPage({
   installSteps,
   cta,
   stripSections,
+  stripIntro,
 }: PackageStubPageProps) {
   let body = readme ? readme.replace(/^# .+\n+/, '') : null;
+
+  if (body && stripIntro) {
+    // Remove leading prose up to the first ## section heading.
+    body = body.replace(/^[\s\S]*?(?=\n## |^## )/, '').trimStart();
+  }
 
   if (body && stripSections && stripSections.length > 0) {
     for (const section of stripSections) {
