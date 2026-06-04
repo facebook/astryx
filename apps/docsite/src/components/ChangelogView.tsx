@@ -80,7 +80,7 @@ export function ChangelogView({
         <XDSVStack gap={2}>
           <XDSHeading level={1}>What&apos;s New</XDSHeading>
           <XDSText type="body" color="secondary">
-            Release notes and changelog for XDS packages.
+            Release notes and changelog for all packages.
           </XDSText>
         </XDSVStack>
 
