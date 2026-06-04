@@ -14,7 +14,6 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {createRequire} from 'node:module';
 import {pathToFileURL, fileURLToPath} from 'node:url';
 import {createJiti} from 'jiti';
 import {getRunPrefix} from '../utils/package-manager.mjs';
@@ -23,19 +22,18 @@ import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
 
 // Import shared theme processing from core — ensures build and runtime
 // use the same logic for typography.scale expansion, prose, and component rules.
-const _require = createRequire(import.meta.url);
 let _defineTheme = null;
 let _generateThemeRules = null;
 let _generateThemeRulesSplit = null;
 let _generateOnMediaCSS = null;
 try {
-  const coreTheme = _require('@xds/core/theme');
+  const coreTheme = await import('@xds/core/theme');
   _defineTheme = coreTheme.defineTheme;
   _generateThemeRules = coreTheme.generateThemeRules;
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
-} catch {
-  // Core not available — fall back to legacy generation
+} catch (e) {
+  console.warn('Warning: could not load @xds/core/theme:', e.message);
 }
 
 /**
