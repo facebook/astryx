@@ -848,7 +848,8 @@ function renderInline(
           </LinkComp>
         );
       }
-      const isExternal = safeHref.startsWith('http');
+      const isExternal =
+        safeHref.startsWith('https://') || safeHref.startsWith('http://');
       const handleClick = onLinkClick
         ? (e: React.MouseEvent<HTMLAnchorElement>) => {
             const result = onLinkClick(safeHref, e);
