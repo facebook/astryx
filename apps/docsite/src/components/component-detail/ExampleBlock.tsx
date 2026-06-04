@@ -108,7 +108,13 @@ export function ExampleBlock({entry}: ExampleBlockProps) {
             {entry.description || 'No description available.'}
           </XDSText>
         ) : (
-          <XDSCodeBlock code={entry.source} language="tsx" hasCopyButton />
+          <XDSCodeBlock
+            code={entry.source}
+            language="tsx"
+            hasCopyButton
+            container="section"
+            width="100%"
+          />
         )}
       </XDSSection>
     </XDSCard>

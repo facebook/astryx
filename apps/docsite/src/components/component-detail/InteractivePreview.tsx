@@ -292,7 +292,13 @@ export function InteractivePreviewStage({
             overflow: 'auto',
             padding: 'var(--spacing-4)',
           }}>
-          <XDSCodeBlock code={code} language="tsx" hasCopyButton />
+          <XDSCodeBlock
+            code={code}
+            language="tsx"
+            hasCopyButton
+            container="section"
+            width="100%"
+          />
         </div>
       ) : (
         <XDSTheme theme={neutralTheme} mode={mode}>
