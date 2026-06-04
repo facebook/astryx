@@ -116,19 +116,36 @@ describe('XDSStepper', () => {
     expect(handleClick).toHaveBeenCalledWith(1);
   });
 
-  it('does not render buttons for upcoming steps in non-linear mode', () => {
+  it('renders buttons for upcoming steps in non-linear mode', () => {
     render(
       <XDSStepper activeStep={0} onStepClick={() => {}}>
         <XDSStep step={0} label="Step 1" />
         <XDSStep step={1} label="Step 2" />
       </XDSStepper>,
     );
+    // All non-disabled steps are navigable, including not-started ones.
     expect(
       screen.getByRole('button', {name: 'Go to step 1: Step 1'}),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: 'Go to step 2: Step 2'}),
-    ).not.toBeInTheDocument();
+      screen.getByRole('button', {name: 'Go to step 2: Step 2'}),
+    ).toBeInTheDocument();
+  });
+
+  it('calls onStepClick when an upcoming step is clicked', async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(
+      <XDSStepper activeStep={0} onStepClick={handleClick}>
+        <XDSStep step={0} label="Step 1" />
+        <XDSStep step={1} label="Step 2" />
+        <XDSStep step={2} label="Step 3" />
+      </XDSStepper>,
+    );
+    await user.click(
+      screen.getByRole('button', {name: 'Go to step 3: Step 3'}),
+    );
+    expect(handleClick).toHaveBeenCalledWith(2);
   });
 
   it('does not render buttons for disabled steps', () => {
@@ -159,11 +176,57 @@ describe('XDSStepper', () => {
     render(
       <XDSStepper activeStep={0}>
         <XDSStep step={0} label="Step 1" data-testid="step-0" />
-        <XDSStep step={1} label="Step 2" status={XDSStepStatus.Completed} data-testid="step-1" />
+        <XDSStep
+          step={1}
+          label="Step 2"
+          status={XDSStepStatus.Completed}
+          data-testid="step-1"
+        />
       </XDSStepper>,
     );
     const step1 = screen.getByTestId('step-1');
     expect(step1).toBeInTheDocument();
+  });
+
+  it('maps deprecated isCompleted prop to Completed status', () => {
+    render(
+      <XDSStepper activeStep={0}>
+        <XDSStep step={0} label="Step 1" data-testid="step-0" />
+        <XDSStep step={1} label="Step 2" isCompleted data-testid="step-1" />
+      </XDSStepper>,
+    );
+    expect(screen.getByTestId('step-1').getAttribute('class') ?? '').toContain(
+      'completed',
+    );
+  });
+
+  it('maps deprecated hasError prop to Error status', () => {
+    render(
+      <XDSStepper activeStep={1}>
+        <XDSStep step={0} label="Step 1" data-testid="step-0" />
+        <XDSStep step={1} label="Step 2" hasError data-testid="step-1" />
+      </XDSStepper>,
+    );
+    expect(screen.getByTestId('step-1').getAttribute('class') ?? '').toContain(
+      'error',
+    );
+  });
+
+  it('prioritizes explicit status over deprecated hasError', () => {
+    render(
+      <XDSStepper activeStep={0}>
+        <XDSStep
+          step={0}
+          label="Step 1"
+          hasError
+          status={XDSStepStatus.Completed}
+          data-testid="step-0"
+        />
+      </XDSStepper>,
+    );
+    const cls = screen.getByTestId('step-0').getAttribute('class') ?? '';
+    expect(cls).toContain('completed');
+    expect(cls).not.toContain('error');
   });
 
   it('handles zero active step correctly', () => {

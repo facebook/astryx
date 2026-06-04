@@ -44,6 +44,16 @@ export interface XDSStepProps extends XDSBaseProps<HTMLDivElement> {
   children?: ReactNode;
   icon?: ReactNode;
   status?: XDSStepStatus;
+  /**
+   * @deprecated Use `status={XDSStepStatus.Completed}` instead. Kept for
+   * backward compatibility with #2206; maps to the Completed status.
+   */
+  isCompleted?: boolean;
+  /**
+   * @deprecated Use `status={XDSStepStatus.Error}` instead. Kept for
+   * backward compatibility with #2206; maps to the Error status.
+   */
+  hasError?: boolean;
   isDisabled?: boolean;
   isOptional?: boolean;
   endContent?: ReactNode;
@@ -168,7 +178,7 @@ const styles = stylex.create({
     alignSelf: 'stretch',
   },
   barCompleted: {
-    backgroundColor: colorVars['--color-icon-primary'],
+    backgroundColor: colorVars['--color-accent'],
   },
   barIncomplete: {
     backgroundColor: colorVars['--color-border'],
@@ -188,6 +198,17 @@ const styles = stylex.create({
     alignItems: 'flex-start',
     flex: 1,
     // density padding applied via densityX styles below
+  },
+
+  // Full-width progress bar segment sitting above each horizontal step.
+  // Each step owns its own segment (filled from its derived status) so the
+  // parent never has to introspect children to build the bar.
+  horizontalBar: {
+    width: '100%',
+    height: BAR_WIDTH,
+    borderRadius: radiusVars['--radius-full'],
+    flexShrink: 0,
+    marginBlockEnd: spacingVars['--spacing-0-5'],
   },
 
   // ===================== SHARED =====================
@@ -213,7 +234,7 @@ const styles = stylex.create({
     color: colorVars['--color-success'],
   },
   iconInProgress: {
-    color: colorVars['--color-icon-primary'],
+    color: colorVars['--color-accent'],
   },
   iconNotStarted: {
     color: colorVars['--color-icon-secondary'],
@@ -239,22 +260,21 @@ const styles = stylex.create({
     width: NUMBER_SIZE,
     height: NUMBER_SIZE,
     borderRadius: radiusVars['--radius-full'],
-    // eslint-disable-next-line @xds/no-hardcoded-styles
+    // 10px is below the smallest type token (--text-supporting-size, 12px);
+    // intentional micro-type for the compact 20px numeric badge.
     fontSize: '10px',
-     
     paddingBlockEnd: '1px',
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    // eslint-disable-next-line @xds/no-hardcoded-styles
     lineHeight: 1,
     flexShrink: 0,
     textAlign: 'center',
   },
   numberCompleted: {
-    backgroundColor: colorVars['--color-icon-primary'],
+    backgroundColor: colorVars['--color-accent'],
     color: colorVars['--color-background-surface'],
   },
   numberInProgress: {
-    backgroundColor: colorVars['--color-icon-primary'],
+    backgroundColor: colorVars['--color-accent'],
     color: colorVars['--color-background-surface'],
   },
   numberNotStarted: {
@@ -307,14 +327,15 @@ const styles = stylex.create({
 
   // Description
   descriptionRow: {
-    paddingInlineStart: '0px',
+    paddingInlineStart: spacingVars['--spacing-0'],
   },
   descriptionRowWithIndicator: {
-    // Align with label: icon/number + gap = 16+8=24 or 20+8=28
-    paddingInlineStart: '24px',
+    // Align with label: icon (16px) + gap (8px) = 24px
+    paddingInlineStart: spacingVars['--spacing-6'],
   },
   descriptionRowWithNumber: {
-    paddingInlineStart: '28px',
+    // Align with label: number badge (20px) + gap (8px) = 28px
+    paddingInlineStart: spacingVars['--spacing-7'],
   },
   description: {
     fontSize: typeScaleVars['--text-supporting-size'],
@@ -327,10 +348,10 @@ const styles = stylex.create({
     paddingBlockStart: spacingVars['--spacing-2'],
   },
   stepContentWithIndicator: {
-    paddingInlineStart: '24px',
+    paddingInlineStart: spacingVars['--spacing-6'],
   },
   stepContentWithNumber: {
-    paddingInlineStart: '28px',
+    paddingInlineStart: spacingVars['--spacing-7'],
   },
 
   // Density
@@ -388,6 +409,8 @@ export function XDSStep({
   children,
   icon,
   status: statusProp,
+  isCompleted,
+  hasError,
   isDisabled = false,
   isOptional = false,
   endContent,
@@ -410,21 +433,25 @@ export function XDSStep({
   const indicator: XDSStepIndicator =
     indicatorProp ?? (hasHiddenIcon ? 'none' : 'auto');
 
-  // Auto-derive status
+  // Resolve status. Priority: explicit `status` > deprecated `hasError` >
+  // deprecated `isCompleted` > auto-derived from activeStep.
   const status: XDSStepStatus =
     statusProp ??
-    (step === activeStep
-      ? XDSStepStatus.InProgress
-      : step < activeStep
+    (hasError
+      ? XDSStepStatus.Error
+      : isCompleted
         ? XDSStepStatus.Completed
-        : XDSStepStatus.NotStarted);
+        : step === activeStep
+          ? XDSStepStatus.InProgress
+          : step < activeStep
+            ? XDSStepStatus.Completed
+            : XDSStepStatus.NotStarted);
 
   const isVertical = orientation === 'vertical';
   const isSelected = status === XDSStepStatus.InProgress;
-  const isClickable =
-    !isDisabled &&
-    onStepClick != null &&
-    (status === XDSStepStatus.Completed || status === XDSStepStatus.InProgress);
+  // Any non-disabled step is navigable when an onStepClick handler is provided,
+  // including not-started steps (free navigation across the flow).
+  const isClickable = !isDisabled && onStepClick != null;
 
   const handleClick = () => {
     if (isClickable && onStepClick) {
@@ -598,7 +625,6 @@ export function XDSStep({
               type="button"
               onClick={handleClick}
               aria-label={`Go to step ${step + 1}: ${label}`}
-              aria-selected={isSelected}
               {...stylex.props(
                 styles.buttonReset,
                 styles.focusRing,
@@ -640,12 +666,22 @@ export function XDSStep({
       data-testid={dataTestId}
       role="listitem"
       {...rest}>
+      {/* 4px progress bar segment for this step */}
+      <div
+        {...mergeProps(
+          xdsClassName('step-bar'),
+          stylex.props(
+            styles.horizontalBar,
+            isBarFilled ? styles.barCompleted : styles.barIncomplete,
+          ),
+        )}
+        aria-hidden="true"
+      />
       {isClickable ? (
         <button
           type="button"
           onClick={handleClick}
           aria-label={`Go to step ${step + 1}: ${label}`}
-          aria-selected={isSelected}
           {...stylex.props(
             styles.buttonReset,
             styles.focusRing,

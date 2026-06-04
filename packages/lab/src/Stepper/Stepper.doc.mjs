@@ -61,7 +61,7 @@ export const docs = {
         {
           name: 'onStepClick',
           type: '(index: number) => void',
-          description: 'Called when a step indicator is clicked. Enables non-linear navigation. Completed and active steps become clickable.',
+          description: 'Called when a step indicator is clicked. Enables non-linear navigation. All non-disabled steps become clickable, including not-started steps.',
         },
         {
           name: 'label',
@@ -113,7 +113,7 @@ export const docs = {
         {
           name: 'isCompleted',
           type: 'boolean',
-          description: 'Override the auto-computed completed state. By default, steps before activeStep are completed.',
+          description: '@deprecated Use status={XDSStepStatus.Completed} instead. Override the auto-computed completed state. By default, steps before activeStep are completed.',
         },
         {
           name: 'isDisabled',
@@ -124,7 +124,7 @@ export const docs = {
         {
           name: 'hasError',
           type: 'boolean',
-          description: 'Shows an error state on the step indicator and label.',
+          description: '@deprecated Use status={XDSStepStatus.Error} instead. Shows an error state on the step indicator and label.',
           default: 'false',
         },
       ],
