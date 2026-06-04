@@ -1072,7 +1072,7 @@ export function registerTheme(program) {
         if (_generateThemeRulesSplit) {
           const {component, prose} = _generateThemeRulesSplit(resolvedTheme);
           const cssParts = [];
-          if (prose.length > 0) {
+          if (options.prose !== false && prose.length > 0) {
             const proseInner = prose.join('\n\n');
             cssParts.push(`@layer reset {\n@scope (${scopeSelector}) to (${scopeTo}) {\n${proseInner}\n}\n}`);
           }
@@ -1113,8 +1113,10 @@ export function registerTheme(program) {
       } else {
         // Legacy fallback when core isn't built yet
         const scopeBlocks = [];
-        const proseCss = generateProseCSS(themeDef);
-        if (proseCss) scopeBlocks.push(proseCss);
+        if (options.prose !== false) {
+          const proseCss = generateProseCSS(themeDef);
+          if (proseCss) scopeBlocks.push(proseCss);
+        }
         const mainCss = generateCSS(themeDef);
         if (mainCss) scopeBlocks.push(mainCss);
         if (scopeBlocks.length === 0) {
