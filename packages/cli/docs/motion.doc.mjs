@@ -25,7 +25,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'XDS provides duration and easing tokens that keep these moments consistent across your application.',
+          text: 'The design system provides duration and easing tokens that keep these moments consistent across your application.',
         },
       ],
     },
@@ -101,7 +101,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Some users experience motion sensitivity — animation that feels polished to one person can cause discomfort for another. XDS components should honor the operating system’s reduced motion setting. When it’s enabled, replace animations with instant state changes.',
+          text: 'Some users experience motion sensitivity — animation that feels polished to one person can cause discomfort for another. Components should honor the operating system’s reduced motion setting. When it’s enabled, replace animations with instant state changes.',
         },
       ],
     },
