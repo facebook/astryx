@@ -7,7 +7,7 @@
  * (bad import, syntax error), the other commands still work.
  */
 
-import {Command} from 'commander';
+import {Command, Option} from 'commander';
 import {fileURLToPath} from 'node:url';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -16,6 +16,7 @@ import {getRunPrefix} from './utils/package-manager.mjs';
 import {API_VERSION, setJsonMode} from './lib/json.mjs';
 import {cliError} from './lib/cli-error.mjs';
 import {levenshteinDistance} from './lib/string-utils.mjs';
+import {installJsonShim} from './lib/json-shim.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -66,7 +67,11 @@ program
   .option('--zh', 'Output docs in Chinese Simplified')
   .option('--dense', 'Output docs in compressed dense format (token-efficient)')
   .option('--lang <locale>', 'Output docs in specified language/format (en, zh, dense)')
-  .option('--detail <level>', 'Output detail level (full, compact, brief)', 'full')
+  .addOption(
+    new Option('--detail <level>', 'Output detail level (full, compact, brief)')
+      .choices(['full', 'compact', 'brief'])
+      .default('full'),
+  )
   .option(
     '--json',
     'Output as typed JSON. Success envelope: { type, data }. Error envelope: { error, suggestions? }.',
@@ -80,13 +85,20 @@ program
     const extras = (cmd && cmd.args) || [];
     if (extras.length > 0) {
       const unknown = String(extras[0]);
-      const known = (program.commands || []).map((c) => c.name());
-      const suggestions = known
+      const known = (program.commands || [])
+        .filter((c) => !c._hidden && c.name() !== 'help')
+        .map((c) => c.name());
+      const close = known
         .map((name) => ({name, distance: levenshteinDistance(unknown.toLowerCase(), name.toLowerCase())}))
         .filter((s) => s.distance <= 3)
         .sort((a, b) => a.distance - b.distance)
         .slice(0, 3)
         .map((s) => ({name: s.name, reason: 'did you mean this?'}));
+      // If we have close matches, surface those. Otherwise list all known commands
+      // so callers (including AI agents) can see what's available.
+      const suggestions = close.length > 0
+        ? close
+        : known.map((name) => ({name, reason: 'available command'}));
       cliError(`unknown command '${unknown}'`, {suggestions});
       return;
     }
@@ -259,3 +271,10 @@ ${line('')}
   ╰${'─'.repeat(W + 2)}╯
 `);
   });
+
+// Install the JSON shim AFTER all commands are registered so we can
+// patch outputHelp on every command (root + subcommands). The shim
+// extends the --json contract to cover Commander's parse-time short
+// circuits (parse errors, unknown options, --help, unknown commands).
+// See packages/cli/src/lib/json-shim.mjs for the rationale.
+installJsonShim(program);
