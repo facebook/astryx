@@ -76,10 +76,9 @@ export function registerTemplate(program) {
           cwd: process.cwd(),
         });
       } catch (e) {
-        // template API uses {name} suggestion shape — preserve the
-        // existing "Available: a, b, c" hint by mapping to suggestions.
-        const suggestions = (e.suggestions || []).map((s) => ({name: s.name}));
-        cliError(e.message, {suggestions});
+        // template API throws structured errors with {name, reason} suggestions —
+        // pass them through untouched so the CLI envelope matches the API.
+        cliError(e.message, {suggestions: e.suggestions || []});
         return;
       }
 

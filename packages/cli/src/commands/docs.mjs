@@ -114,11 +114,9 @@ export function registerDocs(program) {
       try {
         result = await docsApi(topic, section, {lang, zh, dense});
       } catch (e) {
-        // docs API uses {name} suggestion shape (just topic names, no reasons),
-        // but cliError accepts suggestions with optional reason — preserve
-        // the existing "Available: a, b, c" line by mapping name → reason.
-        const suggestions = (e.suggestions || []).map((s) => ({name: s.name}));
-        cliError(e.message, {suggestions});
+        // docs API throws structured errors with {name, reason} suggestions —
+        // pass them through untouched so the CLI envelope matches the API.
+        cliError(e.message, {suggestions: e.suggestions || []});
         return;
       }
 
