@@ -25,18 +25,10 @@ const meta: Meta<typeof XDSOutline> = {
       control: 'text',
       description: 'Controlled active item id',
     },
-    size: {
+    density: {
       control: 'radio',
-      options: ['sm', 'md'],
-      description: 'Size variant',
-    },
-    offset: {
-      control: 'number',
-      description: 'Scroll-spy offset in pixels',
-    },
-    hasScrollOnClick: {
-      control: 'boolean',
-      description: 'Whether clicking scrolls to the target',
+      options: ['default', 'compact'],
+      description: 'Density variant',
     },
   },
 };
@@ -109,118 +101,12 @@ export const Controlled: Story = {
   },
 };
 
-/** Small size variant — compact spacing for dense UIs */
-export const Small: Story = {
+/** Compact density variant — reduced spacing for dense UIs */
+export const Compact: Story = {
   args: {
     items: outlineItems,
     activeId: 'installation',
-    size: 'sm',
-  },
-};
-
-/** Interactive scroll-spy demo with scrollable container */
-export const ScrollSpy: Story = {
-  render: () => {
-    const containerRef = useRef<HTMLDivElement>(null);
-
-    const sections: OutlineItem[] = [
-      {id: 'spy-overview', label: 'Overview', level: 2},
-      {id: 'spy-features', label: 'Features', level: 2},
-      {id: 'spy-usage', label: 'Usage', level: 3},
-      {id: 'spy-props', label: 'Props', level: 3},
-      {id: 'spy-advanced', label: 'Advanced', level: 2},
-      {id: 'spy-changelog', label: 'Changelog', level: 2},
-    ];
-
-    return (
-      <div style={{display: 'flex', gap: 24, height: 400}}>
-        <div style={{width: 200, position: 'sticky', top: 0}}>
-          <XDSOutline
-            items={sections}
-            scrollContainerRef={containerRef}
-            offset={0}
-          />
-        </div>
-        <div
-          ref={containerRef}
-          style={{flex: 1, overflow: 'auto', paddingInlineEnd: 16}}>
-          {sections.map(section => (
-            <div
-              key={section.id}
-              id={section.id}
-              style={{
-                minHeight: 300,
-                padding: 16,
-                borderBottom: '1px solid #eee',
-              }}>
-              <h2>{section.label}</h2>
-              <p style={{color: '#666'}}>
-                Content for the {section.label} section. Scroll to see the
-                indicator slide to the active section.
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  },
-};
-
-/** Navigate callbacks — custom flash highlight on scroll arrival */
-export const NavigateCallbacks: Story = {
-  render: () => {
-    const containerRef = useRef<HTMLDivElement>(null);
-
-    const sections: OutlineItem[] = [
-      {id: 'nav-intro', label: 'Intro', level: 2},
-      {id: 'nav-body', label: 'Body', level: 2},
-      {id: 'nav-outro', label: 'Outro', level: 2},
-    ];
-
-    return (
-      <div style={{display: 'flex', gap: 24, height: 400}}>
-        <div style={{width: 180}}>
-          <XDSOutline
-            items={sections}
-            scrollContainerRef={containerRef}
-            onNavigateEnd={id => {
-              const el = document.getElementById(id);
-              if (!el) {
-                return;
-              }
-              el.style.transition = 'none';
-              el.style.backgroundColor =
-                'var(--color-accent-muted, rgba(0,130,251,0.15))';
-              el.style.borderRadius = '8px';
-              requestAnimationFrame(() => {
-                el.style.transition = 'background-color 800ms ease-out';
-                el.style.backgroundColor = '';
-              });
-            }}
-          />
-        </div>
-        <div
-          ref={containerRef}
-          style={{flex: 1, overflow: 'auto', paddingInlineEnd: 16}}>
-          {sections.map(section => (
-            <div
-              key={section.id}
-              id={section.id}
-              style={{
-                minHeight: 300,
-                padding: 16,
-                borderBottom: '1px solid #eee',
-              }}>
-              <h2>{section.label}</h2>
-              <p style={{color: '#666'}}>
-                Click an item to see the custom flash highlight via
-                onNavigateEnd.
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    density: 'compact',
   },
 };
 

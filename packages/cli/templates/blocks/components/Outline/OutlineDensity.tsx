@@ -8,27 +8,35 @@ import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
 const items: OutlineItem[] = [
-  {id: 'sizes-getting-started', label: 'Getting started', level: 2},
-  {id: 'sizes-configuration', label: 'Configuration', level: 2},
-  {id: 'sizes-api', label: 'API reference', level: 3},
-  {id: 'sizes-examples', label: 'Examples', level: 3},
-  {id: 'sizes-faq', label: 'FAQ', level: 2},
+  {id: 'density-getting-started', label: 'Getting started', level: 2},
+  {id: 'density-configuration', label: 'Configuration', level: 2},
+  {id: 'density-api', label: 'API reference', level: 3},
+  {id: 'density-examples', label: 'Examples', level: 3},
+  {id: 'density-faq', label: 'FAQ', level: 2},
 ];
 
-export default function OutlineSizes() {
+export default function OutlineDensity() {
   return (
     <XDSHStack gap={10} vAlign="start">
       <XDSVStack gap={3} style={{width: 200}}>
         <XDSText type="supporting" color="secondary" weight="medium">
-          Small
+          Default
         </XDSText>
-        <XDSOutline items={items} size="sm" activeId="sizes-configuration" />
+        <XDSOutline
+          items={items}
+          density="default"
+          activeId="density-configuration"
+        />
       </XDSVStack>
       <XDSVStack gap={3} style={{width: 200}}>
         <XDSText type="supporting" color="secondary" weight="medium">
-          Medium (default)
+          Compact
         </XDSText>
-        <XDSOutline items={items} size="md" activeId="sizes-configuration" />
+        <XDSOutline
+          items={items}
+          density="compact"
+          activeId="density-configuration"
+        />
       </XDSVStack>
     </XDSHStack>
   );

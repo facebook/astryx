@@ -12,7 +12,7 @@
  */
 
 export {XDSOutline} from './XDSOutline';
-export type {XDSOutlineProps, XDSOutlineSize} from './XDSOutline';
+export type {XDSOutlineProps, XDSOutlineDensity} from './XDSOutline';
 export type {OutlineItem} from './types';
 export {parseOutlineFromMarkdown} from './parseOutlineFromMarkdown';
 export {useOutlineFromMarkdown} from './useOutlineFromMarkdown';
