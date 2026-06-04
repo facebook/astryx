@@ -3,6 +3,7 @@
 
 import {program} from '../src/index.mjs';
 import {isJsonMode, toErrorEnvelope} from '../src/lib/json.mjs';
+import {handleCommanderError} from '../src/lib/json-shim.mjs';
 
 /**
  * Top-level error boundary (contract guarantee #4): an uncaught throw must
@@ -19,6 +20,12 @@ function inJsonMode() {
 }
 
 function handleFatal(err) {
+  // CommanderError (parse errors, --help, unknown command) routes
+  // through the JSON shim so that a --json consumer always gets a
+  // valid envelope and the right exit code. handleCommanderError
+  // calls process.exit when it owns the error.
+  if (handleCommanderError(err)) return;
+
   if (inJsonMode()) {
     // Only emit if a command didn't already produce an envelope.
     if (!process.__xdsJsonHandled) {
