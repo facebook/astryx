@@ -8,15 +8,9 @@
  */
 
 import type {ReactNode} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {XDSText} from '@xds/core/Text';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
-
-const styles = stylex.create({
-  container: {maxWidth: 1200, marginInline: 'auto'},
-  prose: {maxWidth: 800},
-});
 
 export function DocPageLayout({
   title,
@@ -28,12 +22,12 @@ export function DocPageLayout({
   children: ReactNode;
 }) {
   return (
-    <XDSSection maxWidth="lg" padding={6}>
-      <XDSVStack gap={8} xstyle={styles.container}>
+    <XDSSection maxWidth={800} padding={6} style={{marginInline: 'auto'}}>
+      <XDSVStack gap={8}>
         <XDSVStack gap={2}>
           <XDSText type="display-2">{title}</XDSText>
           {description ? (
-            <XDSText type="body" color="secondary" xstyle={styles.prose}>
+            <XDSText type="body" color="secondary">
               {description}
             </XDSText>
           ) : null}
