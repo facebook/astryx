@@ -20,7 +20,7 @@ import {discover as discoverApi} from '../api/discover.mjs';
 export function registerDiscover(program) {
   program
     .command('discover [query]')
-    .description('Discover external XDS packages and components')
+    .description('Discover external packages and components')
     .option('--components', 'List components only')
     .action(async (query, options) => {
       const detail = program.opts().detail || 'full';
@@ -57,7 +57,7 @@ export function registerDiscover(program) {
               humanLog("    packages: ['/path/to/your/libs'],");
               humanLog('  };');
             } else {
-              humanLog('No external XDS packages found.');
+              humanLog('No external packages found.');
               humanLog('');
               humanLog('Packages opt in by adding an "xds" field to package.json:');
               humanLog('');

@@ -154,7 +154,7 @@ async function runTemplate(targetDir, {interactive = true, templateName} = {}) {
 export function registerInit(program) {
   program
     .command('init')
-    .description('Initialize XDS in your project')
+    .description('Initialize the design system in your project')
     .option('--features <list>', 'Comma-separated features to install (agents, theme, template)')
     .option('--all', 'Install all features, no prompts')
     .option('--remove-agents', 'Remove AI agent docs from all agent doc files')
@@ -204,17 +204,17 @@ export function registerInit(program) {
         hint: `\`${run} xds init --all\` or \`--features agents,theme,template\``,
       });
 
-      p.intro('Welcome to XDS');
+      p.intro('Welcome to the design system');
 
       p.note(
-        'XDS is a design system for building internal tools\nwith 300+ React components.',
+        'A design system for building internal tools\nwith 300+ React components.',
         'About',
       );
 
       // Feature: agents
       const shouldInstallAgents = isCancel(
         await p.confirm({
-          message: 'Install AI agent support? (adds XDS cheat sheet to AGENTS.md)',
+          message: 'Install AI agent support? (adds a design system cheat sheet to AGENTS.md)',
           initialValue: true,
         }),
       );
@@ -239,7 +239,7 @@ export function registerInit(program) {
       await runTheme();
 
       // Outro
-      p.outro('XDS initialized!');
+      p.outro('Design system initialized!');
 
       humanLog('');
       humanLog('  Next steps:');

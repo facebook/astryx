@@ -976,7 +976,7 @@ function validatePrivateVars(themeDef) {
 export function registerTheme(program) {
   const theme = program
     .command('theme')
-    .description('Theme tools — build, export, and manage XDS themes')
+    .description('Theme tools — build, export, and manage themes')
     .action((options, cmd) => {
       // Parent group has no default behaviour. If the user passed an
       // unknown subcommand (e.g. `xds theme bogus`), Commander hands it to

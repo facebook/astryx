@@ -87,7 +87,7 @@ export function registerSwizzle(program) {
 
       if (!coreDir) {
         cliError(
-          'Could not find @xds/core package. Make sure you are inside the XDS monorepo or have @xds/core installed.',
+          'Could not find @xds/core package. Make sure you are inside the design system monorepo or have @xds/core installed.',
         );
         return;
       }
