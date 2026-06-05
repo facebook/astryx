@@ -159,21 +159,23 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'placeholder when a content area has no data — icon, title, description, action buttons',
+    'Placeholder when content area has no data — empty lists, zero results, first-time setups, cleared inboxes',
   usage: {
-    description: 'EmptyState shows a placeholder for empty lists, zero search results, first-time setups. Always include a title and next step.',
     bestPractices: [
-      { guidance: true, description: 'Clear title + CTA button. Icon for context. Compact variant in tight spaces.' },
-      { guidance: false, description: 'No generic "No data" — be specific. Not for errors — use Banner.' },
+      { guidance: true, description: 'Clear title + CTA button so users know how to proceed' },
+      { guidance: true, description: 'Illustration/icon reinforcing empty state context' },
+      { guidance: true, description: 'Compact variant inside cards/sidebars w/ limited space' },
+      { guidance: false, description: 'Never leave w/o guidance — always explain what happened + what user can do next' },
+      { guidance: false, description: 'Never generic "No data" — be specific about what is empty + why' },
+      { guidance: false, description: 'Never use for error msgs requiring immediate action — use Banner instead' },
     ],
   },
   propDescriptions: {
-    title: 'Primary msg rendered as heading (h1-h6) inside empty state.',
-    headingLevel: 'Controls HTML heading tag (h1-h6) for document outline.',
-    description: 'Optional secondary text w/ additional context below title.',
-    icon: 'Optional icon/illustration above title; rendered decorative (aria-hidden="true").',
-    actions: 'Optional action buttons below description; horizontal by default, vertical when isCompact.',
-    isCompact: 'Enables compact variant w/ reduced spacing for constrained areas.',
-    xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
+    title: 'Primary msg rendered as heading inside empty state **(required)**',
+    description: 'Optional secondary text w/ additional context below title',
+    icon: 'Optional icon/illustration above title; decorative (aria-hidden="true")',
+    actions: 'Optional action buttons below description; horizontal by default, vertical when isCompact',
+    headingLevel: 'Controls HTML heading tag (h1-h6) for document outline',
+    isCompact: 'Compact variant w/ reduced spacing for constrained areas',
   },
 };
