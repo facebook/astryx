@@ -257,38 +257,27 @@ export const docsZh = {
   },
 };
 
+/** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  n: 'Markdown',
-  d: 'Renders markdown string as XDS-styled components. Use for user-generated content, AI responses, docs. Headings, lists, tables, code, citations w/ consistent styling.',
-  kw: ['markdown', 'rich text', 'prose', 'renderer', 'streaming', 'markup', 'md'],
+  description: 'Renders markdown string as XDS-styled components; use for user-generated content, AI responses + docs. Handles headings, lists, tables, code blocks + citations w/ consistent styling.',
   usage: {
-    description:
-      'Renders a markdown string as XDS-styled components. Use Markdown for user-generated content, AI responses, and documentation — it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [
-      { guidance: true, description: 'Set headingLevelStart to match the page hierarchy — e.g. start at 3 if the markdown sits inside an h2 section.' },
-      { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
-      { guidance: false, description: 'Use Markdown for hand-authored layouts — use XDSText and XDSHeading directly when you control the content.' },
+      { guidance: true, description: 'Set headingLevelStart to match page hierarchy — e.g. start at 3 if markdown sits inside h2 section.' },
+      { guidance: true, description: 'Use contentWidth to keep prose at readable line length in wide layouts.' },
+      { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns like issue refs, diff refs + mentions instead of preprocessing markdown string.' },
+      { guidance: false, description: 'Use Markdown for hand-authored layouts — use XDSText + XDSHeading directly when you control content.' },
     ],
   },
-  p: {
-    children: 'Markdown string. Required.',
-    density: "Block spacing. 'default'|'compact'. Default: 'default'.",
-    headingLevelStart: 'Maps # to this heading level (1-6). Clamped to h6. Default: 1.',
-    isStreaming: 'Incremental parse + fade-in for streamed chunks. Default: false.',
-    onLinkClick: '(href, event) => void|false. Return false prevents navigation.',
-    sources: 'Record<string, XDSMarkdownSource>. Citation sources by ID. [id]/【id】 markers render as chips.',
-    citationStyle: "'label'|'number'. label=chip w/ title+icon, number=compact badge. Default: 'label'.",
-    contentWidth: 'number|string. Max width for prose (headings, paragraphs, lists). Tables/code unconstrained.',
-    contentAlign: "'start'|'center'. Prose alignment when contentWidth < container. Default: 'start'.",
-    inlinePlugins: 'MarkdownInlinePlugin[]. Regex matches in text nodes -> custom inline React elements. Skips inline/fenced code.',
-    xstyle: 'stylex.create() for layout (margins, sizing).',
-    className: 'CSS class. Prefer xstyle.',
-    style: 'Inline styles. Prefer xstyle.',
-    'data-testid': 'Test selector.',
+  propDescriptions: {
+    density: 'Block-level element spacing.',
+    headingLevelStart: 'HTML heading level # maps to; shifts all levels down. Levels exceeding h6 clamped to h6.',
+    isStreaming: 'Streaming mode — incremental parsing + smooth fade-in animation for chunk-by-chunk delivery.',
+    onLinkClick: 'Link click handler. Return false to prevent default navigation.',
+    sources: 'Citation sources keyed by ID; when provided, [id] + 【id】 markers matching key render as citation chips.',
+    citationStyle: "Inline citation display. 'label' = chip w/ source title, icon + border; 'number' = compact numbered badge.",
+    contentWidth: 'Max width for prose (paragraphs, headings, lists, blockquotes). Tables + code blocks unconstrained; can expand to full container width. Use for readable line lengths in wide layouts.',
+    contentAlign: 'Prose alignment within container when contentWidth narrower than available space.',
+    inlinePlugins: 'Transforms regex matches in parsed text nodes into custom inline React elements. Use for issue refs, diff refs, mentions + other shorthand. Inline code + fenced code blocks unaffected.',
+    'data-testid': 'Test selector for automated testing frameworks.',
   },
-  ex: [
-    '<XDSMarkdown>{\'# Hello\\\\n\\\\nThis is **bold** text.\'}</XDSMarkdown>',
-    '<XDSMarkdown isStreaming={isStreaming}>{streamedText}</XDSMarkdown>',
-    '<XDSMarkdown inlinePlugins={issuePlugins}>{\'Fixed PROJ-123; `PROJ-999` stays plain.\'}</XDSMarkdown>',
-  ],
 };
