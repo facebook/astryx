@@ -17,6 +17,7 @@
     "@stylexjs/stylex": "^0.18.3",
     "@xds/cli": "*",
     "@xds/core": "*",
+    "@xds/lab": "*",
     "@xds/theme-butter": "*",
     "@xds/theme-default": "*",
     "@xds/theme-gothic": "*",
