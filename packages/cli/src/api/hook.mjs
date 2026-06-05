@@ -31,10 +31,16 @@ export async function hook(name, options = {}) {
     list = false,
     category,
     params = false,
-    detail = 'full',
+    detail: detailOption,
     lang = null,
     zh = false,
   } = options;
+
+  // Match the CLI's default-detail resolution so the API and `xds --json`
+  // agree: single-item views default to `full`, list views to `brief`. An
+  // explicit `detail` always wins.
+  const isListView = list || Boolean(category) || !name;
+  const detail = detailOption ?? (isListView ? 'brief' : 'full');
 
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {

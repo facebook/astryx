@@ -61,11 +61,19 @@ export async function component(name, options = {}) {
     source = false,
     showcase = false,
     blocks = false,
-    detail = 'full',
+    detail: detailOption,
     lang = null,
     zh = false,
     dense = false,
   } = options;
+
+  // Resolve the default detail level the same way the CLI does, so the API
+  // and `xds --json` agree by construction (enforced by the parity test):
+  // single-item views default to `full`; list views (--list, --category, or
+  // no name) default to `brief` because they are scannable name lists. An
+  // explicit `detail` always wins.
+  const isListView = list || Boolean(category) || !name;
+  const detail = detailOption ?? (isListView ? 'brief' : 'full');
 
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
