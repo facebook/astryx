@@ -83,3 +83,29 @@ export const docs = {
   importPath: '@xds/core/hooks',
   category: 'layout',
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Measures children in hidden container to determine how many fit in available width w/o flickering. Uses ResizeObserver for container size changes. Measurement container holds all items + optional overflow indicator (data-overflow-indicator attribute).',
+  usage: {
+    bestPractices: [
+      { guidance: true, description: 'Render all items into measureRef container (hidden); only first visibleCount items into containerRef container (visible).' },
+      { guidance: true, description: 'Include overflow indicator (e.g., "+N more" button) as last child of measurement container w/ data-overflow-indicator attribute.' },
+      { guidance: false, description: 'Use for vertical overflow — measures horizontal width only.' },
+    ],
+  },
+  propDescriptions: {
+    itemCount: 'Total item count to measure for overflow **(required)**.',
+    options: 'Config object for overflow behavior.',
+    'options.gap': 'Gap between items in px; used in width calculations.',
+    'options.minVisibleItems': 'Min items to always show, even if they don\'t fit.',
+    'options.collapseFrom': 'Which end to collapse items from.',
+    'options.behavior': 'Element to observe for overflow. \'observeParent\' uses container\'s parent width, allowing visible container to remain content-sized.',
+  },
+  returnDescriptions: {
+    containerRef: 'Ref callback to attach to visible container element.',
+    measureRef: 'Ref callback to attach to hidden measurement container holding all items.',
+    visibleCount: 'Number of items that fit in visible container.',
+    hasOverflow: 'Whether any items overflow (visibleCount < itemCount).',
+  },
+};
