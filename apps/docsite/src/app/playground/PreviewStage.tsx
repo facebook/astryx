@@ -34,37 +34,17 @@ const s = stylex.create({
     justifyContent: 'center',
     alignItems: 'stretch',
     overflow: 'hidden',
-    paddingInline: 'var(--spacing-4)',
-    paddingBlockEnd: 'var(--spacing-4)',
-    paddingBlockStart: 0,
-    backgroundColor: 'var(--color-background-surface)',
+    backgroundColor: 'var(--color-background-muted)',
   },
   areaCenter: {
     alignItems: 'center',
+    padding: 'var(--spacing-4)',
   },
   fullscreen: {
     position: 'fixed',
     inset: 0,
     zIndex: 50,
     padding: 0,
-  },
-  // In fullscreen the card chrome (radius, border, shadow) is stripped so the
-  // preview reads as a bare, edge-to-edge surface. The element stays mounted to
-  // preserve the single iframe + its postMessage channel.
-  cardFullscreen: {
-    borderRadius: 0,
-    borderWidth: 0,
-    boxShadow: 'none',
-  },
-  card: {
-    maxWidth: '100%',
-    maxHeight: '100%',
-    overflow: 'hidden',
-    transitionProperty: 'width, height',
-    transitionDuration: 'var(--duration-medium, 410ms)',
-    transitionTimingFunction:
-      'var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
-    boxShadow: 'var(--shadow-med)',
   },
   iframe: {
     border: 'none',
@@ -77,6 +57,22 @@ const s = stylex.create({
   },
   // Let pointer events pass through to window while the panel is being resized,
   // so dragging over the iframe doesn't stall the drag.
+  iframeWrapper: {
+    overflow: 'hidden',
+    maxWidth: '100%',
+    maxHeight: '100%',
+    boxShadow: 'var(--shadow-med)',
+    transitionProperty: 'width, height, border-radius',
+    transitionDuration: 'var(--duration-medium, 410ms)',
+    transitionTimingFunction:
+      'var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
+  },
+  iframeWrapperPhone: {
+    borderRadius: 'var(--radius-container)',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'var(--color-border-emphasized)',
+  },
   iframeInert: {
     pointerEvents: 'none',
   },
@@ -130,9 +126,8 @@ export function PreviewStage({
           </XDSCard>
         </div>
       )}
-      <XDSCard
-        padding={0}
-        xstyle={[s.card, isFullscreen && s.cardFullscreen]}
+      <div
+        {...stylex.props(s.iframeWrapper, isPhone && s.iframeWrapperPhone)}
         style={{width, height}}>
         <iframe
           ref={iframeRef}
@@ -141,7 +136,7 @@ export function PreviewStage({
           title="Preview"
           {...stylex.props(s.iframe, isInteractionDisabled && s.iframeInert)}
         />
-      </XDSCard>
+      </div>
     </div>
   );
 }

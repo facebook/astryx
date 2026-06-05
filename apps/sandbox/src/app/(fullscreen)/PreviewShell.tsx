@@ -981,7 +981,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
                 display: 'flex',
                 justifyContent: 'center',
                 padding: '24px 16px',
-                backgroundColor: '#f0f0f0',
+                backgroundColor: 'var(--color-background-muted)',
               }}>
               <iframe
                 ref={iframeRef}
