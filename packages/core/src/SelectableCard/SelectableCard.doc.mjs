@@ -37,3 +37,26 @@ export const docs = {
     targets: [{className: 'xds-selectable-card', visualProps: ['selected']}],
   },
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Card toggling selected/unselected w/ accent border; for navigation use ClickableCard.',
+  usage: {
+    bestPractices: [
+      { guidance: true, description: 'Use for plan pickers, filter chips, / option grids.' },
+      { guidance: true, description: 'Single-select: track one ID; multi-select: use Set.' },
+      { guidance: false, description: 'Use for navigation — use ClickableCard instead.' },
+    ],
+  },
+  propDescriptions: {
+    label: 'A11y label **(required)**',
+    isSelected: 'Controlled selection state **(required)**',
+    onChange: 'Called when toggled **(required)**',
+    isDisabled: 'Disables card',
+    padding: 'Inner padding',
+    variant: 'Background color variant',
+    width: 'Card width',
+    height: 'Card height',
+    maxWidth: 'Max card width',
+  },
+};
