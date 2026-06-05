@@ -18,16 +18,11 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
+  XDSChartV2 as XDSChart,
+  XDSChartGrid,
+  XDSChartAxis,
+  line,
+} from '@xds/lab';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSTable, proportional, pixel} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
@@ -181,7 +176,6 @@ const activeUsersData = [
 ];
 
 // X-axis tick indices and their display labels
-const xAxisTicks = [0, 32, 64, 95];
 const xAxisLabels: Record<number, string> = {
   0: 'Apr 1 14:00',
   32: 'Apr 1 22:00',
@@ -475,30 +469,22 @@ function ChartLegendItem({color, label}: {color: string; label: string}) {
   );
 }
 
-function ChartTooltip({
-  active,
-  payload,
-  label,
-}: {
-  active?: boolean;
-  payload?: Array<{name: string; value: number; color: string}>;
-  label?: number;
-}) {
-  if (!active || !payload?.length) {
-    return null;
-  }
-  const point = activeUsersData.find(d => d.hour === label);
+function ChartTooltip(
+  xValue: unknown,
+  rows: Array<{key: string; label: string; color: string; value: unknown}>,
+) {
+  const point = activeUsersData.find(d => d.hour === xValue);
   return (
     <XDSCard padding={3}>
       <XDSVStack gap={1}>
         <XDSText type="supporting" color="secondary">
           {point?.label ?? ''}
         </XDSText>
-        {payload.map(entry => (
-          <XDSHStack key={entry.name} gap={2} vAlign="center">
-            <XDSIcon icon={StopIcon} size="xsm" style={{color: entry.color}} />
+        {rows.map(row => (
+          <XDSHStack key={row.key} gap={2} vAlign="center">
+            <XDSIcon icon={StopIcon} size="xsm" style={{color: row.color}} />
             <XDSText type="supporting">
-              {entry.name}: {entry.value}
+              {row.label}: {String(row.value)}
             </XDSText>
           </XDSHStack>
         ))}
@@ -510,69 +496,40 @@ function ChartTooltip({
 function ActiveUsersChart() {
   return (
     <XDSVStack gap={3}>
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart
-          data={activeUsersData}
-          margin={{top: 5, right: 10, left: 0, bottom: 5}}>
-          <CartesianGrid
-            horizontal
-            vertical={false}
-            stroke="var(--color-border, rgba(5, 54, 89, 0.1))"
-          />
-          <XAxis
-            dataKey="hour"
-            type="number"
-            domain={[0, 23]}
-            ticks={xAxisTicks}
-            tickFormatter={(v: number) => xAxisLabels[v] ?? ''}
-            tick={{
-              fontSize: 'var(--font-size-sm, 12px)',
-              fill: 'var(--color-text-secondary, #4E606F)',
-            }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <YAxis
-            domain={[0, 120]}
-            ticks={[0, 20, 40, 60, 80, 100, 120]}
-            tick={{
-              fontSize: 'var(--font-size-sm, 12px)',
-              fill: 'var(--color-text-secondary, #4E606F)',
-            }}
-            axisLine={false}
-            tickLine={false}
-            width={30}
-          />
-          <Tooltip
-            content={<ChartTooltip />}
-            cursor={{stroke: 'var(--color-border, rgba(5, 54, 89, 0.1))'}}
-          />
-          <Line
-            type="linear"
-            dataKey="allUsers"
-            name="All Users"
-            stroke={chartColors.allUsers}
-            strokeWidth={2}
-            dot={false}
-          />
-          <Line
-            type="linear"
-            dataKey="desktop"
-            name="Desktop"
-            stroke={chartColors.desktop}
-            strokeWidth={2}
-            dot={false}
-          />
-          <Line
-            type="linear"
-            dataKey="mobile"
-            name="Mobile"
-            stroke={chartColors.mobile}
-            strokeWidth={2}
-            dot={false}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      <XDSChart
+        data={activeUsersData}
+        xKey="hour"
+        height={300}
+        margin={{top: 5, right: 10, left: 30, bottom: 24}}
+        series={[
+          line('allUsers', {
+            color: chartColors.allUsers,
+            curve: 'linear',
+            label: 'All Users',
+          }),
+          line('desktop', {
+            color: chartColors.desktop,
+            curve: 'linear',
+            label: 'Desktop',
+          }),
+          line('mobile', {
+            color: chartColors.mobile,
+            curve: 'linear',
+            label: 'Mobile',
+          }),
+        ]}
+        grid={<XDSChartGrid horizontal />}
+        axes={
+          <>
+            <XDSChartAxis
+              position="bottom"
+              tickFormat={v => xAxisLabels[v as number] ?? ''}
+            />
+            <XDSChartAxis position="left" />
+          </>
+        }
+        tooltip={{render: ChartTooltip}}
+      />
       <XDSHStack gap={6} vAlign="center">
         <ChartLegendItem color={chartColors.allUsers} label="All Users" />
         <ChartLegendItem color={chartColors.desktop} label="Desktop" />
@@ -585,18 +542,19 @@ function ActiveUsersChart() {
 function Sparkline({data}: {data: number[]}) {
   const chartData = data.map((v, i) => ({i, v}));
   return (
-    <ResponsiveContainer width="100%" height={40}>
-      <LineChart data={chartData}>
-        <Line
-          type="linear"
-          dataKey="v"
-          stroke="var(--color-data-categorical-blue, #0171E3)"
-          strokeWidth={1.5}
-          dot={false}
-          isAnimationActive={false}
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <XDSChart
+      data={chartData}
+      xKey="i"
+      height={40}
+      margin={{top: 2, right: 0, bottom: 2, left: 0}}
+      series={[
+        line('v', {
+          color: 'var(--color-data-categorical-blue, #0171E3)',
+          curve: 'linear',
+          strokeWidth: 1.5,
+        }),
+      ]}
+    />
   );
 }
 
@@ -649,39 +607,30 @@ function StackedBarCard({
   data: Array<{label: string; value: number; color: string}>;
 }) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
-  // Recharts needs a single data row with each segment as a separate key
-  const chartData = [Object.fromEntries(data.map(d => [d.label, d.value]))];
 
   return (
     <XDSCard>
       <XDSVStack gap={4}>
         <XDSHeading level={4}>{title}</XDSHeading>
-        <ResponsiveContainer width="100%" height={24}>
-          <BarChart
-            data={chartData}
-            layout="vertical"
-            margin={{top: 0, right: 0, bottom: 0, left: 0}}
-            barCategoryGap={0}>
-            <XAxis type="number" hide />
-            <YAxis type="category" hide />
-            {data.map((d, i) => (
-              <Bar
-                key={d.label}
-                dataKey={d.label}
-                stackId="stack"
-                fill={d.color}
-                isAnimationActive={false}
-                radius={
-                  i === 0
-                    ? [4, 0, 0, 4]
-                    : i === data.length - 1
-                      ? [0, 4, 4, 0]
-                      : [0, 0, 0, 0]
-                }
-              />
-            ))}
-          </BarChart>
-        </ResponsiveContainer>
+        {/* Horizontal proportion bar — each segment sized by its share */}
+        <div
+          style={{
+            display: 'flex',
+            width: '100%',
+            height: 24,
+            borderRadius: 4,
+            overflow: 'hidden',
+          }}>
+          {data.map(d => (
+            <div
+              key={d.label}
+              style={{
+                width: `${(d.value / total) * 100}%`,
+                backgroundColor: d.color,
+              }}
+            />
+          ))}
+        </div>
         {/* Legend */}
         <XDSHStack gap={4} wrap="wrap">
           {data.map(d => (
