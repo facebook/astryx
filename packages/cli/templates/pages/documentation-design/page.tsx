@@ -4,7 +4,6 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSAppShell} from '@xds/core/AppShell';
 import {
   XDSSideNav,
   XDSSideNavHeading,
@@ -22,7 +21,7 @@ import {XDSBanner} from '@xds/core/Banner';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSHStack, XDSVStack, XDSStackItem} from '@xds/core/Stack';
-import {XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
+import {XDSLayout, XDSLayoutContent, XDSLayoutPanel} from '@xds/core/Layout';
 import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSTooltip} from '@xds/core/Tooltip';
@@ -494,7 +493,13 @@ function getComponentDocs(key: string) {
 // ComponentDetailView
 // ---------------------------------------------------------------------------
 
-function ComponentDetailView({activeNav}: {activeNav: string}) {
+function ComponentDetailView({
+  activeNav,
+  nav,
+}: {
+  activeNav: string;
+  nav: React.ReactNode;
+}) {
   const [exampleTabs, setExampleTabs] = useState<Record<string, string>>({});
 
   const EXAMPLE_PREVIEWS: Record<string, React.ReactNode[]> = {
@@ -551,7 +556,13 @@ function ComponentDetailView({activeNav}: {activeNav: string}) {
 
   return (
     <XDSLayout
+      height="fill"
       contentWidth={960}
+      start={
+        <XDSLayoutPanel hasDivider padding={0}>
+          {nav}
+        </XDSLayoutPanel>
+      }
       content={
         <XDSLayoutContent padding={8}>
           <XDSVStack gap={8}>
@@ -697,10 +708,9 @@ export default function DesignDocumentationPage() {
   const [activePage, setActivePage] = useState<string>('button');
 
   return (
-    <XDSAppShell
-      variant="section"
-      height="fill"
-      sideNav={
+    <ComponentDetailView
+      activeNav={activePage}
+      nav={
         <XDSSideNav header={<XDSSideNavHeading heading="Product Name" />}>
           {COMPONENT_CATEGORIES.map(category => (
             <XDSSideNavSection key={category.label} title={category.label}>
@@ -719,8 +729,7 @@ export default function DesignDocumentationPage() {
             </XDSSideNavSection>
           ))}
         </XDSSideNav>
-      }>
-      <ComponentDetailView activeNav={activePage} />
-    </XDSAppShell>
+      }
+    />
   );
 }

@@ -17,20 +17,8 @@
   overflow: auto;
   border-radius: var(--radius-container);
   border: var(--border-width) solid var(--color-border);
-  /* Read as a real themed app on the theme's body color. */
-  background-color: var(--color-background-body);
-}
-
-/* Host nested app-shell templates.
-
-   XDSAppShell fill mode sizes the shell to 100dvh (the viewport). Inside
-   this preview frame that would overflow the frame and create a second
-   (outer) scrollbar. Pin the shell to THIS frame's height instead so the
-   template's own content region (#xds-app-shell-main) is the single
-   scroll container, and the header + side nav stay fixed. The descendant
-   selector outweighs StyleX's single-class height:100dvh without
-   !important. */
-.frame :global(.xds-app-shell) {
-  height: 100%;
-  min-height: 0;
+  /* Templates are content-only (no XDSAppShell) and render transparent, so
+     the preview host supplies the page background. Use the surface color so
+     templates read as a real themed app surface. */
+  background-color: var(--color-background-surface);
 }
