@@ -133,23 +133,22 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'Fullscreen overlay for viewing images and videos at full resolution with gallery navigation and zoom.',
+  description: 'Fullscreen overlay for images + videos at full resolution; single-item + gallery modes w/ prev/next nav, optional zoom/pan, native video controls.',
   usage: {
-    description:
-      'A fullscreen overlay for viewing images and videos at full resolution. Supports single-item and gallery modes with prev/next navigation, optional zoom and pan for images, and native video controls.',
     bestPractices: [
-      { guidance: true, description: 'Always provide alt text for every image.' },
-      { guidance: true, description: 'Use gallery mode with onIndexChange for multi-image sets.' },
-      { guidance: false, description: 'Use for non-image content — specialized for images.' },
+      { guidance: true, description: 'Always provide alt text for every image; screen reader accessibility.' },
+      { guidance: true, description: 'Use gallery mode w/ onIndexChange for multi-image sets.' },
+      { guidance: true, description: 'Enable hasZoom only when high-res images benefit from close inspection.' },
+      { guidance: false, description: 'Use lightbox for non-image content — specialized for images.' },
+      { guidance: false, description: 'Nest interactive content in captions — keep plain text.' },
     ],
   },
   propDescriptions: {
-    isOpen: 'Whether the lightbox is open.',
-    onOpenChange: 'Callback when open state changes.',
-    media: 'Single media object or array for gallery mode.',
-    index: 'Current index in gallery mode.',
-    onIndexChange: 'Callback when gallery index changes.',
-    hasZoom: 'Enable double-click zoom and drag pan (images only).',
-    xstyle: 'StyleX styles for layout customization.',
+    isOpen: 'Lightbox open state **(required)**.',
+    onOpenChange: 'Callback when open state changes **(required)**.',
+    media: 'Media to display; single object or array for gallery mode w/ prev/next nav. Each item: src, alt, optional caption + type **(required)**.',
+    index: 'Current gallery index (when media is array).',
+    onIndexChange: 'Callback when gallery index changes via prev/next nav.',
+    hasZoom: 'Enable double-click zoom (images only); drag to pan when zoomed.',
   },
 };
