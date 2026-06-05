@@ -36,6 +36,8 @@ import {XDSChatLayoutContext} from './XDSChatContext';
 // Types
 // =============================================================================
 
+type Density = 'compact' | 'balanced' | 'spacious';
+
 /** Imperative handle for XDSChatLayout scroll controls. */
 export interface XDSChatLayoutHandle {
   /** Scroll a message to the top and unlock for stream-in. */
@@ -88,6 +90,15 @@ export interface XDSChatLayoutProps extends XDSBaseProps<HTMLDivElement> {
    * When omitted, the layout root itself is the scroll container.
    */
   scrollRef?: React.RefObject<HTMLElement | null>;
+
+  /**
+   * Override the automatic density. When set, forces the layout to use
+   * the specified density regardless of container width.
+   *
+   * When omitted, density is determined automatically via CSS container
+   * queries (compact < 480px, balanced 480–768px, spacious > 768px).
+   */
+  density?: Density;
 }
 
 // =============================================================================
@@ -199,6 +210,59 @@ const styles = stylex.create({
     width: '100%',
     maxWidth: 800,
   },
+
+  // --- Forced density overrides (disable container queries) ---
+  messageAreaCompact: {
+    maxWidth: '100%',
+    paddingInline: 0,
+  },
+  messageAreaBalanced: {
+    maxWidth: '100%',
+    paddingInline: 0,
+  },
+  messageAreaSpacious: {
+    maxWidth: 800,
+    paddingInline: spacingVars['--spacing-4'],
+  },
+
+  blurLayerCompact: {
+    height: 80,
+    maskImage: 'linear-gradient(to bottom, transparent, black 24px)',
+    WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 24px)',
+  },
+  blurLayerBalanced: {
+    height: 100,
+    maskImage: 'linear-gradient(to bottom, transparent, black 36px)',
+    WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 36px)',
+  },
+  blurLayerSpacious: {
+    height: 120,
+    maskImage: 'linear-gradient(to bottom, transparent, black 48px)',
+    WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 48px)',
+  },
+
+  dockCompact: {
+    paddingInline: spacingVars['--spacing-2'],
+    paddingBlockEnd: spacingVars['--spacing-2'],
+  },
+  dockBalanced: {
+    paddingInline: spacingVars['--spacing-3'],
+    paddingBlockEnd: spacingVars['--spacing-3'],
+  },
+  dockSpacious: {
+    paddingInline: spacingVars['--spacing-4'],
+    paddingBlockEnd: spacingVars['--spacing-3'],
+  },
+
+  dockInnerCompact: {
+    maxWidth: '100%',
+  },
+  dockInnerBalanced: {
+    maxWidth: '100%',
+  },
+  dockInnerSpacious: {
+    maxWidth: 800,
+  },
 });
 
 // =============================================================================
@@ -222,6 +286,7 @@ function hasVisibleContent(children: ReactNode): boolean {
 export function XDSChatLayout({
   children,
   composer,
+  density,
   emptyState,
   scrollButton,
   scrollRef: externalScrollRef,
@@ -263,13 +328,45 @@ export function XDSChatLayout({
   // --- Derived styles ---
   const showEmpty = !hasVisibleContent(children);
 
+  const messageAreaStyle = density
+    ? density === 'compact'
+      ? styles.messageAreaCompact
+      : density === 'spacious'
+        ? styles.messageAreaSpacious
+        : styles.messageAreaBalanced
+    : null;
+
+  const blurLayerStyle = density
+    ? density === 'compact'
+      ? styles.blurLayerCompact
+      : density === 'spacious'
+        ? styles.blurLayerSpacious
+        : styles.blurLayerBalanced
+    : null;
+
+  const dockStyle = density
+    ? density === 'compact'
+      ? styles.dockCompact
+      : density === 'spacious'
+        ? styles.dockSpacious
+        : styles.dockBalanced
+    : null;
+
+  const dockInnerStyle = density
+    ? density === 'compact'
+      ? styles.dockInnerCompact
+      : density === 'spacious'
+        ? styles.dockInnerSpacious
+        : styles.dockInnerBalanced
+    : null;
+
   return (
     <XDSChatLayoutContext value={layoutContext}>
       <div
         ref={mergeRefs(ref, rootRef)}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('chat-layout'),
+          xdsClassName('chat-layout', density ? {density} : undefined),
           stylex.props(
             styles.root,
             isSelfScrolling && styles.rootScrollable,
@@ -279,7 +376,7 @@ export function XDSChatLayout({
           style,
         )}>
         {/* Message area */}
-        <div {...stylex.props(styles.messageArea)}>
+        <div {...stylex.props(styles.messageArea, messageAreaStyle)}>
           {showEmpty && emptyState ? (
             <div {...stylex.props(styles.emptyState)}>{emptyState}</div>
           ) : (
@@ -299,11 +396,13 @@ export function XDSChatLayout({
           {scrollButton === undefined ? defaultScrollButton : scrollButton}
 
           {/* Frosted glass layer */}
-          <div {...stylex.props(styles.blurLayer)} />
+          <div {...stylex.props(styles.blurLayer, blurLayerStyle)} />
 
           {/* Composer */}
-          <div {...stylex.props(styles.dock)}>
-            <div {...stylex.props(styles.dockInner)}>{composer}</div>
+          <div {...stylex.props(styles.dock, dockStyle)}>
+            <div {...stylex.props(styles.dockInner, dockInnerStyle)}>
+              {composer}
+            </div>
           </div>
         </div>
       </div>
