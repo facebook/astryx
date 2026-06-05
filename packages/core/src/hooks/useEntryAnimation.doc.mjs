@@ -35,3 +35,21 @@ export const docs = {
   importPath: '@xds/core/hooks',
   category: 'animation',
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'StyleX style for mount animation; only animates elements dynamically inserted after initial paint — page-load elements skip animation. Uses XDS motion tokens (duration, easing). Requires "use client"; no SSR.',
+  usage: {
+    bestPractices: [
+      { guidance: true, description: 'Use for conditionally rendered elements: validation messages, toasts, expanding sections.' },
+      { guidance: true, description: 'Spread returned style into stylex.props() w/ other styles.' },
+      { guidance: false, description: 'Use for elements visible on initial page load — they will not animate.' },
+    ],
+  },
+  paramDescriptions: {
+    preset: 'Animation preset applied on mount.',
+  },
+  returnDescriptions: {
+    entryStyle: 'StyleX style for entry animation; null if rendered on initial page load (no animation needed).',
+  },
+};
