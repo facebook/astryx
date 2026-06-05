@@ -25,7 +25,9 @@ const styles = stylex.create({
     overflow: 'hidden',
     position: 'relative' as const,
     borderRadius: 'var(--radius-container)',
-    backgroundColor: 'var(--color-background-muted)',
+    // Templates render transparent (content-only, no XDSAppShell), so the
+    // thumbnail host supplies the page background — use the app surface color.
+    backgroundColor: 'var(--color-background-surface)',
     contentVisibility: 'auto',
     containIntrinsicSize: 'auto 300px 187px',
   },
