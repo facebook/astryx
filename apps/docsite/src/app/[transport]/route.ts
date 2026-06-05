@@ -4,11 +4,11 @@
  * @file MCP Server route handler — hybrid v2 (search + get).
  *
  * Two tools:
- *   - search(): curated brief results with alias resolution and scoring
+ *   - search(): curated brief results with keyword-based resolution and scoring
  *   - get(): full component/topic/template details with examples
  *
- * Key improvements over v1 hybrid:
- *   - Semantic alias map ("success message" → Toast, "dropdown" → Selector)
+ * Key features:
+ *   - Keyword index derived from component .doc.mjs `keywords` fields
  *   - Compound component awareness (Table → sorting/selection hooks)
  *   - Context budget control (~1.5K tokens per brief result)
  *   - Showcase examples included in get() responses
@@ -31,77 +31,22 @@ import type {TemplateEntry} from '../../generated/templateRegistry';
 const allComponents: ComponentEntry[] = Object.values(components).flat();
 const visibleComponents = allComponents.filter(c => !c.hidden);
 
-// ── Alias Map ──────────────────────────────────────────────────────────
-// Maps natural language terms to actual component/hook names.
-// This is the #1 quality lever — bridges semantic gaps that keyword matching misses.
-const ALIASES: Record<string, string[]> = {
-  // Notifications / feedback
-  'success message': ['Toast', 'useXDSToast'],
-  'error message': ['Toast', 'useXDSToast', 'Banner'],
-  notification: ['Toast', 'useXDSToast'],
-  snackbar: ['Toast', 'useXDSToast'],
-  alert: ['Toast', 'Banner', 'AlertDialog'],
-  flash: ['Toast', 'useXDSToast'],
-  'toast notification': ['Toast', 'useXDSToast'],
-
-  // Selection / dropdowns
-  dropdown: ['Selector', 'DropdownMenu'],
-  select: ['Selector'],
-  picker: ['Selector'],
-  combobox: ['Selector'],
-  'dropdown menu': ['DropdownMenu'],
-  'context menu': ['DropdownMenu'],
-
-  // Layout
-  sidebar: ['SideNav', 'AppShell'],
-  'side navigation': ['SideNav'],
-  navigation: ['SideNav', 'TopNav', 'NavIcon'],
-  'nav bar': ['TopNav'],
-  header: ['TopNav'],
-  'app shell': ['AppShell'],
-  layout: ['AppShell', 'Layout'],
-  'admin panel': ['AppShell', 'SideNav'],
-  dashboard: ['AppShell', 'SideNav', 'Card'],
-
-  // Forms
-  form: ['FormLayout', 'TextInput', 'Selector'],
-  input: ['TextInput', 'TextArea'],
-  'text field': ['TextInput'],
-  'text input': ['TextInput'],
-  textarea: ['TextArea'],
-  'form field': ['FormLayout'],
-  'form layout': ['FormLayout'],
-  checkbox: ['Checkbox'],
-  radio: ['RadioGroup'],
-  switch: ['Switch'],
-  toggle: ['Switch', 'ToggleButton'],
-
-  // Tables
-  table: ['Table', 'useXDSTableSortable', 'useXDSTableSelection'],
-  'data table': ['Table', 'useXDSTableSortable', 'useXDSTableSelection'],
-  'sort table': ['Table', 'useXDSTableSortable'],
-  'select rows': ['Table', 'useXDSTableSelection', 'useXDSTableSelectionState'],
-  grid: ['Grid', 'Table'],
-
-  // Overlays
-  modal: ['Dialog'],
-  dialog: ['Dialog', 'AlertDialog'],
-  popover: ['Popover'],
-  tooltip: ['Tooltip', 'useXDSTooltip'],
-
-  // Content
-  card: ['Card'],
-  section: ['Section'],
-  tabs: ['TabList', 'Tab'],
-  accordion: ['Disclosure'],
-  badge: ['Badge'],
-  avatar: ['Avatar'],
-  button: ['Button'],
-  icon: ['Icon'],
-  text: ['Text'],
-  heading: ['Text'],
-  'status indicator': ['StatusDot', 'Badge'],
-};
+// ── Keyword Index ──────────────────────────────────────────────────────
+// Built from the `keywords` field on each component's .doc.mjs file.
+// Inverts keyword[] → component name so natural language queries resolve
+// to the right components without a hardcoded alias map.
+const keywordIndex: Record<string, string[]> = {};
+for (const comp of visibleComponents) {
+  for (const kw of comp.keywords) {
+    const lower = kw.toLowerCase();
+    if (!keywordIndex[lower]) {
+      keywordIndex[lower] = [];
+    }
+    if (!keywordIndex[lower].includes(comp.name)) {
+      keywordIndex[lower].push(comp.name);
+    }
+  }
+}
 
 // ── Scoring ────────────────────────────────────────────────────────────
 
@@ -144,14 +89,15 @@ function score(text: string, query: string): number {
   return 0;
 }
 
-/** Resolve aliases and boost matching components */
-function resolveAliases(query: string): string[] {
+/** Resolve keywords from component docs to boost matching components */
+function resolveKeywords(query: string): string[] {
   const lower = query.toLowerCase();
   const resolved: string[] = [];
 
-  for (const [alias, targets] of Object.entries(ALIASES)) {
-    if (lower.includes(alias)) {
-      resolved.push(...targets);
+  // Check each keyword in the index
+  for (const [keyword, componentNames] of Object.entries(keywordIndex)) {
+    if (lower.includes(keyword) || keyword.includes(lower)) {
+      resolved.push(...componentNames);
     }
   }
 
@@ -168,7 +114,7 @@ const handler = createMcpHandler(
     // ══════════════════════════════════════════════════════════════════
     server.tool(
       'search',
-      `Search XDS design system — finds components, documentation topics, and page templates.\n\n` +
+      `Search Astryx (XDS) design system — finds components, documentation topics, and page templates.\n\n` +
         `Returns brief results (name, description, key info). Use the "get" tool with a ` +
         `specific name for full details including props and code examples.\n\n` +
         `Examples: "dropdown menu", "form inputs", "theming", "dashboard template", ` +
@@ -178,7 +124,7 @@ const handler = createMcpHandler(
         limit: z.number().optional().describe('Max results (default 8).'),
       },
       async ({query, limit = 8}) => {
-        const aliasMatches = resolveAliases(query);
+        const keywordMatches = resolveKeywords(query);
 
         const scored: Array<{
           item: ComponentEntry | DocTopic | TemplateEntry;
@@ -188,15 +134,24 @@ const handler = createMcpHandler(
 
         // Score components
         for (const comp of visibleComponents) {
-          // Alias boost — strongest signal
-          const best = aliasMatches.includes(comp.name)
-            ? 95
-            : Math.max(
-                score(comp.name, query),
-                score(comp.description, query),
-                ...comp.keywords.map(k => score(k, query)),
-                0,
-              );
+          // Name and description matching (always checked)
+          const nameScore = score(comp.name, query);
+          const descScore = score(comp.description, query);
+          const kwTextScore = Math.max(
+            ...comp.keywords.map(k => score(k, query)),
+            0,
+          );
+
+          // Keyword index boost: 90 for exact keyword match (matches CLI parity)
+          const kwBoost = keywordMatches.includes(comp.name) ? 90 : 0;
+
+          let best = Math.max(nameScore, descScore, kwTextScore, kwBoost);
+
+          // Demote sub-components so parent entries surface first in ties.
+          // E.g. "modal" → Dialog (parent) should rank above DialogHeader (sub).
+          if (best > 0 && comp.parentDoc && comp.name !== comp.parentDoc) {
+            best = Math.min(best, best - 1);
+          }
 
           if (best > 0) {
             scored.push({item: comp, score: best, type: 'component'});
@@ -325,7 +280,7 @@ const handler = createMcpHandler(
     // ══════════════════════════════════════════════════════════════════
     server.tool(
       'get',
-      `Get full documentation for a specific XDS component, doc topic, or template by name.\n\n` +
+      `Get full documentation for a specific Astryx (XDS) component, doc topic, or template by name.\n\n` +
         `Returns complete props, usage guidelines, code examples, and theming info.\n\n` +
         `For doc topics, optionally pass a section name to get just that section ` +
         `(recommended for large topics like "theme" to avoid context overload).\n\n` +
@@ -554,12 +509,12 @@ const handler = createMcpHandler(
           };
         }
 
-        // ── Fuzzy fallback with alias awareness ──────────────────────
-        const aliasResolved = resolveAliases(name);
-        const aliasComponents =
-          aliasResolved.length > 0
+        // ── Fuzzy fallback with keyword awareness ──────────────────────
+        const keywordResolved = resolveKeywords(name);
+        const keywordComponents =
+          keywordResolved.length > 0
             ? visibleComponents
-                .filter(c => aliasResolved.includes(c.name))
+                .filter(c => keywordResolved.includes(c.name))
                 .map(c => ({
                   name: c.name,
                   moduleName: c.moduleName,
@@ -568,14 +523,14 @@ const handler = createMcpHandler(
                 }))
             : [];
 
-        if (aliasComponents.length > 0) {
+        if (keywordComponents.length > 0) {
           return {
             content: [
               {
                 type: 'text' as const,
                 text: JSON.stringify({
                   note: `"${name}" is not an exact component name. Did you mean one of these?`,
-                  suggestions: aliasComponents,
+                  suggestions: keywordComponents,
                   hint: 'Use get() with the exact component name from the suggestions above.',
                 }),
               },
@@ -620,7 +575,7 @@ const handler = createMcpHandler(
   {
     capabilities: {tools: {}},
     serverInfo: {
-      name: 'xds',
+      name: 'astryx',
       version: '2.0.0',
     },
   },
