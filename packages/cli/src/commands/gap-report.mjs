@@ -122,7 +122,7 @@ export default {
 export function registerGapReport(program) {
   const gapCmd = program
     .command('gap-report')
-    .description('Report a gap in the XDS design system');
+    .description('Report a gap in the design system');
 
   // --- setup subcommand ---
   gapCmd
@@ -357,7 +357,7 @@ export function registerGapReport(program) {
       }
 
       // Interactive mode
-      p.intro('Report an XDS gap');
+      p.intro('Report a gap');
 
       const component = isCancel(
         await p.text({

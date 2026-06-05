@@ -108,7 +108,7 @@ function App() {
       content: [
         {
           type: 'prose',
-          text: 'Use the CLI wizard (recommended) or create manually with defineTheme. Only override tokens that differ from defaults — omitted tokens use the XDS defaults.',
+          text: 'Use the CLI wizard (recommended) or create manually with defineTheme. Only override tokens that differ from defaults — omitted tokens use the design system defaults.',
         },
         {
           type: 'code',
@@ -384,7 +384,7 @@ import './themes/ocean.css';
       content: [
         {
           type: 'prose',
-          text: 'XDS themes work in two modes:',
+          text: 'Themes work in two modes:',
         },
         {
           type: 'table',

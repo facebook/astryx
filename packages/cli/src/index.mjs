@@ -62,7 +62,7 @@ export const JSON_SUPPORTED = new Set([
 
 program
   .name('xds')
-  .description('XDS design system CLI — components, themes, and tooling')
+  .description('Design system CLI — components, themes, and tooling')
   .version(pkg.version)
   .option('--zh', 'Output docs in Chinese Simplified')
   .option('--dense', 'Output docs in compressed dense format (token-efficient)')
@@ -254,7 +254,7 @@ program
     console.log(`
   ╭${'─'.repeat(W + 2)}╮
 ${line('')}
-${line('  XDS design system installed!')}
+${line('  Design system installed!')}
 ${line('')}
 ${line('  Get started:')}
 ${line(`    ${r} init          Interactive setup`)}

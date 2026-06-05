@@ -16,13 +16,13 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'XDS gives you several ways to style things. Here is when to use each:',
+          text: 'There are several ways to style things. Here is when to use each:',
         },
         {
           type: 'table',
           headers: ['Approach', 'Use for', 'Example'],
           rows: [
-            ['xstyle prop', 'Overriding a specific XDS component', 'xstyle={styles.override}'],
+            ['xstyle prop', 'Overriding a specific component', 'xstyle={styles.override}'],
             ['Tailwind utilities', 'Layout, wrappers, and utility styling', 'className="flex gap-3 p-4"'],
             ['stylex.create', 'Reusable styles, pseudo-classes, typed tokens', 'stylex.create({ card: { ... } })'],
             ['className', 'Integrating with external CSS or Tailwind on components', 'className="my-card shadow-lg"'],
@@ -30,7 +30,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'All approaches resolve to the same XDS design tokens, so theming and dark mode work regardless of which you choose.',
+          text: 'All approaches resolve to the same design tokens, so theming and dark mode work regardless of which you choose.',
         },
       ],
     },
@@ -40,7 +40,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Every XDS component accepts an xstyle prop for style customization. It accepts StyleX styles created via stylex.create() — not inline objects, not class name strings. StyleX styles are compiled at build time for optimal deduplication and dead-code elimination.',
+          text: 'Every component accepts an xstyle prop for style customization. It accepts StyleX styles created via stylex.create() — not inline objects, not class name strings. StyleX styles are compiled at build time for optimal deduplication and dead-code elimination.',
         },
         {
           type: 'code',
@@ -91,7 +91,7 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'XDS ships a Tailwind v4 theme bridge that maps all design tokens to Tailwind utility classes. Import it once and use Tailwind classes backed by XDS tokens — colors, spacing, radius, shadows, and typography all resolve to the active theme.',
+          text: 'The design system ships a Tailwind v4 theme bridge that maps all design tokens to Tailwind utility classes. Import it once and use Tailwind classes backed by design tokens — colors, spacing, radius, shadows, and typography all resolve to the active theme.',
         },
         {
           type: 'code',
@@ -103,7 +103,7 @@ const overrides = stylex.create({
         {
           type: 'code',
           lang: 'tsx',
-          label: 'Tailwind utilities alongside XDS components',
+          label: 'Tailwind utilities alongside components',
           code: `<div className="text-primary bg-surface rounded-container p-4 flex gap-3">
   <XDSButton label="Save" variant="primary" />
   <XDSButton label="Cancel" variant="secondary" />
@@ -111,7 +111,7 @@ const overrides = stylex.create({
         },
         {
           type: 'prose',
-          text: 'The bridge is pure CSS with zero JS. Theme changes (dark mode, custom themes) apply automatically because the utilities reference the same CSS custom properties that XDS components use.',
+          text: 'The bridge is pure CSS with zero JS. Theme changes (dark mode, custom themes) apply automatically because the utilities reference the same CSS custom properties that components use.',
         },
       ],
     },
@@ -144,7 +144,7 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'XDS components extend HTML attributes and spread rest props onto their root DOM element. This means data-* attributes, aria-* attributes, event handlers, and other HTML props pass through automatically.',
+          text: 'Components extend HTML attributes and spread rest props onto their root DOM element. This means data-* attributes, aria-* attributes, event handlers, and other HTML props pass through automatically.',
         },
         {
           type: 'code',
@@ -178,7 +178,7 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'Complex components are composed from smaller XDS components. Each sub-component accepts its own xstyle, className, and rest props. You style the parts individually — there\'s no single "drill into sub-part" prop.',
+          text: 'Complex components are composed from smaller components. Each sub-component accepts its own xstyle, className, and rest props. You style the parts individually — there\'s no single "drill into sub-part" prop.',
         },
         {
           type: 'code',
@@ -224,7 +224,7 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'Every component renders a stable xds-* class name (e.g. xds-button, xds-card) plus variant classes. These are the targeting surface for theme overrides in defineTheme. You rarely need to use them directly, but they\'re useful for debugging and for external CSS that needs to target XDS components.',
+          text: 'Every component renders a stable xds-* class name (e.g. xds-button, xds-card) plus variant classes. These are the targeting surface for theme overrides in defineTheme. You rarely need to use them directly, but they\'re useful for debugging and for external CSS that needs to target components.',
         },
         {
           type: 'code',
@@ -259,7 +259,7 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'When writing custom styles, use design tokens instead of hardcoded values. Tokens are CSS custom properties that adapt to the active theme and color mode. XDS provides tokens for spacing, color, radius, shadow, typography, and size.',
+          text: 'When writing custom styles, use design tokens instead of hardcoded values. Tokens are CSS custom properties that adapt to the active theme and color mode. The design system provides tokens for spacing, color, radius, shadow, typography, and size.',
         },
         {
           type: 'code',
@@ -309,10 +309,10 @@ const styles = stylex.create({
           type: 'list',
           style: 'dont',
           items: [
-            'style={{}} on raw <div> wrappers. Use xstyle on the XDS component directly.',
+            'style={{}} on raw <div> wrappers. Use xstyle on the component directly.',
             'Hardcoded colors (#fff, rgb(...)). Use var(--color-*) tokens or Tailwind semantic classes (text-primary, bg-surface).',
             'Hardcoded spacing (16px, 1rem). Use var(--spacing-*) tokens or Tailwind spacing utilities (p-4, gap-3).',
-            'Wrapping an XDS component in a <div> just to add margin. Use xstyle with stylex.create on the component.',
+            'Wrapping a component in a <div> just to add margin. Use xstyle with stylex.create on the component.',
             'Using !important. If styles aren\'t applying, check specificity — xstyle is merged last.',
           ],
         },

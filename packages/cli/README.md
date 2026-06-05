@@ -1,6 +1,6 @@
 # @xds/cli
 
-The XDS CLI is the primary interface for working with the XDS design system — for humans and machines alike. It provides component documentation, design tokens, page templates, theming tools, and upgrade codemods, all accessible via terminal commands, a typed JSON API, or programmatic imports. AI agents and build tools use the same API that powers the CLI, enabling end-to-end frontend development loops.
+The CLI is the primary interface for working with the design system — for humans and machines alike. It provides component documentation, design tokens, page templates, theming tools, and upgrade codemods, all accessible via terminal commands, a typed JSON API, or programmatic imports. AI agents and build tools use the same API that powers the CLI, enabling end-to-end frontend development loops.
 
 ```bash
 npx xds --help
@@ -14,15 +14,15 @@ npx xds template --list
 
 | Command       | Description                                                                             |
 | ------------- | --------------------------------------------------------------------------------------- |
-| `init`        | Initialize XDS in your project — installs packages, sets up theming, adds AI agent docs |
+| `init`        | Initialize the design system in your project — installs packages, sets up theming, adds AI agent docs |
 | `component`   | List components or print detailed docs, props, usage examples, and source               |
 | `docs`        | Print reference documentation (tokens, theme, color, typography, spacing, etc.)         |
 | `template`    | Inject page or block templates into your project                                        |
 | `hook`        | List hooks and print hook documentation                                                 |
 | `swizzle`     | Copy component source into your project for deep customization                          |
-| `upgrade`     | Run codemods to migrate between XDS versions                                            |
+| `upgrade`     | Run codemods to migrate between versions                                                |
 | `theme build` | Compile a defineTheme file to production CSS and JS                                     |
-| `discover`    | Discover external XDS packages and components                                           |
+| `discover`    | Discover external packages and components                                               |
 | `gap-report`  | Report a gap when a component doesn't meet your needs                                   |
 
 ### Global options

@@ -101,7 +101,7 @@ function formatReferenceFull(docs, detail) {
 export function registerDocs(program) {
   program
     .command('docs [topic] [section]')
-    .description('Print XDS reference docs')
+    .description('Print reference docs')
     .action(async (topic, section) => {
       const run = getRunPrefix();
       const lang = program.opts().lang || null;

@@ -7,7 +7,7 @@ export const docs = {
   title: 'Working with AI',
   category: 'guide',
   description:
-    'How to set up AI coding tools to generate correct XDS component code.',
+    'How to set up AI coding tools to generate correct component code.',
 
   sections: [
     {
@@ -15,11 +15,11 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'XDS is designed to be AI-friendly \u2014 consistent naming, predictable prop patterns, and a CLI that feeds structured documentation directly into AI context windows. But models still need the right context to avoid falling back to generic React patterns or inventing props.',
+          text: 'The design system is built to be AI-friendly \u2014 consistent naming, predictable prop patterns, and a CLI that feeds structured documentation directly into AI context windows. But models still need the right context to avoid falling back to generic React patterns or inventing props.',
         },
         {
           type: 'prose',
-          text: 'The XDS CLI includes a built-in agent docs system that generates context files for your AI tool of choice. One command sets up everything your AI needs to write correct XDS code.',
+          text: 'The CLI includes a built-in agent docs system that generates context files for your AI tool of choice. One command sets up everything your AI needs to write correct component code.',
         },
       ],
     },
@@ -72,7 +72,7 @@ npx xds agent-docs --agent codex     # AGENTS.md (Copilot, Codex, etc.)`,
         },
         {
           type: 'prose',
-          text: 'It also includes rules that prevent common mistakes (no raw divs, no style={{}}, use tokens not magic values) and a CLI quick reference. After setup, you shouldn\'t need to manually correct your AI on XDS conventions \u2014 the agent docs handle it at the system level.',
+          text: 'It also includes rules that prevent common mistakes (no raw divs, no style={{}}, use tokens not magic values) and a CLI quick reference. After setup, you shouldn\'t need to manually correct your AI on these conventions \u2014 the agent docs handle it at the system level.',
         },
       ],
     },
@@ -81,7 +81,7 @@ npx xds agent-docs --agent codex     # AGENTS.md (Copilot, Codex, etc.)`,
       content: [
         {
           type: 'prose',
-          text: 'Cursor project rules aren\'t always picked up \u2014 it selects which rules to apply based on relevance. For reliable inclusion, install XDS context as a User Rule instead. User Rules live at ~/.cursor/rules/ and apply across all projects.',
+          text: 'Cursor project rules aren\'t always picked up \u2014 it selects which rules to apply based on relevance. For reliable inclusion, install the design system context as a User Rule instead. User Rules live at ~/.cursor/rules/ and apply across all projects.',
         },
         {
           type: 'code',
@@ -97,7 +97,7 @@ npx xds agent-docs --agent-docs-path ~/.cursor/rules/xds.mdc`,
       content: [
         {
           type: 'prose',
-          text: 'Paste this into your AI before writing any XDS code. These three questions have a 0% pass rate without docs \u2014 models confidently guess wrong on all of them. If your AI can\'t answer them, it\'ll know to install the agent docs first.',
+          text: 'Paste this into your AI before writing any component code. These three questions have a 0% pass rate without docs \u2014 models confidently guess wrong on all of them. If your AI can\'t answer them, it\'ll know to install the agent docs first.',
         },
         {
           type: 'code',
