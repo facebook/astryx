@@ -33,3 +33,21 @@ export const docs = {
   importPath: '@xds/core/hooks',
   category: 'media',
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'SSR-safe media query hook; subscribes to window.matchMedia. Returns if query matches; always false on first render (SSR-safe).',
+  usage: {
+    bestPractices: [
+      { guidance: true, description: 'Use for responsive layout switching: viewport width, color scheme, or motion preferences.' },
+      { guidance: true, description: 'Prefer XDS responsive tokens + component props over manual breakpoint logic when possible.' },
+      { guidance: false, description: 'Use for server-rendered content that must match on first paint — always returns false initially.' },
+    ],
+  },
+  paramDescriptions: {
+    query: 'CSS media query string **(required)**',
+  },
+  returnDescriptions: {
+    matches: 'If media query currently matches; always false on first render (SSR-safe).',
+  },
+};
