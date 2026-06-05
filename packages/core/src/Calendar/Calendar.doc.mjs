@@ -172,15 +172,15 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'month grid for picking a date or date range',
+  description: 'month grid for picking date or date range; use in booking, scheduling, date filters, or when user needs surrounding date context',
   usage: {
-    description:
-      'Calendar lets the user pick a date or date range from a month grid. Use in booking, scheduling, date filters.',
     bestPractices: [
-      {guidance: true, description: 'Set min/max to limit selection. Use range mode for start + end dates.'},
-      {guidance: true, description: 'Use dateConstraints to disable weekends/holidays. Show two months for cross-month selections.'},
-      {guidance: false, description: 'Use for dates far in the past/future — text input is faster.'},
-      {guidance: false, description: 'Disable dates without explaining why.'},
+      {guidance: true, description: 'Set min + max to limit selection to valid window — e.g. future dates only for booking, current quarter for report.'},
+      {guidance: true, description: 'Use range mode when user needs start + end date, e.g. trip or time-off request.'},
+      {guidance: true, description: 'Use dateConstraints to disable specific dates (weekends/holidays); explain why unavailable.'},
+      {guidance: true, description: 'Show two months side by side when user frequently selects dates spanning month boundary.'},
+      {guidance: false, description: 'Use calendar for dates far in past/future (e.g. birth date) — text input faster for open-ended entry.'},
+      {guidance: false, description: 'Disable large blocks of dates w/o context — user must understand why dates unavailable.'},
     ],
   },
   propDescriptions: {
@@ -194,7 +194,7 @@ export const docsDense = {
     dateConstraints: 'custom constraint fns',
     focusDate: 'controlled visible month',
     onFocusDateChange: 'navigation callback',
-    handleRef: 'imperative navigation handle',
+    handleRef: 'imperative handle for calendar navigation, incl. navigateTo()',
     hasOutsideDays: 'show days from adjacent months',
     hasWeekNumbers: 'show ISO week numbers',
     hasVariableRowCount: 'variable vs fixed 6-row grid',
