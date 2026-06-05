@@ -42,3 +42,22 @@ export const docs = {
   importPath: '@xds/core/hooks',
   category: 'layout',
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Tracks horizontal scroll overflow state; returns ref callback + state booleans updating on scroll/resize. Uses scroll listeners + ResizeObserver. 1px tolerance avoids sub-pixel false positives.',
+  usage: {
+    bestPractices: [
+      { guidance: true, description: 'Show/hide scroll nav buttons or fade edges on carousels + horizontal lists.' },
+      { guidance: true, description: 'Apply scrollRef to container w/ overflow-x: auto/scroll.' },
+      { guidance: false, description: 'Use for vertical scroll tracking — only measures horizontal overflow.' },
+    ],
+  },
+  returnDescriptions: {
+    scrollRef: 'Ref callback; attach to horizontally scrollable container element.',
+    overflowStart: 'Content overflows start edge (left in LTR, right in RTL).',
+    overflowEnd: 'Content overflows end edge (right in LTR, left in RTL).',
+    hasOverflow: 'Container has any scroll overflow (scrollWidth > clientWidth).',
+  },
+};
