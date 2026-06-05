@@ -22,16 +22,12 @@ import {XDSTable, proportional} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {XDSDivider} from '@xds/core/Divider';
 import {
-  AreaChart,
-  Area,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
+  XDSChartV2 as XDSChart,
+  XDSChartGrid,
+  XDSChartAxis,
+  area,
+  line,
+} from '@xds/lab';
 
 import {
   DocumentTextIcon,
@@ -105,7 +101,6 @@ const portfolioData = (() => {
   return out;
 })();
 
-const xAxisTicks = [0, 3, 6, 9, 12];
 const xAxisLabels: Record<number, string> = {
   0: 'Oct',
   3: 'Jan',
@@ -349,21 +344,18 @@ const trendingStocks: StockRow[] = [
 
 // ============= CHART COMPONENTS =============
 
-function ChartTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{value: number}>;
-  label?: number;
-}) {
-  if (!active || !payload?.length) {
+function ChartTooltip(
+  _xValue: unknown,
+  rows: Array<{key: string; label: string; color: string; value: unknown}>,
+) {
+  const value = rows[0]?.value;
+  if (typeof value !== 'number') {
     return null;
   }
   return (
     <XDSCard padding={3}>
       <XDSText type="supporting">
-        {payload[0].value.toLocaleString('en-US', {
+        {value.toLocaleString('en-US', {
           style: 'currency',
           currency: 'USD',
           maximumFractionDigits: 0,
@@ -375,69 +367,34 @@ function ChartTooltip({
 
 function PortfolioChart() {
   return (
-    <ResponsiveContainer width="100%" height={340}>
-      <AreaChart
-        data={portfolioData}
-        margin={{top: 10, right: 10, left: 0, bottom: 5}}>
-        <defs>
-          <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop
-              offset="5%"
-              stopColor="var(--color-data-categorical-green, #22c55e)"
-              stopOpacity={0.3}
-            />
-            <stop
-              offset="95%"
-              stopColor="var(--color-data-categorical-green, #22c55e)"
-              stopOpacity={0.05}
-            />
-          </linearGradient>
-        </defs>
-        <CartesianGrid
-          horizontal
-          vertical={false}
-          stroke="var(--color-border, rgba(5, 54, 89, 0.1))"
-        />
-        <XAxis
-          dataKey="month"
-          type="number"
-          domain={[0, 12]}
-          ticks={xAxisTicks}
-          tickFormatter={(v: number) => xAxisLabels[v] ?? ''}
-          tick={{
-            fontSize: 'var(--font-size-sm, 12px)',
-            fill: 'var(--color-text-secondary, #4E606F)',
-          }}
-          axisLine={false}
-          tickLine={false}
-        />
-        <YAxis
-          domain={[200000, 320000]}
-          ticks={[200000, 240000, 280000, 320000]}
-          tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-          tick={{
-            fontSize: 'var(--font-size-sm, 12px)',
-            fill: 'var(--color-text-secondary, #4E606F)',
-          }}
-          axisLine={false}
-          tickLine={false}
-          width={50}
-        />
-        <Tooltip
-          content={<ChartTooltip />}
-          cursor={{stroke: 'var(--color-border, rgba(5, 54, 89, 0.1))'}}
-        />
-        <Area
-          type="linear"
-          dataKey="value"
-          stroke="var(--color-data-categorical-green, #22c55e)"
-          strokeWidth={1.5}
-          fill="url(#portfolioGradient)"
-          dot={false}
-          isAnimationActive={false}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
+    <XDSChart
+      data={portfolioData}
+      xKey="month"
+      height={340}
+      margin={{top: 10, right: 10, left: 50, bottom: 24}}
+      series={[
+        area('value', {
+          color: 'var(--color-data-categorical-green, #22c55e)',
+          curve: 'linear',
+          gradient: true,
+          stroke: true,
+        }),
+      ]}
+      grid={<XDSChartGrid horizontal />}
+      axes={
+        <>
+          <XDSChartAxis
+            position="bottom"
+            tickFormat={v => xAxisLabels[v as number] ?? ''}
+          />
+          <XDSChartAxis
+            position="left"
+            tickFormat={v => `$${((v as number) / 1000).toFixed(0)}k`}
+          />
+        </>
+      }
+      tooltip={{render: ChartTooltip}}
+    />
   );
 }
 
@@ -449,21 +406,13 @@ function Sparkline({data, positive}: {data: number[]; positive: boolean}) {
     ? 'var(--color-data-categorical-green, #0B991F)'
     : 'var(--color-data-categorical-red, #E5484D)';
   return (
-    <ResponsiveContainer width="100%" height={40}>
-      <LineChart
-        data={chartData}
-        margin={{top: 2, right: 0, left: 0, bottom: 2}}>
-        <YAxis hide domain={['dataMin', 'dataMax']} />
-        <Line
-          type="linear"
-          dataKey="v"
-          stroke={color}
-          strokeWidth={1.5}
-          dot={false}
-          isAnimationActive={false}
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <XDSChart
+      data={chartData}
+      xKey="i"
+      height={40}
+      margin={{top: 2, right: 0, bottom: 2, left: 0}}
+      series={[line('v', {color, curve: 'linear', strokeWidth: 1.5})]}
+    />
   );
 }
 
@@ -518,21 +467,13 @@ function TrendSparkline({data, positive}: {data: number[]; positive: boolean}) {
     ? 'var(--color-data-categorical-green, #0B991F)'
     : 'var(--color-data-categorical-red, #E5484D)';
   return (
-    <ResponsiveContainer width="100%" height={24}>
-      <LineChart
-        data={chartData}
-        margin={{top: 2, right: 0, left: 0, bottom: 2}}>
-        <YAxis hide domain={['dataMin', 'dataMax']} />
-        <Line
-          type="linear"
-          dataKey="v"
-          stroke={color}
-          strokeWidth={1}
-          dot={false}
-          isAnimationActive={false}
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <XDSChart
+      data={chartData}
+      xKey="i"
+      height={24}
+      margin={{top: 2, right: 0, bottom: 2, left: 0}}
+      series={[line('v', {color, curve: 'linear', strokeWidth: 1})]}
+    />
   );
 }
 
