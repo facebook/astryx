@@ -78,20 +78,22 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'horizontal scroll container w/ fade edges, nav buttons, scroll-snap',
+  description: 'Horizontal scroll row for items overflowing available width; use for card grids, galleries, product lists, or browsable item sets',
   usage: {
-    description:
-      'Carousel scrolls items horizontally when they overflow. Use for card grids, galleries, product lists.',
     bestPractices: [
-      {guidance: true, description: 'Scroll-snap for precise alignment. Always set aria-label. Consistent gap and item width.'},
-      {guidance: false, description: 'Critical content in carousels. Auto-advance. Nested carousels.'},
+      {guidance: true, description: 'Enable scroll-snap when each item should land precisely at start edge; e.g. gallery/product list'},
+      {guidance: true, description: 'Always provide aria-label describing carousel contents, e.g. "Featured products"'},
+      {guidance: true, description: 'Consistent gap + item width; must look intentional, not accidental overflow'},
+      {guidance: false, description: 'Carousel for content every user must see — not everyone scrolls horizontally; put critical content above fold'},
+      {guidance: false, description: 'Auto-advance items — let user scroll at own pace'},
+      {guidance: false, description: 'Nest carousels — carousel inside carousel breaks keyboard navigation'},
     ],
   },
   propDescriptions: {
-    children: 'carousel items in horizontal scroll',
     gap: 'item spacing via spacing token scale',
-    hasButtons: 'prev/next buttons on hover (desktop)',
+    hasButtons: 'prev/next nav buttons on hover (desktop only)',
     hasSnap: 'scroll-snap; children snap to start edge',
     'aria-label': 'accessible label for carousel region',
+    'data-testid': 'test selector for automated testing',
   },
 };
