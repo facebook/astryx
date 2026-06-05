@@ -81,3 +81,30 @@ export const docs = {
   importPath: '@xds/core/hooks',
   category: 'focus',
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Keyboard nav for linear lists; WAI-ARIA menu/listbox/toolbar patterns. Arrow keys (vertical/horizontal), Home/End, optional wrap, Escape to close. For dropdown menus, toolbars + any 1D focusable list.',
+  usage: {
+    bestPractices: [
+      { guidance: true, description: "Set orientation 'horizontal' for toolbars + tab bars, 'vertical' for dropdown menus." },
+      { guidance: true, description: 'Provide onEscape for menus/dropdowns to return focus to trigger.' },
+      { guidance: false, description: 'Use for 2D grid nav — prefer useGridFocus for grids + calendars.' },
+    ],
+  },
+  paramDescriptions: {
+    options: 'Config for list focus behavior; all fields optional.',
+    'options.itemSelector': 'Selector for focusable items in list.',
+    'options.wrap': 'Arrow nav wraps at ends.',
+    'options.onEscape': 'Callback on Escape key (e.g., close menu).',
+    'options.orientation': "Nav orientation; 'horizontal' = ArrowLeft/ArrowRight, 'vertical' = ArrowUp/ArrowDown.",
+  },
+  returnDescriptions: {
+    listRef: 'Ref for list container element.',
+    handleKeyDown: 'Key down handler for list container.',
+    focusItem: 'Focus item by index (clamped to valid range).',
+    focusFirst: 'Focus first focusable item.',
+    focusLast: 'Focus last focusable item.',
+  },
+};
