@@ -145,18 +145,19 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'bordered container for DISCRETE items — NOT the default layout tool. Most content doesn\'t need a card.',
+  description: 'bordered elevated container for discrete, self-contained items; NOT default layout tool. Only use when items need clear interaction boundaries or visual comparison in grid.',
   usage: {
-    description:
-      'Card is for discrete items with clear interaction boundaries (one profile, one notification, one product). Cards are NOT the default. Spacing and alignment create visual grouping without borders. Ask: "could I reorder or remove this independently?" — if no, don\'t use a card.',
     bestPractices: [
-      {guidance: true, description: 'Use cards ONLY for discrete items you could reorder/remove independently. Not every group of content needs a container.'},
-      {guidance: true, description: 'Try spacing + headings first. If the grouping is clear from whitespace and typography alone, you don\'t need a card.'},
-      {guidance: true, description: 'For page sections (settings, forms, sidebars), use heading + XDSStack or XDSSection — not a card.'},
-      {guidance: false, description: 'Default to wrapping content in cards. Cards should be the exception, not the reflex. Borders everywhere = visual noise.'},
-      {guidance: false, description: 'Wrap page sections in cards. "General Settings" or "Preferences" are not cards.'},
-      {guidance: false, description: 'Create identical card grids (icon + heading + text, repeated). This is the lazy default — vary layout or skip cards entirely.'},
-      {guidance: false, description: 'Nest cards. Use color variants for status — use Banner or Badge instead.'},
+      {guidance: true, description: 'Ask "could I reorder/remove this independently?" If yes → card. If no → heading + XDSStack or XDSSection.'},
+      {guidance: true, description: 'Use for discrete items: single profile, notification, metric, product in grid. Each card = one "thing" w/ clear interaction boundaries.'},
+      {guidance: true, description: 'Spacing + alignment alone create visual grouping. Try removing card; if grouping clear from whitespace + typography, no card needed.'},
+      {guidance: true, description: 'Keep padding consistent across sibling cards for visual alignment in grid/list.'},
+      {guidance: true, description: 'Pair w/ XDSLayout when you need structured header, scrollable content + footer w/ actions.'},
+      {guidance: false, description: 'Default to cards for visual grouping. Heading + XDSStack w/ proper spacing creates hierarchy w/o borders everywhere. Cards = exception, not default.'},
+      {guidance: false, description: 'Wrap page sections in cards. "General Settings", "Notification Preferences", form groups — page regions; use XDSSection or heading + stack instead.'},
+      {guidance: false, description: 'Create identical card grids (icon + heading + text, repeated). Vary layout or question if cards needed.'},
+      {guidance: false, description: 'Nest cards inside other cards — flatten hierarchy or use spacing + dividers instead.'},
+      {guidance: false, description: 'Use color variants for status — use Banner or Badge instead. Color cards for categorization only.'},
     ],
   },
   propDescriptions: {
@@ -164,7 +165,7 @@ export const docsDense = {
     height: 'card height (number=px, string=as-is)',
     maxWidth: 'max card width',
     minHeight: 'min card height',
-    children: 'content inside card',
     padding: 'internal padding via spacing scale',
+    variant: '`default` = standard bg; `muted` = de-emphasised bg; named variants use `--color-<name>-background` token',
   },
 };
