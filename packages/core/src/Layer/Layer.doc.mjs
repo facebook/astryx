@@ -42,3 +42,20 @@ export const docs = {
     ],
   },
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Core positioning hook for overlay content using CSS Anchor Positioning + Popover API; foundation for popovers, hover cards, tooltips w/o React portals.',
+  usage: {
+    bestPractices: [
+      { guidance: true, description: 'context mode for anchor-positioned overlays relative to trigger; fixed mode for manually positioned overlays at specific coordinates.' },
+      { guidance: true, description: 'Build on higher-level components (Popover, HoverCard, Tooltip) instead of Layer directly for common overlay patterns.' },
+      { guidance: false, description: 'Implement ARIA patterns directly in Layer — leave accessibility semantics to higher-level components that build on it.' },
+    ],
+  },
+  propDescriptions: {
+    mode: 'Positioning strategy: context uses CSS anchor positioning relative to trigger ref; fixed uses explicit x/y coordinates **(required)**',
+    onShow: 'Callback fired when layer becomes visible',
+    onHide: 'Callback fired when layer hidden',
+  },
+};
