@@ -54,3 +54,23 @@ export const docs = {
   importPath: '@xds/core/hooks',
   category: 'streaming',
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Smooths bursty streamed text into steady char-by-char reveal via requestAnimationFrame; decouples arrival from display rate. Advances on word + syntax boundaries to avoid slicing mid-markdown/mid-word, preventing glitches w/ markdown renderers. Animation timing from XDS motion tokens via useXDSTheme when available, w/ fallbacks outside theme provider. Snaps to full text when isStreaming becomes false.',
+  usage: {
+    bestPractices: [
+      { guidance: true, description: 'Pass accumulated text (not individual chunks) as targetText — hook handles incremental reveal internally.' },
+      { guidance: true, description: 'Set isStreaming to false when stream completes to snap to final text.' },
+      { guidance: true, description: "Use speed='instant' for non-animated contexts like search results or when reduced motion preferred." },
+      { guidance: false, description: 'Use for static text that doesn\'t change — hook adds unnecessary overhead for non-streaming content.' },
+    ],
+  },
+  propDescriptions: {
+    targetText: 'Full target text to reveal; update w/ accumulated text as new chunks arrive **(required)**',
+    isStreaming: 'Currently streaming text; when false, returns full targetText immediately **(required)**',
+    options: 'Configuration for streaming behavior',
+    'options.speed': "Speed preset; 'natural' = steady ~2 chars/frame, 'fast' = scales w/ backlog ~4 chars/frame, 'instant' = full text w/o animation",
+    displayedText: 'Portion of targetText to render; grows steadily toward full targetText during streaming, equals targetText when not streaming',
+  },
+};
