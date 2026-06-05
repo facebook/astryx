@@ -3,6 +3,7 @@
 'use client';
 
 import {XDSBadge} from '@xds/core/Badge';
+import {XDSCard} from '@xds/core/Card';
 import {XDSTable, pixel} from '@xds/core/Table';
 
 interface BestPracticesItem {
@@ -17,24 +18,26 @@ export function BestPracticesBlock({items}: {items: BestPracticesItem[]}) {
   })) as Record<string, unknown>[];
 
   return (
-    <XDSTable
-      data={data}
-      columns={[
-        {
-          key: 'guidance',
-          header: 'Guidance',
-          width: pixel(100),
-          renderCell: (item: Record<string, unknown>) => (
-            <XDSBadge
-              label={item.guidance ? 'Do' : "Don't"}
-              variant={item.guidance ? 'success' : 'error'}
-            />
-          ),
-        },
-        {key: 'description', header: 'Practices'},
-      ]}
-      density="spacious"
-      dividers="rows"
-    />
+    <XDSCard variant="default">
+      <XDSTable
+        data={data}
+        columns={[
+          {
+            key: 'guidance',
+            header: 'Guidance',
+            width: pixel(100),
+            renderCell: (item: Record<string, unknown>) => (
+              <XDSBadge
+                label={item.guidance ? 'Do' : "Don't"}
+                variant={item.guidance ? 'success' : 'error'}
+              />
+            ),
+          },
+          {key: 'description', header: 'Practices'},
+        ]}
+        density="spacious"
+        dividers="rows"
+      />
+    </XDSCard>
   );
 }

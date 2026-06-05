@@ -17,8 +17,10 @@ export function BestPractices({practices}: BestPracticesProps) {
 
   return (
     <XDSSection>
-      <XDSVStack gap={2}>
-        <XDSHeading level={3}>Best practices</XDSHeading>
+      <XDSVStack gap={4}>
+        <XDSHeading level={2} type="display-3">
+          Best practices
+        </XDSHeading>
         <BestPracticesBlock items={practices} />
       </XDSVStack>
     </XDSSection>

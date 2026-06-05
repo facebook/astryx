@@ -131,16 +131,12 @@ export function DocsShell({
           {!isOnComponentsRoute && (
             <>
               {/* Getting Started */}
-              <XDSSideNavSection title="Getting Started" isHeaderHidden>
+              <XDSSideNavSection title="Documentation" isHeaderHidden>
                 <XDSSideNavItem
                   label="Getting Started"
                   href="/docs/getting-started"
                   isSelected={pathname === '/docs/getting-started'}
                 />
-              </XDSSideNavSection>
-
-              {/* What's New */}
-              <XDSSideNavSection title="Changelog" isHeaderHidden>
                 <XDSSideNavItem
                   label="What's New"
                   href="/changelog"
