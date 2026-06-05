@@ -108,21 +108,20 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'centers content horizontally and/or vertically via flexbox',
+  description: 'centers content horizontally +/or vertically via flexbox',
   usage: {
-    description:
-      'Center aligns content to the middle of its container. Use for empty states, loading screens, login forms.',
     bestPractices: [
-      {guidance: true, description: 'Set axis when you only need one direction. Set height for vertical centering. Use isInline for icons in text.'},
-      {guidance: false, description: 'Wrap page sections — use XDSLayout. Use for horizontal lists — use XDSStack with hAlign="center".'},
+      {guidance: true, description: 'Use axis="horizontal"/"vertical" when only one direction needed; "both" default but not always required'},
+      {guidance: true, description: 'Set height when centering vertically; needs defined height to know centering space'},
+      {guidance: true, description: 'Use isInline for small elements (icons/badges) in text w/o breaking flow'},
+      {guidance: false, description: 'Wrap large page sections; use XDSLayout or XDSAppShell instead for page-level structure'},
+      {guidance: false, description: 'Use for horizontal item lists; use XDSStack w/ hAlign="center" instead'},
     ],
   },
   propDescriptions: {
     axis: 'centering direction(s)',
-    width: 'container width (px or CSS)',
-    height: 'container height (px or CSS)',
+    width: 'container width (px/CSS value)',
+    height: 'container height (px/CSS value)',
     isInline: 'use inline-flex for text/icons',
-    children: 'content to center',
-    xstyle: 'StyleX styles for layout (margins, positioning, sizing); must be stylex.create() value',
   },
 };
