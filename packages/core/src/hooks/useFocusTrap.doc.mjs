@@ -51,3 +51,25 @@ export const docs = {
   importPath: '@xds/core/hooks',
   category: 'focus',
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Traps focus within container per WAI-ARIA dialog pattern; listens to document focus events + redirects focus back if it escapes via keyboard. Handles Tab + Shift+Tab wrapping. Mouse clicks outside not intercepted — use light-dismiss handler instead.',
+  usage: {
+    bestPractices: [
+      { guidance: true, description: 'Call focusFirst() when opening dialog/modal to move focus into trapped region.' },
+      { guidance: true, description: 'Provide onEscape callback to close dialog when Escape pressed.' },
+      { guidance: false, description: 'Use on non-modal content like tooltips/dropdowns — those need light-dismiss, not focus trapping.' },
+    ],
+  },
+  paramDescriptions: {
+    options: 'Config object for focus trap **(required)**',
+    'options.isActive': 'Focus trap currently active **(required)**',
+    'options.onEscape': 'Callback when Escape pressed inside trapped container',
+  },
+  returnDescriptions: {
+    containerRef: 'Ref to attach to container element that traps focus',
+    focusFirst: 'Focuses first focusable element inside container',
+  },
+};
