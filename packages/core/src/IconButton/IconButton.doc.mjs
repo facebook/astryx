@@ -76,3 +76,28 @@ export const docs = {
     ],
   },
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Icon-only button for toolbars, table rows + compact UI where space is tight + icon is universally understood.',
+  usage: {
+    bestPractices: [
+      { guidance: true, description: 'Make aria-label specific — trash icon labeled "Delete conversation" clearer than just "Delete" for screen readers.' },
+      { guidance: true, description: 'Add tooltip — even gear icon can mean Settings, Preferences, or Configure.' },
+      { guidance: true, description: 'Use ghost in toolbars + dense areas to reduce visual clutter.' },
+      { guidance: false, description: 'Use IconButton if action isn\'t obvious from icon alone — use Button w/ text instead.' },
+      { guidance: false, description: 'Skip tooltip — label only reaches screen readers; sighted users need hover hint.' },
+    ],
+  },
+  propDescriptions: {
+    label: 'Accessible label; used as aria-label (not visible text) **(required)**',
+    icon: 'Icon element rendered inside button **(required)**',
+    variant: 'Visual style variant',
+    size: 'Size variant',
+    isLoading: 'Shows loading spinner + disables interaction',
+    isDisabled: 'Disables button',
+    tooltip: 'Tooltip text shown on hover',
+    onClick: 'Standard click handler',
+    clickAction: 'Async click handler w/ automatic loading state',
+  },
+};
