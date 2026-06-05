@@ -2,9 +2,8 @@
 
 'use client';
 
-import {XDSText} from '@xds/core/Text';
+import {XDSHeading} from '@xds/core/Text';
 import {XDSVStack} from '@xds/core/Layout';
-import {XDSSection} from '@xds/core/Section';
 import {ContentBlockRenderer} from './ContentBlockRenderer';
 import {BestPracticesBlock} from './BestPracticesBlock';
 import {DocPageLayout} from './DocPageLayout';
@@ -37,7 +36,9 @@ function BestPracticesSection({section}: {section: DocSection}) {
   }
   return (
     <XDSVStack gap={4}>
-      <XDSText type="display-3">{section.title}</XDSText>
+      <XDSHeading level={2} type="display-3">
+        {section.title}
+      </XDSHeading>
       <BestPracticesBlock items={items} />
     </XDSVStack>
   );
@@ -59,20 +60,22 @@ export function ReferenceDocView({
       {sections.map(section => {
         const override = sectionOverrides?.[section.title];
         return (
-          <XDSSection key={section.title}>
+          <XDSVStack gap={4} key={section.title}>
             {override ? (
               override(section)
             ) : isBestPracticesSection(section) ? (
               <BestPracticesSection section={section} />
             ) : (
-              <XDSVStack gap={4}>
-                <XDSText type="display-3">{section.title}</XDSText>
+              <>
+                <XDSHeading level={2} type="display-3">
+                  {section.title}
+                </XDSHeading>
                 {section.content.map((block, i) => (
                   <ContentBlockRenderer key={i} block={block} />
                 ))}
-              </XDSVStack>
+              </>
             )}
-          </XDSSection>
+          </XDSVStack>
         );
       })}
     </DocPageLayout>

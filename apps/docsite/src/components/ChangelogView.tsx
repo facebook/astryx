@@ -59,11 +59,7 @@ interface ChangelogViewProps {
 
 const styles = stylex.create({
   container: {
-    maxWidth: 960,
     marginInline: 'auto',
-  },
-  carouselTab: {
-    marginBottom: 4,
   },
 });
 
@@ -75,11 +71,13 @@ export function ChangelogView({
   const active = changelogs.find(c => c.pkg === activeTab);
 
   return (
-    <XDSSection maxWidth="lg" padding={6} xstyle={styles.container}>
-      <XDSVStack gap={6}>
-        <XDSVStack gap={2}>
-          <XDSHeading level={1}>What&apos;s New</XDSHeading>
-          <XDSText type="body" color="secondary">
+    <XDSSection maxWidth={800} padding={6} xstyle={styles.container}>
+      <XDSVStack gap={8}>
+        <XDSVStack gap={4}>
+          <XDSHeading level={1} type="display-1">
+            What&apos;s New
+          </XDSHeading>
+          <XDSText type="large" weight="normal" color="secondary">
             Release notes and changelog for all packages.
           </XDSText>
         </XDSVStack>
@@ -89,12 +87,7 @@ export function ChangelogView({
             <XDSTabList value={activeTab} onChange={setActiveTab} hasDivider>
               <XDSCarousel gap={0.5} hasSnap={false}>
                 {changelogs.map(c => (
-                  <XDSTab
-                    key={c.pkg}
-                    value={c.pkg}
-                    label={c.pkg}
-                    xstyle={styles.carouselTab}
-                  />
+                  <XDSTab key={c.pkg} value={c.pkg} label={c.pkg} />
                 ))}
               </XDSCarousel>
             </XDSTabList>

@@ -5,6 +5,7 @@
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSMarkdown} from '@xds/core/Markdown';
+import {XDSDivider} from '@xds/core/Divider';
 import {DocPageLayout} from './DocPageLayout';
 import {PackageActions, type InstallStep} from './PackageActions';
 
@@ -57,13 +58,14 @@ export function PackageStubPage({
 
   return (
     <DocPageLayout title={name} description={description}>
-      <XDSVStack gap={8}>
+      <XDSVStack gap={10}>
         <PackageActions
           packageName={name}
           version={version}
           installSteps={installSteps}
           cta={cta}
         />
+        <XDSDivider />
         {body ? (
           <XDSMarkdown headingLevelStart={3} contentWidth={800}>
             {body}

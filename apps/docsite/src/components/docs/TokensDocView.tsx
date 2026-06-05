@@ -2,8 +2,9 @@
 
 'use client';
 
+import {XDSCard} from '@xds/core/Card';
 import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {XDSHeading} from '@xds/core/Text';
 import {useXDSTheme} from '@xds/core/theme';
 import {
   ColorTokenTable,
@@ -89,11 +90,15 @@ function TokenSection({
   const prose = section.content.filter(block => block.type !== 'table');
   return (
     <XDSVStack gap={4}>
-      <XDSText type="display-3">{section.title}</XDSText>
+      <XDSHeading level={3} type="display-3">
+        {section.title}
+      </XDSHeading>
       {prose.map((block, i) => (
         <ContentBlockRenderer key={i} block={block} />
       ))}
-      <Table theme={theme} />
+      <XDSCard>
+        <Table theme={theme} />
+      </XDSCard>
     </XDSVStack>
   );
 }
