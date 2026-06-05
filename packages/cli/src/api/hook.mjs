@@ -57,7 +57,7 @@ export async function hook(name, options = {}) {
         );
       }
 
-      if (detail === 'brief') {
+      if (detail === 'compact') {
         const entries = [];
         for (const hookName of match[1]) {
           const docPath = findHookDoc(coreDir, hookName);
@@ -79,11 +79,29 @@ export async function hook(name, options = {}) {
         return {type: 'hook.brief', data: {[match[0]]: entries}};
       }
 
+      if (detail === 'full') {
+        const entries = [];
+        for (const hookName of match[1]) {
+          const docPath = findHookDoc(coreDir, hookName);
+          if (docPath) {
+            try {
+              entries.push(await loadDocs(docPath, {zh, lang}));
+            } catch {
+              entries.push({name: hookName});
+            }
+          } else {
+            entries.push({name: hookName});
+          }
+        }
+        return {type: 'hook.full', data: {[match[0]]: entries}};
+      }
+
+      // Default: brief — names only
       return {type: 'hook.list', data: {[match[0]]: match[1]}};
     }
 
     // All hooks
-    if (detail === 'brief') {
+    if (detail === 'compact') {
       /** @type {Record<string, Array<{name: string, description: string, import: string}>>} */
       const result = {};
       for (const [cat, hookNames] of Object.entries(hooks)) {
@@ -109,6 +127,28 @@ export async function hook(name, options = {}) {
       return {type: 'hook.brief', data: result};
     }
 
+    if (detail === 'full') {
+      /** @type {Record<string, Array<unknown>>} */
+      const result = {};
+      for (const [cat, hookNames] of Object.entries(hooks)) {
+        result[cat] = [];
+        for (const hookName of hookNames) {
+          const docPath = findHookDoc(coreDir, hookName);
+          if (docPath) {
+            try {
+              result[cat].push(await loadDocs(docPath, {zh, lang}));
+            } catch {
+              result[cat].push({name: hookName});
+            }
+          } else {
+            result[cat].push({name: hookName});
+          }
+        }
+      }
+      return {type: 'hook.full', data: result};
+    }
+
+    // Default: brief — names only
     return {type: 'hook.list', data: hooks};
   }
 
