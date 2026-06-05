@@ -223,31 +223,34 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'Hover/focus triggered overlay for displaying rich, interactive content anchored to trigger element.',
+    'Rich overlay on hover/focus of trigger element; use for profile cards, link summaries, inline definitions w/o navigating away.',
   usage: {
-    description: 'HoverCard shows additional info on hover/focus. Use for profile cards, link summaries, inline definitions.',
     bestPractices: [
-      { guidance: true, description: 'Supplementary content only. Dashed underline on text triggers. Hook API for custom control.' },
-      { guidance: false, description: 'No critical actions — content disappears on cursor leave. Use Tooltip/Popover when simpler.' },
+      { guidance: true, description: 'Keep content supplementary; hover cards enhance understanding w/o blocking primary workflow.' },
+      { guidance: true, description: 'Dashed underline on text triggers so users know element is hoverable.' },
+      { guidance: true, description: 'Use hook API (useXDSHoverCard) when you need more control over timing/placement.' },
+      { guidance: false, description: 'No critical actions/required info in hover card — users may miss hover-only content.' },
+      { guidance: false, description: 'Don\'t use hover card when Tooltip/Popover would suffice.' },
+      { guidance: false, description: 'Don\'t use for must-interact content — disappears when cursor leaves.' },
     ],
   },
   components: [
     {
       name: 'XDSHoverCard',
       displayName: 'Hover Card',
-      description: 'Component wrapper for hover card overlay; richer overlay triggered on hover/focus.',
+      description: 'Wrapper for hover card; richer, larger overlay triggered on hover/focus.',
       propDescriptions: {
         children: 'Trigger element; must accept ref.',
-        content: 'Hover card content.',
-        placement: 'Position relative to anchor element.',
+        content: 'Hover card content **(required)**.',
+        placement: 'Position relative to anchor.',
         alignment: 'Alignment along placement axis.',
         delay: 'Show delay in ms.',
         hideDelay: 'Hide delay in ms.',
         focusTrigger: 'Controls when focus events trigger hover card.',
         isEnabled: 'Enable/disable hover + focus triggers.',
-        onOpenChange: 'Callback when visibility changes; true=shown, false=hidden.',
+        onOpenChange: 'Callback on visibility change; true=shown, false=hidden.',
         hasHoverIndication: 'Dashed underline on trigger element.',
-        isDefaultOpen: 'Show hover card on mount. Still dismissible.',
+        isDefaultOpen: 'Show on mount; still dismissible.',
       },
     },
   ],
