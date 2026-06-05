@@ -18,7 +18,7 @@ import {spacingVars} from '@xds/core/theme/tokens.stylex';
 const styles = stylex.create({
   section: {
     marginInline: 'auto',
-    paddingBottom: spacingVars['--spacing-12'],
+    paddingBottom: `calc(${spacingVars['--spacing-12']} * 2)`,
   },
 });
 

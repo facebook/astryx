@@ -10,6 +10,7 @@ import {XDSVStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSCarousel} from '@xds/core/Carousel';
+import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {GITHUB_REPO} from '../constants';
 
 function linkifyPRs(markdown: string): string {
@@ -58,8 +59,9 @@ interface ChangelogViewProps {
 }
 
 const styles = stylex.create({
-  container: {
+  section: {
     marginInline: 'auto',
+    paddingBottom: `calc(${spacingVars['--spacing-12']} * 2)`,
   },
 });
 
@@ -71,7 +73,7 @@ export function ChangelogView({
   const active = changelogs.find(c => c.pkg === activeTab);
 
   return (
-    <XDSSection maxWidth={800} padding={6} xstyle={styles.container}>
+    <XDSSection maxWidth={800} padding={6} xstyle={styles.section}>
       <XDSVStack gap={8}>
         <XDSVStack gap={4}>
           <XDSHeading level={1} type="display-1">
