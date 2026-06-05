@@ -5,8 +5,8 @@
 /**
  * XDS Bundle Size Analysis
  *
- * Traces chunk dependencies and deduplicates shared code to show
- * the real shipped cost of XDS components.
+ * Traces file dependencies to show the real shipped cost of XDS components.
+ * Each component is a standalone file tree (no shared chunks).
  *
  * Usage:
  *   node scripts/bundle-analysis.mjs                     # full report
@@ -16,8 +16,8 @@
  *   node scripts/bundle-analysis.mjs --compare @chakra-ui/react  # whole-library
  */
 
-import {readdirSync, readFileSync, existsSync} from 'fs';
-import {join} from 'path';
+import {readdirSync, readFileSync, existsSync, statSync} from 'fs';
+import {join, dirname, resolve} from 'path';
 import {gzipSync} from 'zlib';
 
 const DIST = join(import.meta.dirname, '..', 'packages', 'core', 'dist');
@@ -27,21 +27,41 @@ function gzSize(fp) {
   return {raw: raw.length, gzip: gzipSync(raw, {level: 9}).length};
 }
 
-function getImports(fp) {
-  if (!existsSync(fp)) return new Set();
-  const c = readFileSync(fp, 'utf-8'), s = new Set();
-  for (const m of c.matchAll(/(?:from|import)\s+["'](?:\.\.\/|\.\/)?(chunk-[^"']+\.mjs)["']/g)) s.add(m[1]);
-  return s;
+function resolveImport(fromFile, specifier) {
+  const dir = dirname(fromFile);
+  const candidates = [
+    join(dir, specifier),
+    join(dir, specifier + '.js'),
+    join(dir, specifier + '.mjs'),
+    join(dir, specifier, 'index.js'),
+    join(dir, specifier, 'index.mjs'),
+  ];
+  for (const c of candidates) {
+    if (existsSync(c) && statSync(c).isFile()) return c;
+  }
+  return null;
 }
 
-function allChunks(entry) {
-  const v = new Set(), q = [entry], c = new Set();
+function getImports(fp) {
+  if (!existsSync(fp)) return new Set();
+  const content = readFileSync(fp, 'utf-8');
+  const paths = new Set();
+  for (const m of content.matchAll(/(?:from|import)\s+["'](\.\.?\/[^"']+)["']/g)) {
+    const resolved = resolveImport(fp, m[1]);
+    if (resolved) paths.add(resolved);
+  }
+  return paths;
+}
+
+function allFiles(entry) {
+  const visited = new Set(), q = [entry];
   while (q.length) {
     const f = q.pop();
-    if (v.has(f)) continue; v.add(f);
-    for (const ch of getImports(f)) { c.add(ch); q.push(join(DIST, ch)); }
+    if (visited.has(f)) continue;
+    visited.add(f);
+    for (const dep of getImports(f)) q.push(dep);
   }
-  return c;
+  return visited;
 }
 
 async function fetchSize(pkg) {
@@ -55,67 +75,63 @@ async function fetchSize(pkg) {
 }
 
 function buildMap() {
-  const comps = {}, cu = {};
+  const comps = {};
   for (const n of readdirSync(DIST)) {
-    const e = join(DIST, n, 'index.mjs');
+    const e = existsSync(join(DIST, n, 'index.js')) ? join(DIST, n, 'index.js') : join(DIST, n, 'index.mjs');
     if (!existsSync(e)) continue;
-    const ch = allChunks(e);
-    comps[n] = {entry: gzSize(e), chunks: ch};
-    for (const c of ch) { if (!cu[c]) cu[c] = new Set(); cu[c].add(n); }
+    const files = allFiles(e);
+    let totalRaw = 0, totalGzip = 0;
+    for (const f of files) {
+      const s = gzSize(f);
+      totalRaw += s.raw;
+      totalGzip += s.gzip;
+    }
+    comps[n] = {entry: gzSize(e), files, totalRaw, totalGzip, fileCount: files.size};
   }
-  return {comps, cu};
+  return comps;
 }
 
-function measure(names, comps, cu) {
-  const ac = new Set(); let eG=0,eR=0; const found=[];
+function measure(names, comps) {
+  const allDeps = new Set();
+  let tG = 0, tR = 0;
+  const found = [];
   for (const n of names) {
     const comp = comps[n];
-    if (!comp) { console.warn(`  \u26a0 "${n}" not found`); continue; }
+    if (!comp) { console.warn(`  ⚠ "${n}" not found`); continue; }
     found.push(n);
-    eG += comp.entry.gzip; eR += comp.entry.raw;
-    for (const ch of comp.chunks) ac.add(ch);
+    for (const f of comp.files) allDeps.add(f);
   }
-  const ts = new Set(found), excl = new Set(), shr = new Set();
-  for (const ch of ac) {
-    const u = cu[ch] || new Set();
-    [...u].some(x => !ts.has(x)) ? shr.add(ch) : excl.add(ch);
+  for (const f of allDeps) {
+    const s = gzSize(f);
+    tG += s.gzip;
+    tR += s.raw;
   }
-  let xG=0,xR=0,sG=0,sR=0;
-  for (const c of excl) { const s = gzSize(join(DIST,c)); xG+=s.gzip; xR+=s.raw; }
-  for (const c of shr) { const s = gzSize(join(DIST,c)); sG+=s.gzip; sR+=s.raw; }
-  const xdsCss = existsSync(join(DIST, 'xds.css')) ? gzSize(join(DIST, 'xds.css')) : {raw:0,gzip:0};
+  const xdsCss = existsSync(join(DIST, 'xds.css')) ? gzSize(join(DIST, 'xds.css')) : {raw: 0, gzip: 0};
   return {
     count: found.length, found,
-    entries: {gzip:eG, raw:eR}, exclusive: {gzip:xG, raw:xR, count:excl.size},
-    shared: {gzip:sG, raw:sR, count:shr.size}, xdsCss,
-    foundation: {gzip:sG+xdsCss.gzip, raw:sR+xdsCss.raw},
-    incremental: {gzip:eG+xG, raw:eR+xR},
-    total: {gzip:sG+xdsCss.gzip+eG+xG, raw:sR+xdsCss.raw+eR+xR},
+    js: {gzip: tG, raw: tR, files: allDeps.size},
+    xdsCss,
+    total: {gzip: tG + xdsCss.gzip, raw: tR + xdsCss.raw},
   };
 }
 
 function fmt(b) {
   return b >= 102400 ? `${(b/1024).toFixed(0)} KB` : b >= 1024 ? `${(b/1024).toFixed(1)} KB` : `${b.toLocaleString()}B`;
 }
-const pad = (s,n,a='left') => { s=String(s); return a==='right' ? s.padStart(n) : s.padEnd(n); };
+const pad = (s, n, a = 'left') => { s = String(s); return a === 'right' ? s.padStart(n) : s.padEnd(n); };
 
 function printSet(label, r) {
   console.log();
-  console.log('\u2500'.repeat(65));
+  console.log('─'.repeat(65));
   console.log(`${label} (${r.count} components)`);
-  console.log('\u2500'.repeat(65));
-  console.log(`  Entries:          ${pad(fmt(r.entries.gzip),10,'right')}  (${r.count} files)`);
-  console.log(`  Exclusive chunks: ${pad(fmt(r.exclusive.gzip),10,'right')}  (${r.exclusive.count} chunks)`);
-  console.log(`  Shared chunks:    ${pad(fmt(r.shared.gzip),10,'right')}  (${r.shared.count} chunks)`);
-  console.log(`  xds.css:          ${pad(fmt(r.xdsCss.gzip),10,'right')}`);
-  console.log();
-  console.log(`  Foundation:       ${pad(fmt(r.foundation.gzip),10,'right')}  (shared chunks + xds.css)`);
-  console.log(`  Incremental:      ${pad(fmt(r.incremental.gzip),10,'right')}  (entries + exclusive + CSS)`);
-  console.log(`  ${'\u2500'.repeat(16)}`);
-  console.log(`  Total shipped:    ${pad(fmt(r.total.gzip),10,'right')}`);
+  console.log('─'.repeat(65));
+  console.log(`  JS:               ${pad(fmt(r.js.gzip), 10, 'right')}  (${r.js.files} files)`);
+  console.log(`  xds.css:          ${pad(fmt(r.xdsCss.gzip), 10, 'right')}`);
+  console.log(`  ${'─'.repeat(16)}`);
+  console.log(`  Total shipped:    ${pad(fmt(r.total.gzip), 10, 'right')}`);
 }
 
-async function printCompare(mappings, comps, cu) {
+async function printCompare(mappings, comps) {
   const hasMap = mappings.some(m => m.xds);
   console.log('\nFetching sizes from bundlephobia...');
   const results = [];
@@ -128,54 +144,53 @@ async function printCompare(mappings, comps, cu) {
   if (!results.length) { console.error('No packages fetched.'); return; }
   if (hasMap) {
     const xn = results.filter(r => r.xds).map(r => r.xds);
-    const xr = measure(xn, comps, cu);
-    const et = results.reduce((s,r) => s + r.bp.gzip, 0);
+    const xr = measure(xn, comps);
+    const et = results.reduce((s, r) => s + r.bp.gzip, 0);
     console.log(`\n${'='.repeat(75)}\nXDS vs External\n${'='.repeat(75)}\n`);
-    console.log(`${pad('XDS',20)} ${pad('XDS gz',14,'right')} ${pad('Ext gz',14,'right')} ${pad('Package',25)}`);
+    console.log(`${pad('XDS', 20)} ${pad('XDS gz', 14, 'right')} ${pad('Ext gz', 14, 'right')} ${pad('Package', 25)}`);
     console.log('-'.repeat(75));
     let xt = 0;
     for (const r of results) {
       if (!r.xds) continue;
       const comp = comps[r.xds]; if (!comp) continue;
-      const x = comp.entry.gzip; xt += x;
-      console.log(`${pad(r.xds,20)} ${pad(fmt(x),14,'right')} ${pad(fmt(r.bp.gzip),14,'right')} ${r.bp.name}@${r.bp.version}`);
+      xt += comp.totalGzip;
+      console.log(`${pad(r.xds, 20)} ${pad(fmt(comp.totalGzip), 14, 'right')} ${pad(fmt(r.bp.gzip), 14, 'right')} ${r.bp.name}@${r.bp.version}`);
     }
     console.log('-'.repeat(75));
-    console.log(`${pad('Entry+CSS total',20)} ${pad(fmt(xt),14,'right')} ${pad(fmt(et),14,'right')}`);
+    console.log(`${pad('Total', 20)} ${pad(fmt(xt), 14, 'right')} ${pad(fmt(et), 14, 'right')}`);
     printSet(`XDS (${xn.length} matched)`, xr);
     console.log(`\n  External total: ${fmt(et)} (JS only)`);
-    console.log(`  XDS marginal:   ${fmt(xr.incremental.gzip)} (fully styled)`);
+    console.log(`  XDS total:      ${fmt(xr.js.gzip)} (JS, fully styled)`);
   } else {
     const an = Object.keys(comps);
-    const xr = measure(an, comps, cu);
+    const xr = measure(an, comps);
     console.log(`\n${'='.repeat(65)}\nLibrary Comparison\n${'='.repeat(65)}\n`);
-    console.log(`${pad('Package',42)} ${pad('Min',10,'right')} ${pad('Gzip',10,'right')}`);
+    console.log(`${pad('Package', 42)} ${pad('Min', 10, 'right')} ${pad('Gzip', 10, 'right')}`);
     console.log('-'.repeat(65));
-    console.log(`${pad(`XDS @xds/core (${an.length} groups)`,42)} ${pad(fmt(xr.total.raw),10,'right')} ${pad(fmt(xr.total.gzip),10,'right')}`);
+    console.log(`${pad(`XDS @xds/core (${an.length} groups)`, 42)} ${pad(fmt(xr.total.raw), 10, 'right')} ${pad(fmt(xr.total.gzip), 10, 'right')}`);
     for (const r of results)
-      console.log(`${pad(`${r.bp.name}@${r.bp.version}`,42)} ${pad(fmt(r.bp.size),10,'right')} ${pad(fmt(r.bp.gzip),10,'right')}`);
+      console.log(`${pad(`${r.bp.name}@${r.bp.version}`, 42)} ${pad(fmt(r.bp.size), 10, 'right')} ${pad(fmt(r.bp.gzip), 10, 'right')}`);
   }
 }
 
-function printFull(comps, cu) {
+function printFull(comps) {
   const an = Object.keys(comps).sort();
   console.log(`${'='.repeat(75)}\nXDS BUNDLE SIZE ANALYSIS\n${'='.repeat(75)}\n`);
-  console.log(`${pad('Component',22)} ${pad('Entry',8,'right')} ${pad('Chunks',8,'right')} ${pad('Solo',10,'right')} ${pad('#ch',5,'right')}`);
-  console.log('-'.repeat(65));
+  console.log(`${pad('Component', 22)} ${pad('Solo', 10, 'right')} ${pad('Files', 6, 'right')}`);
+  console.log('-'.repeat(40));
   const sorted = an.map(n => {
-    const comp = comps[n]; let cg = 0;
-    for (const ch of comp.chunks) cg += gzSize(join(DIST, ch)).gzip;
-    return {n, e: comp.entry.gzip, cg, solo: comp.entry.gzip + cg, ch: comp.chunks.size};
+    const comp = comps[n];
+    return {n, solo: comp.totalGzip, files: comp.fileCount};
   }).sort((a, b) => b.solo - a.solo);
   for (const c of sorted)
-    console.log(`${pad(c.n,22)} ${pad(fmt(c.e),8,'right')} ${pad(fmt(c.cg),8,'right')} ${pad(fmt(c.solo),10,'right')} ${pad(String(c.ch),5,'right')}`);
+    console.log(`${pad(c.n, 22)} ${pad(fmt(c.solo), 10, 'right')} ${pad(String(c.files), 6, 'right')}`);
   const scenarios = [
-    ['Small app (5)', ['Button','Text','Dialog','TextInput','Stack']],
-    ['Medium app (15)', ['Button','Text','Dialog','TextInput','Stack','Table','DropdownMenu','Selector','TabList','Card','Badge','Avatar','Tooltip','Banner','Spinner']],
+    ['Small app (5)', ['Button', 'Text', 'Dialog', 'TextInput', 'Stack']],
+    ['Medium app (15)', ['Button', 'Text', 'Dialog', 'TextInput', 'Stack', 'Table', 'DropdownMenu', 'Selector', 'TabList', 'Card', 'Badge', 'Avatar', 'Tooltip', 'Banner', 'Spinner']],
     ['Full library', an],
   ];
   console.log(`\n${'='.repeat(65)}\nSCENARIOS\n${'='.repeat(65)}`);
-  for (const [l, ns] of scenarios) printSet(l, measure(ns, comps, cu));
+  for (const [l, ns] of scenarios) printSet(l, measure(ns, comps));
 }
 
 // Main
@@ -183,20 +198,20 @@ if (!existsSync(DIST)) { console.error('Run `pnpm build` first.'); process.exit(
 const args = process.argv.slice(2);
 const jsonMode = args.includes('--json');
 const cmpIdx = args.indexOf('--compare');
-const {comps, cu} = buildMap();
+const comps = buildMap();
 
 if (jsonMode) {
   const ca = args.filter(a => !a.startsWith('--'));
-  console.log(JSON.stringify(measure(ca.length ? ca : Object.keys(comps), comps, cu), null, 2));
+  console.log(JSON.stringify(measure(ca.length ? ca : Object.keys(comps), comps), null, 2));
 } else if (cmpIdx !== -1) {
   const ca = args.slice(cmpIdx + 1).filter(a => !a.startsWith('--'));
   const mappings = ca.map(a => {
     const [pkg, xds] = a.includes('=') ? a.split('=', 2) : [a, null];
     return {pkg, xds};
   });
-  await printCompare(mappings, comps, cu);
+  await printCompare(mappings, comps);
 } else {
   const ca = args.filter(a => !a.startsWith('--'));
-  if (ca.length) printSet('Custom set', measure(ca, comps, cu));
-  else printFull(comps, cu);
+  if (ca.length) printSet('Custom set', measure(ca, comps));
+  else printFull(comps);
 }

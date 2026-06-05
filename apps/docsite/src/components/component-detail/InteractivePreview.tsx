@@ -21,7 +21,7 @@ import {XDSText} from '@xds/core/Text';
 import {XDSTheme} from '@xds/core/theme';
 import {neutralTheme} from '@xds/theme-neutral/built';
 import {useThemeMode} from '../../app/providers';
-import {CodeBracketIcon} from '@heroicons/react/24/outline';
+import {Code} from 'lucide-react';
 import {
   coerceDefault,
   parsePropType,
@@ -278,7 +278,7 @@ export function InteractivePreviewStage({
         <XDSButton
           label="Show code"
           tooltip="Show code"
-          icon={<CodeBracketIcon width={16} height={16} />}
+          icon={<Code size={16} />}
           isIconOnly
           variant={showCode ? 'secondary' : 'ghost'}
           size="sm"
@@ -290,9 +290,14 @@ export function InteractivePreviewStage({
           style={{
             minHeight: 200,
             overflow: 'auto',
-            padding: 'var(--spacing-4)',
           }}>
-          <XDSCodeBlock code={code} language="tsx" hasCopyButton />
+          <XDSCodeBlock
+            code={code}
+            language="tsx"
+            hasCopyButton
+            container="section"
+            width="100%"
+          />
         </div>
       ) : (
         <XDSTheme theme={neutralTheme} mode={mode}>

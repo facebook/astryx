@@ -88,7 +88,7 @@ export async function component(name, options = {}) {
         );
       }
 
-      if (detail === 'brief') {
+      if (detail === 'compact') {
         const entries = [];
         for (const comp of match[1]) {
           const readme = findComponentReadme(coreDir, comp);
@@ -106,11 +106,29 @@ export async function component(name, options = {}) {
         return {type: 'component.brief', data: {[match[0]]: entries}};
       }
 
+      if (detail === 'full') {
+        const entries = [];
+        for (const comp of match[1]) {
+          const readme = findComponentReadme(coreDir, comp);
+          if (readme && readme.endsWith('.doc.mjs')) {
+            try {
+              entries.push(await loadDocs(readme, {zh, lang, dense}));
+            } catch {
+              entries.push({name: `XDS${comp}`, description: ''});
+            }
+          } else {
+            entries.push({name: `XDS${comp}`, description: ''});
+          }
+        }
+        return {type: 'component.full', data: {[match[0]]: entries}};
+      }
+
+      // Default: brief — names only
       return {type: 'component.list', data: {[match[0]]: match[1]}};
     }
 
     // All components — merge core + external packages with grouped subcategories
-    if (detail === 'brief') {
+    if (detail === 'compact') {
       /** @type {Record<string, Array<import('../types/component').ComponentBriefEntry>>} */
       const result = {};
       for (const [cat, comps] of Object.entries(components)) {
@@ -132,6 +150,28 @@ export async function component(name, options = {}) {
       return {type: 'component.brief', data: result};
     }
 
+    if (detail === 'full') {
+      /** @type {Record<string, Array<unknown>>} */
+      const result = {};
+      for (const [cat, comps] of Object.entries(components)) {
+        result[cat] = [];
+        for (const comp of comps) {
+          const readme = findComponentReadme(coreDir, comp);
+          if (readme && readme.endsWith('.doc.mjs')) {
+            try {
+              result[cat].push(await loadDocs(readme, {zh, lang, dense}));
+            } catch {
+              result[cat].push({name: `XDS${comp}`, description: ''});
+            }
+          } else {
+            result[cat].push({name: `XDS${comp}`, description: ''});
+          }
+        }
+      }
+      return {type: 'component.full', data: result};
+    }
+
+    // Default: brief — names only (with externals merged in)
     const externals = discoverExternalPackages(cwd);
     for (const ext of externals) {
       const grouped = discoverExternalComponentsGrouped(ext.docsDir);

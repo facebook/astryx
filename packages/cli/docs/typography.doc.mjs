@@ -18,7 +18,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'XDS typography is built on a geometric type scale: base size × ratio^step, with 14px and 1.2 as defaults. Every text style is a semantic token that composes font size, weight, and line-height — so components express intent (heading, body, label) rather than raw values.',
+          text: 'Typography is built on a geometric type scale: base size × ratio^step, with 14px and 1.2 as defaults. Every text style is a semantic token that composes font size, weight, and line-height — so components express intent (heading, body, label) rather than raw values.',
         },
         {
           type: 'prose',

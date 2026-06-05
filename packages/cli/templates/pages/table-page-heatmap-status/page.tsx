@@ -3,8 +3,14 @@
 'use client';
 
 import {useMemo} from 'react';
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Layout';
+import {
+  XDSVStack,
+  XDSHStack,
+  XDSStackItem,
+  XDSLayout,
+  XDSLayoutContent,
+  XDSLayoutHeader,
+} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIconButton} from '@xds/core/IconButton';
@@ -423,39 +429,47 @@ function OutageHeatmap() {
 
 export default function TablePageHeatmapStatusTemplate() {
   return (
-    <XDSAppShell variant="elevated" contentPadding={3} height="auto">
-      <XDSVStack gap={4}>
-        <XDSHStack gap={2} vAlign="center">
-          <XDSStackItem size="fill">
-            <XDSHeading level={1}>Status</XDSHeading>
-          </XDSStackItem>
-          <XDSIconButton
-            label="Filter"
-            icon={<XDSIcon icon={FunnelIcon} size="sm" />}
-            variant="ghost"
-          />
-          <XDSIconButton
-            label="Export"
-            icon={<XDSIcon icon={ArrowDownTrayIcon} size="sm" />}
-            variant="ghost"
-          />
-          <XDSButton
-            label="Refresh"
-            icon={<XDSIcon icon={ArrowPathIcon} size="sm" />}
-          />
-        </XDSHStack>
+    <XDSLayout
+      height="auto"
+      header={
+        <XDSLayoutHeader hasDivider>
+          <XDSHStack gap={2} vAlign="center">
+            <XDSStackItem size="fill">
+              <XDSHeading level={1}>Status</XDSHeading>
+            </XDSStackItem>
+            <XDSIconButton
+              label="Filter"
+              icon={<XDSIcon icon={FunnelIcon} size="sm" />}
+              variant="ghost"
+            />
+            <XDSIconButton
+              label="Export"
+              icon={<XDSIcon icon={ArrowDownTrayIcon} size="sm" />}
+              variant="ghost"
+            />
+            <XDSButton
+              label="Refresh"
+              icon={<XDSIcon icon={ArrowPathIcon} size="sm" />}
+            />
+          </XDSHStack>
+        </XDSLayoutHeader>
+      }
+      content={
+        <XDSLayoutContent padding={3}>
+          <XDSVStack gap={4}>
+            <OutageHeatmap />
 
-        <OutageHeatmap />
-
-        <XDSTable<IncidentRow>
-          data={incidents}
-          columns={columns}
-          idKey="id"
-          density="balanced"
-          dividers="rows"
-          hasHover
-        />
-      </XDSVStack>
-    </XDSAppShell>
+            <XDSTable<IncidentRow>
+              data={incidents}
+              columns={columns}
+              idKey="id"
+              density="balanced"
+              dividers="rows"
+              hasHover
+            />
+          </XDSVStack>
+        </XDSLayoutContent>
+      }
+    />
   );
 }

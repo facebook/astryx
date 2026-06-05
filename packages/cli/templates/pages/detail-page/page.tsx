@@ -3,15 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSAppShell} from '@xds/core/AppShell';
 import {useMediaQuery} from '@xds/core/hooks';
-import {XDSNavIcon} from '@xds/core/NavIcon';
-import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
-} from '@xds/core/SideNav';
 import {
   XDSLayout,
   XDSLayoutHeader,
@@ -38,14 +30,6 @@ import {XDSIcon} from '@xds/core/Icon';
 import {XDSThumbnail} from '@xds/core/Thumbnail';
 import {XDSOverflowList} from '@xds/core/OverflowList';
 import {
-  HomeIcon,
-  ClipboardDocumentListIcon,
-  CubeIcon,
-  UserGroupIcon,
-  DocumentTextIcon,
-  ChartBarIcon,
-  Cog6ToothIcon,
-  QuestionMarkCircleIcon,
   CalendarIcon,
   FlagIcon,
   FunnelIcon,
@@ -55,7 +39,6 @@ import {
   ArrowLeftIcon,
   ViewColumnsIcon,
 } from '@heroicons/react/24/outline';
-import {BuildingStorefrontIcon} from '@heroicons/react/24/solid';
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 import * as stylex from '@stylexjs/stylex';
@@ -164,89 +147,6 @@ const ACTIVITY = [
     time: 'Feb 23 at 2:15 PM',
   },
 ];
-
-// ─── Side Nav ───────────────────────────────────────────────────────────────
-function ShopSideNav() {
-  const [active, setActive] = useState('orders');
-  return (
-    <XDSSideNav
-      collapsible
-      header={
-        <XDSSideNavHeading
-          icon={
-            <XDSNavIcon
-              icon={
-                <XDSIcon
-                  icon={BuildingStorefrontIcon}
-                  size="sm"
-                  color="inherit"
-                />
-              }
-            />
-          }
-          heading="Kiln & Table"
-          headingHref="/"
-        />
-      }
-      footer={
-        <XDSVStack gap={0}>
-          <XDSSideNavItem
-            label="Settings"
-            icon={Cog6ToothIcon}
-            isSelected={active === 'settings'}
-            onClick={() => setActive('settings')}
-          />
-          <XDSSideNavItem
-            label="Help Center"
-            icon={QuestionMarkCircleIcon}
-            isSelected={active === 'help'}
-            onClick={() => setActive('help')}
-          />
-        </XDSVStack>
-      }>
-      <XDSSideNavSection title="Main" isHeaderHidden>
-        <XDSSideNavItem
-          label="Home"
-          icon={HomeIcon}
-          isSelected={active === 'home'}
-          onClick={() => setActive('home')}
-        />
-        <XDSSideNavItem
-          label="Orders"
-          icon={ClipboardDocumentListIcon}
-          isSelected={active === 'orders'}
-          onClick={() => setActive('orders')}
-        />
-        <XDSSideNavItem
-          label="Products"
-          icon={CubeIcon}
-          isSelected={active === 'products'}
-          onClick={() => setActive('products')}
-        />
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Sales channels">
-        <XDSSideNavItem
-          label="Customers"
-          icon={UserGroupIcon}
-          isSelected={active === 'customers'}
-          onClick={() => setActive('customers')}
-        />
-        <XDSSideNavItem
-          label="Content"
-          icon={DocumentTextIcon}
-          isSelected={active === 'content'}
-          onClick={() => setActive('content')}
-        />
-        <XDSSideNavItem
-          label="Analytics"
-          icon={ChartBarIcon}
-          isSelected={active === 'analytics'}
-          onClick={() => setActive('analytics')}
-        />
-      </XDSSideNavSection>
-    </XDSSideNav>
-  );
-}
 
 // ─── Bullet separator ───────────────────────────────────────────────────────
 function Bullet() {
@@ -650,33 +550,28 @@ export default function DetailPage2Template() {
   const [isPanelOpen, setIsPanelOpen] = useState(!isNarrow);
 
   return (
-    <XDSAppShell
-      sideNav={<ShopSideNav />}
-      variant="elevated"
-      contentPadding={0}>
-      <XDSLayout
-        height="fill"
-        contentWidth={1000}
-        defaultHasDividers
-        header={
-          <PageHeader
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            isPanelOpen={isPanelOpen}
-            onTogglePanel={() => setIsPanelOpen(prev => !prev)}
-          />
-        }
-        content={
-          <XDSLayoutContent role="main">
-            <XDSVStack gap={4}>
-              <ItemsCard />
-              <InvoiceCard />
-              <TimelineSection />
-            </XDSVStack>
-          </XDSLayoutContent>
-        }
-        end={isPanelOpen ? <RightPanel /> : undefined}
-      />
-    </XDSAppShell>
+    <XDSLayout
+      height="fill"
+      contentWidth={1000}
+      defaultHasDividers
+      header={
+        <PageHeader
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          isPanelOpen={isPanelOpen}
+          onTogglePanel={() => setIsPanelOpen(prev => !prev)}
+        />
+      }
+      content={
+        <XDSLayoutContent role="main">
+          <XDSVStack gap={4}>
+            <ItemsCard />
+            <InvoiceCard />
+            <TimelineSection />
+          </XDSVStack>
+        </XDSLayoutContent>
+      }
+      end={isPanelOpen ? <RightPanel /> : undefined}
+    />
   );
 }

@@ -2,19 +2,13 @@
 
 'use client';
 
-import * as stylex from '@stylexjs/stylex';
-import {XDSText} from '@xds/core/Text';
+import {XDSHeading} from '@xds/core/Text';
 import {XDSVStack} from '@xds/core/Layout';
-import {XDSSection} from '@xds/core/Section';
 import {ContentBlockRenderer} from './ContentBlockRenderer';
 import {BestPracticesBlock} from './BestPracticesBlock';
+import {DocPageLayout} from './DocPageLayout';
 import type {DocSection} from '../../generated/docsRegistry';
 import type {ReactNode} from 'react';
-
-const styles = stylex.create({
-  container: {maxWidth: 1200, marginInline: 'auto'},
-  prose: {maxWidth: 800},
-});
 
 export type SectionOverrides = Record<
   string,
@@ -42,7 +36,9 @@ function BestPracticesSection({section}: {section: DocSection}) {
   }
   return (
     <XDSVStack gap={4}>
-      <XDSText type="display-3">{section.title}</XDSText>
+      <XDSHeading level={2} type="display-3">
+        {section.title}
+      </XDSHeading>
       <BestPracticesBlock items={items} />
     </XDSVStack>
   );
@@ -60,32 +56,28 @@ export function ReferenceDocView({
   sectionOverrides?: SectionOverrides;
 }) {
   return (
-    <XDSVStack gap={8} xstyle={styles.container}>
-      <XDSVStack gap={2}>
-        <XDSText type="display-2">{title}</XDSText>
-        <XDSText type="body" color="secondary" xstyle={styles.prose}>
-          {description}
-        </XDSText>
-      </XDSVStack>
+    <DocPageLayout title={title} description={description}>
       {sections.map(section => {
         const override = sectionOverrides?.[section.title];
         return (
-          <XDSSection key={section.title}>
+          <XDSVStack gap={4} key={section.title}>
             {override ? (
               override(section)
             ) : isBestPracticesSection(section) ? (
               <BestPracticesSection section={section} />
             ) : (
-              <XDSVStack gap={4}>
-                <XDSText type="display-3">{section.title}</XDSText>
+              <>
+                <XDSHeading level={2} type="display-3">
+                  {section.title}
+                </XDSHeading>
                 {section.content.map((block, i) => (
                   <ContentBlockRenderer key={i} block={block} />
                 ))}
-              </XDSVStack>
+              </>
             )}
-          </XDSSection>
+          </XDSVStack>
         );
       })}
-    </XDSVStack>
+    </DocPageLayout>
   );
 }

@@ -2,8 +2,12 @@
 
 'use client';
 
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {
+  XDSVStack,
+  XDSHStack,
+  XDSLayout,
+  XDSLayoutContent,
+} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSSection} from '@xds/core/Section';
 import {XDSText, XDSHeading} from '@xds/core/Text';
@@ -118,46 +122,55 @@ function ImageGrid() {
 
 export default function SideGalleryTemplate() {
   return (
-    <XDSAppShell height="auto" contentPadding={0} variant="surface">
-      <XDSCenter axis="horizontal">
-        <XDSSection variant="transparent" maxWidth={1400} padding={6}>
-          <div {...stylex.props(styles.splitLayout)}>
-            {/* Left side: Text + CTA */}
-            <XDSVStack gap={6} vAlign="center">
-              <XDSVStack gap={3}>
-                <XDSText type="supporting" color="secondary" weight="semibold">
-                  COLORFUL
-                </XDSText>
-                <XDSHeading level={1}>
-                  Make every day a little more delightful, one small detail at a
-                  time.
-                </XDSHeading>
-                <XDSText type="body" color="secondary">
-                  The smallest details are the ones that matter most. A little
-                  color that catches your eye and makes you pause; that&apos;s
-                  what turns an ordinary day into something worth remembering.
-                </XDSText>
-              </XDSVStack>
+    <XDSLayout
+      height="auto"
+      content={
+        <XDSLayoutContent padding={0}>
+          <XDSCenter axis="horizontal">
+            <XDSSection variant="transparent" maxWidth={1400} padding={6}>
+              <div {...stylex.props(styles.splitLayout)}>
+                {/* Left side: Text + CTA */}
+                <XDSVStack gap={6} vAlign="center">
+                  <XDSVStack gap={3}>
+                    <XDSText
+                      type="supporting"
+                      color="secondary"
+                      weight="semibold">
+                      COLORFUL
+                    </XDSText>
+                    <XDSHeading level={1}>
+                      Make every day a little more delightful, one small detail
+                      at a time.
+                    </XDSHeading>
+                    <XDSText type="body" color="secondary">
+                      The smallest details are the ones that matter most. A
+                      little color that catches your eye and makes you pause;
+                      that&apos;s what turns an ordinary day into something
+                      worth remembering.
+                    </XDSText>
+                  </XDSVStack>
 
-              <XDSHStack gap={3} vAlign="center">
-                <XDSButton label="Explore" variant="primary" />
-              </XDSHStack>
+                  <XDSHStack gap={3} vAlign="center">
+                    <XDSButton label="Explore" variant="primary" />
+                  </XDSHStack>
 
-              <XDSVStack gap={4}>
-                <XDSDivider />
-                <XDSHStack gap={6}>
-                  <StatBlock value="12k+" label="Photos" />
-                  <StatBlock value="350+" label="Projects" />
-                  <StatBlock value="8yrs" label="Experience" />
-                </XDSHStack>
-              </XDSVStack>
-            </XDSVStack>
+                  <XDSVStack gap={4}>
+                    <XDSDivider />
+                    <XDSHStack gap={6}>
+                      <StatBlock value="12k+" label="Photos" />
+                      <StatBlock value="350+" label="Projects" />
+                      <StatBlock value="8yrs" label="Experience" />
+                    </XDSHStack>
+                  </XDSVStack>
+                </XDSVStack>
 
-            {/* Right side: Image Grid */}
-            <ImageGrid />
-          </div>
-        </XDSSection>
-      </XDSCenter>
-    </XDSAppShell>
+                {/* Right side: Image Grid */}
+                <ImageGrid />
+              </div>
+            </XDSSection>
+          </XDSCenter>
+        </XDSLayoutContent>
+      }
+    />
   );
 }

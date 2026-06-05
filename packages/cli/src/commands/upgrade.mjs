@@ -139,7 +139,7 @@ async function listCodemods() {
 export function registerUpgrade(program) {
   program
     .command('upgrade')
-    .description('Run codemods to migrate between XDS versions')
+    .description('Run codemods to migrate between versions')
     .option('--apply', 'Write changes to disk (default: dry-run)', false)
     .option('--from <version>', 'Previous version (overrides package.json detection)')
     .option('--to <version>', 'Target version', latestVersion)
@@ -153,7 +153,7 @@ export function registerUpgrade(program) {
     .option('--list', 'List available codemods', false)
     .action(async (options) => {
       const json = program.opts().json || false;
-      if (!json) p.intro('XDS Upgrade');
+      if (!json) p.intro('Upgrade');
 
       // Validate --to / --from upfront so callers don't silently accept
       // typos like `--to bogus` (which used to flow through getTransformsBetween

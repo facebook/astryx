@@ -41,15 +41,17 @@ import {
   XDSSegmentedControlItem,
 } from '@xds/core/SegmentedControl';
 import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
+import {XDSToggleButton} from '@xds/core/ToggleButton';
 import {
-  ArrowLeftIcon,
-  MoonIcon,
-  SunIcon,
-  ComputerDesktopIcon,
-  DevicePhoneMobileIcon,
-  ArrowsPointingOutIcon,
-  ArrowPathIcon,
-} from '@heroicons/react/24/outline';
+  ArrowLeft,
+  Moon,
+  Sun,
+  Monitor,
+  Smartphone,
+  Maximize2,
+  RotateCw,
+  Crosshair,
+} from 'lucide-react';
 import githubLight from './themes/github-light.json';
 import githubDark from './themes/github-dark.json';
 import {useThemeMode} from '../providers';
@@ -122,7 +124,7 @@ export default function Demo() {
       <XDSVStack gap={4}>
         <XDSVStack>
           <XDSHeading level={3}>
-            XDS Playground
+            Astryx Playground
           </XDSHeading>
           <XDSText color="secondary">
             Edit the code and see live changes.
@@ -200,13 +202,12 @@ function configureMonaco(monaco: MonacoInstance) {
     'file:///globals.d.ts',
   );
 
-  // Heroicons wildcard stub
+  // Lucide icons wildcard stub — gives Monaco a sense of the
+  // module's shape so import { Icon } from 'lucide-react' doesn't
+  // light up with red squigglies in the playground editor.
   ts.addExtraLib(
-    `declare module '@heroicons/react/16/solid' { const icons: Record<string, React.ComponentType<{width?: number; height?: number; className?: string}>>; export = icons; }
-    declare module '@heroicons/react/20/solid' { const icons: Record<string, React.ComponentType<{width?: number; height?: number; className?: string}>>; export = icons; }
-    declare module '@heroicons/react/24/outline' { const icons: Record<string, React.ComponentType<{width?: number; height?: number; className?: string}>>; export = icons; }
-    declare module '@heroicons/react/24/solid' { const icons: Record<string, React.ComponentType<{width?: number; height?: number; className?: string}>>; export = icons; }`,
-    'file:///node_modules/@heroicons/react/index.d.ts',
+    `declare module 'lucide-react' { const icons: Record<string, React.ComponentType<{size?: number | string; color?: string; strokeWidth?: number | string; className?: string}>>; export = icons; }`,
+    'file:///node_modules/lucide-react/index.d.ts',
   );
 
   // Load real type definitions from the pre-built JSON bundle
@@ -233,6 +234,21 @@ function configureMonaco(monaco: MonacoInstance) {
         ts.addExtraLib(
           content,
           `file:///node_modules/@stylexjs/stylex/${fileName}`,
+        );
+      }
+
+      // Heroicons ambient declarations, one per size/style variant. Template
+      // and example code imports icons by name from
+      // '@heroicons/react/{16,20,24}/{outline,solid}', so each declaration
+      // exposes the variant's icons as named exports. Without these, every
+      // heroicons import lights up with a "Cannot find module" red squiggle
+      // once semantic validation turns on below.
+      const heroiconFiles = packages['@heroicons/react'] ?? {};
+      for (const [fileName, content] of Object.entries(heroiconFiles)) {
+        const variant = fileName.replace(/\.d\.ts$/, '');
+        ts.addExtraLib(
+          content,
+          `file:///node_modules/@heroicons/react/${variant}/index.d.ts`,
         );
       }
 
@@ -356,6 +372,9 @@ export function PlaygroundClient() {
   const [statusFading, setStatusFading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [previewReady, setPreviewReady] = useState(false);
+  const [isTargeting, setIsTargeting] = useState(false);
+  const [targetedComponent, setTargetedComponent] = useState<string | null>(null);
+  const [targetedInstance, setTargetedInstance] = useState(0);
 
   // The code the playground was seeded with (a shared/example snippet from the
   // URL hash, or the default). Reset restores this — not the hardcoded default.
@@ -421,12 +440,23 @@ export function PlaygroundClient() {
     [send],
   );
 
-  // Flash a focus ring on the DOM node for a given component instance.
-  const flashInstance = useCallback((component: string, index: number) => {
+  // Persistently highlight the DOM node for a given component instance.
+  const selectInstance = useCallback((component: string, index: number) => {
     iframeRef.current?.contentWindow?.postMessage(
-      {type: 'preview-highlight', id: `${component}#${index}`},
+      {type: 'preview-select', id: `${component}#${index}`},
       window.location.origin,
     );
+  }, []);
+
+  const toggleTargeting = useCallback((pressed?: boolean) => {
+    setIsTargeting(prev => {
+      const next = pressed ?? !prev;
+      iframeRef.current?.contentWindow?.postMessage(
+        {type: next ? 'targeting-enable' : 'targeting-disable'},
+        window.location.origin,
+      );
+      return next;
+    });
   }, []);
 
   useEffect(() => {
@@ -447,6 +477,19 @@ export function PlaygroundClient() {
       }
       if (e.data?.type === 'preview-error') {
         setBuildStatus('error');
+      }
+      if (e.data?.type === 'targeting-select') {
+        setTargetedComponent(e.data.component);
+        setTargetedInstance(e.data.index);
+        setActiveTab('property');
+        setIsTargeting(false);
+        iframeRef.current?.contentWindow?.postMessage(
+          {type: 'targeting-disable'},
+          window.location.origin,
+        );
+      }
+      if (e.data?.type === 'targeting-exit') {
+        setIsTargeting(false);
       }
     };
     window.addEventListener('message', handler);
@@ -645,7 +688,7 @@ export function PlaygroundClient() {
             variant="ghost"
             size="md"
             isIconOnly
-            icon={<ArrowLeftIcon width={20} height={20} />}
+            icon={<ArrowLeft size={20} />}
             onClick={() => router.back()}
           />
           <XDSTabList
@@ -678,7 +721,14 @@ export function PlaygroundClient() {
               code={code}
               onCodeChange={setCode}
               onRevealInCode={revealInCode}
-              onFlashInstance={flashInstance}
+              onFlashInstance={selectInstance}
+              externalSelection={targetedComponent != null ? {
+                component: targetedComponent,
+                instanceIndex: targetedInstance,
+              } : undefined}
+              onExternalSelectionConsumed={() => {
+                setTargetedComponent(null);
+              }}
             />
           )}
         </div>
@@ -710,14 +760,17 @@ export function PlaygroundClient() {
                 variant="ghost"
                 size="md"
                 isIconOnly
-                icon={
-                  mode === 'light' ? (
-                    <MoonIcon width={20} height={20} />
-                  ) : (
-                    <SunIcon width={20} height={20} />
-                  )
-                }
+                icon={mode === 'light' ? <Moon size={20} /> : <Sun size={20} />}
                 onClick={() => setMode(m => (m === 'light' ? 'dark' : 'light'))}
+              />
+              <XDSToggleButton
+                label="Target element"
+                tooltip={isTargeting ? 'Exit targeting (Esc)' : 'Click to select an element'}
+                isPressed={isTargeting}
+                onPressedChange={toggleTargeting}
+                size="md"
+                isIconOnly
+                icon={<Crosshair size={20} />}
               />
             </XDSHStack>
           }
@@ -731,13 +784,13 @@ export function PlaygroundClient() {
                 value="desktop"
                 label="Desktop"
                 isLabelHidden
-                icon={<ComputerDesktopIcon width={20} height={20} />}
+                icon={<Monitor size={20} />}
               />
               <XDSSegmentedControlItem
                 value="phone"
                 label="Phone"
                 isLabelHidden
-                icon={<DevicePhoneMobileIcon width={20} height={20} />}
+                icon={<Smartphone size={20} />}
               />
             </XDSSegmentedControl>
           }
@@ -762,7 +815,7 @@ export function PlaygroundClient() {
                       variant="ghost"
                       size="sm"
                       isIconOnly
-                      icon={<ArrowPathIcon width={16} height={16} />}
+                      icon={<RotateCw size={16} />}
                       onClick={handleRebuild}
                     />
                   )}
@@ -774,7 +827,7 @@ export function PlaygroundClient() {
                 variant="ghost"
                 size="md"
                 isIconOnly
-                icon={<ArrowsPointingOutIcon width={20} height={20} />}
+                icon={<Maximize2 size={20} />}
                 onClick={() => setIsFullscreen(true)}
               />
               <XDSButton

@@ -175,7 +175,7 @@ export default function ComponentsGalleryPage() {
             <XDSButton
               variant="primary"
               size="lg"
-              label="Install Core Library"
+              label="Install core library"
             />
           </XDSPopover>
         </XDSVStack>

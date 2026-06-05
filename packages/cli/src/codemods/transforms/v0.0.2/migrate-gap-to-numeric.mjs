@@ -43,42 +43,75 @@ const TOKEN_TO_NUMBER = {
 
 const GAP_PROPS = ['gap', 'rowGap', 'columnGap'];
 
+/**
+ * Only XDS layout components accept the numeric gap scale. We must not
+ * rewrite gap props on user-defined components or HTML elements that happen
+ * to share the prop name — doing so would silently corrupt their code when
+ * `xds upgrade` runs.
+ */
+const XDS_LAYOUT_ELEMENTS = new Set([
+  'XDSStack',
+  'XDSHStack',
+  'XDSVStack',
+  'XDSGrid',
+  'XDSGridSpan',
+  'XDSStackItem',
+]);
+
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
-  root.find(j.JSXAttribute).forEach((path) => {
-    const attrName = path.node.name.name;
-    if (!GAP_PROPS.includes(attrName)) {
+  root.find(j.JSXOpeningElement).forEach((elementPath) => {
+    const nameNode = elementPath.node.name;
+    // Only handle simple identifier element names like <XDSStack>. Skip member
+    // expressions (e.g. <Foo.Bar>) and namespaced names — they're never XDS.
+    if (!nameNode || nameNode.type !== 'JSXIdentifier') {
+      return;
+    }
+    if (!XDS_LAYOUT_ELEMENTS.has(nameNode.name)) {
       return;
     }
 
-    const value = path.node.value;
-
-    // Handle gap="space4" — JSX string attributes are Literal nodes
-    if (value && (value.type === 'Literal' || value.type === 'StringLiteral')) {
-      const numericValue = TOKEN_TO_NUMBER[value.value];
-      if (numericValue !== undefined) {
-        path.node.value = j.jsxExpressionContainer(
-          j.literal(numericValue),
-        );
-        hasChanges = true;
+    for (const attr of elementPath.node.attributes ?? []) {
+      if (attr.type !== 'JSXAttribute' || !attr.name) {
+        continue;
       }
-    }
-    // Handle gap={"space4"} (JSXExpressionContainer wrapping a string)
-    if (
-      value &&
-      value.type === 'JSXExpressionContainer' &&
-      (value.expression.type === 'Literal' ||
-        value.expression.type === 'StringLiteral')
-    ) {
-      const strValue = value.expression.value;
-      if (typeof strValue === 'string') {
-        const numericValue = TOKEN_TO_NUMBER[strValue];
+      const attrName = attr.name.name;
+      if (!GAP_PROPS.includes(attrName)) {
+        continue;
+      }
+
+      const value = attr.value;
+
+      // Handle gap="space4" — JSX string attributes are Literal nodes
+      if (
+        value &&
+        (value.type === 'Literal' || value.type === 'StringLiteral')
+      ) {
+        const numericValue = TOKEN_TO_NUMBER[value.value];
         if (numericValue !== undefined) {
-          value.expression = j.literal(numericValue);
+          attr.value = j.jsxExpressionContainer(j.literal(numericValue));
           hasChanges = true;
+        }
+        continue;
+      }
+
+      // Handle gap={"space4"} (JSXExpressionContainer wrapping a string)
+      if (
+        value &&
+        value.type === 'JSXExpressionContainer' &&
+        (value.expression.type === 'Literal' ||
+          value.expression.type === 'StringLiteral')
+      ) {
+        const strValue = value.expression.value;
+        if (typeof strValue === 'string') {
+          const numericValue = TOKEN_TO_NUMBER[strValue];
+          if (numericValue !== undefined) {
+            value.expression = j.literal(numericValue);
+            hasChanges = true;
+          }
         }
       }
     }

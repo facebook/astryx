@@ -3,11 +3,7 @@
 'use client';
 
 import stylex from '@stylexjs/stylex';
-import {
-  MagnifyingGlassIcon,
-  UserIcon,
-  ShoppingBagIcon,
-} from '@heroicons/react/24/outline';
+import {Search, User, ShoppingBag} from 'lucide-react';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
@@ -68,11 +64,24 @@ const styles = stylex.create({
     maxWidth: 960,
     marginInline: 'auto',
   },
-  // Fill the full available width instead of capping at 960. Used by the
-  // theme playground where the preview pane is wider than the /themes/<name>
-  // detail card and the grid should stretch edge-to-edge.
+  // Fluid mode used by the theme playground. Caps the showcase at
+  // a sensible max-width so the product grid (3 cards at 240px min +
+  // 16px gap) fills the container naturally — wider caps left a
+  // gutter of unused space on the trailing edge because XDSGrid's
+  // auto-fill column algorithm pads tracks to the start of the row.
+  // Stays centered via the base `content` rule's marginInline:auto.
   contentFluid: {
-    maxWidth: 'none',
+    maxWidth: 880,
+  },
+  // Center-align the text inside each product card. The parent VStack
+  // pinches block-level children to the centre via hAlign="center",
+  // but heading/description text still anchors to the start of its
+  // own block unless `text-align: center` is applied. We use a
+  // stylex rule instead of the XDSHeading/XDSText `justify` prop
+  // because the docsite consumes the published @xds/core build,
+  // which doesn't expose `justify` yet.
+  centerText: {
+    textAlign: 'center',
   },
 });
 
@@ -143,23 +152,26 @@ export function ThemeShowcasePreview({
               <XDSHStack gap={0.5}>
                 <XDSButton
                   label="Search"
+                  tooltip="Search"
                   variant="ghost"
                   isIconOnly
-                  icon={<MagnifyingGlassIcon width={20} height={20} />}
+                  icon={<Search size={20} />}
                   href="#"
                 />
                 <XDSButton
                   label="Account"
+                  tooltip="Account"
                   variant="ghost"
                   isIconOnly
-                  icon={<UserIcon width={20} height={20} />}
+                  icon={<User size={20} />}
                   href="#"
                 />
                 <XDSButton
                   label="Cart"
+                  tooltip="Cart"
                   variant="ghost"
                   isIconOnly
-                  icon={<ShoppingBagIcon width={20} height={20} />}
+                  icon={<ShoppingBag size={20} />}
                   href="#"
                 />
               </XDSHStack>
@@ -171,7 +183,9 @@ export function ThemeShowcasePreview({
         <XDSSection padding={8} variant="transparent">
           <XDSVStack
             gap={10}
-            xstyle={fluid ? [styles.content, styles.contentFluid] : styles.content}>
+            xstyle={
+              fluid ? [styles.content, styles.contentFluid] : styles.content
+            }>
             <XDSCenter>
               <XDSVStack gap={4} hAlign="center" xstyle={styles.heroText}>
                 <XDSText type="display-3">
@@ -198,18 +212,23 @@ export function ThemeShowcasePreview({
                       />
                     </XDSAspectRatio>
                     <div {...stylex.props(styles.cardBody)}>
-                      <XDSVStack gap={2} xstyle={styles.cardStack}>
+                      <XDSVStack
+                        gap={2}
+                        hAlign="center"
+                        xstyle={styles.cardStack}>
                         <XDSHStack>
                           <XDSBadge label={p.badge} variant={p.badgeVariant} />
                         </XDSHStack>
-                        <XDSHeading level={2}>{p.name}</XDSHeading>
+                        <XDSHeading level={2} xstyle={styles.centerText}>
+                          {p.name}
+                        </XDSHeading>
                         <XDSText
                           type="supporting"
                           color="secondary"
-                          xstyle={styles.cardDescription}>
+                          xstyle={[styles.cardDescription, styles.centerText]}>
                           {p.description}
                         </XDSText>
-                        <XDSHStack gap={2} vAlign="center">
+                        <XDSHStack gap={2} vAlign="center" hAlign="center">
                           <XDSNumberInput
                             label="Quantity"
                             isLabelHidden

@@ -103,9 +103,59 @@ describe('migrate-gap-to-numeric', () => {
     expect(output).toContain('gap="custom"');
   });
 
-  it('converts gap on any component with gap prop', async () => {
+  it('does not modify gap on user-defined components', async () => {
     const input = '<CustomComponent gap="space3" />';
     const output = await applyTransform(input);
-    expect(output).toContain('gap={3}');
+    expect(output).toContain('gap="space3"');
+    expect(output).not.toContain('gap={3}');
+  });
+
+  it('does not modify gap on HTML elements', async () => {
+    const input = '<div gap="space4"><span /></div>';
+    const output = await applyTransform(input);
+    expect(output).toContain('gap="space4"');
+    expect(output).not.toContain('gap={4}');
+  });
+
+  it('does not modify rowGap/columnGap on non-XDS components', async () => {
+    const input =
+      '<MyGrid rowGap="space2" columnGap="space6"><div /></MyGrid>';
+    const output = await applyTransform(input);
+    expect(output).toContain('rowGap="space2"');
+    expect(output).toContain('columnGap="space6"');
+  });
+
+  it('does not modify gap on namespaced or member-expression components', async () => {
+    const input = '<Foo.Bar gap="space4"><div /></Foo.Bar>';
+    const output = await applyTransform(input);
+    expect(output).toContain('gap="space4"');
+  });
+
+  it('only rewrites XDS components in mixed files', async () => {
+    const input = `
+      <div>
+        <XDSStack gap="space2"><div /></XDSStack>
+        <CustomComponent gap="space3" />
+        <div gap="space4" />
+      </div>
+    `;
+    const output = await applyTransform(input);
+    expect(output).toContain('gap={2}');
+    expect(output).toContain('gap="space3"');
+    expect(output).toContain('gap="space4"');
+  });
+
+  it.each([
+    'XDSStack',
+    'XDSHStack',
+    'XDSVStack',
+    'XDSGrid',
+    'XDSGridSpan',
+    'XDSStackItem',
+  ])('rewrites gap on %s', async (component) => {
+    const input = `<${component} gap="space5"><div /></${component}>`;
+    const output = await applyTransform(input);
+    expect(output).toContain('gap={5}');
+    expect(output).not.toContain('"space5"');
   });
 });

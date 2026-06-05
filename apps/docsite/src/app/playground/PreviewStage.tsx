@@ -18,7 +18,7 @@
 import * as stylex from '@stylexjs/stylex';
 import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
-import {ArrowsPointingInIcon} from '@heroicons/react/24/outline';
+import {Minimize2} from 'lucide-react';
 
 export type Viewport = 'desktop' | 'phone';
 
@@ -124,7 +124,7 @@ export function PreviewStage({
               variant="ghost"
               size="sm"
               isIconOnly
-              icon={<ArrowsPointingInIcon width={16} height={16} />}
+              icon={<Minimize2 size={16} />}
               onClick={onExitFullscreen}
             />
           </XDSCard>

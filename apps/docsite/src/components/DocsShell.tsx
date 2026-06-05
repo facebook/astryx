@@ -4,7 +4,7 @@
 
 import {useState, useMemo} from 'react';
 import {usePathname} from 'next/navigation';
-import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
+import {Search} from 'lucide-react';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
 import {XDSTextInput} from '@xds/core/TextInput';
@@ -105,9 +105,10 @@ export function DocsShell({
   const isTheme = (p: PackageMeta) => p.name.includes('theme-');
   const libraryPackages = packages.filter(p => !isTheme(p));
 
-  // Classify doc topics by category (from data)
+  // Classify doc topics by category (from data). Getting Started is promoted
+  // to a top-level nav item, so it is excluded from the Guide section.
   const guideTopics = docTopics
-    .filter(d => d.category === 'guide')
+    .filter(d => d.category === 'guide' && d.topic !== 'getting-started')
     .sort((a, b) => a.title.localeCompare(b.title));
   const foundationTopics = docTopics
     .filter(d => d.category === 'foundations')
@@ -129,17 +130,13 @@ export function DocsShell({
         <XDSSideNav>
           {!isOnComponentsRoute && (
             <>
-              {/* Documentation */}
+              {/* Getting Started */}
               <XDSSideNavSection title="Documentation" isHeaderHidden>
                 <XDSSideNavItem
-                  label="Documentation"
-                  href="/docs"
-                  isSelected={pathname === '/docs'}
+                  label="Getting Started"
+                  href="/docs/getting-started"
+                  isSelected={pathname === '/docs/getting-started'}
                 />
-              </XDSSideNavSection>
-
-              {/* What's New */}
-              <XDSSideNavSection title="Changelog" isHeaderHidden>
                 <XDSSideNavItem
                   label="What's New"
                   href="/changelog"
@@ -188,9 +185,9 @@ export function DocsShell({
                     <XDSSideNavItem
                       key={p.name}
                       label={p.name}
-                      href={`/packages/${p.name.replace('@xds/', '')}`}
+                      href={`/docs/${p.name.replace('@xds/', '')}`}
                       isSelected={
-                        pathname === `/packages/${p.name.replace('@xds/', '')}`
+                        pathname === `/docs/${p.name.replace('@xds/', '')}`
                       }
                     />
                   ))}
@@ -209,7 +206,7 @@ export function DocsShell({
                   value={componentQuery}
                   onChange={setComponentQuery}
                   placeholder="Search components…"
-                  startIcon={MagnifyingGlassIcon}
+                  startIcon={Search}
                   hasClear
                   style={{marginBottom: 'var(--spacing-3)'}}
                 />
