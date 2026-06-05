@@ -71,3 +71,58 @@ export const docs = {
     },
   ],
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Confirms destructive/irreversible action before execution — deleting content, revoking access, discarding unsaved changes. For alert w/o managing open state, use useXDSImperativeAlertDialog hook — call alert.show(options) + render alert.element in tree.',
+  usage: {
+    bestPractices: [
+      {guidance: true, description: 'Make action button label specific — "Delete project" better than "OK"/"Confirm".'},
+      {guidance: true, description: 'Describe consequences in description so user knows before confirming.'},
+      {guidance: false, description: 'Use AlertDialog for non-destructive actions — use standard Dialog instead.'},
+    ],
+  },
+  propDescriptions: {
+    isOpen: 'Dialog open state. **(required)**',
+    onOpenChange: 'Visibility change callback. **(required)**',
+    title: 'Dialog title; linked via aria-labelledby. **(required)**',
+    description: 'Consequence description; linked via aria-describedby. **(required)**',
+    actionLabel: 'Action button label. **(required)**',
+    onAction: 'Called when action button clicked; does NOT auto-close. **(required)**',
+    cancelLabel: 'Cancel button label.',
+    actionVariant: 'Action button variant.',
+    isActionLoading: 'Shows loading spinner on action button.',
+    width: 'Dialog width.',
+    isInline: 'Renders inline w/o modal behavior; for documentation previews + showcases only.',
+  },
+  components: [
+    {
+      name: 'XDSAlertDialog',
+      description: 'Modal dialog; asks user to confirm destructive action.',
+      propDescriptions: {
+        isOpen: 'Dialog open state. **(required)**',
+        onOpenChange: 'Visibility change callback. **(required)**',
+        title: 'Dialog title; linked via aria-labelledby. **(required)**',
+        description: 'Consequence description; linked via aria-describedby. **(required)**',
+        actionLabel: 'Action button label. **(required)**',
+        onAction: 'Called when action button clicked; does NOT auto-close. **(required)**',
+        cancelLabel: 'Cancel button label.',
+        actionVariant: 'Action button variant.',
+        isActionLoading: 'Shows loading spinner on action button.',
+        width: 'Dialog width.',
+        isInline: 'Renders inline w/o modal behavior; for documentation previews + showcases only.',
+      },
+    },
+    {
+      name: 'useXDSImperativeAlertDialog',
+      description: 'Hook for alert dialog w/o managing open state; call alert.show(options) to open, alert.hide() to close; render alert.element in JSX tree.',
+      propDescriptions: {
+        show: 'Show alert dialog w/ given options; same as XDSAlertDialog props minus isOpen/onOpenChange.',
+        hide: 'Hide alert dialog.',
+        isOpen: 'Dialog currently open.',
+        element: 'Dialog element — render in JSX tree.',
+      },
+    },
+  ],
+};
