@@ -76,3 +76,29 @@ export const docs = {
   importPath: '@xds/core/hooks',
   category: 'interaction',
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Makes container clickable while preserving nested interactive elements; clicks on nested buttons/links do NOT trigger container action. Detects interactive ancestors between click target + container; ignores text selections. Supports href navigation w/ middle-click + Ctrl/Cmd+click for new tabs.',
+  usage: {
+    bestPractices: [
+      { guidance: true, description: 'Attach both onClick + onMouseUp to container for full click handling including middle-click.' },
+      { guidance: true, description: 'Use inside XDSClickableCard or XDSSelectableCard for standard card interaction pattern.' },
+      { guidance: false, description: 'Use when entire container is single interactive element — use <button> or <a> directly.' },
+    ],
+  },
+  paramDescriptions: {
+    options: 'Config object **(required)**',
+    'options.containerRef': 'Ref to outer container element **(required)**',
+    'options.interactiveRef': 'Ref to primary interactive element inside (link, button); if no onClick/href, clicks proxy to this element',
+    'options.onClick': 'Click handler fired when container surface (not nested interactive element) is clicked',
+    'options.href': 'Navigation URL; when provided, clicking container navigates to this URL',
+    'options.target': "Link target (e.g. '_blank'); used w/ href for navigation",
+    'options.disabled': 'Container disabled state; defaults to false',
+  },
+  returnDescriptions: {
+    onClick: 'Click handler to attach to container element',
+    onMouseUp: 'Mouse-up handler for container; handles middle-click navigation for href',
+  },
+};
