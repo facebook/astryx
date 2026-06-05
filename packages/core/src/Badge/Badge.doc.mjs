@@ -109,28 +109,29 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'highlights a status or category tag — NOT for general metadata',
+  description: 'highlights status/category tag; not for general metadata',
   usage: {
     description:
-      'Badge is for status (Active, Failed) and category tags (Engineering, Design). It is NOT for metadata like dates, durations, counts, or descriptions — use description text (XDSText type="supporting") for those.',
+      'Badge is for status (Active, Failed) + category tags (Engineering, Design); not for metadata like dates, durations, counts, descriptions — use XDSText w/ type="supporting" for those.',
     bestPractices: [
-      {guidance: true, description: 'Every badge steals attention. Only badge states where the user needs to act. If no follow-up is needed, use plain text.'},
-      {guidance: true, description: 'Use success/warning/error ONLY for system status requiring attention (Failed, Degraded, Action Required). These are visually loud — solid colored backgrounds.'},
-      {guidance: true, description: 'Use color variants (blue, purple, teal) for category tags that classify items — team names, content types, priority levels.'},
-      {guidance: true, description: 'Keep labels to one or two words. Add an icon only when it helps identify the badge type.'},
-      {guidance: false, description: 'Apply "success" badges to every healthy/normal item. If most rows are green "Active", none stand out. Skip the badge for the default state — only highlight exceptions that need attention.'},
-      {guidance: false, description: 'Use badges for metadata. Durations, counts, dates, descriptions → use XDSText with type="supporting" instead.'},
-      {guidance: false, description: 'Use status variants for non-status info. "6h window", "12 types", category names are NOT statuses.'},
-      {guidance: false, description: 'Repeat loud badges in every row. Common/default states should be plain text; reserve badges for the exceptional.'},
-      {guidance: false, description: 'Make badges clickable — they are read-only. Use a button or link for actions.'},
+      {guidance: true, description: 'only badge states needing user action — errors, warnings, follow-up items; if no action needed, plain text is fine'},
+      {guidance: true, description: 'use success/warning/error only for system status demanding attention (Failed, Degraded, Action Required); bold solid backgrounds designed to stand out'},
+      {guidance: true, description: 'use color variants (blue, purple, teal, etc.) for category tags — team names, content types, priority levels'},
+      {guidance: true, description: 'keep labels to 1–2 words; put detail in surrounding text instead of badge'},
+      {guidance: true, description: 'add icon when it helps identify badge type; always include text label alongside it'},
+      {guidance: false, description: 'apply "success" to every healthy/normal item; if most rows show green "Active", none stand out — only badge exceptions needing attention'},
+      {guidance: false, description: 'use badges for metadata; durations, counts, dates, descriptions are not statuses — use XDSText w/ type="supporting" instead'},
+      {guidance: false, description: 'use semantic status variants (success, warning, error, info) for categories; these are visually loud + should only indicate system state'},
+      {guidance: false, description: 'repeat same badge in every row; if same value appears in most rows, use plain text — reserve badges for exceptional states'},
+      {guidance: false, description: 'make badges clickable — they are read-only; use button/link for actions'},
     ],
     anatomy: [
-      {name: 'Icon', required: false, description: 'Optional leading icon.'},
-      {name: 'Label', required: true, description: 'Text or number shown inside the badge.'},
+      {name: 'Icon', required: false, description: 'optional leading icon for quick identification'},
+      {name: 'Label', required: true, description: 'text/number shown inside badge'},
     ],
   },
   propDescriptions: {
-    variant: 'visual style variant',
+    variant: 'visual style; semantic variants (neutral, info, success, warning, error) use solid backgrounds; color variants use tinted backgrounds w/ colored text',
     label: 'badge text content',
     icon: 'optional leading icon',
   },
