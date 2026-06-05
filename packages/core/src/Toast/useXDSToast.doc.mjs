@@ -30,3 +30,19 @@ export const docs = {
   importPath: '@xds/core/Toast',
   category: 'interaction',
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Show toast notifications from anywhere in component tree; returns fn accepting toast options. Works w/ XDSLayerProvider automatically or self-mounts fallback viewport.',
+  usage: {
+    bestPractices: [
+      { guidance: true, description: 'Use for transient success/error feedback not requiring user action.' },
+      { guidance: true, description: 'Set uniqueID to deduplicate toasts from rapid user actions.' },
+      { guidance: false, description: 'Use for critical errors requiring acknowledgment — use AlertDialog instead.' },
+      { guidance: false, description: 'Call useXDSToast in same component rendering XDSLayerProvider — must be called from child component inside provider.' },
+    ],
+  },
+  propDescriptions: {
+    showToast: 'Show toast; returns dismiss fn. Options: body (ReactNode), type (\'info\'/\'error\'), isAutoHide, autoHideDuration, endContent, uniqueID, collisionBehavior.',
+  },
+};
