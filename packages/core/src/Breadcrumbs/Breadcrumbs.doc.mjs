@@ -189,17 +189,16 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'link trail from root to current page for wayfinding',
+  description: 'link trail from root to current page for wayfinding + back-navigation',
   usage: {
-    description:
-      'Breadcrumbs show a trail of links from root to current page. Use at the top of detail pages, settings, or nested content.',
     bestPractices: [
-      {guidance: true, description: 'Place above the page heading. Keep labels short and matching page titles.'},
-      {guidance: true, description: 'Use supporting variant in dense UIs where the breadcrumb should be subtle.'},
-      {guidance: true, description: 'Last item should be plain text (isCurrent), not a link.'},
-      {guidance: false, description: 'Use as primary navigation — breadcrumbs supplement, not replace, a main nav.'},
-      {guidance: false, description: 'Show on top-level pages with no parent.'},
-      {guidance: false, description: 'Let the trail exceed 5 levels — simplify the hierarchy instead.'},
+      {guidance: true, description: 'Place above page heading so user sees location before content.'},
+      {guidance: true, description: 'Keep labels short + matching page titles — "Settings" not "Application Settings Page".'},
+      {guidance: true, description: 'Use supporting variant in dense UIs like admin panels/sidebars where breadcrumb should be subtle.'},
+      {guidance: true, description: 'Last item = plain text, not link — represents current page; automatically applied when isCurrent set.'},
+      {guidance: false, description: 'Use as primary navigation — breadcrumbs supplement sidebar/top nav, not replace it.'},
+      {guidance: false, description: 'Show on top-level pages w/ no parent — adds clutter w/o helping user.'},
+      {guidance: false, description: 'Let trail grow beyond 5 levels — simplify page hierarchy instead.'},
     ],
   },
   components: [
@@ -208,25 +207,22 @@ export const docsDense = {
       displayName: 'Breadcrumbs',
       description: 'nav container rendering <nav> w/ ordered breadcrumb list',
       propDescriptions: {
-        children: 'XDSBreadcrumbItem elements in breadcrumb trail',
         separator: 'separator between items',
-        variant: 'supporting=smaller w/ secondary text styling',
+        variant: 'supporting = smaller w/ secondary text styling',
         label: 'nav landmark aria-label',
-        xstyle: 'StyleX layout customization via stylex.create()',
       },
     },
     {
       name: 'XDSBreadcrumbItem',
       isHiddenFromOverview: true,
       displayName: 'Breadcrumb Item',
-      description: 'individual breadcrumb; link w/ href, plain text for current page',
+      description: 'single breadcrumb; link w/ href, plain text if current page',
       propDescriptions: {
-        children: 'label content',
         href: 'link URL; omit for non-navigable items',
         onClick: 'click handler',
         isCurrent: 'marks current page w/ aria-current="page"',
         startIcon: 'icon before label',
-        as: 'custom link component; overrides XDSLinkProvider default',
+        as: 'custom link component instead of <a>; overrides XDSLinkProvider default; only applies to non-current items',
       },
     },
   ],
