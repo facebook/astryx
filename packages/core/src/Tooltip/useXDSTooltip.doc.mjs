@@ -57,3 +57,21 @@ export const docs = {
   importPath: '@xds/core/Tooltip',
   category: 'interaction',
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Headless hover/focus tooltip hook; builds on useXDSLayer w/ hover intent, delay + aria-describedby linking. Use for custom triggers needing tooltip behavior.',
+  usage: {
+    bestPractices: [
+      { guidance: true, description: 'Use for brief text labels describing UI element — icon buttons, truncated text, abbreviations.' },
+      { guidance: true, description: 'Prefer XDSTooltip for standard wrapping — use hook when trigger is not simple child.' },
+      { guidance: false, description: 'Put interactive content (links, buttons) in tooltips — use Popover or HoverCard instead.' },
+    ],
+  },
+  propDescriptions: {
+    content: 'Text/content to display in tooltip **(required)**',
+    placement: 'Position relative to trigger',
+    alignment: 'Alignment along placement axis',
+    delayMs: 'Delay before showing tooltip on hover',
+  },
+};
