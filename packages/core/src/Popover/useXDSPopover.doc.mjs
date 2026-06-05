@@ -93,3 +93,24 @@ export const docs = {
   importPath: '@xds/core/Popover',
   category: 'interaction',
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Headless click-triggered popover hook w/ focus trapping; combines useXDSLayer + useFocusTrap for dialog-like behavior. Use for interactive floating content needing keyboard nav.',
+  usage: {
+    bestPractices: [
+      { guidance: true, description: 'Use for interactive content (forms, menus, pickers) needing focus trapping + light dismiss.' },
+      { guidance: true, description: 'Prefer XDSPopover for standard trigger-content pairs — use hook only for custom trigger patterns.' },
+      { guidance: false, description: 'Use for non-interactive hover previews — use useXDSHoverCard or useXDSTooltip instead.' },
+    ],
+  },
+  propDescriptions: {
+    content: 'Popover content; can be render fn receiving layer props **(required)**',
+    placement: 'Position relative to trigger',
+    alignment: 'Alignment along placement axis',
+    hasLightDismiss: 'Clicking outside dismisses popover',
+    hasSurface: 'Apply default surface styles (background, shadow, radius)',
+    onShow: 'Callback when popover becomes visible',
+    onHide: 'Callback when popover hides',
+  },
+};
