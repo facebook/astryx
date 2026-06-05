@@ -109,6 +109,9 @@ importers:
       '@xds/core':
         specifier: '*'
         version: link:../../packages/core
+      '@xds/lab':
+        specifier: '*'
+        version: link:../../packages/lab
       '@xds/theme-butter':
         specifier: '*'
         version: link:../../packages/themes/butter
