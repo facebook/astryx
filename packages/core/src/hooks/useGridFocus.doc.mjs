@@ -91,3 +91,32 @@ export const docs = {
   importPath: '@xds/core/hooks',
   category: 'focus',
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'WAI-ARIA grid keyboard nav; arrow keys for cell-to-cell, Home/End for row bounds, Ctrl+Home/Ctrl+End for grid bounds, Page Up/Down for custom callbacks (e.g., calendar month nav). Boundary callbacks enable cross-grid nav.',
+  usage: {
+    bestPractices: [
+      { guidance: true, description: 'Use for calendar date grids — wire onPageUp/onPageDown to month nav + onNavigateBefore/onNavigateAfter for cross-month arrow key nav.' },
+      { guidance: true, description: 'Attach both gridRef + handleKeyDown to grid container element.' },
+      { guidance: false, description: 'Use for simple linear lists — use useListFocus instead for 1D nav.' },
+    ],
+  },
+  paramDescriptions: {
+    options: 'Config object for grid focus behavior **(required)**',
+    'options.columns': 'Column count in grid; used for up/down nav (moves by this many cells) **(required)**',
+    'options.cellSelector': 'Selector for focusable cells within grid',
+    'options.onNavigateBefore': 'Callback when nav would go before first cell; receives column index + offset (1 for horizontal, columns for vertical)',
+    'options.onNavigateAfter': 'Callback when nav would go after last cell; receives column index + offset',
+    'options.onPageUp': 'Callback for Page Up key (e.g., nav to previous month in calendars)',
+    'options.onPageDown': 'Callback for Page Down key (e.g., nav to next month in calendars)',
+  },
+  returnDescriptions: {
+    gridRef: 'Ref to attach to grid container element',
+    handleKeyDown: 'Key down handler to attach to grid container',
+    focusCell: 'Focus specific cell by index (clamped to valid range)',
+    focusFirst: 'Focus first focusable cell in grid',
+    focusLast: 'Focus last focusable cell in grid',
+  },
+};
