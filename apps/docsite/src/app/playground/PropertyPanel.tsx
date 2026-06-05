@@ -57,14 +57,11 @@ const s = stylex.create({
   },
   header: {
     flexShrink: 0,
-    padding: 'var(--spacing-3) var(--spacing-3) var(--spacing-2)',
   },
   scroll: {
     flex: 1,
     minHeight: 0,
     overflow: 'auto',
-    padding: 'var(--spacing-3)',
-    paddingBlockStart: 0,
   },
   row: {
     paddingBlock: 'var(--spacing-2)',
@@ -351,27 +348,27 @@ export function PropertyPanel({
   const required = props.filter(p => p.required);
   const optional = props.filter(p => !p.required);
 
-  const selectedLabel = used.find(u => u.module === selected)?.label ?? selected;
+  const selectedLabel =
+    used.find(u => u.module === selected)?.label ?? selected;
 
-  const menuItems = used.length > 1
-    ? used.map(u => ({
-        label: u.count > 1 ? `${u.label} (${u.count})` : u.label,
-        onClick: () => {
-          setSelected(u.module);
-          setInstanceIndex(0);
-          onFlashInstance?.(u.module, 0);
-        },
-      }))
-    : [];
+  const menuItems =
+    used.length > 1
+      ? used.map(u => ({
+          label: u.count > 1 ? `${u.label} (${u.count})` : u.label,
+          onClick: () => {
+            setSelected(u.module);
+            setInstanceIndex(0);
+            onFlashInstance?.(u.module, 0);
+          },
+        }))
+      : [];
 
   return (
     <div {...stylex.props(s.root)}>
       <div {...stylex.props(s.header)}>
         <XDSVStack gap={2}>
           <XDSHStack gap={0} vAlign="center">
-            <XDSHeading level={3}>
-              {selectedLabel}
-            </XDSHeading>
+            <XDSHeading level={3}>{selectedLabel}</XDSHeading>
             {menuItems.length > 0 && (
               <XDSDropdownMenu
                 button={{

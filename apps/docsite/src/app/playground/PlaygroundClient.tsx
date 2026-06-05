@@ -6,10 +6,9 @@
  * @output Full-page two-panel playground (editor + live preview)
  * @position app/playground — the interactive XDS code playground.
  *
- * Left panel: back + tabs (Code · Property · Craft).
+ * Left nav rail: icon-only buttons — back · Code · Properties — toggle the left panel body.
  *   - Code: Monaco editor (controlled) with real XDS .d.ts typedefs.
- *   - Property: component selector + instance picker + knobs that edit the code.
- *   - Craft: disabled AI chat placeholder.
+ *   - Properties: component selector + instance picker + knobs that edit the code.
  * Right panel: toolbar (theme + dark mode · expand · viewport segmented control ·
  *   target element · reset · share) over a responsive /playground-preview iframe.
  *
@@ -30,14 +29,14 @@ import {
   decompressFromEncodedURIComponent,
 } from 'lz-string';
 import {XDSButton} from '@xds/core/Button';
-import {XDSCard} from '@xds/core/Card';
+import {XDSLink} from '@xds/core/Link';
 import {XDSSelector} from '@xds/core/Selector';
+import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {XDSCard} from '@xds/core/Card';
 import {XDSSection} from '@xds/core/Section';
-import {XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSStatusDot} from '@xds/core/StatusDot';
 import {XDSToolbar} from '@xds/core/Toolbar';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {
   XDSSegmentedControl,
   XDSSegmentedControlItem,
@@ -46,6 +45,7 @@ import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
 import {XDSToggleButton} from '@xds/core/ToggleButton';
 import {
   ArrowLeft,
+  Code2,
   Moon,
   Sun,
   Monitor,
@@ -53,6 +53,7 @@ import {
   Maximize2,
   RotateCw,
   Crosshair,
+  SlidersHorizontal,
 } from 'lucide-react';
 import githubLight from './themes/github-light.json';
 import githubDark from './themes/github-dark.json';
@@ -64,6 +65,7 @@ import {
 import {PreviewStage, type Viewport} from './PreviewStage';
 import {PropertyPanel} from './PropertyPanel';
 import {annotateInstanceIds} from './babelParser';
+import {BRAND_ICON} from '../../components/XDSWordmark';
 
 import type * as MonacoTypes from 'monaco-editor';
 
@@ -289,25 +291,25 @@ const BUILD_STATUS_META: Record<
 };
 
 const s = stylex.create({
-  root: {
+  shell: {
     display: 'flex',
     height: '100%',
     overflow: 'hidden',
     backgroundColor: 'var(--color-background-surface)',
   },
+  navRail: {
+    padding: 'var(--spacing-3)',
+    flexShrink: 0,
+  },
+  root: {
+    flex: 1,
+    height: '100%',
+    overflow: 'hidden',
+  },
   leftPanel: {
     flexShrink: 0,
-    display: 'flex',
-    flexDirection: 'column',
     overflow: 'hidden',
     minWidth: 0,
-  },
-  panelHeader: {
-    flexShrink: 0,
-    padding: 'var(--spacing-2) var(--spacing-2) 0',
-  },
-  tabStretch: {
-    flex: 1,
   },
   tabBody: {
     flex: 1,
@@ -325,17 +327,12 @@ const s = stylex.create({
   hidden: {
     display: 'none',
   },
-  rightPanel: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    minWidth: 0,
-    overflow: 'hidden',
-  },
   previewCard: {
     display: 'flex',
     flexDirection: 'column',
+    flex: 1,
     height: '100%',
+    minWidth: 0,
     minHeight: 0,
   },
   previewToolbar: {
@@ -676,201 +673,218 @@ export function PlaygroundClient() {
   );
 
   return (
-    <div {...stylex.props(s.root)} onPointerDownCapture={handleResizeProbe}>
-      {/* Left panel — editor */}
-      <div
-        {...stylex.props(s.leftPanel)}
-        style={{width: editorPanel.size || 440}}>
-        <XDSHStack gap={2} vAlign="center" xstyle={s.panelHeader}>
-          <XDSButton
-            label="Back"
-            tooltip="Back"
-            variant="ghost"
-            size="md"
-            isIconOnly
-            icon={<ArrowLeft size={20} />}
-            onClick={() => router.back()}
+    <div {...stylex.props(s.shell)}>
+      {/* Vertical icon nav rail */}
+      <XDSVStack gap={1} align="center" xstyle={s.navRail}>
+        <XDSLink label="Astryx home" href="/">
+          {BRAND_ICON}
+        </XDSLink>
+        <XDSButton
+          label="Back"
+          tooltip="Back"
+          variant="ghost"
+          size="md"
+          isIconOnly
+          icon={<ArrowLeft size={20} />}
+          onClick={() => router.back()}
+        />
+        <XDSToggleButton
+          label="Code"
+          tooltip="Code"
+          isPressed={activeTab === 'code'}
+          onPressedChange={() => setActiveTab('code')}
+          size="md"
+          isIconOnly
+          icon={<Code2 size={20} />}
+        />
+        <XDSToggleButton
+          label="Properties"
+          tooltip="Properties"
+          isPressed={activeTab === 'property'}
+          onPressedChange={() => setActiveTab('property')}
+          size="md"
+          isIconOnly
+          icon={<SlidersHorizontal size={20} />}
+        />
+      </XDSVStack>
+      <XDSSection padding={3} width="100%" height="100%">
+        <XDSHStack
+          gap={2}
+          xstyle={s.root}
+          onPointerDownCapture={handleResizeProbe}>
+          {/* Left panel — editor */}
+          <XDSVStack xstyle={s.leftPanel} width={editorPanel.size || 440}>
+            <div {...stylex.props(s.tabBody)}>
+              {/* Code: Monaco stays mounted to preserve typedefs + editor state */}
+              <div
+                {...stylex.props(s.codePane, activeTab !== 'code' && s.hidden)}>
+                <MonacoEditor
+                  defaultLanguage="typescript"
+                  value={code}
+                  path="playground.tsx"
+                  theme={editorTheme}
+                  onChange={v => setCode(v ?? '')}
+                  beforeMount={handleMonacoBeforeMount}
+                  onMount={handleMonacoMount}
+                  options={editorOptions}
+                />
+              </div>
+
+              {activeTab === 'property' && (
+                <PropertyPanel
+                  code={code}
+                  onCodeChange={setCode}
+                  onRevealInCode={revealInCode}
+                  onFlashInstance={selectInstance}
+                  externalSelection={
+                    targetedComponent != null
+                      ? {
+                          component: targetedComponent,
+                          instanceIndex: targetedInstance,
+                        }
+                      : undefined
+                  }
+                  onExternalSelectionConsumed={() => {
+                    setTargetedComponent(null);
+                  }}
+                />
+              )}
+            </div>
+          </XDSVStack>
+
+          <XDSResizeHandle
+            label="Resize editor panel"
+            resizable={editorPanel.props}
+            pillPlacement="center"
           />
-          <XDSTabList
-            value={activeTab}
-            onChange={v => setActiveTab(v as LeftTab)}
-            size="md"
-            xstyle={s.tabStretch}>
-            <XDSTab value="code" label="Code" xstyle={s.tabStretch} />
-            <XDSTab value="property" label="Properties" xstyle={s.tabStretch} />
-          </XDSTabList>
-        </XDSHStack>
 
-        <div {...stylex.props(s.tabBody)}>
-          {/* Code: Monaco stays mounted to preserve typedefs + editor state */}
-          <div {...stylex.props(s.codePane, activeTab !== 'code' && s.hidden)}>
-            <MonacoEditor
-              defaultLanguage="typescript"
-              value={code}
-              path="playground.tsx"
-              theme={editorTheme}
-              onChange={v => setCode(v ?? '')}
-              beforeMount={handleMonacoBeforeMount}
-              onMount={handleMonacoMount}
-              options={editorOptions}
-            />
-          </div>
-
-          {activeTab === 'property' && (
-            <PropertyPanel
-              code={code}
-              onCodeChange={setCode}
-              onRevealInCode={revealInCode}
-              onFlashInstance={selectInstance}
-              externalSelection={
-                targetedComponent != null
-                  ? {
-                      component: targetedComponent,
-                      instanceIndex: targetedInstance,
+          {/* Right panel — preview */}
+          <XDSCard padding={0} xstyle={[s.previewCard]}>
+            <XDSToolbar
+              xstyle={[s.previewToolbar]}
+              label="Preview controls"
+              startContent={
+                <XDSHStack gap={2} vAlign="center">
+                  <XDSSelector
+                    label="Theme"
+                    isLabelHidden
+                    options={PLAYGROUND_THEME_OPTIONS}
+                    value={theme}
+                    onChange={setTheme}
+                    size="md"
+                  />
+                  <XDSButton
+                    label={
+                      mode === 'light' ? 'Switch to dark' : 'Switch to light'
                     }
-                  : undefined
+                    tooltip={mode === 'light' ? 'Dark mode' : 'Light mode'}
+                    variant="ghost"
+                    size="md"
+                    isIconOnly
+                    icon={
+                      mode === 'light' ? <Moon size={20} /> : <Sun size={20} />
+                    }
+                    onClick={() =>
+                      setMode(m => (m === 'light' ? 'dark' : 'light'))
+                    }
+                  />
+                </XDSHStack>
               }
-              onExternalSelectionConsumed={() => {
-                setTargetedComponent(null);
-              }}
-            />
-          )}
-        </div>
-      </div>
-
-      <XDSResizeHandle
-        label="Resize editor panel"
-        resizable={editorPanel.props}
-        pillPlacement="center"
-      />
-
-      {/* Right panel — preview */}
-      <XDSSection variant="transparent" xstyle={[s.rightPanel]}>
-        <XDSCard padding={0} xstyle={[s.previewCard]}>
-          <XDSToolbar
-            xstyle={[s.previewToolbar]}
-            label="Preview controls"
-            startContent={
-              <XDSHStack gap={2} vAlign="center">
-                <XDSSelector
-                  label="Theme"
-                  isLabelHidden
-                  options={PLAYGROUND_THEME_OPTIONS}
-                  value={theme}
-                  onChange={setTheme}
-                  size="md"
-                />
-                <XDSButton
-                  label={
-                    mode === 'light' ? 'Switch to dark' : 'Switch to light'
-                  }
-                  tooltip={mode === 'light' ? 'Dark mode' : 'Light mode'}
-                  variant="ghost"
-                  size="md"
-                  isIconOnly
-                  icon={
-                    mode === 'light' ? <Moon size={20} /> : <Sun size={20} />
-                  }
-                  onClick={() =>
-                    setMode(m => (m === 'light' ? 'dark' : 'light'))
-                  }
-                />
-              </XDSHStack>
-            }
-            centerContent={
-              <XDSHStack gap={2} vAlign="center">
-                <XDSToggleButton
-                  label="Target element"
-                  tooltip={
-                    isTargeting
-                      ? 'Exit targeting (Esc)'
-                      : 'Click to select an element'
-                  }
-                  isPressed={isTargeting}
-                  onPressedChange={toggleTargeting}
-                  size="md"
-                  isIconOnly
-                  icon={<Crosshair size={20} />}
-                />
-                <XDSSegmentedControl
-                  label="Viewport size"
-                  size="md"
-                  value={viewport}
-                  onChange={v => setViewport(v as Viewport)}>
-                  <XDSSegmentedControlItem
-                    value="desktop"
-                    label="Desktop"
-                    isLabelHidden
-                    icon={<Monitor size={20} />}
+              centerContent={
+                <XDSHStack gap={2} vAlign="center">
+                  <XDSToggleButton
+                    label="Target element"
+                    tooltip={
+                      isTargeting
+                        ? 'Exit targeting (Esc)'
+                        : 'Click to select an element'
+                    }
+                    isPressed={isTargeting}
+                    onPressedChange={toggleTargeting}
+                    size="md"
+                    isIconOnly
+                    icon={<Crosshair size={20} />}
                   />
-                  <XDSSegmentedControlItem
-                    value="phone"
-                    label="Phone"
-                    isLabelHidden
-                    icon={<Smartphone size={20} />}
-                  />
-                </XDSSegmentedControl>
-                <XDSButton
-                  label="Expand"
-                  tooltip="Fullscreen preview"
-                  variant="ghost"
-                  size="md"
-                  isIconOnly
-                  icon={<Maximize2 size={20} />}
-                  onClick={() => setIsFullscreen(true)}
-                />
-              </XDSHStack>
-            }
-            endContent={
-              <XDSHStack gap={2} vAlign="center">
-                {buildStatus !== 'idle' && (
-                  <div
-                    {...stylex.props(s.buildStatus)}
-                    style={{opacity: statusFading ? 0 : 1}}>
-                    <XDSStatusDot
-                      variant={BUILD_STATUS_META[buildStatus].variant}
-                      label={BUILD_STATUS_META[buildStatus].label}
-                      isPulsing={buildStatus === 'building'}
+                  <XDSSegmentedControl
+                    label="Viewport size"
+                    size="md"
+                    value={viewport}
+                    onChange={v => setViewport(v as Viewport)}>
+                    <XDSSegmentedControlItem
+                      value="desktop"
+                      label="Desktop"
+                      isLabelHidden
+                      icon={<Monitor size={20} />}
                     />
-                    <XDSText type="supporting" color="secondary">
-                      {BUILD_STATUS_META[buildStatus].label}
-                    </XDSText>
-                    {buildStatus === 'error' && (
-                      <XDSButton
-                        label="Rebuild"
-                        tooltip="Rebuild"
-                        variant="ghost"
-                        size="sm"
-                        isIconOnly
-                        icon={<RotateCw size={16} />}
-                        onClick={handleRebuild}
+                    <XDSSegmentedControlItem
+                      value="phone"
+                      label="Phone"
+                      isLabelHidden
+                      icon={<Smartphone size={20} />}
+                    />
+                  </XDSSegmentedControl>
+                  <XDSButton
+                    label="Expand"
+                    tooltip="Fullscreen preview"
+                    variant="ghost"
+                    size="md"
+                    isIconOnly
+                    icon={<Maximize2 size={20} />}
+                    onClick={() => setIsFullscreen(true)}
+                  />
+                </XDSHStack>
+              }
+              endContent={
+                <XDSHStack gap={2} vAlign="center">
+                  {buildStatus !== 'idle' && (
+                    <div
+                      {...stylex.props(s.buildStatus)}
+                      style={{opacity: statusFading ? 0 : 1}}>
+                      <XDSStatusDot
+                        variant={BUILD_STATUS_META[buildStatus].variant}
+                        label={BUILD_STATUS_META[buildStatus].label}
+                        isPulsing={buildStatus === 'building'}
                       />
-                    )}
-                  </div>
-                )}
-                <XDSButton
-                  label="Reset"
-                  variant="ghost"
-                  size="md"
-                  onClick={() => setCode(seedCodeRef.current)}
-                />
-                <XDSButton
-                  label={copied ? '✓ Copied' : 'Share'}
-                  variant={copied ? 'primary' : 'secondary'}
-                  size="md"
-                  onClick={handleShare}
-                />
-              </XDSHStack>
-            }
-          />
-          <PreviewStage
-            viewport={viewport}
-            isFullscreen={isFullscreen}
-            onExitFullscreen={() => setIsFullscreen(false)}
-            iframeRef={iframeRef}
-            isInteractionDisabled={isResizing}
-          />
-        </XDSCard>
+                      <XDSText type="supporting" color="secondary">
+                        {BUILD_STATUS_META[buildStatus].label}
+                      </XDSText>
+                      {buildStatus === 'error' && (
+                        <XDSButton
+                          label="Rebuild"
+                          tooltip="Rebuild"
+                          variant="ghost"
+                          size="sm"
+                          isIconOnly
+                          icon={<RotateCw size={16} />}
+                          onClick={handleRebuild}
+                        />
+                      )}
+                    </div>
+                  )}
+                  <XDSButton
+                    label="Reset"
+                    variant="ghost"
+                    size="md"
+                    onClick={() => setCode(seedCodeRef.current)}
+                  />
+                  <XDSButton
+                    label={copied ? '✓ Copied' : 'Share'}
+                    variant={copied ? 'primary' : 'secondary'}
+                    size="md"
+                    onClick={handleShare}
+                  />
+                </XDSHStack>
+              }
+            />
+            <PreviewStage
+              viewport={viewport}
+              isFullscreen={isFullscreen}
+              onExitFullscreen={() => setIsFullscreen(false)}
+              iframeRef={iframeRef}
+              isInteractionDisabled={isResizing}
+            />
+          </XDSCard>
+        </XDSHStack>
       </XDSSection>
     </div>
   );
