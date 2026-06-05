@@ -337,7 +337,6 @@ const s = stylex.create({
     flexDirection: 'column',
     height: '100%',
     minHeight: 0,
-    boxShadow: 'var(--shadow-med)',
   },
   previewToolbar: {
     borderBottomWidth: 1,

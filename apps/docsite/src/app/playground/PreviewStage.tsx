@@ -61,7 +61,6 @@ const s = stylex.create({
     overflow: 'hidden',
     maxWidth: '100%',
     maxHeight: '100%',
-    boxShadow: 'var(--shadow-med)',
     transitionProperty: 'width, height, border-radius',
     transitionDuration: 'var(--duration-medium, 410ms)',
     transitionTimingFunction:
