@@ -61,11 +61,17 @@ export async function component(name, options = {}) {
     source = false,
     showcase = false,
     blocks = false,
-    detail = 'full',
+    detail: detailOpt,
     lang = null,
     zh = false,
     dense = false,
   } = options;
+
+  // Default detail depends on mode: single-component view defaults to 'full'
+  // (the rich doc the user asked for); list/category views default to 'brief'
+  // (a scannable name list). This mirrors the CLI command so the API and CLI
+  // stay in parity. Callers can override with an explicit detail value.
+  const detail = detailOpt || ((category || list || !name) ? 'brief' : 'full');
 
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {

@@ -31,10 +31,15 @@ export async function hook(name, options = {}) {
     list = false,
     category,
     params = false,
-    detail = 'full',
+    detail: detailOpt,
     lang = null,
     zh = false,
   } = options;
+
+  // Default detail depends on mode: single-hook view defaults to 'full'; list/
+  // category views default to 'brief' (scannable name list). Mirrors the CLI
+  // command so the API and CLI stay in parity. Callers can override.
+  const detail = detailOpt || ((category || list || !name) ? 'brief' : 'full');
 
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
