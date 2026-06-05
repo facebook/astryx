@@ -60,3 +60,23 @@ export const docs = {
   importPath: '@xds/core/hooks',
   category: 'media',
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Detects dark/light image luminance by sampling pixels via OffscreenCanvas. Uses APCA perceptual lightness (sRGB linearization + power curve) for accuracy on saturated colors. Runs off paint path — no visible canvas, no layout thrash. Supports regional sampling where text overlays appear. Returns null while loading; falls back gracefully on CORS/network errors.',
+  usage: {
+    bestPractices: [
+      { guidance: true, description: 'Pair w/ XDSMediaTheme to automatically adapt text color over dynamic background images.' },
+      { guidance: true, description: 'Use region option to sample only area where text overlays appear for more accurate results.' },
+      { guidance: false, description: 'Use for rapidly changing images (e.g., video frames) — each src change triggers new fetch + analysis.' },
+    ],
+  },
+  propDescriptions: {
+    src: 'Image source URL to analyze; when null/undefined, returns fallback value. **(required)**',
+    options: 'Config for image analysis.',
+    'options.region': 'Region to sample w/ normalized 0-1 coordinates ({ x, y, width, height }). Defaults to full image.',
+    'options.threshold': 'Luminance threshold for dark/light split; below = dark, above = light.',
+    'options.fallback': 'Fallback value while loading/on error.',
+  },
+};
