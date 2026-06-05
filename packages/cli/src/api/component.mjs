@@ -45,7 +45,7 @@ function resolveExternalPackage(packageName, cwd) {
  * @param {boolean} [options.source]
  * @param {boolean} [options.showcase]
  * @param {boolean} [options.blocks]
- * @param {'full'|'compact'|'brief'} [options.detail]
+ * @param {'full'|'compact'|'brief'} [options.detail] - Defaults to 'full' for a single component, 'brief' for list views (list/category/no name), matching the CLI.
  * @param {string} [options.lang]
  * @param {boolean} [options.zh]
  * @param {boolean} [options.dense]
@@ -61,11 +61,18 @@ export async function component(name, options = {}) {
     source = false,
     showcase = false,
     blocks = false,
-    detail = 'full',
+    detail: detailOption,
     lang = null,
     zh = false,
     dense = false,
   } = options;
+
+  // Default detail level mirrors the CLI (see commands/component/index.mjs):
+  // single-component views default to 'full', list-style views (--list,
+  // --category, or no name) default to 'brief' (scannable name lists).
+  // Keeping this in sync with the CLI is what the API↔CLI parity test checks.
+  const isListView = list || category != null || !name;
+  const detail = detailOption ?? (isListView ? 'brief' : 'full');
 
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
