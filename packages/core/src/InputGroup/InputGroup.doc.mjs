@@ -68,46 +68,36 @@ export const docs = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'groups input with prefix/suffix addons in a connected container',
+  description: 'groups input w/ prefix/suffix addons in connected container; shared border + focus ring',
   usage: {
-    description: 'InputGroup connects an input with addons. Use for URL fields, currency inputs, search with actions.',
     bestPractices: [
-      {guidance: true, description: 'Text addons for units/prefixes. isInteractive for buttons/selectors.'},
-      {guidance: true, description: 'isLabelHidden on inner input, group label visible.'},
-      {guidance: false, description: 'Don\'t put multiple inputs in one group. Don\'t group unrelated inputs.'},
+      {guidance: true, description: 'text addons to show units/prefixes/suffixes clarifying input format (e.g., "$", "kg", "https://")'},
+      {guidance: true, description: 'use XDSInputGroupText for static prefixes/suffixes like "$", "kg", "https://"'},
+      {guidance: true, description: 'set isLabelHidden on inner input; let group label be visible'},
+      {guidance: false, description: 'Don\'t put multiple text inputs in one group — use separate fields instead'},
+      {guidance: false, description: 'Don\'t use InputGroup for unrelated inputs — only for single input w/ decorations'},
     ],
   },
   components: [
     {
       name: 'XDSInputGroup',
-      displayName: 'Input Group',
-      description: 'connected input+addon container w/ shared border, focus ring',
+      description: 'connected input+addon container w/ shared border + focus ring',
       propDescriptions: {
-        children: 'input + addon children',
-        label: 'a11y label',
+        label: 'accessible label for group **(required)**',
         isLabelHidden: 'visually hide label',
-        description: 'helper text',
-        isDisabled: 'disable group',
-        isOptional: 'show "(optional)"',
-        isRequired: 'mark required',
-        size: 'default input size',
-        status: 'error/warning/success border',
-        labelTooltip: 'tooltip at label end',
-        xstyle: 'StyleX layout styles',
+        description: 'helper text between label + input group',
+        isDisabled: 'disable entire group',
+        isOptional: 'show "(optional)" indicator',
+        isRequired: 'mark field as required',
+        size: 'default size for inputs in group',
+        status: 'status indicator on group border',
+        labelTooltip: 'tooltip text at label end',
         'data-testid': 'test selector',
       },
     },
     {
       name: 'XDSInputGroupText',
-      isHiddenFromOverview: true,
-      displayName: 'Input Group Text',
-      description: 'prefix/suffix text/icon element',
-      propDescriptions: {
-        children: 'text or icon content',
-        xstyle: 'StyleX styles',
-        className: 'CSS class name(s)',
-        style: 'inline styles',
-      },
+      description: 'prefix/suffix text/icon element inside XDSInputGroup',
     },
   ],
 };
