@@ -23,3 +23,13 @@ export const docs = {
     {name: 'xstyle', type: 'StyleXStyles', description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.'},
   ],
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Accessible menu container + items for nav heading popovers. XDSNavHeadingMenu: role="menu" w/ keyboard nav; XDSNavHeadingMenuItem: individual selectable items. Pass as menu prop of XDSSideNavHeading/XDSTopNavHeading.',
+  propDescriptions: {
+    size: 'Controls min-width + item padding.',
+    minWidth: 'Min-width override.',
+  },
+};
