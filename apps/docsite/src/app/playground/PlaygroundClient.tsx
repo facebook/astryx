@@ -237,6 +237,21 @@ function configureMonaco(monaco: MonacoInstance) {
         );
       }
 
+      // Heroicons ambient declarations, one per size/style variant. Template
+      // and example code imports icons by name from
+      // '@heroicons/react/{16,20,24}/{outline,solid}', so each declaration
+      // exposes the variant's icons as named exports. Without these, every
+      // heroicons import lights up with a "Cannot find module" red squiggle
+      // once semantic validation turns on below.
+      const heroiconFiles = packages['@heroicons/react'] ?? {};
+      for (const [fileName, content] of Object.entries(heroiconFiles)) {
+        const variant = fileName.replace(/\.d\.ts$/, '');
+        ts.addExtraLib(
+          content,
+          `file:///node_modules/@heroicons/react/${variant}/index.d.ts`,
+        );
+      }
+
       const xdsFiles = packages['@xds/core'] ?? {};
       const submoduleReexports: string[] = [];
 

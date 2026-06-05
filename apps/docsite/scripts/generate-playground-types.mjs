@@ -143,10 +143,50 @@ declare module '@stylexjs/stylex' {
 }
 `;
 
+// Heroicons ambient module declarations. Template and example code still
+// imports icons from '@heroicons/react/{16,20,24}/{outline,solid}'. Bundling
+// the package's ~10k individual .d.ts files would bloat the payload, so we
+// synthesize one ambient module per variant exposing each icon as a named
+// export. Icon names are read from the installed package's per-variant
+// index.d.ts so the set stays accurate (e.g. 16/solid ships fewer icons).
+function buildHeroiconTypes() {
+  const variants = ['16/solid', '20/solid', '24/outline', '24/solid'];
+  const heroRoot = join(root, '..', '..', 'node_modules', '@heroicons', 'react');
+  const iconType =
+    'React.ComponentType<React.SVGProps<SVGSVGElement> & ' +
+    '{title?: string; titleId?: string}>';
+  const files = {};
+
+  for (const variant of variants) {
+    const indexPath = join(heroRoot, variant, 'index.d.ts');
+    if (!existsSync(indexPath)) continue;
+
+    const src = readFileSync(indexPath, 'utf-8');
+    const names = [
+      ...src.matchAll(/export \{ default as (\w+) \}/g),
+    ].map(m => m[1]);
+    if (names.length === 0) continue;
+
+    const exports = names.map(n => `  export const ${n}: HeroIcon;`).join('\n');
+    files[`${variant}.d.ts`] =
+      `declare module '@heroicons/react/${variant}' {\n` +
+      `  type HeroIcon = ${iconType};\n` +
+      `${exports}\n}`;
+  }
+
+  return files;
+}
+
+const heroiconTypes = buildHeroiconTypes();
+console.log(
+  `Generated heroicon types: ${Object.keys(heroiconTypes).length} variants`,
+);
+
 const output = {
   '@xds/core': xdsTypes,
   react: {'index.d.ts': reactTypes, 'jsx-runtime.d.ts': reactJsxRuntimeTypes},
   '@stylexjs/stylex': {'index.d.ts': stylexTypes},
+  '@heroicons/react': heroiconTypes,
 };
 
 const json = JSON.stringify(output);
