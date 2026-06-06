@@ -11,7 +11,7 @@
     "@stylexjs/stylex": "^0.18.3",
     "@xds/core": "*",
     "@xds/theme-default": "*",
-    "next": "^15.5.16",
+    "next": "^16.2.7",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
