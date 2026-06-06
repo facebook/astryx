@@ -520,6 +520,20 @@ export const componentCount = ${totalCount};
   return {allComponents, totalCount};
 }
 
+/**
+ * Humanize a raw group label (a PascalCase component/group name) into a
+ * spaced display label, e.g. 'TopNav' -> 'Top Nav', 'Chat' -> 'Chat'.
+ * Used as the group label when no member's name exactly matches the group
+ * (so the label doesn't fall back to an arbitrary member's displayName like
+ * 'Chat Composer' for the 'Chat' group).
+ */
+function humanizeGroupLabel(label) {
+  return label
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .trim();
+}
+
 function generateGroupedComponentRegistry(allComponents) {
   console.log('Generating grouped component registry...');
 
@@ -591,10 +605,16 @@ function generateGroupedComponentRegistry(allComponents) {
       if (members.length === 1) {
         items.push({sortKey: members[0].name, item: {type: 'entry', name: members[0].name, displayName: members[0].displayName, href: members[0].href, description: members[0].description}});
       } else {
-        const canonical = members.find(m => m.name === label) || members[0];
-        // Use the canonical member's already-required displayName as the
-        // group label. Falls back to the raw label only as a safety net.
-        items.push({sortKey: label, item: {type: 'group', label, displayName: canonical.displayName || label, description: canonical.description, entries: members.map(m => ({name: m.name, displayName: m.displayName, href: m.href}))}});
+        const canonical = members.find(m => m.name === label);
+        // Prefer the canonical member's already-required displayName as the
+        // group label. When no member's name matches the group label (e.g. the
+        // 'Chat' group has no component literally named 'Chat'), humanize the
+        // raw label instead of falling back to an arbitrary member's
+        // displayName (which produced labels like 'Chat Composer').
+        const groupDisplayName = canonical
+          ? canonical.displayName
+          : humanizeGroupLabel(label);
+        items.push({sortKey: label, item: {type: 'group', label, displayName: groupDisplayName, description: (canonical || members[0]).description, entries: members.map(m => ({name: m.name, displayName: m.displayName, href: m.href}))}});
       }
     }
     for (const entry of ungrouped) {

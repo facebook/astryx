@@ -5,7 +5,7 @@
 export const docs = {
   name: 'SideNav',
   displayName: 'Side Nav',
-  group: 'SideNav',
+  group: 'Navigation',
   category: 'Navigation',
   keywords: ["sidenav","sidebar","navigation","drawer","menu","nav","aside","sidemenu","navmenu","sider","treeview"],
   playground: {
