@@ -239,7 +239,10 @@ function createTargetingController(
     if (sep < 0) {
       return null;
     }
-    return {component: id.slice(0, sep), index: parseInt(id.slice(sep + 1), 10)};
+    return {
+      component: id.slice(0, sep),
+      index: parseInt(id.slice(sep + 1), 10),
+    };
   }
 
   function positionOverlay(target: HTMLElement) {
@@ -428,7 +431,9 @@ export default function PreviewPage() {
     window.parent.postMessage(msg, '*');
   }, []);
 
-  const targetingRef = useRef<ReturnType<typeof createTargetingController> | null>(null);
+  const targetingRef = useRef<ReturnType<
+    typeof createTargetingController
+  > | null>(null);
   if (targetingRef.current == null && typeof window !== 'undefined') {
     targetingRef.current = createTargetingController(postToParent);
   }
@@ -548,7 +553,7 @@ export default function PreviewPage() {
     ? {
         minHeight: '100%',
         display: 'block',
-        backgroundColor: 'var(--color-background-body)',
+        backgroundColor: 'var(--color-background-surface)',
       }
     : {
         minHeight: '100%',
@@ -557,7 +562,7 @@ export default function PreviewPage() {
         justifyContent: 'center',
         padding: 'var(--spacing-4, 16px)',
         boxSizing: 'border-box',
-        backgroundColor: 'var(--color-background-body)',
+        backgroundColor: 'var(--color-background-surface)',
       };
 
   // In fill mode the wrapper has no box (display: contents) so the rendered
