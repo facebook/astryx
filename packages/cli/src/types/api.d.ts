@@ -136,3 +136,20 @@ export declare function getTemplateById(
   id: string,
   options?: {cwd?: string},
 ): Promise<TemplateGetResponse>;
+
+// ── Hook ─────────────────────────────────────────────────────────────
+
+export interface HookOptions {
+  cwd?: string;
+  list?: boolean;
+  category?: string;
+  params?: boolean;
+  detail?: 'full' | 'compact' | 'brief';
+  lang?: string;
+  zh?: boolean;
+}
+
+export declare function hook(
+  name?: string,
+  options?: HookOptions,
+): Promise<{type: string; data: unknown}>;
