@@ -141,6 +141,37 @@ describe('--json shim: invalid --detail choice', () => {
   });
 });
 
+describe('--json shim: invalid --lang choice', () => {
+  it('xds docs color --lang fr --json emits a single error envelope, exit 1', () => {
+    const {status, stdout} = runCli(['docs', 'color', '--lang', 'fr', '--json']);
+    expect(status).toBe(1);
+    const parsed = parseJson(stdout);
+    expect(parsed.apiVersion).toBe(1);
+    expect(parsed.error).toMatch(/--lang/);
+    expect(parsed.error).toMatch(/invalid|allowed/i);
+    // Single emission only — stdout must be exactly one JSON document.
+    const topLevelBraces = stdout.split('\n').filter((l) => l === '{').length;
+    expect(topLevelBraces).toBe(1);
+  });
+
+  it('xds docs color --lang fr (no --json) writes to stderr and exits 1', () => {
+    const {status, stdout, stderr} = runCli(['docs', 'color', '--lang', 'fr']);
+    expect(status).toBe(1);
+    expect(stdout).toBe('');
+    expect(stderr).toMatch(/--lang/);
+  });
+
+  it('xds docs color --lang zh is accepted (exit 0)', () => {
+    const {status} = runCli(['docs', 'color', '--lang', 'zh']);
+    expect(status).toBe(0);
+  });
+
+  it('xds docs color --lang en is accepted (exit 0)', () => {
+    const {status} = runCli(['docs', 'color', '--lang', 'en']);
+    expect(status).toBe(0);
+  });
+});
+
 describe('--json shim: non-JSON behavior is preserved', () => {
   it('xds theme build (no --json, missing arg) writes to stderr and exits 1', () => {
     const {status, stdout, stderr} = runCli(['theme', 'build']);
@@ -185,6 +216,7 @@ describe('--json shim: stdout discipline under --json', () => {
       ['--bogus-flag', '--json'],
       ['bogus-cmd', '--json'],
       ['--detail', 'bogus', '--json'],
+      ['docs', 'color', '--lang', 'fr', '--json'],
     ];
     for (const args of cases) {
       const {stderr} = runCli(args);
