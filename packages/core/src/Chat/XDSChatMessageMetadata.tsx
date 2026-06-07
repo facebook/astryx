@@ -114,6 +114,9 @@ export function XDSChatMessageMetadata({
   timestamp,
   footer,
   status,
+  xstyle,
+  className,
+  style,
 }: XDSChatMessageMetadataProps) {
   const msgContext = useXDSChatMessageContext();
   const sender = msgContext?.sender ?? 'assistant';
@@ -134,7 +137,10 @@ export function XDSChatMessageMetadata({
         stylex.props(
           styles.meta,
           sender === 'user' ? styles.metaUser : styles.metaAssistant,
+          xstyle,
         ),
+        className,
+        style,
       )}>
       {timestamp != null && <span>{timestamp}</span>}
       {timestamp != null && (footer != null || statusConfig != null) && (

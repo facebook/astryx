@@ -29,6 +29,7 @@ import {
 import {XDSIcon} from '../Icon';
 import {XDSButton} from '../Button';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {mergeProps} from '../utils';
 
 // =============================================================================
 // Types
@@ -108,9 +109,14 @@ export function XDSChatLayoutScrollButton({
   isVisible,
   label,
   onClick,
+  xstyle,
+  className,
+  style,
 }: XDSChatLayoutScrollButtonProps) {
   return (
-    <div ref={ref} {...stylex.props(styles.wrapper)}>
+    <div
+      ref={ref}
+      {...mergeProps(stylex.props(styles.wrapper, xstyle), className, style)}>
       <div
         {...stylex.props(
           styles.container,
