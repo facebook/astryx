@@ -34,6 +34,13 @@ import type {
   TemplateCopyResponse,
   TemplateGetResponse,
 } from './template';
+import type {
+  HookListResponse,
+  HookBriefResponse,
+  HookFullResponse,
+  HookDetailResponse,
+  HookDetailParamsResponse,
+} from './hook';
 import type {SwizzleListResponse, SwizzleCopyResponse} from './swizzle';
 import type {ThemeBuildResponse} from './theme';
 import type {UpgradeListResponse, UpgradeRunResponse} from './upgrade';
@@ -76,6 +83,11 @@ export type CLIAnyResponse =
   | TemplateSkeletonResponse
   | TemplateCopyResponse
   | TemplateGetResponse
+  | HookListResponse
+  | HookBriefResponse
+  | HookFullResponse
+  | HookDetailResponse
+  | HookDetailParamsResponse
   | SwizzleListResponse
   | SwizzleCopyResponse
   | ThemeBuildResponse
