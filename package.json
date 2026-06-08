@@ -53,7 +53,7 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.60.0",
     "vite-plugin-singlefile": "^2.3.3",
-    "vitest": "^2.1.0"
+    "vitest": "^3.2.6"
   },
   "packageManager": "pnpm@10.33.4",
   "workspaces": [
