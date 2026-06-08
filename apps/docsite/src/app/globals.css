@@ -76,6 +76,20 @@ body[data-nav-mode='surface'] .xds-top-nav:where(:not(.xds-app-shell .xds-app-sh
   background: color-mix(in srgb, var(--color-background-surface) 80%, transparent);
 }
 
+/* Hide the prev/next chevron buttons inside the home page's hero
+   carousel pagination so only the dot indicators show. XDSPagination's
+   variant="dots" ships with chevrons by default; the hero wants a
+   minimal indicator-only treatment. Scoped to [data-home-page] so
+   other XDSPagination instances across the site stay untouched. */
+[data-home-page]
+  .xds-pagination
+  button[aria-label='Go to previous page'],
+[data-home-page]
+  .xds-pagination
+  button[aria-label='Go to next page'] {
+  display: none;
+}
+
 /* The /themes/<name> dedicated page renders a faux app top nav INSIDE
    its preview surface. The global `.xds-top-nav` rule above gives it a
    surface-tinted frosted background, which leaks through and makes the

@@ -189,9 +189,9 @@ export function DiscoverShowcase() {
             spread ? styles.floatBottomRightEnd : styles.floatBottomRightStart,
           )}
         />
-        <XDSCard variant="blue" padding={0} xstyle={styles.card}>
-          <XDSVStack gap={10} align="center" xstyle={styles.cardContent}>
-            <XDSVStack gap={4} align="center">
+        <XDSCard variant="gray" padding={0} xstyle={styles.card}>
+          <XDSVStack gap={6} align="center" xstyle={styles.cardContent}>
+            <XDSVStack gap={6} align="center">
               <XDSHeading level={2} type="display-1" color="primary">
                 Discover the full
                 <img
