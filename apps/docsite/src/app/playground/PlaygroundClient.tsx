@@ -42,7 +42,6 @@ import {
 import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
 import {XDSToggleButton} from '@xds/core/ToggleButton';
 import {
-  ArrowLeft,
   Code2,
   Moon,
   SlidersHorizontal,
@@ -288,7 +287,7 @@ function configureMonaco(monaco: MonacoInstance) {
     });
 }
 
-type LeftTab = 'code' | 'property' | 'craft';
+type LeftTab = 'code' | 'property';
 type BuildStatus = 'idle' | 'building' | 'finished' | 'error';
 
 const BUILD_STATUS_META: Record<
@@ -301,6 +300,9 @@ const BUILD_STATUS_META: Record<
 };
 
 const s = stylex.create({
+  hidden: {
+    display: 'none',
+  },
   root: {
     flex: 1,
     minWidth: 0,
@@ -320,7 +322,7 @@ const s = stylex.create({
     overflow: 'hidden',
     minWidth: 0,
   },
-  panelHeader: {
+  leftPanelHeader: {
     flexShrink: 0,
     padding: 'var(--spacing-3)',
   },
@@ -335,10 +337,6 @@ const s = stylex.create({
     flex: 1,
     minHeight: 0,
     minWidth: 0,
-    marginBlockStart: 'var(--spacing-1)',
-  },
-  hidden: {
-    display: 'none',
   },
   rightPanel: {
     flex: 1,
@@ -708,7 +706,7 @@ export function PlaygroundClient() {
         onPointerDownCapture={handleResizeProbe}>
         {/* Left panel — editor */}
         <XDSVStack xstyle={s.leftPanel} width={editorPanel.size || 440}>
-          <div {...stylex.props(s.panelHeader)}>
+          <div {...stylex.props(s.leftPanelHeader)}>
             <XDSHeading level={3}>Playground</XDSHeading>
           </div>
           <div {...stylex.props(s.tabBody)}>
