@@ -160,5 +160,39 @@ npx xds docs tokens --dense`,
         },
       ],
     },
+    {
+      title: 'MCP Server',
+      content: [
+        {
+          type: 'prose',
+          text: 'XDS ships a Model Context Protocol (MCP) server that any MCP-compatible AI tool can connect to. Instead of manually pasting CLI output, the AI can query the XDS design system directly — searching for components, reading full documentation, and pulling code examples on demand.',
+        },
+        {
+          type: 'prose',
+          text: 'The MCP server exposes two tools: search(query) for discovering components, doc topics, and templates; and get(name) for retrieving full documentation with props, usage, and examples.',
+        },
+        {
+          type: 'prose',
+          text: 'Add the server to your MCP config file. This works with any MCP-compatible tool — Claude Desktop (claude_desktop_config.json), Cursor (.cursor/mcp.json), Windsurf (.windsurf/mcp.json), Cline, and others.',
+        },
+        {
+          type: 'code',
+          lang: 'json',
+          label: 'MCP config (same for all tools)',
+          code: `{
+  "mcpServers": {
+    "xds": {
+      "type": "url",
+      "url": "https://xds-sandbox.vercel.app/mcp"
+    }
+  }
+}`,
+        },
+        {
+          type: 'prose',
+          text: 'Once connected, your AI tool can search for components by natural language (e.g. "dropdown menu", "success message") and retrieve full documentation without any manual CLI invocation. The server uses the same keyword index from component docs, so search quality improves automatically as component documentation is updated.',
+        },
+      ],
+    },
   ],
 };
