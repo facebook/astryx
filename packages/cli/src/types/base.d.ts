@@ -48,6 +48,7 @@ import type {
   GapReportCategoriesResponse,
   GapReportFileResponse,
 } from './gap-report';
+import type {SearchResponse} from './search';
 
 /** Structured error. Check `'error' in result` to discriminate. */
 export interface CLIError {
@@ -94,7 +95,8 @@ export type CLIAnyResponse =
   | UpgradeListResponse
   | UpgradeRunResponse
   | GapReportCategoriesResponse
-  | GapReportFileResponse;
+  | GapReportFileResponse
+  | SearchResponse;
 
 /** Union of all type discriminator string literals. */
 export type CLIResponseType = CLIAnyResponse['type'];

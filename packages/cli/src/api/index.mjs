@@ -24,4 +24,5 @@ export {docs} from './docs.mjs';
 export {discover} from './discover.mjs';
 export {template} from './template.mjs';
 export {hook} from './hook.mjs';
+export {search} from './search.mjs';
 export {XDSError} from './error.mjs';

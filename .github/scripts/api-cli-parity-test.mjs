@@ -181,6 +181,18 @@ if (hookSample) {
 add('hook NotARealHook99', ['hook', 'NotARealHook99'],
   () => apiCall(api.hook, 'NotARealHook99', {cwd: ROOT}));
 
+// Search — unified ranked search across all content domains
+add('search button', ['search', 'button'],
+  () => apiCall(api.search, 'button', {cwd: ROOT}));
+add('search button --limit 5', ['search', 'button', '--limit', '5'],
+  () => apiCall(api.search, 'button', {limit: 5, cwd: ROOT}));
+add('search modal --type component', ['search', 'modal', '--type', 'component'],
+  () => apiCall(api.search, 'modal', {type: 'component', cwd: ROOT}));
+add('search (no match)', ['search', 'zzqqxx_no_match'],
+  () => apiCall(api.search, 'zzqqxx_no_match', {cwd: ROOT}));
+add('search (bad type)', ['search', 'x', '--type', 'bogus'],
+  () => apiCall(api.search, 'x', {type: 'bogus', cwd: ROOT}));
+
 // Other commands — probe with safe read-only args (no API yet)
 const otherCommands = [
   ['swizzle', '--list'],

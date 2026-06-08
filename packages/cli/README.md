@@ -4,11 +4,49 @@ The CLI is the primary interface for working with the design system — for huma
 
 ```bash
 npx xds --help
+npx xds search button
 npx xds component Button
 npx xds docs tokens
 npx xds docs migration
 npx xds template --list
 ```
+
+### Finding things — `xds search`
+
+When you don't know whether what you need is a component, a hook, a docs topic,
+or a template, search across all of them at once. Results are ranked by
+relevance (name and keyword matches outrank incidental prose mentions, with
+fuzzy matching for typos) and tagged with their domain plus the follow-up
+command to run:
+
+```bash
+$ npx xds search button
+
+Results for "button" (20):
+
+  [component]  Button
+               Button triggers an action when clicked. Use it for form submissions…
+               → npx xds component Button
+
+  [component]  IconButton
+               A button that shows only an icon with no visible text…
+               → npx xds component IconButton
+
+  [hook]       useClickableContainer
+               Makes a container element clickable while preserving nested…
+               → npx xds hook useClickableContainer
+
+  [template]   Banner — Collapsible
+               Combine an action button, dismiss control, and expandable detail area…
+               → npx xds template BannerCollapsibleContent
+```
+
+Options:
+
+- `--type <component|hook|doc|template>` — restrict to a single domain
+- `--limit <n>` — cap the number of results (default 20)
+- `--detail` — include the import path and the match reason/score
+- `--json` — typed `{ type: 'search', data: { query, results } }` envelope
 
 ## Commands
 
@@ -16,6 +54,7 @@ npx xds template --list
 | ------------- | --------------------------------------------------------------------------------------- |
 | `init`        | Initialize the design system in your project — installs packages, sets up theming, adds AI agent docs |
 | `component`   | List components or print detailed docs, props, usage examples, and source               |
+| `search`      | Find components, hooks, docs, and templates in one ranked, cross-domain result set       |
 | `docs`        | Print reference documentation (tokens, theme, color, typography, spacing, etc.)         |
 | `template`    | Inject page or block templates into your project                                        |
 | `hook`        | List hooks and print hook documentation                                                 |
@@ -57,7 +96,7 @@ Errors:
 The same logic that powers `xds --json` is available as importable, type-safe functions:
 
 ```typescript
-import {component, docs, discover, template, hook, XDSError} from '@xds/cli/api';
+import {component, docs, discover, template, hook, search, XDSError} from '@xds/cli/api';
 
 // Same result as: xds --json component Button
 const btn = await component('Button');
@@ -141,6 +180,7 @@ Every response has a `type` string that uniquely identifies it:
 | `xds --json hook --list --detail full`         | `hook.full`                 | `HookFullResponse`                |
 | `xds --json hook <name>`                       | `hook.detail`               | `HookDetailResponse`              |
 | `xds --json hook <name> --params`              | `hook.detail.params`        | `HookDetailParamsResponse`        |
+| `xds --json search <query>`                    | `search`                    | `SearchResponse`                  |
 | `xds --json swizzle [--list]`                  | `swizzle.list`              | `SwizzleListResponse`             |
 | `xds --json swizzle <component>`               | `swizzle.copy`              | `SwizzleCopyResponse`             |
 | `xds --json theme build <file>`                | `theme.build`               | `ThemeBuildResponse`              |
