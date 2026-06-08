@@ -237,6 +237,10 @@ add('search (bad type)', ['search', 'x', '--type', 'bogus'],
 add('discover (list)', ['discover'],
   () => apiCall(api.discover, undefined, {cwd: ROOT}));
 
+// Doctor — the health check. Both sides run against ROOT, so the set of
+// checks (and their statuses) is deterministic and must match exactly.
+add('doctor', ['doctor'], () => apiCall(api.doctor, {cwd: ROOT}));
+
 // Other commands — probe with safe read-only args (no API yet)
 const otherCommands = [
   ['swizzle', '--list'],

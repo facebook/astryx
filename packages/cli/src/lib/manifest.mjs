@@ -63,6 +63,7 @@ export const RESPONSE_TYPES = {
   upgrade: ['upgrade.list', 'upgrade.status', 'upgrade.run'],
   'gap-report': ['gap-report.categories', 'gap-report.dryRun', 'gap-report.file'],
   manifest: ['manifest'],
+  doctor: ['doctor'],
 };
 
 /**
@@ -80,6 +81,7 @@ const EXAMPLES = {
   'theme build': ['xds theme build ./src/themes/ocean.ts --out ./dist/ocean.css'],
   upgrade: ['xds upgrade --json'],
   manifest: ['xds manifest --json', 'xds --json'],
+  doctor: ['xds doctor', 'xds doctor --json'],
   init: ['xds init'],
 };
 

@@ -44,6 +44,7 @@ import type {
 } from './hook';
 import type {SearchResponse, SearchDomain} from './search';
 import type {ErrorCode} from './error-codes';
+import type {DoctorResponse} from './doctor';
 
 /** Structured API error with a stable machine-readable code. */
 export declare class XDSError extends Error {
@@ -193,3 +194,13 @@ export declare function search(
   query: string,
   options?: SearchOptions,
 ): Promise<SearchResponse>;
+
+// ── Doctor ──────────────────────────────────
+
+export interface DoctorOptions {
+  cwd?: string;
+}
+
+export declare function doctor(
+  options?: DoctorOptions,
+): Promise<DoctorResponse>;
