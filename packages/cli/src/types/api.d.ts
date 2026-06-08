@@ -41,6 +41,7 @@ import type {
   HookDetailResponse,
   HookDetailParamsResponse,
 } from './hook';
+import type {SearchResponse, SearchDomain} from './search';
 
 /** Structured API error with optional suggestions. */
 export declare class XDSError extends Error {
@@ -167,3 +168,16 @@ export declare function hook(
   name?: string,
   options?: HookOptions,
 ): Promise<HookResult>;
+
+// ── Search ───────────────────────────────────────────────────────────
+
+export interface SearchOptions {
+  cwd?: string;
+  type?: SearchDomain;
+  limit?: number;
+}
+
+export declare function search(
+  query: string,
+  options?: SearchOptions,
+): Promise<SearchResponse>;

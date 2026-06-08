@@ -52,6 +52,7 @@ export const JSON_SUPPORTED = new Set([
   'component',
   'docs',
   'discover',
+  'search',
   'swizzle',
   'template',
   'hook',
@@ -119,7 +120,7 @@ program
           name: 'xds',
           version: pkg.version,
           commands: [
-            'component', 'docs', 'discover', 'swizzle', 'template',
+            'component', 'docs', 'discover', 'search', 'swizzle', 'template',
             'hook', 'theme', 'gap-report', 'upgrade', 'init',
           ],
           jsonSupported: [...JSON_SUPPORTED].sort(),
@@ -228,6 +229,7 @@ const commands = [
   {name: 'theme', path: './commands/build-theme.mjs', register: 'registerTheme'},
   {name: 'hook', path: './commands/hook/index.mjs', register: 'registerHook'},
   {name: 'discover', path: './commands/discover.mjs', register: 'registerDiscover'},
+  {name: 'search', path: './commands/search.mjs', register: 'registerSearch'},
 ];
 
 for (const cmd of commands) {
