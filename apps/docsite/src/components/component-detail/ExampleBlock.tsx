@@ -102,13 +102,19 @@ export function ExampleBlock({entry}: ExampleBlockProps) {
           )}
         </XDSHStack>
       </XDSSection>
-      <XDSSection variant="muted">
+      <XDSSection variant="muted" padding={tab === 'code' ? 0 : 4}>
         {tab === 'description' ? (
           <XDSText type="body">
             {entry.description || 'No description available.'}
           </XDSText>
         ) : (
-          <XDSCodeBlock code={entry.source} language="tsx" hasCopyButton />
+          <XDSCodeBlock
+            code={entry.source}
+            language="tsx"
+            hasCopyButton
+            container="section"
+            width="100%"
+          />
         )}
       </XDSSection>
     </XDSCard>

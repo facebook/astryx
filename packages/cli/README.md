@@ -1,6 +1,6 @@
 # @xds/cli
 
-The XDS CLI is the primary interface for working with the XDS design system — for humans and machines alike. It provides component documentation, design tokens, page templates, theming tools, and upgrade codemods, all accessible via terminal commands, a typed JSON API, or programmatic imports. AI agents and build tools use the same API that powers the CLI, enabling end-to-end frontend development loops.
+The CLI is the primary interface for working with the design system — for humans and machines alike. It provides component documentation, design tokens, page templates, theming tools, and upgrade codemods, all accessible via terminal commands, a typed JSON API, or programmatic imports. AI agents and build tools use the same API that powers the CLI, enabling end-to-end frontend development loops.
 
 ```bash
 npx xds --help
@@ -14,15 +14,15 @@ npx xds template --list
 
 | Command       | Description                                                                             |
 | ------------- | --------------------------------------------------------------------------------------- |
-| `init`        | Initialize XDS in your project — installs packages, sets up theming, adds AI agent docs |
+| `init`        | Initialize the design system in your project — installs packages, sets up theming, adds AI agent docs |
 | `component`   | List components or print detailed docs, props, usage examples, and source               |
 | `docs`        | Print reference documentation (tokens, theme, color, typography, spacing, etc.)         |
 | `template`    | Inject page or block templates into your project                                        |
 | `hook`        | List hooks and print hook documentation                                                 |
 | `swizzle`     | Copy component source into your project for deep customization                          |
-| `upgrade`     | Run codemods to migrate between XDS versions                                            |
+| `upgrade`     | Run codemods to migrate between versions                                                |
 | `theme build` | Compile a defineTheme file to production CSS and JS                                     |
-| `discover`    | Discover external XDS packages and components                                           |
+| `discover`    | Discover external packages and components                                               |
 | `gap-report`  | Report a gap when a component doesn't meet your needs                                   |
 
 ### Global options
@@ -30,7 +30,7 @@ npx xds template --list
 These flags work with any command:
 
 - `--json` — Output as typed JSON envelope: `{ type, data }`
-- `--detail <level>` — Detail level: `full`, `compact`, or `brief`
+- `--detail <level>` — Detail level for list views, increasing in size: `brief` (names only, default for `--list`) < `compact` (names + 1-line descriptions) < `full` (full docs per entry). Single-item views default to `full`.
 - `--zh` — Output docs in Chinese Simplified
 - `--dense` — Compressed format (token-efficient, useful for AI agents)
 - `--lang <locale>` — Language/format shorthand (`en`, `zh`, `dense`)
@@ -111,37 +111,40 @@ detail.data.name; // already narrowed
 
 Every response has a `type` string that uniquely identifies it:
 
-| Command                                   | Type                        | Response                          |
-| ----------------------------------------- | --------------------------- | --------------------------------- |
-| `xds --json component [--list]`           | `component.list`            | `ComponentListResponse`           |
-| `xds --json component --detail brief`     | `component.brief`           | `ComponentBriefResponse`          |
-| `xds --json component <name>`             | `component.detail`          | `ComponentDetailResponse`         |
-| `xds --json component <name> --props`     | `component.detail.props`    | `ComponentDetailPropsResponse`    |
-| `xds --json component <name> --source`    | `component.detail.source`   | `ComponentDetailSourceResponse`   |
-| `xds --json component <name> --showcase`  | `component.detail.showcase` | `ComponentDetailShowcaseResponse` |
-| `xds --json component <name> --blocks`    | `component.detail.blocks`   | `ComponentDetailBlocksResponse`   |
-| `xds --json discover`                     | `discover.list`             | `DiscoverListResponse`            |
-| `xds --json discover @scope/name`         | `discover.detail`           | `DiscoverDetailResponse`          |
-| `xds --json discover @scope/name/Comp`    | `discover.detail.doc`       | `DiscoverDetailDocResponse`       |
-| `xds --json discover <search>`            | `discover.search`           | `DiscoverSearchResponse`          |
-| `xds --json docs`                         | `docs.list`                 | `DocsListResponse`                |
-| `xds --json docs <topic>`                 | `docs.detail`               | `DocsDetailResponse`              |
-| `xds --json docs <topic> <section>`       | `docs.detail.section`       | `DocsDetailSectionResponse`       |
-| `xds --json template [--list]`            | `template.list`             | `TemplateListResponse`            |
-| `xds --json template <name>`              | `template.show`             | `TemplateShowResponse`            |
-| `xds --json template <name> --skeleton`   | `template.skeleton`         | `TemplateSkeletonResponse`        |
-| `xds --json template <name> [path]`       | `template.copy`             | `TemplateCopyResponse`            |
-| `xds --json hook [--list]`                | `hook.list`                 | `HookListResponse`                |
-| `xds --json hook <name>`                  | `hook.detail`               | `HookDetailResponse`              |
-| `xds --json swizzle [--list]`             | `swizzle.list`              | `SwizzleListResponse`             |
-| `xds --json swizzle <component>`          | `swizzle.copy`              | `SwizzleCopyResponse`             |
-| `xds --json theme build <file>`           | `theme.build`               | `ThemeBuildResponse`              |
-| `xds --json upgrade --list`               | `upgrade.list`              | `UpgradeListResponse`             |
-| `xds --json upgrade [--apply]`            | `upgrade.run`               | `UpgradeRunResponse`              |
-| `xds --json gap-report --list-categories` | `gap-report.categories`     | `GapReportCategoriesResponse`     |
-| `xds --json gap-report --component X ...` | `gap-report.file`           | `GapReportFileResponse`           |
-| any error                                 | —                           | `CLIError`                        |
-| unsupported command                       | —                           | `CLIUnsupportedError`             |
+| Command                                        | Type                        | Response                          |
+| ---------------------------------------------- | --------------------------- | --------------------------------- |
+| `xds --json component [--list]`                | `component.list`            | `ComponentListResponse`           |
+| `xds --json component --list --detail compact` | `component.brief`           | `ComponentBriefResponse`          |
+| `xds --json component --list --detail full`    | `component.full`            | `ComponentFullResponse`           |
+| `xds --json component <name>`                  | `component.detail`          | `ComponentDetailResponse`         |
+| `xds --json component <name> --props`          | `component.detail.props`    | `ComponentDetailPropsResponse`    |
+| `xds --json component <name> --source`         | `component.detail.source`   | `ComponentDetailSourceResponse`   |
+| `xds --json component <name> --showcase`       | `component.detail.showcase` | `ComponentDetailShowcaseResponse` |
+| `xds --json component <name> --blocks`         | `component.detail.blocks`   | `ComponentDetailBlocksResponse`   |
+| `xds --json discover`                          | `discover.list`             | `DiscoverListResponse`            |
+| `xds --json discover @scope/name`              | `discover.detail`           | `DiscoverDetailResponse`          |
+| `xds --json discover @scope/name/Comp`         | `discover.detail.doc`       | `DiscoverDetailDocResponse`       |
+| `xds --json discover <search>`                 | `discover.search`           | `DiscoverSearchResponse`          |
+| `xds --json docs`                              | `docs.list`                 | `DocsListResponse`                |
+| `xds --json docs <topic>`                      | `docs.detail`               | `DocsDetailResponse`              |
+| `xds --json docs <topic> <section>`            | `docs.detail.section`       | `DocsDetailSectionResponse`       |
+| `xds --json template [--list]`                 | `template.list`             | `TemplateListResponse`            |
+| `xds --json template <name>`                   | `template.show`             | `TemplateShowResponse`            |
+| `xds --json template <name> --skeleton`        | `template.skeleton`         | `TemplateSkeletonResponse`        |
+| `xds --json template <name> [path]`            | `template.copy`             | `TemplateCopyResponse`            |
+| `xds --json hook [--list]`                     | `hook.list`                 | `HookListResponse`                |
+| `xds --json hook --list --detail compact`      | `hook.brief`                | (untyped envelope)                |
+| `xds --json hook --list --detail full`         | `hook.full`                 | (untyped envelope)                |
+| `xds --json hook <name>`                       | `hook.detail`               | `HookDetailResponse`              |
+| `xds --json swizzle [--list]`                  | `swizzle.list`              | `SwizzleListResponse`             |
+| `xds --json swizzle <component>`               | `swizzle.copy`              | `SwizzleCopyResponse`             |
+| `xds --json theme build <file>`                | `theme.build`               | `ThemeBuildResponse`              |
+| `xds --json upgrade --list`                    | `upgrade.list`              | `UpgradeListResponse`             |
+| `xds --json upgrade [--apply]`                 | `upgrade.run`               | `UpgradeRunResponse`              |
+| `xds --json gap-report --list-categories`      | `gap-report.categories`     | `GapReportCategoriesResponse`     |
+| `xds --json gap-report --component X ...`      | `gap-report.file`           | `GapReportFileResponse`           |
+| any error                                      | —                           | `CLIError`                        |
+| unsupported command                            | —                           | `CLIUnsupportedError`             |
 
 ## Configuration
 

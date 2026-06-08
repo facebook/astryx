@@ -7,7 +7,7 @@ export const docs = {
   title: 'Getting Started',
   category: 'guide',
   description:
-    'Add XDS to your project and start building.',
+    'Add the design system to your project and start building.',
 
   sections: [
     {
@@ -76,7 +76,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'XDS components are imported from per-category subpath entrypoints. This keeps bundles small and makes intent clear.',
+          text: 'Components are imported from per-category subpath entrypoints. This keeps bundles small and makes intent clear.',
         },
         {
           type: 'code',
@@ -100,7 +100,7 @@ export default function Page() {
       content: [
         {
           type: 'prose',
-          text: 'Every XDS component accepts an `xstyle` prop for StyleX style overrides created via `stylex.create()`.',
+          text: 'Every component accepts an `xstyle` prop for StyleX style overrides created via `stylex.create()`.',
         },
         {
           type: 'code',
@@ -121,17 +121,17 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'For a full working project, clone one of the example apps from the XDS repo. These are complete setups with routing, theming, and components wired together.',
+          text: 'For a full working project, clone one of the example apps from the repo. These are complete setups with routing, theming, and components wired together.',
         },
         {
           type: 'table',
           headers: ['Example', 'Stack', 'Path'],
           rows: [
-            ['Next.js', 'Next.js + XDS theme CSS', 'apps/example-nextjs'],
+            ['Next.js', 'Next.js + theme CSS', 'apps/example-nextjs'],
             ['Next.js + StyleX', 'Next.js + StyleX for custom styles', 'apps/example-nextjs-stylex'],
             ['Next.js + Tailwind', 'Next.js + Tailwind bridge', 'apps/example-nextjs-tailwind'],
-            ['Next.js Source', 'Next.js importing XDS from source', 'apps/example-nextjs-source'],
-            ['Vite', 'Vite + XDS', 'apps/example-vite'],
+            ['Next.js Source', 'Next.js importing from source', 'apps/example-nextjs-source'],
+            ['Vite', 'Vite', 'apps/example-vite'],
           ],
         },
         {

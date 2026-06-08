@@ -2,7 +2,7 @@
 
 // Brand mark used in shell chrome (top nav). Renders the icon-only logo
 // from /public/brand-icon.svg so the wordmark is replaced by the icon.
-export const XDS_BRAND_ICON = (
+export const BRAND_ICON = (
   <img
     src="/brand-icon.svg"
     alt="Astryx"

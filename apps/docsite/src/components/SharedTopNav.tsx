@@ -9,7 +9,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSHStack} from '@xds/core/Layout';
 import {Search, HandHeart, Sun, Moon} from 'lucide-react';
 import {GITHUB_REPO} from '../constants';
-import {XDS_BRAND_ICON} from './XDSWordmark';
+import {BRAND_ICON} from './XDSWordmark';
 import {SearchPalette} from './SearchPalette';
 import {components} from '../generated/componentRegistry';
 import {packages} from '../generated/packageRegistry';
@@ -44,7 +44,6 @@ export function SharedTopNav() {
     if (
       pathname === '/docs' ||
       pathname.startsWith('/docs/') ||
-      pathname.startsWith('/packages/') ||
       pathname.startsWith('/changelog')
     ) {
       return 'docs';
@@ -68,7 +67,7 @@ export function SharedTopNav() {
     <>
       <XDSTopNav
         label="Astryx navigation"
-        heading={<XDSTopNavHeading logo={XDS_BRAND_ICON} headingHref="/" />}
+        heading={<XDSTopNavHeading logo={BRAND_ICON} headingHref="/" />}
         centerContent={
           <>
             <XDSTopNavItem

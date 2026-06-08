@@ -10,6 +10,7 @@
 import type {
   ComponentListResponse,
   ComponentBriefResponse,
+  ComponentFullResponse,
   ComponentDetailResponse,
   ComponentDetailPropsResponse,
   ComponentDetailSourceResponse,
@@ -61,6 +62,7 @@ export interface ComponentOptions {
 type ComponentResult =
   | ComponentListResponse
   | ComponentBriefResponse
+  | ComponentFullResponse
   | ComponentDetailResponse
   | ComponentDetailPropsResponse
   | ComponentDetailSourceResponse

@@ -1,0 +1,147 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file XDS CLI — central error handling helper.
+ *
+ * ## Exit-code policy
+ *
+ * The XDS CLI follows one rule above all: **exit code is the contract**. CI
+ * scripts and AI agents read it before they read any text. Every error path
+ * across every command must agree on the exit code so that callers can
+ * detect failure without parsing stdout/stderr.
+ *
+ * Specifically:
+ *
+ *   1. **Any user-visible error → exit 1.** This includes "command not
+ *      found", "unknown subcommand", "invalid argument", "file missing",
+ *      "validation failed", and every `Error: ...` line we ever print.
+ *
+ *   2. **"Did you mean…" suggestions are still errors.** Suggestion lists
+ *      help the user recover, but the CLI still exits 1. The user asked for
+ *      something we couldn't deliver.
+ *
+ *   3. **Help-display is success.** `xds`, `xds --help`, `xds <cmd> --help`,
+ *      and `xds --version` all exit 0. The user got what they asked for.
+ *
+ *   4. **Empty / no-args invocations:** if the command has a sensible
+ *      default (e.g. `xds component` lists all components, `xds docs` lists
+ *      all topics), exit 0. If the command requires arguments (e.g. `xds
+ *      theme build`), Commander rejects it with exit 1.
+ *
+ *   5. **`--json` and non-`--json` agree on exit code.** The same error case
+ *      MUST exit with the same code in both modes. The shape of the message
+ *      differs (envelope vs. plain text); the exit code does not.
+ *
+ *   6. **Prefer `process.exitCode = 1; return` over `process.exit(1)`** when
+ *      the action handler is the last thing on the call stack. This lets
+ *      pending I/O (stderr buffers, postAction hooks) finish cleanly. Use
+ *      `process.exit(1)` only when an immediate halt is required.
+ *
+ * The JSON envelope shape MUST match the contract from the json.mjs module:
+ *
+ *   { apiVersion: 1, error: <string>, suggestions?: [{name, reason}, ...] }
+ *
+ * NEVER add ad-hoc fields. NEVER vary the shape. Consumers depend on it.
+ */
+
+import {isJsonMode, jsonError as _jsonError, humanWarn} from './json.mjs';
+
+/**
+ * Suggestion object — matches the shape used by API errors and the JSON
+ * envelope's `suggestions` field.
+ * @typedef {{name: string, reason?: string}} Suggestion
+ */
+
+/**
+ * Options for {@link cliError}.
+ * @typedef {object} CliErrorOptions
+ * @property {Suggestion[]} [suggestions] - Optional "did you mean…" list.
+ *   Printed under the error message in human mode and serialized as the
+ *   `suggestions` field in JSON mode.
+ * @property {number} [exitCode] - Override the exit code. Defaults to 1.
+ *   Don't set this unless you have a specific reason — every error in the
+ *   CLI should exit 1.
+ * @property {boolean} [hard] - When true, call `process.exit` immediately
+ *   instead of setting `process.exitCode`. Default: true. We default to hard
+ *   exits for commands because Commander's action handlers don't always
+ *   propagate a `return` cleanly through nested awaits.
+ */
+
+/**
+ * Emit a user-visible error and stop the current command.
+ *
+ * Routes the error through the JSON envelope when `--json` is active, or to
+ * stderr otherwise. Always sets a non-zero exit code (default 1). Use this
+ * in place of every ad-hoc `console.error('Error: …'); process.exit(1)`
+ * pair across the CLI.
+ *
+ * @param {string} message - Human-readable error message. The leading
+ *   "Error: " prefix is added automatically in human mode; in JSON mode the
+ *   message is placed verbatim in the envelope's `error` field.
+ * @param {CliErrorOptions} [options]
+ * @returns {never} - Never returns; either exits the process or throws via
+ *   `jsonError` (which itself exits).
+ */
+export function cliError(message, options = {}) {
+  const {suggestions, exitCode = 1, hard = true} = options;
+
+  if (isJsonMode()) {
+    // jsonError emits the envelope on stdout and calls process.exit(1).
+    // We don't honor a custom exitCode in JSON mode — the contract is exit 1.
+    _jsonError(message, suggestions);
+    // Unreachable, but keeps the type-checker honest.
+    return /** @type {never} */ (undefined);
+  }
+
+  // Human mode: prefix "Error:" and print suggestions on subsequent lines.
+  // Use console.error directly — we always want stderr for errors regardless
+  // of the JSON-mode flag (we already handled JSON above).
+  console.error(`Error: ${message}`);
+  if (suggestions?.length) {
+    console.error('');
+    for (const s of suggestions) {
+      const tag = s.reason ? `  ${s.name}  (${s.reason})` : `  ${s.name}`;
+      console.error(tag);
+    }
+  }
+
+  if (hard) {
+    process.exit(exitCode);
+  } else {
+    process.exitCode = exitCode;
+  }
+  return /** @type {never} */ (undefined);
+}
+
+/**
+ * Clean exit. Mostly a marker for intent — `process.exit(0)` works fine,
+ * but using cliExit at success boundaries makes greps for "exit policy"
+ * sites unambiguous.
+ * @param {number} [code]
+ * @returns {never}
+ */
+export function cliExit(code = 0) {
+  process.exit(code);
+}
+
+/**
+ * Assert a condition; on failure, emit a CLI error.
+ *
+ * Convenience wrapper for the common pattern:
+ *
+ *   if (!something) { cliError('something is required'); }
+ *
+ * @param {unknown} condition - Truthy → no-op. Falsy → cliError.
+ * @param {string} message
+ * @param {CliErrorOptions} [options]
+ * @returns {asserts condition}
+ */
+export function assertOrExit(condition, message, options) {
+  if (!condition) {
+    cliError(message, options);
+  }
+}
+
+// Re-export humanWarn for callers that want a non-fatal warning channel.
+// Warnings should NOT change the exit code.
+export {humanWarn};

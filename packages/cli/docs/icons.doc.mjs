@@ -10,7 +10,7 @@ export const docs = {
   title: 'Icons',
   category: 'foundations',
   description:
-    "Semantic icon names available in XDS. These adapt to the active theme's icon registry.",
+    "Semantic icon names available in the design system. These adapt to the active theme's icon registry.",
 
   sections: [
     {
@@ -104,7 +104,7 @@ registerIcons({
       content: [
         {
           type: 'prose',
-          text: 'To add a new semantic icon name to XDS:',
+          text: 'To add a new semantic icon name to the design system:',
         },
         {
           type: 'list',

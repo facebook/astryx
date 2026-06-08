@@ -2,8 +2,7 @@
 
 'use client';
 
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSVStack, XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSSection} from '@xds/core/Section';
@@ -92,11 +91,7 @@ const IMAGES: GalleryImage[] = [
 function GalleryCard({image}: {image: GalleryImage}) {
   return (
     <div {...stylex.props(styles.card)}>
-      <img
-        src={image.src}
-        alt={image.title}
-        {...stylex.props(styles.img)}
-      />
+      <img src={image.src} alt={image.title} {...stylex.props(styles.img)} />
     </div>
   );
 }
@@ -105,53 +100,62 @@ function GalleryCard({image}: {image: GalleryImage}) {
 
 export default function MixedGalleryTemplate() {
   return (
-    <XDSAppShell height="auto" contentPadding={6} variant="surface">
-      <XDSCenter axis="horizontal">
-        <XDSSection variant="transparent" maxWidth={1400} width="100%" padding={0}>
-          <XDSVStack gap={6}>
-            {/* Header — capped with XDSSection maxWidth */}
-            <XDSCenter axis="horizontal">
-              <XDSSection variant="transparent" maxWidth={680}>
-                <XDSVStack gap={2} xstyle={styles.textCenter}>
-                  <XDSHeading level={1}>
-                    Make every day a little more delightful, one detail at a
-                    time.
-                  </XDSHeading>
-                  <XDSText type="body">
-                    We believe the smallest details are the ones that matter
-                    most. That&apos;s what turns an ordinary day into something
-                    worth remembering.
-                  </XDSText>
-                </XDSVStack>
-              </XDSSection>
-            </XDSCenter>
+    <XDSLayout
+      height="auto"
+      content={
+        <XDSLayoutContent padding={6}>
+          <XDSCenter axis="horizontal">
+            <XDSSection
+              variant="transparent"
+              maxWidth={1400}
+              width="100%"
+              padding={0}>
+              <XDSVStack gap={6}>
+                {/* Header — capped with XDSSection maxWidth */}
+                <XDSCenter axis="horizontal">
+                  <XDSSection variant="transparent" maxWidth={680}>
+                    <XDSVStack gap={2} xstyle={styles.textCenter}>
+                      <XDSHeading level={1}>
+                        Make every day a little more delightful, one detail at a
+                        time.
+                      </XDSHeading>
+                      <XDSText type="body">
+                        We believe the smallest details are the ones that matter
+                        most. That&apos;s what turns an ordinary day into
+                        something worth remembering.
+                      </XDSText>
+                    </XDSVStack>
+                  </XDSSection>
+                </XDSCenter>
 
-            {/* Featured masonry — hero + sidebar + bottom row */}
-            <XDSGrid columns={3} rowHeight={90} gap={3}>
-              {/* Hero — 2 cols × 5 rows */}
-              <XDSGridSpan columns={2} rows={5}>
-                <GalleryCard image={IMAGES[0]} />
-              </XDSGridSpan>
+                {/* Featured masonry — hero + sidebar + bottom row */}
+                <XDSGrid columns={3} rowHeight={90} gap={3}>
+                  {/* Hero — 2 cols × 5 rows */}
+                  <XDSGridSpan columns={2} rows={5}>
+                    <GalleryCard image={IMAGES[0]} />
+                  </XDSGridSpan>
 
-              {/* Sidebar — full height */}
-              <XDSGridSpan rows={5}>
-                <GalleryCard image={IMAGES[2]} />
-              </XDSGridSpan>
+                  {/* Sidebar — full height */}
+                  <XDSGridSpan rows={5}>
+                    <GalleryCard image={IMAGES[2]} />
+                  </XDSGridSpan>
 
-              {/* Bottom row */}
-              <XDSGridSpan rows={3}>
-                <GalleryCard image={IMAGES[3]} />
-              </XDSGridSpan>
-              <XDSGridSpan rows={3}>
-                <GalleryCard image={IMAGES[4]} />
-              </XDSGridSpan>
-              <XDSGridSpan rows={3}>
-                <GalleryCard image={IMAGES[1]} />
-              </XDSGridSpan>
-            </XDSGrid>
-          </XDSVStack>
-        </XDSSection>
-      </XDSCenter>
-    </XDSAppShell>
+                  {/* Bottom row */}
+                  <XDSGridSpan rows={3}>
+                    <GalleryCard image={IMAGES[3]} />
+                  </XDSGridSpan>
+                  <XDSGridSpan rows={3}>
+                    <GalleryCard image={IMAGES[4]} />
+                  </XDSGridSpan>
+                  <XDSGridSpan rows={3}>
+                    <GalleryCard image={IMAGES[1]} />
+                  </XDSGridSpan>
+                </XDSGrid>
+              </XDSVStack>
+            </XDSSection>
+          </XDSCenter>
+        </XDSLayoutContent>
+      }
+    />
   );
 }

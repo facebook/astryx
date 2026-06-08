@@ -79,7 +79,7 @@ them. Check the theme's `## Fonts` section for the specific Google Fonts URL.
 3. Run `pnpm generate`
 
 The package appears in the sidebar, the libraries section, and gets its own
-`/packages/<name>` detail page. If the package contains `.doc.mjs` files,
+`/docs/<name>` detail page. If the package contains `.doc.mjs` files,
 its components are extracted into `componentRegistry.ts` as well.
 
 ## Project Structure

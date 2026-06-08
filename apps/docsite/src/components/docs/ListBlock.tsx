@@ -2,10 +2,10 @@
 
 'use client';
 
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSTable} from '@xds/core/Table';
+import {XDSList, XDSListItem} from '@xds/core/List';
+import {renderInlineCode} from './renderInlineCode';
 
 export function ListBlock({
   items,
@@ -39,7 +39,12 @@ export function ListBlock({
               />
             ),
           },
-          {key: 'text', header: 'Practice'},
+          {
+            key: 'text',
+            header: 'Practice',
+            renderCell: (item: Record<string, unknown>) =>
+              renderInlineCode(item.text as string),
+          },
         ]}
         density="spacious"
         dividers="rows"
@@ -47,23 +52,18 @@ export function ListBlock({
     );
   }
 
+  const xdsListStyle =
+    listStyle === 'ordered'
+      ? 'decimal'
+      : listStyle === 'unordered'
+        ? 'disc'
+        : 'none';
+
   return (
-    <XDSVStack gap={1}>
+    <XDSList density="compact" listStyle={xdsListStyle}>
       {items.map((item, i) => (
-        <XDSHStack key={i} gap={2} vAlign="center">
-          {listStyle === 'ordered' && (
-            <XDSText type="body" color="secondary">
-              {i + 1}.
-            </XDSText>
-          )}
-          {listStyle === 'unordered' && (
-            <XDSText type="body" color="secondary">
-              •
-            </XDSText>
-          )}
-          <XDSText>{item}</XDSText>
-        </XDSHStack>
+        <XDSListItem key={i} label={renderInlineCode(item)} />
       ))}
-    </XDSVStack>
+    </XDSList>
   );
 }

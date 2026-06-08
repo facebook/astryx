@@ -7,7 +7,7 @@ export const docs = {
   title: 'Migration Guide',
   category: 'guide',
   description:
-    'How to migrate an existing Tailwind, shadcn, or Radix application to XDS incrementally.',
+    'How to migrate an existing Tailwind, shadcn, or Radix application to the design system incrementally.',
 
   sections: [
     {
@@ -15,11 +15,11 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Treat migration as a product-shell and workflow migration, not a global class replacement. Start by putting the app inside XDSTheme and AppShell, then move one route or surface at a time to XDS primitives while keeping existing data, routing, and business logic intact.',
+          text: 'Treat migration as a product-shell and workflow migration, not a global class replacement. Start by putting the app inside XDSTheme and AppShell, then move one route or surface at a time to design system primitives while keeping existing data, routing, and business logic intact.',
         },
         {
           type: 'prose',
-          text: 'Tailwind can coexist during migration. Use it for legacy wrappers and local layout while replacing interactive controls, navigation, command surfaces, forms, alerts, dialogs, and settings UI with XDS components.',
+          text: 'Tailwind can coexist during migration. Use it for legacy wrappers and local layout while replacing interactive controls, navigation, command surfaces, forms, alerts, dialogs, and settings UI with components.',
         },
       ],
     },
@@ -30,9 +30,9 @@ export const docs = {
           type: 'list',
           style: 'ordered',
           items: [
-            'Install XDS and run init so the project has package scripts, theme CSS, and agent docs.',
+            'Install the design system and run init so the project has package scripts, theme CSS, and agent docs.',
             'Wrap the app root with XDSTheme and choose the initial light, dark, or system mode behavior.',
-            'Make Tailwind and XDS CSS layer order explicit before replacing components.',
+            'Make Tailwind and design system CSS layer order explicit before replacing components.',
             'Move the persistent frame first: AppShell, TopNav, SideNav, page content, and mobile navigation.',
             'Replace shared primitives: Button, IconButton, TextInput, NumberInput, Switch, CheckboxInput, RadioList, Selector, Tabs, Dialog, AlertDialog, Banner, Toast, Badge, Card, Table, and ListItem.',
             'Replace global workflows: command palette, settings popover, theme toggle, search, filters, create flows, and destructive confirmation dialogs.',
@@ -109,7 +109,7 @@ export function AppRoot({children}: {children: React.ReactNode}) {
         },
         {
           type: 'prose',
-          text: 'When Tailwind remains in the app, declare layer order once in the global CSS file. XDS reset and theme CSS should load before Tailwind utilities so migrated components keep XDS defaults while legacy utility classes still work.',
+          text: 'When Tailwind remains in the app, declare layer order once in the global CSS file. design system reset and theme CSS should load before Tailwind utilities so migrated components keep design system defaults while legacy utility classes still work.',
         },
         {
           type: 'code',
@@ -136,7 +136,7 @@ export function AppRoot({children}: {children: React.ReactNode}) {
         },
         {
           type: 'table',
-          headers: ['Legacy surface', 'XDS target', 'Notes'],
+          headers: ['Legacy surface', 'Component', 'Notes'],
           rows: [
             ['Header', 'XDSTopNav', 'Use for product identity, global actions, account entry, and command/search trigger.'],
             ['Sidebar', 'XDSSideNav', 'Use sections and nested nav items for route groups. Keep selection state driven by the router.'],
@@ -152,21 +152,21 @@ export function AppRoot({children}: {children: React.ReactNode}) {
       content: [
         {
           type: 'prose',
-          text: 'Do not wrap old shadcn components in XDS styles. Replace the primitive with the XDS component that owns the behavior, accessibility, state classes, and token usage.',
+          text: 'Do not wrap old shadcn components in design system styles. Replace the primitive with the component that owns the behavior, accessibility, state classes, and token usage.',
         },
         {
           type: 'table',
-          headers: ['Existing primitive', 'XDS replacement', 'Migration note'],
+          headers: ['Existing primitive', 'Component', 'Migration note'],
           rows: [
             ['button / shadcn Button', 'XDSButton or XDSIconButton', 'Use Button for labeled commands and IconButton for icon-only toolbar actions.'],
-            ['input', 'XDSTextInput', 'Keep validation state in XDS status props rather than ad hoc border classes.'],
+            ['input', 'XDSTextInput', 'Keep validation state in status props rather than ad hoc border classes.'],
             ['textarea', 'XDSTextArea', 'Use when multiline editing is the primary action.'],
             ['switch', 'XDSSwitch', 'Use for persisted boolean settings, including theme mode when represented as a binary choice.'],
             ['checkbox', 'XDSCheckboxInput or XDSCheckboxList', 'Use list variants for grouped selection.'],
             ['radio group', 'XDSRadioList', 'Use when one option must be selected from a visible set.'],
             ['select / combobox', 'XDSSelector or XDSTypeahead', 'Use Selector for bounded options and Typeahead for searchable async options.'],
             ['tabs used as page nav', 'XDSTabList', 'Use route state or current page state as the source of truth.'],
-            ['command dialog', 'XDSCommandPalette', 'Keep app-specific search sources outside the shell and feed XDS searchable items.'],
+            ['command dialog', 'XDSCommandPalette', 'Keep app-specific search sources outside the shell and feed searchable items.'],
             ['dropdown action menu', 'XDSDropdownMenu or XDSMoreMenu', 'Use MoreMenu for compact overflow actions.'],
             ['alert / callout', 'XDSBanner or XDSToast', 'Use Banner for page or section messages and Toast for transient feedback.'],
             ['dialog', 'XDSDialog or XDSAlertDialog', 'Use AlertDialog for destructive confirmation and Dialog for task flows.'],
@@ -180,7 +180,7 @@ export function AppRoot({children}: {children: React.ReactNode}) {
       content: [
         {
           type: 'prose',
-          text: 'Move global search to XDSCommandPalette once the shell exists. Treat the palette as a view over app commands: routes, contextual actions, create actions, filters, recent items, and entity results. Keep data normalization in app code so search sources always return arrays of XDS searchable items.',
+          text: 'Move global search to XDSCommandPalette once the shell exists. Treat the palette as a view over app commands: routes, contextual actions, create actions, filters, recent items, and entity results. Keep data normalization in app code so search sources always return arrays of searchable items.',
         },
         {
           type: 'prose',

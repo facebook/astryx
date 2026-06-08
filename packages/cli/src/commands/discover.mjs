@@ -14,12 +14,13 @@ import {loadConfig} from '../lib/config.mjs';
 import {scanAllPackages} from '../lib/package-scanner.mjs';
 import {formatFull, formatBrief, formatCompact} from '../lib/component-format.mjs';
 import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
+import {cliError} from '../lib/cli-error.mjs';
 import {discover as discoverApi} from '../api/discover.mjs';
 
 export function registerDiscover(program) {
   program
     .command('discover [query]')
-    .description('Discover external XDS packages and components')
+    .description('Discover external packages and components')
     .option('--components', 'List components only')
     .action(async (query, options) => {
       const detail = program.opts().detail || 'full';
@@ -31,15 +32,8 @@ export function registerDiscover(program) {
       try {
         result = await discoverApi(query, {components: options.components, lang, zh});
       } catch (e) {
-        if (json) return jsonError(e.message, e.suggestions);
-        console.error(`Error: ${e.message}`);
-        if (e.suggestions?.length) {
-          console.error('');
-          for (const s of e.suggestions) {
-            console.error(`  ${s.name}  (${s.reason})`);
-          }
-        }
-        process.exit(1);
+        cliError(e.message, {suggestions: e.suggestions});
+        return;
       }
 
       if (json) {
@@ -63,7 +57,7 @@ export function registerDiscover(program) {
               humanLog("    packages: ['/path/to/your/libs'],");
               humanLog('  };');
             } else {
-              humanLog('No external XDS packages found.');
+              humanLog('No external packages found.');
               humanLog('');
               humanLog('Packages opt in by adding an "xds" field to package.json:');
               humanLog('');

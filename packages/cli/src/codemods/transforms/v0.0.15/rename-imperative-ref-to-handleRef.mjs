@@ -15,7 +15,7 @@
 export const meta = {
   title: 'Rename imperative ref props to handleRef',
   description:
-    'Renames imperative `ref` usages to `handleRef` on XDS components whose ' +
+    'Renames imperative `ref` usages to `handleRef` on components whose ' +
     '`ref` prop now points at the root DOM element. Also renames ' +
     '`XDSSideNavCollapseButton` `sideNavRef` to `handleRef`.',
   issue: '#2359',

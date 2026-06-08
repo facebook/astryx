@@ -659,7 +659,7 @@ export function XDSAppShell({
         ref={headerRef}
         {...mergeProps(
           xdsClassName('app-shell-header', {variant}),
-          stylex.props(isAuto && styles.headerSticky, isAuto && stickyBgStyle),
+          stylex.props(navAreaStyle, isAuto && styles.headerSticky),
         )}>
         {headerInner}
       </div>
@@ -743,7 +743,7 @@ export function XDSAppShell({
       <div
         {...mergeProps(
           xdsClassName('app-shell-header', {variant}),
-          stylex.props(isAuto && styles.headerSticky, isAuto && stickyBgStyle),
+          stylex.props(navAreaStyle, isAuto && styles.headerSticky),
         )}>
         <XDSLayoutHeader padding={0} hasDivider={navHasDividers}>
           <div

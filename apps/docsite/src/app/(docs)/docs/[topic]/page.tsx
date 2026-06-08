@@ -1,17 +1,22 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Page type: long-form-doc
- * Renders guide and foundation docs from the pipeline.
- * Content blocks (prose, code, table, list) rendered via ContentBlockRenderer.
- * Token topics (foundations category) render TokensDocView with live token tables.
+ * Unified docs-section template. Serves two kinds of slug:
+ * - long-form-doc: guide/foundation topics from docsRegistry, rendered via
+ *   ContentBlockRenderer (TokensDocView for live token tables, otherwise
+ *   ReferenceDocView).
+ * - package: non-theme @xds packages (e.g. @xds/core, @xds/cli), rendered as
+ *   a README stub via PackageStubPage with install steps and an optional CTA.
+ * Theme packages are NOT served here — they live at /themes/<name>.
  */
 
 import {notFound} from 'next/navigation';
-import {XDSSection} from '@xds/core/Section';
 import {docTopics} from '../../../../generated/docsRegistry';
+import {packages} from '../../../../generated/packageRegistry';
 import {ReferenceDocView} from '../../../../components/docs/ReferenceDocView';
 import {TokensDocView} from '../../../../components/docs/TokensDocView';
+import {PackageStubPage} from '../../../../components/docs/PackageStubPage';
+import {type InstallStep} from '../../../../components/docs/PackageActions';
 
 const TOKEN_TOPICS = new Set([
   'tokens',
@@ -23,8 +28,41 @@ const TOKEN_TOPICS = new Set([
   'typography',
 ]);
 
+function slugToPackageName(slug: string): string {
+  return `@xds/${slug}`;
+}
+
+function isThemePackage(name: string): boolean {
+  return name.includes('theme-');
+}
+
+function getInstallSteps(pkgName: string): InstallStep[] {
+  if (pkgName.endsWith('/cli')) {
+    return [
+      {label: 'Install the CLI', code: `npm install -D ${pkgName}`},
+      {label: 'Run a command', code: `npx xds component --list`},
+    ];
+  }
+  return [
+    {label: 'Install the package', code: `npm install ${pkgName}`},
+    {
+      label: 'Import a component',
+      code: `import {...} from '${pkgName}/ComponentName';`,
+      language: 'typescript',
+    },
+  ];
+}
+
+/** Sections to remove from the @xds/core README on the package page. */
+const CORE_STRIP_SECTIONS = ['Quick Start', 'Resources', 'XDS CLI'];
+
 export function generateStaticParams() {
-  return docTopics.map(d => ({topic: d.topic}));
+  return [
+    ...docTopics.map(d => ({topic: d.topic})),
+    ...packages
+      .filter(p => !isThemePackage(p.name))
+      .map(p => ({topic: p.name.replace('@xds/', '')})),
+  ];
 }
 
 export default async function DocPage({
@@ -33,30 +71,50 @@ export default async function DocPage({
   params: Promise<{topic: string}>;
 }) {
   const {topic: slug} = await params;
+
   const topic = docTopics.find(d => d.topic === slug);
-  if (!topic) {
+  if (topic) {
+    const isTokenTopic =
+      topic.category === 'foundations' && TOKEN_TOPICS.has(topic.topic);
+
+    return isTokenTopic ? (
+      <TokensDocView
+        title={topic.title}
+        description={topic.description}
+        sections={topic.sections}
+        topic={topic.topic}
+      />
+    ) : (
+      <ReferenceDocView
+        title={topic.title}
+        description={topic.description}
+        sections={topic.sections}
+      />
+    );
+  }
+
+  const pkgName = slugToPackageName(slug);
+  const pkg = packages.find(p => p.name === pkgName && !isThemePackage(p.name));
+  if (!pkg) {
     notFound();
   }
 
-  const isTokenTopic =
-    topic.category === 'foundations' && TOKEN_TOPICS.has(topic.topic);
+  const isComponentPkg = pkg.name === '@xds/core';
 
   return (
-    <XDSSection maxWidth="lg" padding={6}>
-      {isTokenTopic ? (
-        <TokensDocView
-          title={topic.title}
-          description={topic.description}
-          sections={topic.sections}
-          topic={topic.topic}
-        />
-      ) : (
-        <ReferenceDocView
-          title={topic.title}
-          description={topic.description}
-          sections={topic.sections}
-        />
-      )}
-    </XDSSection>
+    <PackageStubPage
+      name={pkg.name}
+      description={pkg.description}
+      version={pkg.version}
+      readme={pkg.readme}
+      installSteps={getInstallSteps(pkg.name)}
+      cta={
+        isComponentPkg
+          ? {label: 'View Components', href: '/components/Button'}
+          : undefined
+      }
+      stripSections={isComponentPkg ? CORE_STRIP_SECTIONS : undefined}
+      stripIntro={isComponentPkg}
+    />
   );
 }

@@ -45,7 +45,7 @@ function resolveExternalPackage(packageName, cwd) {
  * @param {boolean} [options.source]
  * @param {boolean} [options.showcase]
  * @param {boolean} [options.blocks]
- * @param {'full'|'compact'|'brief'} [options.detail]
+ * @param {'full'|'compact'|'brief'} [options.detail] - Defaults to 'full' for a single component, 'brief' for list views (list/category/no name), matching the CLI.
  * @param {string} [options.lang]
  * @param {boolean} [options.zh]
  * @param {boolean} [options.dense]
@@ -61,11 +61,18 @@ export async function component(name, options = {}) {
     source = false,
     showcase = false,
     blocks = false,
-    detail = 'full',
+    detail: detailOption,
     lang = null,
     zh = false,
     dense = false,
   } = options;
+
+  // Default detail level mirrors the CLI (see commands/component/index.mjs):
+  // single-component views default to 'full', list-style views (--list,
+  // --category, or no name) default to 'brief' (scannable name lists).
+  // Keeping this in sync with the CLI is what the API↔CLI parity test checks.
+  const isListView = list || category != null || !name;
+  const detail = detailOption ?? (isListView ? 'brief' : 'full');
 
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
@@ -88,7 +95,7 @@ export async function component(name, options = {}) {
         );
       }
 
-      if (detail === 'brief') {
+      if (detail === 'compact') {
         const entries = [];
         for (const comp of match[1]) {
           const readme = findComponentReadme(coreDir, comp);
@@ -106,11 +113,29 @@ export async function component(name, options = {}) {
         return {type: 'component.brief', data: {[match[0]]: entries}};
       }
 
+      if (detail === 'full') {
+        const entries = [];
+        for (const comp of match[1]) {
+          const readme = findComponentReadme(coreDir, comp);
+          if (readme && readme.endsWith('.doc.mjs')) {
+            try {
+              entries.push(await loadDocs(readme, {zh, lang, dense}));
+            } catch {
+              entries.push({name: `XDS${comp}`, description: ''});
+            }
+          } else {
+            entries.push({name: `XDS${comp}`, description: ''});
+          }
+        }
+        return {type: 'component.full', data: {[match[0]]: entries}};
+      }
+
+      // Default: brief — names only
       return {type: 'component.list', data: {[match[0]]: match[1]}};
     }
 
     // All components — merge core + external packages with grouped subcategories
-    if (detail === 'brief') {
+    if (detail === 'compact') {
       /** @type {Record<string, Array<import('../types/component').ComponentBriefEntry>>} */
       const result = {};
       for (const [cat, comps] of Object.entries(components)) {
@@ -132,6 +157,28 @@ export async function component(name, options = {}) {
       return {type: 'component.brief', data: result};
     }
 
+    if (detail === 'full') {
+      /** @type {Record<string, Array<unknown>>} */
+      const result = {};
+      for (const [cat, comps] of Object.entries(components)) {
+        result[cat] = [];
+        for (const comp of comps) {
+          const readme = findComponentReadme(coreDir, comp);
+          if (readme && readme.endsWith('.doc.mjs')) {
+            try {
+              result[cat].push(await loadDocs(readme, {zh, lang, dense}));
+            } catch {
+              result[cat].push({name: `XDS${comp}`, description: ''});
+            }
+          } else {
+            result[cat].push({name: `XDS${comp}`, description: ''});
+          }
+        }
+      }
+      return {type: 'component.full', data: result};
+    }
+
+    // Default: brief — names only (with externals merged in)
     const externals = discoverExternalPackages(cwd);
     for (const ext of externals) {
       const grouped = discoverExternalComponentsGrouped(ext.docsDir);

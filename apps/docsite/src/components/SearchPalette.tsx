@@ -55,8 +55,11 @@ export function SearchPalette({
     }
 
     for (const pkg of packages) {
+      const isTheme = pkg.name.includes('theme-');
       items.push({
-        id: `/packages/${pkg.name.replace('@xds/', '')}`,
+        id: isTheme
+          ? `/themes/${pkg.name.replace('@xds/theme-', '')}`
+          : `/docs/${pkg.name.replace('@xds/', '')}`,
         label: pkg.displayName,
         auxiliaryData: {group: 'Package'},
       });
