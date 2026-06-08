@@ -192,7 +192,7 @@ program.hook('postAction', (thisCommand, actionCommand) => {
  * Only fires for commands that produce output agents read (component, docs, etc.).
  * Suppressed when --json is active to avoid contaminating stdout.
  */
-const UPDATE_HINT_COMMANDS = new Set(['component', 'docs', 'doctor']);
+const UPDATE_HINT_COMMANDS = new Set(['component', 'docs']);
 program.hook('postAction', (thisCommand, actionCommand) => {
   if (program.opts().json) return;
   try {
