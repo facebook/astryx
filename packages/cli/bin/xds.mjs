@@ -1,9 +1,32 @@
 #!/usr/bin/env node
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {program} from '../src/index.mjs';
-import {isJsonMode, toErrorEnvelope} from '../src/lib/json.mjs';
-import {handleCommanderError} from '../src/lib/json-shim.mjs';
+// ---------------------------------------------------------------------------
+// Node.js version preflight gate.
+//
+// The CLI and its dependencies use `styleText` from `node:util`, added in Node
+// 22.13.0. On older runtimes the lazy-loaded subcommands die with a cryptic
+// ESM error ("...does not provide an export named 'styleText'"). To give users
+// a clear message instead, we check the running version FIRST, using only
+// built-ins, and exit early before importing anything that touches styleText.
+//
+// `node-version.mjs` is intentionally dependency-free so it loads on the
+// unsupported runtimes this guard protects against.
+import {
+  isNodeVersionSupported,
+  unsupportedNodeMessage,
+} from '../src/lib/node-version.mjs';
+
+if (!isNodeVersionSupported(process.versions.node)) {
+  console.error(unsupportedNodeMessage(process.versions.node));
+  process.exit(1);
+}
+
+// Imports that transitively load `styleText` must happen AFTER the gate above,
+// so they are dynamically imported here rather than at the top of the module.
+const {program} = await import('../src/index.mjs');
+const {isJsonMode, toErrorEnvelope} = await import('../src/lib/json.mjs');
+const {handleCommanderError} = await import('../src/lib/json-shim.mjs');
 
 /**
  * Top-level error boundary (contract guarantee #4): an uncaught throw must
