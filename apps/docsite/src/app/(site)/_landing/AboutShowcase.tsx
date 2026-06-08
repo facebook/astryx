@@ -18,20 +18,16 @@ import {spacingVars} from '@xds/core/theme/tokens.stylex';
 // breakpoint on purpose — with 1 heading + 3 features, a 2-col grid
 // produces an awkward orphan column on the last row.
 //
-// Pastel shape colors are intentionally hardcoded (not theme tokens)
-// because Astryx's --color-background-{pink,purple,yellow} tokens are
-// translucent washes (33% alpha) that would render as washed-out gray
-// on the white showcase surface. The reference design calls for
-// SATURATED pastels, so we use literal hex values to hit the brief.
-// Decorative shape colors — light pastel in light mode, deep
-// saturated equivalent in dark mode via CSS light-dark() so the
-// shapes stay legible against both body backgrounds. These are
-// one-off marketing decorations not part of the semantic token
-// system, hence the literal hex values (kept inline so the
-// palette is easy to tune per shape).
-const PINK_PASTEL = 'light-dark(#FFC5D2, #5C1F2A)';
-const LAVENDER_PASTEL = 'light-dark(#D4C5F2, #3D1F5C)';
-const YELLOW_PASTEL = 'light-dark(#FEE48B, #5C4A0F)';
+// Decorative shape fills — pulled from the categorical
+// (non-semantic) background tokens so the shapes pick up each
+// theme's pink / purple / yellow ramp automatically and invert
+// for dark mode without hand-rolled palettes. These tokens are
+// 33% alpha pastel washes by default, which read perfectly as
+// soft decorative blobs on the white showcase surface, and any
+// theme can retint them centrally without touching this file.
+const PINK_PASTEL = 'var(--color-background-pink)';
+const LAVENDER_PASTEL = 'var(--color-background-purple)';
+const YELLOW_PASTEL = 'var(--color-background-yellow)';
 
 const SHAPE_SIZE = 40;
 
@@ -99,9 +95,15 @@ const styles = stylex.create({
       '@media (min-width: 1024px)': 'start',
     },
   },
-  // Decorative shape slot — fixed 48x48 box so the SVG renders at the
-  // expected size and the column header sits at a consistent baseline
-  // across all three feature columns.
+  // Decorative shape slot — fixed 40x40 box so the SVG renders at
+  // the expected size and the column header sits at a consistent
+  // baseline across all three feature columns.
+  //
+  // Rendered as a raw <span> in the JSX because XDS has no
+  // primitive for "fixed-size inline-block decorative SVG wrapper"
+  // (XDSIcon is glyph-only and bound to its registry; XDSThumbnail
+  // is chat-attachment chrome). The wrapper exists purely to reserve
+  // space and clip the shape — there is no semantic content here.
   shapeSlot: {
     width: SHAPE_SIZE,
     height: SHAPE_SIZE,
@@ -133,20 +135,19 @@ type AboutColumn = {
 // defined three soft, organic silhouettes (a 16-bump rounded
 // flower/blob, a pillow-shaped rounded square with concave sides,
 // and a rounded-corner diamond) that already match the "irregular
-// pastel splat" treatment in the new design reference. We reuse the
-// exact path data here and only swap the fill color (from the
-// translucent --color-background-{orange,purple,yellow} theme tokens
-// to saturated pastel hex values) and scale the viewBox-rendered
-// size from the original 40px to the spec's 48px.
+// pastel splat" treatment in the new design reference. We reuse
+// the exact path data here, swap the orange-channel to pink, and
+// render each shape at SHAPE_SIZE (40px) — same viewBox the
+// original used so the path math stays unchanged.
 //
-// Mapping (original color -> new pastel for this redesign):
-//   BlobIcon    (orange) -> Pink   #FFC5D2 -> "Design for speed"
-//   SquareIcon  (purple) -> Lavender #D4C5F2 -> "Built by the people who use it"
-//   DiamondIcon (yellow) -> Yellow #FEE48B -> "Ready for what's next"
+// Mapping (original color -> new categorical token):
+//   BlobIcon    (orange) -> --color-background-pink   "Design for speed"
+//   SquareIcon  (purple) -> --color-background-purple "Built by the people who use it"
+//   DiamondIcon (yellow) -> --color-background-yellow "Ready for what's next"
 
 // Pink "rounded flower" blob — 16 alternating bumps around a circle.
 // Reused verbatim from origin/main's BlobIcon (40x40 viewBox), just
-// scaled up to render at 48px and re-tinted from orange to pink.
+// re-tinted from the orange categorical token to the pink one.
 function PinkBlobShape() {
   return (
     <svg
@@ -274,6 +275,12 @@ function AboutColumn({column}: {column: AboutColumn}) {
 export function AboutShowcase() {
   return (
     <XDSVStack as="section" align="center" width="100%">
+      {/* sectionLayout / grid / columnsGrid are kept as plain <div>s
+          because each is a CSS-grid container with responsive
+          `grid-template-columns` (see styles below). XDSGrid hardcodes
+          a single integer column count and a single gap, so it can't
+          express the 1fr-stack → 1fr/2fr → repeat(3, 1fr) responsive
+          patterns this section needs. */}
       <div {...stylex.props(styles.sectionLayout)}>
         <div {...stylex.props(styles.grid)}>
           <AboutHeading />

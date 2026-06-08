@@ -4,7 +4,7 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {XDSCard} from '@xds/core/Card';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
@@ -22,13 +22,13 @@ const CORE_COMPONENT_COUNT = (components['@xds/core'] ?? []).filter(
 const CORE_COMPONENT_COUNT_ROUNDED = Math.floor(CORE_COMPONENT_COUNT / 10) * 10;
 
 const styles = stylex.create({
-  // Layout glue for the XDSGrid: cap at 1200px. Each grid cell now
-  // holds a full-height column wrapper (XDSVStack with height:100%)
-  // rather than a single card, so the grid auto-stretches all three
-  // columns to the tallest column's natural content height — which
-  // is what gives us visually-balanced column heights even when one
-  // column has one tall card and another has a tall card plus a
-  // short card stacked.
+  // Bento CSS-grid layout. Each grid cell holds a full-height
+  // column wrapper (XDSVStack with height:100%) rather than a
+  // single card, so the grid auto-stretches all three columns to
+  // the tallest column's natural content height — which is what
+  // gives us visually-balanced column heights even when one column
+  // has one tall card and another has a tall card plus a short
+  // card stacked.
   // 3-column desktop bento, 1-column mobile stack.
   //
   //   <1024px: single column — every card stacks vertically.
@@ -44,6 +44,15 @@ const styles = stylex.create({
   // contents at mobile to dissolve the wrapper so cards become
   // direct children of the grid and the 1-col gridTemplateColumns
   // can lay them all out in source order.
+  //
+  // Literal pixel values are intentional marketing-section
+  // dimensions, not derivable from the spacing scale:
+  //   • maxWidth 1200 — shared content cap across all three home
+  //     showcases (Features, About, Discover) so they line up.
+  //   • minHeight 720 — keeps the bento tall enough on desktop
+  //     that the dominant "Themes" card has room for its larger
+  //     image composition; below this height the right column
+  //     reads as cramped against the left/middle.
   gridLayout: {
     width: '100%',
     maxWidth: 1200,
@@ -58,21 +67,24 @@ const styles = stylex.create({
       '@media (min-width: 1024px)': 720,
     },
   },
-  // Column wrapper. At desktop it's a flex column that takes the
-  // full grid-cell height and stacks its 1-2 child cards. At
-  // mobile (<1024) display:contents dissolves the wrapper so
-  // its children become direct grid children — combined with
-  // the parent's gridTemplateColumns:1fr at mobile, every card
-  // gets its own row at full width.
+  // Column wrapper. At desktop it's a flex column (rendered as an
+  // XDSVStack with gap={8} width="100%" height="100%") that takes
+  // the full grid-cell height and stacks its 1-2 child cards. At
+  // mobile (<1024) the xstyle below flips display to `contents`,
+  // which dissolves the wrapper so its children become direct grid
+  // children — combined with the parent's gridTemplateColumns:1fr
+  // at mobile, every card gets its own row at full width.
+  //
+  // The display override is the ONLY thing in this xstyle because
+  // XDSVStack already sets `display: flex` + `flex-direction:
+  // column` + the gap; xstyle is applied last in XDSStack so the
+  // mobile `display: contents` cleanly wins at narrow widths and
+  // falls back to flex at desktop without re-declaring anything.
   column: {
     display: {
       default: 'contents',
       '@media (min-width: 1024px)': 'flex',
     },
-    flexDirection: 'column',
-    gap: spacingVars['--spacing-8'],
-    width: '100%',
-    height: '100%',
   },
   // Heading cell — the top-left column starts with plain text on
   // the page background (no card wrapper) per the bento reference.
@@ -113,12 +125,22 @@ const styles = stylex.create({
   // the inner stack is the only reliable way to get 0 bottom padding
   // for image cards while leaving full padding on the text-only card.
 
+  // All four card variants share the same pastel backdrop, pulled
+  // from a marketing-only theme token (defined in astryxTheme.ts as
+  // `--xds-marketing-feature-card-bg`). Sourcing the color from the
+  // theme keeps the bento palette tunable in one place and avoids
+  // baking literal hex values into the component. We do NOT use
+  // XDSCard's `variant="blue"` here because that token (--color-
+  // background-blue, 20%-alpha saturated wash) prints too vivid
+  // against the white showcase surface — the marketing token is a
+  // soft pastel band hand-tuned for this section.
+
   // Tall card variant — applied to the right-column "Themes" card.
   // flex:1 grows the card to fill its parent column wrapper, which
   // is stretched by the grid to match the tallest sibling column.
   cardTall: {
     flex: 1,
-    backgroundColor: 'light-dark(#E6F0FF, #1A2333)',
+    backgroundColor: 'var(--xds-marketing-feature-card-bg)',
     overflow: 'hidden',
   },
   // Regular image card. overflow:hidden because the image is
@@ -128,7 +150,7 @@ const styles = stylex.create({
   card: {
     height: '100%',
     overflow: 'hidden',
-    backgroundColor: 'light-dark(#E6F0FF, #1A2333)',
+    backgroundColor: 'var(--xds-marketing-feature-card-bg)',
   },
   // Flex variant of `card` — image card that grows to fill its
   // column's leftover height so a column with a short text-only
@@ -137,14 +159,14 @@ const styles = stylex.create({
   cardFlex: {
     flex: 1,
     overflow: 'hidden',
-    backgroundColor: 'light-dark(#E6F0FF, #1A2333)',
+    backgroundColor: 'var(--xds-marketing-feature-card-bg)',
   },
   // Text-only feature card variant — no image, so overflow hidden
   // keeps the card contour tidy at the rounded corners.
   cardTextOnly: {
     height: 'auto',
     overflow: 'hidden',
-    backgroundColor: 'light-dark(#E6F0FF, #1A2333)',
+    backgroundColor: 'var(--xds-marketing-feature-card-bg)',
   },
   // Padding for image cards: --spacing-10 (40px) on top + sides +
   // 0 on bottom so the image wrapper inside sits flush at the
@@ -169,15 +191,12 @@ const styles = stylex.create({
   exploreLink: {
     marginTop: spacingVars['--spacing-3'],
   },
-  // Image wrapper for the 3 feature cards with images. The wrapper
-  // is a full-width flex row (alignSelf:stretch overrides the parent
-  // VStack's align="start" so this wrapper spans the full card
-  // interior width, then justifyContent positions the inner image
-  // horizontally within that full-width row).
-  //
-  // Regular cards left-align the image (justifyContent:flex-start)
-  // per the bento reference; the tall card centers its larger
-  // composition (see imageWrapTall).
+  // Image wrapper for the 3 feature cards with images. Rendered as an
+  // XDSHStack with hAlign="start" so the inner image left-aligns per
+  // the bento reference (the tall card uses hAlign="center"; see the
+  // imageWrapTall xstyle below). alignSelf:stretch overrides the
+  // parent VStack's align="start" so this wrapper spans the full card
+  // interior width.
   //
   // marginTop:auto pushes the wrapper to the bottom of the card's
   // content stack so the image always sits at the bottom regardless
@@ -186,45 +205,30 @@ const styles = stylex.create({
   // paddingTop creates breathing room between the "Explore" link
   // and the image.
   //
-  // marginBottom is a literal negative pixel value (not tied to a
-  // spacing token) that bleeds the image past the card's bottom
-  // edge — combined with overflow:visible on the card AND
-  // paddingBlockEnd:0 on the card, the image visibly pops past the
-  // rounded corner. Note the image already sits flush at the card's
-  // bottom (paddingBlockEnd:0); the negative margin is the
-  // additional overhang.
+  // overflow:hidden keeps the image contained inside the wrapper
+  // (and therefore inside the card, since the card itself uses
+  // overflow:hidden too). No bleed past the card edges in any
+  // direction; the image sits flush at the card's bottom.
   imageWrap: {
     marginTop: 'auto',
     paddingTop: spacingVars['--spacing-6'],
     alignSelf: 'stretch',
-    width: '100%',
     minWidth: 0,
     maxWidth: '100%',
-    // overflow:hidden keeps the image contained inside the wrapper
-    // (and therefore inside the card, since the card itself uses
-    // overflow:hidden too). No bleed past the card edges in any
-    // direction; the image sits flush at the card's bottom.
     overflow: 'hidden',
-    display: 'flex',
-    justifyContent: 'flex-start',
   },
-  // Tall-card image wrapper variant. Centered (the tall right card
-  // gets a wider composition that reads better centered than
-  // hugging an edge). More top padding because the tall card has
-  // more vertical room above the image baseline that we want to
-  // leave visually open. Slightly more bleed (-32 vs -24) so the
-  // larger image's overhang reads proportionally to its size.
+  // Tall-card image wrapper variant. Centered via hAlign="center"
+  // on its XDSHStack (the tall right card gets a wider composition
+  // that reads better centered than hugging an edge). More top
+  // padding because the tall card has more vertical room above the
+  // image baseline that we want to leave visually open.
   imageWrapTall: {
     marginTop: 'auto',
     paddingTop: spacingVars['--spacing-10'],
     alignSelf: 'stretch',
-    width: '100%',
     minWidth: 0,
     maxWidth: '100%',
-    // Hard clip so the tall card's image stays inside the card.
     overflow: 'hidden',
-    display: 'flex',
-    justifyContent: 'center',
   },
   // Default image: capped at 320px so a single composition (badges,
   // a small UI sample, a stack of mocks) doesn't span the full
@@ -353,7 +357,10 @@ function FeatureCard({
         : styles.cardTextOnly;
 
   return (
-    <XDSCard variant="blue" padding={0} xstyle={cardStyle}>
+    // variant="transparent" suppresses XDSCard's default border + bg
+    // so the marketing token painted by `cardStyle` below is the
+    // sole surface color (no blend with --color-background-card).
+    <XDSCard variant="transparent" padding={0} xstyle={cardStyle}>
       <XDSVStack
         gap={1}
         align="start"
@@ -374,8 +381,17 @@ function FeatureCard({
           Explore →
         </XDSLink>
         {hasImage && feature.image && (
-          <div
-            {...stylex.props(isTall ? styles.imageWrapTall : styles.imageWrap)}>
+          // XDSHStack handles the flex+direction+alignment chrome;
+          // marginTop/padding/overflow/sizing live in the xstyle.
+          <XDSHStack
+            width="100%"
+            hAlign={isTall ? 'center' : 'start'}
+            xstyle={isTall ? styles.imageWrapTall : styles.imageWrap}>
+            {/* Decorative image — kept as a raw <img> because @xds/core
+                does not export a dedicated Image primitive (XDSThumbnail
+                is a chat/attachment chrome, not a fit-to-container
+                marketing image). Sizing + display:block come from the
+                featureImage / featureImageTall xstyles below. */}
             <img
               src={feature.image.src}
               alt={feature.image.alt}
@@ -383,7 +399,7 @@ function FeatureCard({
                 isTall ? styles.featureImageTall : styles.featureImage,
               )}
             />
-          </div>
+          </XDSHStack>
         )}
       </XDSVStack>
     </XDSCard>
@@ -437,18 +453,29 @@ export function FeaturesShowcase() {
   // heading → templates → components → CLI → themes.
   return (
     <XDSVStack as="section" align="center" gap={10} width="100%">
+      {/* CSS-grid container with responsive column count. Kept as a
+          plain <div> (rather than XDSGrid) because we depend on grid's
+          align-items:stretch + min-height behavior to drive equal
+          column heights, and we need to control gap/minHeight via
+          @media at the wrapper level. XDSGrid is optimized for fixed
+          column counts + a single gap and doesn't expose the
+          minHeight responsive variant pattern we need here. */}
       <div {...stylex.props(styles.gridLayout)}>
-        <div {...stylex.props(styles.column)}>
+        {/* Column wrappers use XDSVStack at desktop and dissolve via
+            `display: contents` at mobile (see styles.column comment).
+            XDSVStack handles flex+direction+gap+sizing; the xstyle
+            owns only the responsive display switch. */}
+        <XDSVStack gap={8} width="100%" height="100%" xstyle={styles.column}>
           <HeadingBlock />
           <FeatureCard feature={features.templates} isFlex />
-        </div>
-        <div {...stylex.props(styles.column)}>
+        </XDSVStack>
+        <XDSVStack gap={8} width="100%" height="100%" xstyle={styles.column}>
           <FeatureCard feature={features.components} isFlex />
           <FeatureCard feature={features.cli} />
-        </div>
-        <div {...stylex.props(styles.column)}>
+        </XDSVStack>
+        <XDSVStack gap={8} width="100%" height="100%" xstyle={styles.column}>
           <FeatureCard feature={features.themes} isTall />
-        </div>
+        </XDSVStack>
       </div>
     </XDSVStack>
   );
