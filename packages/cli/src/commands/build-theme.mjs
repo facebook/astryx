@@ -1241,12 +1241,16 @@ export function registerTheme(program) {
 
       // Print install instructions
       const relDir = path.relative(process.cwd(), outDir);
+      // When the output dir is the cwd, relDir is empty — avoid emitting a
+      // double-slash import path like './/<name>'. Build a './<relDir>/'
+      // prefix that collapses to './' when relDir is empty.
+      const importPrefix = relDir ? `./${relDir}/` : './';
       const exportName = `${toIdentifier(baseName)}Theme`;
       humanLog(`
 Install in your app:
 
-  import { ${exportName} } from './${relDir}/${baseName}';
-  import './${relDir}/${baseName}.css';
+  import { ${exportName} } from '${importPrefix}${baseName}';
+  import '${importPrefix}${baseName}.css';
 
   <XDSTheme theme={${exportName}}>
     <App />
@@ -1254,9 +1258,9 @@ Install in your app:
 
 Or with a <link> tag:
 
-  import { ${exportName} } from './${relDir}/${baseName}';
+  import { ${exportName} } from '${importPrefix}${baseName}';
 
-  <link rel="stylesheet" href="./${relDir}/${baseName}.css" />
+  <link rel="stylesheet" href="${importPrefix}${baseName}.css" />
   <XDSTheme theme={${exportName}}>
     <App />
   </XDSTheme>
