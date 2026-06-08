@@ -87,7 +87,16 @@ const allTopics = docsList.data && !docsList.error
 
 const categories = componentList.data ? Object.keys(componentList.data) : [];
 
+const hookList = cliJson(['hook', '--list']);
+const allHooks = hookList.data && !hookList.error
+  ? Object.values(hookList.data).flat()
+  : [];
+const hookCategories = hookList.data && !hookList.error
+  ? Object.keys(hookList.data)
+  : [];
+
 console.log(`  ${allComponents.length} components, ${allTopics.length} doc topics, ${categories.length} categories`);
+console.log(`  ${allHooks.length} hooks, ${hookCategories.length} hook categories`);
 
 // ─── Build cases ──────────────────────────────────────────────────────────────
 //
@@ -145,6 +154,32 @@ add('template --list', ['template', '--list'],
   () => apiCall(api.template));
 add('template nonexistent', ['template', 'nonexistent99'],
   () => apiCall(api.template, 'nonexistent99'));
+
+// Hook — list variants
+add('hook --list', ['hook', '--list'],
+  () => apiCall(api.hook, undefined, {list: true, cwd: ROOT}));
+
+for (const cat of hookCategories) {
+  add(`hook --category ${cat}`, ['hook', '--category', cat],
+    () => apiCall(api.hook, undefined, {category: cat, cwd: ROOT}));
+}
+
+// Hook — every discovered hook
+for (const name of allHooks) {
+  add(`hook ${name}`, ['hook', name],
+    () => apiCall(api.hook, name, {cwd: ROOT}));
+}
+
+// Hook — params (sample)
+const hookSample = allHooks[0];
+if (hookSample) {
+  add(`hook ${hookSample} --params`, ['hook', hookSample, '--params'],
+    () => apiCall(api.hook, hookSample, {params: true, cwd: ROOT}));
+}
+
+// Hook — error
+add('hook NotARealHook99', ['hook', 'NotARealHook99'],
+  () => apiCall(api.hook, 'NotARealHook99', {cwd: ROOT}));
 
 // Other commands — probe with safe read-only args (no API yet)
 const otherCommands = [

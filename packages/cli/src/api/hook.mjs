@@ -20,7 +20,7 @@ import {XDSError} from './error.mjs';
  * @param {boolean} [options.list]
  * @param {string} [options.category]
  * @param {boolean} [options.params]
- * @param {'full'|'compact'|'brief'} [options.detail]
+ * @param {'full'|'compact'|'brief'} [options.detail] - Defaults to 'full' for a single hook, 'brief' for list views (list/category/no name), matching the CLI.
  * @param {string} [options.lang]
  * @param {boolean} [options.zh]
  * @returns {Promise<{type: string, data: unknown}>}
@@ -31,10 +31,17 @@ export async function hook(name, options = {}) {
     list = false,
     category,
     params = false,
-    detail = 'full',
+    detail: detailOption,
     lang = null,
     zh = false,
   } = options;
+
+  // Default detail level mirrors the CLI (see commands/hook/index.mjs):
+  // single-hook views default to 'full', list-style views (--list,
+  // --category, or no name) default to 'brief' (scannable name lists).
+  // Keeping this in sync with the CLI is what the API↔CLI parity test checks.
+  const isListView = list || category != null || !name;
+  const detail = detailOption ?? (isListView ? 'brief' : 'full');
 
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {

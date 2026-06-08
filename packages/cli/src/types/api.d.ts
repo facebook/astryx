@@ -34,6 +34,13 @@ import type {
   TemplateCopyResponse,
   TemplateGetResponse,
 } from './template';
+import type {
+  HookListResponse,
+  HookBriefResponse,
+  HookFullResponse,
+  HookDetailResponse,
+  HookDetailParamsResponse,
+} from './hook';
 
 /** Structured API error with optional suggestions. */
 export declare class XDSError extends Error {
@@ -136,3 +143,27 @@ export declare function getTemplateById(
   id: string,
   options?: {cwd?: string},
 ): Promise<TemplateGetResponse>;
+
+// ── Hook ─────────────────────────────────────────────────────────────
+
+export interface HookOptions {
+  cwd?: string;
+  list?: boolean;
+  category?: string;
+  params?: boolean;
+  detail?: 'full' | 'compact' | 'brief';
+  lang?: string;
+  zh?: boolean;
+}
+
+type HookResult =
+  | HookListResponse
+  | HookBriefResponse
+  | HookFullResponse
+  | HookDetailResponse
+  | HookDetailParamsResponse;
+
+export declare function hook(
+  name?: string,
+  options?: HookOptions,
+): Promise<HookResult>;

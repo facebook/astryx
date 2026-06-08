@@ -57,7 +57,7 @@ Errors:
 The same logic that powers `xds --json` is available as importable, type-safe functions:
 
 ```typescript
-import {component, docs, discover, template, XDSError} from '@xds/cli/api';
+import {component, docs, discover, template, hook, XDSError} from '@xds/cli/api';
 
 // Same result as: xds --json component Button
 const btn = await component('Button');
@@ -71,6 +71,10 @@ list.data; // Record<string, string[]>
 // Same result as: xds --json docs principles
 const principles = await docs('principles');
 principles.data.title; // 'XDS Principles'
+
+// Same result as: xds --json hook useMediaQuery
+const useMediaQuery = await hook('useMediaQuery');
+useMediaQuery.data.params; // typed as HookParamDoc[]
 
 // Errors throw XDSError with optional .suggestions
 try {
@@ -133,9 +137,10 @@ Every response has a `type` string that uniquely identifies it:
 | `xds --json template <name> --skeleton`        | `template.skeleton`         | `TemplateSkeletonResponse`        |
 | `xds --json template <name> [path]`            | `template.copy`             | `TemplateCopyResponse`            |
 | `xds --json hook [--list]`                     | `hook.list`                 | `HookListResponse`                |
-| `xds --json hook --list --detail compact`      | `hook.brief`                | (untyped envelope)                |
-| `xds --json hook --list --detail full`         | `hook.full`                 | (untyped envelope)                |
+| `xds --json hook --list --detail compact`      | `hook.brief`                | `HookBriefResponse`               |
+| `xds --json hook --list --detail full`         | `hook.full`                 | `HookFullResponse`                |
 | `xds --json hook <name>`                       | `hook.detail`               | `HookDetailResponse`              |
+| `xds --json hook <name> --params`              | `hook.detail.params`        | `HookDetailParamsResponse`        |
 | `xds --json swizzle [--list]`                  | `swizzle.list`              | `SwizzleListResponse`             |
 | `xds --json swizzle <component>`               | `swizzle.copy`              | `SwizzleCopyResponse`             |
 | `xds --json theme build <file>`                | `theme.build`               | `ThemeBuildResponse`              |
