@@ -6,7 +6,7 @@
  * @output Full-page two-panel playground (editor + live preview)
  * @position app/playground — the interactive XDS code playground.
  *
- * Sidebar: icon-only nav strip — back, Code tab, Properties tab.
+ * Sidebar: icon-only nav strip — back, Code view, Properties view.
  * Left panel: Monaco editor (Code) or knobs (Properties).
  *   - Code: Monaco editor (controlled) with real XDS .d.ts typedefs.
  *   - Property: component selector + instance picker + knobs that edit the code.
@@ -40,7 +40,7 @@ import {
   XDSSegmentedControlItem,
 } from '@xds/core/SegmentedControl';
 import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
-import {XDSToggleButton} from '@xds/core/ToggleButton';
+import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
 import {
   Code2,
   Moon,
@@ -287,7 +287,7 @@ function configureMonaco(monaco: MonacoInstance) {
     });
 }
 
-type LeftTab = 'code' | 'property';
+type LeftView = 'code' | 'property';
 type BuildStatus = 'idle' | 'building' | 'finished' | 'error';
 
 const BUILD_STATUS_META: Record<
@@ -302,6 +302,9 @@ const BUILD_STATUS_META: Record<
 const s = stylex.create({
   hidden: {
     display: 'none',
+  },
+  navGroup: {
+    gap: 'var(--spacing-2)',
   },
   root: {
     flex: 1,
@@ -362,7 +365,7 @@ export function PlaygroundClient() {
   const [code, setCode] = useState(getInitialCode);
   const [mode, setMode] = useState<'light' | 'dark'>('light');
   const theme = DEFAULT_PLAYGROUND_THEME;
-  const [activeTab, setActiveTab] = useState<LeftTab>('code');
+  const [activeView, setActiveView] = useState<LeftView>('code');
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -383,10 +386,10 @@ export function PlaygroundClient() {
   const editorRef = useRef<MonacoTypes.editor.IStandaloneCodeEditor | null>(
     null,
   );
-  // Mirror activeTab in a ref so onMount can read the current tab without
+  // Mirror activeView in a ref so onMount can read the current view without
   // re-creating the (stable) mount callback.
-  const activeTabRef = useRef(activeTab);
-  activeTabRef.current = activeTab;
+  const activeViewRef = useRef(activeView);
+  activeViewRef.current = activeView;
 
   const editorPanel = useXDSResizable({
     defaultSize: 440,
@@ -476,7 +479,7 @@ export function PlaygroundClient() {
       if (e.data?.type === 'targeting-select') {
         setTargetedComponent(e.data.component);
         setTargetedInstance(e.data.index);
-        setActiveTab('property');
+        setActiveView('property');
         setIsTargeting(false);
         iframeRef.current?.contentWindow?.postMessage(
           {type: 'targeting-disable'},
@@ -608,28 +611,28 @@ export function PlaygroundClient() {
     ) => {
       editorRef.current = editor;
       configureMonaco(monaco);
-      // Focus on initial mount if the Code tab is the active one.
-      if (activeTabRef.current === 'code') {
+      // Focus on initial mount if the Code view is the active one.
+      if (activeViewRef.current === 'code') {
         editor.focus();
       }
     },
     [],
   );
 
-  // Focus the editor (blinking cursor) whenever the Code tab becomes active.
+  // Focus the editor (blinking cursor) whenever the Code view becomes active.
   useEffect(() => {
-    if (activeTab !== 'code') {
+    if (activeView !== 'code') {
       return;
     }
     const id = requestAnimationFrame(() => editorRef.current?.focus());
     return () => cancelAnimationFrame(id);
-  }, [activeTab]);
+  }, [activeView]);
 
-  // Jump to a specific source offset in the editor (used by the Property tab's
-  // "set in code" links). Switches to the Code tab, then reveals + selects the
+  // Jump to a specific source offset in the editor (used by the Property view's
+  // "set in code" links). Switches to the Code view, then reveals + selects the
   // position once Monaco is visible.
   const revealInCode = useCallback((offset: number) => {
-    setActiveTab('code');
+    setActiveView('code');
     requestAnimationFrame(() => {
       const editor = editorRef.current;
       const model = editor?.getModel();
@@ -677,26 +680,31 @@ export function PlaygroundClient() {
         <XDSLink href="/" label="Go to home">
           {BRAND_ICON}
         </XDSLink>
-        <XDSVStack gap={2}>
+        <XDSToggleButtonGroup
+          type="single"
+          orientation="vertical"
+          label="Playground view"
+          value={activeView}
+          // Single-select groups allow deselecting to null; guard against it so
+          // one view is always active.
+          onChange={v => v && setActiveView(v as LeftView)}
+          size="md"
+          xstyle={s.navGroup}>
           <XDSToggleButton
+            value="code"
             label="Code"
             tooltip="Code"
-            isPressed={activeTab === 'code'}
-            onPressedChange={() => setActiveTab('code')}
-            size="md"
             isIconOnly
             icon={<Code2 size={20} />}
           />
           <XDSToggleButton
+            value="property"
             label="Properties"
             tooltip="Properties"
-            isPressed={activeTab === 'property'}
-            onPressedChange={() => setActiveTab('property')}
-            size="md"
             isIconOnly
             icon={<SlidersHorizontal size={20} />}
           />
-        </XDSVStack>
+        </XDSToggleButtonGroup>
       </XDSVStack>
 
       {/* Playground content */}
@@ -712,7 +720,7 @@ export function PlaygroundClient() {
           <div {...stylex.props(s.tabBody)}>
             {/* Code: Monaco stays mounted to preserve typedefs + editor state */}
             <div
-              {...stylex.props(s.codePane, activeTab !== 'code' && s.hidden)}>
+              {...stylex.props(s.codePane, activeView !== 'code' && s.hidden)}>
               <MonacoEditor
                 defaultLanguage="typescript"
                 value={code}
@@ -725,7 +733,7 @@ export function PlaygroundClient() {
               />
             </div>
 
-            {activeTab === 'property' && (
+            {activeView === 'property' && (
               <PropertyPanel
                 code={code}
                 onCodeChange={setCode}
