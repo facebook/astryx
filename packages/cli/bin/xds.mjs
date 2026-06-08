@@ -18,7 +18,22 @@ import {
 } from '../src/lib/node-version.mjs';
 
 if (!isNodeVersionSupported(process.versions.node)) {
-  console.error(unsupportedNodeMessage(process.versions.node));
+  const msg = unsupportedNodeMessage(process.versions.node);
+  // Honor the --json contract even at this pre-import gate. We can't import
+  // json.mjs here (it transitively loads styleText, the very thing this gate
+  // protects against), so emit a minimal hand-rolled envelope. The shape and
+  // the stable `code` (ERR_NODE_VERSION) match error-codes.mjs.
+  if (process.argv.slice(2).includes('--json')) {
+    console.log(
+      JSON.stringify(
+        {apiVersion: 1, error: msg, code: 'ERR_NODE_VERSION'},
+        null,
+        2,
+      ),
+    );
+  } else {
+    console.error(msg);
+  }
   process.exit(1);
 }
 

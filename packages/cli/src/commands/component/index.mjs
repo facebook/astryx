@@ -25,6 +25,7 @@ import {resolveTheme} from '../../lib/resolve-theme.mjs';
 import {getRunPrefix} from '../../utils/package-manager.mjs';
 import {jsonOut, jsonError, humanLog} from '../../lib/json.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
+import {ERROR_CODES} from '../../lib/error-codes.mjs';
 import {component as componentApi} from '../../api/component.mjs';
 import {findRelatedBlocks} from '../../api/template.mjs';
 
@@ -54,7 +55,7 @@ export function registerComponent(program) {
 
       const validDetails = ['full', 'compact', 'brief'];
       if (!validDetails.includes(detail)) {
-        cliError(`Invalid --detail value "${detail}". Valid levels: ${validDetails.join(', ')}`);
+        cliError(`Invalid --detail value "${detail}". Valid levels: ${validDetails.join(', ')}`, {code: ERROR_CODES.ERR_INVALID_DETAIL});
         return;
       }
 
@@ -73,7 +74,7 @@ export function registerComponent(program) {
           lang, zh, dense,
         });
       } catch (e) {
-        cliError(e.message, {suggestions: e.suggestions});
+        cliError(e.message, {suggestions: e.suggestions, code: e.code});
         return;
       }
 

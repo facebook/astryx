@@ -15,6 +15,7 @@ import {checkForUpdate} from './utils/update-check.mjs';
 import {getRunPrefix} from './utils/package-manager.mjs';
 import {API_VERSION, setJsonMode} from './lib/json.mjs';
 import {cliError} from './lib/cli-error.mjs';
+import {ERROR_CODES} from './lib/error-codes.mjs';
 import {levenshteinDistance} from './lib/string-utils.mjs';
 import {installJsonShim} from './lib/json-shim.mjs';
 
@@ -105,7 +106,7 @@ program
       const suggestions = close.length > 0
         ? close
         : known.map((name) => ({name, reason: 'available command'}));
-      cliError(`unknown command '${unknown}'`, {suggestions});
+      cliError(`unknown command '${unknown}'`, {suggestions, code: ERROR_CODES.ERR_UNKNOWN_COMMAND});
       return;
     }
 
@@ -172,6 +173,7 @@ program.hook('preAction', (thisCommand, actionCommand) => {
   console.log(JSON.stringify({
     apiVersion: API_VERSION,
     error: `JSON output is not supported for the '${fullName}' command`,
+    code: ERROR_CODES.ERR_INVALID_OPTION,
   }, null, 2));
   process.exit(1);
 });

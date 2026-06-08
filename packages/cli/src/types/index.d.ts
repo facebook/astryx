@@ -11,3 +11,4 @@ export * from './theme';
 export * from './gap-report';
 export * from './upgrade';
 export * from './search';
+export * from './error-codes';

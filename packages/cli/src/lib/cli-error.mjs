@@ -39,12 +39,19 @@
  *
  * The JSON envelope shape MUST match the contract from the json.mjs module:
  *
- *   { apiVersion: 1, error: <string>, suggestions?: [{name, reason}, ...] }
+ *   { apiVersion: 1, error: <string>, code: <string>, suggestions?: [...] }
+ *
+ * The `code` is a stable, machine-readable identifier (see error-codes.mjs).
+ * It is the field AI agents and CI scripts should branch on — never the
+ * human-readable `error` string, which changes freely. Human output stays
+ * clean: the code is omitted from the printed "Error: …" line and surfaces
+ * only in the JSON envelope.
  *
  * NEVER add ad-hoc fields. NEVER vary the shape. Consumers depend on it.
  */
 
 import {isJsonMode, jsonError as _jsonError, humanWarn} from './json.mjs';
+import {ERROR_CODES} from './error-codes.mjs';
 
 /**
  * Suggestion object — matches the shape used by API errors and the JSON
@@ -55,6 +62,11 @@ import {isJsonMode, jsonError as _jsonError, humanWarn} from './json.mjs';
 /**
  * Options for {@link cliError}.
  * @typedef {object} CliErrorOptions
+ * @property {string} [code] - Stable machine-readable error code from
+ *   error-codes.mjs (e.g. ERR_UNKNOWN_COMPONENT). Emitted as the `code`
+ *   field of the JSON envelope. Defaults to ERR_UNKNOWN when omitted.
+ *   This is the field machine consumers branch on; the human `error`
+ *   string may change at any time.
  * @property {Suggestion[]} [suggestions] - Optional "did you mean…" list.
  *   Printed under the error message in human mode and serialized as the
  *   `suggestions` field in JSON mode.
@@ -84,11 +96,14 @@ import {isJsonMode, jsonError as _jsonError, humanWarn} from './json.mjs';
  */
 export function cliError(message, options = {}) {
   const {suggestions, exitCode = 1, hard = true} = options;
+  const code = options.code || ERROR_CODES.ERR_UNKNOWN;
 
   if (isJsonMode()) {
     // jsonError emits the envelope on stdout and calls process.exit(1).
     // We don't honor a custom exitCode in JSON mode — the contract is exit 1.
-    _jsonError(message, suggestions);
+    // The stable `code` is carried into the envelope; the human-facing
+    // branch below intentionally omits it to keep stderr clean.
+    _jsonError(message, suggestions, code);
     // Unreachable, but keeps the type-checker honest.
     return /** @type {never} */ (undefined);
   }

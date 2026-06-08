@@ -23,6 +23,7 @@ import {installAgentDocs, removeAgentDocs} from './agent-docs.mjs';
 import {listTemplates} from './template.mjs';
 import {humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {requireInteractive} from '../utils/interactive.mjs';
 
 const VALID_FEATURES = ['agents', 'theme', 'template'];
@@ -104,7 +105,7 @@ async function runTemplate(targetDir, {interactive = true, templateName} = {}) {
     }
 
     if (!templates.includes(templateName)) {
-      cliError(`Unknown template "${templateName}". Available: ${templates.join(', ')}`);
+      cliError(`Unknown template "${templateName}". Available: ${templates.join(', ')}`, {code: ERROR_CODES.ERR_UNKNOWN_TEMPLATE});
       return;
     }
 
@@ -178,7 +179,7 @@ export function registerInit(program) {
 
         const invalid = features.filter(f => !VALID_FEATURES.includes(f));
         if (invalid.length > 0) {
-          cliError(`Unknown features: ${invalid.join(', ')}. Valid features: ${VALID_FEATURES.join(', ')}`);
+          cliError(`Unknown features: ${invalid.join(', ')}. Valid features: ${VALID_FEATURES.join(', ')}`, {code: ERROR_CODES.ERR_UNKNOWN_FEATURE});
           return;
         }
 

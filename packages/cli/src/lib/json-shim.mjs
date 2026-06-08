@@ -37,6 +37,7 @@
  */
 
 import {API_VERSION, isJsonMode, toErrorEnvelope} from './json.mjs';
+import {ERROR_CODES} from './error-codes.mjs';
 
 /**
  * Cheap argv check used before preAction has had a chance to engage
@@ -102,12 +103,48 @@ export function buildHelpEnvelope(cmd) {
  *
  * @param {string} message
  * @param {Array<{name: string, reason: string}>} [suggestions]
+ * @param {string} [code] - Stable machine-readable error code (error-codes.mjs).
  */
-function emitJsonError(message, suggestions) {
+function emitJsonError(message, suggestions, code) {
   if (process.__xdsJsonHandled) return;
   process.__xdsJsonHandled = true;
-  const env = toErrorEnvelope(message, suggestions);
+  const env = toErrorEnvelope(message, suggestions, code);
   process.stdout.write(`${JSON.stringify(env, null, 2)}\n`);
+}
+
+/**
+ * Map a Commander parse-error code (and its message) to a stable XDS error
+ * code. Commander's own codes are stable enough, but they aren't part of our
+ * documented contract — so we translate them into the `ERR_*` taxonomy.
+ *
+ * The `--lang` / `--detail` choice violations both arrive as
+ * `commander.invalidArgument`; we disambiguate on the option name in the
+ * message so consumers get the precise ERR_INVALID_LANG / ERR_INVALID_DETAIL.
+ *
+ * @param {string} commanderCode - e.g. 'commander.unknownOption'
+ * @param {string} message
+ * @returns {string}
+ */
+function commanderCodeToErrorCode(commanderCode, message) {
+  switch (commanderCode) {
+    case 'commander.unknownCommand':
+      return ERROR_CODES.ERR_UNKNOWN_COMMAND;
+    case 'commander.unknownOption':
+      return ERROR_CODES.ERR_INVALID_OPTION;
+    case 'commander.missingArgument':
+    case 'commander.missingMandatoryOptionValue':
+      return ERROR_CODES.ERR_MISSING_ARGUMENT;
+    case 'commander.excessArguments':
+      return ERROR_CODES.ERR_INVALID_ARGUMENT;
+    case 'commander.invalidArgument':
+    case 'commander.invalidOptionArgument': {
+      if (/--lang\b/.test(message)) return ERROR_CODES.ERR_INVALID_LANG;
+      if (/--detail\b/.test(message)) return ERROR_CODES.ERR_INVALID_DETAIL;
+      return ERROR_CODES.ERR_INVALID_ARGUMENT;
+    }
+    default:
+      return ERROR_CODES.ERR_UNKNOWN;
+  }
 }
 
 /**
@@ -274,7 +311,7 @@ export function handleCommanderError(err) {
     // Strip Commander's "error: " prefix — the envelope key is `error`
     // already, doubled "error" is noise.
     const cleaned = message.replace(/^error:\s*/i, '');
-    emitJsonError(cleaned);
+    emitJsonError(cleaned, undefined, commanderCodeToErrorCode(code, cleaned));
   } else {
     // Non-JSON mode: Commander already wrote the "error: ..." line
     // to stderr via configureOutput.writeErr before throwing the

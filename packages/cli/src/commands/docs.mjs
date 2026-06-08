@@ -116,7 +116,7 @@ export function registerDocs(program) {
       } catch (e) {
         // docs API throws structured errors with {name, reason} suggestions —
         // pass them through untouched so the CLI envelope matches the API.
-        cliError(e.message, {suggestions: e.suggestions || []});
+        cliError(e.message, {suggestions: e.suggestions || [], code: e.code});
         return;
       }
 

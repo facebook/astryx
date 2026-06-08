@@ -12,6 +12,7 @@ import {discoverHooks, findHookDoc, getAllHookNames} from '../lib/hook-discovery
 import {loadDocs} from '../lib/component-loader.mjs';
 import {levenshteinDistance} from '../lib/string-utils.mjs';
 import {XDSError} from './error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 /**
  * @param {string} [name]
@@ -45,7 +46,7 @@ export async function hook(name, options = {}) {
 
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
-    throw new XDSError('Could not find @xds/core package');
+    throw new XDSError('Could not find @xds/core package', undefined, ERROR_CODES.ERR_CORE_NOT_FOUND);
   }
 
   // ── List mode ──────────────────────────────────────────────────
@@ -61,6 +62,7 @@ export async function hook(name, options = {}) {
         throw new XDSError(
           `Unknown category "${category}"`,
           Object.keys(hooks).map(k => ({name: k, reason: 'valid category'})),
+          ERROR_CODES.ERR_UNKNOWN_CATEGORY,
         );
       }
 
@@ -180,6 +182,7 @@ export async function hook(name, options = {}) {
     throw new XDSError(
       `No hook named "${name}"`,
       suggestions,
+      ERROR_CODES.ERR_UNKNOWN_HOOK,
     );
   }
 

@@ -42,13 +42,17 @@ import type {
   HookDetailParamsResponse,
 } from './hook';
 import type {SearchResponse, SearchDomain} from './search';
+import type {ErrorCode} from './error-codes';
 
-/** Structured API error with optional suggestions. */
+/** Structured API error with a stable machine-readable code. */
 export declare class XDSError extends Error {
+  /** Stable error code; consumers branch on this, never the message. */
+  code: ErrorCode;
   suggestions?: Array<{name: string; reason: string}>;
   constructor(
     message: string,
     suggestions?: Array<{name: string; reason: string}>,
+    code?: ErrorCode,
   );
 }
 
