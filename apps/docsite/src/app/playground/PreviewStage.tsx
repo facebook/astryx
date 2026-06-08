@@ -64,7 +64,6 @@ const s = stylex.create({
     transitionDuration: 'var(--duration-medium, 410ms)',
     transitionTimingFunction:
       'var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
-    boxShadow: 'var(--shadow-med)',
   },
   iframe: {
     border: 'none',

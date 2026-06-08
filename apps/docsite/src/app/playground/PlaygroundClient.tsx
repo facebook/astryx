@@ -678,6 +678,7 @@ export function PlaygroundClient() {
 
   return (
     <XDSHStack align="stretch" height="100%" width="100%">
+      {/* Playground navigation */}
       <XDSVStack align="center" xstyle={s.sidebar} gap={4}>
         <XDSLink href="/" label="Go to home">
           {BRAND_ICON}
@@ -703,6 +704,8 @@ export function PlaygroundClient() {
           />
         </XDSVStack>
       </XDSVStack>
+
+      {/* Playground content */}
       <XDSHStack
         height="100%"
         xstyle={s.root}
@@ -774,6 +777,21 @@ export function PlaygroundClient() {
           <XDSToolbar
             label="Preview controls"
             startContent={
+              <XDSToggleButton
+                label="Target element"
+                tooltip={
+                  isTargeting
+                    ? 'Exit targeting (Esc)'
+                    : 'Click to select an element'
+                }
+                isPressed={isTargeting}
+                onPressedChange={toggleTargeting}
+                size="md"
+                isIconOnly
+                icon={<Crosshair size={20} />}
+              />
+            }
+            centerContent={
               <XDSHStack gap={2} vAlign="center">
                 <XDSButton
                   label={
@@ -790,23 +808,6 @@ export function PlaygroundClient() {
                     setMode(m => (m === 'light' ? 'dark' : 'light'))
                   }
                 />
-                <XDSToggleButton
-                  label="Target element"
-                  tooltip={
-                    isTargeting
-                      ? 'Exit targeting (Esc)'
-                      : 'Click to select an element'
-                  }
-                  isPressed={isTargeting}
-                  onPressedChange={toggleTargeting}
-                  size="md"
-                  isIconOnly
-                  icon={<Crosshair size={20} />}
-                />
-              </XDSHStack>
-            }
-            centerContent={
-              <XDSHStack gap={2} vAlign="center">
                 <XDSSegmentedControl
                   label="Viewport size"
                   size="md"
@@ -837,7 +838,7 @@ export function PlaygroundClient() {
               </XDSHStack>
             }
             endContent={
-              <XDSHStack gap={2} vAlign="center">
+              <XDSHStack gap={4} vAlign="center">
                 {buildStatus !== 'idle' && (
                   <div
                     {...stylex.props(s.buildStatus)}
