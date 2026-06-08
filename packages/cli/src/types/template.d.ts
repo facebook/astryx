@@ -22,9 +22,11 @@ export interface TemplateListResponse {
 
 export interface TemplateListEntry {
   name: string;
+  displayName: string;
   description: string;
   isReady: boolean;
   scaffold?: boolean;
+  type: 'page' | 'block';
 }
 
 /** xds --json template <name> */
@@ -33,6 +35,7 @@ export interface TemplateShowResponse {
   data: {
     template: string;
     description: string;
+    type: 'page' | 'block';
     components: string[];
     source: string;
   };
@@ -52,7 +55,12 @@ export interface TemplateSkeletonResponse {
 /** xds --json template <name> [path] */
 export interface TemplateCopyResponse {
   type: 'template.copy';
-  data: {template: string; outputDir: string; filesCopied: number};
+  data: {
+    template: string;
+    outputDir: string;
+    fileName: string;
+    filesCopied: number;
+  };
 }
 
 /** xds --json template get --id <id> */

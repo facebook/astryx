@@ -19,6 +19,11 @@ import type {ComponentDoc} from '../../../core/src/docs-types';
 export interface DiscoverListResponse {
   type: 'discover.list';
   data: DiscoverListEntry[];
+  /**
+   * Present when the list is empty so callers can distinguish "no packages
+   * configured" from "configured but nothing discovered".
+   */
+  meta?: {configured: boolean};
 }
 
 export interface DiscoverListEntry {

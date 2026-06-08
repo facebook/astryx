@@ -395,6 +395,7 @@ export async function getTemplateById(id, options = {}) {
  * @param {boolean} [options.list]
  * @param {boolean} [options.skeleton]
  * @param {boolean} [options.show]
+ * @param {'page'|'block'} [options.type] - Filter list views by template kind.
  * @param {string} [options.cwd]
  * @returns {Promise<{type: string, data: unknown}>}
  */
