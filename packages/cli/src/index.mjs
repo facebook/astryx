@@ -14,6 +14,7 @@ import * as path from 'node:path';
 import {checkForUpdate} from './utils/update-check.mjs';
 import {getRunPrefix} from './utils/package-manager.mjs';
 import {API_VERSION, setJsonMode} from './lib/json.mjs';
+import {buildManifest} from './lib/manifest.mjs';
 import {cliError} from './lib/cli-error.mjs';
 import {ERROR_CODES} from './lib/error-codes.mjs';
 import {levenshteinDistance} from './lib/string-utils.mjs';
@@ -60,6 +61,7 @@ export const JSON_SUPPORTED = new Set([
   'theme build',
   'gap-report',
   'upgrade',
+  'manifest',
 ]);
 
 program
@@ -112,19 +114,33 @@ program
 
     // `xds` (no subcommand) — print help, or emit a JSON envelope when --json.
     if (program.opts().json) {
-      // Emit a JSON help envelope. Treat the bare invocation as supported.
+      // Emit the full capability manifest so an agent can drive the entire
+      // CLI from one call — no need to scrape `--help` text. We derive this
+      // from Commander metadata (commands, args, flags) and layer on the
+      // JSON_SUPPORTED allowlist + per-command response types. See
+      // lib/manifest.mjs.
+      //
+      // Backwards-compat: the envelope keeps `type: 'help'` and the original
+      // shallow fields (`name`, `version`, `commands` as a string[] of names,
+      // `jsonSupported`) that earlier consumers read. The richer, structured
+      // surface is embedded under `data.manifest` (and is also available
+      // standalone via `xds manifest --json` as `type: 'manifest'`).
       process.__xdsJsonHandled = true;
+      const manifest = buildManifest(program, {
+        jsonSupported: JSON_SUPPORTED,
+        version: pkg.version,
+      });
       console.log(JSON.stringify({
         apiVersion: API_VERSION,
         type: 'help',
         data: {
-          name: 'xds',
-          version: pkg.version,
-          commands: [
-            'component', 'docs', 'discover', 'search', 'swizzle', 'template',
-            'hook', 'theme', 'gap-report', 'upgrade', 'init',
-          ],
-          jsonSupported: [...JSON_SUPPORTED].sort(),
+          name: manifest.name,
+          version: manifest.version,
+          // Original flat list of command names (string[]) — kept for compat.
+          commands: manifest.commands.map((c) => c.name),
+          jsonSupported: manifest.jsonSupported,
+          // Enriched, self-describing surface (the full manifest payload).
+          manifest,
         },
       }, null, 2));
       return;
@@ -250,6 +266,33 @@ for (const cmd of commands) {
       });
   }
 }
+
+// Capability manifest — a single, self-describing view of the whole CLI so
+// agents can discover every command, argument, flag, and response type without
+// scraping `--help`. `xds manifest --json` is the dedicated surface; the bare
+// `xds --json` embeds the same payload under data.manifest for convenience.
+program
+  .command('manifest')
+  .description('Print the full CLI capability manifest (use with --json)')
+  .action(() => {
+    const manifest = buildManifest(program, {
+      jsonSupported: JSON_SUPPORTED,
+      version: pkg.version,
+    });
+    if (program.opts().json) {
+      process.__xdsJsonHandled = true;
+      console.log(JSON.stringify({apiVersion: API_VERSION, type: 'manifest', data: manifest}, null, 2));
+      return;
+    }
+    // Human-readable summary. Agents should use --json.
+    console.log(`\n${manifest.name} v${manifest.version} — ${manifest.commands.length} commands\n`);
+    for (const c of manifest.commands) {
+      const tag = c.json ? ' [--json]' : '';
+      console.log(`  ${c.name}${tag}`);
+      if (c.description) console.log(`    ${c.description}`);
+    }
+    console.log(`\nRun \`xds manifest --json\` for the full structured manifest.\n`);
+  });
 
 // Hidden command used by package.json postinstall scripts
 program
