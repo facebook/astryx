@@ -31,8 +31,8 @@
     "mcp-handler": "^1.1.0",
     "monaco-editor": "^0.55.1",
     "next": "^15.5.16",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -41,7 +41,7 @@
     "@stylexjs/babel-plugin": "^0.18.3",
     "@stylexjs/postcss-plugin": "^0.18.3",
     "@types/lz-string": "^1.5.0",
-    "@types/react": "^19.2.15",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.0",
     "typescript": "^6.0.3",
