@@ -186,7 +186,7 @@ const styles = stylex.create({
     position: 'absolute',
     bottom: '100%',
     right: -24,
-    marginBottom: 4,
+    marginBottom: spacingVars['--spacing-1'],
     transform: 'rotate(8deg)',
     transformOrigin: 'bottom right',
   },
@@ -203,13 +203,13 @@ const styles = stylex.create({
   // token change, so the rest of the site keeps Astryx's display
   // semibold default.
   heroHeadline: {
-    fontWeight: 400,
+    fontWeight: 'var(--font-weight-normal)',
   },
   // Emphasis weight for the trailing half of the headline so the
   // contrast with the lighter lead reads as an intentional
   // pairing rather than an accidental weight shift.
   heroHeadlineEmphasis: {
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-semibold)',
   },
   showcaseOverlay: {
     position: 'relative',

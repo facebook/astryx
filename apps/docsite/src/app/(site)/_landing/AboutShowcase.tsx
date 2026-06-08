@@ -23,9 +23,15 @@ import {spacingVars} from '@xds/core/theme/tokens.stylex';
 // translucent washes (33% alpha) that would render as washed-out gray
 // on the white showcase surface. The reference design calls for
 // SATURATED pastels, so we use literal hex values to hit the brief.
-const PINK_PASTEL = '#FFC5D2';
-const LAVENDER_PASTEL = '#D4C5F2';
-const YELLOW_PASTEL = '#FEE48B';
+// Decorative shape colors — light pastel in light mode, deep
+// saturated equivalent in dark mode via CSS light-dark() so the
+// shapes stay legible against both body backgrounds. These are
+// one-off marketing decorations not part of the semantic token
+// system, hence the literal hex values (kept inline so the
+// palette is easy to tune per shape).
+const PINK_PASTEL = 'light-dark(#FFC5D2, #5C1F2A)';
+const LAVENDER_PASTEL = 'light-dark(#D4C5F2, #3D1F5C)';
+const YELLOW_PASTEL = 'light-dark(#FEE48B, #5C4A0F)';
 
 const SHAPE_SIZE = 40;
 

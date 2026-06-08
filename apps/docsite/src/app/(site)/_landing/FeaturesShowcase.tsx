@@ -7,6 +7,7 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
+import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {components} from '../../../generated/componentRegistry';
 
 // Count of public @xds/core components (excluding hooks and hidden entries).
@@ -47,7 +48,7 @@ const styles = stylex.create({
     width: '100%',
     maxWidth: 1200,
     display: 'grid',
-    gap: 32,
+    gap: spacingVars['--spacing-8'],
     gridTemplateColumns: {
       default: '1fr',
       '@media (min-width: 1024px)': '1fr 1fr 1fr',
@@ -69,7 +70,7 @@ const styles = stylex.create({
       '@media (min-width: 1024px)': 'flex',
     },
     flexDirection: 'column',
-    gap: 32,
+    gap: spacingVars['--spacing-8'],
     width: '100%',
     height: '100%',
   },
@@ -84,7 +85,7 @@ const styles = stylex.create({
   // also gives the display heading enough room to break onto
   // natural lines without being clipped by a tighter inner width.
   headingCell: {
-    paddingBlockStart: 'var(--spacing-5)',
+    paddingBlockStart: spacingVars['--spacing-5'],
     width: '100%',
     // On desktop the heading block sits in a side-by-side grid
     // with the cards, where flush-left reads as an editorial
@@ -145,28 +146,28 @@ const styles = stylex.create({
     overflow: 'hidden',
     backgroundColor: 'light-dark(#E6F0FF, #1A2333)',
   },
-  // Padding for image cards: 40px on top + sides + 0 on bottom so
-  // the image wrapper inside sits flush at the card's bottom edge
-  // and can then bleed past it via its own negative marginBottom.
+  // Padding for image cards: --spacing-10 (40px) on top + sides +
+  // 0 on bottom so the image wrapper inside sits flush at the
+  // card's bottom edge.
   innerPaddingImage: {
-    paddingBlockStart: 40,
-    paddingInlineStart: 40,
-    paddingInlineEnd: 40,
+    paddingBlockStart: spacingVars['--spacing-10'],
+    paddingInlineStart: spacingVars['--spacing-10'],
+    paddingInlineEnd: spacingVars['--spacing-10'],
     paddingBlockEnd: 0,
   },
-  // Padding for the text-only card: 40px on all sides (matches the
-  // other cards' visual padding rhythm — image cards use the same
-  // 40px on top + sides, the only difference is the missing bottom
-  // padding for the bleed).
+  // Padding for the text-only card: --spacing-10 (40px) on all
+  // sides (matches the image cards' top + sides; only difference
+  // is the bottom padding which the image cards drop to 0 for
+  // their image bleed).
   innerPaddingText: {
-    padding: 40,
+    padding: spacingVars['--spacing-10'],
   },
   // Explore link spacing — VStack gap holds heading↔description at
   // 4px, but the link below the description wants more breathing room
   // (16px). Adding a top margin on the link gives the +12px extra
   // beyond the 4px stack gap to reach the 16px total.
   exploreLink: {
-    marginTop: 'calc(var(--spacing-3))',
+    marginTop: spacingVars['--spacing-3'],
   },
   // Image wrapper for the 3 feature cards with images. The wrapper
   // is a full-width flex row (alignSelf:stretch overrides the parent
@@ -194,7 +195,7 @@ const styles = stylex.create({
   // additional overhang.
   imageWrap: {
     marginTop: 'auto',
-    paddingTop: 24,
+    paddingTop: spacingVars['--spacing-6'],
     alignSelf: 'stretch',
     width: '100%',
     minWidth: 0,
@@ -215,7 +216,7 @@ const styles = stylex.create({
   // larger image's overhang reads proportionally to its size.
   imageWrapTall: {
     marginTop: 'auto',
-    paddingTop: 40,
+    paddingTop: spacingVars['--spacing-10'],
     alignSelf: 'stretch',
     width: '100%',
     minWidth: 0,
