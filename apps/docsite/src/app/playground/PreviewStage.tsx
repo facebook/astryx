@@ -37,7 +37,6 @@ const s = stylex.create({
     paddingInline: 'var(--spacing-4)',
     paddingBlockEnd: 'var(--spacing-4)',
     paddingBlockStart: 0,
-    backgroundColor: 'var(--color-background-surface)',
   },
   areaCenter: {
     alignItems: 'center',
@@ -46,7 +45,8 @@ const s = stylex.create({
     position: 'fixed',
     inset: 0,
     zIndex: 50,
-    padding: 0,
+    paddingInline: 0,
+    paddingBlockEnd: 0,
   },
   // In fullscreen the card chrome (radius, border, shadow) is stripped so the
   // preview reads as a bare, edge-to-edge surface. The element stays mounted to
@@ -64,7 +64,6 @@ const s = stylex.create({
     transitionDuration: 'var(--duration-medium, 410ms)',
     transitionTimingFunction:
       'var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
-    boxShadow: 'var(--shadow-med)',
   },
   iframe: {
     border: 'none',
@@ -80,11 +79,12 @@ const s = stylex.create({
   iframeInert: {
     pointerEvents: 'none',
   },
-  exitButton: {
+  exitButtonCard: {
     position: 'absolute',
     top: 'var(--spacing-4)',
     right: 'var(--spacing-4)',
     zIndex: 51,
+    boxShadow: 'var(--shadow-med)',
   },
 });
 
@@ -116,19 +116,17 @@ export function PreviewStage({
         isFullscreen && s.fullscreen,
       )}>
       {isFullscreen && (
-        <div {...stylex.props(s.exitButton)}>
-          <XDSCard padding={0} style={{boxShadow: 'var(--shadow-med)'}}>
-            <XDSButton
-              label="Exit fullscreen"
-              tooltip="Exit fullscreen"
-              variant="ghost"
-              size="sm"
-              isIconOnly
-              icon={<Minimize2 size={16} />}
-              onClick={onExitFullscreen}
-            />
-          </XDSCard>
-        </div>
+        <XDSCard padding={0} xstyle={s.exitButtonCard}>
+          <XDSButton
+            label="Exit fullscreen"
+            tooltip="Exit fullscreen"
+            variant="ghost"
+            size="sm"
+            isIconOnly
+            icon={<Minimize2 size={16} />}
+            onClick={onExitFullscreen}
+          />
+        </XDSCard>
       )}
       <XDSCard
         padding={0}
