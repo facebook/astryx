@@ -24,7 +24,6 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import dynamic from 'next/dynamic';
 import {loader} from '@monaco-editor/react';
-import {useRouter} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
 import {
   compressToEncodedURIComponent,
@@ -32,9 +31,8 @@ import {
 } from 'lz-string';
 import {XDSButton} from '@xds/core/Button';
 import {XDSLink} from '@xds/core/Link';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSStatusDot} from '@xds/core/StatusDot';
 import {XDSToolbar} from '@xds/core/Toolbar';
 import {
@@ -324,8 +322,7 @@ const s = stylex.create({
   },
   panelHeader: {
     flexShrink: 0,
-    paddingInline: 'var(--spacing-3)',
-    paddingBlock: 'var(--spacing-2)',
+    padding: 'var(--spacing-3)',
   },
   tabBody: {
     flex: 1,
@@ -360,7 +357,6 @@ const s = stylex.create({
 });
 
 export function PlaygroundClient() {
-  const router = useRouter();
   // The editor chrome follows the docsite's own light/dark mode, not the OS
   // (operator) color-scheme preference.
   const {mode: siteMode} = useThemeMode();
@@ -713,19 +709,7 @@ export function PlaygroundClient() {
         {/* Left panel — editor */}
         <XDSVStack xstyle={s.leftPanel} width={editorPanel.size || 440}>
           <div {...stylex.props(s.panelHeader)}>
-            <XDSDropdownMenu
-              button={{label: 'Playground', variant: 'ghost', size: 'sm'}}
-              items={[
-                {label: 'Home', onClick: () => router.push('/')},
-                {label: 'Docs', onClick: () => router.push('/docs')},
-                {
-                  label: 'Components',
-                  onClick: () => router.push('/components'),
-                },
-                {label: 'Templates', onClick: () => router.push('/templates')},
-                {label: 'Themes', onClick: () => router.push('/themes')},
-              ]}
-            />
+            <XDSHeading level={3}>Playground</XDSHeading>
           </div>
           <div {...stylex.props(s.tabBody)}>
             {/* Code: Monaco stays mounted to preserve typedefs + editor state */}
