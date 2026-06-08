@@ -66,7 +66,12 @@ program
   .version(pkg.version)
   .option('--zh', 'Output docs in Chinese Simplified')
   .option('--dense', 'Output docs in compressed dense format (token-efficient)')
-  .option('--lang <locale>', 'Output docs in specified language/format (en, zh, dense)')
+  .addOption(
+    new Option(
+      '--lang <locale>',
+      'Output docs in specified language/format (en, zh, dense)',
+    ).choices(['en', 'zh', 'dense']),
+  )
   .addOption(
     new Option('--detail <level>', 'Output detail level (full, compact, brief)')
       .choices(['full', 'compact', 'brief'])
