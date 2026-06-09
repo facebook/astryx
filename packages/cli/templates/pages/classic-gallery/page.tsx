@@ -39,74 +39,64 @@ const styles = stylex.create({
 
 // ─── Gallery Data ───────────────────────────────────────────────────────────
 
-type Category = 'all' | 'lifestyle' | 'scene' | 'home';
+// Images are served from the app's public/ folder. The base path is injected
+// at build time so the URLs resolve under the deployment's path prefix.
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+const IMG_DIR = `${basePath}/templates/classic-gallery`;
+
+type Category = 'all' | 'lifestyle' | 'products';
 
 interface GalleryImage {
   src: string;
   alt: string;
-  category: Category;
+  category: Exclude<Category, 'all'>;
 }
 
 const GALLERY_IMAGES: GalleryImage[] = [
   {
-    // moody-scene-horizontal-1 from xds_oss asset set
-    src: 'https://lookaside.facebook.com/assets/xds_oss/moody-scene-horizontal-1.png',
-    alt: 'Moody scene landscape',
-    category: 'scene',
-  },
-  {
-    // moody-lifestyle-vertical-1 from xds_oss asset set
-    src: 'https://lookaside.facebook.com/assets/xds_oss/moody-lifestyle-vertical-1.png',
-    alt: 'Moody lifestyle portrait',
+    src: `${IMG_DIR}/home-office.png`,
+    alt: 'Sunlit home office with a yellow sofa and wooden desk',
     category: 'lifestyle',
   },
   {
-    // moody-home-vertical-1 from xds_oss asset set
-    src: 'https://lookaside.facebook.com/assets/xds_oss/moody-home-vertical-1.png',
-    alt: 'Moody home interior',
-    category: 'home',
-  },
-  {
-    // moody-scene-horizontal-2 from xds_oss asset set
-    src: 'https://lookaside.facebook.com/assets/xds_oss/moody-scene-horizontal-2.png',
-    alt: 'Moody scene vista',
-    category: 'scene',
-  },
-  {
-    // moody-lifestyle-vertical-2 from xds_oss asset set
-    src: 'https://lookaside.facebook.com/assets/xds_oss/moody-lifestyle-vertical-2.png',
-    alt: 'Moody lifestyle scene',
+    src: `${IMG_DIR}/coworking-space.png`,
+    alt: 'Bright coworking space with people at their desks',
     category: 'lifestyle',
   },
   {
-    // moody-lifestyle-horizontal-1 from xds_oss asset set
-    src: 'https://lookaside.facebook.com/assets/xds_oss/moody-lifestyle-horizontal-1.png',
-    alt: 'Moody lifestyle horizontal',
+    src: `${IMG_DIR}/working-together.png`,
+    alt: 'Two colleagues reviewing work on a laptop together',
     category: 'lifestyle',
   },
   {
-    // moody-scene-vertical-1 from xds_oss asset set
-    src: 'https://lookaside.facebook.com/assets/xds_oss/moody-scene-vertical-1.png',
-    alt: 'Moody scene vertical',
-    category: 'scene',
+    src: `${IMG_DIR}/product-backpack.png`,
+    alt: 'Charcoal canvas backpack against a neutral backdrop',
+    category: 'products',
   },
   {
-    // moody-home-vertical-2 from xds_oss asset set
-    src: 'https://lookaside.facebook.com/assets/xds_oss/moody-home-vertical-2.png',
-    alt: 'Moody home vertical',
-    category: 'home',
+    src: `${IMG_DIR}/product-headphones.png`,
+    alt: 'Over-ear headphones resting beside a stone riser',
+    category: 'products',
   },
   {
-    // moody-home-horizontal-1 from xds_oss asset set
-    src: 'https://lookaside.facebook.com/assets/xds_oss/moody-home-horizontal-1.png',
-    alt: 'Moody home horizontal',
-    category: 'home',
+    src: `${IMG_DIR}/product-mug.png`,
+    alt: 'Matte graphite insulated travel mug',
+    category: 'products',
   },
   {
-    // moody-scene-vertical-2 from xds_oss asset set
-    src: 'https://lookaside.facebook.com/assets/xds_oss/moody-scene-vertical-2.png',
-    alt: 'Moody scene vertical',
-    category: 'scene',
+    src: `${IMG_DIR}/product-throw.png`,
+    alt: 'Folded linen throw blanket with fringed edges',
+    category: 'products',
+  },
+  {
+    src: `${IMG_DIR}/product-wallet.png`,
+    alt: 'Slim leather bifold wallet on a neutral surface',
+    category: 'products',
+  },
+  {
+    src: `${IMG_DIR}/product-watch.png`,
+    alt: 'Minimalist watch with two interchangeable straps',
+    category: 'products',
   },
 ];
 
@@ -149,8 +139,7 @@ export default function ClassicGalleryTemplate() {
                     onChange={v => setFilter(v as Category)}>
                     <XDSTab value="all" label="All" />
                     <XDSTab value="lifestyle" label="Lifestyle" />
-                    <XDSTab value="scene" label="Scenery" />
-                    <XDSTab value="home" label="Home" />
+                    <XDSTab value="products" label="Products" />
                   </XDSTabList>
                 </XDSVStack>
               </XDSSection>
