@@ -222,10 +222,13 @@ export const docsDense = {
   usage: {
     description: 'DateTimeInput combines a calendar popover with a time input for selecting both a date and time. Use for scheduling, events, deadlines, or any form field needing a datetime.',
     bestPractices: [
-      { guidance: true, description: 'Clear labels + descriptions. Use min/max for valid datetime ranges.' },
-      { guidance: true, description: 'Use hasClear for optional datetimes. Choose hour format matching locale.' },
-      { guidance: false, description: 'Use for date-only (use DateInput) or time-only (use TimeInput).' },
-      { guidance: false, description: 'Hide the label without surrounding context.' },
+      { guidance: true, description: 'Provide clear labels + descriptions so users understand what datetime is expected.' },
+      { guidance: true, description: 'Use min and max to restrict selectable datetimes to valid ranges.' },
+      { guidance: true, description: 'Use hasClear when the datetime is optional so the user can easily reset it.' },
+      { guidance: true, description: 'Choose the hour format (12h or 24h) that matches your audience\u2019s locale.' },
+      { guidance: false, description: 'Use DateTimeInput when only a date is needed — use DateInput instead.' },
+      { guidance: false, description: 'Use DateTimeInput when only a time is needed — use TimeInput instead.' },
+      { guidance: false, description: 'Hide the label without surrounding context that makes the field purpose obvious.' },
     ],
   },
   propDescriptions: {
