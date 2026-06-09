@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Metadata} from 'next';
+import {Suspense} from 'react';
 import {PlaygroundClient} from './PlaygroundClient';
 
 export const metadata: Metadata = {
@@ -9,5 +10,9 @@ export const metadata: Metadata = {
 };
 
 export default function PlaygroundPage() {
-  return <PlaygroundClient />;
+  return (
+    <Suspense fallback={null}>
+      <PlaygroundClient />
+    </Suspense>
+  );
 }
