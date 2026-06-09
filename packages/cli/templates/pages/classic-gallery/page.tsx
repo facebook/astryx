@@ -13,11 +13,17 @@ import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import * as stylex from '@stylexjs/stylex';
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
-// Page width/padding/centering come from XDSLayout (contentWidth) and
-// XDSLayoutContent (padding) props. Only image cover-fit + frame radius and
-// header text-align remain — none have an XDS prop equivalent.
+// Width + centering come from XDSLayout's contentWidth prop. The remaining
+// styles cover things with no XDS prop equivalent: asymmetric page padding,
+// image cover-fit, frame radius, and header text-align.
 
 const styles = stylex.create({
+  // Page padding lives on the inner content so it isn't canceled by
+  // XDSLayout's negative-margin "escape container padding" behavior.
+  pagePadding: {
+    paddingBlock: 'var(--spacing-8)',
+    paddingInline: 'var(--spacing-6)',
+  },
   textCenter: {
     textAlign: 'center',
   },
@@ -119,8 +125,8 @@ export default function ClassicGalleryTemplate() {
       height="auto"
       contentWidth={1200}
       content={
-        <XDSLayoutContent padding={8}>
-          <XDSVStack gap={8}>
+        <XDSLayoutContent padding={0}>
+          <XDSVStack gap={8} xstyle={styles.pagePadding}>
             {/* Header */}
             <XDSCenter axis="horizontal">
               <XDSSection variant="transparent" maxWidth={680} padding={0}>
