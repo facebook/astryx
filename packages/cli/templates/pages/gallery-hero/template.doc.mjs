@@ -3,11 +3,10 @@
 /** @type {import('../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'page',
-  name: 'Hero',
-  displayName: 'Hero',
+  name: 'Gallery Hero',
+  displayName: 'Gallery Hero',
   description:
     'Centered headline, description, and CTA buttons above a three-image gallery grid.',
-  isReady: false,
+  isReady: true,
   category: 'Gallery - Hero',
-  isHiddenFromOverview: true,
 };
