@@ -54,16 +54,6 @@ interface GalleryImage {
 
 const GALLERY_IMAGES: GalleryImage[] = [
   {
-    src: `${IMG_DIR}/home-office.png`,
-    alt: 'Sunlit home office with a yellow sofa and wooden desk',
-    category: 'lifestyle',
-  },
-  {
-    src: `${IMG_DIR}/coworking-space.png`,
-    alt: 'Bright coworking space with people at their desks',
-    category: 'lifestyle',
-  },
-  {
     src: `${IMG_DIR}/working-together.png`,
     alt: 'Two colleagues reviewing work on a laptop together',
     category: 'lifestyle',
