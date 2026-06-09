@@ -162,6 +162,63 @@ if (isError(result)) {
 | `ERR_GH_CLI` | GitHub CLI (`gh`) is not installed or not authenticated. |
 | `ERR_GAP_REPORT_FAILED` | Filing a gap report failed (disabled, or the integration errored). |
 
+## Capability manifest (agent discovery)
+
+Agents don't have to scrape `--help` to learn the CLI. A single call returns a
+**self-describing manifest** — every command, its arguments, flags (with types,
+choices, and defaults), whether it supports `--json`, and the response `type`
+discriminators each command can emit. Think of it as an OpenAPI spec for the CLI.
+
+```bash
+xds manifest --json        # dedicated surface — type: "manifest"
+xds --json                 # bare invocation — embeds the same payload under data.manifest
+```
+
+Shape:
+
+```jsonc
+{
+  "apiVersion": 1,
+  "type": "manifest",
+  "data": {
+    "name": "xds",
+    "version": "0.0.14",
+    "description": "Design system CLI — components, themes, and tooling",
+    "globalOptions": [
+      {"flag": "--json", "type": "boolean", "description": "Output as typed JSON…"},
+      {"flag": "--lang <locale>", "type": "enum", "choices": ["en", "zh", "dense"]},
+      {"flag": "--detail <level>", "type": "enum", "choices": ["full", "compact", "brief"], "default": "full"}
+    ],
+    "commands": [
+      {
+        "name": "component",
+        "description": "List components or print component docs",
+        "arguments": [{"name": "name", "required": false, "variadic": false, "description": ""}],
+        "options": [{"flag": "--props", "type": "boolean", "description": "Print only the props table"}],
+        "json": true,
+        "responseTypes": ["component.list", "component.detail", "component.detail.props", "…"],
+        "examples": ["xds component XDSButton --props --json"]
+      }
+      // …one entry per command; subcommands (e.g. `theme build`) nest under `subcommands`
+    ],
+    "jsonSupported": ["component", "docs", "…"],
+    "responseTypes": {"component": ["component.list", "…"], "theme build": ["theme.build"]}
+  }
+}
+```
+
+The manifest is **derived from Commander metadata** (commands, arguments, options)
+so it can't drift from the real command definitions. The two facts Commander
+doesn't track — `--json` support and emitted response types — are layered on from
+the `JSON_SUPPORTED` allowlist and a small declarative `RESPONSE_TYPES` map in
+`src/lib/manifest.mjs`, guarded by a drift test (`manifest.test.mjs`) so adding a
+command without describing it fails CI.
+
+**Backwards-compat:** the bare `xds --json` envelope keeps `type: "help"` and its
+original shallow fields (`name`, `version`, `commands` as a `string[]` of names,
+`jsonSupported`); the full structured manifest is additive under `data.manifest`.
+For the standalone manifest envelope (`type: "manifest"`), use `xds manifest --json`.
+
 ## Programmatic API
 
 The same logic that powers `xds --json` is available as importable, type-safe functions:

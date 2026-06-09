@@ -50,6 +50,7 @@ import type {
 } from './gap-report';
 import type {SearchResponse} from './search';
 import type {ErrorCode} from './error-codes';
+import type {ManifestResponse} from './manifest';
 
 /**
  * Structured error. Check `'error' in result` to discriminate.
@@ -104,7 +105,8 @@ export type CLIAnyResponse =
   | UpgradeRunResponse
   | GapReportCategoriesResponse
   | GapReportFileResponse
-  | SearchResponse;
+  | SearchResponse
+  | ManifestResponse;
 
 /** Union of all type discriminator string literals. */
 export type CLIResponseType = CLIAnyResponse['type'];
