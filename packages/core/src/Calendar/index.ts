@@ -4,11 +4,8 @@
 
 /**
  * @file index.ts
- * @input Imports calendar components and types
- * @output Exports XDSCalendar and related types
- * @position Component entry point; re-exported by /packages/core/src/index.ts
- *
- * SYNC: When modified, update this header and /packages/core/src/Calendar/Calendar.doc.mjs
+ * @output Public API for the Calendar component
+ * @position Entry point; re-exported by /packages/core/src/index.ts
  */
 
 export {XDSCalendar} from './XDSCalendar';
@@ -18,9 +15,9 @@ export type {
   ISODateString,
   DayOfWeek,
   DateRange,
-} from './XDSCalendar';
+} from './types';
 
-// Re-export hooks for advanced usage
+// Hooks for advanced usage
 export {
   useCalendarDays,
   useCalendarConstraints,
@@ -39,13 +36,10 @@ export type {
   UseCalendarRovingTabindexReturn,
 } from './hooks';
 
-// Re-export calendar-specific utilities for advanced usage
+// Calendar-specific utilities for advanced usage
 export {
   isSameDay,
   isDateInRange,
   getWeekNumber,
   formatAccessibleDate,
 } from './utils';
-
-// Re-export theme styles for customization
-
