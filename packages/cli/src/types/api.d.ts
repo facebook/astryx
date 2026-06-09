@@ -15,6 +15,7 @@ import type {
   ComponentDetailPropsResponse,
   ComponentDetailSourceResponse,
   ComponentDetailShowcaseResponse,
+  ComponentDetailBlocksResponse,
 } from './component';
 import type {
   DocsListResponse,
@@ -62,9 +63,13 @@ export interface ComponentOptions {
   cwd?: string;
   list?: boolean;
   category?: string;
+  /** Scope lookup to a specific external package (e.g. '@acme/xds-widgets'). */
+  package?: string;
   props?: boolean;
   source?: boolean;
   showcase?: boolean;
+  /** List example blocks for the component: showcase, examples, and related. */
+  blocks?: boolean;
   detail?: 'full' | 'compact' | 'brief';
   lang?: string;
   zh?: boolean;
@@ -78,7 +83,8 @@ type ComponentResult =
   | ComponentDetailResponse
   | ComponentDetailPropsResponse
   | ComponentDetailSourceResponse
-  | ComponentDetailShowcaseResponse;
+  | ComponentDetailShowcaseResponse
+  | ComponentDetailBlocksResponse;
 
 export declare function component(
   name?: string,
@@ -129,6 +135,8 @@ export interface TemplateOptions {
   list?: boolean;
   skeleton?: boolean;
   show?: boolean;
+  /** Filter templates by kind: 'page' or 'block'. Only applies to list views. */
+  type?: 'page' | 'block';
   targetPath?: string;
   cwd?: string;
 }
