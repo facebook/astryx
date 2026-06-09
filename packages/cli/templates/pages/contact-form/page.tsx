@@ -3,7 +3,6 @@
 'use client';
 
 import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSSection} from '@xds/core/Section';
@@ -11,6 +10,7 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
+import {XDSIcon} from '@xds/core/Icon';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
@@ -20,11 +20,11 @@ import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSBanner} from '@xds/core/Banner';
-
-// Image is served from the app's public/ folder. The base path is injected at
-// build time so the URL resolves under the deployment's path prefix.
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-const WHY_US_IMAGE = `${basePath}/templates/contact-form/why-us.png`;
+import {
+  RocketLaunchIcon,
+  AdjustmentsHorizontalIcon,
+  HandRaisedIcon,
+} from '@heroicons/react/24/outline';
 
 const CAMPAIGN_GOALS = [
   'Brand Awareness',
@@ -57,28 +57,21 @@ const BUDGET_OPTIONS = [
 
 const WHY_US = [
   {
-    image: WHY_US_IMAGE,
+    icon: RocketLaunchIcon,
     title: 'We move fast for you',
     description: 'We cut through the noise and get straight to the work.',
   },
   {
-    image: WHY_US_IMAGE,
+    icon: AdjustmentsHorizontalIcon,
     title: 'We build around you',
     description: "We tailor everything to what you're trying to achieve.",
   },
   {
-    image: WHY_US_IMAGE,
+    icon: HandRaisedIcon,
     title: 'We show up for you',
     description: 'A dedicated team that knows your brand and wants to win.',
   },
 ];
-
-const styles = stylex.create({
-  // Fills the card's image slot; no XDS prop equivalent (no XDSImage). See #2582.
-  imgFull: {
-    width: '100%',
-  },
-});
 
 /**
  * Contact Form — lead capture form template
@@ -138,11 +131,7 @@ export default function FormSimplePage() {
                 {WHY_US.map(item => (
                   <XDSCard key={item.title}>
                     <XDSVStack gap={3}>
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        {...stylex.props(styles.imgFull)}
-                      />
+                      <XDSIcon icon={item.icon} size="lg" color="accent" />
                       <XDSVStack gap={1}>
                         <XDSText type="body" weight="bold">
                           {item.title}
