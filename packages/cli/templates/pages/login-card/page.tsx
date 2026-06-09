@@ -3,6 +3,7 @@
 'use client';
 
 import {useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {CubeIcon} from '@heroicons/react/24/outline';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
@@ -13,6 +14,7 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSIcon} from '@xds/core/Icon';
+import {colorVars} from '@xds/core/theme/tokens.stylex';
 
 // Brand logos from xds_oss asset set — no heroicons equivalent
 // AppleLogo from xds_oss asset set
@@ -21,6 +23,13 @@ const APPLE_LOGO_URL =
 // GoogleLogo from xds_oss asset set
 const GOOGLE_LOGO_URL =
   'https://lookaside.facebook.com/assets/xds_oss/GoogleLogo.png';
+
+// Standalone auth page paints its own body background (no host shell).
+const styles = stylex.create({
+  page: {
+    backgroundColor: colorVars['--color-background-body'],
+  },
+});
 
 export default function LoginSimple() {
   const [email, setEmail] = useState('');
@@ -42,7 +51,7 @@ export default function LoginSimple() {
   };
 
   return (
-    <XDSCenter axis="both" height="100dvh">
+    <XDSCenter axis="both" height="100dvh" xstyle={styles.page}>
       <XDSVStack gap={4} hAlign="center">
         {/* Logo */}
         <XDSVStack gap={2} hAlign="center">
