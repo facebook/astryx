@@ -258,20 +258,20 @@ export const docsZh = {
 };
 
 export const docsDense = {
-  n: 'Markdown',
-  d: 'Renders markdown string as XDS-styled components. Use for user-generated content, AI responses, docs. Headings, lists, tables, code, citations w/ consistent styling.',
-  kw: ['markdown', 'rich text', 'prose', 'renderer', 'streaming', 'markup', 'md'],
+  description:
+    'Renders markdown string as XDS-styled components. Use for user-generated content, AI responses, docs. Headings, lists, tables, code, citations w/ consistent styling.',
   usage: {
     description:
       'Renders a markdown string as XDS-styled components. Use Markdown for user-generated content, AI responses, and documentation — it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [
       { guidance: true, description: 'Set headingLevelStart to match the page hierarchy — e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
+      { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns (issue refs, diff refs, mentions) instead of preprocessing the markdown string.' },
       { guidance: false, description: 'Use Markdown for hand-authored layouts — use XDSText and XDSHeading directly when you control the content.' },
     ],
   },
-  p: {
-    children: 'Markdown string. Required.',
+  propDescriptions: {
+    children: 'Markdown string. **(required)**',
     density: "Block spacing. 'default'|'compact'. Default: 'default'.",
     headingLevelStart: 'Maps # to this heading level (1-6). Clamped to h6. Default: 1.',
     isStreaming: 'Incremental parse + fade-in for streamed chunks. Default: false.',
@@ -286,9 +286,4 @@ export const docsDense = {
     style: 'Inline styles. Prefer xstyle.',
     'data-testid': 'Test selector.',
   },
-  ex: [
-    '<XDSMarkdown>{\'# Hello\\\\n\\\\nThis is **bold** text.\'}</XDSMarkdown>',
-    '<XDSMarkdown isStreaming={isStreaming}>{streamedText}</XDSMarkdown>',
-    '<XDSMarkdown inlinePlugins={issuePlugins}>{\'Fixed PROJ-123; `PROJ-999` stays plain.\'}</XDSMarkdown>',
-  ],
 };
