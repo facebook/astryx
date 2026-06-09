@@ -2,7 +2,7 @@
 
 'use client';
 
-import {useState, useCallback, useEffect, useMemo} from 'react';
+import {Suspense, useState, useCallback, useEffect, useMemo} from 'react';
 import {useSearchParams} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
 
@@ -975,6 +975,14 @@ function paramsToConfig(params: URLSearchParams): ShellConfig {
 }
 
 export default function ShellLabPage() {
+  return (
+    <Suspense>
+      <ShellLabContent />
+    </Suspense>
+  );
+}
+
+function ShellLabContent() {
   const searchParams = useSearchParams();
 
   // Initialize config from URL params on mount
