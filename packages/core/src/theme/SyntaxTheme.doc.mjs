@@ -24,3 +24,20 @@ export const docs = {
     {name: 'children', type: 'ReactNode', required: true, description: 'Content subtree. All XDSCodeBlock components within will use this syntax theme.'},
   ],
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  usage: {
+    description:
+      'Applies syntax highlighting colors to XDSCodeBlock + any code component in subtree. By default code components use theme-level syntax colors (set via defineTheme({ syntax: ... })), which derive from palette (--color-text-accent for keywords, --color-text-green for strings, etc.); XDSSyntaxTheme overrides those per-region. 14 semantic tokens (keyword, string, comment, number, function, type, variable, operator, constant, tag, attribute, property, punctuation, background) validated against 11 community themes. Custom themes created w/ defineSyntaxTheme(), can use [light, dark] tuples for automatic color-scheme adaptation. Built-in presets: oneDarkPro, dracula, monokai, nord, tokyoNight, catppuccinMocha, githubLight, githubDark, solarizedLight, oneLight (import from @xds/core/theme/syntax).',
+    bestPractices: [
+      {guidance: true, description: 'Use syntax field in defineTheme() for app-wide code styling. Use XDSSyntaxTheme only when a specific section needs different look.'},
+      {guidance: true, description: 'Pick from built-in presets or create custom theme w/ defineSyntaxTheme() for brand-specific colors.'},
+      {guidance: true, description: 'Syntax themes support light-dark() tuples — each token can have different values for light/dark mode, resolved automatically by color scheme.'},
+      {guidance: false, description: 'Wrap individual CodeBlock instances w/ XDSSyntaxTheme — use syntaxTheme prop on XDSCodeBlock directly for per-instance overrides instead.'},
+    ],
+  },
+  propDescriptions: {
+    theme: 'syntax highlighting theme — preset from @xds/core/theme/syntax or custom theme created w/ defineSyntaxTheme(). **(required)**',
+  },
+};
