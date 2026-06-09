@@ -89,7 +89,7 @@ export function formatHookFull(docs) {
   if (docs.usage?.bestPractices?.length) {
     sections.push('## Best Practices\n');
     for (const bp of docs.usage.bestPractices) {
-      const badge = bp.guidance ? '**Do:**' : "**Don\'t:**";
+      const badge = bp.guidance ? '**Do:**' : "**Don't:**";
       sections.push(`- ${badge} ${bp.description}`);
     }
     sections.push('');
@@ -135,7 +135,7 @@ export function formatHookCompact(docs, importPath) {
   if (docs.usage?.bestPractices?.length) {
     sections.push('## Best Practices\n');
     for (const bp of docs.usage.bestPractices) {
-      const badge = bp.guidance ? '**Do:**' : "**Don\'t:**";
+      const badge = bp.guidance ? '**Do:**' : "**Don't:**";
       sections.push(`- ${badge} ${bp.description}`);
     }
     sections.push('');

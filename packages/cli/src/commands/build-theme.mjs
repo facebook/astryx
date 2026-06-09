@@ -18,7 +18,7 @@ import {pathToFileURL, fileURLToPath} from 'node:url';
 import {createJiti} from 'jiti';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {sanitizeName, PathSafetyError} from '../utils/path-safety.mjs';
-import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
+import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 
@@ -164,54 +164,16 @@ async function getKnownValues(componentName) {
 
 
 /**
- * Generate TypeScript declaration file with module augmentation for custom
- * component prop values found in the theme's `components` keys.
- *
- * Scans component override keys (e.g. `status:neutral`, `variant:primary-muted`)
- * and generates augmentations for values not in the base type.
+ * Generate TypeScript declaration content with module augmentation for custom
+ * component prop values found in the theme's `components` keys. Reads known
+ * values from doc files to filter out base prop values.
  *
  * Interface naming convention: XDS + PascalCase(component) + PascalCase(prop) + Map
  *   banner + status → XDSBannerStatusMap
  *   button + variant → XDSButtonVariantMap
  *
  * @param {object} themeDef - Theme definition (resolved by defineTheme)
- * @returns {string|null} TypeScript declaration content, or null if no augmentations needed
- */
-function generateVariantDeclarations(themeDef) {
-  if (!themeDef.components || Object.keys(themeDef.components).length === 0) {
-    return null;
-  }
-
-  // Collect custom values: { component: { prop: [value, ...] } }
-  const customValues = {};
-
-  for (const [component, rules] of Object.entries(themeDef.components)) {
-    for (const key of Object.keys(rules)) {
-      if (key === 'base') continue;
-
-      // Parse prop:value pairs from keys like 'status:neutral' or 'variant:primary+size:sm'
-      const pairs = key.split('+');
-      for (const pair of pairs) {
-        const colonIdx = pair.indexOf(':');
-        if (colonIdx === -1) continue;
-        const prop = pair.slice(0, colonIdx);
-        const value = pair.slice(colonIdx + 1);
-
-        // It's a custom value — collect it for augmentation
-        // (filtering against known values happens async in generateVariantDeclarationsAsync)
-        if (!customValues[component]) customValues[component] = {};
-        if (!customValues[component][prop]) customValues[component][prop] = new Set();
-        customValues[component][prop].add(value);
-      }
-    }
-  }
-
-  // Sync stub — returns null, use generateVariantDeclarationsAsync instead
-  return null;
-}
-
-/**
- * Async version of generateVariantDeclarations that reads known values from doc files.
+ * @returns {Promise<string|null>} TypeScript declaration content, or null if no augmentations needed
  */
 async function generateVariantDeclarationsAsync(themeDef) {
   if (!themeDef.components || Object.keys(themeDef.components).length === 0) {
@@ -570,33 +532,6 @@ function generateCSS(themeDef, {prose = true} = {}) {
 // =============================================================================
 
 /**
- * Prose HTML element → XDS component class mappings.
- *
- * Prose maps raw HTML elements to their XDS component counterparts so that
- * plain markup (e.g. rendered markdown) inherits the component styles from
- * xds.base. The theme doesn't redefine the styles — it just aliases the
- * selectors, scoped under the theme boundary.
- */
-const PROSE_MAPPINGS = [
-  // Headings
-  {html: 'h1', xds: '.xds-heading.level-1'},
-  {html: 'h2', xds: '.xds-heading.level-2'},
-  {html: 'h3', xds: '.xds-heading.level-3'},
-  {html: 'h4', xds: '.xds-heading.level-4'},
-  {html: 'h5', xds: '.xds-heading.level-5'},
-  {html: 'h6', xds: '.xds-heading.level-6'},
-  // Text
-  {html: 'p', xds: '.xds-text.body'},
-  {html: 'small', xds: '.xds-text.supporting'},
-  {html: 'code', xds: '.xds-text.code'},
-  {html: 'pre', xds: '.xds-text.code'},
-  // Standalone components
-  {html: 'kbd', xds: '.xds-kbd'},
-  {html: 'a', xds: '.xds-link'},
-  {html: 'hr', xds: '.xds-divider'},
-];
-
-/**
  * Generate prose CSS — aliases raw HTML elements to XDS component classes.
  *
  * The actual styles live in xds.base (component CSS). Prose just says
@@ -616,10 +551,6 @@ function generateProseCSS(themeDef) {
   // For now, we co-select: the component overrides in generateCSS already
   // target .xds-button, .xds-card, etc. Prose adds the HTML element as
   // an additional selector for component overrides that have an HTML equivalent.
-  const rules = PROSE_MAPPINGS.map(
-    ({html, xds}) => `  ${html} { @extend ${xds}; }`,
-  );
-
   // CSS @extend isn't widely supported yet. Instead, generate rules that
   // reference the same token-based custom properties the components use.
   // This is a thin layer — just structural resets + token references.
@@ -729,7 +660,7 @@ function extractThemeDefinitionLegacy(filePath) {
         `Expected: defineTheme({ name: '...', tokens: {...} })`,
       );
     }
-    // eslint-disable-next-line no-eval
+     
     return eval(`(${defaultMatch[1]})`);
   }
 
@@ -738,12 +669,13 @@ function extractThemeDefinitionLegacy(filePath) {
   objStr = objStr.replace(/icons:\s*[a-zA-Z_][a-zA-Z0-9_]*/g, 'icons: undefined');
 
   try {
-    // eslint-disable-next-line no-eval
+     
     return eval(`(${objStr})`);
   } catch (e) {
     throw new Error(
       `Failed to parse theme definition in ${filePath}: ${e.message}\n` +
       `Make sure the defineTheme() argument is a plain object literal.`,
+      {cause: e},
     );
   }
 }
@@ -974,7 +906,7 @@ function validatePrivateVars(themeDef) {
 
   for (const [component, rules] of Object.entries(themeDef.components)) {
     for (const [key, styles] of Object.entries(rules)) {
-      for (const [prop, value] of Object.entries(styles)) {
+      for (const prop of Object.keys(styles)) {
         if (typeof prop === 'string' && prop.startsWith('--_')) {
           errors.push(
             `Component "${component}" (${key}) sets private var "${prop}". ` +

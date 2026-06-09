@@ -421,7 +421,7 @@ export function checkPeerDeps(ctx) {
         _require.resolve(name, {paths: [ctx.cwd]});
         present = true;
       } catch {
-        present = false;
+        // Still unresolved — leave present at its initial false.
       }
     }
     if (!present) missing.push(`${name}@${peers[name]}`);
@@ -496,7 +496,7 @@ export async function runChecks(options = {}) {
     const loaded = await loadConfig(cwd);
     configTheme = loaded?.theme ?? null;
   } catch {
-    configTheme = null;
+    // Best-effort: a missing/invalid config leaves configTheme null.
   }
 
   /** @type {DoctorContext} */

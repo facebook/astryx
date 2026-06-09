@@ -234,7 +234,7 @@ async function gatherDocs() {
 
 /** Build template candidates (page + block) from the template discovery API. */
 async function gatherTemplates(cwd) {
-  let templates = [];
+  let templates;
   try {
     templates = await discoverTemplates(cwd);
   } catch {
