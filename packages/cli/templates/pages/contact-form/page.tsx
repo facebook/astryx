@@ -21,14 +21,10 @@ import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSBanner} from '@xds/core/Banner';
 
-const WHY_US_IMAGES = [
-  // illustration-horizontal-3 from xds_oss asset set
-  'https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-3.png',
-  // illustration-horizontal-4 from xds_oss asset set
-  'https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-4.png',
-  // illustration-horizontal-5 from xds_oss asset set
-  'https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-5.png',
-];
+// Image is served from the app's public/ folder. The base path is injected at
+// build time so the URL resolves under the deployment's path prefix.
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+const WHY_US_IMAGE = `${basePath}/templates/contact-form/why-us.png`;
 
 const CAMPAIGN_GOALS = [
   'Brand Awareness',
@@ -61,17 +57,17 @@ const BUDGET_OPTIONS = [
 
 const WHY_US = [
   {
-    image: WHY_US_IMAGES[0],
+    image: WHY_US_IMAGE,
     title: 'We move fast for you',
     description: 'We cut through the noise and get straight to the work.',
   },
   {
-    image: WHY_US_IMAGES[1],
+    image: WHY_US_IMAGE,
     title: 'We build around you',
     description: "We tailor everything to what you're trying to achieve.",
   },
   {
-    image: WHY_US_IMAGES[2],
+    image: WHY_US_IMAGE,
     title: 'We show up for you',
     description: 'A dedicated team that knows your brand and wants to win.',
   },
