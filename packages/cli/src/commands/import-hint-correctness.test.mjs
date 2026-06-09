@@ -69,24 +69,20 @@ describe('import hint correctness', () => {
     }
   }
 
-  describe('resolveImportPath produces valid exports for all components', () => {
+  describe('every component resolves to a tree-shakeable subpath (not bare @xds/core)', () => {
     for (const name of individualComponents) {
-      it(`${name} resolves to a valid export`, () => {
+      it(`${name} resolves to @xds/core/<subpath>, not bare @xds/core`, () => {
         const importPath = resolveImportPath(coreDir, name);
 
-        // Should never be empty
+        // Must never be empty
         expect(importPath).toBeTruthy();
 
-        if (importPath === '@xds/core') {
-          // Bare fallback — acceptable only for components without a subpath export.
-          // If a matching export exists, the resolution is wrong.
-          const possibleExport = validExports.has(name);
-          expect(possibleExport).toBe(false);
-        } else {
-          // Subpath should exist in package.json exports
-          const subpath = importPath.replace('@xds/core/', '');
-          expect(validExports.has(subpath)).toBe(true);
-        }
+        // Must resolve to a specific subpath — bare @xds/core is not tree-shakeable
+        expect(importPath).not.toBe('@xds/core');
+
+        // The subpath must exist in package.json exports
+        const subpath = importPath.replace('@xds/core/', '');
+        expect(validExports.has(subpath)).toBe(true);
       });
     }
   });
