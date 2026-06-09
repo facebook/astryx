@@ -17,6 +17,7 @@ import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
 import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
+import {radiusVars} from '@xds/core/theme/tokens.stylex';
 
 // light-working-vertical-1 from xds_oss asset set
 const COVER_IMAGE_URL =
@@ -29,12 +30,15 @@ const GOOGLE_LOGO_URL =
   'https://lookaside.facebook.com/assets/xds_oss/GoogleLogo.png';
 
 const styles = stylex.create({
-  // The card's overflow:clip + border-radius rounds the outer corners,
-  // so the image only needs cover-fit sizing (no own border-radius).
+  // Flush to the card's right edge; round only the outer (right) corners to
+  // match the card radius. The card's clip can't reliably round a flush
+  // grid-cell child, so the image owns its right-side radius.
   coverImage: {
     width: '100%',
     height: '100%',
     objectFit: 'cover' as const,
+    borderStartEndRadius: radiusVars['--radius-container'],
+    borderEndEndRadius: radiusVars['--radius-container'],
   },
 });
 
@@ -83,7 +87,7 @@ export default function LoginTwoColumn() {
                         icon={<XDSIcon icon={CheckCircleIcon} size="lg" />}
                       />
                     ) : (
-                      <XDSVStack gap={4} hAlign="stretch">
+                      <XDSVStack gap={4} hAlign="stretch" width="100%">
                         <XDSVStack gap={1}>
                           <XDSText type="display-1" as="h2">
                             Welcome back
