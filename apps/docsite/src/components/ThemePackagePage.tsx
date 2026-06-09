@@ -118,11 +118,21 @@ const styles = stylex.create({
   // pins the width to SIDEBAR_WIDTH; the right pane (flex:1) absorbs
   // any leftover horizontal space. Hidden at narrow viewports — the
   // mobile selector + actions row takes its place above the preview.
+  //
+  // Caps the sidebar at the viewport height (minus the top nav and
+  // matching bottom breathing room) and gives it its own scroll
+  // container via overflowY:auto. Without that, the sticky panel
+  // tracks the viewport but its own contents extend off the bottom
+  // edge — users have to scroll the whole page to the bottom before
+  // the rest of the sidebar comes into view. With the cap + inner
+  // overflow, the sidebar scrolls independently of the page.
   sidebar: {
     flex: '0 0 auto',
     width: SIDEBAR_WIDTH,
     position: 'sticky' as const,
     top: SIDEBAR_STICKY_TOP,
+    maxHeight: `calc(100dvh - var(--appshell-header-height, 64px) - var(--spacing-4) * 2)`,
+    overflowY: 'auto' as const,
     [SIDEBAR_BREAKPOINT]: {
       display: 'none',
     },
@@ -519,22 +529,13 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
       }
       event.preventDefault();
       setIsLeaving(true);
-      // Hint to the destination playground page that the user arrived
-      // via this animated transition (vs. a direct URL / refresh /
-      // other route). The playground reads + clears the flag on
-      // mount to decide whether to play its matching entry
-      // animation. sessionStorage survives the route boundary
-      // without polluting the URL.
-      try {
-        window.sessionStorage.setItem('xds-themes-leave', '1');
-      } catch {
-        // sessionStorage can throw in private browsing or with
-        // storage disabled — silently skip; the playground will
-        // just render without the entry animation.
-      }
       // Wait for the leave animation to play, then navigate. Length
       // matches --duration-medium (~410ms); we use a slight buffer
-      // so the navigation kicks in just as the animation ends.
+      // so the navigation kicks in just as the animation ends. The
+      // destination playground page handles its own entry animation
+      // declaratively via CSS @starting-style (no cross-page state
+      // signaling needed — first paint of the editor + preview
+      // panels animates in unconditionally).
       window.setTimeout(() => {
         router.push(customizeHref);
       }, 420);
