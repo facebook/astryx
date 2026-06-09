@@ -63,6 +63,7 @@ Options:
 | `theme build` | Compile a defineTheme file to production CSS and JS                                     |
 | `discover`    | Discover external packages and components                                               |
 | `gap-report`  | Report a gap when a component doesn't meet your needs                                   |
+| `doctor`      | Diagnose your XDS setup and report problems with fixes (CI-friendly via exit code)      |
 
 ### Global options
 
@@ -317,8 +318,70 @@ Every response has a `type` string that uniquely identifies it:
 | `xds --json upgrade [--apply]`                 | `upgrade.run`               | `UpgradeRunResponse`              |
 | `xds --json gap-report --list-categories`      | `gap-report.categories`     | `GapReportCategoriesResponse`     |
 | `xds --json gap-report --component X ...`      | `gap-report.file`           | `GapReportFileResponse`           |
+| `xds --json doctor`                            | `doctor`                    | `DoctorResponse`                  |
 | any error                                      | —                           | `CLIError`                        |
 | unsupported command                            | —                           | `CLIUnsupportedError`             |
+
+## Doctor
+
+`xds doctor` runs a series of health checks against your project and
+environment and reports `PASS` / `WARN` / `FAIL` for each, with an actionable
+fix for anything that isn't passing. It's read-only — it never installs or
+mutates anything — so it's safe to run anywhere, including CI.
+
+```
+$ xds doctor
+xds doctor — diagnosing your setup
+
+  ✓ Node.js version
+      Node v22.13.0 meets the minimum (>=22.13.0).
+  ✓ @xds/core installed
+      @xds/core resolved (v0.0.14).
+  ✓ @xds/core <-> @xds/cli alignment
+      @xds/core v0.0.14 is in step with @xds/cli v0.0.14.
+  ⚠ Theme packages
+      No @xds/theme-* packages are installed.
+      → fix: Install a theme, e.g. `npm install @xds/theme-default`, then import its CSS or set xds.theme.
+  ℹ xds.config.mjs
+      No xds.config.mjs found — using defaults.
+  ℹ AI agent docs
+      No agent docs (CLAUDE.md / AGENTS.md / .cursorrules) found.
+      → fix: Generate agent docs with `xds init --features agents`.
+  ✓ @xds/core peer dependencies
+      All peer dependencies satisfied (react, react-dom).
+  ℹ Package manager
+      Detected package manager: yarn.
+
+Summary: 4 passed, 1 warning, 0 failures, 3 info
+
+No failures — but review the ⚠ warnings above when you can.
+```
+
+### Checks
+
+| Check                | Status it can return | What it verifies                                            |
+| -------------------- | -------------------- | ----------------------------------------------------------- |
+| Node.js version      | pass / fail          | Running Node meets the CLI's minimum                        |
+| @xds/core installed  | pass / fail          | `@xds/core` is resolvable from the project                  |
+| Version alignment    | pass / warn / info   | Installed `@xds/core` is in step with `@xds/cli`            |
+| Theme packages       | pass / warn          | An `@xds/theme-*` package is installed and a theme is wired |
+| xds.config.mjs       | pass / fail / info   | Config (if present) loads cleanly with a valid shape        |
+| AI agent docs        | pass / warn / info   | Agent docs exist and contain the XDS section markers        |
+| Peer dependencies    | pass / warn / info   | `@xds/core`'s peer deps (react, …) are installed            |
+| Package manager      | info                 | Reports the detected package manager                        |
+
+### CI gate
+
+The exit code is the contract: `xds doctor` exits `0` when there are no
+failures (warnings are fine) and `1` when any check fails. That makes it
+usable directly as a CI step:
+
+```yaml
+- run: npx xds doctor
+```
+
+Use `--json` for a structured envelope (`{ apiVersion, type: "doctor",
+data: { checks, summary } }`) that AI agents and scripts can parse.
 
 ## Configuration
 

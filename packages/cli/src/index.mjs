@@ -62,6 +62,7 @@ export const JSON_SUPPORTED = new Set([
   'gap-report',
   'upgrade',
   'manifest',
+  'doctor',
 ]);
 
 program
@@ -248,6 +249,7 @@ const commands = [
   {name: 'hook', path: './commands/hook/index.mjs', register: 'registerHook'},
   {name: 'discover', path: './commands/discover.mjs', register: 'registerDiscover'},
   {name: 'search', path: './commands/search.mjs', register: 'registerSearch'},
+  {name: 'doctor', path: './commands/doctor.mjs', register: 'registerDoctor'},
 ];
 
 for (const cmd of commands) {
