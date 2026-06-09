@@ -166,9 +166,11 @@ export const docsDense = {
     description:
       'Section creates page regions. Use for settings groups, form sections, sidebar areas. If you want to visually separate a part of a page, use Section — not Card. Cards are for discrete items (one profile, one notification).',
     bestPractices: [
-      { guidance: true, description: 'Use Section for page-level grouping (settings, forms, sidebars). Use heading + XDSStack inside for content.' },
-      { guidance: true, description: 'Default variant = white surface. Muted = gray for emphasis. Add dividers for separation.' },
-      { guidance: false, description: 'Use Card for page sections. Cards = discrete items. Sections = page regions.' },
+      { guidance: true, description: 'Use Section for page-level grouping: settings panels, form groups, sidebar regions. Page sections, not discrete items.' },
+      { guidance: true, description: 'Start w/ default variant. Use muted only to call attention to a specific region.' },
+      { guidance: true, description: 'Add dividers between same-background sections that need separation.' },
+      { guidance: true, description: 'Combine w/ heading + XDSStack for typical page section pattern.' },
+      { guidance: false, description: 'Use Card when you mean Section. Cards = discrete items (one notification, one profile). Sections = page regions.' },
     ],
   },
   propDescriptions: {
