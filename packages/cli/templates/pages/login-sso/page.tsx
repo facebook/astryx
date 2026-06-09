@@ -22,7 +22,7 @@ import {XDSAvatar} from '@xds/core/Avatar';
 // ---------------------------------------------------------------------------
 
 // building from xds_oss asset set
-const BG_URL = 'https://lookaside.facebook.com/assets/xds_oss/building.jpg';
+const BG_URL = '/template-assets/building.jpg';
 
 const styles = stylex.create({
   page: {

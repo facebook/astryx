@@ -92,9 +92,13 @@ export function resolveOptionLabel(
   option: {label: string; token?: string},
   tokens: Record<string, string>,
 ): string {
-  if (!option.token) {return option.label;}
+  if (!option.token) {
+    return option.label;
+  }
   const resolved = tokens[option.token];
-  if (resolved) {return `${option.label} — ${resolved}`;}
+  if (resolved) {
+    return `${option.label} — ${resolved}`;
+  }
   return option.label;
 }
 
@@ -468,4 +472,4 @@ export const TYPOGRAPHY_CATEGORIES: Record<
 } as const;
 
 export const GOOGLE_FONTS_URL =
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=DM+Sans:wght@400;500;600;700&family=Figtree:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap';
+  'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Figtree:wght@400;500;600;700&family=Fustat:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Manufacturing+Consent&family=Montserrat:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Playwrite+US+Trad:wght@100..400&family=Poppins:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Source+Sans+3:wght@400;500;600;700&family=UnifrakturMaguntia&display=swap';

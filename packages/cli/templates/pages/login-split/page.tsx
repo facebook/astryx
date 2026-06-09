@@ -24,7 +24,7 @@ import {
 
 // light-working-vertical-1 from xds_oss asset set
 const COVER_IMAGE_URL =
-  'https://lookaside.facebook.com/assets/xds_oss/light-working-vertical-1.png';
+  '/template-assets/light-working-vertical-1.png';
 
 const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" width={16} height={16} aria-hidden="true" {...props}>

@@ -22,6 +22,7 @@
 'use client';
 
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useSearchParams} from 'next/navigation';
 import dynamic from 'next/dynamic';
 import {loader} from '@monaco-editor/react';
 import * as stylex from '@stylexjs/stylex';
@@ -44,6 +45,7 @@ import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
 import {
   Code2,
   Moon,
+  Palette,
   SlidersHorizontal,
   Sun,
   Monitor,
@@ -55,13 +57,16 @@ import {
 import githubLight from './themes/github-light.json';
 import githubDark from './themes/github-dark.json';
 import {useThemeMode} from '../providers';
-import {DEFAULT_PLAYGROUND_THEME} from './playgroundThemes';
+import {DEFAULT_PLAYGROUND_THEME, themeByValue} from './playgroundThemes';
 import {PreviewStage, type Viewport} from './PreviewStage';
 import {BRAND_ICON} from '../../components/XDSWordmark';
 import {PropertyPanel} from './PropertyPanel';
 import {annotateInstanceIds} from './babelParser';
+import {PlaygroundThemeEditor} from '../../components/themePlayground/PlaygroundThemeEditor';
+import {DEFAULT_CODE} from './defaultCode';
 
 import type * as MonacoTypes from 'monaco-editor';
+import type {XDSDefinedTheme} from '@xds/core/theme';
 
 // Self-host Monaco from public/monaco/vs — corpnet blocks the default
 // jsdelivr CDN. Configure the singleton loader before the editor initializes.
@@ -103,42 +108,6 @@ const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
     </div>
   ),
 });
-
-const DEFAULT_CODE = `import {
-  XDSButton,
-  XDSText,
-  XDSHeading,
-  XDSVStack,
-  XDSHStack,
-  XDSCard,
-  XDSBadge,
-} from '@xds/core';
-
-export default function Demo() {
-  const [count, setCount] = useState(0);
-
-  return (
-    <XDSCard maxWidth={400}>
-      <XDSVStack gap={4}>
-        <XDSVStack>
-          <XDSHeading level={3}>
-            Astryx Playground
-          </XDSHeading>
-          <XDSText color="secondary">
-            Edit the code and see live changes.
-          </XDSText>
-        </XDSVStack>
-        <XDSHStack gap={2} align="center">
-          <XDSButton
-            label={\`Count: \${count}\`}
-            onClick={() => setCount(c => c + 1)}
-          />
-          <XDSBadge variant="info" label={\`\${count} clicks\`} />
-        </XDSHStack>
-      </XDSVStack>
-    </XDSCard>
-  );
-}`;
 
 function getInitialCode(): string {
   if (typeof window === 'undefined') {
@@ -287,7 +256,7 @@ function configureMonaco(monaco: MonacoInstance) {
     });
 }
 
-type LeftView = 'code' | 'property';
+type LeftView = 'code' | 'property' | 'theme';
 type BuildStatus = 'idle' | 'building' | 'finished' | 'error';
 
 const BUILD_STATUS_META: Record<
@@ -327,7 +296,9 @@ const s = stylex.create({
   },
   leftPanelHeader: {
     flexShrink: 0,
-    padding: 'var(--spacing-3)',
+    paddingBlock: 'var(--spacing-2)',
+    paddingInline: 'var(--spacing-3)',
+    minHeight: 48,
   },
   tabBody: {
     flex: 1,
@@ -340,6 +311,13 @@ const s = stylex.create({
     flex: 1,
     minHeight: 0,
     minWidth: 0,
+  },
+  themePane: {
+    flex: 1,
+    minHeight: 0,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
   },
   rightPanel: {
     flex: 1,
@@ -364,7 +342,21 @@ export function PlaygroundClient() {
   const editorTheme = siteMode === 'dark' ? 'github-dark' : 'github-light';
   const [code, setCode] = useState(getInitialCode);
   const [mode, setMode] = useState<'light' | 'dark'>('light');
-  const theme = DEFAULT_PLAYGROUND_THEME;
+  // A ?theme=<value> query param (e.g. from the themes gallery's "Open in
+  // Playground") seeds the Theme view with that theme and applies it to the
+  // preview. useSearchParams reads it reliably across App Router client-side
+  // navigation (a window.location read at mount can be stale on soft nav).
+  // Validated against the registered themes; null when absent or unknown so
+  // the playground keeps its default, unseeded behavior.
+  const searchParams = useSearchParams();
+  const rawThemeParam = searchParams.get('theme');
+  const themeParam =
+    rawThemeParam && rawThemeParam in themeByValue ? rawThemeParam : null;
+  const theme = themeParam ?? DEFAULT_PLAYGROUND_THEME;
+  // The theme object the editor is seeded from — the ?theme= theme when present,
+  // otherwise the playground default (neutral). Always defined so the always-
+  // mounted Theme editor reflects the active theme and stays the source of truth.
+  const editorInitialTheme = themeByValue[theme];
   const [activeView, setActiveView] = useState<LeftView>('code');
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -390,6 +382,9 @@ export function PlaygroundClient() {
   // re-creating the (stable) mount callback.
   const activeViewRef = useRef(activeView);
   activeViewRef.current = activeView;
+  // Latest theme authored in the Theme view, retained so a mode toggle can
+  // re-post it (the iframe clears the custom theme on any string-only push).
+  const customThemeRef = useRef<XDSDefinedTheme | null>(null);
 
   const editorPanel = useXDSResizable({
     defaultSize: 440,
@@ -420,6 +415,16 @@ export function PlaygroundClient() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
+  // When a ?theme= param seeds the playground, open the Theme view so the
+  // populated theme editor is visible (and drives the preview) on arrival.
+  // Done in an effect (not the initial activeView state) to avoid an
+  // SSR/client hydration mismatch on the panel that renders.
+  useEffect(() => {
+    if (themeParam) {
+      setActiveView('theme');
+    }
+  }, [themeParam]);
+
   const send = useCallback((c: string) => {
     const win = iframeRef.current?.contentWindow;
     if (!win) {
@@ -436,6 +441,24 @@ export function PlaygroundClient() {
   const postCode = useCallback(
     (c: string) => send(annotateInstanceIds(c)),
     [send],
+  );
+
+  // Push a theme authored in the Theme view to the preview. Sent as raw tokens
+  // + components (see the preview-theme protocol) so it survives postMessage.
+  const postCustomTheme = useCallback(
+    (customTheme: XDSDefinedTheme) => {
+      customThemeRef.current = customTheme;
+      iframeRef.current?.contentWindow?.postMessage(
+        {
+          type: 'preview-theme',
+          customTokens: customTheme.tokens,
+          customComponents: customTheme.components,
+          mode,
+        },
+        window.location.origin,
+      );
+    },
+    [mode],
   );
 
   // Persistently highlight the DOM node for a given component instance.
@@ -533,13 +556,33 @@ export function PlaygroundClient() {
 
   // Theme + mode → preview. Also re-sent once the preview signals ready so a
   // non-default initial theme (e.g. neutral) applies even if this effect first
-  // ran before the iframe was listening.
+  // ran before the iframe was listening. Once the Theme editor has produced a
+  // theme (seeded via ?theme= or edited by the user), it becomes the source of
+  // truth and is applied across ALL views (Code / Properties / Theme) so the
+  // preview stays consistent when switching tabs and when toggling light/dark.
   useEffect(() => {
-    iframeRef.current?.contentWindow?.postMessage(
-      {type: 'preview-theme', theme, mode},
-      window.location.origin,
-    );
-  }, [mode, previewReady]);
+    const win = iframeRef.current?.contentWindow;
+    if (!win) {
+      return;
+    }
+    if (customThemeRef.current) {
+      const custom = customThemeRef.current;
+      win.postMessage(
+        {
+          type: 'preview-theme',
+          customTokens: custom.tokens,
+          customComponents: custom.components,
+          mode,
+        },
+        window.location.origin,
+      );
+    } else {
+      win.postMessage(
+        {type: 'preview-theme', theme, mode},
+        window.location.origin,
+      );
+    }
+  }, [mode, previewReady, activeView, theme]);
 
   // While the resize handle is dragged, the cursor can pass over the preview
   // iframe — a separate document that swallows pointer events and stalls the
@@ -704,6 +747,13 @@ export function PlaygroundClient() {
             isIconOnly
             icon={<SlidersHorizontal size={20} />}
           />
+          <XDSToggleButton
+            value="theme"
+            label="Theme"
+            tooltip="Theme"
+            isIconOnly
+            icon={<Palette size={20} />}
+          />
         </XDSToggleButtonGroup>
       </XDSVStack>
 
@@ -714,9 +764,18 @@ export function PlaygroundClient() {
         onPointerDownCapture={handleResizeProbe}>
         {/* Left panel — editor */}
         <XDSVStack xstyle={s.leftPanel} width={editorPanel.size || 440}>
-          <div {...stylex.props(s.leftPanelHeader)}>
+          <XDSHStack
+            justify="between"
+            align="center"
+            xstyle={s.leftPanelHeader}>
             <XDSHeading level={3}>Playground</XDSHeading>
-          </div>
+            {activeView === 'code' && (
+              <XDSButton variant="secondary" size="sm" label="Copy Code" />
+            )}
+            {activeView === 'theme' && (
+              <XDSButton variant="secondary" size="sm" label="Export Theme" />
+            )}
+          </XDSHStack>
           <div {...stylex.props(s.tabBody)}>
             {/* Code: Monaco stays mounted to preserve typedefs + editor state */}
             <div
@@ -752,6 +811,21 @@ export function PlaygroundClient() {
                 }}
               />
             )}
+
+            {/* Theme: stays mounted (hidden when inactive) to preserve the
+                editor's token/component state across tab switches — it only
+                changes when the user edits it, not on navigation. */}
+            <div
+              {...stylex.props(
+                s.themePane,
+                activeView !== 'theme' && s.hidden,
+              )}>
+              <PlaygroundThemeEditor
+                mode={mode}
+                initialTheme={editorInitialTheme}
+                onThemeChange={postCustomTheme}
+              />
+            </div>
           </div>
         </XDSVStack>
 
