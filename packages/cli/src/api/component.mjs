@@ -12,7 +12,6 @@ import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {findCoreDir, discoverExternalPackages} from '../utils/paths.mjs';
 import {
   discoverComponents,
-  discoverExternalComponents,
   discoverExternalComponentsGrouped,
   findComponentReadme,
   findComponentSource,
@@ -275,7 +274,6 @@ export async function component(name, options = {}) {
 
   let readmePath = findComponentReadme(coreDir, dirName);
   let resolvedName = dirName;
-  let fromExternal = null;
 
   if (!readmePath) {
     const externals = discoverExternalPackages(cwd);
@@ -283,7 +281,6 @@ export async function component(name, options = {}) {
       const extDocPath = findExternalComponentDoc(ext.docsDir, dirName);
       if (extDocPath) {
         readmePath = extDocPath;
-        fromExternal = ext;
         break;
       }
     }

@@ -123,20 +123,8 @@ function getInstallCommand(force = false) {
 }
 
 /**
- * List all available codemods across all versions.
+ * Register the `upgrade` command (codemod-driven version migration).
  */
-async function listCodemods() {
-  // Walk the full registry once. The previous implementation called
-  // getTransformsBetween('0.0.0', v) for every v in versions, so a codemod
-  // introduced at 0.0.2 was reprinted for every version >= 0.0.2.
-  const manifests = await getTransformsBetween('0.0.0', latestVersion);
-  for (const {transforms} of manifests) {
-    for (const {name, meta} of transforms) {
-      p.log.info(`  ${name} — ${meta.title} (${meta.pr})`);
-    }
-  }
-}
-
 export function registerUpgrade(program) {
   program
     .command('upgrade')

@@ -13,7 +13,7 @@
  */
 
 import {getRunPrefix} from '../utils/package-manager.mjs';
-import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
+import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {docs as docsApi} from '../api/docs.mjs';
 
@@ -42,8 +42,10 @@ function formatBlock(block, detail) {
 
     case 'code':
       if (detail === 'compact' || detail === 'brief') return null;
-      const label = block.label ? `// ${block.label}\n` : '';
-      return `\`\`\`${block.lang}\n${label}${block.code}\n\`\`\``;
+      {
+        const label = block.label ? `// ${block.label}\n` : '';
+        return `\`\`\`${block.lang}\n${label}${block.code}\n\`\`\``;
+      }
 
     case 'table':
       if (detail === 'brief') {

@@ -7,9 +7,8 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import * as p from '@clack/prompts';
-import {CLI_ROOT} from '../utils/paths.mjs';
 import {isNonInteractive} from '../utils/path-safety.mjs';
-import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
+import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {template as templateApi, getTemplateById} from '../api/template.mjs';

@@ -6,9 +6,6 @@
  * Global options: --detail full|compact|brief, --lang en|zh
  */
 
-import {findCoreDir} from '../../utils/paths.mjs';
-import {discoverHooks, findHookDoc} from '../../lib/hook-discovery.mjs';
-import {loadDocs} from '../../lib/component-loader.mjs';
 import {
   formatHookFull,
   formatHookCompact,
@@ -16,7 +13,7 @@ import {
   formatHookParams,
 } from '../../lib/hook-format.mjs';
 import {getRunPrefix} from '../../utils/package-manager.mjs';
-import {jsonOut, jsonError, humanLog} from '../../lib/json.mjs';
+import {jsonOut, humanLog} from '../../lib/json.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../lib/error-codes.mjs';
 import {hook as hookApi} from '../../api/hook.mjs';
@@ -64,8 +61,6 @@ export function registerHook(program) {
       if (json) return jsonOut(result.type, result.data);
 
       // ── Text output ────────────────────────────────────────────
-      const coreDir = findCoreDir(process.cwd());
-
       switch (result.type) {
         case 'hook.list': {
           // --detail brief (default for list views) — names only.

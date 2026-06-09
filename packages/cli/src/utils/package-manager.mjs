@@ -38,7 +38,9 @@ export function detectPackageManager(targetDir = process.cwd()) {
           const name = pkg.packageManager.split('@')[0];
           if (KNOWN_PMS.has(name)) return name;
         }
-      } catch {}
+      } catch {
+        // Best-effort: unreadable/invalid package.json — keep walking up.
+      }
     }
 
     dir = path.dirname(dir);
