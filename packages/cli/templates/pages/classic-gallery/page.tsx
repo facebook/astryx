@@ -59,6 +59,11 @@ const GALLERY_IMAGES: GalleryImage[] = [
     category: 'lifestyle',
   },
   {
+    src: `${IMG_DIR}/lifestyle-architecture.jpg`,
+    alt: 'Soft blush curved architecture against a pale sky',
+    category: 'lifestyle',
+  },
+  {
     src: `${IMG_DIR}/product-backpack.png`,
     alt: 'Charcoal canvas backpack against a neutral backdrop',
     category: 'products',
