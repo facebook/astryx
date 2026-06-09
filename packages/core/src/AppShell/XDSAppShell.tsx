@@ -530,10 +530,6 @@ export function XDSAppShell({
 
   // Nav style derived values
   const hasBanner = isRenderable(banner);
-  // Prop-level checks — if you pass a renderable prop, you have nav content.
-  // Removed useXDSSlotPresence-based detection which was flaky due to
-  // circular ref dependencies and React.Activity hidden mode (#2243).
-  // Contract: don't pass the prop if you don't have content.
   const hasTopNav = isRenderable(topNav);
   const hasSideNav = isRenderable(sideNav);
   const hasNavContent = hasTopNav || hasSideNav;
@@ -711,8 +707,7 @@ export function XDSAppShell({
   // =========================================================================
   // Build main content
   // =========================================================================
-  const shouldElevateWithCorner =
-    isElevated && hasTopNav && showSideNavInline;
+  const shouldElevateWithCorner = isElevated && hasTopNav && showSideNavInline;
 
   const mainInner = (
     <XDSLayoutContent
