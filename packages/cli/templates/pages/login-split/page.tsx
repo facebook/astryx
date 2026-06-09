@@ -17,11 +17,7 @@ import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
 import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
-import {
-  colorVars,
-  radiusVars,
-  spacingVars,
-} from '@xds/core/theme/tokens.stylex';
+import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 
 // light-working-vertical-1 from xds_oss asset set
 const COVER_IMAGE_URL =
@@ -61,12 +57,7 @@ const styles = stylex.create({
   coverImage: {
     width: '100%',
     height: '100%',
-    minHeight: {
-      default: null,
-      [STACK_QUERY]: 160,
-    },
     objectFit: 'cover' as const,
-    borderRadius: radiusVars['--radius-container'],
   },
 });
 
@@ -226,13 +217,17 @@ export default function LoginTwoColumn() {
                 </XDSVStack>
               </XDSSection>
 
-              {/* Right (wide) / Top (stacked) — Cover image */}
+              {/* Right (wide) / Top (stacked) — Cover image.
+                  A borderless XDSCard clips the image to rounded corners
+                  (overflow:clip + radius) so the image needs no own radius. */}
               <div {...stylex.props(styles.imageCell)}>
-                <img
-                  {...stylex.props(styles.coverImage)}
-                  src={COVER_IMAGE_URL}
-                  alt="Two people working at a desk"
-                />
+                <XDSCard variant="transparent" padding={0} height="100%">
+                  <img
+                    {...stylex.props(styles.coverImage)}
+                    src={COVER_IMAGE_URL}
+                    alt="Two people working at a desk"
+                  />
+                </XDSCard>
               </div>
             </XDSGrid>
           </XDSCard>
