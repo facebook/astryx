@@ -52,9 +52,7 @@ export function useXDSSlotPresence(initialValue = false) {
   const observerRef = useRef<MutationObserver | null>(null);
   const elementRef = useRef<HTMLDivElement | null>(null);
 
-  // Callback ref — called when elements mount/unmount
   const ref = useCallback((node: HTMLDivElement | null) => {
-    // Clean up previous observer
     if (observerRef.current) {
       observerRef.current.disconnect();
       observerRef.current = null;
@@ -67,20 +65,15 @@ export function useXDSSlotPresence(initialValue = false) {
       return;
     }
 
-    if (node) {
-      // Check immediately
-      setHasContent(hasChildContent(node));
+    setHasContent(hasChildContent(node));
 
-      // Observe for changes
-      const observer = new MutationObserver(() => {
-        setHasContent(hasChildContent(node));
-      });
-      observer.observe(node, {childList: true, subtree: true});
-      observerRef.current = observer;
-    }
+    const observer = new MutationObserver(() => {
+      setHasContent(hasChildContent(node));
+    });
+    observer.observe(node, {childList: true, subtree: true});
+    observerRef.current = observer;
   }, []);
 
-  // Clean up on unmount
   useEffect(() => {
     return () => {
       if (observerRef.current) {
