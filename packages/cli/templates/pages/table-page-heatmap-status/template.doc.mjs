@@ -9,4 +9,5 @@ export const doc = {
     'Product status page with an outage heatmap and incident log table.',
   isReady: true,
   category: 'Table - Heatmap',
+  isHiddenFromOverview: true,
 };
