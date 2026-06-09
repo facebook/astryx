@@ -8,12 +8,14 @@
  * prev/next arrows to move quickly between templates in the gallery's
  * display order. Arrow keys (←/→) also navigate; Escape closes.
  *
- * The footer surfaces template metadata (category + name, description),
- * a copy-to-clipboard CLI scaffold command, and an Open in Playground
- * action. A floating close button sits at the top-right corner.
+ * The header surfaces template metadata (category + name, description) on
+ * the left. All controls cluster on the right of the header: a
+ * copy-to-clipboard CLI scaffold command, an Open in Playground action,
+ * and the close button.
  *
- * The prev/next arrows are position:fixed inside the top-layer <dialog>,
- * so they sit in the backdrop gutters outside the dialog box.
+ * The preview sits in a padded, framed (border + radius) surface below the
+ * header. The prev/next arrows are position:fixed inside the top-layer
+ * <dialog>, so they sit in the backdrop gutters outside the dialog box.
  */
 
 import {
@@ -30,8 +32,8 @@ import {
   XDSVStack,
   XDSHStack,
   XDSLayout,
+  XDSLayoutHeader,
   XDSLayoutContent,
-  XDSLayoutFooter,
 } from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSSkeleton} from '@xds/core/Skeleton';
@@ -69,22 +71,18 @@ const styles = stylex.create({
     height: '100%',
     minHeight: 0,
     boxSizing: 'border-box',
-    padding: '16px',
+    paddingInline: '16px',
+    paddingBlockEnd: '16px',
   },
-  footerRow: {
+  headerRow: {
     width: '100%',
-    paddingInlineStart: '4px',
-    paddingBlockEnd: '4px',
   },
-  footerMeta: {
+  headerMeta: {
     flex: 1,
     minWidth: 0,
   },
   categoryPrefix: {
     color: 'var(--color-text-primary)',
-  },
-  footerNoPadding: {
-    padding: 0,
   },
   copyPill: {
     display: 'inline-flex',
@@ -120,19 +118,12 @@ const styles = stylex.create({
   },
   skeletonOverlay: {
     position: 'absolute',
-    inset: '16px',
+    insetInline: '16px',
+    insetBlockEnd: '16px',
+    insetBlockStart: 0,
     zIndex: 5,
     borderRadius: 'var(--radius-container)',
     overflow: 'hidden',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 'var(--spacing-3)',
-    insetInlineEnd: 'var(--spacing-3)',
-    zIndex: 10,
-    borderRadius: 'var(--radius-full)',
-    backgroundColor: 'var(--color-background-card)',
-    boxShadow: 'var(--shadow-high)',
   },
   navArrow: {
     position: 'fixed',
@@ -229,35 +220,10 @@ export function TemplatePreviewDialog({
       aria-label={current.name}>
       <XDSLayout
         height="fill"
-        content={
-          <XDSLayoutContent isScrollable={false} padding={0}>
-            <div {...stylex.props(styles.body)}>
-              <TemplatePreviewSurface
-                key={deferredCurrent.slug}
-                slug={deferredCurrent.slug}
-              />
-              {isPending && (
-                <div {...stylex.props(styles.skeletonOverlay)}>
-                  <XDSSkeleton width="100%" height="100%" />
-                </div>
-              )}
-              <div {...stylex.props(styles.closeButton)}>
-                <XDSButton
-                  variant="ghost"
-                  isIconOnly
-                  label="Close preview"
-                  size="lg"
-                  icon={<XDSIcon icon="close" color="inherit" />}
-                  onClick={() => onOpenChange(false)}
-                />
-              </div>
-            </div>
-          </XDSLayoutContent>
-        }
-        footer={
-          <XDSLayoutFooter xstyle={styles.footerNoPadding}>
-            <XDSHStack gap={4} vAlign="end" xstyle={styles.footerRow}>
-              <XDSVStack gap={0.5} xstyle={styles.footerMeta}>
+        header={
+          <XDSLayoutHeader xstyle={styles.headerRow}>
+            <XDSHStack gap={4} vAlign="start" xstyle={styles.headerRow}>
+              <XDSVStack gap={0.5} xstyle={styles.headerMeta}>
                 <XDSHeading level={2}>
                   {current.category && (
                     <span {...stylex.props(styles.categoryPrefix)}>
@@ -267,7 +233,7 @@ export function TemplatePreviewDialog({
                   {current.name}
                 </XDSHeading>
                 {current.description && (
-                  <XDSText type="body" color="primary">
+                  <XDSText type="body" color="secondary">
                     {current.description}
                   </XDSText>
                 )}
@@ -298,9 +264,32 @@ export function TemplatePreviewDialog({
                     }}
                   />
                 )}
+                <XDSButton
+                  variant="secondary"
+                  isIconOnly
+                  label="Close preview"
+                  size="lg"
+                  icon={<XDSIcon icon="close" color="inherit" />}
+                  onClick={() => onOpenChange(false)}
+                />
               </XDSHStack>
             </XDSHStack>
-          </XDSLayoutFooter>
+          </XDSLayoutHeader>
+        }
+        content={
+          <XDSLayoutContent isScrollable={false} padding={0}>
+            <div {...stylex.props(styles.body)}>
+              <TemplatePreviewSurface
+                key={deferredCurrent.slug}
+                slug={deferredCurrent.slug}
+              />
+              {isPending && (
+                <div {...stylex.props(styles.skeletonOverlay)}>
+                  <XDSSkeleton width="100%" height="100%" />
+                </div>
+              )}
+            </div>
+          </XDSLayoutContent>
         }
       />
 
