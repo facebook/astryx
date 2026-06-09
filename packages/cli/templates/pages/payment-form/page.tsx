@@ -176,13 +176,19 @@ const styles = stylex.create({
   summaryMobileOrder: {order: -1},
   // Express-checkout brand buttons (fixed brand colors).
   paypalButton: {backgroundColor: '#FFC439', borderColor: '#FFC439'},
-  gpayButton: {backgroundColor: '#000', borderColor: '#000'},
+  // Per Google Pay brand guidelines, the official mark must not be recolored
+  // or altered. The provided mark is full-color (for light backgrounds), so
+  // the button uses a light surface that contrasts with the page background.
+  gpayButton: {
+    backgroundColor: colorVars['--color-background-surface'],
+    borderColor: colorVars['--color-border'],
+  },
   // Brand logos inside the express-checkout buttons.
   paypalLogo: {height: spacingVars['--spacing-5'], width: 'auto'},
+  // Unaltered Google Pay mark (no filter/recolor — brand requirement).
   gpayLogo: {
     height: spacingVars['--spacing-6'],
     width: 'auto',
-    filter: 'brightness(0) invert(1)',
   },
   // Accepted card-network marks (Visa/Mastercard/Amex), shared style.
   cardLogo: {
