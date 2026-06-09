@@ -3,6 +3,7 @@
 'use client';
 
 import {useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText, XDSHeading} from '@xds/core/Text';
@@ -12,6 +13,14 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSBanner} from '@xds/core/Banner';
 import {CubeIcon} from '@heroicons/react/24/outline';
+import {colorVars} from '@xds/core/theme/tokens.stylex';
+
+// Standalone auth page paints its own body background (no host shell).
+const styles = stylex.create({
+  page: {
+    backgroundColor: colorVars['--color-background-body'],
+  },
+});
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -30,7 +39,7 @@ export default function LoginPage() {
   };
 
   return (
-    <XDSCenter axis="both" height="100dvh">
+    <XDSCenter axis="both" height="100dvh" xstyle={styles.page}>
       <XDSVStack gap={4} hAlign="center">
         {/* Logo */}
         <XDSVStack gap={2} hAlign="center">
