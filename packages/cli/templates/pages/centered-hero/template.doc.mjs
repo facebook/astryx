@@ -8,5 +8,5 @@ export const doc = {
   description:
     'Centered headline, description, and CTA buttons above a wide hero image.',
   isReady: true,
-  category: 'Gallery - Centered Hero',
+  category: 'Gallery - Hero',
 };
