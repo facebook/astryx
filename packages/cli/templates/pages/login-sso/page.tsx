@@ -159,6 +159,8 @@ export default function LoginSSO() {
                 label="Continue with SSO"
                 variant="secondary"
                 size="lg"
+                onClick={handleContinue}
+                isDisabled={!emailValid}
               />
 
               <XDSVStack hAlign="center">
