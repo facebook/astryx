@@ -177,8 +177,10 @@ export const docsDense = {
     description:
       'Calendar lets the user pick a date or date range from a month grid. Use in booking, scheduling, date filters.',
     bestPractices: [
-      {guidance: true, description: 'Set min/max to limit selection. Use range mode for start + end dates.'},
-      {guidance: true, description: 'Use dateConstraints to disable weekends/holidays. Show two months for cross-month selections.'},
+      {guidance: true, description: 'Set min/max to limit selection to a valid window — only future dates for booking, current quarter for a report.'},
+      {guidance: true, description: 'Use range mode when user picks start + end dates — trip, time-off request.'},
+      {guidance: true, description: 'Use dateConstraints to disable specific dates (weekends/holidays); explain why unavailable.'},
+      {guidance: true, description: 'Show two months side by side when user frequently selects dates spanning a month boundary.'},
       {guidance: false, description: 'Use for dates far in the past/future — text input is faster.'},
       {guidance: false, description: 'Disable dates without explaining why.'},
     ],
