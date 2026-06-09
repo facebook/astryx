@@ -218,7 +218,9 @@ export default function FormSimplePage() {
             {/* Your project */}
             <XDSVStack gap={5}>
               <XDSVStack gap={2}>
-                <XDSText type="label">What are you going for?</XDSText>
+                <XDSText type="label" color="secondary">
+                  What are you going for?
+                </XDSText>
                 <XDSHStack gap={2} wrap="wrap">
                   {CAMPAIGN_GOALS.map(goal => (
                     <XDSToken
