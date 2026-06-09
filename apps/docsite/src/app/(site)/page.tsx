@@ -11,10 +11,15 @@ import {XDSVStack} from '@xds/core/Layout';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
 import {XDSPagination} from '@xds/core/Pagination';
+import {XDSTheme} from '@xds/core/theme';
+import type {XDSDefinedTheme} from '@xds/core/theme';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {FeaturesShowcase} from './_landing/FeaturesShowcase';
 import {AboutShowcase} from './_landing/AboutShowcase';
 import {DiscoverShowcase} from './_landing/DiscoverShowcase';
+import {HeroMockups} from './_landing/HeroMockups';
+import {themeObjects} from '../../generated/themeRegistry';
+import {astryxTheme} from '../../themes/astryx';
 
 // Carousel slide data — each slide drives the three CSS vars that
 // paint the heroAurora gradient blobs. Color values resolve to
@@ -24,6 +29,16 @@ import {DiscoverShowcase} from './_landing/DiscoverShowcase';
 // itself a `light-dark()` pair, so dark mode handling is inherited
 // for free.
 interface HeroSlide {
+  /**
+   * Package name of the XDS theme to scope around the hero while
+   * this slide is active. Looked up against the generated
+   * themeObjects registry. The hero subtree (aurora + mockups +
+   * sticky heroContent) renders inside <XDSTheme theme={...}> so
+   * every theme token (--color-background-body, the splash bg
+   * colors below, button accent, etc.) retints in place as the
+   * carousel advances.
+   */
+  themeName: string;
   colorLeft: string;
   colorCenter: string;
   colorRight: string;
@@ -31,31 +46,48 @@ interface HeroSlide {
 
 // Hero splash palettes — pulled from the categorical (non-
 // semantic) background color tokens so each slide maps to a
-// theme's pink / yellow / orange / blue / etc. ramp. Theme
-// authors can override these tokens to retint the hero
-// splashes without touching this file, and dark mode is handled
-// by the tokens' built-in light-dark() pairs.
+// theme's pink / yellow / orange / blue / etc. ramp. The active
+// slide's themeName scopes an <XDSTheme> wrapper around the
+// entire hero, so these tokens resolve to that theme's specific
+// palette automatically (and dark mode is inherited from the
+// token's built-in light-dark() pairs).
+// Local theme registry that augments the generated public theme
+// packages with the docsite's own Astryx theme. Astryx is the
+// docsite's brand theme (lives under apps/docsite/src/themes/)
+// and isn't part of the generated package registry, so we mix
+// it in by name here to make it usable as a slide theme below.
+const HERO_THEMES = {
+  ...themeObjects,
+  astryx: astryxTheme,
+};
+
 const HERO_SLIDES: ReadonlyArray<HeroSlide> = [
-  // Neutral — warm yellow + soft pink (matches the reference SVG).
+  // Astryx — the docsite's own brand theme. Used as the first /
+  // default slide so the hero opens in the same identity the
+  // rest of the site uses.
   {
+    themeName: 'astryx',
     colorLeft: 'var(--color-background-yellow)',
     colorCenter: 'var(--color-background-yellow)',
     colorRight: 'var(--color-background-pink)',
   },
   // Butter — all yellows + a peach kicker.
   {
+    themeName: '@xds/theme-butter',
     colorLeft: 'var(--color-background-yellow)',
     colorCenter: 'var(--color-background-yellow)',
     colorRight: 'var(--color-background-orange)',
   },
   // Matcha — sage greens + a butter warm accent.
   {
+    themeName: '@xds/theme-matcha',
     colorLeft: 'var(--color-background-green)',
     colorCenter: 'var(--color-background-cyan)',
     colorRight: 'var(--color-background-yellow)',
   },
   // Y2K — candy pinks + lavender + cyan.
   {
+    themeName: '@xds/theme-y2k',
     colorLeft: 'var(--color-background-pink)',
     colorCenter: 'var(--color-background-purple)',
     colorRight: 'var(--color-background-blue)',
@@ -73,6 +105,50 @@ const styles = stylex.create({
   heroScope: {
     position: 'relative',
     backgroundColor: 'var(--color-background-body)',
+  },
+  // Slide-themed background fill — sits inside the <XDSTheme
+  // theme={slideTheme}> wrapper so its --color-background-body
+  // resolves to the ACTIVE slide's theme body color (not Astryx's
+  // default). Pinned to the hero area only (top:0, height matches
+  // the hero aurora's painted region) so the body color swap only
+  // covers the hero, not the entire heroScope (which contains the
+  // showcase below — that section stays on Astryx default).
+  //
+  // Renders as the FIRST child inside XDSTheme (before the
+  // aurora) so it sits behind everything else via source order;
+  // pointer-events:none so it never intercepts clicks.
+  heroThemeFill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 900,
+    backgroundColor: 'var(--color-background-body)',
+    pointerEvents: 'none',
+    transition: 'background-color 600ms ease',
+  },
+  // Slide-themed band fixed to the top of the viewport, painted
+  // behind the transparent topnav. Lives inside the slide-themed
+  // XDSTheme wrapper so its --color-background-body resolves to
+  // the active slide's body color. position:fixed escapes the
+  // AppShell's wrappers (which paint white) so the band shows
+  // through the nav cleanly. Height matches the appshell nav
+  // height so it covers exactly the nav strip and nothing else.
+  navBackdrop: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 'var(--appshell-header-height, 64px)',
+    backgroundColor: 'var(--color-background-body)',
+    pointerEvents: 'none',
+    transition: 'background-color 600ms ease',
+    // Below the nav itself but above the AppShell-header surface
+    // (which paints white at default stacking). The nav is the
+    // top of the document flow, so a z-index of 0 with fixed
+    // positioning puts this band underneath the nav but above
+    // page content.
+    zIndex: 0,
   },
   // Aurora gradient layer — three soft blurred-circle blobs
   // behind the hero, matching the reference "Background
@@ -177,6 +253,13 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-6'],
     textAlign: 'center',
     gap: spacingVars['--spacing-6'],
+    // Lock the hero block to a fixed minimum height so the
+    // carousel theme swap (which retints typography tokens too,
+    // not just colors — themes like Butter define their own
+    // font family + scale ratio) doesn't reflow the heroContent
+    // to a slightly different height per slide and cause the
+    // showcase below to jump up/down on every tick.
+    minHeight: 600,
   },
   // Wrapper around the wordmark + floating Beta badge. Sized
   // exactly to the wordmark image (display:inline-block with no
@@ -369,6 +452,27 @@ export default function HomePage() {
     };
   }, []);
 
+  // Resolve the active slide's XDSTheme. Falls back to the first
+  // slide's theme if a slide's themeName ever fails to resolve
+  // (defensive — themeObjects always contains the registered
+  // theme packages, so this is just to keep the wrapper from
+  // crashing if a theme package is renamed/removed).
+  const slideTheme: XDSDefinedTheme =
+    HERO_THEMES[activeSlide.themeName] ?? HERO_THEMES[HERO_SLIDES[0].themeName];
+
+  // The hero scope is wrapped in <XDSTheme theme={slideTheme}> so
+  // the body background, gradient splashes, and chrome inside the
+  // mockup stickers all retint with the active carousel slide.
+  // XDSTheme renders a `display: contents` wrapper, so it doesn't
+  // create a new positioning context — the sticky heroContent
+  // stays bound to heroScope as before and the pin-and-cover
+  // scroll reveal continues to work.
+  //
+  // Critically, the showcaseOverlay is rendered as a SIBLING of
+  // the themed wrapper (not inside it) so the FeaturesShowcase /
+  // AboutShowcase / DiscoverShowcase below stay on the default
+  // Astryx theme. The slide theme swap is scoped to the hero
+  // chrome only.
   return (
     <div
       {...stylex.props(styles.heroScope)}
@@ -384,7 +488,44 @@ export default function HomePage() {
       onBlurCapture={() => {
         pauseRef.current = false;
       }}>
-      <Hero slide={activeSlide} />
+      {/* The slide-themed XDSTheme wraps everything that should
+          retint per carousel slide: the body-color fill, the
+          aurora gradient splashes, AND the floating mockup
+          stickers (whose XDS chrome — XDSCard / XDSBadge /
+          XDSButton — picks up the active slide's tokens and
+          dogfoods the theme swap visually).
+
+          The sticky heroContent (wordmark + headline + buttons +
+          dots) is a SIBLING OUTSIDE this wrapper so its
+          typography + accent colors stay on Astryx defaults and
+          don't reflow per slide.
+
+          XDSTheme renders a display:contents wrapper so it
+          doesn't break heroScope's containing block — the sticky
+          heroContent below is still bound to heroScope's height
+          and the pin-and-cover scroll reveal works as before. */}
+      <XDSTheme theme={slideTheme}>
+        {/* Fixed-position band that paints behind the transparent
+            topnav with the active slide's body color. Lives inside
+            this XDSTheme wrapper so --color-background-body
+            resolves to the slide's value; position:fixed escapes
+            the AppShell's white surface so the band shows through
+            the nav. */}
+        <div {...stylex.props(styles.navBackdrop)} aria-hidden="true" />
+        <div
+          data-hero-theme-fill="true"
+          {...stylex.props(styles.heroThemeFill)}
+          aria-hidden="true"
+        />
+        <Hero slide={activeSlide} />
+        {/* Decorative scattered sticker composition — two
+            edge-anchored groups of XDS chrome stickers that pin
+            (position: sticky) to the viewport as the user scrolls
+            past the hero. Inside the slide-themed XDSTheme so
+            cards/badges/buttons inside retint with each carousel
+            slide. Hidden below 1024px (desktop-only). */}
+        <HeroMockups />
+      </XDSTheme>
       <XDSVStack
         data-home-page="true"
         align="stretch"

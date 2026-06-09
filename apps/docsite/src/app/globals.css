@@ -37,6 +37,26 @@ body:has([data-home-page]) #xds-app-shell-main {
   padding-top: 0;
 }
 
+/* On the home page, paint the AppShell wrappers (which sit
+   ABOVE heroScope and would otherwise show their default white
+   surface through the transparent nav) with the body background
+   color so the nav reveals a continuous color band from the top
+   of the page through the hero. Uses --color-background-body
+   which inherits whatever theme is active on the body — the
+   slide-theme XDSTheme wrapper around the hero doesn't reach
+   these AppShell wrappers (they're parents of heroScope), so
+   this rule resolves against the page-level Astryx theme.
+
+   For the active slide's color to actually reach the nav, the
+   page-level theme would need to swap too — see page.tsx for
+   the runtime mechanism that mirrors the slide's body color to
+   these wrappers via element.style. This rule is the static
+   fallback for the initial paint. */
+body:has([data-home-page]) .xds-app-shell-header.surface,
+body:has([data-home-page]) #xds-app-shell-main {
+  background-color: var(--color-background-body) !important;
+}
+
 /* Translucent top nav — frosted glass effect.
 
    The :where(:not(.xds-app-shell .xds-app-shell *)) guard scopes every frost
@@ -62,12 +82,22 @@ body:has([data-home-page]) #xds-app-shell-main {
   transition: background 300ms ease;
 }
 
-/* On the home page only, blend the top nav with the cream body background.
-   Use the solid body color (not a color-mix) so it matches perfectly even
-   without anything scrolled behind it. The backdrop-filter blur from the
-   .xds-top-nav rule above is preserved. */
+/* On the home page only, make the top nav transparent so the
+   hero's body background (which retints per active carousel
+   slide via the XDSTheme wrapper) shows through the nav. The
+   backdrop-filter blur from the global .xds-top-nav rule above
+   stays in place so anything that scrolls behind the nav still
+   gets softened. */
 body:has([data-home-page]) .xds-top-nav:where(:not(.xds-app-shell .xds-app-shell *)) {
-  background: var(--color-background-body);
+  background: transparent;
+  /* Drop the backdrop-filter blur from the global frost rule
+     on the home page only. Blurring transparent over the
+     slide-themed AppShell-header below produces a washed-out
+     gray cast (the blur samples and averages the colored
+     pixels behind, ending up close to mid-gray). On the home
+     page we want the colored bg to read cleanly through the
+     nav, no frost. */
+  backdrop-filter: none;
 }
 
 /* When the home page IntersectionObserver detects the theming showcase has
