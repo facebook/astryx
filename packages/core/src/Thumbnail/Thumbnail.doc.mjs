@@ -120,9 +120,8 @@ export const docsZh = {
 };
 
 export const docsDense = {
-  n: 'Thumbnail',
-  d: 'Square preview card for image attachments. Skeleton shimmer on upload, image on success, placeholder when no src.',
-  kw: ['thumbnail', 'attachment', 'preview', 'image', 'upload', 'dismiss', 'remove', 'loading'],
+  description:
+    'Square preview card for image attachments. Skeleton shimmer on upload, image on success, placeholder when no src.',
   usage: {
     description:
       'Compact square image preview. Shimmer while uploading, image on success, placeholder when empty. Use in chat composers, file lists, or small media previews.',
@@ -134,7 +133,7 @@ export const docsDense = {
       {guidance: false, description: "Don't omit alt when src present \u2014 screen readers need image content description, not just label."},
     ],
   },
-  p: {
+  propDescriptions: {
     src: 'Image source URL.',
     alt: 'Alt text for image.',
     label: 'Accessible label (file name). Tooltip on hover, aria-label.',
@@ -147,8 +146,4 @@ export const docsDense = {
     style: 'Inline styles. Prefer xstyle.',
     'data-testid': 'Test selector.',
   },
-  ex: [
-    '<XDSThumbnail src="/photo.jpg" alt="Vacation" label="vacation.jpg" onRemove={() => {}} />',
-    '<XDSThumbnail src="/preview.png" alt="Preview" onClick={openLightbox} />',
-  ],
 };
