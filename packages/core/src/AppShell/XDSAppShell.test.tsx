@@ -330,6 +330,139 @@ describe('XDSAppShell', () => {
     expect(screen.getAllByText('Side item').length).toBeGreaterThan(0);
   });
 
+  it('shows mobile nav toggle for sideNav-only layout with heading-only topNav (#2243)', () => {
+    // Issue #2243: When topNav only has a heading (no startContent/centerContent/endContent),
+    // the auto mobile nav should still activate — a hamburger toggle should appear
+    // so the sidenav is accessible below the breakpoint.
+    mockMql = createMockMatchMedia(true); // below breakpoint
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+
+    render(
+      <XDSAppShell
+        topNav={
+          <XDSTopNav
+            label="Main navigation"
+            heading={<XDSTopNavHeading heading="My App" />}
+          />
+        }
+        sideNav={<TestSideNav>Home</TestSideNav>}
+        mobileNav={{breakpoint: 'md'}}>
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+
+    // A hamburger toggle button should be rendered so the user can access the sidenav
+    expect(
+      screen.getByRole('button', {name: /open navigation/i}),
+    ).toBeInTheDocument();
+  });
+
+  it('renders sidenav items exactly once in mobile drawer when topNav has only heading (#2243)', () => {
+    // Issue #2243: When topNav has heading but no nav items, the sidenav content
+    // should appear exactly once in the mobile drawer — not be duplicated.
+    mockMql = createMockMatchMedia(true); // below breakpoint
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+
+    render(
+      <XDSAppShell
+        variant="section"
+        topNav={
+          <XDSTopNav
+            label="Main navigation"
+            heading={<XDSTopNavHeading heading="My App" />}
+          />
+        }
+        sideNav={
+          <XDSSideNav>
+            <XDSSideNavItem label="Dashboard" href="/" isSelected />
+            <XDSSideNavItem label="Settings" href="/settings" />
+          </XDSSideNav>
+        }
+        mobileNav={{breakpoint: 'md'}}
+        contentPadding={4}>
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+
+    // The mobile toggle should exist
+    expect(
+      screen.getByRole('button', {name: /open navigation/i}),
+    ).toBeInTheDocument();
+
+    // Sidenav items should render exactly once — not duplicated
+    expect(screen.getAllByText('Dashboard')).toHaveLength(1);
+    expect(screen.getAllByText('Settings')).toHaveLength(1);
+  });
+
+  it('does not show auto mobile toggle when sideNav is explicitly undefined (#2243)', () => {
+    // Contract: pass undefined (or omit) when there's no sidenav.
+    mockMql = createMockMatchMedia(true); // below breakpoint
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+
+    render(
+      <XDSAppShell
+        topNav={
+          <XDSTopNav
+            label="Main navigation"
+            heading={<XDSTopNavHeading heading="My App" />}
+          />
+        }
+        sideNav={undefined}
+        mobileNav={{breakpoint: 'md'}}>
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+
+    expect(
+      screen.queryByRole('button', {name: /open navigation/i}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not show auto mobile toggle when sideNav is omitted entirely', () => {
+    mockMql = createMockMatchMedia(true); // below breakpoint
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+
+    render(
+      <XDSAppShell
+        topNav={
+          <XDSTopNav
+            label="Main navigation"
+            heading={<XDSTopNavHeading heading="My App" />}
+          />
+        }
+        mobileNav={{breakpoint: 'md'}}>
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+
+    expect(
+      screen.queryByRole('button', {name: /open navigation/i}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('heading-only topNav does not prevent sidenav from collapsing to mobile (#2243)', () => {
+    // Regression guard: sidenav should NOT render inline below the breakpoint
+    mockMql = createMockMatchMedia(true); // below breakpoint
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+
+    const {container} = render(
+      <XDSAppShell
+        topNav={
+          <XDSTopNav
+            label="Main navigation"
+            heading={<XDSTopNavHeading heading="My App" />}
+          />
+        }
+        sideNav={<TestSideNav>Home</TestSideNav>}
+        mobileNav={{breakpoint: 'md'}}>
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+
+    const inlinePanel = container.querySelector('.xds-layout-panel');
+    expect(inlinePanel).toBeNull();
+  });
+
   it('renders mobile layout on first render when defaultIsMobile is true', () => {
     // matchMedia says mobile too — simulates correct SSR hint
     mockMql = createMockMatchMedia(true);
