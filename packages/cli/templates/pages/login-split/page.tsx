@@ -63,7 +63,7 @@ export default function LoginTwoColumn() {
       <XDSVStack gap={4} hAlign="center">
         {/* Card */}
         <XDSCard padding={0} maxWidth={1000} width="100%">
-          <XDSGrid columns={{minWidth: 360}} align="stretch">
+          <XDSGrid columns={2} align="stretch">
             {/* Left — Form */}
             <XDSSection variant="transparent" padding={8} height="100%">
               <XDSVStack gap={4} height="100%">
