@@ -494,8 +494,12 @@ export const docsDense = {
   usage: {
     description: 'Field wraps input controls with label, description, and validation. Use for accessible forms with consistent labeling and inline feedback.',
     bestPractices: [
-      { guidance: true, description: 'Always provide a label. Use status with clear messages. Add description for format hints.' },
-      { guidance: false, description: 'Don\'t set both isOptional and isRequired. Don\'t use detached status on bordered inputs.' },
+      { guidance: true, description: 'Always provide a label for accessibility, even if visually hidden with isLabelHidden.' },
+      { guidance: true, description: 'Use the status prop with clear messages to provide inline validation feedback.' },
+      { guidance: true, description: 'Add a description when the label alone does not explain what the field expects — format hints or constraints.' },
+      { guidance: false, description: 'Set both isOptional and isRequired on the same field.' },
+      { guidance: false, description: 'Use the detached status variant on bordered inputs — reserve it for checkboxes, switches, and sliders.' },
+      { guidance: false, description: 'Hide the label without providing an alternative way for user to understand the field purpose.' },
     ],
   },
   components: [
