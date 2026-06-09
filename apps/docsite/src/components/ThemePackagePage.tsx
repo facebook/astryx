@@ -5,7 +5,7 @@
 import {useCallback, useMemo, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {useRouter} from 'next/navigation';
+import {usePathname, useRouter} from 'next/navigation';
 import {Sun, Moon} from 'lucide-react';
 import {durationVars, easeVars} from '@xds/core/theme/tokens.stylex';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
@@ -38,12 +38,30 @@ const THEME_ORDER: ReadonlyArray<string> = [
   '@xds/theme-butter',
 ];
 
+// The package whose selection corresponds to the canonical bare
+// `/themes` URL (no `?theme=` query string). Must agree with the
+// `DEFAULT_THEME_PACKAGE` constant in `app/(site)/themes/page.tsx`,
+// which uses the same value to seed the page when no query param
+// is present — if these drift, the picker will round-trip the URL
+// (selecting the "default" theme would write a query that the
+// server then strips on reload, etc.).
+const DEFAULT_THEME_PACKAGE = '@xds/theme-neutral';
+
 // Strip "Theme: " prefix and " Theme" suffix from the registered
 // displayName so the switcher labels read as the brand wordmark
 // ("Neutral", "Butter") rather than the redundant decorations.
 // Mirrors the same helper used on the /themes overview page.
 function themeLabel(displayName: string): string {
   return displayName.replace(/^Theme:\s*/, '').replace(/\s*Theme$/, '');
+}
+
+// Strip the `@xds/theme-` prefix so the slug matches the URL form
+// used by both the dynamic redirect route (`/themes/<slug>`) and
+// the explorer's `?theme=<slug>` query param. Mirrored from the
+// helper on the server-side page.tsx so the encode/decode stays in
+// sync at a single import boundary.
+function packageNameToSlug(packageName: string): string {
+  return packageName.replace(/^@xds\/theme-/, '');
 }
 
 // Below this viewport width the sidebar collapses to a compact
@@ -441,12 +459,48 @@ interface ThemePackagePageProps {
 
 export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
   const [mode, setMode] = useState<'light' | 'dark'>('light');
-  // Selected theme — seeded from the parent's packageName prop
-  // (the /themes page seeds Neutral by default), then user-mutable
-  // via the sidebar / mobile dropdown. State-only; the URL stays
-  // at /themes regardless of which theme is selected, so refresh
-  // resets to the seed.
+  // Selected theme — seeded once from the parent's `packageName`
+  // prop (the /themes page resolves it from the `?theme=<slug>`
+  // query param, or Neutral if absent), then user-mutable via the
+  // sidebar / mobile dropdown. State is locally owned; the URL is
+  // an OUTPUT that we update imperatively in `handleSelectPkg`
+  // below — we intentionally do NOT subscribe to `useSearchParams`
+  // here, since that would create a feedback loop (URL change →
+  // state sync → URL change → ...).
   const [selectedPkgName, setSelectedPkgName] = useState<string>(packageName);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Sync the URL with the active picker selection so it can be
+  // copied, bookmarked, reloaded, or shared. The default theme
+  // (DEFAULT_THEME_PACKAGE) renders as the bare `/themes` URL —
+  // the seed the server uses when no query param is present — and
+  // every other theme renders as `/themes?theme=<slug>`. Matches
+  // the canonical URL the deep-link redirect at /themes/[name]
+  // sends users to, so internal links, share URLs, and the
+  // picker-driven URL all agree.
+  //
+  // `replace` (not `push`): theme selection reads as a filter on
+  // the explorer, not a navigation step. Rapid clicks shouldn't
+  // pollute the back stack — one Back press should exit the
+  // explorer entirely (matching how Vercel / Linear / Sentry
+  // handle in-page filters), not rewind through every preview
+  // the user skimmed.
+  //
+  // `scroll: false`: the sidebar is sticky and the right pane is
+  // tall, so we don't want a picker click to yank the user back
+  // to the top of the page.
+  const handleSelectPkg = useCallback(
+    (nextPkgName: string) => {
+      setSelectedPkgName(nextPkgName);
+      const url =
+        nextPkgName === DEFAULT_THEME_PACKAGE
+          ? pathname
+          : `${pathname}?theme=${encodeURIComponent(packageNameToSlug(nextPkgName))}`;
+      router.replace(url, {scroll: false});
+    },
+    [router, pathname],
+  );
 
   // Sorted list of all theme packages — feeds the sidebar list and
   // the mobile dropdown. Order matches the /themes overview gallery.
@@ -504,7 +558,6 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
   const modeToggleIcon =
     mode === 'light' ? <Moon size={20} /> : <Sun size={20} />;
 
-  const router = useRouter();
   // Plays a slide-left + fade-out animation on the whole page when
   // the user clicks Customize, then navigates to the playground
   // after the animation duration. Reads as 'launching into the
@@ -628,7 +681,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                     key={pkg.name}
                     label={`Preview ${label} theme`}
                     isSelected={isActive}
-                    onChange={() => setSelectedPkgName(pkg.name)}
+                    onChange={() => handleSelectPkg(pkg.name)}
                     padding={0}
                     variant="transparent"
                     xstyle={styles.themeCard}>
@@ -694,7 +747,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
               size="sm"
               options={switcherOptions}
               value={selectedPkgName}
-              onChange={setSelectedPkgName}
+              onChange={handleSelectPkg}
             />
           </div>
           <XDSButton
