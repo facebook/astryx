@@ -41,7 +41,15 @@ export interface InstanceInfo {
   component: string;
   /** Start offset of the opening element (`<`). */
   openingStart: number;
-  /** Offset immediately after the element name — insertion point for new attrs. */
+  /**
+   * Offset of the safe insertion point for new attributes — immediately after
+   * the element name, or after an explicit JSX type argument when present.
+   *
+   * For a generic call like `<XDSTable<Item> ...>` the name node ends right
+   * after `XDSTable`, but inserting there would split the `<Item>` type
+   * argument (`<XDSTable data-pg-id="…"<Item>`), producing invalid JSX. We
+   * advance past the type argument so attributes land after `<Item>`.
+   */
   nameEnd: number;
   attrs: AttrInfo[];
 }
@@ -87,6 +95,24 @@ function readAttrValue(attr: Node): {
     return {valueKind: 'expression'};
   }
   return {valueKind: 'none'};
+}
+
+/**
+ * Find the offset just past the element name where new attributes can be
+ * safely spliced in. Normally this is the end of the name node, but a generic
+ * JSX call carries an explicit type argument (`<XDSTable<Item> ...>`) that sits
+ * between the name and the attribute list. Babel attaches it as
+ * `typeArguments` (older builds: `typeParameters`); we advance past it so an
+ * inserted attribute does not bisect `<Item>` and corrupt the JSX.
+ */
+function instanceNameEnd(opening: Node, nameNode: Node): number {
+  const typeArgs = (opening.typeArguments ?? opening.typeParameters) as
+    | Node
+    | undefined;
+  if (typeArgs && typeof typeArgs.end === 'number') {
+    return typeArgs.end;
+  }
+  return nameNode.end as number;
 }
 
 /**
@@ -144,7 +170,7 @@ export function analyzeCode(code: string): InstanceInfo[] | null {
           instances.push({
             component,
             openingStart: n.start as number,
-            nameEnd: nameNode.end as number,
+            nameEnd: instanceNameEnd(n, nameNode),
             attrs,
           });
         }

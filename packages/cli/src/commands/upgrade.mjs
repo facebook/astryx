@@ -39,6 +39,7 @@ import {installAgentDocs, discoverAgentDocs} from './agent-docs.mjs';
 import {detectPackageManager, getRunPrefix} from '../utils/package-manager.mjs';
 import {isValidSemver, semverGte} from '../utils/semver.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 /**
  * Detect the installed @xds/core version from the consumer's package.json.
@@ -122,24 +123,12 @@ function getInstallCommand(force = false) {
 }
 
 /**
- * List all available codemods across all versions.
+ * Register the `upgrade` command (codemod-driven version migration).
  */
-async function listCodemods() {
-  // Walk the full registry once. The previous implementation called
-  // getTransformsBetween('0.0.0', v) for every v in versions, so a codemod
-  // introduced at 0.0.2 was reprinted for every version >= 0.0.2.
-  const manifests = await getTransformsBetween('0.0.0', latestVersion);
-  for (const {transforms} of manifests) {
-    for (const {name, meta} of transforms) {
-      p.log.info(`  ${name} — ${meta.title} (${meta.pr})`);
-    }
-  }
-}
-
 export function registerUpgrade(program) {
   program
     .command('upgrade')
-    .description('Run codemods to migrate between XDS versions')
+    .description('Run codemods to migrate between versions')
     .option('--apply', 'Write changes to disk (default: dry-run)', false)
     .option('--from <version>', 'Previous version (overrides package.json detection)')
     .option('--to <version>', 'Target version', latestVersion)
@@ -153,14 +142,14 @@ export function registerUpgrade(program) {
     .option('--list', 'List available codemods', false)
     .action(async (options) => {
       const json = program.opts().json || false;
-      if (!json) p.intro('XDS Upgrade');
+      if (!json) p.intro('Upgrade');
 
       // Validate --to / --from upfront so callers don't silently accept
       // typos like `--to bogus` (which used to flow through getTransformsBetween
       // and just emit "no codemods available").
       if (options.to !== undefined && !isValidSemver(options.to)) {
         const msg = `Invalid --to value: "${options.to}". Expected a semver string like 0.0.10.`;
-        if (json) return jsonError(msg);
+        if (json) return jsonError(msg, undefined, ERROR_CODES.ERR_INVALID_VERSION);
         p.log.error(msg);
         p.outro('Aborted');
         process.exitCode = 1;
@@ -168,7 +157,7 @@ export function registerUpgrade(program) {
       }
       if (options.from !== undefined && !isValidSemver(options.from)) {
         const msg = `Invalid --from value: "${options.from}". Expected a semver string like 0.0.5.`;
-        if (json) return jsonError(msg);
+        if (json) return jsonError(msg, undefined, ERROR_CODES.ERR_INVALID_VERSION);
         p.log.error(msg);
         p.outro('Aborted');
         process.exitCode = 1;
@@ -208,7 +197,7 @@ export function registerUpgrade(program) {
       const currentVersion = options.from ?? detectCurrentVersion();
       if (!currentVersion && !skipVersionCheck) {
         const msg = 'Could not detect @xds/core version. Make sure package.json is in the current directory, or use --from <version>.';
-        if (json) return jsonError(msg);
+        if (json) return jsonError(msg, undefined, ERROR_CODES.ERR_VERSION_DETECT);
         p.log.error(msg);
         p.outro('Aborted');
         process.exitCode = 1;
@@ -273,7 +262,7 @@ export function registerUpgrade(program) {
 
       if (totalTransforms === 0 && totalOptional === 0) {
         const msg = `Codemod "${options.codemod}" not found. Use --list to see available codemods.`;
-        if (json) return jsonError(msg);
+        if (json) return jsonError(msg, undefined, ERROR_CODES.ERR_UNKNOWN_CODEMOD);
         p.log.error(msg);
         p.outro('Aborted');
         process.exitCode = 1;
@@ -317,7 +306,7 @@ export function registerUpgrade(program) {
       // Ensure jscodeshift is available
       const ready = await ensureJscodeshift({installDeps: options.installDeps, silent: json});
       if (!ready) {
-        if (json) return jsonError('jscodeshift is required but could not be installed.');
+        if (json) return jsonError('jscodeshift is required but could not be installed.', undefined, ERROR_CODES.ERR_DEP_MISSING);
         p.outro('Aborted');
         process.exitCode = 1;
         return;

@@ -35,18 +35,18 @@ export const docs = {
       name: 'XDSTable',
       displayName: 'Table',
       description:
-        'Styled, data-driven table with density, dividers, hover highlight, striped rows, and named plugin support.',
+        'Styled, data-driven table with density, dividers, hover highlight, striped rows, and named plugin support. T must extend Record<string, unknown>.',
       props: [
         {
           name: 'data',
           type: 'T[]',
-          description: 'Array of data items to render as rows.',
+          description: 'Array of data items to render as rows. T must extend Record<string, unknown> (use `interface MyRow extends Record<string, unknown>` for custom types).',
         },
         {
           name: 'columns',
           type: 'XDSTableColumn<T>[]',
           description:
-            'Column definitions. If omitted, columns are auto-generated from data object keys.',
+            'Column definitions — each column has {key, header, width?, align?, renderCell?}. The `header` field sets the column heading text. If omitted, columns are auto-generated from data object keys.',
         },
         {
           name: 'idKey',
@@ -108,13 +108,13 @@ export const docs = {
         {
           name: 'data',
           type: 'T[]',
-          description: 'Array of data items to render as rows.',
+          description: 'Array of data items to render as rows. T must extend Record<string, unknown>.',
         },
         {
           name: 'columns',
           type: 'XDSTableColumn<T>[]',
           description:
-            'Column definitions. If omitted, columns are auto-generated from data object keys.',
+            'Column definitions — each column has {key, header, width?, renderCell?}. If omitted, columns are auto-generated from data object keys.',
         },
         {
           name: 'idKey',
@@ -525,18 +525,18 @@ export const docsZh = {
       name: 'XDSTable',
       displayName: 'Table',
       description:
-        '带样式的数据驱动表格，支持密度、分隔线、悬停高亮、条纹行和命名插件。',
+        '带样式的数据驱动表格，支持密度、分隔线、悬停高亮、条纹行和命名插件。T 需 extends Record<string, unknown>。',
       props: [
         {
           name: 'data',
           type: 'T[]',
-          description: '要渲染为行的数据项数组。',
+          description: '要渲染为行的数据项数组。T 需 extends Record<string, unknown>。',
         },
         {
           name: 'columns',
           type: 'XDSTableColumn<T>[]',
           description:
-            '列定义。如果省略，将自动从数据对象键生成列。',
+            '列定义 — 每列含 {key, header, width?, align?, renderCell?}。header 设置列标题文本。省略时自动从数据键生成。',
         },
         {
           name: 'idKey',
@@ -599,13 +599,13 @@ export const docsZh = {
         {
           name: 'data',
           type: 'T[]',
-          description: '要渲染为行的数据项数组。',
+          description: '要渲染为行的数据项数组。T 需 extends Record<string, unknown>。',
         },
         {
           name: 'columns',
           type: 'XDSTableColumn<T>[]',
           description:
-            '列定义。如果省略，将自动从数据对象键生成列。',
+            '列定义 — 每列含 {key, header, width?, renderCell?}。省略时自动从数据键生成。',
         },
         {
           name: 'idKey',
@@ -933,8 +933,8 @@ export const docsDense = {
       displayName: 'Table',
       description: 'Styled data-driven table w/ density, dividers, hover, striped rows, named plugin support.',
       propDescriptions: {
-        data: 'Array of data items to render as rows.',
-        columns: 'Column defs; auto-generated from data keys if omitted.',
+        data: 'Array of data items to render as rows. T must extend Record<string, unknown>.',
+        columns: 'Column defs {key, header, width?, align?, renderCell?}; auto-generated from data keys if omitted.',
         idKey: 'Row key for React reconciliation; property name or fn. Falls back to index.',
         density: 'Row density controlling cell padding + font size.',
         dividers: 'Divider style between cells.',
@@ -951,8 +951,8 @@ export const docsDense = {
       displayName: 'Base Table',
       description: 'Unstyled structural table w/ plugin transform pipeline + components prop for custom row/cell renderers.',
       propDescriptions: {
-        data: 'Array of data items to render as rows.',
-        columns: 'Column defs; auto-generated from data keys if omitted.',
+        data: 'Array of data items to render as rows. T must extend Record<string, unknown>.',
+        columns: 'Column defs {key, header, width?, renderCell?}; auto-generated from data keys if omitted.',
         idKey: 'Row key for React reconciliation; property name or fn. Falls back to index.',
         plugins: 'Ordered plugin array applied as sequential transform pipeline.',
         components: 'Component overrides for row/cell elements; receive xstyle from plugin transforms.',

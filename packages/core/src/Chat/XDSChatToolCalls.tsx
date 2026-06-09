@@ -171,8 +171,10 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     paddingInline: spacingVars['--spacing-1'],
     marginInline: `calc(-1 * ${spacingVars['--spacing-1']})`,
-    ':hover': {
-      backgroundColor: colorVars['--color-overlay-hover'],
+    '@media (hover: hover)': {
+      ':hover': {
+        backgroundColor: colorVars['--color-overlay-hover'],
+      },
     },
   },
   callRowToggle: {
@@ -208,7 +210,8 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    minWidth: 0,
+    flexShrink: 1,
+    minWidth: '4ch',
   },
   callLabel: {
     fontSize: typeScaleVars['--text-supporting-size'],
@@ -218,6 +221,7 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
+    flexShrink: 10,
     minWidth: 0,
   },
   callDuration: {

@@ -104,20 +104,20 @@ export function resolveTheme(cwd = process.cwd()) {
   }
 
   // 2. Resolve the specifier to a module
-  let mod = null;
+  let mod;
 
   if (specifier.startsWith('.') || specifier.startsWith('/')) {
     // File path
     mod = tryLoadModule(specifier, cwd);
     if (!mod) {
-      console.warn(`⚠ XDS theme: could not resolve file "${specifier}" from ${cwd}`);
+      console.warn(`⚠ theme: could not resolve file "${specifier}" from ${cwd}`);
       return null;
     }
   } else if (specifier.startsWith('@')) {
     // Scoped package
     mod = tryLoadModule(specifier, cwd);
     if (!mod) {
-      console.warn(`⚠ XDS theme: could not resolve package "${specifier}"`);
+      console.warn(`⚠ theme: could not resolve package "${specifier}"`);
       return null;
     }
   } else {
@@ -127,7 +127,7 @@ export function resolveTheme(cwd = process.cwd()) {
       mod = tryLoadModule(specifier, cwd);
     }
     if (!mod) {
-      console.warn(`⚠ XDS theme: could not resolve "${specifier}" (tried @xds/theme-${specifier} and ${specifier})`);
+      console.warn(`⚠ theme: could not resolve "${specifier}" (tried @xds/theme-${specifier} and ${specifier})`);
       return null;
     }
   }
@@ -135,7 +135,7 @@ export function resolveTheme(cwd = process.cwd()) {
   // 3. Extract theme data
   const theme = extractTheme(mod);
   if (!theme) {
-    console.warn(`⚠ XDS theme: loaded "${specifier}" but could not find a theme object`);
+    console.warn(`⚠ theme: loaded "${specifier}" but could not find a theme object`);
     return null;
   }
 

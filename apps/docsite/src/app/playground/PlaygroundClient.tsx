@@ -6,12 +6,13 @@
  * @output Full-page two-panel playground (editor + live preview)
  * @position app/playground — the interactive XDS code playground.
  *
- * Left panel: back + tabs (Code · Property · Craft).
+ * Sidebar: icon-only nav strip — back, Code view, Properties view.
+ * Left panel: Monaco editor (Code) or knobs (Properties).
  *   - Code: Monaco editor (controlled) with real XDS .d.ts typedefs.
  *   - Property: component selector + instance picker + knobs that edit the code.
- *   - Craft: disabled AI chat placeholder.
- * Right panel: toolbar (theme + dark mode · viewport segmented control ·
- *   expand · reset · share) over a responsive /playground-preview iframe.
+ * Right panel: toolbar (dark mode · target element · viewport
+ *   segmented control · share · expand) over a responsive
+ *   /playground-preview iframe.
  *
  * The preview iframe is driven via postMessage (preview-code / preview-theme);
  * code lives in React state and is the single source of truth shared by Monaco,
@@ -21,47 +22,51 @@
 'use client';
 
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useSearchParams} from 'next/navigation';
 import dynamic from 'next/dynamic';
 import {loader} from '@monaco-editor/react';
-import {useRouter} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
 import {
   compressToEncodedURIComponent,
   decompressFromEncodedURIComponent,
 } from 'lz-string';
 import {XDSButton} from '@xds/core/Button';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {XDSLink} from '@xds/core/Link';
+import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSStatusDot} from '@xds/core/StatusDot';
 import {XDSToolbar} from '@xds/core/Toolbar';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {
   XDSSegmentedControl,
   XDSSegmentedControlItem,
 } from '@xds/core/SegmentedControl';
 import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
+import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
 import {
-  ArrowLeft,
+  Code2,
   Moon,
+  Palette,
+  SlidersHorizontal,
   Sun,
   Monitor,
   Smartphone,
   Maximize2,
   RotateCw,
+  Crosshair,
 } from 'lucide-react';
 import githubLight from './themes/github-light.json';
 import githubDark from './themes/github-dark.json';
 import {useThemeMode} from '../providers';
-import {
-  PLAYGROUND_THEME_OPTIONS,
-  DEFAULT_PLAYGROUND_THEME,
-} from './playgroundThemes';
+import {DEFAULT_PLAYGROUND_THEME, themeByValue} from './playgroundThemes';
 import {PreviewStage, type Viewport} from './PreviewStage';
+import {BRAND_ICON} from '../../components/XDSWordmark';
 import {PropertyPanel} from './PropertyPanel';
 import {annotateInstanceIds} from './babelParser';
+import {PlaygroundThemeEditor} from '../../components/themePlayground/PlaygroundThemeEditor';
+import {DEFAULT_CODE} from './defaultCode';
 
 import type * as MonacoTypes from 'monaco-editor';
+import type {XDSDefinedTheme} from '@xds/core/theme';
 
 // Self-host Monaco from public/monaco/vs — corpnet blocks the default
 // jsdelivr CDN. Configure the singleton loader before the editor initializes.
@@ -103,42 +108,6 @@ const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
     </div>
   ),
 });
-
-const DEFAULT_CODE = `import {
-  XDSButton,
-  XDSText,
-  XDSHeading,
-  XDSVStack,
-  XDSHStack,
-  XDSCard,
-  XDSBadge,
-} from '@xds/core';
-
-export default function Demo() {
-  const [count, setCount] = useState(0);
-
-  return (
-    <XDSCard maxWidth={400}>
-      <XDSVStack gap={4}>
-        <XDSVStack>
-          <XDSHeading level={3}>
-            Astryx Playground
-          </XDSHeading>
-          <XDSText color="secondary">
-            Edit the code and see live changes.
-          </XDSText>
-        </XDSVStack>
-        <XDSHStack gap={2} align="center">
-          <XDSButton
-            label={\`Count: \${count}\`}
-            onClick={() => setCount(c => c + 1)}
-          />
-          <XDSBadge variant="info" label={\`\${count} clicks\`} />
-        </XDSHStack>
-      </XDSVStack>
-    </XDSCard>
-  );
-}`;
 
 function getInitialCode(): string {
   if (typeof window === 'undefined') {
@@ -235,6 +204,21 @@ function configureMonaco(monaco: MonacoInstance) {
         );
       }
 
+      // Heroicons ambient declarations, one per size/style variant. Template
+      // and example code imports icons by name from
+      // '@heroicons/react/{16,20,24}/{outline,solid}', so each declaration
+      // exposes the variant's icons as named exports. Without these, every
+      // heroicons import lights up with a "Cannot find module" red squiggle
+      // once semantic validation turns on below.
+      const heroiconFiles = packages['@heroicons/react'] ?? {};
+      for (const [fileName, content] of Object.entries(heroiconFiles)) {
+        const variant = fileName.replace(/\.d\.ts$/, '');
+        ts.addExtraLib(
+          content,
+          `file:///node_modules/@heroicons/react/${variant}/index.d.ts`,
+        );
+      }
+
       const xdsFiles = packages['@xds/core'] ?? {};
       const submoduleReexports: string[] = [];
 
@@ -272,7 +256,7 @@ function configureMonaco(monaco: MonacoInstance) {
     });
 }
 
-type LeftTab = 'code' | 'property' | 'craft';
+type LeftView = 'code' | 'property' | 'theme';
 type BuildStatus = 'idle' | 'building' | 'finished' | 'error';
 
 const BUILD_STATUS_META: Record<
@@ -285,25 +269,36 @@ const BUILD_STATUS_META: Record<
 };
 
 const s = stylex.create({
+  hidden: {
+    display: 'none',
+  },
+  navGroup: {
+    gap: 'var(--spacing-2)',
+  },
   root: {
-    display: 'flex',
-    height: '100%',
+    flex: 1,
+    minWidth: 0,
     overflow: 'hidden',
     backgroundColor: 'var(--color-background-surface)',
   },
+  sidebar: {
+    flexShrink: 0,
+    backgroundColor: 'var(--color-background-surface)',
+    borderInlineEndWidth: '1px',
+    borderInlineEndStyle: 'solid',
+    borderInlineEndColor: 'var(--color-border)',
+    padding: 'var(--spacing-3)',
+  },
   leftPanel: {
     flexShrink: 0,
-    display: 'flex',
-    flexDirection: 'column',
     overflow: 'hidden',
     minWidth: 0,
   },
-  panelHeader: {
+  leftPanelHeader: {
     flexShrink: 0,
-    padding: 'var(--spacing-2) var(--spacing-2) 0',
-  },
-  tabStretch: {
-    flex: 1,
+    paddingBlock: 'var(--spacing-2)',
+    paddingInline: 'var(--spacing-3)',
+    minHeight: 48,
   },
   tabBody: {
     flex: 1,
@@ -316,17 +311,19 @@ const s = stylex.create({
     flex: 1,
     minHeight: 0,
     minWidth: 0,
-    marginBlockStart: 'var(--spacing-1)',
   },
-  hidden: {
-    display: 'none',
+  themePane: {
+    flex: 1,
+    minHeight: 0,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
   },
   rightPanel: {
     flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
     minWidth: 0,
     overflow: 'hidden',
+    backgroundColor: 'var(--color-background-muted)',
   },
   buildStatus: {
     display: 'flex',
@@ -339,15 +336,28 @@ const s = stylex.create({
 });
 
 export function PlaygroundClient() {
-  const router = useRouter();
   // The editor chrome follows the docsite's own light/dark mode, not the OS
   // (operator) color-scheme preference.
   const {mode: siteMode} = useThemeMode();
   const editorTheme = siteMode === 'dark' ? 'github-dark' : 'github-light';
   const [code, setCode] = useState(getInitialCode);
-  const [theme, setTheme] = useState(DEFAULT_PLAYGROUND_THEME);
   const [mode, setMode] = useState<'light' | 'dark'>('light');
-  const [activeTab, setActiveTab] = useState<LeftTab>('code');
+  // A ?theme=<value> query param (e.g. from the themes gallery's "Open in
+  // Playground") seeds the Theme view with that theme and applies it to the
+  // preview. useSearchParams reads it reliably across App Router client-side
+  // navigation (a window.location read at mount can be stale on soft nav).
+  // Validated against the registered themes; null when absent or unknown so
+  // the playground keeps its default, unseeded behavior.
+  const searchParams = useSearchParams();
+  const rawThemeParam = searchParams.get('theme');
+  const themeParam =
+    rawThemeParam && rawThemeParam in themeByValue ? rawThemeParam : null;
+  const theme = themeParam ?? DEFAULT_PLAYGROUND_THEME;
+  // The theme object the editor is seeded from — the ?theme= theme when present,
+  // otherwise the playground default (neutral). Always defined so the always-
+  // mounted Theme editor reflects the active theme and stays the source of truth.
+  const editorInitialTheme = themeByValue[theme];
+  const [activeView, setActiveView] = useState<LeftView>('code');
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -355,10 +365,12 @@ export function PlaygroundClient() {
   const [statusFading, setStatusFading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [previewReady, setPreviewReady] = useState(false);
+  const [isTargeting, setIsTargeting] = useState(false);
+  const [targetedComponent, setTargetedComponent] = useState<string | null>(
+    null,
+  );
+  const [targetedInstance, setTargetedInstance] = useState(0);
 
-  // The code the playground was seeded with (a shared/example snippet from the
-  // URL hash, or the default). Reset restores this — not the hardcoded default.
-  const seedCodeRef = useRef(code);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const readyRef = useRef(false);
   const pendingRef = useRef<string | null>(null);
@@ -366,10 +378,13 @@ export function PlaygroundClient() {
   const editorRef = useRef<MonacoTypes.editor.IStandaloneCodeEditor | null>(
     null,
   );
-  // Mirror activeTab in a ref so onMount can read the current tab without
+  // Mirror activeView in a ref so onMount can read the current view without
   // re-creating the (stable) mount callback.
-  const activeTabRef = useRef(activeTab);
-  activeTabRef.current = activeTab;
+  const activeViewRef = useRef(activeView);
+  activeViewRef.current = activeView;
+  // Latest theme authored in the Theme view, retained so a mode toggle can
+  // re-post it (the iframe clears the custom theme on any string-only push).
+  const customThemeRef = useRef<XDSDefinedTheme | null>(null);
 
   const editorPanel = useXDSResizable({
     defaultSize: 440,
@@ -393,14 +408,22 @@ export function PlaygroundClient() {
     const onHashChange = () => {
       const newCode = getInitialCode();
       if (newCode !== DEFAULT_CODE) {
-        // A new shared/example snippet became the seed — Reset targets it.
-        seedCodeRef.current = newCode;
         setCode(newCode);
       }
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
+
+  // When a ?theme= param seeds the playground, open the Theme view so the
+  // populated theme editor is visible (and drives the preview) on arrival.
+  // Done in an effect (not the initial activeView state) to avoid an
+  // SSR/client hydration mismatch on the panel that renders.
+  useEffect(() => {
+    if (themeParam) {
+      setActiveView('theme');
+    }
+  }, [themeParam]);
 
   const send = useCallback((c: string) => {
     const win = iframeRef.current?.contentWindow;
@@ -420,12 +443,41 @@ export function PlaygroundClient() {
     [send],
   );
 
-  // Flash a focus ring on the DOM node for a given component instance.
-  const flashInstance = useCallback((component: string, index: number) => {
+  // Push a theme authored in the Theme view to the preview. Sent as raw tokens
+  // + components (see the preview-theme protocol) so it survives postMessage.
+  const postCustomTheme = useCallback(
+    (customTheme: XDSDefinedTheme) => {
+      customThemeRef.current = customTheme;
+      iframeRef.current?.contentWindow?.postMessage(
+        {
+          type: 'preview-theme',
+          customTokens: customTheme.tokens,
+          customComponents: customTheme.components,
+          mode,
+        },
+        window.location.origin,
+      );
+    },
+    [mode],
+  );
+
+  // Persistently highlight the DOM node for a given component instance.
+  const selectInstance = useCallback((component: string, index: number) => {
     iframeRef.current?.contentWindow?.postMessage(
-      {type: 'preview-highlight', id: `${component}#${index}`},
+      {type: 'preview-select', id: `${component}#${index}`},
       window.location.origin,
     );
+  }, []);
+
+  const toggleTargeting = useCallback((pressed?: boolean) => {
+    setIsTargeting(prev => {
+      const next = pressed ?? !prev;
+      iframeRef.current?.contentWindow?.postMessage(
+        {type: next ? 'targeting-enable' : 'targeting-disable'},
+        window.location.origin,
+      );
+      return next;
+    });
   }, []);
 
   useEffect(() => {
@@ -446,6 +498,19 @@ export function PlaygroundClient() {
       }
       if (e.data?.type === 'preview-error') {
         setBuildStatus('error');
+      }
+      if (e.data?.type === 'targeting-select') {
+        setTargetedComponent(e.data.component);
+        setTargetedInstance(e.data.index);
+        setActiveView('property');
+        setIsTargeting(false);
+        iframeRef.current?.contentWindow?.postMessage(
+          {type: 'targeting-disable'},
+          window.location.origin,
+        );
+      }
+      if (e.data?.type === 'targeting-exit') {
+        setIsTargeting(false);
       }
     };
     window.addEventListener('message', handler);
@@ -491,13 +556,33 @@ export function PlaygroundClient() {
 
   // Theme + mode → preview. Also re-sent once the preview signals ready so a
   // non-default initial theme (e.g. neutral) applies even if this effect first
-  // ran before the iframe was listening.
+  // ran before the iframe was listening. Once the Theme editor has produced a
+  // theme (seeded via ?theme= or edited by the user), it becomes the source of
+  // truth and is applied across ALL views (Code / Properties / Theme) so the
+  // preview stays consistent when switching tabs and when toggling light/dark.
   useEffect(() => {
-    iframeRef.current?.contentWindow?.postMessage(
-      {type: 'preview-theme', theme, mode},
-      window.location.origin,
-    );
-  }, [theme, mode, previewReady]);
+    const win = iframeRef.current?.contentWindow;
+    if (!win) {
+      return;
+    }
+    if (customThemeRef.current) {
+      const custom = customThemeRef.current;
+      win.postMessage(
+        {
+          type: 'preview-theme',
+          customTokens: custom.tokens,
+          customComponents: custom.components,
+          mode,
+        },
+        window.location.origin,
+      );
+    } else {
+      win.postMessage(
+        {type: 'preview-theme', theme, mode},
+        window.location.origin,
+      );
+    }
+  }, [mode, previewReady, activeView, theme]);
 
   // While the resize handle is dragged, the cursor can pass over the preview
   // iframe — a separate document that swallows pointer events and stalls the
@@ -569,28 +654,28 @@ export function PlaygroundClient() {
     ) => {
       editorRef.current = editor;
       configureMonaco(monaco);
-      // Focus on initial mount if the Code tab is the active one.
-      if (activeTabRef.current === 'code') {
+      // Focus on initial mount if the Code view is the active one.
+      if (activeViewRef.current === 'code') {
         editor.focus();
       }
     },
     [],
   );
 
-  // Focus the editor (blinking cursor) whenever the Code tab becomes active.
+  // Focus the editor (blinking cursor) whenever the Code view becomes active.
   useEffect(() => {
-    if (activeTab !== 'code') {
+    if (activeView !== 'code') {
       return;
     }
     const id = requestAnimationFrame(() => editorRef.current?.focus());
     return () => cancelAnimationFrame(id);
-  }, [activeTab]);
+  }, [activeView]);
 
-  // Jump to a specific source offset in the editor (used by the Property tab's
-  // "set in code" links). Switches to the Code tab, then reveals + selects the
+  // Jump to a specific source offset in the editor (used by the Property view's
+  // "set in code" links). Switches to the Code view, then reveals + selects the
   // position once Monaco is visible.
   const revealInCode = useCallback((offset: number) => {
-    setActiveTab('code');
+    setActiveView('code');
     requestAnimationFrame(() => {
       const editor = editorRef.current;
       const model = editor?.getModel();
@@ -632,167 +717,235 @@ export function PlaygroundClient() {
   );
 
   return (
-    <div {...stylex.props(s.root)} onPointerDownCapture={handleResizeProbe}>
-      {/* Left panel — editor */}
-      <div
-        {...stylex.props(s.leftPanel)}
-        style={{width: editorPanel.size || 440}}>
-        <XDSHStack gap={2} vAlign="center" xstyle={s.panelHeader}>
-          <XDSButton
-            label="Back"
-            tooltip="Back"
-            variant="ghost"
-            size="md"
+    <XDSHStack align="stretch" height="100%" width="100%">
+      {/* Playground navigation */}
+      <XDSVStack align="center" xstyle={s.sidebar} gap={4}>
+        <XDSLink href="/" label="Go to home">
+          {BRAND_ICON}
+        </XDSLink>
+        <XDSToggleButtonGroup
+          type="single"
+          orientation="vertical"
+          label="Playground view"
+          value={activeView}
+          // Single-select groups allow deselecting to null; guard against it so
+          // one view is always active.
+          onChange={v => v && setActiveView(v as LeftView)}
+          size="md"
+          xstyle={s.navGroup}>
+          <XDSToggleButton
+            value="code"
+            label="Code"
+            tooltip="Code"
             isIconOnly
-            icon={<ArrowLeft size={20} />}
-            onClick={() => router.back()}
+            icon={<Code2 size={20} />}
           />
-          <XDSTabList
-            value={activeTab}
-            onChange={v => setActiveTab(v as LeftTab)}
-            size="md"
-            xstyle={s.tabStretch}>
-            <XDSTab value="code" label="Code" xstyle={s.tabStretch} />
-            <XDSTab value="property" label="Properties" xstyle={s.tabStretch} />
-          </XDSTabList>
-        </XDSHStack>
+          <XDSToggleButton
+            value="property"
+            label="Properties"
+            tooltip="Properties"
+            isIconOnly
+            icon={<SlidersHorizontal size={20} />}
+          />
+          <XDSToggleButton
+            value="theme"
+            label="Theme"
+            tooltip="Theme"
+            isIconOnly
+            icon={<Palette size={20} />}
+          />
+        </XDSToggleButtonGroup>
+      </XDSVStack>
 
-        <div {...stylex.props(s.tabBody)}>
-          {/* Code: Monaco stays mounted to preserve typedefs + editor state */}
-          <div {...stylex.props(s.codePane, activeTab !== 'code' && s.hidden)}>
-            <MonacoEditor
-              defaultLanguage="typescript"
-              value={code}
-              path="playground.tsx"
-              theme={editorTheme}
-              onChange={v => setCode(v ?? '')}
-              beforeMount={handleMonacoBeforeMount}
-              onMount={handleMonacoMount}
-              options={editorOptions}
-            />
+      {/* Playground content */}
+      <XDSHStack
+        height="100%"
+        xstyle={s.root}
+        onPointerDownCapture={handleResizeProbe}>
+        {/* Left panel — editor */}
+        <XDSVStack xstyle={s.leftPanel} width={editorPanel.size || 440}>
+          <XDSHStack
+            justify="between"
+            align="center"
+            xstyle={s.leftPanelHeader}>
+            <XDSHeading level={3}>Playground</XDSHeading>
+            {activeView === 'code' && (
+              <XDSButton variant="secondary" size="sm" label="Copy Code" />
+            )}
+            {activeView === 'theme' && (
+              <XDSButton variant="secondary" size="sm" label="Export Theme" />
+            )}
+          </XDSHStack>
+          <div {...stylex.props(s.tabBody)}>
+            {/* Code: Monaco stays mounted to preserve typedefs + editor state */}
+            <div
+              {...stylex.props(s.codePane, activeView !== 'code' && s.hidden)}>
+              <MonacoEditor
+                defaultLanguage="typescript"
+                value={code}
+                path="playground.tsx"
+                theme={editorTheme}
+                onChange={v => setCode(v ?? '')}
+                beforeMount={handleMonacoBeforeMount}
+                onMount={handleMonacoMount}
+                options={editorOptions}
+              />
+            </div>
+
+            {activeView === 'property' && (
+              <PropertyPanel
+                code={code}
+                onCodeChange={setCode}
+                onRevealInCode={revealInCode}
+                onFlashInstance={selectInstance}
+                externalSelection={
+                  targetedComponent != null
+                    ? {
+                        component: targetedComponent,
+                        instanceIndex: targetedInstance,
+                      }
+                    : undefined
+                }
+                onExternalSelectionConsumed={() => {
+                  setTargetedComponent(null);
+                }}
+              />
+            )}
+
+            {/* Theme: stays mounted (hidden when inactive) to preserve the
+                editor's token/component state across tab switches — it only
+                changes when the user edits it, not on navigation. */}
+            <div
+              {...stylex.props(
+                s.themePane,
+                activeView !== 'theme' && s.hidden,
+              )}>
+              <PlaygroundThemeEditor
+                mode={mode}
+                initialTheme={editorInitialTheme}
+                onThemeChange={postCustomTheme}
+              />
+            </div>
           </div>
+        </XDSVStack>
 
-          {activeTab === 'property' && (
-            <PropertyPanel
-              code={code}
-              onCodeChange={setCode}
-              onRevealInCode={revealInCode}
-              onFlashInstance={flashInstance}
-            />
-          )}
-        </div>
-      </div>
+        <XDSResizeHandle
+          label="Resize editor panel"
+          resizable={editorPanel.props}
+          pillPlacement="center"
+          hasDivider
+        />
 
-      <XDSResizeHandle
-        label="Resize editor panel"
-        resizable={editorPanel.props}
-        pillPlacement="center"
-      />
-
-      {/* Right panel — preview */}
-      <div {...stylex.props(s.rightPanel)}>
-        <XDSToolbar
-          label="Preview controls"
-          startContent={
-            <XDSHStack gap={2} vAlign="center">
-              <XDSSelector
-                label="Theme"
-                isLabelHidden
-                options={PLAYGROUND_THEME_OPTIONS}
-                value={theme}
-                onChange={setTheme}
-                size="md"
-              />
-              <XDSButton
-                label={mode === 'light' ? 'Switch to dark' : 'Switch to light'}
-                tooltip={mode === 'light' ? 'Dark mode' : 'Light mode'}
-                variant="ghost"
+        {/* Right panel — preview */}
+        <XDSVStack xstyle={s.rightPanel}>
+          <XDSToolbar
+            label="Preview controls"
+            startContent={
+              <XDSToggleButton
+                label="Target element"
+                tooltip={
+                  isTargeting
+                    ? 'Exit targeting (Esc)'
+                    : 'Click to select an element'
+                }
+                isPressed={isTargeting}
+                onPressedChange={toggleTargeting}
                 size="md"
                 isIconOnly
-                icon={mode === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-                onClick={() => setMode(m => (m === 'light' ? 'dark' : 'light'))}
+                icon={<Crosshair size={20} />}
               />
-            </XDSHStack>
-          }
-          centerContent={
-            <XDSSegmentedControl
-              label="Viewport size"
-              size="md"
-              value={viewport}
-              onChange={v => setViewport(v as Viewport)}>
-              <XDSSegmentedControlItem
-                value="desktop"
-                label="Desktop"
-                isLabelHidden
-                icon={<Monitor size={20} />}
-              />
-              <XDSSegmentedControlItem
-                value="phone"
-                label="Phone"
-                isLabelHidden
-                icon={<Smartphone size={20} />}
-              />
-            </XDSSegmentedControl>
-          }
-          endContent={
-            <XDSHStack gap={2} vAlign="center">
-              {buildStatus !== 'idle' && (
-                <div
-                  {...stylex.props(s.buildStatus)}
-                  style={{opacity: statusFading ? 0 : 1}}>
-                  <XDSStatusDot
-                    variant={BUILD_STATUS_META[buildStatus].variant}
-                    label={BUILD_STATUS_META[buildStatus].label}
-                    isPulsing={buildStatus === 'building'}
+            }
+            centerContent={
+              <XDSHStack gap={2} vAlign="center">
+                <XDSButton
+                  label={
+                    mode === 'light' ? 'Switch to dark' : 'Switch to light'
+                  }
+                  tooltip={mode === 'light' ? 'Dark mode' : 'Light mode'}
+                  variant="ghost"
+                  size="md"
+                  isIconOnly
+                  icon={
+                    mode === 'light' ? <Moon size={20} /> : <Sun size={20} />
+                  }
+                  onClick={() =>
+                    setMode(m => (m === 'light' ? 'dark' : 'light'))
+                  }
+                />
+                <XDSSegmentedControl
+                  label="Viewport size"
+                  size="md"
+                  value={viewport}
+                  onChange={v => setViewport(v as Viewport)}>
+                  <XDSSegmentedControlItem
+                    value="desktop"
+                    label="Desktop"
+                    isLabelHidden
+                    icon={<Monitor size={20} />}
                   />
-                  <XDSText type="supporting" color="secondary">
-                    {BUILD_STATUS_META[buildStatus].label}
-                  </XDSText>
-                  {buildStatus === 'error' && (
-                    <XDSButton
-                      label="Rebuild"
-                      tooltip="Rebuild"
-                      variant="ghost"
-                      size="sm"
-                      isIconOnly
-                      icon={<RotateCw size={16} />}
-                      onClick={handleRebuild}
+                  <XDSSegmentedControlItem
+                    value="phone"
+                    label="Phone"
+                    isLabelHidden
+                    icon={<Smartphone size={20} />}
+                  />
+                </XDSSegmentedControl>
+                <XDSButton
+                  label="Expand"
+                  tooltip="Fullscreen preview"
+                  variant="ghost"
+                  size="md"
+                  isIconOnly
+                  icon={<Maximize2 size={20} />}
+                  onClick={() => setIsFullscreen(true)}
+                />
+              </XDSHStack>
+            }
+            endContent={
+              <XDSHStack gap={4} vAlign="center">
+                {buildStatus !== 'idle' && (
+                  <div
+                    {...stylex.props(s.buildStatus)}
+                    style={{opacity: statusFading ? 0 : 1}}>
+                    <XDSStatusDot
+                      variant={BUILD_STATUS_META[buildStatus].variant}
+                      label={BUILD_STATUS_META[buildStatus].label}
+                      isPulsing={buildStatus === 'building'}
                     />
-                  )}
-                </div>
-              )}
-              <XDSButton
-                label="Expand"
-                tooltip="Fullscreen preview"
-                variant="ghost"
-                size="md"
-                isIconOnly
-                icon={<Maximize2 size={20} />}
-                onClick={() => setIsFullscreen(true)}
-              />
-              <XDSButton
-                label="Reset"
-                variant="ghost"
-                size="md"
-                onClick={() => setCode(seedCodeRef.current)}
-              />
-              <XDSButton
-                label={copied ? '✓ Copied' : 'Share'}
-                variant={copied ? 'primary' : 'secondary'}
-                size="md"
-                onClick={handleShare}
-              />
-            </XDSHStack>
-          }
-        />
-        <PreviewStage
-          viewport={viewport}
-          isFullscreen={isFullscreen}
-          onExitFullscreen={() => setIsFullscreen(false)}
-          iframeRef={iframeRef}
-          isInteractionDisabled={isResizing}
-        />
-      </div>
-    </div>
+                    <XDSText type="supporting" color="secondary">
+                      {BUILD_STATUS_META[buildStatus].label}
+                    </XDSText>
+                    {buildStatus === 'error' && (
+                      <XDSButton
+                        label="Rebuild"
+                        tooltip="Rebuild"
+                        variant="ghost"
+                        size="sm"
+                        isIconOnly
+                        icon={<RotateCw size={16} />}
+                        onClick={handleRebuild}
+                      />
+                    )}
+                  </div>
+                )}
+                <XDSButton
+                  label={copied ? '✓ Copied' : 'Share'}
+                  variant="primary"
+                  size="md"
+                  onClick={handleShare}
+                />
+              </XDSHStack>
+            }
+          />
+          <PreviewStage
+            viewport={viewport}
+            isFullscreen={isFullscreen}
+            onExitFullscreen={() => setIsFullscreen(false)}
+            iframeRef={iframeRef}
+            isInteractionDisabled={isResizing}
+          />
+        </XDSVStack>
+      </XDSHStack>
+    </XDSHStack>
   );
 }

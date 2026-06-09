@@ -13,7 +13,8 @@
  */
 
 import {getRunPrefix} from '../utils/package-manager.mjs';
-import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
+import {jsonOut, humanLog} from '../lib/json.mjs';
+import {cliError} from '../lib/cli-error.mjs';
 import {docs as docsApi} from '../api/docs.mjs';
 
 // ─── Formatting ──────────────────────────────────────────────────────────────
@@ -41,8 +42,10 @@ function formatBlock(block, detail) {
 
     case 'code':
       if (detail === 'compact' || detail === 'brief') return null;
-      const label = block.label ? `// ${block.label}\n` : '';
-      return `\`\`\`${block.lang}\n${label}${block.code}\n\`\`\``;
+      {
+        const label = block.label ? `// ${block.label}\n` : '';
+        return `\`\`\`${block.lang}\n${label}${block.code}\n\`\`\``;
+      }
 
     case 'table':
       if (detail === 'brief') {
@@ -100,7 +103,7 @@ function formatReferenceFull(docs, detail) {
 export function registerDocs(program) {
   program
     .command('docs [topic] [section]')
-    .description('Print XDS reference docs')
+    .description('Print reference docs')
     .action(async (topic, section) => {
       const run = getRunPrefix();
       const lang = program.opts().lang || null;
@@ -113,12 +116,10 @@ export function registerDocs(program) {
       try {
         result = await docsApi(topic, section, {lang, zh, dense});
       } catch (e) {
-        if (json) return jsonError(e.message, e.suggestions);
-        console.error(`Error: ${e.message}`);
-        if (e.suggestions?.length) {
-          console.error(`Available: ${e.suggestions.map(s => s.name).join(', ')}`);
-        }
-        process.exit(1);
+        // docs API throws structured errors with {name, reason} suggestions —
+        // pass them through untouched so the CLI envelope matches the API.
+        cliError(e.message, {suggestions: e.suggestions || [], code: e.code});
+        return;
       }
 
       if (json) return jsonOut(result.type, result.data);

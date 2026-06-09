@@ -6,10 +6,12 @@ import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars, colorVars} from '@xds/core/theme/tokens.stylex';
 
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
-import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {
+  XDSHStack,
+  XDSVStack,
+  XDSLayout,
+  XDSLayoutContent,
+} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {
   XDSChatComposer,
@@ -31,13 +33,11 @@ import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
 
 import {
-  ChevronLeftIcon,
   DocumentTextIcon,
   ClipboardDocumentIcon,
   ShareIcon,
   AtSymbolIcon,
   PaperClipIcon,
-  CubeIcon,
 } from '@heroicons/react/24/outline';
 
 // ============= STYLES =============
@@ -131,240 +131,231 @@ export default function AIChatArtifactTemplate() {
   });
 
   return (
-    <XDSAppShell
-      variant="elevated"
-      topNav={
-        <XDSTopNav
-          label="Navigation"
-          heading={
-            <XDSHStack gap={1} vAlign="center">
-              <XDSButton
-                label="Back"
-                variant="ghost"
-                size="sm"
-                icon={<XDSIcon icon={ChevronLeftIcon} size="sm" />}
-                isIconOnly
-              />
-              <XDSTopNavHeading
-                logo={
-                  <XDSNavIcon icon={<XDSIcon icon={CubeIcon} size="sm" />} />
-                }
-                heading="My App"
-                headingHref="/"
-              />
-            </XDSHStack>
-          }
-        />
-      }>
-      <XDSHStack height="100%">
-        {/* Chat Panel */}
-        <XDSVStack height="100%" style={{width: chatResize.size}}>
-          <XDSChatLayout
-            style={{height: '100%'}}
-            composer={
-              <XDSChatComposer
-                onSubmit={() => {}}
-                placeholder={
-                  composerMode === 'ask'
-                    ? 'Ask anything...'
-                    : 'Describe your edit...'
-                }
-                input={<XDSChatComposerInput />}
-                headerActions={
-                  <>
-                    <XDSButton
-                      label="Mention"
-                      variant="ghost"
-                      size="sm"
-                      icon={<XDSIcon icon={AtSymbolIcon} size="sm" />}
-                      isIconOnly
+    <XDSLayout
+      height="fill"
+      content={
+        <XDSLayoutContent padding={0}>
+          <XDSHStack height="100%">
+            {/* Chat Panel */}
+            <XDSVStack height="100%" style={{width: chatResize.size}}>
+              <XDSChatLayout
+                style={{height: '100%'}}
+                composer={
+                  <XDSChatComposer
+                    onSubmit={() => {}}
+                    placeholder={
+                      composerMode === 'ask'
+                        ? 'Ask anything...'
+                        : 'Describe your edit...'
+                    }
+                    input={<XDSChatComposerInput />}
+                    headerActions={
+                      <>
+                        <XDSButton
+                          label="Mention"
+                          variant="ghost"
+                          size="sm"
+                          icon={<XDSIcon icon={AtSymbolIcon} size="sm" />}
+                          isIconOnly
+                        />
+                        <XDSButton
+                          label="Attach"
+                          variant="ghost"
+                          size="sm"
+                          icon={<XDSIcon icon={PaperClipIcon} size="sm" />}
+                          isIconOnly
+                        />
+                      </>
+                    }
+                    footerActions={
+                      <XDSDropdownMenu
+                        button={{
+                          label: composerMode === 'ask' ? 'Ask' : 'Edit',
+                          variant: 'ghost',
+                          size: 'sm',
+                        }}
+                        items={[
+                          {
+                            label: 'Ask',
+                            onClick: () => setComposerMode('ask'),
+                          },
+                          {
+                            label: 'Edit',
+                            onClick: () => setComposerMode('edit'),
+                          },
+                        ]}
+                      />
+                    }
+                  />
+                }>
+                <XDSChatMessageList>
+                  <XDSChatSystemMessage variant="divider">
+                    Today
+                  </XDSChatSystemMessage>
+
+                  {/* User request */}
+                  <XDSChatMessage sender="user">
+                    <XDSChatMessageBubble
+                      metadata={
+                        <XDSChatMessageMetadata
+                          timestamp={
+                            <XDSTimestamp
+                              value="2026-05-12T14:30:00"
+                              format="time"
+                            />
+                          }
+                        />
+                      }>
+                      Write me a guide about getting started with design
+                      systems. Cover the core principles, component
+                      architecture, and token systems.
+                    </XDSChatMessageBubble>
+                  </XDSChatMessage>
+
+                  {/* Assistant response */}
+                  <XDSChatMessage
+                    sender="assistant"
+                    avatar={<XDSAvatar name="AI" size="small" />}>
+                    <XDSChatMessageBubble variant="ghost" name="AI">
+                      <XDSMarkdown density="compact">
+                        {`I've created a comprehensive guide on design systems. It covers the core principles of consistency, composability, and accessibility, along with sections on component architecture and the token system.\n\nThe document is displayed in the artifact panel \u2014 you can review it there. Want me to expand any section or adjust the tone?`}
+                      </XDSMarkdown>
+                    </XDSChatMessageBubble>
+                    <XDSChatMessageMetadata
+                      timestamp={
+                        <XDSTimestamp
+                          value="2026-05-12T14:30:45"
+                          format="time"
+                        />
+                      }
                     />
-                    <XDSButton
-                      label="Attach"
-                      variant="ghost"
-                      size="sm"
-                      icon={<XDSIcon icon={PaperClipIcon} size="sm" />}
-                      isIconOnly
+                  </XDSChatMessage>
+
+                  {/* User follow-up */}
+                  <XDSChatMessage sender="user">
+                    <XDSChatMessageBubble
+                      metadata={
+                        <XDSChatMessageMetadata
+                          timestamp={
+                            <XDSTimestamp
+                              value="2026-05-12T14:32:00"
+                              format="time"
+                            />
+                          }
+                        />
+                      }>
+                      This is great. Can you add a section about next steps at
+                      the end?
+                    </XDSChatMessageBubble>
+                  </XDSChatMessage>
+
+                  {/* Assistant confirmation */}
+                  <XDSChatMessage
+                    sender="assistant"
+                    avatar={<XDSAvatar name="AI" size="small" />}>
+                    <XDSChatMessageBubble variant="ghost">
+                      <XDSMarkdown density="compact">
+                        {`Done! I've added a "Next Steps" section with actionable items for getting started. The artifact has been updated \u2014 you can see the changes in the panel.`}
+                      </XDSMarkdown>
+                    </XDSChatMessageBubble>
+                    <XDSChatMessageMetadata
+                      timestamp={
+                        <XDSTimestamp
+                          value="2026-05-12T14:32:30"
+                          format="time"
+                        />
+                      }
                     />
-                  </>
-                }
-                footerActions={
+                  </XDSChatMessage>
+                </XDSChatMessageList>
+              </XDSChatLayout>
+            </XDSVStack>
+
+            {/* Resize Handle */}
+            <XDSResizeHandle
+              direction="horizontal"
+              resizable={chatResize.props}
+              hasDivider
+              label="Resize chat panel"
+            />
+
+            {/* Artifact Panel */}
+            <XDSVStack height="100%" xstyle={styles.artifactPanel}>
+              {/* Artifact Header */}
+              <XDSHStack
+                gap={3}
+                vAlign="center"
+                hAlign="between"
+                xstyle={styles.artifactHeader}>
+                <XDSHStack gap={3} vAlign="center">
+                  <XDSIcon
+                    icon={DocumentTextIcon}
+                    size="sm"
+                    color="secondary"
+                  />
+                  <XDSVStack gap={0}>
+                    <XDSText type="label" weight="semibold">
+                      {ARTIFACT_TITLE}
+                    </XDSText>
+                    <XDSText type="supporting" color="secondary">
+                      Document \u00b7 Updated just now
+                    </XDSText>
+                  </XDSVStack>
+                </XDSHStack>
+
+                <XDSHStack gap={2} vAlign="center">
                   <XDSDropdownMenu
                     button={{
-                      label: composerMode === 'ask' ? 'Ask' : 'Edit',
+                      label: 'v2',
                       variant: 'ghost',
                       size: 'sm',
                     }}
-                    items={[
-                      {
-                        label: 'Ask',
-                        onClick: () => setComposerMode('ask'),
-                      },
-                      {
-                        label: 'Edit',
-                        onClick: () => setComposerMode('edit'),
-                      },
-                    ]}
+                    items={[{label: 'v2 (current)'}, {label: 'v1'}]}
                   />
-                }
-              />
-            }>
-            <XDSChatMessageList>
-              <XDSChatSystemMessage variant="divider">
-                Today
-              </XDSChatSystemMessage>
+                  <XDSButton
+                    label="Copy"
+                    variant="ghost"
+                    size="sm"
+                    icon={<XDSIcon icon={ClipboardDocumentIcon} size="sm" />}
+                    isIconOnly
+                  />
+                  <XDSButton
+                    label="Share"
+                    variant="ghost"
+                    size="sm"
+                    icon={<XDSIcon icon={ShareIcon} size="sm" />}
+                    isIconOnly
+                  />
+                </XDSHStack>
+              </XDSHStack>
 
-              {/* User request */}
-              <XDSChatMessage sender="user">
-                <XDSChatMessageBubble
-                  metadata={
-                    <XDSChatMessageMetadata
-                      timestamp={
-                        <XDSTimestamp
-                          value="2026-05-12T14:30:00"
-                          format="time"
-                        />
-                      }
-                    />
-                  }>
-                  Write me a guide about getting started with design systems.
-                  Cover the core principles, component architecture, and token
-                  systems.
-                </XDSChatMessageBubble>
-              </XDSChatMessage>
+              {/* Artifact Tabs */}
+              <XDSHStack vAlign="center" xstyle={styles.tabRow}>
+                <XDSTabList value={artifactTab} onChange={setArtifactTab}>
+                  <XDSTab value="document" label="Preview" />
+                  <XDSTab value="markdown" label="Markdown" />
+                </XDSTabList>
+              </XDSHStack>
 
-              {/* Assistant response */}
-              <XDSChatMessage
-                sender="assistant"
-                avatar={<XDSAvatar name="AI" size="small" />}>
-                <XDSChatMessageBubble variant="ghost" name="AI">
-                  <XDSMarkdown density="compact">
-                    {`I've created a comprehensive guide on design systems. It covers the core principles of consistency, composability, and accessibility, along with sections on component architecture and the token system.\n\nThe document is displayed in the artifact panel \u2014 you can review it there. Want me to expand any section or adjust the tone?`}
-                  </XDSMarkdown>
-                </XDSChatMessageBubble>
-                <XDSChatMessageMetadata
-                  timestamp={
-                    <XDSTimestamp value="2026-05-12T14:30:45" format="time" />
-                  }
-                />
-              </XDSChatMessage>
-
-              {/* User follow-up */}
-              <XDSChatMessage sender="user">
-                <XDSChatMessageBubble
-                  metadata={
-                    <XDSChatMessageMetadata
-                      timestamp={
-                        <XDSTimestamp
-                          value="2026-05-12T14:32:00"
-                          format="time"
-                        />
-                      }
-                    />
-                  }>
-                  This is great. Can you add a section about next steps at the
-                  end?
-                </XDSChatMessageBubble>
-              </XDSChatMessage>
-
-              {/* Assistant confirmation */}
-              <XDSChatMessage
-                sender="assistant"
-                avatar={<XDSAvatar name="AI" size="small" />}>
-                <XDSChatMessageBubble variant="ghost">
-                  <XDSMarkdown density="compact">
-                    {`Done! I've added a "Next Steps" section with actionable items for getting started. The artifact has been updated \u2014 you can see the changes in the panel.`}
-                  </XDSMarkdown>
-                </XDSChatMessageBubble>
-                <XDSChatMessageMetadata
-                  timestamp={
-                    <XDSTimestamp value="2026-05-12T14:32:30" format="time" />
-                  }
-                />
-              </XDSChatMessage>
-            </XDSChatMessageList>
-          </XDSChatLayout>
-        </XDSVStack>
-
-        {/* Resize Handle */}
-        <XDSResizeHandle
-          direction="horizontal"
-          resizable={chatResize.props}
-          hasDivider
-          label="Resize chat panel"
-        />
-
-        {/* Artifact Panel */}
-        <XDSVStack height="100%" xstyle={styles.artifactPanel}>
-          {/* Artifact Header */}
-          <XDSHStack
-            gap={3}
-            vAlign="center"
-            hAlign="between"
-            xstyle={styles.artifactHeader}>
-            <XDSHStack gap={3} vAlign="center">
-              <XDSIcon icon={DocumentTextIcon} size="sm" color="secondary" />
-              <XDSVStack gap={0}>
-                <XDSText type="label" weight="semibold">
-                  {ARTIFACT_TITLE}
-                </XDSText>
-                <XDSText type="supporting" color="secondary">
-                  Document \u00b7 Updated just now
-                </XDSText>
-              </XDSVStack>
-            </XDSHStack>
-
-            <XDSHStack gap={2} vAlign="center">
-              <XDSDropdownMenu
-                button={{
-                  label: 'v2',
-                  variant: 'ghost',
-                  size: 'sm',
-                }}
-                items={[{label: 'v2 (current)'}, {label: 'v1'}]}
-              />
-              <XDSButton
-                label="Copy"
-                variant="ghost"
-                size="sm"
-                icon={<XDSIcon icon={ClipboardDocumentIcon} size="sm" />}
-                isIconOnly
-              />
-              <XDSButton
-                label="Share"
-                variant="ghost"
-                size="sm"
-                icon={<XDSIcon icon={ShareIcon} size="sm" />}
-                isIconOnly
-              />
-            </XDSHStack>
-          </XDSHStack>
-
-          {/* Artifact Tabs */}
-          <XDSHStack vAlign="center" xstyle={styles.tabRow}>
-            <XDSTabList value={artifactTab} onChange={setArtifactTab}>
-              <XDSTab value="document" label="Preview" />
-              <XDSTab value="markdown" label="Markdown" />
-            </XDSTabList>
-          </XDSHStack>
-
-          {/* Artifact Body */}
-          <div {...stylex.props(styles.artifactContent)}>
-            <XDSVStack gap={2} xstyle={styles.articleBody}>
-              {artifactTab === 'document' ? (
-                <>
-                  <XDSHeading level={1}>{ARTIFACT_TITLE}</XDSHeading>
-                  <XDSMarkdown>{ARTIFACT_CONTENT}</XDSMarkdown>
-                </>
-              ) : (
-                <XDSText type="code">
-                  {`# ${ARTIFACT_TITLE}\n${ARTIFACT_CONTENT}`}
-                </XDSText>
-              )}
+              {/* Artifact Body */}
+              <div {...stylex.props(styles.artifactContent)}>
+                <XDSVStack gap={2} xstyle={styles.articleBody}>
+                  {artifactTab === 'document' ? (
+                    <>
+                      <XDSHeading level={1}>{ARTIFACT_TITLE}</XDSHeading>
+                      <XDSMarkdown>{ARTIFACT_CONTENT}</XDSMarkdown>
+                    </>
+                  ) : (
+                    <XDSText type="code">
+                      {`# ${ARTIFACT_TITLE}\n${ARTIFACT_CONTENT}`}
+                    </XDSText>
+                  )}
+                </XDSVStack>
+              </div>
             </XDSVStack>
-          </div>
-        </XDSVStack>
-      </XDSHStack>
-    </XDSAppShell>
+          </XDSHStack>
+        </XDSLayoutContent>
+      }
+    />
   );
 }

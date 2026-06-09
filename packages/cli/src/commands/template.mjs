@@ -7,9 +7,10 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import * as p from '@clack/prompts';
-import {CLI_ROOT} from '../utils/paths.mjs';
 import {isNonInteractive} from '../utils/path-safety.mjs';
-import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
+import {jsonOut, humanLog} from '../lib/json.mjs';
+import {cliError} from '../lib/cli-error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {template as templateApi, getTemplateById} from '../api/template.mjs';
 
 export {discoverTemplates, listTemplates, getTemplateById} from '../api/template.mjs';
@@ -49,9 +50,8 @@ export function registerTemplate(program) {
             const msg =
               `Refusing to overwrite existing file ${rel}. ` +
               `Re-run with --overwrite (or -f) to replace it.`;
-            if (json) return jsonError(msg);
-            console.error(`Error: ${msg}`);
-            process.exit(1);
+            cliError(msg, {code: ERROR_CODES.ERR_FILE_EXISTS});
+            return;
           }
           const confirmed = isCancel(
             await p.confirm({
@@ -76,12 +76,10 @@ export function registerTemplate(program) {
           cwd: process.cwd(),
         });
       } catch (e) {
-        if (json) return jsonError(e.message, e.suggestions);
-        console.error(`Error: ${e.message}`);
-        if (e.suggestions?.length) {
-          console.error(`Available: ${e.suggestions.map(s => s.name).join(', ')}`);
-        }
-        process.exit(1);
+        // template API throws structured errors with {name, reason} suggestions —
+        // pass them through untouched so the CLI envelope matches the API.
+        cliError(e.message, {suggestions: e.suggestions || [], code: e.code});
+        return;
       }
 
       if (json) return jsonOut(result.type, result.data);
@@ -145,9 +143,8 @@ export function registerTemplate(program) {
       try {
         result = await getTemplateById(options.id, {cwd: process.cwd()});
       } catch (e) {
-        if (json) return jsonError(e.message, e.suggestions);
-        console.error(`Error: ${e.message}`);
-        process.exit(1);
+        cliError(e.message, {suggestions: e.suggestions, code: e.code});
+        return;
       }
 
       if (json) return jsonOut(result.type, result.data);

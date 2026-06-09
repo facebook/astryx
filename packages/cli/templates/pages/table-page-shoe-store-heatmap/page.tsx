@@ -2,8 +2,14 @@
 
 'use client';
 
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Layout';
+import {
+  XDSVStack,
+  XDSHStack,
+  XDSStackItem,
+  XDSLayout,
+  XDSLayoutContent,
+  XDSLayoutHeader,
+} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIconButton} from '@xds/core/IconButton';
@@ -874,58 +880,66 @@ const columns: XDSTableColumn<OrderRow>[] = [
 
 export default function TablePageShoeStoreHeatmapTemplate() {
   return (
-    <XDSAppShell variant="elevated" contentPadding={3} height="auto">
-      <XDSVStack gap={4}>
-        <XDSHStack gap={2} vAlign="center">
-          <XDSStackItem size="fill">
-            <XDSHeading level={1}>Sales</XDSHeading>
-          </XDSStackItem>
-          <XDSIconButton
-            label="Filter"
-            icon={<XDSIcon icon={FunnelIcon} size="sm" />}
-            variant="ghost"
-          />
-          <XDSIconButton
-            label="Export"
-            icon={<XDSIcon icon={ArrowDownTrayIcon} size="sm" />}
-            variant="ghost"
-          />
-          <XDSButton
-            label="New order"
-            icon={<XDSIcon icon={PlusIcon} size="sm" />}
-          />
-        </XDSHStack>
+    <XDSLayout
+      height="auto"
+      header={
+        <XDSLayoutHeader hasDivider>
+          <XDSHStack gap={2} vAlign="center">
+            <XDSStackItem size="fill">
+              <XDSHeading level={1}>Sales</XDSHeading>
+            </XDSStackItem>
+            <XDSIconButton
+              label="Filter"
+              icon={<XDSIcon icon={FunnelIcon} size="sm" />}
+              variant="ghost"
+            />
+            <XDSIconButton
+              label="Export"
+              icon={<XDSIcon icon={ArrowDownTrayIcon} size="sm" />}
+              variant="ghost"
+            />
+            <XDSButton
+              label="New order"
+              icon={<XDSIcon icon={PlusIcon} size="sm" />}
+            />
+          </XDSHStack>
+        </XDSLayoutHeader>
+      }
+      content={
+        <XDSLayoutContent padding={3}>
+          <XDSVStack gap={4}>
+            <XDSChart
+              data={revenueData}
+              xKey="date"
+              series={[
+                area('revenue', {color: '#3b82f6', gradient: true}),
+                line('revenue', {color: '#3b82f6'}),
+              ]}
+              grid={<XDSChartGrid horizontal />}
+              axes={
+                <>
+                  <XDSChartAxis position="bottom" />
+                  <XDSChartAxis
+                    position="left"
+                    tickFormat={(v: unknown) => `$${Number(v) / 1000}k`}
+                  />
+                </>
+              }
+              height={280}
+              margin={{left: 40, right: 10, top: 10, bottom: 30}}
+            />
 
-        <XDSChart
-          data={revenueData}
-          xKey="date"
-          series={[
-            area('revenue', {color: '#3b82f6', gradient: true}),
-            line('revenue', {color: '#3b82f6'}),
-          ]}
-          grid={<XDSChartGrid horizontal />}
-          axes={
-            <>
-              <XDSChartAxis position="bottom" />
-              <XDSChartAxis
-                position="left"
-                tickFormat={(v: unknown) => `$${Number(v) / 1000}k`}
-              />
-            </>
-          }
-          height={280}
-          margin={{left: 40, right: 10, top: 10, bottom: 30}}
-        />
-
-        <XDSTable<OrderRow>
-          data={orders}
-          columns={columns}
-          idKey="id"
-          density="balanced"
-          dividers="rows"
-          hasHover
-        />
-      </XDSVStack>
-    </XDSAppShell>
+            <XDSTable<OrderRow>
+              data={orders}
+              columns={columns}
+              idKey="id"
+              density="balanced"
+              dividers="rows"
+              hasHover
+            />
+          </XDSVStack>
+        </XDSLayoutContent>
+      }
+    />
   );
 }

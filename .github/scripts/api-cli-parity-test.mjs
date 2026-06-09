@@ -87,7 +87,16 @@ const allTopics = docsList.data && !docsList.error
 
 const categories = componentList.data ? Object.keys(componentList.data) : [];
 
+const hookList = cliJson(['hook', '--list']);
+const allHooks = hookList.data && !hookList.error
+  ? Object.values(hookList.data).flat()
+  : [];
+const hookCategories = hookList.data && !hookList.error
+  ? Object.keys(hookList.data)
+  : [];
+
 console.log(`  ${allComponents.length} components, ${allTopics.length} doc topics, ${categories.length} categories`);
+console.log(`  ${allHooks.length} hooks, ${hookCategories.length} hook categories`);
 
 // ─── Build cases ──────────────────────────────────────────────────────────────
 //
@@ -126,6 +135,17 @@ if (sample) {
     () => apiCall(api.component, sample, {props: true, cwd: ROOT}));
   add(`component ${sample} --source`, ['component', sample, '--source'],
     () => apiCall(api.component, sample, {source: true, cwd: ROOT}));
+  // --showcase (component.detail.showcase) and --blocks (component.detail.blocks)
+  // exercise the two single-component result shapes the parity suite previously
+  // never touched. Skip gracefully if the sample component has no showcase so
+  // the suite stays green on component sets that lack one.
+  const showcaseProbe = cliJson(['component', sample, '--showcase']);
+  if (showcaseProbe.type === 'component.detail.showcase') {
+    add(`component ${sample} --showcase`, ['component', sample, '--showcase'],
+      () => apiCall(api.component, sample, {showcase: true, cwd: ROOT}));
+  }
+  add(`component ${sample} --blocks`, ['component', sample, '--blocks'],
+    () => apiCall(api.component, sample, {blocks: true, cwd: ROOT}));
 }
 
 // Component — error
@@ -137,14 +157,89 @@ add('docs (list)', ['docs'], () => apiCall(api.docs));
 for (const topic of allTopics) {
   add(`docs ${topic}`, ['docs', topic], () => apiCall(api.docs, topic));
 }
+// Docs — section detail (docs.detail.section). Pick the first topic's first
+// section so the case is data-driven and exercises the two-arg path.
+if (allTopics.length > 0) {
+  const firstTopic = allTopics[0];
+  const topicDetail = cliJson(['docs', firstTopic]);
+  const firstSection = topicDetail.data?.sections?.[0]?.title;
+  if (firstSection) {
+    add(`docs ${firstTopic} ${firstSection}`, ['docs', firstTopic, firstSection],
+      () => apiCall(api.docs, firstTopic, firstSection));
+  }
+}
 add('docs nonexistent', ['docs', 'nonexistent_xyz'],
   () => apiCall(api.docs, 'nonexistent_xyz'));
 
 // Template — uses API
 add('template --list', ['template', '--list'],
   () => apiCall(api.template));
+// Template — type filters (template.list filtered by page/block).
+add('template --list --type page', ['template', '--list', '--type', 'page'],
+  () => apiCall(api.template, undefined, {list: true, type: 'page', cwd: ROOT}));
+add('template --list --type block', ['template', '--list', '--type', 'block'],
+  () => apiCall(api.template, undefined, {list: true, type: 'block', cwd: ROOT}));
+// Template — show + skeleton for the first available template. These cover
+// template.show and template.skeleton, neither previously exercised.
+const templateList = cliJson(['template', '--list']);
+const firstTemplate = templateList.data && !templateList.error
+  ? templateList.data[0]?.name
+  : undefined;
+if (firstTemplate) {
+  add(`template ${firstTemplate}`, ['template', firstTemplate],
+    () => apiCall(api.template, firstTemplate, {cwd: ROOT}));
+  add(`template ${firstTemplate} --skeleton`, ['template', firstTemplate, '--skeleton'],
+    () => apiCall(api.template, firstTemplate, {skeleton: true, cwd: ROOT}));
+}
 add('template nonexistent', ['template', 'nonexistent99'],
   () => apiCall(api.template, 'nonexistent99'));
+
+// Hook — list variants
+add('hook --list', ['hook', '--list'],
+  () => apiCall(api.hook, undefined, {list: true, cwd: ROOT}));
+
+for (const cat of hookCategories) {
+  add(`hook --category ${cat}`, ['hook', '--category', cat],
+    () => apiCall(api.hook, undefined, {category: cat, cwd: ROOT}));
+}
+
+// Hook — every discovered hook
+for (const name of allHooks) {
+  add(`hook ${name}`, ['hook', name],
+    () => apiCall(api.hook, name, {cwd: ROOT}));
+}
+
+// Hook — params (sample)
+const hookSample = allHooks[0];
+if (hookSample) {
+  add(`hook ${hookSample} --params`, ['hook', hookSample, '--params'],
+    () => apiCall(api.hook, hookSample, {params: true, cwd: ROOT}));
+}
+
+// Hook — error
+add('hook NotARealHook99', ['hook', 'NotARealHook99'],
+  () => apiCall(api.hook, 'NotARealHook99', {cwd: ROOT}));
+
+// Search — unified ranked search across all content domains
+add('search button', ['search', 'button'],
+  () => apiCall(api.search, 'button', {cwd: ROOT}));
+add('search button --limit 5', ['search', 'button', '--limit', '5'],
+  () => apiCall(api.search, 'button', {limit: 5, cwd: ROOT}));
+add('search modal --type component', ['search', 'modal', '--type', 'component'],
+  () => apiCall(api.search, 'modal', {type: 'component', cwd: ROOT}));
+add('search (no match)', ['search', 'zzqqxx_no_match'],
+  () => apiCall(api.search, 'zzqqxx_no_match', {cwd: ROOT}));
+add('search (bad type)', ['search', 'x', '--type', 'bogus'],
+  () => apiCall(api.search, 'x', {type: 'bogus', cwd: ROOT}));
+
+// Discover — list (discover.list). Covers the discover API surface; the CLI
+// envelope's optional `meta` sidecar is stripped by cliJson, matching the API.
+add('discover (list)', ['discover'],
+  () => apiCall(api.discover, undefined, {cwd: ROOT}));
+
+// Doctor — the health check. Both sides run against ROOT, so the set of
+// checks (and their statuses) is deterministic and must match exactly.
+add('doctor', ['doctor'], () => apiCall(api.doctor, {cwd: ROOT}));
 
 // Other commands — probe with safe read-only args (no API yet)
 const otherCommands = [

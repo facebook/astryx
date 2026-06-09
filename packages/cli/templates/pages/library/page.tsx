@@ -15,28 +15,8 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSHStack, XDSVStack, XDSStackItem} from '@xds/core/Stack';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSOverflowList} from '@xds/core/OverflowList';
-import {XDSAppShell} from '@xds/core/AppShell';
-import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavSection,
-  XDSSideNavItem,
-} from '@xds/core/SideNav';
-import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSIcon} from '@xds/core/Icon';
 import {XDSCenter} from '@xds/core/Center';
-import {
-  HomeIcon,
-  BookOpenIcon,
-  CubeIcon,
-  Squares2X2Icon,
-  WrenchScrewdriverIcon,
-  MagnifyingGlassIcon,
-} from '@heroicons/react/24/outline';
-import {
-  HomeIcon as HomeIconSolid,
-  BookOpenIcon as BookOpenIconSolid,
-} from '@heroicons/react/24/solid';
+import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
 interface LibraryItem {
   id: string;
@@ -58,7 +38,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Layout',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/colorful-home-horizontal-1.png',
+      '/template-assets/colorful-home-horizontal-1.png',
   },
   {
     id: '2',
@@ -68,7 +48,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Layout',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-3.jpg',
+      '/template-assets/illustrative-horizontal-3.jpg',
   },
   {
     id: '3',
@@ -78,7 +58,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Layout',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-2.png',
+      '/template-assets/light-working-horizontal-2.png',
   },
   {
     id: '4',
@@ -87,7 +67,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Layout',
     type: 'Utility',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/moody-scene-horizontal-1.png',
+      '/template-assets/moody-scene-horizontal-1.png',
   },
   {
     id: '5',
@@ -96,7 +76,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Layout',
     type: 'Pattern',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-horizontal-2.png',
+      '/template-assets/colorful-lifestyle-horizontal-2.png',
   },
   {
     id: '6',
@@ -105,7 +85,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Layout',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png',
+      '/template-assets/light-scene-horizontal-1.png',
   },
   {
     id: '7',
@@ -115,7 +95,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Forms',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/moody-working-horizontal-1.png',
+      '/template-assets/moody-working-horizontal-1.png',
   },
   {
     id: '8',
@@ -124,7 +104,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Forms',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/colorful-working-horizontal-3.png',
+      '/template-assets/colorful-working-horizontal-3.png',
   },
   {
     id: '9',
@@ -133,7 +113,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Forms',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg',
+      '/template-assets/illustrative-horizontal-1.jpg',
   },
   {
     id: '10',
@@ -142,7 +122,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Forms',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/light-home-horizontal-1.png',
+      '/template-assets/light-home-horizontal-1.png',
   },
   {
     id: '11',
@@ -151,7 +131,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Forms',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/moody-home-horizontal-2.png',
+      '/template-assets/moody-home-horizontal-2.png',
   },
   {
     id: '12',
@@ -161,7 +141,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Forms',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/colorful-product-1.png',
+      '/template-assets/colorful-product-1.png',
   },
   {
     id: '13',
@@ -171,7 +151,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Navigation',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-5.jpg',
+      '/template-assets/illustrative-horizontal-5.jpg',
   },
   {
     id: '14',
@@ -180,7 +160,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Navigation',
     type: 'Pattern',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-1.png',
+      '/template-assets/light-working-horizontal-1.png',
   },
   {
     id: '15',
@@ -190,7 +170,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Navigation',
     type: 'Pattern',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/moody-lifestyle-horizontal-1.png',
+      '/template-assets/moody-lifestyle-horizontal-1.png',
   },
   {
     id: '16',
@@ -199,7 +179,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Navigation',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/colorful-home-horizontal-2.png',
+      '/template-assets/colorful-home-horizontal-2.png',
   },
   {
     id: '17',
@@ -209,7 +189,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Navigation',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/colorful-working-horizontal-1.png',
+      '/template-assets/colorful-working-horizontal-1.png',
   },
   {
     id: '18',
@@ -219,7 +199,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Navigation',
     type: 'Pattern',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-3.png',
+      '/template-assets/light-working-horizontal-3.png',
   },
   {
     id: '19',
@@ -229,7 +209,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Feedback',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/moody-working-horizontal-2.png',
+      '/template-assets/moody-working-horizontal-2.png',
   },
   {
     id: '20',
@@ -239,7 +219,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Feedback',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-2.jpg',
+      '/template-assets/illustrative-horizontal-2.jpg',
   },
   {
     id: '21',
@@ -248,7 +228,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Feedback',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-horizontal-1.png',
+      '/template-assets/colorful-lifestyle-horizontal-1.png',
   },
   {
     id: '22',
@@ -257,7 +237,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Feedback',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/light-lifestyle-horizontal-1.png',
+      '/template-assets/light-lifestyle-horizontal-1.png',
   },
   {
     id: '23',
@@ -267,7 +247,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Feedback',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/moody-home-horizontal-1.png',
+      '/template-assets/moody-home-horizontal-1.png',
   },
   {
     id: '24',
@@ -277,7 +257,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Feedback',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/colorful-working-horizontal-2.png',
+      '/template-assets/colorful-working-horizontal-2.png',
   },
   {
     id: '25',
@@ -287,7 +267,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Data',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-4.jpg',
+      '/template-assets/illustrative-horizontal-4.jpg',
   },
   {
     id: '26',
@@ -297,7 +277,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Data',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-4.png',
+      '/template-assets/light-working-horizontal-4.png',
   },
   {
     id: '27',
@@ -307,7 +287,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Data',
     type: 'Utility',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/moody-lifestyle-horizontal-2.png',
+      '/template-assets/moody-lifestyle-horizontal-2.png',
   },
   {
     id: '28',
@@ -316,7 +296,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Data',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/moody-scene-horizontal-2.png',
+      '/template-assets/moody-scene-horizontal-2.png',
   },
   {
     id: '29',
@@ -326,7 +306,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Data',
     type: 'Pattern',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/colorful-product-2.png',
+      '/template-assets/colorful-product-2.png',
   },
   {
     id: '30',
@@ -336,7 +316,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Data',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/moody-working-horizontal-3.png',
+      '/template-assets/moody-working-horizontal-3.png',
   },
 ];
 
@@ -359,47 +339,6 @@ const styles = stylex.create({
 // =============================================================================
 // Side Nav
 // =============================================================================
-
-function LibraryNav() {
-  return (
-    <XDSSideNav
-      header={
-        <XDSSideNavHeading
-          icon={
-            <XDSNavIcon
-              icon={<XDSIcon icon={CubeIcon} size="sm" color="inherit" />}
-            />
-          }
-          heading="My App"
-          headingHref="#"
-        />
-      }>
-      <XDSSideNavSection title="Main">
-        <XDSSideNavItem
-          label="Home"
-          href="#"
-          icon={HomeIcon}
-          selectedIcon={HomeIconSolid}
-        />
-        <XDSSideNavItem
-          label="Library"
-          href="#"
-          icon={BookOpenIcon}
-          selectedIcon={BookOpenIconSolid}
-          isSelected
-        />
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Browse">
-        <XDSSideNavItem label="Components" href="#" icon={Squares2X2Icon} />
-        <XDSSideNavItem
-          label="Templates"
-          href="#"
-          icon={WrenchScrewdriverIcon}
-        />
-      </XDSSideNavSection>
-    </XDSSideNav>
-  );
-}
 
 function LibraryCard({item}: {item: LibraryItem}) {
   return (
@@ -489,96 +428,94 @@ export default function LibraryPage() {
   }, [activeTab, filtered]);
 
   return (
-    <XDSAppShell sideNav={<LibraryNav />} contentPadding={0}>
-      <XDSLayout
-        header={
-          <XDSLayoutHeader hasDivider padding={6}>
-            <XDSHeading level={1}>Library</XDSHeading>
-          </XDSLayoutHeader>
-        }
-        content={
-          <XDSLayoutContent padding={6}>
-            <XDSVStack gap={6}>
-              <XDSVStack gap={4}>
-                <XDSTextInput
-                  label="Search"
-                  isLabelHidden
-                  placeholder="Search..."
-                  value={search}
-                  onChange={setSearch}
-                  startIcon={MagnifyingGlassIcon}
-                  size="lg"
+    <XDSLayout
+      header={
+        <XDSLayoutHeader hasDivider padding={6}>
+          <XDSHeading level={1}>Library</XDSHeading>
+        </XDSLayoutHeader>
+      }
+      content={
+        <XDSLayoutContent padding={6}>
+          <XDSVStack gap={6}>
+            <XDSVStack gap={4}>
+              <XDSTextInput
+                label="Search"
+                isLabelHidden
+                placeholder="Search..."
+                value={search}
+                onChange={setSearch}
+                startIcon={MagnifyingGlassIcon}
+                size="lg"
+              />
+              <XDSHStack vAlign="center" gap={4}>
+                <XDSStackItem size="fill">
+                  <XDSVStack>
+                    <XDSToggleButtonGroup
+                      label="Filter by category"
+                      value={activeTab}
+                      onChange={v => setActiveTab(v ?? 'All')}>
+                      <XDSOverflowList
+                        gap={1}
+                        behavior="observeParent"
+                        overflowRenderer={overflowItems => (
+                          <XDSDropdownMenu
+                            button={{
+                              label: `+${overflowItems.length}`,
+                              variant: 'ghost',
+                              size: 'lg',
+                            }}
+                            items={overflowItems.map(({index}) => ({
+                              label: CATEGORIES[index],
+                              onClick: () => setActiveTab(CATEGORIES[index]),
+                            }))}
+                          />
+                        )}>
+                        {CATEGORIES.map(cat => (
+                          <XDSToggleButton
+                            key={cat}
+                            label={cat}
+                            value={cat}
+                            size="lg"
+                          />
+                        ))}
+                      </XDSOverflowList>
+                    </XDSToggleButtonGroup>
+                  </XDSVStack>
+                </XDSStackItem>
+                <XDSDropdownMenu
+                  button={{label: sortOrder, size: 'lg'}}
+                  items={[
+                    {label: 'A-Z', onClick: () => setSortOrder('A-Z')},
+                    {label: 'Z-A', onClick: () => setSortOrder('Z-A')},
+                    {label: 'Newest', onClick: () => setSortOrder('Newest')},
+                  ]}
                 />
-                <XDSHStack vAlign="center" gap={4}>
-                  <XDSStackItem size="fill">
-                    <XDSVStack>
-                      <XDSToggleButtonGroup
-                        label="Filter by category"
-                        value={activeTab}
-                        onChange={v => setActiveTab(v ?? 'All')}>
-                        <XDSOverflowList
-                          gap={1}
-                          behavior="observeParent"
-                          overflowRenderer={overflowItems => (
-                            <XDSDropdownMenu
-                              button={{
-                                label: `+${overflowItems.length}`,
-                                variant: 'ghost',
-                                size: 'lg',
-                              }}
-                              items={overflowItems.map(({index}) => ({
-                                label: CATEGORIES[index],
-                                onClick: () => setActiveTab(CATEGORIES[index]),
-                              }))}
-                            />
-                          )}>
-                          {CATEGORIES.map(cat => (
-                            <XDSToggleButton
-                              key={cat}
-                              label={cat}
-                              value={cat}
-                              size="lg"
-                            />
-                          ))}
-                        </XDSOverflowList>
-                      </XDSToggleButtonGroup>
-                    </XDSVStack>
-                  </XDSStackItem>
-                  <XDSDropdownMenu
-                    button={{label: sortOrder, size: 'lg'}}
-                    items={[
-                      {label: 'A-Z', onClick: () => setSortOrder('A-Z')},
-                      {label: 'Z-A', onClick: () => setSortOrder('Z-A')},
-                      {label: 'Newest', onClick: () => setSortOrder('Newest')},
-                    ]}
-                  />
-                </XDSHStack>
-              </XDSVStack>
-
-              {filtered.length === 0 ? (
-                <XDSCenter>
-                  <XDSText type="supporting" color="secondary">
-                    No results found.
-                  </XDSText>
-                </XDSCenter>
-              ) : (
-                <XDSVStack gap={6}>
-                  {(
-                    groupedSections ?? [{category: activeTab, items: filtered}]
-                  ).flatMap(section => [
-                    <XDSDivider key={`d-${section.category}`} />,
-                    <LibrarySection
-                      key={section.category}
-                      category={section.category}
-                      items={section.items}
-                    />,
-                  ])}
-                </XDSVStack>
-              )}
+              </XDSHStack>
             </XDSVStack>
-          </XDSLayoutContent>
-        }
-      />
-    </XDSAppShell>
+
+            {filtered.length === 0 ? (
+              <XDSCenter>
+                <XDSText type="supporting" color="secondary">
+                  No results found.
+                </XDSText>
+              </XDSCenter>
+            ) : (
+              <XDSVStack gap={6}>
+                {(
+                  groupedSections ?? [{category: activeTab, items: filtered}]
+                ).flatMap(section => [
+                  <XDSDivider key={`d-${section.category}`} />,
+                  <LibrarySection
+                    key={section.category}
+                    category={section.category}
+                    items={section.items}
+                  />,
+                ])}
+              </XDSVStack>
+            )}
+          </XDSVStack>
+        </XDSLayoutContent>
+      }
+    />
   );
 }

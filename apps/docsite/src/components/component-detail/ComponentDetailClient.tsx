@@ -2,6 +2,7 @@
 
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import {Suspense} from 'react';
 import {useSearchParams, useRouter, usePathname} from 'next/navigation';
 import {XDSHeading, XDSText} from '@xds/core/Text';
@@ -25,6 +26,14 @@ import type {ComponentEntry} from '../../generated/componentRegistry';
 import type {BlockEntry} from '../../generated/blockRegistry';
 import {showcaseRegistry} from '../../generated/showcaseRegistry';
 import {exampleRegistry} from '../../generated/exampleRegistry';
+import {spacingVars} from '@xds/core/theme/tokens.stylex';
+
+const styles = stylex.create({
+  section: {
+    marginInline: 'auto',
+    paddingBottom: `calc(${spacingVars['--spacing-12']} * 2)`,
+  },
+});
 
 interface ComponentDetailClientProps {
   comp: ComponentEntry;
@@ -51,13 +60,20 @@ function OverviewContent({
       )}
 
       {comp.usage && (
-        <XDSVStack gap={6}>
-          <XDSHeading level={2}>Usage</XDSHeading>
+        <XDSVStack gap={4}>
+          <XDSHeading level={2} type="display-3">
+            Usage
+          </XDSHeading>
           <XDSText type="large" weight="normal">
             {comp.usage.description}
           </XDSText>
 
-          <XDSCodeBlock code={importPath} language="ts" hasCopyButton />
+          <XDSCodeBlock
+            code={importPath}
+            language="ts"
+            width="100%"
+            hasCopyButton
+          />
 
           {comp.usage.bestPractices && comp.usage.bestPractices.length > 0 && (
             <BestPractices practices={comp.usage.bestPractices} />
@@ -72,13 +88,15 @@ function OverviewContent({
       {(exampleRegistry[comp.name] || []).length > 0 && (
         <>
           <XDSDivider />
-          <XDSVStack gap={6}>
-            <XDSHeading level={2}>Examples</XDSHeading>
+          <XDSVStack gap={4}>
+            <XDSHeading level={2} type="display-3">
+              Examples
+            </XDSHeading>
             <XDSText type="large" weight="normal">
               Common configurations, variations, and states.
             </XDSText>
           </XDSVStack>
-          <XDSVStack gap={8}>
+          <XDSVStack gap={10}>
             {(exampleRegistry[comp.name] || []).map((entry, i) => (
               <ExampleBlock key={i} entry={entry} />
             ))}
@@ -125,9 +143,9 @@ function ComponentDetailInner({
   return (
     <XDSSection
       maxWidth={960}
-      padding={4}
+      padding={6}
       variant="transparent"
-      style={{marginInline: 'auto'}}>
+      xstyle={styles.section}>
       <XDSVStack gap={4}>
         <XDSVStack gap={2}>
           <XDSText type="display-1">{comp.displayName}</XDSText>

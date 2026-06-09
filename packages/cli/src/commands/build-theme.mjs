@@ -14,28 +14,33 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {createRequire} from 'node:module';
 import {pathToFileURL, fileURLToPath} from 'node:url';
 import {createJiti} from 'jiti';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {sanitizeName, PathSafetyError} from '../utils/path-safety.mjs';
-import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
+import {jsonOut, humanLog} from '../lib/json.mjs';
+import {cliError} from '../lib/cli-error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 // Import shared theme processing from core — ensures build and runtime
 // use the same logic for typography.scale expansion, prose, and component rules.
-const _require = createRequire(import.meta.url);
+// When available, these imports supersede all local fallback implementations
+// (parsePadding, expandContainerPadding, parseStyleKey, generateCSS, generateProseCSS).
 let _defineTheme = null;
 let _generateThemeRules = null;
 let _generateThemeRulesSplit = null;
 let _generateOnMediaCSS = null;
 try {
-  const coreTheme = _require('@xds/core/theme');
+  const coreTheme = await import('@xds/core/theme');
   _defineTheme = coreTheme.defineTheme;
   _generateThemeRules = coreTheme.generateThemeRules;
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
-} catch {
-  // Core not available — fall back to legacy generation
+} catch (_e) {
+  // Silent fallback. The theme command surfaces a clear error if it's actually
+  // invoked without core being available; emitting a stderr warning at module-
+  // load time would leak into every other command's output and break the
+  // clean-stderr contract under --json (and breaks tests that assert it).
 }
 
 /**
@@ -159,54 +164,16 @@ async function getKnownValues(componentName) {
 
 
 /**
- * Generate TypeScript declaration file with module augmentation for custom
- * component prop values found in the theme's `components` keys.
- *
- * Scans component override keys (e.g. `status:neutral`, `variant:primary-muted`)
- * and generates augmentations for values not in the base type.
+ * Generate TypeScript declaration content with module augmentation for custom
+ * component prop values found in the theme's `components` keys. Reads known
+ * values from doc files to filter out base prop values.
  *
  * Interface naming convention: XDS + PascalCase(component) + PascalCase(prop) + Map
  *   banner + status → XDSBannerStatusMap
  *   button + variant → XDSButtonVariantMap
  *
  * @param {object} themeDef - Theme definition (resolved by defineTheme)
- * @returns {string|null} TypeScript declaration content, or null if no augmentations needed
- */
-function generateVariantDeclarations(themeDef) {
-  if (!themeDef.components || Object.keys(themeDef.components).length === 0) {
-    return null;
-  }
-
-  // Collect custom values: { component: { prop: [value, ...] } }
-  const customValues = {};
-
-  for (const [component, rules] of Object.entries(themeDef.components)) {
-    for (const key of Object.keys(rules)) {
-      if (key === 'base') continue;
-
-      // Parse prop:value pairs from keys like 'status:neutral' or 'variant:primary+size:sm'
-      const pairs = key.split('+');
-      for (const pair of pairs) {
-        const colonIdx = pair.indexOf(':');
-        if (colonIdx === -1) continue;
-        const prop = pair.slice(0, colonIdx);
-        const value = pair.slice(colonIdx + 1);
-
-        // It's a custom value — collect it for augmentation
-        // (filtering against known values happens async in generateVariantDeclarationsAsync)
-        if (!customValues[component]) customValues[component] = {};
-        if (!customValues[component][prop]) customValues[component][prop] = new Set();
-        customValues[component][prop].add(value);
-      }
-    }
-  }
-
-  // Sync stub — returns null, use generateVariantDeclarationsAsync instead
-  return null;
-}
-
-/**
- * Async version of generateVariantDeclarations that reads known values from doc files.
+ * @returns {Promise<string|null>} TypeScript declaration content, or null if no augmentations needed
  */
 async function generateVariantDeclarationsAsync(themeDef) {
   if (!themeDef.components || Object.keys(themeDef.components).length === 0) {
@@ -295,6 +262,18 @@ function resolveTokenValue(value) {
 
 // =============================================================================
 // Container padding mapping
+//
+// LEGACY FALLBACK: The functions below (parsePadding, expandContainerPadding,
+// parseStyleKey, generateCSS, generateProseCSS) duplicate logic from
+// @xds/core/theme (packages/core/src/theme/generateThemeRules.ts).
+//
+// When @xds/core is built, the CLI imports and uses the shared implementation
+// from core (see _generateThemeRules / _generateThemeRulesSplit at top of file).
+// These local copies exist only as a fallback for when core hasn't been built yet
+// (e.g., first-time bootstrap or CI environments where core builds after CLI).
+//
+// TODO: Remove this fallback once the monorepo build order guarantees core
+// is always available before CLI runs. Track in issue backlog.
 // =============================================================================
 
 const CONTAINER_COMPONENTS = new Set(['card', 'section', 'dialog']);
@@ -454,6 +433,7 @@ const PROSE_COMPONENT_MAP = {
 
 /**
  * Generate CSS from a theme definition object.
+ * @deprecated Legacy fallback — see generateThemeRules.ts in @xds/core.
  *
  * When prose is enabled, component overrides for prose-related components
  * (heading, text, kbd, link, divider) co-select their HTML element
@@ -552,33 +532,6 @@ function generateCSS(themeDef, {prose = true} = {}) {
 // =============================================================================
 
 /**
- * Prose HTML element → XDS component class mappings.
- *
- * Prose maps raw HTML elements to their XDS component counterparts so that
- * plain markup (e.g. rendered markdown) inherits the component styles from
- * xds.base. The theme doesn't redefine the styles — it just aliases the
- * selectors, scoped under the theme boundary.
- */
-const PROSE_MAPPINGS = [
-  // Headings
-  {html: 'h1', xds: '.xds-heading.level-1'},
-  {html: 'h2', xds: '.xds-heading.level-2'},
-  {html: 'h3', xds: '.xds-heading.level-3'},
-  {html: 'h4', xds: '.xds-heading.level-4'},
-  {html: 'h5', xds: '.xds-heading.level-5'},
-  {html: 'h6', xds: '.xds-heading.level-6'},
-  // Text
-  {html: 'p', xds: '.xds-text.body'},
-  {html: 'small', xds: '.xds-text.supporting'},
-  {html: 'code', xds: '.xds-text.code'},
-  {html: 'pre', xds: '.xds-text.code'},
-  // Standalone components
-  {html: 'kbd', xds: '.xds-kbd'},
-  {html: 'a', xds: '.xds-link'},
-  {html: 'hr', xds: '.xds-divider'},
-];
-
-/**
  * Generate prose CSS — aliases raw HTML elements to XDS component classes.
  *
  * The actual styles live in xds.base (component CSS). Prose just says
@@ -598,10 +551,6 @@ function generateProseCSS(themeDef) {
   // For now, we co-select: the component overrides in generateCSS already
   // target .xds-button, .xds-card, etc. Prose adds the HTML element as
   // an additional selector for component overrides that have an HTML equivalent.
-  const rules = PROSE_MAPPINGS.map(
-    ({html, xds}) => `  ${html} { @extend ${xds}; }`,
-  );
-
   // CSS @extend isn't widely supported yet. Instead, generate rules that
   // reference the same token-based custom properties the components use.
   // This is a thin layer — just structural resets + token references.
@@ -711,7 +660,7 @@ function extractThemeDefinitionLegacy(filePath) {
         `Expected: defineTheme({ name: '...', tokens: {...} })`,
       );
     }
-    // eslint-disable-next-line no-eval
+     
     return eval(`(${defaultMatch[1]})`);
   }
 
@@ -720,12 +669,13 @@ function extractThemeDefinitionLegacy(filePath) {
   objStr = objStr.replace(/icons:\s*[a-zA-Z_][a-zA-Z0-9_]*/g, 'icons: undefined');
 
   try {
-    // eslint-disable-next-line no-eval
+     
     return eval(`(${objStr})`);
   } catch (e) {
     throw new Error(
       `Failed to parse theme definition in ${filePath}: ${e.message}\n` +
       `Make sure the defineTheme() argument is a plain object literal.`,
+      {cause: e},
     );
   }
 }
@@ -956,7 +906,7 @@ function validatePrivateVars(themeDef) {
 
   for (const [component, rules] of Object.entries(themeDef.components)) {
     for (const [key, styles] of Object.entries(rules)) {
-      for (const [prop, value] of Object.entries(styles)) {
+      for (const prop of Object.keys(styles)) {
         if (typeof prop === 'string' && prop.startsWith('--_')) {
           errors.push(
             `Component "${component}" (${key}) sets private var "${prop}". ` +
@@ -974,12 +924,20 @@ function validatePrivateVars(themeDef) {
 export function registerTheme(program) {
   const theme = program
     .command('theme')
-    .description('Theme tools — build, export, and manage XDS themes')
-    .action(() => {
-      // Parent group has no default behaviour. When invoked without a
-      // subcommand, the preAction hook (in index.mjs) will reject --json
-      // because 'theme' (parent) is not on the JSON_SUPPORTED allowlist —
-      // only 'theme build' is. For the human path, fall through to help.
+    .description('Theme tools — build, export, and manage themes')
+    .action((options, cmd) => {
+      // Parent group has no default behaviour. If the user passed an
+      // unknown subcommand (e.g. `xds theme bogus`), Commander hands it to
+      // us as a positional in cmd.args — exit 1 with a clear error.
+      const extras = (cmd && cmd.args) || [];
+      if (extras.length > 0) {
+        const unknown = String(extras[0]);
+        const known = (theme.commands || []).map((c) => c.name());
+        const suggestions = known.map((name) => ({name, reason: 'available subcommand'}));
+        cliError(`unknown subcommand 'theme ${unknown}'`, {suggestions, code: ERROR_CODES.ERR_UNKNOWN_SUBCOMMAND});
+        return;
+      }
+      // Bare `xds theme` — show the subcommand list. Exit 0 (help is success).
       theme.help();
     });
 
@@ -993,9 +951,8 @@ export function registerTheme(program) {
       const json = program.opts().json || false;
 
       if (!fs.existsSync(filePath)) {
-        if (json) return jsonError('File not found: ' + filePath);
-        console.error(`Error: File not found: ${filePath}`);
-        process.exit(1);
+        cliError(`File not found: ${filePath}`, {code: ERROR_CODES.ERR_FILE_NOT_FOUND});
+        return;
       }
 
       if (!json) humanLog(`\nBuilding theme from ${path.relative(process.cwd(), filePath)}...`);
@@ -1005,15 +962,13 @@ export function registerTheme(program) {
       try {
         themeDef = await extractThemeDefinition(filePath);
       } catch (e) {
-        if (json) return jsonError(e.message);
-        console.error(`Error: ${e.message}`);
-        process.exit(1);
+        cliError(e.message, {code: ERROR_CODES.ERR_THEME_LOAD});
+        return;
       }
 
       if (!themeDef.name) {
-        if (json) return jsonError('Theme must have a name property.');
-        console.error('Error: Theme must have a name property.');
-        process.exit(1);
+        cliError('Theme must have a name property.', {code: ERROR_CODES.ERR_THEME_INVALID});
+        return;
       }
 
       // Path-safety: the theme name is used to derive output filenames
@@ -1024,9 +979,8 @@ export function registerTheme(program) {
         sanitizeName(themeDef.name, {label: 'theme name'});
       } catch (err) {
         if (err instanceof PathSafetyError) {
-          if (json) return jsonError(err.message);
-          console.error(`Error: ${err.message}`);
-          process.exit(1);
+          cliError(err.message, {code: ERROR_CODES.ERR_PATH_TRAVERSAL});
+          return;
         }
         throw err;
       }
@@ -1074,7 +1028,7 @@ export function registerTheme(program) {
         if (_generateThemeRulesSplit) {
           const {component, prose} = _generateThemeRulesSplit(resolvedTheme);
           const cssParts = [];
-          if (prose.length > 0) {
+          if (options.prose !== false && prose.length > 0) {
             const proseInner = prose.join('\n\n');
             cssParts.push(`@layer reset {\n@scope (${scopeSelector}) to (${scopeTo}) {\n${proseInner}\n}\n}`);
           }
@@ -1115,8 +1069,10 @@ export function registerTheme(program) {
       } else {
         // Legacy fallback when core isn't built yet
         const scopeBlocks = [];
-        const proseCss = generateProseCSS(themeDef);
-        if (proseCss) scopeBlocks.push(proseCss);
+        if (options.prose !== false) {
+          const proseCss = generateProseCSS(themeDef);
+          if (proseCss) scopeBlocks.push(proseCss);
+        }
         const mainCss = generateCSS(themeDef);
         if (mainCss) scopeBlocks.push(mainCss);
         if (scopeBlocks.length === 0) {
@@ -1199,9 +1155,8 @@ export function registerTheme(program) {
           try { fs.rmSync(s.tmp, {force: true}); } catch { /* best-effort */ }
         }
         const msg = `Failed to write theme outputs: ${err.message}`;
-        if (json) return jsonError(msg);
-        console.error(`Error: ${msg}`);
-        process.exit(1);
+        cliError(msg, {code: ERROR_CODES.ERR_WRITE_FAILED});
+        return;
       }
 
       if (!json) {
@@ -1234,12 +1189,16 @@ export function registerTheme(program) {
 
       // Print install instructions
       const relDir = path.relative(process.cwd(), outDir);
+      // When the output dir is the cwd, relDir is empty — avoid emitting a
+      // double-slash import path like './/<name>'. Build a './<relDir>/'
+      // prefix that collapses to './' when relDir is empty.
+      const importPrefix = relDir ? `./${relDir}/` : './';
       const exportName = `${toIdentifier(baseName)}Theme`;
       humanLog(`
 Install in your app:
 
-  import { ${exportName} } from './${relDir}/${baseName}';
-  import './${relDir}/${baseName}.css';
+  import { ${exportName} } from '${importPrefix}${baseName}';
+  import '${importPrefix}${baseName}.css';
 
   <XDSTheme theme={${exportName}}>
     <App />
@@ -1247,9 +1206,9 @@ Install in your app:
 
 Or with a <link> tag:
 
-  import { ${exportName} } from './${relDir}/${baseName}';
+  import { ${exportName} } from '${importPrefix}${baseName}';
 
-  <link rel="stylesheet" href="./${relDir}/${baseName}.css" />
+  <link rel="stylesheet" href="${importPrefix}${baseName}.css" />
   <XDSTheme theme={${exportName}}>
     <App />
   </XDSTheme>

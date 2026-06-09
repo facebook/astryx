@@ -6,18 +6,16 @@
  * Global options: --detail full|compact|brief, --lang en|zh
  */
 
-import {findCoreDir} from '../../utils/paths.mjs';
-import {discoverHooks, findHookDoc} from '../../lib/hook-discovery.mjs';
-import {loadDocs} from '../../lib/component-loader.mjs';
 import {
   formatHookFull,
   formatHookCompact,
   formatHookBrief,
-  formatHookBriefAll,
   formatHookParams,
 } from '../../lib/hook-format.mjs';
 import {getRunPrefix} from '../../utils/package-manager.mjs';
-import {jsonOut, jsonError, humanLog} from '../../lib/json.mjs';
+import {jsonOut, humanLog} from '../../lib/json.mjs';
+import {cliError} from '../../lib/cli-error.mjs';
+import {ERROR_CODES} from '../../lib/error-codes.mjs';
 import {hook as hookApi} from '../../api/hook.mjs';
 import {findRelatedBlocks} from '../../api/template.mjs';
 
@@ -32,15 +30,17 @@ export function registerHook(program) {
       const run = getRunPrefix();
       const zh = program.opts().zh || false;
       const lang = program.opts().lang || null;
-      const detail = program.opts().detail || 'full';
+      const detailSource = program.getOptionValueSource('detail');
+      const isListView = options.list || options.category || !name;
+      // Default detail level is full for single-hook view, brief for list views.
+      let detail = program.opts().detail || 'full';
+      if (isListView && detailSource === 'default') detail = 'brief';
       const json = program.opts().json || false;
 
       const validDetails = ['full', 'compact', 'brief'];
       if (!validDetails.includes(detail)) {
-        if (json) return jsonError(`Invalid --detail value "${detail}". Valid levels: ${validDetails.join(', ')}`);
-        console.error(`Error: Invalid --detail value "${detail}".`);
-        console.error(`Valid levels: ${validDetails.join(', ')}`);
-        process.exit(1);
+        cliError(`Invalid --detail value "${detail}". Valid levels: ${validDetails.join(', ')}`, {code: ERROR_CODES.ERR_INVALID_DETAIL});
+        return;
       }
 
       let result;
@@ -54,24 +54,16 @@ export function registerHook(program) {
           lang, zh,
         });
       } catch (e) {
-        if (json) return jsonError(e.message, e.suggestions);
-        console.error(`Error: ${e.message}`);
-        if (e.suggestions?.length) {
-          console.error('');
-          for (const s of e.suggestions) {
-            console.error(`  ${s.name}  (${s.reason})`);
-          }
-        }
-        process.exit(1);
+        cliError(e.message, {suggestions: e.suggestions, code: e.code});
+        return;
       }
 
       if (json) return jsonOut(result.type, result.data);
 
       // ── Text output ────────────────────────────────────────────
-      const coreDir = findCoreDir(process.cwd());
-
       switch (result.type) {
         case 'hook.list': {
+          // --detail brief (default for list views) — names only.
           if (options.category) {
             const [cat, hookNames] = Object.entries(result.data)[0];
             humanLog(`\n${cat}:`);
@@ -91,10 +83,31 @@ export function registerHook(program) {
         }
 
         case 'hook.brief': {
-          if (options.category || options.list || !name) {
-            humanLog(await formatHookBriefAll(coreDir));
-          } else {
-            humanLog(formatHookBrief(result.data));
+          // --detail compact — name + 1-line description per entry.
+          humanLog('');
+          for (const [cat, items] of Object.entries(result.data)) {
+            humanLog(cat);
+            for (const item of items) {
+              const desc = item.description ? ` — ${item.description}` : '';
+              humanLog(`  ${item.name}${desc}`);
+            }
+            humanLog('');
+          }
+          humanLog(`Usage: ${run} xds hook <name>`);
+          humanLog('');
+          break;
+        }
+
+        case 'hook.full': {
+          // --detail full — dense per-hook docs grouped by category
+          // (import block, best practices, full params + returns tables, related).
+          humanLog('');
+          for (const [cat, items] of Object.entries(result.data)) {
+            humanLog(`## ${cat}\n`);
+            for (const item of items) {
+              const importPath = item.importPath || '@xds/core/hooks';
+              humanLog(formatHookCompact(item, importPath));
+            }
           }
           break;
         }

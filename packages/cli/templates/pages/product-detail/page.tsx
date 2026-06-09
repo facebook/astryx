@@ -3,9 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {
+  XDSVStack,
+  XDSHStack,
+  XDSLayout,
+  XDSLayoutContent,
+} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSText, XDSHeading} from '@xds/core/Text';
@@ -19,7 +22,6 @@ import {
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
-import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import * as stylex from '@stylexjs/stylex';
 
@@ -53,15 +55,7 @@ const pageStyles = stylex.create({
   },
 });
 
-import {
-  ShoppingBagIcon,
-  UserIcon,
-  MagnifyingGlassIcon,
-  HeartIcon,
-  MinusIcon,
-  PlusIcon,
-  StarIcon,
-} from '@heroicons/react/24/outline';
+import {MinusIcon, PlusIcon, StarIcon} from '@heroicons/react/24/outline';
 import {StarIcon as StarIconSolid} from '@heroicons/react/24/solid';
 
 // ─── Star Rating ─────────────────────────────────────────────────────────────
@@ -90,19 +84,19 @@ function StarRating({rating, count}: {rating: number; count: number}) {
 // IMAGES[0] = fallback hero; IMAGES[1..6] = thumbnails (first is selected by default)
 const IMAGES = [
   // light-product-1 (fallback hero)
-  'https://lookaside.facebook.com/assets/xds_oss/light-home-horizontal-1.png',
+  '/template-assets/light-home-horizontal-1.png',
   // light-product-1 (thumbnail 1)
-  'https://lookaside.facebook.com/assets/xds_oss/light-home-horizontal-1.png',
+  '/template-assets/light-home-horizontal-1.png',
   // light-product-2
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-2.png',
+  '/template-assets/light-product-2.png',
   // light-product-3
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-3.png',
+  '/template-assets/light-product-3.png',
   // light-product-4
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-4.png',
+  '/template-assets/light-product-4.png',
   // light-product-5
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-5.png',
+  '/template-assets/light-product-5.png',
   // light-product-1 (gallery variety)
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-1.png',
+  '/template-assets/light-product-1.png',
 ];
 
 // ─── Product Data ───────────────────────────────────────────────────────────
@@ -133,65 +127,6 @@ const FINISHES = [
 ];
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
-
-// ─── TopNav ─────────────────────────────────────────────────────────────────
-function StoreTopNav() {
-  return (
-    <XDSTopNav
-      label="Store navigation"
-      heading={
-        <XDSTopNavHeading
-          heading="Kiln & Table"
-          logo={
-            <XDSNavIcon
-              icon={
-                <XDSIcon icon={ShoppingBagIcon} size="sm" color="inherit" />
-              }
-            />
-          }
-          href="#"
-        />
-      }
-      centerContent={
-        <>
-          <XDSTopNavItem label="New Arrivals" href="#" />
-          <XDSTopNavItem label="Mugs" href="#" isSelected />
-          <XDSTopNavItem label="Plates & Bowls" href="#" />
-          <XDSTopNavItem label="Serveware" href="#" />
-          <XDSTopNavItem label="About" href="#" />
-        </>
-      }
-      endContent={
-        <XDSHStack gap={2}>
-          <XDSButton
-            label="Search"
-            variant="ghost"
-            icon={<XDSIcon icon={MagnifyingGlassIcon} size="sm" />}
-            isIconOnly
-          />
-          <XDSButton
-            label="Wishlist"
-            variant="ghost"
-            icon={<XDSIcon icon={HeartIcon} size="sm" />}
-            isIconOnly
-          />
-          <XDSButton
-            label="Account"
-            variant="ghost"
-            icon={<XDSIcon icon={UserIcon} size="sm" />}
-            isIconOnly
-          />
-          <XDSButton
-            label="Cart"
-            variant="ghost"
-            icon={<XDSIcon icon={ShoppingBagIcon} size="sm" />}
-            isIconOnly
-          />
-        </XDSHStack>
-      }
-    />
-  );
-}
 
 // ─── Image Gallery ──────────────────────────────────────────────────────────
 function ImageGallery({
@@ -374,24 +309,25 @@ export default function ProductDetailTemplate() {
   const [selectedThumb, setSelectedThumb] = useState(0);
 
   return (
-    <XDSAppShell
-      topNav={<StoreTopNav />}
+    <XDSLayout
       height="auto"
-      contentPadding={0}
-      variant="surface">
-      <XDSCenter axis="horizontal">
-        <XDSVStack gap={0} xstyle={pageStyles.pageWrapper}>
-          <XDSGrid columns={{minWidth: 400}} gap={5}>
-            <ImageGallery
-              selected={selectedThumb}
-              onSelect={setSelectedThumb}
-            />
-            <XDSVStack gap={0} xstyle={pageStyles.stickyInfo}>
-              <ProductInfo />
+      content={
+        <XDSLayoutContent padding={0}>
+          <XDSCenter axis="horizontal">
+            <XDSVStack gap={0} xstyle={pageStyles.pageWrapper}>
+              <XDSGrid columns={{minWidth: 400}} gap={5}>
+                <ImageGallery
+                  selected={selectedThumb}
+                  onSelect={setSelectedThumb}
+                />
+                <XDSVStack gap={0} xstyle={pageStyles.stickyInfo}>
+                  <ProductInfo />
+                </XDSVStack>
+              </XDSGrid>
             </XDSVStack>
-          </XDSGrid>
-        </XDSVStack>
-      </XDSCenter>
-    </XDSAppShell>
+          </XDSCenter>
+        </XDSLayoutContent>
+      }
+    />
   );
 }

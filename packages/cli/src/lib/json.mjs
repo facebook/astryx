@@ -7,7 +7,11 @@
  * The contract has four guarantees, enforced here and in index.mjs:
  *
  *   1. EVERY emission in --json mode is a single valid JSON envelope.
- *      Success: { apiVersion, type, data }   Error: { apiVersion, error, suggestions? }
+ *      Success: { apiVersion, type, data }
+ *      Error:   { apiVersion, error, code, suggestions? }
+ *      The `code` is a stable, machine-readable identifier (see
+ *      error-codes.mjs). Consumers should branch on `code`, never on the
+ *      human-readable `error` string.
  *   2. Commands that don't support --json are rejected BEFORE any side
  *      effect (preAction gate in index.mjs).
  *   3. Human-facing chatter is suppressed in --json mode (see humanLog /
@@ -24,6 +28,8 @@
  * Version of the JSON envelope contract. Bump on breaking shape changes so
  * consumers can negotiate. Exposed on every envelope as `apiVersion`.
  */
+import {ERROR_CODES} from './error-codes.mjs';
+
 export const API_VERSION = 1;
 
 /**
@@ -99,15 +105,30 @@ export function jsonOut(type, data, meta) {
  * Build a structured error envelope without emitting it. Used by the bin
  * error boundary to convert an uncaught throw into the contract's error
  * shape.
+ *
+ * The `code` is resolved in priority order: an explicit `code` argument,
+ * then a `code` property carried on a thrown Error/XDSError, then the
+ * generic `ERR_UNKNOWN` fallback. It always appears on the envelope so
+ * consumers can branch on it unconditionally.
+ *
  * @param {unknown} err
  * @param {Array<{name: string, reason: string}>} [suggestions]
- * @returns {{apiVersion: number, error: string, suggestions?: Array<{name: string, reason: string}>}}
+ * @param {string} [code] - Explicit stable error code. Overrides any code
+ *   carried on a thrown Error.
+ * @returns {{apiVersion: number, error: string, code: string, suggestions?: Array<{name: string, reason: string}>}}
  */
-export function toErrorEnvelope(err, suggestions) {
+export function toErrorEnvelope(err, suggestions, code) {
   const message =
     err instanceof Error ? err.message : typeof err === 'string' ? err : String(err);
+  const resolvedCode =
+    code ||
+    (err && typeof err === 'object' &&
+    typeof (/** @type {any} */ (err).code) === 'string'
+      ? /** @type {any} */ (err).code
+      : undefined) ||
+    ERROR_CODES.ERR_UNKNOWN;
   /** @type {any} */
-  const env = {apiVersion: API_VERSION, error: message};
+  const env = {apiVersion: API_VERSION, error: message, code: resolvedCode};
   if (suggestions?.length) env.suggestions = suggestions;
   return env;
 }
@@ -116,10 +137,11 @@ export function toErrorEnvelope(err, suggestions) {
  * Output a structured JSON error and exit.
  * @param {string} message
  * @param {Array<{name: string, reason: string}>} [suggestions]
+ * @param {string} [code] - Stable machine-readable error code (error-codes.mjs).
  */
-export function jsonError(message, suggestions) {
+export function jsonError(message, suggestions, code) {
   process.__xdsJsonHandled = true;
-  const err = toErrorEnvelope(message, suggestions);
+  const err = toErrorEnvelope(message, suggestions, code);
   console.log(JSON.stringify(err, null, 2));
   process.exit(1);
 }

@@ -53,13 +53,18 @@ import {
   plainDateAddDays,
   plainDateIsBefore,
   plainDateIsEqual,
-  plainDateIsInRange,
   plainDateGetWeekNumber,
   plainDateFormat,
   DATE_FORMAT_WITH_WEEKDAY,
   DATE_FORMAT_MONTH_YEAR,
 } from '../utils/plainDate';
 import {xdsClassName, mergeProps} from '../utils';
+import {
+  computeDayCellState,
+  computeRangeRounding,
+  computePreviewRounding,
+  isEndpoint,
+} from './dayCellUtils';
 
 // =============================================================================
 // Types
@@ -796,78 +801,60 @@ function DayCell({
 }: DayCellProps) {
   const {date, isOutside, dayNumber} = day;
 
-  // Empty cell for outside days when not showing them
   if (isOutside && !hasOutsideDays) {
     return <div {...stylex.props(dayCellStyles.cell)} />;
   }
 
-  // Outside days should not be clickable even when visible
-  const effectivelyDisabled = isDisabled || isOutside;
+  const state = computeDayCellState({
+    date,
+    dayIndex,
+    mode,
+    selectedDate,
+    rangeStart,
+    rangeEnd,
+    previewStart,
+    previewEnd,
+    today,
+    isDisabled,
+    isOutside,
+  });
 
-  const isToday = plainDateIsEqual(date, today);
-  const isSelected =
-    mode === 'single' && selectedDate && plainDateIsEqual(date, selectedDate);
-  const isInRange =
-    mode === 'range' &&
-    rangeStart &&
-    rangeEnd &&
-    plainDateIsInRange(date, [rangeStart, rangeEnd]);
-  const isRangeStart =
-    mode === 'range' && rangeStart && plainDateIsEqual(date, rangeStart);
-  const isRangeEnd =
-    mode === 'range' && rangeEnd && plainDateIsEqual(date, rangeEnd);
-
-  // Preview range calculations
-  const isInPreview =
-    previewStart &&
-    previewEnd &&
-    plainDateIsInRange(date, [previewStart, previewEnd]);
-  const isPreviewStart = previewStart && plainDateIsEqual(date, previewStart);
-  const isPreviewEnd = previewEnd && plainDateIsEqual(date, previewEnd);
-
-  // Determine cell background for range
-  const hasRangeBackground = isInRange;
-
-  // Round edges at grid boundaries or range endpoints
-  const isFirstColumn = dayIndex === 0;
-  const isLastColumn = dayIndex === 6;
-
-  // Determine if background needs rounded edges
-  const roundLeft = isRangeStart || isFirstColumn;
-  const roundRight = isRangeEnd || isLastColumn;
-
-  // Determine if preview needs rounded edges
-  const previewRoundLeft = isPreviewStart || isFirstColumn;
-  const previewRoundRight = isPreviewEnd || isLastColumn;
+  const endpoint = isEndpoint(state);
+  const rangeRounding = computeRangeRounding(state);
+  const previewRounding = computePreviewRounding(state);
 
   return (
     <div {...stylex.props(dayCellStyles.cell)}>
       {/* Range background */}
-      {hasRangeBackground && (
+      {state.isInRange && (
         <div
           {...stylex.props(
             dayCellStyles.rangeBg,
             dayCellTheme.rangeBg,
-            roundLeft && dayCellStyles.rangeBgRadiusLeft,
-            roundRight && dayCellStyles.rangeBgRadiusRight,
-            isRangeStart && dayCellStyles.rangeInsetLeft,
-            isRangeStart && roundRight && dayCellStyles.rangeInsetRight,
-            isRangeEnd && dayCellStyles.rangeInsetRight,
-            isRangeStart && roundLeft && dayCellStyles.rangeInsetLeft,
+            rangeRounding.roundLeft && dayCellStyles.rangeBgRadiusLeft,
+            rangeRounding.roundRight && dayCellStyles.rangeBgRadiusRight,
+            state.isRangeStart && dayCellStyles.rangeInsetLeft,
+            state.isRangeStart &&
+              rangeRounding.roundRight &&
+              dayCellStyles.rangeInsetRight,
+            state.isRangeEnd && dayCellStyles.rangeInsetRight,
+            state.isRangeStart &&
+              rangeRounding.roundLeft &&
+              dayCellStyles.rangeInsetLeft,
           )}
         />
       )}
 
       {/* Preview range background */}
-      {isInPreview && (
+      {state.isInPreview && (
         <div
           {...stylex.props(
             dayCellStyles.previewBg,
             dayCellTheme.previewBg,
-            previewRoundLeft && dayCellStyles.previewBgRadiusLeft,
-            previewRoundRight && dayCellStyles.previewBgRadiusRight,
-            isPreviewStart && dayCellStyles.previewStart,
-            isPreviewEnd && dayCellStyles.previewEnd,
+            previewRounding.roundLeft && dayCellStyles.previewBgRadiusLeft,
+            previewRounding.roundRight && dayCellStyles.previewBgRadiusRight,
+            state.isPreviewStart && dayCellStyles.previewStart,
+            state.isPreviewEnd && dayCellStyles.previewEnd,
           )}
         />
       )}
@@ -878,39 +865,45 @@ function DayCell({
         role="gridcell"
         data-date={day.iso}
         aria-label={plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY)}
-        aria-selected={isSelected || isInRange || undefined}
-        aria-disabled={effectivelyDisabled || undefined}
+        aria-selected={state.isSelected || state.isInRange || undefined}
+        aria-disabled={state.effectivelyDisabled || undefined}
         disabled={isDisabled}
         tabIndex={isTabbableDay ? 0 : -1}
-        onClick={() => !effectivelyDisabled && onDayClick(date)}
-        onMouseEnter={() => !effectivelyDisabled && onDayHover(date)}
+        onClick={() => !state.effectivelyDisabled && onDayClick(date)}
+        onMouseEnter={() => !state.effectivelyDisabled && onDayHover(date)}
         onMouseLeave={() => onDayHover(null)}
         {...mergeProps(
           xdsClassName('calendar-day', {
-            selected:
-              isSelected || isRangeStart || isRangeEnd ? 'selected' : null,
-            today: isToday ? 'today' : null,
-            disabled: effectivelyDisabled ? 'disabled' : null,
-            'in-range': isInRange ? 'in-range' : null,
+            selected: endpoint ? 'selected' : null,
+            today: state.isToday ? 'today' : null,
+            disabled: state.effectivelyDisabled ? 'disabled' : null,
+            'in-range': state.isInRange ? 'in-range' : null,
           }),
           stylex.props(
             dayCellStyles.day,
             dayCellTheme.day,
             isOutside && dayCellStyles.dayOutside,
             isOutside && dayCellTheme.dayOutside,
-            isToday && !isSelected && !isInRange && dayCellStyles.dayToday,
-            isToday && !isSelected && !isInRange && dayCellTheme.dayToday,
-            isToday &&
-              !isSelected &&
-              isInRange &&
+            state.isToday &&
+              !state.isSelected &&
+              !state.isInRange &&
+              dayCellStyles.dayToday,
+            state.isToday &&
+              !state.isSelected &&
+              !state.isInRange &&
+              dayCellTheme.dayToday,
+            state.isToday &&
+              !state.isSelected &&
+              state.isInRange &&
               dayCellStyles.dayTodayInRange,
-            isToday && !isSelected && isInRange && dayCellTheme.dayTodayInRange,
-            (isSelected || isRangeStart || isRangeEnd) &&
-              dayCellStyles.daySelected,
-            (isSelected || isRangeStart || isRangeEnd) &&
-              dayCellTheme.daySelected,
-            effectivelyDisabled && dayCellStyles.dayDisabled,
-            effectivelyDisabled && dayCellTheme.dayDisabled,
+            state.isToday &&
+              !state.isSelected &&
+              state.isInRange &&
+              dayCellTheme.dayTodayInRange,
+            endpoint && dayCellStyles.daySelected,
+            endpoint && dayCellTheme.daySelected,
+            state.effectivelyDisabled && dayCellStyles.dayDisabled,
+            state.effectivelyDisabled && dayCellTheme.dayDisabled,
           ),
         )}>
         {dayNumber}

@@ -13,8 +13,9 @@
 #   /index.html    — landing page
 #   /latest        — short hash of latest deploy
 #
-# Uses keep_files:false — each deploy is a clean slate. PR previews and
-# reports are preserved by copying them from gh-pages before deploying.
+# Uses keep_files:false + force_orphan:true — each deploy is a clean slate.
+# PR previews and reports are preserved by copying them from gh-pages before
+# deploying, but old generated artifact history is not retained.
 name: Deploy
 
 on:
@@ -254,6 +255,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./deploy
           keep_files: false
+          force_orphan: true
           destination_dir: .
 
   # Publish @xds/* packages to Metaccio (Meta's internal npm registry).

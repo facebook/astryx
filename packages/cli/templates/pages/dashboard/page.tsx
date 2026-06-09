@@ -2,20 +2,15 @@
 
 'use client';
 
-import {useState} from 'react';
-
-import {XDSAppShell} from '@xds/core/AppShell';
 import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
-} from '@xds/core/SideNav';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+  XDSVStack,
+  XDSHStack,
+  XDSLayout,
+  XDSLayoutContent,
+} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
-import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {
   BarChart,
@@ -38,20 +33,11 @@ import {XDSIcon} from '@xds/core/Icon';
 // ============= ICONS =============
 
 import {
-  Squares2X2Icon,
-  FolderIcon,
-  UserGroupIcon,
-  CircleStackIcon,
-  DocumentTextIcon,
   ArrowPathIcon,
   ArrowUpIcon,
   ArrowDownIcon,
 } from '@heroicons/react/24/outline';
-import {
-  Squares2X2Icon as Squares2X2IconSolid,
-  ChartBarIcon as ChartBarIconSolid,
-  StopIcon,
-} from '@heroicons/react/24/solid';
+import {StopIcon} from '@heroicons/react/24/solid';
 
 // ============= DATA =============
 
@@ -738,135 +724,85 @@ function TableCard<T extends {id: string}>({
 
 // ============= SIDENAV =============
 
-function DashboardSideNav() {
-  const [active, setActive] = useState('dashboard');
-  return (
-    <XDSSideNav
-      header={
-        <XDSSideNavHeading
-          icon={
-            <XDSNavIcon icon={<XDSIcon icon={ChartBarIconSolid} size="sm" />} />
-          }
-          heading="Analytics"
-          headingHref="/"
-        />
-      }>
-      <XDSSideNavSection title="Platform">
-        <XDSSideNavItem
-          label="Dashboard"
-          icon={active === 'dashboard' ? Squares2X2IconSolid : Squares2X2Icon}
-          isSelected={active === 'dashboard'}
-          onClick={() => setActive('dashboard')}
-        />
-        <XDSSideNavItem
-          label="Projects"
-          icon={FolderIcon}
-          isSelected={active === 'projects'}
-          onClick={() => setActive('projects')}
-        />
-        <XDSSideNavItem
-          label="Team"
-          icon={UserGroupIcon}
-          isSelected={active === 'team'}
-          onClick={() => setActive('team')}
-        />
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Documents">
-        <XDSSideNavItem
-          label="Data Library"
-          icon={CircleStackIcon}
-          isSelected={active === 'data'}
-          onClick={() => setActive('data')}
-        />
-        <XDSSideNavItem
-          label="Reports"
-          icon={DocumentTextIcon}
-          isSelected={active === 'reports'}
-          onClick={() => setActive('reports')}
-        />
-      </XDSSideNavSection>
-    </XDSSideNav>
-  );
-}
-
 // ============= MAIN COMPONENT =============
 
 export default function DashboardTemplate() {
   return (
-    <XDSAppShell
-      sideNav={<DashboardSideNav />}
-      variant="elevated"
+    <XDSLayout
       height="auto"
-      contentPadding={6}>
-      <XDSVStack gap={6}>
-        {/* Active Users Chart */}
-        <XDSVStack gap={6}>
-          <XDSHStack hAlign="between" vAlign="center">
-            <XDSHeading level={3}>Active users</XDSHeading>
-            <XDSButton
-              label="Reload"
-              variant="secondary"
-              size="md"
-              icon={<XDSIcon icon={ArrowPathIcon} size="sm" />}
-            />
-          </XDSHStack>
-          <ActiveUsersChart />
-        </XDSVStack>
-
-        {/* Metric Cards */}
-        <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
-          {[0, 2].map(start => (
-            <XDSGrid
-              key={start}
-              columns={{minWidth: 240, repeat: 'fit'}}
-              gap={4}>
-              {metrics.slice(start, start + 2).map((m, i) => (
-                <MetricCard
-                  key={m.label}
-                  {...m}
-                  sparkline={sparklines[start + i]}
+      content={
+        <XDSLayoutContent padding={6}>
+          <XDSVStack gap={6}>
+            {/* Active Users Chart */}
+            <XDSVStack gap={6}>
+              <XDSHStack hAlign="between" vAlign="center">
+                <XDSHeading level={3}>Active users</XDSHeading>
+                <XDSButton
+                  label="Reload"
+                  variant="secondary"
+                  size="md"
+                  icon={<XDSIcon icon={ArrowPathIcon} size="sm" />}
                 />
+              </XDSHStack>
+              <ActiveUsersChart />
+            </XDSVStack>
+
+            {/* Metric Cards */}
+            <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
+              {[0, 2].map(start => (
+                <XDSGrid
+                  key={start}
+                  columns={{minWidth: 240, repeat: 'fit'}}
+                  gap={4}>
+                  {metrics.slice(start, start + 2).map((m, i) => (
+                    <MetricCard
+                      key={m.label}
+                      {...m}
+                      sparkline={sparklines[start + i]}
+                    />
+                  ))}
+                </XDSGrid>
               ))}
             </XDSGrid>
-          ))}
-        </XDSGrid>
 
-        <XDSDivider />
+            <XDSDivider />
 
-        {/* Demographics */}
-        <XDSHStack hAlign="between" vAlign="center">
-          <XDSHeading level={3}>Demographics</XDSHeading>
-          <XDSButton label="View more" variant="secondary" size="md" />
-        </XDSHStack>
-        <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
-          <StackedBarCard title="Region" data={regionData} />
-          <StackedBarCard title="Role" data={roleData} />
-        </XDSGrid>
+            {/* Demographics */}
+            <XDSHStack hAlign="between" vAlign="center">
+              <XDSHeading level={3}>Demographics</XDSHeading>
+              <XDSButton label="View more" variant="secondary" size="md" />
+            </XDSHStack>
+            <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
+              <StackedBarCard title="Region" data={regionData} />
+              <StackedBarCard title="Role" data={roleData} />
+            </XDSGrid>
 
-        <XDSDivider />
+            <XDSDivider />
 
-        {/* Engagement */}
-        <XDSHStack hAlign="between" vAlign="center">
-          <XDSHeading level={3}>Engagement</XDSHeading>
-          <XDSButton label="View more" variant="secondary" size="md" />
-        </XDSHStack>
-        <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
-          <TableCard
-            title="Top pages"
-            linkLabel="All pages"
-            linkHref="#"
-            data={topPagesData}
-            columns={topPagesColumns}
-          />
-          <TableCard
-            title="Top events"
-            linkLabel="All events"
-            linkHref="#"
-            data={topEventsData}
-            columns={topEventsColumns}
-          />
-        </XDSGrid>
-      </XDSVStack>
-    </XDSAppShell>
+            {/* Engagement */}
+            <XDSHStack hAlign="between" vAlign="center">
+              <XDSHeading level={3}>Engagement</XDSHeading>
+              <XDSButton label="View more" variant="secondary" size="md" />
+            </XDSHStack>
+            <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
+              <TableCard
+                title="Top pages"
+                linkLabel="All pages"
+                linkHref="#"
+                data={topPagesData}
+                columns={topPagesColumns}
+              />
+              <TableCard
+                title="Top events"
+                linkLabel="All events"
+                linkHref="#"
+                data={topEventsData}
+                columns={topEventsColumns}
+              />
+            </XDSGrid>
+          </XDSVStack>
+        </XDSLayoutContent>
+      }
+    />
   );
 }
