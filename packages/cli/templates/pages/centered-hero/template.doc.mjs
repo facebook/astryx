@@ -3,11 +3,10 @@
 /** @type {import('../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'page',
-  name: 'Basic',
-  displayName: 'Basic',
+  name: 'Centered Hero',
+  displayName: 'Centered Hero',
   description:
-    'Centered headline, description, and CTA buttons above a full-width image.',
-  isReady: false,
-  category: 'Gallery - Basic',
-  isHiddenFromOverview: true,
+    'Centered headline, description, and CTA buttons above a wide hero image.',
+  isReady: true,
+  category: 'Gallery - Centered Hero',
 };
