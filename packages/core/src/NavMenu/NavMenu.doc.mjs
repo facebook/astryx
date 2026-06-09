@@ -24,3 +24,16 @@ export const docs = {
     {name: 'xstyle', type: 'StyleXStyles', description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.'},
   ],
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Accessible menu container + items for nav heading popovers. XDSNavHeadingMenu = role="menu" w/ keyboard nav; XDSNavHeadingMenuItem renders selectable items.',
+  usage: {
+    description:
+      'Accessible menu container + items for nav heading popovers. XDSNavHeadingMenu provides role="menu" w/ keyboard navigation; XDSNavHeadingMenuItem renders individual selectable items. Pass as menu prop of XDSSideNavHeading or XDSTopNavHeading.',
+  },
+  propDescriptions: {
+    size: 'controls min-width + item padding',
+    minWidth: 'minimum width override',
+  },
+};
