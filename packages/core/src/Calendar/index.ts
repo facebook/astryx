@@ -6,6 +6,8 @@
  * @file index.ts
  * @output Public API for the Calendar component
  * @position Entry point; re-exported by /packages/core/src/index.ts
+ *
+ * SYNC: When modified, update /packages/core/src/index.ts
  */
 
 export {XDSCalendar} from './XDSCalendar';
@@ -15,7 +17,7 @@ export type {
   ISODateString,
   DayOfWeek,
   DateRange,
-} from './types';
+} from './XDSCalendar';
 
 // Hooks for advanced usage
 export {
