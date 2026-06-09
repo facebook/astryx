@@ -980,8 +980,7 @@ export default function ShellLabPage() {
   // Initialize config from URL params on mount
   const initialConfig = useMemo(
     () => paramsToConfig(searchParams),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [], // Only read URL on mount
+    [], // only read URL on mount
   );
   const [config, setConfig] = useState<ShellConfig>(initialConfig);
   const [showConfig, setShowConfig] = useState(true);
