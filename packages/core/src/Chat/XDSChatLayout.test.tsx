@@ -5,7 +5,7 @@ import {render, screen} from '@testing-library/react';
 import {XDSChatLayout} from './XDSChatLayout';
 
 describe('XDSChatLayout', () => {
-  it('renders children', () => {
+  it('renders children in the message area', () => {
     render(
       <XDSChatLayout composer={<div>composer</div>}>
         <div>Hello message</div>
@@ -14,22 +14,16 @@ describe('XDSChatLayout', () => {
     expect(screen.getByText('Hello message')).toBeTruthy();
   });
 
-  it('renders composer in fixed dock', () => {
+  it('renders composer in dock', () => {
     render(
       <XDSChatLayout composer={<div data-testid="composer">Compose</div>}>
         <div>msg</div>
       </XDSChatLayout>,
     );
-    const composer = screen.getByTestId('composer');
-    expect(composer).toBeTruthy();
-    // The dock (parent of the composer's wrapper) should have position: fixed
-    const dock = composer.parentElement?.parentElement;
-    expect(dock).toBeTruthy();
-    // StyleX applies classes, so check the element exists in the DOM structure
-    expect(dock?.tagName).toBe('DIV');
+    expect(screen.getByTestId('composer')).toBeTruthy();
   });
 
-  it('renders empty state when children is empty', () => {
+  it('renders empty state when children is empty array', () => {
     render(
       <XDSChatLayout
         composer={<div>composer</div>}
@@ -40,7 +34,7 @@ describe('XDSChatLayout', () => {
     expect(screen.getByText('No messages yet')).toBeTruthy();
   });
 
-  it('does not render empty state when children exist', () => {
+  it('prefers children over empty state when both present', () => {
     render(
       <XDSChatLayout
         composer={<div>composer</div>}
@@ -52,35 +46,56 @@ describe('XDSChatLayout', () => {
     expect(screen.queryByText('No messages yet')).toBeNull();
   });
 
-  it('has container-type on root', () => {
-    render(
-      <XDSChatLayout composer={<div>composer</div>} data-testid="layout-root">
+  it('applies density attribute to root element', () => {
+    const {rerender} = render(
+      <XDSChatLayout
+        composer={<div>composer</div>}
+        data-testid="layout"
+        density="compact">
         <div>msg</div>
       </XDSChatLayout>,
     );
-    const root = screen.getByTestId('layout-root');
-    expect(root).toBeTruthy();
-    expect(root.className).toContain('xds-chat-layout');
-  });
+    const root = screen.getByTestId('layout');
+    expect(root.className).toContain('compact');
 
-  it('applies data-testid', () => {
-    render(
-      <XDSChatLayout composer={<div>composer</div>} data-testid="my-layout">
+    rerender(
+      <XDSChatLayout
+        composer={<div>composer</div>}
+        data-testid="layout"
+        density="spacious">
         <div>msg</div>
       </XDSChatLayout>,
     );
-    expect(screen.getByTestId('my-layout')).toBeTruthy();
+    expect(root.className).toContain('spacious');
   });
 
-  it('renders scrollButton slot', () => {
+  it('defaults density to balanced', () => {
+    render(
+      <XDSChatLayout composer={<div>composer</div>} data-testid="layout">
+        <div>msg</div>
+      </XDSChatLayout>,
+    );
+    const root = screen.getByTestId('layout');
+    expect(root.className).toContain('balanced');
+  });
+
+  it('renders custom scrollButton slot', () => {
     render(
       <XDSChatLayout
         composer={<div>composer</div>}
-        scrollButton={<button type="button">Scroll to bottom</button>}>
+        scrollButton={<button type="button">Scroll down</button>}>
         <div>msg</div>
       </XDSChatLayout>,
     );
-    const button = screen.getByRole('button', {name: /Scroll to bottom/});
-    expect(button).toBeTruthy();
+    expect(screen.getByRole('button', {name: /Scroll down/})).toBeTruthy();
+  });
+
+  it('hides scrollButton when null', () => {
+    render(
+      <XDSChatLayout composer={<div>composer</div>} scrollButton={null}>
+        <div>msg</div>
+      </XDSChatLayout>,
+    );
+    expect(screen.queryByRole('button')).toBeNull();
   });
 });
