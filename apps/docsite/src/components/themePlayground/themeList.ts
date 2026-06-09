@@ -7,7 +7,7 @@
  */
 
 import type {XDSDefinedTheme} from '@xds/core/theme';
-import {themeObjects} from '../../generated/themeRegistry';
+import {themeObjectsFull} from '../../generated/themeRegistry';
 
 export interface ThemeListEntry {
   name: string;
@@ -16,7 +16,7 @@ export interface ThemeListEntry {
 }
 
 export function getThemeList(): ThemeListEntry[] {
-  return Object.values(themeObjects)
+  return Object.values(themeObjectsFull)
     .map(theme => ({
       name: theme.name,
       label: theme.name.charAt(0).toUpperCase() + theme.name.slice(1),

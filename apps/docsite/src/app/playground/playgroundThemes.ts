@@ -12,7 +12,7 @@
  */
 
 import type {XDSDefinedTheme} from '@xds/core/theme';
-import {themeObjects} from '../../generated/themeRegistry';
+import {themeObjectsFull} from '../../generated/themeRegistry';
 import {packages} from '../../generated/packageRegistry';
 
 export interface PlaygroundTheme {
@@ -24,7 +24,9 @@ export interface PlaygroundTheme {
   theme: XDSDefinedTheme;
 }
 
-const displayNameByPackage = new Map(packages.map(p => [p.name, p.displayName]));
+const displayNameByPackage = new Map(
+  packages.map(p => [p.name, p.displayName]),
+);
 
 /** "@xds/theme-default" → "default" */
 function toShortName(packageName: string): string {
@@ -43,7 +45,9 @@ function toLabel(packageName: string, shortName: string): string {
   return base.charAt(0).toUpperCase() + base.slice(1);
 }
 
-export const PLAYGROUND_THEMES: PlaygroundTheme[] = Object.entries(themeObjects)
+export const PLAYGROUND_THEMES: PlaygroundTheme[] = Object.entries(
+  themeObjectsFull,
+)
   .map(([packageName, theme]) => {
     const value = toShortName(packageName);
     return {value, label: toLabel(packageName, value), theme};
