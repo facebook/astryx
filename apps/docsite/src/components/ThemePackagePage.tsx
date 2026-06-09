@@ -366,30 +366,48 @@ const styles = stylex.create({
     position: 'relative' as const,
     zIndex: 1,
   },
-  // Mobile-only top bar that replaces the sidebar at narrow
-  // viewports. Holds the back link + theme dropdown + the same
-  // action cluster (mode toggle, Customize, Install) in a single
-  // horizontal row, wrapping if needed.
+  // Mobile-only floating toolbar that replaces the sidebar at
+  // narrow viewports. position:fixed so it stays pinned to the
+  // bottom of the viewport as the user scrolls the right pane;
+  // horizontally centered via left:50% + translateX(-50%). Holds
+  // the theme dropdown + mode toggle in a single horizontal row.
+  // Visual chrome (pill border, card background, --shadow-high)
+  // matches a floating action toolbar, since it's no longer
+  // inline with the page surface — it needs to read as a
+  // detached control sitting above the content.
+  // width:fit-content so the pill hugs its contents rather than
+  // stretching across the viewport. zIndex:100 keeps it above
+  // page content; PreviewStage's full-screen overlay uses 50,
+  // so this still loses to that (intentional — when the
+  // playground takes over, the toolbar shouldn't poke through).
   mobileBar: {
     display: 'none',
     [SIDEBAR_BREAKPOINT]: {
       display: 'flex',
       flexDirection: 'row' as const,
-      flexWrap: 'wrap' as const,
       alignItems: 'center',
       gap: 'var(--spacing-2)',
-      padding: 'var(--spacing-3)',
-      borderRadius: 'var(--radius-container)',
+      padding: 'var(--spacing-2)',
+      borderRadius: 'var(--radius-full)',
       borderWidth: 'var(--border-width)',
       borderStyle: 'solid',
       borderColor: 'var(--color-border)',
       backgroundColor: 'var(--color-background-card)',
+      boxShadow: 'var(--shadow-high)',
+      position: 'fixed' as const,
+      bottom: 'var(--spacing-4)',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      zIndex: 100,
+      width: 'fit-content',
+      maxWidth: `calc(100vw - var(--spacing-4) * 2)`,
     },
   },
-  // Mobile selector grows to take the leading flex space so the
-  // action buttons cluster on the trailing edge of the bar.
+  // Mobile selector — fixed minimum so the dropdown trigger has
+  // room for the longest theme label without forcing the floating
+  // pill to span the entire viewport. No flex:1 here (the parent
+  // is fit-content sized, not a stretched row).
   mobileSelector: {
-    flex: 1,
     minWidth: 160,
   },
   // Preview card — unchanged from the floating-toolbar version.
@@ -735,10 +753,12 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
           hidden sidebar at narrow viewports. */}
       <div {...stylex.props(styles.rightColumn)}>
         {/* Mobile bar — replaces the sidebar at narrow viewports.
-            Theme switcher collapses to an XDSSelector dropdown +
-            mode toggle icon button. (Customize is reached via the
-            sidebar's "Build a custom theme" CTA at desktop sizes;
-            on mobile the hero CTAs live above the preview already.) */}
+            Renders as a floating pill pinned to the bottom of the
+            viewport (position:fixed) so the theme switcher stays
+            reachable while the user scrolls the long preview pane.
+            Stays in the DOM here (rather than at <body> root) so
+            it co-locates with the state it controls; position:fixed
+            takes it out of the right column's flex flow regardless. */}
         <div {...stylex.props(styles.mobileBar)}>
           <div {...stylex.props(styles.mobileSelector)}>
             <XDSSelector
