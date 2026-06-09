@@ -278,7 +278,9 @@ export default function ThemesPage() {
                   {/* Tile is fully presentational. Navigation is
                       handled exclusively by the two XDSButtons inside
                       the hover overlay ("Preview" → /themes/<slug>;
-                      "Open in Playground" → /themes/playground/<slug>).
+                      "Open in Playground" → /playground?theme=<slug>,
+                      which opens the main playground with the theme
+                      seeded into the Theme editor).
                       No card-wide click target — earlier iterations
                       wrapped this in XDSClickableCard, but the
                       overlay scrim's pointer-events: auto combined
@@ -329,7 +331,7 @@ export default function ThemesPage() {
                                 label="Open in Playground"
                                 variant="secondary"
                                 size="sm"
-                                href={`/themes/playground/${slug}`}
+                                href={`/playground?theme=${slug}`}
                               />
                             </XDSHStack>
                           </XDSVStack>

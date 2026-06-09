@@ -16,7 +16,7 @@ import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
 // light-scene-horizontal-1 from xds_oss asset set
 const IMAGE_URL =
-  'https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png';
+  '/template-assets/light-scene-horizontal-1.png';
 
 const styles = stylex.create({
   textCenter: {

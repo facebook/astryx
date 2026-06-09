@@ -12,8 +12,8 @@ import React, {
   type ErrorInfo,
   type ReactNode,
 } from 'react';
-import {XDSTheme} from '@xds/core/theme';
-import type {ThemeMode} from '@xds/core/theme';
+import {XDSTheme, defineTheme} from '@xds/core/theme';
+import type {ThemeMode, XDSDefinedTheme} from '@xds/core/theme';
 import {
   themeByValue,
   DEFAULT_PLAYGROUND_THEME,
@@ -96,7 +96,16 @@ type PreviewMessage =
   | {type: 'preview-ping'}
   | {type: 'preview-code'; code: string}
   | {type: 'preview-clear'}
-  | {type: 'preview-theme'; mode?: string; theme?: string}
+  | {
+      type: 'preview-theme';
+      mode?: string;
+      theme?: string;
+      // A custom theme authored in the editor. Sent as raw token map +
+      // components (not a defineTheme result) so the payload stays reliably
+      // structured-clone-safe across postMessage; the iframe rebuilds it.
+      customTokens?: Record<string, string>;
+      customComponents?: unknown;
+    }
   | {type: 'preview-highlight'; id: string}
   | {type: 'preview-select'; id: string}
   | {type: 'targeting-enable'}
@@ -399,6 +408,9 @@ export default function PreviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [themeMode, setThemeMode] = useState<ThemeMode>('system');
   const [themeName, setThemeName] = useState(DEFAULT_PLAYGROUND_THEME);
+  // A custom theme authored in the playground theme editor. When set it takes
+  // precedence over the registered theme resolved from themeName.
+  const [customTheme, setCustomTheme] = useState<XDSDefinedTheme | null>(null);
   const [resetKey, setResetKey] = useState(0);
   const [tsReady, setTsReady] = useState(false);
   // Whether the rendered output should fill the stage (full-page templates) vs
@@ -425,7 +437,7 @@ export default function PreviewPage() {
     document.head.appendChild(script);
   }, []);
 
-  const theme = themeByValue[themeName] ?? FALLBACK_THEME;
+  const theme = customTheme ?? themeByValue[themeName] ?? FALLBACK_THEME;
 
   const postToParent = useCallback((msg: Record<string, unknown>) => {
     window.parent.postMessage(msg, '*');
@@ -466,14 +478,38 @@ export default function PreviewPage() {
     setError(null);
   }, []);
 
-  const handleTheme = useCallback((msg: {mode?: string; theme?: string}) => {
-    if (msg.mode === 'light' || msg.mode === 'dark' || msg.mode === 'system') {
-      setThemeMode(msg.mode);
-    }
-    if (msg.theme && msg.theme in themeByValue) {
-      setThemeName(msg.theme);
-    }
-  }, []);
+  const handleTheme = useCallback(
+    (msg: {
+      mode?: string;
+      theme?: string;
+      customTokens?: Record<string, string>;
+      customComponents?: unknown;
+    }) => {
+      if (
+        msg.mode === 'light' ||
+        msg.mode === 'dark' ||
+        msg.mode === 'system'
+      ) {
+        setThemeMode(msg.mode);
+      }
+      if (msg.customTokens) {
+        setCustomTheme(
+          defineTheme({
+            name: 'custom',
+            tokens: msg.customTokens,
+            components: msg.customComponents as XDSDefinedTheme['components'],
+          }),
+        );
+      } else {
+        // No custom tokens — fall back to the registered theme by key.
+        setCustomTheme(null);
+        if (msg.theme && msg.theme in themeByValue) {
+          setThemeName(msg.theme);
+        }
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!tsReady) {
