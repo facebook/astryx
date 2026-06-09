@@ -171,8 +171,10 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     paddingInline: spacingVars['--spacing-1'],
     marginInline: `calc(-1 * ${spacingVars['--spacing-1']})`,
-    ':hover': {
-      backgroundColor: colorVars['--color-overlay-hover'],
+    '@media (hover: hover)': {
+      ':hover': {
+        backgroundColor: colorVars['--color-overlay-hover'],
+      },
     },
   },
   callRowToggle: {
