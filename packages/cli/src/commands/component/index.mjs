@@ -146,7 +146,9 @@ export function registerComponent(program) {
             const importHint = resolveImportPath(coreDir, resolvedName);
             humanLog(formatCompact(result.data, resolvedName, importHint));
           } else {
-            humanLog(formatFull(result.data, {themeData}));
+            const resolvedName = (name || '').replace(/^XDS/, '');
+            const importHint = resolveImportPath(coreDir, resolvedName);
+            humanLog(formatFull(result.data, {themeData, importHint}));
           }
           const compName = (name || '').replace(/^XDS/, '');
           const related = await findRelatedBlocks(compName);
