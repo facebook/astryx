@@ -119,7 +119,7 @@ export default function ClassicGalleryTemplate() {
       height="auto"
       contentWidth={1200}
       content={
-        <XDSLayoutContent padding={6}>
+        <XDSLayoutContent padding={8}>
           <XDSVStack gap={8}>
             {/* Header */}
             <XDSCenter axis="horizontal">
