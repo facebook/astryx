@@ -49,7 +49,8 @@ function OverviewContent({
   hasShowcase,
 }: ComponentDetailClientProps & {hasShowcase: boolean}) {
   const isHook = comp.params != null;
-  const importPath = `import {${comp.moduleName}} from '${pkg}/${comp.directory}'`;
+  const importFrom = comp.importPath ?? `${pkg}/${comp.directory}`;
+  const importPath = `import {${comp.moduleName}} from '${importFrom}'`;
 
   return (
     <XDSVStack gap={8}>

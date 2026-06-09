@@ -114,6 +114,24 @@ function findDocFilesRecursive(dir) {
   return results;
 }
 
+/**
+ * Resolve the correct import path for a component given its package directory
+ * and the subdirectory it lives in. Checks the package.json "exports" field to
+ * find a matching subpath export (e.g. `@xds/core/Chat`).
+ *
+ * Falls back to the package name when no explicit export is found.
+ */
+function resolveImportPathForPkg(pkgDir, directory) {
+  const pkgJsonPath = path.join(REPO_ROOT, pkgDir, 'package.json');
+  if (!fs.existsSync(pkgJsonPath)) return null;
+  const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
+  if (pkg.exports && pkg.exports[`./${directory}`]) {
+    return `${pkg.name}/${directory}`;
+  }
+  // No matching export — fall back to package root
+  return pkg.name;
+}
+
 // ── Package discovery ──────────────────────────────────────────────────
 
 /**
@@ -232,7 +250,7 @@ async function generateComponentRegistry() {
     const pkgJson = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, dir, 'package.json'), 'utf-8'));
     const allDocFiles = findDocFilesRecursive(srcDir);
     if (allDocFiles.length > 0) {
-      componentPackages.push({name: pkgJson.name, srcDir});
+      componentPackages.push({name: pkgJson.name, srcDir, dir});
     }
   }
 
@@ -299,6 +317,11 @@ async function generateComponentRegistry() {
             // Sub-entries whose name differs from the doc name are
             // sub-components — hide them from the overview page.
             const isSubEntry = subName !== doc.name;
+            // Each sub-component may have its own usage; fall back to
+            // the parent doc's usage only when the sub doesn't define one.
+            const subUsage = sub.usage
+              ? sanitizeForJson(sub.usage)
+              : usage;
             pendingSubComponents.push({
               name: subName,
               displayName: requireDisplayName(
@@ -307,6 +330,7 @@ async function generateComponentRegistry() {
               ),
               moduleName: sub.name || subName,
               directory: entry.name,
+              importPath: resolveImportPathForPkg(pkg.dir, entry.name),
               group,
               category,
               isHiddenFromOverview: sub.isHiddenFromOverview ?? isHiddenFromOverview,
@@ -315,7 +339,7 @@ async function generateComponentRegistry() {
               hidden,
               parentDoc: doc.name,
               props: Array.isArray(sub.props) ? sanitizeForJson(sub.props) : [],
-              usage,
+              usage: subUsage,
               theming,
               params: null,
               returns: null,
@@ -336,6 +360,7 @@ async function generateComponentRegistry() {
             ),
             moduleName: name,
             directory: entry.name,
+            importPath: resolveImportPathForPkg(pkg.dir, entry.name),
             group,
             category,
             isHiddenFromOverview,
@@ -364,6 +389,7 @@ async function generateComponentRegistry() {
             ),
             moduleName: name.startsWith('use') ? name : `XDS${name}`,
             directory: entry.name,
+            importPath: resolveImportPathForPkg(pkg.dir, entry.name),
             group,
             category,
             isHiddenFromOverview,
@@ -483,6 +509,8 @@ export interface ComponentEntry {
   displayName: string;
   moduleName: string;
   directory: string;
+  /** Resolved import path, e.g. \`@xds/core/Chat\`. Derived from package.json exports. */
+  importPath: string | null;
   group: string | null;
   /** Functional category for the overview gallery (Actions, Inputs, etc.) */
   category: string | null;
