@@ -46,42 +46,42 @@ interface GalleryImage {
 const IMAGES: GalleryImage[] = [
   {
     // illustrative-horizontal-1 from xds_oss asset set
-    src: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg',
+    src: '/template-assets/illustrative-horizontal-1.jpg',
     title: 'Going places',
   },
   {
     // light-home-horizontal-1 from xds_oss asset set
-    src: 'https://lookaside.facebook.com/assets/xds_oss/light-home-horizontal-1.png',
+    src: '/template-assets/light-home-horizontal-1.png',
     title: 'Making memories',
   },
   {
     // light-lifestyle-vertical-3 from xds_oss asset set
-    src: 'https://lookaside.facebook.com/assets/xds_oss/light-lifestyle-vertical-3.png',
+    src: '/template-assets/light-lifestyle-vertical-3.png',
     title: 'Seeing things',
   },
   {
     // light-lifestyle-vertical-1 from xds_oss asset set
-    src: 'https://lookaside.facebook.com/assets/xds_oss/light-lifestyle-vertical-1.png',
+    src: '/template-assets/light-lifestyle-vertical-1.png',
     title: 'Sharing ideas',
   },
   {
     // light-lifestyle-horizontal-1 from xds_oss asset set
-    src: 'https://lookaside.facebook.com/assets/xds_oss/light-lifestyle-horizontal-1.png',
+    src: '/template-assets/light-lifestyle-horizontal-1.png',
     title: 'Being free',
   },
   {
     // light-home-square-2 from xds_oss asset set
-    src: 'https://lookaside.facebook.com/assets/xds_oss/light-home-square-2.png',
+    src: '/template-assets/light-home-square-2.png',
     title: 'Feeling at home',
   },
   {
     // light-lifestyle-vertical-4 from xds_oss asset set
-    src: 'https://lookaside.facebook.com/assets/xds_oss/light-lifestyle-vertical-4.png',
+    src: '/template-assets/light-lifestyle-vertical-4.png',
     title: 'Taking it easy',
   },
   {
     // light-working-horizontal-2 from xds_oss asset set
-    src: 'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-2.png',
+    src: '/template-assets/light-working-horizontal-2.png',
     title: 'Getting things done',
   },
 ];
