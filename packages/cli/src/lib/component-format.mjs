@@ -103,6 +103,7 @@ function formatTargetsTable(docs, themeData) {
  * @param {object} docs - Component doc object
  * @param {object} [options] - Options
  * @param {object|null} [options.themeData] - Resolved theme data
+ * @param {string|null} [options.importHint] - Import path hint (e.g. '@xds/core/Button')
  */
 export function formatFull(docs, options = {}) {
   const sections = [];
@@ -110,6 +111,11 @@ export function formatFull(docs, options = {}) {
   sections.push(`# ${docs.name}\n`);
   const desc = docs.usage?.description || docs.description || '';
   sections.push(desc + '\n');
+
+  if (options.importHint) {
+    const displayName = docs.components?.[0]?.name || `XDS${docs.name}`;
+    sections.push(`**Import:** \`import {${displayName}} from '${options.importHint}';\`\n`);
+  }
 
   if (docs.usage?.anatomy?.length) {
     sections.push('## Anatomy\n');
