@@ -49,16 +49,24 @@ import type {
   GapReportFileResponse,
 } from './gap-report';
 import type {SearchResponse} from './search';
+import type {ErrorCode} from './error-codes';
 
-/** Structured error. Check `'error' in result` to discriminate. */
+/**
+ * Structured error. Check `'error' in result` to discriminate.
+ *
+ * Branch on `code` (a stable machine-readable identifier), never on the
+ * human-readable `error` string, which changes freely.
+ */
 export interface CLIError {
   error: string;
+  code: ErrorCode;
   suggestions?: Array<{name: string; reason: string}>;
 }
 
 /** Returned by the fallback hook for commands without --json support. */
 export interface CLIUnsupportedError {
   error: `JSON output is not supported for the '${string}' command`;
+  code: ErrorCode;
 }
 
 /** Wrap any response type to include possible error shapes. */
@@ -124,6 +132,7 @@ export function jsonOut<T extends CLIResponseType>(
 export function jsonError(
   message: string,
   suggestions?: Array<{name: string; reason: string}>,
+  code?: ErrorCode,
 ): never;
 
 /** Parse raw CLI output (string or object) into typed result. */

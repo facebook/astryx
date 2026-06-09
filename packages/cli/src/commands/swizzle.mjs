@@ -19,6 +19,7 @@ import {assertWithin, PathSafetyError, isNonInteractive} from '../utils/path-saf
 import {isInteractive} from '../utils/interactive.mjs';
 import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {
   buildGapReportPreview,
   checkGhCli,
@@ -88,6 +89,7 @@ export function registerSwizzle(program) {
       if (!coreDir) {
         cliError(
           'Could not find @xds/core package. Make sure you are inside the design system monorepo or have @xds/core installed.',
+          {code: ERROR_CODES.ERR_CORE_NOT_FOUND},
         );
         return;
       }
@@ -112,7 +114,7 @@ export function registerSwizzle(program) {
       if (!fs.existsSync(componentDir)) {
         cliError(
           `Component "${component}" not found.`,
-          {suggestions: components.slice(0, 10).map((n) => ({name: n}))},
+          {suggestions: components.slice(0, 10).map((n) => ({name: n})), code: ERROR_CODES.ERR_UNKNOWN_COMPONENT},
         );
         return;
       }
@@ -126,7 +128,7 @@ export function registerSwizzle(program) {
         });
       } catch (err) {
         if (err instanceof PathSafetyError) {
-          cliError(err.message);
+          cliError(err.message, {code: ERROR_CODES.ERR_PATH_TRAVERSAL});
           return;
         }
         throw err;
@@ -151,7 +153,7 @@ export function registerSwizzle(program) {
           const msg =
             `Refusing to overwrite ${existingFiles.length} existing file(s) in ${relOutputForMsg}/. ` +
             `Re-run with --overwrite (or -f) to replace them.`;
-          cliError(msg);
+          cliError(msg, {code: ERROR_CODES.ERR_FILE_EXISTS});
           return;
         }
         const confirmed = isCancel(

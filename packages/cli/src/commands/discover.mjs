@@ -32,7 +32,7 @@ export function registerDiscover(program) {
       try {
         result = await discoverApi(query, {components: options.components, lang, zh});
       } catch (e) {
-        cliError(e.message, {suggestions: e.suggestions});
+        cliError(e.message, {suggestions: e.suggestions, code: e.code});
         return;
       }
 

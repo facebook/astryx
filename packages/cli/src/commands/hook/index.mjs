@@ -18,6 +18,7 @@ import {
 import {getRunPrefix} from '../../utils/package-manager.mjs';
 import {jsonOut, jsonError, humanLog} from '../../lib/json.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
+import {ERROR_CODES} from '../../lib/error-codes.mjs';
 import {hook as hookApi} from '../../api/hook.mjs';
 import {findRelatedBlocks} from '../../api/template.mjs';
 
@@ -41,7 +42,7 @@ export function registerHook(program) {
 
       const validDetails = ['full', 'compact', 'brief'];
       if (!validDetails.includes(detail)) {
-        cliError(`Invalid --detail value "${detail}". Valid levels: ${validDetails.join(', ')}`);
+        cliError(`Invalid --detail value "${detail}". Valid levels: ${validDetails.join(', ')}`, {code: ERROR_CODES.ERR_INVALID_DETAIL});
         return;
       }
 
@@ -56,7 +57,7 @@ export function registerHook(program) {
           lang, zh,
         });
       } catch (e) {
-        cliError(e.message, {suggestions: e.suggestions});
+        cliError(e.message, {suggestions: e.suggestions, code: e.code});
         return;
       }
 

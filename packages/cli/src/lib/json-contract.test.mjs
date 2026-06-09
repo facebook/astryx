@@ -66,11 +66,33 @@ describe('json envelope shape', () => {
     expect(env.data).toEqual([]);
   });
 
-  it('toErrorEnvelope produces { apiVersion, error } from string or Error', () => {
-    expect(toErrorEnvelope('boom')).toEqual({apiVersion: API_VERSION, error: 'boom'});
+  it('toErrorEnvelope produces { apiVersion, error, code } from string or Error', () => {
+    expect(toErrorEnvelope('boom')).toEqual({
+      apiVersion: API_VERSION,
+      error: 'boom',
+      code: 'ERR_UNKNOWN',
+    });
     expect(toErrorEnvelope(new Error('kaboom'))).toEqual({
       apiVersion: API_VERSION,
       error: 'kaboom',
+      code: 'ERR_UNKNOWN',
+    });
+  });
+
+  it('toErrorEnvelope honors an explicit code argument', () => {
+    expect(toErrorEnvelope('boom', undefined, 'ERR_UNKNOWN_COMPONENT')).toEqual({
+      apiVersion: API_VERSION,
+      error: 'boom',
+      code: 'ERR_UNKNOWN_COMPONENT',
+    });
+  });
+
+  it('toErrorEnvelope reads a code carried on a thrown Error', () => {
+    const err = Object.assign(new Error('kaboom'), {code: 'ERR_NO_DOC'});
+    expect(toErrorEnvelope(err)).toEqual({
+      apiVersion: API_VERSION,
+      error: 'kaboom',
+      code: 'ERR_NO_DOC',
     });
   });
 

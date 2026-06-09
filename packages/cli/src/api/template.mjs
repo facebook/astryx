@@ -9,6 +9,7 @@ import * as path from 'node:path';
 import {CLI_ROOT, discoverExternalPackages} from '../utils/paths.mjs';
 import {assertWithin, isFilePathArg, PathSafetyError} from '../utils/path-safety.mjs';
 import {XDSError} from './error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {loadConfig} from '../lib/config.mjs';
 
 const TEMPLATES_DIR = path.join(CLI_ROOT, 'templates');
@@ -347,6 +348,8 @@ export async function getTemplateById(id, options = {}) {
         "      get: async (id) => { /* return template source string */ },\n" +
         '    },\n' +
         '  };',
+      undefined,
+      ERROR_CODES.ERR_TEMPLATE_CONFIG,
     );
   }
 
@@ -355,24 +358,30 @@ export async function getTemplateById(id, options = {}) {
     source = await getter(id);
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
-    throw new XDSError(`template.get("${id}") threw an error: ${detail}`);
+    throw new XDSError(`template.get("${id}") threw an error: ${detail}`, undefined, ERROR_CODES.ERR_TEMPLATE_GET);
   }
 
   if (source == null) {
     throw new XDSError(
       `template.get("${id}") returned ${source} — no template found for that ID`,
+      undefined,
+      ERROR_CODES.ERR_TEMPLATE_GET,
     );
   }
 
   if (typeof source !== 'string') {
     throw new XDSError(
       `template.get("${id}") must return a string, got ${typeof source}`,
+      undefined,
+      ERROR_CODES.ERR_TEMPLATE_GET,
     );
   }
 
   if (source.trim() === '') {
     throw new XDSError(
       `template.get("${id}") returned an empty string`,
+      undefined,
+      ERROR_CODES.ERR_TEMPLATE_GET,
     );
   }
 
@@ -414,6 +423,7 @@ export async function template(name, options = {}) {
     throw new XDSError(
       `Unknown template "${name}"`,
       templates.map(t => ({name: t.dirName, reason: `${t.type} template`})),
+      ERROR_CODES.ERR_UNKNOWN_TEMPLATE,
     );
   }
 
@@ -422,10 +432,11 @@ export async function template(name, options = {}) {
       throw new XDSError(
         'Specify a template name for --skeleton',
         templates.map(t => ({name: t.dirName, reason: `${t.type} template`})),
+        ERROR_CODES.ERR_UNKNOWN_TEMPLATE,
       );
     }
     if (!fs.existsSync(match.filePath)) {
-      throw new XDSError(`No source file found for template "${name}"`);
+      throw new XDSError(`No source file found for template "${name}"`, undefined, ERROR_CODES.ERR_NO_SOURCE);
     }
     const src = fs.readFileSync(match.filePath, 'utf-8');
     return {
@@ -440,7 +451,7 @@ export async function template(name, options = {}) {
   }
 
   if (!fs.existsSync(match.filePath)) {
-    throw new XDSError(`No source file found for template "${name}"`);
+    throw new XDSError(`No source file found for template "${name}"`, undefined, ERROR_CODES.ERR_NO_SOURCE);
   }
 
   if (show || !targetPath) {
@@ -467,7 +478,7 @@ export async function template(name, options = {}) {
     });
   } catch (err) {
     if (err instanceof PathSafetyError) {
-      throw new XDSError(err.message);
+      throw new XDSError(err.message, undefined, ERROR_CODES.ERR_PATH_TRAVERSAL);
     }
     throw err;
   }

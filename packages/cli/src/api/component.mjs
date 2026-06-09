@@ -8,6 +8,7 @@
  */
 
 import * as fs from 'node:fs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {findCoreDir, discoverExternalPackages} from '../utils/paths.mjs';
 import {
   discoverComponents,
@@ -76,7 +77,7 @@ export async function component(name, options = {}) {
 
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
-    throw new XDSError('Could not find @xds/core package');
+    throw new XDSError('Could not find @xds/core package', undefined, ERROR_CODES.ERR_CORE_NOT_FOUND);
   }
 
   // ── List mode ──────────────────────────────────────────────────
@@ -92,6 +93,7 @@ export async function component(name, options = {}) {
         throw new XDSError(
           `Unknown category "${category}"`,
           Object.keys(components).map(k => ({name: k, reason: 'valid category'})),
+          ERROR_CODES.ERR_UNKNOWN_CATEGORY,
         );
       }
 
@@ -217,13 +219,13 @@ export async function component(name, options = {}) {
   if (packageScope) {
     const ext = resolveExternalPackage(packageScope, cwd);
     if (!ext) {
-      throw new XDSError(`External package "${packageScope}" not found`);
+      throw new XDSError(`External package "${packageScope}" not found`, undefined, ERROR_CODES.ERR_UNKNOWN_PACKAGE);
     }
 
     if (showcase) {
       const match = await findShowcase(dirName, cwd, {package: packageScope});
       if (!match) {
-        throw new XDSError(`No showcase found for "${name}" in package "${packageScope}"`);
+        throw new XDSError(`No showcase found for "${name}" in package "${packageScope}"`, undefined, ERROR_CODES.ERR_NO_SHOWCASE);
       }
       return {
         type: 'component.detail.showcase',
@@ -245,13 +247,13 @@ export async function component(name, options = {}) {
       }
       return {type: 'component.detail', data: docs};
     }
-    throw new XDSError(`No component "${name}" in package "${packageScope}"`);
+    throw new XDSError(`No component "${name}" in package "${packageScope}"`, undefined, ERROR_CODES.ERR_UNKNOWN_COMPONENT);
   }
 
   if (source) {
     const sourcePath = findComponentSource(coreDir, dirName);
     if (!sourcePath) {
-      throw new XDSError(`Source for "${name}" not found`);
+      throw new XDSError(`Source for "${name}" not found`, undefined, ERROR_CODES.ERR_NO_SOURCE);
     }
     return {type: 'component.detail.source', data: {component: dirName, source: fs.readFileSync(sourcePath, 'utf-8')}};
   }
@@ -259,7 +261,7 @@ export async function component(name, options = {}) {
   if (showcase) {
     const match = await findShowcase(dirName, cwd);
     if (!match) {
-      throw new XDSError(`No showcase found for "${name}"`);
+      throw new XDSError(`No showcase found for "${name}"`, undefined, ERROR_CODES.ERR_NO_SHOWCASE);
     }
     return {
       type: 'component.detail.showcase',
@@ -307,15 +309,16 @@ export async function component(name, options = {}) {
         throw new XDSError(
           `No component named "${name}"`,
           candidates.map(c => ({name: c.name, reason: c.reason})),
+          ERROR_CODES.ERR_UNKNOWN_COMPONENT,
         );
       }
     } else {
-      throw new XDSError(`No component named "${name}"`);
+      throw new XDSError(`No component named "${name}"`, undefined, ERROR_CODES.ERR_UNKNOWN_COMPONENT);
     }
   }
 
   if (!readmePath || !readmePath.endsWith('.doc.mjs')) {
-    throw new XDSError(`No .doc.mjs found for "${resolvedName}". The component needs a typed doc file.`);
+    throw new XDSError(`No .doc.mjs found for "${resolvedName}". The component needs a typed doc file.`, undefined, ERROR_CODES.ERR_NO_DOC);
   }
 
   const docs = await loadDocs(readmePath, {zh, dense, lang});

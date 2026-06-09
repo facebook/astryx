@@ -11,6 +11,7 @@ import {CLI_ROOT} from '../utils/paths.mjs';
 import {isNonInteractive} from '../utils/path-safety.mjs';
 import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {template as templateApi, getTemplateById} from '../api/template.mjs';
 
 export {discoverTemplates, listTemplates, getTemplateById} from '../api/template.mjs';
@@ -50,7 +51,7 @@ export function registerTemplate(program) {
             const msg =
               `Refusing to overwrite existing file ${rel}. ` +
               `Re-run with --overwrite (or -f) to replace it.`;
-            cliError(msg);
+            cliError(msg, {code: ERROR_CODES.ERR_FILE_EXISTS});
             return;
           }
           const confirmed = isCancel(
@@ -78,7 +79,7 @@ export function registerTemplate(program) {
       } catch (e) {
         // template API throws structured errors with {name, reason} suggestions —
         // pass them through untouched so the CLI envelope matches the API.
-        cliError(e.message, {suggestions: e.suggestions || []});
+        cliError(e.message, {suggestions: e.suggestions || [], code: e.code});
         return;
       }
 
@@ -143,7 +144,7 @@ export function registerTemplate(program) {
       try {
         result = await getTemplateById(options.id, {cwd: process.cwd()});
       } catch (e) {
-        cliError(e.message, {suggestions: e.suggestions});
+        cliError(e.message, {suggestions: e.suggestions, code: e.code});
         return;
       }
 

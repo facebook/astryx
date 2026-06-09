@@ -9,6 +9,7 @@ import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {CLI_ROOT} from '../utils/paths.mjs';
 import {XDSError} from './error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 const DOCS_DIR = path.join(CLI_ROOT, 'docs');
 
@@ -138,6 +139,7 @@ export async function docs(topic, section, options = {}) {
     throw new XDSError(
       `Unknown topic "${topic}"`,
       Object.keys(topics).map(t => ({name: t, reason: 'available topic'})),
+      ERROR_CODES.ERR_UNKNOWN_TOPIC,
     );
   }
 
@@ -150,6 +152,7 @@ export async function docs(topic, section, options = {}) {
       throw new XDSError(
         `Section "${section}" not found in "${topic}"`,
         docsData.sections.map(s => ({name: s.title, reason: 'available section'})),
+        ERROR_CODES.ERR_UNKNOWN_SECTION,
       );
     }
     return {type: 'docs.detail.section', data: match};

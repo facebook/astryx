@@ -68,7 +68,7 @@ Options:
 
 These flags work with any command:
 
-- `--json` — Output as typed JSON envelope: `{ type, data }`
+- `--json` — Output as typed JSON envelope: `{ type, data }` (errors: `{ error, code, suggestions? }`)
 - `--detail <level>` — Detail level for list views, increasing in size: `brief` (names only, default for `--list`) < `compact` (names + 1-line descriptions) < `full` (full docs per entry). Single-item views default to `full`.
 - `--zh` — Output docs in Chinese Simplified
 - `--dense` — Compressed format (token-efficient, useful for AI agents)
@@ -87,9 +87,80 @@ Errors:
 ```json
 {
   "error": "No component named \"Buttn\"",
+  "code": "ERR_UNKNOWN_COMPONENT",
   "suggestions": [{"name": "Button", "reason": "similar name"}]
 }
 ```
+
+The `code` field is a **stable, machine-readable identifier**. Branch on it —
+never on the human-readable `error` string, which changes freely as we improve
+wording. Every error envelope carries a `code` (falling back to `ERR_UNKNOWN`
+when no more specific code applies). The same `code` is exposed on thrown
+`XDSError` instances from the programmatic API, so both surfaces agree.
+
+Codes are **append-only**: once shipped, a code's meaning never changes and a
+code is never removed. New error conditions get new codes.
+
+```typescript
+import {isError} from '@xds/cli/json';
+
+const result = parseResponse(raw);
+if (isError(result)) {
+  switch (result.code) {
+    case 'ERR_UNKNOWN_COMPONENT':
+      // suggest the closest match
+      break;
+    case 'ERR_CORE_NOT_FOUND':
+      // prompt the user to install @xds/core
+      break;
+    default:
+      console.error(result.error);
+  }
+}
+```
+
+### Error codes
+
+| Code | Meaning |
+| --- | --- |
+| `ERR_UNKNOWN` | Generic fallback for any error without a more specific code. |
+| `ERR_UNKNOWN_COMMAND` | A top-level command name was not recognized (e.g. `xds bogus`). |
+| `ERR_UNKNOWN_SUBCOMMAND` | A subcommand under a group was not recognized (e.g. `xds theme bogus`). |
+| `ERR_INVALID_OPTION` | An unknown flag was passed, or `--json` was used on a command that doesn't support it. |
+| `ERR_INVALID_ARGUMENT` | An option/argument value was rejected, or required flags were missing. |
+| `ERR_MISSING_ARGUMENT` | A required positional argument was omitted (e.g. `xds theme build` with no file). |
+| `ERR_INVALID_LANG` | `--lang` was given a value outside its choices (`en`, `zh`, `dense`). |
+| `ERR_INVALID_DETAIL` | `--detail` was given a value outside its choices (`full`, `compact`, `brief`). |
+| `ERR_NODE_VERSION` | The running Node.js version is below the supported minimum. |
+| `ERR_CORE_NOT_FOUND` | `@xds/core` could not be located (not installed / not in a monorepo). |
+| `ERR_UNKNOWN_COMPONENT` | No component matched the requested name. |
+| `ERR_UNKNOWN_HOOK` | No hook matched the requested name. |
+| `ERR_UNKNOWN_TOPIC` | No docs topic matched the requested name. |
+| `ERR_UNKNOWN_SECTION` | A docs topic exists but the requested section within it does not. |
+| `ERR_UNKNOWN_CATEGORY` | A `--category` filter value did not match any known category. |
+| `ERR_UNKNOWN_TEMPLATE` | No template matched the requested name. |
+| `ERR_UNKNOWN_PACKAGE` | No package matched the requested name (discover). |
+| `ERR_UNKNOWN_AGENT` | An unrecognized `--agent` value was passed (agent docs / init). |
+| `ERR_UNKNOWN_FEATURE` | An unrecognized `--features` value was passed to `init`. |
+| `ERR_UNKNOWN_CODEMOD` | A `--codemod` value did not match any registered codemod (upgrade). |
+| `ERR_NOT_FOUND` | A discover/lookup query matched nothing in any package. |
+| `ERR_NO_DOC` | A component exists but has no typed `.doc.mjs` file. |
+| `ERR_NO_SHOWCASE` | No showcase exists for the requested component. |
+| `ERR_NO_SOURCE` | No source file could be located for the component/template. |
+| `ERR_INVALID_DOC` | A component's docs failed validation (malformed `.doc.mjs`). |
+| `ERR_FILE_NOT_FOUND` | A required input file did not exist. |
+| `ERR_FILE_EXISTS` | Refused to overwrite an existing file in non-interactive mode. |
+| `ERR_PATH_TRAVERSAL` | A path escaped its allowed root, or a name contained traversal markers. |
+| `ERR_WRITE_FAILED` | Writing output files failed (and was rolled back). |
+| `ERR_THEME_INVALID` | A theme definition was missing a required property (e.g. `name`). |
+| `ERR_THEME_LOAD` | A theme file could not be loaded / parsed into a `defineTheme` result. |
+| `ERR_TEMPLATE_CONFIG` | `template.get` is not configured in `xds.config.mjs` (fetch-by-id). |
+| `ERR_TEMPLATE_GET` | A configured `template.get` threw or returned an invalid value. |
+| `ERR_VERSION_DETECT` | The current `@xds/core` version could not be detected. |
+| `ERR_INVALID_VERSION` | A `--from`/`--to` value was not a valid semver string. |
+| `ERR_DEP_MISSING` | A required external dependency (e.g. jscodeshift) is missing. |
+| `ERR_GH_CLI` | GitHub CLI (`gh`) is not installed or not authenticated. |
+| `ERR_GAP_REPORT_FAILED` | Filing a gap report failed (disabled, or the integration errored). |
 
 ## Programmatic API
 
@@ -115,11 +186,12 @@ principles.data.title; // 'XDS Principles'
 const useMediaQuery = await hook('useMediaQuery');
 useMediaQuery.data.params; // typed as HookParamDoc[]
 
-// Errors throw XDSError with optional .suggestions
+// Errors throw XDSError with a stable .code and optional .suggestions
 try {
   await component('Buttn');
 } catch (e) {
   e.message; // 'No component named "Buttn"'
+  e.code; // 'ERR_UNKNOWN_COMPONENT' (stable; branch on this)
   e.suggestions; // [{ name: 'Button', reason: 'similar name' }]
 }
 ```

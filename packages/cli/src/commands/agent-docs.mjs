@@ -26,6 +26,7 @@ import {discoverComponents} from '../lib/component-discovery.mjs';
 import {discoverHooks} from '../lib/hook-discovery.mjs';
 import {humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 const AGENTS_MD = 'AGENTS.md';
 const CLAUDE_MD = 'CLAUDE.md';
@@ -432,7 +433,7 @@ export function registerAgentDocs(program) {
 
       // Validate --agent
       if (options.agent && !VALID_AGENTS.includes(options.agent)) {
-        cliError(`Unknown agent "${options.agent}". Valid: ${VALID_AGENTS.join(', ')}`);
+        cliError(`Unknown agent "${options.agent}". Valid: ${VALID_AGENTS.join(', ')}`, {code: ERROR_CODES.ERR_UNKNOWN_AGENT});
         return;
       }
 
@@ -455,7 +456,7 @@ export function registerAgentDocs(program) {
         });
       } catch (err) {
         if (err instanceof PathSafetyError) {
-          cliError(err.message);
+          cliError(err.message, {code: ERROR_CODES.ERR_PATH_TRAVERSAL});
           return;
         }
         throw err;

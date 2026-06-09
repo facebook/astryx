@@ -22,6 +22,7 @@ import {
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 /**
  * Decide whether we're in a context safe to actually file a report.
@@ -253,7 +254,7 @@ export function registerGapReport(program) {
 
       const config = loadGapReportConfig();
       if (!config.enabled) {
-        if (json) return jsonError('Gap reporting is disabled');
+        if (json) return jsonError('Gap reporting is disabled', undefined, ERROR_CODES.ERR_GAP_REPORT_FAILED);
         humanLog(
           `Gap reporting is disabled (XDS_GAP_REPORT=off or xds.config.mjs).\n` +
             `Run \`${getRunPrefix()} xds gap-report setup\` to configure.`,
@@ -274,7 +275,7 @@ export function registerGapReport(program) {
           'GitHub CLI (gh) is not installed or not authenticated. ' +
           'Install it from https://cli.github.com and run `gh auth login`. ' +
           `Or run \`${getRunPrefix()} xds gap-report setup\` to configure a custom command.`;
-        cliError(msg);
+        cliError(msg, {code: ERROR_CODES.ERR_GH_CLI});
         return;
       }
 
@@ -289,6 +290,7 @@ export function registerGapReport(program) {
         if (!validCategory) {
           cliError(
             `Invalid category "${options.category}". Valid: ${GAP_CATEGORIES.map(c => c.value).join(', ')}`,
+            {code: ERROR_CODES.ERR_UNKNOWN_CATEGORY},
           );
           return;
         }
@@ -341,7 +343,7 @@ export function registerGapReport(program) {
             humanLog('\nGap reporting is disabled via configuration.\n');
           }
         } catch (err) {
-          cliError(`Filing gap report failed: ${err.message}`);
+          cliError(`Filing gap report failed: ${err.message}`, {code: ERROR_CODES.ERR_GAP_REPORT_FAILED});
           return;
         }
         return;
@@ -353,6 +355,8 @@ export function registerGapReport(program) {
         return jsonError(
           'gap-report --json requires --component, --category, and --reason. ' +
             'Run with --list-categories to see valid categories.',
+          undefined,
+          ERROR_CODES.ERR_INVALID_ARGUMENT,
         );
       }
 

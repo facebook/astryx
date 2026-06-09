@@ -20,6 +20,7 @@ import {getRunPrefix} from '../utils/package-manager.mjs';
 import {sanitizeName, PathSafetyError} from '../utils/path-safety.mjs';
 import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 // Import shared theme processing from core — ensures build and runtime
 // use the same logic for typography.scale expansion, prose, and component rules.
@@ -986,7 +987,7 @@ export function registerTheme(program) {
         const unknown = String(extras[0]);
         const known = (theme.commands || []).map((c) => c.name());
         const suggestions = known.map((name) => ({name, reason: 'available subcommand'}));
-        cliError(`unknown subcommand 'theme ${unknown}'`, {suggestions});
+        cliError(`unknown subcommand 'theme ${unknown}'`, {suggestions, code: ERROR_CODES.ERR_UNKNOWN_SUBCOMMAND});
         return;
       }
       // Bare `xds theme` — show the subcommand list. Exit 0 (help is success).
@@ -1003,7 +1004,7 @@ export function registerTheme(program) {
       const json = program.opts().json || false;
 
       if (!fs.existsSync(filePath)) {
-        cliError(`File not found: ${filePath}`);
+        cliError(`File not found: ${filePath}`, {code: ERROR_CODES.ERR_FILE_NOT_FOUND});
         return;
       }
 
@@ -1014,12 +1015,12 @@ export function registerTheme(program) {
       try {
         themeDef = await extractThemeDefinition(filePath);
       } catch (e) {
-        cliError(e.message);
+        cliError(e.message, {code: ERROR_CODES.ERR_THEME_LOAD});
         return;
       }
 
       if (!themeDef.name) {
-        cliError('Theme must have a name property.');
+        cliError('Theme must have a name property.', {code: ERROR_CODES.ERR_THEME_INVALID});
         return;
       }
 
@@ -1031,7 +1032,7 @@ export function registerTheme(program) {
         sanitizeName(themeDef.name, {label: 'theme name'});
       } catch (err) {
         if (err instanceof PathSafetyError) {
-          cliError(err.message);
+          cliError(err.message, {code: ERROR_CODES.ERR_PATH_TRAVERSAL});
           return;
         }
         throw err;
@@ -1207,7 +1208,7 @@ export function registerTheme(program) {
           try { fs.rmSync(s.tmp, {force: true}); } catch { /* best-effort */ }
         }
         const msg = `Failed to write theme outputs: ${err.message}`;
-        cliError(msg);
+        cliError(msg, {code: ERROR_CODES.ERR_WRITE_FAILED});
         return;
       }
 
