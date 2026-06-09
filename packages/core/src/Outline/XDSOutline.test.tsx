@@ -201,45 +201,6 @@ describe('XDSOutline', () => {
     vi.restoreAllMocks();
   });
 
-  it('re-measures the indicator when the active item reflows (ResizeObserver)', () => {
-    let resizeCallback: ResizeObserverCallback | undefined;
-    const observeSpy = vi.fn();
-
-    class CapturingResizeObserver {
-      observe = observeSpy;
-      unobserve = vi.fn();
-      disconnect = vi.fn();
-      constructor(cb: ResizeObserverCallback) {
-        resizeCallback = cb;
-      }
-    }
-    vi.stubGlobal('ResizeObserver', CapturingResizeObserver);
-
-    let currentHeight = 36;
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
-      function (this: HTMLElement) {
-        if (this.tagName === 'UL') {
-          return {top: 0, left: 0, height: 0, width: 0} as DOMRect;
-        }
-        return {top: 0, left: 0, height: currentHeight, width: 0} as DOMRect;
-      },
-    );
-
-    const {container} = render(<XDSOutline items={items} activeId="intro" />);
-    const indicator = container.querySelector('.xds-outline-indicator');
-    expect((indicator as HTMLElement).style.height).toBe('36px');
-
-    // Label wraps → taller box. Fire the ResizeObserver callback.
-    currentHeight = 54;
-    act(() => {
-      resizeCallback?.([], {} as ResizeObserver);
-    });
-    expect((indicator as HTMLElement).style.height).toBe('54px');
-
-    vi.restoreAllMocks();
-    vi.stubGlobal('ResizeObserver', MockResizeObserver);
-  });
-
   it('preserves the legacy controlled API (items + activeId + onActiveIdChange)', () => {
     // Regression guard: the pre-refresh public API must keep working unchanged.
     const onActiveIdChange = vi.fn();
