@@ -295,36 +295,6 @@ export function XDSOutline({
     measureIndicator();
   }, [resolvedActiveId, items, density, measureIndicator]);
 
-  // Re-measure on reflow: wrapped labels, font loading, or container resize all
-  // change item heights without changing activeId/items/density. A ResizeObserver
-  // on the list (and the active item) catches these so the indicator stays in
-  // sync with the actual rendered item height.
-  useLayoutEffect(() => {
-    if (typeof ResizeObserver === 'undefined') {
-      return;
-    }
-
-    const listEl = listContainerRef.current;
-    const activeItemEl = resolvedActiveId
-      ? itemMapRef.current.get(resolvedActiveId)
-      : undefined;
-
-    const observer = new ResizeObserver(() => {
-      measureIndicator();
-    });
-
-    if (listEl) {
-      observer.observe(listEl);
-    }
-    if (activeItemEl) {
-      observer.observe(activeItemEl);
-    }
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [resolvedActiveId, items, density, measureIndicator]);
-
   const handleClick =
     (id: string) => (event: React.MouseEvent<HTMLElement>) => {
       const target = document.getElementById(id);
