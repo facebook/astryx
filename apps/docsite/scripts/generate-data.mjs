@@ -994,7 +994,18 @@ function writeTemplateComponentRegistry(slugs, pagesDir) {
   // Import specifiers are resolved relative to the generated file's
   // location (OUT_DIR), computed from the real page.tsx path so the
   // registry keeps working if either directory moves.
+  //
+  // Validate slugs to ensure they are safe directory names — prevents code
+  // injection via malicious directory names (satisfies CodeQL sanitization).
+  const SAFE_SLUG = /^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/i;
   const importLines = slugs
+    .filter(slug => {
+      if (!SAFE_SLUG.test(slug)) {
+        console.warn(`[generate-data] Skipping invalid slug: ${slug}`);
+        return false;
+      }
+      return true;
+    })
     .map(slug => {
       const pageFile = path.join(pagesDir, slug, 'page');
       let rel = path.relative(OUT_DIR, pageFile).split(path.sep).join('/');

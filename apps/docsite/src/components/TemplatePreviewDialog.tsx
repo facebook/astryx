@@ -14,8 +14,8 @@
  * and the close button.
  *
  * The preview sits in a padded, framed (border + radius) surface below the
- * header. The prev/next arrows are position:fixed inside the top-layer
- * <dialog>, so they sit in the backdrop gutters outside the dialog box.
+ * header. The prev/next arrows are portalled to document.body so they're
+ * never affected by the dialog's entry transform.
  */
 
 import {
@@ -25,6 +25,7 @@ import {
   useState,
   useTransition,
 } from 'react';
+import {createPortal} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSText, XDSHeading} from '@xds/core/Text';
@@ -339,78 +340,85 @@ export function TemplatePreviewDialog({
   const isFullscreen = variant === 'fullscreen';
 
   return (
-    <XDSDialog
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      variant={variant}
-      width={isFullscreen ? undefined : 1400}
-      maxHeight={isFullscreen ? undefined : '92vh'}
-      xstyle={isFullscreen ? undefined : styles.dialogTall}
-      aria-label={current.name}>
-      <XDSLayout
-        height="fill"
-        header={
-          <XDSLayoutHeader xstyle={styles.headerRow}>
-            <TemplatePreviewHeader
-              item={current}
-              isFullscreen={isFullscreen}
-              cmdCopied={cmdCopied}
-              onCopyCommand={handleCopyCmd}
-              onClose={() => onOpenChange(false)}
-            />
-          </XDSLayoutHeader>
-        }
-        content={
-          <XDSLayoutContent isScrollable={false} padding={0}>
-            <div {...stylex.props(styles.body)}>
-              <TemplatePreviewSurface
-                key={deferredCurrent.slug}
-                slug={deferredCurrent.slug}
+    <>
+      <XDSDialog
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        variant={variant}
+        width={isFullscreen ? undefined : 1400}
+        maxHeight={isFullscreen ? undefined : '92vh'}
+        xstyle={isFullscreen ? undefined : styles.dialogTall}
+        aria-label={current.name}>
+        <XDSLayout
+          height="fill"
+          header={
+            <XDSLayoutHeader xstyle={styles.headerRow}>
+              <TemplatePreviewHeader
+                item={current}
+                isFullscreen={isFullscreen}
+                cmdCopied={cmdCopied}
+                onCopyCommand={handleCopyCmd}
+                onClose={() => onOpenChange(false)}
               />
-              {isPending && (
-                <div {...stylex.props(styles.skeletonOverlay)}>
-                  <XDSSkeleton width="100%" height="100%" />
-                </div>
-              )}
-            </div>
-          </XDSLayoutContent>
-        }
-      />
+            </XDSLayoutHeader>
+          }
+          content={
+            <XDSLayoutContent isScrollable={false} padding={0}>
+              <div {...stylex.props(styles.body)}>
+                <TemplatePreviewSurface
+                  key={deferredCurrent.slug}
+                  slug={deferredCurrent.slug}
+                />
+                {isPending && (
+                  <div {...stylex.props(styles.skeletonOverlay)}>
+                    <XDSSkeleton width="100%" height="100%" />
+                  </div>
+                )}
+              </div>
+            </XDSLayoutContent>
+          }
+        />
+      </XDSDialog>
 
-      {count > 1 && !isFullscreen && (
-        <>
-          <div {...stylex.props(styles.navArrow, styles.navPrev)}>
-            <XDSTooltip
-              content={`Previous: ${items[(index - 1 + count) % count]?.name}`}
-              placement="end">
-              <XDSButton
-                variant="secondary"
-                size="lg"
-                isIconOnly
-                label="Previous template"
-                icon={<XDSIcon icon="chevronLeft" color="inherit" />}
-                onClick={() => go(-1)}
-                xstyle={styles.navArrowButton}
-              />
-            </XDSTooltip>
-          </div>
-          <div {...stylex.props(styles.navArrow, styles.navNext)}>
-            <XDSTooltip
-              content={`Next: ${items[(index + 1) % count]?.name}`}
-              placement="start">
-              <XDSButton
-                variant="secondary"
-                size="lg"
-                isIconOnly
-                label="Next template"
-                icon={<XDSIcon icon="chevronRight" color="inherit" />}
-                onClick={() => go(1)}
-                xstyle={styles.navArrowButton}
-              />
-            </XDSTooltip>
-          </div>
-        </>
-      )}
-    </XDSDialog>
+      {typeof document !== 'undefined' &&
+        isOpen &&
+        count > 1 &&
+        !isFullscreen &&
+        createPortal(
+          <>
+            <div {...stylex.props(styles.navArrow, styles.navPrev)}>
+              <XDSTooltip
+                content={`Previous: ${items[(index - 1 + count) % count]?.name}`}
+                placement="end">
+                <XDSButton
+                  variant="secondary"
+                  size="lg"
+                  isIconOnly
+                  label="Previous template"
+                  icon={<XDSIcon icon="chevronLeft" color="inherit" />}
+                  onClick={() => go(-1)}
+                  xstyle={styles.navArrowButton}
+                />
+              </XDSTooltip>
+            </div>
+            <div {...stylex.props(styles.navArrow, styles.navNext)}>
+              <XDSTooltip
+                content={`Next: ${items[(index + 1) % count]?.name}`}
+                placement="start">
+                <XDSButton
+                  variant="secondary"
+                  size="lg"
+                  isIconOnly
+                  label="Next template"
+                  icon={<XDSIcon icon="chevronRight" color="inherit" />}
+                  onClick={() => go(1)}
+                  xstyle={styles.navArrowButton}
+                />
+              </XDSTooltip>
+            </div>
+          </>,
+          document.body,
+        )}
+    </>
   );
 }
