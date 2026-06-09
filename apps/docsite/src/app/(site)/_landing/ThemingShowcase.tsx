@@ -304,44 +304,15 @@ export function ThemingShowcase() {
         <HeaderLinks />
       </XDSHStack>
 
-      {/* Carousel customisations that aren't expressible through
-          XDSCarousel's prop surface. Scoped via the aria-label of
-          *this* carousel so other XDSCarousel elsewhere in the
-          docsite are unaffected. Rules only exist while
-          ThemingShowcase is mounted (landing route only).
+      {/* Scroller padding that aligns the first tile to the heading
+          text column. This is a layout concern (not chrome) so it
+          remains as a scoped style targeting this carousel's scroller.
 
-          TODO(xds#2509): Remove this block once XDSCarousel ships
-          `hasEdgeFade` / `hasScaleAnimation` props and a reliable
-          `hasButtons={false}`. Tracking issue:
-          https://github.com/facebookexperimental/xds/issues/2509
-
-          1. Hide XDSCarousel's built-in prev/next pills — our own
-             controls render in the header row. `hasButtons={false}`
-             prop is intermittently flaky across HMR/popover states,
-             so we belt-and-suspender with CSS targeting the
-             popover-portal'd buttons by their aria-label.
-
-          2. Strip XDSCarousel's mask-image edge fade. The default
-             reads as a smudgy band; full-bleed filmstrip uses the
-             clean viewport clip instead.
-
-          3. Disable the scroll-driven 0.85→1.0→0.85 scale animation
-             on each item — reads as inconsistent sizing rather than
-             a helpful focus cue when each tile has its own theme.
-
-          4. Add left-padding equal to the page gutter so the FIRST
-             tile aligns with the heading column's left edge instead
-             of sitting flush against the viewport (the right end
-             stays flush so the last tile clips at the viewport edge,
-             signalling "more").
+          TODO: Consider a `scrollerXstyle` prop or padding prop on
+          XDSCarousel if this pattern recurs in other full-bleed usages.
        */}
       <style>{`
-        [popover]:has([aria-label="Scroll left"]),
-        [popover]:has([aria-label="Scroll right"]) {
-          display: none !important;
-        }
         [aria-label="Available themes"] > div:first-child {
-          mask-image: none !important;
           /* Gutter that aligns the first tile to the heading text
              leading edge. Applied as padding on the scroller (not
              a margin on the wrapper) so the gutter is INSIDE the
@@ -359,9 +330,6 @@ export function ThemingShowcase() {
           padding-inline-end: ${CONTENT_GUTTER_FORMULA} !important;
           scroll-padding-inline-end: ${CONTENT_GUTTER_FORMULA} !important;
         }
-        [aria-label="Available themes"] > div > div {
-          animation: none !important;
-        }
       `}</style>
 
       <div {...stylex.props(styles.carouselWrap)}>
@@ -369,7 +337,8 @@ export function ThemingShowcase() {
           aria-label="Available themes"
           gap={4}
           hasSnap
-          hasButtons={false}>
+          hasButtons={false}
+          hasEdgeFade={false}>
           {themePackages.map(pkg => {
             const theme = themeObjects[pkg.name];
             if (!theme) {

@@ -6,14 +6,10 @@
  * Global options: --detail full|compact|brief, --lang en|zh|dense
  */
 
-import {findCoreDir, discoverExternalPackages} from '../../utils/paths.mjs';
+import {findCoreDir} from '../../utils/paths.mjs';
 import {
-  discoverComponents,
-  discoverExternalComponents,
-  findComponentReadme,
   resolveImportPath,
 } from '../../lib/component-discovery.mjs';
-import {loadDocs} from '../../lib/component-loader.mjs';
 import {
   formatFull,
   formatCompact,
@@ -23,7 +19,7 @@ import {
 } from '../../lib/component-format.mjs';
 import {resolveTheme} from '../../lib/resolve-theme.mjs';
 import {getRunPrefix} from '../../utils/package-manager.mjs';
-import {jsonOut, jsonError, humanLog} from '../../lib/json.mjs';
+import {jsonOut, humanLog} from '../../lib/json.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../lib/error-codes.mjs';
 import {component as componentApi} from '../../api/component.mjs';

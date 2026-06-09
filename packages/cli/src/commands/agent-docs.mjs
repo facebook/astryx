@@ -23,7 +23,6 @@ import {findCoreDir, CLI_ROOT} from '../utils/paths.mjs';
 import {assertWithin, PathSafetyError} from '../utils/path-safety.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {discoverComponents} from '../lib/component-discovery.mjs';
-import {discoverHooks} from '../lib/hook-discovery.mjs';
 import {humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
@@ -98,7 +97,7 @@ export function resolveAgentPaths(targetDir, agent) {
  * Templates are positioned first in the workflow to teach agents the
  * "look at reference code" reflex before writing any UI.
  */
-export function generateCompressedIndex(version, {coreDir, zh = false, lang, runPrefix = getRunPrefix()} = {}) {
+export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPrefix()} = {}) {
   const run = `${runPrefix} xds`;
   const lines = [XDS_MARKER_START];
 
@@ -110,7 +109,9 @@ export function generateCompressedIndex(version, {coreDir, zh = false, lang, run
       let total = 0;
       for (const list of Object.values(comps)) total += list.length;
       if (total > 0) componentCount = String(total);
-    } catch {}
+    } catch {
+      // Best-effort: component count is cosmetic; fall back to the default.
+    }
   }
 
   // Header
@@ -152,7 +153,9 @@ export function generateCompressedIndex(version, {coreDir, zh = false, lang, run
         const fileContent = fs.readFileSync(path.join(docsDir, file), 'utf-8');
         const descMatch = fileContent.match(/description:\s*['"](.+?)['"]/);
         if (descMatch) desc = descMatch[1];
-      } catch {}
+      } catch {
+        // Best-effort: fall back to the topic name if the file is unreadable.
+      }
       if (desc.length > 50) desc = desc.slice(0, 47) + '...';
       lines.push(`${run} docs ${topic.padEnd(20)} ${desc}`);
     }
@@ -210,7 +213,7 @@ export function getXdsVersion(coreDir) {
  * @returns {boolean} Whether the file was written
  */
 export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = false, header = '', onlyReplace = false} = {}) {
-  let content = '';
+  let content;
 
   if (fs.existsSync(filePath)) {
     content = fs.readFileSync(filePath, 'utf-8');
@@ -243,7 +246,7 @@ export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = fal
  * Inject or update XDS section in AGENTS.md.
  * Always creates the file if it doesn't exist.
  */
-export function injectAgentsMd(targetDir, version, {zh = false, lang} = {}) {
+export function injectAgentsMd(targetDir, version) {
   const agentsPath = path.join(targetDir, AGENTS_MD);
   const compressedIndex = generateCompressedIndex(version, {coreDir: findCoreDir(targetDir)});
   injectXdsBlock(agentsPath, compressedIndex, {
@@ -258,7 +261,7 @@ export function injectAgentsMd(targetDir, version, {zh = false, lang} = {}) {
  *
  * @returns {boolean} Whether the file was written
  */
-export function injectClaudeMd(targetDir, version, {zh = false, lang} = {}) {
+export function injectClaudeMd(targetDir, version) {
   const claudePath = path.join(targetDir, CLAUDE_MD);
   const compressedIndex = generateCompressedIndex(version, {coreDir: findCoreDir(targetDir)});
   return injectXdsBlock(claudePath, compressedIndex);

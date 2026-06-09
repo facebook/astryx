@@ -104,7 +104,7 @@ export function resolveTheme(cwd = process.cwd()) {
   }
 
   // 2. Resolve the specifier to a module
-  let mod = null;
+  let mod;
 
   if (specifier.startsWith('.') || specifier.startsWith('/')) {
     // File path

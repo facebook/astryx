@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-// Copyright (c) Meta Platforms, Inc. and affiliates.
-
 /**
  * @file Codemod: Rename form field tooltip → labelTooltip, startIcon → labelIcon
  * @see https://github.com/facebookexperimental/xds/pull/375

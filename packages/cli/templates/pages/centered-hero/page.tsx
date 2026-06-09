@@ -16,9 +16,8 @@ import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSSection} from '@xds/core/Section';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
-// colorful-lifestyle-horizontal-1 from xds_oss asset set
-const IMAGE_URL =
-  'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-horizontal-1.png';
+// light-scene-horizontal-1 from the localized template-assets set
+const IMAGE_URL = '/template-assets/light-scene-horizontal-1.png';
 
 // NOTE: The only custom styling in this template is image fill/cap/radius
 // below. It exists because XDS has no image primitive — XDSAspectRatio exposes
