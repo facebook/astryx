@@ -222,6 +222,8 @@ export default function FormTwoColumnPage() {
                       : undefined
                   }
                 />
+                {/* hAlign="stretch" = full-width button workaround; XDSButton
+                    has no full-width prop (#2600). */}
                 <XDSVStack hAlign="stretch">
                   <XDSButton
                     label="Let's connect"
