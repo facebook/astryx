@@ -3,6 +3,7 @@
 'use client';
 
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
+import {XDSCenter} from '@xds/core/Center';
 import {XDSGrid} from '@xds/core/Grid';
 
 const images = [
@@ -15,22 +16,29 @@ const images = [
 ];
 
 export default function AspectRatioImageGallery() {
+  // Anchor a definite width so the grid renders in shrink-to-fit contexts
+  // (e.g. the docsite example preview, which wraps blocks in a
+  // `min-width: fit-content` container). Without a fixed-width ancestor,
+  // the `width="100%"` grid collapses to zero — XDSAspectRatio positions its
+  // child absolutely, so it has no intrinsic width to size the grid from.
   return (
-    <XDSGrid columns={3} gap={4} width="100%">
-      {images.map(({id, alt}) => (
-        <XDSAspectRatio key={id} ratio={4 / 3}>
-          <img
-            src="https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg"
-            alt={alt}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              borderRadius: 8,
-            }}
-          />
-        </XDSAspectRatio>
-      ))}
-    </XDSGrid>
+    <XDSCenter width={600}>
+      <XDSGrid columns={3} gap={4} width="100%">
+        {images.map(({id, alt}) => (
+          <XDSAspectRatio key={id} ratio={4 / 3}>
+            <img
+              src="https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg"
+              alt={alt}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                borderRadius: 8,
+              }}
+            />
+          </XDSAspectRatio>
+        ))}
+      </XDSGrid>
+    </XDSCenter>
   );
 }

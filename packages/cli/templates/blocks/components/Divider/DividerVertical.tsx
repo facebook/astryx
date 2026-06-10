@@ -18,7 +18,7 @@ const styles = stylex.create({
 
 export default function DividerVertical() {
   return (
-    <XDSSection width="100%">
+    <XDSSection variant="transparent" width="100%">
       <XDSCard>
         <XDSHStack gap={4} align="stretch">
           <XDSStackItem size="fill">

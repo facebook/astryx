@@ -10,8 +10,8 @@ import {XDSText} from '@xds/core/Text';
 
 export default function DividerFullBleed() {
   return (
-    <XDSSection width="100%">
-      <XDSCard>
+    <XDSSection variant="transparent" width="100%">
+      <XDSCard width={400}>
         <XDSVStack gap={3}>
           <XDSText type="label">Order Summary</XDSText>
           <XDSHStack hAlign="between">
