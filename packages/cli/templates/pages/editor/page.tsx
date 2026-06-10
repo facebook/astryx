@@ -798,65 +798,73 @@ export default function EditorPage() {
       <XDSVStack gap={4}>
         {/* Panel Header */}
         <XDSSection variant="transparent" padding={4}>
-          <XDSVStack gap={4}>
-            {isEditingTitle ? (
-              <XDSTextInput
-                label="Page title"
-                isLabelHidden
-                value={pageTitle}
-                onChange={setPageTitle}
-                onKeyDown={(e: React.KeyboardEvent) => {
-                  if (e.key === 'Enter') {
-                    setIsEditingTitle(false);
-                  }
-                }}
-                hasAutoFocus
-                onBlur={() => setIsEditingTitle(false)}
-              />
-            ) : (
+          {isMobile ? (
+            // Mobile: just the title and the primary action.
+            <XDSHStack gap={3} vAlign="center" hAlign="between">
               <XDSHeading level={2}>{pageTitle}</XDSHeading>
-            )}
+              <XDSButton label="Publish" variant="primary" />
+            </XDSHStack>
+          ) : (
+            <XDSVStack gap={4}>
+              {isEditingTitle ? (
+                <XDSTextInput
+                  label="Page title"
+                  isLabelHidden
+                  value={pageTitle}
+                  onChange={setPageTitle}
+                  onKeyDown={(e: React.KeyboardEvent) => {
+                    if (e.key === 'Enter') {
+                      setIsEditingTitle(false);
+                    }
+                  }}
+                  hasAutoFocus
+                  onBlur={() => setIsEditingTitle(false)}
+                />
+              ) : (
+                <XDSHeading level={2}>{pageTitle}</XDSHeading>
+              )}
 
-            <XDSToolbar
-              label="Viewport and actions"
-              startContent={
-                <XDSSegmentedControl
-                  label="Viewport size"
-                  value={viewport}
-                  onChange={(v: string) => setViewport(v as ViewportSize)}>
-                  <XDSSegmentedControlItem
-                    value="desktop"
-                    label="Desktop"
-                    icon={<XDSIcon icon={ComputerDesktopIcon} size="sm" />}
-                    isLabelHidden
-                  />
-                  <XDSSegmentedControlItem
-                    value="tablet"
-                    label="Tablet"
-                    icon={<XDSIcon icon={DeviceTabletIcon} size="sm" />}
-                    isLabelHidden
-                  />
-                  <XDSSegmentedControlItem
-                    value="phone"
-                    label="Phone"
-                    icon={<XDSIcon icon={DevicePhoneMobileIcon} size="sm" />}
-                    isLabelHidden
-                  />
-                </XDSSegmentedControl>
-              }
-              endContent={
-                <XDSHStack gap={2}>
-                  <XDSButton
-                    label="Preview"
-                    icon={<XDSIcon icon={EyeIcon} size="sm" />}
-                    variant="ghost"
-                    isIconOnly
-                  />
-                  <XDSButton label="Publish" variant="primary" />
-                </XDSHStack>
-              }
-            />
-          </XDSVStack>
+              <XDSToolbar
+                label="Viewport and actions"
+                startContent={
+                  <XDSSegmentedControl
+                    label="Viewport size"
+                    value={viewport}
+                    onChange={(v: string) => setViewport(v as ViewportSize)}>
+                    <XDSSegmentedControlItem
+                      value="desktop"
+                      label="Desktop"
+                      icon={<XDSIcon icon={ComputerDesktopIcon} size="sm" />}
+                      isLabelHidden
+                    />
+                    <XDSSegmentedControlItem
+                      value="tablet"
+                      label="Tablet"
+                      icon={<XDSIcon icon={DeviceTabletIcon} size="sm" />}
+                      isLabelHidden
+                    />
+                    <XDSSegmentedControlItem
+                      value="phone"
+                      label="Phone"
+                      icon={<XDSIcon icon={DevicePhoneMobileIcon} size="sm" />}
+                      isLabelHidden
+                    />
+                  </XDSSegmentedControl>
+                }
+                endContent={
+                  <XDSHStack gap={2}>
+                    <XDSButton
+                      label="Preview"
+                      icon={<XDSIcon icon={EyeIcon} size="sm" />}
+                      variant="ghost"
+                      isIconOnly
+                    />
+                    <XDSButton label="Publish" variant="primary" />
+                  </XDSHStack>
+                }
+              />
+            </XDSVStack>
+          )}
         </XDSSection>
 
         {!isMobile && (
