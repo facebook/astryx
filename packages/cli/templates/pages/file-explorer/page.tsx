@@ -33,7 +33,6 @@ import {
   DocumentIcon,
 } from '@heroicons/react/24/outline';
 import {FolderIcon} from '@heroicons/react/24/solid';
-import {colorVars} from '@xds/core/theme/tokens.stylex';
 
 interface FileSystemItem {
   id: string;
@@ -261,15 +260,15 @@ const FILESYSTEM: FileSystemItem[] = [
   },
 ];
 
+// The template paints no background and claims no viewport height — the host
+// shell owns that (XDSLayout height="fill" already fills the host's region).
+// The XDSHStack already stretches its children to full height (vAlign defaults
+// to 'stretch'), so the only remaining styles are layout plumbing XDS doesn't
+// expose as props: per-column scroll and fixed vs. flexible track sizing.
 const styles = stylex.create({
-  page: {
-    minHeight: '100dvh',
-    backgroundColor: colorVars['--color-background-surface'],
-  },
-  fillHeight: {height: '100%'},
   scrollable: {overflowY: 'auto'},
-  fixedColumn: {flexShrink: 0, alignSelf: 'stretch'},
-  fillRemaining: {flex: 1, alignSelf: 'stretch'},
+  fixedColumn: {flexShrink: 0},
+  fillRemaining: {flex: 1},
 });
 
 function findItem(items: FileSystemItem[], id: string): FileSystemItem | null {
@@ -352,7 +351,6 @@ export default function FileExplorerPage() {
 
   return (
     <XDSLayout
-      xstyle={styles.page}
       height="fill"
       header={
         <XDSToolbar
@@ -452,7 +450,7 @@ export default function FileExplorerPage() {
       }
       content={
         <XDSLayoutContent padding={0} isScrollable={false}>
-          <XDSHStack xstyle={styles.fillHeight}>
+          <XDSHStack height="100%">
             {columns.map((col, colIndex) => {
               const showDivider =
                 colIndex < columns.length - 1 || selectedFile != null;
