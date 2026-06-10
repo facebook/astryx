@@ -270,20 +270,26 @@ export function findComponentSource(coreDir, name) {
  */
 export function resolveImportPath(coreDir, componentName) {
   const srcDir = path.join(coreDir, 'src');
+  const pkgPath = path.join(coreDir, 'package.json');
+  const pkg = fs.existsSync(pkgPath)
+    ? JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
+    : null;
+
+  // Priority 1: exact subpath export matching the component name (e.g. ./Heading)
+  // This allows convenience re-export directories to win over the source directory.
+  if (pkg?.exports?.[`./${componentName}`]) {
+    return `@xds/core/${componentName}`;
+  }
+
   const sourcePath = findComponentSource(coreDir, componentName);
   if (!sourcePath) return '@xds/core';
 
-  // Get the top-level directory under src/ from the source path
+  // Priority 2: subpath export matching the top-level source directory
   const relToSrc = path.relative(srcDir, sourcePath);
   const topDir = relToSrc.split(path.sep)[0];
 
-  // Check package.json exports for ./${topDir}
-  const pkgPath = path.join(coreDir, 'package.json');
-  if (fs.existsSync(pkgPath)) {
-    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-    if (pkg.exports && pkg.exports[`./${topDir}`]) {
-      return `@xds/core/${topDir}`;
-    }
+  if (pkg?.exports?.[`./${topDir}`]) {
+    return `@xds/core/${topDir}`;
   }
 
   return '@xds/core';
