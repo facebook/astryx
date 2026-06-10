@@ -29,7 +29,7 @@ export const docs = {
       name: 'isCircle',
       type: 'boolean',
       description: 'Clip the container into a circle (forces a 1:1 ratio with a fully rounded border). Ignores `ratio` when set.',
-      defaultValue: 'false',
+      default: 'false',
     },
     {
       name: 'children',
@@ -73,7 +73,7 @@ export const docsZh = {
   },
   props: [
     {name: 'ratio', type: 'number', description: '宽高比，以宽/高表示（例如 16/9、1）。设置 `isCircle` 时可选。', required: false},
-    {name: 'isCircle', type: 'boolean', description: '将容器裁剪为圆形（强制 1:1 比例并应用完全圆角）。设置后将忽略 `ratio`。', defaultValue: 'false'},
+    {name: 'isCircle', type: 'boolean', description: '将容器裁剪为圆形（强制 1:1 比例并应用完全圆角）。设置后将忽略 `ratio`。', default: 'false'},
     {name: 'children', type: 'ReactNode', description: '通过绝对定位填充容器的内容。', required: true},
     {
       name: 'xstyle',
