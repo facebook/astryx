@@ -506,7 +506,7 @@ export default function PaymentFormPage() {
                             <XDSButton
                               label="PayPal"
                               variant="primary"
-                              size="sm"
+                              size="lg"
                               onClick={() => {}}
                               xstyle={styles.paypalButton}>
                               <img
@@ -519,7 +519,7 @@ export default function PaymentFormPage() {
                             <XDSButton
                               label="Google Pay"
                               variant="primary"
-                              size="sm"
+                              size="lg"
                               onClick={() => {}}
                               xstyle={styles.gpayButton}>
                               <img
