@@ -80,8 +80,8 @@ const styles = stylex.create({
       [MOBILE]: 'none',
     },
   },
+  // Only the top margin remains here — the width cap uses the maxWidth prop.
   artifactCard: {
-    maxWidth: 360,
     marginBlockStart: spacingVars['--spacing-2'],
   },
   artifactScroll: {
@@ -316,6 +316,7 @@ function ArtifactCard({onOpen}: {onOpen: () => void}) {
       onClick={onOpen}
       variant="muted"
       padding={3}
+      maxWidth={360}
       xstyle={styles.artifactCard}>
       <XDSHStack gap={3} vAlign="center" width="100%">
         <XDSIcon icon={DocumentTextIcon} size="md" color="secondary" />
