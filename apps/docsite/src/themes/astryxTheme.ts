@@ -23,11 +23,17 @@ export const astryxTheme = defineTheme({
   // surfaces come out brown). Setting --color-accent directly leaves every
   // other token at the XDS default.
   tokens: {
-    '--color-accent': '#292724',
+    // light-dark() so primary buttons / accent surfaces invert in
+    // dark mode — near-black warm in light, warm cream in dark, so
+    // the brand pill stays legible against the body background in
+    // both modes.
+    '--color-accent': 'light-dark(#292724, #E8E3DA)',
+    // Text on the accent surface flips with it: white-on-dark in
+    // light mode, dark-on-cream in dark mode.
+    '--color-on-accent': 'light-dark(#FFFFFF, #292724)',
     // Setting --color-accent alone leaves the *derived* accent tokens
     // (text/icon/muted) at the XDS default blue, so links and accent icons
     // across the docsite stayed blue. Point them at the brand accent too.
-    // light-dark() keeps dark mode legible (near-black is invisible on dark).
     '--color-text-accent': 'light-dark(#292724, #E8E3DA)',
     '--color-icon-accent': 'light-dark(#292724, #E8E3DA)',
     '--color-accent-muted':
