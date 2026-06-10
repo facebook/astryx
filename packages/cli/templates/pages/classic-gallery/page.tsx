@@ -39,11 +39,6 @@ const styles = stylex.create({
 
 // ─── Gallery Data ───────────────────────────────────────────────────────────
 
-// Images are served from the app's public/ folder. The base path is injected
-// at build time so the URLs resolve under the deployment's path prefix.
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-const IMG_DIR = `${basePath}/templates/classic-gallery`;
-
 type Category = 'all' | 'lifestyle' | 'products';
 
 interface GalleryImage {
@@ -54,42 +49,42 @@ interface GalleryImage {
 
 const GALLERY_IMAGES: GalleryImage[] = [
   {
-    src: `${IMG_DIR}/working-together.png`,
+    src: '/template-assets/classic-gallery-working-together.png',
     alt: 'Two colleagues reviewing work on a laptop together',
     category: 'lifestyle',
   },
   {
-    src: `${IMG_DIR}/lifestyle-architecture.jpg`,
+    src: '/template-assets/classic-gallery-lifestyle-architecture.jpg',
     alt: 'Soft blush curved architecture against a pale sky',
     category: 'lifestyle',
   },
   {
-    src: `${IMG_DIR}/product-backpack.png`,
+    src: '/template-assets/classic-gallery-product-backpack.png',
     alt: 'Charcoal canvas backpack against a neutral backdrop',
     category: 'products',
   },
   {
-    src: `${IMG_DIR}/product-headphones.png`,
+    src: '/template-assets/classic-gallery-product-headphones.png',
     alt: 'Over-ear headphones resting beside a stone riser',
     category: 'products',
   },
   {
-    src: `${IMG_DIR}/product-mug.png`,
+    src: '/template-assets/classic-gallery-product-mug.png',
     alt: 'Matte graphite insulated travel mug',
     category: 'products',
   },
   {
-    src: `${IMG_DIR}/product-throw.png`,
+    src: '/template-assets/classic-gallery-product-throw.png',
     alt: 'Folded linen throw blanket with fringed edges',
     category: 'products',
   },
   {
-    src: `${IMG_DIR}/product-wallet.png`,
+    src: '/template-assets/classic-gallery-product-wallet.png',
     alt: 'Slim leather bifold wallet on a neutral surface',
     category: 'products',
   },
   {
-    src: `${IMG_DIR}/product-watch.png`,
+    src: '/template-assets/classic-gallery-product-watch.png',
     alt: 'Minimalist watch with two interchangeable straps',
     category: 'products',
   },
