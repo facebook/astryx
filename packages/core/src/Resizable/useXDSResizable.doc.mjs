@@ -86,3 +86,32 @@ export const docs = {
   importPath: '@xds/core/Resizable',
   category: 'layout',
 };
+
+/** @type {import('../docs-types').HookTranslationDoc} */
+export const docsDense = {
+  description: 'Adds drag-to-resize behavior to layout regions. Supports single-/multi-region configs w/ snap points, collapsible panels, localStorage persistence, cascade resize ordering.',
+  paramDescriptions: {
+    defaultSize: 'Initial size in pixels / percentage string (e.g. "20%").',
+    minSizePx: 'Minimum size in pixels.',
+    maxSizePx: 'Maximum size in pixels.',
+    collapsible: 'Whether dragging below collapsed threshold collapses region to zero.',
+    snaps: 'Pixel values to snap to during drag.',
+    autoSaveId: 'Key for localStorage persistence of size across sessions.',
+  },
+  returnDescriptions: {
+    size: 'Current size in pixels.',
+    isCollapsed: 'Whether region currently collapsed.',
+    collapse: 'Programmatically collapse region.',
+    expand: 'Expand from collapsed state.',
+    resize: 'Resize to specific pixel value.',
+    props: 'Props to spread on resizable component / pass to XDSResizeHandle.',
+  },
+  usage: {
+    description: 'Adds drag-to-resize behavior to layout regions. Supports single-/multi-region configs w/ snap points, collapsible panels, localStorage persistence, cascade resize ordering.',
+    bestPractices: [
+      {guidance: true, description: 'Use w/ XDSLayout / XDSAppShell sidebar for resizable navigation panels.'},
+      {guidance: true, description: 'Set autoSaveId to persist user-chosen sizes across page reloads.'},
+      {guidance: false, description: 'Set minSizePx too small — content becomes unreadable. Prefer collapsible for panels that can hide entirely.'},
+    ],
+  },
+};
