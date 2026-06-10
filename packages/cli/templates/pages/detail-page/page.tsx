@@ -28,6 +28,7 @@ import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSCollapsible} from '@xds/core/Collapsible';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSThumbnail} from '@xds/core/Thumbnail';
+import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 import {
   CalendarIcon,
   FlagIcon,
@@ -574,42 +575,64 @@ function RightPanel() {
 export default function DetailPage2Template() {
   const [activeTab, setActiveTab] = useState('details');
   const isNarrow = useMediaQuery('(max-width: 1024px)');
-  const [showPanel, setShowPanel] = useState(true);
+  // Desktop: a fixed-width `end`-slot side panel that can be hidden.
+  const [showSidePanel, setShowSidePanel] = useState(true);
+  // Mobile: the panel opens as a full-screen dialog (the side slot would squish
+  // the main content), driven by the same toolbar button.
+  const [isPanelDialogOpen, setPanelDialogOpen] = useState(false);
 
-  // On desktop the panel is a fixed-width `end` slot. On mobile that would
-  // squish the main content, so it stacks inside the content column instead.
-  const isPanelVisible = showPanel;
+  const isPanelShown = isNarrow ? isPanelDialogOpen : showSidePanel;
+  const togglePanel = () =>
+    isNarrow
+      ? setPanelDialogOpen(prev => !prev)
+      : setShowSidePanel(prev => !prev);
 
   return (
-    <XDSLayout
-      height="fill"
-      contentWidth={1000}
-      defaultHasDividers
-      header={
-        <PageHeader
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          isPanelOpen={isPanelVisible}
-          onTogglePanel={() => setShowPanel(prev => !prev)}
-          isNarrow={isNarrow}
+    <>
+      <XDSLayout
+        height="fill"
+        contentWidth={1000}
+        defaultHasDividers
+        header={
+          <PageHeader
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            isPanelOpen={isPanelShown}
+            onTogglePanel={togglePanel}
+            isNarrow={isNarrow}
+          />
+        }
+        content={
+          <XDSLayoutContent role="main">
+            <XDSVStack gap={4}>
+              <ItemsCard />
+              <InvoiceCard />
+              <TimelineSection />
+            </XDSVStack>
+          </XDSLayoutContent>
+        }
+        end={!isNarrow && showSidePanel ? <RightPanel /> : undefined}
+      />
+
+      {/* Mobile: the side panel content opens as a full-screen dialog. */}
+      <XDSDialog
+        variant="fullscreen"
+        isOpen={isNarrow && isPanelDialogOpen}
+        onOpenChange={setPanelDialogOpen}>
+        <XDSLayout
+          header={
+            <XDSDialogHeader
+              title="Order details"
+              onOpenChange={setPanelDialogOpen}
+            />
+          }
+          content={
+            <XDSLayoutContent padding={4}>
+              <PanelContent />
+            </XDSLayoutContent>
+          }
         />
-      }
-      content={
-        <XDSLayoutContent role="main">
-          <XDSVStack gap={4}>
-            <ItemsCard />
-            <InvoiceCard />
-            <TimelineSection />
-            {/* Mobile: the side panel stacks here below the content. */}
-            {isNarrow && isPanelVisible && (
-              <XDSSection>
-                <PanelContent />
-              </XDSSection>
-            )}
-          </XDSVStack>
-        </XDSLayoutContent>
-      }
-      end={!isNarrow && isPanelVisible ? <RightPanel /> : undefined}
-    />
+      </XDSDialog>
+    </>
   );
 }
