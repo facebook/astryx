@@ -43,6 +43,10 @@ import {
 // ─── Styles ─────────────────────────────────────────────────────────────────
 import * as stylex from '@stylexjs/stylex';
 
+// The only custom CSS in this template: negative margins that bleed the tab bar
+// to the header's content edges so the active-tab underline meets the header
+// divider. XDSLayoutHeader/XDSTabList have no prop for an edge-docked tab bar
+// (tracked in #2622); everything else uses component props.
 const pageStyles = stylex.create({
   tabsRow: {
     marginInline: -12,
