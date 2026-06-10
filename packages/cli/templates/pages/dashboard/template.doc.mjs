@@ -8,4 +8,5 @@ export const doc = {
   description: 'Analytics dashboard with KPI cards, charts, and data tables',
   isReady: true,
   category: 'Dashboard - Analytics',
+  isHiddenFromOverview: true,
 };
