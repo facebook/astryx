@@ -264,14 +264,22 @@ const FILESYSTEM: FileSystemItem[] = [
 // (minHeight: 100dvh) is required so the Finder-style columns fill the window:
 // XDSLayout height="fill" is height:100%, which only resolves when an ancestor
 // has a definite height, and the host's <html>/<body> don't set one. The rest
-// are layout plumbing XDS doesn't expose as props (per-column scroll, fixed vs.
-// flexible track sizing). The XDSHStack already stretches children to full
-// height (vAlign defaults to 'stretch').
+// are layout plumbing XDS doesn't expose as props (per-column scroll, the row's
+// horizontal scroll, fixed vs. flexible track sizing). The XDSHStack already
+// stretches children to full height (vAlign defaults to 'stretch').
 const styles = stylex.create({
   page: {minHeight: '100dvh'},
+  // The fixed-width columns can exceed the viewport on small screens, so the
+  // whole Miller-column row scrolls horizontally (like Finder). overflowY is
+  // pinned to 'hidden' (each column scrolls vertically on its own) so the row
+  // doesn't sprout a second vertical scrollbar. XDSHStack has no overflow prop.
+  columnRow: {overflowX: 'auto', overflowY: 'hidden'},
   scrollable: {overflowY: 'auto'},
+  // Columns keep their 240px and never shrink — they scroll into view instead.
   fixedColumn: {flexShrink: 0},
-  fillRemaining: {flex: 1},
+  // The detail panel grows to fill on wide screens but keeps a usable minimum
+  // and joins the horizontal scroll instead of collapsing when space is tight.
+  detailColumn: {flexGrow: 1, flexShrink: 0, flexBasis: 320},
 });
 
 function findItem(items: FileSystemItem[], id: string): FileSystemItem | null {
@@ -454,7 +462,7 @@ export default function FileExplorerPage() {
       }
       content={
         <XDSLayoutContent padding={0} isScrollable={false}>
-          <XDSHStack height="100%">
+          <XDSHStack height="100%" xstyle={styles.columnRow}>
             {columns.map((col, colIndex) => {
               const showDivider =
                 colIndex < columns.length - 1 || selectedFile != null;
@@ -512,7 +520,7 @@ export default function FileExplorerPage() {
               <XDSSection
                 padding={6}
                 variant="transparent"
-                xstyle={[styles.scrollable, styles.fillRemaining]}>
+                xstyle={[styles.scrollable, styles.detailColumn]}>
                 <XDSVStack gap={4} hAlign="center">
                   <XDSAvatar name={selectedFile.name} size={96} />
                   <XDSVStack gap={1} hAlign="center">
