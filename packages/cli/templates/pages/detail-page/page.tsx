@@ -48,7 +48,7 @@ import * as stylex from '@stylexjs/stylex';
 // resolves under the GH Pages basePath. The CLI swaps these paths for an
 // inline placeholder on scaffold, so end users never see them.
 const BP =
-  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_BASE_PATH) || '';
+  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) || '';
 
 // The only custom CSS in this template is small optical-alignment negative
 // margins: XDSLayoutHeader/XDSTabList have no edge-dock prop (#2622) and XDSList

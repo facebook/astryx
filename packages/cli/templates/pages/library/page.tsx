@@ -23,7 +23,7 @@ import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 // resolves under the GH Pages basePath. The CLI swaps these paths for an
 // inline placeholder on scaffold, so end users never see them.
 const BP =
-  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_BASE_PATH) || '';
+  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) || '';
 
 interface LibraryItem {
   id: string;

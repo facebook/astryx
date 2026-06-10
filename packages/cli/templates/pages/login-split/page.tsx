@@ -27,7 +27,7 @@ import {
 // resolves under the GH Pages basePath. The CLI swaps these paths for an
 // inline placeholder on scaffold, so end users never see them.
 const BP =
-  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_BASE_PATH) || '';
+  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) || '';
 
 // light-working-vertical-1 from xds_oss asset set
 const COVER_IMAGE_URL = BP + '/template-assets/light-working-vertical-1.png';

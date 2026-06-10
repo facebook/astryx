@@ -119,7 +119,7 @@ const US_STATES = [
 // resolves under the GH Pages basePath. The CLI swaps these paths for an
 // inline placeholder on scaffold, so end users never see them.
 const BP =
-  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_BASE_PATH) || '';
+  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) || '';
 
 const ITEM_IMAGES: Record<string, {src: string}> = {
   '1': {src: BP + '/template-assets/light-product-1.png'},

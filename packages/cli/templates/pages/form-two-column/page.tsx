@@ -24,7 +24,7 @@ import {XDSSelector} from '@xds/core/Selector';
 // resolves under the GH Pages basePath. The CLI swaps these paths for an
 // inline placeholder on scaffold, so end users never see them.
 const BP =
-  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_BASE_PATH) || '';
+  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) || '';
 
 // illustration-horizontal-1 from xds_oss asset set
 const ILLUSTRATION_URL = BP + '/template-assets/illustration-horizontal-1.png';

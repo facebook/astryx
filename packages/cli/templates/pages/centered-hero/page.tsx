@@ -21,7 +21,7 @@ import {ArrowRightIcon} from '@heroicons/react/20/solid';
 // resolves under the GH Pages basePath. The CLI swaps these paths for an
 // inline placeholder on scaffold, so end users never see them.
 const BP =
-  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_BASE_PATH) || '';
+  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) || '';
 
 const IMAGE_URL = BP + '/template-assets/light-scene-horizontal-1.png';
 
