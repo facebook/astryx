@@ -25,14 +25,14 @@ const basePath =
 // ---------------------------------------------------------------------------
 
 // building from xds_oss asset set
-const BG_URL = basePath + '/template-assets/building.jpg';
+const BG_PATH = '/template-assets/building.jpg';
 
 const styles = stylex.create({
-  page: {
-    backgroundImage: `url(${BG_URL})`,
+  page: (url: string) => ({
+    backgroundImage: `url(${url})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
-  },
+  }),
 });
 
 type SSOProvider = {
@@ -103,7 +103,10 @@ export default function LoginSSO() {
   };
 
   return (
-    <XDSCenter axis="both" height="100dvh" xstyle={styles.page}>
+    <XDSCenter
+      axis="both"
+      height="100dvh"
+      xstyle={styles.page(basePath + BG_PATH)}>
       <XDSCard padding={8} width={400}>
         <XDSVStack gap={4} hAlign="stretch">
           {/* ── Step 1: Email entry ── */}
