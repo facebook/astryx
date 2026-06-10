@@ -9,12 +9,11 @@ import {
   XDSLayout,
   XDSLayoutContent,
 } from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSSection} from '@xds/core/Section';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
 const IMAGES = [
@@ -35,24 +34,18 @@ const IMAGES = [
   },
 ];
 
+// NOTE: The only custom styling here is image fill + corner radius. It exists
+// because XDS has no image primitive — XDSAspectRatio exposes no objectFit or
+// radius props and there's no XDSImage. Tracked in issue #2582; replace these
+// with component props once it lands.
 const styles = stylex.create({
-  textCenter: {
-    textAlign: 'center',
-  },
-  titleResponsive: {
-    fontSize: {
-      default: 'var(--text-display-2-size)',
-      '@media (max-width: 640px)': 'var(--text-display-3-size)',
-    },
-  },
-  topSpacing: {
-    paddingTop: 'var(--spacing-12)',
-  },
+  // Fills the XDSAspectRatio box. No objectFit prop on XDSAspectRatio (#2582).
   galleryImage: {
     width: '100%',
     height: '100%',
     objectFit: 'cover',
   },
+  // Rounds the image corners. No radius prop on XDSAspectRatio (#2582).
   galleryImageClip: {
     borderRadius: 'var(--radius-container)',
   },
@@ -62,23 +55,22 @@ export default function GalleryHero() {
   return (
     <XDSLayout
       content={
-        <XDSLayoutContent padding={0}>
+        <XDSLayoutContent padding={6}>
           <XDSVStack gap={10}>
-            <XDSVStack gap={6} hAlign="center" xstyle={styles.topSpacing}>
+            <XDSVStack gap={6} hAlign="center">
               <XDSVStack gap={3} hAlign="center">
-                <XDSText
+                <XDSHeading
+                  level={1}
                   type="display-2"
-                  as="h1"
-                  weight="bold"
-                  textWrap="balance"
-                  xstyle={[styles.textCenter, styles.titleResponsive]}>
+                  justify="center"
+                  textWrap="balance">
                   Little joys, everywhere you go
-                </XDSText>
+                </XDSHeading>
                 <XDSText
                   type="body"
                   color="secondary"
-                  textWrap="balance"
-                  xstyle={styles.textCenter}>
+                  justify="center"
+                  textWrap="balance">
                   Sometimes all it takes is one small thing to turn your whole
                   day around.
                 </XDSText>
@@ -86,30 +78,28 @@ export default function GalleryHero() {
               <XDSHStack gap={3}>
                 <XDSButton
                   label="Get started"
-                  variant="secondary"
+                  variant="primary"
                   endContent={
                     <XDSIcon icon={ArrowRightIcon} size="sm" color="inherit" />
                   }
                 />
-                <XDSButton label="Learn more" variant="ghost" />
+                <XDSButton label="Learn more" variant="secondary" />
               </XDSHStack>
             </XDSVStack>
-            <XDSSection variant="transparent" padding={6}>
-              <XDSGrid columns={3} gap={4}>
-                {IMAGES.map((image, i) => (
-                  <XDSAspectRatio
-                    key={i}
-                    ratio={4 / 5}
-                    xstyle={styles.galleryImageClip}>
-                    <img
-                      {...stylex.props(styles.galleryImage)}
-                      src={image.src}
-                      alt={image.alt}
-                    />
-                  </XDSAspectRatio>
-                ))}
-              </XDSGrid>
-            </XDSSection>
+            <XDSGrid columns={{minWidth: 200, repeat: 'fit'}} gap={4}>
+              {IMAGES.map(image => (
+                <XDSAspectRatio
+                  key={image.src}
+                  ratio={4 / 5}
+                  xstyle={styles.galleryImageClip}>
+                  <img
+                    {...stylex.props(styles.galleryImage)}
+                    src={image.src}
+                    alt={image.alt}
+                  />
+                </XDSAspectRatio>
+              ))}
+            </XDSGrid>
           </XDSVStack>
         </XDSLayoutContent>
       }
