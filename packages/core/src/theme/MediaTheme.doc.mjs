@@ -24,3 +24,20 @@ export const docs = {
     {name: 'children', type: 'ReactNode', required: true, description: 'Content to render with inverted token context. Components inherit the correct colors automatically.'},
   ],
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  usage: {
+    description:
+      'Token overrides for content on inverted surfaces — media overlays, scrims, toasts, tooltips. Base behavior flips color-scheme so all light-dark() tokens resolve to correct side; only a small set of tokens need explicit overrides beyond that. Themes can further customize component appearance on media surfaces via onDark/onLight in defineTheme(), w/ token overrides (e.g. "--color-accent": "#90CAF9") + component overrides (e.g. ghost buttons get border on dark surfaces).',
+    bestPractices: [
+      {guidance: true, description: 'Use for any content over dark background (image overlays, video scrims, dark cards) or other inverted surfaces like toasts/tooltips.'},
+      {guidance: true, description: 'Pair w/ background color — MediaTheme flips token context but does NOT add background. Set backgroundColor on parent element.'},
+      {guidance: true, description: 'Themes can customize components on media surfaces via onDark.components + onLight.components in defineTheme(). E.g. add border to ghost buttons on dark surfaces.'},
+      {guidance: false, description: 'Use MediaTheme for app-level dark mode — use XDSTheme w/ mode="dark"/mode="system" instead. MediaTheme is for local surface inversions, not page-wide color scheme.'},
+    ],
+  },
+  propDescriptions: {
+    mode: 'surface luminance context — dark for content over dark backgrounds (light text, white-tinted interactions), light for content over light backgrounds (dark text, black-tinted interactions). **(required)**',
+  },
+};

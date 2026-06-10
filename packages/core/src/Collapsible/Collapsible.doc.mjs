@@ -179,11 +179,13 @@ export const docsDense = {
   usage: {
     description: 'Collapsible hides and reveals content behind a trigger button. Use in settings, FAQs, or detail views. Wrap in XDSCollapsibleGroup for accordion behavior.',
     bestPractices: [
-      { guidance: true, description: 'Wrap in XDSCard for visual separation. Use type="single" for settings/FAQs.' },
+      { guidance: true, description: 'Wrap each XDSCollapsible in an XDSCard for visual separation in accordion layouts.' },
+      { guidance: true, description: 'Use XDSCollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
       { guidance: true, description: 'Use type="multiple" when users need to compare across sections.' },
       { guidance: true, description: 'Start sections open (defaultIsOpen) when content is needed on first view.' },
       { guidance: false, description: 'Hide critical content behind a collapsible — users may not discover it.' },
-      { guidance: false, description: 'Nest more than two levels deep. Avoid for single short paragraphs.' },
+      { guidance: false, description: 'Nest collapsibles more than two levels deep — makes content hard to find and navigate.' },
+      { guidance: false, description: 'Use a collapsible for a single short paragraph — just show the text directly instead.' },
     ],
   },
   components: [

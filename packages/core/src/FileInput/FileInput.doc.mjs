@@ -269,6 +269,7 @@ export const docsDense = {
       {guidance: true, description: 'Always specify an accept prop to guide users toward valid file types.'},
       {guidance: true, description: 'Use maxSize and maxFiles to prevent oversized uploads.'},
       {guidance: true, description: 'Add a description to communicate constraints.'},
+      {guidance: true, description: 'Use changeAction for immediate upload workflows that benefit from optimistic UI.'},
       {guidance: false, description: "Don't use FileInput for directory uploads."},
       {guidance: false, description: "Don't use mode='input' unless space is very constrained — dropzone mode provides a better experience."},
     ],

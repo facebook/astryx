@@ -163,8 +163,12 @@ export const docsDense = {
   usage: {
     description: 'EmptyState shows a placeholder for empty lists, zero search results, first-time setups. Always include a title and next step.',
     bestPractices: [
-      { guidance: true, description: 'Clear title + CTA button. Icon for context. Compact variant in tight spaces.' },
-      { guidance: false, description: 'No generic "No data" — be specific. Not for errors — use Banner.' },
+      { guidance: true, description: 'Include a clear title + call-to-action button so users know how to proceed.' },
+      { guidance: true, description: 'Use an illustration or icon that reinforces the context of the empty state.' },
+      { guidance: true, description: 'Use the compact variant inside cards or sidebars where space is limited.' },
+      { guidance: false, description: 'Leave an empty state without guidance — always explain what happened and what user can do next.' },
+      { guidance: false, description: 'Use a generic message like "No data" — be specific about what is empty and why.' },
+      { guidance: false, description: 'Use an EmptyState for error messages that require immediate action — use a Banner instead.' },
     ],
   },
   propDescriptions: {

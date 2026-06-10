@@ -227,8 +227,12 @@ export const docsDense = {
   usage: {
     description: 'HoverCard shows additional info on hover/focus. Use for profile cards, link summaries, inline definitions.',
     bestPractices: [
-      { guidance: true, description: 'Supplementary content only. Dashed underline on text triggers. Hook API for custom control.' },
-      { guidance: false, description: 'No critical actions — content disappears on cursor leave. Use Tooltip/Popover when simpler.' },
+      { guidance: true, description: 'Keep content supplementary — hover cards should enhance understanding without blocking the primary workflow.' },
+      { guidance: true, description: 'Provide a dashed underline on text triggers so users know the element is hoverable.' },
+      { guidance: true, description: 'Use the hook API (useXDSHoverCard) when you need more control over timing or placement.' },
+      { guidance: false, description: 'Place critical actions or required information inside a hover card — users may miss content that only appears on hover.' },
+      { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
+      { guidance: false, description: 'Use a HoverCard for content the user must interact with — it disappears when the cursor leaves.' },
     ],
   },
   components: [

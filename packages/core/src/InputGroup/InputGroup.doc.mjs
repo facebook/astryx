@@ -72,9 +72,11 @@ export const docsDense = {
   usage: {
     description: 'InputGroup connects an input with addons. Use for URL fields, currency inputs, search with actions.',
     bestPractices: [
-      {guidance: true, description: 'Text addons for units/prefixes. isInteractive for buttons/selectors.'},
-      {guidance: true, description: 'isLabelHidden on inner input, group label visible.'},
-      {guidance: false, description: 'Don\'t put multiple inputs in one group. Don\'t group unrelated inputs.'},
+      {guidance: true, description: 'Use text addons to show units, prefixes, or suffixes that clarify input format (e.g. "$", "kg", "https://").'},
+      {guidance: true, description: 'Use XDSInputGroupText for static prefixes/suffixes like "$", "kg", or "https://".'},
+      {guidance: true, description: 'Set isLabelHidden on the inner input and let the group label be visible.'},
+      {guidance: false, description: 'Don\'t put multiple text inputs in one group — use separate fields instead.'},
+      {guidance: false, description: 'Don\'t use InputGroup for unrelated inputs — it\'s for a single input with decorations.'},
     ],
   },
   components: [

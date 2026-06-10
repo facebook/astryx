@@ -324,10 +324,13 @@ export const docsDense = {
   usage: {
     description: 'Dialog displays a modal overlay that blocks page interaction. Use for delete confirmations, edit forms, terms acceptance.',
     bestPractices: [
-      { guidance: true, description: 'Pick the right purpose: info=dismissable, form=no backdrop dismiss, required=must respond.' },
-      { guidance: true, description: 'Clear title in header. Use purpose="form" for dialogs with inputs.' },
-      { guidance: false, description: 'Use for simple messages — use inline or toast instead. Don\'t nest dialogs.' },
-      { guidance: false, description: 'Fullscreen for simple confirmations — it\'s for complex content like editors.' },
+      { guidance: true, description: 'Choose the right purpose: info for dismissable content, form to prevent accidental backdrop dismissal, required when user must respond.' },
+      { guidance: true, description: 'Include a clear title in the header so users immediately understand what the dialog is asking.' },
+      { guidance: true, description: 'Use purpose="form" for dialogs with inputs so user can\'t accidentally lose data by clicking the backdrop.' },
+      { guidance: true, description: 'Keep dialogs focused on a single task — if content grows beyond what fits, consider a full page instead.' },
+      { guidance: false, description: 'Use a dialog for simple messages that could be shown inline or as a toast notification.' },
+      { guidance: false, description: 'Nest dialogs inside other dialogs — restructure the flow into steps within a single dialog instead.' },
+      { guidance: false, description: 'Use the fullscreen variant for simple confirmations — it\'s meant for complex content like editors or long forms.' },
     ],
   },
   components: [
@@ -358,6 +361,16 @@ export const docsDense = {
         startContent: 'content before title (e.g. back button)',
         endContent: 'content after title, before close button',
         hasDivider: 'bottom border',
+      },
+    },
+    {
+      name: 'useXDSImperativeDialog',
+      description: 'hook to show a dialog w/o managing open state; call dialog.show(content, options) to open + dialog.hide() to close; render dialog.element in your JSX tree',
+      propDescriptions: {
+        show: 'show the dialog with given content; options = XDSDialog props minus isOpen/onOpenChange/children',
+        hide: 'hide the dialog',
+        isOpen: 'whether the dialog is currently open',
+        element: 'the dialog element — render this in your JSX tree',
       },
     },
   ],

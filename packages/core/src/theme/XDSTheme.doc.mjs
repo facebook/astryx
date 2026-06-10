@@ -18,3 +18,15 @@ export const docs = {
     {name: 'children', type: 'ReactNode', required: true, description: 'Content to render with the theme.'},
   ],
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  usage: {
+    description:
+      'Wraps subtree w/ a specific XDS theme. Use at app root or around sections that need different visual treatment.',
+  },
+  propDescriptions: {
+    theme: 'theme created by defineTheme(). **(required)**',
+    mode: 'color mode — system follows OS preference. defaults to "system"',
+  },
+};

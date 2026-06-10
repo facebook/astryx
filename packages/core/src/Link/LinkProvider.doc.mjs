@@ -17,3 +17,14 @@ export const docs = {
     {name: 'children', type: 'ReactNode', required: true, description: 'Content to render with the link provider.'},
   ],
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Wraps app to replace default <a> tag w/ framework-specific link component (e.g. Next.js Link) for client-side routing across all XDS components.',
+  usage: {
+    description: 'Wraps app to replace default <a> tag w/ framework-specific link component (e.g. Next.js Link) for client-side routing across all XDS components.',
+  },
+  propDescriptions: {
+    component: 'link component for all link elements in subtree (e.g. Next.js Link) **(required)**',
+  },
+};

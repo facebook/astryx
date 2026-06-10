@@ -187,8 +187,11 @@ export const docsDense = {
   usage: {
     description: 'CheckboxInput toggles a single on/off value. Use for settings, terms acceptance, opt-in choices. Use CheckboxList for groups.',
     bestPractices: [
-      { guidance: true, description: 'Always provide a visible label. Add description for context. Use indeterminate for partial "select all".' },
-      { guidance: false, description: 'Use for mutually exclusive choices (use RadioList). Use for immediate actions (use toggle/button).' },
+      { guidance: true, description: 'Always provide a visible label so user knows what they\'re toggling. Use isLabelHidden only when surrounding context makes it obvious.' },
+      { guidance: true, description: 'Add a description for choices that need extra context — e.g. what "Share usage data" actually shares.' },
+      { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes when only some items in a group are selected.' },
+      { guidance: false, description: 'Use a checkbox for mutually exclusive choices — use RadioList when only one option can be selected.' },
+      { guidance: false, description: 'Use a checkbox for actions that take effect immediately — use a toggle switch or button instead.' },
     ],
   },
   propDescriptions: {

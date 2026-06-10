@@ -38,3 +38,28 @@ export const docs = {
     targets: [{className: 'xds-clickable-card', visualProps: ['variant']}],
   },
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Interactive card for navigation/action targets. Nested interactive elements work independently.',
+  usage: {
+    description: 'Interactive card for navigation/action targets. Nested interactive elements work independently.',
+    bestPractices: [
+      {guidance: true, description: 'Use for cards navigating to detail page or triggering single action.'},
+      {guidance: true, description: 'Nest buttons/links freely inside — they handle own events.'},
+      {guidance: false, description: 'Use for toggling selection — use SelectableCard instead.'},
+    ],
+  },
+  propDescriptions: {
+    label: 'accessibility label **(required)**',
+    onClick: 'click handler — fires on card surface only',
+    href: 'navigation URL',
+    target: 'link target',
+    isDisabled: 'disables card',
+    padding: 'inner padding',
+    variant: 'background color variant',
+    width: 'card width',
+    height: 'card height',
+    maxWidth: 'max card width',
+  },
+};

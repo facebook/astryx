@@ -14,3 +14,11 @@ export const docs = {
 
   props: [],
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: '',
+  usage: {
+    description: '',
+  },
+};

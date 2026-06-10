@@ -71,3 +71,46 @@ export const docs = {
     },
   ],
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Confirms destructive/irreversible action before it happens (delete, revoke access, discard unsaved changes).',
+  usage: {
+    description:
+      'AlertDialog confirms destructive/irreversible action (delete, revoke access, discard changes). To show w/o managing open state, use useXDSImperativeAlertDialog hook — call alert.show(options) + render alert.element in tree.',
+    bestPractices: [
+      {guidance: true, description: 'Make action button label specific — "Delete project" > "OK"/"Confirm".'},
+      {guidance: true, description: 'Describe consequences in description so user knows outcome before confirming.'},
+      {guidance: false, description: 'Use AlertDialog for non-destructive actions — use standard Dialog instead.'},
+    ],
+  },
+  components: [
+    {
+      name: 'XDSAlertDialog',
+      description: 'Modal dialog confirming destructive action.',
+      propDescriptions: {
+        isOpen: 'dialog open? **(required)**',
+        onOpenChange: 'visibility change callback **(required)**',
+        title: 'dialog title; linked via aria-labelledby **(required)**',
+        description: 'consequence description; linked via aria-describedby **(required)**',
+        actionLabel: 'action button label **(required)**',
+        onAction: 'fires on action click; does NOT auto-close **(required)**',
+        cancelLabel: 'cancel button label',
+        actionVariant: 'action button variant',
+        isActionLoading: 'shows loading spinner on action button',
+        width: 'dialog width',
+        isInline: 'renders content inline w/o modal behavior; docs previews/showcases only',
+      },
+    },
+    {
+      name: 'useXDSImperativeAlertDialog',
+      description: 'Hook to show alert dialog w/o managing open state. Call alert.show(options) to open, alert.hide() to close; render alert.element in JSX tree.',
+      propDescriptions: {
+        show: 'show dialog w/ options; same as XDSAlertDialog props minus isOpen/onOpenChange',
+        hide: 'hide dialog',
+        isOpen: 'dialog currently open?',
+        element: 'dialog element — render in JSX tree',
+      },
+    },
+  ],
+};

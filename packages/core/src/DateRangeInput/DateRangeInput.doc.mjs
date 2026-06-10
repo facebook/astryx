@@ -64,9 +64,12 @@ export const docsDense = {
   usage: {
     description: 'DateRangeInput lets users select start+end dates from a dual-month calendar. Use for filtering, reports, analytics, and booking.',
     bestPractices: [
-      { guidance: true, description: 'Use presets for common ranges. Use min/max for constraints.' },
-      { guidance: true, description: 'Keep hasClear enabled. Provide clear labels.' },
-      { guidance: false, description: 'Use for single dates (use DateInput). Hide label without context.' },
+      { guidance: true, description: 'Use presets for common ranges like "Last 7 days" to speed up selection.' },
+      { guidance: true, description: 'Use min/max to constrain selectable dates to valid ranges.' },
+      { guidance: true, description: 'Keep hasClear enabled (default) so users can reset the filter.' },
+      { guidance: true, description: 'Provide clear labels + descriptions so users understand what the range controls.' },
+      { guidance: false, description: 'Use DateRangeInput when only a single date is needed — use DateInput instead.' },
+      { guidance: false, description: 'Hide the label without surrounding context that makes the purpose obvious.' },
     ],
   },
   propDescriptions: {
@@ -88,6 +91,8 @@ export const docsDense = {
     status: 'error/warning/success status',
     labelTooltip: 'tooltip via info icon at label end',
     numberOfMonths: 'months in calendar (default 2)',
+    changeAction: 'async action fired after onChange; drives optimistic UI updates via useTransition',
+    isLoading: 'loading state; disables interaction + shows a spinner',
     xstyle: 'StyleX styles for layout',
   },
 };

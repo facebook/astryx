@@ -113,8 +113,11 @@ export const docsDense = {
     description:
       'Center aligns content to the middle of its container. Use for empty states, loading screens, login forms.',
     bestPractices: [
-      {guidance: true, description: 'Set axis when you only need one direction. Set height for vertical centering. Use isInline for icons in text.'},
-      {guidance: false, description: 'Wrap page sections — use XDSLayout. Use for horizontal lists — use XDSStack with hAlign="center".'},
+      {guidance: true, description: 'Use axis="horizontal" or axis="vertical" when you only need one direction — both axes is the default but not always needed.'},
+      {guidance: true, description: 'Set a height when centering vertically — Center needs a defined height to know what space to center within.'},
+      {guidance: true, description: 'Use isInline to center small elements (icons, badges) within a line of text without breaking text flow.'},
+      {guidance: false, description: 'Wrap large page sections in Center — use XDSLayout or XDSAppShell for page-level structure.'},
+      {guidance: false, description: 'Use Center for horizontal lists of items — use XDSStack with hAlign="center" instead.'},
     ],
   },
   propDescriptions: {

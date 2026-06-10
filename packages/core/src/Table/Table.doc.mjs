@@ -915,8 +915,10 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Use density and divider variants to match the information density and scanning needs of your data.' },
       { guidance: true, description: 'Compose rich cell content with XDS components like XDSBadge, XDSStatusDot, and XDSAvatar via renderCell.' },
+      { guidance: true, description: 'Set explicit width on every column via proportional() or pixel(). proportional(1) = equal flex w/ 120px min preventing collapse on narrow viewports. Omitting width skips the minimum.' },
       { guidance: false, description: 'Use a table for data without consistent columns — use a list or card layout for heterogeneous content.' },
       { guidance: false, description: 'Enable every plugin at once — add only the features your use case requires to keep the interface focused.' },
+      { guidance: false, description: 'Omit width on text-heavy columns — w/o explicit proportional() width they have no minimum and can squish to near-zero on mobile.' },
     ],
     anatomy: [
       {name: 'Column Header', required: true, description: 'Displays titles, sorting controls, and bulk selection.'},
@@ -999,6 +1001,19 @@ export const docsDense = {
         getIsIndeterminate: 'Returns partial selection state; renders indeterminate checkbox.',
         getIsItemSelectable: 'Returns whether row shows checkbox; non-selectable rows render nothing.',
         getIsItemEnabled: 'Returns whether row checkbox is interactive; disabled rows show disabled checkbox.',
+      },
+    },
+    {
+      name: 'useXDSTableSelectionState',
+      displayName: 'useXDSTableSelectionState',
+      description: 'State companion for useXDSTableSelection. Handles disabled/selectable row filtering for select-all automatically — disabled rows frozen (state preserved across select-all/deselect-all), non-selectable rows excluded.',
+      propDescriptions: {
+        data: 'Full data array rendered in table. **(required)**',
+        idKey: 'Key extractor — property name or fn returning unique string ID. **(required)**',
+        selectedKeys: 'Controlled set of selected item IDs. **(required)**',
+        setSelectedKeys: 'Setter for controlled selected keys. **(required)**',
+        getIsItemSelectable: 'Returns whether row shows checkbox; non-selectable rows excluded from select-all. Defaults to () => true.',
+        getIsItemEnabled: 'Returns whether row checkbox is interactive; disabled rows frozen — select-all preserves their state. Defaults to () => true.',
       },
     },
     {

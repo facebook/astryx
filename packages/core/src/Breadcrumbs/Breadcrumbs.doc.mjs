@@ -194,9 +194,10 @@ export const docsDense = {
     description:
       'Breadcrumbs show a trail of links from root to current page. Use at the top of detail pages, settings, or nested content.',
     bestPractices: [
-      {guidance: true, description: 'Place above the page heading. Keep labels short and matching page titles.'},
+      {guidance: true, description: 'Place above the page heading so user sees location before reading content.'},
+      {guidance: true, description: 'Keep labels short + matching page titles they link to — "Settings" not "Application Settings Page".'},
       {guidance: true, description: 'Use supporting variant in dense UIs where the breadcrumb should be subtle.'},
-      {guidance: true, description: 'Last item should be plain text (isCurrent), not a link.'},
+      {guidance: true, description: 'Last item plain text, not a link — represents current page; done automatically when you set isCurrent.'},
       {guidance: false, description: 'Use as primary navigation — breadcrumbs supplement, not replace, a main nav.'},
       {guidance: false, description: 'Show on top-level pages with no parent.'},
       {guidance: false, description: 'Let the trail exceed 5 levels — simplify the hierarchy instead.'},
