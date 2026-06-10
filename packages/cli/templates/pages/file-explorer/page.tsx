@@ -260,9 +260,6 @@ const FILESYSTEM: FileSystemItem[] = [
   },
 ];
 
-// Miller-column layout plumbing not yet exposed as XDS props:
-// viewport fill (#2594); horizontal column strip + per-column scroll + flex
-// sizing for the dynamic column count and detail panel (#2623).
 const styles = stylex.create({
   page: {height: '100dvh'},
   columnRow: {overflowX: 'auto', overflowY: 'hidden'},
