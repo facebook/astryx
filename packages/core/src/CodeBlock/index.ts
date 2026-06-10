@@ -14,8 +14,8 @@
 export {XDSCodeBlock} from './XDSCodeBlock';
 export type {XDSCodeBlockProps} from './XDSCodeBlock';
 
-export {XDSCode} from './XDSCode';
-export type {XDSCodeProps} from './XDSCode';
+export {XDSCode} from '../Code';
+export type {XDSCodeProps} from '../Code';
 
 export {
   tokenize,

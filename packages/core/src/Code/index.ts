@@ -1,11 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Convenience re-export for XDSCode
- * @position Subpath export so `@xds/core/Code` resolves correctly
- *
- * XDSCode lives in the CodeBlock directory (shared code rendering internals),
- * but agents and developers naturally expect `@xds/core/Code` to work.
+ * @file index.ts
+ * @input XDSCode component source
+ * @output Exports XDSCode and its props type
+ * @position Entry point for @xds/core/Code subpath export
  */
 
-export {XDSCode, type XDSCodeProps} from '../CodeBlock';
+export {XDSCode, type XDSCodeProps} from './XDSCode';

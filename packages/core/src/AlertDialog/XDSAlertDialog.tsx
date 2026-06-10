@@ -22,7 +22,7 @@ import {XDSLayout} from '../Layout/XDSLayout';
 import {XDSLayoutContent} from '../Layout/XDSLayoutContent';
 import {XDSLayoutFooter} from '../Layout/XDSLayoutFooter';
 import {XDSHStack} from '../Stack';
-import {XDSHeading} from '../Text/XDSHeading';
+import {XDSHeading} from '../Heading/XDSHeading';
 import {XDSText} from '../Text/XDSText';
 import {XDSButton, type XDSButtonVariant} from '../Button';
 import type {XDSBaseProps} from '../XDSBaseProps';

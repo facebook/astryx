@@ -1,11 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Convenience re-export for XDSHeading
- * @position Subpath export so `@xds/core/Heading` resolves correctly
- *
- * XDSHeading lives in the Text directory (shared typography internals),
- * but agents and developers naturally expect `@xds/core/Heading` to work.
+ * @file index.ts
+ * @input XDSHeading component source
+ * @output Exports XDSHeading and its props/types
+ * @position Entry point for @xds/core/Heading subpath export
  */
 
 export {
@@ -13,4 +12,4 @@ export {
   type XDSHeadingProps,
   type XDSHeadingLevel,
   type XDSHeadingType,
-} from '../Text';
+} from './XDSHeading';

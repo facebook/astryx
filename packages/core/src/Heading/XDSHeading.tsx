@@ -6,11 +6,11 @@
  * @file XDSHeading.tsx
  * @input Uses React, HTMLAttributes, ReactNode
  * @output Exports XDSHeading component, XDSHeadingProps, XDSHeadingLevel types
- * @position Core implementation; consumed by index.ts, tested by XDSHeading.test.tsx
+ * @position Core implementation; lives in own Heading/ dir, re-exported by Text/
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Text/Text.doc.mjs (props table, features, implementation notes)
- * - /packages/core/src/Text/XDSHeading.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/Heading/XDSHeading.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Text/index.ts (exports if types change)
  * - /apps/storybook/stories/Text.stories.tsx (storybook stories)
  * - /packages/cli/templates/blocks/components/Text/ (showcase blocks)
@@ -38,8 +38,8 @@ import {
   capsizeStyles,
   decorationStyles,
   truncationTooltipStyles,
-} from './text.stylex';
-import {useTruncation} from './useTruncation';
+} from '../Text/text.stylex';
+import {useTruncation} from '../Text/useTruncation';
 import type {LayerPlacement} from '../Layer';
 import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
