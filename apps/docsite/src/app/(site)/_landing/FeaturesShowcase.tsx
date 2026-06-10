@@ -311,10 +311,10 @@ const features: Record<string, Feature> = {
     description:
       'Scaffold projects, browse templates, generate themes, and get agent-ready docs from the command line or MCP.',
     href: '/docs/cli',
-    // No image — this card is intentionally text-only per the bento
-    // reference. The text-only card sits in the middle-bottom slot
-    // and acts as visual counterweight against the three image-
-    // anchored cards.
+    image: {
+      src: '/feature-cli.png',
+      alt: 'AI prompt input asking "Can you create me a table page" with a send button',
+    },
   },
 };
 
@@ -438,14 +438,14 @@ export function FeaturesShowcase() {
   // marked isFlex / isTall use flex:1 to grow into any leftover
   // vertical space inside their column, which is what visually
   // balances the column heights: the "Over 150 components" card in
-  // the middle column grows to fill the space the short "CLI"
-  // sibling leaves behind, matching the heights of the dedicated
+  // the middle column grows to fill the space its "CLI" sibling
+  // leaves behind, matching the heights of the dedicated
   // "Templates" card on the left and the "Themes" card on the
   // right.
   //
   // Layout on desktop (≥720px):
   //   col 1: HeadingBlock + Templates (flex)
-  //   col 2: Components (flex) + CLI (text-only, natural height)
+  //   col 2: Components (flex) + CLI (image, natural height)
   //   col 3: Themes (tall, flex)
   //
   // Below 720px the grid collapses to 1 column. Each column wrapper
