@@ -23,6 +23,7 @@ import {ThemeCardShowcase} from './ThemeCardShowcase';
 import {getThemeImages} from './themeImages';
 import {packages} from '../generated/packageRegistry';
 import {themeObjects} from '../generated/themeRegistry';
+import {trackClickCta, trackToggle} from '../lib/analytics';
 
 // Gallery order — themes are listed in the same canonical visual-
 // closeness order used elsewhere (most restrained → most expressive).
@@ -599,6 +600,11 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
         return;
       }
       event.preventDefault();
+      trackClickCta({
+        page: 'themes',
+        target: 'customize',
+        item: selectedPkgName,
+      });
       setIsLeaving(true);
       // Wait for the leave animation to play, then navigate. Length
       // matches --duration-medium (~410ms); we use a slight buffer
@@ -669,7 +675,16 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                   label={modeToggleLabel}
                   tooltip={modeToggleLabel}
                   icon={modeToggleIcon}
-                  onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
+                  onClick={() => {
+                    const next = mode === 'light' ? 'dark' : 'light';
+                    trackToggle({
+                      page: 'themes',
+                      target: 'mode',
+                      item: selectedPkgName,
+                      value: next,
+                    });
+                    setMode(next);
+                  }}
                 />
               </XDSHStack>
             </XDSVStack>

@@ -17,6 +17,7 @@ import {neutralTheme} from '@xds/theme-neutral/built';
 import {useThemeMode} from '../../app/providers';
 import type {ExampleEntry} from '../../generated/exampleRegistry';
 import {buildPlaygroundHref} from '../playgroundLink';
+import {trackOpenPlayground} from '../../lib/analytics';
 
 function LivePreview({entry}: {entry: ExampleEntry}) {
   const {mode} = useThemeMode();
@@ -96,6 +97,7 @@ export function ExampleBlock({entry}: ExampleBlockProps) {
               variant="ghost"
               size="sm"
               onClick={() => {
+                trackOpenPlayground({page: 'components', item: entry.name});
                 window.location.href = buildPlaygroundHref(entry.source);
               }}
             />

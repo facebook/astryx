@@ -41,6 +41,7 @@ import {XDSDialog} from '@xds/core/Dialog';
 import {XDSTooltip} from '@xds/core/Tooltip';
 import {TemplatePreviewSurface} from './TemplatePreviewSurface';
 import {buildPlaygroundHref} from './playgroundLink';
+import {trackCopy, trackOpenPlayground, trackNavigate} from '../lib/analytics';
 
 export interface TemplatePreviewItem {
   slug: string;
@@ -166,8 +167,15 @@ export function TemplatePreviewDialog({
     if (count === 0) {
       return;
     }
+    const nextIndex = (index + delta + count) % count;
+    trackNavigate({
+      page: 'templates',
+      target: 'prev_next',
+      direction: delta > 0 ? 'next' : 'prev',
+      item: items[nextIndex]?.slug,
+    });
     startTransition(() => {
-      onIndexChange((index + delta + count) % count);
+      onIndexChange(nextIndex);
     });
   };
 
@@ -206,9 +214,15 @@ export function TemplatePreviewDialog({
   const handleCopyCmd = useCallback(() => {
     navigator.clipboard.writeText(useCommand).then(() => {
       setCmdCopied(true);
+      trackCopy({
+        page: 'templates',
+        target: 'cli_command',
+        item: current.slug,
+        category: current.category,
+      });
       setTimeout(() => setCmdCopied(false), 2000);
     });
-  }, [useCommand]);
+  }, [useCommand, current.slug, current.category]);
 
   return (
     <XDSDialog
@@ -259,6 +273,11 @@ export function TemplatePreviewDialog({
                     variant="primary"
                     size="lg"
                     onClick={() => {
+                      trackOpenPlayground({
+                        page: 'templates',
+                        item: current.slug,
+                        category: current.category,
+                      });
                       window.location.href =
                         buildPlaygroundHref(playgroundSource);
                     }}
