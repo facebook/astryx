@@ -285,6 +285,16 @@ const styles = stylex.create({
     height: 'auto',
     display: 'block',
   },
+  // Reduced-size image — 3/4 of the wrapper width. Combined with a
+  // center-aligned wrapper (hAlign="center") this leaves equal margin
+  // on both sides so the composition reads as a smaller, centered
+  // element rather than spanning the full card. Used by the Components
+  // and CLI cards.
+  featureImageSmall: {
+    width: '75%',
+    height: 'auto',
+    display: 'block',
+  },
   // Tall-card image: same full-bleed treatment. Still height:auto so
   // the natural aspect ratio is preserved.
   featureImageTall: {
@@ -364,6 +374,7 @@ function FeatureCard({
   isFlex = false,
   insetImage = false,
   centerImage = false,
+  smallImage = false,
 }: {
   feature: Feature;
   /**
@@ -396,6 +407,13 @@ function FeatureCard({
    * with a tall empty gap above. Ignored for tall / inset images.
    */
   centerImage?: boolean;
+  /**
+   * When true, the image renders at 2/3 width and is horizontally
+   * centered in its wrapper (equal margin on both sides). Used by the
+   * Components and CLI cards so their smaller compositions don't span
+   * the full card width.
+   */
+  smallImage?: boolean;
 }) {
   const hasImage = feature.image != null;
   // Style precedence:
@@ -450,7 +468,7 @@ function FeatureCard({
           // bleed the image to the card edges (a width="100%" prop here
           // would win over the xstyle and clamp it back to the inset).
           <XDSHStack
-            hAlign={isTall ? 'center' : 'start'}
+            hAlign={isTall || smallImage ? 'center' : 'start'}
             xstyle={
               isTall
                 ? styles.imageWrapTall
@@ -464,12 +482,17 @@ function FeatureCard({
                 does not export a dedicated Image primitive (XDSThumbnail
                 is a chat/attachment chrome, not a fit-to-container
                 marketing image). Sizing + display:block come from the
-                featureImage / featureImageTall xstyles below. */}
+                featureImage / featureImageTall / featureImageSmall
+                xstyles below. */}
             <img
               src={feature.image.src}
               alt={feature.image.alt}
               {...stylex.props(
-                isTall ? styles.featureImageTall : styles.featureImage,
+                isTall
+                  ? styles.featureImageTall
+                  : smallImage
+                    ? styles.featureImageSmall
+                    : styles.featureImage,
               )}
             />
           </XDSHStack>
@@ -543,8 +566,13 @@ export function FeaturesShowcase() {
           <FeatureCard feature={features.themes} isFlex centerImage />
         </XDSVStack>
         <XDSVStack gap={8} width="100%" height="100%" xstyle={styles.column}>
-          <FeatureCard feature={features.components} isFlex insetImage />
-          <FeatureCard feature={features.cli} />
+          <FeatureCard
+            feature={features.components}
+            isFlex
+            insetImage
+            smallImage
+          />
+          <FeatureCard feature={features.cli} smallImage />
         </XDSVStack>
         <XDSVStack gap={8} width="100%" height="100%" xstyle={styles.column}>
           <FeatureCard feature={features.templates} isTall />
