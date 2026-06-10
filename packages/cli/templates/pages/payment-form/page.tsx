@@ -114,12 +114,16 @@ const US_STATES = [
   'Wyoming',
 ];
 
-// Product photos from the local template-assets set (committed to the
-// docsite; the CLI swaps these for an inline placeholder on scaffold).
+// Optional basePath. Empty in end-user projects and the docsite (served at
+// root). In the sandbox preview it picks up `/sandbox` so /template-assets/*
+// resolves under the GH Pages basePath. The CLI swaps these paths for an
+// inline placeholder on scaffold, so end users never see them.
+const BP = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+
 const ITEM_IMAGES: Record<string, {src: string}> = {
-  '1': {src: '/template-assets/light-product-1.png'},
-  '2': {src: '/template-assets/light-product-4.png'},
-  '3': {src: '/template-assets/light-product-5.png'},
+  '1': {src: BP + '/template-assets/light-product-1.png'},
+  '2': {src: BP + '/template-assets/light-product-4.png'},
+  '3': {src: BP + '/template-assets/light-product-5.png'},
 };
 
 const ORDER_ITEMS = [
@@ -511,7 +515,7 @@ export default function PaymentFormPage() {
                               onClick={() => {}}
                               xstyle={styles.paypalButton}>
                               <img
-                                src="/template-assets/paypal-logo.png"
+                                src={BP + '/template-assets/paypal-logo.png'}
                                 alt="PayPal"
                                 {...stylex.props(styles.paypalLogo)}
                               />
@@ -524,7 +528,10 @@ export default function PaymentFormPage() {
                               onClick={() => {}}
                               xstyle={styles.gpayButton}>
                               <img
-                                src="/template-assets/google-pay-logo-dark.svg"
+                                src={
+                                  BP +
+                                  '/template-assets/google-pay-logo-dark.svg'
+                                }
                                 alt="Google Pay"
                                 {...stylex.props(styles.gpayLogo)}
                               />
@@ -550,17 +557,17 @@ export default function PaymentFormPage() {
                           {/* Card type icons */}
                           <XDSHStack gap={1.5} vAlign="center">
                             <img
-                              src="/template-assets/visa.svg"
+                              src={BP + '/template-assets/visa.svg'}
                               alt="Visa"
                               {...stylex.props(styles.cardLogo)}
                             />
                             <img
-                              src="/template-assets/mastercard.svg"
+                              src={BP + '/template-assets/mastercard.svg'}
                               alt="Mastercard"
                               {...stylex.props(styles.cardLogo)}
                             />
                             <img
-                              src="/template-assets/amex.svg"
+                              src={BP + '/template-assets/amex.svg'}
                               alt="Amex"
                               {...stylex.props(styles.cardLogo)}
                             />
