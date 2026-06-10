@@ -67,6 +67,12 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # docsite `generate` runs `xds theme build`, which imports the compiled
+      # @xds/core/theme entry (dist/theme/index.js). Build core first so that
+      # entry exists — otherwise generate fails with "Cannot find module".
+      - name: Build core package
+        run: pnpm -F @xds/core build
+
       - name: Generate and test docsite data
         run: pnpm -F @xds/docsite generate && pnpm -F @xds/docsite test
 
