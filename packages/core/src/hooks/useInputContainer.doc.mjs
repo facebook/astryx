@@ -64,14 +64,14 @@ export const docsDense = {
   description:
     'Makes input container wrapper clickable, delegating focus to inner input/textarea when user clicks non-interactive areas (icons, padding, status indicators). Built on useClickableContainer, so nested interactive elements (clear buttons, calendar toggles, links) handled safely — clicking them does NOT steal focus from input. Automatically detects input type: text-like inputs receive .focus(), other types (checkbox, radio, file) receive .click().',
   paramDescriptions: {
-    options: 'Configuration object for input container. (required)',
-    'options.containerRef': 'Ref to outer container/wrapper element. (required)',
-    'options.inputRef': 'Ref to inner input / textarea element. (required)',
+    options: 'config for input container.',
+    'options.containerRef': 'ref to outer container/wrapper element.',
+    'options.inputRef': 'ref to inner input / textarea element.',
     'options.disabled': 'Whether input disabled.',
   },
   returnDescriptions: {
-    onClick: 'Click handler to attach to container wrapper.',
-    onMouseUp: 'Mouse up handler to attach to container wrapper.',
+    onClick: 'click handler for container wrapper.',
+    onMouseUp: 'mouse up handler for container wrapper.',
   },
   usage: {
     description:

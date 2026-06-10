@@ -87,18 +87,18 @@ export const docsDense = {
   description:
     'Manages keyboard navigation within linear list following WAI-ARIA menu/listbox/toolbar patterns. Supports arrow key navigation (vertical / horizontal), Home/End for boundaries, optional wrap-around, Escape to close. Suitable for dropdown menus, toolbars, any 1D focusable list.',
   paramDescriptions: {
-    options: 'Configuration object for list focus behavior. All fields optional.',
-    'options.itemSelector': 'Selector for focusable items within list.',
-    'options.wrap': 'Whether arrow navigation wraps around at ends.',
-    'options.onEscape': 'Callback when Escape key pressed (e.g. close menu).',
+    options: 'config for list focus behavior. All fields optional.',
+    'options.itemSelector': 'selector for focusable items in list.',
+    'options.wrap': 'whether arrow navigation wraps around at ends.',
+    'options.onEscape': 'callback when Escape key pressed (e.g. close menu).',
     'options.orientation': "Navigation orientation. 'horizontal' uses ArrowLeft/ArrowRight, 'vertical' uses ArrowUp/ArrowDown.",
   },
   returnDescriptions: {
-    listRef: 'Ref to attach to list container element.',
-    handleKeyDown: 'Key down handler to attach to list container.',
-    focusItem: 'Focus specific item by index (clamped to valid range).',
-    focusFirst: 'Focus first focusable item in list.',
-    focusLast: 'Focus last focusable item in list.',
+    listRef: 'ref to attach to list container element.',
+    handleKeyDown: 'key down handler for list container.',
+    focusItem: 'focus specific item by index (clamped to valid range).',
+    focusFirst: 'focus first focusable item in list.',
+    focusLast: 'focus last focusable item in list.',
   },
   usage: {
     description:

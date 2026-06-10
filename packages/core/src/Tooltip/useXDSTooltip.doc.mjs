@@ -62,14 +62,14 @@ export const docs = {
 export const docsDense = {
   description: 'Headless hook for hover/focus-triggered tooltips. Builds on useXDSLayer w/ hover intent, delay, accessible aria-describedby linking. Use for custom trigger elements needing tooltip behavior.',
   paramDescriptions: {
-    content: 'Text / content to display in tooltip. (required)',
-    placement: 'Position relative to trigger.',
-    alignment: 'Alignment along placement axis.',
-    delayMs: 'Delay before showing tooltip on hover.',
+    content: 'text / content for tooltip.',
+    placement: 'position relative to trigger.',
+    alignment: 'alignment along placement axis.',
+    delayMs: 'delay before showing tooltip on hover.',
   },
   returnDescriptions: {
-    triggerProps: 'Props to spread on trigger element (ref, aria-describedby, event handlers).',
-    layerNode: 'Tooltip layer to render (include in JSX output).',
+    triggerProps: 'props to spread on trigger element (ref, aria-describedby, event handlers).',
+    layerNode: 'tooltip layer to render (include in JSX output).',
   },
   usage: {
     description: 'Headless hook for hover/focus-triggered tooltips. Builds on useXDSLayer w/ hover intent, delay, accessible aria-describedby linking. Use for custom trigger elements needing tooltip behavior.',

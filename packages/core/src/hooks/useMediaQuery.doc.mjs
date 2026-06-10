@@ -38,7 +38,7 @@ export const docs = {
 export const docsDense = {
   description: 'SSR-safe media query hook subscribing to window.matchMedia changes. Returns whether given media query matches. Always returns false on first render for SSR compatibility.',
   paramDescriptions: {
-    query: 'CSS media query string to evaluate. (required)',
+    query: 'CSS media query string to evaluate.',
   },
   returnDescriptions: {
     matches: 'Whether media query currently matches. Always false on first render (SSR-safe).',

@@ -89,17 +89,17 @@ export const docsDense = {
   description:
     'Measures children rendered in hidden container to determine how many fit in available width w/o flickering. Uses ResizeObserver to react to container size changes. Measurement container should hold all items plus optional overflow indicator element (identified by data-overflow-indicator attribute).',
   paramDescriptions: {
-    itemCount: 'Total number of items to measure for overflow. (required)',
-    options: 'Configuration object for overflow behavior.',
-    'options.gap': 'Gap between items in pixels. Used in width calculations.',
-    'options.minVisibleItems': "Minimum number of items to always show, even if they don't fit.",
+    itemCount: 'total # items to measure for overflow.',
+    options: 'config for overflow behavior.',
+    'options.gap': 'gap between items in px. Used in width calculations.',
+    'options.minVisibleItems': "min # items to always show, even if they don't fit.",
     'options.collapseFrom': 'Which end to collapse items from.',
     'options.behavior': "Which element to observe for overflow calculations. 'observeParent' uses container's parent element width, allowing visible container to remain content-sized.",
   },
   returnDescriptions: {
-    containerRef: 'Ref callback to attach to visible container element.',
-    measureRef: 'Ref callback to attach to hidden measurement container holding all items.',
-    visibleCount: 'Number of items that fit in visible container.',
+    containerRef: 'ref callback for visible container element.',
+    measureRef: 'ref callback for hidden measurement container holding all items.',
+    visibleCount: '# items that fit in visible container.',
     hasOverflow: 'Whether any items overflowing (visibleCount < itemCount).',
   },
   usage: {

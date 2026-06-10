@@ -34,7 +34,7 @@ export const docsDense = {
   description:
     'Locks body scroll when active by pinning body w/ position: fixed. Prevents background scrolling behind modals + dialogs, necessary for iOS Safari where overscroll-behavior: contain does not work. Restores original scroll position when unlocked.',
   paramDescriptions: {
-    isLocked: 'Whether body scroll should be locked. (required)',
+    isLocked: 'Whether body scroll should be locked.',
   },
   usage: {
     description:

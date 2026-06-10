@@ -82,17 +82,17 @@ export const docsDense = {
   description:
     'Makes container element clickable while preserving nested interactive element behavior. Solves "nested interactive elements" problem: when card is clickable but contains buttons/links, clicking those must NOT trigger card\'s action. Detects interactive ancestors between click target + container, ignores text selections. Supports href navigation (incl. middle-click + Ctrl/Cmd+click for new tabs).',
   paramDescriptions: {
-    options: 'Configuration object for clickable container. (required)',
-    'options.containerRef': 'Ref to outer container element. (required)',
-    'options.interactiveRef': 'Ref to primary interactive element inside (link, button). If no onClick / href provided, clicks proxied to this element.',
-    'options.onClick': 'Click handler fired when container surface (not nested interactive element) clicked.',
-    'options.href': 'Navigation URL. When provided, clicking container navigates to this URL.',
+    options: 'config for clickable container.',
+    'options.containerRef': 'ref to outer container element.',
+    'options.interactiveRef': 'ref to primary interactive element inside (link, button). If no onClick / href provided, clicks proxied to this element.',
+    'options.onClick': 'click handler fired when container surface (not nested interactive element) clicked.',
+    'options.href': 'navigation URL. When provided, clicking container navigates to it.',
     'options.target': "Link target (e.g. '_blank'). Used w/ href for navigation behavior.",
     'options.disabled': 'Whether container disabled.',
   },
   returnDescriptions: {
-    onClick: 'Click handler to attach to container element.',
-    onMouseUp: 'Mouse up handler to attach to container (handles middle-click navigation for href).',
+    onClick: 'click handler for container element.',
+    onMouseUp: 'mouse up handler for container (handles middle-click navigation for href).',
   },
   usage: {
     description:

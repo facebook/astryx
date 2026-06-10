@@ -72,16 +72,16 @@ export const docs = {
 export const docsDense = {
   description: 'Headless hook for hover-triggered floating cards. Builds on useXDSLayer w/ hover/focus intent detection, delay, safe-triangle hover zones. Use for rich previews on hover w/o building interaction logic.',
   paramDescriptions: {
-    content: 'Content to display in hover card. Can be render function receiving layer props. (required)',
-    placement: 'Position relative to trigger.',
-    alignment: 'Alignment along placement axis.',
-    delayMs: 'Delay before showing hover card on hover.',
-    onShow: 'Callback fired when hover card becomes visible.',
-    onHide: 'Callback fired when hover card hidden.',
+    content: 'content for hover card. Can be render function receiving layer props.',
+    placement: 'position relative to trigger.',
+    alignment: 'alignment along placement axis.',
+    delayMs: 'delay before showing hover card on hover.',
+    onShow: 'callback fired when hover card becomes visible.',
+    onHide: 'callback fired when hover card hidden.',
   },
   returnDescriptions: {
-    triggerProps: 'Props to spread on trigger element (ref, event handlers).',
-    layerNode: 'Hover card layer to render (include in JSX output).',
+    triggerProps: 'props to spread on trigger element (ref, event handlers).',
+    layerNode: 'hover card layer to render (include in JSX output).',
   },
   usage: {
     description: 'Headless hook for hover-triggered floating cards. Builds on useXDSLayer w/ hover/focus intent detection, delay, safe-triangle hover zones. Use for rich previews on hover w/o building interaction logic.',

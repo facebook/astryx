@@ -59,7 +59,7 @@ export const docsDense = {
   returnDescriptions: {
     isEnabled: 'Whether collapsible behavior active.',
     isOpen: 'Whether content currently expanded.',
-    toggle: 'Toggle open/closed. Dispatches to group, controlled callback, / internal state.',
+    toggle: 'toggle open/closed. Dispatches to group, controlled callback, / internal state.',
   },
   usage: {
     description: 'Encapsulates collapsible state machine. 3 modes: group-controlled (inside XDSCollapsibleGroup), controlled (isOpen + onOpenChange), uncontrolled (self-managed w/ defaultIsOpen). Used internally by XDSCard + XDSSection.',
