@@ -50,10 +50,13 @@ import {
   ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 
-// Collapse the split-pane to a single chat column below this width. A
-// container query (not a viewport one) so it reacts to the width the template
-// is actually given, e.g. inside a constrained preview pane.
-const MOBILE = '@container artifact (max-width: 767px)';
+// Collapse the split-pane to a single chat column at/below this width. Single
+// source of truth shared by the CSS container query and the JS check in
+// openArtifact, so the two can't drift. A container query (not a viewport one)
+// so it reacts to the width the template is actually given, e.g. inside a
+// constrained preview pane.
+const MOBILE_MAX_WIDTH = 767;
+const MOBILE = `@container artifact (max-width: ${MOBILE_MAX_WIDTH}px)`;
 
 const styles = stylex.create({
   root: {
@@ -350,10 +353,11 @@ export default function AIChatArtifactTemplate() {
   });
 
   // Pick the artifact surface at click time: the layout collapse is a container
-  // query, so measure the root rather than the viewport to stay in sync.
+  // query, so measure the root (same MOBILE_MAX_WIDTH) rather than the viewport
+  // to stay in sync.
   const openArtifact = () => {
-    const width = rootRef.current?.offsetWidth ?? 9999;
-    if (width <= 767) {
+    const width = rootRef.current?.offsetWidth ?? Infinity;
+    if (width <= MOBILE_MAX_WIDTH) {
       setIsArtifactDialogOpen(true);
     } else {
       setIsArtifactOpen(true);
