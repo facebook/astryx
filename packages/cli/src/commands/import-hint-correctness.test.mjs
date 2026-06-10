@@ -174,7 +174,22 @@ describe('import hint correctness', () => {
         const topDir = relToSrc.split(path.sep)[0];
 
         // The import subpath should match the top-level src directory
-        // (case-insensitive check since theme/Theme is valid)
+        // (case-insensitive check since theme/Theme is valid).
+        //
+        // Exception: convenience subpath exports (e.g. `@xds/core/HStack`,
+        // `@xds/core/VStack`, `@xds/core/Heading`, `@xds/core/Code`) live
+        // at `src/<Subpath>/index.ts` as thin re-export wrappers around a
+        // sibling source directory. The export is real and tree-shakeable;
+        // the source file just lives next door. Accept the match if the
+        // subpath has its own index.ts wrapper.
+        const wrapperIndex = path.join(srcDir, subpath, 'index.ts');
+        if (
+          subpath.toLowerCase() !== topDir.toLowerCase() &&
+          fs.existsSync(wrapperIndex)
+        ) {
+          return;
+        }
+
         expect(subpath.toLowerCase()).toBe(topDir.toLowerCase());
       });
     }
