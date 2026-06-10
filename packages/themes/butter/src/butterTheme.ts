@@ -520,6 +520,23 @@ export const butterTheme = defineTheme({
       'status:warning': {'--color-warning': '#ffc502'},
       'status:error': {'--color-error': '#fc473b'},
     },
+
+    // Display sizes use Sarina — the signature buttery display
+    // cursive, reserved for hero/marketing-scale text only.
+    // Headings (h1–h6) and body still use Outfit (configured above
+    // under typography.heading / typography.body). Same pattern
+    // Gothic uses for its Manufacturing Consent display family.
+    text: {
+      'type:display-1': {
+        fontFamily: 'Sarina, "Brush Script MT", "Snell Roundhand", cursive',
+      },
+      'type:display-2': {
+        fontFamily: 'Sarina, "Brush Script MT", "Snell Roundhand", cursive',
+      },
+      'type:display-3': {
+        fontFamily: 'Sarina, "Brush Script MT", "Snell Roundhand", cursive',
+      },
+    },
   },
 
   icons: butterIconRegistry,

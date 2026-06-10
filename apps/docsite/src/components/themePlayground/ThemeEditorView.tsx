@@ -3,7 +3,9 @@
 'use client';
 
 import * as React from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {useRouter} from 'next/navigation';
+import {durationVars, easeVars} from '@xds/core/theme/tokens.stylex';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSHStack, XDSVStack} from '@xds/core/Stack';
@@ -78,6 +80,59 @@ interface ThemeEditorViewProps {
   themeLabel: string;
   initialTheme: XDSDefinedTheme;
 }
+
+// First-paint entry animations. Each rule sits in its resting "to"
+// state on the element; the `@starting-style` block declares the
+// "from" state, and a `transition` interpolates between them. The
+// browser runs the transition exactly once — on first paint, the
+// element's initial computed style comes from @starting-style; on
+// the very next frame it resolves to the rule's normal style and
+// the transition plays. No JS coordination, no cross-page flag,
+// no race conditions: each mount of this view animates in, period.
+//
+// Motion tokens (--duration-medium + --ease-standard) keep the
+// entry in sync with the rest of XDS. prefers-reduced-motion
+// shortens the transition to ~0 so reduced-motion users get an
+// instant resolve instead of a noticeable slide / scale.
+const entryStyles = stylex.create({
+  // Editor panel slides in from the left. Mirrors the leave-side
+  // sidebar animation on /themes so the two halves chain into a
+  // single "panel swap" rather than reading as a hard cut.
+  editor: {
+    transform: 'translateX(0)',
+    opacity: 1,
+    transitionProperty: 'transform, opacity',
+    transitionDuration: {
+      default: durationVars['--duration-medium'],
+      '@media (prefers-reduced-motion: reduce)': '0.01ms',
+    },
+    transitionTimingFunction: easeVars['--ease-standard'],
+    '@starting-style': {
+      transform: 'translateX(-100%)',
+      opacity: 0,
+    },
+  },
+  // Preview entry — scale + fade. Starts at 95% scale to mirror the
+  // canonical XDS layerAnimations pattern (used for popovers, dropdown
+  // menus, hover cards, tooltips). Reads as the preview "settling
+  // into place" rather than just fading in flat. transform-origin
+  // stays at the default 50% 50% so the scale-up reads as growing
+  // outward from the preview's visual center.
+  preview: {
+    transform: 'scale(1)',
+    opacity: 1,
+    transitionProperty: 'transform, opacity',
+    transitionDuration: {
+      default: durationVars['--duration-medium'],
+      '@media (prefers-reduced-motion: reduce)': '0.01ms',
+    },
+    transitionTimingFunction: easeVars['--ease-standard'],
+    '@starting-style': {
+      transform: 'scale(0.95)',
+      opacity: 0,
+    },
+  },
+});
 
 export function ThemeEditorView({
   themeId,
@@ -414,6 +469,7 @@ export function ThemeEditorView({
 
       {/* Left Panel — Editor */}
       <div
+        {...stylex.props(entryStyles.editor)}
         style={{
           width: editor.size || 400,
           minWidth: 348,
@@ -498,6 +554,7 @@ export function ThemeEditorView({
 
       {/* Right Panel — Preview */}
       <div
+        {...stylex.props(entryStyles.preview)}
         style={{
           flex: 1,
           display: 'flex',

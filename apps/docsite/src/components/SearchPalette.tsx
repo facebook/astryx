@@ -56,10 +56,13 @@ export function SearchPalette({
 
     for (const pkg of packages) {
       const isTheme = pkg.name.includes('theme-');
+      // All themes share the single /themes surface — the per-theme
+      // dynamic route was removed in favor of state-driven selection.
+      // Search results for theme packages all land on /themes with
+      // Neutral as the default seed; users browse to the specific
+      // theme they want via the sidebar picker.
       items.push({
-        id: isTheme
-          ? `/themes/${pkg.name.replace('@xds/theme-', '')}`
-          : `/docs/${pkg.name.replace('@xds/', '')}`,
+        id: isTheme ? '/themes' : `/docs/${pkg.name.replace('@xds/', '')}`,
         label: pkg.displayName,
         auxiliaryData: {group: 'Package'},
       });

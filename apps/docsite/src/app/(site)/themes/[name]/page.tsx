@@ -1,29 +1,22 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Dedicated theme page — /themes/<name>
+ * Deep-link redirect — /themes/<name> → /themes?theme=<name>
  *
- * Each XDS theme (@xds/theme-*) gets a canonical page on the themes
- * side of the site that hosts the full live ThemeShowcasePreview
- * (top nav + hero + product grid + table + components). The
- * light/dark mode toggle lives in the page header beside the
- * Install button so the preview surface stays uncluttered. This is
- * the destination for the "Preview" affordance on the /themes
- * gallery cards.
+ * The themes surface was consolidated into a single state-driven
+ * explorer at /themes (see ./page.tsx). To keep existing deep links
+ * working (docs cross-links, shared URLs, search bookmarks), this
+ * route accepts the original `/themes/<slug>` shape and redirects to
+ * the canonical query-param form `/themes?theme=<slug>`, which the
+ * explorer reads on mount to preselect the right theme in its
+ * sidebar picker.
  *
- * This is the canonical URL per theme. Theme entry points (gallery
- * cards, sidebar, search) link here directly.
+ * Only known theme slugs are statically generated; any other slug
+ * falls through Next's default routing and returns a 404, matching
+ * the pre-consolidation behavior of the deleted per-theme page.
  */
-
-import {notFound} from 'next/navigation';
-import {XDSSection} from '@xds/core/Section';
+import {redirect} from 'next/navigation';
 import {packages} from '../../../../generated/packageRegistry';
-import {themeObjects} from '../../../../generated/themeRegistry';
-import {ThemePackagePage} from '../../../../components/ThemePackagePage';
-
-function slugToPackageName(slug: string): string {
-  return `@xds/theme-${slug}`;
-}
 
 export function generateStaticParams() {
   return packages
@@ -31,36 +24,11 @@ export function generateStaticParams() {
     .map(p => ({name: p.name.replace('@xds/theme-', '')}));
 }
 
-export default async function ThemePage({
+export default async function ThemeRedirectPage({
   params,
 }: {
   params: Promise<{name: string}>;
 }) {
   const {name: slug} = await params;
-  const pkgName = slugToPackageName(slug);
-  const pkg = packages.find(p => p.name === pkgName);
-  const theme = themeObjects[pkgName];
-  if (!pkg || !theme) {
-    notFound();
-  }
-
-  // Vanity title: strip the trailing " Theme" suffix from displayName
-  // so the title reads as a brand-style wordmark ("Neutral", "Butter",
-  // "Y2K") rather than the redundant "Neutral Theme" on a page that's
-  // already, by definition, about a theme. Falls back to displayName
-  // verbatim if the suffix isn't present (e.g. legacy entries).
-  const vanityTitle = pkg.displayName.replace(/\s*Theme$/i, '').trim();
-
-  return (
-    <XDSSection maxWidth="lg" padding={6}>
-      <ThemePackagePage
-        title={vanityTitle || pkg.displayName}
-        packageName={pkg.name}
-        description={pkg.description}
-        version={pkg.version}
-        readme={pkg.readme}
-        theme={theme}
-      />
-    </XDSSection>
-  );
+  redirect(`/themes?theme=${encodeURIComponent(slug)}`);
 }
