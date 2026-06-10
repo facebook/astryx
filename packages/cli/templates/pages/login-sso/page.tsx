@@ -16,7 +16,6 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSAvatar} from '@xds/core/Avatar';
-import {shadowVars} from '@xds/core/theme/tokens.stylex';
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -27,17 +26,9 @@ const BG_URL = '/template-assets/building.jpg';
 
 const styles = stylex.create({
   page: {
-    height: '100dvh',
     backgroundImage: `url(${BG_URL})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
-  },
-  card: {
-    boxShadow: shadowVars['--shadow-high'],
-    borderWidth: 0,
-  },
-  fullWidth: {
-    width: '100%',
   },
 });
 
@@ -109,9 +100,9 @@ export default function LoginSSO() {
   };
 
   return (
-    <XDSCenter axis="both" xstyle={styles.page}>
-      <XDSCard padding={8} width={400} xstyle={styles.card}>
-        <XDSVStack gap={4}>
+    <XDSCenter axis="both" height="100dvh" xstyle={styles.page}>
+      <XDSCard padding={8} width={400}>
+        <XDSVStack gap={4} hAlign="stretch">
           {/* ── Step 1: Email entry ── */}
           {step === 'email' && (
             <>
@@ -158,7 +149,6 @@ export default function LoginSSO() {
                 label="Sign in"
                 variant="primary"
                 size="lg"
-                xstyle={styles.fullWidth}
                 onClick={handleContinue}
                 isDisabled={!emailValid}
               />
@@ -169,7 +159,8 @@ export default function LoginSSO() {
                 label="Continue with SSO"
                 variant="secondary"
                 size="lg"
-                xstyle={styles.fullWidth}
+                onClick={handleContinue}
+                isDisabled={!emailValid}
               />
 
               <XDSVStack hAlign="center">
@@ -216,14 +207,12 @@ export default function LoginSSO() {
                   variant="primary"
                   size="lg"
                   isLoading={isLoading}
-                  xstyle={styles.fullWidth}
                   onClick={() => setIsLoading(true)}
                 />
                 <XDSButton
                   label="Use a different email"
                   variant="ghost"
                   size="lg"
-                  xstyle={styles.fullWidth}
                   onClick={handleBack}
                 />
               </XDSVStack>
@@ -280,14 +269,12 @@ export default function LoginSSO() {
                   variant="primary"
                   size="lg"
                   isLoading={isLoading}
-                  xstyle={styles.fullWidth}
                   onClick={handleSignIn}
                 />
                 <XDSButton
                   label="Use a different email"
                   variant="ghost"
                   size="lg"
-                  xstyle={styles.fullWidth}
                   onClick={handleBack}
                 />
               </XDSVStack>
