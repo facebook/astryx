@@ -9,6 +9,7 @@ import {useMediaQuery} from '@xds/core/hooks';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSCenter} from '@xds/core/Center';
+import {XDSDialog} from '@xds/core/Dialog';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSEmptyState} from '@xds/core/EmptyState';
 import {
@@ -16,6 +17,7 @@ import {
   XDSVStack,
   XDSLayout,
   XDSLayoutContent,
+  XDSLayoutHeader,
   XDSLayoutPanel,
 } from '@xds/core/Layout';
 import {XDSIcon} from '@xds/core/Icon';
@@ -48,6 +50,8 @@ import {
   DeviceTabletIcon,
   DevicePhoneMobileIcon,
   EyeIcon,
+  AdjustmentsHorizontalIcon,
+  XMarkIcon,
   PlusCircleIcon,
   ShoppingBagIcon,
   ShoppingCartIcon,
@@ -638,6 +642,9 @@ export default function EditorPage() {
   const [pageTitle, setPageTitle] = useState('Page Editor');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [viewport, setViewport] = useState<ViewportSize>('desktop');
+  // Mobile only: the customizations (tabs + Add Block/Layers) open in a
+  // fullscreen dialog over the preview, since there's no room to dock them.
+  const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
 
   // On phones the editor stacks: the panel sits in the header slot (full width,
   // above the canvas) showing just its toolbar, so the canvas isn't crushed
@@ -696,10 +703,17 @@ export default function EditorPage() {
     setSidebarTab('properties');
   }, []);
 
-  const selectBlock = useCallback((id: string) => {
-    setSelectedId(prev => (prev === id ? null : id));
-    setSidebarTab('properties');
-  }, []);
+  const selectBlock = useCallback(
+    (id: string) => {
+      setSelectedId(prev => (prev === id ? null : id));
+      setSidebarTab('properties');
+      // On mobile, tapping a block on the canvas opens its properties dialog.
+      if (isMobile) {
+        setIsCustomizeOpen(true);
+      }
+    },
+    [isMobile],
+  );
 
   // --- sidebar content ---
 
@@ -790,6 +804,26 @@ export default function EditorPage() {
     />
   );
 
+  // Tabs + the active tab's content. Shown inline in the sidebar on desktop,
+  // and inside a fullscreen dialog on mobile.
+  const editingContent = (
+    <XDSVStack gap={4}>
+      <XDSVStack gap={0}>
+        <XDSTabList
+          layout="fill"
+          value={sidebarTab}
+          onChange={(v: string) => setSidebarTab(v as SidebarTab)}>
+          <XDSTab value="blocks" label="Blocks" />
+          <XDSTab value="properties" label="Properties" />
+        </XDSTabList>
+        <XDSDivider />
+      </XDSVStack>
+      <XDSSection variant="transparent" padding={4}>
+        {sidebarTab === 'blocks' ? blocksTabContent : propertiesTabContent}
+      </XDSSection>
+    </XDSVStack>
+  );
+
   const sidebar = (
     <XDSLayoutPanel
       hasDivider={!isMobile}
@@ -799,10 +833,20 @@ export default function EditorPage() {
         {/* Panel Header */}
         <XDSSection variant="transparent" padding={4}>
           {isMobile ? (
-            // Mobile: just the title and the primary action.
+            // Mobile: the title, an Edit button that opens the customizations
+            // dialog, and the primary action.
             <XDSHStack gap={3} vAlign="center" hAlign="between">
               <XDSHeading level={2}>{pageTitle}</XDSHeading>
-              <XDSButton label="Publish" variant="primary" />
+              <XDSHStack gap={2} vAlign="center">
+                <XDSButton
+                  label="Edit"
+                  icon={<XDSIcon icon={AdjustmentsHorizontalIcon} size="sm" />}
+                  variant="ghost"
+                  isIconOnly
+                  onClick={() => setIsCustomizeOpen(true)}
+                />
+                <XDSButton label="Publish" variant="primary" />
+              </XDSHStack>
             </XDSHStack>
           ) : (
             <XDSVStack gap={4}>
@@ -867,59 +911,72 @@ export default function EditorPage() {
           )}
         </XDSSection>
 
-        {!isMobile && (
-          <XDSVStack gap={4}>
-            <XDSVStack gap={0}>
-              <XDSTabList
-                layout="fill"
-                value={sidebarTab}
-                onChange={(v: string) => setSidebarTab(v as SidebarTab)}>
-                <XDSTab value="blocks" label="Blocks" />
-                <XDSTab value="properties" label="Properties" />
-              </XDSTabList>
-              <XDSDivider />
-            </XDSVStack>
-            <XDSSection variant="transparent" padding={4}>
-              {sidebarTab === 'blocks'
-                ? blocksTabContent
-                : propertiesTabContent}
-            </XDSSection>
-          </XDSVStack>
-        )}
+        {!isMobile && editingContent}
       </XDSVStack>
     </XDSLayoutPanel>
   );
 
   return (
-    <XDSLayout
-      xstyle={editorStyles.page}
-      height="fill"
-      header={isMobile ? sidebar : undefined}
-      start={isMobile ? undefined : sidebar}
-      content={
-        <XDSLayoutContent padding={8}>
-          <XDSVStack
-            gap={4}
-            xstyle={editorStyles.canvas(VIEWPORT_MAX[viewport])}>
-            {blocks.length > 0 ? (
-              blocks.map(block => (
-                <BlockPreview
-                  key={block.id}
-                  block={block}
-                  isSelected={block.id === selectedId}
-                  onSelect={() => selectBlock(block.id)}
+    <>
+      <XDSLayout
+        xstyle={editorStyles.page}
+        height="fill"
+        header={isMobile ? sidebar : undefined}
+        start={isMobile ? undefined : sidebar}
+        content={
+          <XDSLayoutContent padding={8}>
+            <XDSVStack
+              gap={4}
+              xstyle={editorStyles.canvas(VIEWPORT_MAX[viewport])}>
+              {blocks.length > 0 ? (
+                blocks.map(block => (
+                  <BlockPreview
+                    key={block.id}
+                    block={block}
+                    isSelected={block.id === selectedId}
+                    onSelect={() => selectBlock(block.id)}
+                  />
+                ))
+              ) : (
+                <XDSEmptyState
+                  title="No blocks yet"
+                  description="Add blocks from the sidebar to start building your page"
+                  icon={<XDSIcon icon={PlusCircleIcon} />}
                 />
-              ))
-            ) : (
-              <XDSEmptyState
-                title="No blocks yet"
-                description="Add blocks from the sidebar to start building your page"
-                icon={<XDSIcon icon={PlusCircleIcon} />}
-              />
-            )}
-          </XDSVStack>
-        </XDSLayoutContent>
-      }
-    />
+              )}
+            </XDSVStack>
+          </XDSLayoutContent>
+        }
+      />
+
+      {/* Mobile: customizations open in a fullscreen dialog over the preview. */}
+      <XDSDialog
+        isOpen={isMobile && isCustomizeOpen}
+        onOpenChange={setIsCustomizeOpen}
+        variant="fullscreen"
+        purpose="info"
+        padding={0}>
+        <XDSLayout
+          height="fill"
+          header={
+            <XDSLayoutHeader hasDivider>
+              <XDSHStack gap={3} vAlign="center" hAlign="between">
+                <XDSHeading level={3}>Customize</XDSHeading>
+                <XDSButton
+                  label="Close"
+                  icon={<XDSIcon icon={XMarkIcon} size="sm" />}
+                  variant="ghost"
+                  isIconOnly
+                  onClick={() => setIsCustomizeOpen(false)}
+                />
+              </XDSHStack>
+            </XDSLayoutHeader>
+          }
+          content={
+            <XDSLayoutContent padding={0}>{editingContent}</XDSLayoutContent>
+          }
+        />
+      </XDSDialog>
+    </>
   );
 }
