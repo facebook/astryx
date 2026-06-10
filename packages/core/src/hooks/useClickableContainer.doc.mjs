@@ -87,8 +87,8 @@ export const docsDense = {
     'options.interactiveRef': 'ref to primary interactive element inside (link, button). If no onClick / href provided, clicks proxied to this element.',
     'options.onClick': 'click handler fired when container surface (not nested interactive element) clicked.',
     'options.href': 'navigation URL. When provided, clicking container navigates to it.',
-    'options.target': "Link target (e.g. '_blank'). Used w/ href for navigation behavior.",
-    'options.disabled': 'Whether container disabled.',
+    'options.target': "link target (e.g. '_blank'). Used w/ href for navigation behavior.",
+    'options.disabled': 'whether container disabled.',
   },
   returnDescriptions: {
     onClick: 'click handler for container element.',

@@ -67,7 +67,7 @@ export const docsDense = {
     options: 'config for input container.',
     'options.containerRef': 'ref to outer container/wrapper element.',
     'options.inputRef': 'ref to inner input / textarea element.',
-    'options.disabled': 'Whether input disabled.',
+    'options.disabled': 'whether input disabled.',
   },
   returnDescriptions: {
     onClick: 'click handler for container wrapper.',

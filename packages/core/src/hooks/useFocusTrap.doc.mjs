@@ -58,7 +58,7 @@ export const docsDense = {
     'Traps focus within container element following WAI-ARIA dialog focus trap pattern. Listens to document focus events + redirects focus back into container if it escapes via keyboard navigation. Handles both Tab + Shift+Tab wrapping. Mouse clicks outside container not intercepted — use light-dismiss handler for that.',
   paramDescriptions: {
     options: 'config for focus trap.',
-    'options.isActive': 'Whether focus trap currently active.',
+    'options.isActive': 'whether focus trap currently active.',
     'options.onEscape': 'callback when Escape key pressed inside trapped container.',
   },
   returnDescriptions: {

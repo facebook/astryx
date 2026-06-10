@@ -35,7 +35,7 @@ export const docs = {
     {
       name: 'options.collapseFrom',
       type: "'start' | 'end'",
-      description: 'Which end to collapse items from.',
+      description: 'which end to collapse items from.',
       default: "'end'",
       required: false,
     },
@@ -93,14 +93,14 @@ export const docsDense = {
     options: 'config for overflow behavior.',
     'options.gap': 'gap between items in px. Used in width calculations.',
     'options.minVisibleItems': "min # items to always show, even if they don't fit.",
-    'options.collapseFrom': 'Which end to collapse items from.',
-    'options.behavior': "Which element to observe for overflow calculations. 'observeParent' uses container's parent element width, allowing visible container to remain content-sized.",
+    'options.collapseFrom': 'which end to collapse items from.',
+    'options.behavior': "which element to observe for overflow calculations. 'observeParent' uses container's parent element width, allowing visible container to remain content-sized.",
   },
   returnDescriptions: {
     containerRef: 'ref callback for visible container element.',
     measureRef: 'ref callback for hidden measurement container holding all items.',
     visibleCount: '# items that fit in visible container.',
-    hasOverflow: 'Whether any items overflowing (visibleCount < itemCount).',
+    hasOverflow: 'whether any items overflowing (visibleCount < itemCount).',
   },
   usage: {
     description:

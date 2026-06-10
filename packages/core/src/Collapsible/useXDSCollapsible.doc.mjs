@@ -53,13 +53,13 @@ export const docs = {
 export const docsDense = {
   description: 'Encapsulates collapsible state machine. 3 modes: group-controlled (inside XDSCollapsibleGroup), controlled (isOpen + onOpenChange), uncontrolled (self-managed w/ defaultIsOpen). Used internally by XDSCard + XDSSection.',
   paramDescriptions: {
-    isCollapsible: 'Enable collapsible behavior. true = self-managed (starts open). Pass config object for controlled mode / custom defaults.',
-    value: 'Unique id within XDSCollapsibleGroup. When present + inside group, state managed by group.',
+    isCollapsible: 'enable collapsible behavior. true = self-managed (starts open). Pass config object for controlled mode / custom defaults.',
+    value: 'unique id within XDSCollapsibleGroup. When present + inside group, state managed by group.',
   },
   returnDescriptions: {
-    isEnabled: 'Whether collapsible behavior active.',
-    isOpen: 'Whether content currently expanded.',
-    toggle: 'toggle open/closed. Dispatches to group, controlled callback, / internal state.',
+    isEnabled: 'whether collapsible behavior active.',
+    isOpen: 'whether content currently expanded.',
+    toggle: 'toggle open/closed. Dispatches to group, controlled callback / internal state.',
   },
   usage: {
     description: 'Encapsulates collapsible state machine. 3 modes: group-controlled (inside XDSCollapsibleGroup), controlled (isOpen + onOpenChange), uncontrolled (self-managed w/ defaultIsOpen). Used internally by XDSCard + XDSSection.',

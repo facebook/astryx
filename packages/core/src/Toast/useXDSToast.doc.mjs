@@ -35,7 +35,7 @@ export const docs = {
 export const docsDense = {
   description: 'Show toast notifications from anywhere in component tree. Returns function accepting toast options + showing notification. Works automatically w/ XDSLayerProvider / self-mounts fallback viewport.',
   returnDescriptions: {
-    showToast: 'Show toast notification. Returns dismiss function. Options: body (ReactNode), type ("info" | "error"), isAutoHide, autoHideDuration, endContent, uniqueID, collisionBehavior.',
+    showToast: 'show toast notification. Returns dismiss function. Options: body (ReactNode), type ("info" | "error"), isAutoHide, autoHideDuration, endContent, uniqueID, collisionBehavior.',
   },
   usage: {
     description: 'Show toast notifications from anywhere in component tree. Returns function accepting toast options + showing notification. Works automatically w/ XDSLayerProvider / self-mounts fallback viewport.',

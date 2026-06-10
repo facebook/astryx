@@ -35,7 +35,7 @@ export const docs = {
     {
       name: 'options.orientation',
       type: "'horizontal' | 'vertical'",
-      description: "Navigation orientation. 'horizontal' uses ArrowLeft/ArrowRight, 'vertical' uses ArrowUp/ArrowDown.",
+      description: "navigation orientation. 'horizontal' uses ArrowLeft/ArrowRight, 'vertical' uses ArrowUp/ArrowDown.",
       default: "'vertical'",
       required: false,
     },
@@ -91,7 +91,7 @@ export const docsDense = {
     'options.itemSelector': 'selector for focusable items in list.',
     'options.wrap': 'whether arrow navigation wraps around at ends.',
     'options.onEscape': 'callback when Escape key pressed (e.g. close menu).',
-    'options.orientation': "Navigation orientation. 'horizontal' uses ArrowLeft/ArrowRight, 'vertical' uses ArrowUp/ArrowDown.",
+    'options.orientation': "navigation orientation. 'horizontal' uses ArrowLeft/ArrowRight, 'vertical' uses ArrowUp/ArrowDown.",
   },
   returnDescriptions: {
     listRef: 'ref to attach to list container element.',

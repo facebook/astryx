@@ -44,7 +44,7 @@ export const docsDense = {
     preset: 'animation preset applied on mount.',
   },
   returnDescriptions: {
-    entryStyle: 'StyleX style object for entry animation, / null if element rendered on initial page load (no animation needed).',
+    entryStyle: 'StyleX style object for entry animation / null if element rendered on initial page load (no animation needed).',
   },
   usage: {
     description:

@@ -110,7 +110,7 @@ export const docsDense = {
   returnDescriptions: {
     triggerProps: 'props to spread on trigger element (ref, aria-expanded, event handlers).',
     layerNode: 'popover layer to render (include in JSX output).',
-    isOpen: 'Whether popover currently visible.',
+    isOpen: 'whether popover currently visible.',
     show: 'imperatively show popover.',
     hide: 'imperatively hide popover.',
   },

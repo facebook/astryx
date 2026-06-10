@@ -49,9 +49,9 @@ export const docsDense = {
     'Tracks scroll overflow state for horizontally scrollable container. Returns ref callback + state booleans that update as user scrolls / container resizes. Uses scroll event listeners + ResizeObserver for reactive updates. Tolerance of 1px applied to avoid sub-pixel false positives.',
   returnDescriptions: {
     scrollRef: 'ref callback for horizontally scrollable container element.',
-    overflowStart: 'Whether content overflows start edge (left in LTR, right in RTL).',
-    overflowEnd: 'Whether content overflows end edge (right in LTR, left in RTL).',
-    hasOverflow: 'Whether container has any scroll overflow at all (scrollWidth > clientWidth).',
+    overflowStart: 'whether content overflows start edge (left in LTR, right in RTL).',
+    overflowEnd: 'whether content overflows end edge (right in LTR, left in RTL).',
+    hasOverflow: 'whether container has any scroll overflow at all (scrollWidth > clientWidth).',
   },
   usage: {
     description:

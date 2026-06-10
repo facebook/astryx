@@ -60,13 +60,13 @@ export const docsDense = {
   description:
     'Smooths bursty streamed text into steady character-by-character reveal using requestAnimationFrame. Decouples arrival rate from display rate. Advances on word + syntax boundaries to avoid slicing mid-markdown / mid-word, preventing visual glitches w/ markdown renderers. Animation timing derives from XDS motion tokens via useXDSTheme when available, w/ sensible fallbacks outside theme provider. Snaps to full text when isStreaming becomes false.',
   paramDescriptions: {
-    targetText: 'Full target text to reveal. As new chunks arrive, update this value w/ accumulated text.',
-    isStreaming: 'Whether text currently being streamed. When false, hook returns full targetText immediately.',
+    targetText: 'full target text to reveal. As new chunks arrive, update this value w/ accumulated text.',
+    isStreaming: 'whether text currently being streamed. When false, hook returns full targetText immediately.',
     options: 'optional config for streaming behavior.',
-    'options.speed': "Speed preset for text reveal. 'natural' is steady ~2 chars/frame, 'fast' scales w/ backlog ~4 chars/frame, 'instant' returns full text w/ no animation.",
+    'options.speed': "speed preset for text reveal. 'natural' is steady ~2 chars/frame, 'fast' scales w/ backlog ~4 chars/frame, 'instant' returns full text w/ no animation.",
   },
   returnDescriptions: {
-    displayedText: 'Portion of targetText to render. Grows steadily toward full targetText during streaming, / equals targetText when not streaming.',
+    displayedText: 'portion of targetText to render. Grows steadily toward full targetText during streaming / equals targetText when not streaming.',
   },
   usage: {
     description:

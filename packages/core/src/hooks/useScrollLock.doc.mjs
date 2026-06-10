@@ -9,7 +9,7 @@ export const docs = {
     {
       name: 'isLocked',
       type: 'boolean',
-      description: 'Whether body scroll should be locked.',
+      description: 'whether body scroll should be locked.',
       required: true,
     },
   ],
@@ -34,7 +34,7 @@ export const docsDense = {
   description:
     'Locks body scroll when active by pinning body w/ position: fixed. Prevents background scrolling behind modals + dialogs, necessary for iOS Safari where overscroll-behavior: contain does not work. Restores original scroll position when unlocked.',
   paramDescriptions: {
-    isLocked: 'Whether body scroll should be locked.',
+    isLocked: 'whether body scroll should be locked.',
   },
   usage: {
     description:

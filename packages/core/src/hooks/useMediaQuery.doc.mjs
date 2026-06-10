@@ -41,12 +41,12 @@ export const docsDense = {
     query: 'CSS media query string to evaluate.',
   },
   returnDescriptions: {
-    matches: 'Whether media query currently matches. Always false on first render (SSR-safe).',
+    matches: 'whether media query currently matches. Always false on first render (SSR-safe).',
   },
   usage: {
     description: 'SSR-safe media query hook subscribing to window.matchMedia changes. Returns whether given media query matches. Always returns false on first render for SSR compatibility.',
     bestPractices: [
-      { guidance: true, description: 'Use for responsive layout switching based on viewport width, color scheme, / motion preferences.' },
+      { guidance: true, description: 'Use for responsive layout switching based on viewport width, color scheme, or motion preferences.' },
       { guidance: true, description: 'Prefer XDS responsive tokens + component props over manual breakpoint logic when possible.' },
       { guidance: false, description: 'Use for server-rendered content that must match on first paint — hook always returns false initially.' },
     ],
