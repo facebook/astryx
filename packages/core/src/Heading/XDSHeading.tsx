@@ -13,6 +13,7 @@
  * - /packages/core/src/Heading/XDSHeading.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Text/index.ts (exports if types change)
  * - /apps/storybook/stories/Text.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/Heading/ (showcase blocks)
  * - /packages/cli/templates/blocks/components/Text/ (showcase blocks)
  */
 
