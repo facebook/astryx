@@ -83,6 +83,15 @@ const NAV_ITEMS = [
   {label: 'Travel for work', icon: BriefcaseIcon},
 ];
 
+// Section title shown beside the mobile back button (matches each section's
+// in-content heading, which is hidden on mobile to avoid a duplicate).
+const SECTION_TITLES: Record<string, string> = {
+  'Personal information': 'Personal info',
+  'Login & security': 'Login & security',
+  Privacy: 'Privacy',
+  'Languages & currency': 'Languages & currency',
+};
+
 interface InfoRow {
   label: string;
   value: string;
@@ -310,28 +319,26 @@ export default function SettingsSecurityTemplate() {
       content={
         <XDSLayoutContent padding={4}>
           <XDSVStack gap={0}>
-            {/* Mobile detail view: back link returns to the nav menu. */}
+            {/* Mobile detail view: a back button sits beside the section title
+                (the per-section headings below are hidden on mobile). */}
             {isNarrow && (
-              <XDSStackItem>
-                <XDSVStack xstyle={styles.rowPadding}>
-                  <XDSLink
-                    href="#"
-                    color="secondary"
-                    onClick={e => {
-                      e.preventDefault();
-                      setMobileView('nav');
-                    }}>
-                    <XDSHStack gap={1} vAlign="center">
-                      <XDSIcon icon={ArrowLeftIcon} size="sm" color="inherit" />
-                      Account settings
-                    </XDSHStack>
-                  </XDSLink>
-                </XDSVStack>
-              </XDSStackItem>
+              <XDSHStack gap={2} vAlign="center" xstyle={styles.rowPadding}>
+                <XDSButton
+                  label="Back to Account settings"
+                  variant="ghost"
+                  size="sm"
+                  isIconOnly
+                  icon={<XDSIcon icon={ArrowLeftIcon} size="sm" />}
+                  onClick={() => setMobileView('nav')}
+                />
+                <XDSHeading level={2}>{SECTION_TITLES[activeNav]}</XDSHeading>
+              </XDSHStack>
             )}
             {activeNav === 'Login & security' && (
               <XDSVStack gap={6}>
-                <XDSHeading level={2}>Login &amp; security</XDSHeading>
+                {!isNarrow && (
+                  <XDSHeading level={2}>Login &amp; security</XDSHeading>
+                )}
 
                 <XDSTabList
                   value={activeTab}
@@ -464,7 +471,9 @@ export default function SettingsSecurityTemplate() {
 
             {activeNav === 'Languages & currency' && (
               <XDSVStack gap={6}>
-                <XDSHeading level={2}>Languages &amp; currency</XDSHeading>
+                {!isNarrow && (
+                  <XDSHeading level={2}>Languages &amp; currency</XDSHeading>
+                )}
                 <XDSVStack gap={0}>
                   <ExpandableRow
                     label="Preferred language"
@@ -529,7 +538,7 @@ export default function SettingsSecurityTemplate() {
 
             {activeNav === 'Personal information' && (
               <XDSVStack gap={6}>
-                <XDSHeading level={2}>Personal info</XDSHeading>
+                {!isNarrow && <XDSHeading level={2}>Personal info</XDSHeading>}
                 <XDSVStack gap={0}>
                   <ExpandableRow
                     label="Legal name"
@@ -700,7 +709,7 @@ export default function SettingsSecurityTemplate() {
 
             {activeNav === 'Privacy' && (
               <XDSVStack gap={6}>
-                <XDSHeading level={2}>Privacy</XDSHeading>
+                {!isNarrow && <XDSHeading level={2}>Privacy</XDSHeading>}
 
                 <XDSVStack gap={8}>
                   <XDSVStack gap={0}>
