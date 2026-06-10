@@ -93,3 +93,33 @@ export const docs = {
   importPath: '@xds/core/Popover',
   category: 'interaction',
 };
+
+/** @type {import('../docs-types').HookTranslationDoc} */
+export const docsDense = {
+  description: 'Headless hook for click-triggered popovers w/ focus trapping. Combines useXDSLayer w/ useFocusTrap for dialog-like popover behavior. Use for interactive floating content needing keyboard navigation.',
+  paramDescriptions: {
+    content: 'content for popover. Can be render function receiving layer props.',
+    placement: 'position relative to trigger.',
+    alignment: 'alignment along placement axis.',
+    hasLightDismiss: 'whether clicking outside dismisses popover.',
+    hasSurface: 'whether to apply default popover surface styles (background, shadow, radius).',
+    onShow: 'callback fired when popover becomes visible.',
+    onHide: 'callback fired when popover hidden.',
+    xstyle: 'StyleX styles for popover surface (margins, sizing). Must be stylex.create() value — not inline style object. Note: for styles interacting w/ :popover-open, pass xstyle via render() call props instead.',
+  },
+  returnDescriptions: {
+    triggerProps: 'props to spread on trigger element (ref, aria-expanded, event handlers).',
+    layerNode: 'popover layer to render (include in JSX output).',
+    isOpen: 'whether popover currently visible.',
+    show: 'imperatively show popover.',
+    hide: 'imperatively hide popover.',
+  },
+  usage: {
+    description: 'Headless hook for click-triggered popovers w/ focus trapping. Combines useXDSLayer w/ useFocusTrap for dialog-like popover behavior. Use for interactive floating content needing keyboard navigation.',
+    bestPractices: [
+      {guidance: true, description: 'Use for interactive content (forms, menus, pickers) needing focus trapping + light dismiss.'},
+      {guidance: true, description: 'Prefer XDSPopover component for standard trigger-content pairs — use hook for custom trigger patterns.'},
+      {guidance: false, description: 'Use for non-interactive hover previews — use useXDSHoverCard / useXDSTooltip instead.'},
+    ],
+  },
+};

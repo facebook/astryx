@@ -76,3 +76,31 @@ export const docs = {
   importPath: '@xds/core/hooks',
   category: 'interaction',
 };
+
+/** @type {import('../docs-types').HookTranslationDoc} */
+export const docsDense = {
+  description:
+    'Makes container element clickable while preserving nested interactive element behavior. Solves "nested interactive elements" problem: when card is clickable but contains buttons/links, clicking those must NOT trigger card\'s action. Detects interactive ancestors between click target + container, ignores text selections. Supports href navigation (incl. middle-click + Ctrl/Cmd+click for new tabs).',
+  paramDescriptions: {
+    options: 'config for clickable container.',
+    'options.containerRef': 'ref to outer container element.',
+    'options.interactiveRef': 'ref to primary interactive element inside (link, button). If no onClick / href provided, clicks proxied to this element.',
+    'options.onClick': 'click handler fired when container surface (not nested interactive element) clicked.',
+    'options.href': 'navigation URL. When provided, clicking container navigates to it.',
+    'options.target': "link target (e.g. '_blank'). Used w/ href for navigation behavior.",
+    'options.disabled': 'whether container disabled.',
+  },
+  returnDescriptions: {
+    onClick: 'click handler for container element.',
+    onMouseUp: 'mouse up handler for container (handles middle-click navigation for href).',
+  },
+  usage: {
+    description:
+      'Makes container element clickable while preserving nested interactive element behavior. Solves "nested interactive elements" problem: when card is clickable but contains buttons/links, clicking those must NOT trigger card\'s action. Detects interactive ancestors between click target + container, ignores text selections. Supports href navigation (incl. middle-click + Ctrl/Cmd+click for new tabs).',
+    bestPractices: [
+      { guidance: true, description: 'Attach both onClick + onMouseUp to container element for full click handling incl. middle-click.' },
+      { guidance: true, description: 'Use inside XDSClickableCard / XDSSelectableCard for standard card interaction pattern.' },
+      { guidance: false, description: 'Use when entire container is single interactive element — just use <button> / <a> directly.' },
+    ],
+  },
+};

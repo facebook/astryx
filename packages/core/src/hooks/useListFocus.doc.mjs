@@ -35,7 +35,7 @@ export const docs = {
     {
       name: 'options.orientation',
       type: "'horizontal' | 'vertical'",
-      description: "Navigation orientation. 'horizontal' uses ArrowLeft/ArrowRight, 'vertical' uses ArrowUp/ArrowDown.",
+      description: "navigation orientation. 'horizontal' uses ArrowLeft/ArrowRight, 'vertical' uses ArrowUp/ArrowDown.",
       default: "'vertical'",
       required: false,
     },
@@ -80,4 +80,33 @@ export const docs = {
   relatedHooks: ['useGridFocus', 'useFocusTrap'],
   importPath: '@xds/core/hooks',
   category: 'focus',
+};
+
+/** @type {import('../docs-types').HookTranslationDoc} */
+export const docsDense = {
+  description:
+    'Manages keyboard navigation within linear list following WAI-ARIA menu/listbox/toolbar patterns. Supports arrow key navigation (vertical / horizontal), Home/End for boundaries, optional wrap-around, Escape to close. Suitable for dropdown menus, toolbars, any 1D focusable list.',
+  paramDescriptions: {
+    options: 'config for list focus behavior. All fields optional.',
+    'options.itemSelector': 'selector for focusable items in list.',
+    'options.wrap': 'whether arrow navigation wraps around at ends.',
+    'options.onEscape': 'callback when Escape key pressed (e.g. close menu).',
+    'options.orientation': "navigation orientation. 'horizontal' uses ArrowLeft/ArrowRight, 'vertical' uses ArrowUp/ArrowDown.",
+  },
+  returnDescriptions: {
+    listRef: 'ref to attach to list container element.',
+    handleKeyDown: 'key down handler for list container.',
+    focusItem: 'focus specific item by index (clamped to valid range).',
+    focusFirst: 'focus first focusable item in list.',
+    focusLast: 'focus last focusable item in list.',
+  },
+  usage: {
+    description:
+      'Manages keyboard navigation within linear list following WAI-ARIA menu/listbox/toolbar patterns. Supports arrow key navigation (vertical / horizontal), Home/End for boundaries, optional wrap-around, Escape to close. Suitable for dropdown menus, toolbars, any 1D focusable list.',
+    bestPractices: [
+      { guidance: true, description: "Set orientation to 'horizontal' for toolbars + tab bars, 'vertical' for dropdown menus." },
+      { guidance: true, description: 'Provide onEscape callback for menus/dropdowns to return focus to trigger.' },
+      { guidance: false, description: 'Use for 2D grid navigation — prefer useGridFocus for grids + calendars.' },
+    ],
+  },
 };

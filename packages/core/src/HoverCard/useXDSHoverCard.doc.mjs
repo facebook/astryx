@@ -67,3 +67,28 @@ export const docs = {
   importPath: '@xds/core/HoverCard',
   category: 'interaction',
 };
+
+/** @type {import('../docs-types').HookTranslationDoc} */
+export const docsDense = {
+  description: 'Headless hook for hover-triggered floating cards. Builds on useXDSLayer w/ hover/focus intent detection, delay, safe-triangle hover zones. Use for rich previews on hover w/o building interaction logic.',
+  paramDescriptions: {
+    content: 'content for hover card. Can be render function receiving layer props.',
+    placement: 'position relative to trigger.',
+    alignment: 'alignment along placement axis.',
+    delayMs: 'delay before showing hover card on hover.',
+    onShow: 'callback fired when hover card becomes visible.',
+    onHide: 'callback fired when hover card hidden.',
+  },
+  returnDescriptions: {
+    triggerProps: 'props to spread on trigger element (ref, event handlers).',
+    layerNode: 'hover card layer to render (include in JSX output).',
+  },
+  usage: {
+    description: 'Headless hook for hover-triggered floating cards. Builds on useXDSLayer w/ hover/focus intent detection, delay, safe-triangle hover zones. Use for rich previews on hover w/o building interaction logic.',
+    bestPractices: [
+      {guidance: true, description: 'Use for rich content previews (user profiles, link previews) that benefit from hover interaction.'},
+      {guidance: true, description: 'Prefer XDSHoverCard component for standard cases — use hook when you need full control over rendering.'},
+      {guidance: false, description: 'Use for simple text hints — use XDSTooltip / useXDSTooltip instead.'},
+    ],
+  },
+};

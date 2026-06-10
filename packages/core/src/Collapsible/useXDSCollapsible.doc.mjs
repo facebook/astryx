@@ -48,3 +48,25 @@ export const docs = {
   importPath: '@xds/core/Collapsible',
   category: 'interaction',
 };
+
+/** @type {import('../docs-types').HookTranslationDoc} */
+export const docsDense = {
+  description: 'Encapsulates collapsible state machine. 3 modes: group-controlled (inside XDSCollapsibleGroup), controlled (isOpen + onOpenChange), uncontrolled (self-managed w/ defaultIsOpen). Used internally by XDSCard + XDSSection.',
+  paramDescriptions: {
+    isCollapsible: 'enable collapsible behavior. true = self-managed (starts open). Pass config object for controlled mode / custom defaults.',
+    value: 'unique id within XDSCollapsibleGroup. When present + inside group, state managed by group.',
+  },
+  returnDescriptions: {
+    isEnabled: 'whether collapsible behavior active.',
+    isOpen: 'whether content currently expanded.',
+    toggle: 'toggle open/closed. Dispatches to group, controlled callback / internal state.',
+  },
+  usage: {
+    description: 'Encapsulates collapsible state machine. 3 modes: group-controlled (inside XDSCollapsibleGroup), controlled (isOpen + onOpenChange), uncontrolled (self-managed w/ defaultIsOpen). Used internally by XDSCard + XDSSection.',
+    bestPractices: [
+      {guidance: true, description: 'Use directly when building custom collapsible components needing XDS collapsible behavior w/o XDSCollapsible wrapper.'},
+      {guidance: true, description: 'For accordion behavior, wrap items in XDSCollapsibleGroup + pass unique value props.'},
+      {guidance: false, description: 'Implement your own open/close state when useXDSCollapsible already provides it — hook handles group coordination automatically.'},
+    ],
+  },
+};
