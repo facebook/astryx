@@ -303,12 +303,16 @@ function defaultProps(type: BlockType): Record<string, unknown> {
 // and the circular icon chip's surface.
 
 const editorStyles = stylex.create({
+  // Fill the window. XDSLayout height="fill" is height:100%, which only resolves
+  // against a definite height — and the host's <html>/<body> don't set one, so
+  // the layout anchors a definite viewport height itself. No background; the
+  // host owns the page surface.
+  page: {height: '100dvh'},
   // Canvas reflows to the chosen viewport width; XDSVStack has no maxWidth prop.
   canvas: (maxWidth: number) => ({
     maxWidth,
     width: '100%',
     marginInline: 'auto',
-    transition: 'max-width 0.3s ease',
   }),
   clickable: {
     cursor: 'pointer',
@@ -881,6 +885,7 @@ export default function EditorPage() {
 
   return (
     <XDSLayout
+      xstyle={editorStyles.page}
       height="fill"
       start={sidebar}
       content={
