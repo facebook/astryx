@@ -16,22 +16,14 @@ import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSSection} from '@xds/core/Section';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
-// light-scene-horizontal-1 from the localized template-assets set
 const IMAGE_URL = '/template-assets/light-scene-horizontal-1.png';
 
-// NOTE: The only custom styling in this template is image fill/cap/radius
-// below. It exists because XDS has no image primitive — XDSAspectRatio exposes
-// no objectFit/maxWidth/align/radius props and there's no XDSImage. Tracked
-// for eng in issue #2582; replace these with component props once it lands.
 const styles = stylex.create({
-  // Fills the XDSAspectRatio box. No objectFit prop on XDSAspectRatio (#2582).
   heroImage: {
     width: '100%',
     height: '100%',
     objectFit: 'cover',
   },
-  // Caps the image width, centers it, and rounds its corners. No
-  // maxWidth/align/radius props on XDSAspectRatio (#2582).
   heroFrame: {
     maxWidth: 1200,
     marginInline: 'auto',
