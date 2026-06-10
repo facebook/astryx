@@ -353,7 +353,7 @@ const features: Record<string, Feature> = {
     href: '/templates',
     image: {
       src: '/feature-templates.png',
-      alt: 'A tiled wall of ready-to-use page templates, repeating a Welcome back login template',
+      alt: 'A scattered collage of ready-to-use page templates — product gallery, code editor, checkout summary, login, product detail, and AI chat',
     },
   },
   cli: {
