@@ -47,7 +47,23 @@ export const docs = {
   playground: {
     defaults: {
       ratio: 16 / 9,
-      children: {__element: 'XDSCenter', props: {height: '100%'}, children: {__element: 'XDSText', props: {color: 'secondary'}, children: '16:9'}},
+      // Fixed height + auto width lets the CSS `aspect-ratio` drive the box
+      // width as the ratio knob changes (the component's base width is 100%,
+      // which is why the preview was full-width regardless of the ratio).
+      style: {
+        height: 300,
+        width: 'auto',
+        backgroundColor: 'var(--color-background-blue)',
+      },
+      children: {
+        __element: 'XDSCenter',
+        props: {height: '100%'},
+        children: {
+          __element: 'XDSText',
+          props: {color: 'primary'},
+          children: 'Aspect Ratio',
+        },
+      },
     },
   },
   theming: {
