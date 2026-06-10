@@ -143,12 +143,16 @@ const styles = stylex.create({
     backgroundColor: 'var(--xds-marketing-feature-card-bg)',
     overflow: 'hidden',
   },
-  // Regular image card. overflow:hidden because the image is
-  // intended to sit flush at the card's bottom edge but NOT bleed
-  // past it (the image's bottom aligns with the card's bottom
-  // rounded corner).
+  // Regular image card — natural (content) height. Used for an image
+  // card that shares its column with a grow-to-fill (isFlex) sibling:
+  // the flex sibling absorbs the column's leftover height while this
+  // card stays at its content height. (Must NOT be height:100% — that
+  // would make it eat the whole stretched column and collapse the
+  // flex sibling.) overflow:hidden because the image is intended to
+  // sit flush at the card's bottom edge but NOT bleed past it (the
+  // image's bottom aligns with the card's bottom rounded corner).
   card: {
-    height: '100%',
+    height: 'auto',
     overflow: 'hidden',
     backgroundColor: 'var(--xds-marketing-feature-card-bg)',
   },
