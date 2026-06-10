@@ -492,7 +492,10 @@ export function XDSAppShell({
     sideNavBreakpoint === 'none'
       ? '(max-width: 0px)'
       : `(max-width: ${BREAKPOINT_VALUES[sideNavBreakpoint]}px)`;
-  const isBelowBreakpoint = useMediaQuery(breakpointQuery);
+  const isBelowBreakpoint = useMediaQuery(
+    breakpointQuery,
+    mobileNavConfig?.defaultIsMobile,
+  );
   const [uncontrolledMobileOpen, setUncontrolledMobileOpen] = useState(false);
   const isMobileNavOpen = mobileNavConfig?.isOpen ?? uncontrolledMobileOpen;
 

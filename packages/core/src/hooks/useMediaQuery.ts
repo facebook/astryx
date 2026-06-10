@@ -18,21 +18,21 @@
 
 import {useCallback, useSyncExternalStore} from 'react';
 
-function getServerSnapshot(): boolean {
-  return false;
-}
-
 /**
  * SSR-safe media query hook.
  * Returns whether the given media query matches.
  *
+ * @param query - CSS media query string
+ * @param serverDefault - Value to return during SSR. Pass a server-side hint
+ *   (e.g. derived from User-Agent or client hints) to avoid a layout flash.
+ *
  * @example
  * ```
  * const isMobile = useMediaQuery('(max-width: 768px)');
- * const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+ * const isMobile = useMediaQuery('(max-width: 768px)', defaultIsMobile);
  * ```
  */
-export function useMediaQuery(query: string): boolean {
+export function useMediaQuery(query: string, serverDefault = false): boolean {
   const subscribe = useCallback(
     (onStoreChange: () => void) => {
       const mql = window.matchMedia(query);
@@ -45,6 +45,8 @@ export function useMediaQuery(query: string): boolean {
   const getSnapshot = useCallback(() => {
     return window.matchMedia(query).matches;
   }, [query]);
+
+  const getServerSnapshot = useCallback(() => serverDefault, [serverDefault]);
 
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
