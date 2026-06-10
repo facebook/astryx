@@ -27,6 +27,7 @@ import type {BlockEntry} from '../../generated/blockRegistry';
 import {showcaseRegistry} from '../../generated/showcaseRegistry';
 import {exampleRegistry} from '../../generated/exampleRegistry';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import {trackNavigate} from '../../lib/analytics';
 
 const styles = stylex.create({
   section: {
@@ -125,6 +126,12 @@ function ComponentDetailInner({
 
   const tab = searchParams.get('tab') ?? 'overview';
   const setTab = (value: string) => {
+    trackNavigate({
+      page: 'components',
+      target: 'tab',
+      tab: value,
+      item: comp.name,
+    });
     const params = new URLSearchParams(searchParams.toString());
     if (value === 'overview') {
       params.delete('tab');

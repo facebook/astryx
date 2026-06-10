@@ -60,6 +60,7 @@ import {
 } from './helpers';
 import {getThemeList} from './themeList';
 import type {ThemeListEntry} from './themeList';
+import {trackExport} from '../../lib/analytics';
 
 const ALL_DEFAULTS: Record<string, string> = {
   ...colorDefaults,
@@ -645,7 +646,10 @@ export function ThemeEditorView({
               label="Export Theme"
               variant="secondary"
               size="md"
-              onClick={() => setShowExportDialog(true)}
+              onClick={() => {
+                trackExport({page: 'themes', item: selectedThemeId});
+                setShowExportDialog(true);
+              }}
             />
           </XDSHStack>
         </div>

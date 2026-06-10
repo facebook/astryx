@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Metadata} from 'next';
+import {Analytics} from '@vercel/analytics/react';
 import './globals.css';
 import {Providers} from './providers';
 
@@ -36,6 +37,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
         />
       </head>
       <body>
+        <Analytics />
         <Providers>{children}</Providers>
       </body>
     </html>
