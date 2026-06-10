@@ -181,6 +181,13 @@ const styles = stylex.create({
     paddingInlineEnd: spacingVars['--spacing-10'],
     paddingBlockEnd: 0,
   },
+  // Padding for an image card whose image stays *inset* (framed) rather
+  // than full-bleed — --spacing-10 (40px) on all four sides, including
+  // the bottom, so the image keeps left/right/bottom breathing room
+  // inside the card instead of touching the edges.
+  innerPaddingImageInset: {
+    padding: spacingVars['--spacing-10'],
+  },
   // Padding for the text-only card: --spacing-10 (40px) on all
   // sides (matches the image cards' top + sides; only difference
   // is the bottom padding which the image cards drop to 0 for
@@ -195,12 +202,12 @@ const styles = stylex.create({
   exploreLink: {
     marginTop: spacingVars['--spacing-3'],
   },
-  // Image wrapper for the 3 feature cards with images. Rendered as an
-  // XDSHStack with hAlign="start" so the inner image left-aligns per
-  // the bento reference (the tall card uses hAlign="center"; see the
-  // imageWrapTall xstyle below). alignSelf:stretch overrides the
-  // parent VStack's align="start" so this wrapper spans the full card
-  // interior width.
+  // Image wrapper for the 3 feature cards with images. The image is
+  // full-bleed: it spans the entire card width and touches the card's
+  // left, right, and bottom edges (only the text above keeps the
+  // innerPaddingImage inset). To do that, the wrapper cancels the
+  // inner stack's 40px inline padding with negative inline margins so
+  // it reaches the card edges, even though its parent stack is inset.
   //
   // marginTop:auto pushes the wrapper to the bottom of the card's
   // content stack so the image always sits at the bottom regardless
@@ -211,22 +218,57 @@ const styles = stylex.create({
   //
   // overflow:hidden keeps the image contained inside the wrapper
   // (and therefore inside the card, since the card itself uses
-  // overflow:hidden too). No bleed past the card edges in any
-  // direction; the image sits flush at the card's bottom.
+  // overflow:hidden too) so the bottom corners stay rounded.
   imageWrap: {
     marginTop: 'auto',
-    paddingTop: spacingVars['--spacing-6'],
-    alignSelf: 'stretch',
+    // 40px gap between the text above and the image (matches the tall
+    // and inset variants so every card has the same text↔image gap).
+    paddingTop: spacingVars['--spacing-10'],
+    // Break out of the inner stack's 40px inline padding so the image
+    // bleeds to the card's left/right edges. Negative inline margins
+    // pull the wrapper past the padding; the width is grown by the same
+    // 2×40px so the wrapper's content box actually spans the full card
+    // width (a plain width:100% would stay sized to the inset parent).
+    marginInline: `calc(-1 * ${spacingVars['--spacing-10']})`,
+    width: `calc(100% + 2 * ${spacingVars['--spacing-10']})`,
     minWidth: 0,
-    maxWidth: '100%',
     overflow: 'hidden',
   },
-  // Tall-card image wrapper variant. Centered via hAlign="center"
-  // on its XDSHStack (the tall right card gets a wider composition
-  // that reads better centered than hugging an edge). More top
-  // padding because the tall card has more vertical room above the
-  // image baseline that we want to leave visually open.
+  // Tall-card image wrapper variant. Same full-bleed treatment; more
+  // top padding because the tall card has more vertical room above
+  // the image baseline that we want to leave visually open.
   imageWrapTall: {
+    marginTop: 'auto',
+    paddingTop: spacingVars['--spacing-10'],
+    marginInline: `calc(-1 * ${spacingVars['--spacing-10']})`,
+    width: `calc(100% + 2 * ${spacingVars['--spacing-10']})`,
+    minWidth: 0,
+    overflow: 'hidden',
+  },
+  // Vertically-centered full-bleed image wrapper. Same edge-to-edge
+  // horizontal bleed as imageWrap, but the image floats in the middle
+  // of the card's leftover vertical space instead of being pinned to
+  // the bottom: marginBlock:auto puts equal auto-margin above and
+  // below. Used by the Themes card so its composition sits centered
+  // rather than bottom-anchored with a tall empty gap above.
+  imageWrapCentered: {
+    marginBlock: 'auto',
+    // Keep at least a 40px gap above the image even when centered, so
+    // the text↔image spacing matches the other cards.
+    paddingTop: spacingVars['--spacing-10'],
+    marginInline: `calc(-1 * ${spacingVars['--spacing-10']})`,
+    width: `calc(100% + 2 * ${spacingVars['--spacing-10']})`,
+    minWidth: 0,
+    overflow: 'hidden',
+  },
+  // Inset (framed) image wrapper — keeps the image within the card's
+  // inner padding instead of bleeding to the edges. No negative inline
+  // margins and no width expansion, so the wrapper stays inside the
+  // 40px inset and the image has left/right/bottom breathing room (the
+  // inner stack supplies the bottom padding via innerPaddingImageInset).
+  // paddingTop is --spacing-10 (40px) so the gap above the image
+  // matches the 40px frame on the other three sides.
+  imageWrapInset: {
     marginTop: 'auto',
     paddingTop: spacingVars['--spacing-10'],
     alignSelf: 'stretch',
@@ -234,25 +276,19 @@ const styles = stylex.create({
     maxWidth: '100%',
     overflow: 'hidden',
   },
-  // Default image: capped at 320px so a single composition (badges,
-  // a small UI sample, a stack of mocks) doesn't span the full
-  // card width — the reference shows images occupying the left
-  // ~70% of the card's interior with whitespace to the right.
-  // height:auto preserves natural aspect ratio. display:block kills
-  // the inline baseline gap so there's no mystery whitespace under
-  // the image.
+  // Default image: full-bleed to the card width (no max-width cap) so
+  // it spans edge-to-edge. height:auto preserves natural aspect ratio.
+  // display:block kills the inline baseline gap so there's no mystery
+  // whitespace under the image.
   featureImage: {
     width: '100%',
-    maxWidth: 320,
     height: 'auto',
     display: 'block',
   },
-  // Tall-card image: larger cap so the composition reads as the
-  // dominant lower-half element of the tall card per the reference.
-  // Still height:auto so the natural aspect ratio is preserved.
+  // Tall-card image: same full-bleed treatment. Still height:auto so
+  // the natural aspect ratio is preserved.
   featureImageTall: {
     width: '100%',
-    maxWidth: 400,
     height: 'auto',
     display: 'block',
   },
@@ -287,7 +323,7 @@ const features: Record<string, Feature> = {
     href: '/components',
     image: {
       src: '/feature-components.png',
-      alt: 'Sample XDS components — Badge, Switch, Secondary button, Primary button, Search input',
+      alt: 'Sample XDS components — Badges, radio, checkbox, switch, Secondary and Primary buttons, and a search input',
     },
   },
   themes: {
@@ -297,7 +333,7 @@ const features: Record<string, Feature> = {
     href: '/themes',
     image: {
       src: '/feature-brand.png',
-      alt: 'Butter theme applied to a full product landing page with display script, primary CTA, and three product cards',
+      alt: 'A product landing page styled with the Butter theme, shown alongside the theme\u2019s color swatches and type sample',
     },
   },
   templates: {
@@ -326,6 +362,8 @@ function FeatureCard({
   feature,
   isTall = false,
   isFlex = false,
+  insetImage = false,
+  centerImage = false,
 }: {
   feature: Feature;
   /**
@@ -344,6 +382,20 @@ function FeatureCard({
    * intentionally shrink-to-content).
    */
   isFlex?: boolean;
+  /**
+   * When true, the image stays inset (framed) with left/right/bottom
+   * padding instead of bleeding to the card edges. Used for the
+   * "Over 150 components" card whose sample reads better framed than
+   * full-bleed. Ignored for the tall card (which always full-bleeds).
+   */
+  insetImage?: boolean;
+  /**
+   * When true, the full-bleed image is centered in the card's leftover
+   * vertical space instead of pinned to the bottom. Used for the Themes
+   * card so its composition floats centered rather than bottom-anchored
+   * with a tall empty gap above. Ignored for tall / inset images.
+   */
+  centerImage?: boolean;
 }) {
   const hasImage = feature.image != null;
   // Style precedence:
@@ -369,7 +421,13 @@ function FeatureCard({
         gap={1}
         align="start"
         height="100%"
-        xstyle={hasImage ? styles.innerPaddingImage : styles.innerPaddingText}>
+        xstyle={
+          hasImage
+            ? insetImage
+              ? styles.innerPaddingImageInset
+              : styles.innerPaddingImage
+            : styles.innerPaddingText
+        }>
         <XDSHeading level={2} color="primary">
           {feature.title}
         </XDSHeading>
@@ -387,10 +445,21 @@ function FeatureCard({
         {hasImage && feature.image && (
           // XDSHStack handles the flex+direction+alignment chrome;
           // marginTop/padding/overflow/sizing live in the xstyle.
+          // No width prop: the wrapper's width is set in the xstyle to
+          // calc(100% + 2×40px) so it can exceed the inset parent and
+          // bleed the image to the card edges (a width="100%" prop here
+          // would win over the xstyle and clamp it back to the inset).
           <XDSHStack
-            width="100%"
             hAlign={isTall ? 'center' : 'start'}
-            xstyle={isTall ? styles.imageWrapTall : styles.imageWrap}>
+            xstyle={
+              isTall
+                ? styles.imageWrapTall
+                : insetImage
+                  ? styles.imageWrapInset
+                  : centerImage
+                    ? styles.imageWrapCentered
+                    : styles.imageWrap
+            }>
             {/* Decorative image — kept as a raw <img> because @xds/core
                 does not export a dedicated Image primitive (XDSThumbnail
                 is a chat/attachment chrome, not a fit-to-container
@@ -444,17 +513,17 @@ export function FeaturesShowcase() {
   // balances the column heights: the "Over 150 components" card in
   // the middle column grows to fill the space its "CLI" sibling
   // leaves behind, matching the heights of the dedicated
-  // "Templates" card on the left and the "Themes" card on the
+  // "Themes" card on the left and the "Templates" card on the
   // right.
   //
   // Layout on desktop (≥720px):
-  //   col 1: HeadingBlock + Templates (flex)
+  //   col 1: HeadingBlock + Themes (flex)
   //   col 2: Components (flex) + CLI (image, natural height)
-  //   col 3: Themes (tall, flex)
+  //   col 3: Templates (tall, flex)
   //
   // Below 720px the grid collapses to 1 column. Each column wrapper
   // renders top-to-bottom in DOM order, so the cards stack as:
-  // heading → templates → components → CLI → themes.
+  // heading → themes → components → CLI → templates.
   return (
     <XDSVStack as="section" align="center" gap={10} width="100%">
       {/* CSS-grid container with responsive column count. Kept as a
@@ -471,14 +540,14 @@ export function FeaturesShowcase() {
             owns only the responsive display switch. */}
         <XDSVStack gap={8} width="100%" height="100%" xstyle={styles.column}>
           <HeadingBlock />
-          <FeatureCard feature={features.templates} isFlex />
+          <FeatureCard feature={features.themes} isFlex centerImage />
         </XDSVStack>
         <XDSVStack gap={8} width="100%" height="100%" xstyle={styles.column}>
-          <FeatureCard feature={features.components} isFlex />
+          <FeatureCard feature={features.components} isFlex insetImage />
           <FeatureCard feature={features.cli} />
         </XDSVStack>
         <XDSVStack gap={8} width="100%" height="100%" xstyle={styles.column}>
-          <FeatureCard feature={features.themes} isTall />
+          <FeatureCard feature={features.templates} isTall />
         </XDSVStack>
       </div>
     </XDSVStack>
