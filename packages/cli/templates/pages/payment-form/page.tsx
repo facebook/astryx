@@ -20,11 +20,9 @@ import {XDSSelector} from '@xds/core/Selector';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSLink} from '@xds/core/Link';
-import pinkTeddyImg from './pink-teddy.png';
-import redHeartImg from './red-heart.png';
-import beagleImg from './beagle.png';
 import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSDivider} from '@xds/core/Divider';
+import {XDSBanner} from '@xds/core/Banner';
 import {XDSCard} from '@xds/core/Card';
 import {XDSCollapsible} from '@xds/core/Collapsible';
 import {XDSBadge} from '@xds/core/Badge';
@@ -32,17 +30,17 @@ import {XDSNumberInput} from '@xds/core/NumberInput';
 import {useMediaQuery} from '@xds/core/hooks';
 import {XDSSection} from '@xds/core/Section';
 import {XDSCenter} from '@xds/core/Center';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
+import {XDSThumbnail} from '@xds/core/Thumbnail';
 import {XDSIcon} from '@xds/core/Icon';
 import {ShieldCheckIcon} from '@heroicons/react/24/outline';
 import {LockClosedIcon} from '@heroicons/react/24/outline';
 import {CheckCircleIcon} from '@heroicons/react/24/outline';
-import {ArrowRightIcon} from '@heroicons/react/24/outline';
 import {TruckIcon} from '@heroicons/react/24/outline';
 import {
   colorVars,
   spacingVars,
   radiusVars,
+  borderVars,
 } from '@xds/core/theme/tokens.stylex';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -116,33 +114,35 @@ const US_STATES = [
   'Wyoming',
 ];
 
+// Product photos from the local template-assets set (committed to the
+// docsite; the CLI swaps these for an inline placeholder on scaffold).
 const ITEM_IMAGES: Record<string, {src: string}> = {
-  '1': pinkTeddyImg,
-  '2': redHeartImg,
-  '3': beagleImg,
+  '1': {src: '/template-assets/light-product-1.png'},
+  '2': {src: '/template-assets/light-product-4.png'},
+  '3': {src: '/template-assets/light-product-5.png'},
 };
 
 const ORDER_ITEMS = [
   {
     id: '1',
-    name: 'Pink Teddy Keychain',
-    variant: 'Soft plush keychain · One size',
-    price: 75,
+    name: 'Speckled Stoneware Mug',
+    variant: 'Hand-thrown · 12 oz',
+    price: 78,
     qty: 1,
     limited: false,
   },
   {
     id: '2',
-    name: 'Red Heart Keychain',
-    variant: 'Velvet finish · One size',
-    price: 75,
+    name: 'Stoneware Dinner Plate',
+    variant: 'Reactive glaze · 10 in',
+    price: 72,
     qty: 1,
     limited: false,
   },
   {
     id: '3',
-    name: 'Beagle Keychain',
-    variant: 'Cotton handmade · One size',
+    name: 'Cereal Bowl',
+    variant: 'Speckled clay · 6 in',
     price: 80,
     qty: 1,
     limited: true,
@@ -159,27 +159,46 @@ const fmt = (n: number) => `$${n.toFixed(2)}`;
 
 const styles = stylex.create({
   fullWidth: {width: '100%'},
-  orderThumb: {
-    width: spacingVars['--spacing-12'],
-    height: spacingVars['--spacing-12'],
+  // XDSLayoutContent clips overflow by default, which traps position:sticky
+  // children (the sticky order summary). With height="auto" the page scrolls
+  // at the window, so let overflow be visible here so sticky can pin.
+  visibleOverflow: {overflow: 'visible'},
+  // Form column flex-basis so the two checkout columns share width evenly.
+  formColBasis: {flexBasis: 0},
+  // Space the Order Summary content below its collapsible trigger title.
+  summaryContent: {paddingBlockStart: spacingVars['--spacing-2']},
+  // Order-summary column: sticky beside the form on desktop.
+  summarySticky: {
+    flexBasis: 0,
+    position: 'sticky',
+    top: spacingVars['--spacing-4'],
+    alignSelf: 'flex-start',
+  },
+  // On mobile the summary moves above the form.
+  summaryMobileOrder: {order: -1},
+  // Express-checkout brand buttons (fixed brand colors).
+  paypalButton: {backgroundColor: '#FFC439', borderColor: '#FFC439'},
+  // Official Google Pay dark button: black background with the unaltered
+  // dark-variant mark (white "Google Pay" text + full-color G), per the
+  // Google Pay brand guidelines.
+  gpayButton: {backgroundColor: '#000', borderColor: '#000'},
+  // Brand logos inside the express-checkout buttons.
+  paypalLogo: {height: spacingVars['--spacing-5'], width: 'auto'},
+  // Unaltered Google Pay mark (no filter/recolor — brand requirement),
+  // sized so it keeps comfortable clear space inside the lg button.
+  gpayLogo: {
+    height: spacingVars['--spacing-5'],
+    width: 'auto',
+  },
+  // Accepted card-network marks (Visa/Mastercard/Amex), shared style.
+  cardLogo: {
+    height: spacingVars['--spacing-7'],
+    width: 'auto',
     borderRadius: radiusVars['--radius-element'],
-    backgroundColor: colorVars['--color-neutral'],
-    flexShrink: 0,
-    overflow: 'hidden',
-  },
-  freeBanner: {
-    backgroundColor: colorVars['--color-background-blue'],
-    borderRadius: radiusVars['--radius-element'],
-    padding: spacingVars['--spacing-3'],
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
-  },
-  headerArea: {
-    marginBottom: spacingVars['--spacing-6'],
-  },
-  dividerWrap: {
-    marginTop: spacingVars['--spacing-6'],
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border'],
+    backgroundColor: colorVars['--color-background-surface'],
   },
 });
 
@@ -259,7 +278,7 @@ export default function PaymentFormPage() {
     <XDSLayout
       height="auto"
       content={
-        <XDSLayoutContent padding={0}>
+        <XDSLayoutContent padding={0} xstyle={styles.visibleOverflow}>
           <XDSCenter axis="horizontal">
             <XDSSection
               variant="transparent"
@@ -268,17 +287,17 @@ export default function PaymentFormPage() {
               padding={6}>
               <XDSVStack gap={5}>
                 {/* Page header */}
-                <XDSVStack gap={2} {...stylex.props(styles.headerArea)}>
-                  <XDSText type="display-1" as="h1">
-                    Payment Request
-                  </XDSText>
-                  <XDSText type="body" color="secondary">
-                    Review your order and complete your purchase. All
-                    transactions are secured with 256-bit SSL encryption.
-                  </XDSText>
-                  <div {...stylex.props(styles.dividerWrap)}>
-                    <XDSDivider />
-                  </div>
+                <XDSVStack gap={6}>
+                  <XDSVStack gap={2}>
+                    <XDSText type="display-1" as="h1">
+                      Payment Request
+                    </XDSText>
+                    <XDSText type="body" color="secondary">
+                      Review your order and complete your purchase. All
+                      transactions are secured with 256-bit SSL encryption.
+                    </XDSText>
+                  </XDSVStack>
+                  <XDSDivider />
                 </XDSVStack>
 
                 <XDSStack
@@ -287,7 +306,7 @@ export default function PaymentFormPage() {
                   vAlign="start">
                   <XDSStackItem
                     size="fill"
-                    style={{flexBasis: isMobile ? undefined : 0}}>
+                    xstyle={isMobile ? undefined : styles.formColBasis}>
                     <XDSVStack gap={8}>
                       {/* Sign in */}
                       <XDSVStack gap={1}>
@@ -488,36 +507,26 @@ export default function PaymentFormPage() {
                             <XDSButton
                               label="PayPal"
                               variant="primary"
-                              size="sm"
+                              size="lg"
                               onClick={() => {}}
-                              style={{
-                                backgroundColor: '#FFC439',
-                                borderColor: '#FFC439',
-                              }}>
+                              xstyle={styles.paypalButton}>
                               <img
                                 src="/template-assets/paypal-logo.png"
                                 alt="PayPal"
-                                style={{height: 20, width: 'auto'}}
+                                {...stylex.props(styles.paypalLogo)}
                               />
                             </XDSButton>
                             {/* Google Pay */}
                             <XDSButton
                               label="Google Pay"
                               variant="primary"
-                              size="sm"
+                              size="lg"
                               onClick={() => {}}
-                              style={{
-                                backgroundColor: '#000',
-                                borderColor: '#000',
-                              }}>
+                              xstyle={styles.gpayButton}>
                               <img
-                                src="/template-assets/google-pay-logo.svg"
+                                src="/template-assets/google-pay-logo-dark.svg"
                                 alt="Google Pay"
-                                style={{
-                                  height: 22,
-                                  width: 'auto',
-                                  filter: 'brightness(0) invert(1)',
-                                }}
+                                {...stylex.props(styles.gpayLogo)}
                               />
                             </XDSButton>
                           </XDSGrid>
@@ -543,41 +552,17 @@ export default function PaymentFormPage() {
                             <img
                               src="/template-assets/visa.svg"
                               alt="Visa"
-                              style={{
-                                height: 'var(--spacing-7)',
-                                width: 'auto',
-                                borderRadius: 'var(--radius-element)',
-                                border:
-                                  'var(--border-width) solid var(--color-border)',
-                                backgroundColor:
-                                  'var(--color-background-surface)',
-                              }}
+                              {...stylex.props(styles.cardLogo)}
                             />
                             <img
                               src="/template-assets/mastercard.svg"
                               alt="Mastercard"
-                              style={{
-                                height: 'var(--spacing-7)',
-                                width: 'auto',
-                                borderRadius: 'var(--radius-element)',
-                                border:
-                                  'var(--border-width) solid var(--color-border)',
-                                backgroundColor:
-                                  'var(--color-background-surface)',
-                              }}
+                              {...stylex.props(styles.cardLogo)}
                             />
                             <img
                               src="/template-assets/amex.svg"
                               alt="Amex"
-                              style={{
-                                height: 'var(--spacing-7)',
-                                width: 'auto',
-                                borderRadius: 'var(--radius-element)',
-                                border:
-                                  'var(--border-width) solid var(--color-border)',
-                                backgroundColor:
-                                  'var(--color-background-surface)',
-                              }}
+                              {...stylex.props(styles.cardLogo)}
                             />
                           </XDSHStack>
                           <XDSTextInput
@@ -726,15 +711,17 @@ export default function PaymentFormPage() {
                           Promo Code
                         </XDSText>
                         <XDSHStack gap={2} vAlign="center">
-                          <XDSTextInput
-                            size="lg"
-                            label="Promo code"
-                            isLabelHidden
-                            placeholder="Enter promo code"
-                            value={promo}
-                            onChange={setPromo}
-                            xstyle={styles.fullWidth}
-                          />
+                          <XDSStackItem size="fill">
+                            <XDSTextInput
+                              size="lg"
+                              label="Promo code"
+                              isLabelHidden
+                              placeholder="Enter promo code"
+                              value={promo}
+                              onChange={setPromo}
+                              xstyle={styles.fullWidth}
+                            />
+                          </XDSStackItem>
                           <XDSButton
                             label="Apply"
                             variant="secondary"
@@ -826,16 +813,9 @@ export default function PaymentFormPage() {
                             size="lg"
                             xstyle={styles.fullWidth}
                             onClick={() => setSubmitted(true)}
-                            endContent={
-                              <XDSIcon
-                                icon={ArrowRightIcon}
-                                size="sm"
-                                color="inherit"
-                              />
-                            }
                           />
                           <XDSButton
-                            label="← Continue Shopping"
+                            label="Continue Shopping"
                             variant="secondary"
                             size="lg"
                             xstyle={styles.fullWidth}
@@ -863,15 +843,10 @@ export default function PaymentFormPage() {
 
                   <XDSStackItem
                     size="fill"
-                    style={
+                    xstyle={
                       isMobile
-                        ? {order: -1}
-                        : {
-                            flexBasis: 0,
-                            position: 'sticky',
-                            top: 16,
-                            alignSelf: 'flex-start',
-                          }
+                        ? styles.summaryMobileOrder
+                        : styles.summarySticky
                     }>
                     <XDSCard padding={5}>
                       <XDSVStack gap={4}>
@@ -879,27 +854,15 @@ export default function PaymentFormPage() {
                         <XDSCollapsible
                           trigger="Order Summary"
                           defaultIsOpen={true}>
-                          <XDSVStack gap={4}>
+                          <XDSVStack gap={4} xstyle={styles.summaryContent}>
                             {/* Line items */}
                             {ORDER_ITEMS.map(item => (
                               <XDSVStack key={item.id} gap={3}>
                                 <XDSHStack gap={3} vAlign="start">
-                                  {/* Placeholder thumbnail */}
-                                  <div {...stylex.props(styles.orderThumb)}>
-                                    <XDSAspectRatio ratio={1}>
-                                      <img
-                                        src={
-                                          (
-                                            ITEM_IMAGES[item.id] as {
-                                              src: string;
-                                            }
-                                          ).src
-                                        }
-                                        alt={item.name}
-                                        style={{objectFit: 'cover'}}
-                                      />
-                                    </XDSAspectRatio>
-                                  </div>
+                                  <XDSThumbnail
+                                    src={ITEM_IMAGES[item.id].src}
+                                    alt={item.name}
+                                  />
                                   <XDSStackItem size="fill">
                                     <XDSVStack gap={1}>
                                       <XDSHStack
@@ -1003,16 +966,11 @@ export default function PaymentFormPage() {
                                   )}
                                 </XDSText>
                               </XDSHStack>
-                              <div {...stylex.props(styles.freeBanner)}>
-                                <XDSIcon
-                                  icon={TruckIcon}
-                                  size="sm"
-                                  color="primary"
-                                />
-                                <XDSText type="supporting">
-                                  Free shipping on orders over $300
-                                </XDSText>
-                              </div>
+                              <XDSBanner
+                                status="info"
+                                icon={<XDSIcon icon={TruckIcon} size="sm" />}
+                                title="Free shipping on orders over $300"
+                              />
                             </XDSVStack>
                           </XDSVStack>
                         </XDSCollapsible>
