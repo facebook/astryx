@@ -343,7 +343,7 @@ const features: Record<string, Feature> = {
     href: '/templates',
     image: {
       src: '/feature-templates.png',
-      alt: 'Stacked theme preview pages cascading toward a fully designed Butter theme example',
+      alt: 'A tiled wall of ready-to-use page templates, repeating a Welcome back login template',
     },
   },
   cli: {
