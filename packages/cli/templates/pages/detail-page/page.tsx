@@ -166,15 +166,17 @@ function PageHeader({
   onTabChange,
   isPanelOpen,
   onTogglePanel,
+  isNarrow,
 }: {
   activeTab: string;
   onTabChange: (v: string) => void;
   isPanelOpen: boolean;
   onTogglePanel: () => void;
+  isNarrow: boolean;
 }) {
   return (
     <XDSLayoutHeader hasDivider padding={4}>
-      <XDSVStack gap={0}>
+      <XDSVStack gap={3}>
         <XDSHStack gap={4} vAlign="start">
           <XDSStackItem size="fill">
             <XDSVStack gap={0}>
@@ -229,11 +231,29 @@ function PageHeader({
               </XDSVStack>
             </XDSVStack>
           </XDSStackItem>
-          <XDSHStack gap={2} wrap="wrap">
-            <XDSButton label="Restock" variant="secondary" />
-            <XDSButton label="Edit" variant="secondary" />
-          </XDSHStack>
+          {!isNarrow && (
+            <XDSHStack gap={2}>
+              <XDSButton label="Restock" variant="secondary" />
+              <XDSButton label="Edit" variant="secondary" />
+            </XDSHStack>
+          )}
         </XDSHStack>
+
+        {/* Mobile: actions drop below the metadata as a full-width row. */}
+        {isNarrow && (
+          <XDSHStack gap={2}>
+            <XDSStackItem size="fill">
+              <XDSVStack hAlign="stretch">
+                <XDSButton label="Restock" variant="secondary" />
+              </XDSVStack>
+            </XDSStackItem>
+            <XDSStackItem size="fill">
+              <XDSVStack hAlign="stretch">
+                <XDSButton label="Edit" variant="secondary" />
+              </XDSVStack>
+            </XDSStackItem>
+          </XDSHStack>
+        )}
 
         <XDSHStack vAlign="center" xstyle={pageStyles.tabsRow}>
           <XDSStackItem size="fill">
@@ -571,6 +591,7 @@ export default function DetailPage2Template() {
           onTabChange={setActiveTab}
           isPanelOpen={isPanelVisible}
           onTogglePanel={() => setShowPanel(prev => !prev)}
+          isNarrow={isNarrow}
         />
       }
       content={
