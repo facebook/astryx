@@ -45,6 +45,7 @@ import {
   PencilSquareIcon,
   ShareIcon,
   ArrowLeftIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 
 const styles = stylex.create({
@@ -262,6 +263,11 @@ export default function SettingsSecurityTemplate() {
             key={item.label}
             label={item.label}
             startContent={<XDSIcon icon={item.icon} />}
+            endContent={
+              isNarrow ? (
+                <XDSIcon icon={ChevronRightIcon} size="sm" color="secondary" />
+              ) : undefined
+            }
             isSelected={!isNarrow && activeNav === item.label}
             onClick={() => selectNav(item.label)}
           />
