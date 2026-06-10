@@ -99,56 +99,6 @@ export const docs = {
         },
       ],    },
     {
-      name: 'XDSBaseTable',
-      isHiddenFromOverview: true,
-      displayName: 'Base Table',
-      description:
-        'Unstyled structural table component with a plugin transform pipeline and a components prop for swapping in custom row/cell renderers.',
-      props: [
-        {
-          name: 'data',
-          type: 'T[]',
-          description: 'Array of data items to render as rows. T must extend Record<string, unknown>.',
-        },
-        {
-          name: 'columns',
-          type: 'XDSTableColumn<T>[]',
-          description:
-            'Column definitions — each column has {key, header, width?, renderCell?}. If omitted, columns are auto-generated from data object keys.',
-        },
-        {
-          name: 'idKey',
-          type: '(keyof T & string) | ((item: T) => string | number)',
-          description:
-            'Row key for React reconciliation. Pass a property name string or a function. Falls back to row index if omitted.',
-        },
-        {
-          name: 'plugins',
-          type: 'TablePlugin<T>[]',
-          description:
-            'Ordered array of plugins applied as a sequential transform pipeline.',
-        },
-        {
-          name: 'components',
-          type: '{Row?: ComponentType<TableRowComponentProps>; Cell?: ComponentType<TableCellComponentProps>; HeaderCell?: ComponentType<TableHeaderCellComponentProps>}',
-          description:
-            'Component overrides for row and cell elements. When provided, these components receive xstyle from plugin transforms.',
-        },
-        {
-          name: 'children',
-          type: 'ReactNode',
-          description:
-            'Children mode — render rows directly in the tbody instead of using data-driven rendering.',
-        },
-        {
-          name: 'tableProps',
-          type: 'HTMLAttributes<HTMLTableElement>',
-          description:
-            'Additional HTML attributes passed directly to the root <table> element.',
-        },
-      ],
-    },
-    {
       name: 'XDSTableRow',
       isHiddenFromOverview: true,
       displayName: 'Table Row',
@@ -590,56 +540,6 @@ export const docsZh = {
       ],
     },
     {
-      name: 'XDSBaseTable',
-      isHiddenFromOverview: true,
-      displayName: 'Base Table',
-      description:
-        '无样式的结构表格组件，配有插件转换管道和 components 属性，用于替换自定义行/单元格渲染器。',
-      props: [
-        {
-          name: 'data',
-          type: 'T[]',
-          description: '要渲染为行的数据项数组。T 需 extends Record<string, unknown>。',
-        },
-        {
-          name: 'columns',
-          type: 'XDSTableColumn<T>[]',
-          description:
-            '列定义 — 每列含 {key, header, width?, renderCell?}。省略时自动从数据键生成。',
-        },
-        {
-          name: 'idKey',
-          type: '(keyof T & string) | ((item: T) => string | number)',
-          description:
-            '用于 React 协调的行键。传入属性名称字符串或函数。省略时回退到行索引。',
-        },
-        {
-          name: 'plugins',
-          type: 'TablePlugin<T>[]',
-          description:
-            '作为顺序转换管道应用的有序插件数组。',
-        },
-        {
-          name: 'components',
-          type: '{Row?: ComponentType<TableRowComponentProps>; Cell?: ComponentType<TableCellComponentProps>; HeaderCell?: ComponentType<TableHeaderCellComponentProps>}',
-          description:
-            '行和单元格元素的组件覆盖。提供时，这些组件从插件转换中接收 xstyle。',
-        },
-        {
-          name: 'children',
-          type: 'ReactNode',
-          description:
-            '子元素模式 — 在 tbody 中直接渲染行，而非使用数据驱动渲染。',
-        },
-        {
-          name: 'tableProps',
-          type: 'HTMLAttributes<HTMLTableElement>',
-          description:
-            '直接传递给根 <table> 元素的额外 HTML 属性。',
-        },
-      ],
-    },
-    {
       name: 'XDSTableRow',
       isHiddenFromOverview: true,
       displayName: 'Table Row',
@@ -945,21 +845,6 @@ export const docsDense = {
         plugins: 'Named plugins extending behavior via transform pipeline; converted to ordered array.',
         children: 'Children mode; render XDSTableRow/XDSTableCell directly.',
         xstyle: 'StyleX layout styles; must be stylex.create() value.',
-      },
-    },
-    {
-      name: 'XDSBaseTable',
-      isHiddenFromOverview: true,
-      displayName: 'Base Table',
-      description: 'Unstyled structural table w/ plugin transform pipeline + components prop for custom row/cell renderers.',
-      propDescriptions: {
-        data: 'Array of data items to render as rows. T must extend Record<string, unknown>.',
-        columns: 'Column defs {key, header, width?, renderCell?}; auto-generated from data keys if omitted.',
-        idKey: 'Row key for React reconciliation; property name or fn. Falls back to index.',
-        plugins: 'Ordered plugin array applied as sequential transform pipeline.',
-        components: 'Component overrides for row/cell elements; receive xstyle from plugin transforms.',
-        children: 'Children mode; render rows in tbody directly.',
-        tableProps: 'Extra HTML attrs passed to root <table> element.',
       },
     },
     {

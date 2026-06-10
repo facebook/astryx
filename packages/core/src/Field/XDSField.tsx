@@ -20,7 +20,7 @@ import {type ReactNode, use} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSFieldLabel} from './XDSFieldLabel';
-import {XDSFieldStatus as XDSFieldStatusComponent} from './XDSFieldStatus';
+import {XDSFieldStatus} from './XDSFieldStatus';
 import {spacingVars, borderVars} from '../theme/tokens.stylex';
 import type {XDSIconType} from '../Icon';
 import {xdsClassName, mergeProps} from '../utils';
@@ -53,7 +53,7 @@ const styles = stylex.create({
 
 export type XDSFieldStatusType = 'warning' | 'error' | 'success';
 
-export interface XDSFieldStatus {
+export interface XDSFieldStatusInput {
   /**
    * The type of status to display.
    */
@@ -119,7 +119,7 @@ export interface XDSFieldProps extends Omit<
    * Status indicator for the field.
    * When set with a message, displays a colored message box below the input.
    */
-  status?: XDSFieldStatus;
+  status?: XDSFieldStatusInput;
   /**
    * Tooltip text to display in an info icon at the end of the label.
    */
@@ -199,7 +199,7 @@ export function XDSField({
   );
 
   const statusNode = status?.message ? (
-    <XDSFieldStatusComponent
+    <XDSFieldStatus
       type={status.type}
       message={status.message}
       id={resolvedMessageID}
