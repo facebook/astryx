@@ -86,8 +86,11 @@ const styles = stylex.create({
     overflow: 'hidden',
     paddingInline: spacingVars['--spacing-4'],
     paddingBlockStart: spacingVars['--spacing-3'],
-    paddingBlockEnd: `calc(${spacingVars['--spacing-3']} + ${radiusVars['--radius-page']})`,
-    marginBlockEnd: `calc(-1 * ${radiusVars['--radius-page']})`,
+    // The drawer tucks behind the composer (negative marginBlockEnd) and its
+    // top corners align with the composer's outer radius. Tracks the chat
+    // radius to stay matched to the composer, decoupled from --radius-page. #2072
+    paddingBlockEnd: `calc(${spacingVars['--spacing-3']} + ${radiusVars['--radius-chat']})`,
+    marginBlockEnd: `calc(-1 * ${radiusVars['--radius-chat']})`,
     // Surface base with a muted tint layered on top, both in the element's
     // own background layer. The muted backgroundImage composites over the
     // surface backgroundColor and — by CSS rule — paints behind all in-flow
@@ -97,8 +100,8 @@ const styles = stylex.create({
     // opaque or translucent.
     backgroundColor: colorVars['--color-background-surface'],
     backgroundImage: `linear-gradient(${colorVars['--color-background-muted']}, ${colorVars['--color-background-muted']})`,
-    borderTopLeftRadius: radiusVars['--radius-page'],
-    borderTopRightRadius: radiusVars['--radius-page'],
+    borderTopLeftRadius: radiusVars['--radius-chat'],
+    borderTopRightRadius: radiusVars['--radius-chat'],
   },
 
   // Toggle row — both the bar handle and badge+label live in the

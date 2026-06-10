@@ -13,7 +13,7 @@
  * page-radius container, hover/focus shadows, and concentric inner radius.
  *
  * Component CSS vars (themeable via defineTheme):
- * - `--_chat-composer-radius` (default: --radius-page) — outer border radius
+ * - `--_chat-composer-radius` (default: --radius-chat) — outer border radius
  * - `--_chat-composer-padding` (default: --spacing-3) — body padding
  * - Inner element radius = calc(--_chat-composer-radius - --_chat-composer-padding)
  *
@@ -116,7 +116,9 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     // Component CSS vars — themeable via defineTheme({ components: { 'chat-composer': { base: {...} } } })
-    '--_chat-composer-radius': radiusVars['--radius-page'],
+    // Uses the dedicated chat radius (28px) rather than --radius-page, so chat
+    // rounding is decoupled from page-level containers but unchanged today. #2072
+    '--_chat-composer-radius': radiusVars['--radius-chat'],
     '--_chat-composer-padding': spacingVars['--spacing-3'],
     // Concentric radius: buttons follow the outer shell's curvature.
     // Sets --_button-radius (not --radius-element) so only buttons are

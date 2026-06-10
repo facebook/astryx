@@ -93,7 +93,9 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     maxWidth: 'max(80%, 280px)',
-    borderRadius: radiusVars['--radius-page'],
+    // Bubbles are intentionally rounder than cards in the same view, so they
+    // use the dedicated chat radius rather than coupling to --radius-page. #2072
+    borderRadius: radiusVars['--radius-chat'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
