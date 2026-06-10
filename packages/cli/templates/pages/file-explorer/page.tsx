@@ -260,12 +260,15 @@ const FILESYSTEM: FileSystemItem[] = [
   },
 ];
 
-// The template paints no background and claims no viewport height — the host
-// shell owns that (XDSLayout height="fill" already fills the host's region).
-// The XDSHStack already stretches its children to full height (vAlign defaults
-// to 'stretch'), so the only remaining styles are layout plumbing XDS doesn't
-// expose as props: per-column scroll and fixed vs. flexible track sizing.
+// No background — the host shell owns the page surface. The one viewport rule
+// (minHeight: 100dvh) is required so the Finder-style columns fill the window:
+// XDSLayout height="fill" is height:100%, which only resolves when an ancestor
+// has a definite height, and the host's <html>/<body> don't set one. The rest
+// are layout plumbing XDS doesn't expose as props (per-column scroll, fixed vs.
+// flexible track sizing). The XDSHStack already stretches children to full
+// height (vAlign defaults to 'stretch').
 const styles = stylex.create({
+  page: {minHeight: '100dvh'},
   scrollable: {overflowY: 'auto'},
   fixedColumn: {flexShrink: 0},
   fillRemaining: {flex: 1},
@@ -351,6 +354,7 @@ export default function FileExplorerPage() {
 
   return (
     <XDSLayout
+      xstyle={styles.page}
       height="fill"
       header={
         <XDSToolbar
