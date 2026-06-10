@@ -13,7 +13,7 @@
  */
 
 import type * as TS from 'typescript';
-import {scope} from './scope';
+import {scope} from '@/generated/playground-scope';
 
 /** Set by the page after loading /vendor/typescript.js */
 let ts: typeof TS | null = null;
