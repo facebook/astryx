@@ -13,18 +13,13 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSBanner} from '@xds/core/Banner';
 import {CubeIcon} from '@heroicons/react/24/outline';
-import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
+import {colorVars} from '@xds/core/theme/tokens.stylex';
 
+// Standalone auth page paints its own body background (no host shell).
 const styles = stylex.create({
   page: {
-    minHeight: '100dvh',
-    padding: spacingVars['--spacing-6'],
     backgroundColor: colorVars['--color-background-body'],
   },
-  fullWidth: {
-    width: '100%',
-  },
-  centered: {textAlign: 'center'},
 });
 
 export default function LoginPage() {
@@ -44,7 +39,7 @@ export default function LoginPage() {
   };
 
   return (
-    <XDSCenter axis="both" xstyle={styles.page}>
+    <XDSCenter axis="both" height="100dvh" xstyle={styles.page}>
       <XDSVStack gap={4} hAlign="center">
         {/* Logo */}
         <XDSVStack gap={2} hAlign="center">
@@ -56,14 +51,12 @@ export default function LoginPage() {
 
         {/* Card */}
         <XDSCard padding={8} width={400}>
-          <XDSVStack gap={4}>
-            <XDSVStack hAlign="center" xstyle={styles.centered}>
-              <XDSVStack gap={1}>
-                <XDSHeading level={2}>Sign in</XDSHeading>
-                <XDSText type="body" color="secondary" size="sm">
-                  Enter your credentials to continue
-                </XDSText>
-              </XDSVStack>
+          <XDSVStack gap={4} hAlign="stretch">
+            <XDSVStack gap={1} hAlign="center">
+              <XDSHeading level={2}>Sign in</XDSHeading>
+              <XDSText type="body" color="secondary" size="sm">
+                Enter your credentials to continue
+              </XDSText>
             </XDSVStack>
 
             {error && (
@@ -94,7 +87,6 @@ export default function LoginPage() {
               size="lg"
               isLoading={isLoading}
               onClick={handleSignIn}
-              xstyle={styles.fullWidth}
             />
           </XDSVStack>
         </XDSCard>
