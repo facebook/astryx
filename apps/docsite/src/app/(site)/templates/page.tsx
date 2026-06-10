@@ -42,7 +42,7 @@ const styles = stylex.create({
     display: 'grid',
     gap: 'var(--spacing-4)',
     justifyContent: 'center',
-    gridTemplateColumns: `repeat(auto-fill, minmax(max(${CARD_MIN_WIDTH}px, calc((100% - var(--spacing-4)) / 2)), 1fr))`,
+    gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, max(${CARD_MIN_WIDTH}px, calc((100% - var(--spacing-4)) / 2))), 1fr))`,
   },
   cardImage: {
     display: 'block',
