@@ -82,35 +82,39 @@ describe('XDSAspectRatio', () => {
     expect(element.style.aspectRatio).toBe(String(ratio));
   });
 
-  it('renders as a circle with a 1:1 ratio when circle is set', () => {
+  it('renders an ellipse that respects the ratio (circle at 1:1)', () => {
     render(
-      <XDSAspectRatio isCircle data-testid="aspect-ratio">
+      <XDSAspectRatio ratio={1} shape="ellipse" data-testid="aspect-ratio">
         <div>Circle</div>
       </XDSAspectRatio>,
     );
     const element = screen.getByTestId('aspect-ratio');
     expect(element.style.aspectRatio).toBe('1');
+    expect(element.className).toContain('ellipse');
   });
 
-  it('ignores the ratio prop when circle is set', () => {
+  it('ellipse respects a non-square ratio (oval)', () => {
     render(
-      <XDSAspectRatio isCircle ratio={16 / 9} data-testid="aspect-ratio">
-        <div>Circle wins</div>
+      <XDSAspectRatio ratio={16 / 9} shape="ellipse" data-testid="aspect-ratio">
+        <div>Oval</div>
       </XDSAspectRatio>,
     );
     const element = screen.getByTestId('aspect-ratio');
-    expect(element.style.aspectRatio).toBe('1');
+    // Ratio is preserved — the ellipse does not force 1:1.
+    expect(element.style.aspectRatio).toBe(String(16 / 9));
+    expect(element.className).toContain('ellipse');
   });
 
-  it('does not apply circle styling by default', () => {
+  it('defaults to the rectangle shape', () => {
     render(
       <XDSAspectRatio ratio={1} data-testid="aspect-ratio">
-        <div>Square, not circle</div>
+        <div>Rectangle by default</div>
       </XDSAspectRatio>,
     );
     const element = screen.getByTestId('aspect-ratio');
     expect(element.style.aspectRatio).toBe('1');
-    // No fully-rounded border radius when circle is not set
+    expect(element.className).toContain('rectangle');
+    // No ellipse border-radius when shape is the default rectangle
     expect(element.style.borderRadius).toBe('');
   });
 

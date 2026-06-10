@@ -8,7 +8,7 @@ import {XDSCenter} from '@xds/core/Center';
 export default function AspectRatioCircleImage() {
   return (
     <XDSCenter width={300}>
-      <XDSAspectRatio isCircle>
+      <XDSAspectRatio ratio={1} shape="ellipse">
         <img
           src="https://lookaside.facebook.com/assets/xds_oss/light-home-square-1.png"
           alt="Circular image"

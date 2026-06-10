@@ -75,9 +75,11 @@ const meta: Meta<typeof XDSAspectRatio> = {
       control: 'number',
       description: 'The aspect ratio as width/height (e.g., 16/9 = 1.777...)',
     },
-    isCircle: {
-      control: 'boolean',
-      description: 'Clip the container to a circle (forces a 1:1 ratio).',
+    shape: {
+      control: 'select',
+      options: ['rectangle', 'ellipse'],
+      description:
+        'Container shape. Both respect the ratio; "ellipse" clips to an oval (circle at 1:1).',
     },
   },
 };
@@ -175,20 +177,42 @@ export const Ultrawide21x9: Story = {
   ),
 };
 
-export const Circle: Story = {
+export const EllipseCircle: Story = {
   args: {
-    isCircle: true,
+    ratio: 1,
+    shape: 'ellipse',
   },
   render: args => (
     <div {...stylex.props(styles.smallContainer)}>
       <XDSText type="supporting" xstyle={styles.sectionLabel}>
-        Circle - Avatars and circular media (forces 1:1)
+        Ellipse at 1:1 — a circle (avatars, profile images)
       </XDSText>
       <XDSAspectRatio {...args}>
         <img
           {...stylex.props(styles.image)}
           src={PLACEHOLDER_SQUARE}
           alt="Circular media"
+        />
+      </XDSAspectRatio>
+    </div>
+  ),
+};
+
+export const EllipseOval: Story = {
+  args: {
+    ratio: 16 / 9,
+    shape: 'ellipse',
+  },
+  render: args => (
+    <div {...stylex.props(styles.container)}>
+      <XDSText type="supporting" xstyle={styles.sectionLabel}>
+        Ellipse at 16:9 — an oval (respects the ratio)
+      </XDSText>
+      <XDSAspectRatio {...args}>
+        <img
+          {...stylex.props(styles.image)}
+          src={PLACEHOLDER_IMAGE}
+          alt="Oval media"
         />
       </XDSAspectRatio>
     </div>
