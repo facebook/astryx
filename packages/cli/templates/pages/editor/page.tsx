@@ -635,20 +635,12 @@ export default function EditorPage() {
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('blocks');
   const [pageTitle, setPageTitle] = useState('Page Editor');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  // null = follow the responsive default (expanded on desktop, collapsed on
-  // mobile); a boolean means the user explicitly toggled it.
-  const [panelCollapsedOverride, setPanelCollapsedOverride] = useState<
-    boolean | null
-  >(null);
   const [viewport, setViewport] = useState<ViewportSize>('desktop');
 
   // On phones the editor stacks: the panel sits in the header slot (full width,
-  // above the canvas) instead of beside it, so neither gets crushed.
+  // above the canvas) showing just its toolbar, so the canvas isn't crushed
+  // beside a 320px sidebar. On desktop the full panel (tabs + lists) shows.
   const isMobile = useMediaQuery('(max-width: 768px)');
-
-  // Collapsed by default on mobile (so you land on the canvas), expanded on
-  // desktop — unless the user has toggled it.
-  const isPanelCollapsed = panelCollapsedOverride ?? isMobile;
 
   const selectedBlock = blocks.find(b => b.id === selectedId) ?? null;
 
@@ -806,40 +798,23 @@ export default function EditorPage() {
         {/* Panel Header */}
         <XDSSection variant="transparent" padding={4}>
           <XDSVStack gap={4}>
-            <XDSHStack gap={3} vAlign="center" hAlign="between">
-              <XDSVStack gap={0}>
-                {isEditingTitle ? (
-                  <XDSTextInput
-                    label="Page title"
-                    isLabelHidden
-                    value={pageTitle}
-                    onChange={setPageTitle}
-                    onKeyDown={(e: React.KeyboardEvent) => {
-                      if (e.key === 'Enter') {
-                        setIsEditingTitle(false);
-                      }
-                    }}
-                    hasAutoFocus
-                    onBlur={() => setIsEditingTitle(false)}
-                  />
-                ) : (
-                  <XDSHeading level={2}>{pageTitle}</XDSHeading>
-                )}
-              </XDSVStack>
-              <XDSButton
-                label={isPanelCollapsed ? 'Expand panel' : 'Collapse panel'}
-                icon={
-                  <XDSIcon
-                    icon={isPanelCollapsed ? ChevronDownIcon : ChevronUpIcon}
-                    size="sm"
-                  />
-                }
-                variant="ghost"
-                size="sm"
-                onClick={() => setPanelCollapsedOverride(!isPanelCollapsed)}
-                isIconOnly
+            {isEditingTitle ? (
+              <XDSTextInput
+                label="Page title"
+                isLabelHidden
+                value={pageTitle}
+                onChange={setPageTitle}
+                onKeyDown={(e: React.KeyboardEvent) => {
+                  if (e.key === 'Enter') {
+                    setIsEditingTitle(false);
+                  }
+                }}
+                hasAutoFocus
+                onBlur={() => setIsEditingTitle(false)}
               />
-            </XDSHStack>
+            ) : (
+              <XDSHeading level={2}>{pageTitle}</XDSHeading>
+            )}
 
             <XDSToolbar
               label="Viewport and actions"
@@ -883,7 +858,7 @@ export default function EditorPage() {
           </XDSVStack>
         </XDSSection>
 
-        {!isPanelCollapsed && (
+        {!isMobile && (
           <XDSVStack gap={4}>
             <XDSVStack gap={0}>
               <XDSTabList
