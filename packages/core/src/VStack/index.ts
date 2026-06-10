@@ -1,8 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Convenience re-export for XDSVStack
- * @position Subpath export so `@xds/core/VStack` resolves correctly
+ * @file index.ts
+ * @input XDSVStack component source
+ * @output Exports XDSVStack and its props type
+ * @position Entry point for @xds/core/VStack subpath export
  */
 
-export {XDSVStack, type XDSVStackProps} from '../Stack';
+export {XDSVStack, type XDSVStackProps} from './XDSVStack';

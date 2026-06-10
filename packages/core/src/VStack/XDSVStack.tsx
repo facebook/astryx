@@ -8,12 +8,15 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stack/Stack.doc.mjs
- * - /packages/core/src/Stack/XDSVStack.test.tsx
- * - /packages/cli/templates/blocks/components/Stack/ (showcase blocks)
+ * - /packages/core/src/VStack/XDSVStack.test.tsx
+ * - /packages/cli/templates/blocks/components/VStack/ (showcase blocks)
  */
 
-import {XDSStack, type XDSStackProps} from './XDSStack';
-import type {StackCrossAlignment, StackMainAlignment} from './stack.stylex';
+import {XDSStack, type XDSStackProps} from '../Stack/XDSStack';
+import type {
+  StackCrossAlignment,
+  StackMainAlignment,
+} from '../Stack/stack.stylex';
 
 export interface XDSVStackProps extends Omit<
   XDSStackProps,

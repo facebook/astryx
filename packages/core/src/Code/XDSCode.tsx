@@ -6,10 +6,11 @@
  * @file XDSCode.tsx
  * @input Uses React, StyleX, theme tokens
  * @output Exports XDSCode component for inline code styling
- * @position Core implementation; inline code display
+ * @position Core implementation; lives in own Code/ dir, re-exported by CodeBlock/
  *
  * SYNC: When modified, update:
  * - /packages/core/src/CodeBlock/index.ts (exports if types change)
+ * - /packages/cli/templates/blocks/components/Code/ (showcase blocks)
  * - /packages/cli/templates/blocks/components/CodeBlock/ (showcase blocks)
  */
 
