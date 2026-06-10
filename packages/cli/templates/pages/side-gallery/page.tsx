@@ -15,16 +15,15 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSDivider} from '@xds/core/Divider';
 import * as stylex from '@stylexjs/stylex';
 
-// ─── Styles ─────────────────────────────────────────────────────────────────
-// Only the structurally-required image fill + corner radius remain — there is
-// no XDSImage primitive to fill a box with `object-fit` and round it (#2582).
+// Image fill is a plain inline style (not stylex) so it survives the playground
+// preview's runtime TS compile, which doesn't run the StyleX babel plugin.
+const imageStyle = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover' as const,
+};
 
 const styles = stylex.create({
-  image: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
   imageClip: {
     borderRadius: 'var(--radius-element)',
   },
@@ -95,7 +94,7 @@ function ImageGrid() {
     <XDSGrid columns={3} gap={3}>
       {IMAGES.map(img => (
         <XDSAspectRatio key={img.src} ratio={1} xstyle={styles.imageClip}>
-          <img src={img.src} alt={img.alt} {...stylex.props(styles.image)} />
+          <img src={img.src} alt={img.alt} style={imageStyle} />
         </XDSAspectRatio>
       ))}
     </XDSGrid>
