@@ -53,22 +53,6 @@ const styles = stylex.create({
     flexDirection: 'column' as const,
     gap: 16,
   },
-  footer: {
-    borderTop: '1px solid var(--xds-color-border-default, #e0e0e0)',
-    paddingBlock: 16,
-    paddingInline: 24,
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  stickyFooterLayout: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    flex: 1,
-  },
-  stickyFooterContent: {
-    flex: '1 0 auto',
-  },
 });
 
 // =============================================================================
@@ -669,94 +653,4 @@ export const WithMobileNav: Story = {
       </XDSAppShell>
     );
   },
-};
-
-// =============================================================================
-// Sticky Footer — Auto Height
-// =============================================================================
-
-/**
- * Demonstrates the sticky footer pattern in auto height mode.
- * The footer pins to the bottom of the viewport when page content
- * is shorter than the screen — no manual calc() or height hacks needed.
- */
-export const AutoHeightStickyFooter: Story = {
-  render: () => (
-    <XDSAppShell contentPadding={6} topNav={<AppTopNav />} height="auto">
-      <div {...stylex.props(styles.stickyFooterLayout)}>
-        <div {...stylex.props(styles.stickyFooterContent)}>
-          <XDSText type="large">Short Page</XDSText>
-          <XDSText type="body">
-            This page has very little content, but the footer still pins to the
-            bottom of the viewport thanks to the auto-height flex stretch.
-          </XDSText>
-        </div>
-        <div {...stylex.props(styles.footer)}>
-          <XDSText type="supporting" color="secondary">
-            © 2025 Acme Inc.
-          </XDSText>
-          <XDSText type="supporting" color="secondary">
-            Privacy · Terms · Status
-          </XDSText>
-        </div>
-      </div>
-    </XDSAppShell>
-  ),
-};
-
-/**
- * Auto height with sticky footer AND a side nav.
- * Verifies the sticky footer works alongside the sticky sideNav behavior.
- */
-export const AutoHeightStickyFooterWithSideNav: Story = {
-  render: () => (
-    <XDSAppShell
-      contentPadding={6}
-      topNav={<AppTopNav />}
-      sideNav={<SideNavWithoutHeader />}
-      height="auto">
-      <div {...stylex.props(styles.stickyFooterLayout)}>
-        <div {...stylex.props(styles.stickyFooterContent)}>
-          <XDSText type="large">Dashboard</XDSText>
-          <XDSText type="body">
-            Minimal content here — the footer stays at the bottom of the
-            viewport regardless.
-          </XDSText>
-        </div>
-        <div {...stylex.props(styles.footer)}>
-          <XDSText type="supporting" color="secondary">
-            © 2025 Acme Inc. All rights reserved.
-          </XDSText>
-          <XDSText type="supporting" color="secondary">
-            v2.4.1
-          </XDSText>
-        </div>
-      </div>
-    </XDSAppShell>
-  ),
-};
-
-/**
- * Auto height with a long page — footer naturally appears after content.
- * When content exceeds the viewport, the footer flows naturally below the
- * content (no fixed pinning). This confirms the fix doesn't break scrolling.
- */
-export const AutoHeightLongPageWithFooter: Story = {
-  render: () => (
-    <XDSAppShell contentPadding={6} topNav={<AppTopNav />} height="auto">
-      <div {...stylex.props(styles.stickyFooterLayout)}>
-        <div {...stylex.props(styles.stickyFooterContent)}>
-          <MockContent paragraphs={20} />
-        </div>
-        <div {...stylex.props(styles.footer)}>
-          <XDSText type="supporting" color="secondary">
-            © 2025 Acme Inc.
-          </XDSText>
-          <XDSText type="supporting" color="secondary">
-            Privacy · Terms · Status
-          </XDSText>
-        </div>
-      </div>
-    </XDSAppShell>
-  ),
 };
