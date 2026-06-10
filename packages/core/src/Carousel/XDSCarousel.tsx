@@ -173,17 +173,50 @@ const gapStyles = stylex.create({
 });
 
 const paddingStyles = stylex.create({
-  0: {paddingInline: spacingVars['--spacing-0'], scrollPaddingInline: spacingVars['--spacing-0']},
-  0.5: {paddingInline: spacingVars['--spacing-0-5'], scrollPaddingInline: spacingVars['--spacing-0-5']},
-  1: {paddingInline: spacingVars['--spacing-1'], scrollPaddingInline: spacingVars['--spacing-1']},
-  1.5: {paddingInline: spacingVars['--spacing-1-5'], scrollPaddingInline: spacingVars['--spacing-1-5']},
-  2: {paddingInline: spacingVars['--spacing-2'], scrollPaddingInline: spacingVars['--spacing-2']},
-  3: {paddingInline: spacingVars['--spacing-3'], scrollPaddingInline: spacingVars['--spacing-3']},
-  4: {paddingInline: spacingVars['--spacing-4'], scrollPaddingInline: spacingVars['--spacing-4']},
-  5: {paddingInline: spacingVars['--spacing-5'], scrollPaddingInline: spacingVars['--spacing-5']},
-  6: {paddingInline: spacingVars['--spacing-6'], scrollPaddingInline: spacingVars['--spacing-6']},
-  8: {paddingInline: spacingVars['--spacing-8'], scrollPaddingInline: spacingVars['--spacing-8']},
-  10: {paddingInline: spacingVars['--spacing-10'], scrollPaddingInline: spacingVars['--spacing-10']},
+  0: {
+    paddingInline: spacingVars['--spacing-0'],
+    scrollPaddingInline: spacingVars['--spacing-0'],
+  },
+  0.5: {
+    paddingInline: spacingVars['--spacing-0-5'],
+    scrollPaddingInline: spacingVars['--spacing-0-5'],
+  },
+  1: {
+    paddingInline: spacingVars['--spacing-1'],
+    scrollPaddingInline: spacingVars['--spacing-1'],
+  },
+  1.5: {
+    paddingInline: spacingVars['--spacing-1-5'],
+    scrollPaddingInline: spacingVars['--spacing-1-5'],
+  },
+  2: {
+    paddingInline: spacingVars['--spacing-2'],
+    scrollPaddingInline: spacingVars['--spacing-2'],
+  },
+  3: {
+    paddingInline: spacingVars['--spacing-3'],
+    scrollPaddingInline: spacingVars['--spacing-3'],
+  },
+  4: {
+    paddingInline: spacingVars['--spacing-4'],
+    scrollPaddingInline: spacingVars['--spacing-4'],
+  },
+  5: {
+    paddingInline: spacingVars['--spacing-5'],
+    scrollPaddingInline: spacingVars['--spacing-5'],
+  },
+  6: {
+    paddingInline: spacingVars['--spacing-6'],
+    scrollPaddingInline: spacingVars['--spacing-6'],
+  },
+  8: {
+    paddingInline: spacingVars['--spacing-8'],
+    scrollPaddingInline: spacingVars['--spacing-8'],
+  },
+  10: {
+    paddingInline: spacingVars['--spacing-10'],
+    scrollPaddingInline: spacingVars['--spacing-10'],
+  },
 });
 
 // =============================================================================
