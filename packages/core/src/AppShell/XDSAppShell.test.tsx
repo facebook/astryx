@@ -602,30 +602,47 @@ describe('XDSAppShell', () => {
     expect(observeSpy).not.toHaveBeenCalled();
   });
 
-  it('applies flex column stretch to content area in auto mode', () => {
+  it('stretches the content area vertically in auto mode and keeps children in block flow', () => {
     render(
       <XDSAppShell height="auto" data-testid="shell">
         <div data-testid="child">Content</div>
       </XDSAppShell>,
     );
-    // The content area (role="main") should be a flex column in auto mode
     const main = screen.getByRole('main');
-    const style = getComputedStyle(main);
-    expect(style.display).toBe('flex');
-    expect(style.flexDirection).toBe('column');
+    const mainStyle = getComputedStyle(main);
+    // The content area fills remaining vertical space (sticky-footer support)
+    // via a flex column so a child can flex-grow reliably.
+    expect(mainStyle.display).toBe('flex');
+    expect(mainStyle.flexDirection).toBe('column');
+    expect(mainStyle.minHeight).toBe('100%');
+    expect(mainStyle.overflow).toBe('visible');
+
+    // Children are wrapped in a block-flow inner element that fills the width.
+    // This is what restores `max-width` + `margin-inline: auto` centering for
+    // page content (e.g. <XDSSection maxWidth={1200}>): under the parent's flex
+    // context an auto-width item with auto inline margins would collapse to its
+    // content width. The wrapper stretches to 100% width and grows vertically.
+    // See regression from #2440.
+    const inner = screen.getByTestId('child').parentElement;
+    const innerStyle = getComputedStyle(inner!);
+    expect(innerStyle.display).not.toBe('flex');
+    expect(innerStyle.width).toBe('100%');
+    expect(innerStyle.flexGrow).toBe('1');
   });
 
-  it('does not apply flex column stretch to content area in fill mode', () => {
+  it('does not wrap or stretch the content area in fill mode', () => {
     render(
       <XDSAppShell height="fill" data-testid="shell">
         <div data-testid="child">Content</div>
       </XDSAppShell>,
     );
     const main = screen.getByRole('main');
-    const style = getComputedStyle(main);
-    // In fill mode, content area should NOT have flex-direction column
-    // (it uses default block layout with scroll containment)
-    expect(style.flexDirection).not.toBe('column');
+    const mainStyle = getComputedStyle(main);
+    // Fill mode keeps XDSLayoutContent's default fixed-height, internally
+    // scrollable behavior — no auto-mode flex column, no extra wrapper.
+    expect(mainStyle.flexDirection).not.toBe('column');
+    // In fill mode children are rendered directly (no contentAutoInner wrapper).
+    expect(screen.getByTestId('child').parentElement).toBe(main);
   });
 
   // ===========================================================================

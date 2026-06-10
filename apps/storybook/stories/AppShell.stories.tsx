@@ -64,7 +64,7 @@ const styles = stylex.create({
   stickyFooterLayout: {
     display: 'flex',
     flexDirection: 'column' as const,
-    flex: 1,
+    minHeight: '100%',
   },
   stickyFooterContent: {
     flex: '1 0 auto',

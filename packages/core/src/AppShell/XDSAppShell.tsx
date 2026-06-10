@@ -429,16 +429,44 @@ const styles = stylex.create({
     flex: 1,
     overflow: 'auto',
   },
-  // Content area fix for auto mode — makes the content a flex column so that
-  // children can use flex-grow to fill remaining vertical space (sticky footer
-  // pattern). Overrides height/overflow from XDSLayoutContent's default styles
-  // which assume fill-mode (fixed-height, internally scrollable) behavior.
+  // Content area adjustment for auto mode. Overrides height/overflow from
+  // XDSLayoutContent's default styles, which assume fill-mode (fixed-height,
+  // internally scrollable) behavior. The content area becomes a flex column so
+  // a child can reliably fill the remaining vertical space (sticky-footer
+  // pattern) without relying on a fragile percentage-height chain:
+  // - `display: flex; flex-direction: column` — children can use flex-grow.
+  // - `height: auto` — overrides the fill-mode `height: 100%`.
+  // - `min-height: 100%` — fills available space on short pages.
+  // - `overflow: visible` — the page (not this element) owns the scroll.
   contentAutoStretch: {
     display: 'flex',
     flexDirection: 'column' as const,
     height: 'auto',
     minHeight: '100%',
     overflow: 'visible',
+  },
+  // Inner wrapper for the content area in auto mode.
+  //
+  // The content area is a flex column (above) so children can grow vertically.
+  // But page content commonly centers itself with an auto-width container plus
+  // `margin-inline: auto` (e.g. `<XDSSection maxWidth={1200}>`), and under a
+  // flex/grid formatting context an auto-width item with auto inline margins
+  // collapses to its content width instead of filling — so the column renders
+  // far narrower than its max-width (regression from #2440).
+  //
+  // This wrapper re-establishes normal block flow for that content while still
+  // participating in the parent's flex column:
+  // - `width: 100%` — fills the content area horizontally (no auto margin, so
+  //   it stretches rather than collapsing), restoring max-width + margin-auto
+  //   centering for descendants.
+  // - `flex: 1 0 auto` — grows to fill remaining vertical space, preserving the
+  //   sticky-footer capability for children placed inside it.
+  // - `display: block` (default) — descendants lay out in normal flow.
+  contentAutoInner: {
+    width: '100%',
+    flexGrow: 1,
+    flexShrink: 0,
+    flexBasis: 'auto',
   },
 });
 
@@ -730,7 +758,11 @@ export function XDSAppShell({
       id={MAIN_CONTENT_ID}
       isScrollable={isFill}
       xstyle={[contentAreaStyle, isAuto && styles.contentAutoStretch]}>
-      {children}
+      {isAuto ? (
+        <div {...stylex.props(styles.contentAutoInner)}>{children}</div>
+      ) : (
+        children
+      )}
     </XDSLayoutContent>
   );
 
