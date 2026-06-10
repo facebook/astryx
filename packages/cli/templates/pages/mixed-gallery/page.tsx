@@ -7,11 +7,7 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import * as stylex from '@stylexjs/stylex';
 
-// Optional basePath. Empty in end-user projects and the docsite (served at
-// root). In the sandbox preview it picks up `/sandbox` so /template-assets/*
-// resolves under the GH Pages basePath. The CLI swaps these paths for an
-// inline placeholder on scaffold, so end users never see them.
-const BP =
+const basePath =
   (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) || '';
 
 // ─── Styles ────────────────────────────────────────────────────────────────
@@ -69,27 +65,27 @@ interface GalleryImage {
 const IMAGES: GalleryImage[] = [
   {
     // illustrative-horizontal-1 from xds_oss asset set
-    src: BP + '/template-assets/illustrative-horizontal-1.jpg',
+    src: basePath + '/template-assets/illustrative-horizontal-1.jpg',
     title: 'Going places',
   },
   {
     // light-home-horizontal-1 from xds_oss asset set
-    src: BP + '/template-assets/light-home-horizontal-1.png',
+    src: basePath + '/template-assets/light-home-horizontal-1.png',
     title: 'Making memories',
   },
   {
     // light-lifestyle-horizontal-1 from xds_oss asset set
-    src: BP + '/template-assets/light-lifestyle-horizontal-1.png',
+    src: basePath + '/template-assets/light-lifestyle-horizontal-1.png',
     title: 'Being free',
   },
   {
     // light-working-horizontal-2 from xds_oss asset set
-    src: BP + '/template-assets/light-working-horizontal-2.png',
+    src: basePath + '/template-assets/light-working-horizontal-2.png',
     title: 'Getting it done',
   },
   {
     // light-scene-horizontal-1 from xds_oss asset set
-    src: BP + '/template-assets/light-scene-horizontal-1.png',
+    src: basePath + '/template-assets/light-scene-horizontal-1.png',
     title: 'Finding calm',
   },
 ];

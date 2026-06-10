@@ -43,11 +43,7 @@ import {
 // ─── Styles ─────────────────────────────────────────────────────────────────
 import * as stylex from '@stylexjs/stylex';
 
-// Optional basePath. Empty in end-user projects and the docsite (served at
-// root). In the sandbox preview it picks up `/sandbox` so /template-assets/*
-// resolves under the GH Pages basePath. The CLI swaps these paths for an
-// inline placeholder on scaffold, so end users never see them.
-const BP =
+const basePath =
   (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) || '';
 
 // The only custom CSS in this template is small optical-alignment negative
@@ -74,15 +70,15 @@ const pageStyles = stylex.create({
 // Source: meta assets.file list -s xds_oss -g light-product-{1..5}
 const PRODUCT_IMAGES = [
   // light-product-1 from xds_oss asset set
-  BP + '/template-assets/light-product-1.png',
+  basePath + '/template-assets/light-product-1.png',
   // light-product-2 from xds_oss asset set
-  BP + '/template-assets/light-product-2.png',
+  basePath + '/template-assets/light-product-2.png',
   // light-product-3 from xds_oss asset set
-  BP + '/template-assets/light-product-3.png',
+  basePath + '/template-assets/light-product-3.png',
   // light-product-4 from xds_oss asset set
-  BP + '/template-assets/light-product-4.png',
+  basePath + '/template-assets/light-product-4.png',
   // light-product-5 from xds_oss asset set
-  BP + '/template-assets/light-product-5.png',
+  basePath + '/template-assets/light-product-5.png',
 ];
 
 const PRODUCTS = [

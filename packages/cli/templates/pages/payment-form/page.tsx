@@ -114,17 +114,13 @@ const US_STATES = [
   'Wyoming',
 ];
 
-// Optional basePath. Empty in end-user projects and the docsite (served at
-// root). In the sandbox preview it picks up `/sandbox` so /template-assets/*
-// resolves under the GH Pages basePath. The CLI swaps these paths for an
-// inline placeholder on scaffold, so end users never see them.
-const BP =
+const basePath =
   (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) || '';
 
 const ITEM_IMAGES: Record<string, {src: string}> = {
-  '1': {src: BP + '/template-assets/light-product-1.png'},
-  '2': {src: BP + '/template-assets/light-product-4.png'},
-  '3': {src: BP + '/template-assets/light-product-5.png'},
+  '1': {src: basePath + '/template-assets/light-product-1.png'},
+  '2': {src: basePath + '/template-assets/light-product-4.png'},
+  '3': {src: basePath + '/template-assets/light-product-5.png'},
 };
 
 const ORDER_ITEMS = [
@@ -516,7 +512,9 @@ export default function PaymentFormPage() {
                               onClick={() => {}}
                               xstyle={styles.paypalButton}>
                               <img
-                                src={BP + '/template-assets/paypal-logo.png'}
+                                src={
+                                  basePath + '/template-assets/paypal-logo.png'
+                                }
                                 alt="PayPal"
                                 {...stylex.props(styles.paypalLogo)}
                               />
@@ -530,7 +528,7 @@ export default function PaymentFormPage() {
                               xstyle={styles.gpayButton}>
                               <img
                                 src={
-                                  BP +
+                                  basePath +
                                   '/template-assets/google-pay-logo-dark.svg'
                                 }
                                 alt="Google Pay"
@@ -558,17 +556,17 @@ export default function PaymentFormPage() {
                           {/* Card type icons */}
                           <XDSHStack gap={1.5} vAlign="center">
                             <img
-                              src={BP + '/template-assets/visa.svg'}
+                              src={basePath + '/template-assets/visa.svg'}
                               alt="Visa"
                               {...stylex.props(styles.cardLogo)}
                             />
                             <img
-                              src={BP + '/template-assets/mastercard.svg'}
+                              src={basePath + '/template-assets/mastercard.svg'}
                               alt="Mastercard"
                               {...stylex.props(styles.cardLogo)}
                             />
                             <img
-                              src={BP + '/template-assets/amex.svg'}
+                              src={basePath + '/template-assets/amex.svg'}
                               alt="Amex"
                               {...stylex.props(styles.cardLogo)}
                             />

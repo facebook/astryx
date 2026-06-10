@@ -32,11 +32,7 @@ import {
   PlusIcon,
 } from '@heroicons/react/24/outline';
 
-// Optional basePath. Empty in end-user projects and the docsite (served at
-// root). In the sandbox preview it picks up `/sandbox` so /template-assets/*
-// resolves under the GH Pages basePath. The CLI swaps these paths for an
-// inline placeholder on scaffold, so end users never see them.
-const BP =
+const basePath =
   (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) || '';
 
 // ============= DATA =============
@@ -60,37 +56,37 @@ const PRODUCTS = [
   {
     name: 'Ceremonial Matcha Latte',
     category: 'Matcha' as ProductCategory,
-    image: BP + '/template-assets/matcha-product-1.png',
+    image: basePath + '/template-assets/matcha-product-1.png',
     price: 6,
   },
   {
     name: 'Oat Milk Cappuccino',
     category: 'Coffee' as ProductCategory,
-    image: BP + '/template-assets/matcha-product-2.png',
+    image: basePath + '/template-assets/matcha-product-2.png',
     price: 5,
   },
   {
     name: 'Jasmine Green Tea',
     category: 'Tea' as ProductCategory,
-    image: BP + '/template-assets/matcha-product-3.png',
+    image: basePath + '/template-assets/matcha-product-3.png',
     price: 4,
   },
   {
     name: 'Mango Matcha Smoothie',
     category: 'Smoothie' as ProductCategory,
-    image: BP + '/template-assets/matcha-product-4.png',
+    image: basePath + '/template-assets/matcha-product-4.png',
     price: 8,
   },
   {
     name: 'Hojicha Latte',
     category: 'Specialty' as ProductCategory,
-    image: BP + '/template-assets/matcha-product-5.png',
+    image: basePath + '/template-assets/matcha-product-5.png',
     price: 7,
   },
   {
     name: 'Iced Yuzu Matcha',
     category: 'Matcha' as ProductCategory,
-    image: BP + '/template-assets/matcha-product-6.png',
+    image: basePath + '/template-assets/matcha-product-6.png',
     price: 7,
   },
 ];

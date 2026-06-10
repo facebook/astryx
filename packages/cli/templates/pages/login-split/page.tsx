@@ -22,15 +22,12 @@ import {
   radiusVars,
 } from '@xds/core/theme/tokens.stylex';
 
-// Optional basePath. Empty in end-user projects and the docsite (served at
-// root). In the sandbox preview it picks up `/sandbox` so /template-assets/*
-// resolves under the GH Pages basePath. The CLI swaps these paths for an
-// inline placeholder on scaffold, so end users never see them.
-const BP =
+const basePath =
   (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) || '';
 
 // light-working-vertical-1 from xds_oss asset set
-const COVER_IMAGE_URL = BP + '/template-assets/light-working-vertical-1.png';
+const COVER_IMAGE_URL =
+  basePath + '/template-assets/light-working-vertical-1.png';
 
 const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg

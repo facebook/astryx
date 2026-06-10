@@ -16,27 +16,23 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
-// Optional basePath. Empty in end-user projects and the docsite (served at
-// root). In the sandbox preview it picks up `/sandbox` so /template-assets/*
-// resolves under the GH Pages basePath. The CLI swaps these paths for an
-// inline placeholder on scaffold, so end users never see them.
-const BP =
+const basePath =
   (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) || '';
 
 const IMAGES = [
   {
     // colorful-home-horizontal-1 from xds_oss asset set
-    src: BP + '/template-assets/colorful-home-horizontal-1.png',
+    src: basePath + '/template-assets/colorful-home-horizontal-1.png',
     alt: 'Colorful home interior with vibrant decor',
   },
   {
     // colorful-lifestyle-horizontal-1 from xds_oss asset set
-    src: BP + '/template-assets/colorful-lifestyle-horizontal-1.png',
+    src: basePath + '/template-assets/colorful-lifestyle-horizontal-1.png',
     alt: 'Colorful lifestyle portrait with natural lighting',
   },
   {
     // colorful-lifestyle-horizontal-2 from xds_oss asset set
-    src: BP + '/template-assets/colorful-lifestyle-horizontal-2.png',
+    src: basePath + '/template-assets/colorful-lifestyle-horizontal-2.png',
     alt: 'Colorful lifestyle scene with warm tones',
   },
 ];

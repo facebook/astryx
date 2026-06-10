@@ -17,11 +17,7 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSDivider} from '@xds/core/Divider';
 import * as stylex from '@stylexjs/stylex';
 
-// Optional basePath. Empty in end-user projects and the docsite (served at
-// root). In the sandbox preview it picks up `/sandbox` so /template-assets/*
-// resolves under the GH Pages basePath. The CLI swaps these paths for an
-// inline placeholder on scaffold, so end users never see them.
-const BP =
+const basePath =
   (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) || '';
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
@@ -51,47 +47,47 @@ const styles = stylex.create({
 const IMAGES = [
   // colorful-lifestyle-vertical-3 from xds_oss asset set
   {
-    src: BP + '/template-assets/colorful-lifestyle-vertical-3.png',
+    src: basePath + '/template-assets/colorful-lifestyle-vertical-3.png',
     alt: 'Colorful lifestyle scene',
   },
   // colorful-lifestyle-horizontal-1 from xds_oss asset set
   {
-    src: BP + '/template-assets/colorful-lifestyle-horizontal-1.png',
+    src: basePath + '/template-assets/colorful-lifestyle-horizontal-1.png',
     alt: 'Colorful lifestyle horizontal',
   },
   // colorful-lifestyle-vertical-1 from xds_oss asset set
   {
-    src: BP + '/template-assets/colorful-lifestyle-vertical-1.png',
+    src: basePath + '/template-assets/colorful-lifestyle-vertical-1.png',
     alt: 'Colorful lifestyle vertical',
   },
   // colorful-home-vertical-2 from xds_oss asset set
   {
-    src: BP + '/template-assets/colorful-home-vertical-2.png',
+    src: basePath + '/template-assets/colorful-home-vertical-2.png',
     alt: 'Colorful home interior',
   },
   // colorful-home-vertical-3 from xds_oss asset set
   {
-    src: BP + '/template-assets/colorful-home-vertical-3.png',
+    src: basePath + '/template-assets/colorful-home-vertical-3.png',
     alt: 'Colorful home scene',
   },
   // colorful-home-vertical-1 from xds_oss asset set
   {
-    src: BP + '/template-assets/colorful-home-vertical-1.png',
+    src: basePath + '/template-assets/colorful-home-vertical-1.png',
     alt: 'Colorful home vertical',
   },
   // colorful-lifestyle-horizontal-2 from xds_oss asset set
   {
-    src: BP + '/template-assets/colorful-lifestyle-horizontal-2.png',
+    src: basePath + '/template-assets/colorful-lifestyle-horizontal-2.png',
     alt: 'Colorful lifestyle wide',
   },
   // colorful-lifestyle-vertical-2 from xds_oss asset set
   {
-    src: BP + '/template-assets/colorful-lifestyle-vertical-2.png',
+    src: basePath + '/template-assets/colorful-lifestyle-vertical-2.png',
     alt: 'Colorful lifestyle detail',
   },
   // colorful-lifestyle-vertical-4 from xds_oss asset set
   {
-    src: BP + '/template-assets/colorful-lifestyle-vertical-4.png',
+    src: basePath + '/template-assets/colorful-lifestyle-vertical-4.png',
     alt: 'Colorful lifestyle portrait',
   },
 ];

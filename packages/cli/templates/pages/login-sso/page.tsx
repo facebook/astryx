@@ -17,11 +17,7 @@ import {XDSDivider} from '@xds/core/Divider';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSAvatar} from '@xds/core/Avatar';
 
-// Optional basePath. Empty in end-user projects and the docsite (served at
-// root). In the sandbox preview it picks up `/sandbox` so /template-assets/*
-// resolves under the GH Pages basePath. The CLI swaps these paths for an
-// inline placeholder on scaffold, so end users never see them.
-const BP =
+const basePath =
   (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH) || '';
 
 // ---------------------------------------------------------------------------
@@ -29,7 +25,7 @@ const BP =
 // ---------------------------------------------------------------------------
 
 // building from xds_oss asset set
-const BG_URL = BP + '/template-assets/building.jpg';
+const BG_URL = basePath + '/template-assets/building.jpg';
 
 const styles = stylex.create({
   page: {
