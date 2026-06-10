@@ -19,23 +19,17 @@ import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
-import {XDSSection} from '@xds/core/Section';
 import {XDSTypeahead} from '@xds/core/Typeahead';
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 
+// Caps + centers the whole layout shell (header + sidebar + content). XDSLayout
+// has no max-width prop for the outer shell (contentWidth only caps slot content).
 const styles = stylex.create({
   constrainedShell: {
     maxWidth: 1440,
     marginInline: 'auto',
-  },
-  headerPadding: {
-    padding: spacingVars['--spacing-4'],
-  },
-  sideNavWidth: {
-    minWidth: 260,
   },
 });
 
@@ -89,7 +83,7 @@ export default function SettingsTemplate() {
       xstyle={styles.constrainedShell}
       header={
         <XDSLayoutHeader hasDivider>
-          <XDSHStack vAlign="center" xstyle={styles.headerPadding}>
+          <XDSHStack vAlign="center">
             <XDSStackItem size="fill">
               <XDSHeading level={1}>Settings</XDSHeading>
             </XDSStackItem>
@@ -107,22 +101,17 @@ export default function SettingsTemplate() {
         </XDSLayoutHeader>
       }
       start={
-        <XDSLayoutPanel hasDivider={false} padding={0}>
-          <XDSSection
-            padding={2}
-            variant="transparent"
-            xstyle={styles.sideNavWidth}>
-            <XDSList density="balanced">
-              {NAV_ITEMS.map(item => (
-                <XDSListItem
-                  key={item}
-                  label={item}
-                  isSelected={activeNav === item}
-                  onClick={() => setActiveNav(item)}
-                />
-              ))}
-            </XDSList>
-          </XDSSection>
+        <XDSLayoutPanel hasDivider={false} width={260} padding={2}>
+          <XDSList density="balanced">
+            {NAV_ITEMS.map(item => (
+              <XDSListItem
+                key={item}
+                label={item}
+                isSelected={activeNav === item}
+                onClick={() => setActiveNav(item)}
+              />
+            ))}
+          </XDSList>
         </XDSLayoutPanel>
       }
       content={
