@@ -28,7 +28,6 @@ import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSCollapsible} from '@xds/core/Collapsible';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSThumbnail} from '@xds/core/Thumbnail';
-import {XDSOverflowList} from '@xds/core/OverflowList';
 import {
   CalendarIcon,
   FlagIcon,
@@ -189,20 +188,12 @@ function PageHeader({
                 <XDSHeading level={1} maxLines={1}>
                   #1001
                 </XDSHeading>
-                <XDSOverflowList
-                  gap={1}
-                  minVisibleItems={2}
-                  overflowRenderer={overflowItems => (
-                    <XDSBadge
-                      variant="neutral"
-                      label={`+${overflowItems.length} more`}
-                    />
-                  )}>
-                  <XDSHStack gap={1} vAlign="center">
-                    <XDSText type="body" maxLines={1}>
-                      {PRODUCTS.length} ordered items
-                    </XDSText>
-                  </XDSHStack>
+                {/* Metadata wraps to multiple lines on narrow screens (rather
+                    than collapsing items behind a "+N more" overflow). */}
+                <XDSHStack gap={2} vAlign="center" wrap="wrap">
+                  <XDSText type="body" maxLines={1}>
+                    {PRODUCTS.length} ordered items
+                  </XDSText>
                   <XDSHStack gap={1} vAlign="center">
                     <Bullet />
                     <XDSAvatar name="Jane Doe" size="xsmall" />
@@ -234,7 +225,7 @@ function PageHeader({
                       See all
                     </XDSLink>
                   </XDSHStack>
-                </XDSOverflowList>
+                </XDSHStack>
               </XDSVStack>
             </XDSVStack>
           </XDSStackItem>
