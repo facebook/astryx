@@ -25,32 +25,35 @@ import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import * as stylex from '@stylexjs/stylex';
 
+// Custom CSS here is limited to what XDS components can't express today:
+// - image fill + corner radius (no XDSImage primitive — #2582)
+// - the selected-thumbnail outline and sticky info column (no props for either)
 const pageStyles = stylex.create({
-  pageWrapper: {
-    maxWidth: 1200,
-    width: '100%',
-    padding: '32px 24px',
-  },
+  // Keeps the info column in view while the gallery scrolls. No sticky prop on
+  // XDS layout primitives.
   stickyInfo: {
     position: 'sticky',
-    top: 64,
+    top: 'var(--spacing-8)',
     alignSelf: 'start',
   },
+  // Fills the XDSAspectRatio box + rounds corners. No objectFit/radius props on
+  // XDSAspectRatio (#2582).
   heroImage: {
     width: '100%',
     height: '100%',
     objectFit: 'cover',
-    borderRadius: 'var(--radius-container, 12px)',
+    borderRadius: 'var(--radius-container)',
   },
   thumbImage: {
     width: '100%',
     height: '100%',
     objectFit: 'cover',
-    borderRadius: 'var(--radius-element, 8px)',
+    borderRadius: 'var(--radius-element)',
     cursor: 'pointer',
   },
+  // Marks the active thumbnail. No "selected" affordance on a bare image.
   thumbSelected: {
-    outline: '2px solid var(--color-accent, #0866ff)',
+    outline: '2px solid var(--color-accent)',
     outlineOffset: 2,
   },
 });
@@ -84,9 +87,9 @@ function StarRating({rating, count}: {rating: number; count: number}) {
 // IMAGES[0] = fallback hero; IMAGES[1..6] = thumbnails (first is selected by default)
 const IMAGES = [
   // light-product-1 (fallback hero)
-  '/template-assets/light-home-horizontal-1.png',
+  '/template-assets/light-product-1.png',
   // light-product-1 (thumbnail 1)
-  '/template-assets/light-home-horizontal-1.png',
+  '/template-assets/light-product-1.png',
   // light-product-2
   '/template-assets/light-product-2.png',
   // light-product-3
@@ -95,8 +98,8 @@ const IMAGES = [
   '/template-assets/light-product-4.png',
   // light-product-5
   '/template-assets/light-product-5.png',
-  // light-product-1 (gallery variety)
-  '/template-assets/light-product-1.png',
+  // light-product-3 (gallery variety)
+  '/template-assets/light-product-3.png',
 ];
 
 // ─── Product Data ───────────────────────────────────────────────────────────
@@ -311,21 +314,18 @@ export default function ProductDetailTemplate() {
   return (
     <XDSLayout
       height="auto"
+      contentWidth={1200}
       content={
-        <XDSLayoutContent padding={0}>
-          <XDSCenter axis="horizontal">
-            <XDSVStack gap={0} xstyle={pageStyles.pageWrapper}>
-              <XDSGrid columns={{minWidth: 400}} gap={5}>
-                <ImageGallery
-                  selected={selectedThumb}
-                  onSelect={setSelectedThumb}
-                />
-                <XDSVStack gap={0} xstyle={pageStyles.stickyInfo}>
-                  <ProductInfo />
-                </XDSVStack>
-              </XDSGrid>
+        <XDSLayoutContent padding={6}>
+          <XDSGrid columns={{minWidth: 400}} gap={5}>
+            <ImageGallery
+              selected={selectedThumb}
+              onSelect={setSelectedThumb}
+            />
+            <XDSVStack gap={0} xstyle={pageStyles.stickyInfo}>
+              <ProductInfo />
             </XDSVStack>
-          </XDSCenter>
+          </XDSGrid>
         </XDSLayoutContent>
       }
     />
