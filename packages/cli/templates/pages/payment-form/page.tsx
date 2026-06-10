@@ -184,9 +184,10 @@ const styles = stylex.create({
   gpayButton: {backgroundColor: '#000', borderColor: '#000'},
   // Brand logos inside the express-checkout buttons.
   paypalLogo: {height: spacingVars['--spacing-5'], width: 'auto'},
-  // Unaltered Google Pay mark (no filter/recolor — brand requirement).
+  // Unaltered Google Pay mark (no filter/recolor — brand requirement),
+  // sized so it keeps comfortable clear space inside the lg button.
   gpayLogo: {
-    height: spacingVars['--spacing-6'],
+    height: spacingVars['--spacing-5'],
     width: 'auto',
   },
   // Accepted card-network marks (Visa/Mastercard/Amex), shared style.
