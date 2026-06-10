@@ -11,21 +11,21 @@
  *
  * The only non-maxed category is Custom CSS (5/15). All five remaining
  * declarations are layout plumbing a multi-pane, scrollable browser needs and
- * that XDSSection/XDSHStack don't expose as props (see issue #2623):
+ * that XDS doesn't expose as props yet — each maps to a filed issue:
  *   - page         height: 100dvh            full-height fill (host <html>/<body>
  *                                            aren't height:100%, so XDSLayout
- *                                            height="fill" can't resolve)
+ *                                            height="fill" can't resolve)   #2594
  *   - columnRow    overflowX/Y               horizontal scroll of the column
- *                                            strip on small viewports
- *   - scrollable   overflowY: auto           per-column vertical scroll
- *   - fixedColumn  flexShrink: 0             columns keep 240px and scroll in
- *   - detailColumn flexGrow/Shrink/Basis     detail panel sizing
+ *                                            strip on small viewports        #2623
+ *   - scrollable   overflowY: auto           per-column vertical scroll       #2623
+ *   - fixedColumn  flexShrink: 0             columns keep 240px and scroll in #2623
+ *   - detailColumn flexGrow/Shrink/Basis     detail panel sizing             #2623
  *
  * XDSLayoutPanel has native scroll/width/divider, but only in XDSLayout's fixed
  * slots — it can't host this dynamic, runtime-variable column count, and nested
  * layouts squeeze fixed-width panels instead of scrolling horizontally. So the
  * data-driven map + XDSHStack/XDSSection structure is correct; the missing 10
- * points are entirely #2623.
+ * points are entirely #2594 (viewport fill) + #2623 (overflow + flex sizing).
  */
 
 'use client';
