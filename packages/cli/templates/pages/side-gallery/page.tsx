@@ -92,7 +92,7 @@ function StatBlock({value, label}: {value: string; label: string}) {
 
 function ImageGrid() {
   return (
-    <XDSGrid columns={{minWidth: 160, repeat: 'fit'}} gap={3}>
+    <XDSGrid columns={3} gap={3}>
       {IMAGES.map(img => (
         <XDSAspectRatio key={img.src} ratio={1} xstyle={styles.imageClip}>
           <img src={img.src} alt={img.alt} {...stylex.props(styles.image)} />
