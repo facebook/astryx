@@ -21,8 +21,7 @@ import {XDSSelector} from '@xds/core/Selector';
 import {colorVars} from '@xds/core/theme/tokens.stylex';
 
 // illustration-horizontal-1 from xds_oss asset set
-const ILLUSTRATION_URL =
-  '/template-assets/illustration-horizontal-1.png';
+const ILLUSTRATION_URL = '/template-assets/illustration-horizontal-1.png';
 
 // ─────────────────────────────────────────────────────────────
 // Constants
@@ -240,10 +239,7 @@ export default function FormTwoColumnPage() {
                   <XDSText type="supporting" color="secondary">
                     {col.label}
                   </XDSText>
-                  <XDSLink
-                    href={`mailto:${col.email}`}
-                    type="body"
-                    size="sm">
+                  <XDSLink href={`mailto:${col.email}`} type="body" size="sm">
                     {col.email}
                   </XDSLink>
                 </XDSVStack>
