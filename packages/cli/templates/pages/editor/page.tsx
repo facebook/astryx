@@ -5,6 +5,7 @@
 import {useState, useCallback} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '@xds/core/theme/tokens.stylex';
+import {useMediaQuery} from '@xds/core/hooks';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSCenter} from '@xds/core/Center';
@@ -308,6 +309,12 @@ const editorStyles = stylex.create({
   // the layout anchors a definite viewport height itself. No background; the
   // host owns the page surface.
   page: {height: '100dvh'},
+  // On mobile the panel spans the full width of the header slot it moves into;
+  // on desktop the width prop (320) governs. XDSLayoutPanel width is a fixed
+  // value with no responsive form.
+  panelMobileWidth: {
+    width: {default: null, '@media (max-width: 768px)': '100%'},
+  },
   // Canvas reflows to the chosen viewport width; XDSVStack has no maxWidth prop.
   canvas: (maxWidth: number) => ({
     maxWidth,
@@ -628,8 +635,20 @@ export default function EditorPage() {
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('blocks');
   const [pageTitle, setPageTitle] = useState('Page Editor');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+  // null = follow the responsive default (expanded on desktop, collapsed on
+  // mobile); a boolean means the user explicitly toggled it.
+  const [panelCollapsedOverride, setPanelCollapsedOverride] = useState<
+    boolean | null
+  >(null);
   const [viewport, setViewport] = useState<ViewportSize>('desktop');
+
+  // On phones the editor stacks: the panel sits in the header slot (full width,
+  // above the canvas) instead of beside it, so neither gets crushed.
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
+  // Collapsed by default on mobile (so you land on the canvas), expanded on
+  // desktop — unless the user has toggled it.
+  const isPanelCollapsed = panelCollapsedOverride ?? isMobile;
 
   const selectedBlock = blocks.find(b => b.id === selectedId) ?? null;
 
@@ -778,7 +797,11 @@ export default function EditorPage() {
   );
 
   const sidebar = (
-    <XDSLayoutPanel width={320} hasDivider padding={0}>
+    <XDSLayoutPanel
+      width={320}
+      hasDivider={!isMobile}
+      padding={0}
+      xstyle={editorStyles.panelMobileWidth}>
       <XDSVStack gap={4}>
         {/* Panel Header */}
         <XDSSection variant="transparent" padding={4}>
@@ -813,7 +836,7 @@ export default function EditorPage() {
                 }
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsPanelCollapsed(v => !v)}
+                onClick={() => setPanelCollapsedOverride(!isPanelCollapsed)}
                 isIconOnly
               />
             </XDSHStack>
@@ -887,7 +910,8 @@ export default function EditorPage() {
     <XDSLayout
       xstyle={editorStyles.page}
       height="fill"
-      start={sidebar}
+      header={isMobile ? sidebar : undefined}
+      start={isMobile ? undefined : sidebar}
       content={
         <XDSLayoutContent padding={8}>
           <XDSVStack
