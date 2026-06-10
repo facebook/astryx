@@ -8,4 +8,5 @@ export const doc = {
   description: 'Investment portfolio dashboard with KPI metrics, area chart, and top asset holdings',
   isReady: true,
   category: 'Dashboard - Portfolio',
+  isHiddenFromOverview: true,
 };
