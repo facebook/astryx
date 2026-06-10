@@ -95,7 +95,7 @@ const listResult = run(['component', '--list']);
 const componentNames = listResult.stdout
   .split('\n')
   .filter(line => /^\s+[A-Z]/.test(line))
-  .map(line => line.trim());
+  .map(line => line.trim().split(/\s{2,}/)[0]);
 
 console.log(`discovered ${componentNames.length} components`);
 
@@ -109,8 +109,8 @@ if (componentNames.length === 0) {
 // ---------------------------------------------------------------------------
 const categories = listResult.stdout
   .split('\n')
-  .filter(line => /^[A-Z].*:$/.test(line))
-  .map(line => line.replace(/:$/, ''));
+  .filter(line => /^[A-Z].*\(group\)$/.test(line))
+  .map(line => line.replace(/\s*\(group\)$/, ''));
 
 console.log(`discovered ${categories.length} categories: ${categories.join(', ')}`);
 

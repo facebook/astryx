@@ -173,7 +173,7 @@ const listResult = run(['component', '--list']);
 const componentNames = listResult.stdout
   .split('\n')
   .filter(line => /^\s+[A-Z]/.test(line))
-  .map(line => line.trim());
+  .map(line => line.trim().split(/\s{2,}/)[0]);
 
 console.log(`\ndiscovered ${componentNames.length} components`);
 
