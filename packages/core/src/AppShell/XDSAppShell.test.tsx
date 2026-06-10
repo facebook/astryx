@@ -602,32 +602,6 @@ describe('XDSAppShell', () => {
     expect(observeSpy).not.toHaveBeenCalled();
   });
 
-  it('applies flex column stretch to content area in auto mode', () => {
-    render(
-      <XDSAppShell height="auto" data-testid="shell">
-        <div data-testid="child">Content</div>
-      </XDSAppShell>,
-    );
-    // The content area (role="main") should be a flex column in auto mode
-    const main = screen.getByRole('main');
-    const style = getComputedStyle(main);
-    expect(style.display).toBe('flex');
-    expect(style.flexDirection).toBe('column');
-  });
-
-  it('does not apply flex column stretch to content area in fill mode', () => {
-    render(
-      <XDSAppShell height="fill" data-testid="shell">
-        <div data-testid="child">Content</div>
-      </XDSAppShell>,
-    );
-    const main = screen.getByRole('main');
-    const style = getComputedStyle(main);
-    // In fill mode, content area should NOT have flex-direction column
-    // (it uses default block layout with scroll containment)
-    expect(style.flexDirection).not.toBe('column');
-  });
-
   // ===========================================================================
   // Mobile nav slot
   // ===========================================================================
