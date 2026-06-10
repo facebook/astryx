@@ -61,9 +61,80 @@ function requireDisplayName(displayName, where) {
   return displayName;
 }
 
+/**
+ * Parses a single/double/backtick-quoted JS string literal starting at
+ * `openIdx` (the index of the opening quote) and returns the decoded
+ * string value plus the index just past the closing quote.
+ *
+ * Unlike a naive `[^'"`]` character class, this correctly handles:
+ *   - interior quotes of a different type (e.g. `'Swap the default "/"'`)
+ *   - escaped quotes of the same type (e.g. `'won\'t close it'`)
+ *   - standard escape sequences (\n, \t, \uXXXX, \xXX, line continuations)
+ * and has no length cap, so long descriptions survive intact.
+ */
+function parseStringLiteral(content, openIdx) {
+  const quote = content[openIdx];
+  let i = openIdx + 1;
+  let out = '';
+  while (i < content.length) {
+    const ch = content[i];
+    if (ch === '\\') {
+      const next = content[i + 1];
+      switch (next) {
+        case 'n': out += '\n'; i += 2; continue;
+        case 'r': out += '\r'; i += 2; continue;
+        case 't': out += '\t'; i += 2; continue;
+        case 'b': out += '\b'; i += 2; continue;
+        case 'f': out += '\f'; i += 2; continue;
+        case 'v': out += '\v'; i += 2; continue;
+        case '0': out += '\0'; i += 2; continue;
+        case '\n': i += 2; continue; // line continuation
+        case '\r': i += content[i + 2] === '\n' ? 3 : 2; continue;
+        case 'u': {
+          if (content[i + 2] === '{') {
+            const end = content.indexOf('}', i + 3);
+            out += String.fromCodePoint(parseInt(content.slice(i + 3, end), 16));
+            i = end + 1;
+            continue;
+          }
+          out += String.fromCharCode(parseInt(content.slice(i + 2, i + 6), 16));
+          i += 6;
+          continue;
+        }
+        case 'x':
+          out += String.fromCharCode(parseInt(content.slice(i + 2, i + 4), 16));
+          i += 4;
+          continue;
+        default:
+          out += next; // \', \", \`, \\, and any other escaped char
+          i += 2;
+          continue;
+      }
+    }
+    if (ch === quote) {
+      return {value: out, end: i + 1};
+    }
+    out += ch;
+    i++;
+  }
+  return {value: out, end: i};
+}
+
+/**
+ * Extracts a top-level quoted field value (e.g. `description`) from
+ * .doc.mjs source, decoding the string literal so interior quotes and
+ * escapes survive intact. Returns null when the field is absent.
+ */
+function extractQuotedField(content, field) {
+  const re = new RegExp(`(?:^|\\n) {0,4}${field}:\\s*\\n?\\s*['"\`]`);
+  const m = re.exec(content);
+  if (!m) return null;
+  const openIdx = m.index + m[0].length - 1; // index of the opening quote
+  return parseStringLiteral(content, openIdx).value;
+}
+
 /** Extract group/description/hidden from .doc.mjs via regex (no dynamic import) */
 const GROUP_RE = /(?:^|\n) {0,4}group:\s*['"]([^'"]+)['"]/;
-const DESC_RE = /description:\s*\n?\s*['"`]([^'"`]{0,200})['"`]/;
 const HIDDEN_RE = /(?:^|\n) {0,4}hidden:\s*true/;
 const NAME_RE = /(?:^|\n) {0,4}name:\s*['"]([^'"]+)['"]/;
 const DISPLAY_NAME_RE = /(?:^|\n) {0,4}displayName:\s*['"]([^'"]+)['"]/;
@@ -75,7 +146,7 @@ function readDocMeta(docPath) {
   try {
     const content = fs.readFileSync(docPath, 'utf-8');
     const groupMatch = GROUP_RE.exec(content);
-    const descMatch = DESC_RE.exec(content);
+    const description = extractQuotedField(content, 'description');
     const nameMatch = NAME_RE.exec(content);
     const displayNameMatch = DISPLAY_NAME_RE.exec(content);
     const hidden = HIDDEN_RE.test(content);
@@ -87,7 +158,7 @@ function readDocMeta(docPath) {
     const isHiddenFromOverview = IS_HIDDEN_FROM_OVERVIEW_RE.test(content);
     return {
       group: groupMatch?.[1] ?? null,
-      description: descMatch?.[1] ?? '',
+      description: description ?? '',
       name: nameMatch?.[1] ?? null,
       displayName: displayNameMatch?.[1] ?? null,
       hidden,
@@ -1129,7 +1200,7 @@ function generateExampleRegistry() {
 
     // Read name and description from doc meta
     const nameMatch = content.match(/name:\s*['"]([^'"]+)['"]/);
-    const descMatch = content.match(/description:\s*\n?\s*['"`]([^'"`]{0,200})['"`]/);
+    const description = extractQuotedField(content, 'description');
 
     fs.copyFileSync(tsxSrc, path.join(EXAMPLES_OUT, `${basename}.tsx`));
 
@@ -1140,7 +1211,7 @@ function generateExampleRegistry() {
       exampleFor,
       basename,
       name: nameMatch?.[1] || basename,
-      description: descMatch?.[1] || '',
+      description: description || '',
       source,
     });
   }

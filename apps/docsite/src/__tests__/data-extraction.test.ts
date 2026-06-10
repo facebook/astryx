@@ -621,4 +621,40 @@ describe('exampleRegistry', () => {
     expect(exampleCount + showcaseCount).toBeLessThanOrEqual(blockCount);
     expect(exampleCount).toBeGreaterThan(showcaseCount);
   });
+
+  // Regression: the description extractor used to truncate at the first
+  // interior quote (e.g. 'Swap the default "/"...') and drop any
+  // description longer than 200 characters entirely — surfacing as
+  // "No description available." in the docsite. Every authored doc has a
+  // description, so the registry should never carry an empty one.
+  it('every example has a non-empty description', () => {
+    const missing: string[] = [];
+    for (const examples of Object.values(exampleRegistry)) {
+      for (const ex of examples) {
+        if (!ex.description || ex.description.trim().length === 0) {
+          missing.push(ex.name);
+        }
+      }
+    }
+    expect(missing).toEqual([]);
+  });
+
+  // Regression: descriptions containing interior double quotes must be
+  // preserved in full rather than cut off at the first quote.
+  it('preserves descriptions with interior quotes', () => {
+    const breadcrumbs = exampleRegistry['Breadcrumbs'] ?? [];
+    const separators = breadcrumbs.find(e => /Separator/i.test(e.name));
+    expect(separators).toBeDefined();
+    expect(separators!.description).toContain('"/"');
+    // Full sentence survives past the interior quote.
+    expect(separators!.description).toMatch(/separator\.?$/i);
+  });
+
+  // Regression: long descriptions (>200 chars) must not be dropped.
+  it('keeps long descriptions intact', () => {
+    const longest = Object.values(exampleRegistry)
+      .flat()
+      .reduce((max, e) => Math.max(max, e.description.length), 0);
+    expect(longest).toBeGreaterThan(200);
+  });
 });
