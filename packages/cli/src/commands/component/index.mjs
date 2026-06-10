@@ -6,14 +6,10 @@
  * Global options: --detail full|compact|brief, --lang en|zh|dense
  */
 
-import {findCoreDir, discoverExternalPackages} from '../../utils/paths.mjs';
+import {findCoreDir} from '../../utils/paths.mjs';
 import {
-  discoverComponents,
-  discoverExternalComponents,
-  findComponentReadme,
   resolveImportPath,
 } from '../../lib/component-discovery.mjs';
-import {loadDocs} from '../../lib/component-loader.mjs';
 import {
   formatFull,
   formatCompact,
@@ -23,7 +19,9 @@ import {
 } from '../../lib/component-format.mjs';
 import {resolveTheme} from '../../lib/resolve-theme.mjs';
 import {getRunPrefix} from '../../utils/package-manager.mjs';
-import {jsonOut, jsonError, humanLog} from '../../lib/json.mjs';
+import {jsonOut, humanLog} from '../../lib/json.mjs';
+import {cliError} from '../../lib/cli-error.mjs';
+import {ERROR_CODES} from '../../lib/error-codes.mjs';
 import {component as componentApi} from '../../api/component.mjs';
 import {findRelatedBlocks} from '../../api/template.mjs';
 
@@ -43,15 +41,18 @@ export function registerComponent(program) {
       const zh = program.opts().zh || false;
       const dense = program.opts().dense || false;
       const lang = program.opts().lang || null;
-      const detail = program.opts().detail || 'full';
+      const detailSource = program.getOptionValueSource('detail');
+      const isListView = options.list || options.category || !name;
+      // Default detail level is full for single-component view, brief for list views.
+      // (List views are scannable name lists; users can opt into compact/full.)
+      let detail = program.opts().detail || 'full';
+      if (isListView && detailSource === 'default') detail = 'brief';
       const json = program.opts().json || false;
 
       const validDetails = ['full', 'compact', 'brief'];
       if (!validDetails.includes(detail)) {
-        if (json) return jsonError(`Invalid --detail value "${detail}". Valid levels: ${validDetails.join(', ')}`);
-        console.error(`Error: Invalid --detail value "${detail}".`);
-        console.error(`Valid levels: ${validDetails.join(', ')}`);
-        process.exit(1);
+        cliError(`Invalid --detail value "${detail}". Valid levels: ${validDetails.join(', ')}`, {code: ERROR_CODES.ERR_INVALID_DETAIL});
+        return;
       }
 
       let result;
@@ -69,15 +70,8 @@ export function registerComponent(program) {
           lang, zh, dense,
         });
       } catch (e) {
-        if (json) return jsonError(e.message, e.suggestions);
-        console.error(`Error: ${e.message}`);
-        if (e.suggestions?.length) {
-          console.error('');
-          for (const s of e.suggestions) {
-            console.error(`  ${s.name}  (${s.reason})`);
-          }
-        }
-        process.exit(1);
+        cliError(e.message, {suggestions: e.suggestions, code: e.code});
+        return;
       }
 
       if (json) return jsonOut(result.type, result.data);
@@ -88,6 +82,7 @@ export function registerComponent(program) {
 
       switch (result.type) {
         case 'component.list': {
+          // --detail brief (default for list views) — names only.
           if (options.category) {
             const [cat, comps] = Object.entries(result.data)[0];
             humanLog(`\n${cat}:`);
@@ -112,13 +107,28 @@ export function registerComponent(program) {
         }
 
         case 'component.brief': {
-          if (options.category || options.list || !name) {
-            humanLog(await formatBriefAll(coreDir, {zh, lang, themeData}));
-          } else {
-            const resolvedName = (name || '').replace(/^XDS/, '');
-            const importHint = resolveImportPath(coreDir, resolvedName);
-            humanLog(formatBrief(result.data, resolvedName, importHint, {themeData}));
+          // --detail compact — name + 1-line description per entry.
+          humanLog('');
+          const entries = Object.entries(result.data);
+          for (const [cat, items] of entries) {
+            // Skip the synthetic group header when there's only one ungrouped category
+            const isUngrouped =
+              entries.length === 1 && items.length === 1 && items[0]?.name === cat;
+            if (!isUngrouped) humanLog(cat);
+            for (const item of items) {
+              const desc = item.description ? ` — ${item.description}` : '';
+              humanLog(`  XDS${item.name}${desc}`);
+            }
+            humanLog('');
           }
+          humanLog(`Usage: ${run} xds component <name>`);
+          humanLog('');
+          break;
+        }
+
+        case 'component.full': {
+          // --detail full — dense per-component docs (signature, props, theming, examples).
+          humanLog(await formatBriefAll(coreDir, {zh, lang, themeData}));
           break;
         }
 
@@ -132,7 +142,9 @@ export function registerComponent(program) {
             const importHint = resolveImportPath(coreDir, resolvedName);
             humanLog(formatCompact(result.data, resolvedName, importHint));
           } else {
-            humanLog(formatFull(result.data, {themeData}));
+            const resolvedName = (name || '').replace(/^XDS/, '');
+            const importHint = resolveImportPath(coreDir, resolvedName);
+            humanLog(formatFull(result.data, {themeData, importHint}));
           }
           const compName = (name || '').replace(/^XDS/, '');
           const related = await findRelatedBlocks(compName);

@@ -37,13 +37,26 @@ body:has([data-home-page]) #xds-app-shell-main {
   padding-top: 0;
 }
 
-/* Translucent top nav — frosted glass effect */
-.xds-layout-header,
-:has(> .xds-layout-header) {
+/* Translucent top nav — frosted glass effect.
+
+   The :where(:not(.xds-app-shell .xds-app-shell *)) guard scopes every frost
+   rule to the OUTERMOST AppShell only: any nav inside a *nested* AppShell
+   (component examples, templates) matches `.xds-app-shell .xds-app-shell *`
+   — it has two AppShell ancestors — and is therefore excluded, so it keeps
+   its own solid navAreaStyle background and stays seamless with its sidenav.
+
+   The guard lives inside :where() so it adds ZERO specificity. The frost
+   subject stays at (0,1,0) — identical to a bare `.xds-top-nav` — so the
+   home-page, nav-mode, and theme-preview overrides below keep winning exactly
+   as they did before. (Putting the :not() on the outer shell instead, as in
+   `.xds-app-shell:not(...) > .xds-layout .xds-top-nav`, does NOT work: the
+   nested nav is still an unrestricted descendant of the outer layout.) */
+.xds-layout-header:where(:not(.xds-app-shell .xds-app-shell *)),
+:has(> .xds-layout-header):where(:not(.xds-app-shell .xds-app-shell *)) {
   background: transparent !important;
 }
 
-.xds-top-nav {
+.xds-top-nav:where(:not(.xds-app-shell .xds-app-shell *)) {
   background: color-mix(in srgb, var(--color-background-surface) 80%, transparent);
   backdrop-filter: blur(12px);
   transition: background 300ms ease;
@@ -53,13 +66,13 @@ body:has([data-home-page]) #xds-app-shell-main {
    Use the solid body color (not a color-mix) so it matches perfectly even
    without anything scrolled behind it. The backdrop-filter blur from the
    .xds-top-nav rule above is preserved. */
-body:has([data-home-page]) .xds-top-nav {
+body:has([data-home-page]) .xds-top-nav:where(:not(.xds-app-shell .xds-app-shell *)) {
   background: var(--color-background-body);
 }
 
 /* When the home page IntersectionObserver detects the theming showcase has
    reached the top, switch the nav back to a surface-tinted frosted bar. */
-body[data-nav-mode='surface'] .xds-top-nav {
+body[data-nav-mode='surface'] .xds-top-nav:where(:not(.xds-app-shell .xds-app-shell *)) {
   background: color-mix(in srgb, var(--color-background-surface) 80%, transparent);
 }
 

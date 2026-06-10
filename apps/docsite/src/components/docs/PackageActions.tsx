@@ -43,39 +43,35 @@ export function PackageActions({
   ];
 
   return (
-    <XDSVStack gap={2}>
-      {version && (
-        <XDSText type="supporting" color="secondary">
-          v{version}
-        </XDSText>
+    <XDSHStack gap={2}>
+      <XDSPopover
+        width={360}
+        content={
+          <XDSVStack gap={3}>
+            {steps.map((step, i) => (
+              <XDSVStack key={i} gap={1}>
+                <XDSText type="body" weight="bold">
+                  {i + 1}. {step.label}
+                </XDSText>
+                <XDSCard padding={0}>
+                  <XDSCodeBlock
+                    code={step.code}
+                    language={step.language ?? 'bash'}
+                    hasCopyButton
+                  />
+                </XDSCard>
+              </XDSVStack>
+            ))}
+          </XDSVStack>
+        }>
+        <XDSButton
+          label={version ? `Install v${version}` : 'Install'}
+          variant="primary"
+        />
+      </XDSPopover>
+      {cta && (
+        <XDSButton label={cta.label} href={cta.href} variant="secondary" />
       )}
-      <XDSHStack gap={2}>
-        <XDSPopover
-          width={360}
-          content={
-            <XDSVStack gap={3}>
-              {steps.map((step, i) => (
-                <XDSVStack key={i} gap={1}>
-                  <XDSText type="body" weight="bold">
-                    {i + 1}. {step.label}
-                  </XDSText>
-                  <XDSCard padding={0}>
-                    <XDSCodeBlock
-                      code={step.code}
-                      language={step.language ?? 'bash'}
-                      hasCopyButton
-                    />
-                  </XDSCard>
-                </XDSVStack>
-              ))}
-            </XDSVStack>
-          }>
-          <XDSButton label="Install" variant="primary" />
-        </XDSPopover>
-        {cta && (
-          <XDSButton label={cta.label} href={cta.href} variant="secondary" />
-        )}
-      </XDSHStack>
-    </XDSVStack>
+    </XDSHStack>
   );
 }

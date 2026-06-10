@@ -36,7 +36,13 @@ export default tseslint.config(
       "**/internal/eslint-plugin-xds/**",
       ".github/scripts/**",
       "scripts/**",
+      // .mjs is ignored everywhere EXCEPT the CLI package, whose runtime is
+      // entirely .mjs. The negations below opt packages/cli back into linting
+      // (see the dedicated CLI block lower down). Scoped to packages/cli on
+      // purpose — other packages' .mjs stay unlinted (#2468).
       "**/*.mjs",
+      "!packages/cli/src/**/*.mjs",
+      "!packages/cli/bin/**/*.mjs",
       "**/*.test-violations.tsx",
       "apps/example-nextjs/*.js",
       "**/next-env.d.ts",
@@ -273,6 +279,74 @@ export default tseslint.config(
     ],
     rules: {
       "no-console": "off",
+    },
+  },
+  // CLI runtime (.mjs). The CLI ships as ESM Node modules and was never linted
+  // (the global **/*.mjs ignore swallowed it; see #2468). This block gives the
+  // .mjs sources a Node language environment and enforces the JSON-stdout
+  // contract (#2467) at author time via @xds/no-raw-console-cli.
+  {
+    files: ["packages/cli/src/**/*.mjs", "packages/cli/bin/**/*.mjs"],
+    plugins: {
+      '@xds': xdsPlugin,
+    },
+    languageOptions: {
+      sourceType: "module",
+      globals: {
+        // Node globals (no `globals` package dependency in this repo).
+        process: "readonly",
+        console: "readonly",
+        Buffer: "readonly",
+        URL: "readonly",
+        URLSearchParams: "readonly",
+        TextEncoder: "readonly",
+        TextDecoder: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
+        setImmediate: "readonly",
+        clearImmediate: "readonly",
+        queueMicrotask: "readonly",
+        __dirname: "readonly",
+        __filename: "readonly",
+        global: "readonly",
+        globalThis: "readonly",
+        structuredClone: "readonly",
+        fetch: "readonly",
+        AbortController: "readonly",
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-unused-vars": ["error", {
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+        destructuredArrayIgnorePattern: "^_",
+        caughtErrorsIgnorePattern: "^_",
+      }],
+      // Bare console.log corrupts --json stdout. Route human chatter through
+      // humanLog(); console.error/console.warn (stderr) stay allowed.
+      "@xds/no-raw-console-cli": "error",
+    },
+  },
+  // Copyright header for CLI .mjs sources (the main copyright block only
+  // covers .ts/.tsx).
+  {
+    files: ["packages/cli/src/**/*.mjs", "packages/cli/bin/**/*.mjs"],
+    plugins: {
+      '@xds': xdsPlugin,
+    },
+    rules: {
+      '@xds/copyright-header': 'error',
+    },
+  },
+  // CLI tests — relax author-ergonomics rules (test files emit freely and may
+  // keep intentionally-unused fixtures). Must come after the CLI block above.
+  {
+    files: ["packages/cli/**/*.test.mjs"],
+    rules: {
+      "@xds/no-raw-console-cli": "off",
+      "@typescript-eslint/no-unused-vars": "off",
     },
   },
 );

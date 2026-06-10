@@ -5,6 +5,7 @@
 export const docs = {
   name: 'NavIcon',
   displayName: 'Nav Icon',
+  group: 'Navigation',
   category: 'Navigation',
   isHiddenFromOverview: true,
   hidden: false,

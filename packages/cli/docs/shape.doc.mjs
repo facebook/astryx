@@ -38,7 +38,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'When a rounded container has padding, inner elements need a smaller radius to appear concentric. XDS components like Card handle this automatically — the inner radius is computed as max(0, outerRadius - padding).',
+          text: 'When a rounded container has padding, inner elements need a smaller radius to appear concentric. Components like Card handle this automatically — the inner radius is computed as max(0, outerRadius - padding).',
         },
         {
           type: 'code',

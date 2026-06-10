@@ -103,6 +103,8 @@ export function XDSChatDictationButton({
   isHiddenWhenUnsupported = true,
   label,
   xstyle,
+  className,
+  style,
 }: XDSChatDictationButtonProps) {
   if (isHiddenWhenUnsupported && !dictation.isSupported) {
     return null;
@@ -126,7 +128,9 @@ export function XDSChatDictationButton({
   const {barWidth, barGap, barMaxHeight} = SIZE_CONFIG[size];
 
   return (
-    <span ref={ref} {...stylex.props(styles.wrapper, xstyle)}>
+    <span
+      ref={ref}
+      {...mergeProps(stylex.props(styles.wrapper, xstyle), className, style)}>
       {isListening && (
         <span
           aria-hidden

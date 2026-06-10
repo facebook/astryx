@@ -213,4 +213,15 @@ describe('--json contract: supported commands emit valid envelopes', () => {
     const parsed = parseJson(stdout);
     expect(parsed.type).toMatch(/^docs\./);
   });
+
+  it('xds doctor --json emits a doctor envelope with checks + summary', () => {
+    // Run in a bare tmp dir → @xds/core won't resolve → a FAIL → exit 1.
+    const {status, stdout} = runCli(['doctor', '--json'], {cwd: tmpDir});
+    expect(status).toBe(1);
+    const parsed = parseJson(stdout);
+    expect(parsed.type).toBe('doctor');
+    expect(Array.isArray(parsed.data.checks)).toBe(true);
+    expect(parsed.data.summary).toHaveProperty('fail');
+    expect(parsed.data.summary.fail).toBeGreaterThan(0);
+  });
 });

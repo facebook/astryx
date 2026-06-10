@@ -6,7 +6,6 @@
 
 import {discoverComponents, findComponentReadme, resolveImportPath} from './component-discovery.mjs';
 import {loadDocs} from './component-loader.mjs';
-import * as fs from 'node:fs';
 
 /** Derive the theme component key from a theming target (strips 'xds-' prefix). */
 function targetKey(target) {
@@ -103,6 +102,7 @@ function formatTargetsTable(docs, themeData) {
  * @param {object} docs - Component doc object
  * @param {object} [options] - Options
  * @param {object|null} [options.themeData] - Resolved theme data
+ * @param {string|null} [options.importHint] - Import path hint (e.g. '@xds/core/Button')
  */
 export function formatFull(docs, options = {}) {
   const sections = [];
@@ -110,6 +110,11 @@ export function formatFull(docs, options = {}) {
   sections.push(`# ${docs.name}\n`);
   const desc = docs.usage?.description || docs.description || '';
   sections.push(desc + '\n');
+
+  if (options.importHint) {
+    const displayName = docs.components?.[0]?.name || `XDS${docs.name}`;
+    sections.push(`**Import:** \`import {${displayName}} from '${options.importHint}';\`\n`);
+  }
 
   if (docs.usage?.anatomy?.length) {
     sections.push('## Anatomy\n');
@@ -216,9 +221,7 @@ export function formatFull(docs, options = {}) {
 
     // Component CSS vars — split into public (directly settable) and private (set via derived)
     if (docs.theming?.vars?.length) {
-      // Private vars (--_*) are internal — set via standard CSS properties through derived expansion
       const publicVars = docs.theming.vars.filter(v => !v.private && !v.derived);
-      const privateVars = docs.theming.vars.filter(v => v.private || v.derived);
 
       if (publicVars.length > 0) {
         sections.push('**Themeable CSS variables** — additional properties that can be overridden in `defineTheme` component overrides.\n');

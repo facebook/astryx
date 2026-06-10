@@ -21,6 +21,8 @@ import {
 } from '../utils/github.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
+import {cliError} from '../lib/cli-error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 /**
  * Decide whether we're in a context safe to actually file a report.
@@ -121,7 +123,7 @@ export default {
 export function registerGapReport(program) {
   const gapCmd = program
     .command('gap-report')
-    .description('Report a gap in the XDS design system');
+    .description('Report a gap in the design system');
 
   // --- setup subcommand ---
   gapCmd
@@ -252,7 +254,7 @@ export function registerGapReport(program) {
 
       const config = loadGapReportConfig();
       if (!config.enabled) {
-        if (json) return jsonError('Gap reporting is disabled');
+        if (json) return jsonError('Gap reporting is disabled', undefined, ERROR_CODES.ERR_GAP_REPORT_FAILED);
         humanLog(
           `Gap reporting is disabled (XDS_GAP_REPORT=off or xds.config.mjs).\n` +
             `Run \`${getRunPrefix()} xds gap-report setup\` to configure.`,
@@ -270,12 +272,11 @@ export function registerGapReport(program) {
 
       if (willFile && !config.command && !checkGhCli()) {
         const msg =
-          'GitHub CLI (gh) is not installed or not authenticated.\n' +
-          'Install it from https://cli.github.com and run `gh auth login`.\n\n' +
+          'GitHub CLI (gh) is not installed or not authenticated. ' +
+          'Install it from https://cli.github.com and run `gh auth login`. ' +
           `Or run \`${getRunPrefix()} xds gap-report setup\` to configure a custom command.`;
-        if (json) return jsonError(msg);
-        console.error(`Error: ${msg}`);
-        process.exit(1);
+        cliError(msg, {code: ERROR_CODES.ERR_GH_CLI});
+        return;
       }
 
       const isNonInteractive =
@@ -287,15 +288,11 @@ export function registerGapReport(program) {
           c => c.value === options.category,
         );
         if (!validCategory) {
-          if (json)
-            return jsonError(
-              `Invalid category "${options.category}". Valid: ${GAP_CATEGORIES.map(c => c.value).join(', ')}`,
-            );
-          console.error(
-            `Error: Invalid category "${options.category}".\n` +
-              `Valid categories: ${GAP_CATEGORIES.map(c => c.value).join(', ')}`,
+          cliError(
+            `Invalid category "${options.category}". Valid: ${GAP_CATEGORIES.map(c => c.value).join(', ')}`,
+            {code: ERROR_CODES.ERR_UNKNOWN_CATEGORY},
           );
-          process.exit(1);
+          return;
         }
 
         const preview = buildGapReportPreview({
@@ -346,9 +343,8 @@ export function registerGapReport(program) {
             humanLog('\nGap reporting is disabled via configuration.\n');
           }
         } catch (err) {
-          if (json) return jsonError(err.message);
-          console.error(`Error filing gap report: ${err.message}`);
-          process.exit(1);
+          cliError(`Filing gap report failed: ${err.message}`, {code: ERROR_CODES.ERR_GAP_REPORT_FAILED});
+          return;
         }
         return;
       }
@@ -359,11 +355,13 @@ export function registerGapReport(program) {
         return jsonError(
           'gap-report --json requires --component, --category, and --reason. ' +
             'Run with --list-categories to see valid categories.',
+          undefined,
+          ERROR_CODES.ERR_INVALID_ARGUMENT,
         );
       }
 
       // Interactive mode
-      p.intro('Report an XDS gap');
+      p.intro('Report a gap');
 
       const component = isCancel(
         await p.text({

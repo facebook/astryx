@@ -38,6 +38,48 @@ describe('XDSLink', () => {
     expect(screen.getByRole('link')).toHaveAttribute('href', '/destination');
   });
 
+  it('renders as a button when href is undefined', () => {
+    render(<XDSLink>Action</XDSLink>);
+    expect(screen.getByRole('button', {name: 'Action'})).toBeInTheDocument();
+  });
+
+  it('renders as a button when href is explicitly undefined', () => {
+    render(<XDSLink href={undefined}>Action</XDSLink>);
+    expect(screen.getByRole('button', {name: 'Action'})).toBeInTheDocument();
+  });
+
+  it('button fallback fires onClick', async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(<XDSLink onClick={handleClick}>Click me</XDSLink>);
+
+    await user.click(screen.getByRole('button'));
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('button fallback supports isDisabled', () => {
+    render(<XDSLink isDisabled>Disabled Action</XDSLink>);
+    const button = screen.getByRole('button');
+    expect(button).toBeDisabled();
+  });
+
+  it('button fallback has type="button"', () => {
+    render(<XDSLink>Action</XDSLink>);
+    expect(screen.getByRole('button')).toHaveAttribute('type', 'button');
+  });
+
+  it('button fallback supports aria-label via label prop', () => {
+    render(
+      <XDSLink label="Close dialog">
+        <span aria-hidden="true">✕</span>
+      </XDSLink>,
+    );
+    expect(screen.getByRole('button')).toHaveAttribute(
+      'aria-label',
+      'Close dialog',
+    );
+  });
+
   it('does not render aria-label when label is omitted', () => {
     render(<XDSLink href="/test">Visible text</XDSLink>);
     expect(screen.getByRole('link')).not.toHaveAttribute('aria-label');

@@ -2,8 +2,7 @@
 
 'use client';
 
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSVStack, XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
@@ -44,7 +43,7 @@ const PRODUCTS: Product[] = [
     price: 75.0,
     // illustrative-horizontal-1 from xds_oss asset set
     image:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg',
+      '/template-assets/illustrative-horizontal-1.jpg',
   },
   {
     id: 2,
@@ -54,7 +53,7 @@ const PRODUCTS: Product[] = [
     price: 80.0,
     // illustrative-vertical-1 from xds_oss asset set
     image:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-vertical-1.jpg',
+      '/template-assets/illustrative-vertical-1.jpg',
   },
   {
     id: 3,
@@ -64,7 +63,7 @@ const PRODUCTS: Product[] = [
     price: 75.0,
     // illustrative-horizontal-3 from xds_oss asset set
     image:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-3.jpg',
+      '/template-assets/illustrative-horizontal-3.jpg',
   },
   {
     id: 4,
@@ -74,7 +73,7 @@ const PRODUCTS: Product[] = [
     price: 75.0,
     // illustrative-horizontal-4 from xds_oss asset set
     image:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-4.jpg',
+      '/template-assets/illustrative-horizontal-4.jpg',
   },
   {
     id: 5,
@@ -84,7 +83,7 @@ const PRODUCTS: Product[] = [
     price: 60.0,
     // illustrative-horizontal-5 from xds_oss asset set
     image:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-5.jpg',
+      '/template-assets/illustrative-horizontal-5.jpg',
   },
   {
     id: 6,
@@ -94,7 +93,7 @@ const PRODUCTS: Product[] = [
     price: 80.0,
     // illustrative-horizontal-2 from xds_oss asset set
     image:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-2.jpg',
+      '/template-assets/illustrative-horizontal-2.jpg',
   },
 ];
 
@@ -130,40 +129,47 @@ function ProductCard({product}: {product: Product}) {
 
 export default function ProductGalleryTemplate() {
   return (
-    <XDSAppShell height="auto" contentPadding={0} variant="surface">
-      <XDSCenter axis="horizontal">
-        <XDSSection variant="transparent" maxWidth={1200} padding={6}>
-          <XDSVStack gap={6}>
-            {/* Header — XDSGrid handles responsive stacking */}
-            <XDSGrid columns={{minWidth: 280}} gap={4} align="start">
-              <XDSHeading level={1}>
-                Make every day a little more delightful, one small detail at a
-                time.
-              </XDSHeading>
-              <XDSVStack gap={3} hAlign="start">
-                <XDSText type="body">
-                  We believe the smallest details are the ones that matter most.
-                  A little color, a thoughtful touch, a moment that catches your
-                  eye and makes you pause; that&apos;s what turns an ordinary
-                  day into something worth remembering.
-                </XDSText>
-                <XDSButton
-                  label="Get started"
-                  variant="primary"
-                  endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
-                />
-              </XDSVStack>
-            </XDSGrid>
+    <XDSLayout
+      height="auto"
+      content={
+        <XDSLayoutContent padding={0}>
+          <XDSCenter axis="horizontal">
+            <XDSSection variant="transparent" maxWidth={1200} padding={6}>
+              <XDSVStack gap={6}>
+                {/* Header — XDSGrid handles responsive stacking */}
+                <XDSGrid columns={{minWidth: 280}} gap={4} align="start">
+                  <XDSHeading level={1}>
+                    Make every day a little more delightful, one small detail at
+                    a time.
+                  </XDSHeading>
+                  <XDSVStack gap={3} hAlign="start">
+                    <XDSText type="body">
+                      We believe the smallest details are the ones that matter
+                      most. A little color, a thoughtful touch, a moment that
+                      catches your eye and makes you pause; that&apos;s what
+                      turns an ordinary day into something worth remembering.
+                    </XDSText>
+                    <XDSButton
+                      label="Get started"
+                      variant="primary"
+                      endContent={
+                        <XDSIcon icon={ArrowRightIcon} color="inherit" />
+                      }
+                    />
+                  </XDSVStack>
+                </XDSGrid>
 
-            {/* Product Grid — 3 cols desktop, wraps to 2→1 on smaller screens */}
-            <XDSGrid columns={{minWidth: 300}} gap={6}>
-              {PRODUCTS.map(product => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </XDSGrid>
-          </XDSVStack>
-        </XDSSection>
-      </XDSCenter>
-    </XDSAppShell>
+                {/* Product Grid — 3 cols desktop, wraps to 2→1 on smaller screens */}
+                <XDSGrid columns={{minWidth: 300}} gap={6}>
+                  {PRODUCTS.map(product => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </XDSGrid>
+              </XDSVStack>
+            </XDSSection>
+          </XDSCenter>
+        </XDSLayoutContent>
+      }
+    />
   );
 }

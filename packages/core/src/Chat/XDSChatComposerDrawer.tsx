@@ -88,16 +88,15 @@ const styles = stylex.create({
     paddingBlockStart: spacingVars['--spacing-3'],
     paddingBlockEnd: `calc(${spacingVars['--spacing-3']} + ${radiusVars['--radius-page']})`,
     marginBlockEnd: `calc(-1 * ${radiusVars['--radius-page']})`,
+    // Surface base with a muted tint layered on top, both in the element's
+    // own background layer. The muted backgroundImage composites over the
+    // surface backgroundColor and — by CSS rule — paints behind all in-flow
+    // content (tokens, labels, collapse handle) automatically. This restores
+    // the original "surface bg + muted tint" intent (#1182) without a
+    // positioned ::before, so it needs no z-index and works whether muted is
+    // opaque or translucent.
     backgroundColor: colorVars['--color-background-surface'],
-    '::before': {
-      content: '""',
-      position: 'absolute',
-      inset: 0,
-      borderTopLeftRadius: 'inherit',
-      borderTopRightRadius: 'inherit',
-      backgroundColor: colorVars['--color-background-muted'],
-      pointerEvents: 'none',
-    },
+    backgroundImage: `linear-gradient(${colorVars['--color-background-muted']}, ${colorVars['--color-background-muted']})`,
     borderTopLeftRadius: radiusVars['--radius-page'],
     borderTopRightRadius: radiusVars['--radius-page'],
   },

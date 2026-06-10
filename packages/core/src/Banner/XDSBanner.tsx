@@ -37,6 +37,8 @@ import {
   fontWeightVars,
   typeScaleVars,
   borderVars,
+  durationVars,
+  easeVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
@@ -285,7 +287,9 @@ const styles = stylex.create({
   },
   chevron: {
     display: 'inline-flex',
-    transition: 'transform 150ms ease',
+    transitionProperty: 'transform',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
   chevronExpanded: {
     transform: 'rotate(180deg)',

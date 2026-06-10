@@ -17,7 +17,9 @@ import * as p from '@clack/prompts';
 import {findCoreDir, listComponents} from '../utils/paths.mjs';
 import {assertWithin, PathSafetyError, isNonInteractive} from '../utils/path-safety.mjs';
 import {isInteractive} from '../utils/interactive.mjs';
-import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
+import {jsonOut, humanLog} from '../lib/json.mjs';
+import {cliError} from '../lib/cli-error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {
   buildGapReportPreview,
   checkGhCli,
@@ -85,12 +87,11 @@ export function registerSwizzle(program) {
       const json = program.opts().json || false;
 
       if (!coreDir) {
-        if (json) return jsonError('Could not find @xds/core package');
-        console.error(
-          'Error: Could not find @xds/core package.\n' +
-            'Make sure you are inside the XDS monorepo or have @xds/core installed.',
+        cliError(
+          'Could not find @xds/core package. Make sure you are inside the design system monorepo or have @xds/core installed.',
+          {code: ERROR_CODES.ERR_CORE_NOT_FOUND},
         );
-        process.exit(1);
+        return;
       }
 
       const components = listComponents(coreDir);
@@ -111,10 +112,11 @@ export function registerSwizzle(program) {
       const componentDir = path.join(coreDir, 'src', dirName);
 
       if (!fs.existsSync(componentDir)) {
-        if (json) return jsonError(`Component "${component}" not found`, components.slice(0, 5).map(n => ({name: n, reason: 'available component'})));
-        console.error(`Error: Component "${component}" not found.`);
-        console.error(`Available: ${components.join(', ')}`);
-        process.exit(1);
+        cliError(
+          `Component "${component}" not found.`,
+          {suggestions: components.slice(0, 10).map((n) => ({name: n})), code: ERROR_CODES.ERR_UNKNOWN_COMPONENT},
+        );
+        return;
       }
 
       // Path-safety: --output must resolve inside cwd. Reject absolute
@@ -126,9 +128,8 @@ export function registerSwizzle(program) {
         });
       } catch (err) {
         if (err instanceof PathSafetyError) {
-          if (json) return jsonError(err.message);
-          console.error(`Error: ${err.message}`);
-          process.exit(1);
+          cliError(err.message, {code: ERROR_CODES.ERR_PATH_TRAVERSAL});
+          return;
         }
         throw err;
       }
@@ -152,9 +153,8 @@ export function registerSwizzle(program) {
           const msg =
             `Refusing to overwrite ${existingFiles.length} existing file(s) in ${relOutputForMsg}/. ` +
             `Re-run with --overwrite (or -f) to replace them.`;
-          if (json) return jsonError(msg);
-          console.error(`Error: ${msg}`);
-          process.exit(1);
+          cliError(msg, {code: ERROR_CODES.ERR_FILE_EXISTS});
+          return;
         }
         const confirmed = isCancel(
           await p.confirm({

@@ -22,6 +22,8 @@ import {getRunPrefix} from '../utils/package-manager.mjs';
 import {installAgentDocs, removeAgentDocs} from './agent-docs.mjs';
 import {listTemplates} from './template.mjs';
 import {humanLog} from '../lib/json.mjs';
+import {cliError} from '../lib/cli-error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {requireInteractive} from '../utils/interactive.mjs';
 
 const VALID_FEATURES = ['agents', 'theme', 'template'];
@@ -103,7 +105,7 @@ async function runTemplate(targetDir, {interactive = true, templateName} = {}) {
     }
 
     if (!templates.includes(templateName)) {
-      console.error(`Error: Unknown template "${templateName}". Available: ${templates.join(', ')}`);
+      cliError(`Unknown template "${templateName}". Available: ${templates.join(', ')}`, {code: ERROR_CODES.ERR_UNKNOWN_TEMPLATE});
       return;
     }
 
@@ -153,7 +155,7 @@ async function runTemplate(targetDir, {interactive = true, templateName} = {}) {
 export function registerInit(program) {
   program
     .command('init')
-    .description('Initialize XDS in your project')
+    .description('Initialize the design system in your project')
     .option('--features <list>', 'Comma-separated features to install (agents, theme, template)')
     .option('--all', 'Install all features, no prompts')
     .option('--remove-agents', 'Remove AI agent docs from all agent doc files')
@@ -177,9 +179,8 @@ export function registerInit(program) {
 
         const invalid = features.filter(f => !VALID_FEATURES.includes(f));
         if (invalid.length > 0) {
-          console.error(`Error: Unknown features: ${invalid.join(', ')}`);
-          console.error(`Valid features: ${VALID_FEATURES.join(', ')}`);
-          process.exit(1);
+          cliError(`Unknown features: ${invalid.join(', ')}. Valid features: ${VALID_FEATURES.join(', ')}`, {code: ERROR_CODES.ERR_UNKNOWN_FEATURE});
+          return;
         }
 
         for (const feature of features) {
@@ -204,17 +205,17 @@ export function registerInit(program) {
         hint: `\`${run} xds init --all\` or \`--features agents,theme,template\``,
       });
 
-      p.intro('Welcome to XDS');
+      p.intro('Welcome to the design system');
 
       p.note(
-        'XDS is a design system for building internal tools\nwith 300+ React components.',
+        'A design system for building internal tools\nwith 300+ React components.',
         'About',
       );
 
       // Feature: agents
       const shouldInstallAgents = isCancel(
         await p.confirm({
-          message: 'Install AI agent support? (adds XDS cheat sheet to AGENTS.md)',
+          message: 'Install AI agent support? (adds a design system cheat sheet to AGENTS.md)',
           initialValue: true,
         }),
       );
@@ -239,7 +240,7 @@ export function registerInit(program) {
       await runTheme();
 
       // Outro
-      p.outro('XDS initialized!');
+      p.outro('Design system initialized!');
 
       humanLog('');
       humanLog('  Next steps:');

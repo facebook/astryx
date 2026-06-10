@@ -12,6 +12,7 @@ import {discoverHooks, findHookDoc, getAllHookNames} from '../lib/hook-discovery
 import {loadDocs} from '../lib/component-loader.mjs';
 import {levenshteinDistance} from '../lib/string-utils.mjs';
 import {XDSError} from './error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 /**
  * @param {string} [name]
@@ -20,7 +21,7 @@ import {XDSError} from './error.mjs';
  * @param {boolean} [options.list]
  * @param {string} [options.category]
  * @param {boolean} [options.params]
- * @param {'full'|'compact'|'brief'} [options.detail]
+ * @param {'full'|'compact'|'brief'} [options.detail] - Defaults to 'full' for a single hook, 'brief' for list views (list/category/no name), matching the CLI.
  * @param {string} [options.lang]
  * @param {boolean} [options.zh]
  * @returns {Promise<{type: string, data: unknown}>}
@@ -31,14 +32,21 @@ export async function hook(name, options = {}) {
     list = false,
     category,
     params = false,
-    detail = 'full',
+    detail: detailOption,
     lang = null,
     zh = false,
   } = options;
 
+  // Default detail level mirrors the CLI (see commands/hook/index.mjs):
+  // single-hook views default to 'full', list-style views (--list,
+  // --category, or no name) default to 'brief' (scannable name lists).
+  // Keeping this in sync with the CLI is what the API↔CLI parity test checks.
+  const isListView = list || category != null || !name;
+  const detail = detailOption ?? (isListView ? 'brief' : 'full');
+
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
-    throw new XDSError('Could not find @xds/core package');
+    throw new XDSError('Could not find @xds/core package', undefined, ERROR_CODES.ERR_CORE_NOT_FOUND);
   }
 
   // ── List mode ──────────────────────────────────────────────────
@@ -54,10 +62,11 @@ export async function hook(name, options = {}) {
         throw new XDSError(
           `Unknown category "${category}"`,
           Object.keys(hooks).map(k => ({name: k, reason: 'valid category'})),
+          ERROR_CODES.ERR_UNKNOWN_CATEGORY,
         );
       }
 
-      if (detail === 'brief') {
+      if (detail === 'compact') {
         const entries = [];
         for (const hookName of match[1]) {
           const docPath = findHookDoc(coreDir, hookName);
@@ -79,11 +88,29 @@ export async function hook(name, options = {}) {
         return {type: 'hook.brief', data: {[match[0]]: entries}};
       }
 
+      if (detail === 'full') {
+        const entries = [];
+        for (const hookName of match[1]) {
+          const docPath = findHookDoc(coreDir, hookName);
+          if (docPath) {
+            try {
+              entries.push(await loadDocs(docPath, {zh, lang}));
+            } catch {
+              entries.push({name: hookName});
+            }
+          } else {
+            entries.push({name: hookName});
+          }
+        }
+        return {type: 'hook.full', data: {[match[0]]: entries}};
+      }
+
+      // Default: brief — names only
       return {type: 'hook.list', data: {[match[0]]: match[1]}};
     }
 
     // All hooks
-    if (detail === 'brief') {
+    if (detail === 'compact') {
       /** @type {Record<string, Array<{name: string, description: string, import: string}>>} */
       const result = {};
       for (const [cat, hookNames] of Object.entries(hooks)) {
@@ -109,6 +136,28 @@ export async function hook(name, options = {}) {
       return {type: 'hook.brief', data: result};
     }
 
+    if (detail === 'full') {
+      /** @type {Record<string, Array<unknown>>} */
+      const result = {};
+      for (const [cat, hookNames] of Object.entries(hooks)) {
+        result[cat] = [];
+        for (const hookName of hookNames) {
+          const docPath = findHookDoc(coreDir, hookName);
+          if (docPath) {
+            try {
+              result[cat].push(await loadDocs(docPath, {zh, lang}));
+            } catch {
+              result[cat].push({name: hookName});
+            }
+          } else {
+            result[cat].push({name: hookName});
+          }
+        }
+      }
+      return {type: 'hook.full', data: result};
+    }
+
+    // Default: brief — names only
     return {type: 'hook.list', data: hooks};
   }
 
@@ -133,6 +182,7 @@ export async function hook(name, options = {}) {
     throw new XDSError(
       `No hook named "${name}"`,
       suggestions,
+      ERROR_CODES.ERR_UNKNOWN_HOOK,
     );
   }
 

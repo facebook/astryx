@@ -23,8 +23,9 @@ import {findCoreDir, CLI_ROOT} from '../utils/paths.mjs';
 import {assertWithin, PathSafetyError} from '../utils/path-safety.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {discoverComponents} from '../lib/component-discovery.mjs';
-import {discoverHooks} from '../lib/hook-discovery.mjs';
 import {humanLog} from '../lib/json.mjs';
+import {cliError} from '../lib/cli-error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 const AGENTS_MD = 'AGENTS.md';
 const CLAUDE_MD = 'CLAUDE.md';
@@ -96,7 +97,7 @@ export function resolveAgentPaths(targetDir, agent) {
  * Templates are positioned first in the workflow to teach agents the
  * "look at reference code" reflex before writing any UI.
  */
-export function generateCompressedIndex(version, {coreDir, zh = false, lang, runPrefix = getRunPrefix()} = {}) {
+export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPrefix()} = {}) {
   const run = `${runPrefix} xds`;
   const lines = [XDS_MARKER_START];
 
@@ -108,7 +109,9 @@ export function generateCompressedIndex(version, {coreDir, zh = false, lang, run
       let total = 0;
       for (const list of Object.values(comps)) total += list.length;
       if (total > 0) componentCount = String(total);
-    } catch {}
+    } catch {
+      // Best-effort: component count is cosmetic; fall back to the default.
+    }
   }
 
   // Header
@@ -126,9 +129,9 @@ export function generateCompressedIndex(version, {coreDir, zh = false, lang, run
   lines.push('');
 
   // Rules — inline, compact, prevents the top error categories
-  lines.push('No <div> anywhere — not for layout, not for wrappers, not for spacing. Use XDS components.');
+  lines.push('No <div> anywhere — not for layout, not for wrappers, not for spacing. Use components.');
   lines.push('Full-page shells → XDSAppShell (not XDSLayout). Sidebar nav → XDSSideNav (not XDSList).');
-  lines.push('No style={{}} — use the xstyle prop on XDS components for custom styling.');
+  lines.push('No style={{}} — use the xstyle prop on components for custom styling.');
   lines.push('If a component prop does what you need, use it — never replicate with CSS/stylex.');
   lines.push(`No magic values — run \`${run} docs tokens\` for spacing/color/radius.`);
   lines.push(`To change accent/brand colors: \`${run} theme\` — never override --xds-color-* in :root.`);
@@ -150,7 +153,9 @@ export function generateCompressedIndex(version, {coreDir, zh = false, lang, run
         const fileContent = fs.readFileSync(path.join(docsDir, file), 'utf-8');
         const descMatch = fileContent.match(/description:\s*['"](.+?)['"]/);
         if (descMatch) desc = descMatch[1];
-      } catch {}
+      } catch {
+        // Best-effort: fall back to the topic name if the file is unreadable.
+      }
       if (desc.length > 50) desc = desc.slice(0, 47) + '...';
       lines.push(`${run} docs ${topic.padEnd(20)} ${desc}`);
     }
@@ -208,7 +213,7 @@ export function getXdsVersion(coreDir) {
  * @returns {boolean} Whether the file was written
  */
 export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = false, header = '', onlyReplace = false} = {}) {
-  let content = '';
+  let content;
 
   if (fs.existsSync(filePath)) {
     content = fs.readFileSync(filePath, 'utf-8');
@@ -241,7 +246,7 @@ export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = fal
  * Inject or update XDS section in AGENTS.md.
  * Always creates the file if it doesn't exist.
  */
-export function injectAgentsMd(targetDir, version, {zh = false, lang} = {}) {
+export function injectAgentsMd(targetDir, version) {
   const agentsPath = path.join(targetDir, AGENTS_MD);
   const compressedIndex = generateCompressedIndex(version, {coreDir: findCoreDir(targetDir)});
   injectXdsBlock(agentsPath, compressedIndex, {
@@ -256,7 +261,7 @@ export function injectAgentsMd(targetDir, version, {zh = false, lang} = {}) {
  *
  * @returns {boolean} Whether the file was written
  */
-export function injectClaudeMd(targetDir, version, {zh = false, lang} = {}) {
+export function injectClaudeMd(targetDir, version) {
   const claudePath = path.join(targetDir, CLAUDE_MD);
   const compressedIndex = generateCompressedIndex(version, {coreDir: findCoreDir(targetDir)});
   return injectXdsBlock(claudePath, compressedIndex);
@@ -307,7 +312,7 @@ export function removeAgentDocs(targetDir) {
       if (!fs.existsSync(filePath)) {
         humanLog(`✓ Removed empty ${p}`);
       } else {
-        humanLog(`✓ Removed XDS section from ${p}`);
+        humanLog(`✓ Removed design system section from ${p}`);
       }
     }
   }
@@ -411,8 +416,8 @@ const VALID_AGENTS = ['claude', 'cursor', 'codex', 'all'];
 export function registerAgentDocs(program) {
   program
     .command('agent-docs')
-    .description('Install/update XDS component index for AI coding agents')
-    .option('--remove', 'Remove XDS section from all agent doc files')
+    .description('Install/update the component index for AI coding agents')
+    .option('--remove', 'Remove the design system section from all agent doc files')
     .option('--agent <tool>', 'Target tool: claude, cursor, codex, all')
     .option('--agent-docs-path <path...>', 'Explicit file path(s) to write to')
     .action(options => {
@@ -423,20 +428,19 @@ export function registerAgentDocs(program) {
       const lang = program.opts().lang || null;
 
       if (options.remove) {
-        humanLog('\n🗑️  Removing XDS agent docs...\n');
+        humanLog('\n🗑️  Removing agent docs...\n');
         removeAgentDocs(targetDir);
-        humanLog('\n✅ XDS agent docs removed.\n');
+        humanLog('\n✅ Agent docs removed.\n');
         return;
       }
 
       // Validate --agent
       if (options.agent && !VALID_AGENTS.includes(options.agent)) {
-        console.error(`Error: Unknown agent "${options.agent}". Valid: ${VALID_AGENTS.join(', ')}`);
-        process.exitCode = 1;
+        cliError(`Unknown agent "${options.agent}". Valid: ${VALID_AGENTS.join(', ')}`, {code: ERROR_CODES.ERR_UNKNOWN_AGENT});
         return;
       }
 
-      humanLog(`\n📚 Installing XDS agent docs (v${version})...\n`);
+      humanLog(`\n📚 Installing agent docs (v${version})...\n`);
 
       // Collect explicit paths from --agent-docs-path (commander parses variadic as array or single)
       const explicitPaths = options.agentDocsPath
@@ -455,8 +459,7 @@ export function registerAgentDocs(program) {
         });
       } catch (err) {
         if (err instanceof PathSafetyError) {
-          console.error(`Error: ${err.message}`);
-          process.exitCode = 1;
+          cliError(err.message, {code: ERROR_CODES.ERR_PATH_TRAVERSAL});
           return;
         }
         throw err;
@@ -470,14 +473,14 @@ export function registerAgentDocs(program) {
       }
 
       humanLog(`
-✅ XDS agent docs installed!
+✅ Agent docs installed!
 
 Your AI coding agent will now:
-  • See the XDS component index in ${targets.join(' and ')}
+  • See the component index in ${targets.join(' and ')}
   • Run \`${run} component <name>\` to read detailed docs
   • Run \`${run} docs principles\` for design principles
   • Run \`${run} docs tokens\` for design token reference
-  • Follow XDS patterns and avoid anti-patterns
+  • Follow design system patterns and avoid anti-patterns
 
 To update:
   ${run} agent-docs

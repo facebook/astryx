@@ -15,8 +15,10 @@ node node_modules/@xds/core/docs.mjs --list --brief  # brief summaries
 ## Page Layouts
 
 Building a full page? Start with a template rather than composing from scratch.
-Templates show how to combine `XDSAppShell`, `XDSLayout`, `XDSTopNav`, and `XDSSideNav`
-into common page patterns (dashboards, settings, forms, detail pages).
+Templates are content-only — they compose `XDSLayout` with header, content, and
+panel slots into common page patterns (dashboards, settings, forms, detail pages).
+Wrap them in your own app chrome (`XDSAppShell`, `XDSTopNav`, `XDSSideNav`) to add
+global navigation.
 
 Requires `@xds/cli` (`npm install -D @xds/cli`):
 

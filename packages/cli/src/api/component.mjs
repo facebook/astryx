@@ -8,10 +8,10 @@
  */
 
 import * as fs from 'node:fs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {findCoreDir, discoverExternalPackages} from '../utils/paths.mjs';
 import {
   discoverComponents,
-  discoverExternalComponents,
   discoverExternalComponentsGrouped,
   findComponentReadme,
   findComponentSource,
@@ -45,7 +45,7 @@ function resolveExternalPackage(packageName, cwd) {
  * @param {boolean} [options.source]
  * @param {boolean} [options.showcase]
  * @param {boolean} [options.blocks]
- * @param {'full'|'compact'|'brief'} [options.detail]
+ * @param {'full'|'compact'|'brief'} [options.detail] - Defaults to 'full' for a single component, 'brief' for list views (list/category/no name), matching the CLI.
  * @param {string} [options.lang]
  * @param {boolean} [options.zh]
  * @param {boolean} [options.dense]
@@ -61,15 +61,22 @@ export async function component(name, options = {}) {
     source = false,
     showcase = false,
     blocks = false,
-    detail = 'full',
+    detail: detailOption,
     lang = null,
     zh = false,
     dense = false,
   } = options;
 
+  // Default detail level mirrors the CLI (see commands/component/index.mjs):
+  // single-component views default to 'full', list-style views (--list,
+  // --category, or no name) default to 'brief' (scannable name lists).
+  // Keeping this in sync with the CLI is what the API↔CLI parity test checks.
+  const isListView = list || category != null || !name;
+  const detail = detailOption ?? (isListView ? 'brief' : 'full');
+
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
-    throw new XDSError('Could not find @xds/core package');
+    throw new XDSError('Could not find @xds/core package', undefined, ERROR_CODES.ERR_CORE_NOT_FOUND);
   }
 
   // ── List mode ──────────────────────────────────────────────────
@@ -85,10 +92,11 @@ export async function component(name, options = {}) {
         throw new XDSError(
           `Unknown category "${category}"`,
           Object.keys(components).map(k => ({name: k, reason: 'valid category'})),
+          ERROR_CODES.ERR_UNKNOWN_CATEGORY,
         );
       }
 
-      if (detail === 'brief') {
+      if (detail === 'compact') {
         const entries = [];
         for (const comp of match[1]) {
           const readme = findComponentReadme(coreDir, comp);
@@ -106,11 +114,29 @@ export async function component(name, options = {}) {
         return {type: 'component.brief', data: {[match[0]]: entries}};
       }
 
+      if (detail === 'full') {
+        const entries = [];
+        for (const comp of match[1]) {
+          const readme = findComponentReadme(coreDir, comp);
+          if (readme && readme.endsWith('.doc.mjs')) {
+            try {
+              entries.push(await loadDocs(readme, {zh, lang, dense}));
+            } catch {
+              entries.push({name: `XDS${comp}`, description: ''});
+            }
+          } else {
+            entries.push({name: `XDS${comp}`, description: ''});
+          }
+        }
+        return {type: 'component.full', data: {[match[0]]: entries}};
+      }
+
+      // Default: brief — names only
       return {type: 'component.list', data: {[match[0]]: match[1]}};
     }
 
     // All components — merge core + external packages with grouped subcategories
-    if (detail === 'brief') {
+    if (detail === 'compact') {
       /** @type {Record<string, Array<import('../types/component').ComponentBriefEntry>>} */
       const result = {};
       for (const [cat, comps] of Object.entries(components)) {
@@ -132,6 +158,28 @@ export async function component(name, options = {}) {
       return {type: 'component.brief', data: result};
     }
 
+    if (detail === 'full') {
+      /** @type {Record<string, Array<unknown>>} */
+      const result = {};
+      for (const [cat, comps] of Object.entries(components)) {
+        result[cat] = [];
+        for (const comp of comps) {
+          const readme = findComponentReadme(coreDir, comp);
+          if (readme && readme.endsWith('.doc.mjs')) {
+            try {
+              result[cat].push(await loadDocs(readme, {zh, lang, dense}));
+            } catch {
+              result[cat].push({name: `XDS${comp}`, description: ''});
+            }
+          } else {
+            result[cat].push({name: `XDS${comp}`, description: ''});
+          }
+        }
+      }
+      return {type: 'component.full', data: result};
+    }
+
+    // Default: brief — names only (with externals merged in)
     const externals = discoverExternalPackages(cwd);
     for (const ext of externals) {
       const grouped = discoverExternalComponentsGrouped(ext.docsDir);
@@ -170,13 +218,13 @@ export async function component(name, options = {}) {
   if (packageScope) {
     const ext = resolveExternalPackage(packageScope, cwd);
     if (!ext) {
-      throw new XDSError(`External package "${packageScope}" not found`);
+      throw new XDSError(`External package "${packageScope}" not found`, undefined, ERROR_CODES.ERR_UNKNOWN_PACKAGE);
     }
 
     if (showcase) {
       const match = await findShowcase(dirName, cwd, {package: packageScope});
       if (!match) {
-        throw new XDSError(`No showcase found for "${name}" in package "${packageScope}"`);
+        throw new XDSError(`No showcase found for "${name}" in package "${packageScope}"`, undefined, ERROR_CODES.ERR_NO_SHOWCASE);
       }
       return {
         type: 'component.detail.showcase',
@@ -198,13 +246,13 @@ export async function component(name, options = {}) {
       }
       return {type: 'component.detail', data: docs};
     }
-    throw new XDSError(`No component "${name}" in package "${packageScope}"`);
+    throw new XDSError(`No component "${name}" in package "${packageScope}"`, undefined, ERROR_CODES.ERR_UNKNOWN_COMPONENT);
   }
 
   if (source) {
     const sourcePath = findComponentSource(coreDir, dirName);
     if (!sourcePath) {
-      throw new XDSError(`Source for "${name}" not found`);
+      throw new XDSError(`Source for "${name}" not found`, undefined, ERROR_CODES.ERR_NO_SOURCE);
     }
     return {type: 'component.detail.source', data: {component: dirName, source: fs.readFileSync(sourcePath, 'utf-8')}};
   }
@@ -212,7 +260,7 @@ export async function component(name, options = {}) {
   if (showcase) {
     const match = await findShowcase(dirName, cwd);
     if (!match) {
-      throw new XDSError(`No showcase found for "${name}"`);
+      throw new XDSError(`No showcase found for "${name}"`, undefined, ERROR_CODES.ERR_NO_SHOWCASE);
     }
     return {
       type: 'component.detail.showcase',
@@ -226,7 +274,6 @@ export async function component(name, options = {}) {
 
   let readmePath = findComponentReadme(coreDir, dirName);
   let resolvedName = dirName;
-  let fromExternal = null;
 
   if (!readmePath) {
     const externals = discoverExternalPackages(cwd);
@@ -234,7 +281,6 @@ export async function component(name, options = {}) {
       const extDocPath = findExternalComponentDoc(ext.docsDir, dirName);
       if (extDocPath) {
         readmePath = extDocPath;
-        fromExternal = ext;
         break;
       }
     }
@@ -260,15 +306,16 @@ export async function component(name, options = {}) {
         throw new XDSError(
           `No component named "${name}"`,
           candidates.map(c => ({name: c.name, reason: c.reason})),
+          ERROR_CODES.ERR_UNKNOWN_COMPONENT,
         );
       }
     } else {
-      throw new XDSError(`No component named "${name}"`);
+      throw new XDSError(`No component named "${name}"`, undefined, ERROR_CODES.ERR_UNKNOWN_COMPONENT);
     }
   }
 
   if (!readmePath || !readmePath.endsWith('.doc.mjs')) {
-    throw new XDSError(`No .doc.mjs found for "${resolvedName}". The component needs a typed doc file.`);
+    throw new XDSError(`No .doc.mjs found for "${resolvedName}". The component needs a typed doc file.`, undefined, ERROR_CODES.ERR_NO_DOC);
   }
 
   const docs = await loadDocs(readmePath, {zh, dense, lang});

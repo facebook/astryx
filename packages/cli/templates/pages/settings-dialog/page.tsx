@@ -4,7 +4,6 @@
 
 import React, {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSAppShell} from '@xds/core/AppShell';
 import {
   XDSVStack,
   XDSHStack,
@@ -27,7 +26,11 @@ import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSCenter} from '@xds/core/Center';
-import {colorVars, radiusVars, spacingVars} from '@xds/core/theme/tokens.stylex';
+import {
+  colorVars,
+  radiusVars,
+  spacingVars,
+} from '@xds/core/theme/tokens.stylex';
 import {
   UserIcon,
   LockClosedIcon,
@@ -231,11 +234,7 @@ function InfoRowItem({
             {value}
           </XDSText>
         </XDSVStack>
-        {action && (
-          <XDSLink href="#">
-            {action}
-          </XDSLink>
-        )}
+        {action && <XDSLink href="#">{action}</XDSLink>}
       </XDSHStack>
       <XDSDivider />
     </>
@@ -272,14 +271,20 @@ export default function SettingsDialogTemplate() {
   const handleSave = () => setExpandedRow(null);
 
   return (
-    <XDSAppShell>
-      <XDSCenter height="80vh">
-        <XDSButton
-          label="Open settings"
-          variant="primary"
-          onClick={() => setIsOpen(true)}
-        />
-      </XDSCenter>
+    <>
+      <XDSLayout
+        content={
+          <XDSLayoutContent padding={0}>
+            <XDSCenter height="80vh">
+              <XDSButton
+                label="Open settings"
+                variant="primary"
+                onClick={() => setIsOpen(true)}
+              />
+            </XDSCenter>
+          </XDSLayoutContent>
+        }
+      />
 
       <XDSDialog
         isOpen={isOpen}
@@ -300,7 +305,9 @@ export default function SettingsDialogTemplate() {
               padding={0}
               xstyle={styles.panelFull}>
               <XDSVStack gap={4} xstyle={styles.sideNavPadding}>
-                <XDSHeading level={2} xstyle={styles.sideNavHeading}>Account settings</XDSHeading>
+                <XDSHeading level={2} xstyle={styles.sideNavHeading}>
+                  Account settings
+                </XDSHeading>
                 <XDSList density="spacious">
                   {NAV_ITEMS.map(item => (
                     <XDSListItem
@@ -330,7 +337,11 @@ export default function SettingsDialogTemplate() {
             <XDSLayoutContent isScrollable padding={0}>
               <XDSVStack xstyle={styles.headerPadding}>
                 <XDSDialogHeader
-                  title={activeNav === 'Personal information' ? 'Personal info' : activeNav}
+                  title={
+                    activeNav === 'Personal information'
+                      ? 'Personal info'
+                      : activeNav
+                  }
                   onOpenChange={open => setIsOpen(open)}
                   hasDivider={false}
                 />
@@ -467,8 +478,8 @@ export default function SettingsDialogTemplate() {
                               type="supporting"
                               color="secondary"
                               display="block">
-                              We&apos;re hiding some account details to
-                              protect your identity.
+                              We&apos;re hiding some account details to protect
+                              your identity.
                             </XDSText>
                           </XDSVStack>
                         </XDSHStack>
@@ -546,7 +557,9 @@ export default function SettingsDialogTemplate() {
                     {activeTab === 'login' && (
                       <XDSVStack gap={8}>
                         <XDSVStack gap={0}>
-                          <XDSHeading level={3} xstyle={styles.sectionHeading}>Login</XDSHeading>
+                          <XDSHeading level={3} xstyle={styles.sectionHeading}>
+                            Login
+                          </XDSHeading>
                           <XDSDivider />
                           {LOGIN_ROWS.map(row => (
                             <InfoRowItem key={row.label} {...row} />
@@ -554,7 +567,9 @@ export default function SettingsDialogTemplate() {
                         </XDSVStack>
 
                         <XDSVStack gap={0}>
-                          <XDSHeading level={3} xstyle={styles.sectionHeading}>Social accounts</XDSHeading>
+                          <XDSHeading level={3} xstyle={styles.sectionHeading}>
+                            Social accounts
+                          </XDSHeading>
                           <XDSDivider />
                           {SOCIAL_ROWS.map(row => (
                             <InfoRowItem key={row.label} {...row} />
@@ -562,7 +577,9 @@ export default function SettingsDialogTemplate() {
                         </XDSVStack>
 
                         <XDSVStack gap={0}>
-                          <XDSHeading level={3} xstyle={styles.sectionHeading}>Device history</XDSHeading>
+                          <XDSHeading level={3} xstyle={styles.sectionHeading}>
+                            Device history
+                          </XDSHeading>
                           <XDSDivider />
                           {DEVICE_ROWS.map((device, i) => (
                             <React.Fragment key={i}>
@@ -590,9 +607,7 @@ export default function SettingsDialogTemplate() {
                                   </XDSVStack>
                                 </XDSStackItem>
                                 {device.action && (
-                                  <XDSLink href="#">
-                                    {device.action}
-                                  </XDSLink>
+                                  <XDSLink href="#">{device.action}</XDSLink>
                                 )}
                               </XDSHStack>
                               <XDSDivider />
@@ -601,7 +616,9 @@ export default function SettingsDialogTemplate() {
                         </XDSVStack>
 
                         <XDSVStack gap={0}>
-                          <XDSHeading level={3} xstyle={styles.sectionHeading}>Account</XDSHeading>
+                          <XDSHeading level={3} xstyle={styles.sectionHeading}>
+                            Account
+                          </XDSHeading>
                           <XDSDivider />
                           <XDSHStack
                             hAlign="between"
@@ -621,9 +638,7 @@ export default function SettingsDialogTemplate() {
                                 This action cannot be undone
                               </XDSText>
                             </XDSVStack>
-                            <XDSLink href="#">
-                              Deactivate
-                            </XDSLink>
+                            <XDSLink href="#">Deactivate</XDSLink>
                           </XDSHStack>
                           <XDSDivider />
                         </XDSVStack>
@@ -633,7 +648,9 @@ export default function SettingsDialogTemplate() {
                     {activeTab === 'shared' && (
                       <XDSVStack gap={8}>
                         <XDSVStack gap={2}>
-                          <XDSHeading level={3} xstyle={styles.sectionHeading}>Shared access</XDSHeading>
+                          <XDSHeading level={3} xstyle={styles.sectionHeading}>
+                            Shared access
+                          </XDSHeading>
                           <XDSDivider />
                           <XDSText type="body" color="secondary">
                             Review each request carefully before approving
@@ -754,9 +771,7 @@ export default function SettingsDialogTemplate() {
                           <XDSText type="body" weight="semibold">
                             Blocked people
                           </XDSText>
-                          <XDSLink href="#">
-                            View
-                          </XDSLink>
+                          <XDSLink href="#">View</XDSLink>
                         </XDSHStack>
                         <XDSDivider />
                       </XDSVStack>
@@ -780,9 +795,7 @@ export default function SettingsDialogTemplate() {
                         <XDSHeading level={3}>Reviews</XDSHeading>
                         <XDSText type="supporting" color="secondary">
                           Choose what&apos;s shared when you write a review.{' '}
-                          <XDSLink
-                            href="#"
-                            type="supporting">
+                          <XDSLink href="#" type="supporting">
                             Learn more
                           </XDSLink>
                         </XDSText>
@@ -830,9 +843,7 @@ export default function SettingsDialogTemplate() {
                             <XDSText type="body">
                               Request my personal data
                             </XDSText>
-                            <XDSLink href="#">
-                              Request
-                            </XDSLink>
+                            <XDSLink href="#">Request</XDSLink>
                           </XDSHStack>
                         </XDSCard>
                         <XDSSwitch
@@ -846,9 +857,7 @@ export default function SettingsDialogTemplate() {
                         <XDSCard>
                           <XDSHStack hAlign="between" vAlign="center">
                             <XDSText type="body">Delete my account</XDSText>
-                            <XDSLink href="#">
-                              Delete
-                            </XDSLink>
+                            <XDSLink href="#">Delete</XDSLink>
                           </XDSHStack>
                         </XDSCard>
                         <XDSCard variant="muted">
@@ -866,9 +875,7 @@ export default function SettingsDialogTemplate() {
                               <XDSText type="supporting" color="secondary">
                                 We&apos;re committed to keeping your data
                                 protected. See details in our{' '}
-                                <XDSLink
-                                  href="#"
-                                  type="supporting">
+                                <XDSLink href="#" type="supporting">
                                   Privacy Policy
                                 </XDSLink>
                                 .
@@ -885,6 +892,6 @@ export default function SettingsDialogTemplate() {
           }
         />
       </XDSDialog>
-    </XDSAppShell>
+    </>
   );
 }
