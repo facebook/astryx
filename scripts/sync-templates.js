@@ -25,6 +25,14 @@ const GENERATED_DIR = path.join(SANDBOX_DIR, 'src', 'generated');
 const ROUTES_DIR = path.join(
   SANDBOX_DIR, 'src', 'app', '(fullscreen)', 'templates'
 );
+// Template images are committed under the docsite's public dir. The sandbox
+// previews the same templates, so mirror them into the sandbox public dir at
+// generate time (gitignored — not committed) so /template-assets/* resolves
+// in the sandbox preview too.
+const TEMPLATE_ASSETS_SRC = path.join(
+  ROOT, 'apps', 'docsite', 'public', 'template-assets'
+);
+const TEMPLATE_ASSETS_DEST = path.join(SANDBOX_DIR, 'public', 'template-assets');
 // Blocks now share the templates route directory
 
 
@@ -247,6 +255,20 @@ export default function Page() {
 `;
 }
 
+// Mirror docsite template-assets into the sandbox public dir so the sandbox
+// preview can serve /template-assets/* (the files are only committed under the
+// docsite). Uses fs.cpSync; the destination is gitignored.
+function copyTemplateAssets() {
+  if (!fs.existsSync(TEMPLATE_ASSETS_SRC)) {
+    return;
+  }
+  fs.cpSync(TEMPLATE_ASSETS_SRC, TEMPLATE_ASSETS_DEST, {recursive: true});
+  const count = fs.readdirSync(TEMPLATE_ASSETS_DEST).length;
+  console.log(
+    `  copied ${count} template asset(s) → ${path.relative(ROOT, TEMPLATE_ASSETS_DEST)}`,
+  );
+}
+
 async function main() {
   console.log('Syncing templates...');
 
@@ -284,6 +306,8 @@ async function main() {
     fs.writeFileSync(wrapperPath, generateBlockRouteWrapper(b));
     console.log(`  wrote ${path.relative(ROOT, wrapperPath)}`);
   }
+
+  copyTemplateAssets();
 
   console.log('Done.');
 }
