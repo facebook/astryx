@@ -28,3 +28,21 @@ export const docs = {
   importPath: '@xds/core/hooks',
   category: 'layout',
 };
+
+/** @type {import('../docs-types').HookTranslationDoc} */
+export const docsDense = {
+  description:
+    'Locks body scroll when active by pinning body w/ position: fixed. Prevents background scrolling behind modals + dialogs, necessary for iOS Safari where overscroll-behavior: contain does not work. Restores original scroll position when unlocked.',
+  paramDescriptions: {
+    isLocked: 'Whether body scroll should be locked. (required)',
+  },
+  usage: {
+    description:
+      'Locks body scroll when active by pinning body w/ position: fixed. Prevents background scrolling behind modals + dialogs, necessary for iOS Safari where overscroll-behavior: contain does not work. Restores original scroll position when unlocked.',
+    bestPractices: [
+      { guidance: true, description: 'Use when opening full-screen modals / dialogs to prevent background content from scrolling.' },
+      { guidance: true, description: 'Pass same boolean that controls dialog visibility (e.g. isOpen) as isLocked parameter.' },
+      { guidance: false, description: 'Use for non-modal overlays like popovers / tooltips — users should be able to scroll away from those.' },
+    ],
+  },
+};
