@@ -12,6 +12,12 @@ import {XDSIcon} from '@xds/core/Icon';
 import {ArrowRightIcon} from '@heroicons/react/24/outline';
 import * as stylex from '@stylexjs/stylex';
 
+// Optional basePath. Empty in end-user projects and the docsite (served at
+// root). In the sandbox preview it picks up `/sandbox` so /template-assets/*
+// resolves under the GH Pages basePath. The CLI swaps these paths for an
+// inline placeholder on scaffold, so end users never see them.
+const BP = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+
 // ─── Styles ─────────────────────────────────────────────────────────────────
 // The only custom CSS is the image fill — there is no XDSImage primitive to
 // fill the XDSAspectRatio box with `object-fit` (#2582).
@@ -42,7 +48,7 @@ const PRODUCTS: Product[] = [
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 75.0,
     // illustrative-horizontal-1 from xds_oss asset set
-    image: '/template-assets/illustrative-horizontal-1.jpg',
+    image: BP + '/template-assets/illustrative-horizontal-1.jpg',
   },
   {
     id: 2,
@@ -51,7 +57,7 @@ const PRODUCTS: Product[] = [
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 80.0,
     // illustrative-vertical-1 from xds_oss asset set
-    image: '/template-assets/illustrative-vertical-1.jpg',
+    image: BP + '/template-assets/illustrative-vertical-1.jpg',
   },
   {
     id: 3,
@@ -60,7 +66,7 @@ const PRODUCTS: Product[] = [
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 75.0,
     // illustrative-horizontal-3 from xds_oss asset set
-    image: '/template-assets/illustrative-horizontal-3.jpg',
+    image: BP + '/template-assets/illustrative-horizontal-3.jpg',
   },
   {
     id: 4,
@@ -69,7 +75,7 @@ const PRODUCTS: Product[] = [
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 75.0,
     // illustrative-horizontal-4 from xds_oss asset set
-    image: '/template-assets/illustrative-horizontal-4.jpg',
+    image: BP + '/template-assets/illustrative-horizontal-4.jpg',
   },
   {
     id: 5,
@@ -78,7 +84,7 @@ const PRODUCTS: Product[] = [
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 60.0,
     // illustrative-horizontal-5 from xds_oss asset set
-    image: '/template-assets/illustrative-horizontal-5.jpg',
+    image: BP + '/template-assets/illustrative-horizontal-5.jpg',
   },
   {
     id: 6,
@@ -87,7 +93,7 @@ const PRODUCTS: Product[] = [
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 80.0,
     // illustrative-horizontal-2 from xds_oss asset set
-    image: '/template-assets/illustrative-horizontal-2.jpg',
+    image: BP + '/template-assets/illustrative-horizontal-2.jpg',
   },
 ];
 

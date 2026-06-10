@@ -18,6 +18,12 @@ import {XDSOverflowList} from '@xds/core/OverflowList';
 import {XDSCenter} from '@xds/core/Center';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
+// Optional basePath. Empty in end-user projects and the docsite (served at
+// root). In the sandbox preview it picks up `/sandbox` so /template-assets/*
+// resolves under the GH Pages basePath. The CLI swaps these paths for an
+// inline placeholder on scaffold, so end users never see them.
+const BP = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+
 interface LibraryItem {
   id: string;
   name: string;
@@ -37,7 +43,7 @@ const ITEMS: LibraryItem[] = [
       'Vertical and horizontal stack layouts with configurable gap and alignment.',
     category: 'Layout',
     type: 'Component',
-    imageUrl: '/template-assets/colorful-home-horizontal-1.png',
+    imageUrl: BP + '/template-assets/colorful-home-horizontal-1.png',
   },
   {
     id: '2',
@@ -46,7 +52,7 @@ const ITEMS: LibraryItem[] = [
       'Responsive grid container with auto-fit columns and gap control.',
     category: 'Layout',
     type: 'Component',
-    imageUrl: '/template-assets/illustrative-horizontal-3.jpg',
+    imageUrl: BP + '/template-assets/illustrative-horizontal-3.jpg',
   },
   {
     id: '3',
@@ -55,7 +61,7 @@ const ITEMS: LibraryItem[] = [
       'Surface container with optional padding, border, and shadow variants.',
     category: 'Layout',
     type: 'Component',
-    imageUrl: '/template-assets/light-working-horizontal-2.png',
+    imageUrl: BP + '/template-assets/light-working-horizontal-2.png',
   },
   {
     id: '4',
@@ -63,7 +69,7 @@ const ITEMS: LibraryItem[] = [
     description: 'Centers its child both horizontally and vertically.',
     category: 'Layout',
     type: 'Utility',
-    imageUrl: '/template-assets/moody-scene-horizontal-1.png',
+    imageUrl: BP + '/template-assets/moody-scene-horizontal-1.png',
   },
   {
     id: '5',
@@ -71,7 +77,7 @@ const ITEMS: LibraryItem[] = [
     description: 'Semantic page section with optional heading and divider.',
     category: 'Layout',
     type: 'Pattern',
-    imageUrl: '/template-assets/colorful-lifestyle-horizontal-2.png',
+    imageUrl: BP + '/template-assets/colorful-lifestyle-horizontal-2.png',
   },
   {
     id: '6',
@@ -79,7 +85,7 @@ const ITEMS: LibraryItem[] = [
     description: 'Expandable region with animated height transition.',
     category: 'Layout',
     type: 'Component',
-    imageUrl: '/template-assets/light-scene-horizontal-1.png',
+    imageUrl: BP + '/template-assets/light-scene-horizontal-1.png',
   },
   {
     id: '7',
@@ -88,7 +94,7 @@ const ITEMS: LibraryItem[] = [
       'Single-line text field with label, placeholder, and validation states.',
     category: 'Forms',
     type: 'Component',
-    imageUrl: '/template-assets/moody-working-horizontal-1.png',
+    imageUrl: BP + '/template-assets/moody-working-horizontal-1.png',
   },
   {
     id: '8',
@@ -96,7 +102,7 @@ const ITEMS: LibraryItem[] = [
     description: 'Multi-line text field with auto-resize and character count.',
     category: 'Forms',
     type: 'Component',
-    imageUrl: '/template-assets/colorful-working-horizontal-3.png',
+    imageUrl: BP + '/template-assets/colorful-working-horizontal-3.png',
   },
   {
     id: '9',
@@ -104,7 +110,7 @@ const ITEMS: LibraryItem[] = [
     description: 'Checkbox with label, indeterminate state, and group support.',
     category: 'Forms',
     type: 'Component',
-    imageUrl: '/template-assets/illustrative-horizontal-1.jpg',
+    imageUrl: BP + '/template-assets/illustrative-horizontal-1.jpg',
   },
   {
     id: '10',
@@ -112,7 +118,7 @@ const ITEMS: LibraryItem[] = [
     description: 'Group of radio buttons with accessible fieldset wrapper.',
     category: 'Forms',
     type: 'Component',
-    imageUrl: '/template-assets/light-home-horizontal-1.png',
+    imageUrl: BP + '/template-assets/light-home-horizontal-1.png',
   },
   {
     id: '11',
@@ -120,7 +126,7 @@ const ITEMS: LibraryItem[] = [
     description: 'Toggle switch for binary on/off settings.',
     category: 'Forms',
     type: 'Component',
-    imageUrl: '/template-assets/moody-home-horizontal-2.png',
+    imageUrl: BP + '/template-assets/moody-home-horizontal-2.png',
   },
   {
     id: '12',
@@ -129,7 +135,7 @@ const ITEMS: LibraryItem[] = [
       'Dropdown or inline option selector with single and multi-select modes.',
     category: 'Forms',
     type: 'Component',
-    imageUrl: '/template-assets/colorful-product-1.png',
+    imageUrl: BP + '/template-assets/colorful-product-1.png',
   },
   {
     id: '13',
@@ -138,7 +144,7 @@ const ITEMS: LibraryItem[] = [
       'Horizontal tab navigation with underline indicator and keyboard support.',
     category: 'Navigation',
     type: 'Component',
-    imageUrl: '/template-assets/illustrative-horizontal-5.jpg',
+    imageUrl: BP + '/template-assets/illustrative-horizontal-5.jpg',
   },
   {
     id: '14',
@@ -146,7 +152,7 @@ const ITEMS: LibraryItem[] = [
     description: 'Application top bar with logo, nav links, and action slots.',
     category: 'Navigation',
     type: 'Pattern',
-    imageUrl: '/template-assets/light-working-horizontal-1.png',
+    imageUrl: BP + '/template-assets/light-working-horizontal-1.png',
   },
   {
     id: '15',
@@ -155,7 +161,7 @@ const ITEMS: LibraryItem[] = [
       'Vertical sidebar navigation with collapsible groups and active states.',
     category: 'Navigation',
     type: 'Pattern',
-    imageUrl: '/template-assets/moody-lifestyle-horizontal-1.png',
+    imageUrl: BP + '/template-assets/moody-lifestyle-horizontal-1.png',
   },
   {
     id: '16',
@@ -163,7 +169,7 @@ const ITEMS: LibraryItem[] = [
     description: 'Path trail navigation with separator and truncation support.',
     category: 'Navigation',
     type: 'Component',
-    imageUrl: '/template-assets/colorful-home-horizontal-2.png',
+    imageUrl: BP + '/template-assets/colorful-home-horizontal-2.png',
   },
   {
     id: '17',
@@ -172,7 +178,7 @@ const ITEMS: LibraryItem[] = [
       'Page navigation with prev/next controls and page count display.',
     category: 'Navigation',
     type: 'Component',
-    imageUrl: '/template-assets/colorful-working-horizontal-1.png',
+    imageUrl: BP + '/template-assets/colorful-working-horizontal-1.png',
   },
   {
     id: '18',
@@ -181,7 +187,7 @@ const ITEMS: LibraryItem[] = [
       'Bottom tab bar for mobile viewports with icon and label slots.',
     category: 'Navigation',
     type: 'Pattern',
-    imageUrl: '/template-assets/light-working-horizontal-3.png',
+    imageUrl: BP + '/template-assets/light-working-horizontal-3.png',
   },
   {
     id: '19',
@@ -190,7 +196,7 @@ const ITEMS: LibraryItem[] = [
       'Compact label for status, count, or category with semantic color variants.',
     category: 'Feedback',
     type: 'Component',
-    imageUrl: '/template-assets/moody-working-horizontal-2.png',
+    imageUrl: BP + '/template-assets/moody-working-horizontal-2.png',
   },
   {
     id: '20',
@@ -199,7 +205,7 @@ const ITEMS: LibraryItem[] = [
       'Full-width alert bar for info, success, warning, and error messages.',
     category: 'Feedback',
     type: 'Component',
-    imageUrl: '/template-assets/illustrative-horizontal-2.jpg',
+    imageUrl: BP + '/template-assets/illustrative-horizontal-2.jpg',
   },
   {
     id: '21',
@@ -207,7 +213,7 @@ const ITEMS: LibraryItem[] = [
     description: 'Animated loading indicator with size and color variants.',
     category: 'Feedback',
     type: 'Component',
-    imageUrl: '/template-assets/colorful-lifestyle-horizontal-1.png',
+    imageUrl: BP + '/template-assets/colorful-lifestyle-horizontal-1.png',
   },
   {
     id: '22',
@@ -215,7 +221,7 @@ const ITEMS: LibraryItem[] = [
     description: 'Horizontal bar indicating task completion percentage.',
     category: 'Feedback',
     type: 'Component',
-    imageUrl: '/template-assets/light-lifestyle-horizontal-1.png',
+    imageUrl: BP + '/template-assets/light-lifestyle-horizontal-1.png',
   },
   {
     id: '23',
@@ -224,7 +230,7 @@ const ITEMS: LibraryItem[] = [
       'Small dot indicator for presence, health, or pipeline status.',
     category: 'Feedback',
     type: 'Component',
-    imageUrl: '/template-assets/moody-home-horizontal-1.png',
+    imageUrl: BP + '/template-assets/moody-home-horizontal-1.png',
   },
   {
     id: '24',
@@ -233,7 +239,7 @@ const ITEMS: LibraryItem[] = [
       'Contextual label that appears on hover with configurable placement.',
     category: 'Feedback',
     type: 'Component',
-    imageUrl: '/template-assets/colorful-working-horizontal-2.png',
+    imageUrl: BP + '/template-assets/colorful-working-horizontal-2.png',
   },
   {
     id: '25',
@@ -242,7 +248,7 @@ const ITEMS: LibraryItem[] = [
       'Feature-rich data table with sorting, selection, and column resizing.',
     category: 'Data',
     type: 'Component',
-    imageUrl: '/template-assets/illustrative-horizontal-4.jpg',
+    imageUrl: BP + '/template-assets/illustrative-horizontal-4.jpg',
   },
   {
     id: '26',
@@ -251,7 +257,7 @@ const ITEMS: LibraryItem[] = [
       'User profile image with fallback initials and status dot support.',
     category: 'Data',
     type: 'Component',
-    imageUrl: '/template-assets/light-working-horizontal-4.png',
+    imageUrl: BP + '/template-assets/light-working-horizontal-4.png',
   },
   {
     id: '27',
@@ -260,7 +266,7 @@ const ITEMS: LibraryItem[] = [
       'Placeholder shimmer for loading states matching content shapes.',
     category: 'Data',
     type: 'Utility',
-    imageUrl: '/template-assets/moody-lifestyle-horizontal-2.png',
+    imageUrl: BP + '/template-assets/moody-lifestyle-horizontal-2.png',
   },
   {
     id: '28',
@@ -268,7 +274,7 @@ const ITEMS: LibraryItem[] = [
     description: 'Rich popover that appears on hover with arbitrary content.',
     category: 'Data',
     type: 'Component',
-    imageUrl: '/template-assets/moody-scene-horizontal-2.png',
+    imageUrl: BP + '/template-assets/moody-scene-horizontal-2.png',
   },
   {
     id: '29',
@@ -277,7 +283,7 @@ const ITEMS: LibraryItem[] = [
       'Command-palette style search with grouped results and keyboard nav.',
     category: 'Data',
     type: 'Pattern',
-    imageUrl: '/template-assets/colorful-product-2.png',
+    imageUrl: BP + '/template-assets/colorful-product-2.png',
   },
   {
     id: '30',
@@ -286,7 +292,7 @@ const ITEMS: LibraryItem[] = [
       'Autocomplete input with async suggestion loading and selection.',
     category: 'Data',
     type: 'Component',
-    imageUrl: '/template-assets/moody-working-horizontal-3.png',
+    imageUrl: BP + '/template-assets/moody-working-horizontal-3.png',
   },
 ];
 

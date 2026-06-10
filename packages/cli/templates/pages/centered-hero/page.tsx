@@ -16,7 +16,13 @@ import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSSection} from '@xds/core/Section';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
-const IMAGE_URL = '/template-assets/light-scene-horizontal-1.png';
+// Optional basePath. Empty in end-user projects and the docsite (served at
+// root). In the sandbox preview it picks up `/sandbox` so /template-assets/*
+// resolves under the GH Pages basePath. The CLI swaps these paths for an
+// inline placeholder on scaffold, so end users never see them.
+const BP = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+
+const IMAGE_URL = BP + '/template-assets/light-scene-horizontal-1.png';
 
 const styles = stylex.create({
   heroImage: {

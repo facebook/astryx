@@ -19,8 +19,14 @@ import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
 import {XDSSelector} from '@xds/core/Selector';
 
+// Optional basePath. Empty in end-user projects and the docsite (served at
+// root). In the sandbox preview it picks up `/sandbox` so /template-assets/*
+// resolves under the GH Pages basePath. The CLI swaps these paths for an
+// inline placeholder on scaffold, so end users never see them.
+const BP = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+
 // illustration-horizontal-1 from xds_oss asset set
-const ILLUSTRATION_URL = '/template-assets/illustration-horizontal-1.png';
+const ILLUSTRATION_URL = BP + '/template-assets/illustration-horizontal-1.png';
 
 // ─────────────────────────────────────────────────────────────
 // Constants

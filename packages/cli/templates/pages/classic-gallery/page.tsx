@@ -12,6 +12,12 @@ import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import * as stylex from '@stylexjs/stylex';
 
+// Optional basePath. Empty in end-user projects and the docsite (served at
+// root). In the sandbox preview it picks up `/sandbox` so /template-assets/*
+// resolves under the GH Pages basePath. The CLI swaps these paths for an
+// inline placeholder on scaffold, so end users never see them.
+const BP = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+
 // ─── Styles ─────────────────────────────────────────────────────────────────
 // Width + centering come from XDSLayout's contentWidth prop. The remaining
 // styles cover things with no XDS prop equivalent: asymmetric page padding,
@@ -49,42 +55,42 @@ interface GalleryImage {
 
 const GALLERY_IMAGES: GalleryImage[] = [
   {
-    src: '/template-assets/classic-gallery-working-together.png',
+    src: BP + '/template-assets/classic-gallery-working-together.png',
     alt: 'Two colleagues reviewing work on a laptop together',
     category: 'lifestyle',
   },
   {
-    src: '/template-assets/classic-gallery-lifestyle-architecture.jpg',
+    src: BP + '/template-assets/classic-gallery-lifestyle-architecture.jpg',
     alt: 'Soft blush curved architecture against a pale sky',
     category: 'lifestyle',
   },
   {
-    src: '/template-assets/classic-gallery-product-backpack.png',
+    src: BP + '/template-assets/classic-gallery-product-backpack.png',
     alt: 'Charcoal canvas backpack against a neutral backdrop',
     category: 'products',
   },
   {
-    src: '/template-assets/classic-gallery-product-headphones.png',
+    src: BP + '/template-assets/classic-gallery-product-headphones.png',
     alt: 'Over-ear headphones resting beside a stone riser',
     category: 'products',
   },
   {
-    src: '/template-assets/classic-gallery-product-mug.png',
+    src: BP + '/template-assets/classic-gallery-product-mug.png',
     alt: 'Matte graphite insulated travel mug',
     category: 'products',
   },
   {
-    src: '/template-assets/classic-gallery-product-throw.png',
+    src: BP + '/template-assets/classic-gallery-product-throw.png',
     alt: 'Folded linen throw blanket with fringed edges',
     category: 'products',
   },
   {
-    src: '/template-assets/classic-gallery-product-wallet.png',
+    src: BP + '/template-assets/classic-gallery-product-wallet.png',
     alt: 'Slim leather bifold wallet on a neutral surface',
     category: 'products',
   },
   {
-    src: '/template-assets/classic-gallery-product-watch.png',
+    src: BP + '/template-assets/classic-gallery-product-watch.png',
     alt: 'Minimalist watch with two interchangeable straps',
     category: 'products',
   },

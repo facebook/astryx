@@ -7,6 +7,12 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import * as stylex from '@stylexjs/stylex';
 
+// Optional basePath. Empty in end-user projects and the docsite (served at
+// root). In the sandbox preview it picks up `/sandbox` so /template-assets/*
+// resolves under the GH Pages basePath. The CLI swaps these paths for an
+// inline placeholder on scaffold, so end users never see them.
+const BP = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+
 // ─── Styles ────────────────────────────────────────────────────────────────
 // The masonry needs a responsive column count AND a hero that spans 2 columns
 // on desktop but goes full-width on mobile. XDSGrid forces grid-template-columns
@@ -62,27 +68,27 @@ interface GalleryImage {
 const IMAGES: GalleryImage[] = [
   {
     // illustrative-horizontal-1 from xds_oss asset set
-    src: '/template-assets/illustrative-horizontal-1.jpg',
+    src: BP + '/template-assets/illustrative-horizontal-1.jpg',
     title: 'Going places',
   },
   {
     // light-home-horizontal-1 from xds_oss asset set
-    src: '/template-assets/light-home-horizontal-1.png',
+    src: BP + '/template-assets/light-home-horizontal-1.png',
     title: 'Making memories',
   },
   {
     // light-lifestyle-horizontal-1 from xds_oss asset set
-    src: '/template-assets/light-lifestyle-horizontal-1.png',
+    src: BP + '/template-assets/light-lifestyle-horizontal-1.png',
     title: 'Being free',
   },
   {
     // light-working-horizontal-2 from xds_oss asset set
-    src: '/template-assets/light-working-horizontal-2.png',
+    src: BP + '/template-assets/light-working-horizontal-2.png',
     title: 'Getting it done',
   },
   {
     // light-scene-horizontal-1 from xds_oss asset set
-    src: '/template-assets/light-scene-horizontal-1.png',
+    src: BP + '/template-assets/light-scene-horizontal-1.png',
     title: 'Finding calm',
   },
 ];
