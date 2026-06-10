@@ -3,7 +3,10 @@
 import React from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSPopover} from '@xds/core/Popover';
+import type {PopoverTriggerRenderProps} from '@xds/core/Popover';
 import {XDSButton} from '@xds/core/Button';
+import {XDSToken} from '@xds/core/Token';
+import {XDSLink} from '@xds/core/Link';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSSwitch} from '@xds/core/Switch';
@@ -308,4 +311,98 @@ export const Disabled: Story = {
     content: <XDSText type="body">This should not appear.</XDSText>,
     children: <XDSButton label="Disabled popover">Disabled</XDSButton>,
   },
+};
+
+// =============================================================================
+// Token as Popover Trigger (via XDSInteractiveRoleContext)
+// =============================================================================
+
+export const TokenTrigger: Story = {
+  render: () => (
+    <XDSPopover
+      placement="below"
+      label="Token options"
+      width={220}
+      content={
+        <XDSVStack gap={2}>
+          <XDSHeading level={4} tabIndex={-1}>
+            Filter options
+          </XDSHeading>
+          <XDSDivider />
+          <XDSText type="body">
+            The token automatically renders as a button via context.
+          </XDSText>
+        </XDSVStack>
+      }>
+      <XDSToken label="Status: Active" icon="filter" />
+    </XDSPopover>
+  ),
+};
+
+// =============================================================================
+// Link as Popover Trigger (no href → renders as button)
+// =============================================================================
+
+export const LinkTrigger: Story = {
+  render: () => (
+    <XDSPopover
+      placement="below"
+      label="Link actions"
+      width={220}
+      content={
+        <XDSVStack gap={2}>
+          <XDSHeading level={4} tabIndex={-1}>
+            Quick actions
+          </XDSHeading>
+          <XDSDivider />
+          <XDSText type="body">
+            XDSLink without href renders as a button, suitable for triggers.
+          </XDSText>
+        </XDSVStack>
+      }>
+      <XDSLink>More options</XDSLink>
+    </XDSPopover>
+  ),
+};
+
+// =============================================================================
+// Render Prop Pattern (explicit trigger wiring)
+// =============================================================================
+
+export const RenderProp: Story = {
+  render: () => (
+    <XDSPopover
+      placement="below"
+      label="Custom trigger"
+      width={260}
+      content={
+        <XDSVStack gap={2}>
+          <XDSHeading level={4} tabIndex={-1}>
+            Custom trigger
+          </XDSHeading>
+          <XDSDivider />
+          <XDSText type="body">
+            The render prop gives full control over the trigger element.
+          </XDSText>
+        </XDSVStack>
+      }>
+      {(triggerProps: PopoverTriggerRenderProps) => (
+        <button
+          ref={triggerProps.ref}
+          onClick={triggerProps.onClick}
+          aria-haspopup={triggerProps['aria-haspopup']}
+          aria-expanded={triggerProps['aria-expanded']}
+          aria-controls={triggerProps['aria-controls']}
+          style={{
+            padding: '8px 16px',
+            border: '1px dashed currentColor',
+            borderRadius: 4,
+            background: 'transparent',
+            cursor: 'pointer',
+          }}>
+          Custom trigger element
+        </button>
+      )}
+    </XDSPopover>
+  ),
 };
