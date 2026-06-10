@@ -16,7 +16,8 @@ import * as stylex from '@stylexjs/stylex';
 // root). In the sandbox preview it picks up `/sandbox` so /template-assets/*
 // resolves under the GH Pages basePath. The CLI swaps these paths for an
 // inline placeholder on scaffold, so end users never see them.
-const BP = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+const BP =
+  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_BASE_PATH) || '';
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 // The only custom CSS is the image fill — there is no XDSImage primitive to
