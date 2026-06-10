@@ -44,18 +44,19 @@ import {
 import * as stylex from '@stylexjs/stylex';
 
 // The only custom CSS in this template is small optical-alignment negative
-// margins — XDSLayoutHeader/XDSTabList have no edge-dock prop and XDSList has no
-// "bleed to container edge" prop (tracked in #2622). Everything else uses props.
+// margins: XDSLayoutHeader/XDSTabList have no edge-dock prop (#2622) and XDSList
+// has no "bleed to container edge" prop (#2626). Everything else uses props.
 const pageStyles = stylex.create({
   // Bleed the tab bar to the header's content edges so the active-tab underline
-  // meets the header divider.
+  // meets the header divider. No edge-dock prop on XDSTabList (#2622).
   tabsRow: {
     marginInline: -12,
     marginBottom: -16,
     marginTop: 12,
   },
   // Pull the list items' inner padding back so their content optically aligns
-  // with the section heading above (XDSListItem insets content by ~8px).
+  // with the section heading above (XDSListItem insets content by ~8px). No
+  // edge/inset prop on XDSList (#2626).
   itemsList: {
     marginInline: -8,
   },
@@ -246,7 +247,9 @@ function PageHeader({
           )}
         </XDSHStack>
 
-        {/* Mobile: actions drop below the metadata as a full-width row. */}
+        {/* Mobile: actions drop below the metadata as a full-width row. The
+            XDSVStack hAlign="stretch" wrapper is the full-width-button
+            workaround — XDSButton has no full-width prop (#2600). */}
         {isNarrow && (
           <XDSHStack gap={2}>
             <XDSStackItem size="fill">
@@ -619,7 +622,9 @@ export default function DetailPage2Template() {
         end={!isNarrow && showSidePanel ? <RightPanel /> : undefined}
       />
 
-      {/* Mobile: the side panel content opens as a full-screen dialog. */}
+      {/* Mobile: the side panel content opens as a full-screen dialog. (A
+          side drawer/sheet would be more idiomatic, but XDS has no Drawer
+          component yet — #2575 — so we use the fullscreen Dialog variant.) */}
       <XDSDialog
         variant="fullscreen"
         isOpen={isNarrow && isPanelDialogOpen}
