@@ -28,7 +28,7 @@ import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSCollapsible} from '@xds/core/Collapsible';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSThumbnail} from '@xds/core/Thumbnail';
-import {XDSOverflowList} from '@xds/core/OverflowList';
+import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 import {
   CalendarIcon,
   FlagIcon,
@@ -43,11 +43,22 @@ import {
 // ─── Styles ─────────────────────────────────────────────────────────────────
 import * as stylex from '@stylexjs/stylex';
 
+// The only custom CSS in this template is small optical-alignment negative
+// margins: XDSLayoutHeader/XDSTabList have no edge-dock prop (#2622) and XDSList
+// has no "bleed to container edge" prop (#2626). Everything else uses props.
 const pageStyles = stylex.create({
+  // Bleed the tab bar to the header's content edges so the active-tab underline
+  // meets the header divider. No edge-dock prop on XDSTabList (#2622).
   tabsRow: {
     marginInline: -12,
     marginBottom: -16,
     marginTop: 12,
+  },
+  // Pull the list items' inner padding back so their content optically aligns
+  // with the section heading above (XDSListItem insets content by ~8px). No
+  // edge/inset prop on XDSList (#2626).
+  itemsList: {
+    marginInline: -8,
   },
 });
 
@@ -163,15 +174,17 @@ function PageHeader({
   onTabChange,
   isPanelOpen,
   onTogglePanel,
+  isNarrow,
 }: {
   activeTab: string;
   onTabChange: (v: string) => void;
   isPanelOpen: boolean;
   onTogglePanel: () => void;
+  isNarrow: boolean;
 }) {
   return (
     <XDSLayoutHeader hasDivider padding={4}>
-      <XDSVStack gap={0}>
+      <XDSVStack gap={3}>
         <XDSHStack gap={4} vAlign="start">
           <XDSStackItem size="fill">
             <XDSVStack gap={0}>
@@ -185,20 +198,12 @@ function PageHeader({
                 <XDSHeading level={1} maxLines={1}>
                   #1001
                 </XDSHeading>
-                <XDSOverflowList
-                  gap={1}
-                  minVisibleItems={2}
-                  overflowRenderer={overflowItems => (
-                    <XDSBadge
-                      variant="neutral"
-                      label={`+${overflowItems.length} more`}
-                    />
-                  )}>
-                  <XDSHStack gap={1} vAlign="center">
-                    <XDSText type="body" maxLines={1}>
-                      {PRODUCTS.length} ordered items
-                    </XDSText>
-                  </XDSHStack>
+                {/* Metadata wraps to multiple lines on narrow screens (rather
+                    than collapsing items behind a "+N more" overflow). */}
+                <XDSHStack gap={1} vAlign="center" wrap="wrap">
+                  <XDSText type="body" maxLines={1}>
+                    {PRODUCTS.length} ordered items
+                  </XDSText>
                   <XDSHStack gap={1} vAlign="center">
                     <Bullet />
                     <XDSAvatar name="Jane Doe" size="xsmall" />
@@ -230,15 +235,35 @@ function PageHeader({
                       See all
                     </XDSLink>
                   </XDSHStack>
-                </XDSOverflowList>
+                </XDSHStack>
               </XDSVStack>
             </XDSVStack>
           </XDSStackItem>
-          <XDSHStack gap={2}>
-            <XDSButton label="Restock" variant="secondary" />
-            <XDSButton label="Edit" variant="secondary" />
-          </XDSHStack>
+          {!isNarrow && (
+            <XDSHStack gap={2}>
+              <XDSButton label="Restock" variant="secondary" />
+              <XDSButton label="Edit" variant="secondary" />
+            </XDSHStack>
+          )}
         </XDSHStack>
+
+        {/* Mobile: actions drop below the metadata as a full-width row. The
+            XDSVStack hAlign="stretch" wrapper is the full-width-button
+            workaround — XDSButton has no full-width prop (#2600). */}
+        {isNarrow && (
+          <XDSHStack gap={2}>
+            <XDSStackItem size="fill">
+              <XDSVStack hAlign="stretch">
+                <XDSButton label="Restock" variant="secondary" />
+              </XDSVStack>
+            </XDSStackItem>
+            <XDSStackItem size="fill">
+              <XDSVStack hAlign="stretch">
+                <XDSButton label="Edit" variant="secondary" />
+              </XDSVStack>
+            </XDSStackItem>
+          </XDSHStack>
+        )}
 
         <XDSHStack vAlign="center" xstyle={pageStyles.tabsRow}>
           <XDSStackItem size="fill">
@@ -274,7 +299,7 @@ function ItemsCard() {
   return (
     <XDSSection>
       <XDSVStack gap={4}>
-        <XDSHStack vAlign="center">
+        <XDSHStack vAlign="center" gap={2} wrap="wrap">
           <XDSStackItem size="fill">
             <XDSHStack gap={2} vAlign="center">
               <XDSHeading level={2}>Items</XDSHeading>
@@ -287,7 +312,7 @@ function ItemsCard() {
           </XDSHStack>
         </XDSHStack>
 
-        <XDSList density="spacious">
+        <XDSList density="spacious" xstyle={pageStyles.itemsList}>
           {PRODUCTS.map((product, i) => (
             <XDSListItem
               key={i}
@@ -310,11 +335,14 @@ function ItemsCard() {
                 />
               }
               endContent={
-                <XDSText type="body" color="secondary" maxLines={1}>
-                  {fmt(product.price)} {'×'} {product.qty}
-                  {'      '}
-                  {fmt(product.price * product.qty)}
-                </XDSText>
+                <XDSVStack gap={0} hAlign="end">
+                  <XDSText type="body" weight="bold" maxLines={1}>
+                    {fmt(product.price * product.qty)}
+                  </XDSText>
+                  <XDSText type="supporting" color="secondary" maxLines={1}>
+                    {fmt(product.price)} {'×'} {product.qty}
+                  </XDSText>
+                </XDSVStack>
               }
             />
           ))}
@@ -329,7 +357,7 @@ function InvoiceCard() {
   return (
     <XDSSection>
       <XDSVStack gap={4}>
-        <XDSHStack vAlign="center">
+        <XDSHStack vAlign="center" gap={2} wrap="wrap">
           <XDSStackItem size="fill">
             <XDSHStack gap={2} vAlign="center">
               <XDSHeading level={2}>Invoice</XDSHeading>
@@ -481,7 +509,6 @@ function TimelineSection() {
                   </XDSVStack>
                 </XDSStackItem>
               </XDSHStack>
-              {i < ACTIVITY.length - 1 && <XDSDivider />}
             </XDSVStack>
           ))}
         </XDSVStack>
@@ -491,54 +518,63 @@ function TimelineSection() {
 }
 
 // ─── Right Panel ────────────────────────────────────────────────────────────
+// Renders as a fixed-width side panel on desktop, and as a plain stacked section
+// on mobile (so it flows below the content instead of squishing beside it).
+function PanelContent() {
+  return (
+    <XDSVStack gap={4}>
+      <XDSCollapsible trigger={<XDSHeading level={4}>Notes</XDSHeading>}>
+        <XDSText type="body">
+          Customer is a repeat buyer — 3rd order this quarter. Prefers snow and
+          oat glazes. Requested gift wrapping for the mug set. Ships to a
+          residential address in CA.{' '}
+          <XDSLink href="#" color="secondary">
+            Show more
+          </XDSLink>
+        </XDSText>
+      </XDSCollapsible>
+
+      <XDSCollapsible trigger={<XDSHeading level={4}>Customer</XDSHeading>}>
+        <XDSMetadataList>
+          <XDSMetadataListItem label="Name">Jane Doe</XDSMetadataListItem>
+          <XDSMetadataListItem label="Address">
+            321 Smith Road, CA 38238
+          </XDSMetadataListItem>
+          <XDSMetadataListItem label="Phone">234-</XDSMetadataListItem>
+          <XDSMetadataListItem label="Email">
+            janedoe@email.com
+          </XDSMetadataListItem>
+          <XDSMetadataListItem label="Billing Address">
+            Same as shipping address
+          </XDSMetadataListItem>
+        </XDSMetadataList>
+      </XDSCollapsible>
+
+      <XDSCollapsible
+        trigger={<XDSHeading level={4}>Fraud Analysis</XDSHeading>}>
+        <XDSVStack gap={1}>
+          <XDSProgressBar
+            label="Risk level"
+            value={15}
+            variant="success"
+            isLabelHidden
+          />
+          <XDSText type="body">Recommendation: Fulfill order</XDSText>
+          <XDSText type="body">
+            There is a low chance that you will receive a chargeback on this
+            order.
+          </XDSText>
+        </XDSVStack>
+      </XDSCollapsible>
+    </XDSVStack>
+  );
+}
+
+// Desktop: fixed-width side panel in the layout's `end` slot.
 function RightPanel() {
   return (
     <XDSLayoutPanel width={320} padding={4} role="complementary">
-      <XDSVStack gap={4}>
-        <XDSCollapsible trigger={<XDSHeading level={4}>Notes</XDSHeading>}>
-          <XDSText type="body">
-            Customer is a repeat buyer — 3rd order this quarter. Prefers snow
-            and oat glazes. Requested gift wrapping for the mug set. Ships to a
-            residential address in CA.{' '}
-            <XDSLink href="#" color="secondary">
-              Show more
-            </XDSLink>
-          </XDSText>
-        </XDSCollapsible>
-
-        <XDSCollapsible trigger={<XDSHeading level={4}>Customer</XDSHeading>}>
-          <XDSMetadataList>
-            <XDSMetadataListItem label="Name">Jane Doe</XDSMetadataListItem>
-            <XDSMetadataListItem label="Address">
-              321 Smith Road, CA 38238
-            </XDSMetadataListItem>
-            <XDSMetadataListItem label="Phone">234-</XDSMetadataListItem>
-            <XDSMetadataListItem label="Email">
-              janedoe@email.com
-            </XDSMetadataListItem>
-            <XDSMetadataListItem label="Billing Address">
-              Same as shipping address
-            </XDSMetadataListItem>
-          </XDSMetadataList>
-        </XDSCollapsible>
-
-        <XDSCollapsible
-          trigger={<XDSHeading level={4}>Fraud Analysis</XDSHeading>}>
-          <XDSVStack gap={1}>
-            <XDSProgressBar
-              label="Risk level"
-              value={15}
-              variant="success"
-              isLabelHidden
-            />
-            <XDSText type="body">Recommendation: Fulfill order</XDSText>
-            <XDSText type="body">
-              There is a low chance that you will receive a chargeback on this
-              order.
-            </XDSText>
-          </XDSVStack>
-        </XDSCollapsible>
-      </XDSVStack>
+      <PanelContent />
     </XDSLayoutPanel>
   );
 }
@@ -547,31 +583,66 @@ function RightPanel() {
 export default function DetailPage2Template() {
   const [activeTab, setActiveTab] = useState('details');
   const isNarrow = useMediaQuery('(max-width: 1024px)');
-  const [isPanelOpen, setIsPanelOpen] = useState(!isNarrow);
+  // Desktop: a fixed-width `end`-slot side panel that can be hidden.
+  const [showSidePanel, setShowSidePanel] = useState(true);
+  // Mobile: the panel opens as a full-screen dialog (the side slot would squish
+  // the main content), driven by the same toolbar button.
+  const [isPanelDialogOpen, setPanelDialogOpen] = useState(false);
+
+  const isPanelShown = isNarrow ? isPanelDialogOpen : showSidePanel;
+  const togglePanel = () =>
+    isNarrow
+      ? setPanelDialogOpen(prev => !prev)
+      : setShowSidePanel(prev => !prev);
 
   return (
-    <XDSLayout
-      height="fill"
-      contentWidth={1000}
-      defaultHasDividers
-      header={
-        <PageHeader
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          isPanelOpen={isPanelOpen}
-          onTogglePanel={() => setIsPanelOpen(prev => !prev)}
+    <>
+      <XDSLayout
+        height="fill"
+        contentWidth={1000}
+        defaultHasDividers
+        header={
+          <PageHeader
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            isPanelOpen={isPanelShown}
+            onTogglePanel={togglePanel}
+            isNarrow={isNarrow}
+          />
+        }
+        content={
+          <XDSLayoutContent role="main">
+            <XDSVStack gap={4}>
+              <ItemsCard />
+              <InvoiceCard />
+              <TimelineSection />
+            </XDSVStack>
+          </XDSLayoutContent>
+        }
+        end={!isNarrow && showSidePanel ? <RightPanel /> : undefined}
+      />
+
+      {/* Mobile: the side panel content opens as a full-screen dialog. (A
+          side drawer/sheet would be more idiomatic, but XDS has no Drawer
+          component yet — #2575 — so we use the fullscreen Dialog variant.) */}
+      <XDSDialog
+        variant="fullscreen"
+        isOpen={isNarrow && isPanelDialogOpen}
+        onOpenChange={setPanelDialogOpen}>
+        <XDSLayout
+          header={
+            <XDSDialogHeader
+              title="Order details"
+              onOpenChange={setPanelDialogOpen}
+            />
+          }
+          content={
+            <XDSLayoutContent padding={4}>
+              <PanelContent />
+            </XDSLayoutContent>
+          }
         />
-      }
-      content={
-        <XDSLayoutContent role="main">
-          <XDSVStack gap={4}>
-            <ItemsCard />
-            <InvoiceCard />
-            <TimelineSection />
-          </XDSVStack>
-        </XDSLayoutContent>
-      }
-      end={isPanelOpen ? <RightPanel /> : undefined}
-    />
+      </XDSDialog>
+    </>
   );
 }
