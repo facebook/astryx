@@ -70,6 +70,16 @@ const styles = stylex.create({
   sideNavHeading: {
     marginInline: spacingVars['--spacing-4'],
   },
+  // Edge-compensate the ghost back button so its icon aligns flush with the
+  // content's left edge. Same container-driven pattern XDS toolbars use: pull
+  // the row's start margin by the ghost button's optical inset when its first
+  // child is edge-compensatable (data-xds-edge-comp, which ghost XDSButton sets).
+  backRow: {
+    marginInlineStart: {
+      default: null,
+      ':has(> [data-xds-edge-comp]:first-child)': `calc(-1 * ${spacingVars['--spacing-2']})`,
+    },
+  },
 });
 
 const NAV_ITEMS = [
@@ -322,7 +332,10 @@ export default function SettingsSecurityTemplate() {
             {/* Mobile detail view: a back button sits beside the section title
                 (the per-section headings below are hidden on mobile). */}
             {isNarrow && (
-              <XDSHStack gap={2} vAlign="center" xstyle={styles.rowPadding}>
+              <XDSHStack
+                gap={2}
+                vAlign="center"
+                xstyle={[styles.rowPadding, styles.backRow]}>
                 <XDSButton
                   label="Back to Account settings"
                   variant="ghost"
