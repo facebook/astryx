@@ -75,6 +75,10 @@ const meta: Meta<typeof XDSAspectRatio> = {
       control: 'number',
       description: 'The aspect ratio as width/height (e.g., 16/9 = 1.777...)',
     },
+    isCircle: {
+      control: 'boolean',
+      description: 'Clip the container to a circle (forces a 1:1 ratio).',
+    },
   },
 };
 
@@ -166,6 +170,26 @@ export const Ultrawide21x9: Story = {
         <div {...stylex.props(styles.gradientPlaceholder)}>
           <XDSText type="label">Ultrawide 21:9</XDSText>
         </div>
+      </XDSAspectRatio>
+    </div>
+  ),
+};
+
+export const Circle: Story = {
+  args: {
+    isCircle: true,
+  },
+  render: args => (
+    <div {...stylex.props(styles.smallContainer)}>
+      <XDSText type="supporting" xstyle={styles.sectionLabel}>
+        Circle - Avatars and circular media (forces 1:1)
+      </XDSText>
+      <XDSAspectRatio {...args}>
+        <img
+          {...stylex.props(styles.image)}
+          src={PLACEHOLDER_SQUARE}
+          alt="Circular media"
+        />
       </XDSAspectRatio>
     </div>
   ),

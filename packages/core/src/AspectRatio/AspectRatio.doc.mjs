@@ -13,6 +13,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Express the ratio as a fraction like `16/9` or `4/3` for readability.'},
       {guidance: true, description: 'Use for media that needs consistent proportions across screen sizes.'},
+      {guidance: true, description: 'Use `isCircle` for circular media like avatars; it forces a 1:1 ratio and clips to a circle.'},
       {guidance: false, description: 'Use for general layout containers — use standard layout components instead.'},
       {guidance: false, description: 'Nest AspectRatio containers — one level is sufficient.'},
     ],
@@ -21,8 +22,14 @@ export const docs = {
     {
       name: 'ratio',
       type: 'number',
-      description: 'Aspect ratio as width/height (e.g. 16/9, 1).',
-      required: true,
+      description: 'Aspect ratio as width/height (e.g. 16/9, 1). Optional when `isCircle` is set.',
+      required: false,
+    },
+    {
+      name: 'isCircle',
+      type: 'boolean',
+      description: 'Clip the container into a circle (forces a 1:1 ratio with a fully rounded border). Ignores `ratio` when set.',
+      defaultValue: 'false',
     },
     {
       name: 'children',
@@ -65,7 +72,8 @@ export const docsZh = {
     ],
   },
   props: [
-    {name: 'ratio', type: 'number', description: '宽高比，以宽/高表示（例如 16/9、1）。', required: true},
+    {name: 'ratio', type: 'number', description: '宽高比，以宽/高表示（例如 16/9、1）。设置 `isCircle` 时可选。', required: false},
+    {name: 'isCircle', type: 'boolean', description: '将容器裁剪为圆形（强制 1:1 比例并应用完全圆角）。设置后将忽略 `ratio`。', defaultValue: 'false'},
     {name: 'children', type: 'ReactNode', description: '通过绝对定位填充容器的内容。', required: true},
     {
       name: 'xstyle',
@@ -95,7 +103,8 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    ratio: 'width/height ratio (e.g. 16/9, 1)',
+    ratio: 'width/height ratio (e.g. 16/9, 1); optional when isCircle is set',
+    isCircle: 'clip container to a circle (forces 1:1, ignores ratio)',
     children: 'content positioned absolutely to fill container',
     xstyle: 'StyleX layout customization via stylex.create()',
   },

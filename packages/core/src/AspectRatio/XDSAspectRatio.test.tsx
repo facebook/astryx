@@ -82,6 +82,38 @@ describe('XDSAspectRatio', () => {
     expect(element.style.aspectRatio).toBe(String(ratio));
   });
 
+  it('renders as a circle with a 1:1 ratio when circle is set', () => {
+    render(
+      <XDSAspectRatio isCircle data-testid="aspect-ratio">
+        <div>Circle</div>
+      </XDSAspectRatio>,
+    );
+    const element = screen.getByTestId('aspect-ratio');
+    expect(element.style.aspectRatio).toBe('1');
+  });
+
+  it('ignores the ratio prop when circle is set', () => {
+    render(
+      <XDSAspectRatio isCircle ratio={16 / 9} data-testid="aspect-ratio">
+        <div>Circle wins</div>
+      </XDSAspectRatio>,
+    );
+    const element = screen.getByTestId('aspect-ratio');
+    expect(element.style.aspectRatio).toBe('1');
+  });
+
+  it('does not apply circle styling by default', () => {
+    render(
+      <XDSAspectRatio ratio={1} data-testid="aspect-ratio">
+        <div>Square, not circle</div>
+      </XDSAspectRatio>,
+    );
+    const element = screen.getByTestId('aspect-ratio');
+    expect(element.style.aspectRatio).toBe('1');
+    // No fully-rounded border radius when circle is not set
+    expect(element.style.borderRadius).toBe('');
+  });
+
   it('forwards ref correctly', () => {
     const ref = vi.fn();
     render(
