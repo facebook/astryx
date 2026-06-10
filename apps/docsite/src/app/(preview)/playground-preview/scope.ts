@@ -59,6 +59,7 @@ import * as Grid from '@xds/core/Grid';
 import * as HoverCard from '@xds/core/HoverCard';
 import * as Icon from '@xds/core/Icon';
 import * as IconButton from '@xds/core/IconButton';
+import * as Item from '@xds/core/Item';
 import * as Kbd from '@xds/core/Kbd';
 import * as Layer from '@xds/core/Layer';
 import * as Layout from '@xds/core/Layout';
@@ -197,6 +198,7 @@ export const scope: Record<string, Record<string, unknown>> = {
   '@xds/core/HoverCard': HoverCard,
   '@xds/core/Icon': Icon,
   '@xds/core/IconButton': IconButton,
+  '@xds/core/Item': Item,
   '@xds/core/Kbd': Kbd,
   '@xds/core/Layer': Layer,
   '@xds/core/Layout': Layout,
@@ -278,6 +280,7 @@ export const scope: Record<string, Record<string, unknown>> = {
     ...HoverCard,
     ...Icon,
     ...IconButton,
+    ...Item,
     ...Kbd,
     ...Layer,
     ...Layout,

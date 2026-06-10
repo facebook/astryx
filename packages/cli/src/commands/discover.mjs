@@ -11,9 +11,8 @@
  */
 
 import {loadConfig} from '../lib/config.mjs';
-import {scanAllPackages} from '../lib/package-scanner.mjs';
 import {formatFull, formatBrief, formatCompact} from '../lib/component-format.mjs';
-import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
+import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {discover as discoverApi} from '../api/discover.mjs';
 

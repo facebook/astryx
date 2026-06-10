@@ -495,7 +495,7 @@ export default function PaymentFormPage() {
                                 borderColor: '#FFC439',
                               }}>
                               <img
-                                src="https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-100px.png"
+                                src="/template-assets/paypal-logo.png"
                                 alt="PayPal"
                                 style={{height: 20, width: 'auto'}}
                               />
@@ -511,7 +511,7 @@ export default function PaymentFormPage() {
                                 borderColor: '#000',
                               }}>
                               <img
-                                src="https://pay.google.com/about/static_kcs/images/logos/google-pay-logo.svg"
+                                src="/template-assets/google-pay-logo.svg"
                                 alt="Google Pay"
                                 style={{
                                   height: 22,
@@ -541,7 +541,7 @@ export default function PaymentFormPage() {
                           {/* Card type icons */}
                           <XDSHStack gap={1.5} vAlign="center">
                             <img
-                              src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/visa.svg"
+                              src="/template-assets/visa.svg"
                               alt="Visa"
                               style={{
                                 height: 'var(--spacing-7)',
@@ -554,7 +554,7 @@ export default function PaymentFormPage() {
                               }}
                             />
                             <img
-                              src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/mastercard.svg"
+                              src="/template-assets/mastercard.svg"
                               alt="Mastercard"
                               style={{
                                 height: 'var(--spacing-7)',
@@ -567,7 +567,7 @@ export default function PaymentFormPage() {
                               }}
                             />
                             <img
-                              src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/amex.svg"
+                              src="/template-assets/amex.svg"
                               alt="Amex"
                               style={{
                                 height: 'var(--spacing-7)',

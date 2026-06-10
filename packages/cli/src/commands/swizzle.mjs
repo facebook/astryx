@@ -17,7 +17,7 @@ import * as p from '@clack/prompts';
 import {findCoreDir, listComponents} from '../utils/paths.mjs';
 import {assertWithin, PathSafetyError, isNonInteractive} from '../utils/path-safety.mjs';
 import {isInteractive} from '../utils/interactive.mjs';
-import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
+import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {

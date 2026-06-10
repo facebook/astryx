@@ -31,6 +31,7 @@ import {useXDSLayer} from '../Layer';
 import {useScrollOverflow} from '../hooks/useScrollOverflow';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import type {SpacingStep} from '../utils/types';
 
 export interface XDSCarouselProps extends XDSBaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
@@ -47,10 +48,27 @@ export interface XDSCarouselProps extends XDSBaseProps<HTMLDivElement> {
    */
   hasButtons?: boolean;
   /**
+   * Show gradient edge-fade mask when content overflows, signalling that
+   * more items exist off-screen. Can be suppressed when items have
+   * full-fidelity surfaces that look broken when masked.
+   * @default true
+   */
+  hasEdgeFade?: boolean;
+  /**
    * Enable scroll-snap on items. Each direct child snaps to the start edge.
    * @default false
    */
   hasSnap?: boolean;
+  /**
+   * Inline padding on the scroll container. Applied as padding-inline
+   * so the gutter is inside the scrollable area — items can scroll fully
+   * into the padded region. Also sets matching scroll-padding so snap
+   * points align to the content edge rather than the viewport edge.
+   *
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   * @default undefined (no padding)
+   */
+  padding?: SpacingStep;
   /**
    * Accessible label for the carousel region.
    * @default 'Carousel'
@@ -107,21 +125,6 @@ const styles = stylex.create({
     scrollSnapAlign: 'start',
     display: 'flex',
     flexShrink: 0,
-    // Entry: 0% = item just touching edge, ~15% = item half in view, ~30% = fully in view
-    // Exit mirrors in reverse. Scale down only while partially out of view.
-    animationName: stylex.keyframes({
-      '0%': {transform: 'scale(0.85)'},
-      '15%': {transform: 'scale(1)'},
-      '85%': {transform: 'scale(1)'},
-      '100%': {transform: 'scale(0.85)'},
-    }),
-    animationTimeline: 'view(inline)',
-    animationRange: 'cover',
-    animationFillMode: 'both',
-    animationDuration: {
-      default: null,
-      '@media (prefers-reduced-motion: reduce)': '0ms',
-    },
   },
   // Overlay on top layer — covers the carousel anchor area
   buttonOverlay: {
@@ -169,6 +172,53 @@ const gapStyles = stylex.create({
   4: {gap: spacingVars['--spacing-4']},
 });
 
+const paddingStyles = stylex.create({
+  0: {
+    paddingInline: spacingVars['--spacing-0'],
+    scrollPaddingInline: spacingVars['--spacing-0'],
+  },
+  0.5: {
+    paddingInline: spacingVars['--spacing-0-5'],
+    scrollPaddingInline: spacingVars['--spacing-0-5'],
+  },
+  1: {
+    paddingInline: spacingVars['--spacing-1'],
+    scrollPaddingInline: spacingVars['--spacing-1'],
+  },
+  1.5: {
+    paddingInline: spacingVars['--spacing-1-5'],
+    scrollPaddingInline: spacingVars['--spacing-1-5'],
+  },
+  2: {
+    paddingInline: spacingVars['--spacing-2'],
+    scrollPaddingInline: spacingVars['--spacing-2'],
+  },
+  3: {
+    paddingInline: spacingVars['--spacing-3'],
+    scrollPaddingInline: spacingVars['--spacing-3'],
+  },
+  4: {
+    paddingInline: spacingVars['--spacing-4'],
+    scrollPaddingInline: spacingVars['--spacing-4'],
+  },
+  5: {
+    paddingInline: spacingVars['--spacing-5'],
+    scrollPaddingInline: spacingVars['--spacing-5'],
+  },
+  6: {
+    paddingInline: spacingVars['--spacing-6'],
+    scrollPaddingInline: spacingVars['--spacing-6'],
+  },
+  8: {
+    paddingInline: spacingVars['--spacing-8'],
+    scrollPaddingInline: spacingVars['--spacing-8'],
+  },
+  10: {
+    paddingInline: spacingVars['--spacing-10'],
+    scrollPaddingInline: spacingVars['--spacing-10'],
+  },
+});
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -196,7 +246,9 @@ export function XDSCarousel({
   children,
   gap = 1,
   hasButtons = true,
+  hasEdgeFade = true,
   hasSnap = false,
+  padding,
   'aria-label': ariaLabel = 'Carousel',
   xstyle,
   className,
@@ -242,14 +294,15 @@ export function XDSCarousel({
     });
   }, []);
 
-  const fadeStyle =
-    overflowStart && overflowEnd
+  const fadeStyle = hasEdgeFade
+    ? overflowStart && overflowEnd
       ? styles.fadeBoth
       : overflowStart
         ? styles.fadeStart
         : overflowEnd
           ? styles.fadeEnd
-          : null;
+          : null
+    : null;
 
   const coverStyle: React.CSSProperties = {
     positionArea: 'center',
@@ -276,6 +329,7 @@ export function XDSCarousel({
         {...stylex.props(
           styles.scroller,
           gapStyles[gap],
+          padding != null && paddingStyles[padding],
           hasSnap && styles.snap,
           fadeStyle,
         )}>
@@ -284,48 +338,49 @@ export function XDSCarousel({
         ))}
       </div>
 
-      {layer.render(
-        <>
-          <div
-            {...stylex.props(
-              styles.buttonPill,
-              styles.buttonPillStart,
-              !overflowStart && styles.buttonHidden,
-            )}>
-            <XDSButton
-              icon={<XDSIcon icon="chevronLeft" size="xsm" />}
-              label="Scroll left"
-              variant="ghost"
-              size="sm"
-              isIconOnly
-              onClick={() => scrollBy(-1)}
-              xstyle={styles.buttonRadiusOverride}
-            />
-          </div>
-          <div
-            {...stylex.props(
-              styles.buttonPill,
-              styles.buttonPillEnd,
-              !overflowEnd && styles.buttonHidden,
-            )}>
-            <XDSButton
-              icon={<XDSIcon icon="chevronRight" size="xsm" />}
-              label="Scroll right"
-              variant="ghost"
-              size="sm"
-              isIconOnly
-              onClick={() => scrollBy(1)}
-              xstyle={styles.buttonRadiusOverride}
-            />
-          </div>
-        </>,
-        {
-          placement: 'below',
-          alignment: 'center',
-          style: coverStyle,
-          xstyle: styles.buttonOverlay,
-        },
-      )}
+      {hasButtons &&
+        layer.render(
+          <>
+            <div
+              {...stylex.props(
+                styles.buttonPill,
+                styles.buttonPillStart,
+                !overflowStart && styles.buttonHidden,
+              )}>
+              <XDSButton
+                icon={<XDSIcon icon="chevronLeft" size="xsm" />}
+                label="Scroll left"
+                variant="ghost"
+                size="sm"
+                isIconOnly
+                onClick={() => scrollBy(-1)}
+                xstyle={styles.buttonRadiusOverride}
+              />
+            </div>
+            <div
+              {...stylex.props(
+                styles.buttonPill,
+                styles.buttonPillEnd,
+                !overflowEnd && styles.buttonHidden,
+              )}>
+              <XDSButton
+                icon={<XDSIcon icon="chevronRight" size="xsm" />}
+                label="Scroll right"
+                variant="ghost"
+                size="sm"
+                isIconOnly
+                onClick={() => scrollBy(1)}
+                xstyle={styles.buttonRadiusOverride}
+              />
+            </div>
+          </>,
+          {
+            placement: 'below',
+            alignment: 'center',
+            style: coverStyle,
+            xstyle: styles.buttonOverlay,
+          },
+        )}
     </div>
   );
 }

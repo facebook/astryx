@@ -6,7 +6,6 @@
 
 import {discoverComponents, findComponentReadme, resolveImportPath} from './component-discovery.mjs';
 import {loadDocs} from './component-loader.mjs';
-import * as fs from 'node:fs';
 
 /** Derive the theme component key from a theming target (strips 'xds-' prefix). */
 function targetKey(target) {
@@ -222,9 +221,7 @@ export function formatFull(docs, options = {}) {
 
     // Component CSS vars — split into public (directly settable) and private (set via derived)
     if (docs.theming?.vars?.length) {
-      // Private vars (--_*) are internal — set via standard CSS properties through derived expansion
       const publicVars = docs.theming.vars.filter(v => !v.private && !v.derived);
-      const privateVars = docs.theming.vars.filter(v => v.private || v.derived);
 
       if (publicVars.length > 0) {
         sections.push('**Themeable CSS variables** — additional properties that can be overridden in `defineTheme` component overrides.\n');
