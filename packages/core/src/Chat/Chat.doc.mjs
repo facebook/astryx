@@ -273,6 +273,23 @@ const chatLayoutComponent = {
   name: 'XDSChatLayout',
   displayName: 'Chat Layout',
   description: 'Layout shell for full chat interfaces. Messages flow in normal page flow, composer is fixed to the bottom with a frosted glass dock. Adapts density (compact/balanced/spacious) automatically via container width observation. Includes built-in auto-scroll, a "New messages" scroll-to-bottom button, and a frosted glass blur layer behind the composer. By default the layout root is the scroll container; pass scrollRef to delegate scrolling to a parent element or the document body.',
+  usage: {
+    description: 'XDSChatLayout is the layout shell for full-page chat interfaces. It renders messages in normal page flow and docks the composer to the bottom with a frosted glass blur layer. Density adapts automatically via container width observation. Use it to wrap XDSChatMessageList and XDSChatComposer for a complete chat experience with built-in auto-scroll and a scroll-to-bottom button.',
+    bestPractices: [
+      { guidance: true, description: 'Pass XDSChatMessageList as children and XDSChatComposer as the composer prop for a complete chat interface.' },
+      { guidance: true, description: 'Provide an emptyState so new conversations show a prompt instead of a blank screen.' },
+      { guidance: true, description: 'Use scrollRef when the chat is embedded in a page where a parent element handles scrolling.' },
+      { guidance: false, description: 'Don\'t apply a fixed height on the layout — let it fill its container with flex: 1.' },
+      { guidance: false, description: 'Don\'t render multiple ChatLayout instances in the same scroll container — each expects to own its scroll context.' },
+    ],
+    anatomy: [
+      { name: 'Message area', required: true, description: 'Scrollable region for messages. Renders children (typically XDSChatMessageList) in a flex column that pushes content to the bottom when the list is short.' },
+      { name: 'Frosted glass dock', required: true, description: 'Sticky or fixed container at the bottom with a backdrop-blur layer. Houses the scroll button and composer.' },
+      { name: 'Scroll-to-bottom button', required: false, description: 'Appears when the user scrolls up or new messages arrive. Defaults to XDSChatLayoutScrollButton; pass null to hide or a custom element to override.' },
+      { name: 'Composer', required: true, description: 'The input area for sending messages, typically XDSChatComposer. Docked at the bottom inside the frosted glass layer.' },
+      { name: 'Empty state', required: false, description: 'Centered placeholder shown when no messages exist. Use XDSEmptyState for a consistent look.' },
+    ],
+  },
   props: [
     {name: 'children', type: 'ReactNode', description: 'Message content — typically XDSChatMessageList. Flows naturally in the page and scrolls with the container.', required: true},
     {name: 'composer', type: 'ReactNode', description: 'Composer element — typically XDSChatComposer. Fixed to the bottom with a frosted glass dock.', required: true,
