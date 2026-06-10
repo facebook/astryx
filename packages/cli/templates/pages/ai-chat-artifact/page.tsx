@@ -693,8 +693,11 @@ export default function AIChatArtifactTemplate() {
         variant="fullscreen">
         {/* Canonical fullscreen-dialog structure: an XDSLayout whose header
             slot holds the XDSDialogHeader and whose content slot holds the
-            document. XDSLayout + XDSLayoutContent keep the header and body on
-            the same inset automatically (no manual padding to match). */}
+            document. ArtifactBody renders a VStack, so it needs XDSLayoutContent
+            to establish the bounded, scrollable content region — without it the
+            fullscreen dialog can't scroll on mobile/tablet. padding={0} because
+            ArtifactBody's own XDSSection already supplies the document inset
+            (matching the desktop split-pane, which also wraps it edge-to-edge). */}
         <XDSLayout
           header={
             <XDSDialogHeader
@@ -713,7 +716,11 @@ export default function AIChatArtifactTemplate() {
               }
             />
           }
-          content={<ArtifactBody showMarkdown={showMarkdown} />}
+          content={
+            <XDSLayoutContent padding={0}>
+              <ArtifactBody showMarkdown={showMarkdown} />
+            </XDSLayoutContent>
+          }
         />
       </XDSDialog>
     </XDSVStack>
