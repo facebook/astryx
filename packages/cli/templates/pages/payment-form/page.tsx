@@ -165,6 +165,8 @@ const styles = stylex.create({
   visibleOverflow: {overflow: 'visible'},
   // Form column flex-basis so the two checkout columns share width evenly.
   formColBasis: {flexBasis: 0},
+  // Space the Order Summary content below its collapsible trigger title.
+  summaryContent: {paddingBlockStart: spacingVars['--spacing-2']},
   // Order-summary column: sticky beside the form on desktop.
   summarySticky: {
     flexBasis: 0,
@@ -176,13 +178,10 @@ const styles = stylex.create({
   summaryMobileOrder: {order: -1},
   // Express-checkout brand buttons (fixed brand colors).
   paypalButton: {backgroundColor: '#FFC439', borderColor: '#FFC439'},
-  // Per Google Pay brand guidelines, the official mark must not be recolored
-  // or altered. The provided mark is full-color (for light backgrounds), so
-  // the button uses a light surface that contrasts with the page background.
-  gpayButton: {
-    backgroundColor: colorVars['--color-background-surface'],
-    borderColor: colorVars['--color-border'],
-  },
+  // Official Google Pay dark button: black background with the unaltered
+  // dark-variant mark (white "Google Pay" text + full-color G), per the
+  // Google Pay brand guidelines.
+  gpayButton: {backgroundColor: '#000', borderColor: '#000'},
   // Brand logos inside the express-checkout buttons.
   paypalLogo: {height: spacingVars['--spacing-5'], width: 'auto'},
   // Unaltered Google Pay mark (no filter/recolor — brand requirement).
@@ -524,7 +523,7 @@ export default function PaymentFormPage() {
                               onClick={() => {}}
                               xstyle={styles.gpayButton}>
                               <img
-                                src="/template-assets/google-pay-logo.svg"
+                                src="/template-assets/google-pay-logo-dark.svg"
                                 alt="Google Pay"
                                 {...stylex.props(styles.gpayLogo)}
                               />
@@ -854,7 +853,7 @@ export default function PaymentFormPage() {
                         <XDSCollapsible
                           trigger="Order Summary"
                           defaultIsOpen={true}>
-                          <XDSVStack gap={4}>
+                          <XDSVStack gap={4} xstyle={styles.summaryContent}>
                             {/* Line items */}
                             {ORDER_ITEMS.map(item => (
                               <XDSVStack key={item.id} gap={3}>
