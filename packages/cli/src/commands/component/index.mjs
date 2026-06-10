@@ -82,24 +82,32 @@ export function registerComponent(program) {
 
       switch (result.type) {
         case 'component.list': {
-          // --detail brief (default for list views) — names only.
+          // --detail brief (default for list views) — names with import paths.
           if (options.category) {
             const [cat, comps] = Object.entries(result.data)[0];
             humanLog(`\n${cat}:`);
-            for (const comp of comps) humanLog(`  ${comp}`);
+            for (const comp of comps) {
+              const importPath = resolveImportPath(coreDir, comp);
+              humanLog(`  ${comp}  ← ${importPath}`);
+            }
             humanLog('');
           } else {
             humanLog('');
             for (const [key, comps] of Object.entries(result.data)) {
               const isUngrouped = comps.length === 1 && comps[0] === key;
               if (isUngrouped) {
-                humanLog(key);
+                const importPath = resolveImportPath(coreDir, key);
+                humanLog(`${key}  ← ${importPath}`);
               } else {
-                humanLog(key);
-                for (const comp of comps) humanLog(`  ${comp}`);
+                humanLog(`${key} (group)`);
+                for (const comp of comps) {
+                  const importPath = resolveImportPath(coreDir, comp);
+                  humanLog(`  ${comp}  ← ${importPath}`);
+                }
               }
             }
             humanLog('');
+            humanLog(`Import from the path shown (e.g. import {XDSButton} from '@xds/core/Button')`);
             humanLog(`Usage: ${run} xds component <name>`);
             humanLog('');
           }
@@ -114,13 +122,15 @@ export function registerComponent(program) {
             // Skip the synthetic group header when there's only one ungrouped category
             const isUngrouped =
               entries.length === 1 && items.length === 1 && items[0]?.name === cat;
-            if (!isUngrouped) humanLog(cat);
+            if (!isUngrouped) humanLog(`${cat} (group)`);
             for (const item of items) {
+              const importHint = item.import ? `  ← ${item.import}` : '';
               const desc = item.description ? ` — ${item.description}` : '';
-              humanLog(`  XDS${item.name}${desc}`);
+              humanLog(`  XDS${item.name}${importHint}${desc}`);
             }
             humanLog('');
           }
+          humanLog(`Import from the path shown (e.g. import {XDSButton} from '@xds/core/Button')`);
           humanLog(`Usage: ${run} xds component <name>`);
           humanLog('');
           break;

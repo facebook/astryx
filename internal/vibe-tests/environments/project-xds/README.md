@@ -19,6 +19,29 @@ Components use:
 - StyleX (`@stylexjs/stylex`) for styling
 - React 19
 
+## Styling with StyleX
+
+Custom styles must use `stylex.create()` — plain objects are not valid:
+
+```tsx
+import stylex from '@stylexjs/stylex';
+
+const styles = stylex.create({
+  container: {
+    padding: 16,
+    backgroundColor: '#f5f5f5',
+  },
+});
+
+// Apply to XDS components via the xstyle prop:
+<XDSCard xstyle={styles.container}>...</XDSCard>
+
+// Apply to HTML elements via stylex.props():
+<div {...stylex.props(styles.container)}>...</div>
+```
+
+**Important:** Never pass plain `{padding: '16px'}` objects to `xstyle` — always use `stylex.create()`.
+
 ## Import Pattern
 
 Each component is imported from its own subpath:
