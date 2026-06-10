@@ -3,18 +3,18 @@
 'use client';
 
 import {XDSVStack, XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSCard} from '@xds/core/Card';
 import {XDSIcon} from '@xds/core/Icon';
-import {XDSSection} from '@xds/core/Section';
 import {ArrowRightIcon} from '@heroicons/react/24/outline';
 import * as stylex from '@stylexjs/stylex';
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
+// The only custom CSS is the image fill — there is no XDSImage primitive to
+// fill the XDSAspectRatio box with `object-fit` (#2582).
 
 const styles = stylex.create({
   image: {
@@ -113,7 +113,9 @@ function ProductCard({product}: {product: Product}) {
         <XDSText type="body" color="secondary" maxLines={2}>
           {product.description}
         </XDSText>
-        <XDSHeading level={2}>{fmt(product.price)}</XDSHeading>
+        <XDSText type="large" weight="bold">
+          {fmt(product.price)}
+        </XDSText>
       </XDSVStack>
     </XDSVStack>
   );
@@ -125,43 +127,38 @@ export default function ProductGalleryTemplate() {
   return (
     <XDSLayout
       height="auto"
+      contentWidth={1200}
       content={
-        <XDSLayoutContent padding={0}>
-          <XDSCenter axis="horizontal">
-            <XDSSection variant="transparent" maxWidth={1200} padding={6}>
-              <XDSVStack gap={6}>
-                {/* Header — XDSGrid handles responsive stacking */}
-                <XDSGrid columns={{minWidth: 280}} gap={4} align="start">
-                  <XDSHeading level={1}>
-                    Make every day a little more delightful, one small detail at
-                    a time.
-                  </XDSHeading>
-                  <XDSVStack gap={3} hAlign="start">
-                    <XDSText type="body">
-                      We believe the smallest details are the ones that matter
-                      most. A little color, a thoughtful touch, a moment that
-                      catches your eye and makes you pause; that&apos;s what
-                      turns an ordinary day into something worth remembering.
-                    </XDSText>
-                    <XDSButton
-                      label="Get started"
-                      variant="primary"
-                      endContent={
-                        <XDSIcon icon={ArrowRightIcon} color="inherit" />
-                      }
-                    />
-                  </XDSVStack>
-                </XDSGrid>
-
-                {/* Product Grid — 3 cols desktop, wraps to 2→1 on smaller screens */}
-                <XDSGrid columns={{minWidth: 300}} gap={6}>
-                  {PRODUCTS.map(product => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </XDSGrid>
+        <XDSLayoutContent padding={6}>
+          <XDSVStack gap={6}>
+            {/* Header — XDSGrid handles responsive stacking */}
+            <XDSGrid columns={{minWidth: 280}} gap={4} align="start">
+              <XDSHeading level={1}>
+                Make every day a little more delightful, one small detail at a
+                time.
+              </XDSHeading>
+              <XDSVStack gap={3} hAlign="start">
+                <XDSText type="body">
+                  We believe the smallest details are the ones that matter most.
+                  A little color, a thoughtful touch, a moment that catches your
+                  eye and makes you pause; that&apos;s what turns an ordinary
+                  day into something worth remembering.
+                </XDSText>
+                <XDSButton
+                  label="Get started"
+                  variant="primary"
+                  endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
+                />
               </XDSVStack>
-            </XDSSection>
-          </XDSCenter>
+            </XDSGrid>
+
+            {/* Product Grid — reflows 3 → 2 → 1 columns as width narrows */}
+            <XDSGrid columns={{minWidth: 300}} gap={6}>
+              {PRODUCTS.map(product => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </XDSGrid>
+          </XDSVStack>
         </XDSLayoutContent>
       }
     />
