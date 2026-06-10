@@ -8,8 +8,6 @@ import {
   XDSLayout,
   XDSLayoutContent,
 } from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSSection} from '@xds/core/Section';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
@@ -18,21 +16,16 @@ import {XDSDivider} from '@xds/core/Divider';
 import * as stylex from '@stylexjs/stylex';
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
+// Only the structurally-required image fill + corner radius remain — there is
+// no XDSImage primitive to fill a box with `object-fit` and round it (#2582).
 
 const styles = stylex.create({
-  splitLayout: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1.5fr',
-    gap: 'var(--spacing-7)',
-    alignItems: 'center',
-    '@media (max-width: 768px)': {
-      gridTemplateColumns: '1fr',
-    },
-  },
   image: {
     width: '100%',
     height: '100%',
     objectFit: 'cover',
+  },
+  imageClip: {
     borderRadius: 'var(--radius-element)',
   },
 });
@@ -99,9 +92,9 @@ function StatBlock({value, label}: {value: string; label: string}) {
 
 function ImageGrid() {
   return (
-    <XDSGrid columns={3} gap={3}>
-      {IMAGES.map((img, i) => (
-        <XDSAspectRatio key={i} ratio={1}>
+    <XDSGrid columns={{minWidth: 140, max: 3}} gap={3}>
+      {IMAGES.map(img => (
+        <XDSAspectRatio key={img.src} ratio={1} xstyle={styles.imageClip}>
           <img src={img.src} alt={img.alt} {...stylex.props(styles.image)} />
         </XDSAspectRatio>
       ))}
@@ -115,51 +108,44 @@ export default function SideGalleryTemplate() {
   return (
     <XDSLayout
       height="auto"
+      contentWidth={1400}
       content={
-        <XDSLayoutContent padding={0}>
-          <XDSCenter axis="horizontal">
-            <XDSSection variant="transparent" maxWidth={1400} padding={6}>
-              <div {...stylex.props(styles.splitLayout)}>
-                {/* Left side: Text + CTA */}
-                <XDSVStack gap={6} vAlign="center">
-                  <XDSVStack gap={3}>
-                    <XDSText
-                      type="supporting"
-                      color="secondary"
-                      weight="semibold">
-                      COLORFUL
-                    </XDSText>
-                    <XDSHeading level={1}>
-                      Make every day a little more delightful, one small detail
-                      at a time.
-                    </XDSHeading>
-                    <XDSText type="body" color="secondary">
-                      The smallest details are the ones that matter most. A
-                      little color that catches your eye and makes you pause;
-                      that&apos;s what turns an ordinary day into something
-                      worth remembering.
-                    </XDSText>
-                  </XDSVStack>
+        <XDSLayoutContent padding={6}>
+          <XDSGrid columns={{minWidth: 320, max: 2}} gap={8} align="center">
+            {/* Left side: Text + CTA */}
+            <XDSVStack gap={6} vAlign="center">
+              <XDSVStack gap={3}>
+                <XDSText type="supporting" color="secondary" weight="semibold">
+                  COLORFUL
+                </XDSText>
+                <XDSHeading level={1}>
+                  Make every day a little more delightful, one small detail at a
+                  time.
+                </XDSHeading>
+                <XDSText type="body" color="secondary">
+                  The smallest details are the ones that matter most. A little
+                  color that catches your eye and makes you pause; that&apos;s
+                  what turns an ordinary day into something worth remembering.
+                </XDSText>
+              </XDSVStack>
 
-                  <XDSHStack gap={3} vAlign="center">
-                    <XDSButton label="Explore" variant="primary" />
-                  </XDSHStack>
+              <XDSHStack gap={3} vAlign="center">
+                <XDSButton label="Explore" variant="primary" />
+              </XDSHStack>
 
-                  <XDSVStack gap={4}>
-                    <XDSDivider />
-                    <XDSHStack gap={6}>
-                      <StatBlock value="12k+" label="Photos" />
-                      <StatBlock value="350+" label="Projects" />
-                      <StatBlock value="8yrs" label="Experience" />
-                    </XDSHStack>
-                  </XDSVStack>
-                </XDSVStack>
+              <XDSVStack gap={4}>
+                <XDSDivider />
+                <XDSHStack gap={6}>
+                  <StatBlock value="12k+" label="Photos" />
+                  <StatBlock value="350+" label="Projects" />
+                  <StatBlock value="8yrs" label="Experience" />
+                </XDSHStack>
+              </XDSVStack>
+            </XDSVStack>
 
-                {/* Right side: Image Grid */}
-                <ImageGrid />
-              </div>
-            </XDSSection>
-          </XDSCenter>
+            {/* Right side: Image Grid */}
+            <ImageGrid />
+          </XDSGrid>
         </XDSLayoutContent>
       }
     />
