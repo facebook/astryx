@@ -122,14 +122,16 @@ export default function SettingsTemplate() {
       content={
         <XDSLayoutContent padding={4}>
           <XDSVStack gap={4}>
-            {/* Mobile: the sidebar nav collapses to a horizontal, scrollable
+            {/* Mobile: the sidebar nav collapses to a horizontal, centered
                 tab bar above the content. */}
             {isNarrow && (
-              <XDSTabList value={activeNav} onChange={setActiveNav}>
-                {NAV_ITEMS.map(item => (
-                  <XDSTab key={item} value={item} label={item} />
-                ))}
-              </XDSTabList>
+              <XDSVStack hAlign="center">
+                <XDSTabList value={activeNav} onChange={setActiveNav}>
+                  {NAV_ITEMS.map(item => (
+                    <XDSTab key={item} value={item} label={item} />
+                  ))}
+                </XDSTabList>
+              </XDSVStack>
             )}
             <XDSGrid columns={{minWidth: 320}} gap={10}>
               <XDSVStack gap={1}>
