@@ -91,3 +91,34 @@ export const docs = {
   importPath: '@xds/core/hooks',
   category: 'focus',
 };
+
+/** @type {import('../docs-types').HookTranslationDoc} */
+export const docsDense = {
+  description:
+    'Manages keyboard navigation within 2D grid following WAI-ARIA grid pattern. Supports arrow keys for cell-to-cell navigation, Home/End for row boundaries, Ctrl+Home/Ctrl+End for grid boundaries, Page Up/Down for custom callbacks (e.g. month navigation in calendars). Boundary navigation callbacks allow seamless cross-grid navigation.',
+  paramDescriptions: {
+    options: 'Configuration object for grid focus behavior. (required)',
+    'options.columns': 'Number of columns in grid. Used for up/down navigation (moves by this many cells). (required)',
+    'options.cellSelector': 'Selector for focusable cells within grid.',
+    'options.onNavigateBefore': 'Callback when navigation would go before first cell. Receives column index + offset (1 for horizontal, columns for vertical).',
+    'options.onNavigateAfter': 'Callback when navigation would go after last cell. Receives column index + offset.',
+    'options.onPageUp': 'Callback for Page Up key (e.g. navigate to previous month in calendars).',
+    'options.onPageDown': 'Callback for Page Down key (e.g. navigate to next month in calendars).',
+  },
+  returnDescriptions: {
+    gridRef: 'Ref to attach to grid container element.',
+    handleKeyDown: 'Key down handler to attach to grid container.',
+    focusCell: 'Focus specific cell by index (clamped to valid range).',
+    focusFirst: 'Focus first focusable cell in grid.',
+    focusLast: 'Focus last focusable cell in grid.',
+  },
+  usage: {
+    description:
+      'Manages keyboard navigation within 2D grid following WAI-ARIA grid pattern. Supports arrow keys for cell-to-cell navigation, Home/End for row boundaries, Ctrl+Home/Ctrl+End for grid boundaries, Page Up/Down for custom callbacks (e.g. month navigation in calendars). Boundary navigation callbacks allow seamless cross-grid navigation.',
+    bestPractices: [
+      { guidance: true, description: 'Use for calendar date grids — wire onPageUp/onPageDown to month navigation + onNavigateBefore/onNavigateAfter for cross-month arrow key navigation.' },
+      { guidance: true, description: 'Attach both gridRef + handleKeyDown to grid container element.' },
+      { guidance: false, description: 'Use for simple linear lists — prefer useListFocus for 1D navigation.' },
+    ],
+  },
+};
