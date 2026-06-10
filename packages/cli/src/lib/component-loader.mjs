@@ -6,7 +6,7 @@
 
 import {pathToFileURL} from 'node:url';
 
-function mergeTranslation(docs, translation) {
+export function mergeTranslation(docs, translation) {
   if (!translation) return docs;
 
   const merged = {...docs};
@@ -27,6 +27,26 @@ function mergeTranslation(docs, translation) {
     merged.props = merged.props.map(prop => {
       const desc = translation.propDescriptions[prop.name];
       return desc != null ? {...prop, description: desc} : prop;
+    });
+  }
+
+  // Merge hook param descriptions (HookTranslationDoc). Params are an array of
+  // {name, type, description, required}; override description by name where the
+  // translation has an entry. Names may include dots (e.g. 'options.isActive');
+  // the lookup is keyed by the exact param name.
+  if (translation.paramDescriptions && merged.params) {
+    merged.params = merged.params.map(param => {
+      const desc = translation.paramDescriptions[param.name];
+      return desc != null ? {...param, description: desc} : param;
+    });
+  }
+
+  // Merge hook return descriptions (HookTranslationDoc). Returns are an array
+  // of {name, type, description}; override description by name where present.
+  if (translation.returnDescriptions && merged.returns) {
+    merged.returns = merged.returns.map(ret => {
+      const desc = translation.returnDescriptions[ret.name];
+      return desc != null ? {...ret, description: desc} : ret;
     });
   }
 
