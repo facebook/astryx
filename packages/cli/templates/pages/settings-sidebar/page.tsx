@@ -3,6 +3,7 @@
 'use client';
 
 import {useState} from 'react';
+import {useMediaQuery} from '@xds/core/hooks';
 import * as stylex from '@stylexjs/stylex';
 import {
   XDSVStack,
@@ -43,9 +44,16 @@ import {
   ComputerDesktopIcon,
   PencilSquareIcon,
   ShareIcon,
+  ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
 
 const styles = stylex.create({
+  // Anchor the page to the viewport height so the sidebar + content fill the
+  // screen. XDSLayout height="fill" is min-height:100% which collapses when the
+  // host container is content-sized; XDSLayout has no viewport-height prop.
+  fillViewport: {
+    minHeight: '100dvh',
+  },
   iconBox: {
     borderRadius: radiusVars['--radius-container'],
     backgroundColor: colorVars['--color-background-surface'],
@@ -53,9 +61,6 @@ const styles = stylex.create({
   },
   rowPadding: {
     paddingBlock: spacingVars['--spacing-4'],
-  },
-  cardContentPadding: {
-    paddingInline: spacingVars['--spacing-4'],
   },
   sideNavPadding: {
     paddingBlock: spacingVars['--spacing-4'],
@@ -213,6 +218,10 @@ const TIMEZONES = [
 ];
 
 export default function SettingsSecurityTemplate() {
+  const isNarrow = useMediaQuery('(max-width: 768px)');
+  // Mobile is a master→detail drill-down: 'nav' shows the menu, 'detail' shows
+  // the selected section with a back button. Desktop shows both side-by-side.
+  const [mobileView, setMobileView] = useState<'nav' | 'detail'>('nav');
   const [activeNav, setActiveNav] = useState('Personal information');
   const [activeTab, setActiveTab] = useState('login');
   const [readReceipts, setReadReceipts] = useState(true);
@@ -236,41 +245,84 @@ export default function SettingsSecurityTemplate() {
   const [mailingAddress, setMailingAddress] = useState('');
   const [emergencyContact, setEmergencyContact] = useState('Provided');
 
+  // Selecting a nav item also drills into the detail view on mobile.
+  const selectNav = (label: string) => {
+    setActiveNav(label);
+    setMobileView('detail');
+  };
+
+  const navList = (
+    <XDSVStack gap={4} xstyle={styles.sideNavPadding}>
+      <XDSHeading level={2} xstyle={styles.sideNavHeading}>
+        Account settings
+      </XDSHeading>
+      <XDSList density="spacious">
+        {NAV_ITEMS.map(item => (
+          <XDSListItem
+            key={item.label}
+            label={item.label}
+            startContent={<XDSIcon icon={item.icon} />}
+            isSelected={!isNarrow && activeNav === item.label}
+            onClick={() => selectNav(item.label)}
+          />
+        ))}
+      </XDSList>
+      <XDSDivider />
+      <XDSList density="spacious">
+        <XDSListItem
+          label="Professional hosting tools"
+          startContent={<XDSIcon icon={WrenchScrewdriverIcon} />}
+          onClick={() => {}}
+        />
+      </XDSList>
+    </XDSVStack>
+  );
+
+  // Mobile, nav view: show only the menu (full width, no sidebar slot).
+  if (isNarrow && mobileView === 'nav') {
+    return (
+      <XDSLayout
+        height="fill"
+        xstyle={styles.fillViewport}
+        content={<XDSLayoutContent padding={2}>{navList}</XDSLayoutContent>}
+      />
+    );
+  }
+
   return (
     <XDSLayout
       height="fill"
-      contentWidth={700}
+      contentWidth={1200}
+      xstyle={styles.fillViewport}
       start={
-        <XDSLayoutPanel hasDivider padding={0}>
-          <XDSVStack gap={4} xstyle={styles.sideNavPadding}>
-            <XDSHeading level={2} xstyle={styles.sideNavHeading}>
-              Account settings
-            </XDSHeading>
-            <XDSList density="spacious">
-              {NAV_ITEMS.map(item => (
-                <XDSListItem
-                  key={item.label}
-                  label={item.label}
-                  startContent={<XDSIcon icon={item.icon} />}
-                  isSelected={activeNav === item.label}
-                  onClick={() => setActiveNav(item.label)}
-                />
-              ))}
-            </XDSList>
-            <XDSDivider />
-            <XDSList density="spacious">
-              <XDSListItem
-                label="Professional hosting tools"
-                startContent={<XDSIcon icon={WrenchScrewdriverIcon} />}
-                onClick={() => {}}
-              />
-            </XDSList>
-          </XDSVStack>
-        </XDSLayoutPanel>
+        isNarrow ? undefined : (
+          <XDSLayoutPanel hasDivider padding={0}>
+            {navList}
+          </XDSLayoutPanel>
+        )
       }
       content={
         <XDSLayoutContent padding={4}>
           <XDSVStack gap={0}>
+            {/* Mobile detail view: back link returns to the nav menu. */}
+            {isNarrow && (
+              <XDSStackItem>
+                <XDSVStack xstyle={styles.rowPadding}>
+                  <XDSLink
+                    href="#"
+                    color="secondary"
+                    onClick={e => {
+                      e.preventDefault();
+                      setMobileView('nav');
+                    }}>
+                    <XDSHStack gap={1} vAlign="center">
+                      <XDSIcon icon={ArrowLeftIcon} size="sm" color="inherit" />
+                      Account settings
+                    </XDSHStack>
+                  </XDSLink>
+                </XDSVStack>
+              </XDSStackItem>
+            )}
             {activeNav === 'Login & security' && (
               <XDSVStack gap={6}>
                 <XDSHeading level={2}>Login &amp; security</XDSHeading>
@@ -578,12 +630,9 @@ export default function SettingsSecurityTemplate() {
                   </ExpandableRow>
                 </XDSVStack>
 
-                <XDSCard padding={0}>
-                  <XDSVStack gap={0} xstyle={styles.cardContentPadding}>
-                    <XDSHStack
-                      gap={3}
-                      vAlign="start"
-                      xstyle={styles.rowPadding}>
+                <XDSCard padding={4}>
+                  <XDSVStack gap={4}>
+                    <XDSHStack gap={3} vAlign="start">
                       <XDSCenter width={48} height={48} xstyle={styles.iconBox}>
                         <XDSIcon icon={LockClosedIcon} />
                       </XDSCenter>
@@ -601,10 +650,7 @@ export default function SettingsSecurityTemplate() {
                       </XDSVStack>
                     </XDSHStack>
                     <XDSDivider />
-                    <XDSHStack
-                      gap={3}
-                      vAlign="start"
-                      xstyle={styles.rowPadding}>
+                    <XDSHStack gap={3} vAlign="start">
                       <XDSCenter width={48} height={48} xstyle={styles.iconBox}>
                         <XDSIcon icon={PencilSquareIcon} />
                       </XDSCenter>
@@ -624,10 +670,7 @@ export default function SettingsSecurityTemplate() {
                       </XDSVStack>
                     </XDSHStack>
                     <XDSDivider />
-                    <XDSHStack
-                      gap={3}
-                      vAlign="start"
-                      xstyle={styles.rowPadding}>
+                    <XDSHStack gap={3} vAlign="start">
                       <XDSCenter width={48} height={48} xstyle={styles.iconBox}>
                         <XDSIcon icon={ShareIcon} />
                       </XDSCenter>
