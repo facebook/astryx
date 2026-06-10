@@ -18,7 +18,6 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
 import {XDSSelector} from '@xds/core/Selector';
-import {colorVars} from '@xds/core/theme/tokens.stylex';
 
 // illustration-horizontal-1 from xds_oss asset set
 const ILLUSTRATION_URL = '/template-assets/illustration-horizontal-1.png';
@@ -56,15 +55,14 @@ const CONTACT_COLUMNS = [
 // Styles
 // ─────────────────────────────────────────────────────────────
 
+// The only custom styling is fitting the illustration inside its XDSAspectRatio
+// box without distortion (contain, not cover — it's line art, don't crop it).
+// No objectFit prop on XDSAspectRatio, and there's no XDSImage primitive (#2582).
 const styles = stylex.create({
-  page: {
-    backgroundColor: colorVars['--color-background-surface'],
-  },
-  imagePlaceholder: {
-    width: '85%',
-  },
-  fullWidth: {
+  illustrationImg: {
     width: '100%',
+    height: '100%',
+    objectFit: 'contain',
   },
 });
 
@@ -103,15 +101,15 @@ export default function FormTwoColumnPage() {
   const handleSubmit = () => setSubmitted(true);
 
   return (
-    <XDSCenter height="100svh" xstyle={styles.page}>
+    <XDSCenter height="100svh">
       <XDSSection
         maxWidth={1100}
         width="100%"
         padding={10}
         variant="transparent">
         <XDSVStack gap={10}>
-          {/* ── Top: two-column ── */}
-          <XDSGrid columns={2} align="center" gap={10}>
+          {/* ── Top: two-column, stacks to one column below ~520px ── */}
+          <XDSGrid columns={{minWidth: 320}} align="center" gap={10}>
             {/* Left: headline + description + illustration */}
             <XDSVStack gap={6}>
               <XDSVStack gap={3}>
@@ -123,8 +121,12 @@ export default function FormTwoColumnPage() {
                   figure out the best path forward.
                 </XDSText>
               </XDSVStack>
-              <XDSAspectRatio ratio={4 / 3} xstyle={styles.imagePlaceholder}>
-                <img src={ILLUSTRATION_URL} alt="Illustration" />
+              <XDSAspectRatio ratio={4 / 3}>
+                <img
+                  src={ILLUSTRATION_URL}
+                  alt="Person with a laptop and a lightbulb idea"
+                  {...stylex.props(styles.illustrationImg)}
+                />
               </XDSAspectRatio>
             </XDSVStack>
 
@@ -144,7 +146,7 @@ export default function FormTwoColumnPage() {
                       : undefined
                   }
                 />
-                <XDSGrid columns={2} gap={3}>
+                <XDSGrid columns={{minWidth: 180}} gap={3}>
                   <XDSTextInput
                     label="Email"
                     isLabelHidden
@@ -165,7 +167,7 @@ export default function FormTwoColumnPage() {
                     onChange={setCompany}
                   />
                 </XDSGrid>
-                <XDSGrid columns={2} gap={3}>
+                <XDSGrid columns={{minWidth: 180}} gap={3}>
                   <XDSTextInput
                     label="Job title"
                     isLabelHidden
@@ -220,20 +222,23 @@ export default function FormTwoColumnPage() {
                       : undefined
                   }
                 />
-                <XDSButton
-                  label="Let's connect"
-                  variant="primary"
-                  xstyle={styles.fullWidth}
-                  onClick={handleSubmit}
-                />
+                {/* hAlign="stretch" = full-width button workaround; XDSButton
+                    has no full-width prop (#2600). */}
+                <XDSVStack hAlign="stretch">
+                  <XDSButton
+                    label="Let's connect"
+                    variant="primary"
+                    onClick={handleSubmit}
+                  />
+                </XDSVStack>
               </XDSVStack>
             </XDSCard>
           </XDSGrid>
 
-          {/* ── Bottom: contact strip ── */}
+          {/* ── Bottom: contact strip (stacks below ~440px) ── */}
           <XDSVStack gap={6}>
             <XDSDivider />
-            <XDSGrid columns={3} gap={6}>
+            <XDSGrid columns={{minWidth: 200}} gap={6}>
               {CONTACT_COLUMNS.map(col => (
                 <XDSVStack key={col.label} gap={1} hAlign="center">
                   <XDSText type="supporting" color="secondary">
