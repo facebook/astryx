@@ -43,15 +43,21 @@ import {
 // ─── Styles ─────────────────────────────────────────────────────────────────
 import * as stylex from '@stylexjs/stylex';
 
-// The only custom CSS in this template: negative margins that bleed the tab bar
-// to the header's content edges so the active-tab underline meets the header
-// divider. XDSLayoutHeader/XDSTabList have no prop for an edge-docked tab bar
-// (tracked in #2622); everything else uses component props.
+// The only custom CSS in this template is small optical-alignment negative
+// margins — XDSLayoutHeader/XDSTabList have no edge-dock prop and XDSList has no
+// "bleed to container edge" prop (tracked in #2622). Everything else uses props.
 const pageStyles = stylex.create({
+  // Bleed the tab bar to the header's content edges so the active-tab underline
+  // meets the header divider.
   tabsRow: {
     marginInline: -12,
     marginBottom: -16,
     marginTop: 12,
+  },
+  // Pull the list items' inner padding back so their content optically aligns
+  // with the section heading above (XDSListItem insets content by ~8px).
+  itemsList: {
+    marginInline: -8,
   },
 });
 
@@ -193,7 +199,7 @@ function PageHeader({
                 </XDSHeading>
                 {/* Metadata wraps to multiple lines on narrow screens (rather
                     than collapsing items behind a "+N more" overflow). */}
-                <XDSHStack gap={2} vAlign="center" wrap="wrap">
+                <XDSHStack gap={1} vAlign="center" wrap="wrap">
                   <XDSText type="body" maxLines={1}>
                     {PRODUCTS.length} ordered items
                   </XDSText>
@@ -303,7 +309,7 @@ function ItemsCard() {
           </XDSHStack>
         </XDSHStack>
 
-        <XDSList density="spacious">
+        <XDSList density="spacious" xstyle={pageStyles.itemsList}>
           {PRODUCTS.map((product, i) => (
             <XDSListItem
               key={i}
@@ -500,7 +506,6 @@ function TimelineSection() {
                   </XDSVStack>
                 </XDSStackItem>
               </XDSHStack>
-              {i < ACTIVITY.length - 1 && <XDSDivider />}
             </XDSVStack>
           ))}
         </XDSVStack>
