@@ -1,8 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Convenience re-export for XDSHStack
- * @position Subpath export so `@xds/core/HStack` resolves correctly
+ * @file index.ts
+ * @input XDSHStack component source
+ * @output Exports XDSHStack and its props type
+ * @position Entry point for @xds/core/HStack subpath export
  */
 
-export {XDSHStack, type XDSHStackProps} from '../Stack';
+export {XDSHStack, type XDSHStackProps} from './XDSHStack';
