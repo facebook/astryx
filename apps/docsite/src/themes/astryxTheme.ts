@@ -10,52 +10,9 @@
  * Everything else (surfaces, text, borders, status, radius, motion) is
  * inherited from the default XDS theme behavior so the design system
  * stays the source of truth and Astryx is a thin brand layer on top.
- *
- * In addition to the standard XDS token overrides, this theme defines
- * a small set of marketing-only `--xds-marketing-*` custom tokens used
- * exclusively by the docsite home page (feature card backdrops + the
- * marketing-section rhythm). Capturing these palettes at the theme
- * layer keeps the page components free of literal hex colors and gives
- * each token a single, named source of truth — change a palette here
- * and the marketing surface updates without touching component code.
  */
 
 import {defineTheme} from '@xds/core/theme';
-
-// Marketing-only custom tokens. These are NOT part of the semantic XDS
-// token system — they exist solely to back the docsite home page's
-// bento feature cards + section rhythm. They live in the theme (rather
-// than as inline literals) so the entire marketing palette can be
-// retuned in one place and so dark mode is handled by the token's own
-// `light-dark()` value rather than by every consumer.
-//
-// Keyed with the `--xds-marketing-*` prefix so they're trivially
-// greppable and never collide with the standard XDS token namespace
-// (`--color-*`, `--spacing-*`, etc.).
-//
-// Typed as Record<string, string> here so they pass through
-// defineTheme's strict `Partial<Record<XDSTokenName, ...>>` shape via
-// the cast at the call site below — defineTheme's runtime accepts any
-// string-keyed token and emits it verbatim as a CSS custom property.
-const marketingTokens: Record<string, string> = {
-  // Feature card backdrop. Soft pastel blue in light mode, deep
-  // navy in dark mode. Used by FeaturesShowcase's four bento cards
-  // as `backgroundColor: var(--xds-marketing-feature-card-bg)`.
-  // Picked specifically because Astryx's stock --color-background-blue
-  // is a 20%-alpha saturated wash that would render too vivid against
-  // the showcase's white surface; this token gives the cards a soft
-  // pastel band the eye reads as a single related group.
-  '--xds-marketing-feature-card-bg': 'light-dark(#E6F0FF, #1A2333)',
-
-  // Marketing-section vertical rhythm. The XDS spacing scale tops
-  // out at --spacing-12 = 48px, which is fine for in-app density
-  // but too tight for a landing-page section break. Use this token
-  // for the gap between major home-page sections (hero ↔ features
-  // ↔ about ↔ discover) and for the page's first paddingBlockStart
-  // so the rhythm reads as deliberate marketing pacing rather than
-  // a maxed-out spacing step.
-  '--xds-marketing-section-gap': '100px',
-};
 
 export const astryxTheme = defineTheme({
   name: 'astryx',
@@ -65,12 +22,6 @@ export const astryxTheme = defineTheme({
   // and bleeds the accent's hue into neutrals (which made all the "gray"
   // surfaces come out brown). Setting --color-accent directly leaves every
   // other token at the XDS default.
-  //
-  // Cast to relax `Partial<Record<XDSTokenName, ...>>` so the
-  // marketing custom tokens above (which intentionally sit outside
-  // the XDS semantic namespace) typecheck without per-key cast noise.
-  // defineTheme's runtime accepts any string-keyed token and emits
-  // it verbatim as a CSS custom property declaration.
   tokens: {
     '--color-accent': '#292724',
     // Setting --color-accent alone leaves the *derived* accent tokens
@@ -103,8 +54,7 @@ export const astryxTheme = defineTheme({
     '--radius-element': '12px',
     '--radius-container': '16px',
     '--radius-page': '32px',
-    ...marketingTokens,
-  } as Parameters<typeof defineTheme>[0]['tokens'],
+  },
 
   typography: {
     body: {

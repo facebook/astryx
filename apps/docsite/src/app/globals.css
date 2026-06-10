@@ -12,6 +12,31 @@
    reset, xds-base, xds-theme so product styles always win. */
 @stylex;
 
+/* Marketing-only custom properties for the docsite home page. These are
+   NOT XDS theming tokens — they're docsite-specific values that back the
+   landing page's bento feature cards + section rhythm — so they live here
+   in globals.css rather than in the Astryx theme (which should only
+   override real XDS semantic tokens). Each is a light-dark() pair so dark
+   mode is handled by the value itself, no consumer logic required. */
+:root {
+  /* Feature card backdrop. Soft pastel blue in light mode, deep navy in
+     dark mode. Consumed by FeaturesShowcase's bento cards via
+     `backgroundColor: var(--xds-marketing-feature-card-bg)`. Picked
+     specifically because the stock --color-background-blue is a
+     20%-alpha saturated wash that prints too vivid against the showcase's
+     white surface; this gives the cards a soft pastel band the eye reads
+     as a single related group. */
+  --xds-marketing-feature-card-bg: light-dark(#e6f0ff, #1a2333);
+
+  /* Marketing-section vertical rhythm. The XDS spacing scale tops out at
+     --spacing-12 = 48px, which is fine for in-app density but too tight
+     for a landing-page section break. Used for the gap between major
+     home-page sections (hero ↔ features ↔ about ↔ discover) and the
+     page's first paddingBlockStart so the rhythm reads as deliberate
+     marketing pacing rather than a maxed-out spacing step. */
+  --xds-marketing-section-gap: 100px;
+}
+
 /* AppShell sets a sticky top nav but its main content area sits at the same
    top edge — so the first child of any page can end up covered by the nav.
    On every (docs)-group page (anything with a sticky AppShell header),
