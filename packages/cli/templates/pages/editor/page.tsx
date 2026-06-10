@@ -309,11 +309,13 @@ const editorStyles = stylex.create({
   // the layout anchors a definite viewport height itself. No background; the
   // host owns the page surface.
   page: {height: '100dvh'},
-  // On mobile the panel spans the full width of the header slot it moves into;
-  // on desktop the width prop (320) governs. XDSLayoutPanel width is a fixed
-  // value with no responsive form.
-  panelMobileWidth: {
-    width: {default: null, '@media (max-width: 768px)': '100%'},
+  // Pin the panel to a fixed 320px on desktop (so it doesn't resize to its
+  // content when switching tabs) and full width on mobile, where it moves into
+  // the header slot. XDSLayoutPanel width is a single fixed value with no
+  // responsive form, and this xstyle wins over the width prop.
+  panelWidth: {
+    width: {default: 320, '@media (max-width: 768px)': '100%'},
+    flexShrink: 0,
   },
   // Canvas reflows to the chosen viewport width; XDSVStack has no maxWidth prop.
   canvas: (maxWidth: number) => ({
@@ -790,10 +792,9 @@ export default function EditorPage() {
 
   const sidebar = (
     <XDSLayoutPanel
-      width={320}
       hasDivider={!isMobile}
       padding={0}
-      xstyle={editorStyles.panelMobileWidth}>
+      xstyle={editorStyles.panelWidth}>
       <XDSVStack gap={4}>
         {/* Panel Header */}
         <XDSSection variant="transparent" padding={4}>
