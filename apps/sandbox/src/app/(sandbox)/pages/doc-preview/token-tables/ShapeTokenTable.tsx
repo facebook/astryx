@@ -33,6 +33,7 @@ const RADIUS_ORDER = [
   '--radius-element',
   '--radius-container',
   '--radius-page',
+  '--radius-chat',
   '--radius-full',
 ];
 

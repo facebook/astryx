@@ -203,6 +203,10 @@ export const radiusDefaults = {
   '--radius-element': '8px',
   '--radius-container': '12px',
   '--radius-page': '28px',
+  // Chat surfaces (bubbles, composer, drawer) are intentionally rounder than
+  // cards in the same view. Tracks --radius-page's value by default but is a
+  // distinct token so chat rounding can be themed independently. See #2072.
+  '--radius-chat': '28px',
   '--radius-full': '9999px',
 } as const;
 

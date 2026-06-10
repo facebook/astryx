@@ -28,7 +28,7 @@ export const docs = {
       {className: 'xds-trigger-menu'},
     ],
     vars: [
-      {name: '--_chat-composer-radius', description: 'Border radius of the composer body. Inner elements derive their radius concentrically.', default: 'var(--radius-page)', private: true},
+      {name: '--_chat-composer-radius', description: 'Border radius of the composer body. Inner elements derive their radius concentrically.', default: 'var(--radius-chat)', private: true},
       {name: '--_chat-composer-padding', description: 'Padding of the composer body. Used in the concentric radius calculation.', default: 'var(--spacing-3)', private: true},
       {name: '--_button-radius', description: 'Concentric button radius inside the composer.', default: 'max(var(--radius-element), calc(var(--_chat-composer-radius) - var(--_chat-composer-padding)))', private: true, derived: true, formula: 'max(var(--radius-element), calc(var(--_chat-composer-radius) - var(--_chat-composer-padding)))'},
     ],
