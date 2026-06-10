@@ -261,14 +261,16 @@ const FILESYSTEM: FileSystemItem[] = [
 ];
 
 // No background — the host shell owns the page surface. The one viewport rule
-// (minHeight: 100dvh) is required so the Finder-style columns fill the window:
-// XDSLayout height="fill" is height:100%, which only resolves when an ancestor
-// has a definite height, and the host's <html>/<body> don't set one. The rest
-// are layout plumbing XDS doesn't expose as props (per-column scroll, the row's
-// horizontal scroll, fixed vs. flexible track sizing). The XDSHStack already
-// stretches children to full height (vAlign defaults to 'stretch').
+// (height: 100dvh) is required so the Finder-style columns fill the window:
+// XDSLayout height="fill" is height:100%, which only resolves against a
+// *definite* height — and the host's <html>/<body> don't set one, so the layout
+// has to anchor a definite height itself (min-height wouldn't let the inner
+// flex chain resolve its 100% heights). The rest are layout plumbing XDS
+// doesn't expose as props (per-column scroll, the row's horizontal scroll,
+// fixed vs. flexible track sizing). The XDSHStack already stretches children to
+// full height (vAlign defaults to 'stretch').
 const styles = stylex.create({
-  page: {minHeight: '100dvh'},
+  page: {height: '100dvh'},
   // The fixed-width columns can exceed the viewport on small screens, so the
   // whole Miller-column row scrolls horizontally (like Finder). overflowY is
   // pinned to 'hidden' (each column scrolls vertically on its own) so the row
