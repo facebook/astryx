@@ -2,7 +2,8 @@
 
 'use client';
 
-import {useState, useCallback} from 'react';
+import {Suspense, useState, useCallback, useEffect, useMemo} from 'react';
+import {useSearchParams} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
 
 import {XDSAppShell} from '@xds/core/AppShell';
@@ -943,10 +944,65 @@ const styles = stylex.create({
   },
 });
 
+// =============================================================================
+// URL param serialization helpers
+// =============================================================================
+
+function configToParams(config: ShellConfig): URLSearchParams {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(config)) {
+    const defaultValue = DEFAULT_CONFIG[key as keyof ShellConfig];
+    if (value !== defaultValue) {
+      params.set(key, String(value));
+    }
+  }
+  return params;
+}
+
+function paramsToConfig(params: URLSearchParams): ShellConfig {
+  const config = {...DEFAULT_CONFIG};
+  for (const [key, value] of params.entries()) {
+    if (key in DEFAULT_CONFIG) {
+      const defaultValue = DEFAULT_CONFIG[key as keyof ShellConfig];
+      if (typeof defaultValue === 'boolean') {
+        (config as Record<string, unknown>)[key] = value === 'true';
+      } else {
+        (config as Record<string, unknown>)[key] = value;
+      }
+    }
+  }
+  return config;
+}
+
 export default function ShellLabPage() {
-  const [config, setConfig] = useState<ShellConfig>(DEFAULT_CONFIG);
+  return (
+    <Suspense>
+      <ShellLabContent />
+    </Suspense>
+  );
+}
+
+function ShellLabContent() {
+  const searchParams = useSearchParams();
+
+  // Initialize config from URL params on mount
+  const initialConfig = useMemo(
+    () => paramsToConfig(searchParams),
+    [], // only read URL on mount
+  );
+  const [config, setConfig] = useState<ShellConfig>(initialConfig);
   const [showConfig, setShowConfig] = useState(true);
   const [externalCollapsed, setExternalCollapsed] = useState(false);
+
+  // Sync config changes to URL
+  useEffect(() => {
+    const params = configToParams(config);
+    const paramString = params.toString();
+    const newUrl = paramString
+      ? `${window.location.pathname}?${paramString}`
+      : window.location.pathname;
+    window.history.replaceState(null, '', newUrl);
+  }, [config]);
 
   const handleConfigChange = useCallback((update: Partial<ShellConfig>) => {
     setConfig(prev => ({...prev, ...update}));

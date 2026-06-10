@@ -330,6 +330,128 @@ describe('XDSAppShell', () => {
     expect(screen.getAllByText('Side item').length).toBeGreaterThan(0);
   });
 
+  it('shows mobile nav toggle for sideNav-only layout with heading-only topNav (#2243)', () => {
+    mockMql = createMockMatchMedia(true);
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+
+    render(
+      <XDSAppShell
+        topNav={
+          <XDSTopNav
+            label="Main navigation"
+            heading={<XDSTopNavHeading heading="My App" />}
+          />
+        }
+        sideNav={<TestSideNav>Home</TestSideNav>}
+        mobileNav={{breakpoint: 'md'}}>
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+
+    expect(
+      screen.getByRole('button', {name: /open navigation/i}),
+    ).toBeInTheDocument();
+  });
+
+  it('renders sidenav items exactly once in mobile drawer when topNav has only heading (#2243)', () => {
+    mockMql = createMockMatchMedia(true);
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+
+    render(
+      <XDSAppShell
+        variant="section"
+        topNav={
+          <XDSTopNav
+            label="Main navigation"
+            heading={<XDSTopNavHeading heading="My App" />}
+          />
+        }
+        sideNav={
+          <XDSSideNav>
+            <XDSSideNavItem label="Dashboard" href="/" isSelected />
+            <XDSSideNavItem label="Settings" href="/settings" />
+          </XDSSideNav>
+        }
+        mobileNav={{breakpoint: 'md'}}
+        contentPadding={4}>
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+
+    expect(
+      screen.getByRole('button', {name: /open navigation/i}),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText('Dashboard')).toHaveLength(1);
+    expect(screen.getAllByText('Settings')).toHaveLength(1);
+  });
+
+  it('does not show auto mobile toggle when sideNav is explicitly undefined (#2243)', () => {
+    mockMql = createMockMatchMedia(true);
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+
+    render(
+      <XDSAppShell
+        topNav={
+          <XDSTopNav
+            label="Main navigation"
+            heading={<XDSTopNavHeading heading="My App" />}
+          />
+        }
+        sideNav={undefined}
+        mobileNav={{breakpoint: 'md'}}>
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+
+    expect(
+      screen.queryByRole('button', {name: /open navigation/i}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not show auto mobile toggle when sideNav is omitted entirely', () => {
+    mockMql = createMockMatchMedia(true);
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+
+    render(
+      <XDSAppShell
+        topNav={
+          <XDSTopNav
+            label="Main navigation"
+            heading={<XDSTopNavHeading heading="My App" />}
+          />
+        }
+        mobileNav={{breakpoint: 'md'}}>
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+
+    expect(
+      screen.queryByRole('button', {name: /open navigation/i}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('heading-only topNav does not prevent sidenav from collapsing to mobile (#2243)', () => {
+    mockMql = createMockMatchMedia(true);
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+
+    const {container} = render(
+      <XDSAppShell
+        topNav={
+          <XDSTopNav
+            label="Main navigation"
+            heading={<XDSTopNavHeading heading="My App" />}
+          />
+        }
+        sideNav={<TestSideNav>Home</TestSideNav>}
+        mobileNav={{breakpoint: 'md'}}>
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+
+    const inlinePanel = container.querySelector('.xds-layout-panel');
+    expect(inlinePanel).toBeNull();
+  });
+
   it('renders mobile layout on first render when defaultIsMobile is true', () => {
     // matchMedia says mobile too — simulates correct SSR hint
     mockMql = createMockMatchMedia(true);

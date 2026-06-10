@@ -46,11 +46,10 @@ import {XDSSideNavRenderContext} from '../SideNav/XDSSideNavRenderContext';
 import {XDSTopNavRenderContext} from '../TopNav/XDSTopNavRenderContext';
 import {XDSTopNavMobileContentContext} from '../TopNav/XDSTopNavMobileContentContext';
 import {XDSAppShellMobileContext} from './XDSAppShellMobileContext';
-import {useXDSSlotPresence} from './useXDSSlotPresence';
 import type {XDSAppShellMobileContextValue} from './XDSAppShellMobileContext';
 import type {SpacingStep} from '../utils/types';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs, isRenderable} from '../utils';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 
@@ -241,11 +240,37 @@ export interface XDSAppShellProps extends XDSBaseProps<HTMLDivElement> {
 
   /**
    * Side navigation — typically an XDSSideNav.
+   *
+   * Pass `undefined` (or omit) when a page has no side navigation.
+   * Do NOT pass a component that renders `null` — AppShell treats any
+   * renderable value as "sidenav exists".
+   *
+   * **Next.js parallel routes:** Conditionally pass the slot based on
+   * the current route rather than relying on a `default.tsx` that
+   * returns `null`:
+   *
+   * @example
+   * ```tsx
+   * const SIDEBAR_ROUTES = ['/dashboard', '/settings'];
+   *
+   * function Layout({ children, sidebar }) {
+   *   const hasSidebar = SIDEBAR_ROUTES.some(r => pathname.startsWith(r));
+   *   return (
+   *     <XDSAppShell
+   *       sideNav={hasSidebar ? sidebar : undefined}
+   *       mobileNav={hasSidebar ? { breakpoint: 'md' } : false}
+   *     >
+   *       {children}
+   *     </XDSAppShell>
+   *   );
+   * }
+   * ```
    */
   sideNav?: ReactNode;
 
   /**
    * Top navigation — typically an XDSTopNav.
+   * Same contract as `sideNav` — pass `undefined` when there's no top nav.
    */
   topNav?: ReactNode;
 }
@@ -478,12 +503,6 @@ export function XDSAppShell({
   // Refs are attached to wrapper divs around each slot; a MutationObserver
   // checks childNodes to track whether each slot has rendered content.
   // =========================================================================
-  const {ref: topNavRef, hasContent: hasTopNavContent} = useXDSSlotPresence(
-    topNav != null,
-  );
-  const {ref: sideNavRef, hasContent: hasSideNavContent} = useXDSSlotPresence(
-    sideNav != null,
-  );
 
   // =========================================================================
   // Mobile nav open state (controlled + uncontrolled)
@@ -513,12 +532,10 @@ export function XDSAppShell({
   const isAuto = height === 'auto';
 
   // Nav style derived values
-  const hasBanner = banner != null;
-  // Mounting: props were passed — mount the container so children can register
-  const hasTopNav = topNav != null;
-  const hasSideNav = sideNav != null;
-  // Visibility: children actually rendered — drives mobile nav decisions
-  const hasNavContent = hasSideNavContent || hasTopNavContent;
+  const hasBanner = isRenderable(banner);
+  const hasTopNav = isRenderable(topNav);
+  const hasSideNav = isRenderable(sideNav);
+  const hasNavContent = hasTopNav || hasSideNav;
   const mobileNavEnabled =
     !mobileNavDisabled && hasNavContent && mobileNavReactNode == null;
   const navHasDividers = variant === 'section';
@@ -612,16 +629,14 @@ export function XDSAppShell({
   // Wrap with mobile content context so TopNav knows there's SideNav content
   // in the drawer and shows the toggle even without its own collapsible items.
   const mobileContentValue =
-    hasSideNavContent && mobileNavHasToggle ? (
+    hasSideNav && mobileNavHasToggle ? (
       // eslint-disable-next-line @eslint-react/no-unstable-context-value -- context transports ReactNode; instability is inherent
       <XDSSideNavRenderContext value="drawer-content">
-        <div ref={sideNavRef} style={{display: 'contents'}}>
-          {sideNav}
-        </div>
+        {sideNav}
       </XDSSideNavRenderContext>
     ) : null;
 
-  const drawerMobileContentValue = hasSideNavContent ? (
+  const drawerMobileContentValue = hasSideNav ? (
     // eslint-disable-next-line @eslint-react/no-unstable-context-value -- context transports ReactNode; instability is inherent
     <XDSSideNavRenderContext value="drawer-content">
       {sideNav}
@@ -632,9 +647,7 @@ export function XDSAppShell({
     isBelowBreakpoint && !mobileNavDisabled && mobileNavReactNode == null ? (
       <XDSTopNavMobileContentContext value={mobileContentValue}>
         <XDSTopNavRenderContext value="mobile-bar">
-          <div ref={topNavRef} style={{display: 'contents'}}>
-            {topNav}
-          </div>
+          {topNav}
         </XDSTopNavRenderContext>
       </XDSTopNavMobileContentContext>
     ) : (
@@ -648,11 +661,7 @@ export function XDSAppShell({
         {hasBanner && (
           <div {...stylex.props(styles.banner, navAreaStyle)}>{banner}</div>
         )}
-        {hasTopNav && (
-          <div ref={topNavRef} style={{display: 'contents'}}>
-            {topNavContent}
-          </div>
-        )}
+        {hasTopNav && topNavContent}
       </XDSLayoutHeader>
     ) : undefined;
 
@@ -687,9 +696,7 @@ export function XDSAppShell({
         isAuto && stickyBgStyle,
         isAuto && styles.panelAutoFill,
       ]}>
-      <div ref={sideNavRef} style={{display: 'contents'}}>
-        {sideNav}
-      </div>
+      {sideNav}
     </XDSLayoutPanel>
   ) : undefined;
 
@@ -703,8 +710,7 @@ export function XDSAppShell({
   // =========================================================================
   // Build main content
   // =========================================================================
-  const shouldElevateWithCorner =
-    isElevated && hasTopNavContent && showSideNavInline;
+  const shouldElevateWithCorner = isElevated && hasTopNav && showSideNavInline;
 
   const mainInner = (
     <XDSLayoutContent
@@ -742,7 +748,7 @@ export function XDSAppShell({
   // For sidenav-only layouts with no TopNav, render the sideNav in topbar
   // mode — it shows heading + footer icons horizontally, with the hamburger
   const autoMobileTopBar =
-    shouldShowAutoToggle && !hasTopNavContent && hasSideNav ? (
+    shouldShowAutoToggle && !hasTopNav && hasSideNav ? (
       <div
         {...mergeProps(
           xdsClassName('app-shell-header', {variant}),
@@ -754,9 +760,7 @@ export function XDSAppShell({
             role="navigation"
             aria-label="Mobile navigation">
             <XDSSideNavRenderContext value="topbar">
-              <div ref={sideNavRef} style={{display: 'contents'}}>
-                {sideNav}
-              </div>
+              {sideNav}
             </XDSSideNavRenderContext>
             <XDSMobileNavToggle />
           </div>
@@ -819,16 +823,12 @@ export function XDSAppShell({
               {/* SideNav drawer — always mounted so presence detection works.
                 Hidden when TopNav owns the drawer (combined mode passes
                 sideNav via TopNav's mobile content context instead). */}
-              {hasSideNav && (
-                <div
-                  ref={sideNavRef}
-                  style={{display: hasTopNavContent ? 'none' : 'contents'}}>
-                  <XDSSideNavRenderContext value="drawer">
-                    {sideNav}
-                  </XDSSideNavRenderContext>
-                </div>
+              {hasSideNav && !hasTopNav && (
+                <XDSSideNavRenderContext value="drawer">
+                  {sideNav}
+                </XDSSideNavRenderContext>
               )}
-              {hasTopNav && hasTopNavContent && (
+              {hasTopNav && (
                 <XDSTopNavMobileContentContext value={drawerMobileContentValue}>
                   <XDSTopNavRenderContext value="drawer">
                     {topNav}
