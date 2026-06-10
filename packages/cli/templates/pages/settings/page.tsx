@@ -27,7 +27,8 @@ import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 
 // Caps + centers the whole layout shell (header + sidebar + content). XDSLayout
-// has no max-width prop for the outer shell (contentWidth only caps slot content).
+// has no max-width prop for the outer shell — contentWidth only caps slot
+// content, not the sidebar/header. Tracked in #2625.
 const styles = stylex.create({
   constrainedShell: {
     maxWidth: 1440,
