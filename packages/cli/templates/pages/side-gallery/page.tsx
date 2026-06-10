@@ -92,7 +92,7 @@ function StatBlock({value, label}: {value: string; label: string}) {
 
 function ImageGrid() {
   return (
-    <XDSGrid columns={{minWidth: 140, max: 3}} gap={3}>
+    <XDSGrid columns={{minWidth: 140, max: 3, repeat: 'fit'}} gap={3}>
       {IMAGES.map(img => (
         <XDSAspectRatio key={img.src} ratio={1} xstyle={styles.imageClip}>
           <img src={img.src} alt={img.alt} {...stylex.props(styles.image)} />
@@ -111,7 +111,10 @@ export default function SideGalleryTemplate() {
       contentWidth={1400}
       content={
         <XDSLayoutContent padding={6}>
-          <XDSGrid columns={{minWidth: 320, max: 2}} gap={8} align="center">
+          <XDSGrid
+            columns={{minWidth: 320, max: 2, repeat: 'fit'}}
+            gap={8}
+            align="center">
             {/* Left side: Text + CTA */}
             <XDSVStack gap={6} vAlign="center">
               <XDSVStack gap={3}>
