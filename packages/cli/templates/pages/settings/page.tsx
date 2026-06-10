@@ -3,6 +3,7 @@
 'use client';
 
 import {useState} from 'react';
+import {useMediaQuery} from '@xds/core/hooks';
 import {
   XDSVStack,
   XDSHStack,
@@ -14,6 +15,7 @@ import {
 } from '@xds/core/Layout';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
@@ -62,6 +64,7 @@ const settingsSearchSource: XDSSearchSource<XDSSearchableItem> = {
 };
 
 export default function SettingsTemplate() {
+  const isNarrow = useMediaQuery('(max-width: 768px)');
   const [activeNav, setActiveNav] = useState('Profile');
   const [username, setUsername] = useState('nicol43');
   const [firstName, setFirstName] = useState('Stephanie');
@@ -101,22 +104,33 @@ export default function SettingsTemplate() {
         </XDSLayoutHeader>
       }
       start={
-        <XDSLayoutPanel hasDivider={false} width={260} padding={2}>
-          <XDSList density="balanced">
-            {NAV_ITEMS.map(item => (
-              <XDSListItem
-                key={item}
-                label={item}
-                isSelected={activeNav === item}
-                onClick={() => setActiveNav(item)}
-              />
-            ))}
-          </XDSList>
-        </XDSLayoutPanel>
+        isNarrow ? undefined : (
+          <XDSLayoutPanel hasDivider={false} width={260} padding={2}>
+            <XDSList density="balanced">
+              {NAV_ITEMS.map(item => (
+                <XDSListItem
+                  key={item}
+                  label={item}
+                  isSelected={activeNav === item}
+                  onClick={() => setActiveNav(item)}
+                />
+              ))}
+            </XDSList>
+          </XDSLayoutPanel>
+        )
       }
       content={
         <XDSLayoutContent padding={4}>
           <XDSVStack gap={4}>
+            {/* Mobile: the sidebar nav collapses to a horizontal, scrollable
+                tab bar above the content. */}
+            {isNarrow && (
+              <XDSTabList value={activeNav} onChange={setActiveNav}>
+                {NAV_ITEMS.map(item => (
+                  <XDSTab key={item} value={item} label={item} />
+                ))}
+              </XDSTabList>
+            )}
             <XDSGrid columns={{minWidth: 320}} gap={10}>
               <XDSVStack gap={1}>
                 <XDSHeading level={3}>Basic information</XDSHeading>
