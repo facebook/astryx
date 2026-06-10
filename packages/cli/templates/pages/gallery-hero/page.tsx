@@ -14,7 +14,6 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSSection} from '@xds/core/Section';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
 const IMAGES = [
@@ -87,22 +86,20 @@ export default function GalleryHero() {
                 <XDSButton label="Learn more" variant="secondary" />
               </XDSHStack>
             </XDSVStack>
-            <XDSSection variant="transparent" padding={0}>
-              <XDSGrid columns={{minWidth: 240, max: 3}} gap={4}>
-                {IMAGES.map(image => (
-                  <XDSAspectRatio
-                    key={image.src}
-                    ratio={4 / 5}
-                    xstyle={styles.galleryImageClip}>
-                    <img
-                      {...stylex.props(styles.galleryImage)}
-                      src={image.src}
-                      alt={image.alt}
-                    />
-                  </XDSAspectRatio>
-                ))}
-              </XDSGrid>
-            </XDSSection>
+            <XDSGrid columns={{minWidth: 200, repeat: 'fit'}} gap={4}>
+              {IMAGES.map(image => (
+                <XDSAspectRatio
+                  key={image.src}
+                  ratio={4 / 5}
+                  xstyle={styles.galleryImageClip}>
+                  <img
+                    {...stylex.props(styles.galleryImage)}
+                    src={image.src}
+                    alt={image.alt}
+                  />
+                </XDSAspectRatio>
+              ))}
+            </XDSGrid>
           </XDSVStack>
         </XDSLayoutContent>
       }
