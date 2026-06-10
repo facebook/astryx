@@ -3,7 +3,6 @@
 'use client';
 
 import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSSection} from '@xds/core/Section';
@@ -11,6 +10,7 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
+import {XDSIcon} from '@xds/core/Icon';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
@@ -20,16 +20,11 @@ import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSBanner} from '@xds/core/Banner';
-import {colorVars} from '@xds/core/theme/tokens.stylex';
-
-const WHY_US_IMAGES = [
-  // illustration-horizontal-3 from xds_oss asset set
-  '/template-assets/illustration-horizontal-3.png',
-  // illustration-horizontal-4 from xds_oss asset set
-  '/template-assets/illustration-horizontal-4.png',
-  // illustration-horizontal-5 from xds_oss asset set
-  '/template-assets/illustration-horizontal-5.png',
-];
+import {
+  RocketLaunchIcon,
+  AdjustmentsHorizontalIcon,
+  HandRaisedIcon,
+} from '@heroicons/react/24/outline';
 
 const CAMPAIGN_GOALS = [
   'Brand Awareness',
@@ -62,31 +57,21 @@ const BUDGET_OPTIONS = [
 
 const WHY_US = [
   {
-    image: WHY_US_IMAGES[0],
+    icon: RocketLaunchIcon,
     title: 'We move fast for you',
     description: 'We cut through the noise and get straight to the work.',
   },
   {
-    image: WHY_US_IMAGES[1],
+    icon: AdjustmentsHorizontalIcon,
     title: 'We build around you',
     description: "We tailor everything to what you're trying to achieve.",
   },
   {
-    image: WHY_US_IMAGES[2],
+    icon: HandRaisedIcon,
     title: 'We show up for you',
     description: 'A dedicated team that knows your brand and wants to win.',
   },
 ];
-
-const styles = stylex.create({
-  page: {
-    minHeight: '100dvh',
-    backgroundColor: colorVars['--color-background-surface'],
-  },
-  imgFull: {
-    width: '100%',
-  },
-});
 
 /**
  * Contact Form — lead capture form template
@@ -122,7 +107,7 @@ export default function FormSimplePage() {
     );
 
   return (
-    <XDSCenter axis="horizontal" xstyle={styles.page}>
+    <XDSCenter axis="horizontal">
       <XDSVStack hAlign="center" width="100%">
         <XDSSection
           maxWidth={800}
@@ -146,11 +131,7 @@ export default function FormSimplePage() {
                 {WHY_US.map(item => (
                   <XDSCard key={item.title}>
                     <XDSVStack gap={3}>
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        {...stylex.props(styles.imgFull)}
-                      />
+                      <XDSIcon icon={item.icon} size="lg" color="accent" />
                       <XDSVStack gap={1}>
                         <XDSText type="body" weight="bold">
                           {item.title}
@@ -222,7 +203,9 @@ export default function FormSimplePage() {
             {/* Your project */}
             <XDSVStack gap={5}>
               <XDSVStack gap={2}>
-                <XDSText type="label">What are you going for?</XDSText>
+                <XDSText type="label" color="secondary">
+                  What are you going for?
+                </XDSText>
                 <XDSHStack gap={2} wrap="wrap">
                   {CAMPAIGN_GOALS.map(goal => (
                     <XDSToken

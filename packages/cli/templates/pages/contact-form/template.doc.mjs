@@ -3,9 +3,10 @@
 /** @type {import('../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'page',
-  name: 'Basic',
-  displayName: 'Basic',
-  description: 'Marketing lead-capture form with pill toggles, dropdowns, and full-width CTA.',
+  name: 'Contact Form',
+  displayName: 'Contact Form',
+  description:
+    'Marketing lead-capture form with pill toggles, dropdowns, and full-width CTA.',
   isReady: true,
   category: 'Form - Basic',
 };
