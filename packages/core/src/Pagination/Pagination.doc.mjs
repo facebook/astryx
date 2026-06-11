@@ -98,7 +98,7 @@ export const docs = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
   ],
   theming: {
@@ -109,16 +109,16 @@ export const docs = {
   },
   usage: {
     description:
-      'Pagination lets users step through pages of content. Place it below a table, list, or card grid so users can move forward and backward through results. Pick a variant to match the context — numbered pages for data tables, a count for large lists, compact for tight spaces, or dots for carousels.',
+      'Pagination lets users step through pages of content. Place it below a table, list, or card grid so users can move forward and backward through results. Pick a variant to match the context: numbered pages for data tables, a count for large lists, compact for tight spaces, or dots for carousels.',
     bestPractices: [
       { guidance: true, description: 'Place pagination below the content it controls so users see results before navigating.' },
       { guidance: true, description: 'Use the pages variant for data tables where users need to jump to a specific page.' },
       { guidance: true, description: 'Use the count variant with a page size selector when users need to control how many items they see at once.' },
       { guidance: true, description: 'Use the dots variant for carousels and walkthroughs where the total is small and position matters more than a number.' },
       { guidance: true, description: 'Pass totalItems when the total is known so users can see how much content remains.' },
-      { guidance: false, description: 'Show pagination when all items fit on a single page — there is nothing to paginate.' },
-      { guidance: false, description: 'Use the dots variant for more than about 10 pages — the dots become too small to be useful.' },
-      { guidance: false, description: 'Place pagination above the content — users expect it at the bottom.' },
+      { guidance: false, description: 'Show pagination when all items fit on a single page; there is nothing to paginate.' },
+      { guidance: false, description: 'Use the dots variant for more than about 10 pages; the dots become too small to be useful.' },
+      { guidance: false, description: 'Place pagination above the content; users expect it at the bottom.' },
     ],
   },
 };
@@ -229,16 +229,16 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Pagination lets users step through pages of content. Place it below a table, list, or card grid so users can move forward and backward through results. Pick a variant to match the context — numbered pages for data tables, a count for large lists, compact for tight spaces, or dots for carousels.',
+      'Pagination lets users step through pages of content. Place it below a table, list, or card grid so users can move forward and backward through results. Pick a variant to match the context: numbered pages for data tables, a count for large lists, compact for tight spaces, or dots for carousels.',
     bestPractices: [
       { guidance: true, description: 'Place pagination below the content it controls so users see results before navigating.' },
       { guidance: true, description: 'Use the pages variant for data tables where users need to jump to a specific page.' },
       { guidance: true, description: 'Use the count variant with a page size selector when users need to control how many items they see at once.' },
       { guidance: true, description: 'Use the dots variant for carousels and walkthroughs where the total is small and position matters more than a number.' },
       { guidance: true, description: 'Pass totalItems when the total is known so users can see how much content remains.' },
-      { guidance: false, description: 'Show pagination when all items fit on a single page — there is nothing to paginate.' },
-      { guidance: false, description: 'Use the dots variant for more than about 10 pages — the dots become too small to be useful.' },
-      { guidance: false, description: 'Place pagination above the content — users expect it at the bottom.' },
+      { guidance: false, description: 'Show pagination when all items fit on a single page; there is nothing to paginate.' },
+      { guidance: false, description: 'Use the dots variant for more than about 10 pages; the dots become too small to be useful.' },
+      { guidance: false, description: 'Place pagination above the content; users expect it at the bottom.' },
     ],
   },
 };
@@ -249,16 +249,16 @@ export const docsDense = {
     'Standalone pagination controls for navigating content pages. Supports multiple display variants + works w/ known totals or cursor-based pagination.',
   usage: {
     description:
-      'Pagination lets users step through pages of content. Place it below a table, list, or card grid so users can move forward and backward through results. Pick a variant to match the context — numbered pages for data tables, a count for large lists, compact for tight spaces, or dots for carousels.',
+      'Pagination lets users step through pages of content. Place it below a table, list, or card grid so users can move forward and backward through results. Pick a variant to match the context: numbered pages for data tables, a count for large lists, compact for tight spaces, or dots for carousels.',
     bestPractices: [
       { guidance: true, description: 'Place pagination below the content it controls so users see results before navigating.' },
       { guidance: true, description: 'Use the pages variant for data tables where users need to jump to a specific page.' },
       { guidance: true, description: 'Use the count variant with a page size selector when users need to control how many items they see at once.' },
       { guidance: true, description: 'Use the dots variant for carousels and walkthroughs where the total is small and position matters more than a number.' },
       { guidance: true, description: 'Pass totalItems when the total is known so users can see how much content remains.' },
-      { guidance: false, description: 'Show pagination when all items fit on a single page — there is nothing to paginate.' },
-      { guidance: false, description: 'Use the dots variant for more than about 10 pages — the dots become too small to be useful.' },
-      { guidance: false, description: 'Place pagination above the content — users expect it at the bottom.' },
+      { guidance: false, description: 'Show pagination when all items fit on a single page; there is nothing to paginate.' },
+      { guidance: false, description: 'Use the dots variant for more than about 10 pages; the dots become too small to be useful.' },
+      { guidance: false, description: 'Place pagination above the content; users expect it at the bottom.' },
     ],
   },
   propDescriptions: {
