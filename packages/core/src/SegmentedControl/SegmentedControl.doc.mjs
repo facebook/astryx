@@ -81,7 +81,7 @@ export const docs = {
         {
           name: 'xstyle',
           type: 'StyleXStyles',
-          description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+          description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
         },
       ],    },
     {
@@ -133,8 +133,8 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Use for switching between 2–5 mutually exclusive views or modes where all options should be visible.'},
       {guidance: true, description: 'Provide a descriptive label for the control to ensure the group is accessible to screen readers.'},
-      {guidance: false, description: 'Use for page-level navigation — use XDSTabList instead. TabList is a navigation component, while SegmentedControl is an input that always has exactly one selected option.'},
-      {guidance: false, description: 'Use for simple on/off states — use XDSToggleButton instead. ToggleButton can be toggled on or off independently, while SegmentedControl enforces a single selection from a group.'},
+      {guidance: false, description: 'Use for page-level navigation; use XDSTabList instead. TabList is a navigation component, while SegmentedControl is an input that always has exactly one selected option.'},
+      {guidance: false, description: 'Use for simple on/off states; use XDSToggleButton instead. ToggleButton can be toggled on or off independently, while SegmentedControl enforces a single selection from a group.'},
     ],
   },
 };
@@ -179,8 +179,8 @@ export const docsZh = {
     bestPractices: [
       {guidance: true, description: 'Use for switching between 2–5 mutually exclusive views or modes where all options should be visible.'},
       {guidance: true, description: 'Provide a descriptive label for the control to ensure the group is accessible to screen readers.'},
-      {guidance: false, description: 'Use for page-level navigation — use XDSTabList instead. TabList is a navigation component, while SegmentedControl is an input that always has exactly one selected option.'},
-      {guidance: false, description: 'Use for simple on/off states — use XDSToggleButton instead. ToggleButton can be toggled on or off independently, while SegmentedControl enforces a single selection from a group.'},
+      {guidance: false, description: 'Use for page-level navigation; use XDSTabList instead. TabList is a navigation component, while SegmentedControl is an input that always has exactly one selected option.'},
+      {guidance: false, description: 'Use for simple on/off states; use XDSToggleButton instead. ToggleButton can be toggled on or off independently, while SegmentedControl enforces a single selection from a group.'},
     ],
   },
 };
@@ -193,8 +193,8 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Use for switching between 2–5 mutually exclusive views or modes where all options should be visible.'},
       {guidance: true, description: 'Provide a descriptive label for the control to ensure the group is accessible to screen readers.'},
-      {guidance: false, description: 'Use for page-level navigation — use XDSTabList instead. TabList is a navigation component, while SegmentedControl is an input that always has exactly one selected option.'},
-      {guidance: false, description: 'Use for simple on/off states — use XDSToggleButton instead. ToggleButton can be toggled on or off independently, while SegmentedControl enforces a single selection from a group.'},
+      {guidance: false, description: 'Use for page-level navigation; use XDSTabList instead. TabList is a navigation component, while SegmentedControl is an input that always has exactly one selected option.'},
+      {guidance: false, description: 'Use for simple on/off states; use XDSToggleButton instead. ToggleButton can be toggled on or off independently, while SegmentedControl enforces a single selection from a group.'},
     ],
   },
   propDescriptions: {
