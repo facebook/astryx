@@ -13,10 +13,10 @@ export const docs = {
       'Avatar represents a person or team with a profile photo, initials, or a default icon. Use it in comment headers, contact lists, chat messages, user cards, and anywhere you need to identify someone visually.',
     bestPractices: [
       {guidance: true, description: 'Always pass a name so the avatar can show initials if the photo fails to load, and so screen readers can announce who it represents.'},
-      {guidance: true, description: 'Pick a size that matches the context — tiny or xsmall for inline mentions, small or medium for lists and cards, large for profile headers.'},
+      {guidance: true, description: 'Pick a size that matches the context: tiny or xsmall for inline mentions, small or medium for lists and cards, large for profile headers.'},
       {guidance: true, description: 'Add a status dot when knowing someone\'s availability matters, like in chat or team views.'},
-      {guidance: false, description: 'Use Avatar for logos, product images, or anything that isn\'t a person or team — use an image or icon instead.'},
-      {guidance: false, description: 'Force a square or custom shape — avatars are always circular to stay consistent across the system.'},
+      {guidance: false, description: 'Use Avatar for logos, product images, or anything that isn\'t a person or team. Use an image or icon instead.'},
+      {guidance: false, description: 'Force a square or custom shape. Avatars are always circular to stay consistent across the system.'},
     ],
     anatomy: [
       {name: 'Photo', required: false, description: 'The profile image, loaded from the src URL. Shown when available.'},
@@ -111,8 +111,8 @@ export const docsZh = {
     bestPractices: [
       {guidance: true, description: 'Always provide a name prop so the component can generate meaningful initials and alt text when the image fails to load.'},
       {guidance: true, description: 'Use the status slot with XDSAvatarStatusDot to indicate online presence or availability when relevant to the context.'},
-      {guidance: false, description: 'Use Avatar for decorative images or logos that aren\'t representing a person or entity — use an image or icon component instead.'},
-      {guidance: false, description: 'Override the circular shape — Avatars are always round to maintain visual consistency across the system.'},
+      {guidance: false, description: 'Use Avatar for decorative images or logos that aren\'t representing a person or entity. Use an image or icon component instead.'},
+      {guidance: false, description: 'Override the circular shape. Avatars are always round to maintain visual consistency across the system.'},
     ],
   },
   theming: {
@@ -167,10 +167,10 @@ export const docsDense = {
       'Avatar represents a person or team with a profile photo, initials, or a default icon. Falls back automatically. Use in comment headers, contact lists, chat, user cards.',
     bestPractices: [
       {guidance: true, description: 'Always pass a name for initials fallback and screen reader alt text.'},
-      {guidance: true, description: 'Match size to context — tiny/xsmall inline, small/medium in lists, large for profiles.'},
+      {guidance: true, description: 'Match size to context: tiny/xsmall inline, small/medium in lists, large for profiles.'},
       {guidance: true, description: 'Add a status dot in chat or team views where availability matters.'},
-      {guidance: false, description: 'Use for logos or product images — use an image or icon instead.'},
-      {guidance: false, description: 'Force a square or custom shape — avatars are always circular.'},
+      {guidance: false, description: 'Use for logos or product images. Use an image or icon instead.'},
+      {guidance: false, description: 'Force a square or custom shape. Avatars are always circular.'},
     ],
   },
   components: [
