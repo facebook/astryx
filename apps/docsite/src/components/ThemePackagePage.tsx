@@ -2,11 +2,11 @@
 
 'use client';
 
-import {useCallback, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePathname, useRouter} from 'next/navigation';
-import {Sun, Moon, Eye} from 'lucide-react';
+import {Sun, Moon} from 'lucide-react';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
@@ -347,15 +347,10 @@ const styles = stylex.create({
   // bottom of the viewport as the user scrolls the right pane;
   // horizontally centered via left:50% + translateX(-50%). Holds
   // the theme dropdown + mode toggle in a single horizontal row.
-  // Visual chrome (pill border, card background, --shadow-high)
-  // matches a floating action toolbar, since it's no longer
-  // inline with the page surface — it needs to read as a
-  // detached control sitting above the content.
-  // width:fit-content so the pill hugs its contents rather than
-  // stretching across the viewport. zIndex:100 keeps it above
-  // page content; PreviewStage's full-screen overlay uses 50,
-  // so this still loses to that (intentional — when the
-  // playground takes over, the toolbar shouldn't poke through).
+  // Floating toolbar — appears when the theme carousel scrolls out of
+  // view. Animates from below with opacity + translateY transition.
+  // Hidden by default (opacity:0, pointer-events:none) and becomes
+  // visible when the `data-visible` attribute is set.
   mobileBar: {
     display: 'none',
     [SIDEBAR_BREAKPOINT]: {
@@ -373,10 +368,21 @@ const styles = stylex.create({
       position: 'fixed' as const,
       bottom: 'var(--spacing-4)',
       left: '50%',
-      transform: 'translateX(-50%)',
+      transform: 'translateX(-50%) translateY(20px)',
       zIndex: 100,
       width: 'fit-content',
       maxWidth: `calc(100vw - var(--spacing-4) * 2)`,
+      opacity: 0,
+      pointerEvents: 'none' as const,
+      transition: 'opacity 0.2s ease, transform 0.2s ease',
+    },
+  },
+  // Visible state for the floating toolbar — applied via data attribute.
+  mobileBarVisible: {
+    [SIDEBAR_BREAKPOINT]: {
+      opacity: 1,
+      pointerEvents: 'auto' as const,
+      transform: 'translateX(-50%) translateY(0)',
     },
   },
   // Mobile selector — fixed minimum so the dropdown trigger has
@@ -385,6 +391,28 @@ const styles = stylex.create({
   // is fit-content sized, not a stretched row).
   mobileSelector: {
     minWidth: 160,
+  },
+  // Mobile theme carousel — horizontal scrollable row of theme cards.
+  // Only visible at narrow viewports where the sidebar is hidden.
+  mobileCarousel: {
+    display: 'none',
+    [SIDEBAR_BREAKPOINT]: {
+      display: 'flex',
+      flexDirection: 'row' as const,
+      gap: 'var(--spacing-3)',
+      overflowX: 'auto' as const,
+      paddingBottom: 'var(--spacing-2)',
+      scrollSnapType: 'x mandatory',
+      // Hide scrollbar but keep scroll functionality
+      scrollbarWidth: 'none' as const,
+    },
+  },
+  // Individual card in the mobile carousel — fixed width so cards
+  // are uniformly sized and scroll-snappable.
+  mobileCarouselCard: {
+    flexShrink: 0,
+    width: 140,
+    scrollSnapAlign: 'start' as const,
   },
   // Showcase card — clips the theme-showcase template's own
   // backgrounds (top nav, sections) to the card's rounded corners.
@@ -405,26 +433,16 @@ const styles = stylex.create({
     overflow: 'hidden',
     borderRadius: 'var(--radius-container)',
   },
-  // Mobile-only context banner — shown above the preview at narrow
-  // viewports so users immediately understand this is a theme preview
-  // rather than an actual e-commerce page. Hidden on desktop where
-  // the sidebar heading already provides that context.
+  // Mobile-only context heading — shown above the preview at narrow
+  // viewports. Includes the heading, description, and action row
+  // (Open in Playground + mode toggle) mirroring the sidebar's hero.
   mobileContext: {
     display: 'none',
     [SIDEBAR_BREAKPOINT]: {
       display: 'flex',
-      flexDirection: 'row' as const,
-      alignItems: 'center',
-      gap: 'var(--spacing-2)',
-      paddingBlock: 'var(--spacing-3)',
-      paddingInline: 'var(--spacing-4)',
-      borderRadius: 'var(--radius-container)',
-      backgroundColor: 'var(--color-background-muted)',
+      flexDirection: 'column' as const,
+      gap: 'var(--spacing-3)',
     },
-  },
-  mobileContextIcon: {
-    flexShrink: 0,
-    color: 'var(--color-text-secondary)',
   },
 });
 
@@ -480,6 +498,25 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
   const [selectedPkgName, setSelectedPkgName] = useState<string>(packageName);
   const router = useRouter();
   const pathname = usePathname();
+
+  // Ref for the mobile theme carousel — observed by IntersectionObserver
+  // to toggle the floating toolbar visibility.
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [showMobileBar, setShowMobileBar] = useState(false);
+
+  // Show the floating toolbar when the carousel scrolls out of view.
+  useEffect(() => {
+    const el = carouselRef.current;
+    if (!el) {return;}
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setShowMobileBar(!entry.isIntersecting);
+      },
+      {threshold: 0},
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Sync the URL with the active picker selection so it can be
   // copied, bookmarked, reloaded, or shared. The default theme
@@ -728,14 +765,15 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
           bar lives at the top of this column and takes over for the
           hidden sidebar at narrow viewports. */}
       <div {...stylex.props(styles.rightColumn)}>
-        {/* Mobile bar — replaces the sidebar at narrow viewports.
-            Renders as a floating pill pinned to the bottom of the
-            viewport (position:fixed) so the theme switcher stays
-            reachable while the user scrolls the long preview pane.
-            Stays in the DOM here (rather than at <body> root) so
-            it co-locates with the state it controls; position:fixed
-            takes it out of the right column's flex flow regardless. */}
-        <div {...stylex.props(styles.mobileBar)}>
+        {/* Mobile floating toolbar — hidden until the carousel scrolls
+            out of view, then animates in from below. Contains the theme
+            selector dropdown + mode toggle so users always have access
+            to theme switching as they scroll the long preview. */}
+        <div
+          {...stylex.props(
+            styles.mobileBar,
+            showMobileBar && styles.mobileBarVisible,
+          )}>
           <div {...stylex.props(styles.mobileSelector)}>
             <XDSSelector
               label="Theme"
@@ -757,14 +795,111 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
           />
         </div>
 
-        {/* Mobile context banner — visible only at narrow viewports
-            where the sidebar is hidden. Clarifies that the content below
-            is a theme preview, not a real product page. */}
+        {/* Mobile context heading — visible only at narrow viewports.
+            Mirrors the sidebar's hero: heading, description, and
+            action buttons (Open in Playground + mode toggle). */}
         <div {...stylex.props(styles.mobileContext)}>
-          <Eye size={16} {...stylex.props(styles.mobileContextIcon)} />
-          <XDSText type="supporting" color="secondary">
-            Theme preview — switch themes with the toolbar below
-          </XDSText>
+          <XDSVStack gap={2}>
+            <XDSHeading level={1} type="display-3">
+              Themes
+            </XDSHeading>
+            <XDSText type="body" color="secondary">
+              Preview each theme, then start from one and make it your own.{' '}
+              <XDSLink
+                type="body"
+                color="secondary"
+                href="/docs/theme"
+                hasUnderline>
+                Learn how theming works
+              </XDSLink>
+              .
+            </XDSText>
+          </XDSVStack>
+          <XDSHStack gap={2} vAlign="center">
+            <XDSButton
+              variant="primary"
+              size="lg"
+              label="Open in Playground"
+              href={customizeHref}
+              xstyle={styles.heroPrimaryButton}
+              onClick={() => {
+                trackOpenPlayground({
+                  page: 'themes',
+                  item: selectedPkgName,
+                  source: 'theme-showcase',
+                });
+              }}
+            />
+            <XDSButton
+              variant="ghost"
+              size="lg"
+              isIconOnly
+              label={modeToggleLabel}
+              tooltip={modeToggleLabel}
+              icon={modeToggleIcon}
+              onClick={() => {
+                const next = mode === 'light' ? 'dark' : 'light';
+                trackToggle({
+                  page: 'themes',
+                  target: 'mode',
+                  item: selectedPkgName,
+                  value: next,
+                });
+                setMode(next);
+              }}
+            />
+          </XDSHStack>
+        </div>
+
+        {/* Mobile theme carousel — horizontal scrollable row of theme
+            cards. When this scrolls out of view, the floating toolbar
+            appears. Uses IntersectionObserver via the carouselRef. */}
+        <div ref={carouselRef} {...stylex.props(styles.mobileCarousel)}>
+          {themePackages.map(pkg => {
+            const cardTheme = themeObjects[pkg.name];
+            const isActive = pkg.name === selectedPkgName;
+            const label = themeLabel(pkg.displayName) || pkg.displayName;
+            const override = PICKER_OVERRIDES[pkg.name];
+            return (
+              <div key={pkg.name} {...stylex.props(styles.mobileCarouselCard)}>
+                <XDSSelectableCard
+                  label={`Preview ${label} theme`}
+                  isSelected={isActive}
+                  onChange={() => handleSelectPkg(pkg.name)}
+                  padding={0}
+                  variant="transparent">
+                  {cardTheme ? (
+                    <XDSTheme theme={cardTheme} mode="light">
+                      <div
+                        {...stylex.props(
+                          styles.themedSurface,
+                          override?.surface ?? false,
+                        )}>
+                        <XDSText
+                          type="display-3"
+                          weight="bold"
+                          xstyle={[
+                            styles.themeCardLabel,
+                            override?.label ?? false,
+                          ]}>
+                          {label}
+                        </XDSText>
+                      </div>
+                    </XDSTheme>
+                  ) : (
+                    <div {...stylex.props(styles.themedSurface)}>
+                      <XDSText
+                        type="display-3"
+                        weight="bold"
+                        xstyle={styles.themeCardLabel}>
+                        {label}
+                      </XDSText>
+                    </div>
+                  )}
+                </XDSSelectableCard>
+              </div>
+            );
+          })}
         </div>
 
         {/* Themed preview — the theme-showcase template rendered with
