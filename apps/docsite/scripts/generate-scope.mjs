@@ -65,13 +65,9 @@ lines.push("import React, {useState, useCallback, useMemo, useEffect, useRef} fr
 lines.push('');
 
 // ── StyleX mock ────────────────────────────────────────────────────────
-// The playground transpiles user/template code in-browser WITHOUT the StyleX
-// compiler, so stylex.create() returns its raw style objects and stylex.props()
-// runs at runtime. To make template/example layout actually render, props()
-// flattens those plain CSS-property objects into an inline `style` (covers the
-// common case: width/height/objectFit/padding/etc., incl. `var(--token)`). It
-// can't reproduce pseudo/media/`stylex.when` styles — responsive objects
-// collapse to their `default` branch and pseudo-selector keys are skipped.
+// The playground transpiles code in-browser without the StyleX compiler, so
+// props() flattens plain CSS-property objects into an inline `style`. Pseudo/
+// media entries can't be inlined: responsive objects collapse to `default`.
 lines.push(`const STYLEX_SKIP_KEY = /^(:|::|@|--)/;
 const stylexFlatten = (style: Record<string, unknown>, obj: unknown): void => {
   if (obj == null || typeof obj !== 'object') return;

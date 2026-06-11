@@ -587,10 +587,7 @@ export default function PreviewPage() {
 
   const stageStyle: CSSProperties = fill
     ? {
-        // `height: 100%` (not just minHeight) so the chain down to the rendered
-        // root is definite — templates that size with `minHeight: 100%` /
-        // `height: 100%` resolve against it. Taller content still grows/scrolls
-        // via the template's own scroll regions.
+        // Definite height so templates sized with `height: 100%` resolve.
         height: '100%',
         minHeight: '100%',
         display: 'block',
@@ -606,10 +603,6 @@ export default function PreviewPage() {
         backgroundColor: 'var(--color-background-surface)',
       };
 
-  // In fill mode the wrapper is a full-size block so the rendered root fills
-  // width/height — and, crucially, gives a definite height for templates that
-  // size with `minHeight: 100%` / `height: 100%` to resolve against (a
-  // `display: contents` wrapper has no box, so percentage heights collapse).
   const contentStyle: CSSProperties = fill
     ? {height: '100%', width: '100%'}
     : {};
