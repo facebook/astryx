@@ -71,6 +71,10 @@ export function createAgentProject(target, iterDir, promptId) {
     const cliLink = path.join(projectDir, 'node_modules', '@xds', 'cli');
     fs.symlinkSync(path.join(REPO_ROOT, 'packages', 'cli'), cliLink, 'dir');
 
+    // Symlink node_modules/@xds/theme-default → packages/themes/default
+    const themeDefaultLink = path.join(projectDir, 'node_modules', '@xds', 'theme-default');
+    fs.symlinkSync(path.join(REPO_ROOT, 'packages', 'themes', 'default'), themeDefaultLink, 'dir');
+
     // Symlink node_modules/.bin/xds → cli bin so npx xds works
     const binDir = path.join(projectDir, 'node_modules', '.bin');
     ensureDir(binDir);
