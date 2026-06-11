@@ -55,7 +55,7 @@ export const docs = {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
-            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
         },
       ],
     },
@@ -138,8 +138,8 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Provide a header to label the list and give context to screen readers.' },
       { guidance: true, description: 'Use start and end content slots to add icons, avatars, or badges to each item.' },
-      { guidance: false, description: 'Place interactive elements inside an interactive list item — it creates nested click targets and confusing focus behavior.' },
-      { guidance: false, description: 'Use a list for a single item or for laying out unrelated content — lists imply a meaningful collection.' },
+      { guidance: false, description: 'Place interactive elements inside an interactive list item; it creates nested click targets and confusing focus behavior.' },
+      { guidance: false, description: 'Use a list for a single item or for laying out unrelated content; lists imply a meaningful collection.' },
       { guidance: false, description: 'Mix clickable and non-clickable items in the same list without clear visual distinction.' },
     ],
     anatomy: [
@@ -279,8 +279,8 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Provide a header to label the list and give context to screen readers.' },
       { guidance: true, description: 'Use start and end content slots to add icons, avatars, or badges to each item.' },
-      { guidance: false, description: 'Place interactive elements inside an interactive list item — it creates nested click targets and confusing focus behavior.' },
-      { guidance: false, description: 'Use a list for a single item or for laying out unrelated content — lists imply a meaningful collection.' },
+      { guidance: false, description: 'Place interactive elements inside an interactive list item; it creates nested click targets and confusing focus behavior.' },
+      { guidance: false, description: 'Use a list for a single item or for laying out unrelated content; lists imply a meaningful collection.' },
       { guidance: false, description: 'Mix clickable and non-clickable items in the same list without clear visual distinction.' },
     ],
     anatomy: [
@@ -302,8 +302,8 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Provide a header to label the list and give context to screen readers.' },
       { guidance: true, description: 'Use start and end content slots to add icons, avatars, or badges to each item.' },
-      { guidance: false, description: 'Place interactive elements inside an interactive list item — it creates nested click targets and confusing focus behavior.' },
-      { guidance: false, description: 'Use a list for a single item or for laying out unrelated content — lists imply a meaningful collection.' },
+      { guidance: false, description: 'Place interactive elements inside an interactive list item; it creates nested click targets and confusing focus behavior.' },
+      { guidance: false, description: 'Use a list for a single item or for laying out unrelated content; lists imply a meaningful collection.' },
       { guidance: false, description: 'Mix clickable and non-clickable items in the same list without clear visual distinction.' },
     ],
     anatomy: [
