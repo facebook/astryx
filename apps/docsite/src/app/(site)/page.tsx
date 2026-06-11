@@ -6,14 +6,25 @@ import {useEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
-import {XDSBadge} from '@xds/core/Badge';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import {
+  HeroReelProvider,
+  HeroReelCards,
+  HeroReelWordmark,
+  HeroReelDots,
+} from './_landing/hero/HeroThemeReel';
 import {FeaturesShowcase} from './_landing/FeaturesShowcase';
 import {AboutShowcase} from './_landing/AboutShowcase';
 import {DiscoverShowcase} from './_landing/DiscoverShowcase';
+
+// Height of the hero band (the region the fixed hero content + floating cards
+// occupy before the showcase scrolls up over it). Drives the in-flow spacer
+// that reserves this space in heroScope. Bumped from 600 → 760 to give the
+// floating cards more vertical breathing room without crowding the showcase.
+const HERO_BAND_HEIGHT = 760;
 
 const styles = stylex.create({
   // Wraps hero + showcase together so the sticky hero (position: sticky)
@@ -25,73 +36,48 @@ const styles = stylex.create({
     position: 'relative',
     backgroundColor: 'var(--color-background-body)',
   },
-  // Hero content column. maxWidth: 800 is an editorial reading-
-  // measure cap (≈ display-1 + body at a comfortable line length);
-  // not derivable from the spacing scale, kept as a literal
-  // because it's a marketing-section measure, not a system primitive.
-  // paddingBlock = --spacing-12 * 3 → 144px top/bottom; expressed
-  // as a calc() over the spacing token so the rhythm scales with
-  // any future spacing-scale theme override.
+  // Hero content column. Rendered position:fixed — locked to the viewport
+  // exactly like the aurora glow behind it — so the wordmark + headline +
+  // CTAs stay put while the showcase section scrolls UP and covers them
+  // (pin-and-cover reveal). Using `fixed` (not `sticky`) keeps it in lockstep
+  // with the fixed aurora layer so the two never drift apart, and the whole
+  // group is uniformly covered from the bottom by the rising showcase.
+  //
+  // The fixed container spans the full hero band (from just under the nav to
+  // the bottom of the band) and flex-centers its content vertically, so the
+  // wordmark + headline + CTAs always sit in the MIDDLE of the hero regardless
+  // of how tall the band is. Horizontally centered via inset:0 + marginInline:
+  // auto on a capped maxWidth (800 = editorial reading measure). Pulled out of
+  // flow, so heroSpacer reserves the hero's height in heroScope.
   heroContent: {
-    position: 'sticky',
+    position: 'fixed',
     top: 'var(--appshell-header-height, 0px)',
+    left: 0,
+    right: 0,
+    // Span the hero band minus the nav strip so the centered content's box
+    // matches the in-flow heroSpacer region exactly.
+    height: `calc(${HERO_BAND_HEIGHT}px - var(--appshell-header-height, 0px))`,
+    // Vertically center the content within that box. The extra paddingBlockEnd
+    // OPTICALLY centers the block: the carousel dots add visual weight at the
+    // bottom, so reserving a bit more space below shifts the main mass
+    // (wordmark → subtext) up to where the eye reads it as centered.
+    justifyContent: 'center',
+    paddingBlockEnd: spacingVars['--spacing-12'],
     maxWidth: 800,
     marginInline: 'auto',
-    paddingBlock: `calc(${spacingVars['--spacing-12']} * 3)`,
     paddingInline: spacingVars['--spacing-6'],
     textAlign: 'center',
     gap: spacingVars['--spacing-6'],
-    // Lock the hero block to a fixed minimum height so the showcase
-    // below has a stable starting offset across viewports and the
-    // sticky pin-and-cover reveal reads consistently.
-    minHeight: 600,
+    // Decorative-position layer; never intercept clicks outside its actual
+    // content (the buttons/links re-enable pointer events on themselves).
+    zIndex: 0,
   },
-  // Wrapper around the wordmark + floating Beta badge. Sized
-  // exactly to the wordmark image (display:inline-block with no
-  // explicit width, so the inline element shrinks to the image's
-  // natural rendered width) and centered horizontally by the
-  // parent VStack's align:stretch + the wrapper's marginInline:
-  // auto. position:relative establishes the positioning context
-  // for the absolutely-positioned Beta badge.
-  heroWordmarkWrap: {
-    position: 'relative',
-    display: 'inline-block',
-    alignSelf: 'center',
-  },
-  heroWordmark: {
-    display: 'block',
-    // Responsive: scale down on narrow viewports so the wordmark
-    // doesn't overflow the hero column. 80px at desktop is the
-    // designed size; 56px keeps the wordmark visible without
-    // clipping on phones at ~375px viewport.
-    height: {
-      default: 80,
-      '@media (max-width: 480px)': 56,
-    },
-    width: 'auto',
-    maxWidth: '100%',
-  },
-  // Floating Beta badge wrapper — positions the XDSBadge above
-  // the wordmark (bottom anchored to the wordmark's top edge)
-  // and offset right so it reads as a callout attached to the
-  // brand mark without overlapping any of the glyphs. The XDS
-  // Badge component carries the pill chrome (background, radius,
-  // typography); only positioning + rotation lives here.
-  //
-  // right: -24 is a literal pixel offset (not a spacing token)
-  // because the badge anchor is tied to the wordmark glyph
-  // geometry — the badge needs to clear the rightmost ligature
-  // by a precise visual margin that doesn't correspond to any
-  // spacing-scale step. Negative spacing tokens don't exist in
-  // the scale anyway, so even the symmetric "24px" would be a
-  // literal here.
-  heroWordmarkBeta: {
-    position: 'absolute',
-    bottom: '100%',
-    right: -24,
-    marginBottom: spacingVars['--spacing-1'],
-    transform: 'rotate(8deg)',
-    transformOrigin: 'bottom right',
+  // Reserves the hero's vertical space in heroScope since heroContent is
+  // pulled out of flow (position:fixed). Height matches the hero band so the
+  // showcase below starts at the right offset and the pin-and-cover reveal
+  // reads consistently across viewports.
+  heroSpacer: {
+    height: HERO_BAND_HEIGHT,
   },
   // Hero CTA button grid. maxWidth: 420 caps the two-up button
   // row at a comfortable thumb-reachable width so the buttons
@@ -175,92 +161,88 @@ export default function HomePage() {
 
   return (
     <div {...stylex.props(styles.heroScope)}>
-      <XDSVStack
-        data-home-page="true"
-        align="stretch"
-        xstyle={styles.heroContent}>
-        {/* heroWordmarkWrap is a raw <div> because its sole job is
-            to establish a `position: relative` context for the
-            absolutely-positioned Beta badge while sizing exactly to
-            the inline wordmark image's natural width. XDSVStack /
-            XDSHStack would impose flex semantics that fight the
-            inline-block sizing; no other XDS primitive represents
-            "positioning context that hugs an inline child". */}
-        <div {...stylex.props(styles.heroWordmarkWrap)}>
-          {/* Raw <img> — @xds/core does not export a general-purpose
-              image component (XDSThumbnail is chat-attachment chrome;
-              XDSIcon is a glyph registry). Sizing + responsive
-              breakpoints come from the heroWordmark xstyle. */}
-          <img
-            src="/astryx-logo.svg"
-            alt="Astryx"
-            {...stylex.props(styles.heroWordmark)}
-          />
-          {/* heroWordmarkBeta is a raw <span> because we need an
-              inline-level element that establishes its own
-              position:absolute context for the XDSBadge — a stack
-              would force flex children and break the floating
-              callout placement. */}
-          <span {...stylex.props(styles.heroWordmarkBeta)}>
-            <XDSBadge label="Beta" variant="blue" />
-          </span>
-        </div>
-        <XDSHeading
-          level={1}
-          type="display-1"
-          color="primary"
-          xstyle={styles.heroHeadline}>
-          An open source design system that's{' '}
-          {/* XDSText emphasis span — type/color="inherit" picks up
-              the heading's display-1 size + color so only the
-              weight changes, and weight="semibold" provides the
-              contrast against the parent heading's normal weight
-              (set via styles.heroHeadline above). Using XDSText
-              keeps the inline emphasis on a typed XDS primitive
-              instead of a raw <span> + xstyle escape. */}
-          <XDSText as="span" type="inherit" color="inherit" weight="semibold">
-            fully customizable and agent ready
-          </XDSText>
-        </XDSHeading>
-        <XDSVStack gap={4} align="center">
-          <XDSGrid columns={2} gap={3} xstyle={styles.heroButtons}>
-            <XDSButton
-              variant="primary"
-              size="lg"
-              label="Get started"
-              href="/docs/getting-started"
-            />
-            <XDSButton
-              variant="secondary"
-              size="lg"
-              label="Browse components"
-              href="/components"
-            />
-          </XDSGrid>
-          <XDSText display="block">
-            Built on{' '}
-            <XDSLink
-              type="body"
-              color="primary"
-              href="https://react.dev"
-              target="_blank"
-              rel="noopener noreferrer"
-              hasUnderline>
-              React
-            </XDSLink>{' '}
-            and{' '}
-            <XDSLink
-              type="body"
-              color="primary"
-              href="https://stylexjs.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              hasUnderline>
-              StyleX
-            </XDSLink>
-          </XDSText>
+      {/* The theming showcase reel is split across the DOM: a full-bleed
+          floating-cards layer that anchors to this heroScope (so the cards
+          sit in the left/right gutters), and the recolorable wordmark inside
+          the centered content column below. HeroReelProvider holds the shared
+          cycling state + auto-advance clock for both, plus the dot switcher.
+          The headline / CTAs / subtext are intentionally NOT themed — they
+          stay in the stable Astryx brand style. */}
+      <HeroReelProvider>
+        {/* Floating themed UI cards — anchored to the full-width heroScope so
+            they flank the centered text column instead of overlapping it. */}
+        <HeroReelCards />
+        {/* Reserves the hero's height in flow since the content below is
+            position:fixed (pulled out of flow). Without this the showcase
+            would jump up to the top of the page. */}
+        <div {...stylex.props(styles.heroSpacer)} aria-hidden="true" />
+        <XDSVStack
+          data-home-page="true"
+          align="stretch"
+          xstyle={styles.heroContent}>
+          {/* Theme-reactive Astryx wordmark — recolors to each theme's accent
+              as the reel cycles; the "Beta" signal moved into the subtext
+              line below the CTAs. */}
+          <HeroReelWordmark />
+          <XDSHeading
+            level={1}
+            type="display-1"
+            color="primary"
+            xstyle={styles.heroHeadline}>
+            An open source design system that's{' '}
+            {/* XDSText emphasis span — type/color="inherit" picks up
+                the heading's display-1 size + color so only the
+                weight changes, and weight="semibold" provides the
+                contrast against the parent heading's normal weight
+                (set via styles.heroHeadline above). Using XDSText
+                keeps the inline emphasis on a typed XDS primitive
+                instead of a raw <span> + xstyle escape. */}
+            <XDSText as="span" type="inherit" color="inherit" weight="semibold">
+              fully customizable and agent ready
+            </XDSText>
+          </XDSHeading>
+          <XDSVStack gap={4} align="center">
+            <XDSGrid columns={2} gap={3} xstyle={styles.heroButtons}>
+              <XDSButton
+                variant="primary"
+                size="lg"
+                label="Get started"
+                href="/docs/getting-started"
+              />
+              <XDSButton
+                variant="secondary"
+                size="lg"
+                label="Browse components"
+                href="/components"
+              />
+            </XDSGrid>
+            <XDSText display="block" color="secondary">
+              Currently in Beta · Built on{' '}
+              <XDSLink
+                type="body"
+                color="primary"
+                href="https://react.dev"
+                target="_blank"
+                rel="noopener noreferrer"
+                hasUnderline>
+                React
+              </XDSLink>{' '}
+              and{' '}
+              <XDSLink
+                type="body"
+                color="primary"
+                href="https://stylexjs.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                hasUnderline>
+                StyleX
+              </XDSLink>
+            </XDSText>
+            {/* Theme switcher dots — jump straight to any theme in the reel. */}
+            <HeroReelDots />
+          </XDSVStack>
         </XDSVStack>
-      </XDSVStack>
+      </HeroReelProvider>
       <XDSVStack ref={showcaseRef} xstyle={styles.showcaseOverlay}>
         <FeaturesShowcase />
         <AboutShowcase />

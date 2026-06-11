@@ -87,18 +87,30 @@ body:has([data-home-page]) #xds-app-shell-main {
   transition: background 300ms ease;
 }
 
-/* On the home page only, blend the top nav with the cream body background.
-   Use the solid body color (not a color-mix) so it matches perfectly even
-   without anything scrolled behind it. The backdrop-filter blur from the
-   .xds-top-nav rule above is preserved. */
+/* On the home page only, make the top nav transparent so the slide-themed
+   navBackdrop band rendered behind it (inside the hero reel's themed scope)
+   shows through and retints the nav strip with the ACTIVE theme's body color.
+   Without this the nav would paint Astryx's default body color and never
+   follow the reel. The backdrop-filter blur from the .xds-top-nav rule above
+   is preserved. */
 body:has([data-home-page]) .xds-top-nav:where(:not(.xds-app-shell .xds-app-shell *)) {
-  background: var(--color-background-body);
+  background: transparent;
 }
 
 /* When the home page IntersectionObserver detects the theming showcase has
    reached the top, switch the nav back to a surface-tinted frosted bar. */
 body[data-nav-mode='surface'] .xds-top-nav:where(:not(.xds-app-shell .xds-app-shell *)) {
   background: color-mix(in srgb, var(--color-background-surface) 80%, transparent);
+}
+
+/* Hide the prev/next chevron buttons inside the home page's hero theme
+   switcher pagination so only the dot indicators show. XDSPagination's
+   variant="dots" ships with chevrons by default; the hero wants a minimal
+   indicator-only treatment. Scoped to [data-home-page] so other
+   XDSPagination instances across the site stay untouched. */
+[data-home-page] .xds-pagination button[aria-label='Go to previous page'],
+[data-home-page] .xds-pagination button[aria-label='Go to next page'] {
+  display: none;
 }
 
 /* The /themes/<name> dedicated page renders a faux app top nav INSIDE
