@@ -38,9 +38,9 @@ plus Error / Warning / Success) is published as a smooth 21-step tonal
 palette in `butterPalettes`. Categorical badges, cards, and banner text
 roles read from these palettes via:
 
-- `T90` light / `T15` dark — background surfaces
-- `T80` light / `T25` dark — borders, dark-mode text
-- `T25` light / `T80` dark — light-mode text, icons
+- `T90` light / `T15` dark: background surfaces
+- `T80` light / `T25` dark: borders, dark-mode text
+- `T25` light / `T80` dark: light-mode text, icons
 
 To regenerate the palettes after changing a source color, edit the
 `SOURCES` map in `scripts/generate-palettes.mjs`, run the script, and
@@ -48,7 +48,7 @@ paste the output back into `src/butterTheme.ts`.
 
 ## Typography
 
-- **Display**: Sarina (cursive) — applied per-page via inline style.
+- **Display**: Sarina (cursive), applied per-page via inline style.
 - **Heading & Body**: Outfit, base 14px, ratio 1.25.
 - **Code**: JetBrains Mono.
 
