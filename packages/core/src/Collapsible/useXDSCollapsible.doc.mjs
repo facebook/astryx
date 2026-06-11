@@ -40,7 +40,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Use the hook directly when building custom collapsible components that need XDS collapsible behavior without XDSCollapsible wrapper.'},
       {guidance: true, description: 'For accordion behavior, wrap items in XDSCollapsibleGroup and pass unique value props.'},
-      {guidance: false, description: 'Implement your own open/close state when useXDSCollapsible already provides it — the hook handles group coordination automatically.'},
+      {guidance: false, description: 'Implement your own open/close state when useXDSCollapsible already provides it; the hook handles group coordination automatically.'},
     ],
   },
   relatedComponents: ['Collapsible', 'Card', 'Section'],
@@ -66,7 +66,7 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Use directly when building custom collapsible components needing XDS collapsible behavior w/o XDSCollapsible wrapper.'},
       {guidance: true, description: 'For accordion behavior, wrap items in XDSCollapsibleGroup + pass unique value props.'},
-      {guidance: false, description: 'Implement your own open/close state when useXDSCollapsible already provides it — hook handles group coordination automatically.'},
+      {guidance: false, description: 'Implement your own open/close state when useXDSCollapsible already provides it; hook handles group coordination automatically.'},
     ],
   },
 };
