@@ -10,6 +10,7 @@ export const doc = {
   isReady: true,
   // Surfaced via the Themes page "Open in Playground" action, not the
   // Templates gallery, so keep it out of the overview + playground menu.
+  // No `category` — it's hidden from the overview gallery (the only consumer
+  // of `category`), and 'Showcase' isn't part of the TemplateCategory taxonomy.
   isHiddenFromOverview: true,
-  category: 'Showcase - Theme Showcase',
 };
