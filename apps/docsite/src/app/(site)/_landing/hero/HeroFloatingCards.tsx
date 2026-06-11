@@ -37,15 +37,14 @@ import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import type {HeroThemeContent} from './heroThemeContent';
 
 const styles = stylex.create({
-  // Cards live in the SAME viewport-fixed, full-bleed box as the aurora blobs
-  // (backdropGlow: fixed, left/right -200px) so each card's `left %` lands in
-  // the same coordinate space as a blob's `at X%` and they track together at
-  // any screen width. Hidden below ~1180px (cards + blobs both hide there).
+  // Cards live in a viewport-fixed box (same vertical anchor as the aurora
+  // blobs) so each card's `left %` is a true viewport %, letting them track the
+  // blobs as the screen resizes. Hidden below ~1180px (cards + blobs hide too).
   stage: {
     position: 'fixed',
     top: 'var(--appshell-header-height, 0px)',
-    left: -200,
-    right: -200,
+    left: 0,
+    right: 0,
     height: 1050,
     pointerEvents: 'none',
     display: {
@@ -110,9 +109,9 @@ const styles = stylex.create({
   // the lower portion, and a chat bubble that breaks out past the card's
   // right edge over the image's lower area.
   productCard: {
-    // Left edge anchored just left of the left aurora blob's center (22% in the
-    // shared fixed box) so the card sits over that blob at any width.
-    left: '15%',
+    // Left edge near the left aurora blob (visually ~14% of the viewport) so
+    // the card sits over that blob.
+    left: '8%',
     top: 340,
     width: 'clamp(244px, 20vw, 280px)',
     boxShadow: 'var(--shadow-high)',
@@ -131,33 +130,30 @@ const styles = stylex.create({
   // past the card's right edge over the lower part of the product image
   // (matches the SVG). The composer supplies its own surface, radius, and
   // send button; this wrapper only handles placement + the lift shadow.
-  // Card wrapping the composer; breaks out past the product card's right edge
-  // over the lower part of the photo.
+  // Positioning wrapper for the composer; breaks out past the product card's
+  // right edge over the lower part of the photo.
   chatBubble: {
     position: 'absolute',
     left: '5%',
     right: 'calc(-1 * var(--spacing-12))',
     bottom: 'var(--spacing-5)',
     transform: 'translateX(var(--spacing-12))',
-    boxShadow: 'var(--shadow-high)',
-    borderWidth: 0,
     // Decorative only: no pointer interaction or text cursor (the whole layer
     // is also `inert`, but this keeps the composer from showing affordances).
     pointerEvents: 'none',
     cursor: 'default',
   },
-  // The composer sits inside the wrapping card, so flatten its own body fully
-  // (transparent surface, no shadow in any state, no radius) to avoid a double
-  // surface and the stray shadow artifact where the two rounded boxes overlap.
+  // Force a neutral card surface on the composer body so it reads as a clean
+  // light bubble on every theme — the composer defaults to
+  // --color-background-popover, which is a tinted (e.g. pink on Y2K) surface
+  // that clashes with the product card behind it.
   composerSurface: {
-    backgroundColor: 'transparent',
-    boxShadow: 'none',
-    borderRadius: 0,
+    backgroundColor: 'var(--color-background-card)',
   },
   // ── Right: feature card ───────────────────────────────────────────────
   featureCard: {
-    // Left edge anchored just left of the right aurora blob's center (78% in
-    // the shared fixed box) so the card sits over that blob at any width.
+    // Left edge near the right aurora blob (visually ~80% of the viewport) so
+    // the card sits over that blob.
     left: '70%',
     top: 310,
     width: 'clamp(236px, 19vw, 272px)',
@@ -183,12 +179,14 @@ const styles = stylex.create({
 
   // ── Floating pills ────────────────────────────────────────────────────
   pillLeading: {
-    left: '16%',
+    left: '9%',
     top: 304,
   },
   pillTrailing: {
+    // Overlaps the feature card's top-right (card at left:70%, ~272px wide), a
+    // touch above its top edge.
     left: '80%',
-    top: 258,
+    top: 270,
   },
   // Pill-shaped card wrapping the trailing radio option. Fully rounded with a
   // soft lift; the XDSCard default border is dropped so only the shadow defines
@@ -203,8 +201,10 @@ const styles = stylex.create({
   // further left (large right offset) and high enough to sit over the card's
   // lower-left, breaking past its left edge like the reference.
   buyCard: {
-    left: '58%',
-    top: 420,
+    // Overlaps the lower-left of the feature card's image, breaking past its
+    // left edge (feature card at left:70%).
+    left: '64%',
+    top: 440,
     width: 'clamp(208px, 16vw, 248px)',
     boxShadow: 'var(--shadow-high)',
     borderWidth: 0,
@@ -307,7 +307,7 @@ export function HeroFloatingCards({
                 over the lower part of the photo. Decorative: the whole layer is
                 inert / aria-hidden / pointer-events:none, so the no-op handlers
                 never fire. */}
-            <XDSCard padding={2} xstyle={styles.chatBubble}>
+            <div {...stylex.props(styles.chatBubble)}>
               <XDSChatComposer
                 value=""
                 onChange={() => {}}
@@ -325,7 +325,7 @@ export function HeroFloatingCards({
                 }
                 sendButton={<XDSChatSendButton isDisabled={false} />}
               />
-            </XDSCard>
+            </div>
           </div>
         </XDSVStack>
       </XDSCard>
