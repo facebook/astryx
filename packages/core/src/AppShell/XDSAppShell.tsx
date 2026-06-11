@@ -250,9 +250,8 @@ export interface XDSAppShellProps extends XDSBaseProps<HTMLDivElement> {
    * returns `null`:
    *
    * @example
-   * ```tsx
+   * ```
    * const SIDEBAR_ROUTES = ['/dashboard', '/settings'];
-   *
    * function Layout({ children, sidebar }) {
    *   const hasSidebar = SIDEBAR_ROUTES.some(r => pathname.startsWith(r));
    *   return (

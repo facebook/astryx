@@ -98,13 +98,8 @@ export interface XDSPopoverProps extends Pick<
    *
    * @example
    * ```
-   * // Automatic — XDSButton already renders a <button>
    * <XDSPopover content={...}><XDSButton label="Open" /></XDSPopover>
-   *
-   * // Automatic — XDSToken renders as <button> via context
    * <XDSPopover content={...}><XDSToken label="Filter" /></XDSPopover>
-   *
-   * // Explicit — render prop for full control
    * <XDSPopover content={...}>
    *   {(triggerProps) => <MyCustomTrigger {...triggerProps} />}
    * </XDSPopover>
