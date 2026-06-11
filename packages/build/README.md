@@ -1,6 +1,6 @@
 # @xds/build
 
-Build plugins for XDS source builds. Provides babel, PostCSS, and Vite integrations that compile XDS library and product code with separate class name prefixes, enabling independent CSS layers:
+Build plugins for XDS source builds. Provides babel, PostCSS, and Vite integrations that compile XDS library and product code with separate class name prefixes, which enables independent CSS layers:
 
 ```
 reset < xds-base (library, xds prefix) < xds-theme < product (app, x prefix)
@@ -8,7 +8,7 @@ reset < xds-base (library, xds prefix) < xds-theme < product (app, x prefix)
 
 ## Why?
 
-StyleX generates atomic CSS — same declaration = same class name. Without separate prefixes, library and product classes collide and can't be placed in independent CSS layers, which breaks theme overrides.
+StyleX generates atomic CSS: same declaration = same class name. Without separate prefixes, library and product classes collide and can't be placed in independent CSS layers, which breaks theme overrides.
 
 `@xds/build` solves this by:
 
@@ -20,9 +20,9 @@ StyleX generates atomic CSS — same declaration = same class name. Without sepa
 
 | Export               | Purpose                                       | Platform                    |
 | -------------------- | --------------------------------------------- | --------------------------- |
-| `@xds/build/babel`   | Babel plugin — splits class prefixes per file | Next.js, any babel pipeline |
-| `@xds/build/postcss` | PostCSS plugin — compiles + splits CSS layers | Next.js                     |
-| `@xds/build/vite`    | Vite plugin — wraps unplugin + splits layers  | Vite, Storybook             |
+| `@xds/build/babel`   | Babel plugin: splits class prefixes per file  | Next.js, any babel pipeline |
+| `@xds/build/postcss` | PostCSS plugin: compiles + splits CSS layers  | Next.js                     |
+| `@xds/build/vite`    | Vite plugin: wraps unplugin + splits layers   | Vite, Storybook             |
 
 ## Install
 
@@ -179,7 +179,7 @@ export default defineConfig({
 
 ### Babel plugin (`@xds/build/babel`)
 
-Wraps `@stylexjs/babel-plugin` with two internal instances — one with `classNamePrefix: 'xds'` for library files, one with default `'x'` for product files. Routes each file to the correct instance based on its path.
+Wraps `@stylexjs/babel-plugin` with two internal instances: one with `classNamePrefix: 'xds'` for library files, one with default `'x'` for product files. Routes each file to the correct instance based on its path.
 
 Library patterns (configurable):
 
@@ -243,5 +243,5 @@ Wraps `@stylexjs/unplugin` and intercepts the dev CSS endpoint (`/virtual:stylex
 
 ## Related
 
-- [example-nextjs-source](../../apps/example-nextjs-source/) — Full Next.js source build example
-- [`@stylexjs/babel-plugin`](https://github.com/facebook/stylex) — The underlying StyleX compiler
+- [example-nextjs-source](../../apps/example-nextjs-source/): full Next.js source build example
+- [`@stylexjs/babel-plugin`](https://github.com/facebook/stylex): the underlying StyleX compiler
