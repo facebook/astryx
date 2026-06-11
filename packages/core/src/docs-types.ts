@@ -508,15 +508,59 @@ export interface SingleComponentDoc extends BaseDoc {
 }
 
 /**
+ * A cross-link reference to a sub-component that lives in its own sibling
+ * `{Name}.doc.mjs` file (see {@link SubComponentDoc}). The parent's
+ * `components` array lists these names so the family stays discoverable;
+ * the entry's content is emitted from the sub-component's own file, not here.
+ */
+export interface ComponentRef {
+  /** Full export name including XDS prefix, e.g. `"XDSChatComposer"`. Must
+   *  match the `name` field of the referenced sub-component's own doc. */
+  name: string;
+}
+
+/**
  * Documentation for a directory that exports multiple public components.
  * Props live on each entry in `components`.
  *
  * Use this when the directory has multiple `XDS*.tsx` files
  * (e.g. Table, Dialog, TabList, TopNav, Layout).
+ *
+ * Each `components` entry is either a full {@link ComponentEntry} (inline
+ * sub-component) or a name-only {@link ComponentRef} pointing at a sibling
+ * `{Name}.doc.mjs` file. The two styles can be mixed during migration.
  */
 export interface MultiComponentDoc extends BaseDoc {
-  /** Each public component/hook exported from this directory. */
-  components: ComponentEntry[];
+  /** Each public component/hook exported from this directory — either an
+   *  inline entry or a name-only reference to a sibling sub-component doc. */
+  components: (ComponentEntry | ComponentRef)[];
+}
+
+/**
+ * Documentation for a single sub-component that lives in its own
+ * `{Name}.doc.mjs` file inside its parent's directory. Identified by the
+ * `subComponentOf` field, which names the parent component.
+ *
+ * A sub-component owns its `description`, `props`, and (optionally) its own
+ * `usage`. Family-level fields (`group`, `category`, `keywords`, `theming`,
+ * `playground`) are inherited from the directory's primary doc unless
+ * overridden here. The generated registry entry is identical to the legacy
+ * inline `components[]` expansion — this is purely a file-structure change.
+ */
+export interface SubComponentDoc extends Omit<BaseDoc, 'usage'> {
+  /** Name of the parent component this sub-component belongs to, matching the
+   *  parent doc's `name` (e.g. `"Chat"`). Marks this file as a sub-component
+   *  doc so the pipeline parents and inherits family fields correctly. */
+  subComponentOf: string;
+  /** One-sentence description of what this sub-component does and its role
+   *  within the parent composition. */
+  description: string;
+  /** All public props for this sub-component. */
+  props: PropDoc[];
+  /** Usage is optional for sub-components — when omitted, the registry entry
+   *  carries the sub-component's own props/description with no usage prose
+   *  (it is NOT inherited from the parent, which was the #2602 bug). */
+  usage?: UsageDoc;
 }
 
 /**
@@ -529,8 +573,13 @@ export interface MultiComponentDoc extends BaseDoc {
  *
  * Use SingleComponentDoc (with `props`) for single-component directories.
  * Use MultiComponentDoc (with `components`) for multi-component directories.
+ * Use SubComponentDoc (with `subComponentOf`) for a sub-component that lives
+ * in its own file inside its parent's directory.
  */
-export type ComponentDoc = SingleComponentDoc | MultiComponentDoc;
+export type ComponentDoc =
+  | SingleComponentDoc
+  | MultiComponentDoc
+  | SubComponentDoc;
 
 /**
  * Translation overlay for component documentation.

@@ -350,16 +350,31 @@ async function generateComponentRegistry() {
       const docFiles = fs.readdirSync(dirPath).filter(f => f.endsWith('.doc.mjs'));
       if (docFiles.length === 0) continue;
 
-      // First pass: find the primary component doc name for this directory
-      // (used to parent standalone hook docs that share the directory)
+      // First pass: find the primary component doc for this directory. Used to
+      // (a) parent standalone hook docs that share the directory, and
+      // (b) let sibling sub-component docs (subComponentOf) inherit family
+      //     fields (group, category, keywords, theming, importPath, ...).
       let dirPrimaryDoc = null;
+      let dirPrimaryMeta = null;
       for (const df of docFiles) {
         const dfPath = path.join(dirPath, df);
         try {
           const mod = await import(pathToFileURL(dfPath).href);
           const d = mod.docs;
-          if (d && (d.components || d.props) && !d.params) {
+          if (d && (d.components || d.props) && !d.params && !d.subComponentOf) {
             dirPrimaryDoc = d.name || null;
+            dirPrimaryMeta = {
+              name: d.name || null,
+              group: d.group || null,
+              category: d.category || null,
+              keywords: d.keywords || [],
+              hidden: d.hidden ?? false,
+              isHiddenFromOverview: d.isHiddenFromOverview ?? false,
+              topDescription: d.usage?.description || d.description || '',
+              usage: d.usage ? sanitizeForJson(d.usage) : null,
+              theming: d.theming ? sanitizeForJson(d.theming) : null,
+              playground: d.playground ? sanitizeForJson(d.playground) : null,
+            };
             break;
           }
         } catch { /* ignore */ }
@@ -388,12 +403,58 @@ async function generateComponentRegistry() {
         const theming = doc.theming ? sanitizeForJson(doc.theming) : null;
         const playground = doc.playground ? sanitizeForJson(doc.playground) : null;
 
-        if (doc.components && doc.components.length > 0) {
+        if (doc.subComponentOf) {
+          // Extracted sub-component: lives in its parent's directory in its own
+          // .doc.mjs file. Inherits family fields (group, category, keywords,
+          // theming, playground, importPath) from the directory's primary doc;
+          // owns its name, description, props, and usage. Produces a registry
+          // entry identical to the legacy inline `components[]` expansion.
+          const parentMeta = dirPrimaryMeta || {};
+          const subName = (doc.name || '').replace(/^XDS/, '');
+          if (subName) {
+            pendingSubComponents.push({
+              name: subName,
+              displayName: requireDisplayName(
+                doc.displayName,
+                `${pkg.name}: subcomponent ${subName} (parent ${doc.subComponentOf})`,
+              ),
+              moduleName: subName.startsWith('use') ? subName : `XDS${subName}`,
+              directory: entry.name,
+              importPath: resolveImportPathForPkg(pkg.dir, entry.name),
+              group: parentMeta.group ?? group,
+              category: parentMeta.category ?? category,
+              isHiddenFromOverview:
+                doc.isHiddenFromOverview ?? parentMeta.isHiddenFromOverview ?? false,
+              description: doc.description || parentMeta.topDescription || '',
+              keywords: parentMeta.keywords ?? keywords,
+              hidden: parentMeta.hidden ?? hidden,
+              parentDoc: doc.subComponentOf,
+              props: Array.isArray(doc.props) ? sanitizeForJson(doc.props) : [],
+              usage: doc.usage ? sanitizeForJson(doc.usage) : parentMeta.usage ?? null,
+              theming: doc.theming ? sanitizeForJson(doc.theming) : parentMeta.theming ?? null,
+              params: null,
+              returns: null,
+              relatedComponents: null,
+              relatedHooks: null,
+              playground: parentMeta.playground ?? null,
+            });
+          }
+        } else if (doc.components && doc.components.length > 0) {
           for (const sub of doc.components) {
             const rawSubName = sub.name || '';
             const subName = rawSubName.replace(/^XDS/, '');
             if (!subName) continue;
-            const isHookEntry = rawSubName.startsWith('use') || subName.startsWith('use') || Array.isArray(sub.params);
+            const isHookEntry =
+              rawSubName.startsWith('use') ||
+              subName.startsWith('use') ||
+              Array.isArray(sub.params);
+            // Name-only entries are cross-link references to sub-components that
+            // have been extracted into their own sibling .doc.mjs files. Their
+            // content is emitted from those files (subComponentOf branch); skip
+            // here to avoid double emission.
+            const isNameOnlyRef =
+              Object.keys(sub).length === 1 && sub.name != null;
+            if (isNameOnlyRef) continue;
             // Sub-entries whose name differs from the doc name are
             // sub-components — hide them from the overview page.
             const isSubEntry = subName !== doc.name;
