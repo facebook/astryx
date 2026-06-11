@@ -410,7 +410,7 @@ function StorePreview({images}: {images: Record<string, string>}) {
               </XDSVStack>
             </XDSCenter>
 
-            <XDSGrid columns={{minWidth: 180}} gap={4}>
+            <XDSGrid columns={{minWidth: 200}} gap={4}>
               {PRODUCTS.map((p, i) => (
                 <XDSCard key={p.name} padding={0} height="100%">
                   <XDSVStack gap={0} xstyle={styles.cardStack}>
