@@ -60,8 +60,8 @@ export const docs = {
         },
         {
           name: 'size',
-          type: 'XDSAvatarSize',
-          description: 'Avatar size (named or numeric pixel value).',
+          type: "'tiny' | 'xsmall' | 'small' | 'medium' | 'large' | number",
+          description: "Avatar size. Named sizes: 'tiny' (20px), 'xsmall' (24px), 'small' (36px), 'medium' (48px), 'large' (72px). Also accepts specific pixel values (16, 20, 24, 32, 36, 40, 48, 60, 64, 72, 80, 96, 120).",
           default: "'small'",
         },
         {
@@ -141,7 +141,7 @@ export const docsZh = {
         {name: 'fallbackSrc', type: 'string', description: '主图片加载失败时的备用图片。'},
         {name: 'name', type: 'string', description: '用户姓名，用于生成首字母和替代文本。'},
         {name: 'alt', type: 'string', description: '替代文本（未提供时回退到 name）。'},
-        {name: 'size', type: 'XDSAvatarSize', description: '头像尺寸（命名值或数值像素值）。', default: "'small'"},
+        {name: 'size', type: "'tiny' | 'xsmall' | 'small' | 'medium' | 'large' | number", description: "头像尺寸。命名值：'tiny' (20px)、'xsmall' (24px)、'small' (36px)、'medium' (48px)、'large' (72px)。也接受具体像素值。", default: "'small'"},
         {name: 'status', type: 'ReactNode', description: '角落内容，用于状态指示器。'},
       ],
     },
