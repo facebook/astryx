@@ -1,6 +1,6 @@
 # @xds/vega
 
-XDS Vega wrapper -- chart and data visualization components.
+XDS Vega wrapper: chart and data visualization components.
 
 Renders [Vega](https://vega.github.io/vega/) and [Vega-Lite](https://vega.github.io/vega-lite/) specifications via the Vega runtime. The component inspects `$schema` to decide whether to compile (Vega-Lite) or render directly (Vega), validates the schema URL before doing either, and exposes the full Vega `parse()` and `View` construction APIs as props.
 
@@ -12,7 +12,7 @@ Renders [Vega](https://vega.github.io/vega/) and [Vega-Lite](https://vega.github
 |------|------|---------|
 | `package.json` | Config | Package metadata, deps, build scripts |
 | `tsconfig.json` | Config | TypeScript compiler config (extends root) |
-| `tsup.config.ts` | Config | Build config -- CJS + ESM + `.d.ts` outputs |
+| `tsup.config.ts` | Config | Build config: CJS + ESM + `.d.ts` outputs |
 | `src/index.ts` | Barrel | Public API surface |
 | `src/XDSVegaChart.tsx` | Component | Inspects `$schema`, compiles or renders, owns View lifecycle |
 | `src/schema.ts` | Utility | Parses and validates Vega/Vega-Lite `$schema` URLs |
@@ -85,8 +85,8 @@ import {XDSVegaChart} from '@xds/vega';
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `spec` | `AnySpec` | -- | Vega or Vega-Lite spec with `$schema` (required) |
-| `data` | `ViewData` | -- | Initial dataset values — `{datasetName: tuples[]}` |
-| `compileOptions` | `CompileOptions` | -- | Options passed to `compile(spec, options)` — Vega-Lite only |
+| `data` | `ViewData` | -- | Initial dataset values: `{datasetName: tuples[]}` |
+| `compileOptions` | `CompileOptions` | -- | Options passed to `compile(spec, options)`, Vega-Lite only |
 | `parseConfig` | `Config` | -- | Vega config passed to `parse(spec, config)` |
 | `parseOptions` | `ParseOptions` | -- | Options passed to `parse(spec, config, options)` |
 | `viewOptions` | `Omit<ViewOptions, 'container'>` | -- | Options passed to `new View(runtime, options)` |
@@ -124,7 +124,7 @@ import {XDSVegaChart} from '@xds/vega';
 
 ### Data loading
 
-`data` maps dataset names to tuple arrays and is applied via `view.data(name, tuples)` during View initialization, before the first render. It is *not reactive* — changes after mount are ignored.
+`data` maps dataset names to tuple arrays and is applied via `view.data(name, tuples)` during View initialization, before the first render. It is *not reactive*; changes after mount are ignored.
 
 To update data dynamically after render, use `onReady` to get the live View and drive it yourself:
 
