@@ -32,7 +32,7 @@ export const docs = {
           name: 'children',
           type: 'ReactNode',
           description:
-            'The trigger area — right-click on this content to open the menu.',
+            'The trigger area: right-click on this content to open the menu.',
           required: true,
         },
         {
@@ -56,7 +56,7 @@ export const docs = {
         {
           name: 'size',
           type: "'sm' | 'md' | 'lg'",
-          description: 'Size of menu items — controls padding density.',
+          description: 'Size of menu items: controls padding density.',
           default: "'md'",
         },
         {
@@ -112,10 +112,10 @@ export const docs = {
   usage: {
     description: 'A right-click context menu that appears at the cursor position. Use to provide contextual actions for specific elements or regions without cluttering the UI with visible buttons.',
     bestPractices: [
-      { guidance: true, description: 'Keep menu items concise and action-oriented — users expect quick access to contextual actions.' },
+      { guidance: true, description: 'Keep menu items concise and action-oriented; users expect quick access to contextual actions.' },
       { guidance: true, description: 'Use sections and dividers to group related actions when the menu has many items.' },
       { guidance: true, description: 'Ensure all context menu actions are also accessible via other UI elements for keyboard-only users.' },
-      { guidance: false, description: 'Use a ContextMenu as the only way to access important actions — not all users know to right-click.' },
+      { guidance: false, description: 'Use a ContextMenu as the only way to access important actions; not all users know to right-click.' },
       { guidance: false, description: 'Place more than 10–12 items in a single menu without grouping them into sections.' },
     ],
   },
@@ -148,7 +148,7 @@ export const docsZh = {
         {
           name: 'children',
           type: 'ReactNode',
-          description: '触发区域 — 右键点击此内容以打开菜单。',
+          description: '触发区域：右键点击此内容以打开菜单。',
           required: true,
         },
         {
@@ -172,7 +172,7 @@ export const docsZh = {
         {
           name: 'size',
           type: "'sm' | 'md' | 'lg'",
-          description: '菜单项大小 — 控制内边距密度。',
+          description: '菜单项大小：控制内边距密度。',
           default: "'md'",
         },
         {
@@ -255,7 +255,7 @@ export const docsDense = {
       displayName: 'Context Menu',
       description: 'right-click trigger + fixed-position popup menu',
       propDescriptions: {
-        children: 'trigger area — right-click to open menu',
+        children: 'trigger area: right-click to open menu',
         items: 'array of menu entries: action item {label, onClick?, icon?, isDisabled?}, divider {type: "divider"}, or section {type: "section", title?, items: [...]}',
         menuContent: 'custom JSX menu content (compound mode)',
         menuWidth: 'custom menu width',
