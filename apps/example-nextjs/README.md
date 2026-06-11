@@ -1,8 +1,8 @@
-# XDS Example — Next.js (Dist)
+# XDS Example: Next.js (Dist)
 
 Reference application for consuming **@xds/core** as a pre-built dist package in a Next.js project.
 
-No StyleX build plugin needed — XDS ships pre-compiled CSS and JS. This is the simplest way to get started.
+No StyleX build plugin needed; XDS ships pre-compiled CSS and JS. This is the simplest way to get started.
 
 ## Setup Steps
 
@@ -15,7 +15,7 @@ npm install --save-dev @types/react @types/react-dom typescript
 
 ### 2. CSS imports
 
-`src/app/globals.css` — import the reset, component styles, and theme:
+In `src/app/globals.css`, import the reset, component styles, and theme:
 
 ```css
 @import '@xds/core/reset.css';
@@ -25,9 +25,9 @@ npm install --save-dev @types/react @types/react-dom typescript
 
 The CSS import order matters:
 
-1. `reset.css` — baseline resets (`@layer reset`)
-2. `xds.css` — all component styles (`@layer xds-base`)
-3. `theme.css` — theme token overrides (`@layer xds-theme`)
+1. `reset.css`: baseline resets (`@layer reset`)
+2. `xds.css`: all component styles (`@layer xds-base`)
+3. `theme.css`: theme token overrides (`@layer xds-theme`)
 
 Import the CSS file in your root layout:
 
@@ -67,9 +67,9 @@ export function Providers({children}) {
 
 This example lives in the XDS monorepo for convenience, but it should be representative of a real app consuming `@xds/core` from npm. Monorepo workspace resolution can silently bypass issues that external consumers hit.
 
-**Before merging changes to this example, test it as an external consumer** — see the [Testing Example Apps](https://github.com/facebookexperimental/xds/wiki/Testing-Example-Apps) wiki page for the full procedure.
+**Before merging changes to this example, test it as an external consumer.** See the [Testing Example Apps](https://github.com/facebookexperimental/xds/wiki/Testing-Example-Apps) wiki page for the full procedure.
 
 ## Related
 
-- [Issue #145 — Add example-nextjs project](https://github.com/facebookexperimental/xds/issues/145)
-- [XDS + Tailwind example](../example-nextjs-tailwind/) — same dist approach with Tailwind for custom layout styles
+- [Issue #145: Add example-nextjs project](https://github.com/facebookexperimental/xds/issues/145)
+- [XDS + Tailwind example](../example-nextjs-tailwind/): same dist approach with Tailwind for custom layout styles
