@@ -71,14 +71,51 @@ function makeRequire(): (id: string) => unknown {
 }
 
 /**
+ * Names we must NOT inject as globals because doing so would shadow a JavaScript
+ * built-in / standard global that user code relies on. lucide-react, for
+ * example, exports icons literally named `Map` and `Image`; injecting them as
+ * parameters shadows the native `Map`/`Image`, so `new Map()` throws "Map is
+ * not a constructor". Leaving these out lets the names resolve to the real
+ * built-in via the function's normal scope chain.
+ */
+const RESERVED_GLOBALS = new Set([
+  'Map',
+  'Set',
+  'WeakMap',
+  'WeakSet',
+  'Date',
+  'Promise',
+  'Array',
+  'Object',
+  'String',
+  'Number',
+  'Boolean',
+  'Symbol',
+  'BigInt',
+  'RegExp',
+  'Error',
+  'Function',
+  'Proxy',
+  'Reflect',
+  'JSON',
+  'Math',
+  'Intl',
+  'Image',
+  'Event',
+  'URL',
+]);
+
+/**
  * Build a scope with ALL named exports from every module so React hooks and
  * XDS components are available as globals without an explicit import.
+ *
+ * Excludes names that would shadow JS built-ins (see RESERVED_GLOBALS).
  */
 function buildGlobalScope(): Record<string, unknown> {
   const vars: Record<string, unknown> = {};
   for (const moduleExports of Object.values(scope)) {
     for (const [name, value] of Object.entries(moduleExports)) {
-      if (name !== 'default' && name !== '__esModule') {
+      if (name !== 'default' && name !== '__esModule' && !RESERVED_GLOBALS.has(name)) {
         vars[name] = value;
       }
     }
@@ -108,14 +145,47 @@ function compile(code: string): string {
   return result.outputText;
 }
 
+/**
+ * Names the user's code declares at the top level of the compiled module.
+ *
+ * Globals (every XDS/icon export) are passed to `new Function` as parameters so
+ * unimported components resolve. But a top-level `const Foo = ...` in the user
+ * code collides with a `Foo` parameter ("Identifier 'Foo' has already been
+ * declared") — e.g. a template defining `const AppleIcon` clashes with
+ * lucide-react's `AppleIcon`. So we drop any global the user declares; their
+ * declaration wins.
+ */
+function findDeclaredIdentifiers(compiled: string): Set<string> {
+  const names = new Set<string>();
+  // Top-level declarations (function/class and simple const/let/var bindings).
+  const declRe = /^(?:export\s+)?(?:const|let|var|function\*?|class)\s+([A-Za-z_$][\w$]*)/gm;
+  let m: RegExpExecArray | null;
+  while ((m = declRe.exec(compiled)) !== null) {
+    names.add(m[1]);
+  }
+  return names;
+}
+
 function evaluate(compiled: string): React.ComponentType {
   const exportsObj: Record<string, unknown> = {};
   const moduleObj = {exports: exportsObj};
   const requireFn = makeRequire();
   const globals = buildGlobalScope();
 
-  const keys = ['module', 'exports', 'require', ...Object.keys(globals)];
-  const values = [moduleObj, exportsObj, requireFn, ...Object.values(globals)];
+  // Don't inject globals the user already declares — a parameter and a
+  // top-level `const`/`function`/`class` of the same name can't coexist.
+  const declared = findDeclaredIdentifiers(compiled);
+  const globalNames = Object.keys(globals).filter(
+    name => !declared.has(name) && name !== 'module' && name !== 'exports' && name !== 'require',
+  );
+
+  const keys = ['module', 'exports', 'require', ...globalNames];
+  const values = [
+    moduleObj,
+    exportsObj,
+    requireFn,
+    ...globalNames.map(name => globals[name]),
+  ];
 
   const fn = new Function(...keys, compiled);
   fn(...values);
