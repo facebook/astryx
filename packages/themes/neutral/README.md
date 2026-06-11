@@ -41,7 +41,7 @@ Add the theme CSS to your stylesheet:
 
 This is required for component-level theme overrides (colors, radii, typography) to take effect.
 
-This theme uses system fonts — no external font loading is required.
+This theme uses system fonts; no external font loading is required.
 
 ## Related Packages
 
