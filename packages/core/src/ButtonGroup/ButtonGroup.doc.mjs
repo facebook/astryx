@@ -22,7 +22,7 @@ export const docs = {
     {
       name: 'XDSButtonGroup',
       displayName: 'Button Group',
-      description: 'Groups multiple buttons together with connected styling — shared borders, proper border-radius handling (only on outer edges), and horizontal or vertical orientation.',
+      description: 'Groups multiple buttons together with connected styling: shared borders, proper border-radius handling (only on outer edges), and horizontal or vertical orientation.',
       props: [
         {name: 'children', type: 'ReactNode', description: 'XDSButton or XDSIconButton children.', required: true, slotElements: [{__element: 'XDSButton', props: {label: 'Action'}}]},
         {name: 'label', type: 'string', description: 'Accessible label for the group (aria-label).', required: true},
@@ -37,13 +37,13 @@ export const docs = {
   ],
   usage: {
     description:
-      'ButtonGroup joins related actions into a single connected control. Use it when multiple buttons represent related choices or operations that belong together visually — like copy/cut/paste, or undo/redo.',
+      'ButtonGroup joins related actions into a single connected control. Use it when multiple buttons represent related choices or operations that belong together visually, like copy/cut/paste, or undo/redo.',
     bestPractices: [
-      {guidance: true, description: 'Group buttons that perform related actions on the same object — like copy, cut, paste on selected text.'},
+      {guidance: true, description: 'Group buttons that perform related actions on the same object, like copy, cut, paste on selected text.'},
       {guidance: true, description: 'Use the same variant for all buttons in a group so they look like a single connected unit.'},
       {guidance: true, description: 'Keep groups small (2–4 buttons). For more actions, use a Toolbar or DropdownMenu instead.'},
-      {guidance: false, description: "Don't mix wildly different actions — a Save button next to a Delete button in the same group is confusing."},
-      {guidance: false, description: "Don't use ButtonGroup for navigation — use SegmentedControl or TabList for switching between views."},
+      {guidance: false, description: "Don't mix wildly different actions. A Save button next to a Delete button in the same group is confusing."},
+      {guidance: false, description: "Don't use ButtonGroup for navigation. Use SegmentedControl or TabList for switching between views."},
       {guidance: false, description: "Don't nest ButtonGroups. If you need multiple groups, place them side by side with a gap."},
     ],
     anatomy: [
@@ -59,7 +59,7 @@ export const docsZh = {
     {
       name: 'XDSButtonGroup',
       displayName: 'Button Group',
-      description: '将多个按钮组合在一起，带有连接样式 — 共享边框、正确的圆角处理（仅外边缘），以及水平或垂直方向。',
+      description: '将多个按钮组合在一起，带有连接样式：共享边框、正确的圆角处理（仅外边缘），以及水平或垂直方向。',
       propDescriptions: {
         children: 'XDSButton 或 XDSIconButton 子元素。',
         label: '按钮组的无障碍标签 (aria-label)。',
@@ -74,13 +74,13 @@ export const docsZh = {
   ],
   usage: {
     description:
-      'ButtonGroup 将相关操作连接成一个控件。当多个按钮表示对同一对象的相关操作时使用 — 如复制/剪切/粘贴，或撤销/重做。',
+      'ButtonGroup 将相关操作连接成一个控件。当多个按钮表示对同一对象的相关操作时使用，如复制/剪切/粘贴，或撤销/重做。',
     bestPractices: [
-      {guidance: true, description: '将对同一对象执行相关操作的按钮分组 — 如对选中文本的复制、剪切、粘贴。'},
+      {guidance: true, description: '将对同一对象执行相关操作的按钮分组，如对选中文本的复制、剪切、粘贴。'},
       {guidance: true, description: '组内所有按钮使用相同的变体，使其看起来像一个连接的整体。'},
       {guidance: true, description: '保持组较小（2-4 个按钮）。更多操作请使用工具栏或下拉菜单。'},
-      {guidance: false, description: '不要混合差异很大的操作 — 将保存按钮和删除按钮放在同一组中会令人困惑。'},
-      {guidance: false, description: '不要使用 ButtonGroup 进行导航 — 使用 SegmentedControl 或 TabList 切换视图。'},
+      {guidance: false, description: '不要混合差异很大的操作，将保存按钮和删除按钮放在同一组中会令人困惑。'},
+      {guidance: false, description: '不要使用 ButtonGroup 进行导航，使用 SegmentedControl 或 TabList 切换视图。'},
       {guidance: false, description: '不要嵌套 ButtonGroup。如需多个组，请并排放置并留有间隔。'},
     ],
     anatomy: [
@@ -97,11 +97,11 @@ export const docsDense = {
     description:
       'ButtonGroup joins related actions into a single connected control. Use for related operations on the same object.',
     bestPractices: [
-      {guidance: true, description: 'Group related actions on the same object — copy/cut/paste, undo/redo.'},
+      {guidance: true, description: 'Group related actions on the same object: copy/cut/paste, undo/redo.'},
       {guidance: true, description: 'Same variant for all buttons to look like one unit.'},
       {guidance: true, description: 'Keep groups small (2–4 buttons). Use Toolbar or DropdownMenu for more.'},
       {guidance: false, description: "Don't mix unrelated actions in one group."},
-      {guidance: false, description: "Don't use for navigation — use SegmentedControl or TabList."},
+      {guidance: false, description: "Don't use for navigation. Use SegmentedControl or TabList."},
       {guidance: false, description: "Don't nest ButtonGroups."},
     ],
   },
