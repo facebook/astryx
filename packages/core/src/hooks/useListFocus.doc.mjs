@@ -73,7 +73,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: "Set orientation to 'horizontal' for toolbars and tab bars, 'vertical' for dropdown menus." },
       { guidance: true, description: 'Provide an onEscape callback for menus/dropdowns to return focus to the trigger.' },
-      { guidance: false, description: 'Use for 2D grid navigation — prefer useGridFocus for grids and calendars.' },
+      { guidance: false, description: 'Use for 2D grid navigation; prefer useGridFocus for grids and calendars.' },
     ],
   },
   relatedComponents: ['TabMenu', 'Toolbar'],
@@ -106,7 +106,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: "Set orientation to 'horizontal' for toolbars + tab bars, 'vertical' for dropdown menus." },
       { guidance: true, description: 'Provide onEscape callback for menus/dropdowns to return focus to trigger.' },
-      { guidance: false, description: 'Use for 2D grid navigation — prefer useGridFocus for grids + calendars.' },
+      { guidance: false, description: 'Use for 2D grid navigation; prefer useGridFocus for grids + calendars.' },
     ],
   },
 };
