@@ -12,11 +12,11 @@ export const docs = {
     description:
       'A CSS grid layout container for arranging children in rows and columns. Use Grid for card galleries, dashboards, and any multi-column layout. Supports fixed column counts and responsive columns that reflow based on available width.',
     bestPractices: [
-      { guidance: true, description: 'Use responsive columns for layouts that should adapt to screen size — `columns={{minWidth: 280}}`.' },
+      { guidance: true, description: 'Use responsive columns for layouts that should adapt to screen size: `columns={{minWidth: 280}}`.' },
       { guidance: true, description: 'Cap the column count with `max` to prevent rows from getting too wide on large screens.' },
       { guidance: true, description: 'Use `repeat: \'fill\'` (the default) for consistent item widths. Use `\'fit\'` when items should stretch to fill leftover space.' },
-      { guidance: false, description: 'Write manual CSS grid — Grid handles spacing and responsive behavior for you.' },
-      { guidance: false, description: 'Use `XDSHStack` with wrapping for grids — use Grid instead.' },
+      { guidance: false, description: 'Write manual CSS grid; Grid handles spacing and responsive behavior for you.' },
+      { guidance: false, description: 'Use `XDSHStack` with wrapping for grids; use Grid instead.' },
     ],
   },
   theming: {
@@ -41,7 +41,7 @@ export const docs = {
           name: 'minChildWidth',
           type: 'number',
           description:
-            'Deprecated — use `columns={{minWidth: 280}}` instead. Minimum item width in px; enables responsive auto-fit.',
+            'Deprecated; use `columns={{minWidth: 280}}` instead. Minimum item width in px; enables responsive auto-fit.',
         },
         {
           name: 'width',
@@ -89,7 +89,7 @@ export const docs = {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
-            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
         },
       ],
     },
@@ -145,7 +145,7 @@ export const docsZh = {
         {
           name: 'minChildWidth',
           type: 'number',
-          description: '已弃用 — 请使用 `columns={{minWidth: 280}}` 代替。',
+          description: '已弃用，请使用 `columns={{minWidth: 280}}` 代替。',
         },
         {
           name: 'width',
@@ -225,11 +225,11 @@ export const docsZh = {
     description:
       'A CSS grid layout container for arranging children in rows and columns. Use Grid for card galleries, dashboards, and any multi-column layout. Supports fixed column counts and responsive columns that reflow based on available width.',
     bestPractices: [
-      { guidance: true, description: 'Use responsive columns for layouts that should adapt to screen size — `columns={{minWidth: 280}}`.' },
+      { guidance: true, description: 'Use responsive columns for layouts that should adapt to screen size: `columns={{minWidth: 280}}`.' },
       { guidance: true, description: 'Cap the column count with `max` to prevent rows from getting too wide on large screens.' },
       { guidance: true, description: 'Use `repeat: \'fill\'` (the default) for consistent item widths. Use `\'fit\'` when items should stretch to fill leftover space.' },
-      { guidance: false, description: 'Write manual CSS grid — Grid handles spacing and responsive behavior for you.' },
-      { guidance: false, description: 'Use `XDSHStack` with wrapping for grids — use Grid instead.' },
+      { guidance: false, description: 'Write manual CSS grid; Grid handles spacing and responsive behavior for you.' },
+      { guidance: false, description: 'Use `XDSHStack` with wrapping for grids; use Grid instead.' },
     ],
   },
 };
@@ -240,11 +240,11 @@ export const docsDense = {
   usage: {
     description: 'A CSS grid layout container for arranging children in rows and columns. Use Grid for card galleries, dashboards, and any multi-column layout. Supports fixed column counts and responsive columns that reflow based on available width.',
     bestPractices: [
-      { guidance: true, description: 'Use responsive columns for layouts that should adapt to screen size — columns={{minWidth: 280}}.' },
+      { guidance: true, description: 'Use responsive columns for layouts that should adapt to screen size: columns={{minWidth: 280}}.' },
       { guidance: true, description: 'Cap the column count with max to prevent rows from getting too wide on large screens.' },
       { guidance: true, description: 'Use repeat: \'fill\' (the default) for consistent item widths. Use \'fit\' when items should stretch to fill leftover space.' },
-      { guidance: false, description: 'Write manual CSS grid — Grid handles spacing and responsive behavior for you.' },
-      { guidance: false, description: 'Use XDSHStack with wrapping for grids — use Grid instead.' },
+      { guidance: false, description: 'Write manual CSS grid; Grid handles spacing and responsive behavior for you.' },
+      { guidance: false, description: 'Use XDSHStack with wrapping for grids; use Grid instead.' },
     ],
   },
 
@@ -256,7 +256,7 @@ export const docsDense = {
       description: 'Grid container w/ fixed or responsive columns.',
       propDescriptions: {
         columns: "Column config. Number for fixed cols. Object {minWidth, max?, repeat?} for responsive. repeat: 'fill' (default, consistent widths) or 'fit' (stretch).",
-        minChildWidth: 'Deprecated — use columns={{minWidth}} instead.',
+        minChildWidth: 'Deprecated; use columns={{minWidth}} instead.',
         width: 'Container width.',
         height: 'Container height.',
         gap: 'Spacing between all items.',
