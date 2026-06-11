@@ -78,7 +78,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Use with XDSLayout or XDSAppShell sidebar for resizable navigation panels.'},
       {guidance: true, description: 'Set autoSaveId to persist user-chosen sizes across page reloads.'},
-      {guidance: false, description: 'Set minSizePx too small — content becomes unreadable. Prefer collapsible for panels that can hide entirely.'},
+      {guidance: false, description: 'Set minSizePx too small; content becomes unreadable. Prefer collapsible for panels that can hide entirely.'},
     ],
   },
   relatedComponents: ['Resizable', 'AppShell', 'Layout', 'SideNav'],
@@ -111,7 +111,7 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Use w/ XDSLayout / XDSAppShell sidebar for resizable navigation panels.'},
       {guidance: true, description: 'Set autoSaveId to persist user-chosen sizes across page reloads.'},
-      {guidance: false, description: 'Set minSizePx too small — content becomes unreadable. Prefer collapsible for panels that can hide entirely.'},
+      {guidance: false, description: 'Set minSizePx too small; content becomes unreadable. Prefer collapsible for panels that can hide entirely.'},
     ],
   },
 };
