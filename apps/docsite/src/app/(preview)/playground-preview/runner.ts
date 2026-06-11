@@ -108,14 +108,47 @@ function compile(code: string): string {
   return result.outputText;
 }
 
+/**
+ * Names the user's code declares at the top level of the compiled module.
+ *
+ * Globals (every XDS/icon export) are passed to `new Function` as parameters so
+ * unimported components resolve. But a top-level `const Foo = ...` in the user
+ * code collides with a `Foo` parameter ("Identifier 'Foo' has already been
+ * declared") — e.g. a template defining `const AppleIcon` clashes with
+ * lucide-react's `AppleIcon`. So we drop any global the user declares; their
+ * declaration wins.
+ */
+function findDeclaredIdentifiers(compiled: string): Set<string> {
+  const names = new Set<string>();
+  // Top-level declarations (function/class and simple const/let/var bindings).
+  const declRe = /^(?:export\s+)?(?:const|let|var|function\*?|class)\s+([A-Za-z_$][\w$]*)/gm;
+  let m: RegExpExecArray | null;
+  while ((m = declRe.exec(compiled)) !== null) {
+    names.add(m[1]);
+  }
+  return names;
+}
+
 function evaluate(compiled: string): React.ComponentType {
   const exportsObj: Record<string, unknown> = {};
   const moduleObj = {exports: exportsObj};
   const requireFn = makeRequire();
   const globals = buildGlobalScope();
 
-  const keys = ['module', 'exports', 'require', ...Object.keys(globals)];
-  const values = [moduleObj, exportsObj, requireFn, ...Object.values(globals)];
+  // Don't inject globals the user already declares — a parameter and a
+  // top-level `const`/`function`/`class` of the same name can't coexist.
+  const declared = findDeclaredIdentifiers(compiled);
+  const globalNames = Object.keys(globals).filter(
+    name => !declared.has(name) && name !== 'module' && name !== 'exports' && name !== 'require',
+  );
+
+  const keys = ['module', 'exports', 'require', ...globalNames];
+  const values = [
+    moduleObj,
+    exportsObj,
+    requireFn,
+    ...globalNames.map(name => globals[name]),
+  ];
 
   const fn = new Function(...keys, compiled);
   fn(...values);
