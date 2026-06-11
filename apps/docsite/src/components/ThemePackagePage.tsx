@@ -6,7 +6,7 @@ import {useCallback, useMemo, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePathname, useRouter} from 'next/navigation';
-import {Sun, Moon} from 'lucide-react';
+import {Sun, Moon, Eye} from 'lucide-react';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
@@ -395,10 +395,35 @@ const styles = stylex.create({
   // Caps the showcase at the site's "wide content" max-width (1200px,
   // matching home-page showcases / docs index) and centers it so it
   // doesn't run viewport-edge to viewport-edge on very wide screens.
+  // overflow:hidden clips any template content that exceeds the
+  // available width on mobile (e.g. inventory filter rows, tables).
   showcaseBlock: {
     width: '100%',
     maxWidth: 1200,
     marginInline: 'auto',
+    overflow: 'hidden',
+    borderRadius: 'var(--radius-container)',
+  },
+  // Mobile-only context banner — shown above the preview at narrow
+  // viewports so users immediately understand this is a theme preview
+  // rather than an actual e-commerce page. Hidden on desktop where
+  // the sidebar heading already provides that context.
+  mobileContext: {
+    display: 'none',
+    [SIDEBAR_BREAKPOINT]: {
+      display: 'flex',
+      flexDirection: 'row' as const,
+      alignItems: 'center',
+      gap: 'var(--spacing-2)',
+      paddingBlock: 'var(--spacing-3)',
+      paddingInline: 'var(--spacing-4)',
+      borderRadius: 'var(--radius-container)',
+      backgroundColor: 'var(--color-background-muted)',
+    },
+  },
+  mobileContextIcon: {
+    flexShrink: 0,
+    color: 'var(--color-text-secondary)',
   },
 });
 
@@ -729,6 +754,16 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
             icon={modeToggleIcon}
             onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
           />
+        </div>
+
+        {/* Mobile context banner — visible only at narrow viewports
+            where the sidebar is hidden. Clarifies that the content below
+            is a theme preview, not a real product page. */}
+        <div {...stylex.props(styles.mobileContext)}>
+          <Eye size={16} {...stylex.props(styles.mobileContextIcon)} />
+          <XDSText type="supporting" color="secondary">
+            Theme preview — switch themes with the toolbar below
+          </XDSText>
         </div>
 
         {/* Themed preview — the theme-showcase template rendered with

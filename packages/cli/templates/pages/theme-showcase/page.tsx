@@ -44,6 +44,7 @@ import {XDSCenter} from '@xds/core/Center';
 import {XDSSection} from '@xds/core/Section';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSNumberInput} from '@xds/core/NumberInput';
+import {XDSOverflowList} from '@xds/core/OverflowList';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {
   XDSChatComposer,
@@ -92,6 +93,7 @@ const styles = stylex.create({
     paddingBlock: 'var(--spacing-4)',
     paddingInline: 'var(--spacing-6)',
     width: '100%',
+    overflowX: 'auto' as const,
   },
   searchInput: {
     flex: 1,
@@ -132,6 +134,7 @@ const styles = stylex.create({
   content: {
     maxWidth: 960,
     marginInline: 'auto',
+    minWidth: 0,
   },
   contentFluid: {
     maxWidth: 880,
@@ -383,7 +386,7 @@ function StorePreview({images}: {images: Record<string, string>}) {
           }
         />
 
-        <XDSSection padding={8} variant="transparent">
+        <XDSSection padding={6} variant="transparent">
           <XDSVStack gap={10} xstyle={[styles.content, styles.contentFluid]}>
             <XDSCenter>
               <XDSVStack gap={4} hAlign="center" xstyle={styles.heroText}>
@@ -399,7 +402,7 @@ function StorePreview({images}: {images: Record<string, string>}) {
               </XDSVStack>
             </XDSCenter>
 
-            <XDSGrid columns={{minWidth: 240}} gap={4}>
+            <XDSGrid columns={{minWidth: 180}} gap={4}>
               {PRODUCTS.map((p, i) => (
                 <XDSCard key={p.name} padding={0} height="100%">
                   <XDSVStack gap={0} xstyle={styles.cardStack}>
@@ -1094,50 +1097,61 @@ function InventoryCard({images}: {images: Record<string, string>}) {
             startIcon={<Search size={16} />}
             xstyle={styles.searchInput}
           />
-          <XDSSelector
-            label="Categories"
-            isLabelHidden
-            placeholder="Categories"
-            size="sm"
-            startIcon={<Folder size={16} />}
-            value={undefined}
-            onChange={() => {}}
-            options={['Wearables', 'Audio', 'Bags', 'Drinkware', 'Home']}
-          />
-          <XDSSelector
-            label="Locations"
-            isLabelHidden
-            placeholder="Locations"
-            size="sm"
-            startIcon={<MapPin size={16} />}
-            value={undefined}
-            onChange={() => {}}
-            options={[
-              'Aisle 1',
-              'Aisle 2',
-              'Aisle 3',
-              'Aisle 4',
-              'Aisle 5',
-              'Aisle 6',
-            ]}
-          />
-          <XDSSelector
-            label="Tags"
-            isLabelHidden
-            placeholder="Tags"
-            size="sm"
-            startIcon={<Tag size={16} />}
-            value={undefined}
-            onChange={() => {}}
-            options={[
-              'New',
-              'Popular',
-              'Limited',
-              'Leather',
-              'Drinkware',
-              'Home',
-            ]}
-          />
+          <XDSOverflowList
+            gap={2}
+            overflowIndicator={
+              <XDSButton
+                label="Filters"
+                variant="ghost"
+                size="sm"
+                icon={<Tag size={16} />}
+              />
+            }>
+            <XDSSelector
+              label="Categories"
+              isLabelHidden
+              placeholder="Categories"
+              size="sm"
+              startIcon={<Folder size={16} />}
+              value={undefined}
+              onChange={() => {}}
+              options={['Wearables', 'Audio', 'Bags', 'Drinkware', 'Home']}
+            />
+            <XDSSelector
+              label="Locations"
+              isLabelHidden
+              placeholder="Locations"
+              size="sm"
+              startIcon={<MapPin size={16} />}
+              value={undefined}
+              onChange={() => {}}
+              options={[
+                'Aisle 1',
+                'Aisle 2',
+                'Aisle 3',
+                'Aisle 4',
+                'Aisle 5',
+                'Aisle 6',
+              ]}
+            />
+            <XDSSelector
+              label="Tags"
+              isLabelHidden
+              placeholder="Tags"
+              size="sm"
+              startIcon={<Tag size={16} />}
+              value={undefined}
+              onChange={() => {}}
+              options={[
+                'New',
+                'Popular',
+                'Limited',
+                'Leather',
+                'Drinkware',
+                'Home',
+              ]}
+            />
+          </XDSOverflowList>
         </XDSHStack>
         <XDSHStack gap={1} vAlign="center">
           <XDSButton
