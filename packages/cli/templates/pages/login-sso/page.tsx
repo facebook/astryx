@@ -22,10 +22,11 @@ import {XDSAvatar} from '@xds/core/Avatar';
 // ---------------------------------------------------------------------------
 
 // building from xds_oss asset set
-const BG_URL = '/template-assets/building.jpg';
+const BG_URL = 'https://lookaside.facebook.com/assets/xds_oss/building.jpg';
 
 const styles = stylex.create({
   page: {
+    minHeight: '100%',
     backgroundImage: `url(${BG_URL})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
@@ -100,7 +101,7 @@ export default function LoginSSO() {
   };
 
   return (
-    <XDSCenter axis="both" height="100dvh" xstyle={styles.page}>
+    <XDSCenter axis="both" xstyle={styles.page}>
       <XDSCard padding={8} width={400}>
         <XDSVStack gap={4} hAlign="stretch">
           {/* ── Step 1: Email entry ── */}
