@@ -34,7 +34,7 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'Content displayed in the center of the ring — percentage, icon, or custom content.',
+      description: 'Content displayed in the center of the ring: percentage, icon, or custom content.',
     },
     {
       name: 'size',
@@ -67,10 +67,10 @@ export const docs = {
       'A circular progress indicator that shows completion as a ring or arc. Use it for upload progress, score displays, dashboard gauges, or compact progress where horizontal space is limited. Complements XDSProgressBar for radial layouts.',
     bestPractices: [
       { guidance: true, description: 'Pass a value for determinate progress; omit value for an indeterminate spinner.' },
-      { guidance: true, description: 'Provide center content (children) to give context — a percentage, icon, or short label.' },
-      { guidance: true, description: 'Always provide a label, even though it is visually hidden by default — screen readers need it.' },
-      { guidance: false, description: 'Use circular progress for long text labels — use XDSProgressBar instead, which has more room for label and value display.' },
-      { guidance: false, description: 'Stack multiple circular progress indicators for the same operation — use one with a value label.' },
+      { guidance: true, description: 'Provide center content (children) to give context: a percentage, icon, or short label.' },
+      { guidance: true, description: 'Always provide a label, even though it is visually hidden by default; screen readers need it.' },
+      { guidance: false, description: 'Use circular progress for long text labels; use XDSProgressBar instead, which has more room for label and value display.' },
+      { guidance: false, description: 'Stack multiple circular progress indicators for the same operation; use one with a value label.' },
     ],
   },
 };
@@ -106,7 +106,7 @@ export const docsZh = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: '在环形中心显示的内容 — 百分比、图标或自定义内容。',
+      description: '在环形中心显示的内容：百分比、图标或自定义内容。',
     },
     {
       name: 'size',
@@ -138,10 +138,10 @@ export const docsZh = {
       'A circular progress indicator that shows completion as a ring or arc. Use it for upload progress, score displays, dashboard gauges, or compact progress where horizontal space is limited. Complements XDSProgressBar for radial layouts.',
     bestPractices: [
       { guidance: true, description: 'Pass a value for determinate progress; omit value for an indeterminate spinner.' },
-      { guidance: true, description: 'Provide center content (children) to give context — a percentage, icon, or short label.' },
-      { guidance: true, description: 'Always provide a label, even though it is visually hidden by default — screen readers need it.' },
-      { guidance: false, description: 'Use circular progress for long text labels — use XDSProgressBar instead, which has more room for label and value display.' },
-      { guidance: false, description: 'Stack multiple circular progress indicators for the same operation — use one with a value label.' },
+      { guidance: true, description: 'Provide center content (children) to give context: a percentage, icon, or short label.' },
+      { guidance: true, description: 'Always provide a label, even though it is visually hidden by default; screen readers need it.' },
+      { guidance: false, description: 'Use circular progress for long text labels; use XDSProgressBar instead, which has more room for label and value display.' },
+      { guidance: false, description: 'Stack multiple circular progress indicators for the same operation; use one with a value label.' },
     ],
   },
 };
@@ -155,10 +155,10 @@ export const docsDense = {
       'A circular progress indicator that shows completion as a ring or arc. Use it for upload progress, score displays, dashboard gauges, or compact progress where horizontal space is limited. Complements XDSProgressBar for radial layouts.',
     bestPractices: [
       { guidance: true, description: 'Pass a value for determinate progress; omit value for an indeterminate spinner.' },
-      { guidance: true, description: 'Provide center content (children) to give context — a percentage, icon, or short label.' },
-      { guidance: true, description: 'Always provide a label, even though it is visually hidden by default — screen readers need it.' },
-      { guidance: false, description: 'Use circular progress for long text labels — use XDSProgressBar instead, which has more room for label and value display.' },
-      { guidance: false, description: 'Stack multiple circular progress indicators for the same operation — use one with a value label.' },
+      { guidance: true, description: 'Provide center content (children) to give context: a percentage, icon, or short label.' },
+      { guidance: true, description: 'Always provide a label, even though it is visually hidden by default; screen readers need it.' },
+      { guidance: false, description: 'Use circular progress for long text labels; use XDSProgressBar instead, which has more room for label and value display.' },
+      { guidance: false, description: 'Stack multiple circular progress indicators for the same operation; use one with a value label.' },
     ],
   },
   propDescriptions: {
@@ -166,7 +166,7 @@ export const docsDense = {
     max: 'Maximum value.',
     label: 'Accessible label for screen readers (required).',
     isLabelHidden: 'Visually hide label (remains accessible). Defaults to true.',
-    children: 'Center content — percentage, icon, or custom.',
+    children: 'Center content: percentage, icon, or custom.',
     size: 'Ring diameter (32px, 48px, 64px).',
     variant: 'Semantic color variant for the fill.',
     xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
