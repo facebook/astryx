@@ -1,8 +1,8 @@
-# XDS Example — Next.js + StyleX (Dist)
+# XDS Example: Next.js + StyleX (Dist)
 
 Reference application for consuming **@xds/core** as a pre-built dist package with **StyleX** for product-level styles.
 
-XDS component CSS comes pre-built — no need to compile XDS source. StyleX is only used for your own app-level layout and custom styles, compiled at build time via the PostCSS plugin.
+XDS component CSS comes pre-built; there is no need to compile XDS source. StyleX is only used for your own app-level layout and custom styles, compiled at build time via the PostCSS plugin.
 
 ## CSS Layer Integration
 
@@ -53,7 +53,7 @@ npm install --save-dev @stylexjs/babel-plugin @stylexjs/postcss-plugin \
 
 ### 3. Babel config
 
-`babel.config.js` — StyleX for app-level styles only:
+`babel.config.js`: StyleX for app-level styles only:
 
 ```js
 module.exports = {
@@ -76,11 +76,11 @@ module.exports = {
 };
 ```
 
-> No `aliases` config needed — we're not compiling XDS source.
+> No `aliases` config needed; we're not compiling XDS source.
 
 ### 4. PostCSS config
 
-`postcss.config.js` — scan your app source, declare XDS layers before StyleX layers:
+`postcss.config.js`: scan your app source, declare XDS layers before StyleX layers:
 
 ```js
 module.exports = {
@@ -130,5 +130,5 @@ export function Providers({children}) {
 
 ## Related
 
-- [Plain dist example](../example-nextjs/) — no CSS framework, inline styles for layout
-- [Dist + Tailwind example](../example-nextjs-tailwind/) — Tailwind for layout styles
+- [Plain dist example](../example-nextjs/): no CSS framework, inline styles for layout
+- [Dist + Tailwind example](../example-nextjs-tailwind/): Tailwind for layout styles
