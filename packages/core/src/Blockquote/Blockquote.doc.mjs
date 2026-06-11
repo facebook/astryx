@@ -25,7 +25,7 @@ export const docs = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
   ],
   theming: {
@@ -38,7 +38,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Use for quoted text, testimonials, or highlighted excerpts from external sources.' },
       { guidance: true, description: 'Provide a cite prop when the source of the quote is known.' },
-      { guidance: false, description: 'Use for callout boxes or informational notes — use XDSBanner for those.' },
+      { guidance: false, description: 'Use for callout boxes or informational notes; use XDSBanner for those.' },
     ],
   },
 };
@@ -63,7 +63,7 @@ export const docsZh = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值 — 不能是 style={{}} 这样的内联样式对象。',
+        '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值，不能是 style={{}} 这样的内联样式对象。',
     },
   ],
   theming: {
@@ -76,7 +76,7 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: '用于引用文本、推荐语或来自外部来源的高亮摘录。' },
       { guidance: true, description: '当引用来源已知时，提供 cite 属性。' },
-      { guidance: false, description: '用于提示框或信息说明 — 应使用 XDSBanner。' },
+      { guidance: false, description: '用于提示框或信息说明，应使用 XDSBanner。' },
     ],
   },
 };
@@ -89,7 +89,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Use for quoted text, testimonials, or highlighted excerpts.' },
       { guidance: true, description: 'Provide cite when source is known.' },
-      { guidance: false, description: 'Use for callouts/notes — use XDSBanner instead.' },
+      { guidance: false, description: 'Use for callouts/notes; use XDSBanner instead.' },
     ],
   },
   propDescriptions: {
