@@ -152,6 +152,12 @@ const styles = stylex.create({
   cardDescription: {
     flex: 1,
   },
+  hideOnMobile: {
+    display: {
+      default: 'flex',
+      '@media (max-width: 900px)': 'none',
+    },
+  },
   quantityInput: {
     width: 40,
     flexShrink: 0,
@@ -354,35 +360,37 @@ function StorePreview({images}: {images: Record<string, string>}) {
             </>
           }
           endContent={
-            <XDSHStack gap={2} vAlign="center">
-              <XDSHStack gap={0.5}>
-                <XDSButton
-                  label="Search"
-                  tooltip="Search"
-                  variant="ghost"
-                  isIconOnly
-                  icon={<Search size={20} />}
-                  href="#"
-                />
-                <XDSButton
-                  label="Account"
-                  tooltip="Account"
-                  variant="ghost"
-                  isIconOnly
-                  icon={<User size={20} />}
-                  href="#"
-                />
-                <XDSButton
-                  label="Cart"
-                  tooltip="Cart"
-                  variant="ghost"
-                  isIconOnly
-                  icon={<ShoppingBag size={20} />}
-                  href="#"
-                />
+            <div {...stylex.props(styles.hideOnMobile)}>
+              <XDSHStack gap={2} vAlign="center">
+                <XDSHStack gap={0.5}>
+                  <XDSButton
+                    label="Search"
+                    tooltip="Search"
+                    variant="ghost"
+                    isIconOnly
+                    icon={<Search size={20} />}
+                    href="#"
+                  />
+                  <XDSButton
+                    label="Account"
+                    tooltip="Account"
+                    variant="ghost"
+                    isIconOnly
+                    icon={<User size={20} />}
+                    href="#"
+                  />
+                  <XDSButton
+                    label="Cart"
+                    tooltip="Cart"
+                    variant="ghost"
+                    isIconOnly
+                    icon={<ShoppingBag size={20} />}
+                    href="#"
+                  />
+                </XDSHStack>
+                <XDSButton label="Sign in" variant="primary" href="#" />
               </XDSHStack>
-              <XDSButton label="Sign in" variant="primary" href="#" />
-            </XDSHStack>
+            </div>
           }
         />
 
