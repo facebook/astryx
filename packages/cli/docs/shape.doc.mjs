@@ -7,7 +7,7 @@ export const docs = {
   title: 'Shape',
   category: 'foundations',
   description:
-    'Border radius tokens for consistent component rounding — from sharp corners to full pills.',
+    'Border radius tokens for consistent component rounding, from sharp corners to full pills.',
   tokenCategory: 'radius',
 
   sections: [
@@ -17,7 +17,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'The radius scale uses a semantic naming system: inner → element → container → page. Each level is designed for a specific context. Themes can multiply the entire scale via a radius multiplier, with --radius-none and --radius-full as fixed anchors.',
+          text: 'The radius scale uses a semantic naming system: inner → element → container → page. Each level fits a specific context. Themes can multiply the entire scale via a radius multiplier, with --radius-none and --radius-full as fixed anchors.',
         },
       ],
     },
@@ -38,7 +38,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'When a rounded container has padding, inner elements need a smaller radius to appear concentric. Components like Card handle this automatically — the inner radius is computed as max(0, outerRadius - padding).',
+          text: 'When a rounded container has padding, inner elements need a smaller radius to appear concentric. Components like Card handle this automatically; the inner radius is computed as max(0, outerRadius - padding).',
         },
         {
           type: 'code',
@@ -66,8 +66,8 @@ export const docs = {
           type: 'list',
           style: 'dont',
           items: [
-            "Use --radius-page for small elements — it's designed for page-level containers.",
-            "Hardcode radius values — they won't scale with theme radius multipliers.",
+            "Use --radius-page for small elements; it's meant for page-level containers.",
+            "Hardcode radius values; they won't scale with theme radius multipliers.",
           ],
         },
       ],
