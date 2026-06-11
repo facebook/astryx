@@ -290,6 +290,7 @@ export function InteractivePreviewStage({
           style={{
             minHeight: 200,
             overflow: 'auto',
+            paddingRight: 'var(--spacing-8)',
           }}>
           <XDSCodeBlock
             code={code}
