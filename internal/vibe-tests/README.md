@@ -16,10 +16,10 @@ Prompts live in [`test-sets/default.json`](test-sets/default.json). Each prompt 
 }
 ```
 
-- **`prompt`** — the task given to the agent (identical across all configs)
-- **`expectedComponents`** — used for evaluation ONLY, never shown to agents
-- **`category`** — groups prompts by type (feature-with-constraint, workflow-description, clone-with-modification, state-display, data-display, responsive-challenge, io-integration, page-setup, typography, theme-customization)
-- **`complexity`** — simple, moderate, complex
+- **`prompt`**: the task given to the agent (identical across all configs)
+- **`expectedComponents`**: used for evaluation ONLY, never shown to agents
+- **`category`**: groups prompts by type (feature-with-constraint, workflow-description, clone-with-modification, state-display, data-display, responsive-challenge, io-integration, page-setup, typography, theme-customization)
+- **`complexity`**: simple, moderate, complex
 
 ## Sub-Agent Prompts
 
@@ -63,7 +63,7 @@ Note: no system-specific rules, no expected components, no pre-built commands. T
 ### 1. Fair Evaluators
 
 - Same evaluation logic across all configurations (tsc, scoring dimensions)
-- Same pass/fail criteria — don't score one config differently than another
+- Same pass/fail criteria; don't score one config differently than another
 - Target-aware scoring is OK (different systems need different counting methods) but the judgments must be equivalent
 - Evaluation must be blind to which config produced the output
 
@@ -72,12 +72,12 @@ Note: no system-specific rules, no expected components, no pre-built commands. T
 - Same prompts across all configurations (same IDs, same text)
 - Same persona across all configurations
 - Same output format requirements
-- Equivalent sub-agent instructions — if one config gets "read the README", all get an analogous instruction
-- No system-specific coaching rules (e.g. "use StyleX" or "use Tailwind") — let the docs teach that
+- Equivalent sub-agent instructions: if one config gets "read the README", all get an analogous instruction
+- No system-specific coaching rules (e.g. "use StyleX" or "use Tailwind"); let the docs teach that
 
 ### 3. Never Leak the Answer
 
-- `expectedComponents` is for evaluation ONLY — never include in the sub-agent prompt
+- `expectedComponents` is for evaluation ONLY; never include in the sub-agent prompt
 - Don't pre-build retrieval commands from expected components
 - Don't hint at which components to use
 - Don't include rules that only make sense for one system
@@ -95,7 +95,7 @@ Note: no system-specific rules, no expected components, no pre-built commands. T
 - Sub-agents must be spawned fresh with no prior conversation context
 - No inherited knowledge about the design system from the parent session
 - The sub-agent's only knowledge comes from what it discovers during the task
-- Don't reuse sub-agent sessions across prompts — each prompt gets a fresh agent
+- Don't reuse sub-agent sessions across prompts; each prompt gets a fresh agent
 
 ## How to Verify
 
@@ -120,7 +120,7 @@ For evaluation fairness, check `universal-eval.ts`:
 
 ## Known Accepted Asymmetries
 
-These are intentional and documented — they slightly favor baseline, making XDS wins more credible:
+These are intentional and documented; they slightly favor baseline, making XDS wins more credible:
 
 - **Efficiency:** Tailwind's single-line `className` gets a lower styling-ratio than XDS's multi-line `stylex.create` blocks, despite encoding more decisions
 - **Maintainability:** Tailwind scale values (`p-4`, `text-sm`) count as semantic, which is generous compared to how raw `16px` is counted for HTML
