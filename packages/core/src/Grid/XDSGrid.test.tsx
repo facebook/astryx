@@ -41,7 +41,7 @@ describe('XDSGrid', () => {
     );
   });
 
-  it('renders with columns object max (capped via track-max)', () => {
+  it('renders with columns object max (capped via track-min floor)', () => {
     render(
       <XDSGrid columns={{minWidth: 250, max: 3}} gap={4} data-testid="grid">
         <div>Item 1</div>
@@ -50,9 +50,9 @@ describe('XDSGrid', () => {
       </XDSGrid>,
     );
     const grid = screen.getByTestId('grid');
-    // Track max caps at (100% - 2 * gap) / 3 — no maxWidth on container
+    // max() in min position caps column count; 1fr allows stretch
     expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fill, minmax(250px, calc((100% - 2 * var(--spacing-4)) / 3)))',
+      'repeat(auto-fill, minmax(max(250px, calc((100% - 2 * var(--spacing-4)) / 3)), 1fr))',
     );
     expect(grid.style.maxWidth).toBe('');
   });
@@ -68,9 +68,9 @@ describe('XDSGrid', () => {
       </XDSGrid>,
     );
     const grid = screen.getByTestId('grid');
-    // columnGap takes precedence for track-max calculation
+    // columnGap takes precedence for track-min floor calculation
     expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fill, minmax(200px, calc((100% - 3 * var(--spacing-6)) / 4)))',
+      'repeat(auto-fill, minmax(max(200px, calc((100% - 3 * var(--spacing-6)) / 4)), 1fr))',
     );
     expect(grid.style.maxWidth).toBe('');
   });
@@ -201,7 +201,7 @@ describe('XDSGrid', () => {
 
   // --- P2: columns object + columnGap interaction (hardening #719) ---
 
-  it('uses columnGap var in track-max when both columnGap and gap are set', () => {
+  it('uses columnGap var in track-min floor when both columnGap and gap are set', () => {
     render(
       <XDSGrid
         columns={{minWidth: 200, max: 3}}
@@ -212,14 +212,14 @@ describe('XDSGrid', () => {
       </XDSGrid>,
     );
     const grid = screen.getByTestId('grid');
-    // columnGap takes precedence over gap in track-max
+    // columnGap takes precedence over gap in track-min floor
     expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fill, minmax(200px, calc((100% - 2 * var(--spacing-6)) / 3)))',
+      'repeat(auto-fill, minmax(max(200px, calc((100% - 2 * var(--spacing-6)) / 3)), 1fr))',
     );
     expect(grid.style.maxWidth).toBe('');
   });
 
-  it('uses gap var in track-max when columnGap is not set', () => {
+  it('uses gap var in track-min floor when columnGap is not set', () => {
     render(
       <XDSGrid columns={{minWidth: 150, max: 2}} gap={3} data-testid="grid">
         <div>Item</div>
@@ -227,12 +227,12 @@ describe('XDSGrid', () => {
     );
     const grid = screen.getByTestId('grid');
     expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fill, minmax(150px, calc((100% - 1 * var(--spacing-3)) / 2)))',
+      'repeat(auto-fill, minmax(max(150px, calc((100% - 1 * var(--spacing-3)) / 2)), 1fr))',
     );
     expect(grid.style.maxWidth).toBe('');
   });
 
-  it('uses simple fraction in track-max when no gap is set', () => {
+  it('uses simple fraction in track-min floor when no gap is set', () => {
     render(
       <XDSGrid columns={{minWidth: 100, max: 3}} data-testid="grid">
         <div>Item</div>
@@ -240,7 +240,7 @@ describe('XDSGrid', () => {
     );
     const grid = screen.getByTestId('grid');
     expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fill, minmax(100px, calc(100% / 3)))',
+      'repeat(auto-fill, minmax(max(100px, calc(100% / 3)), 1fr))',
     );
     expect(grid.style.maxWidth).toBe('');
   });
@@ -319,7 +319,7 @@ describe('XDSGrid', () => {
     );
   });
 
-  it('renders with columns={{minWidth, max}} capping via track-max', () => {
+  it('renders with columns={{minWidth, max}} capping via track-min floor', () => {
     render(
       <XDSGrid columns={{minWidth: 280, max: 3}} gap={4} data-testid="grid">
         <div>Item 1</div>
@@ -327,14 +327,14 @@ describe('XDSGrid', () => {
       </XDSGrid>,
     );
     const grid = screen.getByTestId('grid');
-    // Track-max limits columns — grid stays full width
+    // max() in min position limits columns — grid stays full width
     expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fill, minmax(280px, calc((100% - 2 * var(--spacing-4)) / 3)))',
+      'repeat(auto-fill, minmax(max(280px, calc((100% - 2 * var(--spacing-4)) / 3)), 1fr))',
     );
     expect(grid.style.maxWidth).toBe('');
   });
 
-  it('renders with columns={{minWidth, max, repeat: "fit"}} using auto-fit + track-max', () => {
+  it('renders with columns={{minWidth, max, repeat: "fit"}} using auto-fit + track-min floor', () => {
     render(
       <XDSGrid
         columns={{minWidth: 280, max: 3, repeat: 'fit'}}
@@ -346,7 +346,7 @@ describe('XDSGrid', () => {
     );
     const grid = screen.getByTestId('grid');
     expect(grid.style.gridTemplateColumns).toBe(
-      'repeat(auto-fit, minmax(280px, calc((100% - 2 * var(--spacing-4)) / 3)))',
+      'repeat(auto-fit, minmax(max(280px, calc((100% - 2 * var(--spacing-4)) / 3)), 1fr))',
     );
     expect(grid.style.maxWidth).toBe('');
   });

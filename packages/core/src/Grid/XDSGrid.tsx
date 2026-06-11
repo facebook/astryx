@@ -319,8 +319,12 @@ const spacingVarNames: Record<SpacingStep, string> = {
 
 /**
  * Build a grid-template-columns value that caps columns at `max` by
- * limiting each track's max size to `(100% - (max-1) * gap) / max`.
- * The grid stays 100% width; the track-max prevents more than `max` columns.
+ * raising each track's minimum size to `(100% - (max-1) * gap) / max`.
+ * Uses CSS `max()` so the track floor is whichever is larger: the user's
+ * `minWidth` or the container share. This ensures:
+ * - Wide viewports: floor = containerShare, so at most `max` tracks fit
+ * - Narrow viewports: floor = minWidth, fewer tracks fit naturally,
+ *   and `1fr` max lets them stretch to fill available space
  */
 function buildCappedTemplate(
   minWidth: number,
@@ -336,12 +340,15 @@ function buildCappedTemplate(
         ? spacingVarNames[gap]
         : null;
 
-  // trackMax = (100% - (maxCols - 1) * gap) / maxCols
-  const trackMax = gapVar
+  // containerShare = (100% - (maxCols - 1) * gap) / maxCols
+  const containerShare = gapVar
     ? `calc((100% - ${maxCols - 1} * var(${gapVar})) / ${maxCols})`
     : `calc(100% / ${maxCols})`;
 
-  return `repeat(${repeatMode}, minmax(${minWidth}px, ${trackMax}))`;
+  // Use max() in the min position: prevents more than maxCols tracks on wide
+  // viewports, while falling back to minWidth on narrow viewports where
+  // fewer columns fit naturally. 1fr as the max allows stretch.
+  return `repeat(${repeatMode}, minmax(max(${minWidth}px, ${containerShare}), 1fr))`;
 }
 
 /**
