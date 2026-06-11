@@ -4,7 +4,7 @@ Core UI components, theme system, and utilities for the XDS design system. For p
 
 ## Component Docs
 
-Look up any component's full API — props, types, best practices, and theming:
+Look up any component's full API (props, types, best practices, and theming):
 
 ```bash
 node node_modules/@xds/core/docs.mjs Button        # full docs for a component
@@ -15,7 +15,7 @@ node node_modules/@xds/core/docs.mjs --list --brief  # brief summaries
 ## Page Layouts
 
 Building a full page? Start with a template rather than composing from scratch.
-Templates are content-only — they compose `XDSLayout` with header, content, and
+Templates are content-only; they compose `XDSLayout` with header, content, and
 panel slots into common page patterns (dashboards, settings, forms, detail pages).
 Wrap them in your own app chrome (`XDSAppShell`, `XDSTopNav`, `XDSSideNav`) to add
 global navigation.
@@ -50,7 +50,7 @@ npx xds gap-report                   # report a missing capability
 
 | Package | Description |
 |---------|-------------|
-| [`@xds/cli`](https://github.com/facebookexperimental/xds/tree/main/packages/cli) | CLI tooling — component docs, templates, scaffolding, codemods |
+| [`@xds/cli`](https://github.com/facebookexperimental/xds/tree/main/packages/cli) | CLI tooling: component docs, templates, scaffolding, codemods |
 | [`@xds/theme-default`](https://github.com/facebookexperimental/xds/tree/main/packages/themes/default) | Default theme (Heroicons) |
 | [`@xds/theme-neutral`](https://github.com/facebookexperimental/xds/tree/main/packages/themes/neutral) | Muted, minimal theme (Lucide icons) |
 | [`@xds/theme-daily`](https://github.com/facebookexperimental/xds/tree/main/packages/themes/daily) | Warm, productivity-focused theme (Lucide icons) |
@@ -74,7 +74,7 @@ Then pick your setup below based on your framework and styling approach.
 
 ### Next.js + Tailwind (simplest)
 
-No build plugins needed — XDS ships pre-built CSS that works alongside Tailwind.
+No build plugins needed; XDS ships pre-built CSS that works alongside Tailwind.
 
 **`src/app/globals.css`**
 
@@ -150,7 +150,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
 }
 ```
 
-That's it — start using components:
+That's it. Start using components:
 
 ```tsx
 import {XDSButton} from '@xds/core/Button';
@@ -184,4 +184,4 @@ Providers and layout are the same as the Tailwind example (use `@xds/theme-defau
 npm install @xds/core @xds/theme-default
 ```
 
-Same CSS imports and providers as above. No build plugins needed — XDS ships pre-built.
+Same CSS imports and providers as above. No build plugins needed; XDS ships pre-built.
