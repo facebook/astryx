@@ -31,7 +31,7 @@
 import {type ReactNode, type MouseEvent, useRef, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {colorVars} from '../theme/tokens.stylex';
+import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
 import {xdsClassName, mergeRefs} from '../utils';
 import {XDSCard} from '../Card/XDSCard';
@@ -67,7 +67,9 @@ const styles = stylex.create({
       inset: 0,
       borderRadius: 'inherit',
       pointerEvents: 'none',
-      transition: 'background-color 0.15s ease',
+      transitionProperty: 'background-color',
+      transitionDuration: durationVars['--duration-fast'],
+      transitionTimingFunction: easeVars['--ease-standard'],
       backgroundColor: 'transparent',
     },
     ':active::after': {
