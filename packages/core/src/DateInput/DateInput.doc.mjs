@@ -122,7 +122,7 @@ export const docs = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
   ],
   theming: {
@@ -139,7 +139,7 @@ export const docs = {
       { guidance: true, description: 'Show a loading state with changeAction when the date triggers a server-side save.' },
       { guidance: false, description: 'Use a DateInput for free-form text that does not represent a calendar date.' },
       { guidance: false, description: 'Hide the label without surrounding context that makes the field purpose obvious.' },
-      { guidance: false, description: 'Rely on the calendar alone — the text input lets users type dates directly, which is faster for known dates.' },
+      { guidance: false, description: 'Rely on the calendar alone; the text input lets users type dates directly, which is faster for known dates.' },
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text above the input describing what date is expected.'},
@@ -165,7 +165,7 @@ export const docsZh = {
       { guidance: true, description: 'Show a loading state with changeAction when the date triggers a server-side save.' },
       { guidance: false, description: 'Use a DateInput for free-form text that does not represent a calendar date.' },
       { guidance: false, description: 'Hide the label without surrounding context that makes the field purpose obvious.' },
-      { guidance: false, description: 'Rely on the calendar alone — the text input lets users type dates directly, which is faster for known dates.' },
+      { guidance: false, description: 'Rely on the calendar alone; the text input lets users type dates directly, which is faster for known dates.' },
     ],
   },
   props: [
@@ -223,7 +223,7 @@ export const docsDense = {
       { guidance: true, description: 'Show a loading state with changeAction when the date triggers a server-side save.' },
       { guidance: false, description: 'Use a DateInput for free-form text that does not represent a calendar date.' },
       { guidance: false, description: 'Hide the label without surrounding context that makes the field purpose obvious.' },
-      { guidance: false, description: 'Rely on the calendar alone — the text input lets users type dates directly, which is faster for known dates.' },
+      { guidance: false, description: 'Rely on the calendar alone; the text input lets users type dates directly, which is faster for known dates.' },
     ],
   },
   propDescriptions: {
