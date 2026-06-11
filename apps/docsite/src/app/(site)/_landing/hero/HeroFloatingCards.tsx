@@ -23,24 +23,30 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {Sparkles, Truck} from 'lucide-react';
+import {Plus, Sparkles} from 'lucide-react';
 import {XDSCard} from '@xds/core/Card';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSChatComposer} from '@xds/core/Chat';
+import {XDSChatComposer, XDSChatSendButton} from '@xds/core/Chat';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
+import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import type {HeroThemeContent} from './heroThemeContent';
 
 const styles = stylex.create({
-  // Full-width stage; cards live in the left/right gutters beside the centered
-  // text column. Hidden below ~1180px (column + two card-width gutters).
+  // Cards live in the SAME viewport-fixed, full-bleed box as the aurora blobs
+  // (backdropGlow: fixed, left/right -200px) so each card's `left %` lands in
+  // the same coordinate space as a blob's `at X%` and they track together at
+  // any screen width. Hidden below ~1180px (cards + blobs both hide there).
   stage: {
-    position: 'absolute',
-    inset: 0,
+    position: 'fixed',
+    top: 'var(--appshell-header-height, 0px)',
+    left: -200,
+    right: -200,
+    height: 1050,
     pointerEvents: 'none',
     display: {
       default: 'none',
@@ -56,27 +62,23 @@ const styles = stylex.create({
     transitionTimingFunction: 'var(--ease-standard, ease)',
     willChange: 'transform, opacity',
   },
-  // All floating cards render at 0.75x. The scale is baked into the pose
-  // transforms (rest = scale(0.75); entrance = a touch smaller + nudged). Each
+  // All floating cards render at 0.85x. The scale is baked into the pose
+  // transforms (rest = scale(0.85); entrance = a touch smaller + nudged). Each
   // card sets transformOrigin toward its anchored gutter edge (see *Origin
   // styles) so it shrinks in place against the gutter instead of drifting
   // toward the hero center.
   hiddenPose: {
     opacity: 0,
-    transform: 'translateY(14px) scale(0.72)',
+    transform: 'translateY(14px) scale(0.82)',
   },
   shownPose: {
     opacity: 1,
-    transform: 'translateY(0) scale(0.75)',
+    transform: 'translateY(0) scale(0.85)',
   },
-  // Transform origins per gutter so the 0.75x scale keeps cards hugging their
-  // edge. Left-gutter cards anchor their top-left; right-gutter cards their
-  // top-right.
+  // All cards anchor from their top-left (% left coordinate) so the 0.85x scale
+  // shrinks them in place against that anchor instead of drifting.
   originTopLeft: {
     transformOrigin: 'top left',
-  },
-  originTopRight: {
-    transformOrigin: 'top right',
   },
 
   // Shared image helpers.
@@ -90,8 +92,16 @@ const styles = stylex.create({
     objectFit: 'cover',
     display: 'block',
   },
-  fullWidth: {
-    width: '100%',
+  // Product description clamped to exactly two lines: short copy still reserves
+  // two lines (minHeight = 2 × leading) so every slide's card keeps a steady
+  // height, and longer copy truncates with an ellipsis instead of pushing the
+  // image down.
+  productDescription: {
+    display: '-webkit-box',
+    WebkitBoxOrient: 'vertical',
+    WebkitLineClamp: 2,
+    overflow: 'hidden',
+    minHeight: 'calc(2 * var(--text-body-size) * var(--text-body-leading))',
   },
 
   // ── Left: image-led product card ──────────────────────────────────────
@@ -100,13 +110,15 @@ const styles = stylex.create({
   // the lower portion, and a chat bubble that breaks out past the card's
   // right edge over the image's lower area.
   productCard: {
-    left: 'var(--spacing-8)',
-    top: 300,
+    // Left edge anchored just left of the left aurora blob's center (22% in the
+    // shared fixed box) so the card sits over that blob at any width.
+    left: '15%',
+    top: 340,
     width: 'clamp(244px, 20vw, 280px)',
     boxShadow: 'var(--shadow-high)',
     // Drop the XDSCard default border so the card reads as a clean floating
     // surface defined only by its shadow.
-    borderColor: 'transparent',
+    borderWidth: 0,
     // overflow visible so the chat bubble can break past the right + bottom.
     overflow: 'visible',
   },
@@ -119,70 +131,99 @@ const styles = stylex.create({
   // past the card's right edge over the lower part of the product image
   // (matches the SVG). The composer supplies its own surface, radius, and
   // send button; this wrapper only handles placement + the lift shadow.
+  // Card wrapping the composer; breaks out past the product card's right edge
+  // over the lower part of the photo.
   chatBubble: {
     position: 'absolute',
-    // Start partway across and extend past the right edge of the card.
-    left: '24%',
-    right: 'calc(-1 * var(--spacing-6))',
+    left: '5%',
+    right: 'calc(-1 * var(--spacing-12))',
     bottom: 'var(--spacing-5)',
-    borderRadius: 'var(--radius-full)',
+    transform: 'translateX(var(--spacing-12))',
     boxShadow: 'var(--shadow-high)',
+    borderWidth: 0,
+    // Decorative only: no pointer interaction or text cursor (the whole layer
+    // is also `inert`, but this keeps the composer from showing affordances).
+    pointerEvents: 'none',
+    cursor: 'default',
+  },
+  // The composer sits inside the wrapping card, so flatten its own body fully
+  // (transparent surface, no shadow in any state, no radius) to avoid a double
+  // surface and the stray shadow artifact where the two rounded boxes overlap.
+  composerSurface: {
+    backgroundColor: 'transparent',
+    boxShadow: 'none',
+    borderRadius: 0,
   },
   // ── Right: feature card ───────────────────────────────────────────────
   featureCard: {
-    right: 'var(--spacing-6)',
-    top: 250,
+    // Left edge anchored just left of the right aurora blob's center (78% in
+    // the shared fixed box) so the card sits over that blob at any width.
+    left: '70%',
+    top: 310,
     width: 'clamp(236px, 19vw, 272px)',
     boxShadow: 'var(--shadow-high)',
-    borderColor: 'transparent',
+    // No border at all — a transparent border still leaves a border-width gap
+    // that reveals the card's white background as a thin frame around the
+    // flush image. borderWidth:0 removes that frame.
+    borderWidth: 0,
     overflow: 'hidden',
-  },
-  featureImageWrap: {
-    position: 'relative',
-  },
-  // Small buy card overlapping the lower-left of the feature card.
-  miniCard: {
-    position: 'absolute',
-    left: 'calc(-1 * var(--spacing-4))',
-    bottom: 'var(--spacing-4)',
-    width: 184,
-    boxShadow: 'var(--shadow-high)',
-    borderColor: 'transparent',
-  },
-  miniThumbFrame: {
-    width: 28,
-    height: 28,
-    flexShrink: 0,
-    overflow: 'hidden',
-    borderRadius: 'var(--radius-inner)',
   },
 
-  // ── Right: reward-progress card (under the feature card) ──────────────
-  // Sits below the feature card; offset further from the right edge so its
-  // left portion peeks out from behind the feature card / mini card cluster,
-  // matching the layered look in the reference.
-  rewardCard: {
-    right: 'var(--spacing-10)',
-    top: 540,
-    width: 'clamp(224px, 18vw, 256px)',
-    boxShadow: 'var(--shadow-high)',
-    borderColor: 'transparent',
+  // ── Right: reward footer (attached below the feature image) ───────────
+  // The feature card is padding={0} so the image sits flush to the edges;
+  // this wrapper re-adds the card's inner padding around the reward footer.
+  rewardFooter: {
+    padding: 'var(--spacing-4)',
+  },
+  // Extra breathing room above the profile row so it sits clearly apart from
+  // the progress bar (beyond the VStack's base gap).
+  profileRow: {
+    marginBlockStart: 'var(--spacing-2)',
   },
 
   // ── Floating pills ────────────────────────────────────────────────────
   pillLeading: {
-    left: 'var(--spacing-10)',
-    top: 260,
+    left: '16%',
+    top: 304,
   },
   pillTrailing: {
-    right: 'var(--spacing-10)',
-    top: 220,
+    left: '80%',
+    top: 258,
   },
-  pillSurface: {
-    backgroundColor: 'var(--color-background-surface)',
+  // Pill-shaped card wrapping the trailing radio option. Fully rounded with a
+  // soft lift; the XDSCard default border is dropped so only the shadow defines
+  // the floating surface.
+  radioPillCard: {
     borderRadius: 'var(--radius-full)',
     boxShadow: 'var(--shadow-med)',
-    padding: 'var(--spacing-1)',
+    borderWidth: 0,
+  },
+  // Buy card overlapping the lower-left of the feature/reward card: thumbnail +
+  // title + 2-line description and a full-width "Add to cart" button. Anchored
+  // further left (large right offset) and high enough to sit over the card's
+  // lower-left, breaking past its left edge like the reference.
+  buyCard: {
+    left: '58%',
+    top: 420,
+    width: 'clamp(208px, 16vw, 248px)',
+    boxShadow: 'var(--shadow-high)',
+    borderWidth: 0,
+  },
+  buyThumbFrame: {
+    width: 'var(--spacing-12)',
+    height: 'var(--spacing-12)',
+    flexShrink: 0,
+    overflow: 'hidden',
+    borderRadius: 'var(--radius-element)',
+  },
+  fullWidth: {
+    width: '100%',
+  },
+  buyDescription: {
+    display: '-webkit-box',
+    WebkitBoxOrient: 'vertical',
+    WebkitLineClamp: 2,
+    overflow: 'hidden',
   },
 });
 
@@ -205,30 +246,31 @@ export function HeroFloatingCards({
           styles.originTopLeft,
           pose,
         )}>
-        <div {...stylex.props(styles.pillSurface)}>
-          <XDSBadge
-            variant="green"
-            label={content.pills.leading}
-            icon={<Sparkles size={12} />}
-          />
-        </div>
+        <XDSBadge
+          variant="green"
+          label={content.pills.leading}
+          icon={<Sparkles size={12} />}
+        />
       </div>
 
-      {/* Trailing pill */}
+      {/* Trailing pill — a selected radio option wrapped in a pill card */}
       <div
         {...stylex.props(
           styles.floater,
           styles.pillTrailing,
-          styles.originTopRight,
+          styles.originTopLeft,
           pose,
         )}>
-        <div {...stylex.props(styles.pillSurface)}>
-          <XDSBadge
-            variant="blue"
+        <XDSCard padding={2} xstyle={styles.radioPillCard}>
+          <XDSRadioList
             label={content.pills.trailing}
-            icon={<Truck size={12} />}
-          />
-        </div>
+            isLabelHidden
+            value="selected"
+            onChange={() => {}}
+            size="sm">
+            <XDSRadioListItem label={content.pills.trailing} value="selected" />
+          </XDSRadioList>
+        </XDSCard>
       </div>
 
       {/* Left — image-led product card with a chat bubble breaking out right */}
@@ -240,10 +282,13 @@ export function HeroFloatingCards({
           styles.originTopLeft,
           pose,
         ]}>
-        <XDSVStack gap={3}>
+        <XDSVStack gap={4}>
           <XDSVStack gap={1}>
-            <XDSHeading level={3}>{content.product.title}</XDSHeading>
-            <XDSText type="supporting" color="secondary">
+            <XDSHeading level={2}>{content.product.title}</XDSHeading>
+            <XDSText
+              type="body"
+              color="secondary"
+              xstyle={styles.productDescription}>
               {content.product.description}
             </XDSText>
           </XDSVStack>
@@ -262,98 +307,103 @@ export function HeroFloatingCards({
                 over the lower part of the photo. Decorative: the whole layer is
                 inert / aria-hidden / pointer-events:none, so the no-op handlers
                 never fire. */}
-            <div {...stylex.props(styles.chatBubble)}>
+            <XDSCard padding={2} xstyle={styles.chatBubble}>
               <XDSChatComposer
                 value=""
                 onChange={() => {}}
                 onSubmit={() => {}}
                 placeholder={content.chatPrompt}
+                xstyle={styles.composerSurface}
+                footerActions={
+                  <XDSButton
+                    variant="secondary"
+                    size="md"
+                    isIconOnly
+                    icon={<Plus size={16} />}
+                    label="Add attachment"
+                  />
+                }
+                sendButton={<XDSChatSendButton isDisabled={false} />}
               />
-            </div>
+            </XDSCard>
           </div>
         </XDSVStack>
       </XDSCard>
 
-      {/* Right — tall feature card with an overlapping mini buy card */}
+      {/* Right — feature card: product image on top, reward footer below */}
       <XDSCard
         padding={0}
         xstyle={[
           styles.floater,
           styles.featureCard,
-          styles.originTopRight,
+          styles.originTopLeft,
           pose,
         ]}>
-        <div {...stylex.props(styles.featureImageWrap)}>
-          <XDSAspectRatio ratio={1}>
-            <img
-              src={content.feature.image}
-              alt=""
-              {...stylex.props(styles.image)}
-            />
-          </XDSAspectRatio>
+        <XDSAspectRatio ratio={1}>
+          <img
+            src={content.feature.image}
+            alt=""
+            {...stylex.props(styles.image)}
+          />
+        </XDSAspectRatio>
 
-          {/* Mini buy card — thumbnail + name + description + Add to cart */}
-          <XDSCard padding={2} xstyle={styles.miniCard}>
-            <XDSVStack gap={2}>
-              <XDSHStack gap={2} vAlign="center">
-                <div {...stylex.props(styles.miniThumbFrame)}>
-                  <img
-                    src={content.mini.image}
-                    alt=""
-                    {...stylex.props(styles.image)}
-                  />
-                </div>
-                <XDSVStack gap={0} xstyle={styles.fullWidth}>
-                  <XDSText type="supporting" weight="semibold">
-                    {content.mini.title}
-                  </XDSText>
-                  <XDSText type="supporting" color="secondary">
-                    {content.mini.description}
-                  </XDSText>
-                </XDSVStack>
-              </XDSHStack>
-              <XDSButton
-                variant="primary"
-                size="sm"
-                label="Add to cart"
-                xstyle={styles.fullWidth}
-              />
-            </XDSVStack>
-          </XDSCard>
+        {/* Reward-progress footer attached below the image */}
+        <div {...stylex.props(styles.rewardFooter)}>
+          <XDSVStack gap={2}>
+            <XDSHStack gap={2} hAlign="between" vAlign="center">
+              <XDSText type="body" weight="semibold">
+                {content.reward.label}
+              </XDSText>
+              <XDSText type="supporting" color="secondary">
+                {content.reward.value}/{content.reward.total}
+              </XDSText>
+            </XDSHStack>
+            <XDSProgressBar
+              label={content.reward.label}
+              isLabelHidden
+              value={content.reward.value}
+              max={content.reward.total}
+              variant="accent"
+            />
+            <XDSHStack gap={2} vAlign="center" xstyle={styles.profileRow}>
+              <XDSAvatar name={content.reward.member} size="xsmall" />
+              <XDSText type="supporting" color="secondary">
+                {content.reward.member}
+              </XDSText>
+            </XDSHStack>
+          </XDSVStack>
         </div>
       </XDSCard>
 
-      {/* Right — reward-progress card beneath the feature card */}
+      {/* Right — buy card: thumbnail + title/description + Add to cart */}
       <XDSCard
         padding={3}
-        xstyle={[
-          styles.floater,
-          styles.rewardCard,
-          styles.originTopRight,
-          pose,
-        ]}>
-        <XDSVStack gap={2}>
-          <XDSHStack gap={2} hAlign="between" vAlign="center">
-            <XDSText type="body" weight="semibold">
-              {content.reward.label}
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
-              {content.reward.value}/{content.reward.total}
-            </XDSText>
+        xstyle={[styles.floater, styles.buyCard, styles.originTopLeft, pose]}>
+        <XDSVStack gap={3}>
+          <XDSHStack gap={3} vAlign="center">
+            <div {...stylex.props(styles.buyThumbFrame)}>
+              <img
+                src={content.mini.image}
+                alt=""
+                {...stylex.props(styles.image)}
+              />
+            </div>
+            <XDSVStack gap={1} xstyle={styles.fullWidth}>
+              <XDSHeading level={3}>{content.mini.title}</XDSHeading>
+              <XDSText
+                type="supporting"
+                color="secondary"
+                xstyle={styles.buyDescription}>
+                {content.mini.description}
+              </XDSText>
+            </XDSVStack>
           </XDSHStack>
-          <XDSProgressBar
-            label={content.reward.label}
-            isLabelHidden
-            value={content.reward.value}
-            max={content.reward.total}
-            variant="success"
+          <XDSButton
+            variant="secondary"
+            size="md"
+            label="Add to cart"
+            xstyle={styles.fullWidth}
           />
-          <XDSHStack gap={2} vAlign="center">
-            <XDSAvatar name={content.reward.member} size="xsmall" />
-            <XDSText type="supporting" color="secondary">
-              {content.reward.member}
-            </XDSText>
-          </XDSHStack>
         </XDSVStack>
       </XDSCard>
     </div>

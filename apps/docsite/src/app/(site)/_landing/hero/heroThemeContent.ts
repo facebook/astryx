@@ -144,8 +144,8 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
       title: 'Speckled mug',
       description: 'Hand-thrown stoneware.',
     },
-    pills: {leading: 'Open source', trailing: 'Agent ready'},
-    chatPrompt: 'Help me start a project',
+    pills: {leading: 'Limited time', trailing: 'Free shipping'},
+    chatPrompt: 'How can I help you today?',
     reward: {
       label: 'Setup progress',
       value: 7,
@@ -170,8 +170,8 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
       title: 'Canvas backpack',
       description: 'Water-resistant.',
     },
-    pills: {leading: 'New arrival', trailing: 'Free returns'},
-    chatPrompt: 'Build me a starter set',
+    pills: {leading: 'Limited time', trailing: 'Free shipping'},
+    chatPrompt: 'How can I help you today?',
     reward: {
       label: 'Member rewards',
       value: 6,
@@ -196,8 +196,8 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
       title: 'Maple waffles',
       description: 'Served warm.',
     },
-    pills: {leading: 'Best seller', trailing: 'Gift wrapped'},
-    chatPrompt: 'Find me a cozy gift',
+    pills: {leading: 'Limited time', trailing: 'Free shipping'},
+    chatPrompt: 'How can I help you today?',
     reward: {label: 'Loyalty perks', value: 5, total: 9, member: 'Noa Bright'},
   },
   '@xds/theme-matcha': {
@@ -217,7 +217,7 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
       title: 'Ube matcha',
       description: 'Ube and cream matcha.',
     },
-    pills: {leading: 'Limited edition', trailing: 'Fast shipping'},
+    pills: {leading: 'Limited time', trailing: 'Free shipping'},
     chatPrompt: 'How can I help you today?',
     reward: {
       label: 'Reward progress',
@@ -243,8 +243,8 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
       title: 'Puppy keychain',
       description: 'Plush + chrome ring.',
     },
-    pills: {leading: 'Back in stock', trailing: 'Glow guarantee'},
-    chatPrompt: 'Make it sparkle ✨',
+    pills: {leading: 'Limited time', trailing: 'Free shipping'},
+    chatPrompt: 'How can I help you today?',
     reward: {label: 'Sparkle points', value: 6, total: 8, member: 'Bella Cruz'},
   },
 };
@@ -264,7 +264,7 @@ function fallbackContent(name: string): HeroThemeContent {
     },
     feature: {image, title: 'Featured product', price: '$40'},
     mini: {image, title: 'Featured', description: 'In stock now.'},
-    pills: {leading: 'New', trailing: 'In stock'},
+    pills: {leading: 'Limited time', trailing: 'Free shipping'},
     chatPrompt: 'How can I help you today?',
     reward: {label: 'Member rewards', value: 6, total: 10, member: 'Sam Lee'},
   };
