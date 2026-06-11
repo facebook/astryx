@@ -41,7 +41,7 @@ export const docs = {
       name: 'isStreaming',
       type: 'boolean',
       description:
-        'Enables streaming mode — uses incremental parsing and a smooth fade-in animation for chunk-by-chunk text delivery.',
+        'Enables streaming mode; it uses incremental parsing and a smooth fade-in animation for chunk-by-chunk text delivery.',
       default: 'false',
     },
     {
@@ -86,19 +86,19 @@ export const docs = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
     {
       name: 'className',
       type: 'string',
       description:
-        'CSS class name for the root element. Prefer xstyle for styling — className is provided for integration with non-StyleX systems.',
+        'CSS class name for the root element. Prefer xstyle for styling; className is provided for integration with non-StyleX systems.',
     },
     {
       name: 'style',
       type: 'CSSProperties',
       description:
-        'Inline styles for the root element. Prefer xstyle for styling — inline styles bypass StyleX optimization.',
+        'Inline styles for the root element. Prefer xstyle for styling; inline styles bypass StyleX optimization.',
     },
     {
       name: 'data-testid',
@@ -118,12 +118,12 @@ export const docs = {
   },
   usage: {
     description:
-      'Renders a markdown string as XDS-styled components. Use Markdown for user-generated content, AI responses, and documentation — it handles headings, lists, tables, code blocks, and citations with consistent styling.',
+      'Renders a markdown string as XDS-styled components. Use Markdown for user-generated content, AI responses, and documentation; it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [
-      { guidance: true, description: 'Set headingLevelStart to match the page hierarchy — e.g. start at 3 if the markdown sits inside an h2 section.' },
+      { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
       { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns like issue refs, diff refs, and mentions instead of preprocessing the markdown string.' },
-      { guidance: false, description: 'Use Markdown for hand-authored layouts — use XDSText and XDSHeading directly when you control the content.' },
+      { guidance: false, description: 'Use Markdown for hand-authored layouts; use XDSText and XDSHeading directly when you control the content.' },
     ],
   },
   examples: [
@@ -178,7 +178,7 @@ export const docsZh = {
       name: 'isStreaming',
       type: 'boolean',
       description:
-        '启用流式模式 — 使用增量解析和淡入动画处理分块文本。',
+        '启用流式模式，使用增量解析和淡入动画处理分块文本。',
       default: 'false',
     },
     {
@@ -227,12 +227,12 @@ export const docsZh = {
     {
       name: 'className',
       type: 'string',
-      description: '根元素的 CSS 类名。建议使用 xstyle — className 适用于非 StyleX 系统集成。',
+      description: '根元素的 CSS 类名。建议使用 xstyle，className 适用于非 StyleX 系统集成。',
     },
     {
       name: 'style',
       type: 'CSSProperties',
-      description: '根元素的内联样式。建议使用 xstyle — 内联样式会绕过 StyleX 优化。',
+      description: '根元素的内联样式。建议使用 xstyle，内联样式会绕过 StyleX 优化。',
     },
     {
       name: 'data-testid',
@@ -247,12 +247,12 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Renders a markdown string as XDS-styled components. Use Markdown for user-generated content, AI responses, and documentation — it handles headings, lists, tables, code blocks, and citations with consistent styling.',
+      'Renders a markdown string as XDS-styled components. Use Markdown for user-generated content, AI responses, and documentation; it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [
-      { guidance: true, description: 'Set headingLevelStart to match the page hierarchy — e.g. start at 3 if the markdown sits inside an h2 section.' },
+      { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
       { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns like issue refs, diff refs, and mentions instead of preprocessing the markdown string.' },
-      { guidance: false, description: 'Use Markdown for hand-authored layouts — use XDSText and XDSHeading directly when you control the content.' },
+      { guidance: false, description: 'Use Markdown for hand-authored layouts; use XDSText and XDSHeading directly when you control the content.' },
     ],
   },
 };
@@ -262,12 +262,12 @@ export const docsDense = {
     'Renders markdown string as XDS-styled components. Use for user-generated content, AI responses, docs. Headings, lists, tables, code, citations w/ consistent styling.',
   usage: {
     description:
-      'Renders a markdown string as XDS-styled components. Use Markdown for user-generated content, AI responses, and documentation — it handles headings, lists, tables, code blocks, and citations with consistent styling.',
+      'Renders a markdown string as XDS-styled components. Use Markdown for user-generated content, AI responses, and documentation; it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [
-      { guidance: true, description: 'Set headingLevelStart to match the page hierarchy — e.g. start at 3 if the markdown sits inside an h2 section.' },
+      { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
       { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns (issue refs, diff refs, mentions) instead of preprocessing the markdown string.' },
-      { guidance: false, description: 'Use Markdown for hand-authored layouts — use XDSText and XDSHeading directly when you control the content.' },
+      { guidance: false, description: 'Use Markdown for hand-authored layouts; use XDSText and XDSHeading directly when you control the content.' },
     ],
   },
   propDescriptions: {
