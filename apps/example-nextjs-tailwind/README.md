@@ -24,8 +24,8 @@ This gives the correct priority (lowest → highest):
 | `xds-base` | XDS | Component styles (buttons, cards, inputs, etc.) |
 | `xds-theme` | XDS | Theme overrides (typography, color mappings) |
 | `components` | Tailwind | Component classes (if any) |
-| `utilities` | Tailwind | Utility classes — **wins over all layers** |
-| *(unlayered)* | Consumer | Your custom CSS — highest priority |
+| `utilities` | Tailwind | Utility classes: **wins over all layers** |
+| *(unlayered)* | Consumer | Your custom CSS: highest priority |
 
 Without this declaration, XDS layers are created *after* Tailwind's declared layers, making XDS component styles outrank Tailwind utilities. That means `className="bg-red-500"` on an XDS component wouldn't work.
 
