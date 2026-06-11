@@ -7,7 +7,7 @@ export const doc = {
   name: 'Pagination — Variants',
   displayName: 'Pagination — Variants',
   description:
-    'All four display variants stacked — dots, compact, count, and pages. A quick visual reference for choosing the right variant.',
+    'All four display variants stacked: dots, compact, count, and pages. A quick visual reference for choosing the right variant.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,
