@@ -66,16 +66,11 @@ const pageStyles = stylex.create({
 // Light product photography from the xds_oss asset set (ceramics collection)
 // Source: meta assets.file list -s xds_oss -g light-product-{1..5}
 const PRODUCT_IMAGES = [
-  // light-product-1 from xds_oss asset set
-  '/template-assets/light-product-1.png',
-  // light-product-2 from xds_oss asset set
-  '/template-assets/light-product-2.png',
-  // light-product-3 from xds_oss asset set
-  '/template-assets/light-product-3.png',
-  // light-product-4 from xds_oss asset set
-  '/template-assets/light-product-4.png',
-  // light-product-5 from xds_oss asset set
-  '/template-assets/light-product-5.png',
+  'https://lookaside.facebook.com/assets/xds_oss/light-product-1.png',
+  'https://lookaside.facebook.com/assets/xds_oss/light-product-2.png',
+  'https://lookaside.facebook.com/assets/xds_oss/light-product-3.png',
+  'https://lookaside.facebook.com/assets/xds_oss/light-product-4.png',
+  'https://lookaside.facebook.com/assets/xds_oss/light-product-5.png',
 ];
 
 const PRODUCTS = [

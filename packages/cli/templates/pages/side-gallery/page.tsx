@@ -42,49 +42,40 @@ const styles = stylex.create({
 // Source: meta assets.file list -s xds_oss -g <name>
 
 const IMAGES = [
-  // colorful-lifestyle-vertical-3 from xds_oss asset set
   {
-    src: '/template-assets/colorful-lifestyle-vertical-3.png',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-vertical-3.png',
     alt: 'Colorful lifestyle scene',
   },
-  // colorful-lifestyle-horizontal-1 from xds_oss asset set
   {
-    src: '/template-assets/colorful-lifestyle-horizontal-1.png',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-horizontal-1.png',
     alt: 'Colorful lifestyle horizontal',
   },
-  // colorful-lifestyle-vertical-1 from xds_oss asset set
   {
-    src: '/template-assets/colorful-lifestyle-vertical-1.png',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-vertical-1.png',
     alt: 'Colorful lifestyle vertical',
   },
-  // colorful-home-vertical-2 from xds_oss asset set
   {
-    src: '/template-assets/colorful-home-vertical-2.png',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-home-vertical-2.png',
     alt: 'Colorful home interior',
   },
-  // colorful-home-vertical-3 from xds_oss asset set
   {
-    src: '/template-assets/colorful-home-vertical-3.png',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-home-vertical-3.png',
     alt: 'Colorful home scene',
   },
-  // colorful-home-vertical-1 from xds_oss asset set
   {
-    src: '/template-assets/colorful-home-vertical-1.png',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-home-vertical-1.png',
     alt: 'Colorful home vertical',
   },
-  // colorful-lifestyle-horizontal-2 from xds_oss asset set
   {
-    src: '/template-assets/colorful-lifestyle-horizontal-2.png',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-horizontal-2.png',
     alt: 'Colorful lifestyle wide',
   },
-  // colorful-lifestyle-vertical-2 from xds_oss asset set
   {
-    src: '/template-assets/colorful-lifestyle-vertical-2.png',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-vertical-2.png',
     alt: 'Colorful lifestyle detail',
   },
-  // colorful-lifestyle-vertical-4 from xds_oss asset set
   {
-    src: '/template-assets/colorful-lifestyle-vertical-4.png',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-vertical-4.png',
     alt: 'Colorful lifestyle portrait',
   },
 ];
