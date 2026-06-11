@@ -613,7 +613,7 @@ export const docs = {
       "content": [
         {
           "type": "prose",
-          "text": "Elevation shadows (low → med → high) and inset shadows for input state rings."
+          "text": "Elevation shadows (low to med to high) and inset shadows for input state rings."
         },
         {
           "type": "table",
