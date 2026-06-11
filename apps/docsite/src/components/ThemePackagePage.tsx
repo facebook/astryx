@@ -22,6 +22,7 @@ import {buildPlaygroundHref} from './playgroundLink';
 import {packages} from '../generated/packageRegistry';
 import {themeObjects} from '../generated/themeRegistry';
 import {templates} from '../generated/templateRegistry';
+import {trackOpenPlayground, trackToggle} from '../lib/analytics';
 
 // Raw source of the theme-showcase page template (embedded as a string in
 // the generated template registry). Used to prepopulate the playground's
@@ -594,6 +595,13 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                   label="Open in Playground"
                   href={customizeHref}
                   xstyle={styles.heroPrimaryButton}
+                  onClick={() => {
+                    trackOpenPlayground({
+                      page: 'themes',
+                      item: selectedPkgName,
+                      source: 'theme-showcase',
+                    });
+                  }}
                 />
                 <XDSButton
                   variant="ghost"
@@ -602,7 +610,16 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                   label={modeToggleLabel}
                   tooltip={modeToggleLabel}
                   icon={modeToggleIcon}
-                  onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
+                  onClick={() => {
+                    const next = mode === 'light' ? 'dark' : 'light';
+                    trackToggle({
+                      page: 'themes',
+                      target: 'mode',
+                      item: selectedPkgName,
+                      value: next,
+                    });
+                    setMode(next);
+                  }}
                 />
               </XDSHStack>
             </XDSVStack>

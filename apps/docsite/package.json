@@ -17,6 +17,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@monaco-editor/react": "^4.7.0",
     "@stylexjs/stylex": "^0.18.3",
+    "@vercel/analytics": "^2.0.1",
     "@xds/cli": "*",
     "@xds/core": "*",
     "@xds/theme-butter": "*",

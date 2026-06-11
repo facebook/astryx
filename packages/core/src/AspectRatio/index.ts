@@ -12,4 +12,4 @@
  */
 
 export {XDSAspectRatio} from './XDSAspectRatio';
-export type {XDSAspectRatioProps} from './XDSAspectRatio';
+export type {XDSAspectRatioProps, XDSAspectRatioShape} from './XDSAspectRatio';

@@ -21,6 +21,7 @@ import {TemplateThumbnail} from '../../../components/TemplateThumbnail';
 import {buildPlaygroundHref} from '../../../components/playgroundLink';
 import {TemplatePreviewDialog} from '../../../components/TemplatePreviewDialog';
 import type {TemplatePreviewItem} from '../../../components/TemplatePreviewDialog';
+import {trackOpenPlayground, trackView} from '../../../lib/analytics';
 
 const GALLERY_MAX_WIDTH = 1600;
 const CARD_MIN_WIDTH = 480;
@@ -112,7 +113,9 @@ const GROUP_LABELS: Record<string, string> = {
  *  Standalone categories without a separator (e.g. 'Settings') are their own
  *  group. Untagged templates fall under 'Other'. */
 function groupOf(category: string): string {
-  if (!category) {return OTHER_GROUP;}
+  if (!category) {
+    return OTHER_GROUP;
+  }
   const idx = category.indexOf(' - ');
   return idx === -1 ? category : category.slice(0, idx);
 }
@@ -144,13 +147,18 @@ export default function TemplatesPage() {
         source: t.source,
       };
       const list = byGroup.get(group);
-      if (list) {list.push(item);}
-      else {byGroup.set(group, [item]);}
+      if (list) {
+        list.push(item);
+      } else {
+        byGroup.set(group, [item]);
+      }
     }
 
     const rank = (g: string) => {
       const i = GROUP_ORDER.indexOf(g);
-      if (i !== -1) {return i;}
+      if (i !== -1) {
+        return i;
+      }
       return g === OTHER_GROUP ? Number.MAX_SAFE_INTEGER : GROUP_ORDER.length;
     };
 
@@ -191,7 +199,8 @@ export default function TemplatesPage() {
   const pathname = usePathname();
 
   const previewSlug = searchParams.get('preview');
-  const openIndex = previewSlug != null ? (indexBySlug.get(previewSlug) ?? null) : null;
+  const openIndex =
+    previewSlug != null ? (indexBySlug.get(previewSlug) ?? null) : null;
 
   const setOpenIndex = useCallback(
     (index: number | null) => {
@@ -211,14 +220,23 @@ export default function TemplatesPage() {
     (slug: string) => {
       const i = indexBySlug.get(slug);
       if (i !== undefined) {
+        const item = flatItems[i];
+        trackView({
+          page: 'templates',
+          item: item.slug,
+          category: item.category,
+        });
         setOpenIndex(i);
       }
     },
-    [indexBySlug, setOpenIndex],
+    [indexBySlug, setOpenIndex, flatItems],
   );
 
   return (
-    <XDSSection maxWidth={GALLERY_MAX_WIDTH} padding={6} xstyle={styles.section}>
+    <XDSSection
+      maxWidth={GALLERY_MAX_WIDTH}
+      padding={6}
+      xstyle={styles.section}>
       <XDSVStack gap={8}>
         <XDSVStack gap={2} style={{alignItems: 'center'}}>
           <XDSHeading level={1} type="display-2" xstyle={styles.heroTitle}>
@@ -256,62 +274,65 @@ export default function TemplatesPage() {
                         cursor: 'pointer',
                       } as React.CSSProperties
                     }>
-                      <XDSOverlay
-                        showOn="hover"
-                        scrim="dark"
-                        content={
-                          <div {...stylex.props(styles.overlayInner)}>
-                            <XDSVStack gap={2}>
-                              <XDSVStack gap={0.5}>
-                                <XDSHeading
-                                  level={3}
-                                  style={{color: '#fff'}}>
-                                  {item.name}
-                                </XDSHeading>
-                                <XDSText
-                                  type="body"
-                                  style={{color: 'rgba(255,255,255,0.7)'}}>
-                                  {item.description.slice(0, 80)}
-                                  {item.description.length > 80 ? '\u2026' : ''}
-                                </XDSText>
-                              </XDSVStack>
-                              {/* Stop card-level click/keys from firing for
+                    <XDSOverlay
+                      showOn="hover"
+                      scrim="dark"
+                      content={
+                        <div {...stylex.props(styles.overlayInner)}>
+                          <XDSVStack gap={2}>
+                            <XDSVStack gap={0.5}>
+                              <XDSHeading level={3} style={{color: '#fff'}}>
+                                {item.name}
+                              </XDSHeading>
+                              <XDSText
+                                type="body"
+                                style={{color: 'rgba(255,255,255,0.7)'}}>
+                                {item.description.slice(0, 80)}
+                                {item.description.length > 80 ? '\u2026' : ''}
+                              </XDSText>
+                            </XDSVStack>
+                            {/* Stop card-level click/keys from firing for
                                   the action buttons so each keeps its own
                                   behavior (the card itself opens the preview). */}
-                              <div
-                                onClick={e => e.stopPropagation()}
-                                onKeyDown={e => e.stopPropagation()}>
-                                <XDSHStack gap={2}>
+                            <div
+                              onClick={e => e.stopPropagation()}
+                              onKeyDown={e => e.stopPropagation()}>
+                              <XDSHStack gap={2}>
+                                <XDSButton
+                                  label="Preview"
+                                  variant="secondary"
+                                  onClick={() => openPreview(item.slug)}
+                                />
+                                {item.source && (
                                   <XDSButton
-                                    label="Preview"
+                                    label="Open in Playground"
                                     variant="secondary"
-                                    onClick={() => openPreview(item.slug)}
+                                    onClick={() => {
+                                      trackOpenPlayground({
+                                        page: 'templates',
+                                        item: item.slug,
+                                        category: groupOf(item.category),
+                                      });
+                                      window.location.href =
+                                        buildPlaygroundHref(item.source);
+                                    }}
                                   />
-                                  {item.source && (
-                                    <XDSButton
-                                      label="Open in Playground"
-                                      variant="secondary"
-                                      onClick={() => {
-                                        window.location.href =
-                                          buildPlaygroundHref(item.source);
-                                      }}
-                                    />
-                                  )}
-                                </XDSHStack>
-                              </div>
-                            </XDSVStack>
-                          </div>
-                        }>
-                        {item.isReady ? (
-                          <TemplateThumbnail slug={item.slug} />
-                        ) : (
-                          <div {...stylex.props(styles.cardImage)}>
-                            <div {...stylex.props(styles.comingSoon)}>
-                              <XDSBadge label="Coming Soon" variant="info" />
+                                )}
+                              </XDSHStack>
                             </div>
+                          </XDSVStack>
+                        </div>
+                      }>
+                      {item.isReady ? (
+                        <TemplateThumbnail slug={item.slug} />
+                      ) : (
+                        <div {...stylex.props(styles.cardImage)}>
+                          <div {...stylex.props(styles.comingSoon)}>
+                            <XDSBadge label="Coming Soon" variant="info" />
                           </div>
-                        )}
-                      </XDSOverlay>
+                        </div>
+                      )}
+                    </XDSOverlay>
                   </XDSCard>
                 ))}
               </div>

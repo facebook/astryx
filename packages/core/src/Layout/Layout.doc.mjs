@@ -202,14 +202,6 @@ export const docs = {
       ],
     },
     {
-      name: 'XDSLayoutContainer',
-      isHiddenFromOverview: true,
-      displayName: 'Layout Container',
-      description:
-        'Primitive component that sets CSS variables for padding, used as the base for XDSCard and XDSSection.',
-      props: [],
-    },
-    {
       name: 'XDSCard',
       displayName: 'Card',
       description:
@@ -445,14 +437,6 @@ export const docsZh = {
       ],
     },
     {
-      name: 'XDSLayoutContainer',
-      isHiddenFromOverview: true,
-      displayName: 'Layout Container',
-      description:
-        '设置内边距 CSS 变量的基础组件，作为 XDSCard 和 XDSSection 的基础。',
-      props: [],
-    },
-    {
       name: 'XDSCard',
       displayName: 'Card',
       description:
@@ -580,13 +564,6 @@ export const docsDense = {
         label: 'Accessible label for landmark element.',
         role: 'ARIA landmark role.',
       },
-    },
-    {
-      name: 'XDSLayoutContainer',
-      isHiddenFromOverview: true,
-      displayName: 'Layout Container',
-      description:
-        'Primitive setting CSS padding vars; base for XDSCard + XDSSection.',
     },
     {
       name: 'XDSCard',

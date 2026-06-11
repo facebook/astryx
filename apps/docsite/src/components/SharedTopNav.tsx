@@ -16,6 +16,7 @@ import {packages} from '../generated/packageRegistry';
 import {docTopics} from '../generated/docsRegistry';
 import {templates} from '../generated/templateRegistry';
 import {useThemeMode} from '../app/providers';
+import {trackSearch, trackClickCta} from '../lib/analytics';
 
 const GitHubIcon = ({
   width = 20,
@@ -106,7 +107,10 @@ export function SharedTopNav() {
                 variant="ghost"
                 isIconOnly
                 icon={<Search size={20} />}
-                onClick={() => setIsSearchOpen(true)}
+                onClick={() => {
+                  trackSearch({target: 'open'});
+                  setIsSearchOpen(true);
+                }}
               />
               <XDSButton
                 label={
@@ -139,12 +143,16 @@ export function SharedTopNav() {
                 isIconOnly
                 icon={<GitHubIcon />}
                 href={GITHUB_REPO}
+                onClick={() => trackClickCta({target: 'github'})}
               />
             </XDSHStack>
             <XDSButton
               label="Get started"
               variant="primary"
               href="/docs/getting-started"
+              onClick={() =>
+                trackClickCta({page: 'landing', target: 'get_started'})
+              }
             />
           </XDSHStack>
         }

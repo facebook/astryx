@@ -17,12 +17,10 @@ export type {
   StackAlignment,
 } from './XDSStack';
 
-// Convenience wrappers
-export {XDSHStack} from './XDSHStack';
-export type {XDSHStackProps} from './XDSHStack';
+// Convenience wrappers (re-exported from their own directories)
+export {XDSHStack, type XDSHStackProps} from '../HStack';
 
-export {XDSVStack} from './XDSVStack';
-export type {XDSVStackProps} from './XDSVStack';
+export {XDSVStack, type XDSVStackProps} from '../VStack';
 
 export {XDSStackItem} from './XDSStackItem';
 export type {XDSStackItemProps} from './XDSStackItem';

@@ -429,17 +429,6 @@ const styles = stylex.create({
     flex: 1,
     overflow: 'auto',
   },
-  // Content area fix for auto mode — makes the content a flex column so that
-  // children can use flex-grow to fill remaining vertical space (sticky footer
-  // pattern). Overrides height/overflow from XDSLayoutContent's default styles
-  // which assume fill-mode (fixed-height, internally scrollable) behavior.
-  contentAutoStretch: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    height: 'auto',
-    minHeight: '100%',
-    overflow: 'visible',
-  },
 });
 
 // =============================================================================
@@ -729,7 +718,7 @@ export function XDSAppShell({
       role="main"
       id={MAIN_CONTENT_ID}
       isScrollable={isFill}
-      xstyle={[contentAreaStyle, isAuto && styles.contentAutoStretch]}>
+      xstyle={contentAreaStyle}>
       {children}
     </XDSLayoutContent>
   );

@@ -22,7 +22,7 @@ import {spacingVars, sizeVars, typeScaleVars} from '../theme/tokens.stylex';
 import {XDSLayoutHeader} from '../Layout/XDSLayoutHeader';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
-import {XDSHeading} from '../Text/XDSHeading';
+import {XDSHeading} from '../Heading/XDSHeading';
 import {XDSText} from '../Text/XDSText';
 import type {XDSBaseProps} from '../XDSBaseProps';
 

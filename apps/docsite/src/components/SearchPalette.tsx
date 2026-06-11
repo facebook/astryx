@@ -17,6 +17,7 @@ interface SearchItem extends XDSSearchableItem<{group: string}> {
 import type {PackageMeta} from '../generated/packageRegistry';
 import type {DocTopic} from '../generated/docsRegistry';
 import type {TemplateEntry} from '../generated/templateRegistry';
+import {trackSearch} from '../lib/analytics';
 
 interface SearchPaletteProps {
   isOpen: boolean;
@@ -104,6 +105,18 @@ export function SearchPalette({
   const handleValueChange = useCallback(
     (value: string) => {
       if (value && value.startsWith('/')) {
+        // Determine type from path prefix
+        const type = value.startsWith('/components/')
+          ? 'component'
+          : value.startsWith('/templates/')
+            ? 'template'
+            : value.startsWith('/themes/')
+              ? 'theme'
+              : value.startsWith('/docs/')
+                ? 'doc'
+                : 'page';
+        const item = value.split('/').pop() || value;
+        trackSearch({target: 'select', item, type});
         router.push(value);
         onOpenChange(false);
       }

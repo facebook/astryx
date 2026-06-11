@@ -68,6 +68,7 @@ import {PreviewStage, type Viewport} from './PreviewStage';
 import {BRAND_ICON} from '../../components/XDSWordmark';
 import {PropertyPanel} from './PropertyPanel';
 import {annotateInstanceIds} from './babelParser';
+import {trackCopy} from '../../lib/analytics';
 import {PlaygroundThemeEditor} from '../../components/themePlayground/PlaygroundThemeEditor';
 import {DEFAULT_CODE} from './defaultCode';
 
@@ -647,6 +648,7 @@ export function PlaygroundClient() {
 
   const handleShare = useCallback(() => {
     navigator.clipboard.writeText(window.location.href).then(() => {
+      trackCopy({page: 'playground', target: 'share_url'});
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
