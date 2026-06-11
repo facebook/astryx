@@ -1099,14 +1099,14 @@ function InventoryCard({images}: {images: Record<string, string>}) {
           />
           <XDSOverflowList
             gap={2}
-            overflowIndicator={
+            overflowRenderer={() => (
               <XDSButton
                 label="Filters"
                 variant="ghost"
                 size="sm"
                 icon={<Tag size={16} />}
               />
-            }>
+            )}>
             <XDSSelector
               label="Categories"
               isLabelHidden
