@@ -15,6 +15,7 @@ export const docs = {
     'scroll spy',
     'documentation',
     'anchors',
+    'sliding indicator',
   ],
   playground: {
     defaults: {
@@ -28,7 +29,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-outline'},
+      {className: 'xds-outline', visualProps: ['density']},
       {className: 'xds-outline-item', visualProps: ['level'], states: ['active']},
     ],
   },
@@ -37,13 +38,13 @@ export const docs = {
       name: 'XDSOutline',
       displayName: 'Outline',
       description:
-        'Document outline navigation. Renders a flat heading list as anchor links and manages scroll-spy active state when uncontrolled.',
+        'Document outline navigation with sliding indicator track. Renders a flat heading list as anchor links with a density variant and scroll-spy active state when uncontrolled.',
       props: [
         {
           name: 'items',
           type: 'OutlineItem[]',
           description:
-            'Ordered heading items. Each item has id, label, and level. The id should match the target heading element id.',
+            'Ordered heading items. Each item has id, label, and level (1-6). The id should match the target heading element id.',
           required: true,
         },
         {
@@ -65,20 +66,88 @@ export const docs = {
           default: "'Table of contents'",
         },
         {
+          name: 'density',
+          type: "'default' | 'compact'",
+          description: "Density variant controlling item padding. 'compact' for dense UIs, 'default' for standard spacing.",
+          default: "'default'",
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
             'StyleX styles for layout customization. Must be a stylex.create() value.',
         },
       ],
+      examples: [
+        {
+          label: 'Basic',
+          code: `
+import {XDSOutline} from '@xds/core/Outline';
+
+const items = [
+  {id: 'overview', label: 'Overview', level: 2},
+  {id: 'installation', label: 'Installation', level: 2},
+  {id: 'theming', label: 'Theming', level: 2},
+  {id: 'tokens', label: 'Tokens', level: 3},
+  {id: 'accessibility', label: 'Accessibility', level: 2},
+];
+
+// Uncontrolled: built-in scroll-spy tracks the topmost visible heading.
+<XDSOutline items={items} />;
+`,
+        },
+        {
+          label: 'Compact (density="compact")',
+          code: `
+import {XDSOutline} from '@xds/core/Outline';
+
+// Dense sidebars use the compact variant; the sliding indicator
+// automatically matches the shorter item height.
+<XDSOutline items={items} density="compact" />;
+`,
+        },
+        {
+          label: 'Controlled active section',
+          code: `
+import {useState} from 'react';
+import {XDSOutline} from '@xds/core/Outline';
+
+function ControlledOutline() {
+  const [activeId, setActiveId] = useState('overview');
+
+  // Providing activeId disables built-in scroll-spy — you own the active state.
+  return (
+    <XDSOutline
+      items={items}
+      activeId={activeId}
+      onActiveIdChange={setActiveId}
+    />
+  );
+}
+`,
+        },
+        {
+          label: 'Generate items from markdown',
+          code: `
+import {XDSOutline, useOutlineFromMarkdown} from '@xds/core/Outline';
+
+function MarkdownOutline({markdown}) {
+  // Derives {id, label, level} items from headings in the source.
+  const items = useOutlineFromMarkdown(markdown);
+  return <XDSOutline items={items} />;
+}
+`,
+        },
+      ],
     },
   ],
   usage: {
     description:
-      'A table-of-contents sidebar for documentation pages, help centers, wikis, and long settings pages. Use it for navigation within a single page, not for app routes.',
+      'A table-of-contents sidebar for documentation pages, help centers, wikis, and long settings pages. Use it for navigation within a single page, not for app routes. Features a sliding indicator track that animates to the active heading.',
     bestPractices: [
       {guidance: true, description: 'Pass a flat ordered list of headings and let level control indentation.'},
       {guidance: true, description: 'Use activeId when custom scroll logic owns the active section.'},
+      {guidance: true, description: 'Use density="compact" in dense sidebars where vertical space is tight.'},
       {guidance: true, description: 'Use useOutlineFromMarkdown or useOutlineFromDOM when headings are generated from content.'},
       {guidance: false, description: 'Use Outline for application navigation - use SideNav or TopNav for routes.'},
       {guidance: false, description: 'Use Outline for expandable hierarchy - use TreeList when nodes need expand and collapse.'},
@@ -93,7 +162,7 @@ export const docsZh = {
   group: 'Outline',
   theming: {
     targets: [
-      {className: 'xds-outline'},
+      {className: 'xds-outline', visualProps: ['density']},
       {className: 'xds-outline-item', visualProps: ['level'], states: ['active']},
     ],
   },
@@ -102,13 +171,13 @@ export const docsZh = {
       name: 'XDSOutline',
       displayName: 'Outline',
       description:
-        '文档大纲导航。将扁平标题列表渲染为锚点链接，并在非受控模式下管理滚动监听的激活状态。',
+        '文档大纲导航，带有滑动指示器轨道。将扁平标题列表渲染为锚点链接，支持密度变体和非受控模式下的滚动监听。',
       props: [
         {
           name: 'items',
           type: 'OutlineItem[]',
           description:
-            '有序标题项。每项包含 id、label 和 level。id 应匹配目标标题元素的 id。',
+            '有序标题项。每项包含 id、label 和 level (1-6)。id 应匹配目标标题元素的 id。',
           required: true,
         },
         {
@@ -129,6 +198,12 @@ export const docsZh = {
           default: "'Table of contents'",
         },
         {
+          name: 'density',
+          type: "'default' | 'compact'",
+          description: "控制项目内边距的密度变体。'compact' 用于紧凑界面，'default' 为标准间距。",
+          default: "'default'",
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description: '用于布局自定义的 StyleX 样式。必须是 stylex.create() 值。',
@@ -142,6 +217,7 @@ export const docsZh = {
     bestPractices: [
       {guidance: true, description: 'Pass a flat ordered list of headings and let level control indentation.'},
       {guidance: true, description: 'Use activeId when custom scroll logic owns the active section.'},
+      {guidance: true, description: 'Use density="compact" in dense sidebars where vertical space is tight.'},
       {guidance: true, description: 'Use useOutlineFromMarkdown or useOutlineFromDOM when headings are generated from content.'},
       {guidance: false, description: 'Use Outline for application navigation - use SideNav or TopNav for routes.'},
       {guidance: false, description: 'Use Outline for expandable hierarchy - use TreeList when nodes need expand and collapse.'},
@@ -152,13 +228,14 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'Document outline/table-of-contents nav for same-page headings. Flat items array {id,label,level}; anchor links; uncontrolled scroll-spy via IntersectionObserver; controlled with activeId.',
+    'Document outline/table-of-contents nav with sliding indicator track. Flat items array {id,label,level}; anchor links; density variant (default/compact); uncontrolled scroll-spy via IntersectionObserver topmost-visible-heading; controlled with activeId; smooth-scroll on click.',
   usage: {
     description:
       'A table-of-contents sidebar for documentation pages, help centers, wikis, and long settings pages. Use it for navigation within a single page, not for app routes.',
     bestPractices: [
       {guidance: true, description: 'Pass a flat ordered list of headings and let level control indentation.'},
       {guidance: true, description: 'Use activeId when custom scroll logic owns the active section.'},
+      {guidance: true, description: 'Use density="compact" in dense sidebars where vertical space is tight.'},
       {guidance: true, description: 'Use useOutlineFromMarkdown or useOutlineFromDOM when headings are generated from content.'},
       {guidance: false, description: 'Use Outline for application navigation - use SideNav or TopNav for routes.'},
       {guidance: false, description: 'Use Outline for expandable hierarchy - use TreeList when nodes need expand and collapse.'},
@@ -169,6 +246,7 @@ export const docsDense = {
     activeId: 'Controlled active heading id. Disables built-in scroll-spy.',
     onActiveIdChange: 'Called when active id changes from scroll-spy or click.',
     label: "Accessible nav label. Default: 'Table of contents'.",
+    density: "Density variant: 'default' (standard) or 'compact'. Default: 'default'.",
     xstyle: 'StyleX styles for layout. Must be stylex.create() value.',
   },
   components: [
@@ -176,12 +254,13 @@ export const docsDense = {
       name: 'XDSOutline',
       displayName: 'Outline',
       description:
-        'Document outline nav. Renders heading anchors and manages scroll-spy active state when uncontrolled.',
+        'Document outline nav with sliding indicator. Renders heading anchors with a density variant and manages scroll-spy active state when uncontrolled.',
       propDescriptions: {
         items: 'Ordered OutlineItem[]: {id,label,level}. id should match target heading DOM id.',
         activeId: 'Controlled active heading id. Disables built-in scroll-spy.',
         onActiveIdChange: 'Called when active id changes from scroll-spy or click.',
         label: "Accessible nav label. Default: 'Table of contents'.",
+        density: "Density variant: 'default' | 'compact'. Default: 'default'.",
         xstyle: 'StyleX styles for layout. Must be stylex.create() value.',
       },
     },

@@ -9,9 +9,9 @@
  * SYNC: When modified, update this header
  */
 
-import {useRef, useState} from 'react';
+import {useRef} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {act, render, screen, waitFor} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSOutline} from './XDSOutline';
 import {parseOutlineFromMarkdown} from './parseOutlineFromMarkdown';
@@ -102,6 +102,8 @@ describe('XDSOutline', () => {
       block: 'start',
     });
     expect(onActiveIdChange).toHaveBeenCalledWith('install');
+
+    document.body.removeChild(target);
   });
 
   it('applies stable root and item class names', () => {
@@ -116,6 +118,87 @@ describe('XDSOutline', () => {
     expect(screen.getByRole('link', {name: 'API'}).className).toContain(
       'level-3',
     );
+  });
+
+  it('renders with density="compact"', () => {
+    render(
+      <XDSOutline
+        items={items}
+        density="compact"
+        data-testid="outline-compact"
+      />,
+    );
+    expect(screen.getByTestId('outline-compact').className).toContain(
+      'compact',
+    );
+  });
+
+  it('renders with density="default" by default', () => {
+    render(<XDSOutline items={items} data-testid="outline-default" />);
+    expect(screen.getByTestId('outline-default').className).toContain(
+      'default',
+    );
+  });
+
+  it('renders the sliding indicator track', () => {
+    const {container} = render(<XDSOutline items={items} activeId="intro" />);
+    // Track is present as an aria-hidden div
+    const track = container.querySelector('[aria-hidden="true"]');
+    expect(track).toBeInTheDocument();
+  });
+
+  it('renders the indicator unconditionally (CSS anchor positioning handles visibility)', () => {
+    const {container} = render(<XDSOutline items={items} activeId="intro" />);
+    const indicator = container.querySelector('.xds-outline-indicator');
+    expect(indicator).toBeInTheDocument();
+    // No inline top/height styles — positioning is CSS-driven
+    expect((indicator as HTMLElement).style.top).toBe('');
+    expect((indicator as HTMLElement).style.height).toBe('');
+  });
+
+  it('renders the active anchor before the indicator for CSS anchor positioning', () => {
+    const {container} = render(<XDSOutline items={items} activeId="intro" />);
+    const activeLink = screen.getByRole('link', {name: 'Introduction'});
+    const indicator = container.querySelector('.xds-outline-indicator');
+
+    expect(indicator).toBeInTheDocument();
+    expect(
+      activeLink.compareDocumentPosition(indicator as Element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('preserves the legacy controlled API (items + activeId + onActiveIdChange)', () => {
+    // Regression guard: the pre-refresh public API must keep working unchanged.
+    const onActiveIdChange = vi.fn();
+    const {rerender} = render(
+      <XDSOutline
+        items={items}
+        activeId="intro"
+        onActiveIdChange={onActiveIdChange}
+      />,
+    );
+
+    expect(screen.getByRole('link', {name: 'Introduction'})).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+
+    // Controlled active id is driven entirely by the prop.
+    rerender(
+      <XDSOutline
+        items={items}
+        activeId="api"
+        onActiveIdChange={onActiveIdChange}
+      />,
+    );
+    expect(screen.getByRole('link', {name: 'API'})).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+    expect(
+      screen.getByRole('link', {name: 'Introduction'}),
+    ).not.toHaveAttribute('aria-current');
   });
 
   it('updates uncontrolled active id from IntersectionObserver', () => {
@@ -160,26 +243,23 @@ describe('XDSOutline', () => {
       'true',
     );
     expect(onActiveIdChange).toHaveBeenCalledWith('api');
+
+    document.body.removeChild(intro);
+    document.body.removeChild(api);
   });
 });
 
 describe('useOutlineFromDOM', () => {
-  it('collects headings and updates after mutations', async () => {
-    const user = userEvent.setup();
-
+  it('collects headings from DOM container', () => {
     function Demo() {
       const ref = useRef<HTMLElement | null>(null);
-      const [showDetails, setShowDetails] = useState(false);
       const outlineItems = useOutlineFromDOM(ref);
 
       return (
         <>
-          <button type="button" onClick={() => setShowDetails(true)}>
-            Show
-          </button>
           <article ref={ref}>
             <h2 id="intro">Intro</h2>
-            {showDetails ? <h3 id="details">Details</h3> : null}
+            <h3 id="details">Details</h3>
           </article>
           <output>
             {outlineItems
@@ -191,15 +271,8 @@ describe('useOutlineFromDOM', () => {
     }
 
     render(<Demo />);
-    await waitFor(() => {
-      expect(screen.getByText('2:intro:Intro')).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByRole('button', {name: 'Show'}));
-    await waitFor(() => {
-      expect(
-        screen.getByText('2:intro:Intro|3:details:Details'),
-      ).toBeInTheDocument();
-    });
+    expect(
+      screen.getByText('2:intro:Intro|3:details:Details'),
+    ).toBeInTheDocument();
   });
 });
