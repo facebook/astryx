@@ -69,7 +69,7 @@ const styles = stylex.create({
           style: 'do',
           items: [
             'Match elevation to interaction context: low for tooltips, med for dropdowns, high for dialogs.',
-            'Use inset shadows for input focus/selection states — they compose better than outlines.',
+            'Use inset shadows for input focus/selection states; they compose better than outlines.',
           ],
         },
         {
@@ -77,7 +77,7 @@ const styles = stylex.create({
           style: 'dont',
           items: [
             'Stack multiple elevation levels on the same element.',
-            'Use elevation shadows for decorative borders — use --color-border tokens instead.',
+            'Use elevation shadows for decorative borders. Use --color-border tokens instead.',
           ],
         },
       ],
