@@ -440,6 +440,38 @@ async function generateComponentRegistry() {
             });
           }
         } else if (doc.components && doc.components.length > 0) {
+          // A family parent that also documents its own component surface (it has
+          // top-level props) is emitted as its own entry. Abstract families with
+          // no top-level props (e.g. Chat) contribute only their sub-components.
+          if (Array.isArray(doc.props) && doc.props.length > 0) {
+            const name = doc.name || docFileName.replace('.doc.mjs', '').replace(/^XDS/, '');
+            standaloneNames.add(name);
+            components.push({
+              name,
+              displayName: requireDisplayName(
+                doc.displayName,
+                `${pkg.name}: component ${name}`,
+              ),
+              moduleName: name.startsWith('use') ? name : `XDS${name}`,
+              directory: entry.name,
+              importPath: resolveImportPathForPkg(pkg.dir, entry.name),
+              group,
+              category,
+              isHiddenFromOverview,
+              description: doc.description || topDescription,
+              keywords,
+              hidden,
+              parentDoc: name,
+              props: sanitizeForJson(doc.props),
+              usage,
+              theming,
+              params: null,
+              returns: null,
+              relatedComponents: null,
+              relatedHooks: null,
+              playground,
+            });
+          }
           for (const sub of doc.components) {
             const rawSubName = sub.name || '';
             const subName = rawSubName.replace(/^XDS/, '');
