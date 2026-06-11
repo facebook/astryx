@@ -31,25 +31,38 @@ const PLACEHOLDER_IMAGE =
   "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E";
 
 /**
+ * Patterns for the demo-image sources templates pull from that should NOT ship
+ * into a scaffolded user project. Today that's Meta's lookaside CDN, which
+ * serves the demo art (`xds_oss` page images, `vs_datakit_*` block avatars) —
+ * it renders on the docsite but is a Meta-only network dependency in user code.
+ *
+ * Kept as a single list so it's easy to extend if demo asset delivery changes
+ * (a new CDN host, a different asset path, etc.). Genuinely external,
+ * non-Meta third-party URLs (e.g. brand logos from `paypalobjects.com` or
+ * `raw.githubusercontent.com`) are intentionally NOT matched — a scaffolded
+ * page keeps those working rather than replacing them with a placeholder.
+ *
+ * @type {RegExp[]}
+ */
+const DEMO_IMAGE_PATTERNS = [
+  // Any lookaside.facebook.com asset URL (covers all current namespaces and is
+  // resilient to the specific asset path changing under that host).
+  /https?:\/\/(?:[\w-]+\.)*lookaside\.facebook\.com\/[^\s'"`)]+/g,
+];
+
+/**
  * Replace demo image references with a self-contained placeholder data URI so
  * scaffolded pages render with zero setup and ship no broken refs or
- * Meta-internal network dependency into a user's project. Covers:
- *
- * - `lookaside.facebook.com/...` URLs — the external CDN templates use for demo
- *   imagery (e.g. `xds_oss` page art, `vs_datakit_*` block avatars). These
- *   resolve on the docsite but are a Meta-only dependency in user code.
- * - `/template-assets/<file>` paths — only the docsite serves these, so they
- *   would 404 in a scaffolded project.
- *
- * Builders then drop in their own images.
+ * Meta-internal network dependency. Builders then drop in their own images.
  *
  * @param {string} source - Template source code.
  * @returns {string} Source with demo image references replaced.
  */
 export function stripTemplateAssetRefs(source) {
-  return source
-    .replace(/https?:\/\/lookaside\.facebook\.com\/[^\s'"`)]+/g, PLACEHOLDER_IMAGE)
-    .replace(/\/template-assets\/[A-Za-z0-9._-]+/g, PLACEHOLDER_IMAGE);
+  return DEMO_IMAGE_PATTERNS.reduce(
+    (out, pattern) => out.replace(pattern, PLACEHOLDER_IMAGE),
+    source,
+  );
 }
 async function loadDocModule(docPath) {
   if (!fs.existsSync(docPath)) return null;
