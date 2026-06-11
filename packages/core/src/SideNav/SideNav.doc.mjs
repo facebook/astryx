@@ -79,7 +79,7 @@ export const docs = {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
-            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
         },
       ],    },
     {
@@ -258,7 +258,7 @@ export const docs = {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
-            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
         },
       ],
     },
@@ -296,8 +296,8 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Use sections to group related navigation items and help users scan for their destination.'},
       {guidance: true, description: 'Pair outline and filled icon variants so the selected state is visually distinct.'},
-      {guidance: false, description: 'Include a SideNavHeading when a TopNav is already providing app identity — this duplicates branding.'},
-      {guidance: false, description: 'Use for filtering content — use tabs or filter buttons instead.'},
+      {guidance: false, description: 'Include a SideNavHeading when a TopNav is already providing app identity; this duplicates branding.'},
+      {guidance: false, description: 'Use for filtering content; use tabs or filter buttons instead.'},
     ],
     anatomy: [
       {name: 'Product icon and name', required: false, description: 'Branding area at the top of the nav.'},
@@ -567,8 +567,8 @@ export const docsZh = {
     bestPractices: [
       {guidance: true, description: 'Use sections to group related navigation items and help users scan for their destination.'},
       {guidance: true, description: 'Pair outline and filled icon variants so the selected state is visually distinct.'},
-      {guidance: false, description: 'Include a SideNavHeading when a TopNav is already providing app identity — this duplicates branding.'},
-      {guidance: false, description: 'Use for filtering content — use tabs or filter buttons instead.'},
+      {guidance: false, description: 'Include a SideNavHeading when a TopNav is already providing app identity; this duplicates branding.'},
+      {guidance: false, description: 'Use for filtering content; use tabs or filter buttons instead.'},
     ],
     anatomy: [
       {name: 'Product icon and name', required: false, description: 'Branding area at the top of the nav.'},
@@ -586,8 +586,8 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Use sections to group related navigation items and help users scan for their destination.'},
       {guidance: true, description: 'Pair outline and filled icon variants so the selected state is visually distinct.'},
-      {guidance: false, description: 'Include a SideNavHeading when a TopNav is already providing app identity — this duplicates branding.'},
-      {guidance: false, description: 'Use for filtering content — use tabs or filter buttons instead.'},
+      {guidance: false, description: 'Include a SideNavHeading when a TopNav is already providing app identity; this duplicates branding.'},
+      {guidance: false, description: 'Use for filtering content; use tabs or filter buttons instead.'},
     ],
     anatomy: [
       {name: 'Product icon and name', required: false, description: 'Branding area at the top of the nav.'},
