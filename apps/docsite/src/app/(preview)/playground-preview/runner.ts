@@ -71,14 +71,51 @@ function makeRequire(): (id: string) => unknown {
 }
 
 /**
+ * Names we must NOT inject as globals because doing so would shadow a JavaScript
+ * built-in / standard global that user code relies on. lucide-react, for
+ * example, exports icons literally named `Map` and `Image`; injecting them as
+ * parameters shadows the native `Map`/`Image`, so `new Map()` throws "Map is
+ * not a constructor". Leaving these out lets the names resolve to the real
+ * built-in via the function's normal scope chain.
+ */
+const RESERVED_GLOBALS = new Set([
+  'Map',
+  'Set',
+  'WeakMap',
+  'WeakSet',
+  'Date',
+  'Promise',
+  'Array',
+  'Object',
+  'String',
+  'Number',
+  'Boolean',
+  'Symbol',
+  'BigInt',
+  'RegExp',
+  'Error',
+  'Function',
+  'Proxy',
+  'Reflect',
+  'JSON',
+  'Math',
+  'Intl',
+  'Image',
+  'Event',
+  'URL',
+]);
+
+/**
  * Build a scope with ALL named exports from every module so React hooks and
  * XDS components are available as globals without an explicit import.
+ *
+ * Excludes names that would shadow JS built-ins (see RESERVED_GLOBALS).
  */
 function buildGlobalScope(): Record<string, unknown> {
   const vars: Record<string, unknown> = {};
   for (const moduleExports of Object.values(scope)) {
     for (const [name, value] of Object.entries(moduleExports)) {
-      if (name !== 'default' && name !== '__esModule') {
+      if (name !== 'default' && name !== '__esModule' && !RESERVED_GLOBALS.has(name)) {
         vars[name] = value;
       }
     }
