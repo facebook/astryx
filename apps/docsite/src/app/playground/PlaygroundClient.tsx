@@ -40,6 +40,7 @@ import {
   XDSSegmentedControl,
   XDSSegmentedControlItem,
 } from '@xds/core/SegmentedControl';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
 import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
 import {
@@ -57,7 +58,12 @@ import {
 import githubLight from './themes/github-light.json';
 import githubDark from './themes/github-dark.json';
 import {useThemeMode} from '../providers';
-import {DEFAULT_PLAYGROUND_THEME, themeByValue} from './playgroundThemes';
+import {
+  DEFAULT_PLAYGROUND_THEME,
+  PLAYGROUND_THEME_OPTIONS,
+  themeByValue,
+} from './playgroundThemes';
+import {templates} from '../../generated/templateRegistry';
 import {PreviewStage, type Viewport} from './PreviewStage';
 import {BRAND_ICON} from '../../components/XDSWordmark';
 import {PropertyPanel} from './PropertyPanel';
@@ -354,10 +360,14 @@ export function PlaygroundClient() {
   const themeParam =
     rawThemeParam && rawThemeParam in themeByValue ? rawThemeParam : null;
   const theme = themeParam ?? DEFAULT_PLAYGROUND_THEME;
-  // The theme object the editor is seeded from — the ?theme= theme when present,
-  // otherwise the playground default (neutral). Always defined so the always-
+  // The theme whose values seed the Theme editor: the ?theme= theme on first
+  // load, then whichever theme the user picks from the "Apply Theme" dropdown.
+  // Changing it remounts the editor (via key) so it re-populates from that theme.
+  const [selectedTheme, setSelectedTheme] = useState(theme);
+  // The theme object the editor is seeded from. Always defined so the always-
   // mounted Theme editor reflects the active theme and stays the source of truth.
-  const editorInitialTheme = themeByValue[theme];
+  const editorInitialTheme =
+    themeByValue[selectedTheme] ?? themeByValue[DEFAULT_PLAYGROUND_THEME];
   const [activeView, setActiveView] = useState<LeftView>('code');
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -691,6 +701,47 @@ export function PlaygroundClient() {
     });
   }, []);
 
+  // Dropdown items for "Apply Theme" — derived from the registered playground
+  // themes (PLAYGROUND_THEME_OPTIONS) so any installed @xds/theme-* package
+  // shows up automatically. Selecting one re-seeds the Theme editor (and thus
+  // the preview) with that theme's values.
+  const themeMenuItems = useMemo(
+    () =>
+      PLAYGROUND_THEME_OPTIONS.map(option => ({
+        label: option.label,
+        onClick: () => setSelectedTheme(option.value),
+      })),
+    [],
+  );
+
+  // Dropdown items for "Templates" — the published, ready templates from the
+  // generated registry (the same source the /templates gallery renders), so any
+  // new template shows up automatically. Selecting one loads its source into the
+  // editor (setCode drives Monaco, the preview, and the URL hash).
+  const templateMenuItems = useMemo(
+    () =>
+      templates
+        .filter(t => !t.isHiddenFromOverview && t.isReady && t.source)
+        .map(t => {
+          const dash = t.category.indexOf(' - ');
+          const group = dash === -1 ? t.category : t.category.slice(0, dash);
+          const label =
+            t.name.toLowerCase() === group.toLowerCase()
+              ? t.name
+              : `${group} · ${t.name}`;
+          return {label, source: t.source};
+        })
+        .sort((a, b) => a.label.localeCompare(b.label))
+        .map(({label, source}) => ({
+          label,
+          onClick: () => {
+            setCode(source);
+            requestAnimationFrame(() => editorRef.current?.focus());
+          },
+        })),
+    [],
+  );
+
   const editorOptions = useMemo(
     () => ({
       minimap: {enabled: false},
@@ -772,10 +823,32 @@ export function PlaygroundClient() {
             xstyle={s.leftPanelHeader}>
             <XDSHeading level={3}>Playground</XDSHeading>
             {activeView === 'code' && (
-              <XDSButton variant="secondary" size="sm" label="Copy Code" />
+              <XDSHStack gap={2} align="center">
+                <XDSDropdownMenu
+                  button={{
+                    label: 'Templates',
+                    variant: 'secondary',
+                    size: 'sm',
+                  }}
+                  hasChevron
+                  items={templateMenuItems}
+                />
+                <XDSButton variant="secondary" size="sm" label="Copy Code" />
+              </XDSHStack>
             )}
             {activeView === 'theme' && (
-              <XDSButton variant="secondary" size="sm" label="Export Theme" />
+              <XDSHStack gap={2} align="center">
+                <XDSDropdownMenu
+                  button={{
+                    label: 'Apply Theme',
+                    variant: 'secondary',
+                    size: 'sm',
+                  }}
+                  hasChevron
+                  items={themeMenuItems}
+                />
+                <XDSButton variant="secondary" size="sm" label="Export Theme" />
+              </XDSHStack>
             )}
           </XDSHStack>
           <div {...stylex.props(s.tabBody)}>
@@ -823,6 +896,7 @@ export function PlaygroundClient() {
                 activeView !== 'theme' && s.hidden,
               )}>
               <PlaygroundThemeEditor
+                key={selectedTheme}
                 mode={mode}
                 initialTheme={editorInitialTheme}
                 onThemeChange={postCustomTheme}

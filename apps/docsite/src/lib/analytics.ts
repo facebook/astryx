@@ -29,7 +29,12 @@ type CopyTarget =
   | 'share_url'
   | 'install_command';
 
-type CtaTarget = 'install' | 'get_started' | 'github' | 'community' | 'customize';
+type CtaTarget =
+  | 'install'
+  | 'get_started'
+  | 'github'
+  | 'community'
+  | 'customize';
 
 type NavigateTarget = 'prev_next' | 'tab' | 'view';
 

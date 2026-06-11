@@ -7,7 +7,6 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePathname, useRouter} from 'next/navigation';
 import {Sun, Moon} from 'lucide-react';
-import {durationVars, easeVars} from '@xds/core/theme/tokens.stylex';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
@@ -18,12 +17,18 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSSelectableCard} from '@xds/core/SelectableCard';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSDivider} from '@xds/core/Divider';
-import {ThemeShowcasePreview} from './ThemeShowcasePreview';
-import {ThemeCardShowcase} from './ThemeCardShowcase';
-import {getThemeImages} from './themeImages';
+import ThemeShowcase from '../../../../packages/cli/templates/pages/theme-showcase/page';
+import {buildPlaygroundHref} from './playgroundLink';
 import {packages} from '../generated/packageRegistry';
 import {themeObjects} from '../generated/themeRegistry';
-import {trackClickCta, trackToggle} from '../lib/analytics';
+import {templates} from '../generated/templateRegistry';
+import {trackOpenPlayground, trackToggle} from '../lib/analytics';
+
+// Raw source of the theme-showcase page template (embedded as a string in
+// the generated template registry). Used to prepopulate the playground's
+// code editor when the user clicks "Open in Playground" from a theme.
+const THEME_SHOWCASE_SOURCE =
+  templates.find(t => t.slug === 'theme-showcase')?.source ?? '';
 
 // Gallery order — themes are listed in the same canonical visual-
 // closeness order used elsewhere (most restrained → most expressive).
@@ -85,19 +90,6 @@ const SIDEBAR_WIDTH = 260;
 const SIDEBAR_STICKY_TOP =
   'calc(var(--appshell-header-height, 64px) + var(--spacing-4))';
 
-// Sidebar-leave animation — slides the sidebar off the left edge
-// and fades it out. Triggered when the user clicks Customize: the
-// keyframe runs for one --duration-medium tick, then the click
-// handler navigates to the playground. The right preview stays
-// visually anchored during the leave, so the transition reads as
-// "swap the left panel for the editor" rather than a generic page
-// change — the playground page renders its own editor controls in
-// roughly the same column when it mounts.
-const sidebarLeaveKeyframes = stylex.keyframes({
-  from: {transform: 'translateX(0)', opacity: 1},
-  to: {transform: 'translateX(-100%)', opacity: 0},
-});
-
 const styles = stylex.create({
   // Outer two-column container. Sidebar (fixed width) sits left,
   // right pane (flex:1) holds the existing preview + showcase. The
@@ -111,24 +103,6 @@ const styles = stylex.create({
     gap: 'var(--spacing-6)',
     [SIDEBAR_BREAKPOINT]: {
       flexDirection: 'column' as const,
-    },
-  },
-  // Applied to the sidebar while the leave animation is playing.
-  // Slides the sidebar off the left edge + fades it out so the
-  // right preview stays put visually until the playground replaces
-  // it. Forward fill-mode holds the end state so there's no flash
-  // of the sidebar reverting before the navigation swaps the route.
-  // Honors prefers-reduced-motion by collapsing to a zero-duration
-  // animation so the leave is instant for users who'd find the
-  // slide motion distracting.
-  sidebarLeaving: {
-    animationName: sidebarLeaveKeyframes,
-    animationDuration: durationVars['--duration-medium'],
-    animationTimingFunction: easeVars['--ease-standard'],
-    animationFillMode: 'forwards',
-    pointerEvents: 'none' as const,
-    '@media (prefers-reduced-motion: reduce)': {
-      animationDuration: '0s',
     },
   },
   // Sticky sidebar wrapper. position:sticky keeps the panel in view
@@ -184,7 +158,7 @@ const styles = stylex.create({
     flexDirection: 'column' as const,
     gap: 'var(--spacing-2)',
   },
-  // Make every action button (hero CTAs, mode toggle, Customize)
+  // Make every action button (hero CTAs, mode toggle, Open in Playground)
   // stretch to the sidebar width and left-align its label
   // (XDSButton's default is centered, which looks off in a vertical
   // nav-style list).
@@ -411,25 +385,16 @@ const styles = stylex.create({
   mobileSelector: {
     minWidth: 160,
   },
-  // Preview card — unchanged from the floating-toolbar version.
-  // Matches the "wide content" max-width used across the site
-  // (home page showcases, docs index). Keeps the showcase from
-  // running viewport-edge to viewport-edge on very wide screens
-  // while staying noticeably wider than the 800px prose column
-  // above it so the showcase grid still has room to breathe.
-  previewCard: {
+  // Showcase card — clips the theme-showcase template's own
+  // backgrounds (top nav, sections) to the card's rounded corners.
+  // The card's default variant supplies the border + radius; the
+  // template paints its own themed body background inside.
+  showcaseCard: {
     overflow: 'hidden',
-    maxWidth: 1200,
-    width: '100%',
-    marginInline: 'auto',
-    // Use the theme's body background (not the card/muted surface)
-    // so the preview reads as a real themed app — the surrounding
-    // chrome (top nav, hero, etc.) sits on the theme's true body
-    // color, which is what users would see in their own app.
-    backgroundColor: 'var(--color-background-body)',
   },
-  // Matches the preview card's 1200px max-width so the card
-  // showcase visually aligns with the preview above it.
+  // Caps the showcase at the site's "wide content" max-width (1200px,
+  // matching home-page showcases / docs index) and centers it so it
+  // doesn't run viewport-edge to viewport-edge on very wide screens.
   showcaseBlock: {
     width: '100%',
     maxWidth: 1200,
@@ -551,9 +516,6 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
   // list — but the guard keeps the page from crashing if the
   // registry drifts).
   const selectedTheme = themeObjects[selectedPkgName] ?? theme;
-  // Resolve the product image set for the selected theme (falls back
-  // to neutral if the theme doesn't have its own set yet).
-  const images = getThemeImages(selectedTheme.name);
 
   // Mobile dropdown options — mirror the sidebar list. Value is the
   // full @xds/theme-<slug> package name (matches state), label is
@@ -577,59 +539,26 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
   const modeToggleIcon =
     mode === 'light' ? <Moon size={20} /> : <Sun size={20} />;
 
-  // Plays a slide-left + fade-out animation on the whole page when
-  // the user clicks Customize, then navigates to the playground
-  // after the animation duration. Reads as 'launching into the
-  // playground' rather than an abrupt route change.
-  //
-  // CSS-only; the animation uses XDS motion tokens
-  // (--duration-medium + --ease-standard) so it stays in sync with
-  // the rest of the app's motion. Modifier-clicks (cmd/middle)
-  // skip the animation and open in a new tab normally.
-  const [isLeaving, setIsLeaving] = useState(false);
-  const customizeHref = `/themes/playground/${selectedTheme.name}`;
-  const handleCustomizeClick = useCallback(
-    (event: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => {
-      if (
-        event.metaKey ||
-        event.ctrlKey ||
-        event.shiftKey ||
-        event.altKey ||
-        event.button !== 0
-      ) {
-        return;
-      }
-      event.preventDefault();
-      trackClickCta({
-        page: 'themes',
-        target: 'customize',
-        item: selectedPkgName,
-      });
-      setIsLeaving(true);
-      // Wait for the leave animation to play, then navigate. Length
-      // matches --duration-medium (~410ms); we use a slight buffer
-      // so the navigation kicks in just as the animation ends. The
-      // destination playground page handles its own entry animation
-      // declaratively via CSS @starting-style (no cross-page state
-      // signaling needed — first paint of the editor + preview
-      // panels animates in unconditionally).
-      window.setTimeout(() => {
-        router.push(customizeHref);
-      }, 420);
-    },
-    [router, customizeHref],
+  // Open in Playground destination: the main /playground seeded with
+  // the theme-showcase template in the code editor (#code) and the
+  // selected theme in the theme editor (?theme=<slug>). The button's
+  // href does a plain full-page navigation, which the playground needs
+  // to read the seeded code from window.location.hash reliably at
+  // mount (App Router soft navigation doesn't reliably commit the hash
+  // before that read, so the code could fall back to DEFAULT_CODE).
+  const customizeHref = buildPlaygroundHref(
+    THEME_SHOWCASE_SOURCE,
+    packageNameToSlug(selectedPkgName),
   );
 
   return (
     <div {...stylex.props(styles.twoColumn)}>
       {/* Sidebar — sticky on desktop, hidden on narrow viewports
           (the mobile bar in the right column takes over). Holds:
-          hero block (heading + description + Customize CTA + mode
+          hero block (heading + description + Open in Playground CTA + mode
           toggle), divider, and the theme picker (one card per
           theme). */}
-      <aside
-        {...stylex.props(styles.sidebar, isLeaving && styles.sidebarLeaving)}
-        aria-label="Theme picker">
+      <aside {...stylex.props(styles.sidebar)} aria-label="Theme picker">
         <XDSCard variant="default" padding={0} xstyle={styles.sidebarCard}>
           <XDSVStack gap={4}>
             {/* Hero block — page-level heading + description + CTAs.
@@ -663,10 +592,16 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                 <XDSButton
                   variant="primary"
                   size="lg"
-                  label="Customize"
+                  label="Open in Playground"
                   href={customizeHref}
-                  onClick={handleCustomizeClick}
                   xstyle={styles.heroPrimaryButton}
+                  onClick={() => {
+                    trackOpenPlayground({
+                      page: 'themes',
+                      item: selectedPkgName,
+                      source: 'theme-showcase',
+                    });
+                  }}
                 />
                 <XDSButton
                   variant="ghost"
@@ -796,26 +731,17 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
           />
         </div>
 
-        <XDSTheme theme={selectedTheme} mode={mode}>
-          <XDSCard
-            padding={0}
-            variant="transparent"
-            xstyle={styles.previewCard}>
-            <ThemeShowcasePreview images={images} />
-          </XDSCard>
-        </XDSTheme>
-
-        {/* Real-world card showcase — sits OUTSIDE the live preview
-            card so it renders on the docsite's own astryx chrome
-            rather than nested inside the theme's body color.
-            Inventory + Checkout + Top customers cards flip light/
-            dark in sync with the preview above via the mode prop. */}
+        {/* Themed preview — the theme-showcase template rendered with
+            the selected theme, wrapped in a bordered, rounded card so
+            it reads as a contained app surface against the docsite
+            chrome. overflow:hidden (showcaseCard) clips the template's
+            own backgrounds (top nav, sections) to the card's radius. */}
         <div {...stylex.props(styles.showcaseBlock)}>
-          <ThemeCardShowcase
-            theme={selectedTheme}
-            images={images}
-            mode={mode}
-          />
+          <XDSCard padding={0} xstyle={styles.showcaseCard}>
+            <XDSTheme theme={selectedTheme} mode={mode}>
+              <ThemeShowcase />
+            </XDSTheme>
+          </XDSCard>
         </div>
       </div>
     </div>
