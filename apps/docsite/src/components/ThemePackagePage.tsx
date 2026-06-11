@@ -145,6 +145,7 @@ const styles = stylex.create({
   rightColumn: {
     flex: '1 1 0',
     minWidth: 0,
+    width: '100%',
     display: 'flex',
     flexDirection: 'column' as const,
     gap: 'var(--spacing-8)',
