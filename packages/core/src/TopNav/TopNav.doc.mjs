@@ -35,14 +35,14 @@ export const docs = {
           name: 'heading',
           type: 'ReactNode',
           description:
-            'Heading slot content (logo, brand) — positioned at the left edge of the nav bar.',
+            'Heading slot content (logo, brand), positioned at the left edge of the nav bar.',
           slotElements: [{__element: 'XDSText', props: {type: 'body', weight: 'bold'}, children: 'Heading'}],
         },
         {
           name: 'startContent',
           type: 'ReactNode',
           description:
-            'Start content slot for navigation items or breadcrumbs — positioned after the heading, left-aligned.',
+            'Start content slot for navigation items or breadcrumbs, positioned after the heading, left-aligned.',
           slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
         },
         {
@@ -56,14 +56,14 @@ export const docs = {
           name: 'centerContent',
           type: 'ReactNode',
           description:
-            'Center content slot (tabs, search bar, primary navigation) — when provided, switches the layout to a three-column CSS grid for true horizontal centering.',
+            'Center content slot (tabs, search bar, primary navigation). When provided, switches the layout to a three-column CSS grid for true horizontal centering.',
           slotElements: [{__element: 'XDSText', props: {type: 'body', weight: 'bold'}, children: 'Center'}],
         },
         {
           name: 'endContent',
           type: 'ReactNode',
           description:
-            'End content slot for search, icons, or user profile — positioned at the right edge.',
+            'End content slot for search, icons, or user profile, positioned at the right edge.',
           slotElements: [
             {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
             {__element: 'XDSBadge', props: {label: '3'}},
@@ -79,7 +79,7 @@ export const docs = {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
-            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
         },
       ],    },
     {
@@ -111,7 +111,7 @@ export const docs = {
           name: 'href',
           type: 'string',
           description:
-            'Deprecated — use headingHref instead. URL to navigate to when clicked.',
+            'Deprecated: use headingHref instead. URL to navigate to when clicked.',
         },
         {
           name: 'superheading',
@@ -170,7 +170,7 @@ export const docs = {
       isHiddenFromOverview: true,
       displayName: 'Top Nav Item',
       description:
-        'Navigation link item for use in XDSTopNav startContent — renders as an anchor with hover and selected states.',
+        'Navigation link item for use in XDSTopNav startContent; renders as an anchor with hover and selected states.',
       props: [
         {
           name: 'label',
@@ -275,13 +275,13 @@ export const docs = {
         {
           name: 'items',
           type: 'ReactNode',
-          description: 'Menu items slot — typically XDSTopNavMegaMenuItem components, but accepts any ReactNode.',
+          description: 'Menu items slot: typically XDSTopNavMegaMenuItem components, but accepts any ReactNode.',
           slotElements: [{__element: 'XDSTopNavItem', props: {label: 'Item', href: '#'}}],
         },
         {
           name: 'featured',
           type: 'ReactNode',
-          description: 'Featured content slot — rendered in the right panel on desktop, below items in the mobile drawer.',
+          description: 'Featured content slot: rendered in the right panel on desktop, below items in the mobile drawer.',
           slotElements: [{__element: 'XDSCard', props: {padding: 4}, children: 'Featured content'}],
         },
         {
@@ -399,8 +399,8 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Include a product logo and name in the heading slot to clearly identify the application.'},
       {guidance: true, description: 'Limit primary navigation items to 5 or fewer for quick scanning and minimal cognitive load.'},
-      {guidance: false, description: 'Avoid using TopNav to filter page content — use Tabs or filter controls instead.'},
-      {guidance: false, description: 'Avoid deeply nested navigation hierarchies — keep menus to one level of depth.'},
+      {guidance: false, description: 'Avoid using TopNav to filter page content; use Tabs or filter controls instead.'},
+      {guidance: false, description: 'Avoid deeply nested navigation hierarchies; keep menus to one level of depth.'},
     ],
     anatomy: [
       {name: 'Product icon and name', required: true, description: 'Identifies the product in the navigation bar.'},
@@ -436,13 +436,13 @@ export const docsZh = {
           name: 'heading',
           type: 'ReactNode',
           description:
-            '标题插槽内容（标志、品牌）— 位于导航栏的左边缘。',
+            '标题插槽内容（标志、品牌），位于导航栏的左边缘。',
         },
         {
           name: 'startContent',
           type: 'ReactNode',
           description:
-            '起始内容插槽，用于导航项或面包屑 — 位于标题之后，左对齐。',
+            '起始内容插槽，用于导航项或面包屑，位于标题之后，左对齐。',
         },
         {
           name: 'children',
@@ -454,13 +454,13 @@ export const docsZh = {
           name: 'centerContent',
           type: 'ReactNode',
           description:
-            '居中内容插槽（标签页、搜索栏、主导航）— 提供时，布局切换为三列 CSS grid 以实现真正的水平居中。',
+            '居中内容插槽（标签页、搜索栏、主导航）。提供时，布局切换为三列 CSS grid 以实现真正的水平居中。',
         },
         {
           name: 'endContent',
           type: 'ReactNode',
           description:
-            '末尾内容插槽，用于搜索、图标或用户头像 — 位于右边缘。',
+            '末尾内容插槽，用于搜索、图标或用户头像，位于右边缘。',
         },
         {
           name: 'label',
@@ -472,7 +472,7 @@ export const docsZh = {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
-            '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值 — 不能是内联样式对象如 style={{}}。',
+            '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值，不能是内联样式对象如 style={{}}。',
         },
       ],
     },
@@ -504,7 +504,7 @@ export const docsZh = {
           name: 'href',
           type: 'string',
           description:
-            '已弃用 — 请使用 headingHref。点击时导航到的 URL。',
+            '已弃用：请使用 headingHref。点击时导航到的 URL。',
         },
         {
           name: 'superheading',
@@ -561,7 +561,7 @@ export const docsZh = {
       isHiddenFromOverview: true,
       displayName: 'Top Nav Item',
       description:
-        '用于 XDSTopNav startContent 的导航链接项 — 渲染为具有悬停和选中状态的锚点。',
+        '用于 XDSTopNav startContent 的导航链接项，渲染为具有悬停和选中状态的锚点。',
       props: [
         {
           name: 'label',
@@ -658,12 +658,12 @@ export const docsZh = {
         {
           name: 'items',
           type: 'ReactNode',
-          description: '菜单项插槽 — 通常为 XDSTopNavMegaMenuItem 组件，但接受任何 ReactNode。',
+          description: '菜单项插槽：通常为 XDSTopNavMegaMenuItem 组件，但接受任何 ReactNode。',
         },
         {
           name: 'featured',
           type: 'ReactNode',
-          description: '特色内容插槽 — 桌面端显示在右侧面板，移动抽屉中显示在项目下方。',
+          description: '特色内容插槽：桌面端显示在右侧面板，移动抽屉中显示在项目下方。',
         },
         {
           name: 'delay',
@@ -779,8 +779,8 @@ export const docsZh = {
     bestPractices: [
       {guidance: true, description: 'Include a product logo and name in the heading slot to clearly identify the application.'},
       {guidance: true, description: 'Limit primary navigation items to 5 or fewer for quick scanning and minimal cognitive load.'},
-      {guidance: false, description: 'Avoid using TopNav to filter page content — use Tabs or filter controls instead.'},
-      {guidance: false, description: 'Avoid deeply nested navigation hierarchies — keep menus to one level of depth.'},
+      {guidance: false, description: 'Avoid using TopNav to filter page content; use Tabs or filter controls instead.'},
+      {guidance: false, description: 'Avoid deeply nested navigation hierarchies; keep menus to one level of depth.'},
     ],
     anatomy: [
       {name: 'Product icon and name', required: true, description: 'Identifies the product in the navigation bar.'},
@@ -800,8 +800,8 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Include a product logo and name in the heading slot to clearly identify the application.'},
       {guidance: true, description: 'Limit primary navigation items to 5 or fewer for quick scanning and minimal cognitive load.'},
-      {guidance: false, description: 'Avoid using TopNav to filter page content — use Tabs or filter controls instead.'},
-      {guidance: false, description: 'Avoid deeply nested navigation hierarchies — keep menus to one level of depth.'},
+      {guidance: false, description: 'Avoid using TopNav to filter page content; use Tabs or filter controls instead.'},
+      {guidance: false, description: 'Avoid deeply nested navigation hierarchies; keep menus to one level of depth.'},
     ],
     anatomy: [
       {name: 'Product icon and name', required: true, description: 'Identifies the product in the navigation bar.'},
@@ -834,7 +834,7 @@ export const docsDense = {
         logo: 'Logo before heading text. Image, XDSNavIcon, or ReactNode.',
         heading: 'Product/app name.',
         headingHref: 'Link for heading (product home). Only href + no menu → whole heading is link.',
-        href: 'Deprecated — use headingHref.',
+        href: 'Deprecated: use headingHref.',
         superheading: 'Text above heading (suite name). Smaller secondary style.',
         superheadingHref: 'Link for superheading. Independent inline link when menu present.',
         subheading: 'Text below heading (account context). Smaller secondary style.',
@@ -877,8 +877,8 @@ export const docsDense = {
       description: 'Nav item w/ full-width mega menu panel on hover. Slots API w/ items+featured ReactNode props. Mobile drawer inline collapsible.',
       propDescriptions: {
         label: 'Trigger button visible label.',
-        items: 'Menu items slot — typically XDSTopNavMegaMenuItem, accepts any ReactNode.',
-        featured: 'Featured content slot — right panel desktop, below items in drawer.',
+        items: 'Menu items slot: typically XDSTopNavMegaMenuItem, accepts any ReactNode.',
+        featured: 'Featured content slot: right panel desktop, below items in drawer.',
         delay: 'Show delay ms on hover.',
         hideDelay: 'Hide delay ms after mouse leaves.',
         onOpenChange: 'Fired on open/close. For coordinating wrapper styles.',
