@@ -65,11 +65,33 @@ lines.push("import React, {useState, useCallback, useMemo, useEffect, useRef} fr
 lines.push('');
 
 // ── StyleX mock ────────────────────────────────────────────────────────
-lines.push(`const stylexMock = {
+// The playground transpiles user/template code in-browser WITHOUT the StyleX
+// compiler, so stylex.create() returns its raw style objects and stylex.props()
+// runs at runtime. To make template/example layout actually render, props()
+// flattens those plain CSS-property objects into an inline `style` (covers the
+// common case: width/height/objectFit/padding/etc., incl. `var(--token)`). It
+// can't reproduce pseudo/media/`stylex.when` styles — responsive objects
+// collapse to their `default` branch and pseudo-selector keys are skipped.
+lines.push(`const STYLEX_SKIP_KEY = /^(:|::|@|--)/;
+const stylexFlatten = (style: Record<string, unknown>, obj: unknown): void => {
+  if (obj == null || typeof obj !== 'object') return;
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    if (v == null || v === false) continue;
+    if (STYLEX_SKIP_KEY.test(k)) continue;
+    if (typeof v === 'object') {
+      const d = (v as Record<string, unknown>).default;
+      if (d != null && typeof d !== 'object') style[k] = d as string;
+      continue;
+    }
+    style[k] = v as string;
+  }
+};
+const stylexMock = {
   create: <T extends Record<string, unknown>>(styles: T): T => styles,
-  props: (..._styles: unknown[]) => {
-    const style: Record<string, string> = {};
-    return {className: '', style};
+  props: (...styles: unknown[]) => {
+    const style: Record<string, unknown> = {};
+    for (const s of styles.flat(Infinity)) stylexFlatten(style, s);
+    return {className: '', style: style as Record<string, string>};
   },
   defineVars: <T extends Record<string, unknown>>(tokens: T): T => tokens,
   keyframes: (kf: Record<string, Record<string, string>>) => kf,
