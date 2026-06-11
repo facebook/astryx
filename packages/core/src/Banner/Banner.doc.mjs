@@ -14,9 +14,9 @@ export const docs = {
       {guidance: true, description: 'Pick a status that matches the message: info for updates, warning for caution, error for problems, success for confirmations.'},
       {guidance: true, description: 'Use the card container inside page content and the section container for full-width messages that span the entire page.'},
       {guidance: true, description: 'Make info and success banners dismissable. Keep error banners visible until the user fixes the issue.'},
-      {guidance: true, description: 'Keep titles short and scannable — "Payment failed" not "There was a problem processing your most recent payment."'},
-      {guidance: false, description: 'Use Banner for short-lived messages that disappear on their own — use Toast instead.'},
-      {guidance: false, description: 'Stack multiple banners with the same status — combine related messages into one banner.'},
+      {guidance: true, description: 'Keep titles short and scannable: "Payment failed" not "There was a problem processing your most recent payment."'},
+      {guidance: false, description: 'Use Banner for short-lived messages that disappear on their own; use Toast instead.'},
+      {guidance: false, description: 'Stack multiple banners with the same status; combine related messages into one banner.'},
     ],
     anatomy: [
       {name: 'Icon', required: true, description: 'Automatically set based on the status (info, warning, error, success).'},
@@ -91,7 +91,7 @@ export const docs = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
   ],
 
@@ -127,9 +127,9 @@ export const docsZh = {
       {guidance: true, description: 'Pick a status that matches the message: info for updates, warning for caution, error for problems, success for confirmations.'},
       {guidance: true, description: 'Use the card container inside page content and the section container for full-width messages that span the entire page.'},
       {guidance: true, description: 'Make info and success banners dismissable. Keep error banners visible until the user fixes the issue.'},
-      {guidance: true, description: 'Keep titles short and scannable — "Payment failed" not "There was a problem processing your most recent payment."'},
-      {guidance: false, description: 'Use Banner for short-lived messages that disappear on their own — use Toast instead.'},
-      {guidance: false, description: 'Stack multiple banners with the same status — combine related messages into one banner.'},
+      {guidance: true, description: 'Keep titles short and scannable: "Payment failed" not "There was a problem processing your most recent payment."'},
+      {guidance: false, description: 'Use Banner for short-lived messages that disappear on their own; use Toast instead.'},
+      {guidance: false, description: 'Stack multiple banners with the same status; combine related messages into one banner.'},
     ],
     anatomy: [
       {name: 'Icon', required: true, description: 'Automatically set based on the status (info, warning, error, success).'},
@@ -192,9 +192,9 @@ export const docsDense = {
       {guidance: true, description: 'Match status to message: info for updates, warning for caution, error for problems, success for confirmations.'},
       {guidance: true, description: 'Card container for inline content, section container for full-width page-level messages.'},
       {guidance: true, description: 'Make info/success dismissable. Keep error banners until the issue is fixed.'},
-      {guidance: true, description: 'Keep titles short — "Payment failed" not "There was a problem processing your payment."'},
-      {guidance: false, description: 'Use for auto-dismissing messages — use Toast instead.'},
-      {guidance: false, description: 'Stack multiple banners of the same status — combine into one.'},
+      {guidance: true, description: 'Keep titles short: "Payment failed" not "There was a problem processing your payment."'},
+      {guidance: false, description: 'Use for auto-dismissing messages; use Toast instead.'},
+      {guidance: false, description: 'Stack multiple banners of the same status; combine into one.'},
     ],
     anatomy: [
       {name: 'Icon', required: true, description: 'Set automatically from status.'},
