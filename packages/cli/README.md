@@ -1,6 +1,6 @@
 # @xds/cli
 
-The CLI is the primary interface for working with the design system — for humans and machines alike. It provides component documentation, design tokens, page templates, theming tools, and upgrade codemods, all accessible via terminal commands, a typed JSON API, or programmatic imports. AI agents and build tools use the same API that powers the CLI, enabling end-to-end frontend development loops.
+The CLI is the primary interface for working with the design system, for humans and machines alike. It provides component documentation, design tokens, page templates, theming tools, and upgrade codemods, all accessible via terminal commands, a typed JSON API, or programmatic imports. AI agents and build tools use the same API that powers the CLI, enabling end-to-end frontend development loops.
 
 ```bash
 npx xds --help
@@ -11,7 +11,7 @@ npx xds docs migration
 npx xds template --list
 ```
 
-### Finding things — `xds search`
+### Finding things: `xds search`
 
 When you don't know whether what you need is a component, a hook, a docs topic,
 or a template, search across all of them at once. Results are ranked by
@@ -43,16 +43,16 @@ Results for "button" (20):
 
 Options:
 
-- `--type <component|hook|doc|template>` — restrict to a single domain
-- `--limit <n>` — cap the number of results (default 20)
-- `--detail` — include the import path and the match reason/score
-- `--json` — typed `{ type: 'search', data: { query, results } }` envelope
+- `--type <component|hook|doc|template>`: restrict to a single domain
+- `--limit <n>`: cap the number of results (default 20)
+- `--detail`: include the import path and the match reason/score
+- `--json`: typed `{ type: 'search', data: { query, results } }` envelope
 
 ## Commands
 
 | Command       | Description                                                                             |
 | ------------- | --------------------------------------------------------------------------------------- |
-| `init`        | Initialize the design system in your project — installs packages, sets up theming, adds AI agent docs |
+| `init`        | Initialize the design system in your project: installs packages, sets up theming, adds AI agent docs |
 | `component`   | List components or print detailed docs, props, usage examples, and source               |
 | `search`      | Find components, hooks, docs, and templates in one ranked, cross-domain result set       |
 | `docs`        | Print reference documentation (tokens, theme, color, typography, spacing, etc.)         |
@@ -69,11 +69,11 @@ Options:
 
 These flags work with any command:
 
-- `--json` — Output as typed JSON envelope: `{ type, data }` (errors: `{ error, code, suggestions? }`)
-- `--detail <level>` — Detail level for list views, increasing in size: `brief` (names only, default for `--list`) < `compact` (names + 1-line descriptions) < `full` (full docs per entry). Single-item views default to `full`.
-- `--zh` — Output docs in Chinese Simplified
-- `--dense` — Compressed format (token-efficient, useful for AI agents)
-- `--lang <locale>` — Language/format shorthand (`en`, `zh`, `dense`)
+- `--json`: Output as typed JSON envelope: `{ type, data }` (errors: `{ error, code, suggestions? }`)
+- `--detail <level>`: Detail level for list views, increasing in size: `brief` (names only, default for `--list`) < `compact` (names + 1-line descriptions) < `full` (full docs per entry). Single-item views default to `full`.
+- `--zh`: Output docs in Chinese Simplified
+- `--dense`: Compressed format (token-efficient, useful for AI agents)
+- `--lang <locale>`: Language/format shorthand (`en`, `zh`, `dense`)
 
 ## JSON API
 
@@ -93,7 +93,7 @@ Errors:
 }
 ```
 
-The `code` field is a **stable, machine-readable identifier**. Branch on it —
+The `code` field is a **stable, machine-readable identifier**. Branch on it,
 never on the human-readable `error` string, which changes freely as we improve
 wording. Every error envelope carries a `code` (falling back to `ERR_UNKNOWN`
 when no more specific code applies). The same `code` is exposed on thrown
@@ -166,7 +166,7 @@ if (isError(result)) {
 ## Capability manifest (agent discovery)
 
 Agents don't have to scrape `--help` to learn the CLI. A single call returns a
-**self-describing manifest** — every command, its arguments, flags (with types,
+**self-describing manifest**: every command, its arguments, flags (with types,
 choices, and defaults), whether it supports `--json`, and the response `type`
 discriminators each command can emit. Think of it as an OpenAPI spec for the CLI.
 
@@ -210,7 +210,7 @@ Shape:
 
 The manifest is **derived from Commander metadata** (commands, arguments, options)
 so it can't drift from the real command definitions. The two facts Commander
-doesn't track — `--json` support and emitted response types — are layered on from
+doesn't track (`--json` support and emitted response types) are layered on from
 the `JSON_SUPPORTED` allowlist and a small declarative `RESPONSE_TYPES` map in
 `src/lib/manifest.mjs`, guarded by a drift test (`manifest.test.mjs`) so adding a
 command without describing it fails CI.
@@ -254,7 +254,7 @@ try {
 }
 ```
 
-The CLI command handlers are thin wrappers around these functions — they parse args, call the API, then format the output (JSON or text). This guarantees that `@xds/cli/api` and `xds --json` always return identical data.
+The CLI command handlers are thin wrappers around these functions: they parse args, call the API, then format the output (JSON or text). This guarantees that `@xds/cli/api` and `xds --json` always return identical data.
 
 ### Consumer utilities
 
@@ -326,8 +326,8 @@ Every response has a `type` string that uniquely identifies it:
 
 `xds doctor` runs a series of health checks against your project and
 environment and reports `PASS` / `WARN` / `FAIL` for each, with an actionable
-fix for anything that isn't passing. It's read-only — it never installs or
-mutates anything — so it's safe to run anywhere, including CI.
+fix for anything that isn't passing. It's read-only; it never installs or
+mutates anything, so it's safe to run anywhere, including CI.
 
 ```
 $ xds doctor
