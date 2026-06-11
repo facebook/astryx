@@ -21,7 +21,6 @@ import {XDSAvatar} from '@xds/core/Avatar';
 // Styles
 // ---------------------------------------------------------------------------
 
-// building from xds_oss asset set
 const BG_URL = 'https://lookaside.facebook.com/assets/xds_oss/building.jpg';
 
 const styles = stylex.create({

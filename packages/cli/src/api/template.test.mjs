@@ -40,7 +40,6 @@ describe('stripTemplateAssetRefs', () => {
   });
 
   it('leaves non-Meta third-party image URLs untouched', () => {
-    // Brand logos that should keep working in a scaffolded project.
     const src = [
       'src="https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-100px.png"',
       'src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/visa.svg"',

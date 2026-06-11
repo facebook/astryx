@@ -48,7 +48,6 @@ interface OrderRow extends Record<string, unknown> {
   date: string;
 }
 
-// matcha-product-{1..6} from xds_oss asset set
 const PRODUCTS = [
   {
     name: 'Ceremonial Matcha Latte',

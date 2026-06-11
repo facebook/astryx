@@ -22,7 +22,6 @@ import {
   radiusVars,
 } from '@xds/core/theme/tokens.stylex';
 
-// light-working-vertical-1 from xds_oss asset set
 const COVER_IMAGE_URL =
   'https://lookaside.facebook.com/assets/xds_oss/light-working-vertical-1.png';
 

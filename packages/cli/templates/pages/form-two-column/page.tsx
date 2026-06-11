@@ -19,7 +19,6 @@ import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
 import {XDSSelector} from '@xds/core/Selector';
 
-// illustration-horizontal-1 from xds_oss asset set
 const ILLUSTRATION_URL =
   'https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-1.png';
 

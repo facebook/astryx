@@ -50,61 +50,51 @@ interface GalleryImage {
 
 const GALLERY_IMAGES: GalleryImage[] = [
   {
-    // moody-scene-horizontal-1 from xds_oss asset set
     src: 'https://lookaside.facebook.com/assets/xds_oss/moody-scene-horizontal-1.png',
     alt: 'Moody scene landscape',
     category: 'scene',
   },
   {
-    // moody-lifestyle-vertical-1 from xds_oss asset set
     src: 'https://lookaside.facebook.com/assets/xds_oss/moody-lifestyle-vertical-1.png',
     alt: 'Moody lifestyle portrait',
     category: 'lifestyle',
   },
   {
-    // moody-home-vertical-1 from xds_oss asset set
     src: 'https://lookaside.facebook.com/assets/xds_oss/moody-home-vertical-1.png',
     alt: 'Moody home interior',
     category: 'home',
   },
   {
-    // moody-scene-horizontal-2 from xds_oss asset set
     src: 'https://lookaside.facebook.com/assets/xds_oss/moody-scene-horizontal-2.png',
     alt: 'Moody scene vista',
     category: 'scene',
   },
   {
-    // moody-lifestyle-vertical-2 from xds_oss asset set
     src: 'https://lookaside.facebook.com/assets/xds_oss/moody-lifestyle-vertical-2.png',
     alt: 'Moody lifestyle scene',
     category: 'lifestyle',
   },
   {
-    // moody-lifestyle-horizontal-1 from xds_oss asset set
     src: 'https://lookaside.facebook.com/assets/xds_oss/moody-lifestyle-horizontal-1.png',
     alt: 'Moody lifestyle horizontal',
     category: 'lifestyle',
   },
   {
-    // moody-scene-vertical-1 from xds_oss asset set
     src: 'https://lookaside.facebook.com/assets/xds_oss/moody-scene-vertical-1.png',
     alt: 'Moody scene vertical',
     category: 'scene',
   },
   {
-    // moody-home-vertical-2 from xds_oss asset set
     src: 'https://lookaside.facebook.com/assets/xds_oss/moody-home-vertical-2.png',
     alt: 'Moody home vertical',
     category: 'home',
   },
   {
-    // moody-home-horizontal-1 from xds_oss asset set
     src: 'https://lookaside.facebook.com/assets/xds_oss/moody-home-horizontal-1.png',
     alt: 'Moody home horizontal',
     category: 'home',
   },
   {
-    // moody-scene-vertical-2 from xds_oss asset set
     src: 'https://lookaside.facebook.com/assets/xds_oss/moody-scene-vertical-2.png',
     alt: 'Moody scene vertical',
     category: 'scene',

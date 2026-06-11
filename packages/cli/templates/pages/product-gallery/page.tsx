@@ -41,7 +41,6 @@ const PRODUCTS: Product[] = [
     description:
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 75.0,
-    // illustrative-horizontal-1 from xds_oss asset set
     image:
       'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg',
   },
@@ -51,7 +50,6 @@ const PRODUCTS: Product[] = [
     description:
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 80.0,
-    // illustrative-vertical-1 from xds_oss asset set
     image:
       'https://lookaside.facebook.com/assets/xds_oss/illustrative-vertical-1.jpg',
   },
@@ -61,7 +59,6 @@ const PRODUCTS: Product[] = [
     description:
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 75.0,
-    // illustrative-horizontal-3 from xds_oss asset set
     image:
       'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-3.jpg',
   },
@@ -71,7 +68,6 @@ const PRODUCTS: Product[] = [
     description:
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 75.0,
-    // illustrative-horizontal-4 from xds_oss asset set
     image:
       'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-4.jpg',
   },
@@ -81,7 +77,6 @@ const PRODUCTS: Product[] = [
     description:
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 60.0,
-    // illustrative-horizontal-5 from xds_oss asset set
     image:
       'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-5.jpg',
   },
@@ -91,7 +86,6 @@ const PRODUCTS: Product[] = [
     description:
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 80.0,
-    // illustrative-horizontal-2 from xds_oss asset set
     image:
       'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-2.jpg',
   },
