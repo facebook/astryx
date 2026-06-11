@@ -20,7 +20,7 @@
  * - /packages/cli/templates/blocks/components/Outline/ (showcase blocks)
  */
 
-import {useCallback, useLayoutEffect, useRef, useState} from 'react';
+import {useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -103,9 +103,15 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-icon-primary'],
     borderRadius: radiusVars['--radius-full'],
     pointerEvents: 'none',
+    positionAnchor: '--outline-active',
+    top: 'anchor(top)',
+    height: 'calc(anchor(bottom) - anchor(top))',
     transitionProperty: 'top, height',
     transitionDuration: durationVars['--duration-fast-min'],
     transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  activeAnchor: {
+    anchorName: '--outline-active',
   },
   list: {
     display: 'flex',
@@ -246,55 +252,6 @@ export function XDSOutline({
     rootRef,
   });
 
-  // Refs for measuring item positions (for sliding indicator)
-  const itemMapRef = useRef<Map<string, HTMLElement>>(new Map());
-  const listContainerRef = useRef<HTMLUListElement | null>(null);
-
-  // Indicator position state
-  const [indicatorStyle, setIndicatorStyle] = useState<{
-    top: number;
-    height: number;
-  } | null>(null);
-
-  // Keep the active id available to imperative observers without re-subscribing.
-  const activeIdRef = useRef<string | undefined>(resolvedActiveId);
-  activeIdRef.current = resolvedActiveId;
-
-  // Measure the active item and sync the sliding indicator's top + height.
-  // Reads the active item's actual rendered box, so it reflects density variant
-  // changes (default/compact) and taller boxes from wrapped labels.
-  const measureIndicator = useCallback(() => {
-    const activeItemId = activeIdRef.current;
-    const itemEl = activeItemId
-      ? itemMapRef.current.get(activeItemId)
-      : undefined;
-    const listEl = listContainerRef.current;
-
-    if (!activeItemId || !itemEl || !listEl) {
-      setIndicatorStyle(prev => (prev === null ? prev : null));
-      return;
-    }
-
-    const listRect = listEl.getBoundingClientRect();
-    const itemRect = itemEl.getBoundingClientRect();
-    const next = {
-      top: itemRect.top - listRect.top,
-      height: itemRect.height,
-    };
-
-    // eslint-disable-next-line @eslint-react/set-state-in-effect -- syncing DOM measurements to state in a layout effect is intentional; the functional updater no-ops when unchanged
-    setIndicatorStyle(prev =>
-      prev != null && prev.top === next.top && prev.height === next.height
-        ? prev
-        : next,
-    );
-  }, []);
-
-  // Re-measure whenever the active item, item set, or density variant changes.
-  useLayoutEffect(() => {
-    measureIndicator();
-  }, [resolvedActiveId, items, density, measureIndicator]);
-
   const handleClick =
     (id: string) => (event: React.MouseEvent<HTMLElement>) => {
       const target = document.getElementById(id);
@@ -331,35 +288,21 @@ export function XDSOutline({
       {/* Track — divider line + sliding indicator */}
       <div {...stylex.props(styles.track)} aria-hidden="true">
         <span {...stylex.props(styles.dividerLine)} />
-        {indicatorStyle != null && (
-          <span
-            {...mergeProps(
-              xdsClassName('outline-indicator'),
-              stylex.props(styles.indicator),
-              undefined,
-              {
-                top: indicatorStyle.top,
-                height: indicatorStyle.height,
-              },
-            )}
-          />
-        )}
+        <span
+          {...mergeProps(
+            xdsClassName('outline-indicator'),
+            stylex.props(styles.indicator),
+          )}
+        />
       </div>
 
-      <ul ref={listContainerRef} {...stylex.props(styles.list)} role="list">
+      <ul {...stylex.props(styles.list)} role="list">
         {items.map(item => {
           const isActive = item.id === resolvedActiveId;
 
           return (
             <li key={item.id} {...stylex.props(styles.item)} role="listitem">
               <LinkComponent
-                ref={(el: HTMLElement | null) => {
-                  if (el) {
-                    itemMapRef.current.set(item.id, el);
-                  } else {
-                    itemMapRef.current.delete(item.id);
-                  }
-                }}
                 href={`#${item.id}`}
                 aria-current={isActive ? 'true' : undefined}
                 onClick={handleClick(item.id)}
@@ -373,6 +316,7 @@ export function XDSOutline({
                     densityStyles[density],
                     getIndentStyle(item.level),
                     isActive && styles.activeLink,
+                    isActive && styles.activeAnchor,
                   ),
                 )}>
                 <span {...stylex.props(styles.label)}>{item.label}</span>

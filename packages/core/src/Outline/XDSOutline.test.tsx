@@ -18,20 +18,6 @@ import {parseOutlineFromMarkdown} from './parseOutlineFromMarkdown';
 import {useOutlineFromDOM} from './useOutlineFromDOM';
 import type {OutlineItem} from './types';
 
-// Mock ResizeObserver for jsdom (used by the sliding indicator measurement)
-class MockResizeObserver {
-  callback: ResizeObserverCallback;
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-
-  constructor(callback: ResizeObserverCallback) {
-    this.callback = callback;
-  }
-}
-
-vi.stubGlobal('ResizeObserver', MockResizeObserver);
-
 const items: OutlineItem[] = [
   {id: 'intro', label: 'Introduction', level: 2},
   {id: 'install', label: 'Installation', level: 3},
@@ -161,44 +147,13 @@ describe('XDSOutline', () => {
     expect(track).toBeInTheDocument();
   });
 
-  it('sizes the indicator to the active item height and updates on density change', () => {
-    // jsdom does not lay out, so drive measurement via getBoundingClientRect.
-    // Heights differ by density variant; the active item reports the
-    // density-specific height and the list reports 0 so indicator.top ===
-    // item.top.
-    const heightForDensity = (density: string) =>
-      density === 'compact' ? 28 : 36;
-
-    function mockRects(density: string) {
-      const itemHeight = heightForDensity(density);
-      vi.spyOn(
-        HTMLElement.prototype,
-        'getBoundingClientRect',
-      ).mockImplementation(function (this: HTMLElement) {
-        // The list <ul> anchors the coordinate space at the top.
-        if (this.tagName === 'UL') {
-          return {top: 0, left: 0, height: 0, width: 0} as DOMRect;
-        }
-        // Anchor links report the density-specific item height.
-        return {top: 0, left: 0, height: itemHeight, width: 0} as DOMRect;
-      });
-    }
-
-    mockRects('default');
-    const {container, rerender} = render(
-      <XDSOutline items={items} activeId="intro" />,
-    );
-
+  it('renders the indicator unconditionally (CSS anchor positioning handles visibility)', () => {
+    const {container} = render(<XDSOutline items={items} activeId="intro" />);
     const indicator = container.querySelector('.xds-outline-indicator');
     expect(indicator).toBeInTheDocument();
-    expect((indicator as HTMLElement).style.height).toBe('36px');
-
-    // Switching to compact shrinks the rendered item; indicator must follow.
-    mockRects('compact');
-    rerender(<XDSOutline items={items} activeId="intro" density="compact" />);
-    expect((indicator as HTMLElement).style.height).toBe('28px');
-
-    vi.restoreAllMocks();
+    // No inline top/height styles — positioning is CSS-driven
+    expect((indicator as HTMLElement).style.top).toBe('');
+    expect((indicator as HTMLElement).style.height).toBe('');
   });
 
   it('preserves the legacy controlled API (items + activeId + onActiveIdChange)', () => {
