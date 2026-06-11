@@ -13,8 +13,8 @@ This plugin implements a two-tier linting strategy:
 
 ### Why Two Tiers?
 
-- **Agents** should follow strict rules perfectly - they have no excuse for violations
-- **Humans** need flexibility during development - warnings inform without blocking
+- **Agents** should follow strict rules perfectly; they have no excuse for violations
+- **Humans** need flexibility during development; warnings inform without blocking
 
 ## Rules
 
@@ -58,7 +58,7 @@ const styles = stylex.create({
 
 Recommends adding `letterSpacing` when `fontSize` is defined (common design pattern for badges, labels).
 
-**Strict mode only** - helps catch missing letter-spacing in compact text elements.
+**Strict mode only.** Helps catch missing letter-spacing in compact text elements.
 
 ## Usage
 
@@ -142,9 +142,9 @@ If a property legitimately needs a hardcoded value:
 
 Enforces that presentational components remain server-component compatible by preventing:
 
-1. **Remembering things** — `useState`, `useReducer`, `useTransition`
-2. **Watching things** — `useEffect`, `useLayoutEffect`, `useRef`, `ResizeObserver`, etc.
-3. **Coordinating children** — `createContext`
+1. **Remembering things**: `useState`, `useReducer`, `useTransition`
+2. **Watching things**: `useEffect`, `useLayoutEffect`, `useRef`, `ResizeObserver`, etc.
+3. **Coordinating children**: `createContext`
 
 Allowed hooks: `useId`, `useMemo`, `useCallback`, `useContext` (read-only).
 
