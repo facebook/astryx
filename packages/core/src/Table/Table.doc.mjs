@@ -46,7 +46,7 @@ export const docs = {
           name: 'columns',
           type: 'XDSTableColumn<T>[]',
           description:
-            'Column definitions — each column has {key, header, width?, align?, renderCell?}. The `header` field sets the column heading text. If omitted, columns are auto-generated from data object keys.',
+            'Column definitions: each column has {key, header, width?, align?, renderCell?}. The `header` field sets the column heading text. If omitted, columns are auto-generated from data object keys.',
         },
         {
           name: 'idKey',
@@ -89,13 +89,13 @@ export const docs = {
           name: 'children',
           type: 'ReactNode',
           description:
-            'Children mode — render XDSTableRow/XDSTableCell directly instead of using data-driven rendering.',
+            'Children mode: render XDSTableRow/XDSTableCell directly instead of using data-driven rendering.',
         },
         {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
-            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
         },
       ],    },
     {
@@ -269,9 +269,9 @@ export const docs = {
       { guidance: true, description: 'Use density and divider variants to match the information density and scanning needs of your data.' },
       { guidance: true, description: 'Compose rich cell content with XDS components like XDSBadge, XDSStatusDot, and XDSAvatar via renderCell.' },
       { guidance: true, description: 'Set explicit width on every column using proportional() or pixel(). proportional(1) gives equal flex distribution with a 120px minimum that prevents columns from collapsing on narrow viewports. Omitting width skips the minimum.' },
-      { guidance: false, description: 'Use a table for data without consistent columns — use a list or card layout for heterogeneous content.' },
-      { guidance: false, description: 'Enable every plugin at once — add only the features your use case requires to keep the interface focused.' },
-      { guidance: false, description: 'Omit width on text-heavy columns — without an explicit proportional() width they have no minimum and can squish to near-zero on mobile.' },
+      { guidance: false, description: 'Use a table for data without consistent columns. Use a list or card layout for heterogeneous content.' },
+      { guidance: false, description: 'Enable every plugin at once. Add only the features your use case requires to keep the interface focused.' },
+      { guidance: false, description: 'Omit width on text-heavy columns; without an explicit proportional() width they have no minimum and can squish to near-zero on mobile.' },
     ],
     anatomy: [
       {name: 'Column Header', required: true, description: 'Displays titles, sorting controls, and bulk selection.'},
@@ -313,7 +313,7 @@ export const docsZh = {
           name: 'columns',
           type: 'XDSTableColumn<T>[]',
           description:
-            '列定义 — 每列含 {key, header, width?, align?, renderCell?}。header 设置列标题文本。省略时自动从数据键生成。',
+            '列定义：每列含 {key, header, width?, align?, renderCell?}。header 设置列标题文本。省略时自动从数据键生成。',
         },
         {
           name: 'idKey',
@@ -356,7 +356,7 @@ export const docsZh = {
           name: 'children',
           type: 'ReactNode',
           description:
-            '子元素模式 — 直接渲染 XDSTableRow/XDSTableCell，而非使用数据驱动渲染。',
+            '子元素模式：直接渲染 XDSTableRow/XDSTableCell，而非使用数据驱动渲染。',
         },
         {
           name: 'xstyle',
@@ -581,7 +581,7 @@ export const docsZh = {
         {
           name: 'filters',
           type: 'XDSTableFilterState',
-          description: '当前筛选状态——列键到筛选值的映射。',
+          description: '当前筛选状态：列键到筛选值的映射。',
           required: true,
         },
         {
@@ -619,8 +619,8 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Use density and divider variants to match the information density and scanning needs of your data.' },
       { guidance: true, description: 'Compose rich cell content with XDS components like XDSBadge, XDSStatusDot, and XDSAvatar via renderCell.' },
-      { guidance: false, description: 'Use a table for data without consistent columns — use a list or card layout for heterogeneous content.' },
-      { guidance: false, description: 'Enable every plugin at once — add only the features your use case requires to keep the interface focused.' },
+      { guidance: false, description: 'Use a table for data without consistent columns. Use a list or card layout for heterogeneous content.' },
+      { guidance: false, description: 'Enable every plugin at once. Add only the features your use case requires to keep the interface focused.' },
     ],
     anatomy: [
       {name: 'Column Header', required: true, description: 'Displays titles, sorting controls, and bulk selection.'},
@@ -643,9 +643,9 @@ export const docsDense = {
       { guidance: true, description: 'Use density and divider variants to match the information density and scanning needs of your data.' },
       { guidance: true, description: 'Compose rich cell content with XDS components like XDSBadge, XDSStatusDot, and XDSAvatar via renderCell.' },
       { guidance: true, description: 'Set explicit width on every column via proportional() or pixel(). proportional(1) = equal flex w/ 120px min preventing collapse on narrow viewports. Omitting width skips the minimum.' },
-      { guidance: false, description: 'Use a table for data without consistent columns — use a list or card layout for heterogeneous content.' },
-      { guidance: false, description: 'Enable every plugin at once — add only the features your use case requires to keep the interface focused.' },
-      { guidance: false, description: 'Omit width on text-heavy columns — w/o explicit proportional() width they have no minimum and can squish to near-zero on mobile.' },
+      { guidance: false, description: 'Use a table for data without consistent columns. Use a list or card layout for heterogeneous content.' },
+      { guidance: false, description: 'Enable every plugin at once. Add only the features your use case requires to keep the interface focused.' },
+      { guidance: false, description: 'Omit width on text-heavy columns; w/o explicit proportional() width they have no minimum and can squish to near-zero on mobile.' },
     ],
     anatomy: [
       {name: 'Column Header', required: true, description: 'Displays titles, sorting controls, and bulk selection.'},
@@ -718,14 +718,14 @@ export const docsDense = {
     {
       name: 'useXDSTableSelectionState',
       displayName: 'useXDSTableSelectionState',
-      description: 'State companion for useXDSTableSelection. Handles disabled/selectable row filtering for select-all automatically — disabled rows frozen (state preserved across select-all/deselect-all), non-selectable rows excluded.',
+      description: 'State companion for useXDSTableSelection. Handles disabled/selectable row filtering for select-all automatically: disabled rows frozen (state preserved across select-all/deselect-all), non-selectable rows excluded.',
       propDescriptions: {
         data: 'Full data array rendered in table. **(required)**',
-        idKey: 'Key extractor — property name or fn returning unique string ID. **(required)**',
+        idKey: 'Key extractor: property name or fn returning unique string ID. **(required)**',
         selectedKeys: 'Controlled set of selected item IDs. **(required)**',
         setSelectedKeys: 'Setter for controlled selected keys. **(required)**',
         getIsItemSelectable: 'Returns whether row shows checkbox; non-selectable rows excluded from select-all. Defaults to () => true.',
-        getIsItemEnabled: 'Returns whether row checkbox is interactive; disabled rows frozen — select-all preserves their state. Defaults to () => true.',
+        getIsItemEnabled: 'Returns whether row checkbox is interactive. Disabled rows frozen; select-all preserves their state. Defaults to () => true.',
       },
     },
     {
@@ -767,7 +767,7 @@ export const docsDense = {
       name: 'useXDSTableFiltering',
       isHiddenFromOverview: true,
       displayName: 'useXDSTableFiltering',
-      description: 'Table filtering plugin — inline column filters (popover/inline). Pairs w/ useXDSTableFilterState.',
+      description: 'Table filtering plugin: inline column filters (popover/inline). Pairs w/ useXDSTableFilterState.',
       propDescriptions: {
         filters: 'Current filter state map (columnKey → value).',
         onFilterChange: 'Called on filter change. null clears.',
