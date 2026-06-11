@@ -7,7 +7,7 @@ export const doc = {
   name: 'Stack — Fill Item',
   displayName: 'Stack — Fill Item',
   description:
-    'An avatar, text, and button in a row — the text stretches to fill the available space.',
+    'An avatar, text, and button in a row; the text stretches to fill the available space.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['Layout', 'Text', 'Button', 'Avatar'],
