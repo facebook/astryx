@@ -587,6 +587,8 @@ export default function PreviewPage() {
 
   const stageStyle: CSSProperties = fill
     ? {
+        // Definite height so templates sized with `height: 100%` resolve.
+        height: '100%',
         minHeight: '100%',
         display: 'block',
         backgroundColor: 'var(--color-background-surface)',
@@ -601,9 +603,9 @@ export default function PreviewPage() {
         backgroundColor: 'var(--color-background-surface)',
       };
 
-  // In fill mode the wrapper has no box (display: contents) so the rendered
-  // root participates directly in block flow and fills width/height naturally.
-  const contentStyle: CSSProperties = fill ? {display: 'contents'} : {};
+  const contentStyle: CSSProperties = fill
+    ? {height: '100%', width: '100%'}
+    : {};
 
   return (
     <XDSTheme theme={theme} mode={themeMode}>
