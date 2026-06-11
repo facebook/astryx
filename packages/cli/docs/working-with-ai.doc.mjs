@@ -15,7 +15,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'The design system is built to be AI-friendly \u2014 consistent naming, predictable prop patterns, and a CLI that feeds structured documentation directly into AI context windows. But models still need the right context to avoid falling back to generic React patterns or inventing props.',
+          text: 'The design system is built to be AI-friendly: consistent naming, predictable prop patterns, and a CLI that feeds structured documentation directly into AI context windows. But models still need the right context to avoid falling back to generic React patterns or inventing props.',
         },
         {
           type: 'prose',
@@ -38,7 +38,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'That\'s it. The agent-docs command generates everything your AI needs \u2014 component index, behavioral rules, CLI reference \u2014 pulled from your installed version. After a version bump, run it again to update in place.',
+          text: 'That\'s it. The agent-docs command generates everything your AI needs (component index, behavioral rules, CLI reference) pulled from your installed version. After a version bump, run it again to update in place.',
         },
         {
           type: 'prose',
@@ -65,14 +65,14 @@ npx xds agent-docs --agent codex     # AGENTS.md (Copilot, Codex, etc.)`,
           type: 'list',
           style: 'ordered',
           items: [
-            '`npx xds template --list` \u2014 find a related page pattern to use as reference',
-            '`npx xds template <name> --skeleton` \u2014 study the layout structure',
-            '`npx xds component <Name>` \u2014 read props and examples for every component used',
+            '`npx xds template --list`: find a related page pattern to use as reference',
+            '`npx xds template <name> --skeleton`: study the layout structure',
+            '`npx xds component <Name>`: read props and examples for every component used',
           ],
         },
         {
           type: 'prose',
-          text: 'It also includes rules that prevent common mistakes (no raw divs, no style={{}}, use tokens not magic values) and a CLI quick reference. After setup, you shouldn\'t need to manually correct your AI on these conventions \u2014 the agent docs handle it at the system level.',
+          text: 'It also includes rules that prevent common mistakes (no raw divs, no style={{}}, use tokens not magic values) and a CLI quick reference. After setup, you shouldn\'t need to manually correct your AI on these conventions; the agent docs handle it at the system level.',
         },
       ],
     },
@@ -81,7 +81,7 @@ npx xds agent-docs --agent codex     # AGENTS.md (Copilot, Codex, etc.)`,
       content: [
         {
           type: 'prose',
-          text: 'Cursor project rules aren\'t always picked up \u2014 it selects which rules to apply based on relevance. For reliable inclusion, install the design system context as a User Rule instead. User Rules live at ~/.cursor/rules/ and apply across all projects.',
+          text: 'Cursor project rules aren\'t always picked up; it selects which rules to apply based on relevance. For reliable inclusion, install the design system context as a User Rule instead. User Rules live at ~/.cursor/rules/ and apply across all projects.',
         },
         {
           type: 'code',
@@ -97,7 +97,7 @@ npx xds agent-docs --agent-docs-path ~/.cursor/rules/xds.mdc`,
       content: [
         {
           type: 'prose',
-          text: 'Paste this into your AI before writing any component code. These three questions have a 0% pass rate without docs \u2014 models confidently guess wrong on all of them. If your AI can\'t answer them, it\'ll know to install the agent docs first.',
+          text: 'Paste this into your AI before writing any component code. These three questions have a 0% pass rate without docs; models confidently guess wrong on all of them. If your AI can\'t answer them, it\'ll know to install the agent docs first.',
         },
         {
           type: 'code',
@@ -165,7 +165,7 @@ npx xds docs tokens --dense`,
       content: [
         {
           type: 'prose',
-          text: 'XDS ships a Model Context Protocol (MCP) server that any MCP-compatible AI tool can connect to. Instead of manually pasting CLI output, the AI can query the XDS design system directly — searching for components, reading full documentation, and pulling code examples on demand.',
+          text: 'XDS ships a Model Context Protocol (MCP) server that any MCP-compatible AI tool can connect to. Instead of manually pasting CLI output, the AI can query the XDS design system directly, searching for components, reading full documentation, and pulling code examples on demand.',
         },
         {
           type: 'prose',
@@ -173,7 +173,7 @@ npx xds docs tokens --dense`,
         },
         {
           type: 'prose',
-          text: 'Add the server to your MCP config file. This works with any MCP-compatible tool — Claude Desktop (claude_desktop_config.json), Cursor (.cursor/mcp.json), Windsurf (.windsurf/mcp.json), Cline, and others.',
+          text: 'Add the server to your MCP config file. This works with any MCP-compatible tool: Claude Desktop (claude_desktop_config.json), Cursor (.cursor/mcp.json), Windsurf (.windsurf/mcp.json), Cline, and others.',
         },
         {
           type: 'code',
