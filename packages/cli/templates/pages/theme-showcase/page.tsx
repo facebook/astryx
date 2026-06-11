@@ -80,6 +80,12 @@ const styles = stylex.create({
       '@media (max-width: 1024px)': '1 / -1',
     },
   },
+  singleColumnOnMobile: {
+    gridTemplateColumns: {
+      default: null,
+      '@media (max-width: 900px)': '1fr',
+    },
+  },
   inventoryCard: {
     backgroundColor: 'var(--color-background-surface)',
     color: 'var(--color-text-primary)',
@@ -324,7 +330,10 @@ export default function ThemeShowcase() {
 function CardShowcase({images}: {images: Record<string, string>}) {
   return (
     <XDSVStack gap={8}>
-      <XDSGrid columns={{minWidth: 200, repeat: 'fit'}} gap={4}>
+      <XDSGrid
+        columns={{minWidth: 200, repeat: 'fit'}}
+        gap={4}
+        xstyle={styles.singleColumnOnMobile}>
         <XDSGridSpan columns={1} xstyle={styles.fullSpanAtNarrow}>
           <CheckoutCard />
         </XDSGridSpan>
@@ -332,7 +341,10 @@ function CardShowcase({images}: {images: Record<string, string>}) {
           <ChatCard />
         </XDSGridSpan>
       </XDSGrid>
-      <XDSGrid columns={{minWidth: 200, repeat: 'fit'}} gap={4}>
+      <XDSGrid
+        columns={{minWidth: 200, repeat: 'fit'}}
+        gap={4}
+        xstyle={styles.singleColumnOnMobile}>
         <XDSGridSpan columns={3} xstyle={styles.fullSpanAtNarrow}>
           <InventoryCard images={images} />
         </XDSGridSpan>
