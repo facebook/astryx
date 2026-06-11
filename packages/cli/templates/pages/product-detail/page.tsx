@@ -87,19 +87,19 @@ function StarRating({rating, count}: {rating: number; count: number}) {
 // IMAGES[0] = fallback hero; IMAGES[1..6] = thumbnails (first is selected by default)
 const IMAGES = [
   // light-product-1 (fallback hero)
-  '/template-assets/light-product-1.png',
+  'https://lookaside.facebook.com/assets/xds_oss/light-product-1.png',
   // light-product-1 (thumbnail 1)
-  '/template-assets/light-product-1.png',
+  'https://lookaside.facebook.com/assets/xds_oss/light-product-1.png',
   // light-product-2
-  '/template-assets/light-product-2.png',
+  'https://lookaside.facebook.com/assets/xds_oss/light-product-2.png',
   // light-product-3
-  '/template-assets/light-product-3.png',
+  'https://lookaside.facebook.com/assets/xds_oss/light-product-3.png',
   // light-product-4
-  '/template-assets/light-product-4.png',
+  'https://lookaside.facebook.com/assets/xds_oss/light-product-4.png',
   // light-product-5
-  '/template-assets/light-product-5.png',
+  'https://lookaside.facebook.com/assets/xds_oss/light-product-5.png',
   // light-product-3 (gallery variety)
-  '/template-assets/light-product-3.png',
+  'https://lookaside.facebook.com/assets/xds_oss/light-product-3.png',
 ];
 
 // ─── Product Data ───────────────────────────────────────────────────────────

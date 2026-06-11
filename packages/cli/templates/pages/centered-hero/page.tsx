@@ -16,7 +16,8 @@ import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSSection} from '@xds/core/Section';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
-const IMAGE_URL = '/template-assets/light-scene-horizontal-1.png';
+const IMAGE_URL =
+  'https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png';
 
 const styles = stylex.create({
   heroImage: {

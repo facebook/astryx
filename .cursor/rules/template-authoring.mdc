@@ -1,0 +1,63 @@
+---
+description: Authoring conventions for cloneable CLI page templates
+globs: packages/cli/templates/pages/**
+alwaysApply: false
+---
+
+# Template Authoring
+
+Files under `packages/cli/templates/pages/**` are scaffolded verbatim into
+users' projects via the XDS CLI. Whatever ships here gets cloned into their
+codebase, so keep templates clean and exemplary.
+
+## No editorial / explanatory comments
+
+Don't add notes, rationale, TODOs, or issue references that are meant for XDS
+maintainers — users don't want that noise cloned into their files. Keep an
+external issue open to track gaps instead of narrating them inline.
+
+```tsx
+// ❌ BAD — ships maintainer commentary into user code
+// NOTE: only custom styling here is image fill/cap/radius. XDS has no image
+// primitive — no objectFit/maxWidth/radius props. Tracked in issue #2582.
+const styles = stylex.create({
+  // Fills the AspectRatio box. No objectFit prop on AspectRatio (#2582).
+  heroImage: { width: '100%', height: '100%', objectFit: 'cover' },
+});
+
+// ✅ GOOD — clean, self-explanatory styles only
+const styles = stylex.create({
+  heroImage: { width: '100%', height: '100%', objectFit: 'cover' },
+});
+```
+
+Comments that genuinely help a consumer understand the template are fine; the
+rule targets maintainer-facing notes, not all comments.
+
+## Images & assets (must be strippable)
+
+Demo imagery is referenced from the `xds_oss` lookaside CDN — templates are NOT
+shipped with committed image files. The docsite/sandbox previews load these
+URLs directly; on scaffold (`xds template <name> <path>`), the CLI's
+`stripTemplateAssetRefs()` (`packages/cli/src/api/template.mjs`) rewrites every
+`lookaside.facebook.com/...` URL (and any legacy `/template-assets/<file>` path)
+to a self-contained inline-SVG placeholder data-URI. This is what keeps a cloned
+template from shipping broken images / a Meta-only network dependency into a
+user's project — builders then drop in their own art.
+
+For this to work, reference the asset as a **plain string literal** so the
+stripper can see it:
+
+```tsx
+// ❌ BAD — dynamic path; stripper can't see it, ships a Meta-only ref
+const IMG_DIR = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/assets`;
+const src = `${IMG_DIR}/cover.png`;
+
+// ✅ GOOD — plain lookaside literal, gets replaced by the placeholder on scaffold
+const src = 'https://lookaside.facebook.com/assets/xds_oss/cover.png';
+```
+
+Genuinely external, non-Meta image URLs (e.g. third-party brand logos like
+`paypalobjects.com` or `raw.githubusercontent.com`) are intentionally left
+untouched by the stripper, so a scaffolded page keeps working logos rather than
+placeholdering them.

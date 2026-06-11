@@ -62,27 +62,27 @@ interface GalleryImage {
 const IMAGES: GalleryImage[] = [
   {
     // illustrative-horizontal-1 from xds_oss asset set
-    src: '/template-assets/illustrative-horizontal-1.jpg',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg',
     title: 'Going places',
   },
   {
     // light-home-horizontal-1 from xds_oss asset set
-    src: '/template-assets/light-home-horizontal-1.png',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/light-home-horizontal-1.png',
     title: 'Making memories',
   },
   {
     // light-lifestyle-horizontal-1 from xds_oss asset set
-    src: '/template-assets/light-lifestyle-horizontal-1.png',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/light-lifestyle-horizontal-1.png',
     title: 'Being free',
   },
   {
     // light-working-horizontal-2 from xds_oss asset set
-    src: '/template-assets/light-working-horizontal-2.png',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-2.png',
     title: 'Getting it done',
   },
   {
     // light-scene-horizontal-1 from xds_oss asset set
-    src: '/template-assets/light-scene-horizontal-1.png',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png',
     title: 'Finding calm',
   },
 ];

@@ -19,17 +19,17 @@ import {ArrowRightIcon} from '@heroicons/react/20/solid';
 const IMAGES = [
   {
     // colorful-home-horizontal-1 from xds_oss asset set
-    src: '/template-assets/colorful-home-horizontal-1.png',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-home-horizontal-1.png',
     alt: 'Colorful home interior with vibrant decor',
   },
   {
     // colorful-lifestyle-horizontal-1 from xds_oss asset set
-    src: '/template-assets/colorful-lifestyle-horizontal-1.png',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-horizontal-1.png',
     alt: 'Colorful lifestyle portrait with natural lighting',
   },
   {
     // colorful-lifestyle-horizontal-2 from xds_oss asset set
-    src: '/template-assets/colorful-lifestyle-horizontal-2.png',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-horizontal-2.png',
     alt: 'Colorful lifestyle scene with warm tones',
   },
 ];

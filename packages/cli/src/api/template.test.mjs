@@ -41,4 +41,40 @@ describe('stripTemplateAssetRefs', () => {
     expect(out).toContain("alt: 'X'");
     expect(out).toContain('const data = [{src:');
   });
+
+  it('replaces a lookaside xds_oss image URL', () => {
+    const src =
+      "const hero = 'https://lookaside.facebook.com/assets/xds_oss/colorful-home-horizontal-1.png';";
+    const out = stripTemplateAssetRefs(src);
+    expect(out).not.toContain('lookaside.facebook.com');
+    expect(out).toContain('data:image/svg+xml,');
+  });
+
+  it('replaces a lookaside block-avatar image URL', () => {
+    const src =
+      'src="https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-05.jpg"';
+    const out = stripTemplateAssetRefs(src);
+    expect(out).not.toContain('lookaside.facebook.com');
+    expect(out).toContain('data:image/svg+xml,');
+  });
+
+  it('replaces both lookaside URLs and /template-assets refs in one source', () => {
+    const src = [
+      "'https://lookaside.facebook.com/assets/xds_oss/a.png'",
+      "'/template-assets/b.jpg'",
+    ].join('\n');
+    const out = stripTemplateAssetRefs(src);
+    expect(out).not.toContain('lookaside.facebook.com');
+    expect(out).not.toMatch(/\/template-assets\//);
+    expect(out.match(/data:image\/svg\+xml,/g)).toHaveLength(2);
+  });
+
+  it('leaves non-lookaside external image URLs untouched', () => {
+    const src = [
+      "src=\"https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-100px.png\"",
+      "src=\"https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/visa.svg\"",
+    ].join('\n');
+    const out = stripTemplateAssetRefs(src);
+    expect(out).toBe(src);
+  });
 });
