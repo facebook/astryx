@@ -12,7 +12,7 @@ export const docs = {
     defaults: {
       header: {__element: 'XDSLayoutHeader', props: {}, children: {__element: 'XDSHeading', props: {level: 3}, children: 'Page Title'}},
       content: {__element: 'XDSLayoutContent', props: {}, children: {__element: 'XDSText', props: {type: 'body', color: 'secondary'}, children: 'Main content area. This is the scrollable center section of the layout.'}},
-      footer: {__element: 'XDSLayoutFooter', props: {}, children: {__element: 'XDSText', props: {type: 'supporting', color: 'secondary'}, children: 'Footer — status bar or actions'}},
+      footer: {__element: 'XDSLayoutFooter', props: {}, children: {__element: 'XDSText', props: {type: 'supporting', color: 'secondary'}, children: 'Footer: status bar or actions'}},
     },
   },
   theming: {
@@ -65,7 +65,7 @@ export const docs = {
           name: 'height',
           type: "'fill' | 'auto'",
           description:
-            'Height behavior — fill the container or grow with content.',
+            'Height behavior: fill the container or grow with content.',
           default: "'fill'",
         },
       ],    },
@@ -244,8 +244,8 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Use XDSLayout for page shells that need distinct zones like header, sidebar(s), content, and footer.' },
       { guidance: true, description: 'Use XDSHStack and XDSVStack for simple directional stacking within a content area.' },
-      { guidance: false, description: 'Use XDSLayout for simple stacking layouts — use XDSHStack or XDSVStack instead.' },
-      { guidance: false, description: 'Nest multiple XDSLayout components — use one per page shell and compose content within its slots.' },
+      { guidance: false, description: 'Use XDSLayout for simple stacking layouts; use XDSHStack or XDSVStack instead.' },
+      { guidance: false, description: 'Nest multiple XDSLayout components; use one per page shell and compose content within its slots.' },
     ],
   },
 };
@@ -479,8 +479,8 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Use XDSLayout for page shells that need distinct zones like header, sidebar(s), content, and footer.' },
       { guidance: true, description: 'Use XDSHStack and XDSVStack for simple directional stacking within a content area.' },
-      { guidance: false, description: 'Use XDSLayout for simple stacking layouts — use XDSHStack or XDSVStack instead.' },
-      { guidance: false, description: 'Nest multiple XDSLayout components — use one per page shell and compose content within its slots.' },
+      { guidance: false, description: 'Use XDSLayout for simple stacking layouts; use XDSHStack or XDSVStack instead.' },
+      { guidance: false, description: 'Nest multiple XDSLayout components; use one per page shell and compose content within its slots.' },
     ],
   },
 };
@@ -495,8 +495,8 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Use XDSLayout for page shells that need distinct zones like header, sidebar(s), content, and footer.' },
       { guidance: true, description: 'Use XDSHStack and XDSVStack for simple directional stacking within a content area.' },
-      { guidance: false, description: 'Use XDSLayout for simple stacking layouts — use XDSHStack or XDSVStack instead.' },
-      { guidance: false, description: 'Nest multiple XDSLayout components — use one per page shell and compose content within its slots.' },
+      { guidance: false, description: 'Use XDSLayout for simple stacking layouts; use XDSHStack or XDSVStack instead.' },
+      { guidance: false, description: 'Nest multiple XDSLayout components; use one per page shell and compose content within its slots.' },
     ],
   },
   components: [
