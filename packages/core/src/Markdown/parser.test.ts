@@ -870,12 +870,10 @@ describe('citation parsing', () => {
       const result = parseInline('see [abc1] for https://example.com', sources);
       expect(result.some(n => n.type === 'citation')).toBe(true);
       // Bare URL remains literal text because autolink is unset
-      const url = 'https://example.com';
-      expect(
-        result.some(
-          n => n.type === 'text' && n.content.includes(url), // lgtm[js/incomplete-url-substring-sanitization]
-        ),
-      ).toBe(true);
+      expect(result).toContainEqual({
+        type: 'text',
+        content: ' for https://example.com',
+      });
     });
 
     it('combines sourceIds + autolink in the options bag', () => {
