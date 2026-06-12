@@ -33,7 +33,7 @@ export const docs = {
         name: 'Container',
         required: true,
         description:
-          'The interactive wrapper — renders as an anchor when a URL is provided, or a span otherwise.',
+          'The interactive wrapper. Renders as an anchor when a URL is provided, or a span otherwise.',
       },
       {
         name: 'Icon',
@@ -74,7 +74,7 @@ export const docs = {
       name: 'variant',
       type: "'label' | 'number'",
       description:
-        'Display style — a label chip showing the source title or a compact numbered badge.',
+        'Display style: a label chip showing the source title or a compact numbered badge.',
       default: "'label'",
     },
   ],

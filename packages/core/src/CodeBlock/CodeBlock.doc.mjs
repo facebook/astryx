@@ -67,10 +67,10 @@ export const docs = {
     description: 'CodeBlock renders syntax-highlighted code with line numbers, a copy button, and optional collapsible sections. Use XDSCodeBlock for multi-line snippets like source files, terminal commands, and configuration examples. Use XDSCode for inline references to function names, variables, or CLI flags within body text.',
     bestPractices: [
       {guidance: true, description: 'Set the language prop to match the code content so syntax highlighting is accurate. Use "plaintext" when the language is unknown.'},
-      {guidance: true, description: 'Add a title when the code represents a file — it gives readers context and appears in the header bar alongside the copy button.'},
+      {guidance: true, description: 'Add a title when the code represents a file. It gives readers context and appears in the header bar alongside the copy button.'},
       {guidance: true, description: 'Use XDSCode for short inline references like function names or CLI flags, and XDSCodeBlock for standalone multi-line snippets.'},
       {guidance: false, description: 'Enable line numbers on short snippets (under 5 lines) where they add clutter without helping navigation.'},
-      {guidance: false, description: 'Nest a code block inside a scrollable container — use the maxHeight prop instead, which handles overflow natively.'},
+      {guidance: false, description: 'Nest a code block inside a scrollable container. Use the maxHeight prop instead, which handles overflow natively.'},
     ],
     anatomy: [
       {name: 'Header Bar', required: false, description: 'Shows the title, language label, and copy button. Appears when any of these props are set.'},
@@ -87,7 +87,7 @@ export const docsZh = {
   usage: {
     description: 'CodeBlock displays syntax-highlighted code snippets with optional line numbers, copy button, and collapsible sections. Use XDSCodeBlock for fenced multi-line code and XDSCode for inline code within prose.',
     bestPractices: [
-      { guidance: true, description: 'Set the language prop to enable syntax highlighting — use "plaintext" when the language is unknown or not supported.' },
+      { guidance: true, description: 'Set the language prop to enable syntax highlighting. Use "plaintext" when the language is unknown or not supported.' },
       { guidance: true, description: 'Use XDSCode for short inline code references within body text, and XDSCodeBlock for standalone multi-line snippets.' },
       { guidance: false, description: 'Enable line numbers for short snippets where they add visual noise without aiding comprehension.' },
       { guidance: false, description: 'Wrap code blocks in a scrollable container when isWrapped or maxHeight already handles overflow.' },
@@ -111,7 +111,7 @@ export const docsZh = {
         maxHeight: '代码块垂直滚动前的最大高度。',
         size: '文字大小变体。',
         width: "代码块宽度。接受任何CSS宽度值。'fit-content'（默认）适应最长行宽度；'100%' 填满父容器宽度。",
-        container: "容器展示样式。'card'（默认）=带边框和圆角及柔和背景；'section'=无边框圆角且背景透明——融入所嵌入的卡片或面板。",
+        container: "容器展示样式。'card'（默认）=带边框和圆角及柔和背景；'section'=无边框圆角且背景透明，融入所嵌入的卡片或面板。",
         tokenizer: '用于不支持语言的自定义分词器。',
         isCollapsible: '允许将代码折叠为仅标题栏。当代码超过 collapsibleThreshold 行时显示切换按钮。',
         collapsibleThreshold: '折叠切换出现前的最小行数。低于此阈值时即使 isCollapsible 为 true 也正常渲染。',
@@ -143,10 +143,10 @@ export const docsDense = {
     description: 'CodeBlock renders syntax-highlighted code with line numbers, a copy button, and optional collapsible sections. Use XDSCodeBlock for multi-line snippets like source files, terminal commands, and configuration examples. Use XDSCode for inline references to function names, variables, or CLI flags within body text.',
     bestPractices: [
       {guidance: true, description: 'Set the language prop to match the code content so syntax highlighting is accurate. Use "plaintext" when the language is unknown.'},
-      {guidance: true, description: 'Add a title when the code represents a file — it gives readers context and appears in the header bar alongside the copy button.'},
+      {guidance: true, description: 'Add a title when the code represents a file. It gives readers context and appears in the header bar alongside the copy button.'},
       {guidance: true, description: 'Use XDSCode for short inline references like function names or CLI flags, and XDSCodeBlock for standalone multi-line snippets.'},
       {guidance: false, description: 'Enable line numbers on short snippets (under 5 lines) where they add clutter without helping navigation.'},
-      {guidance: false, description: 'Nest a code block inside a scrollable container — use the maxHeight prop instead, which handles overflow natively.'},
+      {guidance: false, description: 'Nest a code block inside a scrollable container. Use the maxHeight prop instead, which handles overflow natively.'},
     ],
   },
   components: [
