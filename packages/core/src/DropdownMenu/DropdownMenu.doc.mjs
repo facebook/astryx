@@ -120,7 +120,7 @@ export const docs = {
         {
           name: 'xstyle',
           type: 'StyleXStyles',
-          description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+          description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
         },
       ],
     },
@@ -130,7 +130,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Keep menu items concise and action-oriented so users can scan options quickly.' },
       { guidance: true, description: 'Use sections and dividers to group related actions when the menu has many items.' },
-      { guidance: false, description: 'Use a DropdownMenu for navigation — use a navigation component instead.' },
+      { guidance: false, description: 'Use a DropdownMenu for navigation; use a navigation component instead.' },
       { guidance: false, description: 'Place more than 10–12 items in a single menu without grouping them into sections.' },
     ],
   },
@@ -263,7 +263,7 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Keep menu items concise and action-oriented so users can scan options quickly.' },
       { guidance: true, description: 'Use sections and dividers to group related actions when the menu has many items.' },
-      { guidance: false, description: 'Use a DropdownMenu for navigation — use a navigation component instead.' },
+      { guidance: false, description: 'Use a DropdownMenu for navigation; use a navigation component instead.' },
       { guidance: false, description: 'Place more than 10–12 items in a single menu without grouping them into sections.' },
     ],
   },
@@ -277,7 +277,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Keep menu items concise and action-oriented so users can scan options quickly.' },
       { guidance: true, description: 'Use sections and dividers to group related actions when the menu has many items.' },
-      { guidance: false, description: 'Use a DropdownMenu for navigation — use a navigation component instead.' },
+      { guidance: false, description: 'Use a DropdownMenu for navigation; use a navigation component instead.' },
       { guidance: false, description: 'Place more than 10–12 items in a single menu without grouping them into sections.' },
     ],
   },

@@ -209,7 +209,7 @@ export const docs = {
           name: 'children',
           type: 'ReactNode',
           description:
-            'Item content — render icons, descriptions, keyboard shortcuts, etc.',
+            'Item content: render icons, descriptions, keyboard shortcuts, etc.',
           required: true,
         },
         {
@@ -321,8 +321,8 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Provide a searchSource with bootstrap results so users see useful options before typing.' },
       { guidance: true, description: 'Use auxiliaryData.group on items to automatically organize results into labeled sections.' },
-      { guidance: false, description: 'Use CommandPalette for simple dropdowns or menus — use XDSMenu or XDSSelector for inline selections.' },
-      { guidance: false, description: 'Add too many groups or items — curate results to keep the palette fast and scannable.' },
+      { guidance: false, description: 'Use CommandPalette for simple dropdowns or menus; use XDSMenu or XDSSelector for inline selections.' },
+      { guidance: false, description: 'Add too many groups or items; curate results to keep the palette fast and scannable.' },
     ],
   },
 };
@@ -334,8 +334,8 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Provide a searchSource with bootstrap results so users see useful options before typing.' },
       { guidance: true, description: 'Use auxiliaryData.group on items to automatically organize results into labeled sections.' },
-      { guidance: false, description: 'Use CommandPalette for simple dropdowns or menus — use XDSMenu or XDSSelector for inline selections.' },
-      { guidance: false, description: 'Add too many groups or items — curate results to keep the palette fast and scannable.' },
+      { guidance: false, description: 'Use CommandPalette for simple dropdowns or menus; use XDSMenu or XDSSelector for inline selections.' },
+      { guidance: false, description: 'Add too many groups or items; curate results to keep the palette fast and scannable.' },
     ],
   },
   components: [
@@ -429,8 +429,8 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Provide a searchSource with bootstrap results so users see useful options before typing.' },
       { guidance: true, description: 'Use auxiliaryData.group on items to automatically organize results into labeled sections.' },
-      { guidance: false, description: 'Use CommandPalette for simple dropdowns or menus — use XDSMenu or XDSSelector for inline selections.' },
-      { guidance: false, description: 'Add too many groups or items — curate results to keep the palette fast and scannable.' },
+      { guidance: false, description: 'Use CommandPalette for simple dropdowns or menus; use XDSMenu or XDSSelector for inline selections.' },
+      { guidance: false, description: 'Add too many groups or items; curate results to keep the palette fast and scannable.' },
     ],
   },
   components: [
@@ -487,7 +487,7 @@ export const docsDense = {
       description: 'selectable item; arbitrary children; registers w/ context for kbd nav',
       propDescriptions: {
         value: 'unique id for selection',
-        children: 'item content — icons, descriptions, shortcuts',
+        children: 'item content: icons, descriptions, shortcuts',
         onSelect: 'called on click or Enter',
         isHighlighted: 'keyboard focus; derived from context inside palette',
         isSelected: 'selected in picker mode',
