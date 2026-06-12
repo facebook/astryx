@@ -59,16 +59,9 @@ import {ChartBarIcon} from '@heroicons/react/24/solid';
 const pageStyles = stylex.create({
   groupHeaderRow: {
     cursor: 'pointer',
-  },
-  // Background + bottom divider live on the CELL, not the <tr>: in a
-  // border-collapse: separate table (XDSTable), <tr> backgrounds/borders don't
-  // align with the cell-level row dividers, which leaves a seamed line. Cells
-  // paint cleanly.
-  groupHeaderCell: {
     backgroundColor: 'var(--color-background-muted)',
-    borderBottomWidth: 1,
-    borderBottomStyle: 'solid',
-    borderBottomColor: 'var(--color-border)',
+  },
+  groupHeaderCell: {
     padding: 'var(--spacing-3) var(--spacing-4)',
   },
 });
