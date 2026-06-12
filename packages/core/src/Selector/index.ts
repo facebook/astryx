@@ -12,7 +12,6 @@ export {
   XDSSelector,
   type XDSSelectorProps,
   type XDSSelectorSize,
-  type XDSSelectorDropdownPlacement,
   type XDSSelectorStatus,
   type XDSSelectorStatusType,
 } from './XDSSelector';

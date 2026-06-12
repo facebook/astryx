@@ -790,7 +790,6 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
               options={switcherOptions}
               value={selectedPkgName}
               onChange={handleSelectPkg}
-              dropdownPlacement="above"
             />
           </div>
           <XDSButton

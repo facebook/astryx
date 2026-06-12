@@ -75,13 +75,6 @@ export const docs = {
           default: "'md'",
         },
         {
-          name: 'dropdownPlacement',
-          type: "'above' | 'below'",
-          description:
-            'Direction the dropdown opens from the trigger. Use above for controls pinned near the bottom of the viewport.',
-          default: "'below'",
-        },
-        {
           name: 'isDisabled',
           type: 'boolean',
           description: 'Disables the selector.',
@@ -244,12 +237,6 @@ export const docsZh = {
           default: "'md'",
         },
         {
-          name: 'dropdownPlacement',
-          type: "'above' | 'below'",
-          description: '下拉菜单从触发器打开的方向。靠近视口底部的控件可使用 above。',
-          default: "'below'",
-        },
-        {
           name: 'isDisabled',
           type: 'boolean',
           description: '禁用选择器。',
@@ -381,7 +368,6 @@ export const docsDense = {
         searchPlaceholder: 'Placeholder text for search input.',
         placeholder: 'Placeholder text when no value selected.',
         size: 'Size variant for selector.',
-        dropdownPlacement: 'Direction dropdown opens from trigger; use above near viewport bottom.',
         isDisabled: 'Disables selector.',
         isLabelHidden: 'Visually hides label while keeping accessible.',
         description: 'Helper text below label.',

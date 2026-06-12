@@ -320,8 +320,6 @@ const STATUS_ICON_COLOR_MAP: Record<
 
 export type XDSSelectorSize = 'sm' | 'md' | 'lg';
 
-export type XDSSelectorDropdownPlacement = 'above' | 'below';
-
 export type XDSSelectorStatusType = 'warning' | 'error' | 'success';
 
 export interface XDSSelectorStatus {
@@ -399,13 +397,6 @@ interface XDSSelectorPropsBase<
    * @default 'md'
    */
   size?: XDSSelectorSize;
-
-  /**
-   * Direction the dropdown opens from the selector trigger.
-   * Use 'above' for controls pinned near the bottom of the viewport.
-   * @default 'below'
-   */
-  dropdownPlacement?: XDSSelectorDropdownPlacement;
 
   /**
    * Status indicator for the selector.
@@ -530,7 +521,6 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     isLoading = false,
     placeholder = 'Select...',
     size: sizeProp,
-    dropdownPlacement = 'below',
     status,
     labelTooltip,
     startIcon,
@@ -635,13 +625,9 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
       triggerRef,
     });
 
-  // Disable macOS overlay positioning when search is active or when the
-  // menu opens above the trigger. The selected-item overlay math assumes a
-  // below-trigger baseline; above-trigger menus should simply sit above their
-  // anchor so bottom-fixed controls don't overflow the viewport.
-  const shouldOverlaySelectedItem = !hasSearch && dropdownPlacement === 'below';
-  const selectedItemOffset = shouldOverlaySelectedItem ? rawOffset : 0;
-  const isPositioned = shouldOverlaySelectedItem ? rawIsPositioned : true;
+  // Disable macOS overlay positioning when search is active
+  const selectedItemOffset = hasSearch ? 0 : rawOffset;
+  const isPositioned = hasSearch ? true : rawIsPositioned;
 
   // Selector behavior (keyboard nav, typeahead, selection)
   const {
@@ -956,9 +942,9 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
           </div>
         ),
         {
-          placement: dropdownPlacement,
+          placement: 'below',
           alignment: 'start',
-          xstyle: [styles.popover, layerAnimations[dropdownPlacement]],
+          xstyle: [styles.popover, layerAnimations.below],
         },
       )}
     </XDSField>
