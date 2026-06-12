@@ -419,21 +419,15 @@ interface PlaygroundHeaderActionsProps {
   isCompact?: boolean;
 }
 
-interface PlaygroundPreviewHeaderActionsProps {
-  mode: 'light' | 'dark';
+interface PlaygroundMobileShareActionProps {
   copied: boolean;
-  onToggleMode: () => void;
-  onExpand: () => void;
   onShare: () => void;
 }
 
-interface PlaygroundSideNavHeaderProps extends PlaygroundHeaderActionsProps {
+interface PlaygroundSideNavHeaderProps {
   mobileTab: MobileTopTab;
-  mode: 'light' | 'dark';
   copied: boolean;
   onMobileTabChange: (tab: MobileTopTab) => void;
-  onToggleMode: () => void;
-  onExpand: () => void;
   onShare: () => void;
 }
 
@@ -511,33 +505,12 @@ function PlaygroundHeaderActions({
   return null;
 }
 
-function PlaygroundPreviewHeaderActions({
-  mode,
+function PlaygroundMobileShareAction({
   copied,
-  onToggleMode,
-  onExpand,
   onShare,
-}: PlaygroundPreviewHeaderActionsProps) {
+}: PlaygroundMobileShareActionProps) {
   return (
     <XDSHStack gap={0.5} align="center" xstyle={s.topbarActions}>
-      <XDSButton
-        label={mode === 'light' ? 'Switch to dark' : 'Switch to light'}
-        tooltip={mode === 'light' ? 'Dark mode' : 'Light mode'}
-        variant="ghost"
-        size="sm"
-        isIconOnly
-        icon={mode === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-        onClick={onToggleMode}
-      />
-      <XDSButton
-        label="Expand"
-        tooltip="Fullscreen preview"
-        variant="ghost"
-        size="sm"
-        isIconOnly
-        icon={<Maximize2 size={18} />}
-        onClick={onExpand}
-      />
       <XDSButton
         label={copied ? 'Copied' : 'Share'}
         tooltip={copied ? 'Copied' : 'Share'}
@@ -553,13 +526,9 @@ function PlaygroundPreviewHeaderActions({
 
 function PlaygroundSideNavHeader({
   mobileTab,
-  mode,
   copied,
   onMobileTabChange,
-  onToggleMode,
-  onExpand,
   onShare,
-  ...actionsProps
 }: PlaygroundSideNavHeaderProps) {
   const renderMode = useXDSSideNavRenderMode();
 
@@ -603,22 +572,7 @@ function PlaygroundSideNavHeader({
             xstyle={s.mobileIconTab}
           />
         </XDSTabList>
-        {mobileTab === 'preview' && (
-          <PlaygroundPreviewHeaderActions
-            mode={mode}
-            copied={copied}
-            onToggleMode={onToggleMode}
-            onExpand={onExpand}
-            onShare={onShare}
-          />
-        )}
-        {(mobileTab === 'code' || mobileTab === 'theme') && (
-          <PlaygroundHeaderActions
-            {...actionsProps}
-            activeView={mobileTab}
-            isCompact
-          />
-        )}
+        <PlaygroundMobileShareAction copied={copied} onShare={onShare} />
       </div>
     );
   }
@@ -1153,21 +1107,26 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
     <XDSSideNav
       header={
         <PlaygroundSideNavHeader
-          activeView={activeView}
-          templateMenuItems={templateMenuItems}
-          themeMenuItems={themeMenuItems}
           mobileTab={mobileTab}
-          mode={mode}
           copied={copied}
           onMobileTabChange={handleMobileTabChange}
-          onToggleMode={togglePreviewMode}
-          onExpand={expandPreview}
           onShare={handleShare}
         />
       }
-      collapsible={{isCollapsed: true, hasButton: false}}>
+      collapsible={{isCollapsed: true, hasButton: false}}
+      footerIcons={
+        !isMobile ? (
+          <XDSButton
+            label="Back to site"
+            tooltip="Back to site"
+            href="/"
+            variant="ghost"
+            isIconOnly
+            icon={<ArrowLeft size={20} />}
+          />
+        ) : undefined
+      }>
       <XDSSideNavSection title="Playground views" isHeaderHidden>
-        <XDSSideNavItem label="Back to site" href="/" icon={ArrowLeft} />
         <XDSSideNavItem
           label="Code"
           icon={Code2}
