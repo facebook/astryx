@@ -8,7 +8,7 @@
  * @output Exports XDSRadioListItem component, XDSRadioListItemProps
  * @position Core implementation; consumed by index.ts, tested by XDSRadioList.test.tsx
  *
- * Composes XDSItem for the shared media + label + description + trailing layout.
+ * Composes XDSItem for the shared start content + label + description + end content layout.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/RadioList/RadioList.doc.mjs
@@ -302,7 +302,7 @@ export function XDSRadioListItem({
         stylex.props(styles.container, !isDisabled && radioScope),
       )}>
       <XDSItem
-        media={mediaContent}
+        startContent={mediaContent}
         label={
           <label
             htmlFor={id}
@@ -315,7 +315,7 @@ export function XDSRadioListItem({
             <span id={descriptionID}>{description}</span>
           ) : undefined
         }
-        trailing={endContent}
+        endContent={endContent}
         xstyle={embeddedStyles.root}
       />
     </div>

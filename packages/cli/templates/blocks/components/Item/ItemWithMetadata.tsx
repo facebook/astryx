@@ -12,23 +12,23 @@ export default function ItemWithMetadata() {
   return (
     <XDSStack gap={0}>
       <XDSItem
-        media={<XDSIcon icon="check" size="sm" color="success" />}
+        startContent={<XDSIcon icon="check" size="sm" color="success" />}
         label="Build passed"
         description="Production deploy completed"
-        trailing={<XDSText color="secondary">2m ago</XDSText>}
+        endContent={<XDSText color="secondary">2m ago</XDSText>}
       />
       <XDSItem
-        media={<XDSIcon icon="warning" size="sm" color="warning" />}
+        startContent={<XDSIcon icon="warning" size="sm" color="warning" />}
         label="High memory usage"
         description="Worker pool is above the warning threshold"
-        trailing={<XDSBadge label="Warning" variant="warning" />}
+        endContent={<XDSBadge label="Warning" variant="warning" />}
         isHighlighted
       />
       <XDSItem
-        media={<XDSIcon icon="error" size="sm" color="error" />}
+        startContent={<XDSIcon icon="error" size="sm" color="error" />}
         label="Sync failed"
         description="Retry after checking service credentials"
-        trailing={<XDSBadge label="Action" variant="error" />}
+        endContent={<XDSBadge label="Action" variant="error" />}
         isSelected
       />
     </XDSStack>

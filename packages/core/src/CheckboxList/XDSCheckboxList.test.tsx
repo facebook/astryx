@@ -201,6 +201,19 @@ describe('XDSCheckboxList', () => {
     expect(screen.getByTestId('my-checkbox-list')).toBeInTheDocument();
   });
 
+  it('passes spacious density through to checkbox list items', () => {
+    render(
+      <XDSCheckboxList
+        label="Preferences"
+        density="spacious"
+        value={[]}
+        onChange={() => {}}>
+        <XDSCheckboxListItem label="Option A" value="a" />
+      </XDSCheckboxList>,
+    );
+    expect(screen.getByRole('listitem').className).toContain('spacious');
+  });
+
   it('supports data-testid on CheckboxListItem', () => {
     render(
       <XDSCheckboxList label="Preferences" value={[]} onChange={() => {}}>
