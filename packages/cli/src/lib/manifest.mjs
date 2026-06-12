@@ -64,6 +64,9 @@ export const RESPONSE_TYPES = {
   'gap-report': ['gap-report.categories', 'gap-report.dryRun', 'gap-report.file'],
   manifest: ['manifest'],
   doctor: ['doctor'],
+  'layout expand': ['layout.expand'],
+  'layout check': ['layout.check'],
+  'layout grammar': ['layout.grammar'],
 };
 
 /**
@@ -83,6 +86,9 @@ const EXAMPLES = {
   manifest: ['astryx manifest --json', 'astryx --json'],
   doctor: ['astryx doctor', 'astryx doctor --json'],
   init: ['astryx init'],
+  'layout expand': [`astryx layout expand 'V[g6] > C{card-callout}*4' ./src/Page.tsx`],
+  'layout check': [`astryx layout check 'A > L > LC[p6]' --json`],
+  'layout grammar': ['astryx layout grammar'],
 };
 
 /**

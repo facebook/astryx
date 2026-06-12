@@ -63,6 +63,9 @@ export const JSON_SUPPORTED = new Set([
   'upgrade',
   'manifest',
   'doctor',
+  'layout expand',
+  'layout check',
+  'layout grammar',
 ]);
 
 program
@@ -243,6 +246,7 @@ const commands = [
   {name: 'swizzle', path: './commands/swizzle.mjs', register: 'registerSwizzle'},
   // agent-docs folded into init — functions still importable from agent-docs.mjs
   {name: 'template', path: './commands/template.mjs', register: 'registerTemplate'},
+  {name: 'layout', path: './commands/layout.mjs', register: 'registerLayout'},
   {name: 'gap-report', path: './commands/gap-report.mjs', register: 'registerGapReport'},
   {name: 'upgrade', path: './commands/upgrade.mjs', register: 'registerUpgrade'},
   {name: 'theme', path: './commands/build-theme.mjs', register: 'registerTheme'},
