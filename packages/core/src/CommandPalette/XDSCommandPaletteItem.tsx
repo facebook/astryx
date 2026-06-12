@@ -20,7 +20,7 @@ import {
   spacingVars,
   radiusVars,
   typographyVars,
-  textSizeVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
 
@@ -36,7 +36,7 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-inner'],
     fontFamily: typographyVars['--font-family-body'],
-    fontSize: textSizeVars['--font-size-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
     border: 'none',
