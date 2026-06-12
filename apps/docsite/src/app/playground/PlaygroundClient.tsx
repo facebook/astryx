@@ -71,6 +71,7 @@ import {annotateInstanceIds} from './babelParser';
 import {trackCopy} from '../../lib/analytics';
 import {PlaygroundThemeEditor} from '../../components/themePlayground/PlaygroundThemeEditor';
 import {DEFAULT_CODE} from './defaultCode';
+import {stripCodeExampleCopyrightHeader} from '../../lib/codeExamples';
 
 import type * as MonacoTypes from 'monaco-editor';
 import type {XDSDefinedTheme} from '@xds/core/theme';
@@ -735,7 +736,7 @@ export function PlaygroundClient() {
         .map(({label, source}) => ({
           label,
           onClick: () => {
-            setCode(source);
+            setCode(stripCodeExampleCopyrightHeader(source));
             requestAnimationFrame(() => editorRef.current?.focus());
           },
         })),

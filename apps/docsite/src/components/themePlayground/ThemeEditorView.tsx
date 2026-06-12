@@ -10,7 +10,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSHStack, XDSVStack} from '@xds/core/Stack';
 import {XDSText} from '@xds/core/Text';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {CodeExampleBlock} from '../CodeExampleBlock';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {
   ArrowLeftFilled16Icon as ArrowLeftIcon,
@@ -740,12 +740,16 @@ export function ThemeEditorView({
               <XDSText type="label">
                 1. Save as a theme file (e.g. {themeId}-theme.ts)
               </XDSText>
-              <XDSCodeBlock code={themeCode} language="typescript" size="sm" />
+              <CodeExampleBlock
+                code={themeCode}
+                language="typescript"
+                size="sm"
+              />
             </XDSVStack>
 
             <XDSVStack gap={2}>
               <XDSText type="label">2. Wrap your app with the theme</XDSText>
-              <XDSCodeBlock code={usageSnippet} language="tsx" size="sm" />
+              <CodeExampleBlock code={usageSnippet} language="tsx" size="sm" />
               <XDSText type="supporting" color="secondary">
                 Token and component overrides apply at runtime through{' '}
                 <code>XDSTheme</code>. To consume the theme as a stylesheet

@@ -10,7 +10,7 @@ import {XDSVStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
 import {XDSCard} from '@xds/core/Card';
 import {XDSDivider} from '@xds/core';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {CodeExampleBlock} from '../CodeExampleBlock';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {useMediaQuery} from '@xds/core/hooks';
 import {ShowcasePreview} from './ShowcasePreview';
@@ -70,7 +70,7 @@ function OverviewContent({
             {comp.usage.description}
           </XDSText>
 
-          <XDSCodeBlock
+          <CodeExampleBlock
             code={importPath}
             language="ts"
             width="100%"

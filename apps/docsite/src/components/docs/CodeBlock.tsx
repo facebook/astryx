@@ -5,7 +5,7 @@
 import * as stylex from '@stylexjs/stylex';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {CodeExampleBlock} from '../CodeExampleBlock';
 
 const styles = stylex.create({
   root: {width: '100%'},
@@ -27,7 +27,7 @@ export function CodeBlockRenderer({
           {label}
         </XDSText>
       )}
-      <XDSCodeBlock
+      <CodeExampleBlock
         code={code}
         language={lang}
         hasCopyButton

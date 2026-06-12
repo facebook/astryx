@@ -18,7 +18,7 @@ import {XDSDivider} from '@xds/core/Divider';
 import {XDSButton} from '@xds/core/Button';
 import {XDSPopover} from '@xds/core/Popover';
 import {XDSCard} from '@xds/core/Card';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {CodeExampleBlock} from '../../../components/CodeExampleBlock';
 import {components as componentRegistry} from '../../../generated/componentRegistry';
 import {blocks} from '../../../generated/blockRegistry';
 import {ShowcaseThumbnail} from '../../../components/ShowcaseThumbnail';
@@ -151,7 +151,7 @@ export default function ComponentsGalleryPage() {
                     1. Install the package
                   </XDSText>
                   <XDSCard padding={0}>
-                    <XDSCodeBlock
+                    <CodeExampleBlock
                       code="npm install @xds/core"
                       language="bash"
                       hasCopyButton
@@ -163,7 +163,7 @@ export default function ComponentsGalleryPage() {
                     2. Import a component
                   </XDSText>
                   <XDSCard padding={0}>
-                    <XDSCodeBlock
+                    <CodeExampleBlock
                       code="import {...} from '@xds/core/ComponentName';"
                       language="typescript"
                       hasCopyButton
