@@ -34,7 +34,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Use to show/hide scroll navigation buttons or fade edges on carousels and horizontal lists.' },
       { guidance: true, description: 'Apply the scrollRef to a container with overflow-x: auto or overflow-x: scroll.' },
-      { guidance: false, description: 'Use for vertical scroll tracking — this hook only measures horizontal overflow.' },
+      { guidance: false, description: 'Use for vertical scroll tracking; this hook only measures horizontal overflow.' },
     ],
   },
   relatedComponents: ['Carousel'],
@@ -59,7 +59,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Use to show/hide scroll navigation buttons / fade edges on carousels + horizontal lists.' },
       { guidance: true, description: 'Apply scrollRef to container w/ overflow-x: auto / overflow-x: scroll.' },
-      { guidance: false, description: 'Use for vertical scroll tracking — this hook only measures horizontal overflow.' },
+      { guidance: false, description: 'Use for vertical scroll tracking; this hook only measures horizontal overflow.' },
     ],
   },
 };

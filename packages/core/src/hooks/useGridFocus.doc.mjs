@@ -81,9 +81,9 @@ export const docs = {
     description:
       'Manages keyboard navigation within a 2D grid following the WAI-ARIA grid pattern. Supports arrow keys for cell-to-cell navigation, Home/End for row boundaries, Ctrl+Home/Ctrl+End for grid boundaries, and Page Up/Down for custom callbacks (e.g., month navigation in calendars). Boundary navigation callbacks allow seamless cross-grid navigation.',
     bestPractices: [
-      { guidance: true, description: 'Use for calendar date grids — wire onPageUp/onPageDown to month navigation and onNavigateBefore/onNavigateAfter for cross-month arrow key navigation.' },
+      { guidance: true, description: 'Use for calendar date grids: wire onPageUp/onPageDown to month navigation and onNavigateBefore/onNavigateAfter for cross-month arrow key navigation.' },
       { guidance: true, description: 'Attach both gridRef and handleKeyDown to the grid container element.' },
-      { guidance: false, description: 'Use for simple linear lists — prefer useListFocus for 1D navigation.' },
+      { guidance: false, description: 'Use for simple linear lists; prefer useListFocus for 1D navigation.' },
     ],
   },
   relatedComponents: ['Calendar'],
@@ -116,9 +116,9 @@ export const docsDense = {
     description:
       'Manages keyboard navigation within 2D grid following WAI-ARIA grid pattern. Supports arrow keys for cell-to-cell navigation, Home/End for row boundaries, Ctrl+Home/Ctrl+End for grid boundaries, Page Up/Down for custom callbacks (e.g. month navigation in calendars). Boundary navigation callbacks allow seamless cross-grid navigation.',
     bestPractices: [
-      { guidance: true, description: 'Use for calendar date grids — wire onPageUp/onPageDown to month navigation + onNavigateBefore/onNavigateAfter for cross-month arrow key navigation.' },
+      { guidance: true, description: 'Use for calendar date grids: wire onPageUp/onPageDown to month navigation + onNavigateBefore/onNavigateAfter for cross-month arrow key navigation.' },
       { guidance: true, description: 'Attach both gridRef + handleKeyDown to grid container element.' },
-      { guidance: false, description: 'Use for simple linear lists — prefer useListFocus for 1D navigation.' },
+      { guidance: false, description: 'Use for simple linear lists; prefer useListFocus for 1D navigation.' },
     ],
   },
 };

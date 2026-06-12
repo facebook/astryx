@@ -12,11 +12,11 @@ export const docs = {
     description:
       'Steppers display progress through a sequence of logical and numbered steps. Use them for multi-step workflows like forms, onboarding flows, or checkout processes where users need to see their position and the steps ahead.',
     bestPractices: [
-      {guidance: true, description: 'Keep step labels short and descriptive — "Payment" not "Enter your payment information".'},
+      {guidance: true, description: 'Keep step labels short and descriptive: "Payment" not "Enter your payment information".'},
       {guidance: true, description: 'Use the vertical orientation for narrow containers or when steps have longer descriptions.'},
       {guidance: true, description: 'Provide onStepClick for non-linear workflows where users may need to revisit earlier steps.'},
-      {guidance: false, description: 'Use a stepper for fewer than 3 steps — a simple heading or progress bar works better.'},
-      {guidance: false, description: 'Use more than 7 steps — consider grouping related steps or using a different pattern.'},
+      {guidance: false, description: 'Use a stepper for fewer than 3 steps; a simple heading or progress bar works better.'},
+      {guidance: false, description: 'Use more than 7 steps; consider grouping related steps or using a different pattern.'},
     ],
     anatomy: [
       {name: 'Step indicator', required: true, description: 'A numbered circle showing the step position. Shows a checkmark when completed.'},

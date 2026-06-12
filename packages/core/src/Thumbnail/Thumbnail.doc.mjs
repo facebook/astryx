@@ -48,17 +48,17 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
     {
       name: 'className',
       type: 'string',
-      description: 'CSS class name for the root element. Prefer xstyle for styling — className is provided for integration with non-StyleX systems.',
+      description: 'CSS class name for the root element. Prefer xstyle for styling; className is provided for integration with non-StyleX systems.',
     },
     {
       name: 'style',
       type: 'CSSProperties',
-      description: 'Inline styles for the root element. Prefer xstyle for styling — inline styles bypass StyleX optimization.',
+      description: 'Inline styles for the root element. Prefer xstyle for styling; inline styles bypass StyleX optimization.',
     },
     {
       name: 'data-testid',
@@ -77,9 +77,9 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Always provide a label prop with the file name so the thumbnail and its remove button are accessible to screen readers and show a tooltip on hover.'},
       {guidance: true, description: 'Use isLoading without a src to show a skeleton during initial upload, and isLoading with a src to show a spinner overlay once a preview URL is available.'},
-      {guidance: true, description: 'Pair onClick with a lightbox or detail view so users can inspect the full image — the thumbnail adds button semantics and a hover shadow automatically.'},
-      {guidance: false, description: "Don't use Thumbnail for non-image file types like PDFs or spreadsheets — use a file attachment component with an appropriate icon instead."},
-      {guidance: false, description: "Don't omit alt text when a src is provided — screen readers need a description of the image content, not just the file name from label."},
+      {guidance: true, description: 'Pair onClick with a lightbox or detail view so users can inspect the full image; the thumbnail adds button semantics and a hover shadow automatically.'},
+      {guidance: false, description: "Don't use Thumbnail for non-image file types like PDFs or spreadsheets; use a file attachment component with an appropriate icon instead."},
+      {guidance: false, description: "Don't omit alt text when a src is provided; screen readers need a description of the image content, not just the file name from label."},
     ],
     anatomy: [
       {name: 'Image', required: false, description: 'The preview image, displayed as a square with cover fit.'},
