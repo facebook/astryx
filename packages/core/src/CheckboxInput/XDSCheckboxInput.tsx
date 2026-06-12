@@ -39,7 +39,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
-import {XDSFieldStatus} from '../Field/XDSFieldStatus';
+import {XDSFieldStatus} from '../FieldStatus/XDSFieldStatus';
 import type {XDSIconType} from '../Icon';
 import type {XDSInputStatus} from '../Field/types';
 import {XDSSpinner} from '../Spinner';

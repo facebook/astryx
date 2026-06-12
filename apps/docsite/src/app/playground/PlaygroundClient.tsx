@@ -27,11 +27,8 @@ import {useSearchParams} from 'next/navigation';
 import dynamic from 'next/dynamic';
 import {loader} from '@monaco-editor/react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  compressToEncodedURIComponent,
-  decompressFromEncodedURIComponent,
-} from 'lz-string';
 import {XDSAppShell} from '@xds/core/AppShell';
+import {compressCode, decompressCode} from '../../lib/compress';
 import {XDSButton} from '@xds/core/Button';
 import {XDSLink} from '@xds/core/Link';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
@@ -158,14 +155,14 @@ function getInitialCode(): string {
     return DEFAULT_CODE;
   }
   try {
-    return decompressFromEncodedURIComponent(compressed) || DEFAULT_CODE;
+    return decompressCode(compressed) || DEFAULT_CODE;
   } catch {
     return DEFAULT_CODE;
   }
 }
 
 function updateURL(code: string) {
-  const compressed = compressToEncodedURIComponent(code);
+  const compressed = compressCode(code);
   window.history.replaceState(null, '', `#code=${compressed}`);
 }
 
