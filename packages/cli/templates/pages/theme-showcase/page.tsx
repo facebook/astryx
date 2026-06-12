@@ -414,7 +414,7 @@ function StorePreview({
               </XDSVStack>
             </XDSCenter>
 
-            <XDSGrid columns={isMobile ? 1 : {minWidth: 200}} gap={4}>
+            <XDSGrid columns={isMobile ? 1 : {minWidth: 200, max: 3}} gap={4}>
               {PRODUCTS.map((p, i) => (
                 <XDSCard key={p.name} padding={0} height="100%">
                   <XDSVStack gap={0} xstyle={styles.cardStack}>
