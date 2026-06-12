@@ -37,11 +37,13 @@ const GOOGLE_LOGO_URL =
 // 320 − 2×24 (page padding) − 2×16 (stacked grid inset) = 240, so 240 is the
 // largest MIN that still fits the smallest common phones (down to 320px).
 const COLUMN_MIN_WIDTH = 240;
-// The grid is capped at 2 columns (columns.max=2) and reflows to one when its
-// container is narrower than 2×MIN + 32(gap) = 512px. A container query (not a
-// viewport media query) reorders the image AND tightens the inset to match
-// that exact point — keyed to the card width, not the window — so it never
-// desyncs (e.g. a narrow card in a wide viewport).
+// The grid uses repeat:'fit' (auto-fit), so with only two items it forms two
+// columns when wide and collapses to one — expanding to fill — when its
+// container is narrower than 2×MIN + 32(gap) = 512px. (auto-fit, not a max cap,
+// so the single column fills the width instead of stalling at MIN.) A container
+// query (not a viewport media query) reorders the image AND tightens the inset
+// to match that exact point — keyed to the card width, not the window — so it
+// never desyncs (e.g. a narrow card in a wide viewport).
 const STACK_QUERY = '@container login-split (max-width: 511px)';
 
 const styles = stylex.create({
@@ -76,6 +78,9 @@ const styles = stylex.create({
     },
   },
   imageCell: {
+    // Fill the grid track so the cover spans the full column width (the image's
+    // XDSCard is content-width by default and would otherwise leave a gap).
+    width: '100%',
     // order:-1 moves the image above the form when the grid stacks.
     order: {
       default: 0,
@@ -117,7 +122,7 @@ export default function LoginTwoColumn() {
         <div {...stylex.props(styles.cardWrap)}>
           <XDSCard padding={0} width="100%">
             <XDSGrid
-              columns={{minWidth: COLUMN_MIN_WIDTH, max: 2}}
+              columns={{minWidth: COLUMN_MIN_WIDTH, repeat: 'fit'}}
               gap={8}
               align="stretch"
               xstyle={styles.splitGrid}>
@@ -254,7 +259,11 @@ export default function LoginTwoColumn() {
                   A borderless XDSCard clips the image to rounded corners
                   (overflow:clip + radius) so the image needs no own radius. */}
               <div {...stylex.props(styles.imageCell)}>
-                <XDSCard variant="transparent" padding={0} height="100%">
+                <XDSCard
+                  variant="transparent"
+                  padding={0}
+                  width="100%"
+                  height="100%">
                   <img
                     {...stylex.props(styles.coverImage)}
                     src={COVER_IMAGE_URL}
