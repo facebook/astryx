@@ -1,5 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {getIconRegistry} from '@xds/core/Icon';
 import {describe, expect, it} from 'vitest';
 import {parsePropType} from '../components/component-detail/parsePropType';
 
@@ -51,21 +52,15 @@ describe('component detail prop controls', () => {
     });
   });
 
-  it('uses valid semantic icon options for XDSIconType props', () => {
+  it('derives XDSIconType options from the canonical icon registry', () => {
     const control = parsePropType('XDSIconType', 'labelIcon');
 
     expect(control).toMatchObject({
       kind: 'enum',
       allowEmpty: true,
     });
-    expect(control).toEqual(
-      expect.objectContaining({
-        options: expect.arrayContaining(['info', 'success', 'error', 'search']),
-      }),
-    );
     if (control.kind === 'enum') {
-      expect(control.options).not.toContain('checkCircle');
-      expect(control.options).not.toContain('xCircle');
+      expect(control.options).toEqual(Object.keys(getIconRegistry()));
     }
   });
 });
