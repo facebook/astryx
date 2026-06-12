@@ -14,6 +14,8 @@ export interface ElementOption {
 
 export type PropControlDescriptor =
   | {kind: 'enum'; options: string[]; allowEmpty: boolean}
+  | {kind: 'theme'}
+  | {kind: 'syntax-theme'}
   | {kind: 'boolean'}
   | {kind: 'string'}
   | {kind: 'number'}
@@ -109,6 +111,12 @@ export function parsePropType(
   }
   if (t === 'SizeValue') {
     return {kind: 'number'};
+  }
+  if (t === 'XDSDefinedTheme') {
+    return {kind: 'theme'};
+  }
+  if (t === 'SyntaxTheme') {
+    return {kind: 'syntax-theme'};
   }
   if (t === 'XDSIconType' || t === 'XDSIconName') {
     return {

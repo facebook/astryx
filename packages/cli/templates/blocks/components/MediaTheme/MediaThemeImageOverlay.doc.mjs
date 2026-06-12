@@ -4,20 +4,18 @@
 export const doc = {
   type: 'block',
   exampleFor: 'MediaTheme',
-  name: 'MediaTheme — Media Overlay',
-  displayName: 'MediaTheme — Media Overlay',
+  name: 'MediaTheme — Image Overlay',
+  displayName: 'MediaTheme — Image Overlay',
   description:
-    'A compact media overlay showing XDSMediaTheme adapting text, icons, badges, and button variants over an image-backed dark surface.',
+    'A common image card pattern: place text and actions over a dark gradient and wrap the overlay content in XDSMediaTheme mode="dark".',
   isReady: true,
-  isShowcase: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: [
     'MediaTheme',
+    'AspectRatio',
+    'Button',
     'Section',
     'Layout',
     'Text',
-    'Button',
-    'Badge',
-    'Icon',
   ],
 };
