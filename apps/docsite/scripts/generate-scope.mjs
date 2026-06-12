@@ -141,22 +141,32 @@ const pgPseudoSuffix = (cond: string): string =>
 const pgWrapAtRule = (cond: string, decl: string): string =>
   cond.startsWith('@') ? cond + '{' + decl + '}' : decl;
 
+// Compile one rule object (a map of prop -> value | conditional value) into a
+// $$css-tagged object of class names — the shape props() and the real compiled
+// stylex.props() both understand.
+const pgCompileRule = (rule: Record<string, unknown>): Record<string, unknown> => {
+  const compiled: Record<string, unknown> = {$$css: true};
+  for (const [prop, value] of Object.entries(rule)) {
+    if (value == null) continue;
+    compiled[prop] = pgClassForProp(prop, value as PGStyleValue);
+  }
+  return compiled;
+};
+
 const stylexMock = {
-  create: <T extends Record<string, PGRule>>(styles: T): T => {
+  create: <T extends Record<string, unknown>>(styles: T): T => {
     const out: Record<string, unknown> = {};
     for (const [key, rule] of Object.entries(styles)) {
-      // Dynamic styles (functions) aren't supported by this mock — pass them
-      // through unchanged so they don't crash the preview.
-      if (typeof rule !== 'object' || rule == null) {
+      if (typeof rule === 'function') {
+        // Dynamic style: compile the object it returns at call time so its
+        // (possibly conditional) values still become real CSS classes.
+        const fn = rule as (...args: unknown[]) => Record<string, unknown>;
+        out[key] = (...args: unknown[]) => pgCompileRule(fn(...args));
+      } else if (typeof rule === 'object' && rule != null) {
+        out[key] = pgCompileRule(rule as Record<string, unknown>);
+      } else {
         out[key] = rule;
-        continue;
       }
-      const compiled: Record<string, unknown> = {$$css: true};
-      for (const [prop, value] of Object.entries(rule)) {
-        if (value == null) continue;
-        compiled[prop] = pgClassForProp(prop, value);
-      }
-      out[key] = compiled;
     }
     return out as T;
   },
