@@ -40,20 +40,115 @@ const styles = stylex.create({
   // Cards live in a FIXED-WIDTH, viewport-centered box (the same box the aurora
   // blobs use) so every card's `left %` is a percentage of a stable width — the
   // whole composition just re-centers on resize instead of the cards drifting
-  // apart or away from the blobs. Hidden below ~1180px, where the stacked mobile
-  // layout (HeroFloatingCardsStack) takes over.
+  // apart or away from the blobs. Hidden below ~1024px, where the collage layout
+  // takes over.
   stage: {
     position: 'fixed',
     top: 'var(--appshell-header-height, 0px)',
     left: '50%',
     transform: 'translateX(-50%)',
-    width: 1200,
+    // Cap to the viewport so the fixed stage never forces horizontal scroll on
+    // widths just above the 1024px breakpoint. Card bleed past the gutters is
+    // clipped by heroScope's overflow-x; on wide screens there's room so it
+    // stays visible.
+    width: 'min(1200px, 100vw)',
     height: 1050,
     pointerEvents: 'none',
     display: {
       default: 'none',
-      '@media (min-width: 1180px)': 'block',
+      '@media (min-width: 1024px)': 'block',
     },
+  },
+  // Narrow-screen collage (<1024px): a 3-column arrangement of the same cards
+  // pinned to the bottom of the hero band (the desktop overlap `stage` hides
+  // here). position:fixed so it stays put while the showcase scrolls UP over it,
+  // matching the desktop pin-and-cover behavior instead of scrolling away.
+  // Col 1 = product, Col 2 = reward, Col 3 = buy card + composer + badge + radio.
+  collage: {
+    // Hidden at ≥1024px (desktop uses the overlap `stage`); a CSS grid below.
+    display: {
+      default: 'grid',
+      '@media (min-width: 1024px)': 'none',
+    },
+    // Pinned (fixed) a consistent gap below the hero text. The top offset =
+    // nav height + the hero content's top padding (the nav→wordmark gap) + the
+    // measured hero text height (--hero-text-height, set in page.tsx) + the same
+    // gap again — so the nav→wordmark and text→cards gaps stay equal across
+    // breakpoints. The showcase scrolls UP and paints over it (pin-and-cover).
+    position: 'fixed',
+    top: 'calc(var(--appshell-header-height, 0px) + var(--hero-gap, 96px) + var(--hero-text-height, 345px) + var(--hero-gap, 96px))',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    // <560px: 2 balanced columns. 560–1024px: 3 columns (product | reward |
+    // stacked group). Grid areas (below) place the items per layout.
+    gridTemplateColumns: {
+      default: '1fr 1fr',
+      '@media (min-width: 560px)': '1fr 1fr minmax(0, 240px)',
+    },
+    gridTemplateAreas: {
+      default: '"product reward" "buy composer" "badge radio"',
+      '@media (min-width: 560px)':
+        '"product reward buy" "product reward composer" "product reward badge" "product reward radio"',
+    },
+    alignItems: 'start',
+    justifyContent: 'center',
+    columnGap: 'var(--spacing-4)',
+    rowGap: 'var(--spacing-3)',
+    width: '100%',
+    maxWidth: {
+      default: 560,
+      '@media (min-width: 560px)': 900,
+    },
+    paddingInline: 'var(--spacing-4)',
+    boxSizing: 'border-box',
+    zIndex: 0,
+    pointerEvents: 'none',
+  },
+  // Grid-area placements. The product/reward cards span the full column height
+  // (their images fill) so the two tall columns read as equal height.
+  gaProduct: {gridArea: 'product', display: 'flex', minWidth: 0},
+  gaReward: {gridArea: 'reward', display: 'flex', minWidth: 0},
+  gaBuy: {gridArea: 'buy', minWidth: 0},
+  gaComposer: {gridArea: 'composer', minWidth: 0},
+  gaBadge: {gridArea: 'badge', minWidth: 0},
+  gaRadio: {gridArea: 'radio', minWidth: 0},
+  // Badge sits left-aligned in its cell (not full width).
+  collageBadge: {
+    display: 'flex',
+    justifyContent: 'flex-start',
+  },
+  // Per-card reset in the collage: drop absolute positioning + the scaled pose
+  // so each card sits full-width in its column.
+  stackCard: {
+    position: 'static',
+    width: '100%',
+    transform: 'none',
+    opacity: 1,
+  },
+  // Collage product card: make the body a full-height column and let the image
+  // grow to fill the leftover space (so the card image fills its stretched
+  // height rather than leaving a gap under a fixed-ratio square).
+  collageProductBody: {
+    height: '100%',
+  },
+  collageImageFill: {
+    flexGrow: 1,
+    minHeight: 0,
+    overflow: 'hidden',
+    borderRadius: 'var(--radius-element)',
+  },
+  // Collage reward card: full-height flex column so its image can grow to fill
+  // the stretched card height with the footer pinned to the bottom.
+  collageRewardCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+  },
+  // The reward image grows to fill the space above the footer in collage mode.
+  collageRewardImage: {
+    flexGrow: 1,
+    minHeight: 0,
+    overflow: 'hidden',
   },
   // Shared base for floating elements: absolute placement + a soft theme-timed
   // entrance transition.
@@ -144,10 +239,9 @@ const styles = stylex.create({
     pointerEvents: 'none',
     cursor: 'default',
   },
-  // Force a neutral card surface on the composer body so it reads as a clean
-  // light bubble on every theme — the composer defaults to
-  // --color-background-popover, which is a tinted (e.g. pink on Y2K) surface
-  // that clashes with the product card behind it.
+  // Match the composer surface to the themed body background (like the cards)
+  // so it blends with the hero scene instead of defaulting to the tinted
+  // --color-background-popover (e.g. pink on Y2K).
   composerSurface: {
     backgroundColor: 'var(--color-background-card)',
   },
@@ -231,68 +325,93 @@ const styles = stylex.create({
 export function HeroFloatingCards({
   content,
   mounted,
+  layout = 'overlap',
 }: {
   content: HeroThemeContent;
   mounted: boolean;
+  /** 'overlap' = desktop fixed art layout; 'stack' = mobile flow column. */
+  layout?: 'overlap' | 'stack';
 }) {
-  const pose = mounted ? styles.shownPose : styles.hiddenPose;
+  const stack = layout === 'stack';
+  // In the stacked layout cards render full-size in flow (no entrance pose).
+  const pose = stack
+    ? styles.stackCard
+    : mounted
+      ? styles.shownPose
+      : styles.hiddenPose;
 
-  return (
-    <div {...stylex.props(styles.stage)} aria-hidden="true" inert>
-      {/* Leading pill */}
-      <div
-        {...stylex.props(
-          styles.floater,
-          styles.pillLeading,
-          styles.originTopLeft,
-          pose,
-        )}>
-        <XDSBadge
-          variant="green"
-          label={content.pills.leading}
-          icon={<Sparkles size={12} />}
+  // ── Card bodies (shared by both layouts) ──────────────────────────────
+  const badgeEl = (
+    <XDSBadge
+      variant="green"
+      label={content.pills.leading}
+      icon={<Sparkles size={12} />}
+    />
+  );
+
+  const radioEl = (
+    <XDSCard padding={2} xstyle={styles.radioPillCard}>
+      <XDSRadioList
+        label={content.pills.trailing}
+        isLabelHidden
+        value="selected"
+        onChange={() => {}}
+        size="sm">
+        <XDSRadioListItem label={content.pills.trailing} value="selected" />
+      </XDSRadioList>
+    </XDSCard>
+  );
+
+  const composerEl = (
+    <XDSChatComposer
+      value=""
+      onChange={() => {}}
+      onSubmit={() => {}}
+      placeholder={content.chatPrompt}
+      xstyle={styles.composerSurface}
+      footerActions={
+        <XDSButton
+          variant="secondary"
+          size="md"
+          isIconOnly
+          icon={<Plus size={16} />}
+          label="Add attachment"
         />
-      </div>
+      }
+      sendButton={<XDSChatSendButton isDisabled={false} />}
+    />
+  );
 
-      {/* Trailing pill — a selected radio option wrapped in a pill card */}
-      <div
-        {...stylex.props(
-          styles.floater,
-          styles.pillTrailing,
-          styles.originTopLeft,
-          pose,
-        )}>
-        <XDSCard padding={2} xstyle={styles.radioPillCard}>
-          <XDSRadioList
-            label={content.pills.trailing}
-            isLabelHidden
-            value="selected"
-            onChange={() => {}}
-            size="sm">
-            <XDSRadioListItem label={content.pills.trailing} value="selected" />
-          </XDSRadioList>
-        </XDSCard>
-      </div>
-
-      {/* Left — image-led product card with a chat bubble breaking out right */}
-      <XDSCard
-        padding={4}
-        xstyle={[
-          styles.floater,
-          styles.productCard,
-          styles.originTopLeft,
-          pose,
-        ]}>
-        <XDSVStack gap={4}>
-          <XDSVStack gap={1}>
-            <XDSHeading level={2}>{content.product.title}</XDSHeading>
-            <XDSText
-              type="body"
-              color="secondary"
-              xstyle={styles.productDescription}>
-              {content.product.description}
-            </XDSText>
-          </XDSVStack>
+  // Product card body. In overlap mode the composer breaks out over the image;
+  // in collage mode the composer is a separate column item, so it's omitted.
+  const productCardEl = (
+    <XDSCard
+      padding={4}
+      xstyle={
+        stack
+          ? [styles.stackCard]
+          : [styles.floater, styles.productCard, styles.originTopLeft, pose]
+      }>
+      <XDSVStack gap={4} xstyle={stack ? styles.collageProductBody : undefined}>
+        <XDSVStack gap={1}>
+          <XDSHeading level={2}>{content.product.title}</XDSHeading>
+          <XDSText
+            type="body"
+            color="secondary"
+            xstyle={styles.productDescription}>
+            {content.product.description}
+          </XDSText>
+        </XDSVStack>
+        {stack ? (
+          // Collage: image grows to fill the card's stretched height.
+          <div {...stylex.props(styles.collageImageFill)}>
+            <img
+              src={content.product.image}
+              alt=""
+              {...stylex.props(styles.image)}
+            />
+          </div>
+        ) : (
           <div {...stylex.props(styles.productImageWrap)}>
             <div {...stylex.props(styles.imageFrame)}>
               <XDSAspectRatio ratio={1}>
@@ -303,43 +422,33 @@ export function HeroFloatingCards({
                 />
               </XDSAspectRatio>
             </div>
-            {/* Assistant prompt bubble — a real XDSChatComposer (rounded input
-                + built-in send button) breaking out past the card's right edge
-                over the lower part of the photo. Decorative: the whole layer is
-                inert / aria-hidden / pointer-events:none, so the no-op handlers
-                never fire. */}
-            <div {...stylex.props(styles.chatBubble)}>
-              <XDSChatComposer
-                value=""
-                onChange={() => {}}
-                onSubmit={() => {}}
-                placeholder={content.chatPrompt}
-                xstyle={styles.composerSurface}
-                footerActions={
-                  <XDSButton
-                    variant="secondary"
-                    size="md"
-                    isIconOnly
-                    icon={<Plus size={16} />}
-                    label="Add attachment"
-                  />
-                }
-                sendButton={<XDSChatSendButton isDisabled={false} />}
-              />
-            </div>
+            {/* Overlap-only: composer breaks out past the card edge over the
+                photo. In collage mode the composer is its own column item. */}
+            <div {...stylex.props(styles.chatBubble)}>{composerEl}</div>
           </div>
-        </XDSVStack>
-      </XDSCard>
+        )}
+      </XDSVStack>
+    </XDSCard>
+  );
 
-      {/* Right — feature card: product image on top, reward footer below */}
-      <XDSCard
-        padding={0}
-        xstyle={[
-          styles.floater,
-          styles.featureCard,
-          styles.originTopLeft,
-          pose,
-        ]}>
+  const rewardCardEl = (
+    <XDSCard
+      padding={0}
+      xstyle={
+        stack
+          ? [styles.stackCard, styles.collageRewardCard]
+          : [styles.floater, styles.featureCard, styles.originTopLeft, pose]
+      }>
+      {stack ? (
+        // Collage: image grows to fill the card's stretched height.
+        <div {...stylex.props(styles.collageRewardImage)}>
+          <img
+            src={content.feature.image}
+            alt=""
+            {...stylex.props(styles.image)}
+          />
+        </div>
+      ) : (
         <XDSAspectRatio ratio={1}>
           <img
             src={content.feature.image}
@@ -347,66 +456,117 @@ export function HeroFloatingCards({
             {...stylex.props(styles.image)}
           />
         </XDSAspectRatio>
-
-        {/* Reward-progress footer attached below the image */}
-        <div {...stylex.props(styles.rewardFooter)}>
-          <XDSVStack gap={2}>
-            <XDSHStack gap={2} hAlign="between" vAlign="center">
-              <XDSText type="body" weight="semibold">
-                {content.reward.label}
-              </XDSText>
-              <XDSText type="supporting" color="secondary">
-                {content.reward.value}/{content.reward.total}
-              </XDSText>
-            </XDSHStack>
-            <XDSProgressBar
-              label={content.reward.label}
-              isLabelHidden
-              value={content.reward.value}
-              max={content.reward.total}
-              variant="accent"
-            />
-            <XDSHStack gap={2} vAlign="center" xstyle={styles.profileRow}>
-              <XDSAvatar name={content.reward.member} size="xsmall" />
-              <XDSText type="supporting" color="secondary">
-                {content.reward.member}
-              </XDSText>
-            </XDSHStack>
-          </XDSVStack>
-        </div>
-      </XDSCard>
-
-      {/* Right — buy card: thumbnail + title/description + Add to cart */}
-      <XDSCard
-        padding={3}
-        xstyle={[styles.floater, styles.buyCard, styles.originTopLeft, pose]}>
-        <XDSVStack gap={3}>
-          <XDSHStack gap={3} vAlign="center">
-            <div {...stylex.props(styles.buyThumbFrame)}>
-              <img
-                src={content.mini.image}
-                alt=""
-                {...stylex.props(styles.image)}
-              />
-            </div>
-            <XDSVStack gap={1} xstyle={styles.fullWidth}>
-              <XDSHeading level={3}>{content.mini.title}</XDSHeading>
-              <XDSText
-                type="supporting"
-                color="secondary"
-                xstyle={styles.buyDescription}>
-                {content.mini.description}
-              </XDSText>
-            </XDSVStack>
+      )}
+      <div {...stylex.props(styles.rewardFooter)}>
+        <XDSVStack gap={2}>
+          <XDSHStack gap={2} hAlign="between" vAlign="center">
+            <XDSText type="body" weight="semibold">
+              {content.reward.label}
+            </XDSText>
+            <XDSText type="supporting" color="secondary">
+              {content.reward.value}/{content.reward.total}
+            </XDSText>
           </XDSHStack>
-          <XDSButton
-            variant="secondary"
-            size="md"
-            label="Add to cart"
-            xstyle={styles.fullWidth}
+          <XDSProgressBar
+            label={content.reward.label}
+            isLabelHidden
+            value={content.reward.value}
+            max={content.reward.total}
+            variant="accent"
           />
+          <XDSHStack gap={2} vAlign="center" xstyle={styles.profileRow}>
+            <XDSAvatar name={content.reward.member} size="xsmall" />
+            <XDSText type="supporting" color="secondary">
+              {content.reward.member}
+            </XDSText>
+          </XDSHStack>
         </XDSVStack>
-      </XDSCard>
+      </div>
+    </XDSCard>
+  );
+
+  const buyCardEl = (
+    <XDSCard
+      padding={3}
+      xstyle={
+        stack
+          ? [styles.stackCard]
+          : [styles.floater, styles.buyCard, styles.originTopLeft, pose]
+      }>
+      <XDSVStack gap={3}>
+        <XDSHStack gap={3} vAlign="center">
+          <div {...stylex.props(styles.buyThumbFrame)}>
+            <img
+              src={content.mini.image}
+              alt=""
+              {...stylex.props(styles.image)}
+            />
+          </div>
+          <XDSVStack gap={1} xstyle={styles.fullWidth}>
+            <XDSHeading level={3}>{content.mini.title}</XDSHeading>
+            <XDSText
+              type="supporting"
+              color="secondary"
+              xstyle={styles.buyDescription}>
+              {content.mini.description}
+            </XDSText>
+          </XDSVStack>
+        </XDSHStack>
+        <XDSButton
+          variant="secondary"
+          size="md"
+          label="Add to cart"
+          xstyle={styles.fullWidth}
+        />
+      </XDSVStack>
+    </XDSCard>
+  );
+
+  // ── Collage layout (narrow screens): CSS grid ─────────────────────────
+  // Grid areas reflow the same items: 560–1024px → 3 columns (product, reward,
+  // and buy/composer/badge/radio stacked in col 3); <560px → 2 balanced columns
+  // (left: product, buy, badge · right: reward, composer, radio).
+  if (stack) {
+    return (
+      <div {...stylex.props(styles.collage)} aria-hidden="true" inert>
+        <div {...stylex.props(styles.gaProduct)}>{productCardEl}</div>
+        <div {...stylex.props(styles.gaReward)}>{rewardCardEl}</div>
+        <div {...stylex.props(styles.gaBuy)}>{buyCardEl}</div>
+        <div {...stylex.props(styles.gaComposer)}>{composerEl}</div>
+        <div {...stylex.props(styles.gaBadge, styles.collageBadge)}>
+          {badgeEl}
+        </div>
+        <div {...stylex.props(styles.gaRadio)}>{radioEl}</div>
+      </div>
+    );
+  }
+
+  // ── Overlap layout (desktop): fixed art composition ───────────────────
+  return (
+    <div {...stylex.props(styles.stage)} aria-hidden="true" inert>
+      {/* Leading pill */}
+      <div
+        {...stylex.props(
+          styles.floater,
+          styles.pillLeading,
+          styles.originTopLeft,
+          pose,
+        )}>
+        {badgeEl}
+      </div>
+      {/* Trailing pill — a selected radio option wrapped in a pill card */}
+      <div
+        {...stylex.props(
+          styles.floater,
+          styles.pillTrailing,
+          styles.originTopLeft,
+          pose,
+        )}>
+        {radioEl}
+      </div>
+      {productCardEl}
+      {rewardCardEl}
+      {buyCardEl}
     </div>
   );
 }

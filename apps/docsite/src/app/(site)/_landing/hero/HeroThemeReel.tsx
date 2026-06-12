@@ -86,13 +86,13 @@ const styles = stylex.create({
     transitionDuration: 'var(--duration-medium, 300ms)',
     transitionTimingFunction: 'var(--ease-standard, ease)',
   },
-  // Hero-scale wordmark. Caps at 520px on desktop; on smaller screens it
-  // tracks the column width but stays comfortably inside the hero's inline
-  // padding so the glyphs never kiss the viewport edge.
+  // Hero-scale wordmark. Caps at 520px on desktop; smaller on narrow screens so
+  // it doesn't dominate (and the glyphs never kiss the viewport edge).
   wordmark: {
     width: {
-      default: 'min(520px, 70%)',
-      '@media (max-width: 600px)': '88%',
+      default: 'min(360px, 70%)',
+      '@media (min-width: 768px)': 'min(440px, 70%)',
+      '@media (min-width: 1024px)': 'min(520px, 70%)',
     },
     height: 'auto',
   },
@@ -167,7 +167,9 @@ const styles = stylex.create({
     // coordinate space and stay aligned at any screen width.
     left: '50%',
     transform: 'translateX(-50%)',
-    width: 1200,
+    // Cap to the viewport so the fixed glow box never forces horizontal scroll
+    // on narrow screens.
+    width: 'min(1200px, 100vw)',
     height: 1050,
     pointerEvents: 'none',
     opacity: 0.5,
@@ -177,15 +179,12 @@ const styles = stylex.create({
     // under the left cluster (~5%), center + right blobs under the right
     // cluster (~72% / ~92%).
     backgroundImage:
-      'radial-gradient(circle 220px at 5% 55%, var(--aurora-left), var(--aurora-left) 90%, transparent 100%), ' +
-      'radial-gradient(circle 200px at 72% 65%, var(--aurora-center), var(--aurora-center) 90%, transparent 100%), ' +
-      'radial-gradient(circle 260px at 92% 45%, var(--aurora-right), var(--aurora-right) 90%, transparent 100%)',
-    // Hidden on small viewports (the cards hide there too), so the mobile hero
-    // keeps the clean flat page background.
-    display: {
-      default: 'none',
-      '@media (min-width: 1180px)': 'block',
-    },
+      'radial-gradient(circle 220px at 5% 75%, var(--aurora-left), var(--aurora-left) 90%, transparent 100%), ' +
+      'radial-gradient(circle 200px at 72% 85%, var(--aurora-center), var(--aurora-center) 90%, transparent 100%), ' +
+      'radial-gradient(circle 260px at 92% 65%, var(--aurora-right), var(--aurora-right) 90%, transparent 100%)',
+    // Visible at all widths so the per-theme aurora glow sits behind the hero on
+    // narrow screens (with the collage) as well as the desktop overlap layout.
+    display: 'block',
   },
   // Centering wrapper for the XDSPagination dots, with breathing room above
   // so they don't crowd the "Currently in Beta · Built on React and StyleX"
@@ -349,6 +348,26 @@ export function HeroReelCards() {
       <div {...stylex.props(styles.cardsLayer)}>
         <HeroFloatingCards content={active.content} mounted={shown} />
       </div>
+    </XDSTheme>
+  );
+}
+
+/**
+ * Mobile-only stacked variant of the hero cards. The desktop overlap layout
+ * (HeroReelCards) hides below 1024px; this renders the same cards as a centered
+ * single column in normal flow. Placed after the hero text in page.tsx so it
+ * appears below the headline on small screens. Self-hides at ≥1024px via the
+ * `stackStage` style.
+ */
+export function HeroReelStack() {
+  const reel = useHeroReel();
+  if (!reel || reel.slides.length === 0) {
+    return null;
+  }
+  const active = reel.slides[reel.index];
+  return (
+    <XDSTheme theme={active.theme} mode="light">
+      <HeroFloatingCards content={active.content} mounted layout="stack" />
     </XDSTheme>
   );
 }

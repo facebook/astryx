@@ -13,6 +13,7 @@ import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {
   HeroReelProvider,
   HeroReelCards,
+  HeroReelStack,
   HeroReelWordmark,
   HeroReelDots,
 } from './_landing/hero/HeroThemeReel';
@@ -22,9 +23,16 @@ import {DiscoverShowcase} from './_landing/DiscoverShowcase';
 
 // Height of the hero band (the region the fixed hero content + floating cards
 // occupy before the showcase scrolls up over it). Drives the in-flow spacer
-// that reserves this space in heroScope. Bumped from 600 → 760 to give the
-// floating cards more vertical breathing room without crowding the showcase.
+// that reserves this space in heroScope. Desktop (≥1024px) uses 760; narrow
+// screens use a taller band so the centered hero text and the bottom-pinned
+// collage cards both fit without overlapping (the headline wraps to more lines
+// and the cards stack into a taller row there).
 const HERO_BAND_HEIGHT = 760;
+// Narrow screens use a taller band so the centered hero text and the bottom-
+// pinned collage both fit without overlapping. The collage is a 3-column row at
+// 560–1024px, and wraps to 2 columns (taller) below 560px.
+const HERO_BAND_HEIGHT_NARROW = 1000; // 560–1024px: 3-column row
+const HERO_BAND_HEIGHT_2COL = 1340; // <560px: wraps to 2 columns
 
 const styles = stylex.create({
   // Wraps hero + showcase together so the sticky hero (position: sticky)
@@ -35,6 +43,9 @@ const styles = stylex.create({
   heroScope: {
     position: 'relative',
     backgroundColor: 'var(--color-background-body)',
+    // One gap value shared by the nav→wordmark top padding and the text→cards
+    // gap (collage `top`), so both read consistently across breakpoints.
+    '--hero-gap': 'calc(var(--spacing-12) * 2)',
   },
   // Hero content column. Rendered position:fixed — locked to the viewport
   // exactly like the aurora glow behind it — so the wordmark + headline +
@@ -55,13 +66,27 @@ const styles = stylex.create({
     left: 0,
     right: 0,
     // Span the hero band minus the nav strip so the centered content's box
-    // matches the in-flow heroSpacer region exactly.
-    height: `calc(${HERO_BAND_HEIGHT}px - var(--appshell-header-height, 0px))`,
-    // Vertically center the content within that box. The extra paddingBlockEnd
-    // OPTICALLY centers the block: the carousel dots add visual weight at the
-    // bottom, so reserving a bit more space below shifts the main mass
-    // (wordmark → subtext) up to where the eye reads it as centered.
-    justifyContent: 'center',
+    // matches the in-flow heroSpacer region exactly. Taller on narrow screens.
+    height: {
+      default: `calc(${HERO_BAND_HEIGHT_2COL}px - var(--appshell-header-height, 0px))`,
+      '@media (min-width: 560px)': `calc(${HERO_BAND_HEIGHT_NARROW}px - var(--appshell-header-height, 0px))`,
+      '@media (min-width: 1024px)': `calc(${HERO_BAND_HEIGHT}px - var(--appshell-header-height, 0px))`,
+    },
+    // Desktop: vertically center the content (the extra paddingBlockEnd
+    // optically centers it since the dots add weight at the bottom). Narrow
+    // screens: anchor the text to the TOP of the (taller) band so the
+    // bottom-pinned collage cards have clear room and don't overlap it.
+    justifyContent: {
+      default: 'flex-start',
+      '@media (min-width: 1024px)': 'center',
+    },
+    // Narrow screens anchor content to the top, so add the shared --hero-gap
+    // below the nav so the wordmark doesn't touch it (and it matches the
+    // text→cards gap). Desktop centers, so no top padding needed.
+    paddingBlockStart: {
+      default: 'var(--hero-gap)',
+      '@media (min-width: 1024px)': 0,
+    },
     paddingBlockEnd: spacingVars['--spacing-12'],
     maxWidth: 800,
     marginInline: 'auto',
@@ -77,7 +102,11 @@ const styles = stylex.create({
   // showcase below starts at the right offset and the pin-and-cover reveal
   // reads consistently across viewports.
   heroSpacer: {
-    height: HERO_BAND_HEIGHT,
+    height: {
+      default: HERO_BAND_HEIGHT_2COL,
+      '@media (min-width: 560px)': HERO_BAND_HEIGHT_NARROW,
+      '@media (min-width: 1024px)': HERO_BAND_HEIGHT,
+    },
   },
   // Hero CTA button grid. maxWidth: 420 caps the two-up button
   // row at a comfortable thumb-reachable width so the buttons
@@ -98,6 +127,13 @@ const styles = stylex.create({
   // semibold default.
   heroHeadline: {
     fontWeight: 'var(--font-weight-normal)',
+    // Smaller on narrow screens so the headline doesn't dominate; steps up to
+    // the full display-1 size on desktop.
+    fontSize: {
+      default: 'var(--font-size-3xl)',
+      '@media (min-width: 768px)': 'var(--font-size-4xl)',
+      '@media (min-width: 1024px)': 'var(--text-display-1-size)',
+    },
   },
   // The showcase overlay paints the surface that scrolls UP over
   // the pinned hero (pin-and-cover reveal). Surface color +
@@ -120,6 +156,37 @@ const styles = stylex.create({
 
 export default function HomePage() {
   const showcaseRef = useRef<HTMLDivElement | null>(null);
+  const heroScopeRef = useRef<HTMLDivElement | null>(null);
+  const heroContentRef = useRef<HTMLElement | null>(null);
+
+  // Measure the hero text block height and expose it as --hero-text-height on
+  // heroScope. The pinned collage positions itself a consistent gap below the
+  // text using this (instead of a fixed estimate), so the nav→wordmark gap and
+  // the text→cards gap stay equal as the text wraps/resizes across breakpoints.
+  useEffect(() => {
+    const scope = heroScopeRef.current;
+    const content = heroContentRef.current;
+    if (!scope || !content) {
+      return;
+    }
+    // The fixed hero content fills the band; its children (wordmark, headline,
+    // CTAs) are the text block. Measure from the first child's top to the last
+    // child's bottom to get the real text-block height regardless of wrapping.
+    const setVar = () => {
+      const first = content.firstElementChild;
+      const last = content.lastElementChild;
+      if (!first || !last) {
+        return;
+      }
+      const height =
+        last.getBoundingClientRect().bottom - first.getBoundingClientRect().top;
+      scope.style.setProperty('--hero-text-height', `${Math.round(height)}px`);
+    };
+    setVar();
+    const ro = new ResizeObserver(setVar);
+    ro.observe(content);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     const el = showcaseRef.current;
@@ -160,7 +227,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div {...stylex.props(styles.heroScope)}>
+    <div ref={heroScopeRef} {...stylex.props(styles.heroScope)}>
       {/* The theming showcase reel is split across the DOM: a full-bleed
           floating-cards layer that anchors to this heroScope (so the cards
           sit in the left/right gutters), and the recolorable wordmark inside
@@ -177,6 +244,7 @@ export default function HomePage() {
             would jump up to the top of the page. */}
         <div {...stylex.props(styles.heroSpacer)} aria-hidden="true" />
         <XDSVStack
+          ref={heroContentRef}
           data-home-page="true"
           align="stretch"
           xstyle={styles.heroContent}>
@@ -242,6 +310,10 @@ export default function HomePage() {
             <HeroReelDots />
           </XDSVStack>
         </XDSVStack>
+        {/* Mobile-only stacked cards — the desktop overlap layer (HeroReelCards)
+            hides below 1024px; this renders the same cards as a collage here,
+            below the hero text. Self-hides at ≥1024px. */}
+        <HeroReelStack />
       </HeroReelProvider>
       <XDSVStack ref={showcaseRef} xstyle={styles.showcaseOverlay}>
         <FeaturesShowcase />
