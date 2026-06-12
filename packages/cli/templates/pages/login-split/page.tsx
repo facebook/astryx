@@ -33,9 +33,13 @@ const GOOGLE_LOGO_URL =
 const STACK_QUERY = '@media (max-width: 700px)';
 
 const styles = stylex.create({
-  // Full-viewport page: body background + padding so the centered card never
-  // touches the screen edges.
+  // Page surface: fills its container (full app viewport, or the docsite's
+  // shorter preview frame) via minHeight:100% rather than a viewport unit, so
+  // the centered card stays vertically centered inside the preview frame
+  // instead of centering against the taller browser viewport and dropping
+  // below the frame. Padding keeps the card off the surface edges.
   page: {
+    minHeight: '100%',
     backgroundColor: colorVars['--color-background-body'],
     padding: spacingVars['--spacing-6'],
   },
@@ -82,7 +86,7 @@ export default function LoginTwoColumn() {
   };
 
   return (
-    <XDSCenter axis="both" height="100dvh" xstyle={styles.page}>
+    <XDSCenter axis="both" xstyle={styles.page}>
       <XDSVStack gap={4} width="100%">
         {/* Card — wrapper caps width + centers; grid reflows below 700px */}
         <div {...stylex.props(styles.cardWrap)}>
