@@ -14,7 +14,7 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSIcon} from '@xds/core/Icon';
-import {colorVars} from '@xds/core/theme/tokens.stylex';
+import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 
 // Brand sign-in marks — no heroicons or template-assets equivalent.
 const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -61,6 +61,13 @@ const styles = stylex.create({
   page: {
     minHeight: '100%',
     backgroundColor: colorVars['--color-background-body'],
+    padding: spacingVars['--spacing-6'],
+  },
+  // Cap the column at 400px but let it shrink to fit narrow screens (XDSStack
+  // has no maxWidth prop, so it's set here).
+  content: {
+    width: '100%',
+    maxWidth: 400,
   },
 });
 
@@ -85,7 +92,7 @@ export default function LoginSimple() {
 
   return (
     <XDSCenter axis="both" xstyle={styles.page}>
-      <XDSVStack gap={4} hAlign="center">
+      <XDSVStack gap={4} hAlign="center" xstyle={styles.content}>
         {/* Logo */}
         <XDSVStack gap={2} hAlign="center">
           <XDSIcon icon={CubeIcon} size="lg" />
@@ -95,7 +102,7 @@ export default function LoginSimple() {
         </XDSVStack>
 
         {/* Card */}
-        <XDSCard padding={8} width={400}>
+        <XDSCard padding={8} width="100%">
           <XDSVStack gap={4} hAlign="stretch">
             {/* Header */}
             <XDSVStack gap={1} hAlign="center">
@@ -192,7 +199,7 @@ export default function LoginSimple() {
         </XDSCard>
 
         {/* Terms */}
-        <XDSVStack hAlign="center" width={400}>
+        <XDSVStack hAlign="center" width="100%">
           <XDSText type="supporting" color="secondary" justify="center">
             By clicking continue, you agree to our{' '}
             <XDSLink href="#" type="supporting">
