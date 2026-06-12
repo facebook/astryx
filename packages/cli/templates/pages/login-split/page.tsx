@@ -33,15 +33,34 @@ const GOOGLE_LOGO_URL =
 const STACK_QUERY = '@media (max-width: 700px)';
 
 const styles = stylex.create({
-  // Page surface: fills its container (full app viewport, or the docsite's
-  // shorter preview frame) via minHeight:100% rather than a viewport unit, so
-  // the centered card stays vertically centered inside the preview frame
-  // instead of centering against the taller browser viewport and dropping
-  // below the frame. Padding keeps the card off the surface edges.
+  // Page surface. A column flex that fills its container (the full app
+  // viewport, or the docsite's shorter preview frame) and GROWS with its
+  // content. This is a vertical-flex page rather than an XDSCenter because
+  // XDSCenter is a row flex with align-items:center: when the card is taller
+  // than the frame the centered child overflows the container instead of
+  // stretching it, so (a) the body background only paints one frame-height
+  // and the overflow area shows the frame's bare surface, and (b) the card's
+  // top is pushed above the scroll origin and clipped. As a column flex with
+  // minHeight:100%, the surface grows to the full content height so the body
+  // background covers everything; the child centers via margin-block:auto
+  // (see contentWrap), which is overflow-safe — it centers when there is room
+  // and keeps the top reachable when content is taller than the frame.
+  // boxSizing keeps the spacing-6 padding inside the 100% height.
   page: {
+    display: 'flex',
+    flexDirection: 'column',
     minHeight: '100%',
+    boxSizing: 'border-box',
     backgroundColor: colorVars['--color-background-body'],
     padding: spacingVars['--spacing-6'],
+  },
+  // Vertical-centering wrapper. marginBlock:auto centers the stack within the
+  // page's leftover height when the content fits, but (unlike flex centering)
+  // does not clip the top when the content is taller than the frame — the top
+  // margin collapses to 0 and the card scrolls from the top instead.
+  contentWrap: {
+    width: '100%',
+    marginBlock: 'auto',
   },
   cardWrap: {
     width: '100%',
@@ -86,8 +105,8 @@ export default function LoginTwoColumn() {
   };
 
   return (
-    <XDSCenter axis="both" xstyle={styles.page}>
-      <XDSVStack gap={4} width="100%">
+    <div {...stylex.props(styles.page)}>
+      <XDSVStack gap={4} xstyle={styles.contentWrap}>
         {/* Card — wrapper caps width + centers; grid reflows below 700px */}
         <div {...stylex.props(styles.cardWrap)}>
           <XDSCard padding={0} width="100%">
@@ -252,6 +271,6 @@ export default function LoginTwoColumn() {
           </XDSText>
         </XDSVStack>
       </XDSVStack>
-    </XDSCenter>
+    </div>
   );
 }
