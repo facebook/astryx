@@ -15,7 +15,7 @@ import {getXDSComponent, resolveValue} from './resolveElements';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSCenter} from '@xds/core/Center';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {CodeExampleBlock} from '../CodeExampleBlock';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSTheme} from '@xds/core/theme';
@@ -292,7 +292,7 @@ export function InteractivePreviewStage({
             overflow: 'auto',
             paddingRight: 'var(--spacing-8)',
           }}>
-          <XDSCodeBlock
+          <CodeExampleBlock
             code={code}
             language="tsx"
             hasCopyButton

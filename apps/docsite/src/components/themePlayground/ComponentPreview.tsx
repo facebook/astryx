@@ -39,7 +39,7 @@ import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSToken} from '@xds/core/Token';
 import {XDSTooltip} from '@xds/core/Tooltip';
 
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {CodeExampleBlock} from '../CodeExampleBlock';
 import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
 import {XDSStatusDot} from '@xds/core/StatusDot';
 import {XDSTextArea} from '@xds/core/TextArea';
@@ -828,7 +828,7 @@ export function ComponentPreview() {
                       }
                       value="export">
                       <div style={{paddingBlock: 'var(--spacing-3)'}}>
-                        <XDSCodeBlock
+                        <CodeExampleBlock
                           code={`Tax Year: 2024\nAccount: ***4821\nTotal Gains: $10,160.00\nDividends: $3,130.00`}
                           language="text"
                           size="sm"

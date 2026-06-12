@@ -7,7 +7,7 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSSection} from '@xds/core/Section';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText} from '@xds/core/Text';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {CodeExampleBlock} from '../CodeExampleBlock';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSSpinner} from '@xds/core/Spinner';
 import {XDSButton} from '@xds/core/Button';
@@ -110,7 +110,7 @@ export function ExampleBlock({entry}: ExampleBlockProps) {
             {entry.description || 'No description available.'}
           </XDSText>
         ) : (
-          <XDSCodeBlock
+          <CodeExampleBlock
             code={entry.source}
             language="tsx"
             hasCopyButton
