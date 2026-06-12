@@ -95,7 +95,7 @@ export const docs = {
           name: 'isInline',
           type: 'boolean',
           description:
-            'Renders dialog content inline without the <dialog> element, backdrop, or modal behavior. For documentation previews and showcases only.',
+            'Renders dialog content inline without the <dialog> element, backdrop, modal behavior, or dialog autofocus. For documentation previews and showcases only.',
           default: 'false',
         },
       ],    },
@@ -109,7 +109,7 @@ export const docs = {
         {
           name: 'title',
           type: 'string',
-          description: 'Dialog title (receives focus on open).',
+          description: 'Dialog title (receives focus on open in modal dialogs; suppressed for inline previews).',
         },
         {
           name: 'subtitle',
@@ -350,6 +350,7 @@ export const docsDense = {
         position: 'static position; centered by default',
         variant: 'standard or fullscreen (fills viewport)',
         purpose: 'dismissal behavior: required=no dismiss; form=no backdrop after interaction; info=both allowed',
+        isInline: 'inline docs/showcase rendering; no <dialog>, backdrop, modal behavior, or dialog autofocus',
       },
     },
     {
@@ -358,7 +359,7 @@ export const docsDense = {
       displayName: 'Dialog Header',
       description: 'dialog header w/ title, optional subtitle, close button, start/end content slots',
       propDescriptions: {
-        title: 'dialog title (receives focus on open)',
+        title: 'dialog title (receives focus on open in modal dialogs; suppressed inline)',
         subtitle: 'subtitle below title',
         onOpenChange: 'close button callback (omit=no button)',
         startContent: 'content before title (e.g. back button)',

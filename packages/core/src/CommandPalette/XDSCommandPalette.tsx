@@ -466,7 +466,6 @@ export function XDSCommandPalette<
       onClose: handleClose,
       isOpen,
       isBusy,
-      isInline: isInline ?? false,
     }),
     [
       optimisticSearch,
@@ -485,7 +484,6 @@ export function XDSCommandPalette<
       handleClose,
       isOpen,
       isBusy,
-      isInline,
     ],
   );
 
