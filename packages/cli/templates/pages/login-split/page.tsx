@@ -29,27 +29,18 @@ const APPLE_LOGO_URL =
 const GOOGLE_LOGO_URL =
   'https://lookaside.facebook.com/assets/xds_oss/GoogleLogo.png';
 
-// Per-column minimum width. Kept small (240) on purpose: XDSGrid emits
-// minmax(MIN, 1fr), and that MIN is a HARD floor that does NOT shrink below
-// itself even when the container is narrower — so MIN + the grid's inset on
-// each side AND the page padding must fit a phone, or the single column
-// overflows the card and the content is clipped. Budget on a 320px phone:
-// 320 − 2×24 (page padding) − 2×16 (stacked grid inset) = 240, so 240 is the
-// largest MIN that still fits the smallest common phones (down to 320px).
+// XDSGrid emits minmax(MIN, 1fr) where MIN is a hard floor, so MIN plus the
+// grid inset and page padding must fit the narrowest phone or the column is
+// clipped. 320 − 2×24 (page) − 2×16 (stacked inset) = 240.
 const COLUMN_MIN_WIDTH = 240;
-// The grid uses repeat:'fit' (auto-fit), so with only two items it forms two
-// columns when wide and collapses to one — expanding to fill — when its
-// container is narrower than 2×MIN + 32(gap) = 512px. (auto-fit, not a max cap,
-// so the single column fills the width instead of stalling at MIN.) A container
-// query (not a viewport media query) reorders the image AND tightens the inset
-// to match that exact point — keyed to the card width, not the window — so it
-// never desyncs (e.g. a narrow card in a wide viewport).
+// repeat:'fit' (auto-fit) collapses the two columns to one — expanding to fill —
+// below 2×MIN + 32(gap) = 512px. The container query reorders the image and
+// tightens the inset at that same point, keyed to the card width (not the
+// window) so it never desyncs.
 const STACK_QUERY = '@container login-split (max-width: 511px)';
 
 const styles = stylex.create({
-  // Page surface for the <XDSCenter axis="both"> root (matches the other login
-  // templates). minHeight:100% fills the host — the docsite's bounded preview
-  // frame or the app viewport — so the centered card never leaves an unpainted
+  // minHeight:100% fills the host so the centered card never leaves an unpainted
   // band; padding keeps it off the surface edges.
   page: {
     minHeight: '100%',
@@ -61,27 +52,21 @@ const styles = stylex.create({
     maxWidth: 1000,
     marginInline: 'auto',
   },
-  // Applied to the XDSGrid so the grid (not an extra wrapper div) owns the
-  // frame: padding is the 32px inset, gap={8} is the single inter-cell gutter.
-  // Pad the grid, not the XDSCard, because XDSCard's padding sets the
-  // --container-padding-* vars that the form's XDSSection escapes (negative
-  // margins) — which would cancel the inset on the form side only. containerType
-  // makes the grid the query container STACK_QUERY measures against.
+  // Pad the grid, not the XDSCard: the form's XDSSection escapes XDSCard's
+  // --container-padding-* vars, which would cancel the inset on the form side.
+  // containerType makes this the query container for STACK_QUERY.
   splitGrid: {
     containerType: 'inline-size',
     containerName: 'login-split',
-    // 32px frame on wide layouts; 16px once stacked so the column's hard min
-    // width (see COLUMN_MIN_WIDTH) plus the inset still fits a phone.
     padding: {
       default: spacingVars['--spacing-8'],
       [STACK_QUERY]: spacingVars['--spacing-4'],
     },
   },
   imageCell: {
-    // Fill the grid track so the cover spans the full column width (the image's
-    // XDSCard is content-width by default and would otherwise leave a gap).
+    // Fill the track: the image's XDSCard is content-width by default.
     width: '100%',
-    // order:-1 moves the image above the form when the grid stacks.
+    // order:-1 moves the image above the form when stacked.
     order: {
       default: 0,
       [STACK_QUERY]: -1,
@@ -117,8 +102,6 @@ export default function LoginTwoColumn() {
   return (
     <XDSCenter axis="both" xstyle={styles.page}>
       <XDSVStack gap={4} width="100%">
-        {/* Card — wrapper caps width + centers; grid reflows to one column
-            when its container is narrower than ~512px (see STACK_QUERY). */}
         <div {...stylex.props(styles.cardWrap)}>
           <XDSCard padding={0} width="100%">
             <XDSGrid
@@ -126,7 +109,7 @@ export default function LoginTwoColumn() {
               gap={8}
               align="stretch"
               xstyle={styles.splitGrid}>
-              {/* Left — Form */}
+              {/* Form */}
               <XDSSection variant="transparent" padding={0} height="100%">
                 <XDSVStack gap={4} height="100%">
                   <XDSHStack gap={2} vAlign="center">
@@ -255,9 +238,8 @@ export default function LoginTwoColumn() {
                 </XDSVStack>
               </XDSSection>
 
-              {/* Right (wide) / Top (stacked) — Cover image.
-                  A borderless XDSCard clips the image to rounded corners
-                  (overflow:clip + radius) so the image needs no own radius. */}
+              {/* Cover image — the transparent XDSCard clips it to rounded
+                  corners (overflow:clip + radius), so the image needs no radius. */}
               <div {...stylex.props(styles.imageCell)}>
                 <XDSCard
                   variant="transparent"
@@ -275,7 +257,6 @@ export default function LoginTwoColumn() {
           </XDSCard>
         </div>
 
-        {/* Terms */}
         <XDSVStack hAlign="center">
           <XDSText type="supporting" color="secondary">
             By clicking continue, you agree to our{' '}
