@@ -29,11 +29,20 @@ const APPLE_LOGO_URL =
 const GOOGLE_LOGO_URL =
   'https://lookaside.facebook.com/assets/xds_oss/GoogleLogo.png';
 
-// The grid reflows to one column when its container is narrower than
-// 2×360 + 32(gap) = 752px. A container query (not a viewport media query)
-// reorders the image to match that exact point — keyed to the card width, not
-// the window — so it never desyncs (e.g. a narrow card in a wide viewport).
-const STACK_QUERY = '@container login-split (max-width: 751px)';
+// Per-column minimum width. Kept small (240) on purpose: XDSGrid emits
+// minmax(MIN, 1fr), and that MIN is a HARD floor that does NOT shrink below
+// itself even when the container is narrower — so MIN + the grid's inset on
+// each side AND the page padding must fit a phone, or the single column
+// overflows the card and the content is clipped. Budget on a 320px phone:
+// 320 − 2×24 (page padding) − 2×16 (stacked grid inset) = 240, so 240 is the
+// largest MIN that still fits the smallest common phones (down to 320px).
+const COLUMN_MIN_WIDTH = 240;
+// The grid is capped at 2 columns (columns.max=2) and reflows to one when its
+// container is narrower than 2×MIN + 32(gap) = 512px. A container query (not a
+// viewport media query) reorders the image AND tightens the inset to match
+// that exact point — keyed to the card width, not the window — so it never
+// desyncs (e.g. a narrow card in a wide viewport).
+const STACK_QUERY = '@container login-split (max-width: 511px)';
 
 const styles = stylex.create({
   // Page surface for the <XDSCenter axis="both"> root (matches the other login
@@ -59,7 +68,12 @@ const styles = stylex.create({
   splitGrid: {
     containerType: 'inline-size',
     containerName: 'login-split',
-    padding: spacingVars['--spacing-8'],
+    // 32px frame on wide layouts; 16px once stacked so the column's hard min
+    // width (see COLUMN_MIN_WIDTH) plus the inset still fits a phone.
+    padding: {
+      default: spacingVars['--spacing-8'],
+      [STACK_QUERY]: spacingVars['--spacing-4'],
+    },
   },
   imageCell: {
     // order:-1 moves the image above the form when the grid stacks.
@@ -99,11 +113,11 @@ export default function LoginTwoColumn() {
     <XDSCenter axis="both" xstyle={styles.page}>
       <XDSVStack gap={4} width="100%">
         {/* Card — wrapper caps width + centers; grid reflows to one column
-            when the card is narrower than ~752px (see STACK_QUERY). */}
+            when its container is narrower than ~512px (see STACK_QUERY). */}
         <div {...stylex.props(styles.cardWrap)}>
           <XDSCard padding={0} width="100%">
             <XDSGrid
-              columns={{minWidth: 360}}
+              columns={{minWidth: COLUMN_MIN_WIDTH, max: 2}}
               gap={8}
               align="stretch"
               xstyle={styles.splitGrid}>
