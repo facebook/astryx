@@ -65,29 +65,114 @@ lines.push("import React, {useState, useCallback, useMemo, useEffect, useRef} fr
 lines.push('');
 
 // ── StyleX mock ────────────────────────────────────────────────────────
-// The playground transpiles code in-browser without the StyleX compiler, so
-// props() flattens plain CSS-property objects into an inline `style`. Pseudo/
-// media entries can't be inlined: responsive objects collapse to `default`.
-lines.push(`const STYLEX_SKIP_KEY = /^(:|::|@|--)/;
-const stylexFlatten = (style: Record<string, unknown>, obj: unknown): void => {
-  if (obj == null || typeof obj !== 'object') return;
-  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
-    if (v == null || v === false) continue;
-    if (STYLEX_SKIP_KEY.test(k)) continue;
-    if (typeof v === 'object') {
-      const d = (v as Record<string, unknown>).default;
-      if (d != null && typeof d !== 'object') style[k] = d as string;
-      continue;
-    }
-    style[k] = v as string;
-  }
+// The playground transpiles code in-browser without the StyleX compiler. The
+// mock reimplements just enough of stylex.create/props to support real CSS:
+// each declared property becomes an atomic class whose rule is injected into a
+// shared <style> sheet, so @container / @media / pseudo conditions actually
+// apply (not just the `default` value, as a plain inline style would force).
+//
+// create() returns objects tagged `$$css: true` whose values are the generated
+// class names. That shape is understood by BOTH this mock's props() AND the real
+// compiled stylex.props() inside @xds/core components — so styles passed through
+// a component's `xstyle` prop merge correctly too (stylex.props concatenates the
+// class-name values of any $$css object).
+lines.push(`type PGStyleValue =
+  | string
+  | number
+  | {[condition: string]: string | number};
+type PGRule = Record<string, PGStyleValue>;
+
+const PG_UNITLESS = new Set([
+  'opacity', 'zIndex', 'fontWeight', 'lineHeight', 'flex', 'flexGrow',
+  'flexShrink', 'order', 'gridColumn', 'gridRow', 'gridColumnStart',
+  'gridColumnEnd', 'gridRowStart', 'gridRowEnd', 'columnCount', 'aspectRatio',
+  'scale', 'tabSize',
+]);
+
+const PG_CAMEL_RE = /[A-Z]/g;
+const pgKebab = (prop: string): string =>
+  prop.startsWith('--')
+    ? prop
+    : prop.replace(PG_CAMEL_RE, m => '-' + m.toLowerCase());
+
+const pgCssValue = (prop: string, value: string | number): string =>
+  typeof value === 'number' && !PG_UNITLESS.has(prop) ? value + 'px' : String(value);
+
+// Stable short hash for class names + dedupe of identical declarations.
+const pgHash = (input: string): string => {
+  let h = 5381;
+  for (let i = 0; i < input.length; i++) h = (h * 33) ^ input.charCodeAt(i);
+  return 'pg' + (h >>> 0).toString(36);
 };
+
+const pgSheetCache = new Set<string>();
+let pgSheetEl: HTMLStyleElement | null = null;
+const pgInject = (rule: string): void => {
+  if (typeof document === 'undefined' || pgSheetCache.has(rule)) return;
+  pgSheetCache.add(rule);
+  if (!pgSheetEl) {
+    pgSheetEl = document.createElement('style');
+    pgSheetEl.id = 'pg-stylex';
+    document.head.appendChild(pgSheetEl);
+  }
+  pgSheetEl.appendChild(document.createTextNode(rule));
+};
+
+// Turn one property (with a possibly-conditional value) into a class + rules.
+const pgClassForProp = (prop: string, value: PGStyleValue): string => {
+  const cls = pgHash(prop + ':' + JSON.stringify(value));
+  if (value != null && typeof value === 'object') {
+    for (const [cond, condVal] of Object.entries(value)) {
+      if (condVal == null) continue;
+      const decl = '.' + cls + pgPseudoSuffix(cond) + '{' + pgKebab(prop) + ':' + pgCssValue(prop, condVal) + '}';
+      pgInject(pgWrapAtRule(cond, decl));
+    }
+  } else {
+    pgInject('.' + cls + '{' + pgKebab(prop) + ':' + pgCssValue(prop, value) + '}');
+  }
+  return cls;
+};
+
+// 'default' → no suffix; ':hover'/'::after' → pseudo on the selector.
+const pgPseudoSuffix = (cond: string): string =>
+  cond === 'default' || cond.startsWith('@') ? '' : cond;
+
+// '@media ...'/'@container ...' wrap the rule; 'default'/pseudo return as-is.
+const pgWrapAtRule = (cond: string, decl: string): string =>
+  cond.startsWith('@') ? cond + '{' + decl + '}' : decl;
+
 const stylexMock = {
-  create: <T extends Record<string, unknown>>(styles: T): T => styles,
+  create: <T extends Record<string, PGRule>>(styles: T): T => {
+    const out: Record<string, unknown> = {};
+    for (const [key, rule] of Object.entries(styles)) {
+      // Dynamic styles (functions) aren't supported by this mock — pass them
+      // through unchanged so they don't crash the preview.
+      if (typeof rule !== 'object' || rule == null) {
+        out[key] = rule;
+        continue;
+      }
+      const compiled: Record<string, unknown> = {$$css: true};
+      for (const [prop, value] of Object.entries(rule)) {
+        if (value == null) continue;
+        compiled[prop] = pgClassForProp(prop, value);
+      }
+      out[key] = compiled;
+    }
+    return out as T;
+  },
+  // Mirrors stylex.props for plain elements: later $$css objects override earlier
+  // ones per property key, matching real StyleX. Returns a className (no inline
+  // style) so @container/@media survive.
   props: (...styles: unknown[]) => {
-    const style: Record<string, unknown> = {};
-    for (const s of styles.flat(Infinity)) stylexFlatten(style, s);
-    return {className: '', style: style as Record<string, string>};
+    const byProp: Record<string, string> = {};
+    for (const s of (styles.flat(Infinity) as unknown[])) {
+      if (s == null || s === false || typeof s !== 'object') continue;
+      for (const [prop, cls] of Object.entries(s as Record<string, unknown>)) {
+        if (prop === '$$css' || typeof cls !== 'string') continue;
+        byProp[prop] = cls;
+      }
+    }
+    return {className: Object.values(byProp).join(' '), style: {}};
   },
   defineVars: <T extends Record<string, unknown>>(tokens: T): T => tokens,
   keyframes: (kf: Record<string, Record<string, string>>) => kf,
