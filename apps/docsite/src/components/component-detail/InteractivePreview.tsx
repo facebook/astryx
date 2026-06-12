@@ -2,6 +2,13 @@
 
 'use client';
 
+/**
+ * @file InteractivePreview.tsx
+ * @input Component registry metadata, generated playground state, and XDS components
+ * @output Interactive docsite component preview with an optional generated code view
+ * @position Component detail preview surface used by docsite property tabs
+ */
+
 import {
   createElement,
   useMemo,
@@ -33,6 +40,12 @@ import type {
 } from '../../generated/componentRegistry';
 
 export type {KnobProp} from './interactiveState';
+
+// The code view's copy button is positioned against the right edge of the
+// CodeExampleBlock. Reserve space for the absolutely positioned preview toggle
+// (right inset + icon-only button size + gap) so the two controls cannot stack.
+const CODE_VIEW_COPY_BUTTON_CLEARANCE =
+  'calc(var(--spacing-2) + var(--size-element-sm) + var(--spacing-2))';
 
 class PreviewErrorBoundary extends Component<
   {children: ReactNode; resetKeys: unknown[]},
@@ -274,7 +287,7 @@ export function InteractivePreviewStage({
           style={{
             minHeight: 200,
             overflow: 'auto',
-            paddingRight: 'var(--spacing-8)',
+            paddingRight: CODE_VIEW_COPY_BUTTON_CLEARANCE,
           }}>
           <CodeExampleBlock
             code={code}
