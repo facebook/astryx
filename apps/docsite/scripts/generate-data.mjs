@@ -412,6 +412,10 @@ async function generateComponentRegistry() {
           const parentMeta = dirPrimaryMeta || {};
           const subName = (doc.name || '').replace(/^XDS/, '');
           if (subName) {
+            const isHookEntry =
+              subName.startsWith('use') ||
+              Array.isArray(doc.params) ||
+              Array.isArray(doc.returns);
             pendingSubComponents.push({
               name: subName,
               displayName: requireDisplayName(
@@ -429,17 +433,73 @@ async function generateComponentRegistry() {
               keywords: parentMeta.keywords ?? keywords,
               hidden: parentMeta.hidden ?? hidden,
               parentDoc: doc.subComponentOf,
-              props: Array.isArray(doc.props) ? sanitizeForJson(doc.props) : [],
-              usage: doc.usage ? sanitizeForJson(doc.usage) : parentMeta.usage ?? null,
-              theming: doc.theming ? sanitizeForJson(doc.theming) : parentMeta.theming ?? null,
+              props: isHookEntry
+                ? []
+                : Array.isArray(doc.props)
+                  ? sanitizeForJson(doc.props)
+                  : [],
+              usage: doc.usage
+                ? sanitizeForJson(doc.usage)
+                : isHookEntry && doc.description
+                  ? {description: doc.description}
+                  : parentMeta.usage ?? null,
+              theming: isHookEntry
+                ? null
+                : doc.theming
+                  ? sanitizeForJson(doc.theming)
+                  : parentMeta.theming ?? null,
+              params: isHookEntry
+                ? Array.isArray(doc.params)
+                  ? sanitizeForJson(doc.params)
+                  : Array.isArray(doc.props)
+                    ? sanitizeForJson(doc.props)
+                    : []
+                : null,
+              returns: isHookEntry
+                ? Array.isArray(doc.returns)
+                  ? sanitizeForJson(doc.returns)
+                  : []
+                : null,
+              relatedComponents: isHookEntry
+                ? doc.relatedComponents || [doc.subComponentOf]
+                : null,
+              relatedHooks: isHookEntry ? doc.relatedHooks || null : null,
+              playground: isHookEntry ? null : parentMeta.playground ?? null,
+            });
+          }
+        } else if (doc.components && doc.components.length > 0) {
+          // A family parent that also documents its own component surface (it has
+          // top-level props) is emitted as its own entry. Abstract families with
+          // no top-level props (e.g. Chat) contribute only their sub-components.
+          if (Array.isArray(doc.props) && doc.props.length > 0) {
+            const name = doc.name || docFileName.replace('.doc.mjs', '').replace(/^XDS/, '');
+            standaloneNames.add(name);
+            components.push({
+              name,
+              displayName: requireDisplayName(
+                doc.displayName,
+                `${pkg.name}: component ${name}`,
+              ),
+              moduleName: name.startsWith('use') ? name : `XDS${name}`,
+              directory: entry.name,
+              importPath: resolveImportPathForPkg(pkg.dir, entry.name),
+              group,
+              category,
+              isHiddenFromOverview,
+              description: doc.description || topDescription,
+              keywords,
+              hidden,
+              parentDoc: name,
+              props: sanitizeForJson(doc.props),
+              usage,
+              theming,
               params: null,
               returns: null,
               relatedComponents: null,
               relatedHooks: null,
-              playground: parentMeta.playground ?? null,
+              playground,
             });
           }
-        } else if (doc.components && doc.components.length > 0) {
           for (const sub of doc.components) {
             const rawSubName = sub.name || '';
             const subName = rawSubName.replace(/^XDS/, '');

@@ -26,28 +26,46 @@ export const docs = {
       {className: 'xds-avatar-group', visualProps: ['size']},
     ],
   },
+  description: 'Stacked avatar display with overlapping layout and optional overflow indicator. Children are XDSAvatar elements.',
+  props: [
+    {
+      name: 'children',
+      type: 'ReactNode',
+      description: 'XDSAvatar children, optionally followed by one XDSAvatarGroupOverflow. Consumers handle slicing to the desired visible count.',
+      required: true,
+      slotElements: [
+        {
+          __element: 'XDSAvatar',
+          props: {
+            name: 'User',
+          },
+        },
+      ],
+    },
+    {
+      name: 'size',
+      type: 'XDSAvatarSize',
+      description: 'Size applied to all avatars via context.',
+      default: "'small'",
+    },
+    {
+      name: 'ref',
+      type: 'React.Ref<HTMLDivElement>',
+      description: 'Ref forwarded to the root element.',
+    },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description: 'StyleX styles for layout customization.',
+    },
+    {
+      name: 'data-testid',
+      type: 'string',
+      description: 'Test selector for automated testing frameworks.',
+    },
+  ],
   components: [
-    {
-      name: 'XDSAvatarGroup',
-      displayName: 'Avatar Group',
-      description: 'Stacked avatar display with overlapping layout and optional overflow indicator. Children are XDSAvatar elements.',
-      props: [
-        {name: 'children', type: 'ReactNode', description: 'XDSAvatar children, optionally followed by one XDSAvatarGroupOverflow. Consumers handle slicing to the desired visible count.', required: true, slotElements: [{__element: 'XDSAvatar', props: {name: 'User'}}]},
-        {name: 'size', type: 'XDSAvatarSize', description: 'Size applied to all avatars via context.', default: "'small'"},
-        {name: 'ref', type: 'React.Ref<HTMLDivElement>', description: 'Ref forwarded to the root element.'},
-        {name: 'xstyle', type: 'StyleXStyles', description: 'StyleX styles for layout customization.'},
-        {name: 'data-testid', type: 'string', description: 'Test selector for automated testing frameworks.'},
-      ],
-    },
-    {
-      name: 'XDSAvatarGroupOverflow',
-      isHiddenFromOverview: true,
-      displayName: 'Avatar Group Overflow',
-      description: 'Slot for custom overflow content inside XDSAvatarGroup. Replaces the default "+N" indicator when present.',
-      props: [
-        {name: 'children', type: 'ReactNode', description: 'Custom overflow content (button, popover trigger, etc.).', required: true},
-      ],
-    },
+    {name: 'XDSAvatarGroupOverflow'},
   ],
 };
 
@@ -63,30 +81,6 @@ export const docsZh = {
       {guidance: false, description: '不要嵌套 AvatarGroup，使用单个组包含所有头像。'},
     ],
   },
-  components: [
-    {
-      name: 'XDSAvatarGroup',
-      displayName: 'Avatar Group',
-      description: '重叠布局的堆叠头像显示，带可选溢出指示器。子元素为 XDSAvatar。',
-      propDescriptions: {
-        children: 'XDSAvatar 子元素，可选地后跟一个 XDSAvatarGroupOverflow。',
-        max: '溢出指示器出现前显示的最大头像数。',
-        size: '应用于所有头像的大小。',
-        ref: '转发到根元素的引用。',
-        xstyle: 'StyleX 样式，用于布局自定义。',
-        'data-testid': '自动化测试的选择器。',
-      },
-    },
-    {
-      name: 'XDSAvatarGroupOverflow',
-      isHiddenFromOverview: true,
-      displayName: 'Avatar Group Overflow',
-      description: 'XDSAvatarGroup 内的自定义溢出内容插槽。存在时替换默认的 "+N" 指示器。',
-      propDescriptions: {
-        children: '自定义溢出内容（按钮、弹出触发器等）。',
-      },
-    },
-  ],
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
@@ -102,28 +96,4 @@ export const docsDense = {
       {guidance: false, description: "Don't nest AvatarGroups."},
     ],
   },
-  components: [
-    {
-      name: 'XDSAvatarGroup',
-      displayName: 'Avatar Group',
-      description: 'overlapping avatar row w/ max truncation',
-      propDescriptions: {
-        children: 'XDSAvatar children + optional XDSAvatarGroupOverflow',
-        max: 'max avatars before overflow',
-        size: 'size for all avatars',
-        ref: 'ref to root element',
-        xstyle: 'StyleX layout styles',
-        'data-testid': 'test selector',
-      },
-    },
-    {
-      name: 'XDSAvatarGroupOverflow',
-      isHiddenFromOverview: true,
-      displayName: 'Avatar Group Overflow',
-      description: 'custom overflow slot, replaces default +N',
-      propDescriptions: {
-        children: 'custom overflow content',
-      },
-    },
-  ],
 };
