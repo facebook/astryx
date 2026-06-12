@@ -32,7 +32,7 @@ import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {borderVars, colorVars, spacingVars} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import {
   XDSSideNavCollapseContext,
   type XDSSideNavCollapseState,
@@ -44,6 +44,7 @@ import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
 import {useXDSResizable} from '../Resizable/useXDSResizable';
 import type {XDSResizableConfig} from '../Resizable/useXDSResizable';
 import {XDSResizeHandle} from '../Resizable/XDSResizeHandle';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Constants
@@ -426,7 +427,7 @@ export function XDSSideNav({
       <div
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('side-nav', {mode: 'topbar'}),
+          xdsThemeProps('side-nav', {mode: 'topbar'}),
           stylex.props(styles.topbar, xstyle),
           className,
           style,
@@ -502,7 +503,7 @@ export function XDSSideNav({
       aria-label="Side navigation"
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('side-nav'),
+        xdsThemeProps('side-nav'),
         stylex.props(styles.root, collapsed && styles.rootCollapsed, xstyle),
         className,
         resizableNavStyle,

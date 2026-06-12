@@ -5,7 +5,8 @@ import type React from 'react';
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export interface XDSTableFooterProps extends XDSBaseProps<HTMLTableSectionElement> {
   ref?: React.Ref<HTMLTableSectionElement>;
@@ -16,7 +17,7 @@ export function XDSTableFooter({ref, children, xstyle}: XDSTableFooterProps) {
   return (
     <tfoot
       ref={ref}
-      {...mergeProps(xdsClassName('table-footer'), stylex.props(xstyle))}>
+      {...mergeProps(xdsThemeProps('table-footer'), stylex.props(xstyle))}>
       {children}
     </tfoot>
   );

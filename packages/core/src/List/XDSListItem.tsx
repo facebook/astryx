@@ -29,8 +29,9 @@ import {
 } from '../theme/tokens.stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSListContext} from './XDSListContext';
-import {xdsClassName} from '../utils';
+import {mergeProps} from '../utils';
 import {XDSItem} from '../Item';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Types
@@ -250,10 +251,7 @@ export function XDSListItem({
         hasDividers && embeddedStyles.noRadius,
         xstyle,
       ]}
-      className={[xdsClassName('list-item'), className]
-        .filter(Boolean)
-        .join(' ')}
-      style={style}
+      {...mergeProps(xdsThemeProps('list-item'), {className, style})}
       {...restProps}
     />
   );

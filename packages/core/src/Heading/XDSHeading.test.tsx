@@ -189,11 +189,18 @@ describe('XDSHeading', () => {
     });
   });
 
-  it('renders xds-* class names for theme targeting', () => {
-    render(<XDSHeading level={2}>Themed Heading</XDSHeading>);
+  it('renders xds-* classes and data attributes for theme targeting', () => {
+    render(
+      <XDSHeading level={2} color="secondary">
+        Themed Heading
+      </XDSHeading>,
+    );
     const element = screen.getByText('Themed Heading');
     expect(element.className).toContain('xds-heading');
     expect(element.className).toContain('level-2');
+    expect(element.className).toContain('secondary');
+    expect(element).toHaveAttribute('data-level', '2');
+    expect(element).toHaveAttribute('data-color', 'secondary');
   });
 
   it('does not include variant in class names', () => {

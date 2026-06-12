@@ -25,10 +25,11 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import {XDSTreeListBranches} from './XDSTreeListBranches';
 import type {XDSTreeListDensity} from './XDSTreeListTypes';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Styles
@@ -410,7 +411,7 @@ export function XDSTreeListItem({
       <div {...stylex.props(styles.rowWrapper)}>
         <div
           {...mergeProps(
-            xdsClassName('tree-list-item', {
+            xdsThemeProps('tree-list-item', {
               density,
               selected: isSelected ? 'selected' : null,
               disabled: isDisabled ? 'disabled' : null,

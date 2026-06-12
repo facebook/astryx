@@ -227,7 +227,7 @@ const brandTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: 'The `components` field in defineTheme targets stable `.xds-*` CSS class names. Use `base` for all instances, `variant:value` or `stateName` for specific states.',
+          text: 'The `components` field in defineTheme uses semantic component keys and style keys — not raw CSS selectors. Use `base` for all instances, `variant:value` or `stateName` for specific props/states, and let the theme pipeline choose the underlying selector. For raw external CSS escape hatches, prefer the data-attribute selector surface documented in `xds docs styling`.',
         },
         {
           type: 'code',

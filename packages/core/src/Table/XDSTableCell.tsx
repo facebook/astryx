@@ -35,7 +35,8 @@ import {
   buildDividerStyles,
   mergeXStyle,
 } from './useTableCellStyles';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 /** Props for XDSTableCell — thin `<td>` wrapper */
 export interface XDSTableCellProps extends XDSBaseProps<HTMLTableCellElement> {
@@ -147,7 +148,7 @@ export function XDSTableCell({
         ref={ref}
         {...props}
         {...mergeProps(
-          xdsClassName('table-cell'),
+          xdsThemeProps('table-cell'),
           stylex.props(xstyle),
           incomingClassName,
           incomingStyle,
@@ -170,7 +171,7 @@ export function XDSTableCell({
       ref={ref}
       {...props}
       {...mergeProps(
-        xdsClassName('table-cell'),
+        xdsThemeProps('table-cell'),
         stylex.props(...mergeXStyle(cellStyles, xstyle)),
         incomingClassName,
         incomingStyle,

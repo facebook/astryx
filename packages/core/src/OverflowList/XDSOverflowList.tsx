@@ -21,9 +21,10 @@ import {type ReactNode, type ReactElement, Children} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import type {SpacingStep} from '../utils/types';
 import * as stylex from '@stylexjs/stylex';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import {useOverflow} from '../hooks/useOverflow';
 import {spacingVars} from '../theme/tokens.stylex';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const styles = stylex.create({
   container: {
@@ -245,7 +246,7 @@ export function XDSOverflowList({
       <div
         ref={mergeRefs(ref, containerRef)}
         {...mergeProps(
-          xdsClassName('overflow-list'),
+          xdsThemeProps('overflow-list'),
           stylex.props(
             styles.container,
             gapStyles[gap],

@@ -22,7 +22,8 @@ import {durationVars, spacingVars} from '../theme/tokens.stylex';
 import {useXDSTheme} from '../theme/useXDSTheme';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSText} from '../Text/XDSText';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Constants
@@ -236,7 +237,7 @@ export function XDSSpinner({
       data-testid={hasLabel ? undefined : testId}
       {...(hasLabel ? {} : restProps)}
       {...mergeProps(
-        hasLabel ? '' : xdsClassName('spinner', {size, shade}),
+        hasLabel ? '' : xdsThemeProps('spinner', {size, shade}),
         stylex.props(styles.spinner, !hasLabel && xstyle),
         hasLabel ? undefined : className,
         {...(hasLabel ? {} : style), width: frameSize, height: frameSize},
@@ -255,7 +256,7 @@ export function XDSSpinner({
       data-testid={testId}
       {...restProps}
       {...mergeProps(
-        xdsClassName('spinner', {size, shade}),
+        xdsThemeProps('spinner', {size, shade}),
         stylex.props(styles.wrapper, xstyle),
         className,
         style,

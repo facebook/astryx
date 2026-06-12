@@ -31,10 +31,11 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {XDSBadge} from '../Badge';
 import {XDSIcon, type XDSIconName} from '../Icon';
 import {XDSSpinner} from '../Spinner';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Types
@@ -502,7 +503,7 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
       <div
         ref={ref}
         {...mergeProps(
-          xdsClassName('chat-tool-calls'),
+          xdsThemeProps('chat-tool-calls'),
           stylex.props(styles.root, xstyle),
           className,
           style,
@@ -521,7 +522,7 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('chat-tool-calls'),
+        xdsThemeProps('chat-tool-calls'),
         stylex.props(styles.root, xstyle),
         className,
         style,

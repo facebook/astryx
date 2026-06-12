@@ -44,12 +44,13 @@ import {
   typeScaleVars,
   fontWeightVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeRefs} from '../utils';
+import {mergeRefs} from '../utils';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
 import {formatFilterValue} from './formatFilterValue';
 import {PowerSearchEditPopover} from './PowerSearchEditPopover';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 import type {
   PowerSearchConfig,
   PowerSearchFilter,
@@ -965,7 +966,7 @@ export function XDSPowerSearch({
     <>
       <div
         ref={mergeRefs(ref, popover.triggerRef as React.Ref<HTMLDivElement>)}
-        className={xdsClassName('power-search')}>
+        {...xdsThemeProps('power-search')}>
         <XDSTokenizer
           handleRef={tokenizerRef}
           label={label}

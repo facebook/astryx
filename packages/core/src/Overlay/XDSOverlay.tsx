@@ -18,10 +18,11 @@
 import type {ReactNode, Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import {useXDSOverlay} from './useXDSOverlay';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {overlayScope, overlayContainerStyles} from './overlay.markers.stylex';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 import type {
   OverlayScrimMode,
   OverlayPosition,
@@ -126,7 +127,7 @@ export function XDSOverlay({
     <div
       ref={mergeRefs(ref, overlay.containerRef)}
       {...mergeProps(
-        xdsClassName('overlay'),
+        xdsThemeProps('overlay'),
         stylex.props(overlayScope, overlayContainerStyles.root, xstyle),
         className,
         style,

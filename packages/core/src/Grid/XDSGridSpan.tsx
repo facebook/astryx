@@ -17,7 +17,8 @@ import type {ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export interface XDSGridSpanProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
@@ -111,7 +112,7 @@ export function XDSGridSpan({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('grid-span'),
+        xdsThemeProps('grid-span'),
         stylex.props(baseStyles.span, xstyle),
         className,
         {...style, ...inlineStyle},

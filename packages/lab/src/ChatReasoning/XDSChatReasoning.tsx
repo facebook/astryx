@@ -27,7 +27,8 @@ import {
   durationVars,
   easeVars,
 } from '@xds/core/theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '@xds/core/utils';
+import {mergeProps} from '@xds/core/utils';
+import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
 
 // =============================================================================
 // Types
@@ -258,7 +259,7 @@ export function XDSChatReasoning(props: XDSChatReasoningProps) {
   return (
     <div
       {...mergeProps(
-        xdsClassName('chat-reasoning', {
+        xdsThemeProps('chat-reasoning', {
           expanded: isExpanded ? 'expanded' : null,
           streaming: isStreaming ? 'streaming' : null,
         }),

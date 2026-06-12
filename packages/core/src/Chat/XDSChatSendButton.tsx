@@ -22,8 +22,9 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSButton} from '../Button';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {useXDSChatComposerContext} from './XDSChatContext';
-import {xdsClassName} from '../utils';
+
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Types
@@ -104,7 +105,7 @@ export function XDSChatSendButton(props: XDSChatSendButtonProps): ReactNode {
       isIconOnly
       isDisabled={!isStopShown && isDisabled}
       onClick={isStopShown ? onStop : handleSend}
-      className={xdsClassName('chat-send-button')}
+      {...xdsThemeProps('chat-send-button')}
       xstyle={[styles.root, xstyle]}
     />
   );

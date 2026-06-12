@@ -19,7 +19,8 @@ import type {ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export interface XDSBlockquoteProps extends XDSBaseProps<HTMLQuoteElement> {
   /** Ref forwarded to the root <blockquote> element */
@@ -77,7 +78,7 @@ export function XDSBlockquote({
     <blockquote
       ref={ref}
       {...mergeProps(
-        xdsClassName('blockquote'),
+        xdsThemeProps('blockquote'),
         stylex.props(styles.root, xstyle),
         className,
         style,

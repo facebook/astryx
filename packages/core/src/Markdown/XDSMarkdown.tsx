@@ -37,7 +37,7 @@ import {XDSTableCell} from '../Table/XDSTableCell';
 import {XDSTableHeaderCell} from '../Table/XDSTableHeaderCell';
 import {XDSTableHeader} from '../Table/XDSTableHeader';
 import {XDSTableBody} from '../Table/XDSTableBody';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {useXDSStreamingText} from '../hooks/useXDSStreamingText';
 import {computeBoundaries, computeSegments} from './streaming';
 import type {XDSBaseProps} from '../XDSBaseProps';
@@ -53,6 +53,7 @@ import {
   trimStreamingArtifacts,
 } from './parser';
 import type {BlockNode, InlineNode, IncrementalState} from './parser';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 type SyncReactNode = Exclude<React.ReactNode, Promise<unknown>>;
 
@@ -1618,7 +1619,7 @@ export function XDSMarkdown({
       ref={ref}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('markdown', {density}),
+        xdsThemeProps('markdown', {density}),
         stylex.props(styles.root, xstyle),
         className,
         style,

@@ -58,7 +58,7 @@ import {
   DATE_FORMAT_WITH_WEEKDAY,
   DATE_FORMAT_MONTH_YEAR,
 } from '../utils/plainDate';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {
   computeDayCellState,
   computeRangeRounding,
@@ -72,6 +72,7 @@ import {
 
 export type {ISODateString, DayOfWeek, DateRange} from '../utils/dateTypes';
 import type {ISODateString, DayOfWeek, DateRange} from '../utils/dateTypes';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 /** Imperative handle for XDSCalendar handleRef */
 
@@ -397,7 +398,7 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('calendar', {mode}),
+        xdsThemeProps('calendar', {mode}),
         stylex.props(calendarStyles.calendar, xstyle),
         className,
         style,
@@ -873,7 +874,7 @@ function DayCell({
         onMouseEnter={() => !state.effectivelyDisabled && onDayHover(date)}
         onMouseLeave={() => onDayHover(null)}
         {...mergeProps(
-          xdsClassName('calendar-day', {
+          xdsThemeProps('calendar-day', {
             selected: endpoint ? 'selected' : null,
             today: state.isToday ? 'today' : null,
             disabled: state.effectivelyDisabled ? 'disabled' : null,

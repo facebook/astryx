@@ -20,7 +20,8 @@ import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {XDSAvatarSizeContext} from './XDSAvatarSizeContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 /**
  * Resolves the status dot size, border width, and icon size based on the
@@ -195,7 +196,7 @@ export function XDSAvatarStatusDot({
       ref={ref}
       {...(label ? {role: 'img', 'aria-label': label} : undefined)}
       {...mergeProps(
-        xdsClassName('avatar-status-dot', {variant}),
+        xdsThemeProps('avatar-status-dot', {variant}),
         stylex.props(
           styles.dot,
           variantStyleMap[variant],
