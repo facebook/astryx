@@ -402,8 +402,17 @@ const s = stylex.create({
     justifySelf: 'center',
     flexShrink: 0,
   },
-  mobileIconTab: {
-    paddingInline: 'var(--spacing-2)',
+  sideNavHeading: {
+    paddingInline: {
+      default: null,
+      '@media (min-width: 769px)': 'var(--spacing-1)',
+    },
+  },
+  desktopCollapsedSideNav: {
+    width: {
+      default: null,
+      '@media (min-width: 769px)': 'calc(var(--spacing-12) + var(--spacing-2))',
+    },
   },
   topbarActions: {
     gridColumn: '3',
@@ -545,31 +554,27 @@ function PlaygroundSideNavHeader({
           xstyle={s.mobileTabs}>
           <XDSTab
             value="preview"
-            label=""
-            aria-label="Preview"
+            label="Preview"
             icon={<Monitor size={14} />}
-            xstyle={s.mobileIconTab}
+            isLabelHidden
           />
           <XDSTab
             value="code"
-            label=""
-            aria-label="Code"
+            label="Code"
             icon={<Code2 size={14} />}
-            xstyle={s.mobileIconTab}
+            isLabelHidden
           />
           <XDSTab
             value="property"
-            label=""
-            aria-label="Properties"
+            label="Properties"
             icon={<SlidersHorizontal size={14} />}
-            xstyle={s.mobileIconTab}
+            isLabelHidden
           />
           <XDSTab
             value="theme"
-            label=""
-            aria-label="Theme"
+            label="Theme"
             icon={<Palette size={14} />}
-            xstyle={s.mobileIconTab}
+            isLabelHidden
           />
         </XDSTabList>
         <PlaygroundMobileShareAction copied={copied} onShare={onShare} />
@@ -577,7 +582,14 @@ function PlaygroundSideNavHeader({
     );
   }
 
-  return <XDSSideNavHeading icon={BRAND_ICON} heading="Playground" />;
+  return (
+    <XDSSideNavHeading
+      icon={BRAND_ICON}
+      heading="Playground"
+      headingHref="/"
+      xstyle={s.sideNavHeading}
+    />
+  );
 }
 
 interface PlaygroundClientProps {
@@ -1114,6 +1126,7 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
         />
       }
       collapsible={{isCollapsed: true, hasButton: false}}
+      xstyle={s.desktopCollapsedSideNav}
       footerIcons={
         !isMobile ? (
           <XDSButton
