@@ -412,6 +412,10 @@ async function generateComponentRegistry() {
           const parentMeta = dirPrimaryMeta || {};
           const subName = (doc.name || '').replace(/^XDS/, '');
           if (subName) {
+            const isHookEntry =
+              subName.startsWith('use') ||
+              Array.isArray(doc.params) ||
+              Array.isArray(doc.returns);
             pendingSubComponents.push({
               name: subName,
               displayName: requireDisplayName(
@@ -429,14 +433,38 @@ async function generateComponentRegistry() {
               keywords: parentMeta.keywords ?? keywords,
               hidden: parentMeta.hidden ?? hidden,
               parentDoc: doc.subComponentOf,
-              props: Array.isArray(doc.props) ? sanitizeForJson(doc.props) : [],
-              usage: doc.usage ? sanitizeForJson(doc.usage) : parentMeta.usage ?? null,
-              theming: doc.theming ? sanitizeForJson(doc.theming) : parentMeta.theming ?? null,
-              params: null,
-              returns: null,
-              relatedComponents: null,
-              relatedHooks: null,
-              playground: parentMeta.playground ?? null,
+              props: isHookEntry
+                ? []
+                : Array.isArray(doc.props)
+                  ? sanitizeForJson(doc.props)
+                  : [],
+              usage: doc.usage
+                ? sanitizeForJson(doc.usage)
+                : isHookEntry && doc.description
+                  ? {description: doc.description}
+                  : parentMeta.usage ?? null,
+              theming: isHookEntry
+                ? null
+                : doc.theming
+                  ? sanitizeForJson(doc.theming)
+                  : parentMeta.theming ?? null,
+              params: isHookEntry
+                ? Array.isArray(doc.params)
+                  ? sanitizeForJson(doc.params)
+                  : Array.isArray(doc.props)
+                    ? sanitizeForJson(doc.props)
+                    : []
+                : null,
+              returns: isHookEntry
+                ? Array.isArray(doc.returns)
+                  ? sanitizeForJson(doc.returns)
+                  : []
+                : null,
+              relatedComponents: isHookEntry
+                ? doc.relatedComponents || [doc.subComponentOf]
+                : null,
+              relatedHooks: isHookEntry ? doc.relatedHooks || null : null,
+              playground: isHookEntry ? null : parentMeta.playground ?? null,
             });
           }
         } else if (doc.components && doc.components.length > 0) {
