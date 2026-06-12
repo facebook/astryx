@@ -14,6 +14,7 @@ import {
   XDSLayoutPanel,
 } from '@xds/core/Layout';
 import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSToolbar} from '@xds/core/Toolbar';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
 import {XDSButton} from '@xds/core/Button';
@@ -69,16 +70,6 @@ const styles = stylex.create({
   },
   sideNavHeading: {
     marginInline: spacingVars['--spacing-4'],
-  },
-  // Edge-compensate the ghost back button so its icon aligns flush with the
-  // content's left edge. Same container-driven pattern XDS toolbars use: pull
-  // the row's start margin by the ghost button's optical inset when its first
-  // child is edge-compensatable (data-xds-edge-comp, which ghost XDSButton sets).
-  backRow: {
-    marginInlineStart: {
-      default: null,
-      ':has(> [data-xds-edge-comp]:first-child)': `calc(-1 * ${spacingVars['--spacing-2']})`,
-    },
   },
 });
 
@@ -330,22 +321,29 @@ export default function SettingsSecurityTemplate() {
         <XDSLayoutContent padding={4}>
           <XDSVStack gap={0}>
             {/* Mobile detail view: a back button sits beside the section title
-                (the per-section headings below are hidden on mobile). */}
+                (the per-section headings below are hidden on mobile). Toolbar's
+                start slot edge-compensates the ghost button so its icon aligns
+                flush with the content edge. */}
             {isNarrow && (
-              <XDSHStack
+              <XDSToolbar
+                label={`Back to Account settings — ${SECTION_TITLES[activeNav]}`}
                 gap={2}
-                vAlign="center"
-                xstyle={[styles.rowPadding, styles.backRow]}>
-                <XDSButton
-                  label="Back to Account settings"
-                  variant="ghost"
-                  size="sm"
-                  isIconOnly
-                  icon={<XDSIcon icon={ArrowLeftIcon} size="sm" />}
-                  onClick={() => setMobileView('nav')}
-                />
-                <XDSHeading level={2}>{SECTION_TITLES[activeNav]}</XDSHeading>
-              </XDSHStack>
+                startContent={
+                  <>
+                    <XDSButton
+                      label="Back to Account settings"
+                      variant="ghost"
+                      size="sm"
+                      isIconOnly
+                      icon={<XDSIcon icon={ArrowLeftIcon} size="sm" />}
+                      onClick={() => setMobileView('nav')}
+                    />
+                    <XDSHeading level={2}>
+                      {SECTION_TITLES[activeNav]}
+                    </XDSHeading>
+                  </>
+                }
+              />
             )}
             {activeNav === 'Login & security' && (
               <XDSVStack gap={6}>
