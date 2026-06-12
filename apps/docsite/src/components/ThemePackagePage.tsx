@@ -787,6 +787,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
               label="Theme"
               isLabelHidden
               size="sm"
+              placement="above"
               options={switcherOptions}
               value={selectedPkgName}
               onChange={handleSelectPkg}
