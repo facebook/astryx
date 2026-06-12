@@ -213,6 +213,13 @@ lines.push("import {createElement, type ComponentProps} from 'react';");
 lines.push("import * as xdsTokens from '@xds/core/theme/tokens.stylex';");
 lines.push('');
 
+// ── Hooks ──────────────────────────────────────────────────────────────
+// @xds/core/hooks (useMediaQuery, useOverflow, …) is camelCase, so it isn't
+// picked up by the PascalCase component scan. Add it explicitly so templates
+// that drive responsive behavior with useMediaQuery render correctly.
+lines.push("import * as XDSHooks from '@xds/core/hooks';");
+lines.push('');
+
 // ── Icon libraries ─────────────────────────────────────────────────────
 lines.push("import * as LucideIcons from 'lucide-react';");
 lines.push('// Heroicons kept available in the playground scope alongside Lucide');
@@ -275,6 +282,9 @@ lines.push("  '@xds/core/theme': {XDSTheme: ControlledXDSTheme},");
 
 // tokens.stylex
 lines.push("  '@xds/core/theme/tokens.stylex': xdsTokens,");
+
+// hooks (useMediaQuery, etc.)
+lines.push("  '@xds/core/hooks': XDSHooks,");
 
 // Per-component subpath entries
 for (const name of components) {
