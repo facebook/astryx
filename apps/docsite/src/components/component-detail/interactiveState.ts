@@ -3,13 +3,15 @@
 /**
  * Builds the initial prop state for component detail interactive previews.
  * Keeps runtime-only defaults (callbacks, mock search sources, descriptor
- * resolution) out of the generated JSON registries.
+ * resolution) out of the generated JSON registries while preserving typed
+ * option values from parsed controls.
  */
 
 import {allSyntaxPresets} from '@xds/core/theme/syntax';
 import {themeObjectsFull} from '../../generated/themeRegistry';
 import {
   coerceDefault,
+  coerceEnumOption,
   parsePropType,
   type PropControlDescriptor,
 } from './parsePropType';
@@ -98,7 +100,7 @@ function getRequiredFallbackValue(
 ): unknown {
   switch (control.kind) {
     case 'enum':
-      return control.options[0];
+      return coerceEnumOption(control, control.options[0]);
     case 'theme':
       return Object.values(themeObjectsFull)[0];
     case 'syntax-theme':
