@@ -42,7 +42,6 @@ import {
   XDSSideNavHeading,
   XDSSideNavItem,
   XDSSideNavSection,
-  useXDSSideNavRenderMode,
 } from '@xds/core/SideNav';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSStatusDot} from '@xds/core/StatusDot';
@@ -52,12 +51,12 @@ import {
   XDSSegmentedControlItem,
 } from '@xds/core/SegmentedControl';
 import {XDSTab, XDSTabList} from '@xds/core/TabList';
+import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {useMediaQuery} from '@xds/core/hooks';
 import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
 import {XDSToggleButton} from '@xds/core/ToggleButton';
 import {
-  ArrowLeft,
   Check,
   Code2,
   Copy,
@@ -374,32 +373,6 @@ const s = stylex.create({
     transitionDuration: '0.5s',
     transitionTimingFunction: 'ease',
   },
-  topbarHeader: {
-    display: 'grid',
-    alignItems: 'center',
-    gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
-    gap: 'var(--spacing-2)',
-    flex: 1,
-    width: '100%',
-    minWidth: 0,
-    boxSizing: 'border-box',
-    paddingInline: 'var(--spacing-1)',
-  },
-  topbarBrand: {
-    gridColumn: '1',
-    justifySelf: 'start',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    width: 'var(--size-element-md)',
-    height: 'var(--size-element-md)',
-  },
-  mobileTabs: {
-    gridColumn: '2',
-    justifySelf: 'center',
-    flexShrink: 0,
-  },
   sideNavHeading: {
     paddingInline: {
       default: null,
@@ -412,103 +385,7 @@ const s = stylex.create({
       '@media (min-width: 769px)': 'calc(var(--spacing-12) + var(--spacing-2))',
     },
   },
-  topbarActions: {
-    gridColumn: '3',
-    justifySelf: 'end',
-    flexShrink: 0,
-  },
 });
-
-interface PlaygroundMobileShareActionProps {
-  copied: boolean;
-  onShare: () => void;
-}
-
-interface PlaygroundSideNavHeaderProps {
-  mobileTab: MobileTopTab;
-  copied: boolean;
-  onMobileTabChange: (tab: MobileTopTab) => void;
-  onShare: () => void;
-}
-
-function PlaygroundMobileShareAction({
-  copied,
-  onShare,
-}: PlaygroundMobileShareActionProps) {
-  return (
-    <XDSButton
-      label={copied ? '✓ Copied' : 'Share'}
-      variant="primary"
-      size="md"
-      onClick={onShare}
-      xstyle={s.topbarActions}
-    />
-  );
-}
-
-function PlaygroundSideNavHeader({
-  mobileTab,
-  copied,
-  onMobileTabChange,
-  onShare,
-}: PlaygroundSideNavHeaderProps) {
-  const renderMode = useXDSSideNavRenderMode();
-
-  if (renderMode === 'topbar') {
-    return (
-      <div {...stylex.props(s.topbarHeader)}>
-        <XDSLink
-          href="/"
-          label="Back to main site"
-          tooltip="Back to main site"
-          color="inherit"
-          xstyle={s.topbarBrand}>
-          {BRAND_ICON}
-        </XDSLink>
-        <XDSTabList
-          value={mobileTab}
-          onChange={value => onMobileTabChange(value as MobileTopTab)}
-          size="sm"
-          xstyle={s.mobileTabs}>
-          <XDSTab
-            value="preview"
-            label="Preview"
-            icon={<Monitor size={14} />}
-            isLabelHidden
-          />
-          <XDSTab
-            value="code"
-            label="Code"
-            icon={<Code2 size={14} />}
-            isLabelHidden
-          />
-          <XDSTab
-            value="property"
-            label="Properties"
-            icon={<SlidersHorizontal size={14} />}
-            isLabelHidden
-          />
-          <XDSTab
-            value="theme"
-            label="Theme"
-            icon={<Palette size={14} />}
-            isLabelHidden
-          />
-        </XDSTabList>
-        <PlaygroundMobileShareAction copied={copied} onShare={onShare} />
-      </div>
-    );
-  }
-
-  return (
-    <XDSSideNavHeading
-      icon={BRAND_ICON}
-      heading="Playground"
-      headingHref="/"
-      xstyle={s.sideNavHeading}
-    />
-  );
-}
 
 interface PlaygroundClientProps {
   defaultIsMobile?: boolean;
@@ -1033,30 +910,64 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
     setIsFullscreen(true);
   }, []);
 
+  const mobileTopNav = isMobile ? (
+    <XDSTopNav
+      label="Playground navigation"
+      heading={<XDSTopNavHeading logo={BRAND_ICON} headingHref="/" />}
+      centerContent={
+        <XDSTabList
+          value={mobileTab}
+          onChange={value => handleMobileTabChange(value as MobileTopTab)}
+          size="sm">
+          <XDSTab
+            value="preview"
+            label="Preview"
+            icon={<Monitor size={14} />}
+            isLabelHidden
+          />
+          <XDSTab
+            value="code"
+            label="Code"
+            icon={<Code2 size={14} />}
+            isLabelHidden
+          />
+          <XDSTab
+            value="property"
+            label="Properties"
+            icon={<SlidersHorizontal size={14} />}
+            isLabelHidden
+          />
+          <XDSTab
+            value="theme"
+            label="Theme"
+            icon={<Palette size={14} />}
+            isLabelHidden
+          />
+        </XDSTabList>
+      }
+      endContent={
+        <XDSButton
+          label={copied ? '✓ Copied' : 'Share'}
+          variant="primary"
+          size="md"
+          onClick={handleShare}
+        />
+      }
+    />
+  ) : undefined;
+
   const playgroundSideNav = (
     <XDSSideNav
       header={
-        <PlaygroundSideNavHeader
-          mobileTab={mobileTab}
-          copied={copied}
-          onMobileTabChange={handleMobileTabChange}
-          onShare={handleShare}
+        <XDSSideNavHeading
+          icon={BRAND_ICON}
+          heading="Playground"
+          headingHref="/"
+          xstyle={s.sideNavHeading}
         />
       }
       collapsible={{isCollapsed: true, hasButton: false}}
-      xstyle={s.desktopCollapsedSideNav}
-      footerIcons={
-        !isMobile ? (
-          <XDSButton
-            label="Back to site"
-            tooltip="Back to site"
-            href="/"
-            variant="ghost"
-            isIconOnly
-            icon={<ArrowLeft size={20} />}
-          />
-        ) : undefined
-      }>
+      xstyle={s.desktopCollapsedSideNav}>
       <XDSSideNavSection title="Playground views" isHeaderHidden>
         <XDSSideNavItem
           label="Code"
@@ -1097,7 +1008,8 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
       variant="section"
       height="fill"
       contentPadding={0}
-      mobileNav={{defaultIsMobile}}
+      mobileNav={isMobile ? false : {defaultIsMobile}}
+      topNav={mobileTopNav}
       sideNav={playgroundSideNav}>
       {/* Playground content */}
       <XDSHStack

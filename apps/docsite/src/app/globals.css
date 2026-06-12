@@ -62,14 +62,6 @@ body:has([data-home-page]) #xds-app-shell-main {
   padding-top: 0;
 }
 
-/* The playground mobile top bar owns navigation between Preview / Code /
-   Properties / Theme, so hide AppShell's generated hamburger for this route. */
-@media (max-width: 768px) {
-  body:has([data-playground-page]) [data-testid='mobile-nav-toggle'] {
-    display: none;
-  }
-}
-
 /* Translucent top nav — frosted glass effect.
 
    The :where(:not(.xds-app-shell .xds-app-shell *)) guard scopes every frost

@@ -61,6 +61,12 @@ const s = stylex.create({
     borderWidth: 0,
     boxShadow: 'none',
   },
+  cardFullBleed: {
+    flex: 1,
+    minHeight: 0,
+    width: '100%',
+    height: '100%',
+  },
   card: {
     maxWidth: '100%',
     maxHeight: '100%',
@@ -78,10 +84,6 @@ const s = stylex.create({
     // Transparent so the iframe's own themed body color shows (not the
     // docsite/astryx body color). The selected theme paints inside the iframe.
     backgroundColor: 'transparent',
-  },
-  iframeFullBleed: {
-    flex: 1,
-    minHeight: 0,
   },
   // Let pointer events pass through to window while the panel is being resized,
   // so dragging over the iframe doesn't stall the drag.
@@ -141,32 +143,22 @@ export function PreviewStage({
           />
         </XDSCard>
       )}
-      {isFullBleed && !isFullscreen ? (
+      <XDSCard
+        padding={0}
+        xstyle={[
+          s.card,
+          (isFullscreen || isFullBleed) && s.cardFullscreen,
+          isFullBleed && !isFullscreen && s.cardFullBleed,
+        ]}
+        style={{width, height}}>
         <iframe
           ref={iframeRef}
           src="/playground-preview"
           sandbox="allow-scripts allow-same-origin"
           title="Preview"
-          {...stylex.props(
-            s.iframe,
-            s.iframeFullBleed,
-            isInteractionDisabled && s.iframeInert,
-          )}
+          {...stylex.props(s.iframe, isInteractionDisabled && s.iframeInert)}
         />
-      ) : (
-        <XDSCard
-          padding={0}
-          xstyle={[s.card, isFullscreen && s.cardFullscreen]}
-          style={{width, height}}>
-          <iframe
-            ref={iframeRef}
-            src="/playground-preview"
-            sandbox="allow-scripts allow-same-origin"
-            title="Preview"
-            {...stylex.props(s.iframe, isInteractionDisabled && s.iframeInert)}
-          />
-        </XDSCard>
-      )}
+      </XDSCard>
     </div>
   );
 }
