@@ -32,11 +32,23 @@ const styles = stylex.create({
       '@container gallery (max-width: 720px)': 'minmax(0, 1fr)',
     },
   },
-  // Hero spans 2 columns on desktop, then fills the row once it's single-column.
-  hero: {
-    gridColumn: {
-      default: 'span 2',
-      '@container gallery (max-width: 720px)': '1 / -1',
+  // Desktop hero: spans 2 columns at a 3:1 ratio so its height matches the
+  // single-column 3:2 sidebar tile. Hidden once the grid collapses to 1 column,
+  // where a 3:1 tile would be a stubby outlier next to the 3:2 tiles.
+  heroWide: {
+    gridColumn: 'span 2',
+    display: {
+      default: 'block',
+      '@container gallery (max-width: 720px)': 'none',
+    },
+  },
+  // Single-column hero: a 3:2 tile so every tile in the column is identical.
+  // Hidden on desktop, where the 2-column 3:1 hero is used instead.
+  heroNarrow: {
+    gridColumn: '1 / -1',
+    display: {
+      default: 'none',
+      '@container gallery (max-width: 720px)': 'block',
     },
   },
   // Fills the XDSAspectRatio box. No objectFit prop on XDSAspectRatio (#2582).
@@ -130,14 +142,23 @@ export default function MixedGalleryTemplate() {
                 rows are therefore the same height. Responsive via @container:
                 3 columns → 1 column at ≤720px. */}
             <div {...stylex.props(styles.grid)}>
-              {/* Hero — spans 2 columns; 3:1 keeps it level with the sidebar */}
+              {/* Hero (desktop) — spans 2 columns; 3:1 keeps it level with the
+                  sidebar tile's height. */}
               <GalleryCard
                 image={IMAGES[0]}
                 ratio={3 / 1}
-                xstyle={styles.hero}
+                xstyle={styles.heroWide}
+              />
+              {/* Hero (single-column) — 3:2 so it matches every other tile.
+                  XDSAspectRatio sets the ratio inline, so it can't be made
+                  responsive via @container; a second variant is the clean way. */}
+              <GalleryCard
+                image={IMAGES[0]}
+                ratio={3 / 2}
+                xstyle={styles.heroNarrow}
               />
 
-              {/* Sidebar — same height as the hero */}
+              {/* Sidebar — same height as the desktop hero */}
               <GalleryCard image={IMAGES[2]} ratio={3 / 2} />
 
               {/* Bottom row — three equal tiles */}
