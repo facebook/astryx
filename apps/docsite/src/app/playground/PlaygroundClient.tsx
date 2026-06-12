@@ -6,7 +6,8 @@
  * @output Full-page two-panel playground (editor + live preview)
  * @position app/playground — the interactive XDS code playground.
  *
- * Sidebar: icon-only nav strip — back, Code view, Properties view.
+ * AppShell: side-nav-only shell; desktop nav is controlled collapsed to
+ * an icon rail while AppShell owns the mobile top bar and drawer.
  * Left panel: Monaco editor (Code) or knobs (Properties).
  *   - Code: Monaco editor (controlled) with real XDS .d.ts typedefs.
  *   - Property: component selector + instance picker + knobs that edit the code.
@@ -30,11 +31,18 @@ import {
   compressToEncodedURIComponent,
   decompressFromEncodedURIComponent,
 } from 'lz-string';
+import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSButton} from '@xds/core/Button';
-import {XDSPopover} from '@xds/core/Popover';
-import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSLink} from '@xds/core/Link';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {XDSPopover} from '@xds/core/Popover';
+import {XDSTextInput} from '@xds/core/TextInput';
+import {
+  XDSSideNav,
+  XDSSideNavHeading,
+  XDSSideNavItem,
+  XDSSideNavSection,
+} from '@xds/core/SideNav';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSStatusDot} from '@xds/core/StatusDot';
 import {XDSToolbar} from '@xds/core/Toolbar';
@@ -44,7 +52,7 @@ import {
 } from '@xds/core/SegmentedControl';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
-import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
+import {XDSToggleButton} from '@xds/core/ToggleButton';
 import {
   Code2,
   Moon,
@@ -302,22 +310,11 @@ const s = stylex.create({
   popoverPadding: {
     padding: 'var(--spacing-4)',
   },
-  navGroup: {
-    gap: 'var(--spacing-2)',
-  },
   root: {
     flex: 1,
     minWidth: 0,
     overflow: 'hidden',
     backgroundColor: 'var(--color-background-surface)',
-  },
-  sidebar: {
-    flexShrink: 0,
-    backgroundColor: 'var(--color-background-surface)',
-    borderInlineEndWidth: '1px',
-    borderInlineEndStyle: 'solid',
-    borderInlineEndColor: 'var(--color-border)',
-    padding: 'var(--spacing-3)',
   },
   leftPanel: {
     flexShrink: 0,
@@ -365,7 +362,11 @@ const s = stylex.create({
   },
 });
 
-export function PlaygroundClient() {
+interface PlaygroundClientProps {
+  defaultIsMobile?: boolean;
+}
+
+export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
   // The editor chrome follows the docsite's own light/dark mode, not the OS
   // (operator) color-scheme preference.
   const {mode: siteMode} = useThemeMode();
@@ -867,50 +868,52 @@ export function PlaygroundClient() {
     [],
   );
 
-  return (
-    <XDSHStack align="stretch" height="100%" width="100%">
-      {/* Playground navigation */}
-      <XDSVStack align="center" xstyle={s.sidebar} gap={4}>
-        <XDSLink href="/" label="Go to home">
-          {BRAND_ICON}
-        </XDSLink>
-        <XDSToggleButtonGroup
-          type="single"
-          orientation="vertical"
-          label="Playground view"
-          value={activeView}
-          // Single-select groups allow deselecting to null; guard against it so
-          // one view is always active.
-          onChange={v => v && setActiveView(v as LeftView)}
-          size="md"
-          xstyle={s.navGroup}>
-          <XDSToggleButton
-            value="code"
-            label="Code"
-            tooltip="Code"
-            isIconOnly
-            icon={<Code2 size={20} />}
-          />
-          <XDSToggleButton
-            value="property"
-            label="Properties"
-            tooltip="Properties"
-            isIconOnly
-            icon={<SlidersHorizontal size={20} />}
-          />
-          <XDSToggleButton
-            value="theme"
-            label="Theme"
-            tooltip="Theme"
-            isIconOnly
-            icon={<Palette size={20} />}
-          />
-        </XDSToggleButtonGroup>
-      </XDSVStack>
+  const playgroundSideNav = (
+    <XDSSideNav
+      header={
+        <XDSSideNavHeading
+          icon={BRAND_ICON}
+          heading="Playground"
+          headingHref="/"
+        />
+      }
+      collapsible={{isCollapsed: true, hasButton: false}}>
+      <XDSSideNavSection title="Playground views" isHeaderHidden>
+        <XDSSideNavItem
+          label="Code"
+          icon={Code2}
+          isSelected={activeView === 'code'}
+          onClick={() => setActiveView('code')}
+        />
+        <XDSSideNavItem
+          label="Properties"
+          icon={SlidersHorizontal}
+          isSelected={activeView === 'property'}
+          onClick={() => setActiveView('property')}
+        />
+        <XDSSideNavItem
+          label="Theme"
+          icon={Palette}
+          isSelected={activeView === 'theme'}
+          onClick={() => setActiveView('theme')}
+        />
+      </XDSSideNavSection>
+    </XDSSideNav>
+  );
 
+  return (
+    <XDSAppShell
+      variant="section"
+      height="fill"
+      contentPadding={0}
+      mobileNav={{defaultIsMobile}}
+      sideNav={playgroundSideNav}>
       {/* Playground content */}
       <XDSHStack
+        data-playground-page="true"
+        align="stretch"
         height="100%"
+        width="100%"
         xstyle={s.root}
         onPointerDownCapture={handleResizeProbe}>
         {/* Left panel — editor */}
@@ -1230,6 +1233,6 @@ export function PlaygroundClient() {
           setPendingTemplateSource(null);
         }}
       />
-    </XDSHStack>
+    </XDSAppShell>
   );
 }
