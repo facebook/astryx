@@ -142,7 +142,7 @@ function ComponentDetailInner({
     router.replace(`${pathname}${qs ? `?${qs}` : ''}`, {scroll: false});
   };
 
-  const {knobs, state, setProp} = useInteractiveState(
+  const {knobs, state, setProp, missingRequiredProps} = useInteractiveState(
     comp.name,
     comp.props,
     comp.playground,
@@ -192,7 +192,11 @@ function ComponentDetailInner({
                     maxHeight: isMobile ? 250 : 400,
                     overflow: 'auto',
                   }}>
-                  <InteractivePreviewStage name={comp.name} state={state} />
+                  <InteractivePreviewStage
+                    name={comp.name}
+                    state={state}
+                    missingRequiredProps={missingRequiredProps}
+                  />
                 </div>
 
                 {comp.props.length > 0 && (
