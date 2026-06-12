@@ -239,7 +239,9 @@ describe('XDSList', () => {
         <XDSListItem label="Item" />
       </XDSList>,
     );
-    expect(container.querySelector('li')).toBeInTheDocument();
+    const item = container.querySelector('li');
+    expect(item).toBeInTheDocument();
+    expect(item?.className).toContain('compact');
   });
 
   it('renders with balanced density (default)', () => {
@@ -248,7 +250,10 @@ describe('XDSList', () => {
         <XDSListItem label="Item" />
       </XDSList>,
     );
-    expect(container.querySelector('li')).toBeInTheDocument();
+    const item = container.querySelector('li');
+    expect(item).toBeInTheDocument();
+    expect(item?.className).toContain('default');
+    expect(item?.className).not.toContain('spacious');
   });
 
   it('renders with spacious density', () => {
@@ -257,7 +262,9 @@ describe('XDSList', () => {
         <XDSListItem label="Item" />
       </XDSList>,
     );
-    expect(container.querySelector('li')).toBeInTheDocument();
+    const item = container.querySelector('li');
+    expect(item).toBeInTheDocument();
+    expect(item?.className).toContain('spacious');
   });
 
   // ===========================================================================

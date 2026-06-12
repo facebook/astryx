@@ -174,6 +174,12 @@ const embeddedStyles = stylex.create({
   },
 });
 
+const listItemDensityStyles = stylex.create({
+  spacious: {
+    paddingBlock: spacingVars['--spacing-3'],
+  },
+});
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -247,6 +253,7 @@ export function XDSListItem({
       isSelected={isSelected}
       density={itemDensity}
       xstyle={[
+        density === 'spacious' && listItemDensityStyles.spacious,
         hasMarkers && styles.withCounter,
         hasDividers && styles.withDivider,
         hasDividers && embeddedStyles.noRadius,
