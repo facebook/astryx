@@ -64,6 +64,9 @@ export const RESPONSE_TYPES = {
   'gap-report': ['gap-report.categories', 'gap-report.dryRun', 'gap-report.file'],
   manifest: ['manifest'],
   doctor: ['doctor'],
+  'layout expand': ['layout.expand'],
+  'layout check': ['layout.check'],
+  'layout grammar': ['layout.grammar'],
 };
 
 /**
@@ -83,6 +86,9 @@ const EXAMPLES = {
   manifest: ['xds manifest --json', 'xds --json'],
   doctor: ['xds doctor', 'xds doctor --json'],
   init: ['xds init'],
+  'layout expand': [`xds layout expand 'V[g6] > C{card-callout}*4' ./src/Page.tsx`],
+  'layout check': [`xds layout check 'A > L > LC[p6]' --json`],
+  'layout grammar': ['xds layout grammar'],
 };
 
 /**
