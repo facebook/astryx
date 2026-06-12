@@ -103,12 +103,14 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
       price: '$180',
     },
     feature: {
-      image: '/template-assets/light-product-1.png',
+      image:
+        'https://lookaside.facebook.com/assets/xds_oss/light-product-1.png',
       title: 'Ceramic mug',
       price: '$32',
     },
     mini: {
-      image: '/template-assets/light-product-1.png',
+      image:
+        'https://lookaside.facebook.com/assets/xds_oss/light-product-1.png',
       title: 'Speckled mug',
       description: 'Hand-thrown stoneware.',
     },
@@ -149,7 +151,8 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
   },
   '@xds/theme-butter': {
     product: {
-      image: '/template-assets/light-product-1.png',
+      image:
+        'https://lookaside.facebook.com/assets/xds_oss/light-product-1.png',
       title: 'Speckled mug',
       description: 'Warm stoneware for slow mornings.',
       price: '$32',
@@ -170,18 +173,21 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
   },
   '@xds/theme-matcha': {
     product: {
-      image: '/template-assets/matcha-product-1.png',
+      image:
+        'https://lookaside.facebook.com/assets/xds_oss/matcha-product-1.png',
       title: 'Sweet vanilla matcha',
       description: 'Vanilla matcha with whole milk or oat milk.',
       price: '$6',
     },
     feature: {
-      image: '/template-assets/matcha-product-4.png',
+      image:
+        'https://lookaside.facebook.com/assets/xds_oss/matcha-product-4.png',
       title: 'Ube matcha',
       price: '$7',
     },
     mini: {
-      image: '/template-assets/matcha-product-4.png',
+      image:
+        'https://lookaside.facebook.com/assets/xds_oss/matcha-product-4.png',
       title: 'Ube matcha',
       description: 'Ube and cream matcha.',
     },
@@ -217,18 +223,21 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
   },
   '@xds/theme-y2k': {
     product: {
-      image: '/template-assets/colorful-product-2.png',
+      image:
+        'https://lookaside.facebook.com/assets/xds_oss/colorful-product-2.png',
       title: 'Bubbly charm',
       description: 'A glossy little throwback keepsake.',
       price: '$18',
     },
     feature: {
-      image: '/template-assets/colorful-product-1.png',
+      image:
+        'https://lookaside.facebook.com/assets/xds_oss/colorful-product-1.png',
       title: 'Puppy keychain',
       price: '$12',
     },
     mini: {
-      image: '/template-assets/colorful-product-1.png',
+      image:
+        'https://lookaside.facebook.com/assets/xds_oss/colorful-product-1.png',
       title: 'Puppy keychain',
       description: 'Plush + chrome ring.',
     },
