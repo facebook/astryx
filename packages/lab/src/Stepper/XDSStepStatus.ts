@@ -3,31 +3,30 @@
 /**
  * @file XDSStepStatus.ts
  * @input None
- * @output Exports XDSStepStatus enum
+ * @output Exports XDSStepStatus type
  * @position Shared type used by XDSStep, XDSStepGroup, and context
  */
 
 /**
  * The status for a given step.
  *
+ * Uses plain string values aligned with XDS semantic tokens:
+ * - 'not-started': Step has not been started yet
+ * - 'in-progress': Step is currently in progress (active)
+ * - 'completed': Step has been completed successfully
+ * - 'skipped': Step was deliberately skipped
+ * - 'warning': Step has a warning that needs attention
+ * - 'error': Step has an error that must be resolved
+ *
  * When not explicitly set, status is auto-derived from the parent's activeStep:
- * - step < activeStep → Completed
- * - step === activeStep → InProgress
- * - step > activeStep → NotStarted
+ * - step < activeStep → 'completed'
+ * - step === activeStep → 'in-progress'
+ * - step > activeStep → 'not-started'
  */
-export const XDSStepStatus = {
-  /** Step has not been started yet */
-  NotStarted: 'not-started',
-  /** Step is currently in progress (active) */
-  InProgress: 'in-progress',
-  /** Step has been completed successfully */
-  Completed: 'completed',
-  /** Step was deliberately skipped */
-  Skipped: 'skipped',
-  /** Step has a warning that needs attention */
-  Warning: 'warning',
-  /** Step has an error that must be resolved */
-  Error: 'error',
-} as const;
-
-export type XDSStepStatus = (typeof XDSStepStatus)[keyof typeof XDSStepStatus];
+export type XDSStepStatus =
+  | 'not-started'
+  | 'in-progress'
+  | 'completed'
+  | 'skipped'
+  | 'warning'
+  | 'error';

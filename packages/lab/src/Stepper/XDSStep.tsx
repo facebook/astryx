@@ -31,9 +31,9 @@ import {
 import {xdsClassName, mergeProps} from '@xds/core/utils';
 import type {XDSBaseProps} from '@xds/core';
 import {useXDSStepperContext} from './XDSStepperContext';
-import {XDSStepStatus} from './XDSStepStatus';
+import type {XDSStepStatus} from './XDSStepStatus';
 
-export type XDSStepIndicator = 'auto' | 'status' | 'number' | 'none';
+export type XDSStepIndicatorPreset = 'auto' | 'status' | 'number' | 'none';
 export type XDSStepDensity = 'compact' | 'balanced' | 'spacious';
 
 export interface XDSStepProps extends XDSBaseProps<HTMLDivElement> {
@@ -44,30 +44,19 @@ export interface XDSStepProps extends XDSBaseProps<HTMLDivElement> {
   children?: ReactNode;
   icon?: ReactNode;
   status?: XDSStepStatus;
-  /**
-   * @deprecated Use `status={XDSStepStatus.Completed}` instead. Kept for
-   * backward compatibility with #2206; maps to the Completed status.
-   */
-  isCompleted?: boolean;
-  /**
-   * @deprecated Use `status={XDSStepStatus.Error}` instead. Kept for
-   * backward compatibility with #2206; maps to the Error status.
-   */
-  hasError?: boolean;
   isDisabled?: boolean;
   isOptional?: boolean;
   endContent?: ReactNode;
   /**
-   * What to show as the step indicator.
+   * What to show as the step indicator. Accepts a preset string or any ReactNode:
    * - 'auto': number for not-started steps, status icon once there's a state (default)
    * - 'status': always show status icons (check, dot, error, etc.)
    * - 'number': always show numbered badge
    * - 'none': no indicator, just bar + label
+   * - ReactNode: any custom icon or element to render as the indicator
    * @default 'auto'
    */
-  indicator?: XDSStepIndicator;
-  /** @deprecated Use indicator="none" instead */
-  hasHiddenIcon?: boolean;
+  indicator?: XDSStepIndicatorPreset | ReactNode;
   /**
    * Controls vertical padding of the step.
    * - 'compact': minimal padding (4px block)
@@ -409,13 +398,10 @@ export function XDSStep({
   children,
   icon,
   status: statusProp,
-  isCompleted,
-  hasError,
   isDisabled = false,
   isOptional = false,
   endContent,
   indicator: indicatorProp,
-  hasHiddenIcon = false,
   density: densityProp,
   xstyle,
   className,
@@ -429,26 +415,24 @@ export function XDSStep({
 
   const density = densityProp ?? ctxDensity;
 
-  // Resolve indicator prop (hasHiddenIcon is deprecated compat)
-  const indicator: XDSStepIndicator =
-    indicatorProp ?? (hasHiddenIcon ? 'none' : 'auto');
+  // Resolve indicator prop — may be a preset string or a custom ReactNode
+  const isCustomIndicator =
+    indicatorProp != null && typeof indicatorProp !== 'string';
+  const indicator: XDSStepIndicatorPreset = isCustomIndicator
+    ? 'status'
+    : ((indicatorProp as XDSStepIndicatorPreset | undefined) ?? 'auto');
 
-  // Resolve status. Priority: explicit `status` > deprecated `hasError` >
-  // deprecated `isCompleted` > auto-derived from activeStep.
+  // Resolve status. Priority: explicit `status` > auto-derived from activeStep.
   const status: XDSStepStatus =
     statusProp ??
-    (hasError
-      ? XDSStepStatus.Error
-      : isCompleted
-        ? XDSStepStatus.Completed
-        : step === activeStep
-          ? XDSStepStatus.InProgress
-          : step < activeStep
-            ? XDSStepStatus.Completed
-            : XDSStepStatus.NotStarted);
+    (step === activeStep
+      ? 'in-progress'
+      : step < activeStep
+        ? 'completed'
+        : 'not-started');
 
   const isVertical = orientation === 'vertical';
-  const isSelected = status === XDSStepStatus.InProgress;
+  const isSelected = status === 'in-progress';
   // Any non-disabled step is navigable when an onStepClick handler is provided,
   // including not-started steps (free navigation across the flow).
   const isClickable = !isDisabled && onStepClick != null;
@@ -460,8 +444,7 @@ export function XDSStep({
   };
 
   // Bar: purely progress-based
-  const isBarFilled =
-    status === XDSStepStatus.Completed || status === XDSStepStatus.InProgress;
+  const isBarFilled = status === 'completed' || status === 'in-progress';
 
   // --- Build indicator node ---
   // 'auto': number for not-started, status icon for everything else
@@ -474,18 +457,18 @@ export function XDSStep({
     // Determine if we should show a number
     const showNumber =
       indicator === 'number' ||
-      (indicator === 'auto' && status === XDSStepStatus.NotStarted);
+      (indicator === 'auto' && status === 'not-started');
 
     if (showNumber) {
       const numberColorStyle = isDisabled
         ? styles.numberDisabled
-        : status === XDSStepStatus.Completed
+        : status === 'completed'
           ? styles.numberCompleted
-          : status === XDSStepStatus.InProgress
+          : status === 'in-progress'
             ? styles.numberInProgress
-            : status === XDSStepStatus.Error
+            : status === 'error'
               ? styles.numberError
-              : status === XDSStepStatus.Warning
+              : status === 'warning'
                 ? styles.numberWarning
                 : styles.numberNotStarted;
 
@@ -497,35 +480,36 @@ export function XDSStep({
         </div>
       );
     } else {
-      // Show status icon
-      const statusIcon =
-        icon != null ? (
-          icon
-        ) : status === XDSStepStatus.Completed ? (
-          <CheckCircleIcon />
-        ) : status === XDSStepStatus.InProgress ? (
-          <CurrentIcon />
-        ) : status === XDSStepStatus.Error ? (
-          <ErrorIcon />
-        ) : status === XDSStepStatus.Warning ? (
-          <WarningIcon />
-        ) : status === XDSStepStatus.Skipped ? (
-          <SkipIcon />
-        ) : (
-          <CircleOutlineIcon />
-        );
+      // Show status icon — custom indicator takes priority, then icon prop, then default
+      const statusIcon = isCustomIndicator ? (
+        indicatorProp
+      ) : icon != null ? (
+        icon
+      ) : status === 'completed' ? (
+        <CheckCircleIcon />
+      ) : status === 'in-progress' ? (
+        <CurrentIcon />
+      ) : status === 'error' ? (
+        <ErrorIcon />
+      ) : status === 'warning' ? (
+        <WarningIcon />
+      ) : status === 'skipped' ? (
+        <SkipIcon />
+      ) : (
+        <CircleOutlineIcon />
+      );
 
       const iconColorStyle = isDisabled
         ? styles.iconDisabled
-        : status === XDSStepStatus.Completed
+        : status === 'completed'
           ? styles.iconCompleted
-          : status === XDSStepStatus.InProgress
+          : status === 'in-progress'
             ? styles.iconInProgress
-            : status === XDSStepStatus.Error
+            : status === 'error'
               ? styles.iconError
-              : status === XDSStepStatus.Warning
+              : status === 'warning'
                 ? styles.iconWarning
-                : status === XDSStepStatus.Skipped
+                : status === 'skipped'
                   ? styles.iconSkipped
                   : styles.iconNotStarted;
 
@@ -542,11 +526,11 @@ export function XDSStep({
 
   const labelColorStyle = isDisabled
     ? styles.labelDisabled
-    : status === XDSStepStatus.Error
+    : status === 'error'
       ? styles.labelError
-      : status === XDSStepStatus.NotStarted
+      : status === 'not-started'
         ? styles.labelNotStarted
-        : status === XDSStepStatus.InProgress
+        : status === 'in-progress'
           ? styles.labelInProgress
           : undefined;
 

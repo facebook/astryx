@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSStepper, XDSStep, XDSStepStatus} from '@xds/lab/Stepper';
+import {XDSStepper, XDSStep} from '@xds/lab/Stepper';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
@@ -176,41 +176,41 @@ export const StatusVertical: Story = {
             label="Email verified"
             description="ernesttien@meta.com"
             indicator="status"
-            status={XDSStepStatus.Completed}
+            status={'completed'}
           />
           <XDSStep
             step={1}
             label="Phone verified"
             description="+1 (555) 012-3456"
             indicator="status"
-            status={XDSStepStatus.Completed}
+            status={'completed'}
           />
           <XDSStep
             step={2}
             label="Identity document"
             description="Passport upload failed"
             indicator="status"
-            status={XDSStepStatus.Error}
+            status={'error'}
           />
           <XDSStep
             step={3}
             label="Address verification"
             description="Pending review"
             indicator="status"
-            status={XDSStepStatus.InProgress}
+            status={'in-progress'}
           />
           <XDSStep
             step={4}
             label="Background check"
             indicator="status"
             isOptional
-            status={XDSStepStatus.Skipped}
+            status={'skipped'}
           />
           <XDSStep
             step={5}
             label="Account activated"
             indicator="status"
-            status={XDSStepStatus.NotStarted}
+            status={'not-started'}
           />
         </XDSStepper>
       </div>
@@ -233,42 +233,42 @@ export const StatusAllStates: Story = {
             label="Completed"
             description="Finished successfully"
             indicator="status"
-            status={XDSStepStatus.Completed}
+            status={'completed'}
           />
           <XDSStep
             step={1}
             label="In Progress"
             description="Currently active"
             indicator="status"
-            status={XDSStepStatus.InProgress}
+            status={'in-progress'}
           />
           <XDSStep
             step={2}
             label="Not Started"
             description="Pending"
             indicator="status"
-            status={XDSStepStatus.NotStarted}
+            status={'not-started'}
           />
           <XDSStep
             step={3}
             label="Error"
             description="Requires attention"
             indicator="status"
-            status={XDSStepStatus.Error}
+            status={'error'}
           />
           <XDSStep
             step={4}
             label="Warning"
             description="Needs review"
             indicator="status"
-            status={XDSStepStatus.Warning}
+            status={'warning'}
           />
           <XDSStep
             step={5}
             label="Skipped"
             description="Intentionally bypassed"
             indicator="status"
-            status={XDSStepStatus.Skipped}
+            status={'skipped'}
           />
         </XDSStepper>
       </div>
@@ -635,7 +635,7 @@ export const OptionalSteps: Story = {
             step={1}
             label="Profile photo"
             isOptional
-            status={XDSStepStatus.Skipped}
+            status={'skipped'}
           />
           <XDSStep step={2} label="Connect socials" isOptional />
           <XDSStep step={3} label="Preferences" />

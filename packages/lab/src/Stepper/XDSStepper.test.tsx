@@ -5,7 +5,6 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSStepper} from './XDSStepper';
 import {XDSStep} from './XDSStep';
-import {XDSStepStatus} from './XDSStepStatus';
 
 describe('XDSStepper', () => {
   it('renders a navigation landmark with steps', () => {
@@ -123,7 +122,6 @@ describe('XDSStepper', () => {
         <XDSStep step={1} label="Step 2" />
       </XDSStepper>,
     );
-    // All non-disabled steps are navigable, including not-started ones.
     expect(
       screen.getByRole('button', {name: 'Go to step 1: Step 1'}),
     ).toBeInTheDocument();
@@ -172,14 +170,14 @@ describe('XDSStepper', () => {
     expect(screen.queryAllByRole('button')).toHaveLength(0);
   });
 
-  it('supports status override', () => {
+  it('supports status override with string literal', () => {
     render(
       <XDSStepper activeStep={0}>
         <XDSStep step={0} label="Step 1" data-testid="step-0" />
         <XDSStep
           step={1}
           label="Step 2"
-          status={XDSStepStatus.Completed}
+          status="completed"
           data-testid="step-1"
         />
       </XDSStepper>,
@@ -188,23 +186,11 @@ describe('XDSStepper', () => {
     expect(step1).toBeInTheDocument();
   });
 
-  it('maps deprecated isCompleted prop to Completed status', () => {
-    render(
-      <XDSStepper activeStep={0}>
-        <XDSStep step={0} label="Step 1" data-testid="step-0" />
-        <XDSStep step={1} label="Step 2" isCompleted data-testid="step-1" />
-      </XDSStepper>,
-    );
-    expect(screen.getByTestId('step-1').getAttribute('class') ?? '').toContain(
-      'completed',
-    );
-  });
-
-  it('maps deprecated hasError prop to Error status', () => {
+  it('supports error status string', () => {
     render(
       <XDSStepper activeStep={1}>
         <XDSStep step={0} label="Step 1" data-testid="step-0" />
-        <XDSStep step={1} label="Step 2" hasError data-testid="step-1" />
+        <XDSStep step={1} label="Step 2" status="error" data-testid="step-1" />
       </XDSStepper>,
     );
     expect(screen.getByTestId('step-1').getAttribute('class') ?? '').toContain(
@@ -212,21 +198,19 @@ describe('XDSStepper', () => {
     );
   });
 
-  it('prioritizes explicit status over deprecated hasError', () => {
+  it('prioritizes explicit status over auto-derived', () => {
     render(
       <XDSStepper activeStep={0}>
         <XDSStep
           step={0}
           label="Step 1"
-          hasError
-          status={XDSStepStatus.Completed}
+          status="completed"
           data-testid="step-0"
         />
       </XDSStepper>,
     );
     const cls = screen.getByTestId('step-0').getAttribute('class') ?? '';
     expect(cls).toContain('completed');
-    expect(cls).not.toContain('error');
   });
 
   it('handles zero active step correctly', () => {
@@ -252,5 +236,19 @@ describe('XDSStepper', () => {
       </XDSStepper>,
     );
     expect(screen.getAllByRole('listitem')).toHaveLength(3);
+  });
+
+  it('accepts a custom ReactNode as indicator', () => {
+    render(
+      <XDSStepper activeStep={0}>
+        <XDSStep
+          step={0}
+          label="Step 1"
+          indicator={<span data-testid="custom-icon">★</span>}
+        />
+      </XDSStepper>,
+    );
+    expect(screen.getByTestId('custom-icon')).toBeInTheDocument();
+    expect(screen.getByText('★')).toBeInTheDocument();
   });
 });
