@@ -65,17 +65,14 @@ lines.push("import React, {useState, useCallback, useMemo, useEffect, useRef} fr
 lines.push('');
 
 // ── StyleX mock ────────────────────────────────────────────────────────
-// The playground transpiles code in-browser without the StyleX compiler. The
-// mock reimplements just enough of stylex.create/props to support real CSS:
-// each declared property becomes an atomic class whose rule is injected into a
-// shared <style> sheet, so @container / @media / pseudo conditions actually
-// apply (not just the `default` value, as a plain inline style would force).
+// The playground transpiles code in-browser without the StyleX compiler, so the
+// mock reimplements stylex.create/props: each property becomes an atomic class
+// injected into a shared <style> sheet, so @container/@media/pseudo conditions
+// apply instead of collapsing to the `default` value an inline style would force.
 //
-// create() returns objects tagged `$$css: true` whose values are the generated
-// class names. That shape is understood by BOTH this mock's props() AND the real
-// compiled stylex.props() inside @xds/core components — so styles passed through
-// a component's `xstyle` prop merge correctly too (stylex.props concatenates the
-// class-name values of any $$css object).
+// create() returns `$$css: true` objects of class names — the same shape the real
+// compiled stylex.props() understands, so `xstyle` passed into @xds/core components
+// merges correctly too.
 lines.push(`type PGStyleValue =
   | string
   | number
@@ -98,7 +95,6 @@ const pgKebab = (prop: string): string =>
 const pgCssValue = (prop: string, value: string | number): string =>
   typeof value === 'number' && !PG_UNITLESS.has(prop) ? value + 'px' : String(value);
 
-// Stable short hash for class names + dedupe of identical declarations.
 const pgHash = (input: string): string => {
   let h = 5381;
   for (let i = 0; i < input.length; i++) h = (h * 33) ^ input.charCodeAt(i);
@@ -118,7 +114,6 @@ const pgInject = (rule: string): void => {
   pgSheetEl.appendChild(document.createTextNode(rule));
 };
 
-// Turn one property (with a possibly-conditional value) into a class + rules.
 const pgClassForProp = (prop: string, value: PGStyleValue): string => {
   const cls = pgHash(prop + ':' + JSON.stringify(value));
   if (value != null && typeof value === 'object') {
@@ -133,17 +128,12 @@ const pgClassForProp = (prop: string, value: PGStyleValue): string => {
   return cls;
 };
 
-// 'default' → no suffix; ':hover'/'::after' → pseudo on the selector.
 const pgPseudoSuffix = (cond: string): string =>
   cond === 'default' || cond.startsWith('@') ? '' : cond;
 
-// '@media ...'/'@container ...' wrap the rule; 'default'/pseudo return as-is.
 const pgWrapAtRule = (cond: string, decl: string): string =>
   cond.startsWith('@') ? cond + '{' + decl + '}' : decl;
 
-// Compile one rule object (a map of prop -> value | conditional value) into a
-// $$css-tagged object of class names — the shape props() and the real compiled
-// stylex.props() both understand.
 const pgCompileRule = (rule: Record<string, unknown>): Record<string, unknown> => {
   const compiled: Record<string, unknown> = {$$css: true};
   for (const [prop, value] of Object.entries(rule)) {
@@ -158,8 +148,7 @@ const stylexMock = {
     const out: Record<string, unknown> = {};
     for (const [key, rule] of Object.entries(styles)) {
       if (typeof rule === 'function') {
-        // Dynamic style: compile the object it returns at call time so its
-        // (possibly conditional) values still become real CSS classes.
+        // Dynamic styles must compile at call time so runtime values become classes.
         const fn = rule as (...args: unknown[]) => Record<string, unknown>;
         out[key] = (...args: unknown[]) => pgCompileRule(fn(...args));
       } else if (typeof rule === 'object' && rule != null) {
@@ -170,9 +159,8 @@ const stylexMock = {
     }
     return out as T;
   },
-  // Mirrors stylex.props for plain elements: later $$css objects override earlier
-  // ones per property key, matching real StyleX. Returns a className (no inline
-  // style) so @container/@media survive.
+  // Later styles override earlier ones per property key (matching real StyleX),
+  // returning a className (not inline style) so @container/@media survive.
   props: (...styles: unknown[]) => {
     const byProp: Record<string, string> = {};
     for (const s of (styles.flat(Infinity) as unknown[])) {
@@ -224,9 +212,8 @@ lines.push("import * as xdsTokens from '@xds/core/theme/tokens.stylex';");
 lines.push('');
 
 // ── Hooks ──────────────────────────────────────────────────────────────
-// @xds/core/hooks (useMediaQuery, useOverflow, …) is camelCase, so it isn't
-// picked up by the PascalCase component scan. Add it explicitly so templates
-// that drive responsive behavior with useMediaQuery render correctly.
+// camelCase, so the PascalCase component scan skips it — add it explicitly so
+// templates using useMediaQuery etc. render.
 lines.push("import * as XDSHooks from '@xds/core/hooks';");
 lines.push('');
 
