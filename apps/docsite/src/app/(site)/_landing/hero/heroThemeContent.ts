@@ -3,20 +3,11 @@
 /**
  * @file heroThemeContent.ts
  * @input the docsite theme package registry (generated) + the local Astryx theme
- * @output an ordered list of {theme, label, content} entries the hero cycles
+ * @output an ordered list of {theme, label, content} slides the hero cycles
  * @position Home hero — single source of truth for the theming showcase reel.
  *
- * The hero's floating UI cards are built from themed XDS components, so colors,
- * type, radius, and motion re-skin automatically when wrapped in <XDSTheme>.
- * The only per-theme *content* (copy + a representative product photo) lives
- * here so each slide in the reel reads as a believable, on-brand mini-app
- * rather than the same lorem repeated.
- *
- * The reel intentionally features a curated subset of themes (not every
- * installed package) — see REEL_THEMES below for the exact list + order. Astryx
- * leads because it's the docsite's own brand theme (defined locally, not shipped
- * as an @xds/theme-* package), so it's added explicitly rather than pulled from
- * the package registry.
+ * Per-theme content (copy + product photos) for the reel's cards, plus the
+ * curated theme list/order (REEL_THEMES) and per-theme aurora/wordmark/mode.
  */
 
 import type {XDSDefinedTheme} from '@xds/core/theme';
@@ -24,67 +15,46 @@ import {packages} from '../../../../generated/packageRegistry';
 import {themeObjects} from '../../../../generated/themeRegistry';
 import {astryxTheme} from '../../../../themes/astryxTheme';
 
-// Sentinel name for the docsite's own brand theme. Not an @xds/theme-* package,
-// so it never appears in the generated registry — handled explicitly below.
+// Sentinel for the docsite's local brand theme (not an @xds/theme-* package).
 const ASTRYX = 'astryx';
 
 export interface HeroThemeContent {
-  /**
-   * Left floating card — an image-led product card with an assistant prompt
-   * bubble overlapping the bottom of the photo.
-   */
+  /** Product card (image + title/description + price). */
   product: {
-    /** Path under /public for the product photo (clean product-on-color). */
     image: string;
-    /** Short product title. */
     title: string;
-    /** One-line product description. */
     description: string;
-    /** Price string. */
     price: string;
   };
-  /**
-   * Right floating card — a second, taller image-led product card. A small
-   * "mini" buy card overlaps its lower-left corner (see `mini`).
-   */
+  /** Feature/reward card image + title/price. */
   feature: {
     image: string;
     title: string;
     price: string;
   };
-  /** The small overlapping buy card on the feature card (thumbnail + cart). */
+  /** The buy card (thumbnail + title/description + cart). */
   mini: {
     image: string;
     title: string;
     description: string;
   };
-  /** Small floating "pill" callouts that flank the hero. */
+  /** Floating pill callouts (leading badge, trailing radio). */
   pills: {
-    /** Top-leading callout (e.g. "Limited edition"). */
     leading: string;
-    /** Top-trailing callout (e.g. "Fast shipping"). */
     trailing: string;
   };
-  /** A single chat bubble overlaid on the left product card. */
+  /** Chat composer placeholder. */
   chatPrompt: string;
-  /** Reward-progress card copy (separate card under the feature card). */
+  /** Reward-progress card copy. */
   reward: {
     label: string;
-    /** Completed steps for the "x/total" label. */
     value: number;
-    /** Total steps. */
     total: number;
-    /** Member name shown beside the avatar. */
     member: string;
   };
 }
 
-/**
- * Three colors for the hero's blurred "aurora" background blobs (left, center,
- * right). Each is a categorical background token (e.g. --color-background-green)
- * so it resolves to the active theme's own soft pastel palette — and inherits
- * the token's light-dark() pair for dark mode for free.
- */
+/** The three aurora blob colors (left, center, right). */
 export interface HeroAuroraPalette {
   left: string;
   center: string;
@@ -102,30 +72,28 @@ export interface HeroThemeSlide {
   content: HeroThemeContent;
   /** Soft pastel palette feeding the blurred aurora background blobs. */
   aurora: HeroAuroraPalette;
-  /**
-   * CSS color the wordmark paints in for this theme. The wordmark always sits
-   * on the Astryx page background (a warm cream in light mode), so it needs a
-   * color that reads against *that* surface — which is the theme's accent for
-   * most themes, but NOT for dark-only themes whose accent is a pale on-dark
-   * tone (e.g. Gothic). Such themes override this with a dark brand ink.
-   */
+  /** CSS color the wordmark paints in (must read on the slide's hero fill). */
   wordmarkColor: string;
+  /**
+   * Dark-first theme. On dark slides the hero text/links/nav switch to light,
+   * and the theme renders in dark mode (fill, cards, blobs use its dark palette).
+   */
+  isDark: boolean;
+  /** Color mode the slide's theme renders in. Dark-first themes use 'dark'. */
+  mode: 'light' | 'dark';
 }
 
-// The curated reel — exactly these themes, in this order. Astryx leads (the
-// docsite's own brand), then a spread from restrained (Neutral) to expressive
-// (Y2K). To add/remove a theme from the hero, edit this list only.
+// The curated reel — these themes, in this order. Edit here to add/remove.
 const REEL_THEMES: ReadonlyArray<string> = [
   ASTRYX,
   '@xds/theme-neutral',
   '@xds/theme-butter',
   '@xds/theme-matcha',
+  '@xds/theme-gothic',
   '@xds/theme-y2k',
 ];
 
-// Per-theme card content. Keyed by theme name (package name, or the ASTRYX
-// sentinel). Imagery uses clean product-on-color photos so each slide reads as
-// a real little storefront; copy + product mix is tuned to each theme's mood.
+// Per-theme card content, keyed by theme name (or the ASTRYX sentinel).
 const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
   [ASTRYX]: {
     product: {
@@ -145,7 +113,7 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
       description: 'Hand-thrown stoneware.',
     },
     pills: {leading: 'Limited time', trailing: 'Free shipping'},
-    chatPrompt: 'How can I help you today?',
+    chatPrompt: 'How can I help?',
     reward: {
       label: 'Setup progress',
       value: 7,
@@ -171,7 +139,7 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
       description: 'Water-resistant.',
     },
     pills: {leading: 'Limited time', trailing: 'Free shipping'},
-    chatPrompt: 'How can I help you today?',
+    chatPrompt: 'How can I help?',
     reward: {
       label: 'Member rewards',
       value: 6,
@@ -197,7 +165,7 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
       description: 'Served warm.',
     },
     pills: {leading: 'Limited time', trailing: 'Free shipping'},
-    chatPrompt: 'How can I help you today?',
+    chatPrompt: 'How can I help?',
     reward: {label: 'Loyalty perks', value: 5, total: 9, member: 'Noa Bright'},
   },
   '@xds/theme-matcha': {
@@ -218,13 +186,34 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
       description: 'Ube and cream matcha.',
     },
     pills: {leading: 'Limited time', trailing: 'Free shipping'},
-    chatPrompt: 'How can I help you today?',
+    chatPrompt: 'How can I help?',
     reward: {
       label: 'Reward progress',
       value: 7,
       total: 8,
       member: 'Lottie Wang',
     },
+  },
+  '@xds/theme-gothic': {
+    product: {
+      image: '/theme-gothic-preview.png',
+      title: 'Onyx pendant',
+      description: 'Blackened silver with a matte finish.',
+      price: '$96',
+    },
+    feature: {
+      image: '/theme-gothic-preview.png',
+      title: 'Midnight cuff',
+      price: '$120',
+    },
+    mini: {
+      image: '/theme-gothic-preview.png',
+      title: 'Raven ring',
+      description: 'Hand-forged band.',
+    },
+    pills: {leading: 'Limited time', trailing: 'Free shipping'},
+    chatPrompt: 'How can I help?',
+    reward: {label: 'Member rewards', value: 7, total: 8, member: 'Mara Vale'},
   },
   '@xds/theme-y2k': {
     product: {
@@ -244,14 +233,12 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
       description: 'Plush + chrome ring.',
     },
     pills: {leading: 'Limited time', trailing: 'Free shipping'},
-    chatPrompt: 'How can I help you today?',
+    chatPrompt: 'How can I help?',
     reward: {label: 'Sparkle points', value: 6, total: 8, member: 'Bella Cruz'},
   },
 };
 
-// Fallback content for any theme that ships without a bespoke entry above —
-// keeps the hero from breaking if a new theme package lands. Uses the theme's
-// conventional preview image path so the visual still matches.
+// Fallback content for any theme without a bespoke entry (uses its preview img).
 function fallbackContent(name: string): HeroThemeContent {
   const slug = name.replace('@xds/theme-', '');
   const image = `/theme-${slug}-preview.png`;
@@ -265,19 +252,18 @@ function fallbackContent(name: string): HeroThemeContent {
     feature: {image, title: 'Featured product', price: '$40'},
     mini: {image, title: 'Featured', description: 'In stock now.'},
     pills: {leading: 'Limited time', trailing: 'Free shipping'},
-    chatPrompt: 'How can I help you today?',
+    chatPrompt: 'How can I help?',
     reward: {label: 'Member rewards', value: 6, total: 10, member: 'Sam Lee'},
   };
 }
 
-// Explicit, properly-cased labels for the reel. Some package displayNames are
-// lowercased (e.g. "matcha"), so we don't rely on them for the user-facing dot
-// labels — this map is the source of truth.
+// Properly-cased dot labels (package displayNames are sometimes lowercased).
 const LABEL_BY_THEME: Record<string, string> = {
   [ASTRYX]: 'Astryx',
   '@xds/theme-neutral': 'Neutral',
   '@xds/theme-butter': 'Butter',
   '@xds/theme-matcha': 'Matcha',
+  '@xds/theme-gothic': 'Gothic',
   '@xds/theme-y2k': 'Y2K',
 };
 
@@ -290,10 +276,8 @@ function labelFor(name: string): string {
   return raw.replace(/^Theme:\s*/, '').replace(/\s*Theme$/, '');
 }
 
-// Resolve a reel entry's theme object. Astryx comes from the local brand theme;
-// every other entry is an installed @xds/theme-* package in the generated
-// registry. Returns null if a listed package isn't installed (so the reel
-// silently skips it rather than crashing).
+// Resolve a slide's theme object (Astryx is local; others from the registry).
+// Returns null for an uninstalled package so the reel skips it.
 function themeFor(name: string): XDSDefinedTheme | null {
   if (name === ASTRYX) {
     return astryxTheme;
@@ -301,20 +285,18 @@ function themeFor(name: string): XDSDefinedTheme | null {
   return themeObjects[name] ?? null;
 }
 
-// Default wordmark color: the theme's accent text token, which is a dark brand
-// ink for every light-first theme and reads well on the cream page.
+// Default wordmark color (theme accent — a dark ink on light themes).
 const DEFAULT_WORDMARK_COLOR = 'var(--color-text-accent)';
 
-// Overrides for themes whose accent is a pale on-dark tone that would vanish on
-// the light hero page. (None in the current reel, but kept as the extension
-// point — e.g. a dark-only theme would map to a dark brand ink here.)
-const WORDMARK_COLOR_BY_THEME: Record<string, string> = {};
+// Per-theme wordmark overrides (dark themes need a light ink on their dark fill).
+const WORDMARK_COLOR_BY_THEME: Record<string, string> = {
+  '@xds/theme-gothic': 'var(--color-text-primary)',
+};
 
-// Per-theme aurora palettes. Each blob references a categorical background
-// token so it resolves against the active theme's palette (and inherits its
-// light-dark() pair). Chosen to feel on-brand: Astryx warm, Matcha sage/green,
-// Y2K candy, Butter gold, Neutral cool. Mirrors the palette pairing used in the
-// home-page-refresh PR's hero aurora.
+// Dark-first themes (rendered in dark mode; hero text/nav go light).
+const DARK_THEMES: ReadonlySet<string> = new Set<string>(['@xds/theme-gothic']);
+
+// Per-theme aurora blob palettes (categorical background tokens, on-brand hues).
 const AURORA_BY_THEME: Record<string, HeroAuroraPalette> = {
   [ASTRYX]: {
     left: 'var(--color-background-yellow)',
@@ -336,6 +318,13 @@ const AURORA_BY_THEME: Record<string, HeroAuroraPalette> = {
     center: 'var(--color-background-cyan)',
     right: 'var(--color-background-yellow)',
   },
+  // Gothic (dark mode): use saturated --color-border-* tokens so the blobs glow
+  // instead of washing out white (the 20%-alpha background tints would).
+  '@xds/theme-gothic': {
+    left: 'var(--color-border-purple)',
+    center: 'var(--color-border-blue)',
+    right: 'var(--color-border-teal)',
+  },
   '@xds/theme-y2k': {
     left: 'var(--color-background-pink)',
     center: 'var(--color-background-purple)',
@@ -350,11 +339,7 @@ const DEFAULT_AURORA: HeroAuroraPalette = {
   right: 'var(--color-background-pink)',
 };
 
-/**
- * Ordered list of hero slides — exactly the themes in REEL_THEMES, in order.
- * Any entry whose theme can't be resolved (e.g. a package that isn't installed)
- * is skipped so the reel stays robust.
- */
+// Ordered slides from REEL_THEMES; unresolved (uninstalled) themes are skipped.
 export const HERO_THEME_SLIDES: ReadonlyArray<HeroThemeSlide> = REEL_THEMES.map(
   name => {
     const theme = themeFor(name);
@@ -367,6 +352,8 @@ export const HERO_THEME_SLIDES: ReadonlyArray<HeroThemeSlide> = REEL_THEMES.map(
           aurora: AURORA_BY_THEME[name] ?? DEFAULT_AURORA,
           wordmarkColor:
             WORDMARK_COLOR_BY_THEME[name] ?? DEFAULT_WORDMARK_COLOR,
+          isDark: DARK_THEMES.has(name),
+          mode: DARK_THEMES.has(name) ? 'dark' : 'light',
         }
       : null;
   },

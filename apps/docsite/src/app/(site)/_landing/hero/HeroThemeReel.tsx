@@ -5,31 +5,13 @@
 /**
  * @file HeroThemeReel.tsx
  * @input none (reads the generated theme registry via heroThemeContent)
- * @output Provider + two placed pieces (wordmark, floating cards) + dots
+ * @output Provider + placed pieces (wordmark, cards, dots) consumed by page.tsx
  * @position Home hero — orchestrates the per-theme reel behind the headline.
  *
- * The hero's themed pieces live in different parts of the DOM: the recolorable
- * wordmark sits in the centered content column (in normal flow, so it defines
- * the hero's height), while the floating UI cards must anchor to the FULL-WIDTH
- * hero scope so they can sit out in the left/right gutters instead of on top of
- * the headline. To keep both pieces re-skinning together and sharing one
- * auto-advance clock, the cycling state lives in a context provider
- * (`HeroReelProvider`) and each piece is a thin consumer placed by page.tsx:
- *
- *   <HeroReelProvider>                 // owns index + timer, no DOM of its own
- *     <div heroScope position:relative>
- *       <HeroReelCards />              // full-bleed absolute layer (gutters)
- *       <div heroContent>             // centered 800px column
- *         <HeroReelWordmark />        // in-flow, centered
- *         ...headline / CTAs (NOT themed — stable Astryx brand)...
- *         <HeroReelDots />            // theme switcher
- *       </div>
- *     </div>
- *   </HeroReelProvider>
- *
- * Behavior: auto-advances on a timer; pauses on hover/focus of the hero or when
- * the tab is hidden; respects prefers-reduced-motion (no auto-advance, no
- * entrance animation) while keeping the dots fully usable.
+ * The cycling state (active index + auto-advance clock) lives in HeroReelProvider
+ * so the wordmark, cards, and dots — placed in different parts of the DOM by
+ * page.tsx — re-skin together. Auto-advance pauses on hover/focus and when the
+ * tab is hidden, and respects prefers-reduced-motion.
  */
 
 import {
@@ -53,10 +35,8 @@ import {HeroFloatingCards} from './HeroFloatingCards';
 // How long each theme stays on screen before auto-advancing (ms).
 const ADVANCE_INTERVAL_MS = 4500;
 
-// Master switch for the auto-advance carousel. Temporarily off while iterating
-// on the hero design — the dots still switch themes manually. Flip back to true
-// to re-enable cycling.
-const AUTOPLAY_ENABLED = false;
+// Auto-advance carousel master switch.
+const AUTOPLAY_ENABLED = true;
 
 interface HeroReelState {
   slides: ReadonlyArray<HeroThemeSlide>;
@@ -73,10 +53,21 @@ function useHeroReel(): HeroReelState | null {
   return useContext(HeroReelContext);
 }
 
+/**
+ * Whether the active reel slide is a dark-first theme. The hero text + nav use
+ * this to switch to light colors on dark slides (e.g. Gothic) so they stay
+ * readable on the dark per-slide background.
+ */
+export function useHeroReelIsDark(): boolean {
+  const reel = useContext(HeroReelContext);
+  if (!reel || reel.slides.length === 0) {
+    return false;
+  }
+  return reel.slides[reel.index]?.isDark ?? false;
+}
+
 const styles = stylex.create({
-  // Wordmark wrapper — centers the SVG and caps its width. The SVG paints
-  // with currentColor; the per-theme `color` is supplied by wordmarkColor()
-  // below (dynamic value) since it varies by slide.
+  // Centers the wordmark SVG; it paints with currentColor (set per-slide).
   wordmarkWrap: {
     position: 'relative',
     zIndex: 1,
@@ -86,8 +77,7 @@ const styles = stylex.create({
     transitionDuration: 'var(--duration-medium, 300ms)',
     transitionTimingFunction: 'var(--ease-standard, ease)',
   },
-  // Hero-scale wordmark. Caps at 520px on desktop; smaller on narrow screens so
-  // it doesn't dominate (and the glyphs never kiss the viewport edge).
+  // Hero-scale wordmark, smaller on narrow screens.
   wordmark: {
     width: {
       default: 'min(360px, 70%)',
@@ -96,14 +86,8 @@ const styles = stylex.create({
     },
     height: 'auto',
   },
-  // Full-bleed layer that hosts the floating cards. It's STICKY (not
-  // absolute) with the same top offset + zero height as the hero content
-  // column, so it pins to the viewport in lockstep with the sticky hero
-  // text instead of scrolling away while the text stays put. Zero height
-  // keeps it out of flow; the floating cards inside are absolutely placed
-  // relative to this pinned box, so they hang at fixed offsets below the
-  // pin point and ride along as the user scrolls the hero. pointer-events:
-  // none so the decoration never intercepts clicks meant for the real CTAs.
+  // Sticky, zero-height layer hosting the overlap cards so they pin with the
+  // hero and don't intercept clicks.
   cardsLayer: {
     position: 'sticky',
     top: 'var(--appshell-header-height, 0px)',
@@ -112,34 +96,24 @@ const styles = stylex.create({
     pointerEvents: 'none',
     zIndex: 0,
   },
-  // Slide-themed body fill behind the hero. Lives inside the reel's themed
-  // scope so --color-background-body resolves to the ACTIVE slide's theme body
-  // color (not Astryx's default), retinting the whole hero region per slide.
-  //
-  // position:absolute (anchored to heroScope) with NO z-index — source order
-  // puts it on top of heroScope's own (Astryx) background but behind the
-  // aurora + content that follow it. (A negative z-index would drop it BEHIND
-  // the heroScope background, hiding the retint — that was the earlier bug.)
-  // top:0 + height covers the hero band; it scrolls away with the page and the
-  // showcase paints over it via later source order.
+  // Per-slide body fill behind the hero (resolves to the active theme's body
+  // color). Covers the band + a page-radius extra so the color sits behind the
+  // showcase's rounded top corners (no cream notch on dark themes like Gothic).
   themeFill: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    // Matches the hero band height (HERO_BAND_HEIGHT / heroSpacer in
-    // page.tsx) so the fill covers exactly the hero region and never overlaps
-    // the showcase below (an absolute fill taller than the band would paint
-    // over the showcase's top edge since it's out of flow).
-    height: 760,
+    height: {
+      default:
+        'calc(var(--hero-content-height, 760px) + var(--radius-page, 24px))',
+      '@media (min-width: 1024px)': 'calc(760px + var(--radius-page, 24px))',
+    },
     backgroundColor: 'var(--color-background-body)',
     pointerEvents: 'none',
     transition: 'background-color 600ms ease',
   },
-  // Slide-themed band fixed behind the (transparent) top nav so the nav strip
-  // retints with the active slide too. Height matches the nav; zIndex:0 sits
-  // under the nav but above page content. Inside the themed scope so its
-  // --color-background-body is the active slide's.
+  // Per-slide band behind the transparent top nav so it retints too.
   navBackdrop: {
     position: 'fixed',
     top: 0,
@@ -151,45 +125,28 @@ const styles = stylex.create({
     transition: 'background-color 600ms ease',
     zIndex: 0,
   },
-  // Aurora glow behind the hero — replicates the home-page-refresh PR exactly.
-  // position:fixed locks the blobs to the viewport as the user scrolls (the
-  // sticky hero pins to the same region, so the glow reads as anchored to the
-  // hero); when the showcase scrolls up it paints a solid surface over this
-  // fixed layer, so the glow cleanly disappears past the hero. Three solid
-  // discs (solid to 90% of radius, then quick fade), heavily blurred into soft
-  // out-of-focus lights at opacity 0.5. Disc colors come from --aurora-* vars
-  // set per-slide by dynamic.aurora(). Every literal here matches the PR.
+  // Blurred aurora glow — fixed, in the same 1200px box as the cards so blobs
+  // and cards stay aligned. Capped to 100vw to avoid horizontal scroll. Blob
+  // centers sit under the card clusters; colors come from --aurora-* per slide.
   backdropGlow: {
     position: 'fixed',
     top: 'var(--appshell-header-height, 0px)',
-    // Fixed-width, viewport-centered box — the SAME box the floating cards use
-    // (HeroFloatingCards `stage`) so the blobs and the cards share one
-    // coordinate space and stay aligned at any screen width.
     left: '50%',
     transform: 'translateX(-50%)',
-    // Cap to the viewport so the fixed glow box never forces horizontal scroll
-    // on narrow screens.
     width: 'min(1200px, 100vw)',
     height: 1050,
     pointerEvents: 'none',
     opacity: 0.5,
     transition: 'background-image 800ms ease',
     filter: 'blur(60px)',
-    // Blob centers sit under the card clusters (same 1200px box): left blob
-    // under the left cluster (~5%), center + right blobs under the right
-    // cluster (~72% / ~92%).
     backgroundImage:
       'radial-gradient(circle 220px at 5% 75%, var(--aurora-left), var(--aurora-left) 90%, transparent 100%), ' +
       'radial-gradient(circle 200px at 72% 85%, var(--aurora-center), var(--aurora-center) 90%, transparent 100%), ' +
       'radial-gradient(circle 260px at 92% 65%, var(--aurora-right), var(--aurora-right) 90%, transparent 100%)',
-    // Visible at all widths so the per-theme aurora glow sits behind the hero on
-    // narrow screens (with the collage) as well as the desktop overlap layout.
+    // Visible at all widths (behind the collage on narrow + overlap on desktop).
     display: 'block',
   },
-  // Centering wrapper for the XDSPagination dots, with breathing room above
-  // so they don't crowd the "Currently in Beta · Built on React and StyleX"
-  // line. XDSPagination renders its own centered nav, so this just adds the
-  // top margin + centers the nav within the hero column.
+  // Centers the pagination dots with breathing room above.
   dots: {
     display: 'flex',
     justifyContent: 'center',
@@ -208,11 +165,9 @@ const styles = stylex.create({
   },
 });
 
-// Dynamic per-theme values. StyleX functions keep runtime values out of inline
-// style attributes (the design system forbids inline styles on raw elements).
+// Dynamic per-theme values via stylex.create functions (no inline styles).
 const dynamic = stylex.create({
   wordmarkColor: (color: string) => ({color}),
-  // Feeds the three aurora disc colors into the gradient via CSS vars.
   aurora: (left: string, center: string, right: string) => ({
     '--aurora-left': left,
     '--aurora-center': center,
@@ -296,7 +251,7 @@ export function HeroReelWordmark() {
 
   const active = reel.slides[reel.index];
   return (
-    <XDSTheme theme={active.theme} mode="light">
+    <XDSTheme theme={active.theme} mode={active.mode}>
       <div
         {...stylex.props(
           styles.wordmarkWrap,
@@ -326,13 +281,9 @@ export function HeroReelCards() {
   const shown = reel.animate ? mounted : true;
 
   return (
-    <XDSTheme theme={active.theme} mode="light">
-      {/* Slide-themed body fill behind the hero region. */}
+    <XDSTheme theme={active.theme} mode={active.mode}>
       <div {...stylex.props(styles.themeFill)} aria-hidden="true" />
-      {/* Slide-themed band behind the transparent top nav. */}
       <div {...stylex.props(styles.navBackdrop)} aria-hidden="true" />
-      {/* Blurred aurora glow — position:fixed, locked to the viewport behind
-          the hero (covered by the showcase on scroll). */}
       <div
         aria-hidden="true"
         {...stylex.props(
@@ -353,11 +304,8 @@ export function HeroReelCards() {
 }
 
 /**
- * Mobile-only stacked variant of the hero cards. The desktop overlap layout
- * (HeroReelCards) hides below 1024px; this renders the same cards as a centered
- * single column in normal flow. Placed after the hero text in page.tsx so it
- * appears below the headline on small screens. Self-hides at ≥1024px via the
- * `stackStage` style.
+ * Narrow-screen (collage) variant of the hero cards, placed after the hero text
+ * in page.tsx. Self-hides at ≥1024px, where HeroReelCards (overlap) takes over.
  */
 export function HeroReelStack() {
   const reel = useHeroReel();
@@ -366,7 +314,7 @@ export function HeroReelStack() {
   }
   const active = reel.slides[reel.index];
   return (
-    <XDSTheme theme={active.theme} mode="light">
+    <XDSTheme theme={active.theme} mode={active.mode}>
       <HeroFloatingCards content={active.content} mounted layout="stack" />
     </XDSTheme>
   );
