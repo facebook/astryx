@@ -3,7 +3,7 @@
 /**
  * @file globalIconRegistry.tsx
  * @input None (pure module-level state)
- * @output Exports registerIcons, getIcon, resetIcons, XDSIconName, XDSIconRegistry
+ * @output Exports registerIcons, getIconRegistry, getIcon, resetIcons, XDSIconName, XDSIconRegistry
  * @position Global icon registry; works in both server and client environments
  *
  * This module has NO 'use client' directive — it's importable from RSC.
@@ -79,6 +79,24 @@ let globalRegistry: Partial<XDSIconRegistry> = {};
  */
 export function registerIcons(icons: Partial<XDSIconRegistry>): void {
   globalRegistry = {...globalRegistry, ...icons};
+}
+
+/**
+ * Get a snapshot of the full icon registry, with registered icons overriding
+ * built-in defaults.
+ *
+ * Works in both server and client environments. Useful for tooling that needs
+ * to derive valid semantic icon-name options from the same registry XDSIcon
+ * resolves against.
+ */
+export function getIconRegistry(): Readonly<XDSIconRegistry> {
+  const registry = {...defaultIcons};
+
+  for (const name of Object.keys(globalRegistry) as XDSIconName[]) {
+    registry[name] = globalRegistry[name] ?? defaultIcons[name];
+  }
+
+  return registry;
 }
 
 /**
