@@ -50,6 +50,12 @@ const meta: Meta<typeof XDSSelector> = {
       options: ['sm', 'md', 'lg'],
       description: 'Size variant of the selector',
     },
+    placement: {
+      control: 'select',
+      options: ['above', 'below', 'start', 'end'],
+      description:
+        'Explicit menu placement. Leave unset for selected-item overlay behavior.',
+    },
     isDisabled: {
       control: 'boolean',
       description: 'Whether the selector is disabled',
@@ -552,5 +558,28 @@ export const ClearableWithStatus: Story = {
   args: {
     label: 'Required fruit',
     status: {type: 'warning', message: 'Selection is recommended'},
+  },
+};
+
+export const PlacementAbove: Story = {
+  render: args => {
+    const {
+      value: argsValue,
+      onChange: _onChange,
+      changeAction: _changeAction,
+      hasClear: _hc,
+      ...rest
+    } = args;
+    const [value, setValue] = useState(argsValue ?? 'Banana');
+    return (
+      <XDSSelector
+        {...rest}
+        label="Bottom toolbar selector"
+        options={['Apple', 'Banana', 'Cherry', 'Date']}
+        value={value}
+        onChange={v => setValue(v)}
+        placement="above"
+      />
+    );
   },
 };

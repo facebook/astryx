@@ -60,6 +60,13 @@ export const docs = {
             'Custom menu width; defaults to matching the trigger button width.',
         },
         {
+          name: 'placement',
+          type: "'above' | 'below' | 'start' | 'end'",
+          description:
+            'Menu placement relative to the trigger. Defaults below; the layer automatically flips when there is not enough viewport space.',
+          default: "'below'",
+        },
+        {
           name: 'onClick',
           type: '() => void',
           description: 'Callback fired when the trigger button is clicked.',
@@ -185,6 +192,13 @@ export const docsZh = {
             '自定义菜单宽度；默认与触发按钮同宽。',
         },
         {
+          name: 'placement',
+          type: "'above' | 'below' | 'start' | 'end'",
+          description:
+            '菜单相对于触发器的位置。默认在下方；当视口空间不足时图层会自动翻转。',
+          default: "'below'",
+        },
+        {
           name: 'onClick',
           type: '() => void',
           description: '点击触发按钮时触发的回调。',
@@ -278,6 +292,7 @@ export const docsDense = {
         isMenuOpen: 'controlled open state',
         onOpenChange: 'callback on open state change',
         menuWidth: 'custom menu width; default matches trigger button',
+        placement: 'menu placement relative to trigger; default below with viewport auto-flip',
         onClick: 'trigger button click callback',
         hasChevron: 'show chevron on trigger; false for icon-only triggers',
         hasAutoFocus: 'auto-focus first item on open; false for showcases',

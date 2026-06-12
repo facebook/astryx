@@ -40,6 +40,11 @@ const meta: Meta<typeof XDSDropdownMenu> = {
       control: 'text',
       description: 'Custom menu width (number for px or CSS string)',
     },
+    placement: {
+      control: 'select',
+      options: ['above', 'below', 'start', 'end'],
+      description: 'Menu placement relative to trigger',
+    },
     'data-testid': {
       control: 'text',
       description: 'Test ID for testing frameworks',
@@ -494,5 +499,19 @@ export const CompoundWithDescriptions: Story = {
         onClick={() => console.log('Carol')}
       />
     </XDSDropdownMenu>
+  ),
+};
+
+export const PlacementAbove: Story = {
+  render: () => (
+    <XDSDropdownMenu
+      button={{label: 'Bottom toolbar menu'}}
+      placement="above"
+      items={[
+        {label: 'Edit', onClick: () => console.log('Edit')},
+        {label: 'Duplicate', onClick: () => console.log('Duplicate')},
+        {label: 'Delete', onClick: () => console.log('Delete')},
+      ]}
+    />
   ),
 };
