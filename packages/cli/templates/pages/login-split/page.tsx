@@ -29,49 +29,40 @@ const APPLE_LOGO_URL =
 const GOOGLE_LOGO_URL =
   'https://lookaside.facebook.com/assets/xds_oss/GoogleLogo.png';
 
-// Below this viewport width the split stacks (image on top, form below).
-const STACK_QUERY = '@media (max-width: 700px)';
+// The grid reflows to one column when its container is narrower than
+// 2×360 + 32(gap) = 752px. A container query (not a viewport media query)
+// reorders the image to match that exact point — keyed to the card width, not
+// the window — so it never desyncs (e.g. a narrow card in a wide viewport).
+const STACK_QUERY = '@container login-split (max-width: 751px)';
 
 const styles = stylex.create({
-  // Page surface. A column flex that fills its container (the full app
-  // viewport, or the docsite's shorter preview frame) and GROWS with its
-  // content. This is a vertical-flex page rather than an XDSCenter because
-  // XDSCenter is a row flex with align-items:center: when the card is taller
-  // than the frame the centered child overflows the container instead of
-  // stretching it, so (a) the body background only paints one frame-height
-  // and the overflow area shows the frame's bare surface, and (b) the card's
-  // top is pushed above the scroll origin and clipped. As a column flex with
-  // minHeight:100%, the surface grows to the full content height so the body
-  // background covers everything; the child centers via margin-block:auto
-  // (see contentWrap), which is overflow-safe — it centers when there is room
-  // and keeps the top reachable when content is taller than the frame.
-  // boxSizing keeps the spacing-6 padding inside the 100% height.
+  // Page surface for the <XDSCenter axis="both"> root (matches the other login
+  // templates). minHeight:100% fills the host — the docsite's bounded preview
+  // frame or the app viewport — so the centered card never leaves an unpainted
+  // band; padding keeps it off the surface edges.
   page: {
-    display: 'flex',
-    flexDirection: 'column',
     minHeight: '100%',
-    boxSizing: 'border-box',
     backgroundColor: colorVars['--color-background-body'],
     padding: spacingVars['--spacing-6'],
-  },
-  // Vertical-centering wrapper. marginBlock:auto centers the stack within the
-  // page's leftover height when the content fits, but (unlike flex centering)
-  // does not clip the top when the content is taller than the frame — the top
-  // margin collapses to 0 and the card scrolls from the top instead.
-  contentWrap: {
-    width: '100%',
-    marginBlock: 'auto',
   },
   cardWrap: {
     width: '100%',
     maxWidth: 1000,
     marginInline: 'auto',
   },
-  // Framed cover image: inset from the card edge with fully rounded corners
-  // so it reads correctly whether placed on the right (wide) or on top
-  // (stacked). On stack, order:-1 moves it above the form.
+  // Applied to the XDSGrid so the grid (not an extra wrapper div) owns the
+  // frame: padding is the 32px inset, gap={8} is the single inter-cell gutter.
+  // Pad the grid, not the XDSCard, because XDSCard's padding sets the
+  // --container-padding-* vars that the form's XDSSection escapes (negative
+  // margins) — which would cancel the inset on the form side only. containerType
+  // makes the grid the query container STACK_QUERY measures against.
+  splitGrid: {
+    containerType: 'inline-size',
+    containerName: 'login-split',
+    padding: spacingVars['--spacing-8'],
+  },
   imageCell: {
-    padding: spacingVars['--spacing-4'],
+    // order:-1 moves the image above the form when the grid stacks.
     order: {
       default: 0,
       [STACK_QUERY]: -1,
@@ -105,14 +96,19 @@ export default function LoginTwoColumn() {
   };
 
   return (
-    <div {...stylex.props(styles.page)}>
-      <XDSVStack gap={4} xstyle={styles.contentWrap}>
-        {/* Card — wrapper caps width + centers; grid reflows below 700px */}
+    <XDSCenter axis="both" xstyle={styles.page}>
+      <XDSVStack gap={4} width="100%">
+        {/* Card — wrapper caps width + centers; grid reflows to one column
+            when the card is narrower than ~752px (see STACK_QUERY). */}
         <div {...stylex.props(styles.cardWrap)}>
           <XDSCard padding={0} width="100%">
-            <XDSGrid columns={{minWidth: 360}} align="stretch">
+            <XDSGrid
+              columns={{minWidth: 360}}
+              gap={8}
+              align="stretch"
+              xstyle={styles.splitGrid}>
               {/* Left — Form */}
-              <XDSSection variant="transparent" padding={8} height="100%">
+              <XDSSection variant="transparent" padding={0} height="100%">
                 <XDSVStack gap={4} height="100%">
                   <XDSHStack gap={2} vAlign="center">
                     <XDSIcon icon={SquaresPlusIcon} />
@@ -271,6 +267,6 @@ export default function LoginTwoColumn() {
           </XDSText>
         </XDSVStack>
       </XDSVStack>
-    </div>
+    </XDSCenter>
   );
 }
