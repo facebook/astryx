@@ -167,6 +167,19 @@ export interface XDSMarkdownProps extends XDSBaseProps<HTMLDivElement> {
    * for overlapping ranges.
    */
   inlinePlugins?: MarkdownInlinePlugin[];
+  /**
+   * Opt-in autolinking of bare URLs and emails inside text.
+   * - `'gfm'` — GitHub-Flavored Markdown autolink-literal rules:
+   *   `https?://…`, `www.…`, `<scheme:url>`, `<email>`, and bare
+   *   `user@host` all become `<a>` links. Trailing sentence punctuation
+   *   (`?!.,:*_~`) and unbalanced trailing `)` are excluded; matches inside
+   *   code spans, code blocks, existing links, and image alt text are
+   *   skipped.
+   *
+   * Default behavior (option unset) is unchanged — bare URLs render as
+   * literal text.
+   */
+  autolink?: 'gfm';
 }
 
 // ---------------------------------------------------------------------------
@@ -835,7 +848,8 @@ function renderInline(
           </LinkComp>
         );
       }
-      const isExternal = safeHref.startsWith('http');
+      const isExternal =
+        safeHref.startsWith('https://') || safeHref.startsWith('http://');
       const handleClick = onLinkClick
         ? (e: React.MouseEvent<HTMLAnchorElement>) => {
             const result = onLinkClick(safeHref, e);
@@ -1512,6 +1526,7 @@ export function XDSMarkdown({
   contentAlign = 'start',
   components,
   inlinePlugins,
+  autolink,
   xstyle,
   className,
   style,
@@ -1524,6 +1539,11 @@ export function XDSMarkdown({
     [sources],
   );
 
+  const parseOptions = useMemo(
+    () => ({sourceIds, autolink}),
+    [sourceIds, autolink],
+  );
+
   // Smooth bursty streamed chunks into a steady character-by-character reveal.
   // When not streaming, the hook returns children unchanged (no-op).
   const smoothedText = useXDSStreamingText(children, isStreaming);
@@ -1531,6 +1551,13 @@ export function XDSMarkdown({
   const incrementalStateRef = useRef<IncrementalState>(
     createIncrementalState(),
   );
+  // Reset incremental cache when the autolink option toggles — cached
+  // settled blocks were parsed with the previous setting.
+  const prevAutolinkRef = useRef(autolink);
+  if (prevAutolinkRef.current !== autolink) {
+    incrementalStateRef.current = createIncrementalState();
+    prevAutolinkRef.current = autolink;
+  }
 
   const blocks = useMemo(() => {
     if (isStreaming) {
@@ -1542,11 +1569,11 @@ export function XDSMarkdown({
       return parseMarkdownIncremental(
         input,
         incrementalStateRef.current,
-        sourceIds,
+        parseOptions,
       );
     }
-    return parseMarkdown(children, sourceIds);
-  }, [smoothedText, children, isStreaming, sourceIds]);
+    return parseMarkdown(children, parseOptions);
+  }, [smoothedText, children, isStreaming, parseOptions]);
 
   // Track recent boundaries for stacked fade-in animation.
   // The number of spans needed = ceil(animationDuration / tickInterval).

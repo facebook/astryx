@@ -48,6 +48,60 @@ export type TableCellNode = {children: InlineNode[]};
 export type TableAlignment = 'left' | 'center' | 'right' | null;
 
 // ---------------------------------------------------------------------------
+// Parse options
+// ---------------------------------------------------------------------------
+
+/**
+ * Options for the markdown parser entry points.
+ *
+ * Backward-compatible: the public `parseMarkdown` / `parseInline` /
+ * `parseMarkdownIncremental` functions also accept the legacy
+ * `ReadonlySet<string>` shape as the second argument.
+ */
+export type ParseOptions = {
+  /** Set of citation source ids — `[id]` / `【id】` markers in this set
+   *  become citation nodes instead of plain text / links. */
+  sourceIds?: ReadonlySet<string>;
+  /**
+   * Autolink mode. When set to `'gfm'`, the parser turns bare
+   * `https?://…` / `www.…` URLs, `<URL>` / `<email>` angle-bracket
+   * forms, and `user@host` emails into `link` inline nodes (per the
+   * GitHub Flavored Markdown autolink-literal extension plus the
+   * CommonMark §6.5 autolink form). Disabled by default.
+   *
+   * Two intentional deviations from the strict GFM spec for v1:
+   * trailing `&entity;` is not peeled off the URL, and an invalid TLD
+   * suffix is not rejected (XDS accepts any plausible TLD shape).
+   */
+  autolink?: 'gfm';
+};
+
+type ResolvedOptions = {
+  readonly sourceIds: ReadonlySet<string> | undefined;
+  readonly autolink: 'gfm' | undefined;
+};
+
+const EMPTY_OPTS: ResolvedOptions = {sourceIds: undefined, autolink: undefined};
+
+function resolveOptions(
+  arg: ReadonlySet<string> | ParseOptions | undefined,
+): ResolvedOptions {
+  if (arg == null) {
+    return EMPTY_OPTS;
+  }
+  // Duck-type the legacy `ReadonlySet<string>` form: any object whose
+  // `.has` is callable is treated as the legacy sourceIds set. This is
+  // safer than `instanceof Set`, which would misclassify cross-realm
+  // or polyfilled `ReadonlySet` implementations as a `ParseOptions` bag
+  // and silently lose citation resolution.
+  if (typeof (arg as {has?: unknown}).has === 'function') {
+    return {sourceIds: arg as ReadonlySet<string>, autolink: undefined};
+  }
+  const opts = arg as ParseOptions;
+  return {sourceIds: opts.sourceIds, autolink: opts.autolink};
+}
+
+// ---------------------------------------------------------------------------
 // Inline parser helpers
 // ---------------------------------------------------------------------------
 
@@ -85,9 +139,9 @@ function isWordChar(ch: string | undefined): boolean {
 function matchFullwidthCitation(
   text: string,
   i: number,
-  sourceIds: ReadonlySet<string> | undefined,
+  opts: ResolvedOptions,
 ): {sourceId: string; end: number} | null {
-  if (!sourceIds || text[i] !== '\u3010') {
+  if (!opts.sourceIds || text[i] !== '\u3010') {
     return null;
   }
   const closeIndex = text.indexOf('\u3011', i + 1);
@@ -95,7 +149,7 @@ function matchFullwidthCitation(
     return null;
   }
   const id = text.slice(i + 1, closeIndex);
-  if (id.length === 0 || !sourceIds.has(id)) {
+  if (id.length === 0 || !opts.sourceIds.has(id)) {
     return null;
   }
   return {sourceId: id, end: closeIndex + 1};
@@ -108,9 +162,9 @@ function matchFullwidthCitation(
 function matchBracketCitation(
   text: string,
   i: number,
-  sourceIds: ReadonlySet<string> | undefined,
+  opts: ResolvedOptions,
 ): {sourceId: string; end: number} | null {
-  if (!sourceIds || text[i] !== '[') {
+  if (!opts.sourceIds || text[i] !== '[') {
     return null;
   }
   const closeIndex = text.indexOf(']', i + 1);
@@ -121,7 +175,7 @@ function matchBracketCitation(
     return null;
   }
   const id = text.slice(i + 1, closeIndex);
-  if (id.length === 0 || !sourceIds.has(id)) {
+  if (id.length === 0 || !opts.sourceIds.has(id)) {
     return null;
   }
   return {sourceId: id, end: closeIndex + 1};
@@ -130,7 +184,30 @@ function matchBracketCitation(
 export function parseInline(
   text: string,
   sourceIds?: ReadonlySet<string>,
+): InlineNode[];
+export function parseInline(text: string, options: ParseOptions): InlineNode[];
+export function parseInline(
+  text: string,
+  arg?: ReadonlySet<string> | ParseOptions,
 ): InlineNode[] {
+  return parseInlineEntry(text, resolveOptions(arg));
+}
+
+/**
+ * Internal block-level inline entry point: parses, then applies the GFM
+ * autolink transform when enabled. Recursive calls inside `parseInlineImpl`
+ * (link labels, bold/italic/strikethrough bodies) intentionally bypass this
+ * wrapper and call `parseInlineImpl` directly so the transform runs only on
+ * the outermost block's inline tree — letting `transformAutolinks` decide
+ * which subtrees to descend into (text, bold, italic, strikethrough) and
+ * which to skip (link, code, image, citation, break).
+ */
+function parseInlineEntry(text: string, opts: ResolvedOptions): InlineNode[] {
+  const nodes = parseInlineImpl(text, opts);
+  return opts.autolink === 'gfm' ? transformAutolinks(nodes) : nodes;
+}
+
+function parseInlineImpl(text: string, opts: ResolvedOptions): InlineNode[] {
   const nodes: InlineNode[] = [];
   let i = 0;
 
@@ -156,7 +233,7 @@ export function parseInline(
 
     // --- Citation: fullwidth 【id】 ---
     {
-      const citation = matchFullwidthCitation(text, i, sourceIds);
+      const citation = matchFullwidthCitation(text, i, opts);
       if (citation) {
         nodes.push({type: 'citation', sourceId: citation.sourceId});
         i = citation.end;
@@ -183,7 +260,7 @@ export function parseInline(
 
     // --- Citation: bracket [id] (before link — link requires `(` after `]`) ---
     {
-      const citation = matchBracketCitation(text, i, sourceIds);
+      const citation = matchBracketCitation(text, i, opts);
       if (citation) {
         nodes.push({type: 'citation', sourceId: citation.sourceId});
         i = citation.end;
@@ -200,7 +277,7 @@ export function parseInline(
           nodes.push({
             type: 'link',
             href: text.slice(textClose + 2, urlClose),
-            children: parseInline(text.slice(i + 1, textClose), sourceIds),
+            children: parseInlineImpl(text.slice(i + 1, textClose), opts),
           });
           i = urlClose + 1;
           continue;
@@ -228,7 +305,7 @@ export function parseInline(
             children: [
               {
                 type: 'italic',
-                children: parseInline(text.slice(i + 3, closeIndex), sourceIds),
+                children: parseInlineImpl(text.slice(i + 3, closeIndex), opts),
               },
             ],
           });
@@ -255,7 +332,7 @@ export function parseInline(
         ) {
           nodes.push({
             type: 'bold',
-            children: parseInline(text.slice(i + 2, closeIndex), sourceIds),
+            children: parseInlineImpl(text.slice(i + 2, closeIndex), opts),
           });
           i = closeIndex + 2;
           continue;
@@ -269,7 +346,7 @@ export function parseInline(
       if (closeIndex !== -1) {
         nodes.push({
           type: 'strikethrough',
-          children: parseInline(text.slice(i + 2, closeIndex), sourceIds),
+          children: parseInlineImpl(text.slice(i + 2, closeIndex), opts),
         });
         i = closeIndex + 2;
         continue;
@@ -290,7 +367,7 @@ export function parseInline(
         ) {
           nodes.push({
             type: 'italic',
-            children: parseInline(text.slice(i + 1, closeIndex), sourceIds),
+            children: parseInlineImpl(text.slice(i + 1, closeIndex), opts),
           });
           i = closeIndex + 1;
           continue;
@@ -333,6 +410,289 @@ export function parseInline(
     i = end;
   }
   return nodes;
+}
+
+// ---------------------------------------------------------------------------
+// GFM autolink post-pass (opt-in via ParseOptions.autolink === 'gfm')
+// ---------------------------------------------------------------------------
+
+// Character classes used in autolink patterns.
+const ANY_NON_WHITESPACE_OR_ANGLE = '[^\\s<]+';
+const SCHEME = 'https?:\\/\\/';
+const EMAIL_LOCAL_PART = '[A-Za-z0-9._%+-]+';
+const DOMAIN_LABEL = '[A-Za-z0-9-]+';
+const DOMAIN_WITH_DOT = `${DOMAIN_LABEL}(?:\\.${DOMAIN_LABEL})+`;
+const ANGLE_SCHEME = '[a-zA-Z][a-zA-Z0-9+.-]*';
+const ANGLE_URL_BODY = '[^<>\\s]*';
+
+/** Bare http(s) URL up to whitespace or `<`. Trailing punctuation is peeled afterwards. */
+const URL_LITERAL_RE = new RegExp(`${SCHEME}${ANY_NON_WHITESPACE_OR_ANGLE}`, 'g');
+
+/** Bare www. URL. Resulting href gets `http://` prepended. */
+const WWW_LITERAL_RE = new RegExp(`www\\.${ANY_NON_WHITESPACE_OR_ANGLE}`, 'g');
+
+/** Bare email: local-part@domain (at least one dot in domain). */
+const EMAIL_LITERAL_RE = new RegExp(`${EMAIL_LOCAL_PART}@${DOMAIN_WITH_DOT}`, 'g');
+
+/** Angle-bracket autolink: `<scheme:url>` (CommonMark §6.5). */
+const ANGLE_URL_RE = new RegExp(`<(${ANGLE_SCHEME}:${ANGLE_URL_BODY})>`, 'g');
+
+/** Angle-bracket email: `<user@host.tld>`. */
+const ANGLE_EMAIL_RE = new RegExp(`<(${EMAIL_LOCAL_PART}@${DOMAIN_WITH_DOT})>`, 'g');
+
+/** Characters treated as trailing sentence punctuation per GFM §6.9. */
+const TRAILING_PUNCT_CHARS = new Set('?!.,:*_~');
+
+/** Characters valid in an email local part (used for boundary detection). */
+const EMAIL_LOCAL_CHARS = new Set(
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._%+-@',
+);
+
+interface AutolinkMatch {
+  start: number;
+  end: number;
+  href: string;
+  display: string;
+}
+
+/**
+ * Peel trailing sentence-end punctuation and unbalanced trailing `)` off a
+ * bare URL. Mirrors GFM §6.9: `?!.,:*_~` immediately after the URL aren't
+ * part of it; a trailing `)` is excluded if there are more `)` than `(` in
+ * the candidate (so `(https://example.com)` ends at the second `)` but
+ * `https://example.com/Foo_(bar)` keeps the inner pair).
+ */
+function peelTrailingPunctAndParens(url: string): string {
+  let s = url;
+  while (s.length > 0) {
+    // Peel trailing punctuation characters in one pass.
+    if (TRAILING_PUNCT_CHARS.has(s[s.length - 1])) {
+      let end = s.length - 1;
+      while (end > 0 && TRAILING_PUNCT_CHARS.has(s[end - 1])) {
+        end--;
+      }
+      s = s.slice(0, end);
+      continue;
+    }
+    if (s.endsWith(')')) {
+      let open = 0;
+      let close = 0;
+      for (let idx = 0; idx < s.length; idx++) {
+        if (s[idx] === '(') {
+          open++;
+        } else if (s[idx] === ')') {
+          close++;
+        }
+      }
+      if (close > open) {
+        s = s.slice(0, -1);
+        continue;
+      }
+    }
+    break;
+  }
+  return s;
+}
+
+/** Characters that, when preceding a URL, indicate it's part of a larger token. */
+const URL_CONTINUATION_CHARS = new Set(
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/=',
+);
+
+/**
+ * The character immediately before a bare-URL or bare-www match must not
+ * make the URL look like the tail of a larger token (`xhttps`, `=https://`,
+ * `/https://`). null means start-of-text — always allowed.
+ */
+function isUrlBoundaryChar(ch: string | undefined): boolean {
+  if (ch == null) {
+    return true;
+  }
+  return !URL_CONTINUATION_CHARS.has(ch);
+}
+
+function scanAutolinksInText(text: string): AutolinkMatch[] {
+  const matches: AutolinkMatch[] = [];
+
+  // <scheme:url> angle-bracket form
+  {
+    const re = new RegExp(ANGLE_URL_RE.source, 'g');
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+      const url = m[1];
+      matches.push({
+        start: m.index,
+        end: m.index + m[0].length,
+        href: url,
+        display: url,
+      });
+    }
+  }
+
+  // <email> angle-bracket form
+  {
+    const re = new RegExp(ANGLE_EMAIL_RE.source, 'g');
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+      const email = m[1];
+      matches.push({
+        start: m.index,
+        end: m.index + m[0].length,
+        href: `mailto:${email}`,
+        display: email,
+      });
+    }
+  }
+
+  // bare https?:// URL
+  {
+    const re = new RegExp(URL_LITERAL_RE.source, 'g');
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+      const prev = text[m.index - 1];
+      if (!isUrlBoundaryChar(prev)) {
+        continue;
+      }
+      if (text.slice(m.index - 2, m.index) === '](') {
+        continue;
+      }
+      const cleaned = peelTrailingPunctAndParens(m[0]);
+      if (cleaned.length === 0) {
+        continue;
+      }
+      matches.push({
+        start: m.index,
+        end: m.index + cleaned.length,
+        href: cleaned,
+        display: cleaned,
+      });
+    }
+  }
+
+  // bare www. URL
+  {
+    const re = new RegExp(WWW_LITERAL_RE.source, 'g');
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+      const prev = text[m.index - 1];
+      if (!isUrlBoundaryChar(prev)) {
+        continue;
+      }
+      // Don't match inside an https://www… capture from the previous pattern
+      if (text.slice(m.index - 3, m.index) === '://') {
+        continue;
+      }
+      const cleaned = peelTrailingPunctAndParens(m[0]);
+      if (cleaned.length === 0) {
+        continue;
+      }
+      matches.push({
+        start: m.index,
+        end: m.index + cleaned.length,
+        href: `http://${cleaned}`,
+        display: cleaned,
+      });
+    }
+  }
+
+  // bare email
+  {
+    const re = new RegExp(EMAIL_LITERAL_RE.source, 'g');
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+      const prev = text[m.index - 1];
+      // Reject if previous char could be part of the local part or sits in
+      // a position that would make this match continuation of something
+      // bigger (`name@x.y@host`, `foo+bar@x`, `mailto:user@host`).
+      if (prev != null && EMAIL_LOCAL_CHARS.has(prev)) {
+        continue;
+      }
+      if (text.slice(Math.max(0, m.index - 7), m.index) === 'mailto:') {
+        continue;
+      }
+      matches.push({
+        start: m.index,
+        end: m.index + m[0].length,
+        href: `mailto:${m[0]}`,
+        display: m[0],
+      });
+    }
+  }
+
+  // Sort by start; first-match-wins on overlaps so e.g. an angle-bracket
+  // <https://x> outranks the bare https://x inside it.
+  matches.sort((a, b) => a.start - b.start);
+  const resolved: AutolinkMatch[] = [];
+  let lastEnd = 0;
+  for (const m of matches) {
+    if (m.start >= lastEnd) {
+      resolved.push(m);
+      lastEnd = m.end;
+    }
+  }
+  return resolved;
+}
+
+/**
+ * Split a text-node `content` string into a sequence of text + link nodes
+ * based on autolink matches.
+ */
+function splitTextOnAutolinks(content: string): InlineNode[] {
+  const matches = scanAutolinksInText(content);
+  if (matches.length === 0) {
+    return [{type: 'text', content}];
+  }
+  const out: InlineNode[] = [];
+  let cursor = 0;
+  for (const m of matches) {
+    if (m.start > cursor) {
+      out.push({type: 'text', content: content.slice(cursor, m.start)});
+    }
+    out.push({
+      type: 'link',
+      href: m.href,
+      children: [{type: 'text', content: m.display}],
+    });
+    cursor = m.end;
+  }
+  if (cursor < content.length) {
+    out.push({type: 'text', content: content.slice(cursor)});
+  }
+  return out;
+}
+
+/**
+ * Walk an inline-node tree and replace bare URLs / emails inside `text`
+ * nodes with `link` nodes. Recurses into emphasis containers
+ * (`bold`/`italic`/`strikethrough`) so wrapped URLs link too, but never
+ * descends into existing `link` children (no nested links), `code` content,
+ * `image` alt text, `citation`, or `break`. Runs only on the outermost
+ * block's inline tree (see `parseInlineEntry`).
+ */
+function transformAutolinks(nodes: InlineNode[]): InlineNode[] {
+  const out: InlineNode[] = [];
+  for (const node of nodes) {
+    if (node.type === 'text') {
+      const split = splitTextOnAutolinks(node.content);
+      for (const seg of split) {
+        const last = out[out.length - 1];
+        if (seg.type === 'text' && last?.type === 'text') {
+          last.content += seg.content;
+        } else {
+          out.push(seg);
+        }
+      }
+    } else if (
+      node.type === 'bold' ||
+      node.type === 'italic' ||
+      node.type === 'strikethrough'
+    ) {
+      out.push({...node, children: transformAutolinks(node.children)});
+    } else {
+      out.push(node);
+    }
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -451,10 +811,10 @@ function splitTableRow(line: string): string[] {
 function parseTable(
   lines: string[],
   lineIndex: number,
-  sourceIds?: ReadonlySet<string>,
+  opts: ResolvedOptions,
 ): {node: BlockNode; nextIndex: number} {
   const headers: TableCellNode[] = splitTableRow(lines[lineIndex]).map(
-    cell => ({children: parseInline(cell, sourceIds)}),
+    cell => ({children: parseInlineEntry(cell, opts)}),
   );
   const alignments: TableAlignment[] = splitTableRow(lines[lineIndex + 1]).map(
     cell => {
@@ -479,7 +839,7 @@ function parseTable(
   ) {
     rows.push(
       splitTableRow(lines[rowIndex]).map(cell => ({
-        children: parseInline(cell, sourceIds),
+        children: parseInlineEntry(cell, opts),
       })),
     );
     rowIndex++;
@@ -494,7 +854,7 @@ function parseList(
   lines: string[],
   startIndex: number,
   ordered: boolean,
-  sourceIds?: ReadonlySet<string>,
+  opts: ResolvedOptions,
 ): {node: BlockNode; nextIndex: number} {
   const items: ListItemNode[] = [];
   const baseIndent = getIndent(lines[startIndex]);
@@ -543,7 +903,7 @@ function parseList(
       itemText += '\n' + deindented.join('\n');
     }
 
-    items.push({checked, children: parseMarkdown(itemText, sourceIds)});
+    items.push({checked, children: parseMarkdownImpl(itemText, opts)});
 
     // CommonMark loose list: blank line(s) between items of the same style
     // and indent still form one list. Skip the blanks and continue if the
@@ -574,7 +934,19 @@ function parseList(
 export function parseMarkdown(
   input: string,
   sourceIds?: ReadonlySet<string>,
+): BlockNode[];
+export function parseMarkdown(
+  input: string,
+  options: ParseOptions,
+): BlockNode[];
+export function parseMarkdown(
+  input: string,
+  arg?: ReadonlySet<string> | ParseOptions,
 ): BlockNode[] {
+  return parseMarkdownImpl(input, resolveOptions(arg));
+}
+
+function parseMarkdownImpl(input: string, opts: ResolvedOptions): BlockNode[] {
   const lines = input.split('\n');
   const blocks: BlockNode[] = [];
   let index = 0;
@@ -608,7 +980,7 @@ export function parseMarkdown(
       blocks.push({
         type: 'heading',
         level: headingMatch[1].length as 1 | 2 | 3 | 4 | 5 | 6,
-        children: parseInline(headingMatch[2], sourceIds),
+        children: parseInlineEntry(headingMatch[2], opts),
       });
       index++;
       continue;
@@ -635,7 +1007,7 @@ export function parseMarkdown(
       line.includes('|') &&
       isTableSeparator(lines[index + 1])
     ) {
-      const tableResult = parseTable(lines, index, sourceIds);
+      const tableResult = parseTable(lines, index, opts);
       blocks.push(tableResult.node);
       index = tableResult.nextIndex;
       continue;
@@ -653,14 +1025,14 @@ export function parseMarkdown(
       }
       blocks.push({
         type: 'blockquote',
-        children: parseMarkdown(quoteLines.join('\n'), sourceIds),
+        children: parseMarkdownImpl(quoteLines.join('\n'), opts),
       });
       continue;
     }
 
     // --- Unordered list ---
     if (/^ {0,9}[-*+] /.test(line)) {
-      const listResult = parseList(lines, index, false, sourceIds);
+      const listResult = parseList(lines, index, false, opts);
       blocks.push(listResult.node);
       index = listResult.nextIndex;
       continue;
@@ -668,7 +1040,7 @@ export function parseMarkdown(
 
     // --- Ordered list ---
     if (/^ {0,9}\d+\. /.test(line)) {
-      const listResult = parseList(lines, index, true, sourceIds);
+      const listResult = parseList(lines, index, true, opts);
       blocks.push(listResult.node);
       index = listResult.nextIndex;
       continue;
@@ -687,7 +1059,7 @@ export function parseMarkdown(
     }
     blocks.push({
       type: 'paragraph',
-      children: parseInline(paraLines.join('\n'), sourceIds),
+      children: parseInlineEntry(paraLines.join('\n'), opts),
     });
   }
   return blocks;
@@ -702,6 +1074,13 @@ export interface IncrementalState {
   settledText: string;
   settledBlocks: BlockNode[];
   settledUpTo: number;
+  /**
+   * The `autolink` option the cached `settledBlocks` were parsed with.
+   * `parseMarkdownIncremental` invalidates the cache when the caller flips
+   * this option, so already-settled URLs flip between link/text along
+   * with newly-arriving content.
+   */
+  autolink?: 'gfm';
 }
 
 export function createIncrementalState(): IncrementalState {
@@ -1001,7 +1380,28 @@ export function parseMarkdownIncremental(
   input: string,
   state: IncrementalState,
   sourceIds?: ReadonlySet<string>,
+): BlockNode[];
+export function parseMarkdownIncremental(
+  input: string,
+  state: IncrementalState,
+  options: ParseOptions,
+): BlockNode[];
+export function parseMarkdownIncremental(
+  input: string,
+  state: IncrementalState,
+  arg?: ReadonlySet<string> | ParseOptions,
 ): BlockNode[] {
+  const opts = resolveOptions(arg);
+  // Invalidate cache when the autolink option flips — cached settled blocks
+  // were parsed with the previous setting and would otherwise be reused
+  // unchanged.
+  if (state.autolink !== opts.autolink) {
+    state.prevInput = '';
+    state.settledText = '';
+    state.settledBlocks = [];
+    state.settledUpTo = 0;
+    state.autolink = opts.autolink;
+  }
   if (input === '') {
     state.prevInput = '';
     state.settledText = '';
@@ -1016,7 +1416,7 @@ export function parseMarkdownIncremental(
   if (boundary < 0) {
     // Inside an unclosed fence or no blank-line boundary — full re-parse
     state.prevInput = input;
-    return parseMarkdown(input, sourceIds);
+    return parseMarkdownImpl(input, opts);
   }
 
   const settledText = lines.slice(0, boundary).join('\n');
@@ -1034,15 +1434,15 @@ export function parseMarkdownIncremental(
   ) {
     // Settled portion grew — parse only the new delta
     const delta = settledText.slice(state.settledText.length);
-    const deltaBlocks = parseMarkdown(delta, sourceIds);
+    const deltaBlocks = parseMarkdownImpl(delta, opts);
     settledBlocks = mergeSettledBlocks(state.settledBlocks, deltaBlocks);
   } else {
     // Content before the boundary changed — full re-parse of settled portion
-    settledBlocks = parseMarkdown(settledText, sourceIds);
+    settledBlocks = parseMarkdownImpl(settledText, opts);
   }
 
   const unsettledBlocks = unsettledText
-    ? parseMarkdown(unsettledText, sourceIds)
+    ? parseMarkdownImpl(unsettledText, opts)
     : [];
 
   state.settledText = settledText;
