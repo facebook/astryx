@@ -82,8 +82,32 @@ export const docs = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: '',
+  description:
+    'Inline reference to external source. Attribute info in AI responses, articles, or anywhere provenance needed.',
   usage: {
-    description: '',
+    description:
+      'Inline reference to external source. Attribute info in AI responses, articles, or anywhere provenance needed.',
+    bestPractices: [
+      {
+        guidance: true,
+        description:
+          'Use label variant when source title adds meaningful context.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use number variant for compact inline references in body text, like footnotes.',
+      },
+      {
+        guidance: false,
+        description:
+          'Mix label and number variants in same paragraph. Pick one style per context.',
+      },
+    ],
+  },
+  propDescriptions: {
+    source: 'citation source object with title, url, optional icon.',
+    number: 'display index for this citation.',
+    variant: 'display style: label chip with source title or compact numbered badge.',
   },
 };
