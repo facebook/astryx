@@ -5,6 +5,7 @@
 export const docs = {
   name: 'AppShell',
   displayName: 'App Shell',
+  group: 'AppShell',
   category: 'Layout',
   keywords: ["appshell","layout","scaffold","sidebar","sidenav","topnav","header","navigation","dashboard","shell","page","frame"],
   usage: {
