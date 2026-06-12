@@ -198,7 +198,7 @@ export default function TemplatesPage() {
   );
 
   return (
-    <XDSSection maxWidth={1600} padding={6} style={{marginInline: 'auto'}}>
+    <XDSSection maxWidth={1200} padding={6} style={{marginInline: 'auto'}}>
       <XDSVStack gap={10}>
         {/* Header */}
         <XDSVStack gap={6} align="stretch">
