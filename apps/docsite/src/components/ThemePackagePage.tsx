@@ -349,11 +349,11 @@ const styles = stylex.create({
   // Mobile-only floating toolbar that replaces the sidebar at
   // narrow viewports. position:fixed so it stays pinned to the
   // bottom of the viewport as the user scrolls the right pane;
-  // horizontally centered via left:50% + translateX(-50%). Holds
-  // the theme dropdown + mode toggle in a single horizontal row.
+  // horizontally centered with inset + auto margins instead of
+  // transform so CSS-anchor-positioned popovers inside it (like
+  // XDSSelector's menu) anchor to the visible trigger location.
   // Floating toolbar — appears when the theme carousel scrolls out of
-  // view. Animates from below with opacity + translateY transition.
-  // Hidden by default (opacity:0, pointer-events:none) and becomes
+  // view. Hidden by default (opacity:0, pointer-events:none) and becomes
   // visible when the `data-visible` attribute is set.
   mobileBar: {
     display: 'none',
@@ -371,22 +371,22 @@ const styles = stylex.create({
       boxShadow: 'var(--shadow-high)',
       position: 'fixed' as const,
       bottom: 'var(--spacing-4)',
-      left: '50%',
-      transform: 'translateX(-50%) translateY(20px)',
+      left: 0,
+      right: 0,
+      marginInline: 'auto',
       zIndex: 100,
       width: 'fit-content',
       maxWidth: `calc(100vw - var(--spacing-4) * 2)`,
       opacity: 0,
       pointerEvents: 'none' as const,
-      transition: 'opacity 0.2s ease, transform 0.2s ease',
+      transition: 'opacity 0.2s ease',
     },
   },
-  // Visible state for the floating toolbar — applied via data attribute.
+  // Visible state for the floating toolbar.
   mobileBarVisible: {
     [SIDEBAR_BREAKPOINT]: {
       opacity: 1,
       pointerEvents: 'auto' as const,
-      transform: 'translateX(-50%) translateY(0)',
     },
   },
   // Mobile selector — fixed minimum so the dropdown trigger has
@@ -477,13 +477,19 @@ const PICKER_OVERRIDES: Record<
   },
 };
 
-function ThemeHeading() {
+function ThemeHeading({align = 'start'}: {align?: 'start' | 'center'}) {
+  const isCentered = align === 'center';
+
   return (
-    <XDSVStack gap={2}>
-      <XDSHeading level={1} type="display-3">
+    <XDSVStack gap={2} hAlign={isCentered ? 'center' : undefined}>
+      <XDSHeading level={1} type="display-3" justify={align}>
         Themes
       </XDSHeading>
-      <XDSText type="body" color="secondary">
+      <XDSText
+        type="body"
+        color="secondary"
+        display={isCentered ? 'block' : 'inline'}
+        justify={align}>
         Preview each theme, then start from one and make it your own.{' '}
         <XDSLink type="body" color="secondary" href="/docs/theme" hasUnderline>
           Learn how theming works
@@ -801,7 +807,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
             Mirrors the sidebar's hero: heading, description, and
             action buttons (Open in Playground + mode toggle). */}
         <div {...stylex.props(styles.mobileContext)}>
-          <ThemeHeading />
+          <ThemeHeading align="center" />
           <XDSHStack gap={2} vAlign="center">
             <XDSButton
               variant="primary"
