@@ -2,7 +2,7 @@
 
 /**
  * @file XDSCommandPaletteInput.test.tsx
- * @input Uses vitest, @testing-library/react, XDSCommandPaletteInput
+ * @input Uses vitest, @testing-library/react, XDSCommandPaletteInput, XDSDialog
  * @output Unit tests for XDSCommandPaletteInput component
  * @position Testing; validates XDSCommandPaletteInput.tsx implementation
  */
@@ -11,6 +11,7 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {XDSCommandPaletteInput} from './XDSCommandPaletteInput';
 import {CommandPaletteContext} from './CommandPaletteContext';
+import {XDSDialog} from '../Dialog';
 import type {CommandPaletteContextValue} from './CommandPaletteContext';
 
 describe('XDSCommandPaletteInput', () => {
@@ -72,7 +73,7 @@ describe('XDSCommandPaletteInput', () => {
   });
 });
 
-describe('XDSCommandPaletteInput inline context', () => {
+describe('XDSCommandPaletteInput dialog context', () => {
   function makeContext(
     overrides: Partial<CommandPaletteContextValue> = {},
   ): CommandPaletteContextValue {
@@ -92,17 +93,18 @@ describe('XDSCommandPaletteInput inline context', () => {
       onClose: vi.fn(),
       isOpen: true,
       isBusy: false,
-      isInline: false,
       ...overrides,
     };
   }
 
-  it('does not auto-focus when context isInline is true', () => {
+  it('does not auto-focus inside an inline dialog', () => {
     const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus');
     render(
-      <CommandPaletteContext value={makeContext({isInline: true})}>
-        <XDSCommandPaletteInput />
-      </CommandPaletteContext>,
+      <XDSDialog isOpen isInline onOpenChange={() => {}}>
+        <CommandPaletteContext value={makeContext()}>
+          <XDSCommandPaletteInput />
+        </CommandPaletteContext>
+      </XDSDialog>,
     );
 
     const input = screen.getByRole('combobox');
@@ -113,9 +115,9 @@ describe('XDSCommandPaletteInput inline context', () => {
     focusSpy.mockRestore();
   });
 
-  it('auto-focuses when context isInline is false', async () => {
+  it('auto-focuses outside an inline dialog', async () => {
     render(
-      <CommandPaletteContext value={makeContext({isInline: false})}>
+      <CommandPaletteContext value={makeContext()}>
         <XDSCommandPaletteInput />
       </CommandPaletteContext>,
     );
