@@ -42,6 +42,7 @@ import {
   XDSSideNavHeading,
   XDSSideNavItem,
   XDSSideNavSection,
+  useXDSSideNavRenderMode,
 } from '@xds/core/SideNav';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSStatusDot} from '@xds/core/StatusDot';
@@ -51,10 +52,15 @@ import {
   XDSSegmentedControlItem,
 } from '@xds/core/SegmentedControl';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
+import {useMediaQuery} from '@xds/core/hooks';
 import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
 import {XDSToggleButton} from '@xds/core/ToggleButton';
 import {
+  ArrowLeft,
   Code2,
+  Copy,
+  Download,
+  LayoutTemplate,
   Moon,
   Palette,
   SlidersHorizontal,
@@ -290,6 +296,9 @@ function configureMonaco(monaco: MonacoInstance) {
 
 type LeftView = 'code' | 'property' | 'theme';
 type BuildStatus = 'idle' | 'building' | 'finished' | 'error';
+type PlaygroundMenuItem = {label: string; onClick: () => void};
+
+const MOBILE_BREAKPOINT_QUERY = '(max-width: 768px)';
 
 const BUILD_STATUS_META: Record<
   Exclude<BuildStatus, 'idle'>,
@@ -313,13 +322,19 @@ const s = stylex.create({
   root: {
     flex: 1,
     minWidth: 0,
+    width: '100%',
+    maxWidth: '100%',
     overflow: 'hidden',
     backgroundColor: 'var(--color-background-surface)',
   },
   leftPanel: {
-    flexShrink: 0,
+    flexShrink: {
+      default: 0,
+      '@media (max-width: 768px)': 1,
+    },
     overflow: 'hidden',
     minWidth: 0,
+    maxWidth: '100%',
   },
   leftPanelHeader: {
     flexShrink: 0,
@@ -360,13 +375,131 @@ const s = stylex.create({
     transitionDuration: '0.5s',
     transitionTimingFunction: 'ease',
   },
+  topbarHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 'var(--spacing-2)',
+    width: '100%',
+    minWidth: 0,
+  },
+  topbarBrand: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    width: 'var(--size-element-md)',
+    height: 'var(--size-element-md)',
+  },
+  topbarActions: {
+    flexShrink: 0,
+  },
 });
+
+interface PlaygroundHeaderActionsProps {
+  activeView: LeftView;
+  templateMenuItems: PlaygroundMenuItem[];
+  themeMenuItems: PlaygroundMenuItem[];
+  isCompact?: boolean;
+}
+
+function PlaygroundHeaderActions({
+  activeView,
+  templateMenuItems,
+  themeMenuItems,
+  isCompact = false,
+}: PlaygroundHeaderActionsProps) {
+  const variant = isCompact ? 'ghost' : 'secondary';
+  const gap = isCompact ? 0.5 : 2;
+
+  if (activeView === 'code') {
+    return (
+      <XDSHStack
+        gap={gap}
+        align="center"
+        xstyle={isCompact ? s.topbarActions : undefined}>
+        <XDSDropdownMenu
+          button={{
+            label: 'Templates',
+            tooltip: 'Templates',
+            variant,
+            size: 'sm',
+            ...(isCompact
+              ? {isIconOnly: true, icon: <LayoutTemplate size={18} />}
+              : {}),
+          }}
+          hasChevron={!isCompact}
+          items={templateMenuItems}
+        />
+        <XDSButton
+          variant={variant}
+          size="sm"
+          label="Copy Code"
+          tooltip={isCompact ? 'Copy Code' : undefined}
+          isIconOnly={isCompact}
+          icon={isCompact ? <Copy size={18} /> : undefined}
+        />
+      </XDSHStack>
+    );
+  }
+
+  if (activeView === 'theme') {
+    return (
+      <XDSHStack
+        gap={gap}
+        align="center"
+        xstyle={isCompact ? s.topbarActions : undefined}>
+        <XDSDropdownMenu
+          button={{
+            label: 'Apply Theme',
+            tooltip: 'Apply Theme',
+            variant,
+            size: 'sm',
+            ...(isCompact
+              ? {isIconOnly: true, icon: <Palette size={18} />}
+              : {}),
+          }}
+          hasChevron={!isCompact}
+          items={themeMenuItems}
+        />
+        <XDSButton
+          variant={variant}
+          size="sm"
+          label="Export Theme"
+          tooltip={isCompact ? 'Export Theme' : undefined}
+          isIconOnly={isCompact}
+          icon={isCompact ? <Download size={18} /> : undefined}
+        />
+      </XDSHStack>
+    );
+  }
+
+  return null;
+}
+
+function PlaygroundSideNavHeader(props: PlaygroundHeaderActionsProps) {
+  const renderMode = useXDSSideNavRenderMode();
+
+  if (renderMode === 'topbar') {
+    return (
+      <div {...stylex.props(s.topbarHeader)}>
+        <span {...stylex.props(s.topbarBrand)} aria-hidden="true">
+          {BRAND_ICON}
+        </span>
+        <PlaygroundHeaderActions {...props} isCompact />
+      </div>
+    );
+  }
+
+  return <XDSSideNavHeading icon={BRAND_ICON} heading="Playground" />;
+}
 
 interface PlaygroundClientProps {
   defaultIsMobile?: boolean;
 }
 
 export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
+  const isMobile = useMediaQuery(MOBILE_BREAKPOINT_QUERY, defaultIsMobile);
   // The editor chrome follows the docsite's own light/dark mode, not the OS
   // (operator) color-scheme preference.
   const {mode: siteMode} = useThemeMode();
@@ -871,14 +1004,15 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
   const playgroundSideNav = (
     <XDSSideNav
       header={
-        <XDSSideNavHeading
-          icon={BRAND_ICON}
-          heading="Playground"
-          headingHref="/"
+        <PlaygroundSideNavHeader
+          activeView={activeView}
+          templateMenuItems={templateMenuItems}
+          themeMenuItems={themeMenuItems}
         />
       }
       collapsible={{isCollapsed: true, hasButton: false}}>
       <XDSSideNavSection title="Playground views" isHeaderHidden>
+        <XDSSideNavItem label="Back to site" href="/" icon={ArrowLeft} />
         <XDSSideNavItem
           label="Code"
           icon={Code2}
@@ -917,33 +1051,37 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
         xstyle={s.root}
         onPointerDownCapture={handleResizeProbe}>
         {/* Left panel — editor */}
-        <XDSVStack xstyle={s.leftPanel} width={editorPanel.size || 440}>
-          <XDSHStack
-            justify="between"
-            align="center"
-            xstyle={s.leftPanelHeader}>
-            <XDSHeading level={3}>Playground</XDSHeading>
-            <XDSHStack gap={2} align="center">
-              <XDSDropdownMenu
-                button={{
-                  label: 'Themes',
-                  variant: 'secondary',
-                  size: 'md',
-                }}
-                hasChevron
-                items={themeMenuItems}
-              />
-              <XDSDropdownMenu
-                button={{
-                  label: 'Templates',
-                  variant: 'secondary',
-                  size: 'md',
-                }}
-                hasChevron
-                items={templateMenuItems}
-              />
+        <XDSVStack
+          xstyle={s.leftPanel}
+          width={isMobile ? '100%' : editorPanel.size || 440}>
+          {!isMobile && (
+            <XDSHStack
+              justify="between"
+              align="center"
+              xstyle={s.leftPanelHeader}>
+              <XDSHeading level={3}>Playground</XDSHeading>
+              <XDSHStack gap={2} align="center">
+                <XDSDropdownMenu
+                  button={{
+                    label: 'Themes',
+                    variant: 'secondary',
+                    size: 'md',
+                  }}
+                  hasChevron
+                  items={themeMenuItems}
+                />
+                <XDSDropdownMenu
+                  button={{
+                    label: 'Templates',
+                    variant: 'secondary',
+                    size: 'md',
+                  }}
+                  hasChevron
+                  items={templateMenuItems}
+                />
+              </XDSHStack>
             </XDSHStack>
-          </XDSHStack>
+          )}
           <div {...stylex.props(s.tabBody)}>
             {/* Code: Monaco stays mounted to preserve typedefs + editor state */}
             <div
@@ -998,214 +1136,222 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
           </div>
         </XDSVStack>
 
-        <XDSResizeHandle
-          label="Resize editor panel"
-          resizable={editorPanel.props}
-          pillPlacement="center"
-          hasDivider
-        />
+        {!isMobile && (
+          <XDSResizeHandle
+            label="Resize editor panel"
+            resizable={editorPanel.props}
+            pillPlacement="center"
+            hasDivider
+          />
+        )}
 
         {/* Right panel — preview */}
-        <XDSVStack xstyle={s.rightPanel}>
-          <XDSToolbar
-            label="Preview controls"
-            startContent={
-              <XDSToggleButton
-                label="Target element"
-                tooltip={
-                  isTargeting
-                    ? 'Exit targeting (Esc)'
-                    : 'Click to select an element'
-                }
-                isPressed={isTargeting}
-                onPressedChange={toggleTargeting}
-                size="md"
-                isIconOnly
-                icon={<Crosshair size={20} />}
-              />
-            }
-            centerContent={
-              <XDSHStack gap={2} vAlign="center">
-                <XDSButton
-                  label={
-                    mode === 'light' ? 'Switch to dark' : 'Switch to light'
+        {!isMobile && (
+          <XDSVStack xstyle={s.rightPanel}>
+            <XDSToolbar
+              label="Preview controls"
+              startContent={
+                <XDSToggleButton
+                  label="Target element"
+                  tooltip={
+                    isTargeting
+                      ? 'Exit targeting (Esc)'
+                      : 'Click to select an element'
                   }
-                  tooltip={mode === 'light' ? 'Dark mode' : 'Light mode'}
-                  variant="ghost"
+                  isPressed={isTargeting}
+                  onPressedChange={toggleTargeting}
                   size="md"
                   isIconOnly
-                  icon={
-                    mode === 'light' ? <Moon size={20} /> : <Sun size={20} />
-                  }
-                  onClick={() =>
-                    setMode(m => (m === 'light' ? 'dark' : 'light'))
-                  }
+                  icon={<Crosshair size={20} />}
                 />
-                <XDSSegmentedControl
-                  label="Viewport size"
-                  size="md"
-                  value={viewport}
-                  onChange={v => setViewport(v as Viewport)}>
-                  <XDSSegmentedControlItem
-                    value="desktop"
-                    label="Desktop"
-                    isLabelHidden
-                    icon={<Monitor size={20} />}
-                  />
-                  <XDSSegmentedControlItem
-                    value="phone"
-                    label="Phone"
-                    isLabelHidden
-                    icon={<Smartphone size={20} />}
-                  />
-                </XDSSegmentedControl>
-                <XDSButton
-                  label="Expand"
-                  tooltip="Fullscreen preview"
-                  variant="ghost"
-                  size="md"
-                  isIconOnly
-                  icon={<Maximize2 size={20} />}
-                  onClick={() => setIsFullscreen(true)}
-                />
-              </XDSHStack>
-            }
-            endContent={
-              <XDSHStack gap={4} vAlign="center">
-                {buildStatus !== 'idle' && (
-                  <div
-                    {...stylex.props(s.buildStatus)}
-                    style={{opacity: statusFading ? 0 : 1}}>
-                    <XDSStatusDot
-                      variant={BUILD_STATUS_META[buildStatus].variant}
-                      label={BUILD_STATUS_META[buildStatus].label}
-                      isPulsing={buildStatus === 'building'}
-                    />
-                    <XDSText type="supporting" color="secondary">
-                      {BUILD_STATUS_META[buildStatus].label}
-                    </XDSText>
-                    {buildStatus === 'error' && (
-                      <XDSButton
-                        label="Rebuild"
-                        tooltip="Rebuild"
-                        variant="ghost"
-                        size="sm"
-                        isIconOnly
-                        icon={<RotateCw size={16} />}
-                        onClick={handleRebuild}
-                      />
-                    )}
-                  </div>
-                )}
-                <XDSPopover
-                  label="Share template"
-                  placement="below"
-                  alignment="end"
-                  xstyle={s.popoverPadding}
-                  onOpenChange={open => {
-                    if (open) {
-                      setShareUrl(window.location.href);
-                      // Snapshot the live (ref-held) theme so the download
-                      // link below can derive its href from reactive state.
-                      setExportTheme(
-                        customThemeRef.current ?? editorInitialTheme,
-                      );
-                    }
-                  }}
-                  content={
-                    <XDSVStack gap={6}>
-                      <XDSVStack gap={2}>
-                        <XDSText type="label" weight="semibold">
-                          Share Playground
-                        </XDSText>
-                        <XDSHStack gap={2} vAlign="center" width="100%">
-                          <XDSTextInput
-                            label="Share URL"
-                            isLabelHidden
-                            isDisabled
-                            value={shareUrl}
-                            onChange={() => {}}
-                            xstyle={s.shareInput}
-                          />
-                          <XDSButton
-                            label={copied ? 'Copied' : 'Copy URL'}
-                            tooltip={copied ? 'Copied' : 'Copy URL'}
-                            variant="secondary"
-                            size="md"
-                            isIconOnly
-                            icon={
-                              copied ? <Check size={16} /> : <Copy size={16} />
-                            }
-                            onClick={handleShare}
-                          />
-                        </XDSHStack>
-                      </XDSVStack>
-                      <XDSVStack gap={2}>
-                        <XDSText type="label" weight="semibold">
-                          Export Theme File
-                        </XDSText>
-                        <XDSHStack gap={2} vAlign="center" width="100%">
-                          <XDSTextInput
-                            label="Theme name"
-                            isLabelHidden
-                            placeholder="Enter theme name"
-                            value={themeName}
-                            onChange={v =>
-                              setThemeName(v.replace(/[\s-]/g, ''))
-                            }
-                            xstyle={s.shareInput}
-                          />
-                          <XDSButton
-                            label="Download theme"
-                            tooltip="Download theme"
-                            variant="secondary"
-                            size="md"
-                            isIconOnly
-                            isDisabled={themeExport == null}
-                            icon={<Download size={16} />}
-                            onClick={() => downloadLinkRef.current?.click()}
-                          />
-                          {/* The real download target: a normally-rendered
-                              link whose href/download come from reactive
-                              state. The button above clicks it, so the
-                              browser performs a native download without us
-                              fabricating an <a> in the handler. */}
-                          {themeExport && (
-                            <a
-                              ref={downloadLinkRef}
-                              href={themeExport.href}
-                              download={themeExport.filename}
-                              {...stylex.props(s.hidden)}
-                              aria-hidden="true"
-                              tabIndex={-1}>
-                              Download theme file
-                            </a>
-                          )}
-                        </XDSHStack>
-                        <XDSLink href="/docs/theme" hasUnderline>
-                          Learn about using themes
-                        </XDSLink>
-                      </XDSVStack>
-                    </XDSVStack>
-                  }>
+              }
+              centerContent={
+                <XDSHStack gap={2} vAlign="center">
                   <XDSButton
-                    label="Export"
-                    variant="primary"
+                    label={
+                      mode === 'light' ? 'Switch to dark' : 'Switch to light'
+                    }
+                    tooltip={mode === 'light' ? 'Dark mode' : 'Light mode'}
+                    variant="ghost"
                     size="md"
-                    endContent={<ExternalLink size={16} />}
+                    isIconOnly
+                    icon={
+                      mode === 'light' ? <Moon size={20} /> : <Sun size={20} />
+                    }
+                    onClick={() =>
+                      setMode(m => (m === 'light' ? 'dark' : 'light'))
+                    }
                   />
-                </XDSPopover>
-              </XDSHStack>
-            }
-          />
-          <PreviewStage
-            viewport={viewport}
-            isFullscreen={isFullscreen}
-            onExitFullscreen={() => setIsFullscreen(false)}
-            iframeRef={iframeRef}
-            isInteractionDisabled={isResizing}
-          />
-        </XDSVStack>
+                  <XDSSegmentedControl
+                    label="Viewport size"
+                    size="md"
+                    value={viewport}
+                    onChange={v => setViewport(v as Viewport)}>
+                    <XDSSegmentedControlItem
+                      value="desktop"
+                      label="Desktop"
+                      isLabelHidden
+                      icon={<Monitor size={20} />}
+                    />
+                    <XDSSegmentedControlItem
+                      value="phone"
+                      label="Phone"
+                      isLabelHidden
+                      icon={<Smartphone size={20} />}
+                    />
+                  </XDSSegmentedControl>
+                  <XDSButton
+                    label="Expand"
+                    tooltip="Fullscreen preview"
+                    variant="ghost"
+                    size="md"
+                    isIconOnly
+                    icon={<Maximize2 size={20} />}
+                    onClick={() => setIsFullscreen(true)}
+                  />
+                </XDSHStack>
+              }
+              endContent={
+                <XDSHStack gap={4} vAlign="center">
+                  {buildStatus !== 'idle' && (
+                    <div
+                      {...stylex.props(s.buildStatus)}
+                      style={{opacity: statusFading ? 0 : 1}}>
+                      <XDSStatusDot
+                        variant={BUILD_STATUS_META[buildStatus].variant}
+                        label={BUILD_STATUS_META[buildStatus].label}
+                        isPulsing={buildStatus === 'building'}
+                      />
+                      <XDSText type="supporting" color="secondary">
+                        {BUILD_STATUS_META[buildStatus].label}
+                      </XDSText>
+                      {buildStatus === 'error' && (
+                        <XDSButton
+                          label="Rebuild"
+                          tooltip="Rebuild"
+                          variant="ghost"
+                          size="sm"
+                          isIconOnly
+                          icon={<RotateCw size={16} />}
+                          onClick={handleRebuild}
+                        />
+                      )}
+                    </div>
+                  )}
+                  <XDSPopover
+                    label="Share template"
+                    placement="below"
+                    alignment="end"
+                    xstyle={s.popoverPadding}
+                    onOpenChange={open => {
+                      if (open) {
+                        setShareUrl(window.location.href);
+                        // Snapshot the live (ref-held) theme so the download
+                        // link below can derive its href from reactive state.
+                        setExportTheme(
+                          customThemeRef.current ?? editorInitialTheme,
+                        );
+                      }
+                    }}
+                    content={
+                      <XDSVStack gap={6}>
+                        <XDSVStack gap={2}>
+                          <XDSText type="label" weight="semibold">
+                            Share Playground
+                          </XDSText>
+                          <XDSHStack gap={2} vAlign="center" width="100%">
+                            <XDSTextInput
+                              label="Share URL"
+                              isLabelHidden
+                              isDisabled
+                              value={shareUrl}
+                              onChange={() => {}}
+                              xstyle={s.shareInput}
+                            />
+                            <XDSButton
+                              label={copied ? 'Copied' : 'Copy URL'}
+                              tooltip={copied ? 'Copied' : 'Copy URL'}
+                              variant="secondary"
+                              size="md"
+                              isIconOnly
+                              icon={
+                                copied ? (
+                                  <Check size={16} />
+                                ) : (
+                                  <Copy size={16} />
+                                )
+                              }
+                              onClick={handleShare}
+                            />
+                          </XDSHStack>
+                        </XDSVStack>
+                        <XDSVStack gap={2}>
+                          <XDSText type="label" weight="semibold">
+                            Export Theme File
+                          </XDSText>
+                          <XDSHStack gap={2} vAlign="center" width="100%">
+                            <XDSTextInput
+                              label="Theme name"
+                              isLabelHidden
+                              placeholder="Enter theme name"
+                              value={themeName}
+                              onChange={v =>
+                                setThemeName(v.replace(/[\s-]/g, ''))
+                              }
+                              xstyle={s.shareInput}
+                            />
+                            <XDSButton
+                              label="Download theme"
+                              tooltip="Download theme"
+                              variant="secondary"
+                              size="md"
+                              isIconOnly
+                              isDisabled={themeExport == null}
+                              icon={<Download size={16} />}
+                              onClick={() => downloadLinkRef.current?.click()}
+                            />
+                            {/* The real download target: a normally-rendered
+                                link whose href/download come from reactive
+                                state. The button above clicks it, so the
+                                browser performs a native download without us
+                                fabricating an <a> in the handler. */}
+                            {themeExport && (
+                              <a
+                                ref={downloadLinkRef}
+                                href={themeExport.href}
+                                download={themeExport.filename}
+                                {...stylex.props(s.hidden)}
+                                aria-hidden="true"
+                                tabIndex={-1}>
+                                Download theme file
+                              </a>
+                            )}
+                          </XDSHStack>
+                          <XDSLink href="/docs/theme" hasUnderline>
+                            Learn about using themes
+                          </XDSLink>
+                        </XDSVStack>
+                      </XDSVStack>
+                    }>
+                    <XDSButton
+                      label="Export"
+                      variant="primary"
+                      size="md"
+                      endContent={<ExternalLink size={16} />}
+                    />
+                  </XDSPopover>
+                </XDSHStack>
+              }
+            />
+            <PreviewStage
+              viewport={viewport}
+              isFullscreen={isFullscreen}
+              onExitFullscreen={() => setIsFullscreen(false)}
+              iframeRef={iframeRef}
+              isInteractionDisabled={isResizing}
+            />
+          </XDSVStack>
+        )}
       </XDSHStack>
 
       <ConfirmDialog
