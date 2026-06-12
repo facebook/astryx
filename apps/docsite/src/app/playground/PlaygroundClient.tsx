@@ -58,10 +58,11 @@ import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
 import {XDSToggleButton} from '@xds/core/ToggleButton';
 import {
   ArrowLeft,
+  Check,
   Code2,
   Copy,
   Download,
-  LayoutTemplate,
+  ExternalLink,
   Moon,
   Palette,
   SlidersHorizontal,
@@ -71,10 +72,6 @@ import {
   Maximize2,
   RotateCw,
   Crosshair,
-  ExternalLink,
-  Copy,
-  Check,
-  Download,
 } from 'lucide-react';
 import githubLight from './themes/github-light.json';
 import githubDark from './themes/github-dark.json';
@@ -298,8 +295,6 @@ function configureMonaco(monaco: MonacoInstance) {
 type LeftView = 'code' | 'property' | 'theme';
 type MobileTopTab = 'preview' | 'code' | 'property' | 'theme';
 type BuildStatus = 'idle' | 'building' | 'finished' | 'error';
-type PlaygroundMenuItem = {label: string; onClick: () => void};
-
 const MOBILE_BREAKPOINT_QUERY = '(max-width: 768px)';
 
 const BUILD_STATUS_META: Record<
@@ -384,8 +379,10 @@ const s = stylex.create({
     alignItems: 'center',
     gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
     gap: 'var(--spacing-2)',
+    flex: 1,
     width: '100%',
     minWidth: 0,
+    boxSizing: 'border-box',
     paddingInline: 'var(--spacing-1)',
   },
   topbarBrand: {
@@ -422,13 +419,6 @@ const s = stylex.create({
   },
 });
 
-interface PlaygroundHeaderActionsProps {
-  activeView: LeftView;
-  templateMenuItems: PlaygroundMenuItem[];
-  themeMenuItems: PlaygroundMenuItem[];
-  isCompact?: boolean;
-}
-
 interface PlaygroundMobileShareActionProps {
   copied: boolean;
   onShare: () => void;
@@ -441,96 +431,18 @@ interface PlaygroundSideNavHeaderProps {
   onShare: () => void;
 }
 
-function PlaygroundHeaderActions({
-  activeView,
-  templateMenuItems,
-  themeMenuItems,
-  isCompact = false,
-}: PlaygroundHeaderActionsProps) {
-  const variant = isCompact ? 'ghost' : 'secondary';
-  const gap = isCompact ? 0.5 : 2;
-
-  if (activeView === 'code') {
-    return (
-      <XDSHStack
-        gap={gap}
-        align="center"
-        xstyle={isCompact ? s.topbarActions : undefined}>
-        <XDSDropdownMenu
-          button={{
-            label: 'Templates',
-            tooltip: 'Templates',
-            variant,
-            size: 'sm',
-            ...(isCompact
-              ? {isIconOnly: true, icon: <LayoutTemplate size={18} />}
-              : {}),
-          }}
-          hasChevron={!isCompact}
-          items={templateMenuItems}
-        />
-        <XDSButton
-          variant={variant}
-          size="sm"
-          label="Copy Code"
-          tooltip={isCompact ? 'Copy Code' : undefined}
-          isIconOnly={isCompact}
-          icon={isCompact ? <Copy size={18} /> : undefined}
-        />
-      </XDSHStack>
-    );
-  }
-
-  if (activeView === 'theme') {
-    return (
-      <XDSHStack
-        gap={gap}
-        align="center"
-        xstyle={isCompact ? s.topbarActions : undefined}>
-        <XDSDropdownMenu
-          button={{
-            label: 'Apply Theme',
-            tooltip: 'Apply Theme',
-            variant,
-            size: 'sm',
-            ...(isCompact
-              ? {isIconOnly: true, icon: <Palette size={18} />}
-              : {}),
-          }}
-          hasChevron={!isCompact}
-          items={themeMenuItems}
-        />
-        <XDSButton
-          variant={variant}
-          size="sm"
-          label="Export Theme"
-          tooltip={isCompact ? 'Export Theme' : undefined}
-          isIconOnly={isCompact}
-          icon={isCompact ? <Download size={18} /> : undefined}
-        />
-      </XDSHStack>
-    );
-  }
-
-  return null;
-}
-
 function PlaygroundMobileShareAction({
   copied,
   onShare,
 }: PlaygroundMobileShareActionProps) {
   return (
-    <XDSHStack gap={0.5} align="center" xstyle={s.topbarActions}>
-      <XDSButton
-        label={copied ? 'Copied' : 'Share'}
-        tooltip={copied ? 'Copied' : 'Share'}
-        variant="ghost"
-        size="sm"
-        isIconOnly
-        icon={<Share2 size={18} />}
-        onClick={onShare}
-      />
-    </XDSHStack>
+    <XDSButton
+      label={copied ? '✓ Copied' : 'Share'}
+      variant="primary"
+      size="md"
+      onClick={onShare}
+      xstyle={s.topbarActions}
+    />
   );
 }
 
