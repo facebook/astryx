@@ -21,7 +21,7 @@ Components use:
 
 ## Styling with StyleX
 
-Custom styles must use `stylex.create()` — plain objects are not valid:
+Custom styles must use `stylex.create()`. Plain objects are not valid:
 
 ```tsx
 import stylex from '@stylexjs/stylex';
@@ -40,7 +40,7 @@ const styles = stylex.create({
 <div {...stylex.props(styles.container)}>...</div>
 ```
 
-**Important:** Never pass plain `{padding: '16px'}` objects to `xstyle` — always use `stylex.create()`.
+**Important:** Never pass plain `{padding: '16px'}` objects to `xstyle`. Always use `stylex.create()`.
 
 ## Import Pattern
 

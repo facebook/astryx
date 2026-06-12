@@ -1,4 +1,4 @@
-# XDS Example — Next.js (Source Build)
+# XDS Example: Next.js (Source Build)
 
 Reference application for compiling **@xds/core** from raw TypeScript + StyleX source alongside product code. Uses `@xds/build` for independent CSS layer separation.
 
@@ -15,8 +15,8 @@ Reference application for compiling **@xds/core** from raw TypeScript + StyleX s
 
 `@xds/build` provides two plugins that work together:
 
-1. **`@xds/build/babel`** — wraps the StyleX babel plugin, routing XDS library files to `xds` class prefix and product files to default `x` prefix
-2. **`@xds/build/postcss`** — compiles StyleX CSS in two passes with different prefixes, wrapping each in its own `@layer`
+1. **`@xds/build/babel`**: wraps the StyleX babel plugin, routing XDS library files to `xds` class prefix and product files to default `x` prefix
+2. **`@xds/build/postcss`**: compiles StyleX CSS in two passes with different prefixes, wrapping each in its own `@layer`
 
 This creates completely independent class namespaces:
 
@@ -111,7 +111,7 @@ export default nextConfig;
 
 ### 5. CSS files
 
-`src/app/layers.css` — must be a separate file (webpack hoists `@import` content):
+`src/app/layers.css` must be a separate file (webpack hoists `@import` content):
 
 ```css
 @layer reset, xds-base, xds-theme, product;
@@ -131,10 +131,10 @@ export default nextConfig;
 
 This example includes a visual demo showing:
 
-1. **xds-base** — default XDS component styles
-2. **xds-theme** — theme overrides (secondary button background)
-3. **product** — app overrides (pill shape, green background, full-width)
-4. **Class prefix verification** — XDS components use `xds` prefix, product uses `x`
+1. **xds-base**: default XDS component styles
+2. **xds-theme**: theme overrides (secondary button background)
+3. **product**: app overrides (pill shape, green background, full-width)
+4. **Class prefix verification**: XDS components use `xds` prefix, product uses `x`
 
 Open devtools → CSS layers panel to see the separation.
 
@@ -149,7 +149,7 @@ Open devtools → CSS layers panel to see the separation.
 
 ## Related
 
-- [Plain dist example](../example-nextjs/) — simplest setup
-- [Dist + Tailwind](../example-nextjs-tailwind/) — Tailwind for layout
-- [Dist + StyleX](../example-nextjs-stylex/) — StyleX for product only
-- [`@xds/build`](../../packages/build/) — the build plugin source
+- [Plain dist example](../example-nextjs/): simplest setup
+- [Dist + Tailwind](../example-nextjs-tailwind/): Tailwind for layout
+- [Dist + StyleX](../example-nextjs-stylex/): StyleX for product only
+- [`@xds/build`](../../packages/build/): the build plugin source
