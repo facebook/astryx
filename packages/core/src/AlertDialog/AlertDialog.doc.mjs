@@ -62,7 +62,8 @@ export const docs = {
       name: 'useXDSImperativeAlertDialog',
       displayName: 'useXDSImperativeAlertDialog',
       description: 'Hook for showing an alert dialog without managing open state. Call alert.show(options) to open and alert.hide() to close. Render alert.element in your JSX tree.',
-      props: [
+      params: [],
+      returns: [
         {name: 'show', type: '(options: AlertDialogOptions) => void', description: 'Show the alert dialog with the given options. Options are the same as XDSAlertDialog props minus isOpen/onOpenChange.'},
         {name: 'hide', type: '() => void', description: 'Hide the alert dialog.'},
         {name: 'isOpen', type: 'boolean', description: 'Whether the dialog is currently open.'},

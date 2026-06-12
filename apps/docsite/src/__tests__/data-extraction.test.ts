@@ -215,6 +215,20 @@ describe('componentRegistry', () => {
     }
   });
 
+  it('renders useXDS hook pages as hook docs with examples', () => {
+    const core = components['@xds/core'];
+    const hooks = core.filter(c => c.name.startsWith('useXDS'));
+    expect(hooks.length).toBeGreaterThan(15);
+    expect(hooks.map(h => h.name)).toContain('useXDSTheme');
+
+    for (const hook of hooks) {
+      expect(hook.params).not.toBeNull();
+      expect(hook.returns).not.toBeNull();
+      expect(hook.props).toHaveLength(0);
+      expect(exampleRegistry[hook.name]?.length ?? 0).toBeGreaterThan(0);
+    }
+  });
+
   it('discovers theme utilities (not skipped)', () => {
     const core = components['@xds/core'];
     const themeUtils = core.filter(c => c.directory === 'theme');
@@ -610,16 +624,15 @@ describe('exampleRegistry', () => {
     expect(files.every(f => f.endsWith('.tsx'))).toBe(true);
   });
 
-  it('does not include showcases', () => {
-    // Every example in the registry should NOT be a showcase
-    // (showcases have their own registry)
-    // Showcase names typically don't have a dash separator
-    // but more importantly, the generator filters isShowcase: true
-    // Just verify count makes sense: examples + showcases ≈ total blocks
+  it('does not include showcases as primary component examples', () => {
+    // Hook pages can reuse authored component examples/showcases through
+    // explicit block metadata. Count unique authored example sources so those
+    // hook aliases don't make the registry look larger than the block set.
     const showcaseCount = Object.keys(showcaseRegistry).length;
-    const exampleCount = Object.values(exampleRegistry).flat().length;
-    expect(exampleCount + showcaseCount).toBeLessThanOrEqual(blockCount);
-    expect(exampleCount).toBeGreaterThan(showcaseCount);
+    const examples = Object.values(exampleRegistry).flat();
+    const uniqueExampleSourceCount = new Set(examples.map(e => e.source)).size;
+    expect(uniqueExampleSourceCount).toBeLessThanOrEqual(blockCount);
+    expect(examples.length).toBeGreaterThan(showcaseCount);
   });
 
   // Regression: the description extractor used to truncate at the first

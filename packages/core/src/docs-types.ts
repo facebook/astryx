@@ -180,9 +180,11 @@ export interface ComponentVar {
  * directory exports multiple public components (e.g. Table exports XDSTable,
  * XDSBaseTable, XDSTableRow, XDSTableCell, XDSTableHeaderCell).
  *
- * Also use for hooks with config objects (e.g. useXDSTableSelection) —
- * treat config options as "props". Order components with the primary/most-used
- * component first.
+ * Also use for hooks that are part of a component API (e.g.
+ * useXDSTableSelection). For hook entries, document arguments in `params`
+ * and return fields in `returns` so the docsite renders a Parameters / Returns
+ * signature instead of an interactive Properties playground. Order components
+ * with the primary/most-used component first.
  */
 export interface ComponentEntry {
   /** Full export name including XDS prefix. e.g. `"XDSTableRow"`,
@@ -195,8 +197,18 @@ export interface ComponentEntry {
   /** One-sentence description of what this specific component does.
    *  For sub-components, explain the role within the parent composition. */
   description: string;
-  /** All public props for this component. */
-  props: PropDoc[];
+  /** All public props for this component. Omit for hook entries. */
+  props?: PropDoc[];
+  /** Hook parameters or options object fields. Use for `use*` entries. */
+  params?: HookParamDoc[];
+  /** Hook return value fields. Use for `use*` entries. */
+  returns?: HookReturnDoc[];
+  /** Usage documentation for this specific component or hook. */
+  usage?: UsageDoc;
+  /** Components this hook is commonly used with. */
+  relatedComponents?: string[];
+  /** Other hooks this hook is commonly used with. */
+  relatedHooks?: string[];
   /** Short code examples rendered by the CLI after the props table. */
   examples?: ExampleDoc[];
   /** When true, this sub-component is excluded from the overview page. */
@@ -844,6 +856,14 @@ export interface BlockTemplateDoc extends BaseTemplateDoc {
    *  Matches the component's doc name (e.g. 'Button', 'Dialog', 'Stack').
    *  Used by the docsite to show relevant examples on component detail pages. */
   exampleFor: string;
+  /** Additional component or hook doc pages whose Examples section should
+   *  include this block. Use when a component example is also the canonical
+   *  usage example for one of that component's hooks. */
+  alsoExampleFor?: string[];
+  /** Additional component or hook doc pages whose hero showcase should reuse
+   *  this block. Unlike `isShowcase`, this does not make the block the primary
+   *  showcase for `exampleFor`; it only creates explicit secondary placements. */
+  alsoShowcaseFor?: string[];
   /** Width-to-height ratio for preview containers (e.g. 16/9, 1, 3/4). */
   aspectRatio: number;
   /** Scale factor for the block preview (default 1). */

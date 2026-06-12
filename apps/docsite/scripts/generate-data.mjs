@@ -309,6 +309,13 @@ function sanitizeForJson(obj) {
   }));
 }
 
+function extractStringArrayField(content, field) {
+  const re = new RegExp(`${field}:\\s*\\[([^\\]]*)\\]`);
+  const match = re.exec(content);
+  if (!match) return [];
+  return [...match[1].matchAll(/['"]([^'"]+)['"]/g)].map(m => m[1]);
+}
+
 async function generateComponentRegistry() {
   console.log('Generating component registry...');
 
@@ -383,16 +390,35 @@ async function generateComponentRegistry() {
 
         if (doc.components && doc.components.length > 0) {
           for (const sub of doc.components) {
-            const subName = (sub.name || '').replace(/^XDS/, '');
+            const rawSubName = sub.name || '';
+            const subName = rawSubName.replace(/^XDS/, '');
             if (!subName) continue;
+            const isHookEntry = rawSubName.startsWith('use') || subName.startsWith('use') || Array.isArray(sub.params);
             // Sub-entries whose name differs from the doc name are
             // sub-components — hide them from the overview page.
             const isSubEntry = subName !== doc.name;
             // Each sub-component may have its own usage; fall back to
             // the parent doc's usage only when the sub doesn't define one.
+            // Hook entries should read as hook docs, not as the parent component,
+            // so use the hook description as the usage summary when no explicit
+            // usage block is authored.
             const subUsage = sub.usage
               ? sanitizeForJson(sub.usage)
-              : usage;
+              : isHookEntry && sub.description
+                ? {description: sub.description}
+                : usage;
+            const params = isHookEntry
+              ? Array.isArray(sub.params)
+                ? sanitizeForJson(sub.params)
+                : Array.isArray(sub.props)
+                  ? sanitizeForJson(sub.props)
+                  : []
+              : null;
+            const returns = isHookEntry
+              ? Array.isArray(sub.returns)
+                ? sanitizeForJson(sub.returns)
+                : []
+              : null;
             pendingSubComponents.push({
               name: subName,
               displayName: requireDisplayName(
@@ -409,14 +435,20 @@ async function generateComponentRegistry() {
               keywords,
               hidden,
               parentDoc: doc.name,
-              props: Array.isArray(sub.props) ? sanitizeForJson(sub.props) : [],
+              props: isHookEntry
+                ? []
+                : Array.isArray(sub.props)
+                  ? sanitizeForJson(sub.props)
+                  : [],
               usage: subUsage,
-              theming,
-              params: null,
-              returns: null,
-              relatedComponents: null,
-              relatedHooks: null,
-              playground,
+              theming: isHookEntry ? null : theming,
+              params,
+              returns,
+              relatedComponents: isHookEntry
+                ? sub.relatedComponents || (doc.name ? [doc.name] : null)
+                : null,
+              relatedHooks: isHookEntry ? sub.relatedHooks || null : null,
+              playground: isHookEntry ? null : playground,
             });
           }
         } else if (doc.params) {
@@ -1152,7 +1184,7 @@ function generateShowcaseRegistry() {
 
   for (const docPath of docFiles) {
     const content = fs.readFileSync(docPath, 'utf-8');
-    if (!/isShowcase:\s*true/.test(content)) continue;
+    const isShowcase = /isShowcase:\s*true/.test(content);
 
     const efMatch = content.match(/exampleFor:\s*['"]([^'"]+)['"]/);
     if (!efMatch) continue;
@@ -1162,11 +1194,25 @@ function generateShowcaseRegistry() {
     const tsxSrc = path.join(path.dirname(docPath), basename + '.tsx');
     if (!fs.existsSync(tsxSrc)) continue;
 
-    // Copy the TSX file into generated/showcases/
-    const destFile = `${basename}.tsx`;
-    fs.copyFileSync(tsxSrc, path.join(SHOWCASE_OUT, destFile));
+    const alsoShowcaseFor = extractStringArrayField(content, 'alsoShowcaseFor');
 
-    entries.push({exampleFor, basename, destFile});
+    if (isShowcase) {
+      // Copy the TSX file into generated/showcases/
+      const destFile = `${basename}.tsx`;
+      fs.copyFileSync(tsxSrc, path.join(SHOWCASE_OUT, destFile));
+      entries.push({exampleFor, basename, destFile});
+    }
+
+    // Blocks can opt into serving as the visual showcase for additional
+    // component or hook pages. This is explicit metadata instead of source
+    // inspection so authors control where examples appear.
+    for (const target of alsoShowcaseFor) {
+      const aliasBasename = `${basename}__${target}`;
+      const destFile = `${aliasBasename}.tsx`;
+      fs.copyFileSync(tsxSrc, path.join(SHOWCASE_OUT, destFile));
+      entries.push({exampleFor: target, basename: aliasBasename, destFile});
+    }
+
   }
 
   // Deduplicate: one showcase per component (first wins)
@@ -1215,8 +1261,7 @@ function generateExampleRegistry() {
 
   for (const docPath of docFiles) {
     const content = fs.readFileSync(docPath, 'utf-8');
-    // Skip showcases — they have their own registry
-    if (/isShowcase:\s*true/.test(content)) continue;
+    const isShowcase = /isShowcase:\s*true/.test(content);
 
     const efMatch = content.match(/exampleFor:\s*['"]([^'"]+)['"]/);
     if (!efMatch) continue;
@@ -1230,18 +1275,37 @@ function generateExampleRegistry() {
     const nameMatch = content.match(/name:\s*['"]([^'"]+)['"]/);
     const description = extractQuotedField(content, 'description');
 
-    fs.copyFileSync(tsxSrc, path.join(EXAMPLES_OUT, `${basename}.tsx`));
-
     let source = '';
     try { source = fs.readFileSync(tsxSrc, 'utf-8'); } catch { /* ignore */ }
 
-    entries.push({
-      exampleFor,
-      basename,
-      name: nameMatch?.[1] || basename,
-      description: description || '',
-      source,
-    });
+    const alsoExampleFor = extractStringArrayField(content, 'alsoExampleFor');
+
+    if (!isShowcase) {
+      fs.copyFileSync(tsxSrc, path.join(EXAMPLES_OUT, `${basename}.tsx`));
+      entries.push({
+        exampleFor,
+        basename,
+        name: nameMatch?.[1] || basename,
+        description: description || '',
+        source,
+      });
+    }
+
+    // Blocks can explicitly appear as examples for additional component or
+    // hook pages. This supports component examples doubling as hook examples
+    // without inferring intent from the TSX source.
+    for (const target of alsoExampleFor) {
+      const aliasBasename = `${basename}__${target}`;
+      fs.copyFileSync(tsxSrc, path.join(EXAMPLES_OUT, `${aliasBasename}.tsx`));
+      entries.push({
+        exampleFor: target,
+        basename: aliasBasename,
+        name: nameMatch?.[1] || basename,
+        description: description || `Example using ${target}.`,
+        source,
+      });
+    }
+
   }
 
   // Group by component

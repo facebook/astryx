@@ -101,9 +101,12 @@ export function HookSignature({params, returns}: HookSignatureProps) {
                   {
                     key: 'name',
                     header: 'Param',
-                    width: pixel(160),
+                    width: pixel(240),
                     renderCell: (item: Record<string, unknown>) => (
-                      <XDSHStack gap={1} vAlign="center">
+                      <XDSHStack
+                        gap={1}
+                        vAlign="center"
+                        style={{whiteSpace: 'nowrap'}}>
                         <XDSText type="code" weight="bold">
                           {item.name as string}
                         </XDSText>
@@ -150,9 +153,12 @@ export function HookSignature({params, returns}: HookSignatureProps) {
                   {
                     key: 'name',
                     header: 'Field',
-                    width: pixel(160),
+                    width: pixel(220),
                     renderCell: (item: Record<string, unknown>) => (
-                      <XDSText type="code" weight="bold">
+                      <XDSText
+                        type="code"
+                        weight="bold"
+                        style={{whiteSpace: 'nowrap'}}>
                         {item.name as string}
                       </XDSText>
                     ),

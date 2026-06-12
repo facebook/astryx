@@ -1,0 +1,149 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/** @type {import('../docs-types').HookDoc} */
+export const docs = {
+  name: 'useXDSLayer',
+  displayName: 'useXDSLayer',
+  group: 'Utilities',
+  keywords: [
+    'layer',
+    'overlay',
+    'popover',
+    'positioning',
+    'anchor',
+    'floating',
+    'dropdown',
+    'popper',
+    'popup',
+    'portal',
+  ],
+  params: [
+    {
+      name: 'mode',
+      type: "'context' | 'fixed'",
+      description:
+        'Positioning strategy: context uses CSS anchor positioning relative to a trigger ref; fixed uses explicit x/y coordinates.',
+      required: true,
+    },
+    {
+      name: 'onShow',
+      type: '() => void',
+      description: 'Callback fired when the layer becomes visible.',
+    },
+    {
+      name: 'onHide',
+      type: '() => void',
+      description: 'Callback fired when the layer is hidden.',
+    },
+    {
+      name: 'lightDismiss',
+      type: 'boolean',
+      description:
+        'Whether clicking outside should dismiss the layer using native popover light-dismiss behavior.',
+      default: 'false',
+    },
+  ],
+  returns: [
+    {
+      name: 'ref',
+      type: 'RefCallback<HTMLElement> | undefined',
+      description: 'Trigger ref for context mode. Undefined in fixed mode.',
+    },
+    {
+      name: 'anchorId',
+      type: 'string',
+      description: 'CSS anchor name for context mode positioning.',
+    },
+    {
+      name: 'show',
+      type: '() => void',
+      description: 'Imperatively show the layer.',
+    },
+    {
+      name: 'hide',
+      type: '() => void',
+      description: 'Imperatively hide the layer.',
+    },
+    {
+      name: 'isOpen',
+      type: 'boolean',
+      description: 'Whether the layer is currently open.',
+    },
+    {
+      name: 'id',
+      type: 'string',
+      description: 'Unique ID for aria-describedby or other ARIA relationships.',
+    },
+    {
+      name: 'render',
+      type: '(children: ReactNode, props: ContextRenderProps | FixedRenderProps) => ReactNode',
+      description:
+        'Render function for the popover element. Pass placement/alignment in context mode or x/y in fixed mode.',
+    },
+  ],
+  usage: {
+    description:
+      'Core positioning hook for rendering overlay content using CSS Anchor Positioning and the Popover API. Use it as the foundation for custom popovers, hover cards, tooltips, and fixed-position layers when higher-level components are not enough.',
+    bestPractices: [
+      {
+        guidance: true,
+        description:
+          'Use context mode for anchor-positioned overlays relative to a trigger element, and fixed mode for manually positioned overlays at specific coordinates.',
+      },
+      {
+        guidance: true,
+        description:
+          'Build on higher-level components like Popover, HoverCard, and Tooltip for common overlay patterns.',
+      },
+      {
+        guidance: false,
+        description:
+          'Implement ARIA patterns directly in a Layer unless you also own the full accessibility behavior.',
+      },
+    ],
+  },
+  relatedComponents: ['LayerProvider', 'Popover', 'HoverCard', 'Tooltip'],
+  relatedHooks: ['useXDSPopover', 'useXDSHoverCard', 'useXDSTooltip'],
+  importPath: '@xds/core/Layer',
+  category: 'interaction',
+};
+
+/** @type {import('../docs-types').HookTranslationDoc} */
+export const docsDense = {
+  description:
+    'Core positioning hook for overlay content via CSS Anchor Positioning + Popover API. Foundation for custom popovers, hover cards, tooltips, fixed-position layers.',
+  paramDescriptions: {
+    mode: 'positioning strategy: context = CSS anchor relative to trigger; fixed = explicit x/y coords. **(required)**',
+    onShow: 'fires when layer becomes visible.',
+    onHide: 'fires when layer hides.',
+    lightDismiss: 'whether native outside-click light-dismiss is enabled.',
+  },
+  returnDescriptions: {
+    ref: 'trigger ref for context mode; undefined in fixed mode.',
+    anchorId: 'CSS anchor name.',
+    show: 'show layer.',
+    hide: 'hide layer.',
+    isOpen: 'whether layer is open.',
+    id: 'unique ARIA id.',
+    render: 'renders popover element; pass placement/alignment or x/y.',
+  },
+  usage: {
+    description:
+      'Core positioning hook for overlay content via CSS Anchor Positioning + Popover API. Foundation for custom popovers, hover cards, tooltips, fixed-position layers.',
+    bestPractices: [
+      {
+        guidance: true,
+        description: 'Use context mode for trigger-anchored overlays; fixed mode for explicit coordinates.',
+      },
+      {
+        guidance: true,
+        description: 'Build on Popover/HoverCard/Tooltip for common overlay patterns.',
+      },
+      {
+        guidance: false,
+        description:
+          'Implement ARIA directly in Layer unless you own full accessibility behavior.',
+      },
+    ],
+  },
+};
