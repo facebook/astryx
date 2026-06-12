@@ -80,7 +80,7 @@ export const docs = {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
-            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
         },
       ],    },
     {
@@ -184,9 +184,9 @@ export const docs = {
     description:
       'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [
-      { guidance: true, description: 'Use the gap prop for spacing between items — don\'t add margins manually.' },
+      { guidance: true, description: 'Use the gap prop for spacing between items; don\'t add margins manually.' },
       { guidance: true, description: 'Use XDSStackItem with size="fill" to make one item stretch and fill the leftover space.' },
-      { guidance: false, description: 'Nest stacks inside stacks — try wrap="wrap" first to let items flow to the next line.' },
+      { guidance: false, description: 'Nest stacks inside stacks; try wrap="wrap" first to let items flow to the next line.' },
     ],
   },
 };
@@ -373,9 +373,9 @@ export const docsZh = {
     description:
       'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [
-      { guidance: true, description: 'Use the gap prop for spacing between items — don\'t add margins manually.' },
+      { guidance: true, description: 'Use the gap prop for spacing between items; don\'t add margins manually.' },
       { guidance: true, description: 'Use XDSStackItem with size="fill" to make one item stretch and fill the leftover space.' },
-      { guidance: false, description: 'Nest stacks inside stacks — try wrap="wrap" first to let items flow to the next line.' },
+      { guidance: false, description: 'Nest stacks inside stacks; try wrap="wrap" first to let items flow to the next line.' },
     ],
   },
 };
@@ -387,9 +387,9 @@ export const docsDense = {
     description:
       'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [
-      { guidance: true, description: 'Use the gap prop for spacing between items — don\'t add margins manually.' },
+      { guidance: true, description: 'Use the gap prop for spacing between items; don\'t add margins manually.' },
       { guidance: true, description: 'Use XDSStackItem with size="fill" to make one item stretch and fill the leftover space.' },
-      { guidance: false, description: 'Nest stacks inside stacks — try wrap="wrap" first to let items flow to the next line.' },
+      { guidance: false, description: 'Nest stacks inside stacks; try wrap="wrap" first to let items flow to the next line.' },
     ],
   },
   components: [

@@ -100,9 +100,9 @@ export const docs = {
     description:
       'MetadataList displays key-value pairs for object attributes like quality, condition, and status, in a structured layout. Use it for detail panels, settings summaries, and record information.',
     bestPractices: [
-      { guidance: true, description: 'Choose label position based on content — "start" for short values, "top" for long or complex values.' },
+      { guidance: true, description: 'Choose label position based on content: "start" for short values, "top" for long or complex values.' },
       { guidance: true, description: 'Collapse long lists with `maxNumOfItems` to keep the page scannable.' },
-      { guidance: false, description: 'Use for extensive form input — use a form layout instead.' },
+      { guidance: false, description: 'Use for extensive form input; use a form layout instead.' },
       { guidance: false, description: "Use for data that doesn't have a clear key-value structure." },
     ],
     anatomy: [
@@ -147,9 +147,9 @@ export const docsZh = {
     description:
       'MetadataList displays key-value pairs for object attributes like quality, condition, and status, in a structured layout. Use it for detail panels, settings summaries, and record information.',
     bestPractices: [
-      { guidance: true, description: 'Choose label position based on content — "start" for short values, "top" for long or complex values.' },
+      { guidance: true, description: 'Choose label position based on content: "start" for short values, "top" for long or complex values.' },
       { guidance: true, description: 'Collapse long lists with `maxNumOfItems` to keep the page scannable.' },
-      { guidance: false, description: 'Use for extensive form input — use a form layout instead.' },
+      { guidance: false, description: 'Use for extensive form input; use a form layout instead.' },
       { guidance: false, description: "Use for data that doesn't have a clear key-value structure." },
     ],
     anatomy: [
@@ -168,9 +168,9 @@ export const docsDense = {
     description:
       'MetadataList displays key-value pairs for object attributes like quality, condition, and status, in a structured layout. Use it for detail panels, settings summaries, and record information.',
     bestPractices: [
-      { guidance: true, description: 'Choose label position based on content — "start" for short values, "top" for long or complex values.' },
+      { guidance: true, description: 'Choose label position based on content: "start" for short values, "top" for long or complex values.' },
       { guidance: true, description: 'Collapse long lists with `maxNumOfItems` to keep the page scannable.' },
-      { guidance: false, description: 'Use for extensive form input — use a form layout instead.' },
+      { guidance: false, description: 'Use for extensive form input; use a form layout instead.' },
       { guidance: false, description: "Use for data that doesn't have a clear key-value structure." },
     ],
     anatomy: [

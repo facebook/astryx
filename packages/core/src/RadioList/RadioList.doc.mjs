@@ -104,7 +104,7 @@ export const docs = {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
-            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
         },
       ],
     },
@@ -160,12 +160,12 @@ export const docs = {
     description:
       'A group of options where only one can be selected at a time. All options are visible at once, making it easy to compare choices. Use it when users need to pick one option from a small set.',
     bestPractices: [
-      { guidance: true, description: 'Keep the number of options small — typically 2 to 7 choices.' },
+      { guidance: true, description: 'Keep the number of options small: typically 2 to 7 choices.' },
       { guidance: true, description: 'Use clear, concise labels that differentiate each option at a glance.' },
-      { guidance: true, description: "Pre-select a default option when there's a sensible default — don't leave the group empty unless the choice is truly optional." },
-      { guidance: false, description: 'Use when multiple selections are needed — use CheckboxList instead.' },
-      { guidance: false, description: 'Use for long lists — use Selector for better discoverability.' },
-      { guidance: false, description: 'Use horizontal layout with more than 4 options — it wraps awkwardly.' },
+      { guidance: true, description: "Pre-select a default option when there's a sensible default; don't leave the group empty unless the choice is truly optional." },
+      { guidance: false, description: 'Use when multiple selections are needed; use CheckboxList instead.' },
+      { guidance: false, description: 'Use for long lists; use Selector for better discoverability.' },
+      { guidance: false, description: 'Use horizontal layout with more than 4 options; it wraps awkwardly.' },
     ],
     anatomy: [
       {name: 'Header', required: false, description: 'Optional heading above the radio list.'},
@@ -326,12 +326,12 @@ export const docsZh = {
     description:
       'A group of options where only one can be selected at a time. All options are visible at once, making it easy to compare choices. Use it when users need to pick one option from a small set.',
     bestPractices: [
-      { guidance: true, description: 'Keep the number of options small — typically 2 to 7 choices.' },
+      { guidance: true, description: 'Keep the number of options small: typically 2 to 7 choices.' },
       { guidance: true, description: 'Use clear, concise labels that differentiate each option at a glance.' },
-      { guidance: true, description: "Pre-select a default option when there's a sensible default — don't leave the group empty unless the choice is truly optional." },
-      { guidance: false, description: 'Use when multiple selections are needed — use CheckboxList instead.' },
-      { guidance: false, description: 'Use for long lists — use Selector for better discoverability.' },
-      { guidance: false, description: 'Use horizontal layout with more than 4 options — it wraps awkwardly.' },
+      { guidance: true, description: "Pre-select a default option when there's a sensible default; don't leave the group empty unless the choice is truly optional." },
+      { guidance: false, description: 'Use when multiple selections are needed; use CheckboxList instead.' },
+      { guidance: false, description: 'Use for long lists; use Selector for better discoverability.' },
+      { guidance: false, description: 'Use horizontal layout with more than 4 options; it wraps awkwardly.' },
     ],
     anatomy: [
       {name: 'Header', required: false, description: 'Optional heading above the radio list.'},
@@ -349,12 +349,12 @@ export const docsDense = {
     description:
       'A group of options where only one can be selected at a time. All options are visible at once, making it easy to compare choices. Use it when users need to pick one option from a small set.',
     bestPractices: [
-      { guidance: true, description: 'Keep the number of options small — typically 2 to 7 choices.' },
+      { guidance: true, description: 'Keep the number of options small: typically 2 to 7 choices.' },
       { guidance: true, description: 'Use clear, concise labels that differentiate each option at a glance.' },
-      { guidance: true, description: "Pre-select a default option when there's a sensible default — don't leave the group empty unless the choice is truly optional." },
-      { guidance: false, description: 'Use when multiple selections are needed — use CheckboxList instead.' },
-      { guidance: false, description: 'Use for long lists — use Selector for better discoverability.' },
-      { guidance: false, description: 'Use horizontal layout with more than 4 options — it wraps awkwardly.' },
+      { guidance: true, description: "Pre-select a default option when there's a sensible default; don't leave the group empty unless the choice is truly optional." },
+      { guidance: false, description: 'Use when multiple selections are needed; use CheckboxList instead.' },
+      { guidance: false, description: 'Use for long lists; use Selector for better discoverability.' },
+      { guidance: false, description: 'Use horizontal layout with more than 4 options; it wraps awkwardly.' },
     ],
     anatomy: [
       {name: 'Header', required: false, description: 'Optional heading above the radio list.'},

@@ -12,7 +12,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Use for plan pickers, filter chips, or option grids.'},
       {guidance: true, description: 'For single-select track one ID; for multi-select use a Set.'},
-      {guidance: false, description: 'Use for navigation — use ClickableCard for that.'},
+      {guidance: false, description: 'Use for navigation; use ClickableCard for that.'},
     ],
     anatomy: [
       {name: 'Container', required: true, description: 'Interactive div with accent border on selection.'},
@@ -30,7 +30,7 @@ export const docs = {
     {name: 'width', type: 'SizeValue', description: 'Card width.'},
     {name: 'height', type: 'SizeValue', description: 'Card height.'},
     {name: 'maxWidth', type: 'SizeValue', description: 'Maximum card width.'},
-    {name: 'xstyle', type: 'StyleXStyles', description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.'},
+    {name: 'xstyle', type: 'StyleXStyles', description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.'},
   ],
   theming: {
     container: true,
@@ -46,7 +46,7 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Use for plan pickers, filter chips, option grids.'},
       {guidance: true, description: 'For single-select track one ID; for multi-select use a Set.'},
-      {guidance: false, description: 'Use for navigation — use ClickableCard instead.'},
+      {guidance: false, description: 'Use for navigation; use ClickableCard instead.'},
     ],
   },
   propDescriptions: {

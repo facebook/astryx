@@ -24,7 +24,7 @@ export const docs = {
       name: 'value',
       type: 'number | [number, number]',
       description:
-        'Current value — a `number` for single thumb mode or `[number, number]` for range mode.',
+        'Current value: a `number` for single thumb mode or `[number, number]` for range mode.',
       required: true,
     },
     {
@@ -129,7 +129,7 @@ export const docs = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
   ],
   theming: {
@@ -145,8 +145,8 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Always provide a label, even if visually hidden, so the slider is accessible to screen readers.'},
       {guidance: true, description: 'Format values with meaningful units like "$50" or "75%" instead of raw numbers.'},
-      {guidance: false, description: 'Use for precise numeric entry — pair with a text input or use NumberInput instead.'},
-      {guidance: false, description: 'Set a step size so large that only a few positions are possible — use SegmentedControl or radio buttons instead.'},
+      {guidance: false, description: 'Use for precise numeric entry; pair with a text input or use NumberInput instead.'},
+      {guidance: false, description: 'Set a step size so large that only a few positions are possible; use SegmentedControl or radio buttons instead.'},
     ],
   },
 };
@@ -287,8 +287,8 @@ export const docsZh = {
     bestPractices: [
       {guidance: true, description: 'Always provide a label, even if visually hidden, so the slider is accessible to screen readers.'},
       {guidance: true, description: 'Format values with meaningful units like "$50" or "75%" instead of raw numbers.'},
-      {guidance: false, description: 'Use for precise numeric entry — pair with a text input or use NumberInput instead.'},
-      {guidance: false, description: 'Set a step size so large that only a few positions are possible — use SegmentedControl or radio buttons instead.'},
+      {guidance: false, description: 'Use for precise numeric entry; pair with a text input or use NumberInput instead.'},
+      {guidance: false, description: 'Set a step size so large that only a few positions are possible; use SegmentedControl or radio buttons instead.'},
     ],
   },
 };
@@ -301,8 +301,8 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Always provide a label, even if visually hidden, so the slider is accessible to screen readers.'},
       {guidance: true, description: 'Format values with meaningful units like "$50" or "75%" instead of raw numbers.'},
-      {guidance: false, description: 'Use for precise numeric entry — pair with a text input or use NumberInput instead.'},
-      {guidance: false, description: 'Set a step size so large that only a few positions are possible — use SegmentedControl or radio buttons instead.'},
+      {guidance: false, description: 'Use for precise numeric entry; pair with a text input or use NumberInput instead.'},
+      {guidance: false, description: 'Set a step size so large that only a few positions are possible; use SegmentedControl or radio buttons instead.'},
     ],
   },
   propDescriptions: {
