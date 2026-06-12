@@ -27,7 +27,7 @@ export const docs = {
       description: 'A universal item primitive that unifies the "media + label + description + trailing content" layout pattern. Use as a building block for list items, menu items, contact rows, notifications, and more.',
       props: [
         {name: 'label', type: 'ReactNode', description: 'Primary text identifying this item. Accepts string (auto-truncated) or ReactNode (for rich content).', required: true},
-        {name: 'media', type: 'ReactNode', description: 'Leading visual — avatar, icon, image, or any ReactNode.', slotElements: [{__element: 'XDSAvatar', props: {size: 'sm'}}, {__element: 'XDSIcon', props: {icon: 'user', size: 'sm'}}]},
+        {name: 'media', type: 'ReactNode', description: 'Leading visual — avatar, icon, image, or any ReactNode.', slotElements: [{__element: 'XDSAvatar', props: {name: 'Ada Lovelace', size: 'xsmall'}}, {__element: 'XDSIcon', props: {icon: 'info', size: 'sm', color: 'secondary'}}]},
         {name: 'description', type: 'ReactNode', description: 'Secondary text — subtitle, description, or supporting info.'},
         {name: 'trailing', type: 'ReactNode', description: 'Trailing content — badges, metadata, timestamps, action buttons. Positioned at the end, flex-shrink: 0.', slotElements: [{__element: 'XDSBadge', props: {label: 3}}, {__element: 'XDSText', props: {color: 'secondary'}, children: '2h ago'}]},
         {name: 'as', type: "'div' | 'li' | 'span'", description: 'HTML element to render as the root.', default: "'div'"},
