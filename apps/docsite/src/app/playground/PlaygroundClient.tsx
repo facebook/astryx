@@ -386,6 +386,7 @@ const s = stylex.create({
     gap: 'var(--spacing-2)',
     width: '100%',
     minWidth: 0,
+    paddingInline: 'var(--spacing-1)',
   },
   topbarBrand: {
     gridColumn: '1',
@@ -544,9 +545,14 @@ function PlaygroundSideNavHeader({
   if (renderMode === 'topbar') {
     return (
       <div {...stylex.props(s.topbarHeader)}>
-        <span {...stylex.props(s.topbarBrand)} aria-hidden="true">
+        <XDSLink
+          href="/"
+          label="Back to main site"
+          tooltip="Back to main site"
+          color="inherit"
+          xstyle={s.topbarBrand}>
           {BRAND_ICON}
-        </span>
+        </XDSLink>
         <XDSTabList
           value={mobileTab}
           onChange={value => onMobileTabChange(value as MobileTopTab)}
