@@ -1,11 +1,22 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, beforeEach} from 'vitest';
-import {registerIcons, getIcon, resetIcons} from './globalIconRegistry';
+import {defaultIcons} from './defaultIcons';
+import {
+  registerIcons,
+  getIcon,
+  resetIcons,
+  XDS_ICON_NAMES,
+} from './globalIconRegistry';
 
 describe('iconRegistry (global, RSC-compatible)', () => {
   beforeEach(() => {
     resetIcons();
+  });
+
+  it('derives icon names from the default icon map', () => {
+    expect(XDS_ICON_NAMES).toEqual(Object.keys(defaultIcons));
+    expect(Object.isFrozen(XDS_ICON_NAMES)).toBe(true);
   });
 
   it('returns default icons when nothing is registered', () => {

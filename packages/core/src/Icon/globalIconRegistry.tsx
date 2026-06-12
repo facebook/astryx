@@ -57,6 +57,15 @@ export type XDSIconName =
  */
 export type XDSIconRegistry = Record<XDSIconName, ReactNode>;
 
+/**
+ * Canonical list of semantic icon names supported by the default registry.
+ * Keep controls and docs in sync by deriving options from this list instead
+ * of hand-copying icon names.
+ */
+export const XDS_ICON_NAMES = Object.freeze(
+  Object.keys(defaultIcons),
+) as ReadonlyArray<XDSIconName>;
+
 // =============================================================================
 // Global Registry
 // =============================================================================
