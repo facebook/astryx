@@ -133,11 +133,9 @@ function extractQuotedField(content, field) {
   return parseStringLiteral(content, openIdx).value;
 }
 
-/** Extract group/description/hidden from .doc.mjs via regex (no dynamic import) */
+/** Extract doc metadata from .doc.mjs source without dynamic import. */
 const GROUP_RE = /(?:^|\n) {0,4}group:\s*['"]([^'"]+)['"]/;
 const HIDDEN_RE = /(?:^|\n) {0,4}hidden:\s*true/;
-const NAME_RE = /(?:^|\n) {0,4}name:\s*['"]([^'"]+)['"]/;
-const DISPLAY_NAME_RE = /(?:^|\n) {0,4}displayName:\s*['"]([^'"]+)['"]/;
 const KEYWORDS_RE = /keywords:\s*\[([^\]]*)\]/;
 const CATEGORY_RE = /(?:^|\n) {0,4}category:\s*['"]([^'"]+)['"]/;
 const IS_HIDDEN_FROM_OVERVIEW_RE = /(?:^|\n) {0,4}isHiddenFromOverview:\s*true/;
@@ -147,8 +145,8 @@ function readDocMeta(docPath) {
     const content = fs.readFileSync(docPath, 'utf-8');
     const groupMatch = GROUP_RE.exec(content);
     const description = extractQuotedField(content, 'description');
-    const nameMatch = NAME_RE.exec(content);
-    const displayNameMatch = DISPLAY_NAME_RE.exec(content);
+    const name = extractQuotedField(content, 'name');
+    const displayName = extractQuotedField(content, 'displayName');
     const hidden = HIDDEN_RE.test(content);
     const kwMatch = KEYWORDS_RE.exec(content);
     const keywords = kwMatch
@@ -159,8 +157,8 @@ function readDocMeta(docPath) {
     return {
       group: groupMatch?.[1] ?? null,
       description: description ?? '',
-      name: nameMatch?.[1] ?? null,
-      displayName: displayNameMatch?.[1] ?? null,
+      name: name ?? null,
+      displayName: displayName ?? null,
       hidden,
       keywords,
       category: categoryMatch?.[1] ?? null,
@@ -1393,7 +1391,7 @@ function generateExampleRegistry() {
     if (!fs.existsSync(tsxSrc)) continue;
 
     // Read name and description from doc meta
-    const nameMatch = content.match(/name:\s*['"]([^'"]+)['"]/);
+    const name = extractQuotedField(content, 'name');
     const description = extractQuotedField(content, 'description');
 
     let source = '';
@@ -1406,7 +1404,7 @@ function generateExampleRegistry() {
       entries.push({
         exampleFor,
         basename,
-        name: nameMatch?.[1] || basename,
+        name: name || basename,
         description: description || '',
         source,
       });
@@ -1421,7 +1419,7 @@ function generateExampleRegistry() {
       entries.push({
         exampleFor: target,
         basename: aliasBasename,
-        name: nameMatch?.[1] || basename,
+        name: name || basename,
         description: description || `Example using ${target}.`,
         source,
       });
