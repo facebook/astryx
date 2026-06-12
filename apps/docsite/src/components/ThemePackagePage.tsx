@@ -627,11 +627,14 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
 
   // Open in Playground destination: the main /playground seeded with
   // the theme-showcase template in the code editor (#code) and the
-  // selected theme in the theme editor (?theme=<slug>). The button's
-  // href does a plain full-page navigation, which the playground needs
-  // to read the seeded code from window.location.hash reliably at
-  // mount (App Router soft navigation doesn't reliably commit the hash
-  // before that read, so the code could fall back to DEFAULT_CODE).
+  // selected theme in the theme editor (?theme=<slug>). Navigation goes
+  // through the framework — XDSButton's href renders the docsite's Next
+  // <Link> (via XDSLinkProvider), so this is a soft, client-side
+  // transition rather than a full-page reload. The playground reads the
+  // seeded code from window.location.hash in a mount effect (the
+  // App-Router-safe way to read a fragment — useSearchParams only sees
+  // the query string), which runs after the navigation has committed the
+  // new URL, so the hash is reliably present when it's read.
   const customizeHref = buildPlaygroundHref(
     THEME_SHOWCASE_SOURCE,
     packageNameToSlug(selectedPkgName),
