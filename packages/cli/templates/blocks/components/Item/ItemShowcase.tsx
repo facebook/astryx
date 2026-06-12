@@ -14,30 +14,30 @@ export default function ItemShowcase() {
   return (
     <XDSStack gap={0}>
       <XDSItem
-        media={<XDSAvatar name="Alice Johnson" size={40} />}
+        startContent={<XDSAvatar name="Alice Johnson" size={40} />}
         label="Alice Johnson"
         description="Engineering Lead"
-        trailing={<XDSBadge label="Admin" />}
+        endContent={<XDSBadge label="Admin" />}
         onClick={() => {}}
       />
       <XDSItem
-        media={<XDSIcon icon={BellIcon} size="sm" />}
+        startContent={<XDSIcon icon={BellIcon} size="sm" />}
         label="Build completed successfully"
         description="Pipeline #4521 — all 42 tests passed"
-        trailing={<XDSText color="secondary">5h ago</XDSText>}
+        endContent={<XDSText color="secondary">5h ago</XDSText>}
         descriptionLines={1}
         onClick={() => {}}
       />
       <XDSItem
-        media={<XDSIcon icon={DocumentIcon} size="sm" />}
+        startContent={<XDSIcon icon={DocumentIcon} size="sm" />}
         label="design-spec.pdf"
         description="Modified 2 hours ago"
-        trailing={<XDSText color="secondary">2.4 MB</XDSText>}
+        endContent={<XDSText color="secondary">2.4 MB</XDSText>}
         isSelected
         onClick={() => {}}
       />
       <XDSItem
-        media={<XDSIcon icon={UserIcon} size="sm" />}
+        startContent={<XDSIcon icon={UserIcon} size="sm" />}
         label="Compact menu item"
         density="compact"
         onClick={() => {}}

@@ -16,6 +16,7 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSAvatar} from '@xds/core/Avatar';
+import {spacingVars} from '@xds/core/theme/tokens.stylex';
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -29,6 +30,7 @@ const styles = stylex.create({
     backgroundImage: `url(${BG_URL})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
+    padding: spacingVars['--spacing-6'],
   },
 });
 
@@ -101,7 +103,7 @@ export default function LoginSSO() {
 
   return (
     <XDSCenter axis="both" xstyle={styles.page}>
-      <XDSCard padding={8} width={400}>
+      <XDSCard padding={8} width="100%" maxWidth={400}>
         <XDSVStack gap={4} hAlign="stretch">
           {/* ── Step 1: Email entry ── */}
           {step === 'email' && (

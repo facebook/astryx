@@ -5,7 +5,7 @@
  * @output Exports XDSSelectorOption component for custom option rendering
  * @position Sub-component; used by XDSSelector and consumers for custom options
  *
- * Composes XDSItem for the shared media + label + description + trailing layout.
+ * Composes XDSItem for the shared start content + label + description + end content layout.
  */
 
 import type {ReactNode} from 'react';
@@ -101,14 +101,14 @@ export function XDSSelectorOption({
 }: XDSSelectorOptionProps) {
   return (
     <XDSItem
-      media={
+      startContent={
         icon
           ? renderIconSlot(icon, {size: 'sm', color: 'secondary'})
           : undefined
       }
       label={label}
       description={description}
-      trailing={children}
+      endContent={children}
       xstyle={[embeddedStyles.root, xstyle]}
       className={[xdsClassName('selector-option'), className]
         .filter(Boolean)

@@ -8,7 +8,7 @@
  * @output Exports XDSListItem component, XDSListItemProps type
  * @position Core implementation; consumed by XDSList, index.ts, tested by XDSList.test.tsx
  *
- * Composes XDSItem for the shared media + label + description + trailing layout
+ * Composes XDSItem for the shared start content + label + description + end content layout
  * and the invisible button/anchor interactive pattern.
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -228,24 +228,22 @@ export function XDSListItem({
       <span {...stylex.props(markerStyles.number)} />
     ) : null;
 
-  const itemDensity = density === 'compact' ? 'compact' : 'default';
-
   return (
     <XDSItem
       as="li"
       ref={ref}
-      startAdornment={marker}
-      media={startContent}
+      marker={marker}
+      startContent={startContent}
       label={label}
       description={description}
-      trailing={endContent}
+      endContent={endContent}
       onClick={onClick}
       href={href}
       target={target as '_blank' | '_self'}
       rel={rel}
       isDisabled={isDisabled}
       isSelected={isSelected}
-      density={itemDensity}
+      density={density}
       xstyle={[
         hasMarkers && styles.withCounter,
         hasDividers && styles.withDivider,

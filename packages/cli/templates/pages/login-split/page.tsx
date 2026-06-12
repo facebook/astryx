@@ -8,6 +8,7 @@ import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Layout';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSCard} from '@xds/core/Card';
+import {XDSSection} from '@xds/core/Section';
 import {XDSText} from '@xds/core/Text';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSEmptyState} from '@xds/core/EmptyState';
@@ -16,74 +17,65 @@ import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
 import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
-import {
-  colorVars,
-  spacingVars,
-  radiusVars,
-} from '@xds/core/theme/tokens.stylex';
+import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 
+// light-working-vertical-1 from xds_oss asset set
 const COVER_IMAGE_URL =
   'https://lookaside.facebook.com/assets/xds_oss/light-working-vertical-1.png';
+// AppleLogo from xds_oss asset set
+const APPLE_LOGO_URL =
+  'https://lookaside.facebook.com/assets/xds_oss/AppleLogo.png';
+// GoogleLogo from xds_oss asset set
+const GOOGLE_LOGO_URL =
+  'https://lookaside.facebook.com/assets/xds_oss/GoogleLogo.png';
 
-const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    width={16}
-    height={16}
-    aria-hidden="true"
-    {...props}>
-    <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-  </svg>
-);
-
-const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    width={16}
-    height={16}
-    aria-hidden="true"
-    {...props}>
-    <path
-      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
-      fill="#4285F4"
-    />
-    <path
-      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-      fill="#34A853"
-    />
-    <path
-      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-      fill="#FBBC05"
-    />
-    <path
-      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-      fill="#EA4335"
-    />
-  </svg>
-);
+// XDSGrid emits minmax(MIN, 1fr) where MIN is a hard floor, so MIN plus the
+// grid inset and page padding must fit the narrowest phone or the column is
+// clipped. 320 − 2×24 (page) − 2×16 (stacked inset) = 240.
+const COLUMN_MIN_WIDTH = 240;
+// repeat:'fit' (auto-fit) collapses the two columns to one — expanding to fill —
+// below 2×MIN + 32(gap) = 512px. The container query reorders the image and
+// tightens the inset at that same point, keyed to the card width (not the
+// window) so it never desyncs.
+const STACK_QUERY = '@container login-split (max-width: 511px)';
 
 const styles = stylex.create({
+  // minHeight:100% fills the host so the centered card never leaves an unpainted
+  // band; padding keeps it off the surface edges.
   page: {
     minHeight: '100%',
     backgroundColor: colorVars['--color-background-body'],
+    padding: spacingVars['--spacing-6'],
   },
-  fullWidth: {
+  cardWrap: {
     width: '100%',
+    maxWidth: 1000,
+    marginInline: 'auto',
   },
-  formColumn: {
-    padding: spacingVars['--spacing-8'],
+  // Pad the grid, not the XDSCard: the form's XDSSection escapes XDSCard's
+  // --container-padding-* vars, which would cancel the inset on the form side.
+  // containerType makes this the query container for STACK_QUERY.
+  splitGrid: {
+    containerType: 'inline-size',
+    containerName: 'login-split',
+    padding: {
+      default: spacingVars['--spacing-8'],
+      [STACK_QUERY]: spacingVars['--spacing-4'],
+    },
   },
-  imageColumn: {
-    paddingBlock: spacingVars['--spacing-4'],
-    paddingInlineEnd: spacingVars['--spacing-4'],
+  imageCell: {
+    // Fill the track: the image's XDSCard is content-width by default.
+    width: '100%',
+    // order:-1 moves the image above the form when stacked.
+    order: {
+      default: 0,
+      [STACK_QUERY]: -1,
+    },
   },
   coverImage: {
     width: '100%',
     height: '100%',
     objectFit: 'cover' as const,
-    borderRadius: radiusVars['--radius-container'],
   },
 });
 
@@ -109,141 +101,162 @@ export default function LoginTwoColumn() {
 
   return (
     <XDSCenter axis="both" xstyle={styles.page}>
-      <XDSVStack gap={4} hAlign="center">
-        {/* Card */}
-        <XDSCard padding={0} maxWidth={1000} width="100%">
-          <XDSGrid columns={2} align="stretch">
-            {/* Left — Form */}
-            <XDSVStack xstyle={styles.formColumn}>
-              <XDSHStack gap={2} vAlign="center">
-                <XDSIcon icon={SquaresPlusIcon} />
-                <XDSText type="body" weight="bold">
-                  Product Inc.
-                </XDSText>
-              </XDSHStack>
+      <XDSVStack gap={4} width="100%">
+        <div {...stylex.props(styles.cardWrap)}>
+          <XDSCard padding={0} width="100%">
+            <XDSGrid
+              columns={{minWidth: COLUMN_MIN_WIDTH, repeat: 'fit'}}
+              gap={8}
+              align="stretch"
+              xstyle={styles.splitGrid}>
+              {/* Form */}
+              <XDSSection variant="transparent" padding={0} height="100%">
+                <XDSVStack gap={4} height="100%">
+                  <XDSHStack gap={2} vAlign="center">
+                    <XDSIcon icon={SquaresPlusIcon} />
+                    <XDSText type="body" weight="bold">
+                      Product Inc.
+                    </XDSText>
+                  </XDSHStack>
 
-              <XDSStackItem size="fill">
-                <XDSCenter axis="vertical" height="100%">
-                  {isSuccess ? (
-                    <XDSEmptyState
-                      title="You're signed in"
-                      description="Redirecting to your dashboard…"
-                      icon={<CheckCircleIcon width={48} height={48} />}
-                    />
-                  ) : (
-                    <XDSVStack gap={4} xstyle={styles.fullWidth}>
-                      <XDSVStack gap={1}>
-                        <XDSText type="display-1" as="h2">
-                          Welcome back
-                        </XDSText>
-                        <XDSText type="body" color="secondary" size="sm">
-                          Login to your Product Inc. account
-                        </XDSText>
-                      </XDSVStack>
-
-                      <XDSVStack gap={2}>
-                        <XDSTextInput
-                          label="Email"
-                          isLabelHidden
-                          type="email"
-                          placeholder="name@company.com"
-                          value={email}
-                          onChange={setEmail}
-                          size="lg"
+                  <XDSStackItem size="fill">
+                    <XDSCenter axis="vertical" height="100%">
+                      {isSuccess ? (
+                        <XDSEmptyState
+                          title="You're signed in"
+                          description="Redirecting to your dashboard…"
+                          icon={<XDSIcon icon={CheckCircleIcon} size="lg" />}
                         />
-                        <XDSVStack gap={1}>
-                          <XDSTextInput
-                            label="Password"
-                            isLabelHidden
-                            placeholder="Enter your password"
-                            type="password"
-                            value={password}
-                            onChange={(v: string) => {
-                              setPassword(v);
-                              setLoginFailed(false);
-                            }}
-                            size="lg"
-                            status={
-                              loginFailed
-                                ? {
-                                    type: 'error',
-                                    message: 'Incorrect password. Try again.',
-                                  }
-                                : undefined
-                            }
-                          />
-                          {loginFailed && (
-                            <XDSVStack hAlign="end">
-                              <XDSLink
-                                href="#"
-                                size="sm"
-                                color="secondary"
-                                type="supporting">
-                                Forgot your password?
-                              </XDSLink>
+                      ) : (
+                        <XDSVStack gap={4} hAlign="stretch" width="100%">
+                          <XDSVStack gap={1}>
+                            <XDSText type="display-1" as="h2">
+                              Welcome back
+                            </XDSText>
+                            <XDSText type="body" color="secondary" size="sm">
+                              Login to your Product Inc. account
+                            </XDSText>
+                          </XDSVStack>
+
+                          <XDSVStack gap={2}>
+                            <XDSTextInput
+                              label="Email"
+                              isLabelHidden
+                              type="email"
+                              placeholder="name@company.com"
+                              value={email}
+                              onChange={setEmail}
+                              size="lg"
+                            />
+                            <XDSVStack gap={1}>
+                              <XDSTextInput
+                                label="Password"
+                                isLabelHidden
+                                placeholder="Enter your password"
+                                type="password"
+                                value={password}
+                                onChange={(v: string) => {
+                                  setPassword(v);
+                                  setLoginFailed(false);
+                                }}
+                                size="lg"
+                                status={
+                                  loginFailed
+                                    ? {
+                                        type: 'error',
+                                        message:
+                                          'Incorrect password. Try again.',
+                                      }
+                                    : undefined
+                                }
+                              />
+                              {loginFailed && (
+                                <XDSVStack hAlign="end">
+                                  <XDSLink
+                                    href="#"
+                                    size="sm"
+                                    color="secondary"
+                                    type="supporting">
+                                    Forgot your password?
+                                  </XDSLink>
+                                </XDSVStack>
+                              )}
                             </XDSVStack>
-                          )}
+                          </XDSVStack>
+
+                          <XDSButton
+                            label="Login"
+                            variant="primary"
+                            size="lg"
+                            isLoading={isLoading}
+                            onClick={handleLogin}
+                          />
+
+                          <XDSDivider label="Or continue with" />
+
+                          <XDSGrid columns={2} gap={3} justify="stretch">
+                            <XDSButton
+                              label="Apple"
+                              variant="secondary"
+                              icon={
+                                <img
+                                  src={APPLE_LOGO_URL}
+                                  alt=""
+                                  width={16}
+                                  height={16}
+                                />
+                              }
+                              size="lg"
+                            />
+                            <XDSButton
+                              label="Google"
+                              variant="secondary"
+                              icon={
+                                <img
+                                  src={GOOGLE_LOGO_URL}
+                                  alt=""
+                                  width={16}
+                                  height={16}
+                                />
+                              }
+                              size="lg"
+                            />
+                          </XDSGrid>
                         </XDSVStack>
-                      </XDSVStack>
+                      )}
+                    </XDSCenter>
+                  </XDSStackItem>
 
-                      <XDSButton
-                        label="Login"
-                        variant="primary"
-                        size="lg"
-                        isLoading={isLoading}
-                        xstyle={styles.fullWidth}
-                        onClick={handleLogin}
-                      />
-
-                      <XDSDivider label="Or continue with" />
-
-                      <XDSHStack gap={3}>
-                        <XDSStackItem size="fill">
-                          <XDSButton
-                            label="Apple"
-                            variant="secondary"
-                            icon={<AppleIcon />}
-                            size="lg"
-                            xstyle={styles.fullWidth}
-                          />
-                        </XDSStackItem>
-                        <XDSStackItem size="fill">
-                          <XDSButton
-                            label="Google"
-                            variant="secondary"
-                            icon={<GoogleIcon />}
-                            size="lg"
-                            xstyle={styles.fullWidth}
-                          />
-                        </XDSStackItem>
-                      </XDSHStack>
-                    </XDSVStack>
+                  {!isSuccess && (
+                    <XDSText type="supporting" color="secondary">
+                      Don&apos;t have an account?{' '}
+                      <XDSLink href="#" type="supporting">
+                        Sign up
+                      </XDSLink>
+                    </XDSText>
                   )}
-                </XDSCenter>
-              </XDSStackItem>
+                </XDSVStack>
+              </XDSSection>
 
-              {!isSuccess && (
-                <XDSText type="supporting" color="secondary">
-                  Don&apos;t have an account?{' '}
-                  <XDSLink href="#" type="supporting">
-                    Sign up
-                  </XDSLink>
-                </XDSText>
-              )}
-            </XDSVStack>
+              {/* Cover image — the transparent XDSCard clips it to rounded
+                  corners (overflow:clip + radius), so the image needs no radius. */}
+              <div {...stylex.props(styles.imageCell)}>
+                <XDSCard
+                  variant="transparent"
+                  padding={0}
+                  width="100%"
+                  height="100%">
+                  <img
+                    {...stylex.props(styles.coverImage)}
+                    src={COVER_IMAGE_URL}
+                    alt="Two people working at a desk"
+                  />
+                </XDSCard>
+              </div>
+            </XDSGrid>
+          </XDSCard>
+        </div>
 
-            {/* Right — Cover image */}
-            <XDSVStack xstyle={styles.imageColumn}>
-              <img
-                {...stylex.props(styles.coverImage)}
-                src={COVER_IMAGE_URL}
-                alt="Two people working at a desk"
-              />
-            </XDSVStack>
-          </XDSGrid>
-        </XDSCard>
-
-        {/* Terms */}
         <XDSVStack hAlign="center">
           <XDSText type="supporting" color="secondary">
             By clicking continue, you agree to our{' '}

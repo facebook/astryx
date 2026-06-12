@@ -36,7 +36,7 @@ import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 // =============================================================================
 
 export type XDSItemAlign = 'center' | 'start';
-export type XDSItemDensity = 'default' | 'compact';
+export type XDSItemDensity = 'compact' | 'balanced' | 'spacious';
 
 export interface XDSItemProps extends XDSBaseProps<HTMLElement> {
   /** Ref forwarded to the root element. */
@@ -49,16 +49,16 @@ export interface XDSItemProps extends XDSBaseProps<HTMLElement> {
   as?: 'div' | 'li' | 'span';
 
   /**
-   * Content rendered as a direct flex child before the media slot,
-   * without a wrapper element. Use for list markers or other content
-   * that needs its own flex alignment (e.g. alignSelf: 'baseline').
+   * Marker rendered before startContent as a direct flex child.
+   * Use for list bullets/counters that need custom baseline alignment.
    */
-  startAdornment?: ReactNode;
+  marker?: ReactNode;
 
   /**
-   * Leading visual — avatar, icon, image, or any ReactNode.
+   * Content rendered before the label/description area.
+   * Use for leading icons, avatars, or checkboxes.
    */
-  media?: ReactNode;
+  startContent?: ReactNode;
 
   /**
    * Primary text identifying this item. Required.
@@ -72,20 +72,21 @@ export interface XDSItemProps extends XDSBaseProps<HTMLElement> {
   description?: ReactNode;
 
   /**
-   * Trailing content — badges, metadata, timestamps, action buttons.
-   * Positioned at the end, flex-shrink: 0.
+   * Content rendered after the label/description area.
+   * Use for badges, metadata, timestamps, or action buttons.
    */
-  trailing?: ReactNode;
+  endContent?: ReactNode;
 
   /**
-   * Vertical alignment of the media and trailing slots.
+   * Vertical alignment of the start/end content slots.
    * @default 'center'
    */
   align?: XDSItemAlign;
 
   /**
-   * Density: "default" (8px padding) or "compact" (4px block padding).
-   * @default 'default'
+   * Density: "compact" (4px block padding), "balanced" (8px block padding),
+   * or "spacious" (12px block and inline padding).
+   * @default 'balanced'
    */
   density?: XDSItemDensity;
 
@@ -262,11 +263,11 @@ const styles = stylex.create({
     display: '-webkit-box',
     WebkitBoxOrient: 'vertical' as const,
   },
-  media: {
+  startContent: {
     flex: '0 0 auto',
     display: 'flex',
   },
-  trailing: {
+  endContent: {
     flex: '0 0 auto',
     display: 'flex',
     marginInlineStart: 'auto',
@@ -280,11 +281,15 @@ const dynamicStyles = stylex.create({
 });
 
 const densityStyles = stylex.create({
-  default: {
-    paddingBlock: spacingVars['--spacing-2'],
-  },
   compact: {
     paddingBlock: spacingVars['--spacing-1'],
+  },
+  balanced: {
+    paddingBlock: spacingVars['--spacing-2'],
+  },
+  spacious: {
+    paddingBlock: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-3'],
   },
 });
 
@@ -293,30 +298,30 @@ const densityStyles = stylex.create({
 // =============================================================================
 
 /**
- * A universal item primitive that unifies the "media + label + description +
- * trailing content" layout pattern. Use as a building block for list items,
+ * A universal item primitive that unifies the "start content + label +
+ * description + end content" layout pattern. Use as a building block for list items,
  * menu items, contact rows, notification items, and more.
  *
  * @example
  * ```
  * <XDSItem
- *   media={<XDSAvatar src={user.avatar} size="sm" />}
+ *   startContent={<XDSAvatar src={user.avatar} size="sm" />}
  *   label={user.name}
  *   description={user.role}
- *   trailing={<XDSBadge>Admin</XDSBadge>}
+ *   endContent={<XDSBadge>Admin</XDSBadge>}
  *   onClick={() => navigate(`/users/${user.id}`)}
  * />
  * ```
  */
 export function XDSItem({
   as: Component = 'div',
-  startAdornment,
-  media,
+  marker,
+  startContent,
   label,
   description,
-  trailing,
+  endContent,
   align = 'center',
-  density = 'default',
+  density = 'balanced',
   labelLines,
   descriptionLines,
   onClick,
@@ -402,8 +407,10 @@ export function XDSItem({
 
   const innerContent = (
     <>
-      {startAdornment}
-      {media != null && <span {...stylex.props(styles.media)}>{media}</span>}
+      {marker}
+      {startContent != null && (
+        <span {...stylex.props(styles.startContent)}>{startContent}</span>
+      )}
 
       {hasParentRole ? (
         <span
@@ -447,13 +454,13 @@ export function XDSItem({
         </span>
       )}
 
-      {trailing != null && (
+      {endContent != null && (
         <span
           {...stylex.props(
-            styles.trailing,
+            styles.endContent,
             isDisabled && styles.disabledContent,
           )}>
-          {trailing}
+          {endContent}
         </span>
       )}
     </>
