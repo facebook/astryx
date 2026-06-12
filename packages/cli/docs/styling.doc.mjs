@@ -40,7 +40,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Every component accepts an xstyle prop for style customization. It accepts StyleX styles created via stylex.create() — not inline objects, not class name strings. StyleX styles are compiled at build time for optimal deduplication and dead-code elimination.',
+          text: 'Every component accepts an xstyle prop for style customization. It accepts StyleX styles created via stylex.create(), not inline objects or class name strings. StyleX styles are compiled at build time for optimal deduplication and dead-code elimination.',
         },
         {
           type: 'code',
@@ -91,12 +91,12 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'The design system ships a Tailwind v4 theme bridge that maps all design tokens to Tailwind utility classes. Import it once and use Tailwind classes backed by design tokens — colors, spacing, radius, shadows, and typography all resolve to the active theme.',
+          text: 'The design system ships a Tailwind v4 theme bridge that maps all design tokens to Tailwind utility classes. Import it once and use Tailwind classes backed by design tokens: colors, spacing, radius, shadows, and typography all resolve to the active theme.',
         },
         {
           type: 'code',
           lang: 'css',
-          label: 'globals.css — import the bridge',
+          label: 'globals.css: import the bridge',
           code: `@import "tailwindcss";
 @import "@xds/core/tailwind-theme.css" layer(theme);`,
         },
@@ -134,7 +134,7 @@ const overrides = stylex.create({
         },
         {
           type: 'prose',
-          text: 'For layout and wrapper styling, Tailwind utilities on className work well. For component-specific overrides (padding, colors, borders), prefer xstyle — it integrates with StyleX deduplication and the component\'s internal style pipeline.',
+          text: 'For layout and wrapper styling, Tailwind utilities on className work well. For component-specific overrides (padding, colors, borders), prefer xstyle; it integrates with StyleX deduplication and the component\'s internal style pipeline.',
         },
       ],
     },
@@ -168,7 +168,7 @@ const overrides = stylex.create({
         },
         {
           type: 'prose',
-          text: 'A few HTML attributes are intentionally omitted from the base type (contentEditable, dangerouslySetInnerHTML). children is not in the base type either — components that accept children declare it explicitly, so slot-based components don\'t silently drop JSX children.',
+          text: 'A few HTML attributes are intentionally omitted from the base type (contentEditable, dangerouslySetInnerHTML). children is not in the base type either; components that accept children declare it explicitly, so slot-based components don\'t silently drop JSX children.',
         },
       ],
     },
@@ -178,7 +178,7 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'Complex components are composed from smaller components. Each sub-component accepts its own xstyle, className, and rest props. You style the parts individually — there\'s no single "drill into sub-part" prop.',
+          text: 'Complex components are composed from smaller components. Each sub-component accepts its own xstyle, className, and rest props. You style the parts individually; there\'s no single "drill into sub-part" prop.',
         },
         {
           type: 'code',
@@ -293,7 +293,7 @@ const styles = stylex.create({
         },
         {
           type: 'prose',
-          text: 'Both approaches work — var() strings or typed imports from tokens.stylex. The typed imports give autocomplete and catch typos at build time.',
+          text: 'Both approaches work: var() strings or typed imports from tokens.stylex. The typed imports give autocomplete and catch typos at build time.',
         },
         {
           type: 'prose',
@@ -313,7 +313,7 @@ const styles = stylex.create({
             'Hardcoded colors (#fff, rgb(...)). Use var(--color-*) tokens or Tailwind semantic classes (text-primary, bg-surface).',
             'Hardcoded spacing (16px, 1rem). Use var(--spacing-*) tokens or Tailwind spacing utilities (p-4, gap-3).',
             'Wrapping a component in a <div> just to add margin. Use xstyle with stylex.create on the component.',
-            'Using !important. If styles aren\'t applying, check specificity — xstyle is merged last.',
+            'Using !important. If styles aren\'t applying, check specificity; xstyle is merged last.',
           ],
         },
       ],

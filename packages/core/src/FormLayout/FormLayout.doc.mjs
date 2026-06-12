@@ -26,7 +26,7 @@ export const docs = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
   ],
   theming: {
@@ -35,14 +35,14 @@ export const docs = {
     ],
   },
   usage: {
-    description: 'A layout container that arranges form fields with consistent spacing and direction. FormLayout handles where fields go — not state or submission. Wrap it in a <form> for that. Supports vertical (default), horizontal, and horizontal-labels directions, and can be nested to mix them.',
+    description: 'A layout container that arranges form fields with consistent spacing and direction. FormLayout handles where fields go, not state or submission. Wrap it in a <form> for that. Supports vertical (default), horizontal, and horizontal-labels directions, and can be nested to mix them.',
     bestPractices: [
-      { guidance: true, description: 'Stack fields vertically for most forms — it\'s the easiest to scan top to bottom.' },
+      { guidance: true, description: 'Stack fields vertically for most forms. It\'s the easiest to scan top to bottom.' },
       { guidance: true, description: 'Nest a horizontal FormLayout inside a vertical one when fields naturally pair up, like First Name + Last Name or City + State + ZIP.' },
       { guidance: true, description: 'Use horizontal-labels for settings pages where labels sit beside their inputs.' },
-      { guidance: false, description: 'Use FormLayout for form state or submission — it\'s just layout. Wrap it in a <form> for that.' },
-      { guidance: false, description: 'Put unrelated fields side by side in a horizontal layout — save it for fields that belong together.' },
-      { guidance: false, description: 'Nest horizontal-labels inside another FormLayout — it uses CSS Grid and needs to be the outermost container.' },
+      { guidance: false, description: 'Use FormLayout for form state or submission. It\'s just layout. Wrap it in a <form> for that.' },
+      { guidance: false, description: 'Put unrelated fields side by side in a horizontal layout. Save it for fields that belong together.' },
+      { guidance: false, description: 'Nest horizontal-labels inside another FormLayout. It uses CSS Grid and needs to be the outermost container.' },
     ],
     anatomy: [
       {name: 'Form title', required: false, description: 'Heading that describes the purpose of the form.'},
@@ -83,14 +83,14 @@ export const docsZh = {
     ],
   },
   usage: {
-    description: 'A layout container that arranges form fields with consistent spacing and direction. FormLayout handles where fields go — not state or submission. Wrap it in a <form> for that. Supports vertical (default), horizontal, and horizontal-labels directions, and can be nested to mix them.',
+    description: 'A layout container that arranges form fields with consistent spacing and direction. FormLayout handles where fields go, not state or submission. Wrap it in a <form> for that. Supports vertical (default), horizontal, and horizontal-labels directions, and can be nested to mix them.',
     bestPractices: [
-      { guidance: true, description: 'Stack fields vertically for most forms — it\'s the easiest to scan top to bottom.' },
+      { guidance: true, description: 'Stack fields vertically for most forms. It\'s the easiest to scan top to bottom.' },
       { guidance: true, description: 'Nest a horizontal FormLayout inside a vertical one when fields naturally pair up, like First Name + Last Name or City + State + ZIP.' },
       { guidance: true, description: 'Use horizontal-labels for settings pages where labels sit beside their inputs.' },
-      { guidance: false, description: 'Use FormLayout for form state or submission — it\'s just layout. Wrap it in a <form> for that.' },
-      { guidance: false, description: 'Put unrelated fields side by side in a horizontal layout — save it for fields that belong together.' },
-      { guidance: false, description: 'Nest horizontal-labels inside another FormLayout — it uses CSS Grid and needs to be the outermost container.' },
+      { guidance: false, description: 'Use FormLayout for form state or submission. It\'s just layout. Wrap it in a <form> for that.' },
+      { guidance: false, description: 'Put unrelated fields side by side in a horizontal layout. Save it for fields that belong together.' },
+      { guidance: false, description: 'Nest horizontal-labels inside another FormLayout. It uses CSS Grid and needs to be the outermost container.' },
     ],
     anatomy: [
       {name: 'Form title', required: false, description: 'Heading that describes the purpose of the form.'},
@@ -105,14 +105,14 @@ export const docsDense = {
   description:
     'Layout container for form fields w/ consistent spacing + direction.',
   usage: {
-    description: 'A layout container that arranges form fields with consistent spacing and direction. FormLayout handles where fields go — not state or submission. Wrap it in a <form> for that. Supports vertical (default), horizontal, and horizontal-labels directions, and can be nested to mix them.',
+    description: 'A layout container that arranges form fields with consistent spacing and direction. FormLayout handles where fields go, not state or submission. Wrap it in a <form> for that. Supports vertical (default), horizontal, and horizontal-labels directions, and can be nested to mix them.',
     bestPractices: [
-      { guidance: true, description: 'Stack fields vertically for most forms — it\'s the easiest to scan top to bottom.' },
+      { guidance: true, description: 'Stack fields vertically for most forms. It\'s the easiest to scan top to bottom.' },
       { guidance: true, description: 'Nest a horizontal FormLayout inside a vertical one when fields naturally pair up, like First Name + Last Name or City + State + ZIP.' },
       { guidance: true, description: 'Use horizontal-labels for settings pages where labels sit beside their inputs.' },
-      { guidance: false, description: 'Use FormLayout for form state or submission — it\'s just layout. Wrap it in a <form> for that.' },
-      { guidance: false, description: 'Put unrelated fields side by side in a horizontal layout — save it for fields that belong together.' },
-      { guidance: false, description: 'Nest horizontal-labels inside another FormLayout — it uses CSS Grid and needs to be the outermost container.' },
+      { guidance: false, description: 'Use FormLayout for form state or submission. It\'s just layout. Wrap it in a <form> for that.' },
+      { guidance: false, description: 'Put unrelated fields side by side in a horizontal layout. Save it for fields that belong together.' },
+      { guidance: false, description: 'Nest horizontal-labels inside another FormLayout. It uses CSS Grid and needs to be the outermost container.' },
     ],
     anatomy: [
       {name: 'Form title', required: false, description: 'Heading that describes the purpose of the form.'},

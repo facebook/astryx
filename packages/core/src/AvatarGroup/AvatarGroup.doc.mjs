@@ -9,12 +9,12 @@ export const docs = {
   keywords: ['avatar', 'group', 'facepile', 'stack', 'overlap', 'participants', 'assignees', 'members', 'team'],
   usage: {
     description:
-      'AvatarGroup displays multiple avatars in an overlapping row with an optional overflow indicator. Uses a compositional API — pass XDSAvatar children directly so each avatar can carry its own props (status dots, click handlers, etc.).',
+      'AvatarGroup displays multiple avatars in an overlapping row with an optional overflow indicator. Uses a compositional API: pass XDSAvatar children directly so each avatar can carry its own props (status dots, click handlers, etc.).',
     bestPractices: [
-      {guidance: true, description: 'Set max to limit visible avatars when the list is long — 3-5 is typical.'},
+      {guidance: true, description: 'Set max to limit visible avatars when the list is long; 3-5 is typical.'},
       {guidance: true, description: 'Use XDSAvatarGroupOverflow for custom overflow content like a popover trigger or "add member" button.'},
       {guidance: true, description: 'Pass status dots, click handlers, or tooltips directly on each XDSAvatar child.'},
-      {guidance: false, description: "Don't nest AvatarGroups — use a single group with all avatars."},
+      {guidance: false, description: "Don't nest AvatarGroups; use a single group with all avatars."},
     ],
     anatomy: [
       {name: 'Avatar children', required: true, description: 'XDSAvatar elements that form the overlapping row. Each can have its own props.'},
@@ -55,12 +55,12 @@ export const docs = {
 export const docsZh = {
   usage: {
     description:
-      'AvatarGroup 以重叠排列方式显示多个头像，并可选择显示溢出指示器。使用组合式 API — 直接传入 XDSAvatar 子元素，每个头像可携带自己的属性。',
+      'AvatarGroup 以重叠排列方式显示多个头像，并可选择显示溢出指示器。使用组合式 API：直接传入 XDSAvatar 子元素，每个头像可携带自己的属性。',
     bestPractices: [
-      {guidance: true, description: '当列表较长时设置 max 来限制可见头像数量 — 通常 3-5 个为佳。'},
+      {guidance: true, description: '当列表较长时设置 max 来限制可见头像数量，通常 3-5 个为佳。'},
       {guidance: true, description: '使用 XDSAvatarGroupOverflow 自定义溢出内容，如弹出触发器或"添加成员"按钮。'},
       {guidance: true, description: '直接在每个 XDSAvatar 子元素上传递状态点、点击处理器或工具提示。'},
-      {guidance: false, description: '不要嵌套 AvatarGroup — 使用单个组包含所有头像。'},
+      {guidance: false, description: '不要嵌套 AvatarGroup，使用单个组包含所有头像。'},
     ],
   },
   components: [
@@ -94,7 +94,7 @@ export const docsDense = {
   description: 'compositional overlapping avatar row w/ +N overflow or custom slot',
   usage: {
     description:
-      'Stacked avatar display with overlapping layout. Compositional API — XDSAvatar children with per-avatar props (status dots, clicks). Optional XDSAvatarGroupOverflow slot for custom overflow.',
+      'Stacked avatar display with overlapping layout. Compositional API: XDSAvatar children with per-avatar props (status dots, clicks). Optional XDSAvatarGroupOverflow slot for custom overflow.',
     bestPractices: [
       {guidance: true, description: 'Set max to limit visible avatars (3-5 typical).'},
       {guidance: true, description: 'Use XDSAvatarGroupOverflow for custom overflow (popover, add button).'},

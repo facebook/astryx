@@ -7,7 +7,7 @@ export const docs = {
   title: 'Spacing',
   category: 'foundations',
   description:
-    'Spacing scale tokens for padding, gap, and margin — the rhythmic foundation of design system layouts.',
+    'Spacing scale tokens for padding, gap, and margin: the rhythmic foundation of design system layouts.',
   tokenCategory: 'spacing',
 
   sections: [
@@ -67,7 +67,7 @@ const styles = stylex.create({
           type: 'list',
           style: 'do',
           items: [
-            'Use component gap props when available — they handle automatic spacing compensation.',
+            'Use component gap props when available; they handle automatic spacing compensation.',
             "Stick to the scale for consistency. If a value isn't on the scale, reconsider the design.",
             'Use smaller steps (0.5–2) for tight internal spacing and larger steps (4–8) for section gaps.',
           ],

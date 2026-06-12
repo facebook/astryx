@@ -18,7 +18,7 @@ export const docs = {
       name: 'label',
       type: 'string',
       description:
-        'Label text for the textarea — always rendered for accessibility.',
+        'Label text for the textarea. Always rendered for accessibility.',
       required: true,
     },
     {
@@ -92,7 +92,7 @@ export const docs = {
       name: 'maxLength',
       type: 'number',
       description:
-        'Maximum number of characters allowed. When set, a character counter (current/max) is displayed below the textarea. Does not enforce the limit natively — the counter shows error styling when exceeded.',
+        'Maximum number of characters allowed. When set, a character counter (current/max) is displayed below the textarea. Does not enforce the limit natively; the counter shows error styling when exceeded.',
     },
     {
       name: 'status',
@@ -155,7 +155,7 @@ export const docs = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
   ],
   theming: {
@@ -168,12 +168,12 @@ export const docs = {
       'TextArea is a multi-line text input for collecting longer-form content like comments, descriptions, or messages. Use it when the expected input spans multiple lines. For shorter, single-line values, use TextInput.',
     bestPractices: [
       { guidance: true, description: 'Provide a visible label so users know what to enter. If the label must be hidden, set isLabelHidden with a descriptive label for screen readers.' },
-      { guidance: true, description: 'Set maxLength with a character counter when there is a defined limit — it helps users stay within bounds before they submit.' },
-      { guidance: true, description: 'Use the status prop to surface validation feedback inline — show success when input is valid, warning for soft limits, and error for hard failures.' },
-      { guidance: true, description: 'Add a description or placeholder to clarify expected content, like "Describe the issue in detail" — but never rely on placeholder alone as the only label.' },
-      { guidance: false, description: 'Avoid using TextArea for short, single-line values like names or emails — use TextInput instead.' },
-      { guidance: false, description: 'Don\'t rely solely on placeholder text to communicate the purpose of the field — placeholders disappear on focus and are not accessible labels.' },
-      { guidance: false, description: 'Don\'t show a status message without also setting the status type — the colored border and icon are what draw the user\'s attention to the message.' },
+      { guidance: true, description: 'Set maxLength with a character counter when there is a defined limit; it helps users stay within bounds before they submit.' },
+      { guidance: true, description: 'Use the status prop to surface validation feedback inline: show success when input is valid, warning for soft limits, and error for hard failures.' },
+      { guidance: true, description: 'Add a description or placeholder to clarify expected content, like "Describe the issue in detail," but never rely on placeholder alone as the only label.' },
+      { guidance: false, description: 'Avoid using TextArea for short, single-line values like names or emails; use TextInput instead.' },
+      { guidance: false, description: 'Don\'t rely solely on placeholder text to communicate the purpose of the field; placeholders disappear on focus and are not accessible labels.' },
+      { guidance: false, description: 'Don\'t show a status message without also setting the status type; the colored border and icon are what draw the user\'s attention to the message.' },
     ],
   },
 };
@@ -191,7 +191,7 @@ export const docsZh = {
     {
       name: 'label',
       type: 'string',
-      description: '文本域的标签文本 — 始终渲染以确保无障碍性。',
+      description: '文本域的标签文本：始终渲染以确保无障碍性。',
       required: true,
     },
     {
@@ -259,7 +259,7 @@ export const docsZh = {
     {
       name: 'maxLength',
       type: 'number',
-      description: '允许的最大字符数。设置后，在文本域下方显示字符计数器（当前/最大）。不原生强制限制——超出时计数器显示错误样式。',
+      description: '允许的最大字符数。设置后，在文本域下方显示字符计数器（当前/最大）。不原生强制限制：超出时计数器显示错误样式。',
     },
     {
       name: 'status',
@@ -330,12 +330,12 @@ export const docsZh = {
       'TextArea is a multi-line text input for collecting longer-form content like comments, descriptions, or messages. Use it when the expected input spans multiple lines. For shorter, single-line values, use TextInput.',
     bestPractices: [
       { guidance: true, description: 'Provide a visible label so users know what to enter. If the label must be hidden, set isLabelHidden with a descriptive label for screen readers.' },
-      { guidance: true, description: 'Set maxLength with a character counter when there is a defined limit — it helps users stay within bounds before they submit.' },
-      { guidance: true, description: 'Use the status prop to surface validation feedback inline — show success when input is valid, warning for soft limits, and error for hard failures.' },
-      { guidance: true, description: 'Add a description or placeholder to clarify expected content, like "Describe the issue in detail" — but never rely on placeholder alone as the only label.' },
-      { guidance: false, description: 'Avoid using TextArea for short, single-line values like names or emails — use TextInput instead.' },
-      { guidance: false, description: 'Don\'t rely solely on placeholder text to communicate the purpose of the field — placeholders disappear on focus and are not accessible labels.' },
-      { guidance: false, description: 'Don\'t show a status message without also setting the status type — the colored border and icon are what draw the user\'s attention to the message.' },
+      { guidance: true, description: 'Set maxLength with a character counter when there is a defined limit; it helps users stay within bounds before they submit.' },
+      { guidance: true, description: 'Use the status prop to surface validation feedback inline: show success when input is valid, warning for soft limits, and error for hard failures.' },
+      { guidance: true, description: 'Add a description or placeholder to clarify expected content, like "Describe the issue in detail," but never rely on placeholder alone as the only label.' },
+      { guidance: false, description: 'Avoid using TextArea for short, single-line values like names or emails; use TextInput instead.' },
+      { guidance: false, description: 'Don\'t rely solely on placeholder text to communicate the purpose of the field; placeholders disappear on focus and are not accessible labels.' },
+      { guidance: false, description: 'Don\'t show a status message without also setting the status type; the colored border and icon are what draw the user\'s attention to the message.' },
     ],
   },
 };
@@ -349,11 +349,11 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Visible label or isLabelHidden with descriptive label for screen readers.' },
       { guidance: true, description: 'Set maxLength for character counter when a limit exists.' },
-      { guidance: true, description: 'Use status prop for inline validation — success, warning, error.' },
-      { guidance: true, description: 'Add description or placeholder for context — never placeholder alone as label.' },
-      { guidance: false, description: 'Avoid TextArea for single-line values — use TextInput.' },
-      { guidance: false, description: 'Don\'t use placeholder as only label — disappears on focus, not accessible.' },
-      { guidance: false, description: 'Don\'t show status message without status type — border and icon draw attention.' },
+      { guidance: true, description: 'Use status prop for inline validation: success, warning, error.' },
+      { guidance: true, description: 'Add description or placeholder for context; never placeholder alone as label.' },
+      { guidance: false, description: 'Avoid TextArea for single-line values; use TextInput.' },
+      { guidance: false, description: 'Don\'t use placeholder as only label; disappears on focus, not accessible.' },
+      { guidance: false, description: 'Don\'t show status message without status type; border and icon draw attention.' },
     ],
   },
   propDescriptions: {

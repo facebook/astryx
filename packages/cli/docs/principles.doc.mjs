@@ -22,10 +22,10 @@ export const docs = {
           type: 'list',
           style: 'unordered',
           items: [
-            'Components over primitives — use components for everything they cover before reaching for raw HTML',
-            'Semantic tokens over hardcoded values — colors, spacing, and radii are named by purpose, not appearance',
-            'Theme-agnostic code — your app code never references specific colors or measurements, so themes and dark mode work automatically',
-            'Open internals — every primitive is exported and composable, so you can build on top of it without fighting it',
+            'Components over primitives: use components for everything they cover before reaching for raw HTML',
+            'Semantic tokens over hardcoded values: colors, spacing, and radii are named by purpose, not appearance',
+            'Theme-agnostic code: your app code never references specific colors or measurements, so themes and dark mode work automatically',
+            'Open internals: every primitive is exported and composable, so you can build on top of it without fighting it',
           ],
         },
       ],
@@ -39,7 +39,7 @@ export const docs = {
           style: 'ordered',
           items: [
             'Use components for everything they cover',
-            'StyleX or Tailwind for custom styling — both are first-class (see \`npx xds docs styling\`)',
+            'StyleX or Tailwind for custom styling; both are first-class (see \`npx xds docs styling\`)',
             'Semantic tokens, not hardcoded values (see \`npx xds docs tokens\`)',
             'CSS custom properties for colors, not hex values',
             'Form inputs are controlled (value + onChange)',
@@ -54,7 +54,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'The design system supports multiple styling approaches. Every component accepts an \`xstyle\` prop for StyleX style overrides via \`stylex.create()\`. For layout and wrapper styling outside of components, use StyleX or Tailwind utilities — both resolve to the same design tokens.',
+          text: 'The design system supports multiple styling approaches. Every component accepts an \`xstyle\` prop for StyleX style overrides via \`stylex.create()\`. For layout and wrapper styling outside of components, use StyleX or Tailwind utilities; both resolve to the same design tokens.',
         },
         {
           type: 'prose',
