@@ -63,6 +63,12 @@ export const docs = {
           default: "'Search...'",
         },
         {
+          name: 'placement',
+          type: "'above' | 'below' | 'start' | 'end'",
+          description:
+            'Dropdown placement relative to the trigger. Omit for the default selector behavior: align the selected item over the trigger and clamp the menu to the viewport. Set a value to use explicit layer positioning.',
+        },
+        {
           name: 'placeholder',
           type: 'string',
           description: 'Placeholder text shown when no value is selected.',
@@ -225,6 +231,12 @@ export const docsZh = {
           default: "'Search...'",
         },
         {
+          name: 'placement',
+          type: "'above' | 'below' | 'start' | 'end'",
+          description:
+            '下拉层相对于触发器的位置。省略时使用选择器默认行为：将已选项对齐到触发器上并限制在视口内。设置后使用显式图层定位。',
+        },
+        {
           name: 'placeholder',
           type: 'string',
           description: '未选择值时显示的占位文本。',
@@ -366,6 +378,7 @@ export const docsDense = {
         hasClear: 'Shows clear button when value selected. onChange also accepts null on clear.',
         hasSearch: 'Shows search input for filtering options.',
         searchPlaceholder: 'Placeholder text for search input.',
+        placement: 'Dropdown placement. Omit for selected-item overlay clamped to viewport; set value for explicit layer positioning.',
         placeholder: 'Placeholder text when no value selected.',
         size: 'Size variant for selector.',
         isDisabled: 'Disables selector.',

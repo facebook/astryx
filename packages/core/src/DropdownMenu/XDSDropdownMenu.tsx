@@ -44,9 +44,9 @@ import {
 } from './XDSDropdownMenuContext';
 import {useListFocus} from '../hooks/useListFocus';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
+import type {LayerPlacement} from '../Layer/useXDSLayer';
 import {
   spacingVars,
-  sizeVars,
   radiusVars,
   durationVars,
   easeVars,
@@ -74,30 +74,17 @@ const styles = stylex.create({
   popover: {
     minWidth: 'anchor-size(width)',
   },
-  popoverGap: {
+  popoverBlockGap: {
     marginBlockStart: spacingVars['--spacing-1'],
     marginBlockEnd: spacingVars['--spacing-1'],
+  },
+  popoverInlineGap: {
+    marginInlineStart: spacingVars['--spacing-1'],
+    marginInlineEnd: spacingVars['--spacing-1'],
   },
   popoverCustomWidth: (width: string | number) => ({
     minWidth: typeof width === 'number' ? `${width}px` : width,
   }),
-});
-
-/**
- * Overlay offset styles: shift the popover up so the first item's text
- * aligns with the trigger button's text.
- * Formula: -(container_padding + trigger_height)
- */
-const popoverOverlayStyles = stylex.create({
-  sm: {
-    marginBlockStart: `calc(-1 * (${spacingVars['--spacing-1']} + ${sizeVars['--size-element-sm']}))`,
-  },
-  md: {
-    marginBlockStart: `calc(-1 * (${spacingVars['--spacing-1']} + ${sizeVars['--size-element-md']}))`,
-  },
-  lg: {
-    marginBlockStart: `calc(-1 * (${spacingVars['--spacing-1']} + ${sizeVars['--size-element-lg']}))`,
-  },
 });
 
 // =============================================================================
@@ -139,6 +126,13 @@ interface XDSDropdownMenuBaseProps extends XDSBaseProps {
   menuWidth?: number | string;
   onClick?: () => void;
   hasChevron?: boolean;
+  /**
+   * Position placement relative to the trigger.
+   * Uses the same placement values as other XDS layer-based components.
+   * @default 'below'
+   */
+  placement?: LayerPlacement;
+
   /**
    * Whether to auto-focus the first menu item when the menu opens.
    * Set to `false` for inline showcases or documentation previews
@@ -196,6 +190,7 @@ export function XDSDropdownMenu({
   menuWidth,
   onClick,
   hasChevron = true,
+  placement = 'below',
   hasAutoFocus = true,
   className,
   style,
@@ -357,6 +352,10 @@ export function XDSDropdownMenu({
   const popoverXstyle = menuWidth
     ? styles.popoverCustomWidth(menuWidth)
     : styles.popover;
+  const popoverGapStyle =
+    placement === 'above' || placement === 'below'
+      ? styles.popoverBlockGap
+      : styles.popoverInlineGap;
 
   // Context for compound items
   const contextValue = useMemo<XDSDropdownMenuContextValue>(
@@ -411,13 +410,9 @@ export function XDSDropdownMenu({
           </XDSDropdownMenuContext>
         </div>,
         {
-          placement: 'below',
+          placement,
           alignment: 'start',
-          xstyle: [
-            popoverXstyle,
-            popoverOverlayStyles[menuSize],
-            layerAnimations.below,
-          ],
+          xstyle: [popoverXstyle, popoverGapStyle, layerAnimations[placement]],
         },
       )}
     </>

@@ -37,6 +37,7 @@ import {
 } from '../Field';
 import {XDSDivider} from '../Divider';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
+import type {LayerPlacement} from '../Layer/useXDSLayer';
 import {XDSSpinner} from '../Spinner';
 import {
   colorVars,
@@ -175,9 +176,6 @@ const styles = stylex.create({
     opacity: 0,
     transition: 'none',
   },
-  dropdownOffset: (offset: number) => ({
-    marginTop: offset,
-  }),
 
   // Popover container (for anchor positioning)
   popover: {
@@ -434,6 +432,16 @@ interface XDSSelectorPropsBase<
   searchPlaceholder?: string;
 
   /**
+   * Position placement relative to the trigger.
+   *
+   * Omit to use the selector's default selected-item overlay behavior: the
+   * selected item is positioned over the trigger and clamped to the viewport.
+   * Set a placement to opt into explicit layer positioning (for example,
+   * `placement="above"` for bottom-fixed toolbars).
+   */
+  placement?: LayerPlacement;
+
+  /**
    * Whether the dropdown starts open on mount.
    * Useful for showcases and previews.
    * @default false
@@ -527,6 +535,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     children,
     hasSearch = false,
     searchPlaceholder = 'Search...',
+    placement,
     isDefaultOpen = false,
     'data-testid': testId,
     xstyle,
@@ -615,19 +624,26 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     // eslint-disable-next-line @eslint-react/exhaustive-deps -- mount-only: isDefaultOpen is not reactive
   }, []);
 
-  // Calculate offset to position selected item over trigger
+  // Calculate offset to position selected item over trigger. Explicit
+  // placement opts out of the selector-specific overlay behavior and uses the
+  // standard layer positioning API instead.
+  const shouldOverlaySelectedItem = placement == null && !hasSearch;
   const {offset: rawOffset, isPositioned: rawIsPositioned} =
     useSelectedItemOffset({
-      isOpen: popover.isOpen,
+      isOpen: popover.isOpen && shouldOverlaySelectedItem,
       selectedItemIndex,
       listboxId,
       listboxRef,
       triggerRef,
     });
 
-  // Disable macOS overlay positioning when search is active
-  const selectedItemOffset = hasSearch ? 0 : rawOffset;
-  const isPositioned = hasSearch ? true : rawIsPositioned;
+  const selectedItemOffset = shouldOverlaySelectedItem ? rawOffset : 0;
+  const isPositioned = shouldOverlaySelectedItem ? rawIsPositioned : true;
+  const popoverPlacement = placement ?? 'below';
+  const popoverOffsetStyle: React.CSSProperties | undefined =
+    selectedItemOffset > 0
+      ? {marginBlockStart: `-${selectedItemOffset}px`}
+      : undefined;
 
   // Selector behavior (keyboard nav, typeahead, selection)
   const {
@@ -936,15 +952,15 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
             {...stylex.props(
               styles.dropdown,
               !isPositioned && styles.dropdownHidden,
-              styles.dropdownOffset(-selectedItemOffset),
             )}>
             {renderOptions()}
           </div>
         ),
         {
-          placement: 'below',
+          placement: popoverPlacement,
           alignment: 'start',
-          xstyle: [styles.popover, layerAnimations.below],
+          xstyle: [styles.popover, layerAnimations[popoverPlacement]],
+          style: popoverOffsetStyle,
         },
       )}
     </XDSField>
