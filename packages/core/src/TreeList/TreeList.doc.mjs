@@ -69,8 +69,8 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Provide meaningful labels and icons for each node to make the hierarchy easy to scan.'},
       {guidance: true, description: 'Pre-expand important branches so users see key content immediately.'},
-      {guidance: false, description: 'Nest more than 4–5 levels deep — flatten the structure or use a different pattern.'},
-      {guidance: false, description: 'Use a tree for flat, non-hierarchical data — use a List instead.'},
+      {guidance: false, description: 'Nest more than 4–5 levels deep; flatten the structure or use a different pattern.'},
+      {guidance: false, description: 'Use a tree for flat, non-hierarchical data; use a List instead.'},
     ],
   },
 };
@@ -133,8 +133,8 @@ export const docsZh = {
     bestPractices: [
       {guidance: true, description: 'Provide meaningful labels and icons for each node to make the hierarchy easy to scan.'},
       {guidance: true, description: 'Pre-expand important branches so users see key content immediately.'},
-      {guidance: false, description: 'Nest more than 4–5 levels deep — flatten the structure or use a different pattern.'},
-      {guidance: false, description: 'Use a tree for flat, non-hierarchical data — use a List instead.'},
+      {guidance: false, description: 'Nest more than 4–5 levels deep; flatten the structure or use a different pattern.'},
+      {guidance: false, description: 'Use a tree for flat, non-hierarchical data; use a List instead.'},
     ],
   },
 };
@@ -149,8 +149,8 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Provide meaningful labels and icons for each node to make the hierarchy easy to scan.'},
       {guidance: true, description: 'Pre-expand important branches so users see key content immediately.'},
-      {guidance: false, description: 'Nest more than 4–5 levels deep — flatten the structure or use a different pattern.'},
-      {guidance: false, description: 'Use a tree for flat, non-hierarchical data — use a List instead.'},
+      {guidance: false, description: 'Nest more than 4–5 levels deep; flatten the structure or use a different pattern.'},
+      {guidance: false, description: 'Use a tree for flat, non-hierarchical data; use a List instead.'},
     ],
   },
   propDescriptions: {

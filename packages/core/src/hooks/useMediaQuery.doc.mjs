@@ -25,7 +25,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Use for responsive layout switching based on viewport width, color scheme, or motion preferences.' },
       { guidance: true, description: 'Prefer XDS responsive tokens and component props over manual breakpoint logic when possible.' },
-      { guidance: false, description: 'Use for server-rendered content that must match on first paint — the hook always returns false initially.' },
+      { guidance: false, description: 'Use for server-rendered content that must match on first paint; the hook always returns false initially.' },
     ],
   },
   relatedComponents: [],
@@ -48,7 +48,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Use for responsive layout switching based on viewport width, color scheme, or motion preferences.' },
       { guidance: true, description: 'Prefer XDS responsive tokens + component props over manual breakpoint logic when possible.' },
-      { guidance: false, description: 'Use for server-rendered content that must match on first paint — hook always returns false initially.' },
+      { guidance: false, description: 'Use for server-rendered content that must match on first paint; hook always returns false initially.' },
     ],
   },
 };
