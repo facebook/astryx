@@ -11,7 +11,7 @@ import {
   Component,
   type ReactNode,
 } from 'react';
-import {getXDSComponent, resolveValue} from './resolveElements';
+import {getXDSComponent} from './resolveElements';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSCenter} from '@xds/core/Center';
@@ -19,25 +19,20 @@ import {CodeExampleBlock} from '../CodeExampleBlock';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSTheme} from '@xds/core/theme';
-import {allSyntaxPresets} from '@xds/core/theme/syntax';
 import {neutralTheme} from '@xds/theme-neutral/built';
-import {themeObjectsFull} from '../../generated/themeRegistry';
 import {useThemeMode} from '../../app/providers';
 import {Code} from 'lucide-react';
 import {
-  coerceDefault,
-  parsePropType,
-  type PropControlDescriptor,
-} from './parsePropType';
+  buildInitialState,
+  getMissingRequiredProps,
+  pickPrimaryProps,
+} from './interactiveState';
 import type {
   PropDoc,
   PlaygroundConfig,
 } from '../../generated/componentRegistry';
 
-export interface KnobProp {
-  row: PropDoc;
-  control: PropControlDescriptor;
-}
+export type {KnobProp} from './interactiveState';
 
 class PreviewErrorBoundary extends Component<
   {children: ReactNode; resetKeys: unknown[]},
@@ -65,129 +60,6 @@ class PreviewErrorBoundary extends Component<
     }
     return this.props.children;
   }
-}
-
-function pickPrimaryProps(name: string, props: PropDoc[]): KnobProp[] {
-  if (props.length === 0) {
-    return [];
-  }
-  return props.map(row => ({
-    row,
-    control: parsePropType(row.type, row.name, row.slotElements),
-  }));
-}
-
-function resolveThemeValue(value: unknown): unknown {
-  if (typeof value !== 'string') {
-    return resolveValue(value);
-  }
-
-  const byPackageName = themeObjectsFull[value];
-  if (byPackageName) {
-    return byPackageName;
-  }
-
-  return (
-    Object.values(themeObjectsFull).find(theme => theme.name === value) ?? value
-  );
-}
-
-function resolveSyntaxThemeValue(value: unknown): unknown {
-  if (typeof value !== 'string') {
-    return resolveValue(value);
-  }
-
-  return allSyntaxPresets.find(theme => theme.name === value) ?? value;
-}
-
-function resolveDefaultValue(
-  value: unknown,
-  control: PropControlDescriptor | undefined,
-): unknown {
-  if (control?.kind === 'theme') {
-    return resolveThemeValue(value);
-  }
-  if (control?.kind === 'syntax-theme') {
-    return resolveSyntaxThemeValue(value);
-  }
-  return resolveValue(value);
-}
-
-function buildInitialState(
-  knobs: KnobProp[],
-  playground?: PlaygroundConfig | null,
-): Record<string, unknown> {
-  const state: Record<string, unknown> = {};
-
-  const controlByName = new Map(
-    knobs.map(({row, control}) => [row.name, control]),
-  );
-
-  // Apply playground defaults first (resolved from ElementDescriptor if needed)
-  if (playground?.defaults) {
-    for (const [key, value] of Object.entries(playground.defaults)) {
-      state[key] = resolveDefaultValue(value, controlByName.get(key));
-    }
-  }
-
-  // Fill in remaining props from doc defaults / auto-generation
-  for (const {row, control} of knobs) {
-    if (state[row.name] !== undefined) {
-      continue;
-    }
-    const def = coerceDefault(row.default, control);
-    if (def !== undefined) {
-      state[row.name] = def;
-    } else if (control.kind === 'slot-list') {
-      // Always generate initial items for slot-lists (empty list isn't useful)
-      const slotEl = row.slotElements?.[0];
-      if (slotEl) {
-        state[row.name] = [1, 2, 3].map(n => {
-          const tweaked = {...slotEl};
-          const props = {...(tweaked.props ?? {})};
-          if (typeof props.label === 'string') {
-            props.label = `${props.label} ${n}`;
-          }
-          if (typeof props.value === 'string') {
-            props.value = `${props.value}-${n}`;
-          }
-          tweaked.props = props;
-          if (typeof tweaked.children === 'string') {
-            tweaked.children = `${tweaked.children} ${n}`;
-          }
-          return resolveValue(tweaked);
-        });
-      }
-    } else if (row.required) {
-      switch (control.kind) {
-        case 'enum':
-          state[row.name] = control.options[0];
-          break;
-        case 'theme':
-          state[row.name] = Object.values(themeObjectsFull)[0];
-          break;
-        case 'syntax-theme':
-          state[row.name] = allSyntaxPresets[0];
-          break;
-        case 'input-status':
-          state[row.name] = {
-            type: control.options[0],
-            message: `${control.options[0]} status`,
-          };
-          break;
-        case 'boolean':
-          state[row.name] = false;
-          break;
-        case 'string':
-          state[row.name] = row.name;
-          break;
-        case 'number':
-          state[row.name] = 0;
-          break;
-      }
-    }
-  }
-  return state;
 }
 
 function toIdentifierName(name: string): string {
@@ -292,6 +164,10 @@ export function useInteractiveState(
     [knobs, playground],
   );
   const [state, setState] = useState<Record<string, unknown>>(initialState);
+  const missingRequiredProps = useMemo(
+    () => getMissingRequiredProps(knobs, initialState),
+    [knobs, initialState],
+  );
 
   const setProp = useCallback(
     (propName: string, value: unknown) =>
@@ -306,19 +182,45 @@ export function useInteractiveState(
     [state, initialState],
   );
 
-  return {knobs, state, setProp, reset, isDirty};
+  return {knobs, state, setProp, reset, isDirty, missingRequiredProps};
 }
 
 export function InteractivePreviewStage({
   name,
   state,
+  missingRequiredProps = [],
 }: {
   name: string;
   state: Record<string, unknown>;
+  missingRequiredProps?: string[];
 }) {
   const {mode} = useThemeMode();
   const [showCode, setShowCode] = useState(false);
   const Component = getXDSComponent(name);
+
+  if (missingRequiredProps.length > 0) {
+    return (
+      <XDSCard variant="muted" padding={0}>
+        <XDSCenter style={{minHeight: 200, width: '100%'}}>
+          <XDSVStack
+            gap={1}
+            style={{
+              paddingBlock: 24,
+              paddingInline: 16,
+              textAlign: 'center',
+            }}>
+            <XDSText type="supporting" color="secondary">
+              Interactive preview needs required props that cannot be generated
+              automatically.
+            </XDSText>
+            <XDSText type="supporting" color="secondary">
+              Missing: {missingRequiredProps.join(', ')}
+            </XDSText>
+          </XDSVStack>
+        </XDSCenter>
+      </XDSCard>
+    );
+  }
 
   if (!Component) {
     return (
