@@ -17,7 +17,7 @@
  *
  * // Composable — drop into the chart's children for full control
  * <XDSChart>
- *   <XDSChartTooltip highlightBand={false} placement="top" />
+ *   <XDSChartTooltip hoverIndicator={false} placement="top" />
  * </XDSChart>
  * ```
  */
@@ -35,9 +35,14 @@ import {
 } from 'react';
 import {createPortal} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
+import {
+  colorVars,
+  radiusVars,
+  shadowVars,
+  spacingVars,
+} from '@xds/core/theme/tokens.stylex';
 import {XDSText} from '@xds/core';
 import {XDSVStack, XDSHStack} from '@xds/core';
-import {radiusVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 import {useChartV2} from './ChartV2Context';
 import {XDSChartSwatch, swatchVariantForType} from './XDSChartSwatch';
 import {
@@ -63,10 +68,14 @@ export interface XDSChartTooltipProps {
    */
   render?: (xValue: unknown, seriesValues: TooltipSeriesValue[]) => ReactNode;
   /**
-   * Whether to draw the soft column highlight behind the hovered band.
-   * Only takes effect on band-scale x-axes. Default: `true`.
+   * Whether to draw a hover indicator at the focused x-position.
+   * Picks the right shape automatically:
+   * - **band-highlight rect** when the chart includes bar series on a band scale
+   * - **vertical crosshair line** for line / area / dot charts
+   *
+   * Default: `true`.
    */
-  highlightBand?: boolean;
+  hoverIndicator?: boolean;
   /**
    * Whether to draw a hover dot at each series' point (skipped for bars).
    * Default: `true`.
@@ -85,16 +94,20 @@ const styles = stylex.create({
   // imperatively via ref to keep pointer-move cost free of React renders.
   card: {
     position: 'fixed',
-    background: 'var(--color-background-popover)',
-    border: '1px solid var(--color-border)',
+    backgroundColor: colorVars['--color-background-popover'],
+    border: `1px solid ${colorVars['--color-border']}`,
     borderRadius: radiusVars['--radius-container'],
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
-    boxShadow: 'var(--shadow-med)',
+    boxShadow: shadowVars['--shadow-med'],
     pointerEvents: 'none',
     whiteSpace: 'nowrap',
     zIndex: 9999,
     display: 'none',
+  },
+  crosshair: {
+    stroke: colorVars['--color-text-primary'],
+    strokeWidth: 1,
   },
 });
 
@@ -143,7 +156,7 @@ const DefaultTooltipContent = memo(function DefaultTooltipContent({
 export function XDSChartTooltip({
   series = [],
   render,
-  highlightBand = true,
+  hoverIndicator = true,
   showHoverDots = true,
   placement = 'auto',
 }: XDSChartTooltipProps) {
@@ -172,9 +185,7 @@ export function XDSChartTooltip({
     (e: ChartPointerEvent) => {
       const card = cardRef.current;
       const svg = svgRef.current;
-      if (!card) {
-        return;
-      }
+      if (!card) return;
       if (!svg || !e.nearest) {
         card.style.display = 'none';
         return;
@@ -242,19 +253,13 @@ export function XDSChartTooltip({
 
   // Hover dots — read from the resolved map at the hovered index.
   const dots = useMemo(() => {
-    if (!showHoverDots || hoveredIndex == null) {
-      return null;
-    }
+    if (!showHoverDots || hoveredIndex == null) return null;
     const elements: ReactNode[] = [];
     for (const s of series) {
-      if (!shouldRenderHoverDot(s.type)) {
-        continue;
-      }
+      if (!shouldRenderHoverDot(s.type)) continue;
       const points = resolved.get(s.key);
       const point = points?.find(p => p.dataIndex === hoveredIndex);
-      if (!point) {
-        continue;
-      }
+      if (!point) continue;
       elements.push(
         <circle
           key={s.key}
@@ -271,41 +276,59 @@ export function XDSChartTooltip({
     return elements;
   }, [showHoverDots, hoveredIndex, series, resolved]);
 
-  // Band highlight — only on band scales (categorical x-axis).
-  const bandHighlight = useMemo(() => {
-    if (!highlightBand || hoveredIndex == null) {
-      return null;
-    }
-    if (!('bandwidth' in xScale)) {
-      return null;
-    }
+  // Hover indicator — band-highlight rect for bar charts, vertical crosshair
+  // line for line/area charts. Same source-of-truth (hoveredIndex), distinct
+  // visual idioms picked automatically based on the series mix.
+  const hoverIndicatorElement = useMemo(() => {
+    if (!hoverIndicator || hoveredIndex == null) return null;
     const xv = data[hoveredIndex]?.[xKey];
-    if (xv == null) {
-      return null;
+    if (xv == null) return null;
+    const isBandScale = 'bandwidth' in xScale;
+    const hasBars = series.some(s => s.type === 'bar');
+
+    // Bar charts on a band scale → soft column highlight.
+    if (hasBars && isBandScale) {
+      const bandScale = xScale as ScaleBand<string>;
+      const x = bandScale(String(xv)) ?? 0;
+      const bw = bandScale.bandwidth();
+      const pad = 8;
+      const rectX = Math.max(0, x - pad);
+      const rectRight = Math.min(width, x + bw + pad);
+      const rectWidth = rectRight - rectX;
+      const topPad = Math.min(pad, margin.top);
+      return (
+        <rect
+          x={rectX}
+          y={-topPad}
+          width={rectWidth}
+          height={height + topPad}
+          fill="currentColor"
+          opacity={0.06}
+          rx={4}
+          pointerEvents="none"
+        />
+      );
     }
-    const bandScale = xScale as ScaleBand<string>;
-    const x = bandScale(String(xv)) ?? 0;
-    const bw = bandScale.bandwidth();
-    const pad = 8;
-    const rectX = Math.max(0, x - pad);
-    const rectRight = Math.min(width, x + bw + pad);
-    const rectWidth = rectRight - rectX;
-    const topPad = Math.min(pad, margin.top);
+
+    // Line / area / dot charts → vertical crosshair through the point.
+    const px = isBandScale
+      ? ((xScale as ScaleBand<string>)(String(xv)) ?? 0) +
+        (xScale as ScaleBand<string>).bandwidth() / 2
+      : (xScale as (v: number) => number)(xv as number);
     return (
-      <rect
-        x={rectX}
-        y={-topPad}
-        width={rectWidth}
-        height={height + topPad}
-        fill="currentColor"
-        opacity={0.06}
-        rx={4}
+      <line
+        x1={px}
+        x2={px}
+        y1={0}
+        y2={height}
+        {...stylex.props(styles.crosshair)}
         pointerEvents="none"
       />
     );
   }, [
-    highlightBand,
+    hoverIndicator,
     hoveredIndex,
+    series,
     xScale,
     data,
     xKey,
@@ -319,7 +342,7 @@ export function XDSChartTooltip({
     // SSR: no DOM portal target; band highlight + dots still render in SVG.
     return (
       <>
-        {bandHighlight}
+        {hoverIndicatorElement}
         {dots}
       </>
     );
@@ -334,7 +357,7 @@ export function XDSChartTooltip({
 
   return (
     <>
-      {bandHighlight}
+      {hoverIndicatorElement}
       {dots}
       {createPortal(
         <div ref={cardRef} {...stylex.props(styles.card)}>
