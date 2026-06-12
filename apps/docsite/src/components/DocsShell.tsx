@@ -13,11 +13,8 @@ import type {ComponentEntry} from '../generated/componentRegistry';
 import type {PackageMeta} from '../generated/packageRegistry';
 import type {DocTopic} from '../generated/docsRegistry';
 import type {TemplateEntry} from '../generated/templateRegistry';
-import type {
-  ComponentItem,
-  GroupedEntry,
-} from '../generated/groupedComponentRegistry';
-import {groupedComponents} from '../generated/groupedComponentRegistry';
+import type {GroupedEntry} from '../generated/groupedComponentRegistry';
+import {getComponentSidebarData} from './componentSidebarData';
 
 interface DocsShellProps {
   children: React.ReactNode;
@@ -39,21 +36,6 @@ const foundationsSort = (a: DocTopic, b: DocTopic) => {
   return a.title.localeCompare(b.title);
 };
 
-// ── Component sidebar builder ──────────────────────────────────────────
-
-type SidebarItem = ComponentItem;
-
-function buildComponentSidebar(): {
-  componentItems: SidebarItem[];
-  utilities: Array<{name: string; displayName: string; href: string}>;
-} {
-  const grouped = groupedComponents['@xds/core'];
-  if (!grouped) {
-    return {componentItems: [], utilities: []};
-  }
-  return {componentItems: grouped.items, utilities: grouped.utilities};
-}
-
 // ── Shell ──────────────────────────────────────────────────────────────
 
 export function DocsShell({
@@ -67,7 +49,7 @@ export function DocsShell({
   const pathname = usePathname();
   const [componentQuery, setComponentQuery] = useState('');
 
-  const {componentItems, utilities} = buildComponentSidebar();
+  const {componentItems, utilities} = getComponentSidebarData();
 
   const q = componentQuery.trim().toLowerCase();
 
