@@ -39,6 +39,7 @@ const styles = stylex.create({
     maxWidth: 1200,
     overflow: 'hidden',
     borderRadius: 'var(--radius-container)',
+    isolation: 'isolate',
   },
   card: {
     position: 'relative',
