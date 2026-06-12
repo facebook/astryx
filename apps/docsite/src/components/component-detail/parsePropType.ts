@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {XDS_ICON_NAMES} from '@xds/core/Icon';
+import {getIconRegistry} from '@xds/core/Icon';
 
 /**
  * Parses a stringified TypeScript prop type into a control descriptor
@@ -166,7 +166,7 @@ export function parsePropType(
   if (t === 'XDSIconType' || t === 'XDSIconName') {
     return {
       kind: 'enum',
-      options: [...XDS_ICON_NAMES],
+      options: Object.keys(getIconRegistry()),
       allowEmpty: true,
     };
   }

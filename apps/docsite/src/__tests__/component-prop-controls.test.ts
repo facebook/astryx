@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {XDS_ICON_NAMES} from '@xds/core/Icon';
+import {getIconRegistry} from '@xds/core/Icon';
 import {describe, expect, it} from 'vitest';
 import {parsePropType} from '../components/component-detail/parsePropType';
 
@@ -60,7 +60,7 @@ describe('component detail prop controls', () => {
       allowEmpty: true,
     });
     if (control.kind === 'enum') {
-      expect(control.options).toEqual([...XDS_ICON_NAMES]);
+      expect(control.options).toEqual(Object.keys(getIconRegistry()));
     }
   });
 });
