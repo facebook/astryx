@@ -39,6 +39,14 @@ const styles = stylex.create({
     maxWidth: 1200,
     overflow: 'hidden',
     borderRadius: 'var(--radius-container)',
+    // Isolate the stage into its own stacking context so the card (zIndex: 1)
+    // and floating images (zIndex: 2) below are scoped locally. Without this,
+    // those z-indexes leak up to the root stacking context (the stage, its
+    // overlay, and heroScope ancestors are all `position: relative` with no
+    // z-index, so none of them form a stacking context) and paint on top of
+    // the AppShell's sticky nav (zIndex: 1). Isolating keeps the whole stage
+    // below the nav while preserving the images-above-card ordering inside.
+    isolation: 'isolate',
   },
   card: {
     position: 'relative',
