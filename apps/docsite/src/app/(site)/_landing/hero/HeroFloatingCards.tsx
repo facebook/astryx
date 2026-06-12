@@ -37,14 +37,17 @@ import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import type {HeroThemeContent} from './heroThemeContent';
 
 const styles = stylex.create({
-  // Cards live in a viewport-fixed box (same vertical anchor as the aurora
-  // blobs) so each card's `left %` is a true viewport %, letting them track the
-  // blobs as the screen resizes. Hidden below ~1180px (cards + blobs hide too).
+  // Cards live in a FIXED-WIDTH, viewport-centered box (the same box the aurora
+  // blobs use) so every card's `left %` is a percentage of a stable width — the
+  // whole composition just re-centers on resize instead of the cards drifting
+  // apart or away from the blobs. Hidden below ~1180px, where the stacked mobile
+  // layout (HeroFloatingCardsStack) takes over.
   stage: {
     position: 'fixed',
     top: 'var(--appshell-header-height, 0px)',
-    left: 0,
-    right: 0,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    width: 1200,
     height: 1050,
     pointerEvents: 'none',
     display: {
@@ -91,16 +94,14 @@ const styles = stylex.create({
     objectFit: 'cover',
     display: 'block',
   },
-  // Product description clamped to exactly two lines: short copy still reserves
-  // two lines (minHeight = 2 × leading) so every slide's card keeps a steady
-  // height, and longer copy truncates with an ellipsis instead of pushing the
-  // image down.
+  // Product description capped at two lines (longer copy truncates with an
+  // ellipsis). No minHeight reservation, so the gap from the description to the
+  // image equals the card's padding regardless of copy length.
   productDescription: {
     display: '-webkit-box',
     WebkitBoxOrient: 'vertical',
     WebkitLineClamp: 2,
     overflow: 'hidden',
-    minHeight: 'calc(2 * var(--text-body-size) * var(--text-body-leading))',
   },
 
   // ── Left: image-led product card ──────────────────────────────────────
@@ -111,9 +112,9 @@ const styles = stylex.create({
   productCard: {
     // Left edge near the left aurora blob (visually ~14% of the viewport) so
     // the card sits over that blob.
-    left: '8%',
+    left: '-8%',
     top: 340,
-    width: 'clamp(244px, 20vw, 280px)',
+    width: 312,
     boxShadow: 'var(--shadow-high)',
     // Drop the XDSCard default border so the card reads as a clean floating
     // surface defined only by its shadow.
@@ -154,9 +155,9 @@ const styles = stylex.create({
   featureCard: {
     // Left edge near the right aurora blob (visually ~80% of the viewport) so
     // the card sits over that blob.
-    left: '70%',
-    top: 310,
-    width: 'clamp(236px, 19vw, 272px)',
+    left: '88%',
+    top: 380,
+    width: 304,
     boxShadow: 'var(--shadow-high)',
     // No border at all — a transparent border still leaves a border-width gap
     // that reveals the card's white background as a thin frame around the
@@ -179,22 +180,22 @@ const styles = stylex.create({
 
   // ── Floating pills ────────────────────────────────────────────────────
   pillLeading: {
-    left: '9%',
+    left: '-11%',
     top: 304,
   },
   pillTrailing: {
-    // Overlaps the feature card's top-right (card at left:70%, ~272px wide), a
-    // touch above its top edge.
-    left: '80%',
-    top: 270,
+    // Sits above the feature card's top edge with a small gap (card at top:380).
+    left: '104%',
+    top: 326,
   },
   // Pill-shaped card wrapping the trailing radio option. Fully rounded with a
   // soft lift; the XDSCard default border is dropped so only the shadow defines
-  // the floating surface.
+  // the floating surface. nowrap keeps the label on one line.
   radioPillCard: {
     borderRadius: 'var(--radius-full)',
     boxShadow: 'var(--shadow-med)',
     borderWidth: 0,
+    whiteSpace: 'nowrap',
   },
   // Buy card overlapping the lower-left of the feature/reward card: thumbnail +
   // title + 2-line description and a full-width "Add to cart" button. Anchored
@@ -202,10 +203,10 @@ const styles = stylex.create({
   // lower-left, breaking past its left edge like the reference.
   buyCard: {
     // Overlaps the lower-left of the feature card's image, breaking past its
-    // left edge (feature card at left:70%).
-    left: '64%',
-    top: 440,
-    width: 'clamp(208px, 16vw, 248px)',
+    // left edge but kept clear of the hero text.
+    left: '80%',
+    top: 480,
+    width: 248,
     boxShadow: 'var(--shadow-high)',
     borderWidth: 0,
   },
@@ -222,7 +223,7 @@ const styles = stylex.create({
   buyDescription: {
     display: '-webkit-box',
     WebkitBoxOrient: 'vertical',
-    WebkitLineClamp: 2,
+    WebkitLineClamp: 1,
     overflow: 'hidden',
   },
 });

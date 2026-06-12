@@ -162,17 +162,24 @@ const styles = stylex.create({
   backdropGlow: {
     position: 'fixed',
     top: 'var(--appshell-header-height, 0px)',
-    left: -200,
-    right: -200,
+    // Fixed-width, viewport-centered box — the SAME box the floating cards use
+    // (HeroFloatingCards `stage`) so the blobs and the cards share one
+    // coordinate space and stay aligned at any screen width.
+    left: '50%',
+    transform: 'translateX(-50%)',
+    width: 1200,
     height: 1050,
     pointerEvents: 'none',
     opacity: 0.5,
     transition: 'background-image 800ms ease',
     filter: 'blur(60px)',
+    // Blob centers sit under the card clusters (same 1200px box): left blob
+    // under the left cluster (~5%), center + right blobs under the right
+    // cluster (~72% / ~92%).
     backgroundImage:
-      'radial-gradient(circle 220px at 22% 55%, var(--aurora-left), var(--aurora-left) 90%, transparent 100%), ' +
-      'radial-gradient(circle 200px at 65% 65%, var(--aurora-center), var(--aurora-center) 90%, transparent 100%), ' +
-      'radial-gradient(circle 260px at 78% 45%, var(--aurora-right), var(--aurora-right) 90%, transparent 100%)',
+      'radial-gradient(circle 220px at 5% 55%, var(--aurora-left), var(--aurora-left) 90%, transparent 100%), ' +
+      'radial-gradient(circle 200px at 72% 65%, var(--aurora-center), var(--aurora-center) 90%, transparent 100%), ' +
+      'radial-gradient(circle 260px at 92% 45%, var(--aurora-right), var(--aurora-right) 90%, transparent 100%)',
     // Hidden on small viewports (the cards hide there too), so the mobile hero
     // keeps the clean flat page background.
     display: {
