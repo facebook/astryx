@@ -476,19 +476,37 @@ export function PlaygroundClient() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  // Re-read the hash once on mount. When arriving via a soft (client-side)
-  // navigation — e.g. the Themes page's "Open in Playground" link routed
-  // through Next's <Link> — the App Router commits the new URL slightly
-  // after this component first renders, so the synchronous getInitialCode()
-  // seed for `code` above can miss the fragment and fall back to
-  // DEFAULT_CODE. A hashchange event isn't emitted for that navigation
-  // (the page itself changes, not just the fragment), so we read the
-  // committed hash here, after mount, and adopt the seeded code if present.
+  // Re-read the hash after mount. When arriving via a soft (client-side)
+  // navigation — e.g. the templates dialog's or themes page's "Open in
+  // Playground" link routed through Next's <Link> — the App Router commits
+  // the new URL slightly after this component first renders, so the
+  // synchronous getInitialCode() seed for `code` above can miss the fragment
+  // and fall back to DEFAULT_CODE. A hashchange event isn't emitted for that
+  // navigation (the route changes, not just the fragment), so we can't rely
+  // on the listener above. The exact commit timing varies (heavy lazy trees
+  // like Monaco can push it past a single tick), so we poll for a few frames
+  // until the committed hash carries a `code=` fragment, then adopt it.
   useEffect(() => {
-    const seeded = getInitialCode();
-    if (seeded !== DEFAULT_CODE) {
-      setCode(prev => (prev === seeded ? prev : seeded));
+    // If the synchronous seed already captured shared code, nothing to do.
+    if (getInitialCode() !== DEFAULT_CODE) {
+      return;
     }
+    let raf = 0;
+    // ~1s of frames (≈16ms each) — generous enough for a slow cross-route
+    // commit, bounded so we don't poll forever on a genuinely empty hash.
+    let attemptsLeft = 60;
+    const tryAdopt = () => {
+      const seeded = getInitialCode();
+      if (seeded !== DEFAULT_CODE) {
+        setCode(prev => (prev === seeded ? prev : seeded));
+        return;
+      }
+      if (attemptsLeft-- > 0) {
+        raf = requestAnimationFrame(tryAdopt);
+      }
+    };
+    raf = requestAnimationFrame(tryAdopt);
+    return () => cancelAnimationFrame(raf);
     // Runs once on mount; the hashchange listener above covers later changes.
   }, []);
 
