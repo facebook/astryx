@@ -7,23 +7,14 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import * as stylex from '@stylexjs/stylex';
 
-// ─── Styles ────────────────────────────────────────────────────────────────
-// The masonry needs a responsive column count AND a hero that spans 2 columns
-// on desktop but goes full-width on mobile. XDSGrid forces grid-template-columns
-// inline, so a responsive span can't be expressed through its props — this is a
-// @container grid (the sanctioned XDS pattern for container-responsive layout).
-// Image fill + radius are also custom because XDS has no image primitive (#2582).
-
+// Custom CSS is limited to the @container grid (a responsive column count plus a
+// hero that spans 2 columns can't be expressed through XDSGrid props) and the
+// image fill/radius (no XDS image primitive — #2582).
 const styles = stylex.create({
-  // Named inline-size container on the page column so the grid responds to the
-  // available content width (works inside the sandbox's resizable preview).
   container: {
     containerType: 'inline-size',
     containerName: 'gallery',
   },
-  // 3 columns on desktop, dropping straight to 1 column below 720px (no 2-col
-  // middle state). minmax(0, 1fr) (not 1fr) so tracks split evenly and ignore
-  // the images' intrinsic min-width.
   grid: {
     display: 'grid',
     gap: 'var(--spacing-3)',
@@ -32,9 +23,8 @@ const styles = stylex.create({
       '@container gallery (max-width: 720px)': 'minmax(0, 1fr)',
     },
   },
-  // Desktop hero: spans 2 columns at a 3:1 ratio so its height matches the
-  // single-column 3:2 sidebar tile. Hidden once the grid collapses to 1 column,
-  // where a 3:1 tile would be a stubby outlier next to the 3:2 tiles.
+  // Spans 2 columns at 3:1 so its height matches the 3:2 sidebar tile. Hidden in
+  // single-column, where heroNarrow (3:2) takes over so every tile is identical.
   heroWide: {
     gridColumn: 'span 2',
     display: {
@@ -42,8 +32,6 @@ const styles = stylex.create({
       '@container gallery (max-width: 720px)': 'none',
     },
   },
-  // Single-column hero: a 3:2 tile so every tile in the column is identical.
-  // Hidden on desktop, where the 2-column 3:1 hero is used instead.
   heroNarrow: {
     gridColumn: '1 / -1',
     display: {
@@ -51,26 +39,22 @@ const styles = stylex.create({
       '@container gallery (max-width: 720px)': 'block',
     },
   },
-  // Fills the XDSAspectRatio box. No objectFit prop on XDSAspectRatio (#2582).
   img: {
     width: '100%',
     height: '100%',
     objectFit: 'cover',
   },
-  // Rounds the image corners. No radius prop on XDSAspectRatio (#2582).
   clip: {
     borderRadius: 'var(--radius-element)',
   },
 });
-
-// ─── Gallery Data ───────────────────────────────────────────────────────────
 
 interface GalleryImage {
   src: string;
   title: string;
 }
 
-// All landscape photos so the uniform 3:2 / 3:1 tiles crop cleanly.
+// Landscape photos so the uniform 3:2 / 3:1 tiles crop cleanly.
 const IMAGES: GalleryImage[] = [
   {
     src: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg',
@@ -94,10 +78,8 @@ const IMAGES: GalleryImage[] = [
   },
 ];
 
-// ─── Gallery Card ─────────────────────────────────────────────────────────
-// XDSAspectRatio gives every cell a definite, self-contained height from its
-// ratio, so images can't overflow their grid cell (no row-track guesswork).
-
+// XDSAspectRatio gives every cell a definite height from its ratio, so images
+// can't overflow their grid cell.
 function GalleryCard({
   image,
   ratio,
@@ -114,8 +96,6 @@ function GalleryCard({
   );
 }
 
-// ─── Main Page ──────────────────────────────────────────────────────────────
-
 export default function MixedGalleryTemplate() {
   return (
     <XDSLayout
@@ -124,7 +104,6 @@ export default function MixedGalleryTemplate() {
       content={
         <XDSLayoutContent padding={6}>
           <XDSVStack gap={6} xstyle={styles.container}>
-            {/* Header */}
             <XDSVStack gap={2} hAlign="center">
               <XDSHeading level={1} justify="center">
                 Make every day a little more delightful, one detail at a time.
@@ -136,32 +115,22 @@ export default function MixedGalleryTemplate() {
               </XDSText>
             </XDSVStack>
 
-            {/* Featured layout — a wide hero next to a single tile, above a row
-                of three. Every tile is 3:2 except the hero, which is 3:1 so that
-                (being 2 columns wide) it matches the row height exactly. All
-                rows are therefore the same height. Responsive via @container:
-                3 columns → 1 column at ≤720px. */}
             <div {...stylex.props(styles.grid)}>
-              {/* Hero (desktop) — spans 2 columns; 3:1 keeps it level with the
-                  sidebar tile's height. */}
+              {/* The hero renders twice — a 3:1 variant for the 2-column desktop
+                  grid and a 3:2 variant for single-column — because XDSAspectRatio
+                  sets its ratio inline and can't switch ratios via @container. */}
               <GalleryCard
                 image={IMAGES[0]}
                 ratio={3 / 1}
                 xstyle={styles.heroWide}
               />
-              {/* Hero (single-column) — 3:2 so it matches every other tile.
-                  XDSAspectRatio sets the ratio inline, so it can't be made
-                  responsive via @container; a second variant is the clean way. */}
               <GalleryCard
                 image={IMAGES[0]}
                 ratio={3 / 2}
                 xstyle={styles.heroNarrow}
               />
 
-              {/* Sidebar — same height as the desktop hero */}
               <GalleryCard image={IMAGES[2]} ratio={3 / 2} />
-
-              {/* Bottom row — three equal tiles */}
               <GalleryCard image={IMAGES[3]} ratio={3 / 2} />
               <GalleryCard image={IMAGES[4]} ratio={3 / 2} />
               <GalleryCard image={IMAGES[1]} ratio={3 / 2} />
