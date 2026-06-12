@@ -8,8 +8,9 @@
  * explicit `className` or `style` attribute alongside a spread, one silently
  * clobbers the other — whichever appears last in source wins.
  *
- * Fix: Use `mergeProps(xdsClassName(...), stylex.props(...), className, style)`
- * which concatenates class names and merges style objects correctly.
+ * Fix: Use `mergeProps(xdsProps(...), stylex.props(...), className, style)`
+ * which concatenates class names, preserves reflected data attributes, and
+ * merges style objects correctly.
  *
  * Bad:
  *   <div className={xdsClassName('foo')} {...stylex.props(styles.root)} />
@@ -17,8 +18,8 @@
  *   <div {...stylex.props(styles.root)} style={dynamicStyle} />
  *
  * Good:
- *   <div {...mergeProps(xdsClassName('foo'), stylex.props(styles.root))} />
- *   <div {...mergeProps(xdsClassName('foo'), stylex.props(styles.root), undefined, dynamicStyle)} />
+ *   <div {...mergeProps(xdsProps('foo'), stylex.props(styles.root))} />
+ *   <div {...mergeProps(xdsProps('foo'), stylex.props(styles.root), undefined, dynamicStyle)} />
  */
 
 const rule = {
@@ -33,10 +34,10 @@ const rule = {
     messages: {
       classNameClobber:
         'className is clobbered by {...stylex.props()}. ' +
-        'Use mergeProps(xdsClassName(...), stylex.props(...)) to merge them correctly.',
+        'Use mergeProps(xdsProps(...), stylex.props(...)) to merge them correctly.',
       styleClobber:
         'style and {...stylex.props()} clobber each other. ' +
-        'Use mergeProps(xdsClassName(...), stylex.props(...), undefined, style) to merge them correctly.',
+        'Use mergeProps(xdsProps(...), stylex.props(...), undefined, style) to merge them correctly.',
     },
     schema: [],
   },
@@ -73,10 +74,10 @@ const rule = {
 
         if (hasStylexSpread) {
           if (hasClassName) {
-            context.report({ node, messageId: 'classNameClobber' });
+            context.report({node, messageId: 'classNameClobber'});
           }
           if (hasStyle) {
-            context.report({ node, messageId: 'styleClobber' });
+            context.report({node, messageId: 'styleClobber'});
           }
         }
       },

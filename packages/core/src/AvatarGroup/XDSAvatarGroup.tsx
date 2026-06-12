@@ -22,7 +22,7 @@ import {useMemo, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {resolveSize, type XDSAvatarSize} from '../Avatar';
 import * as stylex from '@stylexjs/stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {XDSAvatarGroupContext} from './XDSAvatarGroupContext';
 
 const OVERLAP_RATIO = 0.25;
@@ -98,7 +98,7 @@ export function XDSAvatarGroup({
         aria-label={ariaLabel}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('avatar-group', {size}),
+          xdsProps('avatar-group', {size}),
           stylex.props(styles.root, xstyle),
           className,
           style,

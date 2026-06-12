@@ -23,7 +23,7 @@ import {
 import {useXDSChatMessageContext} from './XDSChatContext';
 import {XDSIcon} from '../Icon';
 import type {XDSIconName} from '../Icon/globalIconRegistry';
-import {mergeProps, xdsClassName} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 export type XDSChatMessageStatus =
@@ -133,7 +133,7 @@ export function XDSChatMessageMetadata({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('chat-message-metadata'),
+        xdsProps('chat-message-metadata'),
         stylex.props(
           styles.meta,
           sender === 'user' ? styles.metaUser : styles.metaAssistant,

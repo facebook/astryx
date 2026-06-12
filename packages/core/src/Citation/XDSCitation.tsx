@@ -25,7 +25,7 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 export interface XDSCitationSource {
@@ -172,7 +172,7 @@ export function XDSCitation({
         data-testid={testId}
         {...linkProps}
         {...mergeProps(
-          xdsClassName('citation', {variant}),
+          xdsProps('citation', {variant}),
           stylex.props(
             styles.number,
             href != null && styles.numberHover,
@@ -195,7 +195,7 @@ export function XDSCitation({
       data-testid={testId}
       {...linkProps}
       {...mergeProps(
-        xdsClassName('citation', {variant}),
+        xdsProps('citation', {variant}),
         stylex.props(
           styles.label,
           icon != null && styles.labelWithIcon,

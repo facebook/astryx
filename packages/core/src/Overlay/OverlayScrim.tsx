@@ -21,7 +21,7 @@ import {
   spacingVars,
 } from '../theme/tokens.stylex';
 import {XDSMediaTheme} from '../theme/XDSMediaTheme';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {overlayScope} from './overlay.markers.stylex';
 
 // =============================================================================
@@ -275,7 +275,7 @@ export function OverlayScrim({
   return (
     <div
       {...mergeProps(
-        xdsClassName('overlay-scrim', {position}),
+        xdsProps('overlay-scrim', {position}),
         stylex.props(
           styles.base,
           positionMap[position],

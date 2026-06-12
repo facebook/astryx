@@ -29,7 +29,7 @@ import {
 } from '../theme/tokens.stylex';
 import {useXDSSegmentedControlContext} from './XDSSegmentedControlContext';
 import type {XDSSegmentedControlSize} from './XDSSegmentedControlContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 export interface XDSSegmentedControlItemProps extends XDSBaseProps<HTMLButtonElement> {
@@ -197,7 +197,7 @@ export function XDSSegmentedControlItem({
       tabIndex={isSelected ? 0 : -1}
       onClick={handleClick}
       {...mergeProps(
-        xdsClassName('segmented-control-item', {
+        xdsProps('segmented-control-item', {
           size,
           selected: isSelected ? 'selected' : null,
           disabled: isItemDisabled ? 'disabled' : null,

@@ -43,7 +43,7 @@ import {
 } from '../Field';
 import {XDSIcon, renderIconSlot, type XDSIconType} from '../Icon';
 import {XDSSpinner} from '../Spinner';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
@@ -375,7 +375,7 @@ export function XDSTextArea({
         onClick={handleWrapperClick}
         onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
-          xdsClassName('textarea', {size, status: status?.type ?? null}),
+          xdsProps('textarea', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,

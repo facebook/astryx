@@ -64,7 +64,7 @@ import {
   getSelectableOptions,
 } from '../Selector/utils';
 import {useMultiCombobox} from './hooks';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 
@@ -1114,7 +1114,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
         onClick={onTriggerClick}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('multi-selector', {size, status: status?.type ?? null}),
+          xdsProps('multi-selector', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             styles.triggerContainer,
@@ -1183,7 +1183,6 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
           )}
         </span>
       </div>
-
       {popover.render(
         <div {...stylex.props(styles.dropdown)}>
           {renderSearch()}

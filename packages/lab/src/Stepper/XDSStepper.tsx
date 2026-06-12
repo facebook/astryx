@@ -19,7 +19,7 @@
 import {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
-import {xdsClassName, mergeProps} from '@xds/core/utils';
+import {mergeProps, xdsProps} from '@xds/core/utils';
 import type {XDSBaseProps} from '@xds/core';
 import {
   XDSStepperContext,
@@ -116,7 +116,7 @@ export function XDSStepper({
       <nav ref={ref} aria-label={label} {...rest}>
         <ol
           {...mergeProps(
-            xdsClassName('stepper', {orientation}),
+            xdsProps('stepper', {orientation}),
             stylex.props(
               styles.root,
               orientation === 'horizontal'

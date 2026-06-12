@@ -39,7 +39,7 @@ import {
   fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import type {XDSSearchableItem, XDSSearchSource} from './types';
 
@@ -673,14 +673,13 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
           <XDSIcon icon="clock" size="sm" color="secondary" />
         </span>
       )}
-
       {popover.render(
         <div
           id={listboxId}
           role="listbox"
           aria-label="Search results"
           {...mergeProps(
-            xdsClassName('typeahead-dropdown'),
+            xdsProps('typeahead-dropdown'),
             stylex.props(styles.dropdown),
           )}>
           {results.length === 0 && hasSearched ? (

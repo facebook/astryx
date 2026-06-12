@@ -17,7 +17,7 @@
 import {Suspense, useCallback, useMemo, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '@xds/core';
-import {xdsClassName, mergeProps, plainDateFromInstant} from '@xds/core/utils';
+import {mergeProps, plainDateFromInstant, xdsProps} from '@xds/core/utils';
 import {eventOverlapsRange, getBrowserTimezoneID, sortEvents} from './dateMath';
 import {XDSScheduleContext} from './context';
 import {defaultXDSSchedulePlugins} from './plugins';
@@ -264,7 +264,7 @@ export function XDSSchedule({
     <div
       {...rest}
       {...mergeProps(
-        xdsClassName('schedule'),
+        xdsProps('schedule'),
         stylex.props(styles.root, xstyle),
         className,
         style,

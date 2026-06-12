@@ -25,7 +25,7 @@ import React, {
 } from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSPopover} from './useXDSPopover';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useXDSLayer';
@@ -471,7 +471,7 @@ export function XDSPopover({
           <div
             data-testid={testId}
             {...mergeProps(
-              xdsClassName('popover'),
+              xdsProps('popover'),
               stylex.props(styles.contentPadding, xstyle),
               className,
               style,
@@ -507,7 +507,7 @@ export function XDSPopover({
           <div
             data-testid={testId}
             {...mergeProps(
-              xdsClassName('popover'),
+              xdsProps('popover'),
               stylex.props(styles.contentPadding, xstyle),
               className,
               style,
@@ -536,7 +536,7 @@ export function XDSPopover({
         <div
           data-testid={testId}
           {...mergeProps(
-            xdsClassName('popover'),
+            xdsProps('popover'),
             stylex.props(styles.contentPadding, xstyle),
             className,
             style,

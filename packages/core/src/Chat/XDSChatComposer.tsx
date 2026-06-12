@@ -43,7 +43,7 @@ import {
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {XDSIcon} from '../Icon';
 import {XDSChatComposerInput} from './XDSChatComposerInput';
 import {XDSChatComposerContext} from './XDSChatContext';
@@ -383,7 +383,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
       <div
         ref={ref}
         {...mergeProps(
-          xdsClassName('chat-composer', {density}),
+          xdsProps('chat-composer', {density}),
           stylex.props(styles.root, isDisabled && styles.rootDisabled),
           className,
           style,

@@ -27,7 +27,7 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {getIcon} from './globalIconRegistry';
 import type {XDSIconName} from './globalIconRegistry';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 
 // =============================================================================
 // Styles
@@ -233,7 +233,7 @@ export function XDSIcon({
       ref={ref}
       aria-hidden="true"
       {...mergeProps(
-        xdsClassName('icon', {size, color}),
+        xdsProps('icon', {size, color}),
         stylex.props(styles.root, colorStyles[color], sizeStyles[size]),
       )}
       {...props}
@@ -272,7 +272,7 @@ function IconFromRegistry({
   return (
     <span
       {...mergeProps(
-        xdsClassName('icon', {size, color}),
+        xdsProps('icon', {size, color}),
         stylex.props(styles.span, colorStyles[color], spanSizeStyles[size]),
       )}
       aria-hidden="true">

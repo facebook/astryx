@@ -1,14 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
-import {xdsClassName} from './xdsClassName';
+import {xdsClassName, xdsDataAttributes, xdsProps} from './xdsClassName';
 
 describe('xdsClassName', () => {
   it('returns base class for component', () => {
     expect(xdsClassName('card')).toBe('xds-card');
   });
 
-  it('adds variant classes', () => {
+  it('adds compatibility value classes', () => {
     expect(xdsClassName('button', {variant: 'secondary', size: 'sm'})).toBe(
       'xds-button secondary sm',
     );
@@ -30,5 +30,28 @@ describe('xdsClassName', () => {
 
   it('handles string numeric values', () => {
     expect(xdsClassName('heading', {level: '3'})).toBe('xds-heading level-3');
+  });
+
+  it('reflects visual props as data attributes', () => {
+    expect(xdsDataAttributes({variant: 'secondary', size: 'sm'})).toEqual({
+      'data-variant': 'secondary',
+      'data-size': 'sm',
+    });
+  });
+
+  it('hyphenates camelCase prop names for data attributes', () => {
+    expect(xdsDataAttributes({labelPosition: 'end'})).toEqual({
+      'data-label-position': 'end',
+    });
+  });
+
+  it('returns classes and data attributes together', () => {
+    expect(
+      xdsProps('button', {variant: 'secondary', size: 'sm'}),
+    ).toMatchObject({
+      className: 'xds-button secondary sm',
+      'data-variant': 'secondary',
+      'data-size': 'sm',
+    });
   });
 });

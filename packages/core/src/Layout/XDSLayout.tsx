@@ -24,7 +24,7 @@ import {XDSLayoutSlotsContext, type LayoutSlots} from './XDSLayoutSlotsContext';
 import {XDSLayoutDividerContext} from './XDSLayoutDividerContext';
 import {stack} from '../Stack/stack.stylex';
 import {stackItem} from '../Stack/stackItem.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import type {SpacingStep} from '../utils/types';
 import {
@@ -257,7 +257,7 @@ export function XDSLayout({
       <div
         ref={ref}
         {...mergeProps(
-          xdsClassName('layout', {height}),
+          xdsProps('layout', {height}),
           stylex.props(
             styles.layoutOuter,
             isFill ? styles.fill : styles.auto,

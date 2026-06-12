@@ -30,7 +30,7 @@ import {
   radiusVars,
   spacingVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import type {ResizableProps} from './useXDSResizable';
 
 const KEYBOARD_STEP = 10;
@@ -485,7 +485,7 @@ export function XDSResizeHandle({
       onBlur={() => setIsFocused(false)}
       data-resizing={isDragging || undefined}
       {...mergeProps(
-        xdsClassName('resize-handle'),
+        xdsProps('resize-handle'),
         stylex.props(
           styles.handle,
           isOverlay && styles.overlay,
@@ -531,7 +531,7 @@ export function XDSResizeHandle({
       {children ?? (
         <div
           {...mergeProps(
-            xdsClassName('resize-handle-pill'),
+            xdsProps('resize-handle-pill'),
             stylex.props(
               styles.pill,
               isHorizontal ? styles.pillHorizontal : styles.pillVertical,

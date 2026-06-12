@@ -21,7 +21,7 @@ import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {XDSField} from '../Field/XDSField';
 import type {XDSInputStatus} from '../Field/types';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 /**
@@ -214,7 +214,7 @@ export function XDSRadioList({
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-required={isRequired || undefined}
         {...mergeProps(
-          xdsClassName('radio-list', {orientation, size}),
+          xdsProps('radio-list', {orientation, size}),
           stylex.props(
             styles.radiogroup,
             orientation === 'vertical' ? styles.vertical : styles.horizontal,

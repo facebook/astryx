@@ -37,7 +37,7 @@ import {
   spacingStepToToken,
 } from '../Layout/padding.stylex';
 import type {SpacingStep} from '../utils/types';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import {DialogContext} from './DialogContext';
 
 /**
@@ -504,7 +504,7 @@ export function XDSDialog({
     return (
       <div
         {...mergeProps(
-          xdsClassName('dialog', {variant}),
+          xdsProps('dialog', {variant}),
           stylex.props(
             styles.inlineWrapper,
             !isFullscreen && dynamicStyles.sizing(width, maxHeight),
@@ -538,7 +538,7 @@ export function XDSDialog({
       aria-modal="true"
       role={purpose === 'required' ? 'alertdialog' : undefined}
       {...mergeProps(
-        xdsClassName('dialog', {variant}),
+        xdsProps('dialog', {variant}),
         stylex.props(
           styles.dialog,
           isOpen && styles.open,

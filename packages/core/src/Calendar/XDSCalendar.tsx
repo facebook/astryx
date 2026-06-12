@@ -58,7 +58,7 @@ import {
   DATE_FORMAT_WITH_WEEKDAY,
   DATE_FORMAT_MONTH_YEAR,
 } from '../utils/plainDate';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {
   computeDayCellState,
   computeRangeRounding,
@@ -397,7 +397,7 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('calendar', {mode}),
+        xdsProps('calendar', {mode}),
         stylex.props(calendarStyles.calendar, xstyle),
         className,
         style,
@@ -844,7 +844,6 @@ function DayCell({
           )}
         />
       )}
-
       {/* Preview range background */}
       {state.isInPreview && (
         <div
@@ -858,7 +857,6 @@ function DayCell({
           )}
         />
       )}
-
       {/* Day button */}
       <button
         type="button"
@@ -873,7 +871,7 @@ function DayCell({
         onMouseEnter={() => !state.effectivelyDisabled && onDayHover(date)}
         onMouseLeave={() => onDayHover(null)}
         {...mergeProps(
-          xdsClassName('calendar-day', {
+          xdsProps('calendar-day', {
             selected: endpoint ? 'selected' : null,
             today: state.isToday ? 'today' : null,
             disabled: state.effectivelyDisabled ? 'disabled' : null,

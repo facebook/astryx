@@ -30,7 +30,7 @@ import {XDSIcon} from '../Icon';
 import {XDSIconButton} from '../IconButton';
 import {useScrollLock} from '../hooks/useScrollLock';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 /**
@@ -477,7 +477,7 @@ export function XDSLightbox({
       }}
       aria-label={currentItem.alt || 'Media viewer'}
       {...mergeProps(
-        xdsClassName('lightbox'),
+        xdsProps('lightbox'),
         stylex.props(styles.dialog, xstyle),
         className,
         style,

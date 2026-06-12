@@ -34,7 +34,7 @@ import type {XDSTabListSize} from './XDSTabListContext';
 import {tabScope} from './tab.markers.stylex';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 
 export interface XDSTabProps extends XDSBaseProps<HTMLButtonElement> {
@@ -260,7 +260,7 @@ export function XDSTab({
     [EDGE_COMP_ATTR]: '',
     'aria-current': isSelected ? ('page' as const) : undefined,
     ...mergeProps(
-      xdsClassName('tab', {
+      xdsProps('tab', {
         selected: isSelected ? 'selected' : null,
       }),
       stylex.props(
@@ -286,7 +286,7 @@ export function XDSTab({
   const indicatorElement = (
     <span
       {...mergeProps(
-        xdsClassName('tab-indicator', {
+        xdsProps('tab-indicator', {
           selected: isSelected ? 'selected' : null,
         }),
         stylex.props(

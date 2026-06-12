@@ -43,7 +43,7 @@ describe('XDSChatSystemMessage', () => {
     expect(screen.getByTestId('icon')).toBeTruthy();
   });
 
-  it('applies variant class', () => {
+  it('applies variant compatibility class and data attribute', () => {
     render(
       <XDSChatSystemMessage variant="divider" data-testid="sys">
         Today
@@ -51,6 +51,7 @@ describe('XDSChatSystemMessage', () => {
     );
     const el = screen.getByTestId('sys');
     expect(el.className).toContain('divider');
+    expect(el).toHaveAttribute('data-variant', 'divider');
   });
 
   it('applies data-testid', () => {

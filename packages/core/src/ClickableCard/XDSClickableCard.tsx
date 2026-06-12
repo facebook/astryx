@@ -33,7 +33,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
-import {xdsClassName, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import {XDSCard} from '../Card/XDSCard';
 import type {XDSCardVariant} from '../Card/XDSCard';
 import {useClickableContainer} from '../hooks/useClickableContainer';
@@ -255,11 +255,7 @@ export function XDSClickableCard({
       maxWidth={maxWidth}
       padding={padding}
       variant={variant}
-      className={
-        classNameProp
-          ? `${xdsClassName('clickable-card', {variant})} ${classNameProp}`
-          : xdsClassName('clickable-card', {variant})
-      }
+      {...mergeProps(xdsProps('clickable-card', {variant}), {}, classNameProp)}
       xstyle={
         [
           styles.interactive,

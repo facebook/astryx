@@ -42,7 +42,7 @@ import {renderIconSlot, type XDSIconType} from '../Icon';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {useXDSPopover} from '../Popover/useXDSPopover';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSTooltip} from '../Tooltip';
 import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
@@ -481,7 +481,7 @@ export function XDSSideNavItem({
 
     // Shared collapsed item styles — used by trigger, link, and button
     const collapsedItemStyles = mergeProps(
-      xdsClassName('side-nav-item', {
+      xdsProps('side-nav-item', {
         size,
         selected: isSelected ? 'selected' : null,
       }),
@@ -582,7 +582,7 @@ export function XDSSideNavItem({
   );
 
   const navItemStyleProps = mergeProps(
-    xdsClassName('side-nav-item', {
+    xdsProps('side-nav-item', {
       size,
       selected: isSelected ? 'selected' : null,
     }),

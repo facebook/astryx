@@ -65,7 +65,18 @@ export type {ISOTimeString, ParsedTime} from './timeParser';
 
 export {parseStyleKey} from './parseStyleKey';
 
-export {xdsClassName} from './xdsClassName';
+export {
+  xdsClassName,
+  xdsDataAttributes,
+  xdsProps,
+  isXDSPropsObject,
+  XDS_PROPS_MARKER,
+} from './xdsClassName';
+export type {
+  XDSClassNameProps,
+  XDSDataAttributes,
+  XDSPropsObject,
+} from './xdsClassName';
 
 export {mergeProps} from './mergeProps';
 export {mergeRefs} from './mergeRefs';

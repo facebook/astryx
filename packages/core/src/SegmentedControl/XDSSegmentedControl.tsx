@@ -23,7 +23,7 @@ import type {
   XDSSegmentedControlSize,
   XDSSegmentedControlLayout,
 } from './XDSSegmentedControlContext';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
@@ -205,7 +205,7 @@ export function XDSSegmentedControl({
         aria-disabled={isDisabled || undefined}
         onKeyDown={handleKeyDown}
         {...mergeProps(
-          xdsClassName('segmented-control', {size}),
+          xdsProps('segmented-control', {size}),
           stylex.props(
             styles.container,
             sizeStyles[size],

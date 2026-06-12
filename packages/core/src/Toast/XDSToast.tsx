@@ -17,7 +17,7 @@ import {
   typographyVars,
   typeScaleDefaults,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {useXDSTheme} from '../theme';
 import {XDSMediaTheme} from '../theme/XDSMediaTheme';
 import type {XDSToastType, XDSToastDismissReason} from './types';
@@ -186,7 +186,7 @@ export function XDSToast({
       onFocusCapture={pauseTimer}
       onBlurCapture={resumeTimer}
       {...mergeProps(
-        xdsClassName('toast', {type}),
+        xdsProps('toast', {type}),
         stylex.props(
           styles.root,
           isError ? styles.variantError : styles.variantDefault,

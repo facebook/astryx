@@ -19,7 +19,7 @@
 import {createContext, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
@@ -164,7 +164,7 @@ export function XDSBreadcrumbs({
         ref={ref}
         aria-label={label}
         {...mergeProps(
-          xdsClassName('breadcrumbs', {variant}),
+          xdsProps('breadcrumbs', {variant}),
           stylex.props(navStyles.root, xstyle),
           className,
           style,

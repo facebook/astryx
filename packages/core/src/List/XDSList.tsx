@@ -25,7 +25,7 @@ import {
   type XDSListDensity,
   type XDSListMarkerStyle,
 } from './XDSListContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 
 export {
   type XDSListDensity,
@@ -169,7 +169,7 @@ export function XDSList({
       {...(isOrdered && start != null && start !== 1 ? {start} : {})}
       {...(listStyle === 'none' && !isOrdered ? {role: 'list'} : {})}
       {...mergeProps(
-        xdsClassName('list', {density, listStyle}),
+        xdsProps('list', {density, listStyle}),
         stylex.props(
           styles.list,
           hasDividers && styles.withDividers,

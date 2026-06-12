@@ -25,7 +25,7 @@ import {
   typeScaleVars,
   borderVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 
 const styles = stylex.create({
   text: {
@@ -96,7 +96,7 @@ export function XDSInputGroupText({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('input-group-text'),
+        xdsProps('input-group-text'),
         stylex.props(styles.text, xstyle),
         className,
         style,

@@ -26,7 +26,7 @@ import {
 } from '../theme/tokens.stylex';
 import {XDSAvatarSizeContext} from './XDSAvatarSizeContext';
 import {useXDSAvatarGroup} from '../AvatarGroup/XDSAvatarGroupContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 
 /**
  * The offset ratio for positioning elements on a circle's edge at 45°.
@@ -309,7 +309,7 @@ export function XDSAvatar({
         aria-label={accessibleName}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('avatar', {size: resolvedSize}),
+          xdsProps('avatar', {size: resolvedSize}),
           stylex.props(
             styles.wrapper,
             avatarGroup && groupStyles.ring,

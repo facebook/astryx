@@ -61,7 +61,7 @@ import {
 } from './utils';
 import {useCombobox, useSelectedItemOffset} from './hooks';
 import {XDSSelectorOption} from './XDSSelectorOption';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
@@ -859,7 +859,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
         onClick={onTriggerClick}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('selector', {size, status: status?.type ?? null}),
+          xdsProps('selector', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             styles.triggerContainer,
@@ -929,7 +929,6 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
           )}
         </span>
       </div>
-
       {popover.render(
         hasSearch ? (
           <div>

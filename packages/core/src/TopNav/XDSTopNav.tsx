@@ -20,7 +20,7 @@ import type {ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {XDSTopNavSlotContext} from './TopNavContext';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
 import {useXDSTopNavMobileContent} from './XDSTopNavMobileContentContext';
@@ -204,7 +204,7 @@ export function XDSTopNav({
         role="navigation"
         aria-label={label}
         {...mergeProps(
-          xdsClassName('top-nav', {mode: 'mobile-bar'}),
+          xdsProps('top-nav', {mode: 'mobile-bar'}),
           stylex.props(styles.mobileBar, xstyle),
           className,
           style,
@@ -261,7 +261,7 @@ export function XDSTopNav({
       role="navigation"
       aria-label={label}
       {...mergeProps(
-        xdsClassName('top-nav'),
+        xdsProps('top-nav'),
         stylex.props(
           styles.base,
           hasCenterContent ? styles.baseGrid : styles.baseFlex,

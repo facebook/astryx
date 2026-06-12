@@ -65,9 +65,9 @@ import {
   formatISOTime,
   isTimeInRange,
   adjustTime,
-  xdsClassName,
   mergeProps,
   mergeRefs,
+  xdsProps,
 } from '../utils';
 import {
   plainDateFromISO,
@@ -781,7 +781,7 @@ export function XDSDateTimeInput({
       <div
         {...rest}
         {...mergeProps(
-          xdsClassName('date-time-input', {
+          xdsProps('date-time-input', {
             size,
             status: status?.type ?? null,
           }),
@@ -897,7 +897,6 @@ export function XDSDateTimeInput({
           />
         </div>
       </div>
-
       {popover.render(
         <XDSCalendar
           handleRef={calendarRef}

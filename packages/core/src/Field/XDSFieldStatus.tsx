@@ -17,7 +17,7 @@
 import React from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {
   colorVars,
   radiusVars,
@@ -139,7 +139,7 @@ export function XDSFieldStatus({
       role={type === 'error' ? 'alert' : 'status'}
       aria-live={type === 'error' ? 'assertive' : 'polite'}
       {...mergeProps(
-        xdsClassName('field-status', {type, variant}),
+        xdsProps('field-status', {type, variant}),
         stylex.props(
           styles.base,
           entryStyle,

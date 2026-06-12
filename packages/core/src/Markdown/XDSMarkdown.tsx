@@ -37,7 +37,7 @@ import {XDSTableCell} from '../Table/XDSTableCell';
 import {XDSTableHeaderCell} from '../Table/XDSTableHeaderCell';
 import {XDSTableHeader} from '../Table/XDSTableHeader';
 import {XDSTableBody} from '../Table/XDSTableBody';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {useXDSStreamingText} from '../hooks/useXDSStreamingText';
 import {computeBoundaries, computeSegments} from './streaming';
 import type {XDSBaseProps} from '../XDSBaseProps';
@@ -1591,7 +1591,7 @@ export function XDSMarkdown({
       ref={ref}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('markdown', {density}),
+        xdsProps('markdown', {density}),
         stylex.props(styles.root, xstyle),
         className,
         style,

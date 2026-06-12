@@ -40,7 +40,7 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
 
 // =============================================================================
@@ -416,7 +416,7 @@ export function XDSBanner({
       {/* Header: colored status background — primary theme target ('banner') */}
       <div
         {...mergeProps(
-          xdsClassName('banner', {container, status}),
+          xdsProps('banner', {container, status}),
           stylex.props(
             styles.header,
             isSingleLine && styles.headerCentered,
@@ -429,7 +429,7 @@ export function XDSBanner({
         )}>
         <div
           {...mergeProps(
-            xdsClassName('banner-icon', {status}),
+            xdsProps('banner-icon', {status}),
             stylex.props(styles.iconWrapper),
           )}
           aria-hidden="true">
@@ -490,7 +490,7 @@ export function XDSBanner({
       {showContent && (
         <div
           {...mergeProps(
-            xdsClassName('banner-content', {container, status}),
+            xdsProps('banner-content', {container, status}),
             stylex.props(styles.contentArea, isCard && styles.contentAreaCard),
           )}>
           {children}

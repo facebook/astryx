@@ -227,7 +227,7 @@ const brandTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: 'The `components` field in defineTheme targets stable `.xds-*` CSS class names. Use `base` for all instances, `variant:value` or `stateName` for specific states.',
+          text: 'The `components` field in defineTheme targets stable component selectors. Use `base` for all instances, `variant:value` or `stateName` for specific props/states. Built CSS currently emits compatibility `.xds-*.<value>` selectors; components also reflect those props/states as `data-*` attributes such as `data-variant="primary"` for external CSS.',
         },
         {
           type: 'code',

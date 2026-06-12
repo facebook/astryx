@@ -26,7 +26,7 @@ import {
   fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
 // =============================================================================
@@ -186,7 +186,7 @@ export function XDSSideNavSection({
       aria-labelledby={titleId}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('side-nav-section'),
+        xdsProps('side-nav-section'),
         stylex.props(styles.root, xstyle),
         className,
         style,

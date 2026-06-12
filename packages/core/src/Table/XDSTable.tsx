@@ -22,7 +22,7 @@ import {colorVars} from '../theme/tokens.stylex';
 import {XDSBaseTable} from './XDSBaseTable';
 import {XDSTableContext} from './XDSTableContext';
 import {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, xdsProps} from '../utils';
 import type {
   XDSBaseTableProps,
   XDSTableVerticalAlign,
@@ -134,7 +134,7 @@ function TableScrollWrapper({children}: {children: React.ReactNode}) {
   return (
     <div
       {...mergeProps(
-        xdsClassName('table-scroll-wrapper'),
+        xdsProps('table-scroll-wrapper'),
         stylex.props(
           scrollWrapperStyles.base,
           scrollWrapperStyles.containerBleed,

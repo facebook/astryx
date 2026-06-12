@@ -14,7 +14,7 @@
 import {useCallback, useEffect, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import {
   colorVars,
   spacingVars,
@@ -178,7 +178,7 @@ export function XDSCommandPaletteItem({
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       {...mergeProps(
-        xdsClassName('command-palette-item'),
+        xdsProps('command-palette-item'),
         stylex.props(
           styles.item,
           !isDisabled && styles.itemHover,

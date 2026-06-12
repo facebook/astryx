@@ -28,7 +28,7 @@ import {
   fontWeightVars,
   typographyVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {XDSDivider} from '../Divider';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
@@ -129,7 +129,7 @@ export function XDSChatSystemMessage({
         role="status"
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('chat-system-message', {variant}),
+          xdsProps('chat-system-message', {variant}),
           stylex.props(styles.dividerWrap, xstyle),
           className,
           styleProp,
@@ -145,7 +145,7 @@ export function XDSChatSystemMessage({
       role="status"
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('chat-system-message', {variant}),
+        xdsProps('chat-system-message', {variant}),
         stylex.props(styles.root, xstyle),
         className,
         styleProp,

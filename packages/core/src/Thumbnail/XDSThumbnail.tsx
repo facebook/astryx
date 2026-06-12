@@ -38,7 +38,7 @@ import {XDSTooltip} from '../Tooltip/XDSTooltip';
 import {XDSMediaTheme} from '../theme/XDSMediaTheme';
 import {useImageMode} from '../hooks/useImageMode';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 
 /** Sample the region behind the remove button (20px button, 4px inset, in 64px container). */
 const BUTTON_REGION = {x: 0.5, y: 0.06, width: 0.44, height: 0.44};
@@ -297,7 +297,7 @@ export function XDSThumbnail({
       data-testid={testId}
       aria-label={accessibleName}
       {...mergeProps(
-        xdsClassName('thumbnail'),
+        xdsProps('thumbnail'),
         stylex.props(styles.root, isDisabled && styles.disabled, xstyle),
         className,
         style,

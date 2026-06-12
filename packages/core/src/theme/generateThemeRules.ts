@@ -29,7 +29,7 @@ import {getDerivedVars} from './derivedVarRegistry';
  * so callers can place them in different CSS layers.
  */
 export interface ThemeRulesSplit {
-  /** Token overrides + component .xds-* overrides + prop-level color rules */
+  /** Token overrides + component compatibility selector overrides + prop-level color rules */
   component: string[];
   /** Prose element defaults (h1-h6, p, small, code, hr) — belongs in reset layer */
   prose: string[];
@@ -46,7 +46,7 @@ export interface ThemeCSSOutput {
    */
   prose: string;
   /**
-   * Token overrides + component .xds-* overrides scoped to the theme.
+   * Token overrides + component compatibility selector overrides scoped to the theme.
    * Should be injected into @layer xds-theme — above StyleX layers so
    * theme component overrides take effect. Empty string if no rules.
    */
@@ -231,7 +231,7 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
     parts.push(`  :scope {\n${declarations}\n  }`);
   }
 
-  // 2. Component overrides (.xds-* class rules)
+  // 2. Component overrides (compatibility class selector rules)
   if (theme.components) {
     generateComponentRules(theme.components, parts);
   }
@@ -248,7 +248,7 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
 }
 
 /**
- * Generate component .xds-* class override rules.
+ * Generate component compatibility class override rules.
  * Handles derived var expansion and container padding mapping.
  */
 function generateComponentRules(
@@ -259,11 +259,11 @@ function generateComponentRules(
   parts: string[],
 ): void {
   for (const [component, rules] of Object.entries(components)) {
-    for (const [key, styles] of Object.entries(
-      rules,
-    )) {
+    for (const [key, styles] of Object.entries(rules)) {
       const entries = Object.entries(styles);
-      if (entries.length === 0) {continue;}
+      if (entries.length === 0) {
+        continue;
+      }
 
       const suffix = parseStyleKey(key);
       const baseSelector = `.xds-${component}${suffix}`;
@@ -348,7 +348,7 @@ function generateComponentRules(
 /**
  * Generate prose HTML element default rules (h1-h6, p, small, code, hr).
  * Wrapped in :where() for zero specificity — these are defaults that
- * any class-based style (StyleX, .xds-* overrides) should beat.
+ * any class-based style (StyleX, component overrides) should beat.
  * The caller places these in the reset layer (not xds-theme) so they
  * sit below all component styles in the cascade.
  */
@@ -438,7 +438,7 @@ function generateColorOverrides(
  * as themed defaults — conceptually the same tier as the CSS reset. They
  * belong in the reset layer so any class-based style wins.
  *
- * Component rules (tokens, .xds-* overrides) are intentional theme overrides
+ * Component rules (tokens, component overrides) are intentional theme overrides
  * that need to beat StyleX — they stay in xds-theme (above StyleX layers).
  */
 export function generateThemeRulesSplit(
@@ -497,7 +497,9 @@ export function generateOnMediaCSS(theme: XDSDefinedTheme): string {
           >,
         )) {
           const entries = Object.entries(styles);
-          if (entries.length === 0) {continue;}
+          if (entries.length === 0) {
+            continue;
+          }
 
           const suffix = parseStyleKey(key);
           const baseSelector = `[data-xds-media="${surface}"] .xds-${component}${suffix}`;
@@ -547,7 +549,7 @@ export function generateOnMediaCSS(theme: XDSDefinedTheme): string {
  *
  * Returns two CSS blocks for injection into different layers:
  * - `prose`: @scope'd element defaults → inject into @layer reset
- * - `component`: @scope'd token + .xds-* overrides → inject into @layer xds-theme
+ * - `component`: @scope'd token + component overrides → inject into @layer xds-theme
  *
  * This separation ensures prose defaults (what bare HTML looks like in a theme)
  * sit at reset-layer priority where any class-based style wins, while component

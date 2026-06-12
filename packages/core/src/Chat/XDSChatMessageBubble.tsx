@@ -35,7 +35,7 @@ import {
   typographyVars,
 } from '../theme/tokens.stylex';
 import {useXDSChatMessageContext} from './XDSChatContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 export type XDSChatMessageBubbleVariant = 'filled' | 'ghost';
@@ -145,7 +145,8 @@ const styles = stylex.create({
     textAlign: 'end',
   },
   // Sender backgrounds — same default, but separate styles for theme overrides.
-  // Themes can target .xds-chat-message-bubble.user vs .assistant via @scope.
+  // Theme CSS currently emits compatibility class selectors; external CSS should
+  // prefer [data-sender="user"] / [data-sender="assistant"].
   assistant: {
     backgroundColor: colorVars['--color-neutral'],
     color: colorVars['--color-text-primary'],
@@ -275,7 +276,7 @@ export function XDSChatMessageBubble({
         ref={ref}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('chat-message-bubble', {sender, variant, density}),
+          xdsProps('chat-message-bubble', {sender, variant, density}),
           stylex.props(
             styles.content,
             density === 'compact' && styles.radiusCompact,

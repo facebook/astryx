@@ -51,7 +51,7 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 const styles = stylex.create({
@@ -392,7 +392,6 @@ export function XDSDropdownMenu({
         aria-controls={menuId}
         data-testid={testId}
       />
-
       {popover.render(
         <div
           ref={listRef}
@@ -400,7 +399,7 @@ export function XDSDropdownMenu({
           role="menu"
           onKeyDown={listKeyDown}
           {...mergeProps(
-            xdsClassName('dropdown-menu'),
+            xdsProps('dropdown-menu'),
             stylex.props(styles.dropdown, xstyle),
             className,
             style,

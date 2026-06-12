@@ -31,7 +31,7 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {XDSIcon} from '../Icon';
 import {
   tokenize,
@@ -775,7 +775,7 @@ export function XDSCodeBlock({
     <pre
       ref={ref}
       {...mergeProps(
-        xdsClassName('codeblock', {size, language, container}),
+        xdsProps('codeblock', {size, language, container}),
         stylex.props(
           styles.root,
           dynamicStyles.width(widthProp),

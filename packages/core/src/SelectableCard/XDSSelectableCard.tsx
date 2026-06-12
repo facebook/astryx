@@ -37,7 +37,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
-import {xdsClassName, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import {XDSCard} from '../Card/XDSCard';
 import type {XDSCardVariant} from '../Card/XDSCard';
 import {useClickableContainer} from '../hooks/useClickableContainer';
@@ -323,17 +323,14 @@ export function XDSSelectableCard({
       maxWidth={maxWidth}
       padding={padding}
       variant={variant}
-      className={
-        classNameProp
-          ? `${xdsClassName('selectable-card', {
-              variant,
-              selected: isSelected ? 'true' : 'false',
-            })} ${classNameProp}`
-          : xdsClassName('selectable-card', {
-              variant,
-              selected: isSelected ? 'true' : 'false',
-            })
-      }
+      {...mergeProps(
+        xdsProps('selectable-card', {
+          variant,
+          selected: isSelected ? 'true' : 'false',
+        }),
+        {},
+        classNameProp,
+      )}
       xstyle={
         [
           styles.interactive,

@@ -39,7 +39,7 @@ import type {
 } from '../theme/types';
 import {useXDSLinkComponent} from './useXDSLinkComponent';
 import type {XDSLinkComponentType} from './types';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {computeTargetAndRel} from './computeTargetAndRel';
 import {useXDSInteractiveRole} from '../hooks/useXDSInteractiveRole';
 
@@ -284,7 +284,8 @@ export function XDSLink({
 
   // When role resolves to 'button' (no href, or context-provided),
   // render as a <button> with link styling for semantic correctness.
-  const renderAsButton = role === 'button' || (role === 'inert' && href == null);
+  const renderAsButton =
+    role === 'button' || (role === 'inert' && href == null);
 
   const sharedContent = (
     <>
@@ -316,7 +317,7 @@ export function XDSLink({
         tabIndex={isDisabled ? -1 : undefined}
         disabled={isDisabled}
         {...mergeProps(
-          xdsClassName('link', {color}),
+          xdsProps('link', {color}),
           stylex.props(
             styles.base,
             styles.buttonReset,
@@ -345,7 +346,7 @@ export function XDSLink({
         aria-disabled={isDisabled || undefined}
         tabIndex={isDisabled ? -1 : undefined}
         {...mergeProps(
-          xdsClassName('link', {color}),
+          xdsProps('link', {color}),
           stylex.props(
             styles.base,
             linkColorStyles[color],

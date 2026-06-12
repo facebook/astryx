@@ -49,7 +49,7 @@ export type {
   XDSInputStatus as XDSFileInputStatus,
   XDSInputStatusType as XDSFileInputStatusType,
 } from '../Field';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 function formatFileSize(bytes: number): string {
@@ -664,7 +664,7 @@ export function XDSFileInput({
         aria-busy={isLoading || undefined}
         {...dragDropProps}
         {...mergeProps(
-          xdsClassName('file-input', {mode, status: status?.type ?? null}),
+          xdsProps('file-input', {mode, status: status?.type ?? null}),
           stylex.props(
             isDropzone ? styles.dropzone : styles.compact,
             isDropzone && !isDisabled && styles.dropzoneHover,

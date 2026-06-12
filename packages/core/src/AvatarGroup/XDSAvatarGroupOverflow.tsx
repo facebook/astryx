@@ -21,7 +21,7 @@ import {
   fontWeightVars,
   radiusVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {useXDSAvatarGroup} from './XDSAvatarGroupContext';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
@@ -147,7 +147,7 @@ export function XDSAvatarGroupOverflow({
         onClick={onClick}
         aria-label={label}
         {...mergeProps(
-          xdsClassName('avatar-group-overflow'),
+          xdsProps('avatar-group-overflow'),
           stylex.props(
             styles.base,
             styles.button,
@@ -170,7 +170,7 @@ export function XDSAvatarGroupOverflow({
       ref={ref}
       aria-label={label}
       {...mergeProps(
-        xdsClassName('avatar-group-overflow'),
+        xdsProps('avatar-group-overflow'),
         stylex.props(
           styles.base,
           styles.overlap,

@@ -132,7 +132,7 @@ export type {
   XDSInputStatus as XDSDateInputStatus,
   XDSInputStatusType as XDSDateInputStatusType,
 } from '../Field';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 export interface XDSDateInputProps extends Omit<
@@ -506,7 +506,7 @@ export function XDSDateInput({
         ref={popover.triggerRef}
         {...rest}
         {...mergeProps(
-          xdsClassName('date-input', {size, status: status?.type ?? null}),
+          xdsProps('date-input', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             sizeStyles[size],

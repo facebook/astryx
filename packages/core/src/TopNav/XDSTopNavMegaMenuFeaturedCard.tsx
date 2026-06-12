@@ -26,7 +26,7 @@ import {
   typeScaleVars,
   fontWeightVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 
@@ -137,7 +137,7 @@ export function XDSTopNavMegaMenuFeaturedCard({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('top-nav-mega-menu-featured-card'),
+        xdsProps('top-nav-mega-menu-featured-card'),
         stylex.props(styles.root),
       )}>
       {image && (

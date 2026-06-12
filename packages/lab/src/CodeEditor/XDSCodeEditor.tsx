@@ -26,7 +26,7 @@ import {
   typeScaleVars,
   borderVars,
 } from '@xds/core/theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '@xds/core/utils';
+import {mergeProps, xdsProps} from '@xds/core/utils';
 import {
   tokenize,
   tokenizeAsync,
@@ -416,7 +416,7 @@ export function XDSCodeEditor({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('codeeditor', {size, language}),
+        xdsProps('codeeditor', {size, language}),
         stylex.props(styles.root, focused && styles.rootFocused, xstyle),
         className,
         style,

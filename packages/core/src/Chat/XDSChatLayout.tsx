@@ -26,7 +26,7 @@ import {type ReactNode, useMemo, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import {useXDSChatStreamScroll} from './useXDSChatStreamScroll';
 import {useXDSChatNewMessages} from './useXDSChatNewMessages';
 import {XDSChatLayoutScrollButton} from './XDSChatLayoutScrollButton';
@@ -329,7 +329,7 @@ export function XDSChatLayout({
         ref={mergeRefs(ref, rootRef)}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('chat-layout', {density}),
+          xdsProps('chat-layout', {density}),
           stylex.props(
             styles.root,
             isSelfScrolling && styles.rootScrollable,

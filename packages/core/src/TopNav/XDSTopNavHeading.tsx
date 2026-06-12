@@ -34,7 +34,7 @@ import {XDSLink} from '../Link';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSMenuHover} from '../hooks/useXDSMenuHover';
 import {XDSNavHeadingCloseContext} from '../NavMenu/XDSNavMenuContext';
@@ -426,7 +426,7 @@ export function XDSTopNavHeading({
         href={headingHref}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('top-nav-heading'),
+          xdsProps('top-nav-heading'),
           stylex.props(
             styles.root,
             !!headingHref && styles.menuTrigger,
@@ -449,7 +449,7 @@ export function XDSTopNavHeading({
         href={headingHref}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('top-nav-heading'),
+          xdsProps('top-nav-heading'),
           stylex.props(styles.root, styles.menuTrigger, xstyle),
           className,
           style,
@@ -472,7 +472,7 @@ export function XDSTopNavHeading({
           data-testid={testId}
           {...triggerProps}
           {...mergeProps(
-            xdsClassName('top-nav-heading'),
+            xdsProps('top-nav-heading'),
             stylex.props(styles.root, styles.menuTrigger, xstyle),
             className,
             style,
@@ -523,7 +523,7 @@ export function XDSTopNavHeading({
           data-testid={testId}
           {...triggerProps}
           {...mergeProps(
-            xdsClassName('top-nav-heading'),
+            xdsProps('top-nav-heading'),
             stylex.props(styles.root, xstyle),
             className,
             style,
@@ -584,7 +584,7 @@ export function XDSTopNavHeading({
         ref={ref as React.Ref<HTMLDivElement>}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('top-nav-heading'),
+          xdsProps('top-nav-heading'),
           stylex.props(styles.root, xstyle),
           className,
           style,
@@ -635,7 +635,7 @@ export function XDSTopNavHeading({
       ref={ref as React.Ref<HTMLDivElement>}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('top-nav-heading'),
+        xdsProps('top-nav-heading'),
         stylex.props(styles.root, xstyle),
         className,
         style,

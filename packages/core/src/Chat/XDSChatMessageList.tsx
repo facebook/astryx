@@ -30,7 +30,7 @@ import {
   type XDSChatDensity,
   useXDSChatLayoutContext,
 } from './XDSChatContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {XDSSpinner} from '../Spinner';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import type {SpacingStep} from '../utils/types';
@@ -254,7 +254,7 @@ export function XDSChatMessageList({
         tabIndex={0}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('chat-message-list', {density}),
+          xdsProps('chat-message-list', {density}),
           stylex.props(styles.root, xstyle),
           className,
           style,

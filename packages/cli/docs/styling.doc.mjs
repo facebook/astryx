@@ -219,32 +219,40 @@ const overrides = stylex.create({
       ],
     },
     {
-      title: 'Theming via xds-* Class Names',
+      title: 'Theming Selectors',
   category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'Every component renders a stable xds-* class name (e.g. xds-button, xds-card) plus variant classes. These are the targeting surface for theme overrides in defineTheme. You rarely need to use them directly, but they\'re useful for debugging and for external CSS that needs to target components.',
+          text: 'Every component renders a stable xds-* base class (e.g. xds-button, xds-card). Visual props and documented states are also reflected as data-* attributes such as data-variant and data-size. Legacy bare value classes (primary, sm, checked, etc.) still render for compatibility, but new external CSS should prefer data attributes because they avoid collisions and make prop intent explicit.',
         },
         {
           type: 'code',
           lang: 'tsx',
-          label: 'Class names rendered by components',
+          label: 'Selectors rendered by components',
           code: `// <XDSButton variant="primary" size="sm" />
 // renders: class="xds-button primary sm ..."
+//          data-variant="primary" data-size="sm"
 
-// <XDSCard variant="elevated" />
-// renders: class="xds-card elevated ..."
+// <XDSCard variant="muted" />
+// renders: class="xds-card muted ..."
+//          data-variant="muted"
 
 // <XDSHeading level={2} />
-// renders: class="xds-heading level-2 ..."`,
+// renders: class="xds-heading level-2 ..."
+//          data-level="2"`,
         },
         {
           type: 'code',
           lang: 'css',
           label: 'Targeting in external CSS (escape hatch)',
-          code: `.my-app .xds-button.primary {
+          code: `.my-app .xds-button[data-variant="primary"] {
   /* override primary button in this app context */
+}
+
+/* Legacy compatibility selector; avoid for new CSS. */
+.my-app .xds-button.primary {
+  /* still works during the compatibility window */
 }`,
         },
         {

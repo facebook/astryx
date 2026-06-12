@@ -28,7 +28,7 @@ import {
   durationVars,
   easeVars,
 } from '@xds/core/theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '@xds/core/utils';
+import {mergeProps, xdsProps} from '@xds/core/utils';
 import {XDSIcon} from '@xds/core/Icon';
 import type {XDSBaseProps} from '@xds/core';
 import {useXDSStepperContext} from './XDSStepperContext';
@@ -366,7 +366,7 @@ export function XDSStep({
       onClick={handleClick}
       aria-label={`Go to step ${step + 1}: ${label}`}
       {...mergeProps(
-        xdsClassName('step-indicator', {state: stepState}),
+        xdsProps('step-indicator', {state: stepState}),
         stylex.props(
           styles.buttonReset,
           styles.indicator,
@@ -380,7 +380,7 @@ export function XDSStep({
     <div
       aria-hidden="true"
       {...mergeProps(
-        xdsClassName('step-indicator', {state: stepState}),
+        xdsProps('step-indicator', {state: stepState}),
         stylex.props(styles.indicator, indicatorVariantStyle),
       )}>
       {indicatorContent}
@@ -424,7 +424,7 @@ export function XDSStep({
       <div
         ref={ref}
         {...mergeProps(
-          xdsClassName('step', {state: stepState}),
+          xdsProps('step', {state: stepState}),
           stylex.props(styles.verticalRoot, xstyle),
           className,
           style,
@@ -438,7 +438,7 @@ export function XDSStep({
           <div {...stylex.props(styles.verticalConnector)}>
             <div
               {...mergeProps(
-                xdsClassName('step-connector'),
+                xdsProps('step-connector'),
                 stylex.props(
                   styles.verticalConnectorLine,
                   isCompleted
@@ -463,7 +463,7 @@ export function XDSStep({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('step', {state: stepState}),
+        xdsProps('step', {state: stepState}),
         stylex.props(styles.horizontalRoot, xstyle),
         className,
         style,
@@ -479,7 +479,7 @@ export function XDSStep({
       <div {...stylex.props(styles.horizontalConnector)}>
         <div
           {...mergeProps(
-            xdsClassName('step-connector'),
+            xdsProps('step-connector'),
             stylex.props(
               styles.horizontalConnectorLine,
               isCompleted

@@ -29,7 +29,7 @@ import {
   type XDSMetadataListLabelConfig,
 } from './XDSMetadataListContext';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 
 // =============================================================================
 // Types
@@ -259,7 +259,7 @@ export function XDSMetadataList({
         ref={ref}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('metadata-list', {
+          xdsProps('metadata-list', {
             columns: String(columns),
             orientation,
           }),

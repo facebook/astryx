@@ -27,7 +27,7 @@ import {
   spacingVars,
   typeScaleVars,
 } from '@xds/core/theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '@xds/core/utils';
+import {mergeProps, xdsProps} from '@xds/core/utils';
 import type {XDSBaseProps} from '@xds/core';
 
 /**
@@ -298,7 +298,7 @@ export function XDSCircularProgress({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('circular-progress', {variant, size}),
+        xdsProps('circular-progress', {variant, size}),
         stylex.props(styles.root, showLabel && styles.rootWithLabel, xstyle),
         className,
         style,
@@ -310,7 +310,6 @@ export function XDSCircularProgress({
         {...stylex.props(showLabel ? styles.label : styles.visuallyHidden)}>
         {label}
       </span>
-
       <div {...stylex.props(styles.ringWrapper)}>
         <svg
           role={isIndeterminate ? 'progressbar' : 'meter'}
@@ -326,7 +325,7 @@ export function XDSCircularProgress({
           )}>
           <circle
             {...mergeProps(
-              xdsClassName('circular-progress-track'),
+              xdsProps('circular-progress-track'),
               stylex.props(styles.track, trackVariantStyles[variant]),
             )}
             cx={center}
@@ -337,7 +336,7 @@ export function XDSCircularProgress({
           {isIndeterminate ? (
             <circle
               {...mergeProps(
-                xdsClassName('circular-progress-fill', {variant}),
+                xdsProps('circular-progress-fill', {variant}),
                 stylex.props(styles.fillIndeterminate, variantStyles[variant]),
               )}
               cx={center}
@@ -348,7 +347,7 @@ export function XDSCircularProgress({
           ) : (
             <circle
               {...mergeProps(
-                xdsClassName('circular-progress-fill', {variant}),
+                xdsProps('circular-progress-fill', {variant}),
                 stylex.props(styles.fill, variantStyles[variant]),
               )}
               cx={center}

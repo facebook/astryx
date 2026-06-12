@@ -58,6 +58,17 @@ function getTargetStates(target) {
   return target.states || [];
 }
 
+function propToDataAttribute(prop) {
+  return `data-${prop.replace(/[A-Z]/g, match => `-${match.toLowerCase()}`)}`;
+}
+
+function getTargetDataAttributes(target) {
+  return [
+    ...(target.visualProps || []).map(propToDataAttribute),
+    ...(target.states || []).map(propToDataAttribute),
+  ];
+}
+
 /**
  * Format the theming targets table, merging in theme variants if available.
  *
@@ -69,8 +80,8 @@ function formatTargetsTable(docs, themeData) {
   if (!docs.theming?.targets?.length) return '';
 
   const lines = [];
-  lines.push('| Class | Variants | States |');
-  lines.push('|-------|----------|--------|');
+  lines.push('| Class | Data attrs | Variants | States |');
+  lines.push('|-------|------------|----------|--------|');
 
   for (const target of docs.theming.targets) {
     const coreVariants = getTargetVariants(target, docs);
@@ -89,8 +100,10 @@ function formatTargetsTable(docs, themeData) {
 
     const variantsStr = variantParts.length > 0 ? variantParts.join(', ') : '—';
     const statesStr = states.length > 0 ? states.join(', ') : '—';
+    const dataAttrs = getTargetDataAttributes(target);
+    const dataAttrsStr = dataAttrs.length > 0 ? dataAttrs.map(attr => `\`${attr}\``).join(', ') : '—';
 
-    lines.push(`| \`${target.className}\` | ${variantsStr} | ${statesStr} |`);
+    lines.push(`| \`${target.className}\` | ${dataAttrsStr} | ${variantsStr} | ${statesStr} |`);
   }
 
   return lines.join('\n');
@@ -171,6 +184,7 @@ export function formatFull(docs, options = {}) {
     sections.push('## Theming\n');
 // Targets table with theme variant merging
     if (docs.theming.targets?.length) {
+      sections.push('Targets render a stable `xds-*` base class. Visual props and documented states are also reflected as `data-*` attributes (for example `data-variant="primary"`) while legacy bare classes remain for compatibility. Prefer data attributes for new external CSS selectors.\n');
       const targetsTable = formatTargetsTable(docs, themeData);
       sections.push(targetsTable + '\n');
 
@@ -420,11 +434,13 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
     output.push(`  Derived: ${derivedNames}`);
   }
 
-// Theme targets (class names, variants, states) with theme variant merging
+// Theme targets (base classes, data attributes, variants, states) with theme variant merging
   if (docs.theming?.targets?.length) {
     const { themeData = null } = options;
     const targetParts = docs.theming.targets.map(t => {
       const parts = [t.className];
+      const dataAttrs = getTargetDataAttributes(t);
+      if (dataAttrs.length) parts.push(`attrs: ${dataAttrs.join(', ')}`);
       if (t.visualProps?.length) parts.push(`variants: ${t.visualProps.join(', ')}`);
       if (t.states?.length) parts.push(`states: ${t.states.join(', ')}`);
       // Merge theme variants

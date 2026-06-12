@@ -38,7 +38,7 @@ import {
 import {XDSField} from '../Field/XDSField';
 import {XDSTooltip} from '../Tooltip/XDSTooltip';
 import type {XDSInputStatus} from '../Field/types';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
@@ -652,7 +652,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
         aria-describedby={ariaDescribedBy}
         onKeyDown={e => handleKeyDown(thumbIndex, e)}
         {...mergeProps(
-          xdsClassName('slider-thumb', {
+          xdsProps('slider-thumb', {
             orientation,
             disabled: isDisabled ? 'disabled' : null,
           }),
@@ -741,7 +741,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
       style={style}>
       <div
         {...mergeProps(
-          xdsClassName('slider', {
+          xdsProps('slider', {
             orientation,
             disabled: isDisabled ? 'disabled' : null,
           }),
@@ -765,7 +765,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
           <div
             aria-hidden="true"
             {...mergeProps(
-              xdsClassName('slider-track', {orientation}),
+              xdsProps('slider-track', {orientation}),
               stylex.props(
                 styles.track,
                 isHorizontal ? styles.trackHorizontal : styles.trackVertical,

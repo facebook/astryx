@@ -23,7 +23,7 @@ import type {SpacingStep} from '../utils/types';
 import type {XDSElementSize} from '../SizeContext/XDSSizeContext';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars, sizeVars} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {XDSSection} from '../Section/XDSSection';
 import {useListFocus} from '../hooks/useListFocus';
 import {XDSSizeProvider} from '../SizeContext/XDSSizeContext';
@@ -256,7 +256,7 @@ export function XDSToolbar({
           aria-orientation={orientation}
           onKeyDown={handleKeyDown}
           {...mergeProps(
-            xdsClassName('toolbar', {size}),
+            xdsProps('toolbar', {size}),
             stylex.props(
               hasCenterContent ? styles.baseGrid : styles.baseFlex,
               orientation === 'vertical' && styles.vertical,

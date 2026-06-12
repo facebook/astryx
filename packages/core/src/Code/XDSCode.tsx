@@ -23,7 +23,7 @@ import {
   typographyVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 const styles = stylex.create({
@@ -73,7 +73,7 @@ export function XDSCode({
     <code
       ref={ref}
       {...mergeProps(
-        xdsClassName('code'),
+        xdsProps('code'),
         stylex.props(styles.base, xstyle),
         className,
         style,

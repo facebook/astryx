@@ -9,15 +9,16 @@
  * <!-- SYNC: packages/cli/src/commands/build-theme.mjs (parseStyleKey) -->
  * <!-- SYNC: packages/core/src/utils/xdsClassName.ts -->
  *
- * Uses class names for visual prop values — shorter HTML, easier to inspect.
- * The component class (e.g. .xds-button) disambiguates any value overlaps.
+ * Uses compatibility class names for visual prop values in generated theme CSS.
+ * Components also reflect the same props as data attributes via `xdsProps()`;
+ * new external CSS selectors should prefer those data attributes.
  *
  * Values starting with a digit get prefixed with the prop name since
  * CSS class names can't start with a number.
  *
- * Bare state names (no colon) are used directly as class names.
+ * Bare state names (no colon) are used directly as compatibility class names.
  * This supports state-based theming targets like 'checked', 'disabled',
- * 'selected' documented in the Theming Infrastructure wiki.
+ * 'selected' while components migrate selector consumers toward data attributes.
  *
  * @example
  * ```ts

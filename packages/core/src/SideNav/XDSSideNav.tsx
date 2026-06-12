@@ -32,7 +32,7 @@ import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {borderVars, colorVars, spacingVars} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import {
   XDSSideNavCollapseContext,
   type XDSSideNavCollapseState,
@@ -426,7 +426,7 @@ export function XDSSideNav({
       <div
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('side-nav', {mode: 'topbar'}),
+          xdsProps('side-nav', {mode: 'topbar'}),
           stylex.props(styles.topbar, xstyle),
           className,
           style,
@@ -502,7 +502,7 @@ export function XDSSideNav({
       aria-label="Side navigation"
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('side-nav'),
+        xdsProps('side-nav'),
         stylex.props(styles.root, collapsed && styles.rootCollapsed, xstyle),
         className,
         resizableNavStyle,

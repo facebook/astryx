@@ -56,9 +56,9 @@ import {
   formatISOTime,
   adjustTime,
   isTimeInRange,
-  xdsClassName,
   mergeProps,
   mergeRefs,
+  xdsProps,
 } from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
@@ -526,7 +526,7 @@ export function XDSTimeInput({
         onClick={handleWrapperClick}
         onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
-          xdsClassName('time-input', {size, status: status?.type ?? null}),
+          xdsProps('time-input', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             sizeStyles[size],

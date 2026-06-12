@@ -25,7 +25,7 @@ import {
   type SpacingStep,
 } from './stack.stylex';
 import type {SizeValue} from '../utils/types';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 
 /**
  * Alignment values accepted by XDSStack.
@@ -234,7 +234,7 @@ export function XDSStack({
     {
       ref: ref as Ref<Element>,
       ...mergeProps(
-        xdsClassName('stack', {direction, gap, wrap}),
+        xdsProps('stack', {direction, gap, wrap}),
         stylexProps,
         className,
         {...style, ...sizingStyle},

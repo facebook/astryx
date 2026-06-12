@@ -28,7 +28,7 @@ import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {BreadcrumbContext} from './XDSBreadcrumbs';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
@@ -230,7 +230,7 @@ export function XDSBreadcrumbItem({
       <li
         ref={mergeRefs(ref, liRef)}
         {...mergeProps(
-          xdsClassName('breadcrumb-item'),
+          xdsProps('breadcrumb-item'),
           stylex.props(
             itemStyles.root,
             isSupporting ? itemStyles.supportingSize : itemStyles.defaultSize,
@@ -264,7 +264,7 @@ export function XDSBreadcrumbItem({
     <li
       ref={mergeRefs(ref, liRef)}
       {...mergeProps(
-        xdsClassName('breadcrumb-item'),
+        xdsProps('breadcrumb-item'),
         stylex.props(
           itemStyles.root,
           isSupporting ? itemStyles.supportingSize : itemStyles.defaultSize,

@@ -43,7 +43,7 @@ import {XDSFieldStatus} from '../Field/XDSFieldStatus';
 import type {XDSIconType} from '../Icon';
 import type {XDSInputStatus} from '../Field/types';
 import {XDSSpinner} from '../Spinner';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import {checkboxScope} from './checkbox.markers.stylex';
 
 const styles = stylex.create({
@@ -381,7 +381,7 @@ export function XDSCheckboxInput({
   return (
     <div
       {...mergeProps(
-        xdsClassName('checkbox-input', {size}),
+        xdsProps('checkbox-input', {size}),
         stylex.props(xstyle),
         className,
         style,
@@ -430,7 +430,7 @@ export function XDSCheckboxInput({
           <div
             aria-hidden="true"
             {...mergeProps(
-              xdsClassName('checkbox', {
+              xdsProps('checkbox', {
                 size,
                 checked: isChecked
                   ? 'checked'

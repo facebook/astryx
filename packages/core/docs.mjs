@@ -146,6 +146,19 @@ function formatPropsTable(props) {
   return lines.join('\n');
 }
 
+
+function propToDataAttribute(prop) {
+  return `data-${prop.replace(/[A-Z]/g, match => `-${match.toLowerCase()}`)}`;
+}
+
+function formatDataAttributes(target) {
+  const attrs = [
+    ...(target.visualProps || []).map(propToDataAttribute),
+    ...(target.states || []).map(propToDataAttribute),
+  ];
+  return attrs.length ? attrs.map(attr => `\`${attr}\``).join(', ') : '—';
+}
+
 function formatFull(docs, docPath) {
   const s = [];
   s.push(`# ${docs.name}\n`);
@@ -194,12 +207,13 @@ function formatFull(docs, docPath) {
 
   if (docs.theming?.targets?.length) {
     s.push('## Theming\n');
-    s.push('| Class | Variants | States |');
-    s.push('|-------|----------|--------|');
+    s.push('Targets render a stable `xds-*` base class. Visual props and documented states are also reflected as `data-*` attributes (for example `data-variant="primary"`) while legacy bare classes remain for compatibility. Prefer data attributes for new external CSS selectors.\n');
+    s.push('| Class | Data attrs | Variants | States |');
+    s.push('|-------|------------|----------|--------|');
     for (const t of docs.theming.targets) {
       const variants = t.visualProps?.join(', ') || '—';
       const states = t.states?.join(', ') || '—';
-      s.push(`| \`${t.className}\` | ${variants} | ${states} |`);
+      s.push(`| \`${t.className}\` | ${formatDataAttributes(t)} | ${variants} | ${states} |`);
     }
     s.push('');
     const publicVars = docs.theming.vars?.filter(v => !v.private && !v.derived) || [];

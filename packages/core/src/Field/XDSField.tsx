@@ -23,7 +23,7 @@ import {XDSFieldLabel} from './XDSFieldLabel';
 import {XDSFieldStatus} from './XDSFieldStatus';
 import {spacingVars, borderVars} from '../theme/tokens.stylex';
 import type {XDSIconType} from '../Icon';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {XDSFormLayoutContext} from '../FormLayout/XDSFormLayoutContext';
 import {XDSText} from '../Text';
 
@@ -217,7 +217,7 @@ export function XDSField({
       <div
         ref={ref}
         {...mergeProps(
-          xdsClassName('field', {layout: 'horizontal-labels'}),
+          xdsProps('field', {layout: 'horizontal-labels'}),
           stylex.props(styles.horizontalLabels, xstyle),
           className,
           style,
@@ -245,7 +245,7 @@ export function XDSField({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('field'),
+        xdsProps('field'),
         stylex.props(
           styles.container,
           !isLabelHidden && styles.containerGap,

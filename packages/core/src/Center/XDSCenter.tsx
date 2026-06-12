@@ -19,7 +19,7 @@ import type {ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {SizeValue} from '../utils/types';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 
 const styles = stylex.create({
   base: {
@@ -111,7 +111,7 @@ export function XDSCenter({
   ...props
 }: XDSCenterProps) {
   const stylexProps = mergeProps(
-    xdsClassName('center', {axis}),
+    xdsProps('center', {axis}),
     stylex.props(
       isInline ? styles.inline : styles.base,
       (axis === 'both' || axis === 'vertical') && styles.alignItemsCenter,

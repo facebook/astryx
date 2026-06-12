@@ -23,7 +23,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 
 const styles = stylex.create({
   container: {
@@ -155,7 +155,7 @@ export function XDSEmptyState({
       ref={ref}
       role="status"
       {...mergeProps(
-        xdsClassName('emptystate', {variant: isCompact ? 'compact' : null}),
+        xdsProps('emptystate', {variant: isCompact ? 'compact' : null}),
         stylex.props(
           styles.container,
           isCompact && styles.containerCompact,

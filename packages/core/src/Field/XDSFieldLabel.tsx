@@ -15,7 +15,7 @@
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 
 import {
   colorVars,
@@ -157,7 +157,7 @@ export function XDSFieldLabel({
         ref={ref}
         htmlFor={inputID}
         {...mergeProps(
-          xdsClassName('field-label'),
+          xdsProps('field-label'),
           stylex.props(
             styles.label,
             isDisabled && styles.labelDisabled,

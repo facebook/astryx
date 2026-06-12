@@ -39,7 +39,7 @@ import {XDSFieldStatus} from '../Field/XDSFieldStatus';
 import type {XDSIconType} from '../Icon';
 import type {XDSInputStatus} from '../Field/types';
 import {XDSSpinner} from '../Spinner';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {switchScope} from './switch.markers.stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
@@ -382,7 +382,7 @@ export function XDSSwitch({
       <div
         aria-hidden="true"
         {...mergeProps(
-          xdsClassName('switch', {
+          xdsProps('switch', {
             checked: isOn ? 'checked' : null,
             disabled: isDisabled ? 'disabled' : null,
           }),
@@ -396,7 +396,7 @@ export function XDSSwitch({
         )}>
         <div
           {...mergeProps(
-            xdsClassName('switch-thumb', {checked: isOn ? 'checked' : null}),
+            xdsProps('switch-thumb', {checked: isOn ? 'checked' : null}),
             stylex.props(styles.thumb, isOn ? styles.thumbOn : styles.thumbOff),
           )}>
           {isBusy && <XDSSpinner size="sm" />}
@@ -430,7 +430,7 @@ export function XDSSwitch({
   return (
     <div
       {...mergeProps(
-        xdsClassName('switch-field', {
+        xdsProps('switch-field', {
           labelPosition: labelPosition !== 'end' ? labelPosition : undefined,
           labelSpacing: labelSpacing !== 'default' ? labelSpacing : undefined,
         }),

@@ -31,7 +31,7 @@ import {
   spacingStepToToken,
 } from '../Layout/padding.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 
 /**
  * Extensible variant map for XDSSection.
@@ -267,7 +267,7 @@ export function XDSSection({
       {...props}>
       <div
         {...mergeProps(
-          xdsClassName('section', {variant}),
+          xdsProps('section', {variant}),
           stylex.props(
             nestedStyles.inner,
             ...container(

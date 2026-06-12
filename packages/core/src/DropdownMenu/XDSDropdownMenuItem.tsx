@@ -33,7 +33,7 @@ import {
   typographyVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {useXDSDropdownMenuContext} from './XDSDropdownMenuContext';
 
 const menuItemStyles = stylex.create({
@@ -159,13 +159,12 @@ export function XDSDropdownMenuItem({
         isDisabled && menuItemStyles.disabled,
         xstyle,
       ]}
-      className={[
-        xdsClassName('dropdown-menu-item', {size: menuSize}),
+      {...mergeProps(
+        xdsProps('dropdown-menu-item', {size: menuSize}),
+        {},
         className,
-      ]
-        .filter(Boolean)
-        .join(' ')}
-      style={style}
+        style,
+      )}
     />
   );
 }

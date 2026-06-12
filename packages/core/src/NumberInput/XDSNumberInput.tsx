@@ -128,7 +128,7 @@ export type {
   XDSInputStatus as XDSNumberInputStatus,
   XDSInputStatusType as XDSNumberInputStatusType,
 } from '../Field';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 interface XDSNumberInputPropsBase extends Omit<
@@ -517,7 +517,7 @@ export function XDSNumberInput({
       onClick={handleWrapperClick}
       onMouseUp={handleWrapperMouseUp}
       {...mergeProps(
-        xdsClassName('number-input', {size, status: status?.type ?? null}),
+        xdsProps('number-input', {size, status: status?.type ?? null}),
         stylex.props(
           inputWrapperStyles.base,
           styles.wrapper,

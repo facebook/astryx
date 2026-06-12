@@ -40,7 +40,7 @@ import {
 import {XDSToken} from '../Token';
 import {renderIconSlot, type XDSIconType} from '../Icon';
 import {spacingVars, sizeVars} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import type {XDSSearchableItem, XDSSearchSource} from './types';
 
@@ -366,7 +366,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
         onClick={handleWrapperClick}
         onBlur={handleBlur}
         {...mergeProps(
-          xdsClassName('typeahead', {size, status: status?.type}),
+          xdsProps('typeahead', {size, status: status?.type}),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,

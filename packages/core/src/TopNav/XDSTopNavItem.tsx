@@ -32,7 +32,7 @@ import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
 import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
 
 /**
@@ -215,7 +215,7 @@ export function XDSTopNavItem({
         aria-disabled={isDisabled || undefined}
         tabIndex={isDisabled ? -1 : undefined}
         {...mergeProps(
-          xdsClassName('top-nav-item', {
+          xdsProps('top-nav-item', {
             mode: 'drawer',
             selected: isSelected ? 'selected' : null,
           }),
@@ -250,7 +250,7 @@ export function XDSTopNavItem({
       aria-disabled={isDisabled || undefined}
       tabIndex={isDisabled ? -1 : undefined}
       {...mergeProps(
-        xdsClassName('top-nav-item', {
+        xdsProps('top-nav-item', {
           selected: isSelected ? 'selected' : null,
         }),
         stylex.props(

@@ -111,7 +111,9 @@ export type XDSBuiltinTextType =
  *
  * Themes can define custom text types via component overrides in defineTheme.
  * Custom types render with `body` baseline styles and receive their visual
- * treatment from theme CSS (`.xds-text.<custom-type> { ... }`).
+ * treatment from theme CSS. Components render both compatibility classes
+ * (`.xds-text.<custom-type>`) and reflected data attributes
+ * (`.xds-text[data-type="<custom-type>"]`) for prop-aware selectors.
  *
  * To add type-safe custom types, use module augmentation:
  * ```ts

@@ -42,7 +42,7 @@ import {
 } from '../Text/text.stylex';
 import {useTruncation} from '../Text/useTruncation';
 import type {LayerPlacement} from '../Layer';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 const LazyXDSTooltip = lazy(async () =>
@@ -248,7 +248,7 @@ export function XDSHeading({
       <Component
         ref={mergeRefs(ref, truncation.ref, headingRef)}
         {...mergeProps(
-          xdsClassName('heading', {level, color, ...(type && {type})}),
+          xdsProps('heading', {level, color, ...(type && {type})}),
           stylex.props(
             colorStyles[color],
             type ? sizeByTypeStyles[type] : sizeByLevelStyles[level],

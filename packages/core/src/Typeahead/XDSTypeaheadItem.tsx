@@ -21,7 +21,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {XDSSearchableItem} from './types';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 
 // =============================================================================
 // Types
@@ -141,7 +141,7 @@ export function XDSTypeaheadItem<T extends XDSSearchableItem>({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('typeahead-item'),
+        xdsProps('typeahead-item'),
         stylex.props(styles.container, isDisabled && styles.disabled),
       )}>
       {icon}

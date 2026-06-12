@@ -22,7 +22,7 @@
 import {type CSSProperties, type SVGProps, useId} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '@xds/core/theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '@xds/core/utils';
+import {mergeProps, xdsProps} from '@xds/core/utils';
 import {iconVars} from './tokens.stylex';
 import {variations, opticalSize} from './variations.stylex';
 
@@ -367,7 +367,7 @@ export function XDSSVGIcon({
       viewBox={viewBox}
       aria-hidden="true"
       {...mergeProps(
-        xdsClassName('svg-icon', {variation, size, color}),
+        xdsProps('svg-icon', {variation, size, color}),
         stylex.props(
           styles.root,
           colorStyles[color],
@@ -389,11 +389,9 @@ export function XDSSVGIcon({
           </mask>
         </defs>
       )}
-
       {/* Primary layer */}
       {renderFillRoleShapes(primarySplit.fill, 'primary', maskId)}
       {renderStrokeRoleShapes(primarySplit.stroke, 'primary')}
-
       {/* Secondary layer — hidden entirely in bold+mask (all secondaries are knockouts) */}
       {hasSecondary && !useMask && (
         <>

@@ -51,7 +51,7 @@ import {
   easeVars,
   shadowVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import type {
   XDSDropdownMenuOption,
@@ -187,7 +187,7 @@ export function XDSContextMenu({
 
   const menuId = useId();
   const positionRef = useRef({x: 0, y: 0});
-  // eslint-disable-next-line @eslint-react/no-unused-state -- isOpen triggers the click-outside effect
+   
   const [isOpen, setIsOpen] = useState(false);
 
   const layer = useXDSLayer({
@@ -288,7 +288,6 @@ export function XDSContextMenu({
         data-testid={testId}>
         {children}
       </div>
-
       {layer.render(
         <div
           ref={listRef}
@@ -296,7 +295,7 @@ export function XDSContextMenu({
           role="menu"
           onKeyDown={listKeyDown}
           {...mergeProps(
-            xdsClassName('context-menu'),
+            xdsProps('context-menu'),
             stylex.props(styles.menu, xstyle),
             className,
             style,

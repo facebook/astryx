@@ -73,13 +73,16 @@ export interface PropDoc {
 }
 
 /**
- * A theming target — a stable CSS class name that `defineTheme` can target
- * via `@scope` selectors. Each component renders one or more class names
- * via `xdsClassName()`, and themes can override styles for each.
+ * A theming target — a stable CSS class name plus reflected `data-*`
+ * attributes that identify visual prop/state values on the rendered element.
+ * `defineTheme` currently emits compatibility selectors for the classes;
+ * external CSS should prefer the data attributes for new prop-aware selectors.
  *
  * @example
  * ```
  * {className: 'xds-button', visualProps: ['variant', 'size']}
+ * // <XDSButton variant="primary" size="sm" /> renders:
+ * // class="xds-button primary sm ..." data-variant="primary" data-size="sm"
  * {className: 'xds-avatar-status-dot', visualProps: ['variant']}
  * {className: 'xds-card'}
  * ```
@@ -89,16 +92,19 @@ export interface ThemingTarget {
    *  Always starts with `xds-`.
    *  e.g. `"xds-button"`, `"xds-avatar-status-dot"`, `"xds-card"` */
   className: string;
-  /** Visual prop names that produce variant classes on this element.
-   *  These are the props passed to `xdsClassName()` as the second argument.
-   *  Themes can target specific variants via `.xds-button.secondary`.
+  /** Visual prop names reflected on this element.
+   *  Components render compatibility classes for these values today and also
+   *  expose matching data attributes (`variant` → `data-variant`,
+   *  `labelPosition` → `data-label-position`). Prefer data attributes for new
+   *  external CSS selectors, e.g. `.xds-button[data-variant="secondary"]`.
    *  Omit if the component has no visual props (class name only). */
   visualProps?: string[];
-  /** State class names that appear on this element based on component state.
+  /** State names reflected on this element based on component state.
    *  Unlike visualProps (driven by props), these reflect runtime state
-   *  (checked, selected, today, on, expanded, etc.).
-   *  Themes target them the same way as variants: `.xds-radio.checked { ... }`
-   *  Omit if the element has no state-driven classes. */
+   *  (checked, selected, today, on, expanded, etc.). Components render
+   *  compatibility state classes today and also expose matching data attributes
+   *  where the state is reflected by `xdsProps()`.
+   *  Omit if the element has no state-driven selectors. */
   states?: string[];
 }
 
@@ -462,9 +468,9 @@ interface BaseDoc {
    *  only make sense within a parent (e.g. BreadcrumbItem, DialogHeader)
    *  or internal primitives that shouldn't appear in the gallery. */
   isHiddenFromOverview?: boolean;
-  /** Theming configuration. Documents the stable CSS class names
-   *  rendered by this component that themes can target via `@scope`
-   *  selectors in `defineTheme`. */
+  /** Theming configuration. Documents the stable selector surface rendered by
+   *  this component: `xds-*` classes plus reflected `data-*` attributes for
+   *  visual props/states. */
   theming?: {
     /** Whether this component is a container whose `padding` properties
      *  should be mapped to container tokens by the theme pipeline.

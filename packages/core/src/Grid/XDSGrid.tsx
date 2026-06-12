@@ -22,7 +22,7 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {SpacingStep} from '../utils/types';
 import type {SizeValue} from '../utils/types';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 
 /**
  * Grid alignment options for align-items and justify-items.
@@ -445,7 +445,7 @@ export function XDSGrid({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('grid', {columns: columnsVariant, gap, align, justify}),
+        xdsProps('grid', {columns: columnsVariant, gap, align, justify}),
         stylex.props(
           baseStyles.grid,
           gap != null && gapStyles[gap],

@@ -31,7 +31,7 @@ import {XDSIcon} from '../Icon';
 import {useXDSLayer} from '../Layer';
 import {useScrollOverflow} from '../hooks/useScrollOverflow';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, xdsProps} from '../utils';
 import type {SpacingStep} from '../utils/types';
 
 export interface XDSCarouselProps extends XDSBaseProps<HTMLDivElement> {
@@ -324,7 +324,7 @@ export function XDSCarousel({
       aria-label={ariaLabel}
       aria-roledescription="carousel"
       {...mergeProps(
-        xdsClassName('carousel'),
+        xdsProps('carousel'),
         stylex.props(styles.root, xstyle),
         className,
         style,
@@ -343,7 +343,6 @@ export function XDSCarousel({
           <div {...stylex.props(styles.item)}>{child}</div>
         ))}
       </div>
-
       {hasButtons &&
         layer.render(
           <>

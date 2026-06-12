@@ -18,7 +18,7 @@
 import {useId, useState, useMemo, useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSTreeListItem} from './XDSTreeListItem';
 import type {XDSTreeListItemData, XDSTreeListDensity} from './XDSTreeListTypes';
@@ -215,7 +215,7 @@ export function XDSTreeList({
       ref={ref}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('tree-list', {density}),
+        xdsProps('tree-list', {density}),
         stylex.props(styles.root, xstyle),
         className,
         style,

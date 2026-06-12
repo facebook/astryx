@@ -27,7 +27,7 @@ import {
   durationVars,
   easeVars,
 } from '@xds/core/theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '@xds/core/utils';
+import {mergeProps, xdsProps} from '@xds/core/utils';
 
 // =============================================================================
 // Types
@@ -258,7 +258,7 @@ export function XDSChatReasoning(props: XDSChatReasoningProps) {
   return (
     <div
       {...mergeProps(
-        xdsClassName('chat-reasoning', {
+        xdsProps('chat-reasoning', {
           expanded: isExpanded ? 'expanded' : null,
           streaming: isStreaming ? 'streaming' : null,
         }),
@@ -307,7 +307,6 @@ export function XDSChatReasoning(props: XDSChatReasoningProps) {
           <ChevronDownIcon />
         </span>
       </div>
-
       <div
         {...stylex.props(styles.content, isExpanded && styles.contentExpanded)}>
         <div {...stylex.props(styles.contentInner)}>

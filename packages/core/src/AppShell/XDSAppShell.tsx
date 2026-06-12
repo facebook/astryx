@@ -49,7 +49,7 @@ import {XDSAppShellMobileContext} from './XDSAppShellMobileContext';
 import type {XDSAppShellMobileContextValue} from './XDSAppShellMobileContext';
 import type {SpacingStep} from '../utils/types';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps, mergeRefs, isRenderable} from '../utils';
+import {mergeProps, mergeRefs, isRenderable, xdsProps} from '../utils';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 
@@ -669,7 +669,7 @@ export function XDSAppShell({
       <div
         ref={headerRef}
         {...mergeProps(
-          xdsClassName('app-shell-header', {variant}),
+          xdsProps('app-shell-header', {variant}),
           stylex.props(navAreaStyle, isAuto && styles.headerSticky),
         )}>
         {headerInner}
@@ -689,7 +689,7 @@ export function XDSAppShell({
       padding={0}
       hasDivider={navHasDividers}
       isScrollable={isFill}
-      className={xdsClassName('app-shell-sidenav', {variant})}
+      {...xdsProps('app-shell-sidenav', {variant})}
       xstyle={[
         navAreaStyle,
         isAuto && stickyBgStyle,
@@ -750,7 +750,7 @@ export function XDSAppShell({
     shouldShowAutoToggle && !hasTopNav && hasSideNav ? (
       <div
         {...mergeProps(
-          xdsClassName('app-shell-header', {variant}),
+          xdsProps('app-shell-header', {variant}),
           stylex.props(navAreaStyle, isAuto && styles.headerSticky),
         )}>
         <XDSLayoutHeader padding={0} hasDivider={navHasDividers}>
@@ -773,7 +773,7 @@ export function XDSAppShell({
         ref={mergeRefs(ref, shellRef)}
         data-testid={dataTestId}
         {...mergeProps(
-          xdsClassName('app-shell', {variant}),
+          xdsProps('app-shell', {variant}),
           stylex.props(
             styles.root,
             variant === 'wash'

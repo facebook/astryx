@@ -15,7 +15,7 @@
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import {
   colorVars,
   spacingVars,
@@ -88,7 +88,7 @@ export function XDSCommandPaletteFooter({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('command-palette-footer'),
+        xdsProps('command-palette-footer'),
         stylex.props(styles.footer, xstyle),
         className,
         style,

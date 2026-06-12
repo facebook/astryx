@@ -18,7 +18,7 @@ import type {ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, sizeVars} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 
 /**
  * NavIcon styles
@@ -78,7 +78,7 @@ export function XDSNavIcon({
     <span
       ref={ref}
       {...mergeProps(
-        xdsClassName('navicon'),
+        xdsProps('navicon'),
         stylex.props(styles.base, xstyle),
         className,
         style,

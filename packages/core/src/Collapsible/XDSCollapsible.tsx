@@ -34,7 +34,7 @@ import {
 } from '../theme/tokens.stylex';
 import {useXDSCollapsible} from './useXDSCollapsible';
 import {getIcon} from '../Icon/globalIconRegistry';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 const styles = stylex.create({
@@ -197,7 +197,7 @@ export function XDSCollapsible({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('collapsible'),
+        xdsProps('collapsible'),
         stylex.props(styles.root, xstyle),
         className,
         style,

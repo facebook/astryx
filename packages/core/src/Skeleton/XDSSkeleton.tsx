@@ -18,7 +18,7 @@
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars, durationVars} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps, xdsProps} from '../utils';
 
 // =============================================================================
 // Animation Timing Constants
@@ -181,7 +181,7 @@ export function XDSSkeleton({
       ref={ref}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('skeleton'),
+        xdsProps('skeleton'),
         stylex.props(
           styles.root,
           styles.animate,
