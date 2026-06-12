@@ -23,7 +23,7 @@ export const docs = {
       name: 'isMobile',
       type: 'boolean',
       description:
-        'Whether the current viewport is below the AppShell mobile navigation breakpoint.',
+        'Whether the current viewport is below the AppShell mobile navigation breakpoint. Use this to synchronize AppShell-adjacent mobile UI with the same breakpoint as mobile nav.',
     },
     {
       name: 'isMobileNavOpen',
@@ -63,12 +63,12 @@ export const docs = {
   ],
   usage: {
     description:
-      'Hook for reading and controlling XDSAppShell mobile navigation state from descendants of AppShell. Use it for custom mobile nav triggers, custom nav items that need to close the drawer after navigation, or AppShell-aware navigation components.',
+      'Hook for reading and controlling XDSAppShell mobile navigation state from descendants of AppShell. Use it for custom mobile nav triggers, closing the drawer after route changes, or coordinating AppShell-adjacent mobile experiences with the same breakpoint used by mobile nav.',
     bestPractices: [
       {
         guidance: true,
         description:
-          'Use inside the XDSAppShell tree when building custom mobile navigation controls or route-aware nav items.',
+          'Use inside the XDSAppShell tree when building custom mobile navigation controls, route-aware nav items, or UI that should update at the same breakpoint as AppShell mobile nav.',
       },
       {
         guidance: true,
@@ -83,7 +83,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Use for arbitrary responsive layout logic outside AppShell — use useMediaQuery for unrelated viewport checks.',
+          'Use as a general responsive primitive when the UI is not inside AppShell or does not need to align with AppShell mobile nav — use useMediaQuery instead.',
       },
       {
         guidance: false,
@@ -106,9 +106,10 @@ export const docs = {
 /** @type {import('../docs-types').HookTranslationDoc} */
 export const docsDense = {
   description:
-    'Reads/controls XDSAppShell mobile nav context. Use for custom mobile nav triggers, route-aware nav items that close drawer, or AppShell-aware nav components.',
+    'Reads/controls XDSAppShell mobile nav context. Use for custom triggers, closing drawer after route changes, or syncing AppShell-adjacent mobile UI to the same breakpoint as mobile nav.',
   returnDescriptions: {
-    isMobile: 'viewport below AppShell mobile nav breakpoint?',
+    isMobile:
+      'viewport below AppShell mobile nav breakpoint? Use to sync AppShell-adjacent mobile UI',
     isMobileNavOpen: 'AppShell-managed mobile nav drawer open?',
     toggleMobileNav: 'toggle drawer; no-op when mobile nav disabled',
     openMobileNav: 'open drawer; no-op when mobile nav disabled',
@@ -120,12 +121,12 @@ export const docsDense = {
   },
   usage: {
     description:
-      'Reads/controls XDSAppShell mobile nav context. Use for custom mobile nav triggers, route-aware nav items that close drawer, or AppShell-aware nav components.',
+      'Reads/controls XDSAppShell mobile nav context. Use for custom triggers, closing drawer after route changes, or syncing AppShell-adjacent mobile UI to the same breakpoint as mobile nav.',
     bestPractices: [
       {
         guidance: true,
         description:
-          'Use inside XDSAppShell tree for custom mobile nav controls / route-aware nav items.',
+          'Use inside XDSAppShell tree for custom nav controls, route-aware nav items, or UI that should update at AppShell mobile nav breakpoint.',
       },
       {
         guidance: true,
@@ -140,7 +141,7 @@ export const docsDense = {
       {
         guidance: false,
         description:
-          'Use for arbitrary responsive layout outside AppShell — use useMediaQuery instead.',
+          'Use as general responsive primitive when not inside AppShell / not aligning to AppShell mobile nav — use useMediaQuery instead.',
       },
       {
         guidance: false,
