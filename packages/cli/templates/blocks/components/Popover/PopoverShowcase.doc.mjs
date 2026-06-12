@@ -4,6 +4,7 @@
 export const doc = {
   type: 'block',
   exampleFor: 'Popover',
+  alsoShowcaseFor: ['useXDSPopover'],
   name: 'Popover',
   displayName: 'Popover',
   isReady: true,

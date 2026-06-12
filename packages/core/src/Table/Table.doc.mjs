@@ -146,53 +146,17 @@ export const docs = {
       displayName: 'useXDSTableSelection',
       description:
         'Hook that returns a TablePlugin implementing row selection with checkboxes, select-all, and aria-selected. Uses React Context for independent checkbox re-renders.',
-      props: [
-        {
-          name: 'getIsItemSelected',
-          type: '(item: T) => boolean',
-          description: 'Returns whether the given item is currently selected.',
-          required: true,
-        },
-        {
-          name: 'onSelectItem',
-          type: '(event: {item: T; isSelected: boolean}) => void',
-          description:
-            'Called when a row checkbox is toggled. isSelected is the new desired state.',
-          required: true,
-        },
-        {
-          name: 'onSelectAll',
-          type: '(event: {isAllSelected: boolean}) => void',
-          description: 'Called when the select-all header checkbox is toggled.',
-          required: true,
-        },
-        {
-          name: 'getIsAllSelected',
-          type: '() => boolean',
-          description:
-            'Returns whether all selectable items are currently selected.',
-          required: true,
-        },
-        {
-          name: 'getIsIndeterminate',
-          type: '() => boolean',
-          description:
-            'Returns whether selection is partial (some but not all). Renders the select-all checkbox in indeterminate state.',
-        },
-        {
-          name: 'getIsItemSelectable',
-          type: '(item: T) => boolean',
-          description:
-            'Returns whether a row should show a checkbox. Non-selectable rows render nothing in the selection cell.',
-          default: '() => true',
-        },
-        {
-          name: 'getIsItemEnabled',
-          type: '(item: T) => boolean',
-          description:
-            'Returns whether a row checkbox is interactive. Disabled rows show a disabled checkbox.',
-          default: '() => true',
-        },
+      params: [
+        {name: 'getIsItemSelected', type: '(item: T) => boolean', description: 'Returns whether the given item is currently selected.', required: true},
+        {name: 'onSelectItem', type: '(event: {item: T; isSelected: boolean}) => void', description: 'Called when a row checkbox is toggled. isSelected is the new desired state.', required: true},
+        {name: 'onSelectAll', type: '(event: {isAllSelected: boolean}) => void', description: 'Called when the select-all header checkbox is toggled.', required: true},
+        {name: 'getIsAllSelected', type: '() => boolean', description: 'Returns whether all selectable items are currently selected.', required: true},
+        {name: 'getIsIndeterminate', type: '() => boolean', description: 'Returns whether selection is partial (some but not all). Renders the select-all checkbox in indeterminate state.'},
+        {name: 'getIsItemSelectable', type: '(item: T) => boolean', description: 'Returns whether a row should show a checkbox. Non-selectable rows render nothing in the selection cell.', default: '() => true'},
+        {name: 'getIsItemEnabled', type: '(item: T) => boolean', description: 'Returns whether a row checkbox is interactive. Disabled rows show a disabled checkbox.', default: '() => true'},
+      ],
+      returns: [
+        {name: 'value', type: 'TablePlugin<T>', description: 'Selection plugin to pass to XDSTable plugins. It prepends the checkbox column and applies selected row state.'},
       ],
     },
     {
@@ -200,46 +164,16 @@ export const docs = {
       displayName: 'useXDSTableSelectionState',
       description:
         'State management companion for useXDSTableSelection. Handles disabled/selectable row filtering for select-all automatically — disabled rows are frozen (preserved across select-all/deselect-all), non-selectable rows are excluded.',
-      props: [
-        {
-          name: 'data',
-          type: 'T[]',
-          description: 'The full data array rendered in the table.',
-          required: true,
-        },
-        {
-          name: 'idKey',
-          type: '(keyof T & string) | ((item: T) => string)',
-          description:
-            'Key extractor — property name or function returning a unique string ID.',
-          required: true,
-        },
-        {
-          name: 'selectedKeys',
-          type: 'Set<string>',
-          description: 'Controlled set of selected item IDs.',
-          required: true,
-        },
-        {
-          name: 'setSelectedKeys',
-          type: 'Dispatch<SetStateAction<Set<string>>>',
-          description: 'Setter for the controlled selected keys.',
-          required: true,
-        },
-        {
-          name: 'getIsItemSelectable',
-          type: '(item: T) => boolean',
-          description:
-            'Should this row show a checkbox? Non-selectable rows are excluded from select-all.',
-          default: '() => true',
-        },
-        {
-          name: 'getIsItemEnabled',
-          type: '(item: T) => boolean',
-          description:
-            'Is this row checkbox interactive? Disabled rows are frozen — select-all preserves their state.',
-          default: '() => true',
-        },
+      params: [
+        {name: 'data', type: 'T[]', description: 'The data array currently rendered in the table. Select-all operates on this array.', required: true},
+        {name: 'idKey', type: '(keyof T & string) | ((item: T) => string)', description: 'Key extractor — property name or function returning a unique string ID.', required: true},
+        {name: 'selectedKeys', type: 'Set<string>', description: 'Controlled set of selected item IDs.', required: true},
+        {name: 'setSelectedKeys', type: 'Dispatch<SetStateAction<Set<string>>>', description: 'Setter for the controlled selected keys.', required: true},
+        {name: 'getIsItemSelectable', type: '(item: T) => boolean', description: 'Should this row show a checkbox? Non-selectable rows are excluded from select-all.', default: '() => true'},
+        {name: 'getIsItemEnabled', type: '(item: T) => boolean', description: 'Is this row checkbox interactive? Disabled rows are frozen — select-all preserves their state.', default: '() => true'},
+      ],
+      returns: [
+        {name: 'selectionConfig', type: 'UseXDSTableSelectionConfig<T>', description: 'Ready-to-use config object to pass directly to useXDSTableSelection.'},
       ],
     },
     {
@@ -247,35 +181,14 @@ export const docs = {
       displayName: 'useXDSTableSortable',
       description:
         'Headless multi-sort plugin for XDSTable. The consumer owns sort state and provides a callback. Shift+click enables secondary sort columns. Sort indicators render in header cells automatically.',
-      props: [
-        {
-          name: 'sort',
-          type: 'XDSTableSortState<TSortKey>',
-          description:
-            'Current sort state. Ordered array of {sortKey, direction} entries. First entry is the primary sort.',
-          required: true,
-        },
-        {
-          name: 'onSortChange',
-          type: '(sort: XDSTableSortState<TSortKey>) => void',
-          description:
-            'Called when the user clicks a header cell to change sort.',
-          required: true,
-        },
-        {
-          name: 'allowUnsortedState',
-          type: 'boolean',
-          description:
-            'Allow cycling back to unsorted. When true: asc, desc, unsorted. When false: asc, desc, asc.',
-          default: 'false',
-        },
-        {
-          name: 'isMultiSortEnabled',
-          type: 'boolean',
-          description:
-            'Enable multi-sort via Shift+click. Regular click still replaces the entire sort state.',
-          default: 'false',
-        },
+      params: [
+        {name: 'sort', type: 'XDSTableSortState<TSortKey>', description: 'Current sort state. Ordered array of {sortKey, direction} entries. First entry is the primary sort.', required: true},
+        {name: 'onSortChange', type: '(sort: XDSTableSortState<TSortKey>) => void', description: 'Called when the user clicks a header cell to change sort.', required: true},
+        {name: 'allowUnsortedState', type: 'boolean', description: 'Allow cycling back to unsorted. When true: asc, desc, unsorted. When false: asc, desc, asc.', default: 'true'},
+        {name: 'isMultiSortEnabled', type: 'boolean', description: 'Enable multi-sort via Shift+click. Regular click still replaces the entire sort state.', default: 'false'},
+      ],
+      returns: [
+        {name: 'value', type: 'TablePlugin<T>', description: 'Sorting plugin to pass to XDSTable plugins. It augments sortable header cells with buttons, indicators, and aria-sort.'},
       ],
     },
     {
@@ -283,110 +196,38 @@ export const docs = {
       displayName: 'useXDSTablePagination',
       description:
         'Headless pagination plugin for XDSTable. Supports client-side slicing, server-side pagination, and cursor-based pagination. Renders XDSPagination controls automatically above, below, or both.',
-      props: [
-        {
-          name: 'page',
-          type: 'number',
-          description: 'Current page number (1-based).',
-          required: true,
-        },
-        {
-          name: 'onPageChange',
-          type: '(page: number) => void',
-          description: 'Called when the page changes.',
-          required: true,
-        },
-        {
-          name: 'totalItems',
-          type: 'number',
-          description:
-            'Total number of items across all pages. Used to calculate total page count.',
-        },
-        {
-          name: 'totalPages',
-          type: 'number',
-          description:
-            'Total number of pages. Use when you know the page count but not item count.',
-        },
-        {
-          name: 'hasMore',
-          type: 'boolean',
-          description:
-            'Whether more pages exist. Use for cursor-based pagination where the total is unknown.',
-        },
-        {
-          name: 'pageSize',
-          type: 'number',
-          description: 'Number of items per page.',
-          default: '10',
-        },
-        {
-          name: 'onPageSizeChange',
-          type: '(pageSize: number) => void',
-          description:
-            'Called when the user changes the page size. Shows a page size dropdown when provided with pageSizeOptions.',
-        },
-        {
-          name: 'pageSizeOptions',
-          type: 'number[]',
-          description:
-            'Available page size options. Shows a page size selector when provided.',
-        },
-        {
-          name: 'variant',
-          type: "'pages' | 'count' | 'compact' | 'dots' | 'none'",
-          description: 'Visual variant for the pagination controls.',
-          default: "'pages'",
-        },
-        {
-          name: 'position',
-          type: "'below' | 'above' | 'both' | 'none'",
-          description:
-            'Where to render pagination controls relative to the table.',
-          default: "'below'",
-        },
-        {
-          name: 'align',
-          type: "'start' | 'center' | 'end'",
-          description:
-            'Horizontal alignment of the pagination controls.',
-          default: "'center'",
-        },
+      params: [
+        {name: 'page', type: 'number', description: 'Current page number (1-based).', required: true},
+        {name: 'onPageChange', type: '(page: number) => void', description: 'Called when the page changes.', required: true},
+        {name: 'totalItems', type: 'number', description: 'Total number of items across all pages. Used to calculate total page count.'},
+        {name: 'totalPages', type: 'number', description: 'Total number of pages. Use when you know the page count but not item count.'},
+        {name: 'hasMore', type: 'boolean', description: 'Whether more pages exist. Use for cursor-based pagination where the total is unknown.'},
+        {name: 'pageSize', type: 'number', description: 'Number of items per page.', default: '10'},
+        {name: 'onPageSizeChange', type: '(pageSize: number) => void', description: 'Called when the user changes the page size. Shows a page size dropdown when provided with pageSizeOptions.'},
+        {name: 'pageSizeOptions', type: 'number[]', description: 'Available page size options. Shows a page size selector when provided.'},
+        {name: 'variant', type: "'pages' | 'count' | 'compact' | 'dots' | 'none'", description: 'Visual variant for the pagination controls.', default: "'pages'"},
+        {name: 'size', type: "'sm' | 'md'", description: 'Size of the pagination controls.', default: "'md'"},
+        {name: 'position', type: "'below' | 'above' | 'both' | 'none'", description: 'Where to render pagination controls relative to the table.', default: "'below'"},
+        {name: 'align', type: "'start' | 'center' | 'end'", description: 'Horizontal alignment of the pagination controls.', default: "'center'"},
+        {name: 'label', type: 'string', description: 'Accessible label for the pagination nav landmark.', default: "'Table pagination'"},
+      ],
+      returns: [
+        {name: 'value', type: 'TablePlugin<T>', description: 'Pagination plugin to pass to XDSTable plugins. It renders pagination controls around the table.'},
       ],
     },
     {
       name: 'useXDSTableColumnSettings',
       displayName: 'useXDSTableColumnSettings',
       description:
-        'Headless column visibility and ordering management for XDSTable. Provides filtered columns, toggle helpers, and pre-built XDSMultiSelector options for a column picker UI.',
-      props: [
-        {
-          name: 'columns',
-          type: 'XDSColumnSettingsOption[]',
-          description:
-            'All available columns with metadata for the settings UI. Each entry has key, label, optional isAlwaysVisible and group.',
-          required: true,
-        },
-        {
-          name: 'activeColumnKeys',
-          type: 'string[]',
-          description:
-            'Currently active column keys, in display order. Only columns with keys in this array are shown.',
-          required: true,
-        },
-        {
-          name: 'onChangeActiveColumnKeys',
-          type: '(keys: string[]) => void',
-          description:
-            'Called when active columns change (toggle, reorder).',
-          required: true,
-        },
-        {
-          name: 'defaultColumnKeys',
-          type: 'string[]',
-          description:
-            'Default column set for "Reset to default". When omitted, reset shows all columns.',
-        },
+        'Headless column visibility and ordering plugin for XDSTable. It filters and reorders the table columns from a controlled active-column key list.',
+      params: [
+        {name: 'columns', type: 'ReadonlyArray<XDSColumnSettingsOption<TColumnKey>>', description: 'All available columns with metadata for the settings UI. Each entry has key, label, optional isAlwaysVisible and group.', required: true},
+        {name: 'activeColumnKeys', type: 'ReadonlyArray<TColumnKey>', description: 'Currently active column keys, in display order. Only columns with keys in this array are shown.', required: true},
+        {name: 'onChangeActiveColumnKeys', type: '(keys: ReadonlyArray<TColumnKey>) => void', description: 'Called when active columns change (toggle, reorder).', required: true},
+        {name: 'defaultColumnKeys', type: 'ReadonlyArray<TColumnKey>', description: 'Default column set for Reset to default. When omitted, reset shows all columns.'},
+      ],
+      returns: [
+        {name: 'value', type: 'TablePlugin<T>', description: 'Column settings plugin to pass to XDSTable plugins. It filters and orders columns by activeColumnKeys.'},
       ],
     },
     {
@@ -394,29 +235,15 @@ export const docs = {
       isHiddenFromOverview: true,
       displayName: 'useXDSTableFiltering',
       description:
-        'Table plugin that adds inline column filters with popover or inline controls. Pairs with useXDSTableFilterState for managed state. Supports text, select, multi-select, date, and number filter types via PowerSearch field definitions.',
-      props: [
-        {
-          name: 'filters',
-          type: 'XDSTableFilterState',
-          description:
-            'Current filter state — map from column key to filter value.',
-          required: true,
-        },
-        {
-          name: 'onFilterChange',
-          type: '(columnKey: string, value: XDSTableFilterValue | null) => void',
-          description:
-            'Called when the user changes a filter value. null clears the filter.',
-          required: true,
-        },
-        {
-          name: 'variant',
-          type: "'popover' | 'inline'",
-          description:
-            'Display variant for filter controls.',
-          default: "'popover'",
-        },
+        'Table plugin that adds inline column filters with popover or inline controls. Pairs with useXDSTableFilterState for managed state. Supports text, select, multi-select, date, time, number, and tokenizer filter types via PowerSearch field definitions.',
+      params: [
+        {name: 'filters', type: 'XDSTableFilterState', description: 'Current filter state — map from column key to filter value.', required: true},
+        {name: 'onFilterChange', type: '(columnKey: string, value: XDSTableFilterValue | null) => void', description: 'Called when the user changes a filter value. null clears the filter.', required: true},
+        {name: 'variant', type: "'popover' | 'inline' | 'inline-compact'", description: 'Display variant for filter controls.', default: "'popover'"},
+        {name: 'searchConfig', type: 'PowerSearchConfig', description: 'PowerSearch field definitions used to resolve each column filter to the correct control type.', required: true},
+      ],
+      returns: [
+        {name: 'value', type: 'TablePlugin<T>', description: 'Filtering plugin to pass to XDSTable plugins. It renders filter controls in header cells.'},
       ],
     },
     {
@@ -424,14 +251,14 @@ export const docs = {
       isHiddenFromOverview: true,
       displayName: 'useXDSTableFilterState',
       description:
-        'Managed state hook for table filtering. Returns the current filter map and an onChange handler. Pass the result directly to useXDSTableFiltering.',
-      props: [
-        {
-          name: 'initialState',
-          type: 'XDSTableFilterState',
-          description:
-            'Optional initial filter state map.',
-        },
+        'Managed state hook for table filtering. Returns the current filter map, a typed onChange handler, and a clearAll helper. Pass filters and onFilterChange directly to useXDSTableFiltering.',
+      params: [
+        {name: 'initialState', type: 'XDSTableFilterState', description: 'Optional initial filter state map.'},
+      ],
+      returns: [
+        {name: 'filters', type: 'XDSTableFilterState', description: 'Current filter state map. Pass to useXDSTableFiltering.'},
+        {name: 'onFilterChange', type: '(key: string, value: XDSTableFilterValue | null) => void', description: 'Filter change handler. Pass to useXDSTableFiltering.'},
+        {name: 'clearAll', type: '() => void', description: 'Reset all filters to an empty state.'},
       ],
     },
   ],

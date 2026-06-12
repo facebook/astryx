@@ -4,6 +4,8 @@
 export const doc = {
   type: 'block',
   exampleFor: 'Table',
+  alsoExampleFor: ['useXDSTableColumnSettings'],
+  alsoShowcaseFor: ['useXDSTableColumnSettings'],
   name: 'Table — Column Settings',
   displayName: 'Table — Column Settings',
   description:

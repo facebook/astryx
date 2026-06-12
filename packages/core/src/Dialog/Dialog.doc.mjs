@@ -151,8 +151,11 @@ export const docs = {
       name: 'useXDSImperativeDialog',
       displayName: 'useXDSImperativeDialog',
       description: 'Hook for showing a dialog without managing open state. Call dialog.show(content, options) to open and dialog.hide() to close. Render dialog.element in your JSX tree.',
-      props: [
-        {name: 'show', type: '(content: ReactNode, options?: DialogOptions) => void', description: 'Show the dialog with the given content. Options are the same as XDSDialog props minus isOpen/onOpenChange/children.'},
+      params: [
+        {name: 'defaultOptions', type: 'DialogOptions', description: 'Default XDSDialog props to apply to every dialog shown by this hook, minus isOpen/onOpenChange/children.'},
+      ],
+      returns: [
+        {name: 'show', type: '(content: ReactNode, options?: DialogOptions) => void', description: 'Show the dialog with the given content. Options override or extend defaultOptions for this show call.'},
         {name: 'hide', type: '() => void', description: 'Hide the dialog.'},
         {name: 'isOpen', type: 'boolean', description: 'Whether the dialog is currently open.'},
         {name: 'element', type: 'ReactNode', description: 'The dialog element — render this in your JSX tree.'},
