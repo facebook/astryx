@@ -169,6 +169,12 @@ function buildInitialState(
         case 'syntax-theme':
           state[row.name] = allSyntaxPresets[0];
           break;
+        case 'input-status':
+          state[row.name] = {
+            type: control.options[0],
+            message: `${control.options[0]} status`,
+          };
+          break;
         case 'boolean':
           state[row.name] = false;
           break;

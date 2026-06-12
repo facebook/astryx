@@ -81,6 +81,35 @@ function resolveSlotElement(
   }
 }
 
+type InputStatusOption = 'error' | 'warning' | 'success';
+
+const STATUS_OPTION_LABELS: Record<InputStatusOption, string> = {
+  error: 'Error',
+  warning: 'Warning',
+  success: 'Success',
+};
+
+function createStatusValue(type: InputStatusOption) {
+  return {
+    type,
+    message: `${STATUS_OPTION_LABELS[type]} status message`,
+  };
+}
+
+function getStatusValue(value: unknown): InputStatusOption | 'None' {
+  if (
+    value != null &&
+    typeof value === 'object' &&
+    'type' in value &&
+    typeof value.type === 'string' &&
+    value.type in STATUS_OPTION_LABELS
+  ) {
+    return value.type as InputStatusOption;
+  }
+
+  return 'None';
+}
+
 function humanizePackageName(pkgName: string): string {
   return pkgName
     .replace('@xds/theme-', '')
@@ -332,13 +361,47 @@ function InlineControl({
       );
     case 'enum': {
       const isNumeric = control.options.every(o => /^-?\d+(\.\d+)?$/.test(o));
+      const options = control.allowEmpty
+        ? ['None', ...control.options]
+        : control.options;
+      const selected =
+        value == null && control.allowEmpty
+          ? 'None'
+          : String(value ?? control.options[0]);
       return (
         <XDSSelector
           label={prop.name}
           isLabelHidden
-          value={String(value ?? control.options[0])}
-          options={control.options}
-          onChange={next => onChange(isNumeric ? Number(next) : next)}
+          value={selected}
+          options={options}
+          onChange={next => {
+            if (control.allowEmpty && (next === 'None' || next === '')) {
+              onChange(undefined);
+              return;
+            }
+            onChange(isNumeric ? Number(next) : next);
+          }}
+        />
+      );
+    }
+    case 'input-status': {
+      const selected = getStatusValue(value);
+      const options = control.allowEmpty
+        ? ['None', ...control.options]
+        : control.options;
+      return (
+        <XDSSelector
+          label={prop.name}
+          isLabelHidden
+          value={selected}
+          options={options}
+          onChange={next =>
+            onChange(
+              next === 'None' || next === ''
+                ? undefined
+                : createStatusValue(next as InputStatusOption),
+            )
+          }
         />
       );
     }

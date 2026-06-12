@@ -12,8 +12,11 @@ export interface ElementOption {
   componentName: string;
 }
 
+type InputStatusOption = 'error' | 'warning' | 'success';
+
 export type PropControlDescriptor =
   | {kind: 'enum'; options: string[]; allowEmpty: boolean}
+  | {kind: 'input-status'; options: InputStatusOption[]; allowEmpty: boolean}
   | {kind: 'theme'}
   | {kind: 'syntax-theme'}
   | {kind: 'boolean'}
@@ -29,6 +32,68 @@ const NUMBER_LITERAL_RE = /^-?\d+(\.\d+)?$/;
 const CALLBACK_RE = /=>/;
 const NODE_TYPE_RE = /\b(ReactNode|ReactElement|JSX\.Element|ReactChild)\b/;
 const REACT_ELEMENT_RE = /ReactElement<(XDS\w+)Props>/g;
+
+const ICON_OPTIONS = [
+  'close',
+  'chevronDown',
+  'chevronLeft',
+  'chevronRight',
+  'check',
+  'success',
+  'error',
+  'warning',
+  'info',
+  'calendar',
+  'clock',
+  'externalLink',
+  'menu',
+  'moreHorizontal',
+  'search',
+  'arrowUp',
+  'arrowDown',
+  'arrowsUpDown',
+  'funnel',
+  'eyeSlash',
+  'viewColumns',
+  'copy',
+  'checkDouble',
+  'wrench',
+  'stop',
+  'microphone',
+];
+
+const INPUT_STATUS_OPTIONS: InputStatusOption[] = [
+  'error',
+  'warning',
+  'success',
+];
+
+function hasStringLiteral(typeStr: string, value: string): boolean {
+  return new RegExp(`['"]${value}['"]`).test(typeStr);
+}
+
+function parseStatusOptions(typeStr: string): InputStatusOption[] {
+  const literalOptions = INPUT_STATUS_OPTIONS.filter(status =>
+    hasStringLiteral(typeStr, status),
+  );
+  return literalOptions.length > 0 ? literalOptions : INPUT_STATUS_OPTIONS;
+}
+
+function isInputStatusType(typeStr: string, propName?: string): boolean {
+  if (propName !== 'status') {
+    return false;
+  }
+
+  if (/\bXDS(?:InputStatus|FieldStatus)\b/.test(typeStr)) {
+    return true;
+  }
+
+  return (
+    typeStr.trim().startsWith('{') &&
+    /\btype\s*:/.test(typeStr) &&
+    INPUT_STATUS_OPTIONS.some(status => hasStringLiteral(typeStr, status))
+  );
+}
 
 function splitUnion(input: string): string[] {
   const parts: string[] = [];
@@ -118,39 +183,18 @@ export function parsePropType(
   if (t === 'SyntaxTheme') {
     return {kind: 'syntax-theme'};
   }
-  if (t === 'XDSIconType' || t === 'XDSIconName') {
+  if (isInputStatusType(t, propName)) {
     return {
-      kind: 'enum',
-      options: [
-        'check',
-        'close',
-        'info',
-        'warning',
-        'search',
-        'calendar',
-        'clock',
-        'chevronDown',
-        'chevronLeft',
-        'chevronRight',
-        'checkCircle',
-        'xCircle',
-        'externalLink',
-        'menu',
-        'moreHorizontal',
-        'copy',
-        'wrench',
-        'arrowUp',
-        'arrowDown',
-        'eyeSlash',
-      ],
+      kind: 'input-status',
+      options: parseStatusOptions(t),
       allowEmpty: true,
     };
   }
-  if (t === 'XDSInputStatus') {
+  if (t === 'XDSIconType' || t === 'XDSIconName') {
     return {
       kind: 'enum',
-      options: ['default', 'error', 'warning', 'success'],
-      allowEmpty: false,
+      options: ICON_OPTIONS,
+      allowEmpty: true,
     };
   }
   if (t === 'XDSAppShellBreakpoint') {
@@ -250,6 +294,13 @@ export function coerceDefault(
     case 'string': {
       const m = STRING_LITERAL_RE.exec(v);
       return m ? m[1] : v;
+    }
+    case 'input-status': {
+      const m = STRING_LITERAL_RE.exec(v);
+      const stripped = m ? m[1] : v;
+      return control.options.includes(stripped as InputStatusOption)
+        ? {type: stripped, message: `${stripped} status`}
+        : undefined;
     }
     case 'element':
       return undefined;
