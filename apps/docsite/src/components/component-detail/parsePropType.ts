@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {getIconRegistry} from '@xds/core/Icon';
+
 /**
  * Parses a stringified TypeScript prop type into a control descriptor
  * that the playground can render an input for.
@@ -32,35 +34,6 @@ const NUMBER_LITERAL_RE = /^-?\d+(\.\d+)?$/;
 const CALLBACK_RE = /=>/;
 const NODE_TYPE_RE = /\b(ReactNode|ReactElement|JSX\.Element|ReactChild)\b/;
 const REACT_ELEMENT_RE = /ReactElement<(XDS\w+)Props>/g;
-
-const ICON_OPTIONS = [
-  'close',
-  'chevronDown',
-  'chevronLeft',
-  'chevronRight',
-  'check',
-  'success',
-  'error',
-  'warning',
-  'info',
-  'calendar',
-  'clock',
-  'externalLink',
-  'menu',
-  'moreHorizontal',
-  'search',
-  'arrowUp',
-  'arrowDown',
-  'arrowsUpDown',
-  'funnel',
-  'eyeSlash',
-  'viewColumns',
-  'copy',
-  'checkDouble',
-  'wrench',
-  'stop',
-  'microphone',
-];
 
 const INPUT_STATUS_OPTIONS: InputStatusOption[] = [
   'error',
@@ -193,7 +166,7 @@ export function parsePropType(
   if (t === 'XDSIconType' || t === 'XDSIconName') {
     return {
       kind: 'enum',
-      options: ICON_OPTIONS,
+      options: Object.keys(getIconRegistry()),
       allowEmpty: true,
     };
   }

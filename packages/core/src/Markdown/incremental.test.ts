@@ -565,4 +565,69 @@ describe('streaming end-to-end: no raw syntax visible', () => {
       expect(visible).not.toContain('![');
     }
   });
+
+  describe('with autolink option', () => {
+    it('produces same final result as full parse with autolink: gfm', () => {
+      const text = 'Visit https://example.com or mail user@example.com today.';
+      const state = createIncrementalState();
+      const incremental = parseMarkdownIncremental(text, state, {
+        autolink: 'gfm',
+      });
+      const full = parseMarkdown(text, {autolink: 'gfm'});
+      expect(incremental).toEqual(full);
+      // Sanity: the autolink transform actually fired
+      const para = incremental[0];
+      if (para.type === 'paragraph') {
+        const linkHrefs = para.children
+          .filter((n: InlineNode) => n.type === 'link')
+          .map((n: InlineNode) => (n.type === 'link' ? n.href : ''));
+        expect(linkHrefs).toEqual([
+          'https://example.com',
+          'mailto:user@example.com',
+        ]);
+      } else {
+        throw new Error('expected paragraph block');
+      }
+    });
+
+    it('streams character-by-character to the same final result', () => {
+      const text = 'see https://example.com here and mail me@example.com soon.';
+      const state = createIncrementalState();
+      let last: BlockNode[] = [];
+      for (let i = 1; i <= text.length; i++) {
+        last = parseMarkdownIncremental(text.slice(0, i), state, {
+          autolink: 'gfm',
+        });
+      }
+      const full = parseMarkdown(text, {autolink: 'gfm'});
+      expect(last).toEqual(full);
+    });
+
+    it('invalidates the cache when the autolink option toggles', () => {
+      const text = 'first https://a.com.\n\nsecond https://b.com.';
+      const state = createIncrementalState();
+      // Prime cache with autolink off.
+      const off = parseMarkdownIncremental(text, state);
+      expect(off).toEqual(parseMarkdown(text));
+      const noLinks = off.every(
+        b =>
+          b.type !== 'paragraph' ||
+          b.children.every((n: InlineNode) => n.type !== 'link'),
+      );
+      expect(noLinks).toBe(true);
+      // Re-parse same text with autolink on — stale settled blocks must NOT
+      // be reused as plain text.
+      const on = parseMarkdownIncremental(text, state, {autolink: 'gfm'});
+      expect(on).toEqual(parseMarkdown(text, {autolink: 'gfm'}));
+      const hasLink = on.some(
+        b =>
+          b.type === 'paragraph' &&
+          b.children.some((n: InlineNode) => n.type === 'link'),
+      );
+      expect(hasLink).toBe(true);
+      // Toggle back off — cache must invalidate again.
+      const offAgain = parseMarkdownIncremental(text, state);
+      expect(offAgain).toEqual(parseMarkdown(text));
+    });
+  });
 });

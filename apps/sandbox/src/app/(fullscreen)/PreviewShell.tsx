@@ -260,7 +260,6 @@ function ChevronDownIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-
 type ViewportSize = 'desktop' | 'tablet' | 'mobile';
 const viewportWidths: Record<ViewportSize, string> = {
   desktop: '100%',
@@ -276,7 +275,17 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
   );
   const isEmbed = searchParams.get('embed') === '1';
   if (isEmbed) {
-    return <>{children}</>;
+    // Embedded template previews need a full-height chain so page roots sized
+    // with min-height:100% (e.g. centered login pages) fill the frame instead of
+    // collapsing to content height. The chain is html → body → XDSTheme wrapper
+    // ([data-xds-theme]) → template root. Rendered inline (not in the layout
+    // <head>) so it applies reliably in the embed context.
+    return (
+      <>
+        <style>{`html,body{height:100%}body>[data-xds-theme]{height:100%}`}</style>
+        {children}
+      </>
+    );
   }
   const [view, setView] = useState<'preview' | 'code'>('preview');
   const [viewport, setViewport] = useState<ViewportSize>('desktop');

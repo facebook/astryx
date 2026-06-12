@@ -37,7 +37,7 @@ const meta: Meta<typeof XDSItem> = {
   tags: ['autodocs'],
   argTypes: {
     align: {control: 'select', options: ['center', 'start']},
-    density: {control: 'select', options: ['default', 'compact']},
+    density: {control: 'select', options: ['compact', 'balanced', 'spacious']},
   },
 };
 
@@ -48,10 +48,10 @@ type Story = StoryObj<typeof XDSItem>;
 export const Default: Story = {
   render: () => (
     <XDSItem
-      media={<XDSIcon icon={UserIcon} size="sm" />}
+      startContent={<XDSIcon icon={UserIcon} size="sm" />}
       label="Alice Johnson"
       description="Software Engineer"
-      trailing={<XDSBadge label="Admin" />}
+      endContent={<XDSBadge label="Admin" />}
     />
   ),
 };
@@ -61,23 +61,23 @@ export const ContactList: Story = {
   render: () => (
     <XDSStack gap={0}>
       <XDSItem
-        media={<XDSAvatar name="Alice Johnson" size={40} />}
+        startContent={<XDSAvatar name="Alice Johnson" size={40} />}
         label="Alice Johnson"
         description="Engineering Lead"
-        trailing={<XDSBadge label="Admin" />}
+        endContent={<XDSBadge label="Admin" />}
         onClick={() => {}}
       />
       <XDSItem
-        media={<XDSAvatar name="Bob Smith" size={40} />}
+        startContent={<XDSAvatar name="Bob Smith" size={40} />}
         label="Bob Smith"
         description="Product Designer"
         onClick={() => {}}
       />
       <XDSItem
-        media={<XDSAvatar name="Carol Williams" size={40} />}
+        startContent={<XDSAvatar name="Carol Williams" size={40} />}
         label="Carol Williams"
         description="Data Scientist"
-        trailing={<XDSText color="secondary">Away</XDSText>}
+        endContent={<XDSText color="secondary">Away</XDSText>}
         onClick={() => {}}
       />
     </XDSStack>
@@ -89,26 +89,26 @@ export const Notifications: Story = {
   render: () => (
     <XDSStack gap={0}>
       <XDSItem
-        media={<XDSAvatar name="Alice" size={40} />}
+        startContent={<XDSAvatar name="Alice" size={40} />}
         label={
           <>
             <b>Alice</b> commented on your PR
           </>
         }
         description="Looks good, one nit on the error handling..."
-        trailing={<XDSText color="secondary">2h ago</XDSText>}
+        endContent={<XDSText color="secondary">2h ago</XDSText>}
         descriptionLines={1}
         onClick={() => {}}
       />
       <XDSItem
-        media={
+        startContent={
           <div {...stylex.props(storyStyles.iconCircle)}>
             <XDSIcon icon={BellIcon} size="sm" />
           </div>
         }
         label="Build completed successfully"
         description="Pipeline #4521 — all 42 tests passed"
-        trailing={<XDSText color="secondary">5h ago</XDSText>}
+        endContent={<XDSText color="secondary">5h ago</XDSText>}
         descriptionLines={1}
         onClick={() => {}}
       />
@@ -121,24 +121,45 @@ export const CompactMenu: Story = {
   render: () => (
     <XDSStack gap={0}>
       <XDSItem
-        media={<XDSIcon icon={PencilSquareIcon} size="sm" />}
+        startContent={<XDSIcon icon={PencilSquareIcon} size="sm" />}
         label="Edit"
         density="compact"
         onClick={() => {}}
       />
       <XDSItem
-        media={<XDSIcon icon={Cog6ToothIcon} size="sm" />}
+        startContent={<XDSIcon icon={Cog6ToothIcon} size="sm" />}
         label="Settings"
         description="Manage your preferences"
         density="compact"
         onClick={() => {}}
       />
       <XDSItem
-        media={<XDSIcon icon={ChatBubbleLeftIcon} size="sm" />}
+        startContent={<XDSIcon icon={ChatBubbleLeftIcon} size="sm" />}
         label="Messages"
         density="compact"
-        trailing={<XDSBadge label="12" />}
+        endContent={<XDSBadge label="12" />}
         onClick={() => {}}
+      />
+    </XDSStack>
+  ),
+};
+
+/** Spacious item rows for roomy layouts. */
+export const SpaciousRows: Story = {
+  render: () => (
+    <XDSStack gap={0}>
+      <XDSItem
+        startContent={<XDSIcon icon={BellIcon} size="sm" />}
+        label="Product updates"
+        description="Major announcements and release notes"
+        density="spacious"
+      />
+      <XDSItem
+        startContent={<XDSIcon icon={ChatBubbleLeftIcon} size="sm" />}
+        label="Team messages"
+        description="Direct messages, mentions, and thread replies"
+        endContent={<XDSBadge label="4" />}
+        density="spacious"
       />
     </XDSStack>
   ),
@@ -162,26 +183,26 @@ export const FileBrowser: Story = {
     return (
       <XDSStack gap={0}>
         <XDSItem
-          media={<XDSIcon icon={DocumentIcon} size="sm" />}
+          startContent={<XDSIcon icon={DocumentIcon} size="sm" />}
           label="design-spec.pdf"
           description="Modified 2 hours ago"
-          trailing={<XDSText color="secondary">2.4 MB</XDSText>}
+          endContent={<XDSText color="secondary">2.4 MB</XDSText>}
           isSelected={selected.has('doc1')}
           onClick={() => toggle('doc1')}
         />
         <XDSItem
-          media={<XDSIcon icon={DocumentIcon} size="sm" />}
+          startContent={<XDSIcon icon={DocumentIcon} size="sm" />}
           label="architecture-diagram.png"
           description="Modified yesterday"
-          trailing={<XDSText color="secondary">1.2 MB</XDSText>}
+          endContent={<XDSText color="secondary">1.2 MB</XDSText>}
           isSelected={selected.has('doc2')}
           onClick={() => toggle('doc2')}
         />
         <XDSItem
-          media={<XDSIcon icon={DocumentIcon} size="sm" />}
+          startContent={<XDSIcon icon={DocumentIcon} size="sm" />}
           label="meeting-notes.md"
           description="Modified 3 days ago"
-          trailing={<XDSText color="secondary">48 KB</XDSText>}
+          endContent={<XDSText color="secondary">48 KB</XDSText>}
           isSelected={selected.has('doc3')}
           onClick={() => toggle('doc3')}
         />
@@ -195,7 +216,7 @@ export const SearchResults: Story = {
   render: () => (
     <XDSStack gap={0}>
       <XDSItem
-        media={<XDSIcon icon={MagnifyingGlassIcon} size="sm" />}
+        startContent={<XDSIcon icon={MagnifyingGlassIcon} size="sm" />}
         label={
           <>
             XDS <b>Button</b> Component
@@ -206,7 +227,7 @@ export const SearchResults: Story = {
         href="/docs/button"
       />
       <XDSItem
-        media={<XDSIcon icon={MagnifyingGlassIcon} size="sm" />}
+        startContent={<XDSIcon icon={MagnifyingGlassIcon} size="sm" />}
         label={
           <>
             XDS <b>Button</b>Group
@@ -225,13 +246,13 @@ export const Disabled: Story = {
   render: () => (
     <XDSStack gap={0}>
       <XDSItem
-        media={<XDSIcon icon={UserIcon} size="sm" />}
+        startContent={<XDSIcon icon={UserIcon} size="sm" />}
         label="Active item"
         description="This item is interactive"
         onClick={() => {}}
       />
       <XDSItem
-        media={<XDSIcon icon={UserIcon} size="sm" />}
+        startContent={<XDSIcon icon={UserIcon} size="sm" />}
         label="Disabled item"
         description="This item cannot be interacted with"
         onClick={() => {}}
@@ -246,10 +267,10 @@ export const AlignStart: Story = {
   render: () => (
     <XDSItem
       align="start"
-      media={<XDSAvatar name="Alice" size={40} />}
+      startContent={<XDSAvatar name="Alice" size={40} />}
       label="Alice Johnson"
-      description="This is a longer description that wraps across multiple lines to demonstrate the align=start behavior, which positions the media and trailing content at the top rather than vertically centering them."
-      trailing={<XDSText color="secondary">Just now</XDSText>}
+      description="This is a longer description that wraps across multiple lines to demonstrate the align=start behavior, which positions the start and end content at the top rather than vertically centering them."
+      endContent={<XDSText color="secondary">Just now</XDSText>}
     />
   ),
 };
