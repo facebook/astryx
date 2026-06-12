@@ -228,6 +228,11 @@
       "types": "./dist/Field/index.d.ts",
       "default": "./dist/Field/index.js"
     },
+    "./FieldStatus": {
+      "source": "./src/FieldStatus/index.ts",
+      "types": "./dist/FieldStatus/index.d.ts",
+      "default": "./dist/FieldStatus/index.js"
+    },
     "./FileInput": {
       "source": "./src/FileInput/index.ts",
       "types": "./dist/FileInput/index.d.ts",

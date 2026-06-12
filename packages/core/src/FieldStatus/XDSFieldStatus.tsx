@@ -4,12 +4,14 @@
  * @file XDSFieldStatus.tsx
  * @input Uses React, stylex, theme tokens
  * @output Exports XDSFieldStatus component, XDSFieldStatusProps
- * @position Core implementation; consumed by index.ts, XDSField.tsx, XDSSwitch.tsx, XDSCheckboxInput.tsx
+ * @position Core implementation; consumed by Field, Switch, CheckboxInput, and the FieldStatus entrypoint
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Field/Field.doc.mjs (props table, features, implementation notes)
- * - /packages/core/src/Field/index.ts (exports if types change)
- * - /packages/cli/templates/blocks/components/Field/ (showcase blocks)
+ * - /packages/core/src/FieldStatus/FieldStatus.doc.mjs (props table, features, implementation notes)
+ * - /packages/core/src/Field/Field.doc.mjs (compat docs when public API changes)
+ * - /packages/core/src/FieldStatus/index.ts (exports if types change)
+ * - /packages/core/src/Field/index.ts (compat re-export if public API changes)
+ * - /packages/cli/templates/blocks/components/FieldStatus/ (showcase blocks)
  */
 
 'use client';
@@ -25,7 +27,7 @@ import {
   typographyVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import type {XDSInputStatusType} from './types';
+import type {XDSInputStatusType} from '../Field/types';
 import {useEntryAnimation} from '../hooks/useEntryAnimation';
 
 const styles = stylex.create({
@@ -71,7 +73,7 @@ const colorStyles = stylex.create({
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/Field' {
+ * declare module '@xds/core/FieldStatus' {
  *   interface XDSFieldStatusVariantMap {
  *     'inline': true;
  *   }
