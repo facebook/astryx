@@ -48,7 +48,7 @@
    it measures the rendered header (post-hydration). The 64px fallback
    approximates the default XDS top-nav height so the layout reserves
    space immediately on the first paint. */
-#xds-app-shell-main {
+body:not(:has([data-playground-page])) #xds-app-shell-main {
   scroll-padding-top: var(--appshell-header-height, 64px);
   padding-top: var(--appshell-header-height, 64px);
 }
@@ -59,15 +59,6 @@
    here would introduce a visible cream-colored gap between the nav and
    the hero. scroll-padding-top is kept for anchor-link scrolling. */
 body:has([data-home-page]) #xds-app-shell-main {
-  padding-top: 0;
-}
-
-/* The playground uses AppShell for its side-nav/mobile-nav behavior, but it
-   intentionally has no sticky marketing/docs top nav. Keep the full-bleed
-   editor flush with the AppShell content area instead of inheriting the
-   docs top-nav offset above. */
-body:has([data-playground-page]) #xds-app-shell-main {
-  scroll-padding-top: 0;
   padding-top: 0;
 }
 
