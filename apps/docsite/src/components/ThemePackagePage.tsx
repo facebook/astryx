@@ -343,6 +343,9 @@ const styles = stylex.create({
     position: 'relative' as const,
     zIndex: 1,
   },
+  mobileThemeCardLabel: {
+    fontSize: 24,
+  },
   // Mobile-only floating toolbar that replaces the sidebar at
   // narrow viewports. position:fixed so it stays pinned to the
   // bottom of the viewport as the user scrolls the right pane;
@@ -870,6 +873,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                           weight="bold"
                           xstyle={[
                             styles.themeCardLabel,
+                            styles.mobileThemeCardLabel,
                             override?.label ?? false,
                           ]}>
                           {label}
@@ -881,7 +885,10 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                       <XDSText
                         type="display-3"
                         weight="bold"
-                        xstyle={styles.themeCardLabel}>
+                        xstyle={[
+                          styles.themeCardLabel,
+                          styles.mobileThemeCardLabel,
+                        ]}>
                         {label}
                       </XDSText>
                     </div>
