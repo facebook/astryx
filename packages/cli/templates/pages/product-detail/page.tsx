@@ -23,11 +23,12 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
+import {XDSSelectableCard} from '@xds/core/SelectableCard';
 import * as stylex from '@stylexjs/stylex';
 
 // Custom CSS here is limited to what XDS components can't express today:
 // - image fill + corner radius (no XDSImage primitive — #2582)
-// - the selected-thumbnail outline and sticky info column (no props for either)
+// - the sticky info column (no sticky prop on XDS layout primitives — #2613)
 const pageStyles = stylex.create({
   // Keeps the info column in view while the gallery scrolls. No sticky prop on
   // XDS layout primitives.
@@ -44,17 +45,13 @@ const pageStyles = stylex.create({
     objectFit: 'cover',
     borderRadius: 'var(--radius-container)',
   },
+  // Fills the thumbnail card. Corner radius + selection ring come from
+  // XDSSelectableCard; the image only needs to fill and cover (#2582).
   thumbImage: {
     width: '100%',
     height: '100%',
     objectFit: 'cover',
-    borderRadius: 'var(--radius-element)',
-    cursor: 'pointer',
-  },
-  // Marks the active thumbnail. No "selected" affordance on a bare image.
-  thumbSelected: {
-    outline: '2px solid var(--color-accent)',
-    outlineOffset: 2,
+    display: 'block',
   },
 });
 
@@ -154,23 +151,20 @@ function ImageGallery({
       <XDSGrid columns={3} gap={2}>
         {thumbnails.map((src, i) => (
           <XDSAspectRatio key={i} ratio={1}>
-            <img
-              {...stylex.props(
-                pageStyles.thumbImage,
-                selected === i && pageStyles.thumbSelected,
-              )}
-              src={src}
-              alt={`Product image ${i + 1}`}
-              onClick={() => onSelect(i)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={e => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  onSelect(i);
-                }
-              }}
-            />
+            <XDSSelectableCard
+              label={`Product image ${i + 1}`}
+              isSelected={selected === i}
+              onChange={() => onSelect(i)}
+              variant="transparent"
+              padding={0}
+              width="100%"
+              height="100%">
+              <img
+                {...stylex.props(pageStyles.thumbImage)}
+                src={src}
+                alt={`Product image ${i + 1}`}
+              />
+            </XDSSelectableCard>
           </XDSAspectRatio>
         ))}
       </XDSGrid>
@@ -317,7 +311,7 @@ export default function ProductDetailTemplate() {
       contentWidth={1200}
       content={
         <XDSLayoutContent padding={6}>
-          <XDSGrid columns={{minWidth: 400}} gap={5}>
+          <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={5}>
             <ImageGallery
               selected={selectedThumb}
               onSelect={setSelectedThumb}
