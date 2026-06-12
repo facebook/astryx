@@ -2,7 +2,7 @@
 
 **Dark-only** atmospheric gothic theme for XDS — deep blue-gray surfaces, distressed display heading, and pastel categorical accents that glow against the dark page like illuminated panels. Uses Manufacturing Consent for headings, Fustat for body text, and [Lucide](https://lucide.dev) icons.
 
-> Gothic is a single-mode theme — it always renders dark, regardless of the user's system color preference. For best browser-chrome integration (scrollbars, native form controls), pass `mode="dark"` to your `XDSTheme` provider.
+> Gothic is a single-mode theme: it always renders dark, regardless of the user's system color preference. For best browser-chrome integration (scrollbars, native form controls), pass `mode="dark"` to your `XDSTheme` provider.
 
 ## Install
 
@@ -47,29 +47,29 @@ Add the theme CSS to your stylesheet:
 
 ## Aesthetic
 
-Gothic is dark-only by design — every token is a single value, and the
+Gothic is dark-only by design: every token is a single value, and the
 output CSS contains no `light-dark()`, so the theme renders identically
 whether the user prefers light or dark.
 
-| Aspect       | Choice                                                 |
-| ------------ | ------------------------------------------------------ |
-| Mode         | Dark only — no light variant                           |
-| Neutral      | Cool blue-gray (#101314 → #E8F1F6)                     |
-| Status       | Forest moss, blood crimson, candlelight amber          |
-| Categorical  | Pastel-on-dark — light backgrounds, dark text          |
-| Radius       | Subtle rounding (2–24px)                               |
-| Motion       | Slower / theatrical (150ms → 800ms, 0.75 ratio)        |
-| Type scale   | 14px base, 1.2 ratio                                   |
+| Aspect      | Choice                                          |
+| ----------- | ----------------------------------------------- |
+| Mode        | Dark only, no light variant                     |
+| Neutral     | Cool blue-gray (#101314 → #E8F1F6)              |
+| Status      | Forest moss, blood crimson, candlelight amber   |
+| Categorical | Pastel-on-dark: light backgrounds, dark text    |
+| Radius      | Subtle rounding (2–24px)                        |
+| Motion      | Slower / theatrical (150ms → 800ms, 0.75 ratio) |
+| Type scale  | 14px base, 1.2 ratio                            |
 
 ## Fonts
 
 This theme uses custom typefaces:
 
-| Role    | Font                  | Vibe                       |
-| ------- | --------------------- | -------------------------- |
-| Body    | Fustat                | Clean modern sans          |
-| Heading | Manufacturing Consent | Distressed display         |
-| Code    | JetBrains Mono        | Crisp, monospaced          |
+| Role    | Font                  | Vibe               |
+| ------- | --------------------- | ------------------ |
+| Body    | Fustat                | Clean modern sans  |
+| Heading | Manufacturing Consent | Distressed display |
+| Code    | JetBrains Mono        | Crisp, monospaced  |
 
 **These fonts must be loaded separately.** The theme references them by name but does not bundle the font files.
 

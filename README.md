@@ -2,7 +2,7 @@
 
 # XDS
 
-A design system for building internal tools and products, enabling the creation of high-quality product experiences.
+A design system for building internal tools and products.
 
 ## Overview
 
@@ -10,10 +10,10 @@ XDS is an open source design system born from years of building internal tools a
 
 **What makes XDS different:**
 
-- **Open internals** — All primitives are exported and composable, not hidden. Build exactly what you need.
-- **Plugin architecture** — Transform and extend components through a unified plugin system
-- **Automatic spacing** — Context-aware spacing compensation eliminates "double padding" issues
-- **AI-ready** — JSDoc annotations with composition hints designed for LLM-assisted development
+- **Open internals:** All primitives are exported and composable, not hidden. Build exactly what you need.
+- **Plugin architecture:** Transform and extend components through a unified plugin system
+- **Automatic spacing:** Context-aware spacing compensation eliminates "double padding" issues
+- **AI-ready:** JSDoc annotations with composition hints for LLM-assisted development
 
 ## Getting Started
 
@@ -49,21 +49,21 @@ Then follow the [setup guide](packages/core/README.md#quick-start) to import sty
 
 ## Packages
 
-| Package                                         | Description                                         | README                                      |
-| ----------------------------------------------- | --------------------------------------------------- | ------------------------------------------- |
-| [`@xds/core`](packages/core)                    | Components, theme system, and utilities             | [README](packages/core/README.md)           |
-| [`@xds/cli`](packages/cli)                      | CLI tooling — component docs, scaffolding, codemods | [README](packages/cli/README.md)            |
-| [`@xds/build`](packages/build)                  | Build plugins for StyleX source builds              | [README](packages/build/README.md)          |
-| [`@xds/vega`](packages/vega)                    | Vega/Vega-Lite chart wrapper                        | [README](packages/vega/README.md)           |
-| [`@xds/theme-default`](packages/themes/default) | Clean, professional default theme                   | [README](packages/themes/default/README.md) |
-| [`@xds/theme-neutral`](packages/themes/neutral) | Muted, minimal aesthetic theme                      | [README](packages/themes/neutral/README.md) |
-| [`@xds/theme-daily`](packages/themes/daily)     | Warm, productivity-focused theme                    | [README](packages/themes/daily/README.md)   |
+| Package                                         | Description                                        | README                                      |
+| ----------------------------------------------- | -------------------------------------------------- | ------------------------------------------- |
+| [`@xds/core`](packages/core)                    | Components, theme system, and utilities            | [README](packages/core/README.md)           |
+| [`@xds/cli`](packages/cli)                      | CLI tooling: component docs, scaffolding, codemods | [README](packages/cli/README.md)            |
+| [`@xds/build`](packages/build)                  | Build plugins for StyleX source builds             | [README](packages/build/README.md)          |
+| [`@xds/vega`](packages/vega)                    | Vega/Vega-Lite chart wrapper                       | [README](packages/vega/README.md)           |
+| [`@xds/theme-default`](packages/themes/default) | Clean, professional default theme                  | [README](packages/themes/default/README.md) |
+| [`@xds/theme-neutral`](packages/themes/neutral) | Muted, minimal aesthetic theme                     | [README](packages/themes/neutral/README.md) |
+| [`@xds/theme-daily`](packages/themes/daily)     | Warm, productivity-focused theme                   | [README](packages/themes/daily/README.md)   |
 
 ## Philosophy
 
-- **AI-First** — Built to produce better trajectories in AI-assisted development, with auto-documentation and patterns designed for LLM consumption
-- **Open Internals** — Unlike closed systems, all subcomponents are exported and recommended for use. Compose at any level.
-- **Themeable** — First-class theming with CSS variable cascade
+- **AI-First:** Built to produce better trajectories in AI-assisted development, with auto-documentation and patterns for LLM consumption
+- **Open Internals:** Unlike closed systems, all subcomponents are exported and recommended for use. Compose at any level.
+- **Themeable:** First-class theming with CSS variable cascade
 
 ## Architecture
 

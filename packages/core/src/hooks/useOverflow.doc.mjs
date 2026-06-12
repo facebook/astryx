@@ -75,7 +75,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Render all items into the measureRef container (hidden) and only the first visibleCount items into the containerRef container (visible).' },
       { guidance: true, description: 'Include an overflow indicator (e.g., "+N more" button) as the last child of the measurement container with a data-overflow-indicator attribute.' },
-      { guidance: false, description: 'Use for vertical overflow — this hook measures horizontal width only.' },
+      { guidance: false, description: 'Use for vertical overflow; this hook measures horizontal width only.' },
     ],
   },
   relatedComponents: ['OverflowList', 'Breadcrumb'],
@@ -108,7 +108,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Render all items into measureRef container (hidden) + only first visibleCount items into containerRef container (visible).' },
       { guidance: true, description: 'Include overflow indicator (e.g. "+N more" button) as last child of measurement container w/ data-overflow-indicator attribute.' },
-      { guidance: false, description: 'Use for vertical overflow — this hook measures horizontal width only.' },
+      { guidance: false, description: 'Use for vertical overflow; this hook measures horizontal width only.' },
     ],
   },
 };

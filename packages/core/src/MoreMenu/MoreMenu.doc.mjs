@@ -12,7 +12,7 @@ export const docs = {
       name: 'items',
       type: 'XDSDropdownMenuOption[]',
       description:
-        'Menu items — data array of actions, dividers, and sections. Same type as XDSDropdownMenu items prop.',
+        'Menu items: data array of actions, dividers, and sections. Same type as XDSDropdownMenu items prop.',
       required: true,
     },
     {
@@ -63,7 +63,7 @@ export const docs = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
   ],
   playground: {
@@ -84,9 +84,9 @@ export const docs = {
     description:
       'MoreMenu is a three-dot button that opens a list of actions. Use it for secondary actions that don\'t need to be always visible, like in table rows, card headers, or toolbars.',
     bestPractices: [
-      { guidance: true, description: 'Use for overflow or secondary actions — keep primary actions visible outside the menu.' },
+      { guidance: true, description: 'Use for overflow or secondary actions; keep primary actions visible outside the menu.' },
       { guidance: true, description: 'Use dividers or sections to group related actions when the menu has many items.' },
-      { guidance: false, description: 'Hide primary actions inside a MoreMenu — they should be directly visible.' },
+      { guidance: false, description: 'Hide primary actions inside a MoreMenu; they should be directly visible.' },
     ],
   },
 };
@@ -161,9 +161,9 @@ export const docsZh = {
     description:
       'MoreMenu is a three-dot button that opens a list of actions. Use it for secondary actions that don\'t need to be always visible, like in table rows, card headers, or toolbars.',
     bestPractices: [
-      { guidance: true, description: 'Use for overflow or secondary actions — keep primary actions visible outside the menu.' },
+      { guidance: true, description: 'Use for overflow or secondary actions; keep primary actions visible outside the menu.' },
       { guidance: true, description: 'Use dividers or sections to group related actions when the menu has many items.' },
-      { guidance: false, description: 'Hide primary actions inside a MoreMenu — they should be directly visible.' },
+      { guidance: false, description: 'Hide primary actions inside a MoreMenu; they should be directly visible.' },
     ],
   },
 };
@@ -176,9 +176,9 @@ export const docsDense = {
     description:
       'MoreMenu is a three-dot button that opens a list of actions. Use it for secondary actions that don\'t need to be always visible, like in table rows, card headers, or toolbars.',
     bestPractices: [
-      { guidance: true, description: 'Use for overflow or secondary actions — keep primary actions visible outside the menu.' },
+      { guidance: true, description: 'Use for overflow or secondary actions; keep primary actions visible outside the menu.' },
       { guidance: true, description: 'Use dividers or sections to group related actions when the menu has many items.' },
-      { guidance: false, description: 'Hide primary actions inside a MoreMenu — they should be directly visible.' },
+      { guidance: false, description: 'Hide primary actions inside a MoreMenu; they should be directly visible.' },
     ],
   },
   propDescriptions: {

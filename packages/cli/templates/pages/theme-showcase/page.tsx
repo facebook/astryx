@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {useXDSAppShellMobile} from '@xds/core/AppShell';
 import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
 import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
@@ -44,6 +45,7 @@ import {XDSCenter} from '@xds/core/Center';
 import {XDSSection} from '@xds/core/Section';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSNumberInput} from '@xds/core/NumberInput';
+import {XDSOverflowList} from '@xds/core/OverflowList';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {
   XDSChatComposer,
@@ -73,12 +75,6 @@ const styles = stylex.create({
     textAlign: 'center',
     wordBreak: 'break-word',
   },
-  fullSpanAtNarrow: {
-    gridColumn: {
-      default: null,
-      '@media (max-width: 1024px)': '1 / -1',
-    },
-  },
   inventoryCard: {
     backgroundColor: 'var(--color-background-surface)',
     color: 'var(--color-text-primary)',
@@ -92,6 +88,7 @@ const styles = stylex.create({
     paddingBlock: 'var(--spacing-4)',
     paddingInline: 'var(--spacing-6)',
     width: '100%',
+    overflowX: 'auto' as const,
   },
   searchInput: {
     flex: 1,
@@ -132,6 +129,7 @@ const styles = stylex.create({
   content: {
     maxWidth: 960,
     marginInline: 'auto',
+    minWidth: 0,
   },
   contentFluid: {
     maxWidth: 880,
@@ -294,48 +292,63 @@ const PREVIEW_IMAGES: Record<string, string> = {
 
 export default function ThemeShowcase() {
   const images: Record<string, string> = PREVIEW_IMAGES;
+  const {isMobile} = useXDSAppShellMobile();
   return (
     <div
       style={{
         minHeight: '100%',
         backgroundColor: 'var(--color-background-body)',
       }}>
-      <StorePreview images={images} />
+      <StorePreview images={images} isMobile={isMobile} />
       <div
         style={{
           padding: 'var(--spacing-6)',
           backgroundColor: 'var(--color-background-surface)',
         }}>
-        <CardShowcase images={images} />
+        <CardShowcase images={images} isMobile={isMobile} />
       </div>
     </div>
   );
 }
 
-function CardShowcase({images}: {images: Record<string, string>}) {
+function CardShowcase({
+  images,
+  isMobile,
+}: {
+  images: Record<string, string>;
+  isMobile: boolean;
+}) {
+  const columns = isMobile ? 1 : ({minWidth: 200, repeat: 'fit'} as const);
+
   return (
     <XDSVStack gap={8}>
-      <XDSGrid columns={{minWidth: 200, repeat: 'fit'}} gap={4}>
-        <XDSGridSpan columns={1} xstyle={styles.fullSpanAtNarrow}>
-          <CheckoutCard />
+      <XDSGrid columns={columns} gap={4}>
+        <XDSGridSpan columns={1}>
+          <CheckoutCard isMobile={isMobile} />
         </XDSGridSpan>
-        <XDSGridSpan columns={2} xstyle={styles.fullSpanAtNarrow}>
+        <XDSGridSpan columns={isMobile ? 1 : 2}>
           <ChatCard />
         </XDSGridSpan>
       </XDSGrid>
-      <XDSGrid columns={{minWidth: 200, repeat: 'fit'}} gap={4}>
-        <XDSGridSpan columns={3} xstyle={styles.fullSpanAtNarrow}>
+      <XDSGrid columns={columns} gap={4}>
+        <XDSGridSpan columns={isMobile ? 1 : 3}>
           <InventoryCard images={images} />
         </XDSGridSpan>
-        <XDSGridSpan columns={1} xstyle={styles.fullSpanAtNarrow}>
-          <LatestActivityCard />
+        <XDSGridSpan columns={1}>
+          <LatestActivityCard isMobile={isMobile} />
         </XDSGridSpan>
       </XDSGrid>
     </XDSVStack>
   );
 }
 
-function StorePreview({images}: {images: Record<string, string>}) {
+function StorePreview({
+  images,
+  isMobile,
+}: {
+  images: Record<string, string>;
+  isMobile: boolean;
+}) {
   return (
     <div data-theme-preview="true">
       <XDSVStack gap={0}>
@@ -343,12 +356,14 @@ function StorePreview({images}: {images: Record<string, string>}) {
           label="Theme preview navigation"
           heading={<XDSTopNavHeading heading="Studio" />}
           centerContent={
-            <>
-              <XDSTopNavItem label="Shop" href="#" isSelected />
-              <XDSTopNavItem label="New In" href="#" />
-              <XDSTopNavItem label="Stories" href="#" />
-              <XDSTopNavItem label="Help" href="#" />
-            </>
+            isMobile ? undefined : (
+              <>
+                <XDSTopNavItem label="Shop" href="#" isSelected />
+                <XDSTopNavItem label="New In" href="#" />
+                <XDSTopNavItem label="Stories" href="#" />
+                <XDSTopNavItem label="Help" href="#" />
+              </>
+            )
           }
           endContent={
             <XDSHStack gap={2} vAlign="center">
@@ -383,7 +398,7 @@ function StorePreview({images}: {images: Record<string, string>}) {
           }
         />
 
-        <XDSSection padding={8} variant="transparent">
+        <XDSSection padding={6} variant="transparent">
           <XDSVStack gap={10} xstyle={[styles.content, styles.contentFluid]}>
             <XDSCenter>
               <XDSVStack gap={4} hAlign="center" xstyle={styles.heroText}>
@@ -399,7 +414,7 @@ function StorePreview({images}: {images: Record<string, string>}) {
               </XDSVStack>
             </XDSCenter>
 
-            <XDSGrid columns={{minWidth: 240}} gap={4}>
+            <XDSGrid columns={isMobile ? 1 : {minWidth: 200, max: 3}} gap={4}>
               {PRODUCTS.map((p, i) => (
                 <XDSCard key={p.name} padding={0} height="100%">
                   <XDSVStack gap={0} xstyle={styles.cardStack}>
@@ -458,7 +473,7 @@ function StorePreview({images}: {images: Record<string, string>}) {
   );
 }
 
-function CheckoutCard() {
+function CheckoutCard({isMobile}: {isMobile: boolean}) {
   return (
     <XDSCard padding={5} xstyle={styles.card}>
       <XDSVStack gap={4} xstyle={styles.checkoutStack}>
@@ -514,7 +529,7 @@ function CheckoutCard() {
             <XDSText type="supporting" weight="bold">
               Payment method
             </XDSText>
-            <XDSGrid columns={{minWidth: 70, max: 3}} gap={2}>
+            <XDSGrid columns={isMobile ? 1 : {minWidth: 70, max: 3}} gap={2}>
               <XDSSelectableCard
                 label="Pay with card"
                 isSelected={true}
@@ -572,7 +587,7 @@ function CheckoutCard() {
             size="lg"
           />
 
-          <XDSGrid columns={{minWidth: 90, max: 2}} gap={2}>
+          <XDSGrid columns={isMobile ? 1 : {minWidth: 90, max: 2}} gap={2}>
             <XDSTextInput
               label="Expiry"
               placeholder="MM / YY"
@@ -839,7 +854,7 @@ function formatAmount(amount: number): string {
   return sign + '$' + Math.abs(amount).toLocaleString();
 }
 
-function LatestActivityCard() {
+function LatestActivityCard({isMobile}: {isMobile: boolean}) {
   return (
     <XDSCard padding={5} xstyle={styles.activityCard}>
       <XDSVStack gap={4} xstyle={styles.activityCardStack}>
@@ -858,7 +873,7 @@ function LatestActivityCard() {
           </div>
         </XDSVStack>
 
-        <XDSGrid columns={2} gap={3}>
+        <XDSGrid columns={isMobile ? 1 : 2} gap={3}>
           <XDSVStack gap={0}>
             <span style={inlineStyles.kpiValue}>18K</span>
             <XDSText type="supporting" color="secondary">
@@ -1094,50 +1109,61 @@ function InventoryCard({images}: {images: Record<string, string>}) {
             startIcon={<Search size={16} />}
             xstyle={styles.searchInput}
           />
-          <XDSSelector
-            label="Categories"
-            isLabelHidden
-            placeholder="Categories"
-            size="sm"
-            startIcon={<Folder size={16} />}
-            value={undefined}
-            onChange={() => {}}
-            options={['Wearables', 'Audio', 'Bags', 'Drinkware', 'Home']}
-          />
-          <XDSSelector
-            label="Locations"
-            isLabelHidden
-            placeholder="Locations"
-            size="sm"
-            startIcon={<MapPin size={16} />}
-            value={undefined}
-            onChange={() => {}}
-            options={[
-              'Aisle 1',
-              'Aisle 2',
-              'Aisle 3',
-              'Aisle 4',
-              'Aisle 5',
-              'Aisle 6',
-            ]}
-          />
-          <XDSSelector
-            label="Tags"
-            isLabelHidden
-            placeholder="Tags"
-            size="sm"
-            startIcon={<Tag size={16} />}
-            value={undefined}
-            onChange={() => {}}
-            options={[
-              'New',
-              'Popular',
-              'Limited',
-              'Leather',
-              'Drinkware',
-              'Home',
-            ]}
-          />
+          <XDSOverflowList
+            gap={2}
+            overflowRenderer={() => (
+              <XDSButton
+                label="Filters"
+                variant="ghost"
+                size="sm"
+                icon={<Tag size={16} />}
+              />
+            )}>
+            <XDSSelector
+              label="Categories"
+              isLabelHidden
+              placeholder="Categories"
+              size="sm"
+              startIcon={<Folder size={16} />}
+              value={undefined}
+              onChange={() => {}}
+              options={['Wearables', 'Audio', 'Bags', 'Drinkware', 'Home']}
+            />
+            <XDSSelector
+              label="Locations"
+              isLabelHidden
+              placeholder="Locations"
+              size="sm"
+              startIcon={<MapPin size={16} />}
+              value={undefined}
+              onChange={() => {}}
+              options={[
+                'Aisle 1',
+                'Aisle 2',
+                'Aisle 3',
+                'Aisle 4',
+                'Aisle 5',
+                'Aisle 6',
+              ]}
+            />
+            <XDSSelector
+              label="Tags"
+              isLabelHidden
+              placeholder="Tags"
+              size="sm"
+              startIcon={<Tag size={16} />}
+              value={undefined}
+              onChange={() => {}}
+              options={[
+                'New',
+                'Popular',
+                'Limited',
+                'Leather',
+                'Drinkware',
+                'Home',
+              ]}
+            />
+          </XDSOverflowList>
         </XDSHStack>
         <XDSHStack gap={1} vAlign="center">
           <XDSButton

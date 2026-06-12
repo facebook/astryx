@@ -7,12 +7,15 @@
 'use client';
 
 import {useCallback, useMemo} from 'react';
+import type {CSSProperties} from 'react';
 import {useSearchParams, useRouter, usePathname} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
+import {useXDSAppShellMobile} from '@xds/core/AppShell';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
-import {XDSCard} from '@xds/core/Card';
+import {XDSClickableCard} from '@xds/core/ClickableCard';
+import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
 import {XDSOverlay} from '@xds/core/Overlay';
 import {XDSBadge} from '@xds/core/Badge';
@@ -24,7 +27,11 @@ import type {TemplatePreviewItem} from '../../../components/TemplatePreviewDialo
 import {trackOpenPlayground, trackView} from '../../../lib/analytics';
 
 const GALLERY_MAX_WIDTH = 1600;
-const CARD_MIN_WIDTH = 480;
+const CARD_MIN_WIDTH = 420;
+const CARD_STYLE: CSSProperties & {'--color-overlay': string} = {
+  '--color-overlay':
+    'color-mix(in srgb, var(--color-on-light) 78%, transparent)',
+};
 
 const styles = stylex.create({
   section: {
@@ -38,25 +45,12 @@ const styles = stylex.create({
     marginInline: 'auto',
     width: '100%',
   },
-  grid: {
-    display: 'grid',
-    gap: 'var(--spacing-4)',
-    justifyContent: 'center',
-    gridTemplateColumns: `repeat(auto-fill, minmax(max(${CARD_MIN_WIDTH}px, calc((100% - var(--spacing-4)) / 2)), 1fr))`,
-  },
   cardImage: {
     display: 'block',
     width: '100%',
     aspectRatio: '16/10',
     backgroundColor: 'var(--color-background-muted)',
     borderRadius: 'var(--radius-container)',
-  },
-  clickableCard: {
-    outline: {
-      default: 'none',
-      ':focus-visible': '2px solid var(--color-accent)',
-    },
-    outlineOffset: '2px',
   },
   comingSoon: {
     height: '100%',
@@ -131,6 +125,8 @@ interface TemplateItem {
 }
 
 export default function TemplatesPage() {
+  const {isMobile} = useXDSAppShellMobile();
+
   const groups = useMemo(() => {
     const visible = templates.filter(t => !t.isHiddenFromOverview);
 
@@ -251,91 +247,86 @@ export default function TemplatesPage() {
           <XDSVStack key={group} gap={4}>
             <XDSHeading level={2}>{GROUP_LABELS[group] ?? group}</XDSHeading>
             <div {...stylex.props(styles.galleryWrap)}>
-              <div {...stylex.props(styles.grid)}>
-                {items.map(item => (
-                  <XDSCard
-                    key={item.slug}
-                    padding={0}
-                    xstyle={styles.clickableCard}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`Preview ${item.name}`}
-                    onClick={() => openPreview(item.slug)}
-                    onKeyDown={(e: React.KeyboardEvent) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        openPreview(item.slug);
-                      }
-                    }}
-                    style={
-                      {
-                        '--color-overlay':
-                          'color-mix(in srgb, var(--color-on-light) 78%, transparent)',
-                        cursor: 'pointer',
-                      } as React.CSSProperties
-                    }>
-                    <XDSOverlay
-                      showOn="hover"
-                      scrim="dark"
-                      content={
-                        <div {...stylex.props(styles.overlayInner)}>
-                          <XDSVStack gap={2}>
-                            <XDSVStack gap={0.5}>
-                              <XDSHeading level={3} style={{color: '#fff'}}>
-                                {item.name}
-                              </XDSHeading>
-                              <XDSText
-                                type="body"
-                                style={{color: 'rgba(255,255,255,0.7)'}}>
-                                {item.description.slice(0, 80)}
-                                {item.description.length > 80 ? '\u2026' : ''}
-                              </XDSText>
-                            </XDSVStack>
-                            {/* Stop card-level click/keys from firing for
-                                  the action buttons so each keeps its own
-                                  behavior (the card itself opens the preview). */}
-                            <div
-                              onClick={e => e.stopPropagation()}
-                              onKeyDown={e => e.stopPropagation()}>
-                              <XDSHStack gap={2}>
-                                <XDSButton
-                                  label="Preview"
-                                  variant="secondary"
-                                  onClick={() => openPreview(item.slug)}
-                                />
-                                {item.source && (
-                                  <XDSButton
-                                    label="Open in Playground"
-                                    variant="secondary"
-                                    onClick={() => {
-                                      trackOpenPlayground({
-                                        page: 'templates',
-                                        item: item.slug,
-                                        category: groupOf(item.category),
-                                      });
-                                      window.location.href =
-                                        buildPlaygroundHref(item.source);
-                                    }}
-                                  />
-                                )}
-                              </XDSHStack>
-                            </div>
-                          </XDSVStack>
-                        </div>
-                      }>
-                      {item.isReady ? (
-                        <TemplateThumbnail slug={item.slug} />
+              <XDSGrid
+                columns={
+                  isMobile
+                    ? 1
+                    : {minWidth: CARD_MIN_WIDTH, max: 2, repeat: 'fit'}
+                }
+                gap={4}
+                style={{maxWidth: '100%'}}>
+                {items.map(item => {
+                  const templateContent = item.isReady ? (
+                    <TemplateThumbnail slug={item.slug} />
+                  ) : (
+                    <div {...stylex.props(styles.cardImage)}>
+                      <div {...stylex.props(styles.comingSoon)}>
+                        <XDSBadge label="Coming Soon" variant="info" />
+                      </div>
+                    </div>
+                  );
+
+                  return (
+                    <XDSClickableCard
+                      key={item.slug}
+                      padding={0}
+                      maxWidth="100%"
+                      label={`Preview ${item.name}`}
+                      onClick={() => openPreview(item.slug)}
+                      style={CARD_STYLE}>
+                      {isMobile ? (
+                        templateContent
                       ) : (
-                        <div {...stylex.props(styles.cardImage)}>
-                          <div {...stylex.props(styles.comingSoon)}>
-                            <XDSBadge label="Coming Soon" variant="info" />
-                          </div>
-                        </div>
+                        <XDSOverlay
+                          showOn="hover"
+                          scrim="dark"
+                          content={
+                            <div {...stylex.props(styles.overlayInner)}>
+                              <XDSVStack gap={2}>
+                                <XDSVStack gap={0.5}>
+                                  <XDSHeading level={3} style={{color: '#fff'}}>
+                                    {item.name}
+                                  </XDSHeading>
+                                  <XDSText
+                                    type="body"
+                                    style={{color: 'rgba(255,255,255,0.7)'}}>
+                                    {item.description.slice(0, 80)}
+                                    {item.description.length > 80
+                                      ? '\u2026'
+                                      : ''}
+                                  </XDSText>
+                                </XDSVStack>
+                                <XDSHStack gap={2}>
+                                  <XDSButton
+                                    label="Preview"
+                                    variant="secondary"
+                                    onClick={() => openPreview(item.slug)}
+                                  />
+                                  {item.source && (
+                                    <XDSButton
+                                      label="Open in Playground"
+                                      variant="secondary"
+                                      href={buildPlaygroundHref(item.source)}
+                                      onClick={() => {
+                                        trackOpenPlayground({
+                                          page: 'templates',
+                                          item: item.slug,
+                                          category: groupOf(item.category),
+                                        });
+                                      }}
+                                    />
+                                  )}
+                                </XDSHStack>
+                              </XDSVStack>
+                            </div>
+                          }>
+                          {templateContent}
+                        </XDSOverlay>
                       )}
-                    </XDSOverlay>
-                  </XDSCard>
-                ))}
-              </div>
+                    </XDSClickableCard>
+                  );
+                })}
+              </XDSGrid>
             </div>
           </XDSVStack>
         ))}
@@ -351,6 +342,7 @@ export default function TemplatesPage() {
           }
         }}
         onIndexChange={setOpenIndex}
+        variant={isMobile ? 'fullscreen' : undefined}
       />
     </XDSSection>
   );

@@ -18,11 +18,11 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Typography is built on a geometric type scale: base size × ratio^step, with 14px and 1.2 as defaults. Every text style is a semantic token that composes font size, weight, and line-height — so components express intent (heading, body, label) rather than raw values.',
+          text: 'Typography is built on a geometric type scale: base size × ratio^step, with 14px and 1.2 as defaults. Every text style is a semantic token that composes font size, weight, and line-height, so components express intent (heading, body, label) rather than raw values.',
         },
         {
           type: 'prose',
-          text: 'Two layers work together: raw size tokens (--font-size-xs … --font-size-5xl) form the geometric scale, and semantic type scale tokens (--text-heading-1-size, --text-body-leading, etc.) reference them by var(). Themes override the entire scale by adjusting base and ratio in defineTheme — all semantic tokens recompute automatically.',
+          text: 'Two layers work together: raw size tokens (--font-size-xs … --font-size-5xl) form the geometric scale, and semantic type scale tokens (--text-heading-1-size, --text-body-leading, etc.) reference them by var(). Themes override the entire scale by adjusting base and ratio in defineTheme; all semantic tokens recompute automatically.',
         },
       ],
     },
@@ -34,7 +34,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Three font roles: body (UI text), heading (titles and headings), and code (monospace). By default, body and heading share the same system font stack; code uses a monospace stack. Custom themes can assign different families per role — heading inherits from body when not explicitly set.',
+          text: 'Three font roles: body (UI text), heading (titles and headings), and code (monospace). By default, body and heading share the same system font stack; code uses a monospace stack. Custom themes can assign different families per role; heading inherits from body when not explicitly set.',
         },
         {
           type: 'token-ref',
@@ -89,7 +89,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'The 4px grid is critical: every line box aligns to 4px increments, which keeps baselines, spacing, and component heights predictable. The expandTypeScale utility computes these automatically when you provide a base and ratio — you should never need to set line-height manually.',
+          text: 'The 4px grid matters: every line box aligns to 4px increments, which keeps baselines, spacing, and component heights predictable. The expandTypeScale utility computes these automatically when you provide a base and ratio, so you should never need to set line-height manually.',
         },
       ],
     },
@@ -118,7 +118,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Display variants (display-1, display-2, display-3) continue the geometric progression above heading-1, at steps +6, +5, and +4. They use normal weight (400) instead of semibold, and tighter line-heights (~1.2) — large text reads better with less leading. Use display types for hero banners, marketing headlines, and data callouts — not for document headings.',
+          text: 'Display variants (display-1, display-2, display-3) continue the geometric progression above heading-1, at steps +6, +5, and +4. They use normal weight (400) instead of semibold, and tighter line-heights (~1.2), since large text reads better with less leading. Use display types for hero banners, marketing headlines, and data callouts, not for document headings.',
         },
         {
           type: 'prose',
@@ -203,23 +203,23 @@ const denseTheme = defineTheme({
           type: 'list',
           style: 'do',
           items: [
-            'Use XDSHeading for document headings and XDSText for everything else — they apply the full type scale automatically.',
+            'Use XDSHeading for document headings and XDSText for everything else; they apply the full type scale automatically.',
             'Adjust typography holistically: change base and ratio in defineTheme to shift the entire ramp (e.g. { base: 16, ratio: 1.25 } for editorial, { base: 12, ratio: 1.125 } for dense UI).',
-            'Use display types with as="h1" (or h2/h3) when display text is a page heading — this preserves accessibility while giving you display-level sizing. Or better, use <XDSHeading level={1} type="display-1"> which handles both semantics and styling.',
-            'Let line-height snap to the 4px grid via the type scale — expandTypeScale computes leading automatically from base and ratio.',
+            'Use display types with as="h1" (or h2/h3) when display text is a page heading; this preserves accessibility while giving you display-level sizing. Or better, use <XDSHeading level={1} type="display-1"> which handles both semantics and styling.',
+            'Let line-height snap to the 4px grid via the type scale; expandTypeScale computes leading automatically from base and ratio.',
             'Use the supporting type for secondary information: timestamps, helper text, metadata, captions.',
-            'Use accessibilityLevel on XDSHeading when the visual hierarchy doesn\u2019t match the document outline (e.g. sidebar or card headings).',
+            'Use accessibilityLevel on XDSHeading when the visual hierarchy doesn\u0027t match the document outline (e.g. sidebar or card headings).',
           ],
         },
         {
           type: 'list',
           style: 'dont',
           items: [
-            'Set font-size or line-height manually — use the semantic type scale tokens so the full ramp stays consistent and 4px-grid-aligned.',
-            'Skip heading levels (e.g. h1 \u2192 h3) — screen readers rely on an unbroken hierarchy. Use accessibilityLevel to decouple visual from semantic level.',
-            'Use display types for body content or in-page sections — they\u2019re designed for hero/marketing/data-callout contexts only.',
-            'Override individual size tokens (--font-size-lg) to "tweak" a heading — adjust base/ratio instead so proportions remain coherent across the entire scale.',
-            'Use raw numeric font-weight values (400, 600) — reference the semantic weight tokens so themes can remap them.',
+            'Set font-size or line-height manually; use the semantic type scale tokens so the full ramp stays consistent and 4px-grid-aligned.',
+            'Skip heading levels (e.g. h1 to h3); screen readers rely on an unbroken hierarchy. Use accessibilityLevel to decouple visual from semantic level.',
+            'Use display types for body content or in-page sections; they\u0027re designed for hero/marketing/data-callout contexts only.',
+            'Override individual size tokens (--font-size-lg) to "tweak" a heading; adjust base/ratio instead so proportions remain coherent across the entire scale.',
+            'Use raw numeric font-weight values (400, 600); reference the semantic weight tokens so themes can remap them.',
           ],
         },
       ],

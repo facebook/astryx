@@ -68,15 +68,15 @@ export const docs = {
 
   usage: {
     description:
-      'Toast shows a brief, non-blocking notification to confirm an action or present temporary information. Use it for scenarios where the user needs feedback but not a decision, such as saving, deleting, or changing a status.\n\nFor production use, prefer the `useXDSToast()` hook — it handles positioning, stacking, auto-dismiss, and deduplication via `XDSToastViewport`. The `XDSToast` component renders the visual toast element inline and is useful for previews, documentation, and static showcases where the viewport lifecycle is not needed.',
+      'Toast shows a brief, non-blocking notification to confirm an action or present temporary information. Use it for scenarios where the user needs feedback but not a decision, such as saving, deleting, or changing a status.\n\nFor production use, prefer the `useXDSToast()` hook; it handles positioning, stacking, auto-dismiss, and deduplication via `XDSToastViewport`. The `XDSToast` component renders the visual toast element inline and is useful for previews, documentation, and static showcases where the viewport lifecycle is not needed.',
     bestPractices: [
-      {guidance: true, description: 'Keep messages short - only a few words that tell the user what happened, like "Changes saved" or "Message sent".'},
+      {guidance: true, description: 'Keep messages short: only a few words that tell the user what happened, like "Changes saved" or "Message sent".'},
       {guidance: true, description: 'Add an undo action in the endContent slot for reversible operations like deleting an item, so the user can recover without navigating away.'},
       {guidance: true, description: 'Use uniqueID to deduplicate toasts that fire from repeated actions, like clicking a save button multiple times.'},
-      {guidance: true, description: 'Use error type for failures that need attention but not immediate action — it persists until dismissed so the user won\'t miss it.'},
-      {guidance: false, description: 'Don\'t use a toast for critical errors that block the user — use Banner for persistent, in-context messaging that requires acknowledgment.'},
-      {guidance: false, description: 'Don\'t put long or multi-line content in a toast — it disappears after 5 seconds and the user may not finish reading.'},
-      {guidance: false, description: 'Don\'t show form validation errors as toasts — use inline field validation so the user can see exactly which field needs fixing.'},
+      {guidance: true, description: 'Use error type for failures that need attention but not immediate action; it persists until dismissed so the user won\'t miss it.'},
+      {guidance: false, description: 'Don\'t use a toast for critical errors that block the user. Use Banner for persistent, in-context messaging that requires acknowledgment.'},
+      {guidance: false, description: 'Don\'t put long or multi-line content in a toast; it disappears after 5 seconds and the user may not finish reading.'},
+      {guidance: false, description: 'Don\'t show form validation errors as toasts. Use inline field validation so the user can see exactly which field needs fixing.'},
     ],
     anatomy: [
       {name: 'Body', required: true, description: 'The primary message text describing what happened or what the user should know.'},
@@ -106,15 +106,15 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Toast 显示简短的非阻塞通知，用于确认操作或呈现临时信息。适用于用户需要反馈但不需要做决定的场景，如保存、删除或状态变更。\n\n生产环境中推荐使用 `useXDSToast()` hook——它通过 `XDSToastViewport` 处理定位、堆叠、自动关闭和去重。`XDSToast` 组件以内联方式渲染 toast 视觉元素，适用于预览、文档和静态展示。',
+      'Toast 显示简短的非阻塞通知，用于确认操作或呈现临时信息。适用于用户需要反馈但不需要做决定的场景，如保存、删除或状态变更。\n\n生产环境中推荐使用 `useXDSToast()` hook，它通过 `XDSToastViewport` 处理定位、堆叠、自动关闭和去重。`XDSToast` 组件以内联方式渲染 toast 视觉元素，适用于预览、文档和静态展示。',
     bestPractices: [
-      {guidance: true, description: '保持消息简短——只需几个词告诉用户发生了什么，如"更改已保存"或"消息已发送"。'},
+      {guidance: true, description: '保持消息简短，只需几个词告诉用户发生了什么，如"更改已保存"或"消息已发送"。'},
       {guidance: true, description: '在 endContent 插槽中添加撤销操作，用于可逆操作如删除项目，让用户无需导航即可恢复。'},
       {guidance: true, description: '使用 uniqueID 去重重复操作触发的 toast，如多次点击保存按钮。'},
-      {guidance: true, description: '对需要关注但不需要立即操作的错误使用 error 类型——它会持续显示直到关闭。'},
-      {guidance: false, description: '不要对阻塞用户的严重错误使用 toast——使用 Banner 进行持久的上下文消息传递。'},
-      {guidance: false, description: '不要在 toast 中放置长内容或多行内容——它会在5秒后消失，用户可能来不及阅读。'},
-      {guidance: false, description: '不要将表单验证错误显示为 toast——使用内联字段验证让用户看到具体哪个字段需要修复。'},
+      {guidance: true, description: '对需要关注但不需要立即操作的错误使用 error 类型，它会持续显示直到关闭。'},
+      {guidance: false, description: '不要对阻塞用户的严重错误使用 toast，使用 Banner 进行持久的上下文消息传递。'},
+      {guidance: false, description: '不要在 toast 中放置长内容或多行内容，它会在5秒后消失，用户可能来不及阅读。'},
+      {guidance: false, description: '不要将表单验证错误显示为 toast，使用内联字段验证让用户看到具体哪个字段需要修复。'},
     ],
     anatomy: [
       {name: '正文', required: true, description: '描述发生了什么或用户应该知道什么的主要消息文本。'},
@@ -130,15 +130,15 @@ export const docsDense = {
     'toast notification w/ auto-dismiss, stacking, dedup, smooth animations; XDSMediaTheme inverted surface',
   usage: {
     description:
-      'Brief non-blocking notification for action confirmations and temporary info. Use where user needs feedback not decisions — saves, deletes, status changes. useXDSToast() hook for production (positioning, stacking, auto-dismiss, dedup via XDSToastViewport). XDSToast renders inline for previews/docs/static showcases.',
+      'Brief non-blocking notification for action confirmations and temporary info. Use where user needs feedback not decisions: saves, deletes, status changes. useXDSToast() hook for production (positioning, stacking, auto-dismiss, dedup via XDSToastViewport). XDSToast renders inline for previews/docs/static showcases.',
     bestPractices: [
-      {guidance: true, description: 'Short messages — a few words: "Changes saved", "Message sent".'},
+      {guidance: true, description: 'Short messages, a few words: "Changes saved", "Message sent".'},
       {guidance: true, description: 'Undo action in endContent for reversible ops like deletes.'},
       {guidance: true, description: 'uniqueID to dedup repeated action toasts.'},
-      {guidance: true, description: 'Error type for failures needing attention — persists until dismissed.'},
-      {guidance: false, description: 'Don\'t use for critical blocking errors — use Banner for persistent in-context messaging.'},
-      {guidance: false, description: 'Don\'t put long/multi-line content — disappears in 5s, user may not finish reading.'},
-      {guidance: false, description: 'Don\'t show form validation errors — use inline field validation instead.'},
+      {guidance: true, description: 'Error type for failures needing attention; persists until dismissed.'},
+      {guidance: false, description: 'Don\'t use for critical blocking errors. Use Banner for persistent in-context messaging.'},
+      {guidance: false, description: 'Don\'t put long/multi-line content; disappears in 5s, user may not finish reading.'},
+      {guidance: false, description: 'Don\'t show form validation errors. Use inline field validation instead.'},
     ],
   },
   propDescriptions: {

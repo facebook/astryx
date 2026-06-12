@@ -4,12 +4,21 @@
 export const doc = {
   type: 'block',
   exampleFor: 'Theme',
-  name: 'Theme — Side by Side',
-  displayName: 'Theme — Side by Side',
+  name: 'Theme — Distinct Themes',
+  displayName: 'Theme — Distinct Themes',
   description:
-    'Two theme providers wrapping identical content to show how XDSTheme changes the visual treatment of all child components.',
+    'Two visually distinct theme providers wrapping identical content to show how XDSTheme changes the visual treatment of child components.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Theme', 'Card', 'Layout', 'Text', 'Button', 'Badge'],
+  componentsUsed: [
+    'Theme',
+    'Card',
+    'Grid',
+    'Section',
+    'Layout',
+    'Text',
+    'Button',
+    'Badge',
+  ],
 };

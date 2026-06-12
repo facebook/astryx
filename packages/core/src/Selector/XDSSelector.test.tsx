@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSSelector} from './XDSSelector';
 
@@ -46,6 +46,65 @@ const h = {hidden: true} as const;
 
 const OPTIONS = ['Apple', 'Banana', 'Cherry'];
 
+function rect({
+  top,
+  bottom,
+  left = 0,
+  right = 100,
+  width = right - left,
+  height = bottom - top,
+}: {
+  top: number;
+  bottom: number;
+  left?: number;
+  right?: number;
+  width?: number;
+  height?: number;
+}): DOMRect {
+  return {
+    x: left,
+    y: top,
+    top,
+    bottom,
+    left,
+    right,
+    width,
+    height,
+    toJSON: () => ({}),
+  };
+}
+
+function mockSelectorRects() {
+  const originalGetBoundingClientRect =
+    HTMLElement.prototype.getBoundingClientRect;
+  const originalInnerHeight = Object.getOwnPropertyDescriptor(
+    window,
+    'innerHeight',
+  );
+  HTMLElement.prototype.getBoundingClientRect = function () {
+    if (this.getAttribute('role') === 'combobox') {
+      return rect({top: 160, bottom: 190, height: 30});
+    }
+    if (this.getAttribute('role') === 'listbox') {
+      return rect({top: 190, bottom: 310, height: 120});
+    }
+    if (this.id.endsWith('-item-1')) {
+      return rect({top: 220, bottom: 250, height: 30});
+    }
+    return originalGetBoundingClientRect.call(this);
+  };
+  Object.defineProperty(window, 'innerHeight', {
+    value: 200,
+    configurable: true,
+  });
+  return () => {
+    HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    if (originalInnerHeight) {
+      Object.defineProperty(window, 'innerHeight', originalInnerHeight);
+    }
+  };
+}
+
 describe('XDSSelector', () => {
   it('renders with placeholder when no value', () => {
     render(
@@ -64,6 +123,79 @@ describe('XDSSelector', () => {
       />,
     );
     expect(screen.getByRole('combobox')).toHaveTextContent('Banana');
+  });
+
+  it('supports explicit menu placement', () => {
+    render(
+      <XDSSelector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        placement="above"
+      />,
+    );
+    const popover = screen
+      .getByRole('listbox', {hidden: true})
+      .closest('[popover]');
+    expect(popover?.getAttribute('style')).toContain(
+      'position-area: top span-right',
+    );
+  });
+
+  it('clamps the default selected-item overlay to the viewport', async () => {
+    const restoreRects = mockSelectorRects();
+    const user = userEvent.setup();
+    try {
+      render(
+        <XDSSelector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+        />,
+      );
+
+      await user.click(screen.getByRole('combobox'));
+      const popover = screen
+        .getByRole('listbox', {hidden: true})
+        .closest('[popover]');
+      await waitFor(() => {
+        expect(popover?.getAttribute('style')).toContain(
+          'margin-block-start: -110px',
+        );
+      });
+    } finally {
+      restoreRects();
+    }
+  });
+
+  it('does not apply selected-item overlay offset when placement is explicit', async () => {
+    const restoreRects = mockSelectorRects();
+    const user = userEvent.setup();
+    try {
+      render(
+        <XDSSelector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+          placement="above"
+        />,
+      );
+
+      await user.click(screen.getByRole('combobox'));
+      const popover = screen
+        .getByRole('listbox', {hidden: true})
+        .closest('[popover]');
+      await waitFor(() => {
+        expect(popover?.getAttribute('style')).not.toContain(
+          'margin-block-start',
+        );
+      });
+    } finally {
+      restoreRects();
+    }
   });
 
   describe('hasClear', () => {

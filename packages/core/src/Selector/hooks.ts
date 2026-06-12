@@ -34,11 +34,11 @@ interface UseSelectedItemOffsetResult {
  * Calculates the offset needed to position the dropdown so that the selected
  * item appears centered over the trigger button (macOS-style selector).
  *
- * When the offset would push the popover out of the viewport (e.g. the selector
- * is near the top of the page), the offset is clamped so the popover stays
- * fully visible. If the selected item can't be shown over the trigger without
- * going out of bounds, the popover falls back to appearing below the trigger
- * with no offset.
+ * The desired dropdown top is calculated directly from the trigger center and
+ * selected-item center, then clamped to the viewport. This preserves the
+ * default "selected item over trigger" behavior while letting the menu slide
+ * upward near the bottom edge or downward near the top edge instead of being
+ * clipped off-screen.
  */
 export function useSelectedItemOffset({
   isOpen,
@@ -83,47 +83,34 @@ export function useSelectedItemOffset({
       return;
     }
 
-    // Get positions
+    // Get positions. JSDOM returns zero rects by default, but browsers provide
+    // real dimensions before paint via layout effect.
     const listboxRect = listboxRef.current.getBoundingClientRect();
     const itemRect = targetItem.getBoundingClientRect();
     const triggerRect = triggerRef.current.getBoundingClientRect();
 
-    // Calculate offset to center the item over the trigger
-    // The listbox is positioned below the trigger by anchor positioning (top of listbox at bottom of trigger)
-    // We need to move it UP so the selected item's center aligns with trigger's center
-    //
-    // Item center relative to listbox top:
+    const listboxHeight = listboxRect.height;
+    if (listboxHeight <= 0) {
+      commitPosition(0, true);
+      return;
+    }
+
+    // Item center relative to listbox top. This remains stable even as the
+    // popover's top changes between measurements.
     const itemCenterInListbox =
       itemRect.top - listboxRect.top + itemRect.height / 2;
-    //
-    // To center item over trigger, we need to move up by:
-    // (item center in listbox) + (half trigger height to reach trigger's center from its bottom edge)
-    const calculatedOffset = itemCenterInListbox + triggerRect.height / 2;
+    const triggerCenter = triggerRect.top + triggerRect.height / 2;
 
-    // Clamp to viewport bounds — don't let the popover go above the screen.
-    // The popover's top edge after offset = triggerRect.bottom - calculatedOffset.
-    // We want: top >= 0 (viewport top) and bottom <= viewportHeight.
-    const popoverTopAfterOffset = triggerRect.bottom - calculatedOffset;
-    const listboxHeight = listboxRect.height;
-    const popoverBottomAfterOffset = popoverTopAfterOffset + listboxHeight;
+    // Desired top aligns the selected item's center with trigger center.
+    const desiredTop = triggerCenter - itemCenterInListbox;
     const viewportHeight = window.innerHeight;
+    const maxTop = Math.max(0, viewportHeight - listboxHeight);
+    const clampedTop = Math.min(Math.max(desiredTop, 0), maxTop);
 
-    let clampedOffset = calculatedOffset;
-
-    if (popoverTopAfterOffset < 0) {
-      // Would go above viewport — reduce offset so top edge sits at viewport top
-      clampedOffset = calculatedOffset + popoverTopAfterOffset;
-    } else if (popoverBottomAfterOffset > viewportHeight) {
-      // Would go below viewport — reduce offset so bottom edge sits at viewport bottom
-      clampedOffset =
-        calculatedOffset - (popoverBottomAfterOffset - viewportHeight);
-    }
-
-    // If even the clamped offset is negative or near-zero, fall back to
-    // showing the popover below the trigger with no overlay offset
-    if (clampedOffset < 0) {
-      clampedOffset = 0;
-    }
+    // useXDSLayer positions the popover below the trigger. Apply a negative
+    // block-start margin to the layer container so the listbox top moves from
+    // triggerRect.bottom to clampedTop.
+    const clampedOffset = Math.max(0, triggerRect.bottom - clampedTop);
 
     commitPosition(clampedOffset, true);
   }, [

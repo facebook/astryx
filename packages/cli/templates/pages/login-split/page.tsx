@@ -22,8 +22,8 @@ import {
   radiusVars,
 } from '@xds/core/theme/tokens.stylex';
 
-// light-working-vertical-1 from xds_oss asset set
-const COVER_IMAGE_URL = '/template-assets/light-working-vertical-1.png';
+const COVER_IMAGE_URL =
+  'https://lookaside.facebook.com/assets/xds_oss/light-working-vertical-1.png';
 
 const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -66,6 +66,7 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 const styles = stylex.create({
   page: {
+    minHeight: '100%',
     backgroundColor: colorVars['--color-background-body'],
   },
   fullWidth: {
@@ -107,7 +108,7 @@ export default function LoginTwoColumn() {
   };
 
   return (
-    <XDSCenter axis="both" height="100dvh" xstyle={styles.page}>
+    <XDSCenter axis="both" xstyle={styles.page}>
       <XDSVStack gap={4} hAlign="center">
         {/* Card */}
         <XDSCard padding={0} maxWidth={1000} width="100%">

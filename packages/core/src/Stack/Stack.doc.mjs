@@ -18,7 +18,7 @@ export const docs = {
     {
       name: 'XDSHStack',
       isHiddenFromOverview: true,
-      displayName: 'XDSH Stack',
+      displayName: 'H Stack',
       description:
         'Horizontal stack for arranging items left-to-right. Supports polymorphic rendering.',
       props: [
@@ -80,13 +80,13 @@ export const docs = {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
-            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
         },
       ],    },
     {
       name: 'XDSVStack',
       isHiddenFromOverview: true,
-      displayName: 'XDSV Stack',
+      displayName: 'V Stack',
       description:
         'Vertical stack for arranging items top-to-bottom. Supports polymorphic rendering.',
       props: [
@@ -184,9 +184,9 @@ export const docs = {
     description:
       'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [
-      { guidance: true, description: 'Use the gap prop for spacing between items — don\'t add margins manually.' },
+      { guidance: true, description: 'Use the gap prop for spacing between items; don\'t add margins manually.' },
       { guidance: true, description: 'Use XDSStackItem with size="fill" to make one item stretch and fill the leftover space.' },
-      { guidance: false, description: 'Nest stacks inside stacks — try wrap="wrap" first to let items flow to the next line.' },
+      { guidance: false, description: 'Nest stacks inside stacks; try wrap="wrap" first to let items flow to the next line.' },
     ],
   },
 };
@@ -206,7 +206,7 @@ export const docsZh = {
     {
       name: 'XDSHStack',
       isHiddenFromOverview: true,
-      displayName: 'XDSH Stack',
+      displayName: 'H Stack',
       description:
         '水平堆叠组件，将元素从左到右排列。支持多态渲染。',
       props: [
@@ -275,7 +275,7 @@ export const docsZh = {
     {
       name: 'XDSVStack',
       isHiddenFromOverview: true,
-      displayName: 'XDSV Stack',
+      displayName: 'V Stack',
       description:
         '垂直堆叠组件，将元素从上到下排列。支持多态渲染。',
       props: [
@@ -373,9 +373,9 @@ export const docsZh = {
     description:
       'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [
-      { guidance: true, description: 'Use the gap prop for spacing between items — don\'t add margins manually.' },
+      { guidance: true, description: 'Use the gap prop for spacing between items; don\'t add margins manually.' },
       { guidance: true, description: 'Use XDSStackItem with size="fill" to make one item stretch and fill the leftover space.' },
-      { guidance: false, description: 'Nest stacks inside stacks — try wrap="wrap" first to let items flow to the next line.' },
+      { guidance: false, description: 'Nest stacks inside stacks; try wrap="wrap" first to let items flow to the next line.' },
     ],
   },
 };
@@ -387,16 +387,16 @@ export const docsDense = {
     description:
       'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [
-      { guidance: true, description: 'Use the gap prop for spacing between items — don\'t add margins manually.' },
+      { guidance: true, description: 'Use the gap prop for spacing between items; don\'t add margins manually.' },
       { guidance: true, description: 'Use XDSStackItem with size="fill" to make one item stretch and fill the leftover space.' },
-      { guidance: false, description: 'Nest stacks inside stacks — try wrap="wrap" first to let items flow to the next line.' },
+      { guidance: false, description: 'Nest stacks inside stacks; try wrap="wrap" first to let items flow to the next line.' },
     ],
   },
   components: [
     {
       name: 'XDSHStack',
       isHiddenFromOverview: true,
-      displayName: 'XDSH Stack',
+      displayName: 'H Stack',
       description: 'Horizontal stack; left-to-right, polymorphic rendering.',
       propDescriptions: {
         gap: 'Numeric spacing step for gap: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
@@ -415,7 +415,7 @@ export const docsDense = {
     {
       name: 'XDSVStack',
       isHiddenFromOverview: true,
-      displayName: 'XDSV Stack',
+      displayName: 'V Stack',
       description: 'Vertical stack; top-to-bottom, polymorphic rendering.',
       propDescriptions: {
         gap: 'Numeric spacing step for gap: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',

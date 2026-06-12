@@ -4,6 +4,8 @@
 export const doc = {
   type: 'block',
   exampleFor: 'Tooltip',
+  alsoExampleFor: ['useXDSTooltip'],
+  alsoShowcaseFor: ['useXDSTooltip'],
   name: 'Tooltip — Hook Usage',
   displayName: 'Tooltip — Hook Usage',
   description:

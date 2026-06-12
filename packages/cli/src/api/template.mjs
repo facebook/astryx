@@ -17,13 +17,8 @@ const PAGES_DIR = path.join(TEMPLATES_DIR, 'pages');
 const BLOCKS_DIR = path.join(TEMPLATES_DIR, 'blocks');
 
 /**
- * Inline placeholder illustration used when scaffolding a template into a
- * user's project. Template `/template-assets/*` references only resolve on the
- * XDS docsite — when a builder runs `xds template <name> <path>`, those files
- * don't exist in their app. Rather than ship demo images the builder will
- * replace anyway, we strip the references and drop in a self-contained data-URI
- * placeholder so scaffolded pages render with zero setup.
- *
+ * Inline placeholder swapped in for demo imagery when scaffolding a template,
+ * so scaffolded pages render with zero setup (see stripTemplateAssetRefs).
  * Neutral hex colors (not design tokens) so it renders in any project, themed
  * or not. Mirrors apps/docsite/public/template-assets/placeholder.svg.
  */
@@ -31,17 +26,27 @@ const PLACEHOLDER_IMAGE =
   "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E";
 
 /**
- * Replace docsite-local `/template-assets/<file>` image references with a
- * self-contained placeholder data URI. Only the docsite serves files from
- * `/template-assets`, so these paths would 404 in a scaffolded project.
+ * Demo-image sources to strip from scaffolded projects — Meta's lookaside CDN
+ * (a Meta-only network dependency). Genuine third-party URLs (e.g. brand logos
+ * from paypalobjects.com) are intentionally left untouched.
+ *
+ * @type {RegExp[]}
+ */
+const DEMO_IMAGE_PATTERNS = [
+  /https?:\/\/(?:[\w-]+\.)*lookaside\.facebook\.com\/[^\s'"`)]+/g,
+];
+
+/**
+ * Replace demo image references with a self-contained placeholder data URI so
+ * scaffolded pages render with zero setup. Builders drop in their own images.
  *
  * @param {string} source - Template source code.
- * @returns {string} Source with template-asset references replaced.
+ * @returns {string} Source with demo image references replaced.
  */
 export function stripTemplateAssetRefs(source) {
-  return source.replace(
-    /\/template-assets\/[A-Za-z0-9._-]+/g,
-    PLACEHOLDER_IMAGE,
+  return DEMO_IMAGE_PATTERNS.reduce(
+    (out, pattern) => out.replace(pattern, PLACEHOLDER_IMAGE),
+    source,
   );
 }
 async function loadDocModule(docPath) {
@@ -533,8 +538,8 @@ export async function template(name, options = {}) {
 
   fs.mkdirSync(outputDir, {recursive: true});
 
-  // Strip docsite-only /template-assets references so the scaffolded file
-  // renders in the user's project without copying demo images.
+  // Strip demo image references so the scaffolded file renders without a
+  // Meta-only network dependency.
   const source = fs.readFileSync(match.filePath, 'utf-8');
   const outputSource = stripTemplateAssetRefs(source);
   fs.writeFileSync(outputFilePath, outputSource);

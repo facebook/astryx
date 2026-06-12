@@ -37,7 +37,7 @@ export const docs = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
   ],  theming: {
     targets: [
@@ -50,8 +50,8 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Provide a meaningful label to describe what is loading for screen reader users.'},
       {guidance: true, description: 'Use the "onMedia" shade when placed on dark or accent-colored backgrounds.'},
-      {guidance: false, description: 'Use for content areas with known dimensions — use Skeleton to preserve layout instead.'},
-      {guidance: false, description: 'Stack multiple spinners in the same view — use one to represent the overall loading state.'},
+      {guidance: false, description: 'Use for content areas with known dimensions; use Skeleton to preserve layout instead.'},
+      {guidance: false, description: 'Stack multiple spinners in the same view; use one to represent the overall loading state.'},
     ],
   },
 };
@@ -102,8 +102,8 @@ export const docsZh = {
     bestPractices: [
       {guidance: true, description: 'Provide a meaningful label to describe what is loading for screen reader users.'},
       {guidance: true, description: 'Use the "onMedia" shade when placed on dark or accent-colored backgrounds.'},
-      {guidance: false, description: 'Use for content areas with known dimensions — use Skeleton to preserve layout instead.'},
-      {guidance: false, description: 'Stack multiple spinners in the same view — use one to represent the overall loading state.'},
+      {guidance: false, description: 'Use for content areas with known dimensions; use Skeleton to preserve layout instead.'},
+      {guidance: false, description: 'Stack multiple spinners in the same view; use one to represent the overall loading state.'},
     ],
   },
 };
@@ -116,8 +116,8 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Provide a meaningful label to describe what is loading for screen reader users.'},
       {guidance: true, description: 'Use the "onMedia" shade when placed on dark or accent-colored backgrounds.'},
-      {guidance: false, description: 'Use for content areas with known dimensions — use Skeleton to preserve layout instead.'},
-      {guidance: false, description: 'Stack multiple spinners in the same view — use one to represent the overall loading state.'},
+      {guidance: false, description: 'Use for content areas with known dimensions; use Skeleton to preserve layout instead.'},
+      {guidance: false, description: 'Stack multiple spinners in the same view; use one to represent the overall loading state.'},
     ],
   },
   propDescriptions: {

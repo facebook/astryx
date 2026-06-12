@@ -39,6 +39,7 @@ const styles = stylex.create({
     maxWidth: 1200,
     overflow: 'hidden',
     borderRadius: 'var(--radius-container)',
+    isolation: 'isolate',
   },
   card: {
     position: 'relative',
@@ -155,10 +156,14 @@ const styles = stylex.create({
     marginInline: 'auto',
   },
   // Two-up button row cap. maxWidth: 360 is a thumb-reachable
-  // ergonomic value, not a spacing-scale step.
+  // ergonomic value. The grid uses auto-fit 160px tracks in markup
+  // so narrow phones collapse to one centered column instead of
+  // forcing the buttons into undersized cells. Literals are button
+  // ergonomics values, not spacing-scale steps.
   buttonGrid: {
     width: '100%',
     maxWidth: 360,
+    marginInline: 'auto',
   },
   // Reading-measure cap for the supporting text paragraph. Kept as
   // a stylex rule (instead of inline style) so it composes cleanly
@@ -275,7 +280,10 @@ export function DiscoverShowcase() {
                 — pick a starting point and go.
               </XDSText>
             </XDSVStack>
-            <XDSGrid columns={2} gap={3} xstyle={styles.buttonGrid}>
+            <XDSGrid
+              columns={{minWidth: 160, repeat: 'fit'}}
+              gap={3}
+              xstyle={styles.buttonGrid}>
               <XDSButton
                 variant="primary"
                 size="lg"

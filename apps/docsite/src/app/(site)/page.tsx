@@ -90,6 +90,7 @@ const styles = stylex.create({
   heroButtons: {
     width: '100%',
     maxWidth: 420,
+    marginInline: 'auto',
   },
   // On dark slides the hero text switches to a light ink (headline/links inherit).
   heroTextDark: {

@@ -282,7 +282,9 @@ function IconFromRegistry({
 }
 
 /**
- * Renders an icon slot value. Handles both ReactNode and component types:
+ * Renders an icon slot value. Handles semantic names, ReactNode values, and
+ * component types:
+ * - If the value is a semantic icon name string, wraps it in XDSIcon.
  * - If the value is a component (function or forwardRef object), wraps it in XDSIcon.
  * - Otherwise, renders the ReactNode directly.
  */
@@ -290,6 +292,10 @@ export function renderIconSlot(
   icon: React.ReactNode | XDSIconType,
   props?: {size?: XDSIconSize; color?: XDSIconColor},
 ): React.ReactNode {
+  if (typeof icon === 'string') {
+    return <XDSIcon icon={icon as XDSIconName} {...props} />;
+  }
+
   if (
     typeof icon === 'function' ||
     (typeof icon === 'object' && icon !== null && 'render' in icon)

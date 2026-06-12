@@ -6,7 +6,12 @@
  * PlaygroundPropsTable (for slot element controls).
  */
 
-import {createElement, type ComponentType} from 'react';
+import {
+  cloneElement,
+  createElement,
+  isValidElement,
+  type ComponentType,
+} from 'react';
 import * as XDSCore from '@xds/core';
 import type {ElementDescriptor} from '../../generated/componentRegistry';
 
@@ -25,36 +30,39 @@ export function isElementDescriptor(v: unknown): v is ElementDescriptor {
   return v != null && typeof v === 'object' && '__element' in v;
 }
 
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  if (v == null || typeof v !== 'object' || isValidElement(v)) {
+    return false;
+  }
+  const proto = Object.getPrototypeOf(v);
+  return proto === Object.prototype || proto === null;
+}
+
+function withArrayKey(node: unknown, key: number): unknown {
+  if (isValidElement(node) && node.key == null) {
+    return cloneElement(node, {key});
+  }
+  return node;
+}
+
 export function resolveElementDescriptor(
   desc: ElementDescriptor,
 ): React.ReactNode {
   const Comp = getXDSComponent(desc.__element.replace(/^XDS/, ''));
   const tag = Comp ?? desc.__element;
 
-  // Resolve any nested ElementDescriptors inside props
+  // Resolve nested ElementDescriptors anywhere inside props.
   const resolvedProps: Record<string, unknown> = {};
   if (desc.props) {
     for (const [key, val] of Object.entries(desc.props)) {
-      resolvedProps[key] = isElementDescriptor(val)
-        ? resolveElementDescriptor(val)
-        : val;
+      resolvedProps[key] = resolveValue(val);
     }
   }
 
-  let children: React.ReactNode = undefined;
-  if (desc.children != null) {
-    if (typeof desc.children === 'string') {
-      children = desc.children;
-    } else if (Array.isArray(desc.children)) {
-      children = desc.children.map((c, i) =>
-        typeof c === 'string'
-          ? c
-          : createElement('span', {key: i}, resolveElementDescriptor(c)),
-      );
-    } else {
-      children = resolveElementDescriptor(desc.children);
-    }
-  }
+  const children =
+    desc.children == null
+      ? undefined
+      : (resolveValue(desc.children) as React.ReactNode);
 
   return createElement(tag, resolvedProps, children);
 }
@@ -63,5 +71,21 @@ export function resolveValue(v: unknown): unknown {
   if (isElementDescriptor(v)) {
     return resolveElementDescriptor(v);
   }
+
+  if (Array.isArray(v)) {
+    return v.map((item, index) => withArrayKey(resolveValue(item), index));
+  }
+
+  if (isPlainObject(v)) {
+    const resolved: Record<string, unknown> = {};
+    let changed = false;
+    for (const [key, value] of Object.entries(v)) {
+      const next = resolveValue(value);
+      resolved[key] = next;
+      changed ||= next !== value;
+    }
+    return changed ? resolved : v;
+  }
+
   return v;
 }

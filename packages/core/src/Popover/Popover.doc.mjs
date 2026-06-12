@@ -93,7 +93,7 @@ export const docs = {
         {
           name: 'xstyle',
           type: 'StyleXStyles',
-          description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+          description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
         },
       ],
     },
@@ -120,10 +120,10 @@ export const docs = {
       'A click-triggered overlay anchored to a button or trigger element. Use it for secondary actions, inline confirmations, or supplementary information that does not warrant a full dialog. For hover previews use HoverCard, for brief helper text use Tooltip.',
     bestPractices: [
       { guidance: true, description: 'Keep popover content focused on a single task or piece of information.' },
-      { guidance: true, description: 'Provide a clear way to close — either by clicking outside or with an explicit close button.' },
-      { guidance: false, description: 'Nest popovers inside other popovers — it creates confusing focus and navigation.' },
-      { guidance: false, description: 'Use a popover for content that requires heavy user input — use a Dialog instead.' },
-      { guidance: false, description: 'Put too much content in a popover — if it needs scrolling, use a Dialog instead.' },
+      { guidance: true, description: 'Provide a clear way to close: either by clicking outside or with an explicit close button.' },
+      { guidance: false, description: 'Nest popovers inside other popovers; it creates confusing focus and navigation.' },
+      { guidance: false, description: 'Use a popover for content that requires heavy user input; use a Dialog instead.' },
+      { guidance: false, description: 'Put too much content in a popover; if it needs scrolling, use a Dialog instead.' },
     ],
     anatomy: [
       {name: 'Header', required: true, description: 'Contains the title, optional subheader, and close button.'},
@@ -238,10 +238,10 @@ export const docsZh = {
       'A click-triggered overlay anchored to a button or trigger element. Use it for secondary actions, inline confirmations, or supplementary information that does not warrant a full dialog. For hover previews use HoverCard, for brief helper text use Tooltip.',
     bestPractices: [
       { guidance: true, description: 'Keep popover content focused on a single task or piece of information.' },
-      { guidance: true, description: 'Provide a clear way to close — either by clicking outside or with an explicit close button.' },
-      { guidance: false, description: 'Nest popovers inside other popovers — it creates confusing focus and navigation.' },
-      { guidance: false, description: 'Use a popover for content that requires heavy user input — use a Dialog instead.' },
-      { guidance: false, description: 'Put too much content in a popover — if it needs scrolling, use a Dialog instead.' },
+      { guidance: true, description: 'Provide a clear way to close: either by clicking outside or with an explicit close button.' },
+      { guidance: false, description: 'Nest popovers inside other popovers; it creates confusing focus and navigation.' },
+      { guidance: false, description: 'Use a popover for content that requires heavy user input; use a Dialog instead.' },
+      { guidance: false, description: 'Put too much content in a popover; if it needs scrolling, use a Dialog instead.' },
     ],
     anatomy: [
       {name: 'Header', required: true, description: 'Contains the title, optional subheader, and close button.'},
@@ -260,10 +260,10 @@ export const docsDense = {
       'A click-triggered overlay anchored to a button or trigger element. Use it for secondary actions, inline confirmations, or supplementary information that does not warrant a full dialog. For hover previews use HoverCard, for brief helper text use Tooltip.',
     bestPractices: [
       { guidance: true, description: 'Keep popover content focused on a single task or piece of information.' },
-      { guidance: true, description: 'Provide a clear way to close — either by clicking outside or with an explicit close button.' },
-      { guidance: false, description: 'Nest popovers inside other popovers — it creates confusing focus and navigation.' },
-      { guidance: false, description: 'Use a popover for content that requires heavy user input — use a Dialog instead.' },
-      { guidance: false, description: 'Put too much content in a popover — if it needs scrolling, use a Dialog instead.' },
+      { guidance: true, description: 'Provide a clear way to close: either by clicking outside or with an explicit close button.' },
+      { guidance: false, description: 'Nest popovers inside other popovers; it creates confusing focus and navigation.' },
+      { guidance: false, description: 'Use a popover for content that requires heavy user input; use a Dialog instead.' },
+      { guidance: false, description: 'Put too much content in a popover; if it needs scrolling, use a Dialog instead.' },
     ],
     anatomy: [
       {name: 'Header', required: true, description: 'Contains the title, optional subheader, and close button.'},

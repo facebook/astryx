@@ -12,6 +12,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {XDSDialog} from './XDSDialog';
+import {XDSDialogHeader} from './XDSDialogHeader';
 
 // Mock showModal and close methods since they're not fully implemented in jsdom
 beforeEach(() => {
@@ -326,6 +327,22 @@ describe('XDSDialog', () => {
         </XDSDialog>,
       );
       expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
+    });
+
+    it('suppresses DialogHeader auto-focus', () => {
+      const before = document.createElement('button');
+      before.type = 'button';
+      document.body.appendChild(before);
+      before.focus();
+
+      render(
+        <XDSDialog isOpen={true} isInline onOpenChange={() => {}}>
+          <XDSDialogHeader title="Inline title" />
+        </XDSDialog>,
+      );
+
+      expect(before).toHaveFocus();
+      before.remove();
     });
   });
 });

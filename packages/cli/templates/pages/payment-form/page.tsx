@@ -117,9 +117,15 @@ const US_STATES = [
 // Product photos from the local template-assets set (committed to the
 // docsite; the CLI swaps these for an inline placeholder on scaffold).
 const ITEM_IMAGES: Record<string, {src: string}> = {
-  '1': {src: '/template-assets/light-product-1.png'},
-  '2': {src: '/template-assets/light-product-4.png'},
-  '3': {src: '/template-assets/light-product-5.png'},
+  '1': {
+    src: 'https://lookaside.facebook.com/assets/xds_oss/light-product-1.png',
+  },
+  '2': {
+    src: 'https://lookaside.facebook.com/assets/xds_oss/light-product-4.png',
+  },
+  '3': {
+    src: 'https://lookaside.facebook.com/assets/xds_oss/light-product-5.png',
+  },
 };
 
 const ORDER_ITEMS = [
@@ -511,7 +517,7 @@ export default function PaymentFormPage() {
                               onClick={() => {}}
                               xstyle={styles.paypalButton}>
                               <img
-                                src="/template-assets/paypal-logo.png"
+                                src="https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-100px.png"
                                 alt="PayPal"
                                 {...stylex.props(styles.paypalLogo)}
                               />
@@ -524,7 +530,7 @@ export default function PaymentFormPage() {
                               onClick={() => {}}
                               xstyle={styles.gpayButton}>
                               <img
-                                src="/template-assets/google-pay-logo-dark.svg"
+                                src="https://pay.google.com/about/static_kcs/images/logos/google-pay-logo.svg"
                                 alt="Google Pay"
                                 {...stylex.props(styles.gpayLogo)}
                               />
@@ -550,17 +556,17 @@ export default function PaymentFormPage() {
                           {/* Card type icons */}
                           <XDSHStack gap={1.5} vAlign="center">
                             <img
-                              src="/template-assets/visa.svg"
+                              src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/visa.svg"
                               alt="Visa"
                               {...stylex.props(styles.cardLogo)}
                             />
                             <img
-                              src="/template-assets/mastercard.svg"
+                              src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/mastercard.svg"
                               alt="Mastercard"
                               {...stylex.props(styles.cardLogo)}
                             />
                             <img
-                              src="/template-assets/amex.svg"
+                              src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/amex.svg"
                               alt="Amex"
                               {...stylex.props(styles.cardLogo)}
                             />

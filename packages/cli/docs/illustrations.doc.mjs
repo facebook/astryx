@@ -39,7 +39,7 @@ export const docs = {
           items: [
             'Keep illustrations consistent in style across the product.',
             'Use simple, flat illustrations that work in both light and dark mode.',
-            'Size illustrations proportionally to the container — typically 120\u2013240px.',
+            'Size illustrations proportionally to the container, typically 120\u2013240px.',
             'Center illustrations with supporting text below.',
           ],
         },

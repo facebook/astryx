@@ -11,11 +11,12 @@ import {components} from '../../../../generated/componentRegistry';
 import {blocks} from '../../../../generated/blockRegistry';
 import {packages} from '../../../../generated/packageRegistry';
 import {ComponentDetailClient} from '../../../../components/component-detail/ComponentDetailClient';
+import {flattenComponentSidebarEntries} from '../../../../components/componentSidebarData';
 
 const allComponents = Object.values(components).flat();
 
 export function generateStaticParams() {
-  return allComponents.filter(c => !c.parentDoc).map(c => ({name: c.name}));
+  return flattenComponentSidebarEntries().map(c => ({name: c.name}));
 }
 
 export default async function ComponentPage({

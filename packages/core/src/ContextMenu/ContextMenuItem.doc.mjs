@@ -1,0 +1,86 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/** @type {import('../docs-types').ComponentDoc} */
+
+export const docs = {
+  name: 'ContextMenuItem',
+  subComponentOf: 'ContextMenu',
+  displayName: 'Context Menu Item',
+  isHiddenFromOverview: true,
+  description: 'Menu item component for compound mode. Re-exported from XDSDropdownMenuItem for discoverability.',
+  props: [
+    {
+      name: 'icon',
+      type: 'XDSIconType',
+      description: 'Icon to display before the label.',
+    },
+    {
+      name: 'label',
+      type: 'ReactNode',
+      description: 'Primary label text.',
+    },
+    {
+      name: 'description',
+      type: 'ReactNode',
+      description: 'Secondary description text displayed below the label.',
+    },
+    {
+      name: 'children',
+      type: 'ReactNode',
+      description: 'Additional content rendered after the label and description.',
+    },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description: 'StyleX styles for layout customization.',
+    },
+  ],
+};
+
+export const docsZh = {
+  name: 'ContextMenuItem',
+  isHiddenFromOverview: true,
+  displayName: 'Context Menu Item',
+  description: '复合模式的菜单项组件。从 XDSDropdownMenuItem 重新导出以便发现。',
+  props: [
+    {
+      name: 'icon',
+      type: 'XDSIconType',
+      description: '显示在标签前的图标。',
+    },
+    {
+      name: 'label',
+      type: 'ReactNode',
+      description: '主标签文本。',
+    },
+    {
+      name: 'description',
+      type: 'ReactNode',
+      description: '显示在标签下方的次要描述文本。',
+    },
+    {
+      name: 'children',
+      type: 'ReactNode',
+      description: '在标签和描述之后渲染的附加内容。',
+    },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description: '根容器的 StyleX 样式。',
+    },
+  ],
+};
+
+export const docsDense = {
+  name: 'ContextMenuItem',
+  isHiddenFromOverview: true,
+  displayName: 'Context Menu Item',
+  description: 're-exported XDSDropdownMenuItem for compound mode',
+  propDescriptions: {
+    icon: 'icon before label',
+    label: 'primary label text',
+    description: 'secondary text below label',
+    children: 'additional content after label+description',
+    xstyle: 'StyleX styles for root container',
+  },
+};

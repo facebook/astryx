@@ -19,8 +19,8 @@ import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
 import {XDSSelector} from '@xds/core/Selector';
 
-// illustration-horizontal-1 from xds_oss asset set
-const ILLUSTRATION_URL = '/template-assets/illustration-horizontal-1.png';
+const ILLUSTRATION_URL =
+  'https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-1.png';
 
 // ─────────────────────────────────────────────────────────────
 // Constants
@@ -59,6 +59,9 @@ const CONTACT_COLUMNS = [
 // box without distortion (contain, not cover — it's line art, don't crop it).
 // No objectFit prop on XDSAspectRatio, and there's no XDSImage primitive (#2582).
 const styles = stylex.create({
+  page: {
+    minHeight: '100%',
+  },
   illustrationImg: {
     width: '100%',
     height: '100%',
@@ -101,7 +104,7 @@ export default function FormTwoColumnPage() {
   const handleSubmit = () => setSubmitted(true);
 
   return (
-    <XDSCenter height="100svh">
+    <XDSCenter xstyle={styles.page}>
       <XDSSection
         maxWidth={1100}
         width="100%"

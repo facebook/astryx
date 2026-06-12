@@ -4,10 +4,11 @@
 export const doc = {
   type: 'block',
   exampleFor: 'Collapsible',
+  alsoShowcaseFor: ['useXDSCollapsible'],
   name: 'Collapsible',
   displayName: 'Collapsible',
   description:
-    'An accordion group with three collapsible sections in single mode — opening one closes the others.',
+    'An accordion group with three collapsible sections in single mode: opening one closes the others.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

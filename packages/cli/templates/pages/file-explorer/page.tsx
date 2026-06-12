@@ -33,7 +33,6 @@ import {
   DocumentIcon,
 } from '@heroicons/react/24/outline';
 import {FolderIcon} from '@heroicons/react/24/solid';
-import {colorVars} from '@xds/core/theme/tokens.stylex';
 
 interface FileSystemItem {
   id: string;
@@ -262,14 +261,11 @@ const FILESYSTEM: FileSystemItem[] = [
 ];
 
 const styles = stylex.create({
-  page: {
-    minHeight: '100dvh',
-    backgroundColor: colorVars['--color-background-surface'],
-  },
-  fillHeight: {height: '100%'},
+  page: {height: '100dvh'},
+  columnRow: {overflowX: 'auto', overflowY: 'hidden'},
   scrollable: {overflowY: 'auto'},
-  fixedColumn: {flexShrink: 0, alignSelf: 'stretch'},
-  fillRemaining: {flex: 1, alignSelf: 'stretch'},
+  fixedColumn: {flexShrink: 0},
+  detailColumn: {flexGrow: 1, flexShrink: 0, flexBasis: 320},
 });
 
 function findItem(items: FileSystemItem[], id: string): FileSystemItem | null {
@@ -452,7 +448,7 @@ export default function FileExplorerPage() {
       }
       content={
         <XDSLayoutContent padding={0} isScrollable={false}>
-          <XDSHStack xstyle={styles.fillHeight}>
+          <XDSHStack height="100%" xstyle={styles.columnRow}>
             {columns.map((col, colIndex) => {
               const showDivider =
                 colIndex < columns.length - 1 || selectedFile != null;
@@ -510,7 +506,7 @@ export default function FileExplorerPage() {
               <XDSSection
                 padding={6}
                 variant="transparent"
-                xstyle={[styles.scrollable, styles.fillRemaining]}>
+                xstyle={[styles.scrollable, styles.detailColumn]}>
                 <XDSVStack gap={4} hAlign="center">
                   <XDSAvatar name={selectedFile.name} size={96} />
                   <XDSVStack gap={1} hAlign="center">

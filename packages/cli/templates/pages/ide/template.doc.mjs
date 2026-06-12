@@ -6,7 +6,7 @@ export const doc = {
   name: 'IDE',
   displayName: 'IDE',
   description:
-    'Code editor workspace with file explorer, tabbed editor, terminal panel, and properties sidebar — all resizable and collapsible.',
+    'Code editor workspace with file explorer, tabbed editor, terminal panel, and properties sidebar, all resizable and collapsible.',
   isReady: true,
   category: 'Tools - IDE',
 };

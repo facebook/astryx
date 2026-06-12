@@ -4,6 +4,7 @@
 export const doc = {
   type: 'block',
   exampleFor: 'Dialog',
+  alsoExampleFor: ['useXDSImperativeDialog'],
   name: 'Dialog — Scrollable',
   displayName: 'Dialog — Scrollable',
   description:

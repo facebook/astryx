@@ -12,7 +12,7 @@ Before writing any code, install dependencies:
 npm install
 ```
 
-This automatically generates `AGENTS.md` with the XDS component index via `xds init --features agents`. **Read `AGENTS.md` for all XDS component documentation** — it contains CLI commands to browse components, tokens, themes, and design rules.
+This automatically generates `AGENTS.md` with the XDS component index via `xds init --features agents`. **Read `AGENTS.md` for all XDS component documentation**: it contains CLI commands to browse components, tokens, themes, and design rules.
 
 If `AGENTS.md` is missing, regenerate it:
 
@@ -83,18 +83,18 @@ pnpm -F @xds/core dev
 pnpm -F @xds/sandbox dev
 ```
 
-Best of both worlds — edits trigger incremental dist rebuilds via Babel CLI (a few seconds), and CSS layer ordering is correct. Theming works properly.
+Edits trigger incremental dist rebuilds via Babel CLI (a few seconds), and CSS layer ordering is correct. Theming works properly.
 
 ## File manifest
 
 | File                       | Purpose                                                                  |
 | -------------------------- | ------------------------------------------------------------------------ |
-| `package.json`             | Dependencies — uses PostCSS path for StyleX                              |
+| `package.json`             | Dependencies; uses PostCSS path for StyleX                               |
 | `babel.config.js`          | StyleX babel plugin config (as plugin, not preset)                       |
-| `postcss.config.js`        | StyleX PostCSS plugin — extracts CSS from `@stylex;` directive           |
+| `postcss.config.js`        | StyleX PostCSS plugin: extracts CSS from `@stylex;` directive            |
 | `next.config.mjs`          | Static export, basePath for GitHub Pages, webpack alias for theme tokens |
 | `tsconfig.json`            | TypeScript config with workspace path aliases                            |
-| `src/app/globals.css`      | `@stylex;` injection point — PostCSS replaces this with extracted CSS    |
+| `src/app/globals.css`      | `@stylex;` injection point: PostCSS replaces this with extracted CSS     |
 | `src/app/providers.tsx`    | Client-side theme provider wrapper                                       |
 | `src/app/layout.tsx`       | Root layout with sidebar navigation                                      |
 | `src/app/Sidebar.tsx`      | Sidebar navigation component                                             |

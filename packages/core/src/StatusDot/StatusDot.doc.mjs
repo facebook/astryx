@@ -37,7 +37,7 @@ export const docs = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
   ],
   theming: {
@@ -51,8 +51,8 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Always pair with a visible text label so status is not conveyed by color alone.' },
       { guidance: true, description: 'Provide a descriptive `label` prop for screen reader accessibility.' },
-      { guidance: false, description: 'Use the pulse animation for purely decorative purposes — reserve it for states that require immediate attention.' },
-      { guidance: false, description: 'Rely on color alone to communicate status — always include text.' },
+      { guidance: false, description: 'Use the pulse animation for purely decorative purposes; reserve it for states that require immediate attention.' },
+      { guidance: false, description: 'Rely on color alone to communicate status; always include text.' },
     ],
   },
 };
@@ -99,8 +99,8 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Always pair with a visible text label so status is not conveyed by color alone.' },
       { guidance: true, description: 'Provide a descriptive `label` prop for screen reader accessibility.' },
-      { guidance: false, description: 'Use the pulse animation for purely decorative purposes — reserve it for states that require immediate attention.' },
-      { guidance: false, description: 'Rely on color alone to communicate status — always include text.' },
+      { guidance: false, description: 'Use the pulse animation for purely decorative purposes; reserve it for states that require immediate attention.' },
+      { guidance: false, description: 'Rely on color alone to communicate status; always include text.' },
     ],
   },
 };
@@ -114,8 +114,8 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Always pair with a visible text label so status is not conveyed by color alone.' },
       { guidance: true, description: 'Provide a descriptive `label` prop for screen reader accessibility.' },
-      { guidance: false, description: 'Use the pulse animation for purely decorative purposes — reserve it for states that require immediate attention.' },
-      { guidance: false, description: 'Rely on color alone to communicate status — always include text.' },
+      { guidance: false, description: 'Use the pulse animation for purely decorative purposes; reserve it for states that require immediate attention.' },
+      { guidance: false, description: 'Rely on color alone to communicate status; always include text.' },
     ],
   },
   propDescriptions: {

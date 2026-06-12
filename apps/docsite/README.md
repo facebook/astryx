@@ -27,7 +27,7 @@ from the monorepo and writes typed TypeScript registries to `src/generated/`.
 | Registry               | Source                            | What it contains                                              |
 | ---------------------- | --------------------------------- | ------------------------------------------------------------- |
 | `packageRegistry.ts`   | `packages/*/package.json`         | Name, version, description, README for each published package |
-| `componentRegistry.ts` | `*.doc.mjs` files                 | Props, usage docs, hooks, groups — per package                |
+| `componentRegistry.ts` | `*.doc.mjs` files                 | Props, usage docs, hooks, groups, per package                 |
 | `blockRegistry.ts`     | CLI `templates/blocks/`           | Showcase and example blocks with metadata                     |
 | `templateRegistry.ts`  | CLI `templates/pages/`            | Page-level templates (e.g. dashboard, settings)               |
 | `docsRegistry.ts`      | CLI `docs/`                       | Long-form guide and foundation topics                         |
@@ -36,7 +36,7 @@ from the monorepo and writes typed TypeScript registries to `src/generated/`.
 | `exampleRegistry.ts`   | Blocks with `exampleFor`          | Copied example blocks per component                           |
 
 The `src/generated/` directory is gitignored. Pages import from these registries
-and render whatever the pipeline found — no manual wiring needed.
+and render whatever the pipeline found, with no manual wiring needed.
 
 ### The Rule
 
@@ -46,9 +46,9 @@ add it to `generate-data.mjs` and consume it from a registry.
 
 This means:
 
-- No `import {fooTheme} from '@xds/theme-foo/built'` in page files — use `themeObjects` from the generated `themeRegistry`
-- No hand-maintained arrays of component names — use `componentRegistry`
-- No `if (pkg === '@xds/core')` switches — let the pipeline classify packages
+- No `import {fooTheme} from '@xds/theme-foo/built'` in page files; use `themeObjects` from the generated `themeRegistry`
+- No hand-maintained arrays of component names; use `componentRegistry`
+- No `if (pkg === '@xds/core')` switches; let the pipeline classify packages
 
 ## Adding a New Theme
 
@@ -56,7 +56,7 @@ This means:
 2. Add `"@xds/theme-<name>": "*"` to `apps/docsite/package.json` dependencies
 3. Add `@import "@xds/theme-<name>/theme.css"` to `src/app/globals.css`
 4. Load the theme's fonts (see below)
-5. Run `pnpm generate` — the theme appears in `themeRegistry.ts`, `packageRegistry.ts`, the sidebar, craft page, and package detail page automatically
+5. Run `pnpm generate`; the theme appears in `themeRegistry.ts`, `packageRegistry.ts`, the sidebar, craft page, and package detail page automatically
 
 > Only add **public** (non-private) theme packages to the docsite.
 
@@ -115,5 +115,5 @@ apps/docsite/
 ## Testing
 
 Tests live in `src/__tests__/data-extraction.test.ts` and validate the generated
-registries — package discovery, component extraction, theme wiring, etc. Run
+registries: package discovery, component extraction, theme wiring, etc. Run
 `pnpm generate` before running tests since they import from `src/generated/`.

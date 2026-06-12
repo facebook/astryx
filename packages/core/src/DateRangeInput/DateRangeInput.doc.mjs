@@ -43,7 +43,7 @@ export const docs = {
       { guidance: true, description: 'Use min/max to constrain selectable dates to valid ranges.' },
       { guidance: true, description: 'Keep hasClear enabled (default) so users can reset the filter.' },
       { guidance: true, description: 'Provide clear labels and descriptions so users understand what the range controls.' },
-      { guidance: false, description: 'Use DateRangeInput when only a single date is needed — use DateInput instead.' },
+      { guidance: false, description: 'Use DateRangeInput when only a single date is needed; use DateInput instead.' },
       { guidance: false, description: 'Hide the label without surrounding context that makes the purpose obvious.' },
     ],
     anatomy: [
@@ -68,7 +68,7 @@ export const docsDense = {
       { guidance: true, description: 'Use min/max to constrain selectable dates to valid ranges.' },
       { guidance: true, description: 'Keep hasClear enabled (default) so users can reset the filter.' },
       { guidance: true, description: 'Provide clear labels + descriptions so users understand what the range controls.' },
-      { guidance: false, description: 'Use DateRangeInput when only a single date is needed — use DateInput instead.' },
+      { guidance: false, description: 'Use DateRangeInput when only a single date is needed; use DateInput instead.' },
       { guidance: false, description: 'Hide the label without surrounding context that makes the purpose obvious.' },
     ],
   },

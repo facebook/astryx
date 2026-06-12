@@ -1,6 +1,6 @@
 # XDS + Tailwind (Dist Build)
 
-Example Next.js app using XDS pre-built dist CSS alongside Tailwind CSS v4. No StyleX build plugin needed — XDS components are consumed as a regular npm package with a CSS import.
+Example Next.js app using XDS pre-built dist CSS alongside Tailwind CSS v4. No StyleX build plugin needed: XDS components are consumed as a regular npm package with a CSS import.
 
 ## How it works
 
@@ -16,18 +16,18 @@ The key to coexistence is declaring **all** layers upfront in `globals.css`:
 
 This gives the correct priority (lowest → highest):
 
-| Layer | Source | What it does |
-|-------|--------|-------------|
-| `reset` | XDS | CSS reset (`:where()` selectors, zero specificity) |
-| `theme` | Tailwind | Theme variables (colors, fonts, spacing) |
-| `base` | Tailwind | Preflight reset (element-level normalization) |
-| `xds-base` | XDS | Component styles (buttons, cards, inputs, etc.) |
-| `xds-theme` | XDS | Theme overrides (typography, color mappings) |
-| `components` | Tailwind | Component classes (if any) |
-| `utilities` | Tailwind | Utility classes — **wins over all layers** |
-| *(unlayered)* | Consumer | Your custom CSS — highest priority |
+| Layer         | Source   | What it does                                       |
+| ------------- | -------- | -------------------------------------------------- |
+| `reset`       | XDS      | CSS reset (`:where()` selectors, zero specificity) |
+| `theme`       | Tailwind | Theme variables (colors, fonts, spacing)           |
+| `base`        | Tailwind | Preflight reset (element-level normalization)      |
+| `xds-base`    | XDS      | Component styles (buttons, cards, inputs, etc.)    |
+| `xds-theme`   | XDS      | Theme overrides (typography, color mappings)       |
+| `components`  | Tailwind | Component classes (if any)                         |
+| `utilities`   | Tailwind | Utility classes: **wins over all layers**          |
+| _(unlayered)_ | Consumer | Your custom CSS: highest priority                  |
 
-Without this declaration, XDS layers are created *after* Tailwind's declared layers, making XDS component styles outrank Tailwind utilities. That means `className="bg-red-500"` on an XDS component wouldn't work.
+Without this declaration, XDS layers are created _after_ Tailwind's declared layers, making XDS component styles outrank Tailwind utilities. That means `className="bg-red-500"` on an XDS component wouldn't work.
 
 ## Usage patterns
 
@@ -46,7 +46,7 @@ Without this declaration, XDS layers are created *after* Tailwind's declared lay
 
 ### XDS Tailwind Bridge (recommended)
 
-Import `@xds/core/tailwind-theme.css` to register XDS tokens as Tailwind theme variables. This maps all XDS design tokens to native Tailwind utilities — no `var()` needed:
+Import `@xds/core/tailwind-theme.css` to register XDS tokens as Tailwind theme variables. This maps all XDS design tokens to native Tailwind utilities, with no `var()` needed:
 
 ```tsx
 // Before (verbose arbitrary values):
@@ -60,7 +60,7 @@ Import `@xds/core/tailwind-theme.css` to register XDS tokens as Tailwind theme v
 </div>
 ```
 
-The bridge uses Tailwind v4's `@theme inline` — it tells Tailwind to generate utilities from XDS's existing CSS custom properties without emitting duplicate declarations. Theme switching just works.
+The bridge uses Tailwind v4's `@theme inline`: it tells Tailwind to generate utilities from XDS's existing CSS custom properties without emitting duplicate declarations. Theme switching just works.
 
 Available utilities include `text-primary`, `text-secondary`, `bg-surface`, `bg-card`, `border-strong`, `text-error`, `bg-success`, `bg-blue-subtle`, `text-blue-vivid`, `border-blue-ring`, and 80+ more.
 
@@ -85,12 +85,14 @@ All XDS components accept `className`. Tailwind utilities in the `utilities` lay
 
 ### Mixing XDS and Tailwind components
 
-Shadcn-style Tailwind components render correctly alongside XDS — both resets are nearly identical (shared modern-normalize lineage), so there are no conflicts:
+Shadcn-style Tailwind components render correctly alongside XDS. Both resets are nearly identical (shared modern-normalize lineage), so there are no conflicts:
 
 ```tsx
 <div className="grid grid-cols-2 gap-6">
   <XDSCard>...</XDSCard>
-  <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">...</div>
+  <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+    ...
+  </div>
 </div>
 ```
 
@@ -98,9 +100,9 @@ Shadcn-style Tailwind components render correctly alongside XDS — both resets 
 
 XDS reset and Tailwind Preflight overlap ~80%. The meaningful differences:
 
-- **Font smoothing** — XDS enables `-webkit-font-smoothing: antialiased`; Tailwind doesn't
-- **Color scheme** — XDS maps `data-theme` to `color-scheme` for light/dark mode
-- **Placeholder color** — XDS uses `var(--color-text-secondary)` token; Tailwind uses `color-mix()`
+- **Font smoothing**: XDS enables `-webkit-font-smoothing: antialiased`; Tailwind doesn't
+- **Color scheme**: XDS maps `data-theme` to `color-scheme` for light/dark mode
+- **Placeholder color**: XDS uses `var(--color-text-secondary)` token; Tailwind uses `color-mix()`
 
 Both resets can run together without conflicts. Neither breaks the other's components.
 

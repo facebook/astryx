@@ -5,7 +5,7 @@
 import {XDSText} from '@xds/core/Text';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSPopover} from '@xds/core/Popover';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {CodeExampleBlock} from '../CodeExampleBlock';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 
@@ -54,7 +54,7 @@ export function PackageActions({
                   {i + 1}. {step.label}
                 </XDSText>
                 <XDSCard padding={0}>
-                  <XDSCodeBlock
+                  <CodeExampleBlock
                     code={step.code}
                     language={step.language ?? 'bash'}
                     hasCopyButton

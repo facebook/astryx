@@ -20,7 +20,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Use when opening full-screen modals or dialogs to prevent background content from scrolling.' },
       { guidance: true, description: 'Pass the same boolean that controls dialog visibility (e.g., isOpen) as the isLocked parameter.' },
-      { guidance: false, description: 'Use for non-modal overlays like popovers or tooltips — users should be able to scroll away from those.' },
+      { guidance: false, description: 'Use for non-modal overlays like popovers or tooltips; users should be able to scroll away from those.' },
     ],
   },
   relatedComponents: ['Dialog'],
@@ -42,7 +42,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Use when opening full-screen modals / dialogs to prevent background content from scrolling.' },
       { guidance: true, description: 'Pass same boolean that controls dialog visibility (e.g. isOpen) as isLocked parameter.' },
-      { guidance: false, description: 'Use for non-modal overlays like popovers / tooltips — users should be able to scroll away from those.' },
+      { guidance: false, description: 'Use for non-modal overlays like popovers / tooltips; users should be able to scroll away from those.' },
     ],
   },
 };

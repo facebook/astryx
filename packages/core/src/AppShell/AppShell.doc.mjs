@@ -5,16 +5,17 @@
 export const docs = {
   name: 'AppShell',
   displayName: 'App Shell',
+  group: 'AppShell',
   category: 'Layout',
   keywords: ["appshell","layout","scaffold","sidebar","sidenav","topnav","header","navigation","dashboard","shell","page","frame"],
   usage: {
     description:
-      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page — it handles responsive collapse, skip-to-content, and mobile navigation automatically.',
+      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive collapse, skip-to-content, and mobile navigation automatically.',
     bestPractices: [
-      {guidance: true, description: 'Choose the right height — use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
-      {guidance: true, description: 'Set `contentPadding` based on content type — 4 for forms and settings, 0 for tables and dashboards.'},
-      {guidance: false, description: "Nest one AppShell inside another — it's the outermost layout frame."},
-      {guidance: false, description: 'Use for sub-page layouts — use Layout for content areas within AppShell.'},
+      {guidance: true, description: 'Choose the right height: use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
+      {guidance: true, description: 'Set `contentPadding` based on content type: 4 for forms and settings, 0 for tables and dashboards.'},
+      {guidance: false, description: "Nest one AppShell inside another; it's the outermost layout frame."},
+      {guidance: false, description: 'Use for sub-page layouts; use Layout for content areas within AppShell.'},
     ],
   },
   props: [
@@ -91,7 +92,7 @@ export const docs = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
   ],
   playground: {
@@ -136,12 +137,12 @@ export const docsZh = {
   displayName: 'App Shell',
   usage: {
     description:
-      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page — it handles responsive collapse, skip-to-content, and mobile navigation automatically.',
+      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive collapse, skip-to-content, and mobile navigation automatically.',
     bestPractices: [
-      {guidance: true, description: 'Choose the right height — use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
-      {guidance: true, description: 'Set `contentPadding` based on content type — 4 for forms and settings, 0 for tables and dashboards.'},
-      {guidance: false, description: "Nest one AppShell inside another — it's the outermost layout frame."},
-      {guidance: false, description: 'Use for sub-page layouts — use Layout for content areas within AppShell.'},
+      {guidance: true, description: 'Choose the right height: use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
+      {guidance: true, description: 'Set `contentPadding` based on content type: 4 for forms and settings, 0 for tables and dashboards.'},
+      {guidance: false, description: "Nest one AppShell inside another; it's the outermost layout frame."},
+      {guidance: false, description: 'Use for sub-page layouts; use Layout for content areas within AppShell.'},
     ],
   },
   props: [
@@ -208,12 +209,12 @@ export const docsDense = {
     'app-level layout shell w/ header, side nav, main content; composes XDSLayout internally, replaces XDSPage+XDSPageLayout',
   usage: {
     description:
-      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page — it handles responsive collapse, skip-to-content, and mobile navigation automatically.',
+      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive collapse, skip-to-content, and mobile navigation automatically.',
     bestPractices: [
-      {guidance: true, description: 'Choose the right height — use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
-      {guidance: true, description: 'Set `contentPadding` based on content type — 4 for forms and settings, 0 for tables and dashboards.'},
-      {guidance: false, description: "Nest one AppShell inside another — it's the outermost layout frame."},
-      {guidance: false, description: 'Use for sub-page layouts — use Layout for content areas within AppShell.'},
+      {guidance: true, description: 'Choose the right height: use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
+      {guidance: true, description: 'Set `contentPadding` based on content type: 4 for forms and settings, 0 for tables and dashboards.'},
+      {guidance: false, description: "Nest one AppShell inside another; it's the outermost layout frame."},
+      {guidance: false, description: 'Use for sub-page layouts; use Layout for content areas within AppShell.'},
     ],
   },
   propDescriptions: {

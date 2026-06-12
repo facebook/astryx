@@ -31,6 +31,8 @@ import {
   decompressFromEncodedURIComponent,
 } from 'lz-string';
 import {XDSButton} from '@xds/core/Button';
+import {XDSPopover} from '@xds/core/Popover';
+import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSLink} from '@xds/core/Link';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
@@ -54,6 +56,10 @@ import {
   Maximize2,
   RotateCw,
   Crosshair,
+  ExternalLink,
+  Copy,
+  Check,
+  Download,
 } from 'lucide-react';
 import githubLight from './themes/github-light.json';
 import githubDark from './themes/github-dark.json';
@@ -65,15 +71,26 @@ import {
 } from './playgroundThemes';
 import {templates} from '../../generated/templateRegistry';
 import {PreviewStage, type Viewport} from './PreviewStage';
+import {ConfirmDialog} from './ConfirmDialog';
 import {BRAND_ICON} from '../../components/XDSWordmark';
 import {PropertyPanel} from './PropertyPanel';
 import {annotateInstanceIds} from './babelParser';
 import {trackCopy} from '../../lib/analytics';
 import {PlaygroundThemeEditor} from '../../components/themePlayground/PlaygroundThemeEditor';
+import {generateThemeCode} from '../../components/themePlayground/helpers';
 import {DEFAULT_CODE} from './defaultCode';
+import {stripCodeExampleCopyrightHeader} from '../../lib/codeExamples';
 
 import type * as MonacoTypes from 'monaco-editor';
 import type {XDSDefinedTheme} from '@xds/core/theme';
+import {xdsTokenDefaults} from '@xds/core/theme';
+
+// Source of the theme-showcase template — a set of real product surfaces
+// (store, checkout, chat, inventory) used to preview a theme. It's hidden
+// from the generated templates registry (isHiddenFromOverview), so it's added
+// explicitly as the first entry in the Templates dropdown.
+const THEME_SHOWCASE_SOURCE =
+  templates.find(t => t.slug === 'theme-showcase')?.source ?? '';
 
 // Self-host Monaco from public/monaco/vs — corpnet blocks the default
 // jsdelivr CDN. Configure the singleton loader before the editor initializes.
@@ -279,6 +296,12 @@ const s = stylex.create({
   hidden: {
     display: 'none',
   },
+  shareInput: {
+    width: 300,
+  },
+  popoverPadding: {
+    padding: 'var(--spacing-4)',
+  },
   navGroup: {
     gap: 'var(--spacing-2)',
   },
@@ -361,7 +384,7 @@ export function PlaygroundClient() {
     rawThemeParam && rawThemeParam in themeByValue ? rawThemeParam : null;
   const theme = themeParam ?? DEFAULT_PLAYGROUND_THEME;
   // The theme whose values seed the Theme editor: the ?theme= theme on first
-  // load, then whichever theme the user picks from the "Apply Theme" dropdown.
+  // load, then whichever theme the user picks from the "Themes" dropdown.
   // Changing it remounts the editor (via key) so it re-populates from that theme.
   const [selectedTheme, setSelectedTheme] = useState(theme);
   // The theme object the editor is seeded from. Always defined so the always-
@@ -375,12 +398,35 @@ export function PlaygroundClient() {
   const [buildStatus, setBuildStatus] = useState<BuildStatus>('idle');
   const [statusFading, setStatusFading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
+  const [themeName, setThemeName] = useState('');
+  // Snapshot of the theme to export, captured when the Export popover opens.
+  // The live theme lives in customThemeRef (a ref, updated as the user edits
+  // tokens without re-rendering the playground); we copy it into state on
+  // open so the download link below can be built declaratively from reactive
+  // state. The popover is in the toolbar, so the theme isn't being edited
+  // while it's open — the snapshot stays current.
+  const [exportTheme, setExportTheme] = useState<XDSDefinedTheme | null>(null);
   const [previewReady, setPreviewReady] = useState(false);
   const [isTargeting, setIsTargeting] = useState(false);
   const [targetedComponent, setTargetedComponent] = useState<string | null>(
     null,
   );
   const [targetedInstance, setTargetedInstance] = useState(0);
+  // The theme value awaiting confirmation from the "Example themes" dropdown.
+  // Applying an example theme re-seeds the Theme editor and discards the
+  // current theme, so we hold the pending choice until the user confirms.
+  // The dialog is open whenever this is non-null.
+  const [pendingExampleTheme, setPendingExampleTheme] = useState<string | null>(
+    null,
+  );
+  // The template source awaiting confirmation from the "Templates" dropdown.
+  // Loading a template overwrites the code editor, so we hold the pending
+  // choice until the user confirms. The dialog is open whenever this is
+  // non-null.
+  const [pendingTemplateSource, setPendingTemplateSource] = useState<
+    string | null
+  >(null);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const readyRef = useRef(false);
@@ -389,6 +435,10 @@ export function PlaygroundClient() {
   const editorRef = useRef<MonacoTypes.editor.IStandaloneCodeEditor | null>(
     null,
   );
+  // Points at the declaratively-rendered theme-export download link (below).
+  // The Download button triggers it so we get native download behavior from a
+  // normally-rendered <a> rather than fabricating one in a click handler.
+  const downloadLinkRef = useRef<HTMLAnchorElement>(null);
   // Mirror activeView in a ref so onMount can read the current view without
   // re-creating the (stable) mount callback.
   const activeViewRef = useRef(activeView);
@@ -424,6 +474,22 @@ export function PlaygroundClient() {
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  // Re-read the hash once on mount. When arriving via a soft (client-side)
+  // navigation — e.g. the Themes page's "Open in Playground" link routed
+  // through Next's <Link> — the App Router commits the new URL slightly
+  // after this component first renders, so the synchronous getInitialCode()
+  // seed for `code` above can miss the fragment and fall back to
+  // DEFAULT_CODE. A hashchange event isn't emitted for that navigation
+  // (the page itself changes, not just the fragment), so we read the
+  // committed hash here, after mount, and adopt the seeded code if present.
+  useEffect(() => {
+    const seeded = getInitialCode();
+    if (seeded !== DEFAULT_CODE) {
+      setCode(prev => (prev === seeded ? prev : seeded));
+    }
+    // Runs once on mount; the hashchange listener above covers later changes.
   }, []);
 
   // When a ?theme= param seeds the playground, open the Theme view so the
@@ -654,6 +720,34 @@ export function PlaygroundClient() {
     });
   }, []);
 
+  // Derive the export href from reactive state so the download is a real,
+  // normally-rendered <a> (see downloadLinkRef below) rather than a DOM
+  // element fabricated and clicked inside a callback. The active theme is the
+  // one authored in the Theme editor (snapshotted into state when the popover
+  // opens), falling back to the seeded theme. Returns the suggested filename
+  // and a data: URL holding the generated `defineTheme` source; null until a
+  // theme name is entered.
+  const themeExport = useMemo(() => {
+    const name = themeName.trim();
+    if (!name) {
+      return null;
+    }
+    const activeTheme = exportTheme ?? editorInitialTheme;
+    const source = generateThemeCode(
+      name,
+      activeTheme.tokens,
+      xdsTokenDefaults,
+      14,
+      1.2,
+      [],
+      activeTheme.components ?? {},
+    );
+    return {
+      filename: `${name}-theme.ts`,
+      href: `data:text/typescript;charset=utf-8,${encodeURIComponent(source)}`,
+    };
+  }, [themeName, exportTheme, editorInitialTheme]);
+
   const handleMonacoBeforeMount = useCallback((monaco: MonacoInstance) => {
     monaco.editor.defineTheme('github-light', githubLight);
     monaco.editor.defineTheme('github-dark', githubDark);
@@ -701,26 +795,32 @@ export function PlaygroundClient() {
     });
   }, []);
 
-  // Dropdown items for "Apply Theme" — derived from the registered playground
+  // Dropdown items for "Themes" — derived from the registered playground
   // themes (PLAYGROUND_THEME_OPTIONS) so any installed @xds/theme-* package
-  // shows up automatically. Selecting one re-seeds the Theme editor (and thus
-  // the preview) with that theme's values.
+  // shows up automatically. Selecting one prompts for confirmation (it discards
+  // the current theme) before re-seeding the Theme editor (and thus the preview)
+  // with that theme's values.
   const themeMenuItems = useMemo(
     () =>
       PLAYGROUND_THEME_OPTIONS.map(option => ({
         label: option.label,
-        onClick: () => setSelectedTheme(option.value),
+        onClick: () => setPendingExampleTheme(option.value),
       })),
     [],
   );
 
   // Dropdown items for "Templates" — the published, ready templates from the
   // generated registry (the same source the /templates gallery renders), so any
-  // new template shows up automatically. Selecting one loads its source into the
-  // editor (setCode drives Monaco, the preview, and the URL hash).
+  // new template shows up automatically. Selecting one prompts for confirmation
+  // (it overwrites the editor) before loading its source (setCode drives Monaco,
+  // the preview, and the URL hash).
   const templateMenuItems = useMemo(
-    () =>
-      templates
+    () => [
+      {
+        label: 'Theme Showcase',
+        onClick: () => setPendingTemplateSource(THEME_SHOWCASE_SOURCE),
+      },
+      ...templates
         .filter(t => !t.isHiddenFromOverview && t.isReady && t.source)
         .map(t => {
           const dash = t.category.indexOf(' - ');
@@ -734,11 +834,9 @@ export function PlaygroundClient() {
         .sort((a, b) => a.label.localeCompare(b.label))
         .map(({label, source}) => ({
           label,
-          onClick: () => {
-            setCode(source);
-            requestAnimationFrame(() => editorRef.current?.focus());
-          },
+          onClick: () => setPendingTemplateSource(source),
         })),
+    ],
     [],
   );
 
@@ -822,34 +920,26 @@ export function PlaygroundClient() {
             align="center"
             xstyle={s.leftPanelHeader}>
             <XDSHeading level={3}>Playground</XDSHeading>
-            {activeView === 'code' && (
-              <XDSHStack gap={2} align="center">
-                <XDSDropdownMenu
-                  button={{
-                    label: 'Templates',
-                    variant: 'secondary',
-                    size: 'sm',
-                  }}
-                  hasChevron
-                  items={templateMenuItems}
-                />
-                <XDSButton variant="secondary" size="sm" label="Copy Code" />
-              </XDSHStack>
-            )}
-            {activeView === 'theme' && (
-              <XDSHStack gap={2} align="center">
-                <XDSDropdownMenu
-                  button={{
-                    label: 'Apply Theme',
-                    variant: 'secondary',
-                    size: 'sm',
-                  }}
-                  hasChevron
-                  items={themeMenuItems}
-                />
-                <XDSButton variant="secondary" size="sm" label="Export Theme" />
-              </XDSHStack>
-            )}
+            <XDSHStack gap={2} align="center">
+              <XDSDropdownMenu
+                button={{
+                  label: 'Themes',
+                  variant: 'secondary',
+                  size: 'md',
+                }}
+                hasChevron
+                items={themeMenuItems}
+              />
+              <XDSDropdownMenu
+                button={{
+                  label: 'Templates',
+                  variant: 'secondary',
+                  size: 'md',
+                }}
+                hasChevron
+                items={templateMenuItems}
+              />
+            </XDSHStack>
           </XDSHStack>
           <div {...stylex.props(s.tabBody)}>
             {/* Code: Monaco stays mounted to preserve typedefs + editor state */}
@@ -1004,12 +1094,104 @@ export function PlaygroundClient() {
                     )}
                   </div>
                 )}
-                <XDSButton
-                  label={copied ? '✓ Copied' : 'Share'}
-                  variant="primary"
-                  size="md"
-                  onClick={handleShare}
-                />
+                <XDSPopover
+                  label="Share template"
+                  placement="below"
+                  alignment="end"
+                  xstyle={s.popoverPadding}
+                  onOpenChange={open => {
+                    if (open) {
+                      setShareUrl(window.location.href);
+                      // Snapshot the live (ref-held) theme so the download
+                      // link below can derive its href from reactive state.
+                      setExportTheme(
+                        customThemeRef.current ?? editorInitialTheme,
+                      );
+                    }
+                  }}
+                  content={
+                    <XDSVStack gap={6}>
+                      <XDSVStack gap={2}>
+                        <XDSText type="label" weight="semibold">
+                          Share Playground
+                        </XDSText>
+                        <XDSHStack gap={2} vAlign="center" width="100%">
+                          <XDSTextInput
+                            label="Share URL"
+                            isLabelHidden
+                            isDisabled
+                            value={shareUrl}
+                            onChange={() => {}}
+                            xstyle={s.shareInput}
+                          />
+                          <XDSButton
+                            label={copied ? 'Copied' : 'Copy URL'}
+                            tooltip={copied ? 'Copied' : 'Copy URL'}
+                            variant="secondary"
+                            size="md"
+                            isIconOnly
+                            icon={
+                              copied ? <Check size={16} /> : <Copy size={16} />
+                            }
+                            onClick={handleShare}
+                          />
+                        </XDSHStack>
+                      </XDSVStack>
+                      <XDSVStack gap={2}>
+                        <XDSText type="label" weight="semibold">
+                          Export Theme File
+                        </XDSText>
+                        <XDSHStack gap={2} vAlign="center" width="100%">
+                          <XDSTextInput
+                            label="Theme name"
+                            isLabelHidden
+                            placeholder="Enter theme name"
+                            value={themeName}
+                            onChange={v =>
+                              setThemeName(v.replace(/[\s-]/g, ''))
+                            }
+                            xstyle={s.shareInput}
+                          />
+                          <XDSButton
+                            label="Download theme"
+                            tooltip="Download theme"
+                            variant="secondary"
+                            size="md"
+                            isIconOnly
+                            isDisabled={themeExport == null}
+                            icon={<Download size={16} />}
+                            onClick={() => downloadLinkRef.current?.click()}
+                          />
+                          {/* The real download target: a normally-rendered
+                              link whose href/download come from reactive
+                              state. The button above clicks it, so the
+                              browser performs a native download without us
+                              fabricating an <a> in the handler. */}
+                          {themeExport && (
+                            <a
+                              ref={downloadLinkRef}
+                              href={themeExport.href}
+                              download={themeExport.filename}
+                              {...stylex.props(s.hidden)}
+                              aria-hidden="true"
+                              tabIndex={-1}>
+                              Download theme file
+                            </a>
+                          )}
+                        </XDSHStack>
+                        <XDSLink href="/docs/theme" hasUnderline>
+                          Learn about using themes
+                        </XDSLink>
+                      </XDSVStack>
+                    </XDSVStack>
+                  }>
+                  <XDSButton
+                    label="Export"
+                    variant="primary"
+                    size="md"
+                    endContent={<ExternalLink size={16} />}
+                  />
+                </XDSPopover>
               </XDSHStack>
             }
           />
@@ -1022,6 +1204,32 @@ export function PlaygroundClient() {
           />
         </XDSVStack>
       </XDSHStack>
+
+      <ConfirmDialog
+        isOpen={pendingExampleTheme != null}
+        title="Apply example theme"
+        message="Applying an example theme will overwrite your current theme. Any changes you've made in the Theme editor will be lost. Do you want to continue?"
+        onCancel={() => setPendingExampleTheme(null)}
+        onConfirm={() => {
+          if (pendingExampleTheme != null) {
+            setSelectedTheme(pendingExampleTheme);
+          }
+          setPendingExampleTheme(null);
+        }}
+      />
+      <ConfirmDialog
+        isOpen={pendingTemplateSource != null}
+        title="Load template"
+        message="Loading this template will replace the current contents of the code editor. Any changes you've made there will be lost. Do you want to continue?"
+        onCancel={() => setPendingTemplateSource(null)}
+        onConfirm={() => {
+          if (pendingTemplateSource != null) {
+            setCode(stripCodeExampleCopyrightHeader(pendingTemplateSource));
+            requestAnimationFrame(() => editorRef.current?.focus());
+          }
+          setPendingTemplateSource(null);
+        }}
+      />
     </XDSHStack>
   );
 }

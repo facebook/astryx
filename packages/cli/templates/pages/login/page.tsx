@@ -18,6 +18,7 @@ import {colorVars} from '@xds/core/theme/tokens.stylex';
 // Standalone auth page paints its own body background (no host shell).
 const styles = stylex.create({
   page: {
+    minHeight: '100%',
     backgroundColor: colorVars['--color-background-body'],
   },
 });
@@ -39,7 +40,7 @@ export default function LoginPage() {
   };
 
   return (
-    <XDSCenter axis="both" height="100dvh" xstyle={styles.page}>
+    <XDSCenter axis="both" xstyle={styles.page}>
       <XDSVStack gap={4} hAlign="center">
         {/* Logo */}
         <XDSVStack gap={2} hAlign="center">

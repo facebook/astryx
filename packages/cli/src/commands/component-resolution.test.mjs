@@ -49,11 +49,14 @@ describe('component() sub-component scoping', () => {
     expect(result.data.name).not.toBe('TabList');
   });
 
-  // Non-regression: asking for the parent still returns the full doc
+  // Non-regression: asking for the parent still returns the full doc, with its
+  // family listed as name-only cross-links (sub-component content now lives in
+  // each sub-component's own .doc.mjs file).
   it('component("CodeBlock") still returns full CodeBlock doc', async () => {
     const result = await component('CodeBlock', CWD);
     expect(result.data.name).toBe('CodeBlock');
-    expect(result.data.components.length).toBeGreaterThan(1);
+    expect(result.data.components.length).toBeGreaterThanOrEqual(1);
+    expect(result.data.components.every(c => typeof c.name === 'string')).toBe(true);
   });
 
   it('component("Stack") still returns full Stack doc', async () => {

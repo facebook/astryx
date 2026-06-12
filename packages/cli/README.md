@@ -1,6 +1,6 @@
 # @xds/cli
 
-The CLI is the primary interface for working with the design system — for humans and machines alike. It provides component documentation, design tokens, page templates, theming tools, and upgrade codemods, all accessible via terminal commands, a typed JSON API, or programmatic imports. AI agents and build tools use the same API that powers the CLI, enabling end-to-end frontend development loops.
+The CLI is the primary interface for working with the design system, for humans and machines alike. It provides component documentation, design tokens, page templates, theming tools, and upgrade codemods, all accessible via terminal commands, a typed JSON API, or programmatic imports. AI agents and build tools use the same API that powers the CLI, enabling end-to-end frontend development loops.
 
 ```bash
 npx xds --help
@@ -11,7 +11,7 @@ npx xds docs migration
 npx xds template --list
 ```
 
-### Finding things — `xds search`
+### Finding things: `xds search`
 
 When you don't know whether what you need is a component, a hook, a docs topic,
 or a template, search across all of them at once. Results are ranked by
@@ -43,37 +43,37 @@ Results for "button" (20):
 
 Options:
 
-- `--type <component|hook|doc|template>` — restrict to a single domain
-- `--limit <n>` — cap the number of results (default 20)
-- `--detail` — include the import path and the match reason/score
-- `--json` — typed `{ type: 'search', data: { query, results } }` envelope
+- `--type <component|hook|doc|template>`: restrict to a single domain
+- `--limit <n>`: cap the number of results (default 20)
+- `--detail`: include the import path and the match reason/score
+- `--json`: typed `{ type: 'search', data: { query, results } }` envelope
 
 ## Commands
 
-| Command       | Description                                                                             |
-| ------------- | --------------------------------------------------------------------------------------- |
-| `init`        | Initialize the design system in your project — installs packages, sets up theming, adds AI agent docs |
-| `component`   | List components or print detailed docs, props, usage examples, and source               |
-| `search`      | Find components, hooks, docs, and templates in one ranked, cross-domain result set       |
-| `docs`        | Print reference documentation (tokens, theme, color, typography, spacing, etc.)         |
-| `template`    | Inject page or block templates into your project                                        |
-| `hook`        | List hooks and print hook documentation                                                 |
-| `swizzle`     | Copy component source into your project for deep customization                          |
-| `upgrade`     | Run codemods to migrate between versions                                                |
-| `theme build` | Compile a defineTheme file to production CSS and JS                                     |
-| `discover`    | Discover external packages and components                                               |
-| `gap-report`  | Report a gap when a component doesn't meet your needs                                   |
-| `doctor`      | Diagnose your XDS setup and report problems with fixes (CI-friendly via exit code)      |
+| Command       | Description                                                                                          |
+| ------------- | ---------------------------------------------------------------------------------------------------- |
+| `init`        | Initialize the design system in your project: installs packages, sets up theming, adds AI agent docs |
+| `component`   | List components or print detailed docs, props, usage examples, and source                            |
+| `search`      | Find components, hooks, docs, and templates in one ranked, cross-domain result set                   |
+| `docs`        | Print reference documentation (tokens, theme, color, typography, spacing, etc.)                      |
+| `template`    | Inject page or block templates into your project                                                     |
+| `hook`        | List hooks and print hook documentation                                                              |
+| `swizzle`     | Copy component source into your project for deep customization                                       |
+| `upgrade`     | Run codemods to migrate between versions                                                             |
+| `theme build` | Compile a defineTheme file to production CSS and JS                                                  |
+| `discover`    | Discover external packages and components                                                            |
+| `gap-report`  | Report a gap when a component doesn't meet your needs                                                |
+| `doctor`      | Diagnose your XDS setup and report problems with fixes (CI-friendly via exit code)                   |
 
 ### Global options
 
 These flags work with any command:
 
-- `--json` — Output as typed JSON envelope: `{ type, data }` (errors: `{ error, code, suggestions? }`)
-- `--detail <level>` — Detail level for list views, increasing in size: `brief` (names only, default for `--list`) < `compact` (names + 1-line descriptions) < `full` (full docs per entry). Single-item views default to `full`.
-- `--zh` — Output docs in Chinese Simplified
-- `--dense` — Compressed format (token-efficient, useful for AI agents)
-- `--lang <locale>` — Language/format shorthand (`en`, `zh`, `dense`)
+- `--json`: Output as typed JSON envelope: `{ type, data }` (errors: `{ error, code, suggestions? }`)
+- `--detail <level>`: Detail level for list views, increasing in size: `brief` (names only, default for `--list`) < `compact` (names + 1-line descriptions) < `full` (full docs per entry). Single-item views default to `full`.
+- `--zh`: Output docs in Chinese Simplified
+- `--dense`: Compressed format (token-efficient, useful for AI agents)
+- `--lang <locale>`: Language/format shorthand (`en`, `zh`, `dense`)
 
 ## JSON API
 
@@ -93,7 +93,7 @@ Errors:
 }
 ```
 
-The `code` field is a **stable, machine-readable identifier**. Branch on it —
+The `code` field is a **stable, machine-readable identifier**. Branch on it,
 never on the human-readable `error` string, which changes freely as we improve
 wording. Every error envelope carries a `code` (falling back to `ERR_UNKNOWN`
 when no more specific code applies). The same `code` is exposed on thrown
@@ -122,51 +122,51 @@ if (isError(result)) {
 
 ### Error codes
 
-| Code | Meaning |
-| --- | --- |
-| `ERR_UNKNOWN` | Generic fallback for any error without a more specific code. |
-| `ERR_UNKNOWN_COMMAND` | A top-level command name was not recognized (e.g. `xds bogus`). |
-| `ERR_UNKNOWN_SUBCOMMAND` | A subcommand under a group was not recognized (e.g. `xds theme bogus`). |
-| `ERR_INVALID_OPTION` | An unknown flag was passed, or `--json` was used on a command that doesn't support it. |
-| `ERR_INVALID_ARGUMENT` | An option/argument value was rejected, or required flags were missing. |
-| `ERR_MISSING_ARGUMENT` | A required positional argument was omitted (e.g. `xds theme build` with no file). |
-| `ERR_INVALID_LANG` | `--lang` was given a value outside its choices (`en`, `zh`, `dense`). |
-| `ERR_INVALID_DETAIL` | `--detail` was given a value outside its choices (`full`, `compact`, `brief`). |
-| `ERR_NODE_VERSION` | The running Node.js version is below the supported minimum. |
-| `ERR_CORE_NOT_FOUND` | `@xds/core` could not be located (not installed / not in a monorepo). |
-| `ERR_UNKNOWN_COMPONENT` | No component matched the requested name. |
-| `ERR_UNKNOWN_HOOK` | No hook matched the requested name. |
-| `ERR_UNKNOWN_TOPIC` | No docs topic matched the requested name. |
-| `ERR_UNKNOWN_SECTION` | A docs topic exists but the requested section within it does not. |
-| `ERR_UNKNOWN_CATEGORY` | A `--category` filter value did not match any known category. |
-| `ERR_UNKNOWN_TEMPLATE` | No template matched the requested name. |
-| `ERR_UNKNOWN_PACKAGE` | No package matched the requested name (discover). |
-| `ERR_UNKNOWN_AGENT` | An unrecognized `--agent` value was passed (agent docs / init). |
-| `ERR_UNKNOWN_FEATURE` | An unrecognized `--features` value was passed to `init`. |
-| `ERR_UNKNOWN_CODEMOD` | A `--codemod` value did not match any registered codemod (upgrade). |
-| `ERR_NOT_FOUND` | A discover/lookup query matched nothing in any package. |
-| `ERR_NO_DOC` | A component exists but has no typed `.doc.mjs` file. |
-| `ERR_NO_SHOWCASE` | No showcase exists for the requested component. |
-| `ERR_NO_SOURCE` | No source file could be located for the component/template. |
-| `ERR_INVALID_DOC` | A component's docs failed validation (malformed `.doc.mjs`). |
-| `ERR_FILE_NOT_FOUND` | A required input file did not exist. |
-| `ERR_FILE_EXISTS` | Refused to overwrite an existing file in non-interactive mode. |
-| `ERR_PATH_TRAVERSAL` | A path escaped its allowed root, or a name contained traversal markers. |
-| `ERR_WRITE_FAILED` | Writing output files failed (and was rolled back). |
-| `ERR_THEME_INVALID` | A theme definition was missing a required property (e.g. `name`). |
-| `ERR_THEME_LOAD` | A theme file could not be loaded / parsed into a `defineTheme` result. |
-| `ERR_TEMPLATE_CONFIG` | `template.get` is not configured in `xds.config.mjs` (fetch-by-id). |
-| `ERR_TEMPLATE_GET` | A configured `template.get` threw or returned an invalid value. |
-| `ERR_VERSION_DETECT` | The current `@xds/core` version could not be detected. |
-| `ERR_INVALID_VERSION` | A `--from`/`--to` value was not a valid semver string. |
-| `ERR_DEP_MISSING` | A required external dependency (e.g. jscodeshift) is missing. |
-| `ERR_GH_CLI` | GitHub CLI (`gh`) is not installed or not authenticated. |
-| `ERR_GAP_REPORT_FAILED` | Filing a gap report failed (disabled, or the integration errored). |
+| Code                     | Meaning                                                                                |
+| ------------------------ | -------------------------------------------------------------------------------------- |
+| `ERR_UNKNOWN`            | Generic fallback for any error without a more specific code.                           |
+| `ERR_UNKNOWN_COMMAND`    | A top-level command name was not recognized (e.g. `xds bogus`).                        |
+| `ERR_UNKNOWN_SUBCOMMAND` | A subcommand under a group was not recognized (e.g. `xds theme bogus`).                |
+| `ERR_INVALID_OPTION`     | An unknown flag was passed, or `--json` was used on a command that doesn't support it. |
+| `ERR_INVALID_ARGUMENT`   | An option/argument value was rejected, or required flags were missing.                 |
+| `ERR_MISSING_ARGUMENT`   | A required positional argument was omitted (e.g. `xds theme build` with no file).      |
+| `ERR_INVALID_LANG`       | `--lang` was given a value outside its choices (`en`, `zh`, `dense`).                  |
+| `ERR_INVALID_DETAIL`     | `--detail` was given a value outside its choices (`full`, `compact`, `brief`).         |
+| `ERR_NODE_VERSION`       | The running Node.js version is below the supported minimum.                            |
+| `ERR_CORE_NOT_FOUND`     | `@xds/core` could not be located (not installed / not in a monorepo).                  |
+| `ERR_UNKNOWN_COMPONENT`  | No component matched the requested name.                                               |
+| `ERR_UNKNOWN_HOOK`       | No hook matched the requested name.                                                    |
+| `ERR_UNKNOWN_TOPIC`      | No docs topic matched the requested name.                                              |
+| `ERR_UNKNOWN_SECTION`    | A docs topic exists but the requested section within it does not.                      |
+| `ERR_UNKNOWN_CATEGORY`   | A `--category` filter value did not match any known category.                          |
+| `ERR_UNKNOWN_TEMPLATE`   | No template matched the requested name.                                                |
+| `ERR_UNKNOWN_PACKAGE`    | No package matched the requested name (discover).                                      |
+| `ERR_UNKNOWN_AGENT`      | An unrecognized `--agent` value was passed (agent docs / init).                        |
+| `ERR_UNKNOWN_FEATURE`    | An unrecognized `--features` value was passed to `init`.                               |
+| `ERR_UNKNOWN_CODEMOD`    | A `--codemod` value did not match any registered codemod (upgrade).                    |
+| `ERR_NOT_FOUND`          | A discover/lookup query matched nothing in any package.                                |
+| `ERR_NO_DOC`             | A component exists but has no typed `.doc.mjs` file.                                   |
+| `ERR_NO_SHOWCASE`        | No showcase exists for the requested component.                                        |
+| `ERR_NO_SOURCE`          | No source file could be located for the component/template.                            |
+| `ERR_INVALID_DOC`        | A component's docs failed validation (malformed `.doc.mjs`).                           |
+| `ERR_FILE_NOT_FOUND`     | A required input file did not exist.                                                   |
+| `ERR_FILE_EXISTS`        | Refused to overwrite an existing file in non-interactive mode.                         |
+| `ERR_PATH_TRAVERSAL`     | A path escaped its allowed root, or a name contained traversal markers.                |
+| `ERR_WRITE_FAILED`       | Writing output files failed (and was rolled back).                                     |
+| `ERR_THEME_INVALID`      | A theme definition was missing a required property (e.g. `name`).                      |
+| `ERR_THEME_LOAD`         | A theme file could not be loaded / parsed into a `defineTheme` result.                 |
+| `ERR_TEMPLATE_CONFIG`    | `template.get` is not configured in `xds.config.mjs` (fetch-by-id).                    |
+| `ERR_TEMPLATE_GET`       | A configured `template.get` threw or returned an invalid value.                        |
+| `ERR_VERSION_DETECT`     | The current `@xds/core` version could not be detected.                                 |
+| `ERR_INVALID_VERSION`    | A `--from`/`--to` value was not a valid semver string.                                 |
+| `ERR_DEP_MISSING`        | A required external dependency (e.g. jscodeshift) is missing.                          |
+| `ERR_GH_CLI`             | GitHub CLI (`gh`) is not installed or not authenticated.                               |
+| `ERR_GAP_REPORT_FAILED`  | Filing a gap report failed (disabled, or the integration errored).                     |
 
 ## Capability manifest (agent discovery)
 
 Agents don't have to scrape `--help` to learn the CLI. A single call returns a
-**self-describing manifest** — every command, its arguments, flags (with types,
+**self-describing manifest**: every command, its arguments, flags (with types,
 choices, and defaults), whether it supports `--json`, and the response `type`
 discriminators each command can emit. Think of it as an OpenAPI spec for the CLI.
 
@@ -186,31 +186,65 @@ Shape:
     "version": "0.0.14",
     "description": "Design system CLI — components, themes, and tooling",
     "globalOptions": [
-      {"flag": "--json", "type": "boolean", "description": "Output as typed JSON…"},
-      {"flag": "--lang <locale>", "type": "enum", "choices": ["en", "zh", "dense"]},
-      {"flag": "--detail <level>", "type": "enum", "choices": ["full", "compact", "brief"], "default": "full"}
+      {
+        "flag": "--json",
+        "type": "boolean",
+        "description": "Output as typed JSON…",
+      },
+      {
+        "flag": "--lang <locale>",
+        "type": "enum",
+        "choices": ["en", "zh", "dense"],
+      },
+      {
+        "flag": "--detail <level>",
+        "type": "enum",
+        "choices": ["full", "compact", "brief"],
+        "default": "full",
+      },
     ],
     "commands": [
       {
         "name": "component",
         "description": "List components or print component docs",
-        "arguments": [{"name": "name", "required": false, "variadic": false, "description": ""}],
-        "options": [{"flag": "--props", "type": "boolean", "description": "Print only the props table"}],
+        "arguments": [
+          {
+            "name": "name",
+            "required": false,
+            "variadic": false,
+            "description": "",
+          },
+        ],
+        "options": [
+          {
+            "flag": "--props",
+            "type": "boolean",
+            "description": "Print only the props table",
+          },
+        ],
         "json": true,
-        "responseTypes": ["component.list", "component.detail", "component.detail.props", "…"],
-        "examples": ["xds component XDSButton --props --json"]
-      }
+        "responseTypes": [
+          "component.list",
+          "component.detail",
+          "component.detail.props",
+          "…",
+        ],
+        "examples": ["xds component XDSButton --props --json"],
+      },
       // …one entry per command; subcommands (e.g. `theme build`) nest under `subcommands`
     ],
     "jsonSupported": ["component", "docs", "…"],
-    "responseTypes": {"component": ["component.list", "…"], "theme build": ["theme.build"]}
-  }
+    "responseTypes": {
+      "component": ["component.list", "…"],
+      "theme build": ["theme.build"],
+    },
+  },
 }
 ```
 
 The manifest is **derived from Commander metadata** (commands, arguments, options)
 so it can't drift from the real command definitions. The two facts Commander
-doesn't track — `--json` support and emitted response types — are layered on from
+doesn't track (`--json` support and emitted response types) are layered on from
 the `JSON_SUPPORTED` allowlist and a small declarative `RESPONSE_TYPES` map in
 `src/lib/manifest.mjs`, guarded by a drift test (`manifest.test.mjs`) so adding a
 command without describing it fails CI.
@@ -225,7 +259,15 @@ For the standalone manifest envelope (`type: "manifest"`), use `xds manifest --j
 The same logic that powers `xds --json` is available as importable, type-safe functions:
 
 ```typescript
-import {component, docs, discover, template, hook, search, XDSError} from '@xds/cli/api';
+import {
+  component,
+  docs,
+  discover,
+  template,
+  hook,
+  search,
+  XDSError,
+} from '@xds/cli/api';
 
 // Same result as: xds --json component Button
 const btn = await component('Button');
@@ -254,7 +296,7 @@ try {
 }
 ```
 
-The CLI command handlers are thin wrappers around these functions — they parse args, call the API, then format the output (JSON or text). This guarantees that `@xds/cli/api` and `xds --json` always return identical data.
+The CLI command handlers are thin wrappers around these functions: they parse args, call the API, then format the output (JSON or text). This guarantees that `@xds/cli/api` and `xds --json` always return identical data.
 
 ### Consumer utilities
 
@@ -326,8 +368,8 @@ Every response has a `type` string that uniquely identifies it:
 
 `xds doctor` runs a series of health checks against your project and
 environment and reports `PASS` / `WARN` / `FAIL` for each, with an actionable
-fix for anything that isn't passing. It's read-only — it never installs or
-mutates anything — so it's safe to run anywhere, including CI.
+fix for anything that isn't passing. It's read-only; it never installs or
+mutates anything, so it's safe to run anywhere, including CI.
 
 ```
 $ xds doctor
@@ -359,16 +401,16 @@ No failures — but review the ⚠ warnings above when you can.
 
 ### Checks
 
-| Check                | Status it can return | What it verifies                                            |
-| -------------------- | -------------------- | ----------------------------------------------------------- |
-| Node.js version      | pass / fail          | Running Node meets the CLI's minimum                        |
-| @xds/core installed  | pass / fail          | `@xds/core` is resolvable from the project                  |
-| Version alignment    | pass / warn / info   | Installed `@xds/core` is in step with `@xds/cli`            |
-| Theme packages       | pass / warn          | An `@xds/theme-*` package is installed and a theme is wired |
-| xds.config.mjs       | pass / fail / info   | Config (if present) loads cleanly with a valid shape        |
-| AI agent docs        | pass / warn / info   | Agent docs exist and contain the XDS section markers        |
-| Peer dependencies    | pass / warn / info   | `@xds/core`'s peer deps (react, …) are installed            |
-| Package manager      | info                 | Reports the detected package manager                        |
+| Check               | Status it can return | What it verifies                                            |
+| ------------------- | -------------------- | ----------------------------------------------------------- |
+| Node.js version     | pass / fail          | Running Node meets the CLI's minimum                        |
+| @xds/core installed | pass / fail          | `@xds/core` is resolvable from the project                  |
+| Version alignment   | pass / warn / info   | Installed `@xds/core` is in step with `@xds/cli`            |
+| Theme packages      | pass / warn          | An `@xds/theme-*` package is installed and a theme is wired |
+| xds.config.mjs      | pass / fail / info   | Config (if present) loads cleanly with a valid shape        |
+| AI agent docs       | pass / warn / info   | Agent docs exist and contain the XDS section markers        |
+| Peer dependencies   | pass / warn / info   | `@xds/core`'s peer deps (react, …) are installed            |
+| Package manager     | info                 | Reports the detected package manager                        |
 
 ### CI gate
 

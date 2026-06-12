@@ -21,7 +21,7 @@ export const docs = {
     {name: 'children', type: 'ReactNode', required: true, description: 'Menu items.'},
     {name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'", description: 'Controls min-width and item padding.'},
     {name: 'minWidth', type: 'number | string', description: 'Minimum width override.'},
-    {name: 'xstyle', type: 'StyleXStyles', description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.'},
+    {name: 'xstyle', type: 'StyleXStyles', description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.'},
   ],
 };
 
