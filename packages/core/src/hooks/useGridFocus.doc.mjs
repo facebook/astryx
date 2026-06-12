@@ -79,7 +79,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Manages keyboard navigation within a 2D grid following the WAI-ARIA grid pattern. Supports arrow keys for cell-to-cell navigation, Home/End for row boundaries, Ctrl+Home/Ctrl+End for grid boundaries, and Page Up/Down for custom callbacks (e.g., month navigation in calendars). Boundary navigation callbacks allow seamless cross-grid navigation.',
+      'Manages keyboard navigation within a 2D grid following the WAI-ARIA grid pattern. Supports arrow keys for cell-to-cell navigation, Home/End for row boundaries, Ctrl+Home/Ctrl+End for grid boundaries, and Page Up/Down for custom callbacks (e.g., month navigation in calendars). Boundary navigation callbacks allow cross-grid navigation.',
     bestPractices: [
       { guidance: true, description: 'Use for calendar date grids: wire onPageUp/onPageDown to month navigation and onNavigateBefore/onNavigateAfter for cross-month arrow key navigation.' },
       { guidance: true, description: 'Attach both gridRef and handleKeyDown to the grid container element.' },
@@ -95,7 +95,7 @@ export const docs = {
 /** @type {import('../docs-types').HookTranslationDoc} */
 export const docsDense = {
   description:
-    'Manages keyboard navigation within 2D grid following WAI-ARIA grid pattern. Supports arrow keys for cell-to-cell navigation, Home/End for row boundaries, Ctrl+Home/Ctrl+End for grid boundaries, Page Up/Down for custom callbacks (e.g. month navigation in calendars). Boundary navigation callbacks allow seamless cross-grid navigation.',
+    'Manages keyboard navigation within 2D grid following WAI-ARIA grid pattern. Supports arrow keys for cell-to-cell navigation, Home/End for row boundaries, Ctrl+Home/Ctrl+End for grid boundaries, Page Up/Down for custom callbacks (e.g. month navigation in calendars). Boundary navigation callbacks allow cross-grid navigation.',
   paramDescriptions: {
     options: 'config for grid focus behavior.',
     'options.columns': '# columns in grid. Used for up/down navigation (moves by this many cells).',
@@ -114,7 +114,7 @@ export const docsDense = {
   },
   usage: {
     description:
-      'Manages keyboard navigation within 2D grid following WAI-ARIA grid pattern. Supports arrow keys for cell-to-cell navigation, Home/End for row boundaries, Ctrl+Home/Ctrl+End for grid boundaries, Page Up/Down for custom callbacks (e.g. month navigation in calendars). Boundary navigation callbacks allow seamless cross-grid navigation.',
+      'Manages keyboard navigation within 2D grid following WAI-ARIA grid pattern. Supports arrow keys for cell-to-cell navigation, Home/End for row boundaries, Ctrl+Home/Ctrl+End for grid boundaries, Page Up/Down for custom callbacks (e.g. month navigation in calendars). Boundary navigation callbacks allow cross-grid navigation.',
     bestPractices: [
       { guidance: true, description: 'Use for calendar date grids: wire onPageUp/onPageDown to month navigation + onNavigateBefore/onNavigateAfter for cross-month arrow key navigation.' },
       { guidance: true, description: 'Attach both gridRef + handleKeyDown to grid container element.' },
