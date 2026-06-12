@@ -166,6 +166,42 @@ describe('XDSTabList', () => {
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
 
+  it('renders icon-only tab with aria-label from label prop', () => {
+    render(
+      <XDSTabList value="preview" onChange={() => {}}>
+        <XDSTab
+          value="preview"
+          label="Preview"
+          isLabelHidden
+          icon={<span data-testid="icon">▣</span>}
+        />
+      </XDSTabList>,
+    );
+
+    const tab = screen.getByRole('button', {name: 'Preview'});
+    expect(tab).toHaveAttribute('aria-label', 'Preview');
+    expect(screen.getByTestId('icon')).toBeInTheDocument();
+    expect(screen.queryByText('Preview')).not.toBeInTheDocument();
+  });
+
+  it('omits empty label nodes so aria-labeled icon tabs align to the icon', () => {
+    render(
+      <XDSTabList value="preview" onChange={() => {}}>
+        <XDSTab
+          value="preview"
+          label=""
+          aria-label="Preview"
+          icon={<span data-testid="icon">▣</span>}
+        />
+      </XDSTabList>,
+    );
+
+    const tab = screen.getByRole('button', {name: 'Preview'});
+    expect(tab).toBeInTheDocument();
+    expect(screen.getByTestId('icon')).toBeInTheDocument();
+    expect(tab.querySelectorAll(':scope > span').length).toBe(3);
+  });
+
   it('renders selectedIcon when tab is selected', () => {
     render(
       <XDSTabList value="home" onChange={() => {}}>
