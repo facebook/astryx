@@ -3,10 +3,11 @@
 /** @type {import('../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'page',
-  name: 'Dialog',
-  displayName: 'Dialog',
+  name: 'Settings Dialog',
+  displayName: 'Settings Dialog',
   description:
     'Account settings in a modal dialog with sidebar navigation and multi-section content',
   isReady: true,
+  isHiddenFromOverview: true,
   category: 'Settings - Dialog',
 };
