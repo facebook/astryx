@@ -95,12 +95,15 @@ const styles = stylex.create({
   },
   // Hero CTA button grid. maxWidth: 420 caps the two-up button
   // row at a comfortable thumb-reachable width so the buttons
-  // don't stretch edge-to-edge on wide hero columns; literal
-  // because the cap is a button-pair ergonomics value, not a
-  // spacing-scale step.
+  // don't stretch edge-to-edge on wide hero columns. The grid
+  // uses auto-fit 160px tracks in markup so narrow phones collapse
+  // to one centered column instead of forcing two labels into
+  // undersized cells. Literals are button-pair ergonomics values,
+  // not spacing-scale steps.
   heroButtons: {
     width: '100%',
     maxWidth: 420,
+    marginInline: 'auto',
   },
   // Lighter display weight for the leading half of the hero
   // headline ("An open source design system that's"). Astryx's
@@ -223,7 +226,10 @@ export default function HomePage() {
           </XDSText>
         </XDSHeading>
         <XDSVStack gap={4} align="center">
-          <XDSGrid columns={2} gap={3} xstyle={styles.heroButtons}>
+          <XDSGrid
+            columns={{minWidth: 160, repeat: 'fit'}}
+            gap={3}
+            xstyle={styles.heroButtons}>
             <XDSButton
               variant="primary"
               size="lg"
