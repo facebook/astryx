@@ -4,7 +4,6 @@
 export const doc = {
   type: 'block',
   exampleFor: 'AppShell',
-  alsoExampleFor: ['useXDSAppShellMobile'],
   name: 'AppShell — Top Nav with Side Nav',
   displayName: 'AppShell — Top Nav with Side Nav',
   description:
