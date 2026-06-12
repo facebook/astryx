@@ -119,13 +119,10 @@ const styles = stylex.create({
   },
 });
 
-// Keeps interactive hero controls (CTAs, dots) on the Astryx brand theme, in the
-// mode that matches the active slide (dark slides → dark variants). XDSTheme is
-// display:contents (layout-neutral), and the page already renders inside ambient
-// Astryx, so this is visually a no-op on light slides. Critically, we ALWAYS
-// render the same <XDSTheme> element and only toggle `mode` — swapping the
-// element type (e.g. Fragment ↔ XDSTheme) on theme change would remount this
-// subtree and drop keyboard focus from the dot the user just activated.
+// Renders hero controls (CTAs, dots) in the active slide's mode. Always renders
+// the same <XDSTheme> element and only toggles `mode` — swapping the element type
+// (Fragment ↔ XDSTheme) would remount the subtree and drop keyboard focus from
+// the dot the user just activated.
 function DarkScope({isDark, children}: {isDark: boolean; children: ReactNode}) {
   return (
     <XDSTheme theme={astryxTheme} mode={isDark ? 'dark' : 'light'}>
