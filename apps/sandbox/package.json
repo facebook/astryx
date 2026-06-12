@@ -4,10 +4,9 @@
   "private": true,
   "scripts": {
     "build:deps": "pnpm -F @xds/theme-default build && pnpm -F @xds/theme-neutral build && pnpm -F @xds/theme-brutalist build && pnpm -F @xds/theme-matcha build && pnpm -F @xds/theme-daily build && pnpm -F @xds/theme-stone build && pnpm -F @xds/theme-gothic build && pnpm -F @xds/theme-chocolate build && pnpm -F @xds/theme-y2k build && pnpm -F @xds/theme-butter build",
-    "generate:versions": "node scripts/generate-versions.js",
     "generate:changelog": "node scripts/generate-changelog.js",
     "generate:cli": "node scripts/generate-cli-registry.mjs",
-    "generate": "node ../../scripts/sync-templates.js && pnpm generate:versions && pnpm generate:changelog && pnpm generate:cli && node scripts/generate-foundation-docs.mjs",
+    "generate": "node ../../scripts/sync-templates.js && pnpm generate:changelog && pnpm generate:cli && node scripts/generate-foundation-docs.mjs",
     "dev": "pnpm generate && (node ../../scripts/sync-templates.js --watch & next dev)",
     "build": "pnpm generate && next build",
     "start": "next start",
