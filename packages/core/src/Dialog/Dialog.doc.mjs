@@ -35,132 +35,65 @@ export const docs = {
       {property: 'padding', expand: 'container'},
     ],
   },
+  description: 'Modal dialog using the native <dialog> element.',
+  props: [
+    {
+      name: 'isOpen',
+      type: 'boolean',
+      description: 'Whether the dialog is open (required).',
+      required: true,
+    },
+    {
+      name: 'onOpenChange',
+      type: '(isOpen: boolean) => unknown',
+      description: 'Callback when dialog visibility changes (required).',
+      required: true,
+    },
+    {
+      name: 'children',
+      type: 'ReactNode',
+      description: 'Dialog content.',
+      required: true,
+    },
+    {
+      name: 'width',
+      type: 'number | string',
+      description: 'Width of the dialog in pixels or any CSS value.',
+      default: '400',
+    },
+    {
+      name: 'maxHeight',
+      type: 'number | string',
+      description: 'Maximum height of the dialog.',
+      default: "'75vh'",
+    },
+    {
+      name: 'position',
+      type: 'XDSDialogPosition',
+      description: 'Static position for the dialog; centered by default when omitted.',
+    },
+    {
+      name: 'variant',
+      type: "'standard' | 'fullscreen'",
+      description: 'Dialog variant — fullscreen expands to fill the entire viewport.',
+      default: "'standard'",
+    },
+    {
+      name: 'purpose',
+      type: "'required' | 'form' | 'info'",
+      description: 'Controls dismissal behavior: required disables Escape and backdrop click; form disables backdrop click after interaction; info allows both.',
+      default: "'info'",
+    },
+    {
+      name: 'isInline',
+      type: 'boolean',
+      description: 'Renders dialog content inline without the <dialog> element, backdrop, or modal behavior. For documentation previews and showcases only.',
+      default: 'false',
+    },
+  ],
   components: [
-    {
-      name: 'XDSDialog',
-      displayName: 'Dialog',
-      description: 'Modal dialog using the native <dialog> element.',
-      props: [
-        {
-          name: 'isOpen',
-          type: 'boolean',
-          description: 'Whether the dialog is open (required).',
-          required: true,
-        },
-        {
-          name: 'onOpenChange',
-          type: '(isOpen: boolean) => unknown',
-          description: 'Callback when dialog visibility changes (required).',
-          required: true,
-        },
-        {
-          name: 'children',
-          type: 'ReactNode',
-          description: 'Dialog content.',
-          required: true,
-        },
-        {
-          name: 'width',
-          type: 'number | string',
-          description: 'Width of the dialog in pixels or any CSS value.',
-          default: '400',
-        },
-        {
-          name: 'maxHeight',
-          type: 'number | string',
-          description: 'Maximum height of the dialog.',
-          default: "'75vh'",
-        },
-        {
-          name: 'position',
-          type: 'XDSDialogPosition',
-          description:
-            'Static position for the dialog; centered by default when omitted.',
-        },
-        {
-          name: 'variant',
-          type: "'standard' | 'fullscreen'",
-          description:
-            'Dialog variant: fullscreen expands to fill the entire viewport.',
-          default: "'standard'",
-        },
-        {
-          name: 'purpose',
-          type: "'required' | 'form' | 'info'",
-          description:
-            'Controls dismissal behavior: required disables Escape and backdrop click; form disables backdrop click after interaction; info allows both.',
-          default: "'info'",
-        },
-        {
-          name: 'isInline',
-          type: 'boolean',
-          description:
-            'Renders dialog content inline without the <dialog> element, backdrop, modal behavior, or dialog autofocus. For documentation previews and showcases only.',
-          default: 'false',
-        },
-      ],    },
-    {
-      name: 'XDSDialogHeader',
-      isHiddenFromOverview: true,
-      displayName: 'Dialog Header',
-      description:
-        'Header for dialogs with a title, optional subtitle, close button, and start/end content slots.',
-      props: [
-        {
-          name: 'title',
-          type: 'string',
-          description: 'Dialog title (receives focus on open in modal dialogs; suppressed for inline previews).',
-        },
-        {
-          name: 'subtitle',
-          type: 'string',
-          description: 'Subtitle below the title.',
-        },
-        {
-          name: 'onOpenChange',
-          type: '(isOpen: boolean) => unknown',
-          description:
-            'Close button callback (no button if omitted).',
-        },
-        {
-          name: 'startContent',
-          type: 'ReactNode',
-          description:
-            'Content before the title (e.g., a back button).',
-          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
-        },
-        {
-          name: 'endContent',
-          type: 'ReactNode',
-          description:
-            'Content after the title, before close button.',
-          slotElements: [
-            {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
-            {__element: 'XDSBadge', props: {label: '3'}},
-          ],
-        },
-        {
-          name: 'hasDivider',
-          type: 'boolean',
-          description: 'Adds border at the bottom edge.',
-          default: 'true',
-        },
-      ],
-    },
-    {
-      name: 'useXDSImperativeDialog',
-      displayName: 'useXDSImperativeDialog',
-      description: 'Hook for showing a dialog without managing open state. Call dialog.show(content, options) to open and dialog.hide() to close. Render dialog.element in your JSX tree.',
-      params: [
-        {name: 'defaultOptions', type: 'DialogOptions', description: 'Default XDSDialog props to apply to every dialog shown by this hook, minus isOpen/onOpenChange/children.'},
-      ],
-      returns: [
-        {name: 'show', type: '(content: ReactNode, options?: DialogOptions) => void', description: 'Show the dialog with the given content. Options override or extend defaultOptions for this show call.'},
-        {name: 'hide', type: '() => void', description: 'Hide the dialog.'},
-        {name: 'isOpen', type: 'boolean', description: 'Whether the dialog is currently open.'},
-        {name: 'element', type: 'ReactNode', description: 'The dialog element: render this in your JSX tree.'},
-      ],
-    },
+    {name: 'XDSDialogHeader'},
+    {name: 'useXDSImperativeDialog'},
   ],
   usage: {
     description: 'Dialog displays a modal overlay that blocks interaction with the page until the user responds. Use it for delete confirmations, edit forms, terms acceptance, or any decision that should not be skipped.\n\nFor cases where you want to show a dialog without managing open state, use the `useXDSImperativeDialog` hook: call `dialog.show(content)` and render `dialog.element` in your tree.',
@@ -182,125 +115,8 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
-  name: 'Dialog',
-  displayName: 'Dialog',
-  theming: {
-    container: true,
-    targets: [
-      {className: 'xds-dialog', visualProps: ['variant']},
-    ],
-    vars: [
-      {name: '--_dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)', private: true},
-    ],
-    derived: [
-      {property: 'borderRadius', vars: ['--_dialog-radius']},
-      {property: 'padding', expand: 'container'},
-    ],
-  },
-  components: [
-    {
-      name: 'XDSDialog',
-      displayName: 'Dialog',
-      description: '使用原生 <dialog> 元素的模态对话框。',
-      props: [
-        {
-          name: 'isOpen',
-          type: 'boolean',
-          description: '对话框是否打开（必填）。',
-          required: true,
-        },
-        {
-          name: 'onOpenChange',
-          type: '(isOpen: boolean) => unknown',
-          description: '对话框可见性变化时的回调（必填）。',
-          required: true,
-        },
-        {
-          name: 'children',
-          type: 'ReactNode',
-          description: '对话框内容。',
-          required: true,
-        },
-        {
-          name: 'width',
-          type: 'number | string',
-          description: '对话框的宽度，单位为像素或任意 CSS 值。',
-          default: '400',
-        },
-        {
-          name: 'maxHeight',
-          type: 'number | string',
-          description: '对话框的最大高度。',
-          default: "'75vh'",
-        },
-        {
-          name: 'position',
-          type: 'XDSDialogPosition',
-          description:
-            '对话框的静态定位；省略时默认居中。',
-        },
-        {
-          name: 'variant',
-          type: "'standard' | 'fullscreen'",
-          description:
-            '对话框变体 - fullscreen 会扩展至填满整个视口。',
-          default: "'standard'",
-        },
-        {
-          name: 'purpose',
-          type: "'required' | 'form' | 'info'",
-          description:
-            '控制关闭行为：required 禁用 Escape 和遮罩层点击；form 在交互后禁用遮罩层点击；info 两者都允许。',
-          default: "'info'",
-        },
-      ],
-    },
-    {
-      name: 'XDSDialogHeader',
-      isHiddenFromOverview: true,
-      displayName: 'Dialog Header',
-      description:
-        '对话框头部，包含标题、可选副标题、关闭按钮以及首尾内容插槽。',
-      props: [
-        {
-          name: 'title',
-          type: 'string',
-          description: '对话框标题（打开时获得焦点）。',
-        },
-        {
-          name: 'subtitle',
-          type: 'string',
-          description: '标题下方的副标题。',
-        },
-        {
-          name: 'onOpenChange',
-          type: '(isOpen: boolean) => unknown',
-          description:
-            '关闭按钮的回调（省略时不显示按钮）。',
-        },
-        {
-          name: 'startContent',
-          type: 'ReactNode',
-          description:
-            '标题之前的内容（例如返回按钮）。',
-        },
-        {
-          name: 'endContent',
-          type: 'ReactNode',
-          description:
-            '标题之后、关闭按钮之前的内容。',
-        },
-        {
-          name: 'hasDivider',
-          type: 'boolean',
-          description: '在底部边缘添加分隔线。',
-          default: 'true',
-        },
-      ],
-    },
-  ],
   usage: {
     description: 'Dialog displays a modal overlay that blocks interaction with the page until the user responds. Use it for delete confirmations, edit forms, terms acceptance, or any decision that should not be skipped.',
     bestPractices: [
@@ -336,46 +152,4 @@ export const docsDense = {
       { guidance: false, description: 'Use the fullscreen variant for simple confirmations; it\'s meant for complex content like editors or long forms.' },
     ],
   },
-  components: [
-    {
-      name: 'XDSDialog',
-      displayName: 'Dialog',
-      description: 'modal dialog using native <dialog>',
-      propDescriptions: {
-        isOpen: 'dialog open state',
-        onOpenChange: 'callback on visibility change',
-        children: 'dialog content',
-        width: 'dialog width (px or CSS)',
-        maxHeight: 'max dialog height',
-        position: 'static position; centered by default',
-        variant: 'standard or fullscreen (fills viewport)',
-        purpose: 'dismissal behavior: required=no dismiss; form=no backdrop after interaction; info=both allowed',
-        isInline: 'inline docs/showcase rendering; no <dialog>, backdrop, modal behavior, or dialog autofocus',
-      },
-    },
-    {
-      name: 'XDSDialogHeader',
-      isHiddenFromOverview: true,
-      displayName: 'Dialog Header',
-      description: 'dialog header w/ title, optional subtitle, close button, start/end content slots',
-      propDescriptions: {
-        title: 'dialog title (receives focus on open in modal dialogs; suppressed inline)',
-        subtitle: 'subtitle below title',
-        onOpenChange: 'close button callback (omit=no button)',
-        startContent: 'content before title (e.g. back button)',
-        endContent: 'content after title, before close button',
-        hasDivider: 'bottom border',
-      },
-    },
-    {
-      name: 'useXDSImperativeDialog',
-      description: 'hook to show a dialog w/o managing open state; call dialog.show(content, options) to open + dialog.hide() to close; render dialog.element in your JSX tree',
-      propDescriptions: {
-        show: 'show the dialog with given content; options = XDSDialog props minus isOpen/onOpenChange/children',
-        hide: 'hide the dialog',
-        isOpen: 'whether the dialog is currently open',
-        element: 'the dialog element: render this in your JSX tree',
-      },
-    },
-  ],
 };
