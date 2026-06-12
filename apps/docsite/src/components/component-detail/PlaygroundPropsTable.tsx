@@ -15,6 +15,8 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSIconButton} from '@xds/core/IconButton';
 import {Minus, Plus} from 'lucide-react';
 import {useMediaQuery} from '@xds/core/hooks';
+import {allSyntaxPresets} from '@xds/core/theme/syntax';
+import {themeObjectsFull} from '../../generated/themeRegistry';
 import type {PropControlDescriptor} from './parsePropType';
 import type {KnobProp} from './InteractivePreview';
 import {resolveElementDescriptor} from './resolveElements';
@@ -79,6 +81,107 @@ function resolveSlotElement(
   }
 }
 
+function humanizePackageName(pkgName: string): string {
+  return pkgName
+    .replace('@xds/theme-', '')
+    .split('-')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+const themeOptions = Object.entries(themeObjectsFull).map(
+  ([pkgName, theme]) => ({
+    value: pkgName,
+    label: humanizePackageName(pkgName),
+    theme,
+  }),
+);
+
+const syntaxThemeOptions = allSyntaxPresets.map(theme => ({
+  value: theme.name,
+  label: theme.name
+    .split('-')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' '),
+  theme,
+}));
+
+function ThemeControl({
+  value,
+  onChange,
+}: {
+  value: unknown;
+  onChange: (next: unknown) => void;
+}) {
+  if (themeOptions.length === 0) {
+    return null;
+  }
+
+  const selected =
+    themeOptions.find(
+      option =>
+        option.theme === value ||
+        (value != null &&
+          typeof value === 'object' &&
+          'name' in value &&
+          option.theme.name === value.name),
+    )?.value ?? themeOptions[0].value;
+
+  return (
+    <XDSSelector
+      label="Theme"
+      isLabelHidden
+      value={selected}
+      options={themeOptions.map(({value: optionValue, label}) => ({
+        value: optionValue,
+        label,
+      }))}
+      onChange={next => {
+        const match = themeOptions.find(option => option.value === next);
+        if (match) {
+          onChange(match.theme);
+        }
+      }}
+    />
+  );
+}
+
+function SyntaxThemeControl({
+  value,
+  onChange,
+}: {
+  value: unknown;
+  onChange: (next: unknown) => void;
+}) {
+  const selected =
+    syntaxThemeOptions.find(
+      option =>
+        option.theme === value ||
+        (value != null &&
+          typeof value === 'object' &&
+          'name' in value &&
+          option.theme.name === value.name),
+    )?.value ?? syntaxThemeOptions[0].value;
+
+  return (
+    <XDSSelector
+      label="Syntax theme"
+      isLabelHidden
+      value={selected}
+      options={syntaxThemeOptions.map(({value: optionValue, label}) => ({
+        value: optionValue,
+        label,
+      }))}
+      onChange={next => {
+        const match = syntaxThemeOptions.find(option => option.value === next);
+        if (match) {
+          onChange(match.theme);
+        }
+      }}
+    />
+  );
+}
+
 function ElementControl({
   control,
   value,
@@ -111,7 +214,8 @@ function ElementControl({
 
   return (
     <XDSSelector
-      label=""
+      label={prop.name}
+      isLabelHidden
       placeholder="None"
       value={value != null ? selected : 'None'}
       options={['None', ...control.options.map(o => o.label)]}
@@ -230,13 +334,18 @@ function InlineControl({
       const isNumeric = control.options.every(o => /^-?\d+(\.\d+)?$/.test(o));
       return (
         <XDSSelector
-          label=""
+          label={prop.name}
+          isLabelHidden
           value={String(value ?? control.options[0])}
           options={control.options}
           onChange={next => onChange(isNumeric ? Number(next) : next)}
         />
       );
     }
+    case 'theme':
+      return <ThemeControl value={value} onChange={onChange} />;
+    case 'syntax-theme':
+      return <SyntaxThemeControl value={value} onChange={onChange} />;
     case 'string':
       return (
         <XDSTextInput

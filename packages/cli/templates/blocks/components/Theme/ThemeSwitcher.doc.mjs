@@ -4,21 +4,19 @@
 export const doc = {
   type: 'block',
   exampleFor: 'Theme',
-  name: 'Theme — Distinct Themes',
-  displayName: 'Theme — Distinct Themes',
+  name: 'Theme — Switch Themes',
+  displayName: 'Theme — Switch Themes',
   description:
-    'Two visually distinct theme providers wrapping identical content to show how XDSTheme changes the visual treatment of child components.',
+    'Use state to switch the theme object passed to XDSTheme and preview a different visual treatment.',
   isReady: true,
-  isShowcase: true,
-  aspectRatio: 16 / 9,
+  aspectRatio: 4 / 3,
   componentsUsed: [
     'Theme',
     'Card',
-    'Grid',
+    'Button',
     'Section',
     'Layout',
+    'Selector',
     'Text',
-    'Button',
-    'Badge',
   ],
 };

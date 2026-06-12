@@ -4,20 +4,18 @@
 export const doc = {
   type: 'block',
   exampleFor: 'MediaTheme',
-  name: 'MediaTheme — Media Overlay',
-  displayName: 'MediaTheme — Media Overlay',
+  name: 'MediaTheme — Light Scrim',
+  displayName: 'MediaTheme — Light Scrim',
   description:
-    'A compact media overlay showing XDSMediaTheme adapting text, icons, badges, and button variants over an image-backed dark surface.',
+    'A light scrim over an image. Use XDSMediaTheme mode="light" so text and ghost buttons use dark-on-light tokens.',
   isReady: true,
-  isShowcase: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: [
     'MediaTheme',
+    'AspectRatio',
+    'Button',
     'Section',
     'Layout',
     'Text',
-    'Button',
-    'Badge',
-    'Icon',
   ],
 };

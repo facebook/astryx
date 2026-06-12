@@ -19,7 +19,9 @@ import {CodeExampleBlock} from '../CodeExampleBlock';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSTheme} from '@xds/core/theme';
+import {allSyntaxPresets} from '@xds/core/theme/syntax';
 import {neutralTheme} from '@xds/theme-neutral/built';
+import {themeObjectsFull} from '../../generated/themeRegistry';
 import {useThemeMode} from '../../app/providers';
 import {Code} from 'lucide-react';
 import {
@@ -75,16 +77,56 @@ function pickPrimaryProps(name: string, props: PropDoc[]): KnobProp[] {
   }));
 }
 
+function resolveThemeValue(value: unknown): unknown {
+  if (typeof value !== 'string') {
+    return resolveValue(value);
+  }
+
+  const byPackageName = themeObjectsFull[value];
+  if (byPackageName) {
+    return byPackageName;
+  }
+
+  return (
+    Object.values(themeObjectsFull).find(theme => theme.name === value) ?? value
+  );
+}
+
+function resolveSyntaxThemeValue(value: unknown): unknown {
+  if (typeof value !== 'string') {
+    return resolveValue(value);
+  }
+
+  return allSyntaxPresets.find(theme => theme.name === value) ?? value;
+}
+
+function resolveDefaultValue(
+  value: unknown,
+  control: PropControlDescriptor | undefined,
+): unknown {
+  if (control?.kind === 'theme') {
+    return resolveThemeValue(value);
+  }
+  if (control?.kind === 'syntax-theme') {
+    return resolveSyntaxThemeValue(value);
+  }
+  return resolveValue(value);
+}
+
 function buildInitialState(
   knobs: KnobProp[],
   playground?: PlaygroundConfig | null,
 ): Record<string, unknown> {
   const state: Record<string, unknown> = {};
 
+  const controlByName = new Map(
+    knobs.map(({row, control}) => [row.name, control]),
+  );
+
   // Apply playground defaults first (resolved from ElementDescriptor if needed)
   if (playground?.defaults) {
     for (const [key, value] of Object.entries(playground.defaults)) {
-      state[key] = resolveValue(value);
+      state[key] = resolveDefaultValue(value, controlByName.get(key));
     }
   }
 
@@ -121,6 +163,12 @@ function buildInitialState(
         case 'enum':
           state[row.name] = control.options[0];
           break;
+        case 'theme':
+          state[row.name] = Object.values(themeObjectsFull)[0];
+          break;
+        case 'syntax-theme':
+          state[row.name] = allSyntaxPresets[0];
+          break;
         case 'boolean':
           state[row.name] = false;
           break;
@@ -136,12 +184,40 @@ function buildInitialState(
   return state;
 }
 
-function formatValue(value: unknown): string {
+function toIdentifierName(name: string): string {
+  return name
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean)
+    .map((part, index) => {
+      const lower = part.charAt(0).toLowerCase() + part.slice(1);
+      if (index === 0) {
+        return lower;
+      }
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join('');
+}
+
+function formatValue(
+  value: unknown,
+  propName?: string,
+  componentName?: string,
+): string {
   if (value === undefined) {
     return 'undefined';
   }
   if (value === null) {
     return 'null';
+  }
+  if (
+    value != null &&
+    typeof value === 'object' &&
+    'name' in value &&
+    typeof value.name === 'string' &&
+    propName === 'theme'
+  ) {
+    const identifier = toIdentifierName(value.name);
+    return componentName === 'Theme' ? `${identifier}Theme` : identifier;
   }
   if (typeof value === 'string') {
     return `"${value}"`;
@@ -193,7 +269,7 @@ function generateCode(name: string, state: Record<string, unknown>): string {
     if (typeof value === 'string') {
       return `  ${key}="${value}"`;
     }
-    return `  ${key}={${formatValue(value)}}`;
+    return `  ${key}={${formatValue(value, key, name)}}`;
   });
 
   return `<${componentName}\n${propLines.join('\n')}\n/>`;
