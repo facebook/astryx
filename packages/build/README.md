@@ -18,11 +18,11 @@ StyleX generates atomic CSS: same declaration = same class name. Without separat
 
 ## Packages
 
-| Export               | Purpose                                      | Platform                    |
-| -------------------- | -------------------------------------------- | --------------------------- |
-| `@xds/build/babel`   | Babel plugin: splits class prefixes per file | Next.js, any babel pipeline |
-| `@xds/build/postcss` | PostCSS plugin: compiles + splits CSS layers | Next.js                     |
-| `@xds/build/vite`    | Vite plugin: wraps unplugin + splits layers  | Vite, Storybook             |
+| Export               | Purpose                                       | Platform                    |
+| -------------------- | --------------------------------------------- | --------------------------- |
+| `@xds/build/babel`   | Babel plugin: splits class prefixes per file  | Next.js, any babel pipeline |
+| `@xds/build/postcss` | PostCSS plugin: compiles + splits CSS layers  | Next.js                     |
+| `@xds/build/vite`    | Vite plugin: wraps unplugin + splits layers   | Vite, Storybook             |
 
 ## Install
 

@@ -35,8 +35,7 @@ export default function AppShellMobileHookUsage() {
         <XDSButton label="Open navigation" variant="secondary" isDisabled />
         <XDSText type="body" color="secondary">
           AppShell mobile navigation context is available. Narrow the viewport
-          below the AppShell mobile breakpoint to make the custom trigger
-          active.
+          below the AppShell mobile breakpoint to make the custom trigger active.
         </XDSText>
       </XDSVStack>
     );

@@ -165,14 +165,14 @@ npm run preview
 
 ## Gotchas
 
-| Issue                         | Symptom                                    | Fix                                                                          |
-| ----------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------- |
+| Issue                         | Symptom                                     | Fix                                                                          |
+| ----------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------- |
 | Missing `lightningcssOptions` | Colors broken: `light-dark()` gets lowered | Add `lightningcssOptions: { targets: lightningcssTargets }` to StyleX plugin |
-| Vite pre-bundles XDS          | `Unexpected stylex.defineVars at runtime`  | Add `optimizeDeps: { exclude: ['@xds/core', '@xds/theme-default'] }`         |
-| Missing resolve aliases       | Module not found errors for `@xds/core`    | Add `resolve.alias` pointing to source directory                             |
-| Missing CSS entry point       | StyleX has no CSS asset to append to       | Create a minimal `index.css` and import it in `main.tsx`                     |
-| Plugin order                  | Styles not extracted or HMR broken         | `stylex.vite()` must come before `react()` in the plugins array              |
-| Duplicate React types         | JSX component type errors in monorepo      | Known monorepo issue with `@types/react` hoisting; doesn't affect runtime    |
+| Vite pre-bundles XDS          | `Unexpected stylex.defineVars at runtime`   | Add `optimizeDeps: { exclude: ['@xds/core', '@xds/theme-default'] }`         |
+| Missing resolve aliases       | Module not found errors for `@xds/core`     | Add `resolve.alias` pointing to source directory                             |
+| Missing CSS entry point       | StyleX has no CSS asset to append to        | Create a minimal `index.css` and import it in `main.tsx`                     |
+| Plugin order                  | Styles not extracted or HMR broken          | `stylex.vite()` must come before `react()` in the plugins array              |
+| Duplicate React types         | JSX component type errors in monorepo       | Known monorepo issue with `@types/react` hoisting; doesn't affect runtime    |
 
 ## Testing outside the monorepo
 

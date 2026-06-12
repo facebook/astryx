@@ -16,18 +16,18 @@ The key to coexistence is declaring **all** layers upfront in `globals.css`:
 
 This gives the correct priority (lowest → highest):
 
-| Layer         | Source   | What it does                                       |
-| ------------- | -------- | -------------------------------------------------- |
-| `reset`       | XDS      | CSS reset (`:where()` selectors, zero specificity) |
-| `theme`       | Tailwind | Theme variables (colors, fonts, spacing)           |
-| `base`        | Tailwind | Preflight reset (element-level normalization)      |
-| `xds-base`    | XDS      | Component styles (buttons, cards, inputs, etc.)    |
-| `xds-theme`   | XDS      | Theme overrides (typography, color mappings)       |
-| `components`  | Tailwind | Component classes (if any)                         |
-| `utilities`   | Tailwind | Utility classes: **wins over all layers**          |
-| _(unlayered)_ | Consumer | Your custom CSS: highest priority                  |
+| Layer | Source | What it does |
+|-------|--------|-------------|
+| `reset` | XDS | CSS reset (`:where()` selectors, zero specificity) |
+| `theme` | Tailwind | Theme variables (colors, fonts, spacing) |
+| `base` | Tailwind | Preflight reset (element-level normalization) |
+| `xds-base` | XDS | Component styles (buttons, cards, inputs, etc.) |
+| `xds-theme` | XDS | Theme overrides (typography, color mappings) |
+| `components` | Tailwind | Component classes (if any) |
+| `utilities` | Tailwind | Utility classes: **wins over all layers** |
+| *(unlayered)* | Consumer | Your custom CSS: highest priority |
 
-Without this declaration, XDS layers are created _after_ Tailwind's declared layers, making XDS component styles outrank Tailwind utilities. That means `className="bg-red-500"` on an XDS component wouldn't work.
+Without this declaration, XDS layers are created *after* Tailwind's declared layers, making XDS component styles outrank Tailwind utilities. That means `className="bg-red-500"` on an XDS component wouldn't work.
 
 ## Usage patterns
 
@@ -90,9 +90,7 @@ Shadcn-style Tailwind components render correctly alongside XDS. Both resets are
 ```tsx
 <div className="grid grid-cols-2 gap-6">
   <XDSCard>...</XDSCard>
-  <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-    ...
-  </div>
+  <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">...</div>
 </div>
 ```
 

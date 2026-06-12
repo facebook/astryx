@@ -10,5 +10,5 @@ import '@xds/theme-y2k/theme.css';
 
 <XDSTheme theme={y2kTheme}>
   <App />
-</XDSTheme>;
+</XDSTheme>
 ```

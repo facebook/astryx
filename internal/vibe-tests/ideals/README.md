@@ -32,7 +32,6 @@ Examples:
 55 prompt IDs covered (62 images total). See [issue #733](https://github.com/facebookexperimental/xds/issues/733) for context.
 
 Multi-image prompts use `__` suffixes for different states/views:
-
 - `rc-1.png` + `rc-1__menu.png`: collapsed and expanded menu
 - `rc-3.png` + `rc-3__desktop.png`: mobile and desktop
 - `wd-1.png` + `wd-1__cart.png`, `wd-1__shipping.png`, `wd-1__payment.png`, `wd-1__confirm.png`: checkout flow steps
