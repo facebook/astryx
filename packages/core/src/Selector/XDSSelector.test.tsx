@@ -66,6 +66,24 @@ describe('XDSSelector', () => {
     expect(screen.getByRole('combobox')).toHaveTextContent('Banana');
   });
 
+  it('can open the dropdown above the trigger', async () => {
+    const user = userEvent.setup();
+    const {container} = render(
+      <XDSSelector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        dropdownPlacement="above"
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox'));
+
+    const popover = container.querySelector('[popover]') as HTMLElement;
+    expect(popover.style.positionArea).toBe('top span-right');
+  });
+
   describe('hasClear', () => {
     it('shows selected value label when hasClear is enabled', () => {
       render(
