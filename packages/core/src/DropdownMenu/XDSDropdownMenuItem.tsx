@@ -10,7 +10,7 @@
  * Interactive menu item with role="menuitem". Keyboard navigation
  * is handled by useListFocus on the parent menu container.
  *
- * Composes XDSItem for the shared media + label + description + trailing layout.
+ * Composes XDSItem for the shared start content + label + description + end content layout.
  * Passes role="menuitem" so XDSItem puts onClick on the root div instead of
  * creating an invisible button (keyboard access is provided by the parent menu).
  *
@@ -143,14 +143,14 @@ export function XDSDropdownMenuItem({
     <XDSItem
       role="menuitem"
       tabIndex={isDisabled ? undefined : -1}
-      media={
+      startContent={
         icon
           ? renderIconSlot(icon, {size: 'sm', color: 'secondary'})
           : undefined
       }
       label={label}
       description={description}
-      trailing={children}
+      endContent={children}
       onClick={handleClick}
       isDisabled={isDisabled}
       xstyle={[

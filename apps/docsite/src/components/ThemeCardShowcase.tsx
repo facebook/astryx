@@ -654,7 +654,7 @@ function ChatCard() {
                 Here’s everything I have on order #1043:
               </XDSText>
               {/* Compact order-summary block — XDSItem rows give
-                  a label/description + trailing value pair without
+                  a label/description + endContent value pair without
                   any custom layout code. Wrapped in XDSCard so the
                   block reads as a distinct artifact within the
                   prose, similar to a Copilot tool-call result. */}
@@ -663,7 +663,7 @@ function ChatCard() {
                   <XDSItem
                     label="Items"
                     description="Minimalist Watch · Linen Throw"
-                    trailing={
+                    endContent={
                       <XDSText type="body" weight="bold">
                         $248
                       </XDSText>
@@ -672,7 +672,7 @@ function ChatCard() {
                   <XDSItem
                     label="Shipping"
                     description="UPS Ground"
-                    trailing={
+                    endContent={
                       <XDSText type="body" weight="bold">
                         $12
                       </XDSText>
@@ -681,12 +681,12 @@ function ChatCard() {
                   <XDSItem
                     label="Estimated arrival"
                     description="Tomorrow by 8pm"
-                    trailing={<XDSBadge variant="green" label="On time" />}
+                    endContent={<XDSBadge variant="green" label="On time" />}
                   />
                   <XDSItem
                     label="Tracking"
                     description="UPS 1Z 999 AA1 0123 4567 84"
-                    trailing={<XDSLink href="#">Track →</XDSLink>}
+                    endContent={<XDSLink href="#">Track →</XDSLink>}
                   />
                 </XDSVStack>
               </XDSCard>
@@ -875,14 +875,14 @@ function LatestActivityCard() {
           {ACTIVITY.map(item => (
             <XDSItem
               key={item.id}
-              media={
+              startContent={
                 <div {...stylex.props(styles.activityIcon)} aria-hidden="true">
                   {item.icon}
                 </div>
               }
               label={item.label}
               description={item.detail}
-              trailing={
+              endContent={
                 <XDSText
                   type="body"
                   weight="bold"

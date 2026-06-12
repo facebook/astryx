@@ -252,7 +252,7 @@ describe('XDSList', () => {
     );
     const item = container.querySelector('li');
     expect(item).toBeInTheDocument();
-    expect(item?.className).toContain('default');
+    expect(item?.className).toContain('balanced');
     expect(item?.className).not.toContain('spacious');
   });
 
