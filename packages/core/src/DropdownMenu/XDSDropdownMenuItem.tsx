@@ -16,6 +16,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DropdownMenu/DropdownMenu.doc.mjs
+ * - /packages/core/src/DropdownMenu/DropdownMenuItem.doc.mjs
  * - /packages/core/src/DropdownMenu/XDSDropdownMenu.test.tsx
  * - /packages/core/src/DropdownMenu/index.ts
  * - /apps/storybook/stories/DropdownMenu.stories.tsx
@@ -85,7 +86,7 @@ export interface XDSDropdownMenuItemProps {
   /** Whether the item is disabled. @default false */
   isDisabled?: boolean;
   /** Additional content to render after the label/description. */
-  children?: ReactNode;
+  endContent?: ReactNode;
   /**
    * StyleX styles for layout customization (margins, positioning, sizing).
    * Must be a `stylex.create()` value — not an inline style object.
@@ -113,7 +114,7 @@ export interface XDSDropdownMenuItemProps {
  * ```
  * <XDSDropdownMenu button={{ label: 'Actions' }}>
  *   <XDSDropdownMenuItem icon={PencilIcon} label="Edit" onClick={handleEdit} />
- *   <XDSDropdownMenuItem label="Delete" onClick={handleDelete} isDisabled />
+ *   <XDSDropdownMenuItem label="Delete" endContent={<XDSBadge label="⌘D" />} onClick={handleDelete} />
  * </XDSDropdownMenu>
  * ```
  */
@@ -123,7 +124,7 @@ export function XDSDropdownMenuItem({
   description,
   onClick,
   isDisabled = false,
-  children,
+  endContent,
   xstyle,
   className,
   style,
@@ -150,7 +151,7 @@ export function XDSDropdownMenuItem({
       }
       label={label}
       description={description}
-      endContent={children}
+      endContent={endContent}
       onClick={handleClick}
       isDisabled={isDisabled}
       xstyle={[

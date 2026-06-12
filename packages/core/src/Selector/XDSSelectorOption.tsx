@@ -42,7 +42,7 @@ export interface XDSSelectorOptionProps {
   /**
    * Additional content to render after the label/description.
    */
-  children?: ReactNode;
+  endContent?: ReactNode;
 
   /**
    * StyleX styles created via `stylex.create()`. Merged with the component's
@@ -94,7 +94,7 @@ export function XDSSelectorOption({
   icon,
   label,
   description,
-  children,
+  endContent,
   xstyle,
   className,
   style,
@@ -108,7 +108,7 @@ export function XDSSelectorOption({
       }
       label={label}
       description={description}
-      endContent={children}
+      endContent={endContent}
       xstyle={[embeddedStyles.root, xstyle]}
       className={[xdsClassName('selector-option'), className]
         .filter(Boolean)

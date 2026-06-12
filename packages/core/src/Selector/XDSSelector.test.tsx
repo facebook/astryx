@@ -13,6 +13,7 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSSelector} from './XDSSelector';
+import {XDSSelectorOption} from './XDSSelectorOption';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -123,6 +124,27 @@ describe('XDSSelector', () => {
       />,
     );
     expect(screen.getByRole('combobox')).toHaveTextContent('Banana');
+  });
+
+  it('renders custom option endContent', async () => {
+    const user = userEvent.setup();
+    render(
+      <XDSSelector
+        label="Role"
+        options={[{value: 'admin', label: 'Admin'}]}
+        value={undefined}
+        onChange={() => {}}>
+        {option => (
+          <XDSSelectorOption
+            label={option.label}
+            endContent={<span data-testid="option-badge">Owner</span>}
+          />
+        )}
+      </XDSSelector>,
+    );
+
+    await user.click(screen.getByRole('combobox'));
+    expect(screen.getByTestId('option-badge')).toHaveTextContent('Owner');
   });
 
   it('supports explicit menu placement', () => {

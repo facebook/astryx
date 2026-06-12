@@ -12,6 +12,7 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSContextMenu} from './XDSContextMenu';
+import {XDSContextMenuItem} from './index';
 import {XDSDropdownMenuItem} from '../DropdownMenu/XDSDropdownMenuItem';
 import {XDSDivider} from '../Divider';
 
@@ -239,6 +240,23 @@ describe('XDSContextMenu compound mode', () => {
     expect(
       screen.getByRole('menuitem', {name: 'Copy', hidden: true}),
     ).toBeInTheDocument();
+  });
+
+  it('renders XDSContextMenuItem endContent', () => {
+    render(
+      <XDSContextMenu
+        menuContent={
+          <XDSContextMenuItem
+            label="Cut"
+            endContent={<span data-testid="shortcut">⌘X</span>}
+            onClick={() => {}}
+          />
+        }>
+        <div>Right-click me</div>
+      </XDSContextMenu>,
+    );
+
+    expect(screen.getByTestId('shortcut')).toHaveTextContent('⌘X');
   });
 
   it('calls onClick when compound item is clicked', async () => {
