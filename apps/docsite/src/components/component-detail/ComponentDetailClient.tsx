@@ -104,7 +104,7 @@ function OverviewContent({
           </XDSVStack>
           <XDSVStack gap={10}>
             {(exampleRegistry[comp.name] || []).map((entry, i) => (
-              <ExampleBlock key={i} entry={entry} />
+              <ExampleBlock key={i} entry={entry} componentName={comp.name} />
             ))}
           </XDSVStack>
         </>

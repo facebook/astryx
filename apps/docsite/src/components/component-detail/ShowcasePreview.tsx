@@ -8,6 +8,7 @@ import {XDSText} from '@xds/core/Text';
 import {XDSSpinner} from '@xds/core/Spinner';
 import {useMediaQuery} from '@xds/core/hooks';
 import {showcaseRegistry} from '../../generated/showcaseRegistry';
+import {preventPreviewNavigation} from './previewNavigation';
 
 interface ShowcasePreviewProps {
   name: string;
@@ -28,6 +29,9 @@ export function ShowcasePreview({name}: ShowcasePreviewProps) {
       .then(mod => setComponent(() => mod.default))
       .catch(() => setError(true));
   }, [name]);
+
+  const previewNavigationProps =
+    name === 'SideNav' ? {onClickCapture: preventPreviewNavigation} : {};
 
   const placeholderStyle = isSmall
     ? {minHeight: 160, width: '100%'}
@@ -61,7 +65,8 @@ export function ShowcasePreview({name}: ShowcasePreviewProps) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-        }}>
+        }}
+        {...previewNavigationProps}>
         <div style={{minWidth: 'fit-content'}}>
           <Component />
         </div>
@@ -78,7 +83,8 @@ export function ShowcasePreview({name}: ShowcasePreviewProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-      }}>
+      }}
+      {...previewNavigationProps}>
       <Component />
     </div>
   );
