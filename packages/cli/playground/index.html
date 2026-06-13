@@ -33,7 +33,9 @@
   .err-row { color:var(--err); font:12px/1.5 ui-monospace,monospace; padding:4px 0; border-bottom:1px dashed var(--line); }
   .err-row b { color:var(--accent); font-weight:600; }
   .section-label { padding:8px 16px 2px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); border-top:1px solid var(--line); }
-  .examples { display:flex; gap:6px; flex-wrap:wrap; padding:0 16px 10px; }
+  .examples { display:flex; flex-direction:column; gap:4px; padding:0 16px 10px; }
+  .ex-cat { font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-top:8px; }
+  .ex-row { display:flex; gap:6px; flex-wrap:wrap; }
   .examples button { font-size:12px; padding:3px 8px; }
 </style>
 </head>
@@ -73,10 +75,72 @@
 import {checkExpression, expandExpression} from '/xle/browser.mjs';
 
 const EXAMPLES = [
-  ['Dashboard shell', 'A[cp6 @topNav=TN @sideNav=SN] > L > LC > S[p6] > (G[c4 g4] > C{card-callout}*4) + T[striped]'],
-  ['Login card', 'Ctr[h="100dvh"] > C[w=400 p8] > V[g6] >\n  (F > TI"Email"[t=email req] + TI"Password"[t=password req]) +\n  B.primary"Sign in"'],
-  ['Outline form', 'AppShell cp=6\n  topNav: TN\n  Layout > LayoutContent\n    Section p=6\n      Grid cols=4 gap=4\n        Card {card-callout} x4'],
-  ['Table + overlay', 'V > B"Delete"[opens=#confirm] ;; AD#confirm"Delete item?"'],
+  ["Layout", "Centered box", "Ctr[h=\"100dvh\"] > C[w=400 p8] > Tx\"Hello world\""],
+  ["Layout", "App shell", "A[cp6 @topNav=TN @sideNav=SN] > L > LC > S[p6] > Tx\"Page content\""],
+  ["Layout", "App shell + header", "A[cp4 @topNav=TN] > L > LH\"Page header\" + LC > S[p4] > Tx\"Body\""],
+  ["Layout", "Vertical stack", "V[g4] > Tx\"One\" + Tx\"Two\" + Tx\"Three\""],
+  ["Layout", "Spread row", "H[j=between a=center] > Tx.lg\"Title\" + B.primary\"Action\""],
+  ["Layout", "Grid 4-up", "G[c4 g4] > C[p6]*4"],
+  ["Layout", "Responsive grid", "G[c{min:320} g4] > C{card-callout}*3"],
+  ["Layout", "Section muted", "S[p6 v=muted] > Tx\"Muted section\""],
+  ["Layout", "Nested stacks", "V[g6] > (H[j=between] > Tx.lg\"Header\" + B\"Edit\") + (G[c3 g4] > C[p4]*3)"],
+  ["Layout", "Layout regions", "L > LH\"Header\" + LC > S[p4] > Tx\"Body\""],
+  ["Layout", "Divider between", "V[g4] > Tx\"Above\" + D + Tx\"Below\""],
+  ["Layout", "Fill stack item", "H[g4] > Tx\"Fixed\" + (SI[size=fill] > Tx\"Grows\")"],
+  ["Layout", "Toolbar + content", "V[g4] > (Tbar\"Actions\" > B\"Filter\" + B.primary\"New\") + S[p4] > Tx\"Below toolbar\""],
+  ["Cards", "Titled card", "C[p6] > V[g2] > Hd\"Card title\"[level=3] + Tx[t=supporting]\"Supporting copy\""],
+  ["Cards", "KPI tile", "C[p6] > V[g1] > Tx.lg\"1,284\" + Tx[t=supporting]\"Active users\""],
+  ["Cards", "KPI grid", "G[c4 g4] > (C[p6] > V[g1] > Tx.lg\"\\$42k\" + Tx[t=supporting]\"Revenue\")*4"],
+  ["Cards", "Clickable card", "CC[p6] > H[j=between a=center] > Tx\"Open project\" + Ic[icon=arrow-right]"],
+  ["Cards", "Card grid", "G[c3 g4] > (C[p6] > V[g2] > Hd\"A\"[level=4] + Tx\"text\")*3"],
+  ["Cards", "Callout block", "S[p6] > C{card-callout}"],
+  ["Cards", "Badge row", "H[g2] > Bd.success\"Active\" + Bd.warning\"Pending\" + Bd.error\"Failed\" + Bd.info\"New\""],
+  ["Cards", "Avatar row", "H[g2 a=center] > Av + (V[g0.5] > Tx\"Jane Doe\" + Tx[t=supporting]\"Admin\")"],
+  ["Cards", "Metadata list", "C[p6] > ML > MLI\"Status\":\"Active\" + MLI\"Owner\":\"Jane\" + MLI\"Region\":\"us-east\""],
+  ["Content", "List", "UL > LI\"First item\" + LI\"Second item\" + LI\"Third item\""],
+  ["Content", "Kbd hint", "H[g2 a=center] > Tx\"Press\" + K\"mod+k\" + Tx\"to search\""],
+  ["Content", "Headings scale", "V[g3] > Hd\"H1\"[level=1] + Hd\"H2\"[level=2] + Hd\"H3\"[level=3]"],
+  ["Content", "Text + link", "H[g1] > Tx\"Read\" + Lk[href=\"/docs\"]\"the docs\""],
+  ["Content", "Tokens", "H[g2] > Tk\"react\" + Tk\"typescript\" + Tk\"stylex\""],
+  ["Tables", "Simple table", "C[p0] > T[striped] > (TR > THC\"Name\" + THC\"Email\") + (TR > TC\"Alice\" + TC\"alice@x.com\")*5"],
+  ["Tables", "Table + status cell", "T > (TR > THC\"Service\" + THC\"Status\") + (TR > TC\"api-gateway\" + (TC > Bd.success\"Up\"))*4"],
+  ["Tables", "Dense table", "T[density=compact dividers=rows] > (TR > THC\"ID\" + THC\"Value\") + (TR > TC\"row-$\" + TC\"\\$12.00\")*6"],
+  ["Tables", "Table in card", "C[p0] > T[striped] > (TR>THC\"Item\"+THC\"Qty\") + (TR>TC\"Widget\"+TC\"3\")*3"],
+  ["Forms", "Login form", "Ctr[h=\"100dvh\"] > C[w=400 p8] > V[g6] > (F > TI\"Email\"[t=email req] + TI\"Password\"[t=password req]) + B.primary\"Sign in\""],
+  ["Forms", "Field set", "F > TI\"Full name\"[req] + TI\"Email\"[t=email req] + TA\"Bio\" + B.primary\"Save\""],
+  ["Forms", "Inline controls", "H[j=between a=center] > CB\"Remember me\" + Lk[href=\"/forgot\"]\"Forgot password?\""],
+  ["Forms", "Number + switch", "V[g4] > NI\"Quantity\" + (H[j=between a=center] > Tx\"Notifications\" + SW\"Enable notifications\")"],
+  ["Forms", "Two column form", "G[c2 g4] > TI\"First name\"[req] + TI\"Last name\"[req] + TI\"Email\"[t=email req] + TI\"Phone\""],
+  ["Forms", "Checkbox list", "CL\"Permissions\" > CLI\"Read\" + CLI\"Write\" + CLI\"Admin\""],
+  ["Forms", "Radio list", "RL\"Plan\" > RLI\"Free\" + RLI\"Pro\" + RLI\"Enterprise\""],
+  ["Forms", "Slider", "V[g4] > SL\"Volume\" + SL\"Brightness\""],
+  ["Forms", "Date input", "F > DI\"Start date\" + DI\"End date\""],
+  ["Forms", "Search field", "TI\"Search\"[t=text]"],
+  ["Nav", "Tabs", "TL > Tab\"Overview\"! + Tab\"Activity\" + Tab\"Settings\""],
+  ["Nav", "Breadcrumbs", "BC > BCI\"Home\"[href=\"/\"] + BCI\"Projects\"[href=\"/projects\"] + BCI\"Detail\""],
+  ["Nav", "Segmented control", "SG > SGI\"Day\" + SGI\"Week\" + SGI\"Month\""],
+  ["Nav", "Top nav", "TN > TNH\"Acme\" + TNI\"Docs\" + TNI\"Pricing\""],
+  ["Nav", "Side nav", "SN > (SNS\"Main\" > SNI\"Dashboard\" + SNI\"Reports\") + (SNS\"Settings\" > SNI\"Profile\")"],
+  ["Nav", "Pagination", "PG[variant=count]"],
+  ["Nav", "Tabs + content", "V[g4] > (TL > Tab\"All\"! + Tab\"Active\") + S[p4] > Tx\"Tab body\""],
+  ["Feedback", "Success banner", "Bn.success\"Changes saved successfully\""],
+  ["Feedback", "Empty state", "ES\"No results found\"[description=\"Try adjusting your filters\"]"],
+  ["Feedback", "Spinner", "Ctr[h=200] > Sp"],
+  ["Feedback", "Progress bar", "V[g4] > PB[value=60] + PB[value=90]"],
+  ["Feedback", "Skeletons", "V[g2] > Sk*4"],
+  ["Feedback", "Delete dialog", "V > B.destructive\"Delete\"[opens=#confirm] ;; AD#confirm\"Delete this item?\""],
+  ["Feedback", "Status dots", "V[g2] > (H[g2 a=center] > SD.success + Tx\"Operational\") + (H[g2 a=center] > SD.error + Tx\"Outage\")"],
+  ["Feedback", "Toolbar actions", "Tbar\"Actions\" > B\"Filter\" + B\"Export\" + B.primary\"New\""],
+  ["Blocks", "Splice block", "S[p6] > C{card-callout}"],
+  ["Blocks", "Block grid", "G[c2 g4] > {card-callout}*2"],
+  ["Blocks", "Standalone block", "{card-callout}"],
+  ["Outline", "Outline app shell", "AppShell cp=6\n  topNav: TN\n  Layout > LayoutContent\n    Section p=6\n      Grid cols=4 gap=4\n        Card p=6 x4"],
+  ["Outline", "Outline form", "Center h=\"100dvh\"\n  Card w=400 p=8\n    VStack g=6\n      FormLayout\n        TextInput \"Email\" t=email req\n        TextInput \"Password\" t=password req\n      Button.primary \"Sign in\""],
+  ["Outline", "Outline dashboard", "Section p=6\n  VStack g=6\n    HStack j=between a=center\n      Heading \"Dashboard\" level=2\n      Button.primary \"New\"\n    Grid c=4 g=4\n      Card {card-callout} x4"],
+  ["Outline", "Outline table", "Card p=0\n  Table striped\n    TableRow\n      TableHeaderCell \"Name\"\n      TableHeaderCell \"Role\"\n    repeat 4:\n      TableRow\n        TableCell \"Person\"\n        TableCell \"Engineer\""],
+  ["Outline", "Outline with overlay", "VStack g=4\n  Button.destructive \"Delete\" opens=#confirm\n\noverlays:\n  AlertDialog#confirm \"Delete this item?\""],
+  ["Outline", "Outline tabs", "VStack g=4\n  TabList\n    Tab \"Overview\" !\n    Tab \"Activity\"\n    Tab \"Settings\"\n  Section p=4\n    Text \"Tab content\""],
+  ["Chat", "Chat layout", "ChL > ChML > ChS\"Today\" + (ChM > ChB\"Hello there\") + (ChM > ChB\"Hi, how can I help?\")"],
 ];
 
 const $ = id => document.getElementById(id);
@@ -96,6 +160,7 @@ function render() {
     $('compact').textContent = r.compact;
     $('outline').textContent = r.outline;
     $('expand').disabled = false;
+    doExpand(); // live "rendered source"
   } else {
     status.innerHTML = `<span class="pill err">${r.errors.length} error${r.errors.length===1?'':'s'}</span>`;
     errors.innerHTML = r.errors.map(e =>
@@ -103,6 +168,7 @@ function render() {
     ).join('');
     $('compact').textContent = '';
     $('outline').textContent = '';
+    $('code').textContent = '';
     $('expand').disabled = true;
   }
 }
@@ -114,16 +180,22 @@ function doExpand() {
 
 function escapeHtml(s) { return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 
-$('examples').innerHTML = EXAMPLES.map((e, i) => `<button data-i="${i}">${e[0]}</button>`).join('');
+// Group example chips by category.
+const cats = [...new Set(EXAMPLES.map(e => e[0]))];
+$('examples').innerHTML = cats.map(cat => {
+  const chips = EXAMPLES.map((e, i) => [e, i]).filter(([e]) => e[0] === cat)
+    .map(([e, i]) => `<button data-i="${i}">${escapeHtml(e[1])}</button>`).join('');
+  return `<div class="ex-cat">${escapeHtml(cat)}</div><div class="ex-row">${chips}</div>`;
+}).join('');
 $('examples').addEventListener('click', e => {
   const i = e.target.dataset.i;
-  if (i != null) { $('src').value = EXAMPLES[i][1]; render(); }
+  if (i != null) { $('src').value = EXAMPLES[i][2]; render(); }
 });
 $('src').addEventListener('input', render);
 $('surface').addEventListener('change', render);
 $('expand').addEventListener('click', doExpand);
 
-$('src').value = EXAMPLES[0][1];
+$('src').value = EXAMPLES[0][2];
 render();
 </script>
 </body>
