@@ -20,22 +20,41 @@ const require = createRequire(import.meta.url);
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, '..', 'public');
 
+/**
+ * Resolve a vendored dependency, returning null (with a warning) instead of
+ * throwing when it isn't installed. A partial/offline install shouldn't abort
+ * the whole `generate` chain — data generation already ran; only the
+ * playground editor/preview degrade until a full install provides these.
+ */
+function tryResolve(spec) {
+  try {
+    return require.resolve(spec);
+  } catch {
+    console.warn(`vendor: '${spec}' not installed — skipping (run a full install to enable it)`);
+    return null;
+  }
+}
+
 // --- Monaco editor (min/vs) ---
-const monacoPkg = require.resolve('monaco-editor/package.json');
-const monacoVs = join(dirname(monacoPkg), 'min', 'vs');
+const monacoPkg = tryResolve('monaco-editor/package.json');
 const monacoDest = join(publicDir, 'monaco', 'vs');
-if (existsSync(join(monacoDest, 'loader.js'))) {
+if (!monacoPkg) {
+  // skipped — warned above
+} else if (existsSync(join(monacoDest, 'loader.js'))) {
   console.log('monaco: already present at public/monaco/vs — skipping');
 } else {
+  const monacoVs = join(dirname(monacoPkg), 'min', 'vs');
   mkdirSync(dirname(monacoDest), {recursive: true});
   cpSync(monacoVs, monacoDest, {recursive: true});
   console.log('monaco: copied min/vs -> public/monaco/vs');
 }
 
 // --- TypeScript (browser UMD) ---
-const tsLib = require.resolve('typescript/lib/typescript.js');
+const tsLib = tryResolve('typescript/lib/typescript.js');
 const tsDest = join(publicDir, 'vendor', 'typescript.js');
-if (existsSync(tsDest) && statSync(tsDest).size === statSync(tsLib).size) {
+if (!tsLib) {
+  // skipped — warned above
+} else if (existsSync(tsDest) && statSync(tsDest).size === statSync(tsLib).size) {
   console.log(
     'typescript: already present at public/vendor/typescript.js — skipping',
   );

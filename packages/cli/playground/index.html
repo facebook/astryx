@@ -1,0 +1,130 @@
+<!doctype html>
+<!-- Copyright (c) Meta Platforms, Inc. and affiliates. -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>XLE / XLO playground</title>
+<style>
+  :root { color-scheme: light dark; --bg:#fff; --fg:#1c1e21; --muted:#65676b; --line:#dadde1; --panel:#f5f6f7; --ok:#1a7f37; --err:#cf222e; --warn:#9a6700; --accent:#0866ff; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#18191a; --fg:#e4e6eb; --muted:#b0b3b8; --line:#3a3b3c; --panel:#242526; --accent:#4b9bff; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--fg); }
+  header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; align-items:baseline; gap:12px; }
+  header h1 { font-size:16px; margin:0; }
+  header span { color:var(--muted); font-size:12px; }
+  main { display:grid; grid-template-columns:1fr 1fr; gap:0; height:calc(100vh - 53px); }
+  .col { display:flex; flex-direction:column; min-width:0; }
+  .col + .col { border-left:1px solid var(--line); }
+  .bar { padding:10px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .bar label { font-size:12px; color:var(--muted); }
+  select, button { font:inherit; padding:4px 10px; border-radius:6px; border:1px solid var(--line); background:var(--panel); color:var(--fg); cursor:pointer; }
+  button.primary { background:var(--accent); color:#fff; border-color:transparent; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  textarea { flex:0 0 200px; resize:vertical; border:0; border-bottom:1px solid var(--line); padding:14px 16px; font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace; background:var(--bg); color:var(--fg); outline:none; tab-size:2; }
+  .status { padding:8px 16px; font-size:12px; display:flex; gap:8px; align-items:center; border-bottom:1px solid var(--line); }
+  .pill { padding:2px 8px; border-radius:999px; font-weight:600; font-size:11px; }
+  .pill.ok { background:color-mix(in srgb,var(--ok) 18%,transparent); color:var(--ok); }
+  .pill.err { background:color-mix(in srgb,var(--err) 18%,transparent); color:var(--err); }
+  .pill.warn { background:color-mix(in srgb,var(--warn) 20%,transparent); color:var(--warn); }
+  .scroll { flex:1; overflow:auto; }
+  pre { margin:0; padding:14px 16px; font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace; white-space:pre; }
+  .err-list { padding:10px 16px; }
+  .err-row { color:var(--err); font:12px/1.5 ui-monospace,monospace; padding:4px 0; border-bottom:1px dashed var(--line); }
+  .err-row b { color:var(--accent); font-weight:600; }
+  .section-label { padding:8px 16px 2px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); border-top:1px solid var(--line); }
+  .examples { display:flex; gap:6px; flex-wrap:wrap; padding:0 16px 10px; }
+  .examples button { font-size:12px; padding:3px 8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>XLE / XLO playground</h1>
+  <span>compressed layout expressions → validated XDS TSX · standalone (no build)</span>
+</header>
+<main>
+  <div class="col">
+    <div class="bar">
+      <label for="surface">Surface</label>
+      <select id="surface">
+        <option value="auto">Auto</option>
+        <option value="compact">Compact (XLE)</option>
+        <option value="outline">Outline (XLO)</option>
+      </select>
+      <button id="expand" class="primary">Expand →</button>
+    </div>
+    <textarea id="src" spellcheck="false"></textarea>
+    <div class="status" id="status"><span class="pill warn">loading…</span></div>
+    <div class="err-list" id="errors"></div>
+    <div class="section-label">Examples</div>
+    <div class="examples" id="examples"></div>
+    <div class="section-label">Canonical compact</div>
+    <div class="scroll"><pre id="compact"></pre></div>
+    <div class="section-label">Canonical outline</div>
+    <div class="scroll"><pre id="outline"></pre></div>
+  </div>
+  <div class="col">
+    <div class="bar"><label>Expanded TSX</label></div>
+    <div class="scroll"><pre id="code">Press “Expand →”.</pre></div>
+  </div>
+</main>
+
+<script type="module">
+import {checkExpression, expandExpression} from '/xle/browser.mjs';
+
+const EXAMPLES = [
+  ['Dashboard shell', 'A[cp6 @topNav=TN @sideNav=SN] > L > LC > S[p6] > (G[c4 g4] > C{card-callout}*4) + T[striped]'],
+  ['Login card', 'Ctr[h="100dvh"] > C[w=400 p8] > V[g6] >\n  (F > TI"Email"[t=email req] + TI"Password"[t=password req]) +\n  B.primary"Sign in"'],
+  ['Outline form', 'AppShell cp=6\n  topNav: TN\n  Layout > LayoutContent\n    Section p=6\n      Grid cols=4 gap=4\n        Card {card-callout} x4'],
+  ['Table + overlay', 'V > B"Delete"[opens=#confirm] ;; AD#confirm"Delete item?"'],
+];
+
+const $ = id => document.getElementById(id);
+const data = await fetch('/registry.json').then(r => r.json());
+const REG = data.registry, BLOCKS = data.blocks;
+
+function render() {
+  const expr = $('src').value;
+  const form = $('surface').value;
+  const r = checkExpression(expr, REG, {blocks: BLOCKS, form});
+  const status = $('status'), errors = $('errors');
+  status.innerHTML = '';
+  errors.innerHTML = '';
+  if (r.ok && r.valid) {
+    status.innerHTML = `<span class="pill ok">Valid · ${r.form}</span>` +
+      (r.warnings.length ? `<span class="pill warn">${r.warnings.length} warning</span>` : '');
+    $('compact').textContent = r.compact;
+    $('outline').textContent = r.outline;
+    $('expand').disabled = false;
+  } else {
+    status.innerHTML = `<span class="pill err">${r.errors.length} error${r.errors.length===1?'':'s'}</span>`;
+    errors.innerHTML = r.errors.map(e =>
+      `<div class="err-row">${escapeHtml(e.formatted)}${e.suggestions?.length ? ` <b>→ ${escapeHtml(e.suggestions.join(', '))}</b>` : ''}</div>`
+    ).join('');
+    $('compact').textContent = '';
+    $('outline').textContent = '';
+    $('expand').disabled = true;
+  }
+}
+
+function doExpand() {
+  const r = expandExpression($('src').value, REG, {blocks: BLOCKS, form: $('surface').value, name: 'PlaygroundLayout'});
+  $('code').textContent = r.ok ? r.code : r.errors.map(e => e.formatted).join('\n');
+}
+
+function escapeHtml(s) { return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+$('examples').innerHTML = EXAMPLES.map((e, i) => `<button data-i="${i}">${e[0]}</button>`).join('');
+$('examples').addEventListener('click', e => {
+  const i = e.target.dataset.i;
+  if (i != null) { $('src').value = EXAMPLES[i][1]; render(); }
+});
+$('src').addEventListener('input', render);
+$('surface').addEventListener('change', render);
+$('expand').addEventListener('click', doExpand);
+
+$('src').value = EXAMPLES[0][1];
+render();
+</script>
+</body>
+</html>
