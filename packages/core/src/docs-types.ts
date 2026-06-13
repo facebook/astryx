@@ -815,6 +815,8 @@ export type TemplateCategory =
   | 'Settings'
   | 'Settings - Dialog'
   | 'Settings - Sidebar'
+  | 'Settings - Panels'
+  | 'Settings - Form'
   // Login
   | 'Login - Basic'
   | 'Login - Card'
