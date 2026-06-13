@@ -156,7 +156,7 @@ export function XDSEmptyState({
       ref={ref}
       role="status"
       {...mergeProps(
-        xdsThemeProps('emptystate', {variant: isCompact ? 'compact' : null}),
+        xdsThemeProps('empty-state', {variant: isCompact ? 'compact' : null}),
         stylex.props(
           styles.container,
           isCompact && styles.containerCompact,

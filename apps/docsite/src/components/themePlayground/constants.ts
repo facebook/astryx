@@ -329,7 +329,7 @@ export const ALL_COMPONENT_NAMES = [
   'dialog',
   'divider',
   'dropdown-menu',
-  'emptystate',
+  'empty-state',
   'field',
   'heading',
   'hovercard',
