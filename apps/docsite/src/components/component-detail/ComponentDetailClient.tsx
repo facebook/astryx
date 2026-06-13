@@ -200,6 +200,11 @@ function ComponentDetailInner({
                     name={comp.name}
                     state={state}
                     missingRequiredProps={missingRequiredProps}
+                    onPropChange={setProp}
+                    canControlOpenState={
+                      comp.props.some(prop => prop.name === 'isOpen') &&
+                      comp.props.some(prop => prop.name === 'onOpenChange')
+                    }
                   />
                 </div>
 

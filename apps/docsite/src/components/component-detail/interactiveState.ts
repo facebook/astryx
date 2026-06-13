@@ -3,8 +3,8 @@
 /**
  * Builds the initial prop state for component detail interactive previews.
  * Keeps runtime-only defaults (callbacks, mock search sources, descriptor
- * resolution) out of the generated JSON registries while preserving typed
- * option values from parsed controls.
+ * resolution) and preview-only controlled callbacks out of the generated JSON
+ * registries while preserving typed option values from parsed controls.
  */
 
 import {allSyntaxPresets} from '@xds/core/theme/syntax';
@@ -205,4 +205,23 @@ export function getMissingRequiredProps(
   return knobs
     .filter(({row}) => row.required === true && state[row.name] === undefined)
     .map(({row}) => row.name);
+}
+
+export function buildRuntimePreviewState(
+  state: Record<string, unknown>,
+  onPropChange?: (propName: string, value: unknown) => void,
+  options?: {canControlOpenState?: boolean},
+): Record<string, unknown> {
+  if (
+    onPropChange == null ||
+    options?.canControlOpenState !== true ||
+    typeof state.isOpen !== 'boolean'
+  ) {
+    return state;
+  }
+
+  return {
+    ...state,
+    onOpenChange: (isOpen: boolean) => onPropChange('isOpen', isOpen),
+  };
 }

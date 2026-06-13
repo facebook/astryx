@@ -22,6 +22,7 @@ import {Code} from 'lucide-react';
 import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {
   buildInitialState,
+  buildRuntimePreviewState,
   getMissingRequiredProps,
   pickPrimaryProps,
 } from './interactiveState';
@@ -187,10 +188,14 @@ export function InteractivePreviewStage({
   name,
   state,
   missingRequiredProps = [],
+  onPropChange,
+  canControlOpenState = false,
 }: {
   name: string;
   state: Record<string, unknown>;
   missingRequiredProps?: string[];
+  onPropChange?: (propName: string, value: unknown) => void;
+  canControlOpenState?: boolean;
 }) {
   const [showCode, setShowCode] = useState(false);
   const Component = getXDSComponent(name);
@@ -246,6 +251,10 @@ export function InteractivePreviewStage({
     );
   }
 
+  const runtimeState = useMemo(
+    () => buildRuntimePreviewState(state, onPropChange, {canControlOpenState}),
+    [state, onPropChange, canControlOpenState],
+  );
   const code = generateCode(name, state);
 
   return (
@@ -293,8 +302,8 @@ export function InteractivePreviewStage({
               width: '100%',
               padding: 'var(--spacing-4)',
             }}>
-            <PreviewErrorBoundary resetKeys={[Component, state]}>
-              {createElement(Component, state)}
+            <PreviewErrorBoundary resetKeys={[Component, runtimeState]}>
+              {createElement(Component, runtimeState)}
             </PreviewErrorBoundary>
           </XDSCenter>
         )}
