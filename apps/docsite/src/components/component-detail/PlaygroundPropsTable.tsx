@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file PlaygroundPropsTable.tsx
+ * @input Prop docs, control descriptors, current playground values
+ * @output Props table rows with inline controls that write typed prop values
+ * @position Component detail page — props table and interactive preview knobs.
+ */
+
 'use client';
 
 import {createElement, useState} from 'react';
@@ -17,7 +24,7 @@ import {Minus, Plus} from 'lucide-react';
 import {useMediaQuery} from '@xds/core/hooks';
 import {allSyntaxPresets} from '@xds/core/theme/syntax';
 import {themeObjectsFull} from '../../generated/themeRegistry';
-import type {PropControlDescriptor} from './parsePropType';
+import {coerceEnumOption, type PropControlDescriptor} from './parsePropType';
 import type {KnobProp} from './InteractivePreview';
 import {resolveElementDescriptor} from './resolveElements';
 import type {
@@ -379,7 +386,9 @@ function InlineControl({
               onChange(undefined);
               return;
             }
-            onChange(isNumeric ? Number(next) : next);
+            onChange(
+              isNumeric ? Number(next) : coerceEnumOption(control, next),
+            );
           }}
         />
       );

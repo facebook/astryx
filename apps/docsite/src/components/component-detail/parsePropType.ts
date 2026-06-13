@@ -3,8 +3,14 @@
 import {getIconRegistry} from '@xds/core/Icon';
 
 /**
+ * @file parsePropType.ts
+ * @input Stringified TypeScript prop types from component docs
+ * @output Control descriptors and typed default/option coercion helpers
+ * @position Component detail and playground prop-control generation.
+ *
  * Parses a stringified TypeScript prop type into a control descriptor
- * that the playground can render an input for.
+ * that the playground can render an input for. Literal unions become
+ * enum controls, including mixed string-literal + boolean unions.
  *
  * Ported from the internal docsite (nest/apps/xds).
  */
@@ -16,8 +22,17 @@ export interface ElementOption {
 
 type InputStatusOption = 'error' | 'warning' | 'success';
 
+export type EnumOptionValue = string | number | boolean;
+
+export interface EnumPropControlDescriptor {
+  kind: 'enum';
+  options: string[];
+  allowEmpty: boolean;
+  optionValues?: Record<string, EnumOptionValue>;
+}
+
 export type PropControlDescriptor =
-  | {kind: 'enum'; options: string[]; allowEmpty: boolean}
+  | EnumPropControlDescriptor
   | {kind: 'input-status'; options: InputStatusOption[]; allowEmpty: boolean}
   | {kind: 'theme'}
   | {kind: 'syntax-theme'}
@@ -207,19 +222,45 @@ export function parsePropType(
 
   const parts = splitUnion(t);
   const literals: string[] = [];
+  const optionValues: Record<string, EnumOptionValue> = {};
   let allowEmpty = false;
   let onlyLiterals = true;
+  let hasNonBooleanLiteral = false;
+  let hasOptionValueOverrides = false;
+
+  function addLiteral(value: string): void {
+    if (!literals.includes(value)) {
+      literals.push(value);
+    }
+  }
+
+  function addOptionValue(option: string, value: EnumOptionValue): void {
+    optionValues[option] = value;
+    hasOptionValueOverrides = true;
+  }
 
   for (const part of parts) {
     if (part === 'undefined' || part === 'null') {
       allowEmpty = true;
       continue;
     }
+    if (part === 'boolean') {
+      addLiteral('true');
+      addLiteral('false');
+      addOptionValue('true', true);
+      addOptionValue('false', false);
+      continue;
+    }
     const sm = STRING_LITERAL_RE.exec(part);
     if (sm) {
-      literals.push(sm[1]);
+      hasNonBooleanLiteral = true;
+      addLiteral(sm[1]);
     } else if (NUMBER_LITERAL_RE.test(part)) {
-      literals.push(part);
+      hasNonBooleanLiteral = true;
+      addLiteral(part);
+    } else if (part === 'true' || part === 'false') {
+      addLiteral(part);
+      addOptionValue(part, part === 'true');
     } else {
       onlyLiterals = false;
       break;
@@ -227,17 +268,31 @@ export function parsePropType(
   }
 
   if (onlyLiterals && literals.length >= 2) {
-    return {kind: 'enum', options: literals, allowEmpty};
-  }
-
-  if (
-    onlyLiterals === false &&
-    parts.every(p => p === 'true' || p === 'false')
-  ) {
-    return {kind: 'boolean'};
+    if (!hasNonBooleanLiteral) {
+      return {kind: 'boolean'};
+    }
+    return {
+      kind: 'enum',
+      options: literals,
+      allowEmpty,
+      ...(hasOptionValueOverrides ? {optionValues} : {}),
+    };
   }
 
   return {kind: 'unknown'};
+}
+
+export function coerceEnumOption(
+  control: EnumPropControlDescriptor,
+  option: string,
+): EnumOptionValue {
+  if (
+    control.optionValues != null &&
+    Object.prototype.hasOwnProperty.call(control.optionValues, option)
+  ) {
+    return control.optionValues[option];
+  }
+  return option;
 }
 
 export function coerceDefault(
@@ -262,7 +317,9 @@ export function coerceDefault(
     case 'enum': {
       const m = STRING_LITERAL_RE.exec(v);
       const stripped = m ? m[1] : v;
-      return control.options.includes(stripped) ? stripped : undefined;
+      return control.options.includes(stripped)
+        ? coerceEnumOption(control, stripped)
+        : undefined;
     }
     case 'string': {
       const m = STRING_LITERAL_RE.exec(v);
