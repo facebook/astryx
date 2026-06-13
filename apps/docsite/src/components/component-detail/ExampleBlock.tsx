@@ -12,15 +12,12 @@ import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSSpinner} from '@xds/core/Spinner';
 import {XDSButton} from '@xds/core/Button';
 import {XDSHStack} from '@xds/core/Layout';
-import {XDSTheme} from '@xds/core/theme';
-import {neutralTheme} from '@xds/theme-neutral/built';
-import {useThemeMode} from '../../app/providers';
 import type {ExampleEntry} from '../../generated/exampleRegistry';
+import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {buildPlaygroundHref} from '../playgroundLink';
 import {trackOpenPlayground} from '../../lib/analytics';
 
 function LivePreview({entry}: {entry: ExampleEntry}) {
-  const {mode} = useThemeMode();
   const [Component, setComponent] = useState<ComponentType | null>(null);
   const [error, setError] = useState(false);
 
@@ -50,21 +47,19 @@ function LivePreview({entry}: {entry: ExampleEntry}) {
   }
 
   return (
-    <XDSTheme theme={neutralTheme} mode={mode}>
-      <div
-        style={{
-          width: '100%',
-          overflow: 'auto',
-          minHeight: 200,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-        <div style={{minWidth: 'fit-content', padding: 'var(--spacing-4)'}}>
-          <Component />
-        </div>
+    <div
+      style={{
+        width: '100%',
+        overflow: 'auto',
+        minHeight: 200,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+      <div style={{minWidth: 'fit-content', padding: 'var(--spacing-4)'}}>
+        <Component />
       </div>
-    </XDSTheme>
+    </div>
   );
 }
 
@@ -76,49 +71,51 @@ export function ExampleBlock({entry}: ExampleBlockProps) {
   const [tab, setTab] = useState<string>('description');
 
   return (
-    <XDSCard padding={3}>
-      <XDSText type="body" weight="medium">
-        {entry.name}
-      </XDSText>
+    <ComponentPreviewTheme>
+      <XDSCard padding={3}>
+        <XDSText type="body" weight="medium">
+          {entry.name}
+        </XDSText>
 
-      <LivePreview entry={entry} />
+        <LivePreview entry={entry} />
 
-      <XDSSection variant="muted" padding={1} dividers={['top']}>
-        <XDSHStack
-          gap={1}
-          style={{justifyContent: 'space-between', alignItems: 'center'}}>
-          <XDSTabList value={tab} onChange={setTab} size="sm">
-            <XDSTab value="description" label="Description" />
-            <XDSTab value="code" label="Code" />
-          </XDSTabList>
-          {entry.source && (
-            <XDSButton
-              label="Open in Playground"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                trackOpenPlayground({page: 'components', item: entry.name});
-                window.location.href = buildPlaygroundHref(entry.source);
-              }}
+        <XDSSection variant="muted" padding={1} dividers={['top']}>
+          <XDSHStack
+            gap={1}
+            style={{justifyContent: 'space-between', alignItems: 'center'}}>
+            <XDSTabList value={tab} onChange={setTab} size="sm">
+              <XDSTab value="description" label="Description" />
+              <XDSTab value="code" label="Code" />
+            </XDSTabList>
+            {entry.source && (
+              <XDSButton
+                label="Open in Playground"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  trackOpenPlayground({page: 'components', item: entry.name});
+                  window.location.href = buildPlaygroundHref(entry.source);
+                }}
+              />
+            )}
+          </XDSHStack>
+        </XDSSection>
+        <XDSSection variant="muted" padding={tab === 'code' ? 0 : 4}>
+          {tab === 'description' ? (
+            <XDSText type="body">
+              {entry.description || 'No description available.'}
+            </XDSText>
+          ) : (
+            <CodeExampleBlock
+              code={entry.source}
+              language="tsx"
+              hasCopyButton
+              container="section"
+              width="100%"
             />
           )}
-        </XDSHStack>
-      </XDSSection>
-      <XDSSection variant="muted" padding={tab === 'code' ? 0 : 4}>
-        {tab === 'description' ? (
-          <XDSText type="body">
-            {entry.description || 'No description available.'}
-          </XDSText>
-        ) : (
-          <CodeExampleBlock
-            code={entry.source}
-            language="tsx"
-            hasCopyButton
-            container="section"
-            width="100%"
-          />
-        )}
-      </XDSSection>
-    </XDSCard>
+        </XDSSection>
+      </XDSCard>
+    </ComponentPreviewTheme>
   );
 }

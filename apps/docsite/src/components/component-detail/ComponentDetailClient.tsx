@@ -14,6 +14,7 @@ import {CodeExampleBlock} from '../CodeExampleBlock';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {useMediaQuery} from '@xds/core/hooks';
 import {ShowcasePreview} from './ShowcasePreview';
+import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {BestPractices} from './BestPractices';
 import {HookSignature} from './HookSignature';
 import {ExampleBlock} from './ExampleBlock';
@@ -56,9 +57,11 @@ function OverviewContent({
   return (
     <XDSVStack gap={8}>
       {hasShowcase && (
-        <XDSCard variant="muted" padding={0}>
-          <ShowcasePreview name={comp.name} />
-        </XDSCard>
+        <ComponentPreviewTheme>
+          <XDSCard variant="muted" padding={0}>
+            <ShowcasePreview name={comp.name} />
+          </XDSCard>
+        </ComponentPreviewTheme>
       )}
 
       {comp.usage && (
