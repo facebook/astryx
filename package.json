@@ -65,26 +65,5 @@
   "lint-staged": {
     "*.{ts,tsx}": "eslint --cache --fix",
     "*.{ts,tsx,md}": "prettier --write"
-  },
-  "pnpm": {
-    "overrides": {
-      "prettier": "^3.8.3",
-      "postcss": "^8.5.10",
-      "picomatch": "^4.0.4",
-      "micromatch>picomatch": "^2.3.2",
-      "anymatch>picomatch": "^2.3.2",
-      "minimatch": "^9.0.7",
-      "dompurify": "^3.3.2",
-      "vite": "^6.4.2",
-      "tmp": ">=0.2.6"
-    },
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "@swc/core",
-      "sharp",
-      "@parcel/watcher",
-      "core-js",
-      "puppeteer"
-    ]
   }
 }
