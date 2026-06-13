@@ -67,6 +67,13 @@ export const docs = {
 export const docsDense = {
   description:
     'Validation feedback message for fields/custom controls. Supports error, warning, success and attached/detached variants.',
+  usage: {
+    bestPractices: [
+      {guidance: true, description: 'Use attached status below bordered inputs when message belongs to that input.'},
+      {guidance: true, description: 'Use detached status for checkboxes, switches, and custom controls where overlap is visually awkward.'},
+      {guidance: false, description: 'Use FieldStatus for general alerts or page-level notices; use Banner or Toast instead.'},
+    ],
+  },
   propDescriptions: {
     type: 'error/warning/success status tone',
     message: 'visible validation feedback text',
