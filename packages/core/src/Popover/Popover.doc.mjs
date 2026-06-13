@@ -35,13 +35,13 @@ export const docs = {
         },
         {
           name: 'placement',
-          type: 'LayerPlacement',
+          type: "'above' | 'below' | 'start' | 'end'",
           description: 'Position placement relative to the trigger.',
           default: "'below'",
         },
         {
           name: 'alignment',
-          type: 'LayerAlignment',
+          type: "'start' | 'center' | 'end'",
           description: 'Alignment along the placement axis.',
           default: "'start'",
         },
@@ -164,13 +164,13 @@ export const docsZh = {
         },
         {
           name: 'placement',
-          type: 'LayerPlacement',
+          type: "'above' | 'below' | 'start' | 'end'",
           description: '相对于触发器的位置放置方式。',
           default: "'below'",
         },
         {
           name: 'alignment',
-          type: 'LayerAlignment',
+          type: "'start' | 'center' | 'end'",
           description: '沿放置轴的对齐方式。',
           default: "'start'",
         },

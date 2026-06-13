@@ -68,8 +68,8 @@ export const docs = {
     },
     {
       name: 'hasTruncateTooltip',
-      type: 'boolean | LayerPlacement',
-      description: 'Controls tooltip behavior for truncated text. true shows the tooltip at the default position, false disables it, or a LayerPlacement string sets a specific position.',
+      type: "boolean | 'above' | 'below' | 'start' | 'end'",
+      description: "Controls tooltip behavior for truncated text. true shows the tooltip at the default position, false disables it, or a placement string ('above' | 'below' | 'start' | 'end') sets a specific position.",
       default: 'true',
     },
     {
