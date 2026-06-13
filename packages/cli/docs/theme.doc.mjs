@@ -576,7 +576,7 @@ function ChartConfig() {
         },
         {
           type: 'prose',
-          text: 'See `npx xds docs styling` for component-level customization and `npx xds docs tokens` for the full token reference.',
+          text: 'See `npx xds docs styling-libraries` for styling-library interop and `npx xds docs tokens` for the full token reference.',
         },
       ],
     },

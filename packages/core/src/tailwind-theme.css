@@ -1,34 +1,38 @@
 /* Copyright (c) Meta Platforms, Inc. and affiliates. */
 
 /**
- * XDS Tailwind Bridge
+ * Tailwind Bridge
  *
- * Maps XDS design tokens to Tailwind CSS v4 theme variables so you can use
- * Tailwind utility classes backed by XDS's theming system.
+ * Maps design tokens to Tailwind CSS v4 theme variables so you can use
+ * Tailwind utility classes backed by the active theme.
  *
  * Instead of: class="text-[var(--color-text-primary)] bg-[var(--color-background-surface)]"
  * Write:      class="text-primary bg-surface"
  *
  * Requires:
  *   - Tailwind CSS v4+
- *   - XDS CSS loaded (either `@xds/core/xds.css` or a theme package)
+ *   - core CSS and a theme CSS file loaded before Tailwind utilities
  *
  * Usage:
+ *   @layer reset, theme, base, xds-base, xds-theme, components, utilities;
+ *
+ *   @import "tailwindcss/theme.css" layer(theme);
+ *   @import "tailwindcss/preflight.css" layer(base);
+ *   @import "@xds/core/reset.css";
+ *   @import "@xds/core/xds.css";
+ *   @import "@xds/theme-default/theme.css";
  *   @import "@xds/core/tailwind-theme.css";
+ *   @import "tailwindcss/utilities.css" layer(utilities);
  *
- * Or if you manage your own Tailwind import:
- *   @import "tailwindcss";
- *   @import "@xds/core/tailwind-theme.css" layer(theme);
- *
- * @position infrastructure — sits between XDS tokens and Tailwind utility generation
+ * @position infrastructure — sits between system tokens and Tailwind utility generation
  */
 
 /*
  * `@theme inline` registers theme variables that Tailwind uses to generate
  * utility classes, WITHOUT emitting CSS declarations. The actual values come
- * from XDS's own CSS custom properties (set by xds.css / theme packages).
+ * from the system CSS custom properties (set by xds.css / theme packages).
  *
- * This means theme switching just works — when XDS tokens change (e.g. dark
+ * This means theme switching just works — when system tokens change (e.g. dark
  * mode, custom theme), Tailwind utilities automatically resolve to the new
  * values because they reference the same CSS custom properties.
  */
@@ -36,7 +40,7 @@
   /* =========================================================================
    * Colors — Semantic
    *
-   * These map XDS's purpose-specific tokens to Tailwind color utilities.
+   * These map purpose-specific tokens to Tailwind color utilities.
    * Each name is chosen to read naturally with its most common utility:
    *   text-primary, bg-surface, border-default
    *
@@ -91,7 +95,7 @@
   --color-shadow: var(--color-shadow);
 
   /* --- Hue palette ---
-   * XDS splits each hue into background/border/icon/text sub-tokens.
+   * Each hue is split into background/border/icon/text sub-tokens.
    * We expose each sub-token as a separate Tailwind color so you can
    * pick the right intensity per use case:
    *
@@ -144,12 +148,12 @@
   /* =========================================================================
    * Spacing
    *
-   * XDS uses a named scale (--spacing-0 through --spacing-12) with a 4px base.
+   * The system uses a named scale (--spacing-0 through --spacing-12) with a 4px base.
    * Tailwind v4 uses a base --spacing value with numeric multipliers:
    *   p-4 → calc(var(--spacing) * 4)
    *
-   * By referencing --spacing-1 (the XDS base unit), Tailwind's scale
-   * stays in sync with XDS: p-1 = 4px, p-2 = 8px, p-4 = 16px, etc.
+   * By referencing --spacing-1 (the base unit), Tailwind's scale
+   * stays in sync with the system: p-1 = 4px, p-2 = 8px, p-4 = 16px, etc.
    * ========================================================================= */
   --spacing: var(--spacing-1);
 
@@ -163,9 +167,9 @@
   --font-heading: var(--font-family-heading);
 
   /* --- Font sizes ---
-   * Maps XDS's named scale to Tailwind's text-* utilities.
-   * XDS sizes don't map 1:1 to Tailwind's default scale, so we
-   * use XDS names to avoid confusion.
+   * Maps the named scale to Tailwind's text-* utilities.
+   * System sizes don't map 1:1 to Tailwind's default scale, so we
+   * use system names to avoid confusion.
    */
   --text-2xs: var(--font-size-2xs);
   --text-xs: var(--font-size-xs);
@@ -187,8 +191,8 @@
   /* =========================================================================
    * Border radius
    *
-   * Maps XDS's semantic radius tokens to Tailwind's rounded-* utilities.
-   * XDS has: inner (4px) → element (8px) → container (12px) → page (28px)
+   * Maps semantic radius tokens to Tailwind's rounded-* utilities.
+   * Radius scale: inner (4px) → element (8px) → container (12px) → page (28px)
    * ========================================================================= */
   --radius-none: var(--radius-none);
   --radius-xs: var(--radius-inner);
@@ -208,7 +212,7 @@
   /* =========================================================================
    * Transitions & Animation
    *
-   * XDS has a richer duration/easing system than Tailwind's defaults.
+   * The system has a richer duration/easing scale than Tailwind's defaults.
    * We map the primary durations and expose the standard easing.
    * ========================================================================= */
   --transition-property-colors: color, background-color, border-color, text-decoration-color, fill, stroke;
