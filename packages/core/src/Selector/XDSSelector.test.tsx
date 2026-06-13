@@ -133,14 +133,14 @@ describe('XDSSelector', () => {
         label="Role"
         options={[{value: 'admin', label: 'Admin'}]}
         value={undefined}
-        onChange={() => {}}>
-        {option => (
+        onChange={() => {}}
+        renderOption={option => (
           <XDSSelectorOption
             label={option.label}
             endContent={<span data-testid="option-badge">Owner</span>}
           />
         )}
-      </XDSSelector>,
+      />,
     );
 
     await user.click(screen.getByRole('combobox'));

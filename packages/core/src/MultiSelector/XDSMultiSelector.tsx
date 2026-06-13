@@ -499,9 +499,9 @@ export interface XDSMultiSelectorProps<
 
   /**
    * Custom render function for options.
-   * Only called for selectable options (not dividers/sections).
+   * Only called for selectable options (not dividers/sections or the select-all row).
    */
-  children?: (option: XDSMultiSelectorOptionData) => ReactNode;
+  renderOption?: (option: XDSMultiSelectorOptionData) => ReactNode;
 
   /**
    * Whether the dropdown starts open on mount.
@@ -555,7 +555,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
   searchPlaceholder = 'Search...',
   triggerDisplay = 'count',
   maxBadges = 3,
-  children,
+  renderOption,
   isDefaultOpen = false,
   'data-testid': testId,
   xstyle,
@@ -969,8 +969,8 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
               size={size === 'lg' ? 'md' : size}
             />
           </div>
-          {children && !isSelectAll ? (
-            children(item)
+          {renderOption && !isSelectAll ? (
+            renderOption(item)
           ) : (
             <span
               {...stylex.props(
@@ -984,7 +984,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
       );
     },
     [
-      children,
+      renderOption,
       highlightedIndex,
       optimisticValue,
       allEnabledSelected,
