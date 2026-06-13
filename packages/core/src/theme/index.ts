@@ -134,6 +134,17 @@ export type {
 
 export {useXDSTheme, XDSThemeContext} from './useXDSTheme';
 export type {UseXDSThemeReturn, XDSThemeContextValue} from './useXDSTheme';
+export {
+  resolveXDSThemeToken,
+  resolveXDSThemeTokens,
+  xdsTokenVar,
+  xdsTokenVars,
+} from './tokens';
+export type {
+  ResolveXDSThemeTokenOptions,
+  ResolveXDSThemeTokensOptions,
+  XDSResolvedThemeMode,
+} from './tokens';
 
 export type {
   ThemeMode,
