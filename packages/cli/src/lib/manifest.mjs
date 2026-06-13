@@ -86,9 +86,9 @@ const EXAMPLES = {
   manifest: ['xds manifest --json', 'xds --json'],
   doctor: ['xds doctor', 'xds doctor --json'],
   init: ['xds init'],
-  'layout expand': [`xds layout expand 'V[g6] > C{card-callout}*4' ./src/Page.tsx`],
-  'layout check': [`xds layout check 'A[cp6] > L > LC > S[p6]' --json`],
-  'layout grammar': ['xds layout grammar'],
+  'layout expand': [`xds layout expand 'V[g6] > C{card-callout}*4' ./src/Page.tsx`, `xds layout expand --target glasses 'Scr > C[p4] > V[g2] > B.primary"Start"'`],
+  'layout check': [`xds layout check 'A[cp6] > L > LC > S[p6]' --json`, `xds layout check --target glasses 'Scr > C[p4] > Tx"Status"' --json`],
+  'layout grammar': ['xds layout grammar', 'xds layout grammar --target glasses'],
 };
 
 /**

@@ -4,7 +4,7 @@
  * @file Programmatic API for the layout command (XLE/XLO).
  *
  * `xds layout` turns token-compressed layout expressions into validated
- * XDS TSX. Two input surfaces — compact (Emmet-derived XLE) and outline
+ * XDS TSX or native-shaped target payloads. Two input surfaces — compact (Emmet-derived XLE) and outline
  * (indentation-based XLO) — share one AST, one validator, and one
  * expander. See the research: pastes P2376666892 (spec) and P2376717669
  * (outline surface).
@@ -22,6 +22,7 @@ import {assertWithin, isFilePathArg, PathSafetyError} from '../utils/path-safety
 import {parse, detectForm, XLEParseError} from '../lib/xle/parse.mjs';
 import {validate} from '../lib/xle/validate.mjs';
 import {expand} from '../lib/xle/expand.mjs';
+import {emitPayload} from '../lib/xle/payload.mjs';
 import {toCompact, toOutline} from '../lib/xle/print.mjs';
 import {buildRegistry, ALIAS_TABLE} from '../lib/xle/registry.mjs';
 import {discoverTemplates, stripTemplateAssetRefs} from './template.mjs';
@@ -118,8 +119,8 @@ function formatIssue(issue) {
  * Parse + validate, throwing structured XDSErrors on failure.
  * Returns {doc, registry, blocks, warnings}.
  */
-async function analyze(expression, {form = 'auto', loose = false, cwd = process.cwd()} = {}) {
-  const registry = await buildRegistry({cwd});
+async function analyze(expression, {form = 'auto', loose = false, cwd = process.cwd(), target = 'core'} = {}) {
+  const registry = await buildRegistry({cwd, target});
   const blocks = await loadBlocks(cwd);
 
   let doc;
@@ -145,21 +146,41 @@ async function analyze(expression, {form = 'auto', loose = false, cwd = process.
  *
  * @param {string} expression
  * @param {object} [options]
- * @param {string} [options.targetPath] - write TSX here (validated against cwd)
+ * @param {string} [options.targetPath] - write TSX/payload artifact here (validated against cwd)
  * @param {'compact'|'outline'|'auto'} [options.form]
  * @param {boolean} [options.loose] - downgrade unknown {hints} to TODO warnings
  * @param {string} [options.name] - generated component name
  * @param {string} [options.cwd]
+ * @param {'core'|'glasses'} [options.target] - Component package target to validate/expand against.
+ * @param {'auto'|'tsx'|'payload'} [options.emit] - Output format. Auto means TSX for core, payload for glasses.
  */
 export async function layoutExpand(expression, options = {}) {
-  const {targetPath, form = 'auto', loose = false, name, cwd = process.cwd()} = options;
-  const {doc, registry, blocks, errors, warnings} = await analyze(expression, {form, loose, cwd});
+  const {targetPath, form = 'auto', loose = false, name, cwd = process.cwd(), target = 'core', emit = 'auto'} = options;
+  const {doc, registry, blocks, errors, warnings} = await analyze(expression, {form, loose, cwd, target});
 
   if (errors.length > 0) {
     throw new XDSError(
       `Layout expression is invalid:\n` + errors.map(e => `  - ${formatIssue(e)}`).join('\n'),
       errors.flatMap(e => (e.suggestions || []).map(s => ({name: s, reason: 'did you mean this?'}))),
       ERROR_CODES.ERR_LAYOUT_INVALID,
+    );
+  }
+
+  const resolvedEmit = emit === 'auto'
+    ? (target === 'glasses' ? 'payload' : 'tsx')
+    : emit;
+  if (resolvedEmit !== 'tsx' && resolvedEmit !== 'payload') {
+    throw new XDSError(
+      `--emit must be one of auto, tsx, payload — got '${emit}'`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+  if (target === 'glasses' && resolvedEmit === 'tsx') {
+    throw new XDSError(
+      `--target glasses emits native payloads; use --emit payload or leave --emit as auto`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
     );
   }
 
@@ -171,11 +192,10 @@ export async function layoutExpand(expression, options = {}) {
       ERROR_CODES.ERR_INVALID_ARGUMENT,
     );
   }
-  const blockModules = buildBlockModules(doc, blocks);
-  const result = expand(doc, registry, {componentName, blockModules});
 
   let written = null;
-  if (targetPath) {
+  const writeArtifact = (contents, extension) => {
+    if (!targetPath) return null;
     let resolved;
     try {
       resolved = assertWithin(targetPath, cwd, {label: 'layout target path'});
@@ -187,16 +207,44 @@ export async function layoutExpand(expression, options = {}) {
     }
     const filePath = isFilePathArg(targetPath)
       ? resolved
-      : path.join(resolved, `${componentName}.tsx`);
+      : path.join(resolved, `${componentName}.${extension}`);
     fs.mkdirSync(path.dirname(filePath), {recursive: true});
-    fs.writeFileSync(filePath, result.code);
-    written = path.relative(cwd, filePath);
+    fs.writeFileSync(filePath, contents);
+    return path.relative(cwd, filePath);
+  };
+
+  if (resolvedEmit === 'payload') {
+    const result = emitPayload(doc, registry);
+    written = writeArtifact(JSON.stringify(result.payload, null, 2) + '\n', 'json');
+    return {
+      type: 'layout.expand',
+      data: {
+        form: form === 'auto' ? detectForm(expression) : form,
+        target: registry.target || target,
+        packageName: registry.packageName,
+        emit: 'payload',
+        payload: result.payload,
+        componentsUsed: result.componentsUsed,
+        states: 0,
+        todos: result.todos,
+        blocksReferenced: [],
+        warnings: warnings.map(formatIssue),
+        written,
+      },
+    };
   }
+
+  const blockModules = buildBlockModules(doc, blocks);
+  const result = expand(doc, registry, {componentName, blockModules});
+  written = writeArtifact(result.code, 'tsx');
 
   return {
     type: 'layout.expand',
     data: {
       form: form === 'auto' ? detectForm(expression) : form,
+      target: registry.target || target,
+      packageName: registry.packageName,
+      emit: 'tsx',
       code: result.code,
       componentsUsed: result.componentsUsed,
       states: result.states,
@@ -213,14 +261,16 @@ export async function layoutExpand(expression, options = {}) {
  * Validates without expanding; echoes both canonical surfaces.
  */
 export async function layoutCheck(expression, options = {}) {
-  const {form = 'auto', loose = false, cwd = process.cwd()} = options;
-  const {doc, errors, warnings} = await analyze(expression, {form, loose, cwd});
+  const {form = 'auto', loose = false, cwd = process.cwd(), target = 'core'} = options;
+  const {doc, registry, errors, warnings} = await analyze(expression, {form, loose, cwd, target});
 
   return {
     type: 'layout.check',
     data: {
       valid: errors.length === 0,
       form: doc.form,
+      target: registry.target || target,
+      packageName: registry.packageName,
       errors: errors.map(e => ({...e, formatted: formatIssue(e)})),
       warnings: warnings.map(formatIssue),
       compact: toCompact(doc),
@@ -234,8 +284,8 @@ export async function layoutCheck(expression, options = {}) {
  * generated from this branch's registry (never hand-maintained).
  */
 export async function layoutGrammar(options = {}) {
-  const {cwd = process.cwd()} = options;
-  const registry = await buildRegistry({cwd});
+  const {cwd = process.cwd(), target = 'core'} = options;
+  const registry = await buildRegistry({cwd, target});
 
   const aliasLines = [];
   const byTarget = new Map();
@@ -247,17 +297,30 @@ export async function layoutGrammar(options = {}) {
     aliasLines.push(`${aliases.join('/')}=${target}`);
   }
 
-  const text = `XLE/XLO — XDS layout expressions (branch-generated; aliases reflect this install)
+  const isGlasses = registry.target === 'glasses';
+  const compactExample = isGlasses
+    ? 'Scr[label="Ops brief"] > C[p4] > V[g2] > (Hd"Build health" + Tx.supporting"3 services need attention" + B.primary"Open")'
+    : 'A[cp6 @topNav=TN] > L > LC > S[p6] > (C{card-callout}*4) + T';
+  const outlineExample = isGlasses
+    ? 'Screen label="Ops brief"\n  Card p=4\n    VStack g=2\n      Heading "Build health"\n      Text.supporting "3 services need attention"\n      Button.primary "Open"'
+    : 'indentation = nesting · same-indent = siblings · "repeat N:" block = (...)*N\n           slot lines:  topNav: TN     (or a block:  topNav:\\n    TN ...)';
+  const structureNotes = isGlasses
+    ? '  Scr > C > V/H              root HUD screen, translucent card, shallow stack layout\n  UL > LI                       short glanceable lists; use title/subtitle/meta instead of tables\n  B.primary[action=id]          speakable/gaze action chip with optional native action id'
+    : '  Layout > LH + LC + LF + LP   children auto-route into header/content/footer/start slots\n  T > (TR>THC*4) + (TR>TC*4)*6 rows partition into TableHeader/TableBody automatically\n  TabList/inputs               required value+onChange scaffold typed useState automatically\n  overlays                     compact: tree ;; Dlg#confirm[...] · outline: overlays: section\n                               trigger: B"Delete"[opens=#confirm]';
+  const targetShell = isGlasses ? '@xds/glasses' : '@xds/core';
+
+  const text = `XLE/XLO — XDS layout expressions (${registry.packageName}; branch-generated aliases reflect this target)
 
 WORKFLOW
   xds layout check "<expr>"           validate; echoes canonical compact + outline forms
-  xds layout expand "<expr>" [path]   emit validated TSX (path optional; --name <Pascal>)
+  xds layout expand "<expr>" [path]   emit validated TSX or native payload (path optional; --name <Pascal>)
+  add --target glasses                validate/expand against @xds/glasses instead of @xds/core
+  add --emit payload                  emit a native-shaped component payload instead of TSX
   Errors carry line/col + suggestions. Fix and resubmit; nothing is guessed.
 
 TWO SURFACES, ONE LANGUAGE (autodetected; --form to force)
-  compact: A[cp6 @topNav=TN] > L > LC > S[p6] > (C{card-callout}*4) + T
-  outline: indentation = nesting · same-indent = siblings · "repeat N:" block = (...)*N
-           slot lines:  topNav: TN     (or a block:  topNav:\\n    TN ...)
+  compact: ${compactExample}
+  outline: ${outlineExample}
 
 NODE ANATOMY   Name#id.enum"payload"[attrs]{hint}*N > children
   .enum        unique enum value of any prop:  Bd.success  Tx.lg  B.primary
@@ -275,7 +338,7 @@ ATTRS [...] (outline: bare tokens after the name, no brackets)
   trigger      opens=#id  (a plain attr, no @ — binds an onClick that opens the overlay)
   fill         on a stack child → wraps in <StackItem size="fill">
 
-TEMPLATE REFERENCING  ({hint} pulls in real content — this is how XLE reaches past the @xds/core shell)
+TEMPLATE REFERENCING  ({hint} pulls in real content — this is how XLE reaches past the ${targetShell} shell)
   C{card-callout}              splice a template block (xds template --list --type block):
                               the block is co-defined once in the file, referenced, imports merged
   {kpi-card}                   standalone reference (no wrapper element) — place a component directly
@@ -285,17 +348,21 @@ TEMPLATE REFERENCING  ({hint} pulls in real content — this is how XLE reaches 
                                then {kpi-card} → import {KpiCard} + <KpiCard /> (kebab ↔ Pascal)
 
 STRUCTURE THE EXPANDER HANDLES
-  Layout > LH + LC + LF + LP   children auto-route into header/content/footer/start slots
-  T > (TR>THC*4) + (TR>TC*4)*6 rows partition into TableHeader/TableBody automatically
-  TabList/inputs               required value+onChange scaffold typed useState automatically
-  overlays                     compact: tree ;; Dlg#confirm[...] · outline: overlays: section
-                               trigger: B"Delete"[opens=#confirm]
+${structureNotes}
 
 ALIASES (full component names always valid; XDS prefix optional)
   ${aliasLines.join('  ')}
 `;
 
-  return {type: 'layout.grammar', data: {text, aliases: Object.fromEntries(registry.aliases)}};
+  return {
+    type: 'layout.grammar',
+    data: {
+      text,
+      target: registry.target || target,
+      packageName: registry.packageName,
+      aliases: Object.fromEntries(registry.aliases),
+    },
+  };
 }
 
 export {ALIAS_TABLE};

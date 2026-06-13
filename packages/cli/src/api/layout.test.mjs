@@ -19,6 +19,7 @@ import {buildRegistry} from '../lib/xle/registry.mjs';
 // parallel load that can exceed the default 5s test timeout. Warm it once.
 beforeAll(async () => {
   await buildRegistry();
+  await buildRegistry({target: 'glasses'});
 }, 120_000);
 
 const SLOW = 30_000;
@@ -166,6 +167,60 @@ describe('layoutCheck', () => {
   });
 });
 
+describe('glasses layout target', () => {
+  const DESKTOP_TASK_OVERVIEW =
+    'A[@topNav=TN] > L > LC > S[p6] > ' +
+    '(Hd"Project brief" + Tx"Status, risks, and next actions" + ' +
+    'G[c3 g4] > (C[p4] > V[g2] > Hd"Status" + Tx"On track")*3)';
+
+  const GLASSES_TASK_OVERVIEW =
+    'Scr[label="Project brief"] > C[p4] > V[g2] > ' +
+    '(Hd"Project brief" + Tx.supporting"Status: on track" + Bd.info"brief" + B.primary"Open details"[action=openDetails])';
+
+  it('validates a glasses expression against the @xds/glasses package', async () => {
+    const result = await layoutCheck(GLASSES_TASK_OVERVIEW, {target: 'glasses'});
+    expect(result.data.valid).toBe(true);
+    expect(result.data.target).toBe('glasses');
+    expect(result.data.packageName).toBe('@xds/glasses');
+    expect(result.data.compact).toContain('Scr');
+    expect(result.data.outline).toContain('B.primary "Open details" action=openDetails');
+  });
+
+  it('rejects desktop-only layout components for the glasses target', async () => {
+    const result = await layoutCheck('A > L > LC > T', {target: 'glasses'});
+    expect(result.data.valid).toBe(false);
+    const messages = result.data.errors.map(e => e.message).join('\n');
+    expect(messages).toMatch(/Unknown component or alias 'A'/);
+    expect(messages).toMatch(/Unknown component or alias 'T'/);
+  });
+
+  it('expands the same app idea into desktop TSX and a glasses native payload', async () => {
+    const desktop = await layoutExpand(DESKTOP_TASK_OVERVIEW, {name: 'DesktopTaskOverview'});
+    const glasses = await layoutExpand(GLASSES_TASK_OVERVIEW, {name: 'GlassesTaskOverview', target: 'glasses'});
+
+    expectValidTsx(desktop.data.code);
+    expect(desktop.data.emit).toBe('tsx');
+    expect(glasses.data.emit).toBe('payload');
+    expect(desktop.data.packageName).toBe('@xds/core');
+    expect(glasses.data.packageName).toBe('@xds/glasses');
+    expect(desktop.data.code).toContain("from '@xds/core/AppShell'");
+    expect(glasses.data.payload.roots[0]).toMatchObject({
+      type: 'Screen',
+      role: 'surface',
+      renderer: {android: 'ScreenRenderer'},
+      theme: {component: 'screen', mode: 'ambient-adaptive'},
+    });
+    const button = glasses.data.payload.roots[0].children[0].children[0].children[3];
+    expect(button).toMatchObject({
+      type: 'Button',
+      role: 'action',
+      renderer: {android: 'ButtonRenderer'},
+      theme: {component: 'button', mode: 'ambient-adaptive'},
+      props: {action: 'openDetails', variant: 'primary', label: 'Open details'},
+    });
+  }, SLOW);
+});
+
 describe('template referencing', () => {
   it('splices a template block: co-defined once, referenced, imports merged', async () => {
     const result = await layoutExpand('S[p6] > C{card-callout}*3', {name: 'Demo'});
@@ -234,5 +289,14 @@ describe('layoutGrammar', () => {
     expect(result.data.aliases.TB).toBe('TableBody');
     // every alias target must exist — the table is registry-filtered
     expect(Object.values(result.data.aliases)).not.toContain(undefined);
+  });
+
+  it('filters aliases against the glasses package when requested', async () => {
+    const result = await layoutGrammar({target: 'glasses'});
+    expect(result.data.packageName).toBe('@xds/glasses');
+    expect(result.data.aliases.Scr).toBe('Screen');
+    expect(result.data.aliases.C).toBe('Card');
+    expect(result.data.aliases.T).toBeUndefined();
+    expect(result.data.text).toContain('@xds/glasses');
   });
 });

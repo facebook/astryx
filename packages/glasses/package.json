@@ -1,0 +1,42 @@
+{
+  "name": "@xds/glasses",
+  "version": "0.0.14",
+  "private": true,
+  "displayName": "XDS Glasses",
+  "description": "Prototype XDS components for smart glasses HUD surfaces. Used by layout grammar target validation experiments.",
+  "author": "Meta Open Source",
+  "license": "MIT",
+  "homepage": "https://github.com/facebookexperimental/xds#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/facebookexperimental/xds.git",
+    "directory": "packages/glasses"
+  },
+  "bugs": {
+    "url": "https://github.com/facebookexperimental/xds/issues"
+  },
+  "keywords": [
+    "xds",
+    "glasses",
+    "hud",
+    "design-system",
+    "layout-grammar"
+  ],
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./Screen": "./src/Screen/index.ts",
+    "./Card": "./src/Card/index.ts",
+    "./Stack": "./src/Stack/index.ts",
+    "./Text": "./src/Text/index.ts",
+    "./Badge": "./src/Badge/index.ts",
+    "./Button": "./src/Button/index.ts",
+    "./List": "./src/List/index.ts"
+  },
+  "peerDependencies": {
+    "react": ">=19.0.0"
+  }
+}

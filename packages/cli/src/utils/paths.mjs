@@ -16,19 +16,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const CLI_ROOT = path.resolve(__dirname, '..', '..');
 
 /**
- * Find packages/core directory by walking up from startDir.
- * Also checks node_modules/@xds/core for installed usage.
+ * Find an XDS package directory by walking up from startDir.
+ * Also checks node_modules/@xds/{packageName} for installed usage.
  */
-export function findCoreDir(startDir = process.cwd()) {
+export function findXdsPackageDir(packageName, startDir = process.cwd()) {
   let dir = startDir;
 
   for (let i = 0; i < 5; i++) {
-    const candidate = path.join(dir, 'packages', 'core');
+    const candidate = path.join(dir, 'packages', packageName);
     if (fs.existsSync(candidate)) {
       return candidate;
     }
 
-    const nodeModules = path.join(dir, 'node_modules', '@xds', 'core');
+    const nodeModules = path.join(dir, 'node_modules', '@xds', packageName);
     if (fs.existsSync(nodeModules)) {
       return nodeModules;
     }
@@ -39,6 +39,14 @@ export function findCoreDir(startDir = process.cwd()) {
   }
 
   return null;
+}
+
+/**
+ * Find packages/core directory by walking up from startDir.
+ * Also checks node_modules/@xds/core for installed usage.
+ */
+export function findCoreDir(startDir = process.cwd()) {
+  return findXdsPackageDir('core', startDir);
 }
 
 /**

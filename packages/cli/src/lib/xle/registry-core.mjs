@@ -26,7 +26,7 @@
  */
 export const ALIAS_TABLE = {
   // Layout core
-  A: 'AppShell', L: 'Layout', LH: 'LayoutHeader', LC: 'LayoutContent',
+  A: 'AppShell', Scr: 'Screen', L: 'Layout', LH: 'LayoutHeader', LC: 'LayoutContent',
   LF: 'LayoutFooter', LP: 'LayoutPanel', V: 'VStack', H: 'HStack',
   SI: 'StackItem', G: 'Grid', GS: 'GridSpan', S: 'Section', Ctr: 'Center',
   F: 'FormLayout', D: 'Divider', Tbar: 'Toolbar', AR: 'AspectRatio',

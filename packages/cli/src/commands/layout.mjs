@@ -35,11 +35,13 @@ export function registerLayout(program) {
 
   layoutCmd
     .command('expand [expression] [path]')
-    .description('Expand a layout expression into validated XDS TSX')
+    .description('Expand a layout expression into validated XDS TSX or target payload')
     .option('--file <file>', 'Read the expression from a file')
     .option('--form <form>', 'Input surface: compact, outline, or auto', 'auto')
     .option('--name <name>', 'Generated component name (PascalCase)', 'GeneratedLayout')
     .option('--loose', 'Downgrade unknown {block} hints to TODO placeholders')
+    .option('--target <target>', 'Component target package: core or glasses', 'core')
+    .option('--emit <format>', 'Output format: auto, tsx, or payload', 'auto')
     .action(async (expression, targetPath, options) => {
       const json = program.opts().json || false;
       const source = await readExpression(expression, options);
@@ -54,6 +56,8 @@ export function registerLayout(program) {
           form: options.form,
           loose: options.loose || false,
           name: options.name,
+          target: options.target,
+          emit: options.emit,
           cwd: process.cwd(),
         });
       } catch (e) {
@@ -65,11 +69,14 @@ export function registerLayout(program) {
       for (const warning of result.data.warnings) humanLog(`⚠ ${warning}`);
       if (result.data.written) {
         humanLog(`\n✓ Expanded to ${result.data.written}`);
+        humanLog(`  Target: ${result.data.packageName || result.data.target}`);
         humanLog(`  Components: ${result.data.componentsUsed.join(', ')}`);
         if (result.data.todos.length > 0) {
           humanLog(`  TODOs: ${result.data.todos.length} (search for "TODO(xle)")`);
         }
         humanLog('');
+      } else if (result.data.emit === 'payload') {
+        humanLog(JSON.stringify(result.data.payload, null, 2));
       } else {
         humanLog(result.data.code);
       }
@@ -81,6 +88,7 @@ export function registerLayout(program) {
     .option('--file <file>', 'Read the expression from a file')
     .option('--form <form>', 'Input surface: compact, outline, or auto', 'auto')
     .option('--loose', 'Downgrade unknown {block} hints to TODO placeholders')
+    .option('--target <target>', 'Component target package: core or glasses', 'core')
     .action(async (expression, options) => {
       const json = program.opts().json || false;
       const source = await readExpression(expression, options);
@@ -93,6 +101,7 @@ export function registerLayout(program) {
         result = await layoutCheck(source, {
           form: options.form,
           loose: options.loose || false,
+          target: options.target,
           cwd: process.cwd(),
         });
       } catch (e) {
@@ -101,7 +110,7 @@ export function registerLayout(program) {
       }
       if (json) return jsonOut(result.type, result.data);
 
-      const {valid, form, errors, warnings, compact, outline} = result.data;
+      const {valid, form, target, packageName, errors, warnings, compact, outline} = result.data;
       if (!valid) {
         humanLog(`\n✗ Invalid (${errors.length} error${errors.length === 1 ? '' : 's'}):`);
         for (const e of errors) {
@@ -112,7 +121,7 @@ export function registerLayout(program) {
         process.exitCode = 1;
         return;
       }
-      humanLog(`\n✓ Valid (parsed as ${form})`);
+      humanLog(`\n✓ Valid (parsed as ${form}; target ${packageName || target})`);
       for (const warning of warnings) humanLog(`⚠ ${warning}`);
       humanLog('\ncompact:');
       humanLog(`  ${compact}`);
@@ -124,11 +133,12 @@ export function registerLayout(program) {
   layoutCmd
     .command('grammar')
     .description('Print the XLE/XLO cheatsheet (alias table generated from this branch)')
-    .action(async () => {
+    .option('--target <target>', 'Component target package: core or glasses', 'core')
+    .action(async (options) => {
       const json = program.opts().json || false;
       let result;
       try {
-        result = await layoutGrammar({cwd: process.cwd()});
+        result = await layoutGrammar({cwd: process.cwd(), target: options.target});
       } catch (e) {
         cliError(e.message, {suggestions: e.suggestions || [], code: e.code});
         return;

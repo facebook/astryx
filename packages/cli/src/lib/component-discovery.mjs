@@ -268,7 +268,7 @@ export function findComponentSource(coreDir, name) {
  * Compute the Levenshtein (edit) distance between two strings.
  * Used for fuzzy-matching component names. Dependency-free.
  */
-export function resolveImportPath(coreDir, componentName) {
+export function resolveImportPath(coreDir, componentName, packageName = '@xds/core') {
   const srcDir = path.join(coreDir, 'src');
   const pkgPath = path.join(coreDir, 'package.json');
   const pkg = fs.existsSync(pkgPath)
@@ -278,7 +278,7 @@ export function resolveImportPath(coreDir, componentName) {
   // Priority 1: exact subpath export matching the component name (e.g. ./Heading)
   // This allows convenience re-export directories to win over the source directory.
   if (pkg?.exports?.[`./${componentName}`]) {
-    return `@xds/core/${componentName}`;
+    return `${packageName}/${componentName}`;
   }
 
   const sourcePath = findComponentSource(coreDir, componentName);
@@ -289,10 +289,10 @@ export function resolveImportPath(coreDir, componentName) {
   const topDir = relToSrc.split(path.sep)[0];
 
   if (pkg?.exports?.[`./${topDir}`]) {
-    return `@xds/core/${topDir}`;
+    return `${packageName}/${topDir}`;
   }
 
-  return '@xds/core';
+  return packageName;
 }
 
 // ── External package discovery ───────────────────────────────────────
