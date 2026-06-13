@@ -184,6 +184,18 @@ export function XLEPanel({onApplyCode}: {onApplyCode: (code: string) => void}) {
 
   const valid = check.ok && check.valid;
 
+  // Picking an example updates the editor AND immediately renders it into the
+  // preview, so there's no extra "Expand" click to see the result.
+  const pickExample = (exprText: string) => {
+    setExpr(exprText);
+    const r = expandExpression(exprText, xleData.registry, {
+      blocks: xleData.blocks,
+      form: surface,
+      name: 'PlaygroundLayout',
+    });
+    if (r.ok) onApplyCode(r.code);
+  };
+
   return (
     <div {...stylex.props(s.panel)}>
       <XDSVStack gap={1}>
@@ -289,7 +301,7 @@ export function XLEPanel({onApplyCode}: {onApplyCode: (code: string) => void}) {
                   variant="secondary"
                   size="sm"
                   label={ex.label}
-                  onClick={() => setExpr(ex.expr)}
+                  onClick={() => pickExample(ex.expr)}
                 />
               ))}
             </XDSHStack>
