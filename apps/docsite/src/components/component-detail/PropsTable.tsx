@@ -8,6 +8,7 @@ import {XDSSection} from '@xds/core/Section';
 import {XDSTable, pixel} from '@xds/core/Table';
 import {XDSBadge} from '@xds/core/Badge';
 import type {PropDoc} from '../../generated/componentRegistry';
+import {MarkdownText} from '../MarkdownText';
 
 function formatType(type: string, defaultValue?: string): string {
   if (defaultValue != null) {
@@ -69,7 +70,15 @@ export function PropsTable({props, heading}: PropsTableProps) {
                 </XDSText>
               ),
             },
-            {key: 'description', header: 'Description'},
+            {
+              key: 'description',
+              header: 'Description',
+              renderCell: (item: Record<string, unknown>) => (
+                <MarkdownText type="body">
+                  {item.description as string}
+                </MarkdownText>
+              ),
+            },
           ]}
           density="spacious"
           dividers="rows"

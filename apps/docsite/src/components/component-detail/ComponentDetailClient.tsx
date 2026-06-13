@@ -18,6 +18,7 @@ import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {BestPractices} from './BestPractices';
 import {HookSignature} from './HookSignature';
 import {ExampleBlock} from './ExampleBlock';
+import {MarkdownText} from '../MarkdownText';
 import {
   InteractivePreviewStage,
   useInteractiveState,
@@ -69,9 +70,9 @@ function OverviewContent({
           <XDSHeading level={2} type="display-3">
             Usage
           </XDSHeading>
-          <XDSText type="large" weight="normal">
+          <MarkdownText type="large" weight="normal">
             {comp.usage.description}
-          </XDSText>
+          </MarkdownText>
 
           <CodeExampleBlock
             code={importPath}

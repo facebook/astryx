@@ -16,6 +16,7 @@ import type {ExampleEntry} from '../../generated/exampleRegistry';
 import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {buildPlaygroundHref} from '../playgroundLink';
 import {trackOpenPlayground} from '../../lib/analytics';
+import {MarkdownText} from '../MarkdownText';
 
 function LivePreview({entry}: {entry: ExampleEntry}) {
   const [Component, setComponent] = useState<ComponentType | null>(null);
@@ -102,9 +103,9 @@ export function ExampleBlock({entry}: ExampleBlockProps) {
         </XDSSection>
         <XDSSection variant="muted" padding={tab === 'code' ? 0 : 4}>
           {tab === 'description' ? (
-            <XDSText type="body">
+            <MarkdownText type="body">
               {entry.description || 'No description available.'}
-            </XDSText>
+            </MarkdownText>
           ) : (
             <CodeExampleBlock
               code={entry.source}

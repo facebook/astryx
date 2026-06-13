@@ -31,6 +31,7 @@ import type {
   ElementDescriptor,
   PropDoc,
 } from '../../generated/componentRegistry';
+import {MarkdownText} from '../MarkdownText';
 
 function formatType(type: string, defaultValue?: string): React.ReactNode {
   const parts = type.split(/\s*\|\s*/);
@@ -481,9 +482,9 @@ function PropRow({
           {formatType(prop.type, prop.default)}
         </XDSText>
         {prop.description != null && prop.description !== '' && (
-          <XDSText type="body" color="secondary">
+          <MarkdownText type="body" color="secondary">
             {prop.description}
-          </XDSText>
+          </MarkdownText>
         )}
         {knob && onChange && (
           <InlineControl
@@ -509,9 +510,9 @@ function PropRow({
           {formatType(prop.type, prop.default)}
         </XDSText>
         {prop.description != null && prop.description !== '' && (
-          <XDSText type="body" color="secondary" style={{marginTop: 6}}>
+          <MarkdownText type="body" color="secondary" style={{marginTop: 6}}>
             {prop.description}
-          </XDSText>
+          </MarkdownText>
         )}
       </div>
       {knob && onChange && (
