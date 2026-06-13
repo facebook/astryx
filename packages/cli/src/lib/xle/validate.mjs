@@ -15,7 +15,7 @@
  * @position lib/xle — between parse.mjs and expand.mjs
  */
 
-import {levenshteinDistance} from '../string-utils.mjs';
+import {levenshteinDistance} from '../levenshtein.mjs';
 import {KEY_ALIASES} from './parse.mjs';
 import {resolveComponent} from './registry-core.mjs';
 
