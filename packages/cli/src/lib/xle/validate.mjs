@@ -17,7 +17,7 @@
 
 import {levenshteinDistance} from '../string-utils.mjs';
 import {KEY_ALIASES} from './parse.mjs';
-import {resolveComponent} from './registry.mjs';
+import {resolveComponent} from './registry-core.mjs';
 
 /** Boolean flag synonyms — agent-frequency spellings of isX/hasX props. */
 const FLAG_SYNONYMS = {

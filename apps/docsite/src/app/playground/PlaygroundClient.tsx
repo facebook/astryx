@@ -54,6 +54,7 @@ import {
   Maximize2,
   RotateCw,
   Crosshair,
+  Wand2,
 } from 'lucide-react';
 import githubLight from './themes/github-light.json';
 import githubDark from './themes/github-dark.json';
@@ -67,6 +68,7 @@ import {templates} from '../../generated/templateRegistry';
 import {PreviewStage, type Viewport} from './PreviewStage';
 import {BRAND_ICON} from '../../components/XDSWordmark';
 import {PropertyPanel} from './PropertyPanel';
+import {XLEPanel} from './XLEPanel';
 import {annotateInstanceIds} from './babelParser';
 import {trackCopy} from '../../lib/analytics';
 import {PlaygroundThemeEditor} from '../../components/themePlayground/PlaygroundThemeEditor';
@@ -264,7 +266,7 @@ function configureMonaco(monaco: MonacoInstance) {
     });
 }
 
-type LeftView = 'code' | 'property' | 'theme';
+type LeftView = 'code' | 'property' | 'theme' | 'layout';
 type BuildStatus = 'idle' | 'building' | 'finished' | 'error';
 
 const BUILD_STATUS_META: Record<
@@ -808,6 +810,13 @@ export function PlaygroundClient() {
             isIconOnly
             icon={<Palette size={20} />}
           />
+          <XDSToggleButton
+            value="layout"
+            label="Layout DSL"
+            tooltip="Layout expression (XLE / XLO)"
+            isIconOnly
+            icon={<Wand2 size={20} />}
+          />
         </XDSToggleButtonGroup>
       </XDSVStack>
 
@@ -867,6 +876,8 @@ export function PlaygroundClient() {
                 options={editorOptions}
               />
             </div>
+
+            {activeView === 'layout' && <XLEPanel onApplyCode={setCode} />}
 
             {activeView === 'property' && (
               <PropertyPanel

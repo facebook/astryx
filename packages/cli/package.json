@@ -37,6 +37,10 @@
     "./api": {
       "types": "./src/types/api.d.ts",
       "import": "./src/api/index.mjs"
+    },
+    "./xle": {
+      "types": "./src/lib/xle/browser.d.ts",
+      "import": "./src/lib/xle/browser.mjs"
     }
   },
   "files": [
