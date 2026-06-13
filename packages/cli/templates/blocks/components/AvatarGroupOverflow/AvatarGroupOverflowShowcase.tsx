@@ -1,5 +1,4 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
-
 'use client';
 
 import {XDSAvatar} from '@xds/core/Avatar';
@@ -20,39 +19,31 @@ const USERS = [
     name: 'Carol Davis',
     src: 'https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-60.jpg',
   },
-  {
-    name: 'Gina Wilson',
-    src: 'https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-98.jpg',
-  },
-  {
-    name: 'Eve Park',
-    src: 'https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-125.jpg',
-  },
 ];
 
-export default function AvatarGroup() {
+export default function AvatarGroupOverflowShowcase() {
   return (
     <XDSStack direction="vertical" gap={8}>
       <XDSStack direction="vertical" gap={3}>
         <XDSText type="supporting" color="secondary">
-          Team members
+          Default overflow
         </XDSText>
         <XDSAvatarGroup size="medium">
           {USERS.map(user => (
             <XDSAvatar key={user.name} src={user.src} name={user.name} />
           ))}
-          <XDSAvatarGroupOverflow count={3} />
+          <XDSAvatarGroupOverflow count={5} />
         </XDSAvatarGroup>
       </XDSStack>
       <XDSStack direction="vertical" gap={3}>
         <XDSText type="supporting" color="secondary">
-          Larger group
+          Custom count text
         </XDSText>
         <XDSAvatarGroup size="medium">
-          {USERS.slice(0, 3).map(user => (
+          {USERS.slice(0, 2).map(user => (
             <XDSAvatar key={user.name} src={user.src} name={user.name} />
           ))}
-          <XDSAvatarGroupOverflow count={8} />
+          <XDSAvatarGroupOverflow count={12}>12+</XDSAvatarGroupOverflow>
         </XDSAvatarGroup>
       </XDSStack>
     </XDSStack>
