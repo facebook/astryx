@@ -20,6 +20,13 @@ export const docs = {
     'navigation',
   ],
   description: 'Root component. Manages open state, search, keyboard navigation, and composition slots.',
+  playground: {
+    defaults: {
+      isOpen: true,
+      isInline: true,
+      onOpenChange: undefined,
+    },
+  },
   props: [
     {
       name: 'isOpen',
