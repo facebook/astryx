@@ -7,7 +7,7 @@ export const docs = {
   title: 'Styling Components',
   category: 'guide',
   description:
-    'How to customize component appearance: xstyle prop, Tailwind, StyleX, className, rest props, compound component patterns, and theming hooks.',
+    'How to customize component appearance: xstyle prop, Tailwind, StyleX, className, rest props, compound component patterns, theming hooks, and styling-library interop.',
 
   sections: [
     {
@@ -26,11 +26,12 @@ export const docs = {
             ['Tailwind utilities', 'Layout, wrappers, and utility styling', 'className="flex gap-3 p-4"'],
             ['stylex.create', 'Reusable styles, pseudo-classes, typed tokens', 'stylex.create({ card: { ... } })'],
             ['className', 'Integrating with external CSS or Tailwind on components', 'className="my-card shadow-lg"'],
+            ['Styling-library token aliases', 'Keeping Panda, Chakra, MUI, Emotion, styled-components, UnoCSS, CSS Modules, or Sass in sync with the system', "colors.surface = 'var(--color-background-surface)'"],
           ],
         },
         {
           type: 'prose',
-          text: 'All approaches resolve to the same design tokens, so theming and dark mode work regardless of which you choose.',
+          text: 'All approaches resolve to the same design tokens, so theming and dark mode work regardless of which you choose. For external styling libraries, run `npx xds docs styling-libraries`; it covers Tailwind, StyleX, Panda, Chakra, MUI, CSS-in-JS, CSS Modules, Sass, and `useXDSTheme()` for non-CSS processing.',
         },
       ],
     },
@@ -91,14 +92,21 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'The design system ships a Tailwind v4 theme bridge that maps all design tokens to Tailwind utility classes. Import it once and use Tailwind classes backed by design tokens: colors, spacing, radius, shadows, and typography all resolve to the active theme.',
+          text: 'The package ships a Tailwind v4 theme bridge that maps all design tokens to Tailwind utility classes. Import it once and use Tailwind classes backed by design tokens: colors, spacing, radius, shadows, and typography all resolve to the active theme.',
         },
         {
           type: 'code',
           lang: 'css',
           label: 'globals.css: import the bridge',
-          code: `@import "tailwindcss";
-@import "@xds/core/tailwind-theme.css" layer(theme);`,
+          code: `@layer reset, theme, base, xds-base, xds-theme, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "@xds/core/reset.css";
+@import "@xds/core/xds.css";
+@import "@xds/theme-default/theme.css";
+@import "@xds/core/tailwind-theme.css";
+@import "tailwindcss/utilities.css" layer(utilities);`,
         },
         {
           type: 'code',
@@ -111,7 +119,7 @@ const overrides = stylex.create({
         },
         {
           type: 'prose',
-          text: 'The bridge is pure CSS with zero JS. Theme changes (dark mode, custom themes) apply automatically because the utilities reference the same CSS custom properties that components use.',
+          text: 'The bridge is pure CSS with zero JS. Theme changes (dark mode, custom themes) apply automatically because the utilities reference the same CSS custom properties that components use. This is the paved Tailwind path; for other styling libraries that follow the same aliasing pattern, run `npx xds docs styling-libraries`.',
         },
       ],
     },
@@ -289,7 +297,7 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'When writing custom styles, use design tokens instead of hardcoded values. Tokens are CSS custom properties that adapt to the active theme and color mode. The design system provides tokens for spacing, color, radius, shadow, typography, and size.',
+          text: 'When writing custom styles, use design tokens instead of hardcoded values. Tokens are CSS custom properties that adapt to the active theme and color mode. The system provides tokens for spacing, color, radius, shadow, typography, and size.',
         },
         {
           type: 'code',
