@@ -18,10 +18,8 @@ import {XDSCenter} from '@xds/core/Center';
 import {CodeExampleBlock} from '../CodeExampleBlock';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
-import {XDSTheme} from '@xds/core/theme';
-import {neutralTheme} from '@xds/theme-neutral/built';
-import {useThemeMode} from '../../app/providers';
 import {Code} from 'lucide-react';
+import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {
   buildInitialState,
   getMissingRequiredProps,
@@ -194,98 +192,101 @@ export function InteractivePreviewStage({
   state: Record<string, unknown>;
   missingRequiredProps?: string[];
 }) {
-  const {mode} = useThemeMode();
   const [showCode, setShowCode] = useState(false);
   const Component = getXDSComponent(name);
 
   if (missingRequiredProps.length > 0) {
     return (
-      <XDSCard variant="muted" padding={0}>
-        <XDSCenter style={{minHeight: 200, width: '100%'}}>
-          <XDSVStack
-            gap={1}
-            style={{
-              paddingBlock: 24,
-              paddingInline: 16,
-              textAlign: 'center',
-            }}>
-            <XDSText type="supporting" color="secondary">
-              Interactive preview needs required props that cannot be generated
-              automatically.
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
-              Missing: {missingRequiredProps.join(', ')}
-            </XDSText>
-          </XDSVStack>
-        </XDSCenter>
-      </XDSCard>
+      <ComponentPreviewTheme>
+        <XDSCard variant="muted" padding={0}>
+          <XDSCenter style={{minHeight: 200, width: '100%'}}>
+            <XDSVStack
+              gap={1}
+              style={{
+                paddingBlock: 24,
+                paddingInline: 16,
+                textAlign: 'center',
+              }}>
+              <XDSText type="supporting" color="secondary">
+                Interactive preview needs required props that cannot be
+                generated automatically.
+              </XDSText>
+              <XDSText type="supporting" color="secondary">
+                Missing: {missingRequiredProps.join(', ')}
+              </XDSText>
+            </XDSVStack>
+          </XDSCenter>
+        </XDSCard>
+      </ComponentPreviewTheme>
     );
   }
 
   if (!Component) {
     return (
-      <XDSCard variant="muted" padding={0}>
-        <XDSCenter style={{minHeight: 200, width: '100%'}}>
-          <XDSVStack
-            gap={1}
-            style={{
-              paddingBlock: 24,
-              paddingInline: 16,
-              textAlign: 'center',
-            }}>
-            <XDSText type="supporting" color="secondary">
-              Interactive preview not available for {name}.
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
-              This component is not part of @xds/core.
-            </XDSText>
-          </XDSVStack>
-        </XDSCenter>
-      </XDSCard>
+      <ComponentPreviewTheme>
+        <XDSCard variant="muted" padding={0}>
+          <XDSCenter style={{minHeight: 200, width: '100%'}}>
+            <XDSVStack
+              gap={1}
+              style={{
+                paddingBlock: 24,
+                paddingInline: 16,
+                textAlign: 'center',
+              }}>
+              <XDSText type="supporting" color="secondary">
+                Interactive preview not available for {name}.
+              </XDSText>
+              <XDSText type="supporting" color="secondary">
+                This component is not part of @xds/core.
+              </XDSText>
+            </XDSVStack>
+          </XDSCenter>
+        </XDSCard>
+      </ComponentPreviewTheme>
     );
   }
 
   const code = generateCode(name, state);
 
   return (
-    <XDSCard
-      variant="muted"
-      padding={0}
-      style={{width: '100%', position: 'relative'}}>
-      <div
-        style={{
-          position: 'absolute',
-          top: 'var(--spacing-2)',
-          right: 'var(--spacing-2)',
-          zIndex: 2,
-        }}>
-        <XDSButton
-          label="Show code"
-          tooltip="Show code"
-          icon={<Code size={16} />}
-          isIconOnly
-          variant={showCode ? 'secondary' : 'ghost'}
-          size="sm"
-          onClick={() => setShowCode(v => !v)}
-        />
-      </div>
-      {showCode ? (
+    <ComponentPreviewTheme>
+      <XDSCard
+        variant="muted"
+        padding={0}
+        style={{width: '100%', position: 'relative'}}>
         <div
           style={{
-            minHeight: 200,
-            overflow: 'auto',
-            paddingRight: 'var(--spacing-8)',
+            position: 'absolute',
+            top: 'var(--spacing-2)',
+            right: 'var(--spacing-2)',
+            zIndex: 2,
           }}>
-          <CodeExampleBlock
-            code={code}
-            language="tsx"
-            hasCopyButton
-            container="section"
-            width="100%"
+          <XDSButton
+            label="Show code"
+            tooltip="Show code"
+            icon={<Code size={16} />}
+            isIconOnly
+            variant={showCode ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setShowCode(v => !v)}
           />
         </div>
-      ) : (
-        <XDSTheme theme={neutralTheme} mode={mode}>
+        {showCode ? (
+          <div
+            style={{
+              minHeight: 200,
+              overflow: 'auto',
+              paddingRight: 'var(--spacing-8)',
+            }}>
+            <CodeExampleBlock
+              code={code}
+              language="tsx"
+              hasCopyButton
+              container="section"
+              width="100%"
+            />
+          </div>
+        ) : (
           <XDSCenter
             style={{
               minHeight: 200,
@@ -296,8 +297,8 @@ export function InteractivePreviewStage({
               {createElement(Component, state)}
             </PreviewErrorBoundary>
           </XDSCenter>
-        </XDSTheme>
-      )}
-    </XDSCard>
+        )}
+      </XDSCard>
+    </ComponentPreviewTheme>
   );
 }
