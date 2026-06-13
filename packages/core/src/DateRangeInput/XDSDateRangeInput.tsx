@@ -48,10 +48,11 @@ import {XDSIcon} from '../Icon';
 import {XDSSpinner} from '../Spinner';
 import {XDSCalendar, type ISODateString, type DateRange} from '../Calendar';
 import {useXDSPopover} from '../Popover';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export type {DateRange as XDSDateRange} from '../Calendar';
 
@@ -486,7 +487,7 @@ export function XDSDateRangeInput({
         ref={popover.triggerRef}
         {...rest}
         {...mergeProps(
-          xdsClassName('date-range-input', {
+          xdsThemeProps('date-range-input', {
             size,
             status: status?.type ?? null,
           }),

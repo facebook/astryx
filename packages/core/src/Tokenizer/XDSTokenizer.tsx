@@ -48,7 +48,8 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {XDSSearchableItem, XDSSearchSource} from '../Typeahead/types';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // Re-export status types for convenience
 export type {
@@ -655,7 +656,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
       onBlurCapture={handleBlurCapture}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('tokenizer', {size, status: status?.type}),
+        xdsThemeProps('tokenizer', {size, status: status?.type}),
         stylex.props(
           inputWrapperStyles.base,
           styles.wrapper,
@@ -740,7 +741,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
           ref={placeholderRef}
           onClick={handleWrapperClick}
           {...mergeProps(
-            xdsClassName('tokenizer', {size, status: status?.type}),
+            xdsThemeProps('tokenizer', {size, status: status?.type}),
             stylex.props(
               inputWrapperStyles.base,
               styles.wrapper,

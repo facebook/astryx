@@ -113,11 +113,12 @@ export type {
   XDSInputStatus as XDSTextInputStatus,
   XDSInputStatusType as XDSTextInputStatusType,
 } from '../Field';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useXDSInputGroup} from '../InputGroup/XDSInputGroupContext';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export type XDSTextInputType = 'text' | 'password' | 'email';
 
@@ -331,7 +332,7 @@ export function XDSTextInput({
       onClick={handleWrapperClick}
       onMouseUp={handleWrapperMouseUp}
       {...mergeProps(
-        xdsClassName('text-input', {size, status: status?.type ?? null}),
+        xdsThemeProps('text-input', {size, status: status?.type ?? null}),
         stylex.props(
           inputWrapperStyles.base,
           sizeStyles[size],

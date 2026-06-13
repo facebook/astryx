@@ -14,7 +14,7 @@
 import {useCallback, useEffect, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import {
   colorVars,
   spacingVars,
@@ -23,6 +23,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const HOVER_HOVER = '@media (hover: hover)';
 
@@ -178,7 +179,7 @@ export function XDSCommandPaletteItem({
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       {...mergeProps(
-        xdsClassName('command-palette-item'),
+        xdsThemeProps('command-palette-item'),
         stylex.props(
           styles.item,
           !isDisabled && styles.itemHover,

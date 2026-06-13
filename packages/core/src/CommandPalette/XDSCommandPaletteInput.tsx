@@ -16,7 +16,7 @@ import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSIcon} from '../Icon';
 import {XDSSpinner} from '../Spinner';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import {
   colorVars,
   typeScaleVars,
@@ -26,6 +26,7 @@ import {
 import {useCommandPaletteContext} from './CommandPaletteContext';
 import {useDialogContext} from '../Dialog/DialogContext';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const styles = stylex.create({
   wrapper: {
@@ -192,7 +193,7 @@ export function XDSCommandPaletteInput({
   return (
     <div
       {...mergeProps(
-        xdsClassName('command-palette-input'),
+        xdsThemeProps('command-palette-input'),
         stylex.props(styles.wrapper, xstyle),
       )}>
       <span {...stylex.props(styles.icon)}>

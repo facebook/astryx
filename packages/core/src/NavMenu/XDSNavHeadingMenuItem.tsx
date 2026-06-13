@@ -13,10 +13,11 @@ import {
   typeScaleVars,
   radiusVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSNavHeadingMenuContext} from './XDSNavMenuContext';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const styles = stylex.create({
   root: {
@@ -138,7 +139,7 @@ export function XDSNavHeadingMenuItem({
       onClick={handleClick}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('nav-heading-menu-item', {size}),
+        xdsThemeProps('nav-heading-menu-item', {size}),
         stylex.props(
           styles.root,
           sizeStyles[size],

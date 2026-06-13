@@ -18,7 +18,8 @@
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 /**
  * The shape of the aspect ratio container.
@@ -122,7 +123,7 @@ export function XDSAspectRatio({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('aspect-ratio', {shape}),
+        xdsThemeProps('aspect-ratio', {shape}),
         stylex.props(
           styles.container,
           shape === 'ellipse' && styles.ellipse,

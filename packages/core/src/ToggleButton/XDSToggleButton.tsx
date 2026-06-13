@@ -23,10 +23,11 @@
 import React, {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, fontWeightVars} from '../theme/tokens.stylex';
-import {xdsClassName} from '../utils';
+
 import {XDSButton, type XDSButtonSize} from '../Button';
 import {useXDSToggleButtonGroup} from './XDSToggleButtonGroup';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Styles
@@ -293,7 +294,7 @@ export function XDSToggleButton({
       aria-pressed={isPressed}
       icon={resolvedIcon}
       tooltip={tooltip}
-      className={xdsClassName('toggle-button', {
+      {...xdsThemeProps('toggle-button', {
         isPressed: isPressed ? 'true' : 'false',
       })}
       xstyle={[isPressed ? pressedStyles.background : undefined, xstyle]}

@@ -219,37 +219,67 @@ const overrides = stylex.create({
       ],
     },
     {
-      title: 'Theming via xds-* Class Names',
+      title: 'Preferred Selector Surface: Data Attributes',
   category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'Every component renders a stable xds-* class name (e.g. xds-button, xds-card) plus variant classes. These are the targeting surface for theme overrides in defineTheme. You rarely need to use them directly, but they\'re useful for debugging and for external CSS that needs to target components.',
-        },
-        {
-          type: 'code',
-          lang: 'tsx',
-          label: 'Class names rendered by components',
-          code: `// <XDSButton variant="primary" size="sm" />
-// renders: class="xds-button primary sm ..."
-
-// <XDSCard variant="elevated" />
-// renders: class="xds-card elevated ..."
-
-// <XDSHeading level={2} />
-// renders: class="xds-heading level-2 ..."`,
+          text: 'When external CSS needs to target an XDS component by prop or state, combine the stable component class with reflected data attributes. The component class identifies the component (`.xds-button`, `.xds-card`); data attributes identify the axis and value (`data-variant`, `data-size`, `data-level`, etc.). This is the preferred selector surface for new CSS because it is explicit and collision-resistant.',
         },
         {
           type: 'code',
           lang: 'css',
-          label: 'Targeting in external CSS (escape hatch)',
-          code: `.my-app .xds-button.primary {
-  /* override primary button in this app context */
+          code: `.my-app .xds-button[data-variant="primary"] {
+  /* primary buttons in this app context */
+}
+
+.my-app .xds-button[data-variant="primary"][data-size="sm"] {
+  /* small primary buttons */
+}
+
+.my-app .xds-heading[data-level="2"] {
+  /* level 2 headings; numeric values stay literal in data attrs */
 }`,
         },
         {
+          type: 'code',
+          lang: 'tsx',
+          label: 'What components reflect',
+          code: `// <XDSButton variant="primary" size="sm" />
+// preferred selector attrs: data-variant="primary" data-size="sm"
+
+// <XDSCard variant="elevated" />
+// preferred selector attrs: data-variant="elevated"
+
+// <XDSHeading level={2} />
+// preferred selector attrs: data-level="2"`,
+        },
+        {
           type: 'prose',
-          text: 'For systematic theming, use defineTheme component overrides instead of raw CSS selectors. Run `npx xds docs theme` for the full theming guide.',
+          text: 'For systematic theming, use defineTheme component overrides instead of raw CSS selectors. defineTheme keeps the higher-level `prop:value` API (`variant:primary`, `size:sm`) and handles selector generation for you. Run `npx xds docs theme` for the full theming guide.',
+        },
+      ],
+    },
+    {
+      title: 'Deprecated: Bare Prop and State Classes',
+  category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'XDS still emits legacy bare prop/state classes such as `.primary`, `.sm`, `.level-2`, and `.checked` for compatibility with existing apps and built themes. Do not write new CSS against these bare classes. The stable base component classes (`.xds-button`, `.xds-card`, etc.) are not deprecated; only the unprefixed prop/state classes are the legacy surface.',
+        },
+        {
+          type: 'code',
+          lang: 'css',
+          code: `/* Deprecated compatibility selector — avoid in new CSS */
+.my-app .xds-button.primary {
+  /* use .xds-button[data-variant="primary"] instead */
+}
+
+/* Deprecated compatibility selector — avoid in new CSS */
+.my-app .xds-heading.level-2 {
+  /* use .xds-heading[data-level="2"] instead */
+}`,
         },
       ],
     },

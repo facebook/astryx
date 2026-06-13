@@ -46,8 +46,9 @@ import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
 import {XDSHeading} from '../Heading/XDSHeading';
 import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Styles
@@ -398,7 +399,7 @@ export function XDSMobileNav({
       onClick={handleDialogClick}
       onCancel={handleCancel}
       {...mergeProps(
-        xdsClassName('mobile-nav', {side: resolvedSide}),
+        xdsThemeProps('mobile-nav', {side: resolvedSide}),
         stylex.props(
           styles.dialog,
           isOpen && styles.open,

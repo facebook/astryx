@@ -12,6 +12,17 @@ function targetKey(target) {
   return target.className.replace(/^xds-/, '');
 }
 
+function dataAttrForName(name) {
+  return `data-${name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()}`;
+}
+
+function getTargetDataAttributes(target) {
+  return [
+    ...(target.visualProps || []).map(dataAttrForName),
+    ...(target.states || []).map(dataAttrForName),
+  ];
+}
+
 function formatPropsTable(props) {
   if (!props || props.length === 0) return '';
   const lines = [];
@@ -69,8 +80,8 @@ function formatTargetsTable(docs, themeData) {
   if (!docs.theming?.targets?.length) return '';
 
   const lines = [];
-  lines.push('| Class | Variants | States |');
-  lines.push('|-------|----------|--------|');
+  lines.push('| Component class | Preferred data attributes | Props | States |');
+  lines.push('|-----------------|---------------------------|-------|--------|');
 
   for (const target of docs.theming.targets) {
     const coreVariants = getTargetVariants(target, docs);
@@ -89,8 +100,13 @@ function formatTargetsTable(docs, themeData) {
 
     const variantsStr = variantParts.length > 0 ? variantParts.join(', ') : '—';
     const statesStr = states.length > 0 ? states.join(', ') : '—';
+    const dataAttrs = getTargetDataAttributes(target);
+    const dataAttrsStr =
+      dataAttrs.length > 0 ? dataAttrs.map(attr => `\`${attr}\``).join(', ') : '—';
 
-    lines.push(`| \`${target.className}\` | ${variantsStr} | ${statesStr} |`);
+    lines.push(
+      `| \`${target.className}\` | ${dataAttrsStr} | ${variantsStr} | ${statesStr} |`,
+    );
   }
 
   return lines.join('\n');
@@ -183,7 +199,7 @@ export function formatFull(docs, options = {}) {
         }
       }
 
-      // Generate defineTheme example with class targeting
+      // Generate defineTheme example with component selector targeting
       const exampleLines = ['Override in defineTheme:\n```ts\ncomponents: {'];
       const rootTarget = docs.theming.targets[0];
       const rootKey = targetKey(rootTarget);
@@ -420,11 +436,13 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
     output.push(`  Derived: ${derivedNames}`);
   }
 
-// Theme targets (class names, variants, states) with theme variant merging
+// Theme targets (component class, preferred data attrs, props, states) with theme variant merging
   if (docs.theming?.targets?.length) {
     const { themeData = null } = options;
     const targetParts = docs.theming.targets.map(t => {
       const parts = [t.className];
+      const dataAttrs = getTargetDataAttributes(t);
+      if (dataAttrs.length) parts.push(`preferred attrs: ${dataAttrs.join(', ')}`);
       if (t.visualProps?.length) parts.push(`variants: ${t.visualProps.join(', ')}`);
       if (t.states?.length) parts.push(`states: ${t.states.join(', ')}`);
       // Merge theme variants

@@ -17,10 +17,11 @@ import {
   typographyVars,
   typeScaleDefaults,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {useXDSTheme} from '../theme';
 import {XDSMediaTheme} from '../theme/XDSMediaTheme';
 import type {XDSToastType, XDSToastDismissReason} from './types';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const styles = stylex.create({
   root: {
@@ -186,7 +187,7 @@ export function XDSToast({
       onFocusCapture={pauseTimer}
       onBlurCapture={resumeTimer}
       {...mergeProps(
-        xdsClassName('toast', {type}),
+        xdsThemeProps('toast', {type}),
         stylex.props(
           styles.root,
           isError ? styles.variantError : styles.variantDefault,

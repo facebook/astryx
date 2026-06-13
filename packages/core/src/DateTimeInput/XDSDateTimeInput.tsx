@@ -65,7 +65,6 @@ import {
   formatISOTime,
   isTimeInRange,
   adjustTime,
-  xdsClassName,
   mergeProps,
   mergeRefs,
 } from '../utils';
@@ -78,6 +77,7 @@ import {
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export type ISODateTimeString = string & {
   readonly __brand: 'ISODateTimeString';
@@ -781,7 +781,7 @@ export function XDSDateTimeInput({
       <div
         {...rest}
         {...mergeProps(
-          xdsClassName('date-time-input', {
+          xdsThemeProps('date-time-input', {
             size,
             status: status?.type ?? null,
           }),

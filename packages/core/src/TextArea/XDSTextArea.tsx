@@ -43,10 +43,11 @@ import {
 } from '../Field';
 import {XDSIcon, renderIconSlot, type XDSIconType} from '../Icon';
 import {XDSSpinner} from '../Spinner';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const COUNTER_WARNING_THRESHOLD = 0.8;
 
@@ -375,7 +376,7 @@ export function XDSTextArea({
         onClick={handleWrapperClick}
         onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
-          xdsClassName('textarea', {size, status: status?.type ?? null}),
+          xdsThemeProps('textarea', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,

@@ -37,11 +37,12 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
-import {xdsClassName, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import {XDSCard} from '../Card/XDSCard';
 import type {XDSCardVariant} from '../Card/XDSCard';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Styles — selection + interaction; Card handles the rest
@@ -323,17 +324,13 @@ export function XDSSelectableCard({
       maxWidth={maxWidth}
       padding={padding}
       variant={variant}
-      className={
-        classNameProp
-          ? `${xdsClassName('selectable-card', {
-              variant,
-              selected: isSelected ? 'true' : 'false',
-            })} ${classNameProp}`
-          : xdsClassName('selectable-card', {
-              variant,
-              selected: isSelected ? 'true' : 'false',
-            })
-      }
+      {...mergeProps(
+        xdsThemeProps('selectable-card', {
+          variant,
+          selected: isSelected ? 'true' : 'false',
+        }),
+        {className: classNameProp, style},
+      )}
       xstyle={
         [
           styles.interactive,
@@ -345,7 +342,6 @@ export function XDSSelectableCard({
           xstyleProp,
         ] as unknown as StyleXStyles
       }
-      style={style}
       onClick={!isDisabled ? composedOnClick : undefined}
       onMouseUp={!isDisabled ? composedOnMouseUp : undefined}
       {...props}>

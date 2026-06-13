@@ -187,12 +187,14 @@ describe('XDSButton', () => {
     expect(button).toHaveAttribute('aria-busy', 'true');
   });
 
-  it('renders xds-* class names for theme targeting', () => {
+  it('renders xds-* classes and data attributes for theme targeting', () => {
     render(<XDSButton label="Test" variant="secondary" size="sm" />);
     const button = screen.getByRole('button');
     expect(button.className).toContain('xds-button');
     expect(button.className).toContain('secondary');
     expect(button.className).toContain('sm');
+    expect(button).toHaveAttribute('data-variant', 'secondary');
+    expect(button).toHaveAttribute('data-size', 'sm');
   });
 
   // P0: onClick fires before clickAction, clickAction respects preventDefault

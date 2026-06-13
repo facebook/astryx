@@ -61,9 +61,10 @@ import {
 } from './utils';
 import {useCombobox, useSelectedItemOffset} from './hooks';
 import {XDSSelectorOption} from './XDSSelectorOption';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const styles = stylex.create({
   // Trigger container — the enhanced click target wrapping the combobox button and clear button as siblings
@@ -859,7 +860,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
         onClick={onTriggerClick}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('selector', {size, status: status?.type ?? null}),
+          xdsThemeProps('selector', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             styles.triggerContainer,

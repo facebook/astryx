@@ -331,7 +331,8 @@ const styles = stylex.create({
     // (distressed display), and themes without a display family
     // override fall back to their heading font (Outfit, system,
     // etc.). The XDSText below uses type="display-3" so the
-    // .xds-text.display-3 selector in each theme's @scope'd CSS
+    // .xds-text.display-3 selector in each theme's @scope'd CSS (legacy class
+    // selector; text also emits data-type="display-3")
     // applies the right family per card.
     fontSize: 32,
     lineHeight: 1.2,

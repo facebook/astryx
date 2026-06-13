@@ -89,6 +89,7 @@ export interface XDSBaseProps<T extends HTMLElement = HTMLElement> extends Omit<
    */
   xstyle?: StyleXStyles;
 
-  /** Allow data-* attributes for telemetry, testing, and integration hooks. */
+  /** Allow data-* attributes for telemetry, testing, integration hooks, and
+   * XDS component prop/state reflection (for example data-variant/data-size). */
   [key: `data-${string}`]: string | undefined;
 }

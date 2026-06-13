@@ -56,13 +56,13 @@ import {
   formatISOTime,
   adjustTime,
   isTimeInRange,
-  xdsClassName,
   mergeProps,
   mergeRefs,
 } from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const styles = stylex.create({
   icon: {
@@ -526,7 +526,7 @@ export function XDSTimeInput({
         onClick={handleWrapperClick}
         onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
-          xdsClassName('time-input', {size, status: status?.type ?? null}),
+          xdsThemeProps('time-input', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             sizeStyles[size],

@@ -13,7 +13,8 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {renderIconSlot, type XDSIconType} from '../Icon';
 import {XDSItem} from '../Item';
-import {xdsClassName} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const embeddedStyles = stylex.create({
   root: {
@@ -110,10 +111,7 @@ export function XDSSelectorOption({
       description={description}
       endContent={children}
       xstyle={[embeddedStyles.root, xstyle]}
-      className={[xdsClassName('selector-option'), className]
-        .filter(Boolean)
-        .join(' ')}
-      style={style}
+      {...mergeProps(xdsThemeProps('selector-option'), {className, style})}
     />
   );
 }
