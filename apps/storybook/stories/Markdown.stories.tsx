@@ -5,6 +5,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {XDSMarkdown} from '@xds/core/Markdown';
 import {XDSButton} from '@xds/core/Button';
 import {XDSLink} from '@xds/core/Link';
+import {XDSText} from '@xds/core/Text';
 
 const meta: Meta<typeof XDSMarkdown> = {
   title: 'Core/Markdown',
@@ -20,6 +21,10 @@ const meta: Meta<typeof XDSMarkdown> = {
       options: [1, 2, 3, 4, 5, 6],
     },
     isStreaming: {control: 'boolean'},
+    display: {
+      control: 'select',
+      options: ['block', 'inline'],
+    },
   },
 };
 
@@ -179,6 +184,41 @@ export const ShiftedHeadings: Story = {
     children: SAMPLE_MD,
     headingLevelStart: 3,
   },
+};
+
+export const InlineDisplay: Story = {
+  name: 'Inline Display',
+  render: () => (
+    <div style={{maxWidth: 680, display: 'grid', gap: 16}}>
+      <XDSText type="large" display="block">
+        <XDSMarkdown display="inline">
+          {
+            'Use `value` with **controlled state** and [read the docs](https://example.com) without creating block wrappers.'
+          }
+        </XDSMarkdown>
+      </XDSText>
+
+      <div
+        style={{
+          border: '1px solid #ddd',
+          borderRadius: 8,
+          padding: 12,
+          display: 'grid',
+          gap: 6,
+        }}>
+        <XDSText type="body" weight="bold" display="block">
+          Prop description
+        </XDSText>
+        <XDSText type="body" color="secondary" display="block">
+          <XDSMarkdown display="inline">
+            {
+              'Accepts an action item `{label, onClick?, icon?}`, a divider `{type: "divider"}`, or a section `{type: "section", items: [...]}`.'
+            }
+          </XDSMarkdown>
+        </XDSText>
+      </div>
+    </div>
+  ),
 };
 
 export const TableFocused: Story = {

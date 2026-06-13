@@ -25,6 +25,13 @@ export const docs = {
       required: true,
     },
     {
+      name: 'display',
+      type: "'block' | 'inline'",
+      description:
+        "Display type. Markdown defaults to block. Use 'inline' for markdown spans embedded inside text.",
+      default: "'block'",
+    },
+    {
       name: 'density',
       type: "\'default\' | \'compact\'",
       description: 'Controls spacing between block-level elements.',
@@ -134,6 +141,18 @@ export const docs = {
   },
   examples: [
     {
+      label: 'Inline display',
+      code: `
+import {XDSText} from '@xds/core/Text';
+
+<XDSText>
+  This description includes{' '}
+  <XDSMarkdown display="inline">{'\`inline code\` and **bold text**'}</XDSMarkdown>
+  .
+</XDSText>;
+`,
+    },
+    {
       label: 'GFM autolinks',
       code: `
 <XDSMarkdown autolink="gfm">
@@ -175,6 +194,13 @@ export const docsZh = {
       type: 'string',
       description: '要渲染的 Markdown 字符串。',
       required: true,
+    },
+    {
+      name: 'display',
+      type: "'block' | 'inline'",
+      description:
+        "显示类型。Markdown 默认为 block。使用 'inline' 可在文本内嵌入 Markdown 片段。",
+      default: "'block'",
     },
     {
       name: 'density',
