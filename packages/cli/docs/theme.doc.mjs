@@ -171,7 +171,7 @@ const myTheme = defineTheme({
             ],
             [
               'radius',
-              '--radius-1 through --radius-4, --radius-container, --radius-page',
+              '--radius-inner, --radius-element, --radius-container, --radius-page, --radius-chat',
               'base (px), multiplier (0–2)',
             ],
             [
@@ -497,29 +497,86 @@ import './themes/ocean.css';
       ],
     },
     {
+      title: 'Token Utilities',
+  category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'Use `xdsTokenVar()` when a non-StyleX styling library wants a CSS variable reference, and `resolveXDSThemeTokens()` when JavaScript needs token values for a specific theme and mode without React context.',
+        },
+        {
+          type: 'code',
+          lang: 'ts',
+          label: 'CSS var references for styling-library configs',
+          code: `import {xdsTokenVar, xdsTokenVars} from '@xds/core/theme/tokens';
+
+const pandaOrEmotionTheme = {
+  colors: {
+    text: xdsTokenVar('--color-text-primary'),
+    surface: xdsTokenVars['--color-background-surface'],
+  },
+  spacing: {
+    4: xdsTokenVars['--spacing-4'],
+  },
+};`,
+        },
+        {
+          type: 'code',
+          lang: 'ts',
+          label: 'Resolve token values without a hook',
+          code: `import {resolveXDSThemeTokens} from '@xds/core/theme/tokens';
+import {defaultTheme} from '@xds/theme-default';
+
+const lightTokens = resolveXDSThemeTokens(defaultTheme, {mode: 'light'});
+const chartTheme = {
+  textColor: lightTokens['--color-text-primary'],
+  seriesColor: lightTokens['--color-data-categorical-blue'],
+};`,
+        },
+        {
+          type: 'prose',
+          text: 'The `@xds/core/theme/tokens` subpath is server-safe and does not require React. The main `@xds/core/theme` barrel also re-exports these helpers for client code that already imports theme APIs.',
+        },
+      ],
+    },
+    {
       title: 'useXDSTheme Hook',
   category: 'guide',
       content: [
         {
+          type: 'prose',
+          text: '`useXDSTheme()` uses the same token resolution as `resolveXDSThemeTokens()`, but reads the nearest XDSTheme and effective color mode from React context and media query state. Use it inside client components for SVG, canvas, charts, maps, and third-party configuration objects that need token values in JavaScript instead of `var(...)` references.',
+        },
+        {
           type: 'code',
           lang: 'tsx',
-          label: 'Access current theme',
-          code: `import {useXDSTheme} from '@xds/core';
+          label: 'Access resolved token values in React',
+          code: `import {useMemo} from 'react';
+import {useXDSTheme} from '@xds/core/theme';
 
-function MyComponent() {
-  const ctx = useXDSTheme();
-  // ctx.theme — the XDSDefinedTheme object
-  // ctx.mode — 'system' | 'light' | 'dark'
-  return null;
+function ChartConfig() {
+  const {mode, tokens} = useXDSTheme();
+
+  const options = useMemo(
+    () => ({
+      mode,
+      textColor: tokens['--color-text-primary'],
+      gridColor: tokens['--color-border'],
+      seriesColor: tokens['--color-data-categorical-blue'],
+    }),
+    [mode, tokens],
+  );
+
+  return <Chart options={options} />;
 }`,
         },
         {
           type: 'prose',
-          text: 'This is read-only. To change the theme/mode, manage state at the app level and pass it to <XDSTheme>.',
+          text: 'Prefer CSS variables, StyleX token imports, xstyle, or className for ordinary styling. To change the theme or mode, manage state at the app level and pass it to <XDSTheme>.',
         },
         {
           type: 'prose',
-          text: 'See `npx xds docs styling` for component-level customization (xstyle, className, rest props). See `npx xds docs tokens` for the full token reference.',
+          text: 'See `npx xds docs styling` for component-level customization and `npx xds docs tokens` for the full token reference.',
         },
       ],
     },
