@@ -17,8 +17,14 @@ import {humanLog} from '../lib/json.mjs';
 // Known corruption patterns that indicate a broken transform.
 // Each entry: [regex, human-readable description]
 const CORRUPTION_PATTERNS = [
-  [/\[native code\]/g, '[native code] injection (prototype pollution in identifier map)'],
-  [/function \w+\(\) \{ \[native code\] \}/g, 'native function toString() leak'],
+  [
+    /\[native code\]/g,
+    '[native code] injection (prototype pollution in identifier map)',
+  ],
+  [
+    /function \w+\(\) \{ \[native code\] \}/g,
+    'native function toString() leak',
+  ],
 ];
 
 /**
@@ -36,10 +42,7 @@ const CORRUPTION_PATTERNS = [
  * @returns {string}
  */
 export function fixDirectiveCorruption(code) {
-  return code.replace(
-    /^(['"]use (client|server|strict)['"]);\s*;/gm,
-    '$1;',
-  );
+  return code.replace(/^(['"]use (client|server|strict)['"]);\s*;/gm, '$1;');
 }
 
 /**
@@ -49,7 +52,18 @@ export function fixDirectiveCorruption(code) {
  */
 function findSourceFiles(dir) {
   const results = [];
-  const extensions = new Set(['.tsx', '.ts', '.jsx', '.js']);
+  const extensions = new Set([
+    '.tsx',
+    '.ts',
+    '.jsx',
+    '.js',
+    '.mjs',
+    '.cjs',
+    '.css',
+    '.scss',
+    '.sass',
+    '.less',
+  ]);
 
   function walk(currentDir) {
     let entries;
@@ -84,7 +98,7 @@ async function formatChangedFiles(files, silent = false) {
   if (files.length === 0) return;
 
   const {execSync} = await import('node:child_process');
-  const fileArgs = files.map((f) => `"${f}"`).join(' ');
+  const fileArgs = files.map(f => `"${f}"`).join(' ');
   const prefix = getRunPrefix();
 
   const formatters = [
@@ -95,7 +109,10 @@ async function formatChangedFiles(files, silent = false) {
   for (const {name, cmd} of formatters) {
     try {
       execSync(cmd, {stdio: 'pipe', timeout: 30000});
-      if (!silent) p.log.info(`Formatted ${files.length} file${files.length === 1 ? '' : 's'} with ${name}`);
+      if (!silent)
+        p.log.info(
+          `Formatted ${files.length} file${files.length === 1 ? '' : 's'} with ${name}`,
+        );
       return;
     } catch {
       // Formatter not available or failed — try next
@@ -115,15 +132,17 @@ async function formatChangedFiles(files, silent = false) {
  * @param {Function} j - jscodeshift instance (with parser configured)
  * @returns {{ valid: boolean, reason?: string }}
  */
-export function validateOutput(result, source, j) {
+export function validateOutput(result, source, j, {parse = true} = {}) {
   // Check 1: Re-parse the output — catches syntax-breaking corruption
-  try {
-    j(result);
-  } catch (parseError) {
-    return {
-      valid: false,
-      reason: `transform produced unparseable output: ${parseError.message}`,
-    };
+  if (parse) {
+    try {
+      j(result);
+    } catch (parseError) {
+      return {
+        valid: false,
+        reason: `transform produced unparseable output: ${parseError.message}`,
+      };
+    }
   }
 
   // Check 2: Known corruption patterns (only flag new ones, not pre-existing)
@@ -153,13 +172,18 @@ export function validateOutput(result, source, j) {
  * @param {string|undefined} options.codemod - Run only this specific transform
  * @param {boolean} [options.silent] - Suppress all human-facing output (for --json)
  */
-export async function runCodemods(versionManifests, {apply, path: srcPath, codemod, silent = false}) {
+export async function runCodemods(
+  versionManifests,
+  {apply, path: srcPath, codemod, silent = false},
+) {
   // No-op stub object so silent mode skips clack stdout entirely without
   // littering the body with `if (!silent)` guards.
   const log = silent
     ? {step() {}, info() {}, success() {}, warn() {}, error() {}, message() {}}
     : p.log;
-  const writeBlank = () => { if (!silent) humanLog(''); };
+  const writeBlank = () => {
+    if (!silent) humanLog('');
+  };
 
   const resolvedPath = path.resolve(srcPath);
 
@@ -173,7 +197,14 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
 
   if (files.length === 0) {
     log.warn('No source files found.');
-    return {ok: true, totalFilesChanged: 0, totalTransformsApplied: 0, errors: [], writtenFiles: [], skippedOptional: []};
+    return {
+      ok: true,
+      totalFilesChanged: 0,
+      totalTransformsApplied: 0,
+      errors: [],
+      writtenFiles: [],
+      skippedOptional: [],
+    };
   }
 
   log.info(`Found ${files.length} source file${files.length === 1 ? '' : 's'}`);
@@ -196,6 +227,9 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
       if (codemod && transformEntry.name !== codemod) continue;
 
       const {name, transform, meta, optional} = transformEntry;
+      const transformExtensions = new Set(
+        meta.fileExtensions ?? ['.tsx', '.ts', '.jsx', '.js', '.mjs', '.cjs'],
+      );
 
       // Skip optional codemods unless explicitly requested via --codemod
       if (optional && !codemod) {
@@ -211,10 +245,14 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
         const relativePath = path.relative(process.cwd(), filePath);
 
         try {
+          const ext = path.extname(filePath);
+          if (!transformExtensions.has(ext)) {
+            continue;
+          }
+
           const source = fs.readFileSync(filePath, 'utf-8');
           // Configure parser based on file extension
-          const ext = path.extname(filePath);
-          const parser = (ext === '.tsx' || ext === '.ts') ? 'tsx' : 'babel';
+          const parser = ext === '.tsx' || ext === '.ts' ? 'tsx' : 'babel';
           const j = jscodeshift.withParser(parser);
           const api = {
             jscodeshift: j,
@@ -230,11 +268,19 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
             result = fixDirectiveCorruption(result);
 
             // Validate output before writing
-            const validation = validateOutput(result, source, j);
+            const validation = validateOutput(result, source, j, {
+              parse: ['.tsx', '.ts', '.jsx', '.js', '.mjs', '.cjs'].includes(
+                ext,
+              ),
+            });
             if (!validation.valid) {
               totalValidationBlocked++;
               log.error(`    ✗ ${relativePath} — ${validation.reason}`);
-              errors.push({file: relativePath, codemod: name, error: validation.reason});
+              errors.push({
+                file: relativePath,
+                codemod: name,
+                error: validation.reason,
+              });
               continue;
             }
 
@@ -258,7 +304,9 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
 
       if (filesChanged > 0) {
         const verb = apply ? 'Updated' : 'Would update';
-        log.info(`  ${verb} ${filesChanged} file${filesChanged === 1 ? '' : 's'}`);
+        log.info(
+          `  ${verb} ${filesChanged} file${filesChanged === 1 ? '' : 's'}`,
+        );
       }
     }
   }
@@ -322,5 +370,11 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
     }
   }
 
-  return {totalFilesChanged, totalTransformsApplied, totalValidationBlocked, errors, skippedOptional};
+  return {
+    totalFilesChanged,
+    totalTransformsApplied,
+    totalValidationBlocked,
+    errors,
+    skippedOptional,
+  };
 }
