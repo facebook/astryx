@@ -179,7 +179,7 @@ WORKFLOW
   Errors carry line/col + suggestions. Fix and resubmit; nothing is guessed.
 
 TWO SURFACES, ONE LANGUAGE (autodetected; --form to force)
-  compact: A[@topNav=TN] > LC[p6] > (C{card-callout}*4) + T
+  compact: A[cp6 @topNav=TN] > L > LC > S[p6] > (C{card-callout}*4) + T
   outline: indentation = nesting · same-indent = siblings · "repeat N:" block = (...)*N
            slot lines:  topNav: TN     (or a block:  topNav:\\n    TN ...)
 
@@ -191,7 +191,7 @@ NODE ANATOMY   Name#id.enum"payload"[attrs]{hint}*N > children
   trailing !   initial selection for scaffolded state:  Tab"Overview"!
 
 ATTRS [...] (outline: bare tokens after the name, no brackets)
-  fused        p6 g4 c4 w240 h2 cp2 mw960 rg2 cg2  (per-component: p6 on AppShell errors → cp6)
+  fused        p6 g4 c4 w240 h2 cp2 mw960 rg2 cg2  (per-component: padding lives on Card/Section/AppShell.cp — p6 on AppShell/Layout/VStack errors with a correction)
   key=value    t=email href='/x' c{min:340} dv=[top,bottom] — keys validated per component
   flags        req opt dis striped hover divider … (isX/hasX props) · negate: !scroll
   align        j= main axis, a= cross axis — expander picks hAlign/vAlign per stack direction

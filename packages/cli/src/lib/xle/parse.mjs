@@ -3,7 +3,7 @@
 /**
  * @file XLE/XLO parser — two surfaces, one AST.
  *
- * Compact (XLE):  A[@top=TN{app-nav}] > LC[p6] > (C{kpi-stat}*4) + T
+ * Compact (XLE):  A[cp6 @topNav=TN] > L > LC > S[p6] > (C{card-callout}*4) + T
  * Outline (XLO):  indentation for nesting, `slot:` lines, `repeat N:` blocks.
  *
  * Both surfaces produce the same AST and share the attribute-token
