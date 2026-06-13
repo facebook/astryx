@@ -84,6 +84,20 @@ describe('XDSHoverCard', () => {
     expect(content).toBeInTheDocument();
   });
 
+  it('applies the theme body font to the portaled layer', () => {
+    render(
+      <XDSHoverCard content={<span>Card content</span>}>
+        <button type="button">Trigger</button>
+      </XDSHoverCard>,
+    );
+
+    const layer = screen.getByText('Card content').closest('[popover]');
+    expect(layer).not.toBeNull();
+    expect(getComputedStyle(layer as Element).fontFamily).toBe(
+      'var(--font-family-body)',
+    );
+  });
+
   it('injects aria-describedby on trigger', () => {
     render(
       <XDSHoverCard content={<span>Card content</span>}>
