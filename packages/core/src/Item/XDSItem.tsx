@@ -27,9 +27,10 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {computeTargetAndRel} from '../Link/computeTargetAndRel';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Types
@@ -473,7 +474,7 @@ export function XDSItem({
       aria-disabled={isDisabled || undefined}
       {...restProps}
       {...mergeProps(
-        xdsClassName('item', {density, align}),
+        xdsThemeProps('item', {density, align}),
         stylex.props(
           styles.root,
           densityStyles[density],

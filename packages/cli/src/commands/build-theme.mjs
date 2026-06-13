@@ -249,14 +249,19 @@ function resolveTokenValue(value) {
 }
 
 /**
- * Parse a component style key into a CSS selector suffix.
+ * Parse a component style key into the legacy class selector suffix used by
+ * built theme CSS today.
  * - `base` → ''
  * - `variant:secondary` → '.secondary'
  * - `level:1` → '.level-1' (digits get prefixed)
  * - `variant:destructive+size:sm` → '.destructive.sm'
  *
+ * Runtime components also emit matching data-* prop reflections via xdsThemeProps()
+ * (`data-variant="secondary"`, `data-level="1"`, etc.) for the data-attribute
+ * selector migration. Keep the class output here until the generator migrates.
+ *
  * <!-- SYNC: packages/core/src/utils/parseStyleKey.ts -->
- * <!-- SYNC: packages/core/src/utils/xdsClassName.ts -->
+ * <!-- SYNC: packages/core/src/utils/xdsThemeProps.ts -->
  * The digit-prefix and value-to-class logic must match across all three files.
  */
 

@@ -27,8 +27,9 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSBadge} from '../Badge';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export interface XDSChatComposerDrawerProps extends XDSBaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
@@ -249,7 +250,7 @@ export function XDSChatComposerDrawer({
       ref={ref}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('chat-composer-drawer', {
+        xdsThemeProps('chat-composer-drawer', {
           collapsed: isCollapsed ? 'collapsed' : null,
         }),
         stylex.props(styles.root, xstyle),

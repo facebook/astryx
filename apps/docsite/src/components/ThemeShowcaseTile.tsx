@@ -222,7 +222,8 @@ const styles = stylex.create({
   // Each typography sample sizes itself uniformly via a wrapper
   // class. The actual font family + weight comes from the underlying
   // XDSText / span using the theme's own typography tokens (or, for
-  // Display, the theme-scoped .xds-text.display-3 rule which themes
+  // Display, the theme-scoped .xds-text.display-3 rule (legacy class selector;
+  // text also emits data-type="display-3") which themes
   // like Gothic use to swap in a signature display family).
   typeAa: {
     display: 'inline-block',
@@ -475,7 +476,7 @@ export function ThemeShowcaseTile({
                   display / heading / body / mono font with the role as
                   label. The Display sample uses XDSText type="display-3"
                   so themes that scope a custom display family to the
-                  .xds-text.display-3 selector (e.g. Gothic →
+                  .xds-text.display-3 selector (legacy class selector; e.g. Gothic →
                   Manufacturing Consent) flow through cleanly. */}
               <XDSHStack gap={3}>
                 <XDSVStack gap={0.5} xstyle={styles.typeSample}>

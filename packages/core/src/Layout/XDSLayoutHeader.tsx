@@ -21,8 +21,9 @@ import {use} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSLayoutDividerContext} from './XDSLayoutDividerContext';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {SpacingStep} from '../utils/types';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 import {
   paddingStyles,
   containerPaddingInlineVarStyles,
@@ -158,7 +159,7 @@ export function XDSLayoutHeader({
       aria-label={label}
       data-divider={resolvedHasDivider || undefined}
       {...mergeProps(
-        xdsClassName('layout-header'),
+        xdsThemeProps('layout-header'),
         stylex.props(
           styles.header,
           dynamicStyles.sizing(height ?? null),

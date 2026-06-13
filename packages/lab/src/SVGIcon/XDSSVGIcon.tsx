@@ -22,9 +22,10 @@
 import {type CSSProperties, type SVGProps, useId} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '@xds/core/theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '@xds/core/utils';
+import {mergeProps} from '@xds/core/utils';
 import {iconVars} from './tokens.stylex';
 import {variations, opticalSize} from './variations.stylex';
+import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
 
 // =============================================================================
 // Types
@@ -367,7 +368,7 @@ export function XDSSVGIcon({
       viewBox={viewBox}
       aria-hidden="true"
       {...mergeProps(
-        xdsClassName('svg-icon', {variation, size, color}),
+        xdsThemeProps('svg-icon', {variation, size, color}),
         stylex.props(
           styles.root,
           colorStyles[color],

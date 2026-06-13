@@ -26,9 +26,10 @@ import {
   fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 // =============================================================================
 // Styles
 // =============================================================================
@@ -186,7 +187,7 @@ export function XDSSideNavSection({
       aria-labelledby={titleId}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('side-nav-section'),
+        xdsThemeProps('side-nav-section'),
         stylex.props(styles.root, xstyle),
         className,
         style,

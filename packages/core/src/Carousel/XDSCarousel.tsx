@@ -31,8 +31,9 @@ import {XDSIcon} from '../Icon';
 import {useXDSLayer} from '../Layer';
 import {useScrollOverflow} from '../hooks/useScrollOverflow';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import type {SpacingStep} from '../utils/types';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export interface XDSCarouselProps extends XDSBaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
@@ -324,7 +325,7 @@ export function XDSCarousel({
       aria-label={ariaLabel}
       aria-roledescription="carousel"
       {...mergeProps(
-        xdsClassName('carousel'),
+        xdsThemeProps('carousel'),
         stylex.props(styles.root, xstyle),
         className,
         style,

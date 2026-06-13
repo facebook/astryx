@@ -8,7 +8,9 @@
  * Applies theme tokens and sets color-scheme for light-dark() to work.
  * Themes are created with `defineTheme()` and applied via CSS:
  * - Token overrides set as CSS custom properties on [data-xds-theme]
- * - Component overrides scoped via @scope'd CSS selectors on .xds-* classes
+ * - Component overrides scoped via @scope'd CSS selectors on the stable XDS
+ *   selector surface (`.xds-*` classes today; components also emit `data-*`
+ *   prop reflections for the data-attribute selector migration)
  *
  * Root detection: The first XDSTheme in the tree (no parent XDSTheme)
  * automatically syncs attributes to `document.documentElement`:
@@ -227,7 +229,8 @@ function useRootThemeSync(
  *
  * Sets data-xds-theme attribute so @scope'd CSS takes effect.
  * Component overrides are pure CSS scoped under the theme attribute —
- * components render with their .xds-* class and don't need context.
+ * components render with stable `.xds-*` classes plus `data-*` prop
+ * reflections and don't need context.
  *
  * When this is the root XDSTheme (no parent XDSTheme in the tree),
  * it syncs `data-theme` and `data-xds-theme` to `<html>` so browser

@@ -19,7 +19,7 @@
 import React from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {
   colorVars,
   radiusVars,
@@ -29,6 +29,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {XDSInputStatusType} from '../Field/types';
 import {useEntryAnimation} from '../hooks/useEntryAnimation';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const styles = stylex.create({
   base: {
@@ -141,7 +142,7 @@ export function XDSFieldStatus({
       role={type === 'error' ? 'alert' : 'status'}
       aria-live={type === 'error' ? 'assertive' : 'polite'}
       {...mergeProps(
-        xdsClassName('field-status', {type, variant}),
+        xdsThemeProps('field-status', {type, variant}),
         stylex.props(
           styles.base,
           entryStyle,

@@ -38,9 +38,10 @@ import {XDSSpinner} from '../Spinner';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {useXDSButtonGroup} from '../ButtonGroup/XDSButtonGroupContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 /**
  * Base button styles
@@ -588,7 +589,7 @@ export function XDSButton({
   );
 
   const sharedMergedProps = mergeProps(
-    xdsClassName('button', {variant, size}),
+    xdsThemeProps('button', {variant, size}),
     sharedStylexProps,
     className,
     style,

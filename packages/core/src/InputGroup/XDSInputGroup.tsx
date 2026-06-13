@@ -25,9 +25,10 @@ import * as stylex from '@stylexjs/stylex';
 import {sizeVars} from '../theme/tokens.stylex';
 import {XDSField, type XDSInputStatus} from '../Field';
 import {XDSSizeProvider, useXDSSize} from '../SizeContext/XDSSizeContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSInputGroupContext} from './XDSInputGroupContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export type XDSInputGroupSize = 'sm' | 'md' | 'lg';
 
@@ -188,7 +189,7 @@ export function XDSInputGroup({
             data-testid={testId}
             {...rest}
             {...mergeProps(
-              xdsClassName('input-group', {
+              xdsThemeProps('input-group', {
                 size,
                 status: status?.type ?? null,
               }),

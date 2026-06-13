@@ -20,7 +20,8 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSTooltip} from '../Tooltip/XDSTooltip';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 /**
  * Pulse animation keyframes
@@ -159,7 +160,7 @@ export function XDSStatusDot({
       role="img"
       aria-label={label}
       {...mergeProps(
-        xdsClassName('statusdot', {variant}),
+        xdsThemeProps('statusdot', {variant}),
         stylex.props(
           styles.base,
           variants[variant],

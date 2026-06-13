@@ -15,7 +15,7 @@
  * flips when the panel collapses to 0px so it stays accessible.
  *
  * Pill placement uses a single stylex dynamic style that accepts a direction
- * multiplier (-1 or 1). The pill element has its own xdsClassName
+ * multiplier (-1 or 1). The pill element has its own xdsThemeProps
  * ('resize-handle-pill') so themes can target size/shape directly.
  */
 
@@ -30,8 +30,9 @@ import {
   radiusVars,
   spacingVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import type {ResizableProps} from './useXDSResizable';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const KEYBOARD_STEP = 10;
 const KEYBOARD_LARGE_STEP = 50;
@@ -485,7 +486,7 @@ export function XDSResizeHandle({
       onBlur={() => setIsFocused(false)}
       data-resizing={isDragging || undefined}
       {...mergeProps(
-        xdsClassName('resize-handle'),
+        xdsThemeProps('resize-handle'),
         stylex.props(
           styles.handle,
           isOverlay && styles.overlay,
@@ -531,7 +532,7 @@ export function XDSResizeHandle({
       {children ?? (
         <div
           {...mergeProps(
-            xdsClassName('resize-handle-pill'),
+            xdsThemeProps('resize-handle-pill'),
             stylex.props(
               styles.pill,
               isHorizontal ? styles.pillHorizontal : styles.pillVertical,

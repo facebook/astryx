@@ -21,7 +21,8 @@ import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
 import {tableRowMarker} from './table.stylex';
 import {XDSTableContext} from './XDSTableContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 /** Props for XDSTableRow — thin `<tr>` wrapper */
 export interface XDSTableRowProps extends XDSBaseProps<HTMLTableRowElement> {
@@ -103,7 +104,7 @@ export function XDSTableRow({
         ref={ref}
         {...props}
         {...mergeProps(
-          xdsClassName('table-row'),
+          xdsThemeProps('table-row'),
           stylex.props(tableRowMarker, xstyle),
         )}>
         {children}
@@ -136,7 +137,7 @@ export function XDSTableRow({
       ref={ref}
       {...props}
       {...mergeProps(
-        xdsClassName('table-row'),
+        xdsThemeProps('table-row'),
         stylex.props(tableRowMarker, ...rowStyles),
       )}>
       {children}

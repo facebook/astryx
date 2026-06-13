@@ -26,13 +26,14 @@ import {
   typeScaleVars,
   borderVars,
 } from '@xds/core/theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '@xds/core/utils';
+import {mergeProps} from '@xds/core/utils';
 import {
   tokenize,
   tokenizeAsync,
   SYNC_TOKENIZE_THRESHOLD,
 } from '@xds/core/CodeBlock';
 import type {TokenLine} from '@xds/core/CodeBlock';
+import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
 import {
   ensureHighlightStyles,
   applyHighlightRangesFlat,
@@ -416,7 +417,7 @@ export function XDSCodeEditor({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('codeeditor', {size, language}),
+        xdsThemeProps('codeeditor', {size, language}),
         stylex.props(styles.root, focused && styles.rootFocused, xstyle),
         className,
         style,

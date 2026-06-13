@@ -23,6 +23,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // Extend React's HTMLAttributes to include popover API attributes
 declare module 'react' {
@@ -77,7 +78,7 @@ export interface ContextRenderProps {
   xstyle?: StyleXStyles;
   /**
    * Additional CSS class name(s) for the popover container.
-   * Use with xdsClassName() for theme targeting.
+   * Use with xdsThemeProps() for theme targeting when reflecting visual props.
    */
   className?: string;
   /**
@@ -99,7 +100,7 @@ export interface FixedRenderProps {
   xstyle?: StyleXStyles;
   /**
    * Additional CSS class name(s) for the popover container.
-   * Use with xdsClassName() for theme targeting.
+   * Use with xdsThemeProps() for theme targeting when reflecting visual props.
    */
   className?: string;
   /**

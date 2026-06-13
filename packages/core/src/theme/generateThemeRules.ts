@@ -231,7 +231,8 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
     parts.push(`  :scope {\n${declarations}\n  }`);
   }
 
-  // 2. Component overrides (.xds-* class rules)
+  // 2. Component overrides (legacy .xds-* class rules; components also emit
+  // data-* prop reflections for external selector migrations)
   if (theme.components) {
     generateComponentRules(theme.components, parts);
   }
@@ -248,7 +249,9 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
 }
 
 /**
- * Generate component .xds-* class override rules.
+ * Generate component override rules using the legacy .xds-* class selector
+ * format. Runtime components also emit matching data-* prop reflections; the
+ * theme CSS generator will move to data-attribute selectors in a later step.
  * Handles derived var expansion and container padding mapping.
  */
 function generateComponentRules(
@@ -259,11 +262,11 @@ function generateComponentRules(
   parts: string[],
 ): void {
   for (const [component, rules] of Object.entries(components)) {
-    for (const [key, styles] of Object.entries(
-      rules,
-    )) {
+    for (const [key, styles] of Object.entries(rules)) {
       const entries = Object.entries(styles);
-      if (entries.length === 0) {continue;}
+      if (entries.length === 0) {
+        continue;
+      }
 
       const suffix = parseStyleKey(key);
       const baseSelector = `.xds-${component}${suffix}`;
@@ -497,7 +500,9 @@ export function generateOnMediaCSS(theme: XDSDefinedTheme): string {
           >,
         )) {
           const entries = Object.entries(styles);
-          if (entries.length === 0) {continue;}
+          if (entries.length === 0) {
+            continue;
+          }
 
           const suffix = parseStyleKey(key);
           const baseSelector = `[data-xds-media="${surface}"] .xds-${component}${suffix}`;

@@ -21,8 +21,9 @@ import {use} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {XDSLayoutSlotsContext} from './XDSLayoutSlotsContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {SpacingStep} from '../utils/types';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 import {
   paddingStyles,
   containerPaddingInlineVarStyles,
@@ -185,7 +186,7 @@ export function XDSLayoutContent({
       role={role}
       aria-label={label}
       {...mergeProps(
-        xdsClassName('layout-content'),
+        xdsThemeProps('layout-content'),
         stylex.props(
           styles.content,
           // Outer padding on container edges (unless content is full bleed)

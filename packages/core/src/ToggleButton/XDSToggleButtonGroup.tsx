@@ -22,8 +22,9 @@ import {createContext, useCallback, use, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {XDSButtonSize} from '../Button';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {StyleXStyles} from '@stylexjs/stylex';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Context
@@ -230,7 +231,7 @@ export function XDSToggleButtonGroup(
         aria-label={label}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('toggle-button-group'),
+          xdsThemeProps('toggle-button-group'),
           stylex.props(
             styles.group,
             orientation === 'vertical' && styles.vertical,
