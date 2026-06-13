@@ -422,6 +422,14 @@ describe('blockRegistry', () => {
     }
   });
 
+  it('decodes unicode escapes in block titles', () => {
+    const block = blocks.find(b => b.dirName === 'TabListTabsWithBadge');
+    expect(block).toBeDefined();
+    expect(block!.name).toBe('TabList — With Badge');
+    expect(block!.displayName).toBe('TabList — With Badge');
+    expect(block!.name).not.toContain('\\u2014');
+  });
+
   it('showcase sources contain valid JSX', () => {
     const showcases = blocks.filter(b => b.isShowcase);
     for (const s of showcases) {
@@ -661,6 +669,14 @@ describe('exampleRegistry', () => {
     expect(separators!.description).toContain('"/"');
     // Full sentence survives past the interior quote.
     expect(separators!.description).toMatch(/separator\.?$/i);
+  });
+
+  it('decodes unicode escapes in example titles', () => {
+    const tabList = exampleRegistry['TabList'] ?? [];
+    const withBadge = tabList.find(e => /With Badge/i.test(e.name));
+    expect(withBadge).toBeDefined();
+    expect(withBadge!.name).toBe('TabList — With Badge');
+    expect(withBadge!.name).not.toContain('\\u2014');
   });
 
   // Regression: long descriptions (>200 chars) must not be dropped.
