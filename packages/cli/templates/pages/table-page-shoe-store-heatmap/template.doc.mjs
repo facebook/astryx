@@ -3,8 +3,8 @@
 /** @type {import('../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'page',
-  name: 'Chart',
-  displayName: 'Chart',
+  name: 'Shoe Sales Table',
+  displayName: 'Shoe Sales Table',
   description:
     'Shoe store sales data table with a revenue area chart and product thumbnails.',
   isReady: true,

@@ -3,8 +3,8 @@
 /** @type {import('../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'page',
-  name: 'Analytics',
-  displayName: 'Analytics',
+  name: 'Analytics Dashboard',
+  displayName: 'Analytics Dashboard',
   description: 'Analytics dashboard with KPI cards, charts, and data tables',
   isReady: true,
   category: 'Dashboard - Analytics',
