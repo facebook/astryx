@@ -195,7 +195,8 @@ ATTRS [...] (outline: bare tokens after the name, no brackets)
   key=value    t=email href='/x' c{min:340} dv=[top,bottom] — keys validated per component
   flags        req opt dis striped hover divider … (isX/hasX props) · negate: !scroll
   align        j= main axis, a= cross axis — expander picks hAlign/vAlign per stack direction
-  slots        @slotName=Node | @slotName=(sub > expr) | @slotName='text' | @opens=#id
+  slots        @slotName=Node | @slotName=(sub > expr) | @slotName='text' | @slotName=#id
+  trigger      opens=#id  (a plain attr, no @ — binds an onClick that opens the overlay)
   fill         on a stack child → wraps in <StackItem size="fill">
 
 STRUCTURE THE EXPANDER HANDLES
@@ -203,7 +204,7 @@ STRUCTURE THE EXPANDER HANDLES
   T > (TR>THC*4) + (TR>TC*4)*6 rows partition into TableHeader/TableBody automatically
   TabList/inputs               required value+onChange scaffold typed useState automatically
   overlays                     compact: tree ;; Dlg#confirm[...] · outline: overlays: section
-                               trigger: B"Delete"[@opens=#confirm]
+                               trigger: B"Delete"[opens=#confirm]
 
 ALIASES (full component names always valid; XDS prefix optional)
   ${aliasLines.join('  ')}
