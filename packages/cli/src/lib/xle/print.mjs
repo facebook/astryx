@@ -55,7 +55,7 @@ function slotTokensCompact(node) {
 }
 
 function nodeCompact(node) {
-  let out = node.name;
+  let out = node.name || '';
   if (node.id) out += `#${node.id}`;
   for (const mod of node.enumMods) out += `.${mod}`;
   if (node.payload != null) out += `"${node.payload}"`;
@@ -108,7 +108,7 @@ export function toCompact(doc) {
 
 function nodeOutlineLines(node, depth) {
   const pad = '  '.repeat(depth);
-  let line = node.name;
+  let line = node.name || '';
   if (node.id) line += `#${node.id}`;
   for (const mod of node.enumMods) line += `.${mod}`;
   if (node.payload != null) line += ` "${node.payload}"`;
@@ -119,7 +119,7 @@ function nodeOutlineLines(node, depth) {
   if (node.selected) line += ' !';
   if (node.repeat) line += ` x${node.repeat}`;
 
-  const lines = [pad + line];
+  const lines = [pad + line.trimStart()];
   for (const slot of node.slots) {
     if (slot.value && slot.value.subexpr) {
       if (slot.value.subexpr.length === 1 && isSimpleNode(slot.value.subexpr[0])) {

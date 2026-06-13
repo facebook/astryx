@@ -85,9 +85,11 @@ export function checkExpression(expression, registry, opts = {}) {
  * @param {'compact'|'outline'|'auto'} [opts.form]
  * @param {boolean} [opts.loose]
  * @param {string} [opts.name] - generated component name (PascalCase)
+ * @param {Map} [opts.blockModules] - prepared block sources/imports for splicing;
+ *   omit in the browser (hints stay as TODO markers without sources)
  */
 export function expandExpression(expression, registry, opts = {}) {
-  const {blocks = [], form = 'auto', loose = false, name = 'GeneratedLayout'} = opts;
+  const {blocks = [], form = 'auto', loose = false, name = 'GeneratedLayout', blockModules} = opts;
   const reg = asRegistry(registry);
   let doc;
   try {
@@ -105,7 +107,7 @@ export function expandExpression(expression, registry, opts = {}) {
   if (!/^[A-Z][A-Za-z0-9]*$/.test(name)) {
     return {ok: false, errors: [{message: `Component name must be PascalCase, got '${name}'`, formatted: `Component name must be PascalCase, got '${name}'`}]};
   }
-  const result = expand(doc, reg, {componentName: name});
+  const result = expand(doc, reg, {componentName: name, blockModules});
   return {
     ok: true,
     form: form === 'auto' ? detectForm(expression) : form,

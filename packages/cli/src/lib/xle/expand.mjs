@@ -17,6 +17,7 @@
  */
 
 import {PAYLOAD_PROPS} from './validate.mjs';
+import {mergeImports, renderImport, prepareSpliceModule} from './splice.mjs';
 
 const INDENT = '  ';
 
@@ -87,18 +88,34 @@ function substituteCounter(node, index) {
 class Emitter {
   constructor(registry, options = {}) {
     this.registry = registry;
-    this.imports = new Map(); // importPath → Set<exportName>
+    // importPath → {named:Set, types:Set, default, namespace, sideEffect}
+    this.imports = new Map();
     this.states = [];
     this.usedStateNames = new Set();
     this.todos = [];
     this.componentsUsed = new Set();
     this.componentName = options.componentName || 'GeneratedLayout';
+    // canonical block key → prepared module ({mode, componentName, ...})
+    this.blockModules = options.blockModules || new Map();
+    // names of blocks already co-defined in this module (dedup)
+    this.splicedBlocks = new Map(); // key → componentName
+    this.blockDefs = []; // co-defined block source bodies, in first-use order
+  }
+
+  importEntry(source) {
+    if (!this.imports.has(source)) {
+      this.imports.set(source, {named: new Set(), types: new Set(), default: null, namespace: null, sideEffect: false});
+    }
+    return this.imports.get(source);
   }
 
   addImport(component) {
-    if (!this.imports.has(component.importPath)) this.imports.set(component.importPath, new Set());
-    this.imports.get(component.importPath).add(component.exportName);
+    this.importEntry(component.importPath).named.add(component.exportName);
     this.componentsUsed.add(component.name);
+  }
+
+  addNamedImport(source, name) {
+    this.importEntry(source).named.add(name);
   }
 
   requireComponent(name) {
@@ -233,6 +250,8 @@ class Emitter {
 
   emitNode(node, depth, context = {}) {
     if (!node.bound) {
+      // Anonymous block reference — emit just the block, no wrapper element.
+      if (node.hint) return this.emitHint(node.hint, depth);
       return [`${INDENT.repeat(depth)}{/* unresolved: ${node.name} */}`];
     }
     const component = node.bound.component;
@@ -396,7 +415,14 @@ class Emitter {
   emitHint(hint, depth) {
     const pad = INDENT.repeat(depth);
     if (hint.block) {
-      this.todos.push(`splice block ${hint.block.name}`);
+      const key = hint.block.name;
+      const mod = this.blockModules.get(key) || this.blockModules.get(key.toLowerCase());
+      if (mod) {
+        const name = this.referenceBlock(key, mod);
+        if (name) return [`${pad}<${name} />`];
+      }
+      // Source not available (e.g. browser, or unreadable) → pointer marker.
+      this.todos.push(`reference block ${hint.block.name}`);
       const flags = hint.flags.length > 0 ? ` (+${hint.flags.join(' +')})` : '';
       const arg = hint.arg ? `:${hint.arg}` : '';
       return [
@@ -405,6 +431,41 @@ class Emitter {
     }
     this.todos.push(`unresolved hint {${hint.name}}`);
     return [`${pad}{/* TODO(xle): content '{${hint.name}}' (no matching block) */}`];
+  }
+
+  /**
+   * Register a referenced block (import-mode app component, or splice-mode
+   * template block co-defined once) and return the JSX component name to use.
+   */
+  referenceBlock(key, mod) {
+    if (this.splicedBlocks.has(key)) return this.splicedBlocks.get(key);
+
+    if (mod.mode === 'import') {
+      this.addNamedImport(mod.importPath, mod.componentName);
+      this.componentsUsed.add(mod.componentName);
+      this.splicedBlocks.set(key, mod.componentName);
+      return mod.componentName;
+    }
+
+    // splice mode — prepare from raw source, co-define, hoist imports.
+    const prepared = prepareSpliceModule(mod.source, mod.componentName);
+    if (!prepared) return null;
+    // Avoid name collisions with the generated component or another block.
+    let name = prepared.componentName;
+    if (name === this.componentName || [...this.splicedBlocks.values()].includes(name)) {
+      name = `${name}Block`;
+    }
+    const body = name === prepared.componentName
+      ? prepared.body
+      : prepared.body.replace(
+          new RegExp(`\\bfunction ${prepared.componentName}\\b`),
+          `function ${name}`,
+        );
+    mergeImports(this.imports, prepared.imports);
+    this.blockDefs.push(body);
+    this.componentsUsed.add(name);
+    this.splicedBlocks.set(key, name);
+    return name;
   }
 
   routeLayoutChildren(node, props, slotEntries, depth) {
@@ -521,20 +582,29 @@ export function expand(doc, registry, options = {}) {
     body.push(`${INDENT.repeat(1)});`);
   }
 
+  // useState is just another named import from 'react' so it merges with any
+  // hooks a spliced block brought in (e.g. a Table block's useState).
+  if (emitter.states.length > 0) emitter.addNamedImport('react', 'useState');
+
   const importLines = [];
-  if (emitter.states.length > 0) importLines.push(`import {useState} from 'react';`);
   const sortedImports = [...emitter.imports.entries()].sort(([a], [b]) => a.localeCompare(b));
-  for (const [importPath, names] of sortedImports) {
-    importLines.push(`import {${[...names].sort().join(', ')}} from '${importPath}';`);
+  for (const [importPath, entry] of sortedImports) {
+    importLines.push(renderImport(importPath, entry));
   }
 
   const stateLines = emitter.states.map(
     s => `${INDENT}const [${s.name}, ${s.setter}] = useState(${s.initial});`,
   );
 
+  // Co-defined template blocks live between imports and the page component.
+  const blockSection = emitter.blockDefs.length > 0
+    ? ['', ...emitter.blockDefs.flatMap(b => [b, ''])]
+    : [];
+
   const code = [
     `// Generated by \`xds layout expand\` — this file is the artifact; edit freely.`,
     ...importLines,
+    ...blockSection,
     '',
     `export default function ${emitter.componentName}() {`,
     ...stateLines,

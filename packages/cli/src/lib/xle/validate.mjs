@@ -122,6 +122,13 @@ export class Validation {
   }
 
   bindNode(node, parent) {
+    // Anonymous block reference ({block} with no host element).
+    if (!node.name && node.hint) {
+      node.bound = null;
+      this.bindHint(node);
+      for (const child of node.children) this.bindAny(child, node);
+      return;
+    }
     const component = resolveComponent(this.registry, node.name);
     if (!component) {
       this.error(

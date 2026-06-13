@@ -294,10 +294,14 @@ class CompactStream {
 
 function parseCompactNode(s) {
   const {line, col} = s.pos();
-  if (!isIdentStart(s.peek())) s.error(`Expected a component name, found '${s.peek() ?? 'end of input'}'`);
   let name = '';
-  while (!s.eof() && /[A-Za-z0-9]/.test(s.peek())) name += s.next();
-  const node = makeNode(name, line, col);
+  // A term may start with `{block}` — an anonymous block reference with no
+  // wrapping element (e.g. a domain component placed directly in a Grid).
+  if (s.peek() !== '{') {
+    if (!isIdentStart(s.peek())) s.error(`Expected a component name, found '${s.peek() ?? 'end of input'}'`);
+    while (!s.eof() && /[A-Za-z0-9]/.test(s.peek())) name += s.next();
+  }
+  const node = makeNode(name || null, line, col);
 
   // postfix pieces in any sensible order: #id .mod "payload" [attrs] {hint} *N !
   for (;;) {
@@ -442,6 +446,15 @@ function parseOutlineNodeSegment(segment, line) {
   const tokens = tokenize(segment, line, 0);
   if (tokens.length === 0) throw new XLEParseError('Empty node', line, 1);
   const first = tokens[0];
+  // Anonymous block reference: a line that starts with `{block}`.
+  if (first.text.startsWith('{') && first.text.endsWith('}')) {
+    const node = makeNode(null, line, first.col);
+    node.hint = parseHintBody(first.text.slice(1, -1), line, first.col);
+    for (const token of tokens.slice(1)) {
+      if (/^[x*]\d+$/.test(token.text)) node.repeat = Number(token.text.slice(1));
+    }
+    return node;
+  }
   const m = first.text.match(/^([A-Za-z][A-Za-z0-9]*)(#[A-Za-z0-9_-]+)?((?:\.[a-z0-9-]+)*)$/);
   if (!m) {
     throw new XLEParseError(

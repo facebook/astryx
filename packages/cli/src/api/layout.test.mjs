@@ -8,6 +8,9 @@
  */
 
 import {describe, it, expect, beforeAll} from 'vitest';
+import {mkdtempSync, writeFileSync, rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import ts from 'typescript';
 import {layoutExpand, layoutCheck, layoutGrammar} from './layout.mjs';
 import {buildRegistry} from '../lib/xle/registry.mjs';
@@ -47,7 +50,7 @@ AppShell
         ChS "Today"
         repeat 2:
           ChM
-            ChB {chat-message-bubble-showcase}
+            ChB "Reply $"
     Tbar "Actions"
       B "Delete" opens=#confirm
 
@@ -103,7 +106,11 @@ describe('layoutExpand', () => {
     expect(code).toContain('Order 3');
     expect(code).toContain('$12.00');
     expect(code).not.toContain('112.00');
-    expect((code.match(/TODO\(xle\): content block 'CardCallout'/g) || [])).toHaveLength(4);
+    // {card-callout} now splices: the block is co-defined once and referenced
+    // four times — no TODO marker.
+    expect((code.match(/^function CardCallout\(\)/gm) || [])).toHaveLength(1);
+    expect((code.match(/<CardCallout \/>/g) || [])).toHaveLength(4);
+    expect(code).not.toContain("TODO(xle): content block 'CardCallout'");
   }, SLOW);
 
   it('compact and outline surfaces expand to identical TSX', async () => {
@@ -156,6 +163,66 @@ describe('layoutCheck', () => {
     expect(all).toMatch(/no prop 'padding'/);
     expect(all).toMatch(/must be one of/);
     expect(all).toMatch(/Unknown block/);
+  });
+});
+
+describe('template referencing', () => {
+  it('splices a template block: co-defined once, referenced, imports merged', async () => {
+    const result = await layoutExpand('S[p6] > C{card-callout}*3', {name: 'Demo'});
+    const {code} = result.data;
+    expectValidTsx(code);
+    // co-defined exactly once, referenced three times, no TODO
+    expect((code.match(/^function CardCallout\(\)/gm) || [])).toHaveLength(1);
+    expect((code.match(/<CardCallout \/>/g) || [])).toHaveLength(3);
+    expect(code).not.toContain('TODO(xle)');
+    // the block's own import is hoisted, and shared specifiers dedupe
+    expect((code.match(/from '@xds\/core\/Card'/g) || [])).toHaveLength(1);
+    // the block lost its export — it's a local declaration now
+    expect(code).not.toContain('export default function CardCallout');
+    expect(result.data.blocksReferenced).toEqual([{name: 'CardCallout', mode: 'splice'}]);
+  }, SLOW);
+
+  it('merges a stateful block useState into a single react import', async () => {
+    const result = await layoutExpand(
+      'V > TI"Search"[t=text] + {table-column-settings-table}',
+      {name: 'Demo'},
+    );
+    const {code} = result.data;
+    expectValidTsx(code);
+    // page TextInput scaffolds useState; block also uses useState → one import
+    expect((code.match(/^import \{useState\} from 'react';$/gm) || [])).toHaveLength(1);
+    expect(code).toContain('function TableColumnSettingsTable()');
+  }, SLOW);
+
+  it('imports app-registered local components (the local-component bridge)', async () => {
+    // Inside the workspace so @xds/core resolves; cleaned up after.
+    const cwd = mkdtempSync(join(process.cwd(), '.xle-imp-test-'));
+    try {
+      writeFileSync(
+        join(cwd, 'xds.config.mjs'),
+        `export default {layout: {components: {KpiCard: '@/components/KpiCard', TimeRangePicker: {from: '@/components/TimeRangePicker'}}}};\n`,
+      );
+      const result = await layoutExpand('S[p6] > (G[c4 g4] > {kpi-card}*4) + {time-range-picker}', {
+        name: 'Demo',
+        cwd,
+      });
+      const {code} = result.data;
+      expectValidTsx(code);
+      expect(code).toContain("import {KpiCard} from '@/components/KpiCard';");
+      expect(code).toContain("import {TimeRangePicker} from '@/components/TimeRangePicker';");
+      expect((code.match(/<KpiCard \/>/g) || [])).toHaveLength(4);
+      expect(code).toContain('<TimeRangePicker />');
+      expect(result.data.blocksReferenced).toContainEqual({name: 'KpiCard', mode: 'import'});
+    } finally {
+      rmSync(cwd, {recursive: true, force: true});
+    }
+  }, SLOW);
+
+  it('parses a standalone {block} in both surfaces', async () => {
+    const check = await layoutCheck('G[c4 g4] > {card-callout}*2');
+    expect(check.data.valid).toBe(true);
+    expect(check.data.compact).toContain('{card-callout}*2');
+    expect(check.data.outline).toMatch(/\{card-callout\} x2/);
   });
 });
 

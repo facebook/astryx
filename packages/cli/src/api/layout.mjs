@@ -24,15 +24,89 @@ import {validate} from '../lib/xle/validate.mjs';
 import {expand} from '../lib/xle/expand.mjs';
 import {toCompact, toOutline} from '../lib/xle/print.mjs';
 import {buildRegistry, ALIAS_TABLE} from '../lib/xle/registry.mjs';
-import {discoverTemplates} from './template.mjs';
+import {discoverTemplates, stripTemplateAssetRefs} from './template.mjs';
+import {loadConfig} from '../lib/config.mjs';
 
+/**
+ * The catalog a `{hint}` can resolve to: template blocks (spliced inline) plus
+ * any app-registered local components from xds.config.mjs `layout.components`
+ * (imported by name). App components are how XLE reaches domain pieces — the
+ * KpiCard/chart/drawer set that the @xds/core registry can't see.
+ */
 async function loadBlocks(cwd) {
+  const blocks = [];
   try {
     const all = await discoverTemplates(cwd);
-    return all.filter(t => t.type === 'block');
+    for (const t of all) if (t.type === 'block') blocks.push({...t, kind: 'template'});
   } catch {
-    return [];
+    // discovery is best-effort
   }
+  try {
+    const config = await loadConfig(cwd);
+    const components = config.layout?.components || {};
+    for (const [name, spec] of Object.entries(components)) {
+      const importPath = typeof spec === 'string' ? spec : spec.from;
+      if (!importPath) continue;
+      blocks.push({
+        type: 'block',
+        kind: 'component',
+        dirName: name,
+        name,
+        description: typeof spec === 'object' ? spec.description || '' : '',
+        category: 'app',
+        importPath,
+        isDefault: typeof spec === 'object' ? Boolean(spec.default) : false,
+      });
+    }
+  } catch {
+    // config is optional
+  }
+  return blocks;
+}
+
+const normKey = (name) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/** Collect the block names referenced by {hints} anywhere in the doc. */
+function collectHintNames(doc) {
+  const names = new Set();
+  const visitNode = (node) => {
+    if (!node || node.kind === 'group') {
+      (node?.children || []).forEach(visit);
+      return;
+    }
+    if (node.hint?.block) names.add(node.hint.block.name);
+    for (const slot of node.slots || []) {
+      if (slot.value?.hint?.block) names.add(slot.value.hint.block.name);
+      (slot.value?.subexpr || []).forEach(visit);
+    }
+    (node.children || []).forEach(visit);
+  };
+  const visit = (item) => (item?.kind === 'group' ? item.children.forEach(visit) : visitNode(item));
+  doc.roots.forEach(visit);
+  doc.overlays.forEach(visit);
+  return names;
+}
+
+/**
+ * Build the blockModules map expand() needs: import-mode for app components,
+ * splice-mode (reading + asset-stripping the block source) for template blocks.
+ * Only blocks actually referenced are read.
+ */
+function buildBlockModules(doc, blocks) {
+  const referenced = collectHintNames(doc);
+  if (referenced.size === 0) return new Map();
+  const byKey = new Map(blocks.map(b => [normKey(b.dirName), b]));
+  const modules = new Map();
+  for (const name of referenced) {
+    const block = byKey.get(normKey(name));
+    if (!block) continue;
+    if (block.kind === 'component') {
+      modules.set(name, {mode: 'import', componentName: block.name, importPath: block.importPath, isDefault: block.isDefault});
+    } else if (block.filePath && fs.existsSync(block.filePath)) {
+      modules.set(name, {mode: 'splice', componentName: block.dirName, source: stripTemplateAssetRefs(fs.readFileSync(block.filePath, 'utf-8'))});
+    }
+  }
+  return modules;
 }
 
 function formatIssue(issue) {
@@ -79,7 +153,7 @@ async function analyze(expression, {form = 'auto', loose = false, cwd = process.
  */
 export async function layoutExpand(expression, options = {}) {
   const {targetPath, form = 'auto', loose = false, name, cwd = process.cwd()} = options;
-  const {doc, registry, errors, warnings} = await analyze(expression, {form, loose, cwd});
+  const {doc, registry, blocks, errors, warnings} = await analyze(expression, {form, loose, cwd});
 
   if (errors.length > 0) {
     throw new XDSError(
@@ -97,7 +171,8 @@ export async function layoutExpand(expression, options = {}) {
       ERROR_CODES.ERR_INVALID_ARGUMENT,
     );
   }
-  const result = expand(doc, registry, {componentName});
+  const blockModules = buildBlockModules(doc, blocks);
+  const result = expand(doc, registry, {componentName, blockModules});
 
   let written = null;
   if (targetPath) {
@@ -126,6 +201,7 @@ export async function layoutExpand(expression, options = {}) {
       componentsUsed: result.componentsUsed,
       states: result.states,
       todos: result.todos,
+      blocksReferenced: [...blockModules.entries()].map(([name, m]) => ({name, mode: m.mode})),
       warnings: warnings.map(formatIssue),
       written,
     },
@@ -186,7 +262,7 @@ TWO SURFACES, ONE LANGUAGE (autodetected; --form to force)
 NODE ANATOMY   Name#id.enum"payload"[attrs]{hint}*N > children
   .enum        unique enum value of any prop:  Bd.success  Tx.lg  B.primary
   "payload"    primary text prop (label/title/heading) or text child:  TI"Email"  B"Save"
-  {hint}       kebab-case block reference (xds template --list --type block) — NEVER text
+  {hint}       kebab-case template/component reference (see TEMPLATE REFERENCING) — NEVER text
   *N / xN      repeat (use $ for the counter:  Tk"item-$"*3)
   trailing !   initial selection for scaffolded state:  Tab"Overview"!
 
@@ -198,6 +274,15 @@ ATTRS [...] (outline: bare tokens after the name, no brackets)
   slots        @slotName=Node | @slotName=(sub > expr) | @slotName='text' | @slotName=#id
   trigger      opens=#id  (a plain attr, no @ — binds an onClick that opens the overlay)
   fill         on a stack child → wraps in <StackItem size="fill">
+
+TEMPLATE REFERENCING  ({hint} pulls in real content — this is how XLE reaches past the @xds/core shell)
+  C{card-callout}              splice a template block (xds template --list --type block):
+                              the block is co-defined once in the file, referenced, imports merged
+  {kpi-card}                   standalone reference (no wrapper element) — place a component directly
+  {kpi-card}*4                 repeat a reference; the definition/import is emitted once
+  app components               register local ones in xds.config.mjs to import them by name:
+                                 export default {layout: {components: {KpiCard: '@/components/KpiCard'}}}
+                               then {kpi-card} → import {KpiCard} + <KpiCard /> (kebab ↔ Pascal)
 
 STRUCTURE THE EXPANDER HANDLES
   Layout > LH + LC + LF + LP   children auto-route into header/content/footer/start slots
