@@ -65,7 +65,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-emptystate'},
+      {className: 'xds-empty-state'},
     ],
   },
   usage: {
@@ -140,7 +140,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-emptystate'},
+      {className: 'xds-empty-state'},
     ],
   },
   usage: {

@@ -797,7 +797,7 @@ const KNOWN_COMPONENTS = {
   dialog: ['variant', 'position'],
   divider: ['variant', 'orientation'],
   dropdownmenu: [],
-  emptystate: [],
+  'empty-state': [],
   field: [],
   formlayout: [],
   grid: ['align'],
