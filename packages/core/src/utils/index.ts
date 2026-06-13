@@ -64,6 +64,7 @@ export {
 export type {ISOTimeString, ParsedTime} from './timeParser';
 
 export {parseStyleKey} from './parseStyleKey';
+export {getKey, type XDSKey, type XDSKeyFallback} from './getKey';
 
 export {mergeProps} from './mergeProps';
 export {mergeRefs} from './mergeRefs';
