@@ -7,10 +7,13 @@ packages:
   - "internal/*"
 
 # pnpm 10 no longer reads `pnpm.overrides` / `pnpm.onlyBuiltDependencies`
-# from package.json — they live here now. Without this, the vite pin is
-# dropped and an unpinned transitive vite@5 pulls esbuild 0.21.5, which
-# collides with the 0.25.x the rest of the tree expects (postinstall fails
-# with: Expected "0.25.12" but got "0.21.5").
+# from package.json — they live here now. Without this the vite pin is
+# dropped and an unpinned transitive vite@5 pulls esbuild 0.21.5, whose
+# postinstall fails (Expected "0.25.12" but got "0.21.5"). The vite pin
+# alone fixes it: each esbuild copy keeps its matching platform binary.
+# (Do NOT pin `esbuild` globally — it forces the JS version down while
+# transitive consumers keep their own @esbuild/<platform> binary, causing
+# the inverse skew, e.g. JS 0.25.12 vs binary 0.28.0.)
 overrides:
   prettier: "^3.8.3"
   postcss: "^8.5.10"
@@ -20,7 +23,6 @@ overrides:
   minimatch: "^9.0.7"
   dompurify: "^3.3.2"
   vite: "^6.4.2"
-  esbuild: "^0.25.0"
   tmp: ">=0.2.6"
 
 onlyBuiltDependencies:
