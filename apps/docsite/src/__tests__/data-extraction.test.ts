@@ -163,6 +163,18 @@ describe('componentRegistry', () => {
     expect(dialogHeader!.description.toLowerCase()).toContain('header');
   });
 
+  it('sub-components can override inherited playground defaults', () => {
+    const core = components['@xds/core'];
+    const avatarGroupOverflow = core.find(
+      c => c.name === 'AvatarGroupOverflow',
+    );
+    expect(avatarGroupOverflow).toBeDefined();
+    expect(avatarGroupOverflow!.playground?.defaults).toMatchObject({
+      count: 2,
+      children: '+2',
+    });
+  });
+
   it('Chat has many sub-components (standalone docs take priority over compound entries)', () => {
     const core = components['@xds/core'];
     // Chat compound doc has 14 sub-components, but ChatToolCalls and

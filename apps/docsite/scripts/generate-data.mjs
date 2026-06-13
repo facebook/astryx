@@ -404,8 +404,9 @@ async function generateComponentRegistry() {
         if (doc.subComponentOf) {
           // Extracted sub-component: lives in its parent's directory in its own
           // .doc.mjs file. Inherits family fields (group, category, keywords,
-          // theming, playground, importPath) from the directory's primary doc;
-          // owns its name, description, props, and usage. Produces a registry
+          // theming, playground, importPath) from the directory's primary doc
+          // unless the sub-component doc overrides them; owns its name,
+          // description, props, and usage. Produces a registry
           // entry identical to the legacy inline `components[]` expansion.
           const parentMeta = dirPrimaryMeta || {};
           const subName = (doc.name || '').replace(/^XDS/, '');
@@ -462,7 +463,11 @@ async function generateComponentRegistry() {
                 ? doc.relatedComponents || [doc.subComponentOf]
                 : null,
               relatedHooks: isHookEntry ? doc.relatedHooks || null : null,
-              playground: isHookEntry ? null : parentMeta.playground ?? null,
+              playground: isHookEntry
+                ? null
+                : doc.playground
+                  ? sanitizeForJson(doc.playground)
+                  : parentMeta.playground ?? null,
             });
           }
         } else if (doc.components && doc.components.length > 0) {
