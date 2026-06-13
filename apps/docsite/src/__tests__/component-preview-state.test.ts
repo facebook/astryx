@@ -3,6 +3,7 @@
 import {describe, expect, it, vi} from 'vitest';
 import {
   buildInitialState,
+  buildRuntimePreviewState,
   getMissingRequiredProps,
   pickPrimaryProps,
 } from '../components/component-detail/interactiveState';
@@ -91,5 +92,23 @@ describe('component detail preview state', () => {
 
     expect(state.config).toBeUndefined();
     expect(getMissingRequiredProps(knobs, state)).toEqual(['config']);
+  });
+
+  it('wires controlled open previews back to their isOpen prop', () => {
+    const onPropChange = vi.fn();
+    const runtimeState = buildRuntimePreviewState(
+      {
+        children: 'Preview content',
+        isOpen: true,
+      },
+      onPropChange,
+      {canControlOpenState: true},
+    );
+
+    expect(runtimeState.onOpenChange).toEqual(expect.any(Function));
+
+    (runtimeState.onOpenChange as (isOpen: boolean) => void)(false);
+
+    expect(onPropChange).toHaveBeenCalledWith('isOpen', false);
   });
 });
