@@ -27,6 +27,26 @@ describe('XDSMarkdown', () => {
     expect(screen.getByText('Hello world').tagName).toBe('P');
   });
 
+  it('renders inline display without block wrappers', () => {
+    const {container} = render(
+      <XDSMarkdown display="inline">{'Use `code` and **bold**'}</XDSMarkdown>,
+    );
+
+    expect(container.firstElementChild?.tagName).toBe('SPAN');
+    expect(screen.queryByRole('document')).not.toBeInTheDocument();
+    expect(container.querySelector('p')).toBeNull();
+    expect(screen.getByText('code').tagName).toBe('CODE');
+    expect(screen.getByText('bold').tagName).toBe('STRONG');
+  });
+
+  it('renders links with inline display', () => {
+    render(<XDSMarkdown display="inline">{'[docs](/docs)'}</XDSMarkdown>);
+
+    const link = screen.getByText('docs');
+    expect(link.tagName).toBe('A');
+    expect(link.getAttribute('href')).toBe('/docs');
+  });
+
   it('renders bold text', () => {
     render(<XDSMarkdown>{'**bold text**'}</XDSMarkdown>);
     expect(screen.getByText('bold text').tagName).toBe('STRONG');

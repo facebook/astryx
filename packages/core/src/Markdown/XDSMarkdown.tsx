@@ -25,6 +25,7 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
+import type {XDSTextDisplay} from '../theme/types';
 import {XDSCodeBlock, XDSCode} from '../CodeBlock';
 import {XDSCheckboxList} from '../CheckboxList/XDSCheckboxList';
 import {XDSCheckboxListItem} from '../CheckboxList/XDSCheckboxListItem';
@@ -47,6 +48,7 @@ import type {XDSCitationSource} from '../Citation/XDSCitation';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {
+  parseInline,
   parseMarkdown,
   parseMarkdownIncremental,
   createIncrementalState,
@@ -112,9 +114,15 @@ export interface XDSMarkdownComponents {
   hr?: React.ComponentType<object>;
 }
 
-export interface XDSMarkdownProps extends XDSBaseProps<HTMLDivElement> {
-  ref?: React.Ref<HTMLDivElement>;
+export interface XDSMarkdownProps extends XDSBaseProps<HTMLElement> {
+  ref?: React.Ref<HTMLDivElement> | React.Ref<HTMLSpanElement>;
   children: string;
+  /**
+   * Display type. Markdown defaults to block.
+   * Use 'inline' for markdown spans embedded inside surrounding text.
+   * @default 'block'
+   */
+  display?: XDSTextDisplay;
   density?: 'default' | 'compact';
   /**
    * The HTML heading level that markdown `#` maps to.
@@ -230,6 +238,15 @@ const styles = stylex.create({
     maxWidth: '100%',
     minWidth: 0,
     overflowWrap: 'break-word',
+  },
+  inlineRoot: {
+    display: 'inline',
+    width: 'auto',
+    maxWidth: 'none',
+    fontFamily: 'inherit',
+    color: 'inherit',
+    lineHeight: 'inherit',
+    fontSize: 'inherit',
   },
   // Headings
   headingBase: {
@@ -1517,6 +1534,7 @@ function renderBlock(
 export function XDSMarkdown({
   ref,
   children,
+  display = 'block',
   density = 'default',
   headingLevelStart = 1,
   isStreaming = false,
@@ -1561,6 +1579,9 @@ export function XDSMarkdown({
   }
 
   const blocks = useMemo(() => {
+    if (display === 'inline') {
+      return [];
+    }
     if (isStreaming) {
       if (smoothedText === '') {
         incrementalStateRef.current = createIncrementalState();
@@ -1574,7 +1595,15 @@ export function XDSMarkdown({
       );
     }
     return parseMarkdown(children, parseOptions);
-  }, [smoothedText, children, isStreaming, parseOptions]);
+  }, [display, smoothedText, children, isStreaming, parseOptions]);
+
+  const inlineNodes = useMemo(() => {
+    if (display !== 'inline') {
+      return [];
+    }
+    const input = isStreaming ? trimStreamingArtifacts(smoothedText) : children;
+    return parseInline(input, parseOptions);
+  }, [display, smoothedText, children, isStreaming, parseOptions]);
 
   // Track recent boundaries for stacked fade-in animation.
   // The number of spans needed = ceil(animationDuration / tickInterval).
@@ -1591,15 +1620,19 @@ export function XDSMarkdown({
   }, [token]);
 
   const prevBlocksRef = useRef<BlockNode[]>([]);
+  const prevInlineNodesRef = useRef<InlineNode[]>([]);
   const boundariesRef = useRef<number[]>([]);
   const smoothedLen = smoothedText.length;
   const boundaries = useMemo(() => {
     void smoothedLen; // dep trigger
-    const prevLen = countBlockTextLength(prevBlocksRef.current);
+    const prevLen =
+      display === 'inline'
+        ? countInlineTextLength(prevInlineNodesRef.current)
+        : countBlockTextLength(prevBlocksRef.current);
     const next = computeBoundaries(boundariesRef.current, prevLen, maxSpans);
     boundariesRef.current = next;
     return next;
-  }, [smoothedLen, maxSpans]);
+  }, [display, smoothedLen, maxSpans]);
 
   const cursor: StreamingCursor = {
     offset: 0,
@@ -1613,10 +1646,43 @@ export function XDSMarkdown({
     ? {sources, numberMap: new Map(), nextNumber: 1, style: citationStyle}
     : null;
 
+  if (display === 'inline') {
+    const renderedInline = (
+      <span
+        ref={ref}
+        data-testid={testId}
+        {...mergeProps(
+          xdsThemeProps('markdown', {density}),
+          stylex.props(styles.root, styles.inlineRoot, xstyle),
+          className,
+          style,
+        )}>
+        {inlineNodes.map((node, i) =>
+          renderInline(
+            node,
+            i,
+            onLinkClick,
+            cursor,
+            citationCtx,
+            LinkComponent,
+            inlinePlugins,
+            components,
+          ),
+        )}
+      </span>
+    );
+
+    // Store current inline nodes for next render's boundary calculation.
+    prevInlineNodesRef.current = inlineNodes;
+    prevBlocksRef.current = [];
+
+    return renderedInline;
+  }
+
   const rendered = (
     <div
       role="document"
-      ref={ref}
+      ref={ref as React.Ref<HTMLDivElement>}
       data-testid={testId}
       {...mergeProps(
         xdsThemeProps('markdown', {density}),
@@ -1652,6 +1718,7 @@ export function XDSMarkdown({
   // This ref write is safe under StrictMode: both invocations produce the same
   // blocks (same smoothedText → same useMemo result), so both write the same value.
   prevBlocksRef.current = blocks;
+  prevInlineNodesRef.current = [];
 
   return rendered;
 }

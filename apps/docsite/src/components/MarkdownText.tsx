@@ -2,16 +2,10 @@
 
 'use client';
 
-import type {ComponentProps, ReactNode} from 'react';
-import {Fragment} from 'react';
-import {XDSLink} from '@xds/core/Link';
+import type {ComponentProps} from 'react';
+import {XDSMarkdown} from '@xds/core/Markdown';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
-import {
-  type InlineMarkdownToken,
-  parseInlineMarkdown,
-  splitMarkdownParagraphs,
-} from './markdownInline';
 
 type XDSTextProps = ComponentProps<typeof XDSText>;
 
@@ -46,7 +40,7 @@ export function MarkdownText({
         weight={weight}
         display={display}
         style={style}>
-        {renderInlineMarkdown(parseInlineMarkdown(paragraphs[0]))}
+        <XDSMarkdown display="inline">{paragraphs[0]}</XDSMarkdown>
       </XDSText>
     );
   }
@@ -61,48 +55,17 @@ export function MarkdownText({
           color={color}
           weight={weight}
           display="block">
-          {renderInlineMarkdown(parseInlineMarkdown(paragraph))}
+          <XDSMarkdown display="inline">{paragraph}</XDSMarkdown>
         </XDSText>
       ))}
     </XDSVStack>
   );
 }
 
-function renderInlineMarkdown(tokens: InlineMarkdownToken[]): ReactNode {
-  return tokens.map((token, index) => {
-    switch (token.kind) {
-      case 'text':
-        return <Fragment key={index}>{token.text}</Fragment>;
-      case 'code':
-        return (
-          <XDSText key={index} type="code" color="inherit">
-            {token.text}
-          </XDSText>
-        );
-      case 'strong':
-        return (
-          <XDSText key={index} type="inherit" color="inherit" weight="bold">
-            {renderInlineMarkdown(token.children)}
-          </XDSText>
-        );
-      case 'emphasis':
-        return <em key={index}>{renderInlineMarkdown(token.children)}</em>;
-      case 'link':
-        return (
-          <XDSLink
-            key={index}
-            href={token.href}
-            type="inherit"
-            color="active"
-            hasUnderline
-            isExternalLink={isExternalHref(token.href)}>
-            {renderInlineMarkdown(token.children)}
-          </XDSLink>
-        );
-    }
-  });
-}
-
-function isExternalHref(href: string): boolean {
-  return /^https?:\/\//i.test(href);
+function splitMarkdownParagraphs(markdown: string): string[] {
+  return markdown
+    .trim()
+    .split(/\n{2,}/)
+    .map(block => block.replace(/\s*\n\s*/g, ' ').trim())
+    .filter(Boolean);
 }
