@@ -33,10 +33,23 @@
   .err-row { color:var(--err); font:12px/1.5 ui-monospace,monospace; padding:4px 0; border-bottom:1px dashed var(--line); }
   .err-row b { color:var(--accent); font-weight:600; }
   .section-label { padding:8px 16px 2px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); border-top:1px solid var(--line); }
-  .examples { display:flex; flex-direction:column; gap:4px; padding:0 16px 10px; }
-  .ex-cat { font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-top:8px; }
-  .ex-row { display:flex; gap:6px; flex-wrap:wrap; }
-  .examples button { font-size:12px; padding:3px 8px; }
+  .metrics { display:flex; gap:8px; padding:8px 16px; border-bottom:1px solid var(--line); }
+  .metric { flex:1; border:1px solid var(--line); border-radius:6px; padding:6px 8px; background:var(--panel); }
+  .metric .m-label { font-size:11px; color:var(--muted); }
+  .metric .m-val { font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; }
+  .metric .m-sub { font-size:11px; color:var(--muted); }
+  .ex-head { display:flex; align-items:center; gap:8px; padding:8px 16px 4px; }
+  .ex-head .section-label { border:0; padding:0; flex-shrink:0; }
+  .search { flex:1; padding:4px 8px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--fg); font:inherit; font-size:12px; }
+  .browser { margin:0 16px 10px; border:1px solid var(--line); border-radius:6px; max-height:260px; overflow-y:auto; }
+  .ex-cat { position:sticky; top:0; background:var(--panel); padding:3px 10px; font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); border-bottom:1px solid var(--line); }
+  .ex-item { display:flex; justify-content:space-between; align-items:center; gap:8px; width:100%; text-align:left; border:0; border-bottom:1px solid var(--line); background:transparent; color:var(--fg); cursor:pointer; padding:5px 10px; }
+  .ex-item:hover { background:var(--panel); }
+  .ex-item.active { background:color-mix(in srgb,var(--accent) 14%,transparent); }
+  .ex-item .ex-label { font-size:12px; font-weight:600; }
+  .ex-item .ex-expr { font-family:ui-monospace,monospace; font-size:10px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ex-item .ex-tok { flex-shrink:0; font-size:10px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .ex-col { min-width:0; display:flex; flex-direction:column; }
 </style>
 </head>
 <body>
@@ -57,9 +70,13 @@
     </div>
     <textarea id="src" spellcheck="false"></textarea>
     <div class="status" id="status"><span class="pill warn">loading…</span></div>
+    <div class="metrics" id="metrics"></div>
     <div class="err-list" id="errors"></div>
-    <div class="section-label">Examples</div>
-    <div class="examples" id="examples"></div>
+    <div class="ex-head">
+      <span class="section-label">Examples</span>
+      <input id="search" class="search" type="search" placeholder="Search examples…" />
+    </div>
+    <div class="browser" id="examples"></div>
     <div class="section-label">Canonical compact</div>
     <div class="scroll"><pre id="compact"></pre></div>
     <div class="section-label">Canonical outline</div>
@@ -75,6 +92,21 @@
 import {checkExpression, expandExpression} from '/xle/browser.mjs';
 
 const EXAMPLES = [
+  ["Pages", "Analytics dashboard", "A[cp6 @topNav=TN @sideNav=SN] > L > LC > V[g6] > (H[j=between a=center] > Hd\"Analytics\"[level=2] + (H[g2] > B\"Export\" + B.primary\"New report\")) + (G[c4 g4] > (C[p6] > V[g1] > Tx.lg\"\\$42k\" + Tx[t=supporting]\"Revenue\")*4) + (G[c{min:340} g4] > C{card-callout} + C{card-callout}) + (C[p0] > T[striped] > (TR>THC\"Order\"+THC\"Customer\"+THC\"Status\"+THC\"Total\") + (TR>TC\"#10$\"+TC\"Acme Inc\"+(TC>Bd.success\"Paid\")+TC\"\\$120\")*5)"],
+  ["Pages", "Settings page", "A[cp6 @topNav=TN @sideNav=SN] > L > LC > S[p6] > V[g6] > Hd\"Settings\"[level=2] + (C[p6] > V[g4] > Hd\"Profile\"[level=4] + (F > TI\"Name\"[req] + TI\"Email\"[t=email req]) + B.primary\"Save\") + (C[p6] > V[g4] > Hd\"Notifications\"[level=4] + (H[j=between a=center] > Tx\"Email alerts\" + SW\"Email alerts\") + (H[j=between a=center] > Tx\"Push\" + SW\"Push\"))"],
+  ["Pages", "Order detail", "A[cp6 @topNav=TN] > L > LC > V[g6] > (H[j=between a=center] > (V[g1] > Hd\"Order #1042\"[level=2] + Tx[t=supporting]\"Created today\") + Bd.success\"Paid\") + (G[c{min:280} g6] > (C[p6] > V[g4] > Hd\"Items\"[level=4] + (T > (TR>THC\"Item\"+THC\"Qty\") + (TR>TC\"Widget\"+TC\"2\")*3)) + (C[p6] > V[g3] > Hd\"Customer\"[level=4] + (ML > MLI\"Name\":\"Acme\" + MLI\"Email\":\"a@x.com\" + MLI\"Plan\":\"Pro\")))"],
+  ["Pages", "Users table page", "A[cp6 @topNav=TN @sideNav=SN] > L > LC > V[g4] > (Tbar\"Users\" > B\"Filter\" + B\"Export\" + B.primary\"Invite\") + (C[p0] > T[striped] > (TR>THC\"Name\"+THC\"Role\"+THC\"Status\") + (TR>TC\"Person $\"+TC\"Engineer\"+(TC>Bd.success\"Active\"))*8) + (H[j=end] > PG[variant=count])"],
+  ["Pages", "Pricing page", "S[p8] > V[g8] > (Ctr > V[g2] > Hd\"Pricing\"[level=1] + Tx[t=supporting]\"Pick a plan that fits\") + (G[c3 g6] > (C[p6] > V[g4] > Hd\"Pro\"[level=3] + Tx.lg\"\\$29/mo\" + (UL > LI\"Feature one\" + LI\"Feature two\" + LI\"Feature three\") + B.primary\"Choose Pro\")*3)"],
+  ["Pages", "Login split", "G[c2 h=\"100dvh\"] > (S[p8 v=muted] > Ctr > V[g2] > Hd\"Acme\"[level=1] + Tx[t=supporting]\"Welcome back\") + (Ctr > C[w=360 p8] > V[g6] > (F > TI\"Email\"[t=email req] + TI\"Password\"[t=password req]) + (H[j=between a=center] > CB\"Remember me\" + Lk[href=\"/forgot\"]\"Forgot?\") + B.primary\"Sign in\")"],
+  ["Pages", "Profile header", "C[p6] > H[j=between a=center] > (H[g4 a=center] > Av + (V[g1] > Hd\"Jane Doe\"[level=3] + Tx[t=supporting]\"Product Designer\")) + (H[g2] > B\"Message\" + B.primary\"Follow\")"],
+  ["Pages", "Kanban board", "G[c3 g4] > (C[p4] > V[g3] > (H[j=between a=center] > Hd\"To Do\"[level=5] + Bd\"3\") + (V[g2] > (C[p3] > Tx\"Task item\")*3))*3"],
+  ["Pages", "Dashboard with sidebar nav", "A[cp0 @sideNav=(SN > (SNS\"Main\" > SNI\"Dashboard\" + SNI\"Reports\" + SNI\"Settings\"))] > L > LC > S[p6] > V[g6] > Hd\"Dashboard\"[level=2] + (G[c4 g4] > (C[p6] > V[g1] > Tx.lg\"128\" + Tx[t=supporting]\"Metric\")*4)"],
+  ["Pages", "Feed with composer", "Ctr > C[w=560 p0] > V > (C[p4] > V[g3] > (H[g2 a=center] > Av + Tx\"Share an update\") + (H[j=end] > B.primary\"Post\")) + D + (V[g0] > (C[p4] > V[g2] > (H[g2 a=center] > Av + (V[g0.5] > Tx\"User $\" + Tx[t=supporting]\"2h ago\")) + Tx\"A post body goes here.\")*3)"],
+  ["Pages", "Two-column form", "A[cp6 @topNav=TN] > L > LC > S[p6] > C[p6] > V[g4] > Hd\"New employee\"[level=3] + (G[c2 g4] > TI\"First name\"[req] + TI\"Last name\"[req] + TI\"Email\"[t=email req] + TI\"Phone\" + (RL\"Department\" > RLI\"Engineering\" + RLI\"Design\") + (CL\"Access\" > CLI\"Admin\" + CLI\"Billing\")) + (H[j=end g2] > B\"Cancel\" + B.primary\"Create\")"],
+  ["Pages", "Stats + chart + activity", "V[g6] > (G[c3 g4] > (C[p6] > V[g1] > Tx.lg\"\\$12k\" + Tx[t=supporting]\"This week\")*3) + (G[c{min:320} g6] > C{card-callout} + (C[p6] > V[g3] > Hd\"Recent activity\"[level=4] + (UL > LI\"Event one\" + LI\"Event two\" + LI\"Event three\")))"],
+  ["Pages", "Confirm dialog flow", "V[g4] > (Tbar\"Document\" > B\"Share\" + B.destructive\"Delete\"[opens=#del]) + (C[p6] > Tx\"Document body content\") ;; AD#del\"Delete this document?\""],
+  ["Pages", "Outline settings (XLO)", "AppShell cp=6\n  topNav: TN\n  sideNav: SN\n  Layout > LayoutContent\n    Section p=6\n      VStack g=6\n        Heading \"Settings\" level=2\n        Card p=6\n          VStack g=4\n            Heading \"Profile\" level=4\n            FormLayout\n              TextInput \"Name\" req\n              TextInput \"Email\" t=email req\n            Button.primary \"Save\"\n        Card p=6\n          VStack g=4\n            Heading \"Danger zone\" level=4\n            Button.destructive \"Delete account\" opens=#del\n\noverlays:\n  AlertDialog#del \"Delete your account?\""],
+  ["Pages", "Outline product page (XLO)", "Section p=8\n  Grid c={min:320} g=8\n    Card p=0\n      Center h=240\n        Text t=supporting \"Image\"\n    VStack g=4\n      Heading \"Product name\" level=1\n      Text.lg \"\\$129\"\n      Text t=supporting \"A short product description goes here.\"\n      HStack g=2\n        Button.primary \"Add to cart\"\n        Button \"Save\""],
   ["Layout", "Centered box", "Ctr[h=\"100dvh\"] > C[w=400 p8] > Tx\"Hello world\""],
   ["Layout", "App shell", "A[cp6 @topNav=TN @sideNav=SN] > L > LC > S[p6] > Tx\"Page content\""],
   ["Layout", "App shell + header", "A[cp4 @topNav=TN] > L > LH\"Page header\" + LC > S[p4] > Tx\"Body\""],
@@ -147,6 +179,18 @@ const $ = id => document.getElementById(id);
 const data = await fetch('/registry.json').then(r => r.json());
 const REG = data.registry, BLOCKS = data.blocks;
 
+const estTokens = s => (String(s).match(/\w+|[^\s\w]/g) || []).length;
+const escapeHtml = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+function metricsHtml(inTok, inChars, outTok, outChars) {
+  const ratio = inTok > 0 && outTok > 0 ? (outTok / inTok).toFixed(1) + '×' : '—';
+  const cell = (label, val, sub) =>
+    `<div class="metric"><div class="m-label">${label}</div><div class="m-val">${val}</div><div class="m-sub">${sub}</div></div>`;
+  return cell('XLE input', inTok + ' tok', inChars + ' chars') +
+    cell('Output TSX', outTok ? outTok + ' tok' : '—', outChars ? outChars + ' chars' : '—') +
+    cell('Expansion', ratio, 'output ÷ input');
+}
+
 function render() {
   const expr = $('src').value;
   const form = $('surface').value;
@@ -154,13 +198,15 @@ function render() {
   const status = $('status'), errors = $('errors');
   status.innerHTML = '';
   errors.innerHTML = '';
+  const inTok = estTokens(expr);
   if (r.ok && r.valid) {
     status.innerHTML = `<span class="pill ok">Valid · ${r.form}</span>` +
       (r.warnings.length ? `<span class="pill warn">${r.warnings.length} warning</span>` : '');
     $('compact').textContent = r.compact;
     $('outline').textContent = r.outline;
     $('expand').disabled = false;
-    doExpand(); // live "rendered source"
+    const code = doExpand(); // live "rendered source"
+    $('metrics').innerHTML = metricsHtml(inTok, expr.length, estTokens(code), code.length);
   } else {
     status.innerHTML = `<span class="pill err">${r.errors.length} error${r.errors.length===1?'':'s'}</span>`;
     errors.innerHTML = r.errors.map(e =>
@@ -170,31 +216,52 @@ function render() {
     $('outline').textContent = '';
     $('code').textContent = '';
     $('expand').disabled = true;
+    $('metrics').innerHTML = metricsHtml(inTok, expr.length, 0, 0);
   }
 }
 
 function doExpand() {
   const r = expandExpression($('src').value, REG, {blocks: BLOCKS, form: $('surface').value, name: 'PlaygroundLayout'});
-  $('code').textContent = r.ok ? r.code : r.errors.map(e => e.formatted).join('\n');
+  const code = r.ok ? r.code : r.errors.map(e => e.formatted).join('\n');
+  $('code').textContent = code;
+  return r.ok ? code : '';
 }
 
-function escapeHtml(s) { return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+// Searchable, categorized example browser.
+let activeLabel = EXAMPLES[0][1];
+function renderBrowser(query) {
+  const q = (query || '').trim().toLowerCase();
+  const match = ([cat, label, expr]) =>
+    !q || label.toLowerCase().includes(q) || cat.toLowerCase().includes(q) || expr.toLowerCase().includes(q);
+  const cats = [...new Set(EXAMPLES.map(e => e[0]))];
+  let html = '';
+  for (const cat of cats) {
+    const rows = EXAMPLES.map((e, i) => [e, i]).filter(([e]) => e[0] === cat && match(e));
+    if (!rows.length) continue;
+    html += `<div class="ex-cat">${escapeHtml(cat)}</div>`;
+    for (const [e, i] of rows) {
+      const active = e[1] === activeLabel ? ' active' : '';
+      html += `<button class="ex-item${active}" data-i="${i}"><span class="ex-col"><span class="ex-label">${escapeHtml(e[1])}</span><span class="ex-expr">${escapeHtml(e[2].replace(/\n/g, ' ⏎ '))}</span></span><span class="ex-tok">${estTokens(e[2])} tok</span></button>`;
+    }
+  }
+  $('examples').innerHTML = html || '<div class="ex-cat">No matches</div>';
+}
 
-// Group example chips by category.
-const cats = [...new Set(EXAMPLES.map(e => e[0]))];
-$('examples').innerHTML = cats.map(cat => {
-  const chips = EXAMPLES.map((e, i) => [e, i]).filter(([e]) => e[0] === cat)
-    .map(([e, i]) => `<button data-i="${i}">${escapeHtml(e[1])}</button>`).join('');
-  return `<div class="ex-cat">${escapeHtml(cat)}</div><div class="ex-row">${chips}</div>`;
-}).join('');
 $('examples').addEventListener('click', e => {
-  const i = e.target.dataset.i;
-  if (i != null) { $('src').value = EXAMPLES[i][2]; render(); }
+  const btn = e.target.closest('.ex-item');
+  if (!btn) return;
+  const ex = EXAMPLES[btn.dataset.i];
+  activeLabel = ex[1];
+  $('src').value = ex[2];
+  render();
+  renderBrowser($('search').value);
 });
+$('search').addEventListener('input', e => renderBrowser(e.target.value));
 $('src').addEventListener('input', render);
 $('surface').addEventListener('change', render);
 $('expand').addEventListener('click', doExpand);
 
+renderBrowser('');
 $('src').value = EXAMPLES[0][2];
 render();
 </script>
