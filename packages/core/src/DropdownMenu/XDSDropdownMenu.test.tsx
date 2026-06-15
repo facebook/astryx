@@ -486,6 +486,19 @@ describe('XDSDropdownMenu compound mode', () => {
     ).toBeInTheDocument();
   });
 
+  it('renders endContent after the item label', () => {
+    render(
+      <XDSDropdownMenu button={{label: 'Actions'}}>
+        <XDSDropdownMenuItem
+          label="Notifications"
+          endContent={<span data-testid="badge">3</span>}
+        />
+      </XDSDropdownMenu>,
+    );
+
+    expect(screen.getByTestId('badge')).toHaveTextContent('3');
+  });
+
   it('calls onClick when compound item is clicked', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();

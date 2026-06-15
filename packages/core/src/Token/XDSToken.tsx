@@ -29,10 +29,11 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import {useXDSInteractiveRole} from '../hooks/useXDSInteractiveRole';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Types
@@ -368,7 +369,7 @@ export function XDSToken({
         aria-disabled={isDisabled || undefined}
         {...sharedProps}
         {...mergeProps(
-          xdsClassName('token', {color, size}),
+          xdsThemeProps('token', {color, size}),
           stylex.props(
             styles.base,
             sizeStyles[size],
@@ -400,7 +401,7 @@ export function XDSToken({
         onClick={isDisabled ? undefined : handleContainerClick}
         {...sharedProps}
         {...mergeProps(
-          xdsClassName('token', {color, size}),
+          xdsThemeProps('token', {color, size}),
           stylex.props(
             styles.base,
             sizeStyles[size],
@@ -450,7 +451,7 @@ export function XDSToken({
       ref={ref}
       {...sharedProps}
       {...mergeProps(
-        xdsClassName('token', {color, size}),
+        xdsThemeProps('token', {color, size}),
         stylex.props(
           styles.base,
           sizeStyles[size],

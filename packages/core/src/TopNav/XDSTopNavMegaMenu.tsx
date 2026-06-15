@@ -45,11 +45,12 @@ import {
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {XDSGrid} from '../Grid/XDSGrid';
 import {getIcon} from '../Icon/globalIconRegistry';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Styles
@@ -439,7 +440,7 @@ function DefaultMegaMenu({
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         {...mergeProps(
-          xdsClassName('top-nav-mega-menu'),
+          xdsThemeProps('top-nav-mega-menu'),
           stylex.props(styles.trigger, popover.isOpen && styles.triggerOpen),
         )}>
         {label}
@@ -505,7 +506,7 @@ function DrawerMegaMenu({
         aria-expanded={isExpanded}
         aria-controls={`${menuId}-items`}
         {...mergeProps(
-          xdsClassName('top-nav-mega-menu', {mode: 'drawer'}),
+          xdsThemeProps('top-nav-mega-menu', {mode: 'drawer'}),
           stylex.props(navItemStyles.item, styles.drawerHeader),
         )}>
         {label}

@@ -10,8 +10,9 @@
  * props table for the selected component instance. Changing a knob performs a
  * targeted source-range edit (see babelParser) and writes back through
  * onCodeChange — so edits flow into Monaco and the live preview. Only literal
- * props (boolean / enum / string / number) are editable; props set to an
- * expression are shown read-only ("set in code") to avoid clobbering.
+ * props (boolean / enum / string / number) are editable; enum controls preserve
+ * typed option values for mixed literal unions. Props set to an expression are
+ * shown read-only ("set in code") to avoid clobbering.
  */
 
 'use client';
@@ -32,6 +33,7 @@ import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {ChevronDown} from 'lucide-react';
 import {
   coerceDefault,
+  coerceEnumOption,
   parsePropType,
   type PropControlDescriptor,
 } from '../../components/component-detail/parsePropType';
@@ -150,15 +152,18 @@ function PropRow({
         formatAttr(prop.name, 'number', value),
       );
     } else {
-      const numeric = NUMERIC_RE.test(String(value));
+      const numeric =
+        typeof value === 'number' || NUMERIC_RE.test(String(value));
+      const attrKind =
+        typeof value === 'boolean' ? 'boolean' : numeric ? 'number' : 'string';
       next = setAttribute(
         code,
         instance,
         prop.name,
         formatAttr(
           prop.name,
-          numeric ? 'number' : 'string',
-          numeric ? Number(value) : value,
+          attrKind,
+          numeric && typeof value !== 'number' ? Number(value) : value,
         ),
       );
     }
@@ -210,7 +215,7 @@ function PropRow({
         size="sm"
         value={value}
         options={control.options}
-        onChange={next => commit('enum', next)}
+        onChange={next => commit('enum', coerceEnumOption(control, next))}
       />
     );
   } else if (control.kind === 'string') {
@@ -351,27 +356,27 @@ export function PropertyPanel({
   const required = props.filter(p => p.required);
   const optional = props.filter(p => !p.required);
 
-  const selectedLabel = used.find(u => u.module === selected)?.label ?? selected;
+  const selectedLabel =
+    used.find(u => u.module === selected)?.label ?? selected;
 
-  const menuItems = used.length > 1
-    ? used.map(u => ({
-        label: u.count > 1 ? `${u.label} (${u.count})` : u.label,
-        onClick: () => {
-          setSelected(u.module);
-          setInstanceIndex(0);
-          onFlashInstance?.(u.module, 0);
-        },
-      }))
-    : [];
+  const menuItems =
+    used.length > 1
+      ? used.map(u => ({
+          label: u.count > 1 ? `${u.label} (${u.count})` : u.label,
+          onClick: () => {
+            setSelected(u.module);
+            setInstanceIndex(0);
+            onFlashInstance?.(u.module, 0);
+          },
+        }))
+      : [];
 
   return (
     <div {...stylex.props(s.root)}>
       <div {...stylex.props(s.header)}>
         <XDSVStack gap={2}>
           <XDSHStack gap={0} vAlign="center">
-            <XDSHeading level={3}>
-              {selectedLabel}
-            </XDSHeading>
+            <XDSHeading level={3}>{selectedLabel}</XDSHeading>
             {menuItems.length > 0 && (
               <XDSDropdownMenu
                 button={{

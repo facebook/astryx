@@ -14,9 +14,11 @@ import {CodeExampleBlock} from '../CodeExampleBlock';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {useMediaQuery} from '@xds/core/hooks';
 import {ShowcasePreview} from './ShowcasePreview';
+import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {BestPractices} from './BestPractices';
 import {HookSignature} from './HookSignature';
 import {ExampleBlock} from './ExampleBlock';
+import {MarkdownText} from '../MarkdownText';
 import {
   InteractivePreviewStage,
   useInteractiveState,
@@ -56,9 +58,11 @@ function OverviewContent({
   return (
     <XDSVStack gap={8}>
       {hasShowcase && (
-        <XDSCard variant="muted" padding={0}>
-          <ShowcasePreview name={comp.name} />
-        </XDSCard>
+        <ComponentPreviewTheme>
+          <XDSCard variant="muted" padding={0}>
+            <ShowcasePreview name={comp.name} />
+          </XDSCard>
+        </ComponentPreviewTheme>
       )}
 
       {comp.usage && (
@@ -66,9 +70,9 @@ function OverviewContent({
           <XDSHeading level={2} type="display-3">
             Usage
           </XDSHeading>
-          <XDSText type="large" weight="normal">
+          <MarkdownText type="large" weight="normal">
             {comp.usage.description}
-          </XDSText>
+          </MarkdownText>
 
           <CodeExampleBlock
             code={importPath}
@@ -196,6 +200,11 @@ function ComponentDetailInner({
                     name={comp.name}
                     state={state}
                     missingRequiredProps={missingRequiredProps}
+                    onPropChange={setProp}
+                    canControlOpenState={
+                      comp.props.some(prop => prop.name === 'isOpen') &&
+                      comp.props.some(prop => prop.name === 'onOpenChange')
+                    }
                   />
                 </div>
 

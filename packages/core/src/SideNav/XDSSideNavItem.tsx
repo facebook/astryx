@@ -42,7 +42,7 @@ import {renderIconSlot, type XDSIconType} from '../Icon';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {useXDSPopover} from '../Popover/useXDSPopover';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSTooltip} from '../Tooltip';
 import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
@@ -53,6 +53,7 @@ import {
 import {getIcon} from '../Icon/globalIconRegistry';
 import {useXDSSideNavRenderMode} from './XDSSideNavRenderContext';
 import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Styles
@@ -481,7 +482,7 @@ export function XDSSideNavItem({
 
     // Shared collapsed item styles — used by trigger, link, and button
     const collapsedItemStyles = mergeProps(
-      xdsClassName('side-nav-item', {
+      xdsThemeProps('side-nav-item', {
         size,
         selected: isSelected ? 'selected' : null,
       }),
@@ -582,7 +583,7 @@ export function XDSSideNavItem({
   );
 
   const navItemStyleProps = mergeProps(
-    xdsClassName('side-nav-item', {
+    xdsThemeProps('side-nav-item', {
       size,
       selected: isSelected ? 'selected' : null,
     }),

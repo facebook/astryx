@@ -20,7 +20,7 @@ import type {ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {XDSTopNavSlotContext} from './TopNavContext';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
 import {useXDSTopNavMobileContent} from './XDSTopNavMobileContentContext';
@@ -28,6 +28,7 @@ import {XDSDivider} from '../Divider/XDSDivider';
 import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
 import {XDSMobileNavToggle} from '../MobileNav/XDSMobileNavToggle';
 import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 /**
  * Base TopNav styles
@@ -204,7 +205,7 @@ export function XDSTopNav({
         role="navigation"
         aria-label={label}
         {...mergeProps(
-          xdsClassName('top-nav', {mode: 'mobile-bar'}),
+          xdsThemeProps('top-nav', {mode: 'mobile-bar'}),
           stylex.props(styles.mobileBar, xstyle),
           className,
           style,
@@ -261,7 +262,7 @@ export function XDSTopNav({
       role="navigation"
       aria-label={label}
       {...mergeProps(
-        xdsClassName('top-nav'),
+        xdsThemeProps('top-nav'),
         stylex.props(
           styles.base,
           hasCenterContent ? styles.baseGrid : styles.baseFlex,

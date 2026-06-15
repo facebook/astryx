@@ -33,8 +33,9 @@ import {
   type XDSChatMessageSender,
   type XDSChatDensity,
 } from './XDSChatContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export interface XDSChatMessageProps extends XDSBaseProps<HTMLElement> {
   ref?: React.Ref<HTMLElement>;
@@ -220,7 +221,7 @@ export function XDSChatMessage({
         aria-label={!hasName ? `Message from ${sender}` : undefined}
         aria-labelledby={hasName ? nameId : undefined}
         {...mergeProps(
-          xdsClassName('chat-message', {sender, density}),
+          xdsThemeProps('chat-message', {sender, density}),
           stylex.props(
             styles.root,
             rootAlignment,

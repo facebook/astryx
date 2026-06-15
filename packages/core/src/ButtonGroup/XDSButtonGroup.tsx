@@ -25,10 +25,11 @@ import * as stylex from '@stylexjs/stylex';
 import type {XDSButtonSize} from '../Button';
 import {XDSSizeProvider, useXDSSize} from '../SizeContext/XDSSizeContext';
 import {useListFocus} from '../hooks/useListFocus';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSButtonGroupContext} from './XDSButtonGroupContext';
 import type {XDSButtonGroupOrientation} from './XDSButtonGroupContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Props
@@ -144,7 +145,7 @@ export function XDSButtonGroup({
           aria-disabled={isDisabled || undefined}
           data-testid={testId}
           {...mergeProps(
-            xdsClassName('button-group', {size, orientation}),
+            xdsThemeProps('button-group', {size, orientation}),
             stylex.props(
               styles.group,
               orientation === 'vertical' && styles.vertical,

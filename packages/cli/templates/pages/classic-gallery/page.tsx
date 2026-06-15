@@ -148,7 +148,7 @@ export default function ClassicGalleryTemplate() {
               </XDSCenter>
 
               {/* Gallery Grid */}
-              <XDSGrid columns={{minWidth: 400}} gap={4}>
+              <XDSGrid columns={{minWidth: 260, repeat: 'fit'}} gap={4}>
                 {filteredImages.map((image, i) => (
                   <div key={i} {...stylex.props(styles.imageWrapper)}>
                     <img

@@ -30,16 +30,26 @@ describe('XDSItem', () => {
     expect(screen.getByText('Manage your preferences')).toBeInTheDocument();
   });
 
-  it('renders media content', () => {
+  it('renders marker', () => {
     render(
-      <XDSItem label="Item" media={<span data-testid="avatar">A</span>} />,
+      <XDSItem label="Item" marker={<span data-testid="marker">•</span>} />,
+    );
+    expect(screen.getByTestId('marker')).toBeInTheDocument();
+  });
+
+  it('renders startContent', () => {
+    render(
+      <XDSItem
+        label="Item"
+        startContent={<span data-testid="avatar">A</span>}
+      />,
     );
     expect(screen.getByTestId('avatar')).toBeInTheDocument();
   });
 
-  it('renders trailing content', () => {
+  it('renders endContent', () => {
     render(
-      <XDSItem label="Item" trailing={<span data-testid="badge">3</span>} />,
+      <XDSItem label="Item" endContent={<span data-testid="badge">3</span>} />,
     );
     expect(screen.getByTestId('badge')).toBeInTheDocument();
   });
@@ -47,16 +57,18 @@ describe('XDSItem', () => {
   it('renders all slots together', () => {
     render(
       <XDSItem
-        media={<span data-testid="media">M</span>}
+        marker={<span data-testid="marker">•</span>}
+        startContent={<span data-testid="start">S</span>}
         label="Label"
         description="Description"
-        trailing={<span data-testid="trailing">T</span>}
+        endContent={<span data-testid="end">E</span>}
       />,
     );
-    expect(screen.getByTestId('media')).toBeInTheDocument();
+    expect(screen.getByTestId('marker')).toBeInTheDocument();
+    expect(screen.getByTestId('start')).toBeInTheDocument();
     expect(screen.getByText('Label')).toBeInTheDocument();
     expect(screen.getByText('Description')).toBeInTheDocument();
-    expect(screen.getByTestId('trailing')).toBeInTheDocument();
+    expect(screen.getByTestId('end')).toBeInTheDocument();
   });
 
   it('supports data-testid', () => {
@@ -114,14 +126,14 @@ describe('XDSItem', () => {
         label="Clickable"
         onClick={onClick}
         data-testid="item"
-        media={<span data-testid="media">M</span>}
+        startContent={<span data-testid="start">S</span>}
       />,
     );
-    await user.click(screen.getByTestId('media'));
+    await user.click(screen.getByTestId('start'));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
-  it('does not fire item onClick when trailing interactive element is clicked', async () => {
+  it('does not fire item onClick when endContent interactive element is clicked', async () => {
     const user = userEvent.setup();
     const itemClick = vi.fn();
     const buttonClick = vi.fn();
@@ -129,7 +141,7 @@ describe('XDSItem', () => {
       <XDSItem
         label="Item"
         onClick={itemClick}
-        trailing={
+        endContent={
           <button type="button" onClick={buttonClick}>
             Action
           </button>
@@ -137,6 +149,26 @@ describe('XDSItem', () => {
       />,
     );
     await user.click(screen.getByText('Action'));
+    expect(buttonClick).toHaveBeenCalledTimes(1);
+    expect(itemClick).not.toHaveBeenCalled();
+  });
+
+  it('does not fire item onClick when startContent interactive element is clicked', async () => {
+    const user = userEvent.setup();
+    const itemClick = vi.fn();
+    const buttonClick = vi.fn();
+    render(
+      <XDSItem
+        label="Item"
+        onClick={itemClick}
+        startContent={
+          <button type="button" onClick={buttonClick}>
+            Open
+          </button>
+        }
+      />,
+    );
+    await user.click(screen.getByText('Open'));
     expect(buttonClick).toHaveBeenCalledTimes(1);
     expect(itemClick).not.toHaveBeenCalled();
   });
@@ -264,27 +296,32 @@ describe('XDSItem', () => {
   });
 
   // ===========================================================================
-  // Media and trailing slot positions
+  // Marker, start, and end slot positions
   // ===========================================================================
 
-  it('media and trailing are siblings to invisible button', () => {
+  it('marker, startContent, and endContent are siblings to invisible button', () => {
     const {container} = render(
       <XDSItem
         label="Item"
         onClick={() => {}}
-        media={<span data-testid="media">M</span>}
-        trailing={<span data-testid="trailing">T</span>}
+        marker={<span data-testid="marker">•</span>}
+        startContent={<span data-testid="start">S</span>}
+        endContent={<span data-testid="end">E</span>}
       />,
     );
     const button = container.querySelector('button');
     const root = container.firstElementChild;
-    expect(root?.querySelector('[data-testid="media"]')).toBeInTheDocument();
-    expect(root?.querySelector('[data-testid="trailing"]')).toBeInTheDocument();
+    expect(root?.querySelector('[data-testid="marker"]')).toBeInTheDocument();
+    expect(root?.querySelector('[data-testid="start"]')).toBeInTheDocument();
+    expect(root?.querySelector('[data-testid="end"]')).toBeInTheDocument();
     expect(
-      button?.querySelector('[data-testid="media"]'),
+      button?.querySelector('[data-testid="marker"]'),
     ).not.toBeInTheDocument();
     expect(
-      button?.querySelector('[data-testid="trailing"]'),
+      button?.querySelector('[data-testid="start"]'),
+    ).not.toBeInTheDocument();
+    expect(
+      button?.querySelector('[data-testid="end"]'),
     ).not.toBeInTheDocument();
   });
 
@@ -292,14 +329,21 @@ describe('XDSItem', () => {
   // Density variants
   // ===========================================================================
 
-  it('renders with default density', () => {
+  it('renders with balanced density by default', () => {
     render(<XDSItem label="Item" data-testid="item" />);
     expect(screen.getByTestId('item')).toBeInTheDocument();
+    expect(screen.getByTestId('item').className).toContain('balanced');
   });
 
   it('renders with compact density', () => {
     render(<XDSItem label="Item" density="compact" data-testid="item" />);
     expect(screen.getByTestId('item')).toBeInTheDocument();
+  });
+
+  it('renders with spacious density', () => {
+    render(<XDSItem label="Item" density="spacious" data-testid="item" />);
+    expect(screen.getByTestId('item')).toBeInTheDocument();
+    expect(screen.getByTestId('item').className).toContain('spacious');
   });
 
   // ===========================================================================

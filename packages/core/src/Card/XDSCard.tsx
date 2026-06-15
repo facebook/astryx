@@ -28,8 +28,9 @@ import {
   spacingStepToToken,
 } from '../Layout/padding.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Variant type
@@ -261,7 +262,7 @@ export function XDSCard({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('card', {variant}),
+        xdsThemeProps('card', {variant}),
         stylex.props(
           styles.card,
           variantStyles[variant],

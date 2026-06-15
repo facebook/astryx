@@ -7,7 +7,7 @@ export const docs = {
   title: 'Styling Components',
   category: 'guide',
   description:
-    'How to customize component appearance: xstyle prop, Tailwind, StyleX, className, rest props, compound component patterns, and theming hooks.',
+    'How to customize component appearance: xstyle prop, Tailwind, StyleX, className, rest props, compound component patterns, theming hooks, and styling-library interop.',
 
   sections: [
     {
@@ -26,11 +26,12 @@ export const docs = {
             ['Tailwind utilities', 'Layout, wrappers, and utility styling', 'className="flex gap-3 p-4"'],
             ['stylex.create', 'Reusable styles, pseudo-classes, typed tokens', 'stylex.create({ card: { ... } })'],
             ['className', 'Integrating with external CSS or Tailwind on components', 'className="my-card shadow-lg"'],
+            ['Styling-library token aliases', 'Keeping Panda, Chakra, MUI, Emotion, styled-components, UnoCSS, CSS Modules, or Sass in sync with the system', "colors.surface = 'var(--color-background-surface)'"],
           ],
         },
         {
           type: 'prose',
-          text: 'All approaches resolve to the same design tokens, so theming and dark mode work regardless of which you choose.',
+          text: 'All approaches resolve to the same design tokens, so theming and dark mode work regardless of which you choose. For external styling libraries, run `npx xds docs styling-libraries`; it covers Tailwind, StyleX, Panda, Chakra, MUI, CSS-in-JS, CSS Modules, Sass, and `useXDSTheme()` for non-CSS processing.',
         },
       ],
     },
@@ -91,14 +92,21 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'The design system ships a Tailwind v4 theme bridge that maps all design tokens to Tailwind utility classes. Import it once and use Tailwind classes backed by design tokens: colors, spacing, radius, shadows, and typography all resolve to the active theme.',
+          text: 'The package ships a Tailwind v4 theme bridge that maps all design tokens to Tailwind utility classes. Import it once and use Tailwind classes backed by design tokens: colors, spacing, radius, shadows, and typography all resolve to the active theme.',
         },
         {
           type: 'code',
           lang: 'css',
           label: 'globals.css: import the bridge',
-          code: `@import "tailwindcss";
-@import "@xds/core/tailwind-theme.css" layer(theme);`,
+          code: `@layer reset, theme, base, xds-base, xds-theme, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "@xds/core/reset.css";
+@import "@xds/core/xds.css";
+@import "@xds/theme-default/theme.css";
+@import "@xds/core/tailwind-theme.css";
+@import "tailwindcss/utilities.css" layer(utilities);`,
         },
         {
           type: 'code',
@@ -111,7 +119,7 @@ const overrides = stylex.create({
         },
         {
           type: 'prose',
-          text: 'The bridge is pure CSS with zero JS. Theme changes (dark mode, custom themes) apply automatically because the utilities reference the same CSS custom properties that components use.',
+          text: 'The bridge is pure CSS with zero JS. Theme changes (dark mode, custom themes) apply automatically because the utilities reference the same CSS custom properties that components use. This is the paved Tailwind path; for other styling libraries that follow the same aliasing pattern, run `npx xds docs styling-libraries`.',
         },
       ],
     },
@@ -219,37 +227,67 @@ const overrides = stylex.create({
       ],
     },
     {
-      title: 'Theming via xds-* Class Names',
+      title: 'Preferred Selector Surface: Data Attributes',
   category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'Every component renders a stable xds-* class name (e.g. xds-button, xds-card) plus variant classes. These are the targeting surface for theme overrides in defineTheme. You rarely need to use them directly, but they\'re useful for debugging and for external CSS that needs to target components.',
-        },
-        {
-          type: 'code',
-          lang: 'tsx',
-          label: 'Class names rendered by components',
-          code: `// <XDSButton variant="primary" size="sm" />
-// renders: class="xds-button primary sm ..."
-
-// <XDSCard variant="elevated" />
-// renders: class="xds-card elevated ..."
-
-// <XDSHeading level={2} />
-// renders: class="xds-heading level-2 ..."`,
+          text: 'When external CSS needs to target an XDS component by prop or state, combine the stable component class with reflected data attributes. The component class identifies the component (`.xds-button`, `.xds-card`); data attributes identify the axis and value (`data-variant`, `data-size`, `data-level`, etc.). This is the preferred selector surface for new CSS because it is explicit and collision-resistant.',
         },
         {
           type: 'code',
           lang: 'css',
-          label: 'Targeting in external CSS (escape hatch)',
-          code: `.my-app .xds-button.primary {
-  /* override primary button in this app context */
+          code: `.my-app .xds-button[data-variant="primary"] {
+  /* primary buttons in this app context */
+}
+
+.my-app .xds-button[data-variant="primary"][data-size="sm"] {
+  /* small primary buttons */
+}
+
+.my-app .xds-heading[data-level="2"] {
+  /* level 2 headings; numeric values stay literal in data attrs */
 }`,
         },
         {
+          type: 'code',
+          lang: 'tsx',
+          label: 'What components reflect',
+          code: `// <XDSButton variant="primary" size="sm" />
+// preferred selector attrs: data-variant="primary" data-size="sm"
+
+// <XDSCard variant="elevated" />
+// preferred selector attrs: data-variant="elevated"
+
+// <XDSHeading level={2} />
+// preferred selector attrs: data-level="2"`,
+        },
+        {
           type: 'prose',
-          text: 'For systematic theming, use defineTheme component overrides instead of raw CSS selectors. Run `npx xds docs theme` for the full theming guide.',
+          text: 'For systematic theming, use defineTheme component overrides instead of raw CSS selectors. defineTheme keeps the higher-level `prop:value` API (`variant:primary`, `size:sm`) and handles selector generation for you. Run `npx xds docs theme` for the full theming guide.',
+        },
+      ],
+    },
+    {
+      title: 'Deprecated: Bare Prop and State Classes',
+  category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'XDS still emits legacy bare prop/state classes such as `.primary`, `.sm`, `.level-2`, and `.checked` for compatibility with existing apps and built themes. Do not write new CSS against these bare classes. The stable base component classes (`.xds-button`, `.xds-card`, etc.) are not deprecated; only the unprefixed prop/state classes are the legacy surface.',
+        },
+        {
+          type: 'code',
+          lang: 'css',
+          code: `/* Deprecated compatibility selector — avoid in new CSS */
+.my-app .xds-button.primary {
+  /* use .xds-button[data-variant="primary"] instead */
+}
+
+/* Deprecated compatibility selector — avoid in new CSS */
+.my-app .xds-heading.level-2 {
+  /* use .xds-heading[data-level="2"] instead */
+}`,
         },
       ],
     },
@@ -259,7 +297,7 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'When writing custom styles, use design tokens instead of hardcoded values. Tokens are CSS custom properties that adapt to the active theme and color mode. The design system provides tokens for spacing, color, radius, shadow, typography, and size.',
+          text: 'When writing custom styles, use design tokens instead of hardcoded values. Tokens are CSS custom properties that adapt to the active theme and color mode. The system provides tokens for spacing, color, radius, shadow, typography, and size.',
         },
         {
           type: 'code',

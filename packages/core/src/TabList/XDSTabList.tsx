@@ -22,8 +22,9 @@ import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export interface XDSTabListProps extends Omit<
   XDSBaseProps<HTMLElement>,
@@ -124,7 +125,7 @@ export function XDSTabList({
         {...{[EDGE_COMP_ATTR]: ''}}
         {...restProps}
         {...mergeProps(
-          xdsClassName('tab-list', {size}),
+          xdsThemeProps('tab-list', {size}),
           stylex.props(
             styles.nav,
             layout === 'fill' && styles.fill,

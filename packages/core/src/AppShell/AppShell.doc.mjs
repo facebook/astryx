@@ -10,7 +10,7 @@ export const docs = {
   keywords: ["appshell","layout","scaffold","sidebar","sidenav","topnav","header","navigation","dashboard","shell","page","frame"],
   usage: {
     description:
-      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive collapse, skip-to-content, and mobile navigation automatically.',
+      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive mobile navigation and skip-to-content automatically. Configure side nav collapse on XDSSideNav with its collapsible prop.',
     bestPractices: [
       {guidance: true, description: 'Choose the right height: use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
       {guidance: true, description: 'Set `contentPadding` based on content type: 4 for forms and settings, 0 for tables and dashboards.'},
@@ -64,23 +64,6 @@ export const docs = {
         "Height behavior: 'fill' makes the shell fill the viewport (100dvh) with independent scroll containers; 'auto' lets the shell grow with content and uses sticky positioning for nav.",
       default: "'fill'",
     },
-    {
-      name: 'isSideNavCollapsed',
-      type: 'boolean',
-      description: 'Whether the sideNav is collapsed (controlled mode).',
-    },
-    {
-      name: 'defaultIsSideNavCollapsed',
-      type: 'boolean',
-      description: 'Initial collapsed state for uncontrolled mode.',
-      default: 'false',
-    },
-    {
-      name: 'onSideNavCollapsedChange',
-      type: '(isCollapsed: boolean) => void',
-      description: 'Callback fired when the sideNav collapse state changes.',
-    },
-
     {
       name: 'variant',
       type: "'wash' | 'surface' | 'section' | 'elevated'",
@@ -137,7 +120,7 @@ export const docsZh = {
   displayName: 'App Shell',
   usage: {
     description:
-      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive collapse, skip-to-content, and mobile navigation automatically.',
+      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive mobile navigation and skip-to-content automatically. Configure side nav collapse on XDSSideNav with its collapsible prop.',
     bestPractices: [
       {guidance: true, description: 'Choose the right height: use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
       {guidance: true, description: 'Set `contentPadding` based on content type: 4 for forms and settings, 0 for tables and dashboards.'},
@@ -165,16 +148,6 @@ export const docsZh = {
         "高度行为：'fill' 使外壳填满视口（100dvh），各区域拥有独立的滚动容器；'auto' 使外壳随内容增长，导航使用 sticky 定位。",
       default: "'fill'",
     },
-    {name: 'isSideNavCollapsed', type: 'boolean', description: 'sideNav 是否折叠（受控模式）。'},
-    {name: 'defaultIsSideNavCollapsed', type: 'boolean', description: '非受控模式下的初始折叠状态。', default: 'false'},
-    {name: 'onSideNavCollapsedChange', type: '(isCollapsed: boolean) => void', description: 'sideNav 折叠状态变化时触发的回调。'},
-    {
-      name: 'sideNavBreakpoint',
-      type: "'sm' | 'md' | 'lg' | 'none'",
-      description: '视口宽度断点，低于该断点时 sideNav 自动折叠。使用 "none" 禁用响应式折叠。',
-      default: "'md'",
-    },
-    {name: 'sideNavWidth', type: 'number', description: 'sideNav 面板的宽度（像素）。', default: '260'},
     {
       name: 'variant',
       type: "'wash' | 'surface' | 'section' | 'elevated'",
@@ -209,7 +182,7 @@ export const docsDense = {
     'app-level layout shell w/ header, side nav, main content; composes XDSLayout internally, replaces XDSPage+XDSPageLayout',
   usage: {
     description:
-      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive collapse, skip-to-content, and mobile navigation automatically.',
+      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive mobile navigation and skip-to-content automatically. Configure side nav collapse on XDSSideNav with its collapsible prop.',
     bestPractices: [
       {guidance: true, description: 'Choose the right height: use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
       {guidance: true, description: 'Set `contentPadding` based on content type: 4 for forms and settings, 0 for tables and dashboards.'},
@@ -225,9 +198,6 @@ export const docsDense = {
     banner: 'slot for system-wide announcements above topNav',
     height:
       'fill=viewport 100dvh w/ independent scroll; auto=content-driven w/ sticky nav',
-    isSideNavCollapsed: 'sideNav collapsed (controlled)',
-    defaultIsSideNavCollapsed: 'initial collapsed state (uncontrolled)',
-    onSideNavCollapsedChange: 'callback on sideNav collapse change',
     variant:
       'nav bg style: wash=wash bg, surface=surface bg, section=dividers, elevated=wash nav w/ elevated surface content+radius',
     contentPadding:

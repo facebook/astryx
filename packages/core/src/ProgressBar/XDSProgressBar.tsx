@@ -28,8 +28,9 @@ import {
   easeVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 /**
  * Extensible variant map for XDSProgressBar.
@@ -282,7 +283,7 @@ export function XDSProgressBar({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('progressbar', {variant}),
+        xdsThemeProps('progressbar', {variant}),
         stylex.props(styles.container, xstyle),
         className,
         style,
@@ -326,13 +327,13 @@ export function XDSProgressBar({
         aria-labelledby={labelId}
         aria-valuetext={isIndeterminate ? undefined : valueText}
         {...mergeProps(
-          xdsClassName('progressbar-track'),
+          xdsThemeProps('progressbar-track'),
           stylex.props(styles.track),
         )}>
         {isIndeterminate ? (
           <div
             {...mergeProps(
-              xdsClassName('progressbar-fill', {variant: fillVariant}),
+              xdsThemeProps('progressbar-fill', {variant: fillVariant}),
               stylex.props(
                 styles.indeterminateFill,
                 variantStyles[fillVariant],
@@ -342,7 +343,7 @@ export function XDSProgressBar({
         ) : (
           <div
             {...mergeProps(
-              xdsClassName('progressbar-fill', {variant: fillVariant}),
+              xdsThemeProps('progressbar-fill', {variant: fillVariant}),
               stylex.props(styles.fill, variantStyles[fillVariant]),
             )}
             style={{width: `${percentage}%`}}

@@ -2,7 +2,7 @@
 
 'use client';
 
-import {XDSFieldStatus} from '@xds/core/Field';
+import {XDSFieldStatus} from '@xds/core/FieldStatus';
 import {XDSVStack} from '@xds/core/Layout';
 
 export default function FieldStatusShowcase() {

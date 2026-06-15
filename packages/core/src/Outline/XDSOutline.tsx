@@ -26,10 +26,11 @@ import {
   fontWeightVars,
 } from '../theme/tokens.stylex';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
-import {mergeProps, mergeRefs, xdsClassName} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useScrollSpy} from './useScrollSpy';
 import type {OutlineItem} from './types';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export type {OutlineItem} from './types';
 
@@ -187,7 +188,7 @@ export function XDSOutline({
       aria-label={label}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('outline'),
+        xdsThemeProps('outline'),
         stylex.props(styles.root, xstyle),
         className,
         style,
@@ -202,7 +203,7 @@ export function XDSOutline({
                 aria-current={isActive ? 'true' : undefined}
                 onClick={handleClick(item.id)}
                 {...mergeProps(
-                  xdsClassName('outline-item', {
+                  xdsThemeProps('outline-item', {
                     active: isActive ? 'active' : null,
                     level: item.level,
                   }),

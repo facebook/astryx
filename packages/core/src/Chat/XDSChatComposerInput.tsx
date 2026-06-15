@@ -41,7 +41,7 @@ import {
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {useTriggerMenu} from './useTriggerMenu';
 import {
   useXDSChatComposerTokens,
@@ -55,6 +55,7 @@ import {
 } from './useXDSChatPasteAsToken';
 import {XDSBadge, type XDSBadgeProps} from '../Badge';
 import {useXDSChatComposerContext} from './XDSChatContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Types
@@ -618,7 +619,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('chat-composer-input'),
+        xdsThemeProps('chat-composer-input'),
         stylex.props(styles.root, isDisabled && styles.disabled, xstyle),
         className,
         style,

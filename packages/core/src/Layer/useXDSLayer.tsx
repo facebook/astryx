@@ -4,7 +4,7 @@
 
 /**
  * @file useXDSLayer.tsx
- * @input Uses React hooks, Popover API, CSS anchor positioning
+ * @input Uses React hooks, Popover API, CSS anchor positioning, typography tokens
  * @output Exports useXDSLayer hook for layer positioning and visibility
  * @position Core layer utility; used by useXDSHoverCard, useXDSTooltip, etc.
  *
@@ -23,6 +23,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
+import {typographyVars} from '../theme/tokens.stylex';
 
 // Extend React's HTMLAttributes to include popover API attributes
 declare module 'react' {
@@ -46,6 +47,7 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     overflow: 'visible',
+    fontFamily: typographyVars['--font-family-body'],
     // Override browser default [popover] background (canvas color)
     backgroundColor: 'transparent',
   },
@@ -77,7 +79,7 @@ export interface ContextRenderProps {
   xstyle?: StyleXStyles;
   /**
    * Additional CSS class name(s) for the popover container.
-   * Use with xdsClassName() for theme targeting.
+   * Use with xdsThemeProps() for theme targeting when reflecting visual props.
    */
   className?: string;
   /**
@@ -99,7 +101,7 @@ export interface FixedRenderProps {
   xstyle?: StyleXStyles;
   /**
    * Additional CSS class name(s) for the popover container.
-   * Use with xdsClassName() for theme targeting.
+   * Use with xdsThemeProps() for theme targeting when reflecting visual props.
    */
   className?: string;
   /**

@@ -7,10 +7,13 @@
  * to ensure the same convention is applied consistently.
  *
  * <!-- SYNC: packages/cli/src/commands/build-theme.mjs (parseStyleKey) -->
- * <!-- SYNC: packages/core/src/utils/xdsClassName.ts -->
+ * <!-- SYNC: packages/core/src/utils/xdsThemeProps.ts -->
  *
- * Uses class names for visual prop values — shorter HTML, easier to inspect.
- * The component class (e.g. .xds-button) disambiguates any value overlaps.
+ * Emits the legacy class-selector suffix used by defineTheme/component override
+ * generation today. Components also reflect the same prop values as data
+ * attributes via `xdsThemeProps()` (`variant:secondary` renders both `.secondary`
+ * and `[data-variant="secondary"]` in the DOM), but generated theme CSS still
+ * uses these class selectors until the selector contract migrates fully.
  *
  * Values starting with a digit get prefixed with the prop name since
  * CSS class names can't start with a number.

@@ -38,6 +38,11 @@ const s = stylex.create({
     paddingBlockEnd: 'var(--spacing-4)',
     paddingBlockStart: 0,
   },
+  areaFullBleed: {
+    paddingInline: 0,
+    paddingBlockEnd: 0,
+    paddingBlockStart: 0,
+  },
   areaCenter: {
     alignItems: 'center',
   },
@@ -55,6 +60,12 @@ const s = stylex.create({
     borderRadius: 0,
     borderWidth: 0,
     boxShadow: 'none',
+  },
+  cardFullBleed: {
+    flex: 1,
+    minHeight: 0,
+    width: '100%',
+    height: '100%',
   },
   card: {
     maxWidth: '100%',
@@ -95,6 +106,8 @@ interface PreviewStageProps {
   iframeRef: React.RefObject<HTMLIFrameElement | null>;
   /** Disable iframe pointer events (e.g. while the panel is being resized). */
   isInteractionDisabled?: boolean;
+  /** Render the iframe directly, without the preview card/device frame. */
+  isFullBleed?: boolean;
 }
 
 export function PreviewStage({
@@ -103,8 +116,9 @@ export function PreviewStage({
   onExitFullscreen,
   iframeRef,
   isInteractionDisabled = false,
+  isFullBleed = false,
 }: PreviewStageProps) {
-  const isPhone = !isFullscreen && viewport === 'phone';
+  const isPhone = !isFullscreen && !isFullBleed && viewport === 'phone';
   const width = isPhone ? PHONE_WIDTH : '100%';
   const height = isPhone ? PHONE_HEIGHT : '100%';
 
@@ -112,6 +126,7 @@ export function PreviewStage({
     <div
       {...stylex.props(
         s.area,
+        isFullBleed && !isFullscreen && s.areaFullBleed,
         isPhone && s.areaCenter,
         isFullscreen && s.fullscreen,
       )}>
@@ -130,7 +145,11 @@ export function PreviewStage({
       )}
       <XDSCard
         padding={0}
-        xstyle={[s.card, isFullscreen && s.cardFullscreen]}
+        xstyle={[
+          s.card,
+          (isFullscreen || isFullBleed) && s.cardFullscreen,
+          isFullBleed && !isFullscreen && s.cardFullBleed,
+        ]}
         style={{width, height}}>
         <iframe
           ref={iframeRef}

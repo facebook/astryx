@@ -15,8 +15,9 @@
 
 import React, {useSyncExternalStore} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 import {
   colorVars,
   spacingVars,
@@ -166,7 +167,7 @@ export function XDSKbd({
       ref={ref}
       {...rest}
       {...mergeProps(
-        xdsClassName('kbd'),
+        xdsThemeProps('kbd'),
         stylex.props(styles.wrapper, xstyle),
         className,
         style,

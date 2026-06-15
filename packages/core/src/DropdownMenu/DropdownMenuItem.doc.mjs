@@ -25,7 +25,7 @@ export const docs = {
       description: 'Secondary description text displayed below the label.',
     },
     {
-      name: 'children',
+      name: 'endContent',
       type: 'ReactNode',
       description: 'Additional content rendered after the label and description.',
     },
@@ -59,7 +59,7 @@ export const docsZh = {
       description: '显示在标签下方的次要描述文本。',
     },
     {
-      name: 'children',
+      name: 'endContent',
       type: 'ReactNode',
       description: '在标签和描述之后渲染的附加内容。',
     },
@@ -80,7 +80,7 @@ export const docsDense = {
     icon: 'icon before label',
     label: 'primary label text',
     description: 'secondary text below label',
-    children: 'additional content after label+description',
+    endContent: 'additional content after label+description',
     xstyle: 'StyleX styles for root container',
   },
 };

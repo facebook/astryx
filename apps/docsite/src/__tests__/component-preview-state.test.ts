@@ -3,6 +3,7 @@
 import {describe, expect, it, vi} from 'vitest';
 import {
   buildInitialState,
+  buildRuntimePreviewState,
   getMissingRequiredProps,
   pickPrimaryProps,
 } from '../components/component-detail/interactiveState';
@@ -52,6 +53,37 @@ describe('component detail preview state', () => {
     expect(getMissingRequiredProps(knobs, state)).toEqual([]);
   });
 
+  it('keeps generated required fallbacks when playground defaults open an inline preview', () => {
+    const knobs = pickPrimaryProps('CommandPalette', [
+      prop({name: 'isOpen', type: 'boolean', required: true}),
+      prop({
+        name: 'onOpenChange',
+        type: '(isOpen: boolean) => void',
+        required: true,
+      }),
+      prop({name: 'searchSource', type: 'XDSSearchSource<T>', required: true}),
+      prop({name: 'isInline', type: 'boolean'}),
+    ]);
+
+    const state = buildInitialState(knobs, {
+      defaults: {
+        isOpen: true,
+        isInline: true,
+        onOpenChange: undefined,
+      },
+    });
+
+    expect(state.isOpen).toBe(true);
+    expect(state.isInline).toBe(true);
+    expect(state.onOpenChange).toEqual(expect.any(Function));
+    expect(state.searchSource).toMatchObject({
+      search: expect.any(Function),
+      bootstrap: expect.any(Function),
+      cancel: expect.any(Function),
+    });
+    expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+  });
+
   it('reports required props that cannot be generated safely', () => {
     const knobs = pickPrimaryProps('CustomWidget', [
       prop({name: 'config', type: 'CustomConfig', required: true}),
@@ -60,5 +92,23 @@ describe('component detail preview state', () => {
 
     expect(state.config).toBeUndefined();
     expect(getMissingRequiredProps(knobs, state)).toEqual(['config']);
+  });
+
+  it('wires controlled open previews back to their isOpen prop', () => {
+    const onPropChange = vi.fn();
+    const runtimeState = buildRuntimePreviewState(
+      {
+        children: 'Preview content',
+        isOpen: true,
+      },
+      onPropChange,
+      {canControlOpenState: true},
+    );
+
+    expect(runtimeState.onOpenChange).toEqual(expect.any(Function));
+
+    (runtimeState.onOpenChange as (isOpen: boolean) => void)(false);
+
+    expect(onPropChange).toHaveBeenCalledWith('isOpen', false);
   });
 });

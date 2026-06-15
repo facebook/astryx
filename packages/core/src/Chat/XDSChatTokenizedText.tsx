@@ -21,8 +21,9 @@ import React, {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSBadge} from '../Badge';
 import type {XDSChatComposerToken} from './XDSChatComposerInput';
-import {mergeProps, xdsClassName} from '../utils';
+import {mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Styles
@@ -96,7 +97,7 @@ export function XDSChatTokenizedText({
       <span
         ref={ref}
         {...mergeProps(
-          xdsClassName('chat-tokenized-text'),
+          xdsThemeProps('chat-tokenized-text'),
           stylex.props(styles.root),
         )}>
         {children ?? ''}
@@ -109,7 +110,7 @@ export function XDSChatTokenizedText({
     <span
       ref={ref}
       {...mergeProps(
-        xdsClassName('chat-tokenized-text'),
+        xdsThemeProps('chat-tokenized-text'),
         stylex.props(styles.root),
       )}>
       {parts}

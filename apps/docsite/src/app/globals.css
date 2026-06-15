@@ -48,7 +48,7 @@
    it measures the rendered header (post-hydration). The 64px fallback
    approximates the default XDS top-nav height so the layout reserves
    space immediately on the first paint. */
-#xds-app-shell-main {
+body:not(:has([data-playground-page])) #xds-app-shell-main {
   scroll-padding-top: var(--appshell-header-height, 64px);
   padding-top: var(--appshell-header-height, 64px);
 }

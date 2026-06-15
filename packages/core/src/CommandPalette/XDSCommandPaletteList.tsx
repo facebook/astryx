@@ -16,9 +16,10 @@
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {spacingVars} from '../theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const styles = stylex.create({
   list: {
@@ -87,7 +88,7 @@ export function XDSCommandPaletteList({
       role="listbox"
       aria-label={label}
       {...mergeProps(
-        xdsClassName('command-palette-list'),
+        xdsThemeProps('command-palette-list'),
         stylex.props(styles.list, xstyle),
         className,
         style,

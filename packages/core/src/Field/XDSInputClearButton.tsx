@@ -44,3 +44,5 @@ export function XDSInputClearButton({
     />
   );
 }
+
+XDSInputClearButton.displayName = 'XDSInputClearButton';

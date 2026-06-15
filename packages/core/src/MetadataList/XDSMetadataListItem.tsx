@@ -26,7 +26,8 @@ import {
 } from '../theme/tokens.stylex';
 import {XDSMetadataListContext} from './XDSMetadataListContext';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Types
@@ -165,7 +166,7 @@ export function XDSMetadataListItem({
         ref={ref}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('metadata-list-item'),
+          xdsThemeProps('metadata-list-item'),
           stylex.props(styles.stackedWrapper, xstyle),
           className,
           style,
@@ -183,7 +184,7 @@ export function XDSMetadataListItem({
         ref={ref}
         data-testid={testId ? `${testId}-label` : undefined}
         {...mergeProps(
-          xdsClassName('metadata-list-item'),
+          xdsThemeProps('metadata-list-item'),
           stylex.props(styles.label, xstyle),
           className,
           style,

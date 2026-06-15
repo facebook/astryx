@@ -27,6 +27,7 @@
     "@xds/theme-neutral": "*",
     "@xds/theme-stone": "*",
     "@xds/theme-y2k": "*",
+    "fflate": "^0.8.2",
     "lucide-react": "^1.17.0",
     "lz-string": "^1.5.0",
     "mcp-handler": "^1.1.0",

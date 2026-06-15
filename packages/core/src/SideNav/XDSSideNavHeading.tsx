@@ -39,10 +39,11 @@ import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSMenuHover} from '../hooks/useXDSMenuHover';
 import {XDSNavHeadingCloseContext} from '../NavMenu/XDSNavMenuContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Styles
@@ -391,7 +392,7 @@ export function XDSSideNavHeading({
           aria-label={heading}
           data-testid={testId}
           {...mergeProps(
-            xdsClassName('side-nav-heading'),
+            xdsThemeProps('side-nav-heading'),
             stylex.props(navItemStyles.item, styles.rootCollapsed, xstyle),
             className,
             style,
@@ -410,7 +411,7 @@ export function XDSSideNavHeading({
             {...popover.triggerProps}
             {...triggerProps}
             {...mergeProps(
-              xdsClassName('side-nav-heading'),
+              xdsThemeProps('side-nav-heading'),
               stylex.props(
                 navItemStyles.item,
                 styles.rootCollapsed,
@@ -472,7 +473,7 @@ export function XDSSideNavHeading({
           ref={collapsedSetRef}
           data-testid={testId}
           {...mergeProps(
-            xdsClassName('side-nav-heading'),
+            xdsThemeProps('side-nav-heading'),
             stylex.props(styles.root, styles.rootCollapsed, xstyle),
             className,
             style,
@@ -570,7 +571,7 @@ export function XDSSideNavHeading({
         href={headingHref}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('side-nav-heading'),
+          xdsThemeProps('side-nav-heading'),
           stylex.props(styles.root, styles.menuTrigger, xstyle),
           className,
           style,
@@ -593,7 +594,7 @@ export function XDSSideNavHeading({
           data-testid={testId}
           {...triggerProps}
           {...mergeProps(
-            xdsClassName('side-nav-heading'),
+            xdsThemeProps('side-nav-heading'),
             stylex.props(styles.root, styles.menuTrigger, xstyle),
             className,
             style,
@@ -644,7 +645,7 @@ export function XDSSideNavHeading({
           data-testid={testId}
           {...triggerProps}
           {...mergeProps(
-            xdsClassName('side-nav-heading'),
+            xdsThemeProps('side-nav-heading'),
             stylex.props(styles.root, xstyle),
             className,
             style,
@@ -700,7 +701,7 @@ export function XDSSideNavHeading({
         ref={ref}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('side-nav-heading'),
+          xdsThemeProps('side-nav-heading'),
           stylex.props(styles.root, xstyle),
           className,
           style,
@@ -757,7 +758,7 @@ export function XDSSideNavHeading({
       ref={ref}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('side-nav-heading'),
+        xdsThemeProps('side-nav-heading'),
         stylex.props(styles.root, xstyle),
         className,
         style,

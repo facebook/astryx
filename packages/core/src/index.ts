@@ -4,8 +4,8 @@
 
 /**
  * @file index.ts
- * @input Imports from component directories (Button/, Card/, Layout/, Layer/)
- * @output Exports all public components and types for @xds/core
+ * @input Imports from component directories (Button/, Card/, Layout/, Layer/, Toast/)
+ * @output Exports all public components, hooks, and types for @xds/core
  * @position Package entry point; consumed by external applications
  *
  * SYNC: When modified, update this header and /packages/core/src/README.md
@@ -119,8 +119,9 @@ export {XDSLayerProvider} from './Layer';
 export type {XDSLayerProviderProps, LayerToastConfig} from './Layer';
 
 // Toast
-export {useXDSToast} from './Toast';
+export {XDSToast, useXDSToast} from './Toast';
 export type {
+  XDSToastProps,
   XDSToastType,
   XDSToastPosition,
   XDSToastCollisionBehavior,

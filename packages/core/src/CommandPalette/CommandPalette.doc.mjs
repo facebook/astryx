@@ -20,6 +20,13 @@ export const docs = {
     'navigation',
   ],
   description: 'Root component. Manages open state, search, keyboard navigation, and composition slots.',
+  playground: {
+    defaults: {
+      isOpen: true,
+      isInline: true,
+      onOpenChange: undefined,
+    },
+  },
   props: [
     {
       name: 'isOpen',
@@ -117,7 +124,7 @@ export const docs = {
     {
       name: 'isInline',
       type: 'boolean',
-      description: 'Renders command palette content inline without modal behavior. Automatically disables auto-focus on the input. For documentation previews and showcases only.',
+      description: 'Renders command palette content inline without modal behavior. Automatically disables input auto-focus and initial highlighted-item auto-scroll. For documentation previews and showcases only.',
       default: 'false',
     },
   ],

@@ -22,9 +22,10 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {XDSLayoutAreaContext} from './XDSLayoutAreaContext';
 import {XDSLayoutSlotsContext} from './XDSLayoutSlotsContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {SpacingStep} from '../utils/types';
 import type {ResizableProps} from '../Resizable/useXDSResizable';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 import {
   paddingStyles,
   containerPaddingInlineVarStyles,
@@ -255,7 +256,7 @@ export function XDSLayoutPanel({
       role={role}
       aria-label={label}
       {...mergeProps(
-        xdsClassName('layout-panel'),
+        xdsThemeProps('layout-panel'),
         stylex.props(
           styles.panel,
           dynamicStyles.sizing(effectiveWidth ?? null),

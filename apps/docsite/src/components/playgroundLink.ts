@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {compressToEncodedURIComponent} from 'lz-string';
+import {compressCode} from '../lib/compress';
 import {stripCodeExampleCopyrightHeader} from '../lib/codeExamples';
 
 /**
@@ -12,7 +12,7 @@ import {stripCodeExampleCopyrightHeader} from '../lib/codeExamples';
  */
 export function buildPlaygroundHref(source: string, theme?: string): string {
   const cleanedSource = stripCodeExampleCopyrightHeader(source);
-  const compressed = compressToEncodedURIComponent(cleanedSource);
+  const compressed = compressCode(cleanedSource);
   const query = theme ? `?theme=${encodeURIComponent(theme)}` : '';
   return `/playground${query}#code=${compressed}`;
 }

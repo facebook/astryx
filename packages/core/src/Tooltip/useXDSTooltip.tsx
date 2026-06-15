@@ -28,6 +28,7 @@ import {
   type LayerPlacement,
 } from '../Layer/useXDSLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 import {
   colorVars,
   radiusVars,
@@ -35,7 +36,6 @@ import {
   typographyVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName} from '../utils';
 
 const styles = stylex.create({
   // Base container styles - inverted colors for high contrast
@@ -430,7 +430,7 @@ export function useXDSTooltip(
         placement: renderPlacement,
         alignment: props?.alignment ?? alignment,
         xstyle: [popoverXstyle, layerAnimations[renderPlacement]],
-        className: xdsClassName('tooltip'),
+        className: xdsThemeProps('tooltip').className,
       };
 
       return layer.render(

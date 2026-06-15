@@ -34,8 +34,9 @@ import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
 import {XDSSelector} from '../Selector';
 import {XDSText} from '../Text';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Types
@@ -506,7 +507,7 @@ export function XDSPagination({
                 onClick={() => handlePageChange(i + 1)}
                 disabled={isDisabled}
                 {...mergeProps(
-                  xdsClassName('pagination-dot', {
+                  xdsThemeProps('pagination-dot', {
                     active: i + 1 === page ? 'active' : null,
                     size,
                   }),
@@ -535,7 +536,7 @@ export function XDSPagination({
       aria-label={label}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('pagination', {variant, size}),
+        xdsThemeProps('pagination', {variant, size}),
         stylex.props(styles.root, xstyle),
         className,
         style,

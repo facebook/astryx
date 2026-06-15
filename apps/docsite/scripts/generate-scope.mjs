@@ -65,29 +65,112 @@ lines.push("import React, {useState, useCallback, useMemo, useEffect, useRef} fr
 lines.push('');
 
 // ── StyleX mock ────────────────────────────────────────────────────────
-// The playground transpiles code in-browser without the StyleX compiler, so
-// props() flattens plain CSS-property objects into an inline `style`. Pseudo/
-// media entries can't be inlined: responsive objects collapse to `default`.
-lines.push(`const STYLEX_SKIP_KEY = /^(:|::|@|--)/;
-const stylexFlatten = (style: Record<string, unknown>, obj: unknown): void => {
-  if (obj == null || typeof obj !== 'object') return;
-  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
-    if (v == null || v === false) continue;
-    if (STYLEX_SKIP_KEY.test(k)) continue;
-    if (typeof v === 'object') {
-      const d = (v as Record<string, unknown>).default;
-      if (d != null && typeof d !== 'object') style[k] = d as string;
-      continue;
-    }
-    style[k] = v as string;
-  }
+// The playground transpiles code in-browser without the StyleX compiler, so the
+// mock reimplements stylex.create/props: each property becomes an atomic class
+// injected into a shared <style> sheet, so @container/@media/pseudo conditions
+// apply instead of collapsing to the `default` value an inline style would force.
+//
+// create() returns `$$css: true` objects of class names — the same shape the real
+// compiled stylex.props() understands, so `xstyle` passed into @xds/core components
+// merges correctly too.
+lines.push(`type PGStyleValue =
+  | string
+  | number
+  | {[condition: string]: string | number};
+type PGRule = Record<string, PGStyleValue>;
+
+const PG_UNITLESS = new Set([
+  'opacity', 'zIndex', 'fontWeight', 'lineHeight', 'flex', 'flexGrow',
+  'flexShrink', 'order', 'gridColumn', 'gridRow', 'gridColumnStart',
+  'gridColumnEnd', 'gridRowStart', 'gridRowEnd', 'columnCount', 'aspectRatio',
+  'scale', 'tabSize',
+]);
+
+const PG_CAMEL_RE = /[A-Z]/g;
+const pgKebab = (prop: string): string =>
+  prop.startsWith('--')
+    ? prop
+    : prop.replace(PG_CAMEL_RE, m => '-' + m.toLowerCase());
+
+const pgCssValue = (prop: string, value: string | number): string =>
+  typeof value === 'number' && !PG_UNITLESS.has(prop) ? value + 'px' : String(value);
+
+const pgHash = (input: string): string => {
+  let h = 5381;
+  for (let i = 0; i < input.length; i++) h = (h * 33) ^ input.charCodeAt(i);
+  return 'pg' + (h >>> 0).toString(36);
 };
+
+const pgSheetCache = new Set<string>();
+let pgSheetEl: HTMLStyleElement | null = null;
+const pgInject = (rule: string): void => {
+  if (typeof document === 'undefined' || pgSheetCache.has(rule)) return;
+  pgSheetCache.add(rule);
+  if (!pgSheetEl) {
+    pgSheetEl = document.createElement('style');
+    pgSheetEl.id = 'pg-stylex';
+    document.head.appendChild(pgSheetEl);
+  }
+  pgSheetEl.appendChild(document.createTextNode(rule));
+};
+
+const pgClassForProp = (prop: string, value: PGStyleValue): string => {
+  const cls = pgHash(prop + ':' + JSON.stringify(value));
+  if (value != null && typeof value === 'object') {
+    for (const [cond, condVal] of Object.entries(value)) {
+      if (condVal == null) continue;
+      const decl = '.' + cls + pgPseudoSuffix(cond) + '{' + pgKebab(prop) + ':' + pgCssValue(prop, condVal) + '}';
+      pgInject(pgWrapAtRule(cond, decl));
+    }
+  } else {
+    pgInject('.' + cls + '{' + pgKebab(prop) + ':' + pgCssValue(prop, value) + '}');
+  }
+  return cls;
+};
+
+const pgPseudoSuffix = (cond: string): string =>
+  cond === 'default' || cond.startsWith('@') ? '' : cond;
+
+const pgWrapAtRule = (cond: string, decl: string): string =>
+  cond.startsWith('@') ? cond + '{' + decl + '}' : decl;
+
+const pgCompileRule = (rule: Record<string, unknown>): Record<string, unknown> => {
+  const compiled: Record<string, unknown> = {$$css: true};
+  for (const [prop, value] of Object.entries(rule)) {
+    if (value == null) continue;
+    compiled[prop] = pgClassForProp(prop, value as PGStyleValue);
+  }
+  return compiled;
+};
+
 const stylexMock = {
-  create: <T extends Record<string, unknown>>(styles: T): T => styles,
+  create: <T extends Record<string, unknown>>(styles: T): T => {
+    const out: Record<string, unknown> = {};
+    for (const [key, rule] of Object.entries(styles)) {
+      if (typeof rule === 'function') {
+        // Dynamic styles must compile at call time so runtime values become classes.
+        const fn = rule as (...args: unknown[]) => Record<string, unknown>;
+        out[key] = (...args: unknown[]) => pgCompileRule(fn(...args));
+      } else if (typeof rule === 'object' && rule != null) {
+        out[key] = pgCompileRule(rule as Record<string, unknown>);
+      } else {
+        out[key] = rule;
+      }
+    }
+    return out as T;
+  },
+  // Later styles override earlier ones per property key (matching real StyleX),
+  // returning a className (not inline style) so @container/@media survive.
   props: (...styles: unknown[]) => {
-    const style: Record<string, unknown> = {};
-    for (const s of styles.flat(Infinity)) stylexFlatten(style, s);
-    return {className: '', style: style as Record<string, string>};
+    const byProp: Record<string, string> = {};
+    for (const s of (styles.flat(Infinity) as unknown[])) {
+      if (s == null || s === false || typeof s !== 'object') continue;
+      for (const [prop, cls] of Object.entries(s as Record<string, unknown>)) {
+        if (prop === '$$css' || typeof cls !== 'string') continue;
+        byProp[prop] = cls;
+      }
+    }
+    return {className: Object.values(byProp).join(' '), style: {}};
   },
   defineVars: <T extends Record<string, unknown>>(tokens: T): T => tokens,
   keyframes: (kf: Record<string, Record<string, string>>) => kf,
@@ -126,6 +209,12 @@ lines.push("import {XDSTheme} from '@xds/core/theme';");
 lines.push("import type {XDSDefinedTheme} from '@xds/core/theme';");
 lines.push("import {createElement, type ComponentProps} from 'react';");
 lines.push("import * as xdsTokens from '@xds/core/theme/tokens.stylex';");
+lines.push('');
+
+// ── Hooks ──────────────────────────────────────────────────────────────
+// camelCase, so the PascalCase component scan skips it — add it explicitly so
+// templates using useMediaQuery etc. render.
+lines.push("import * as XDSHooks from '@xds/core/hooks';");
 lines.push('');
 
 // ── Icon libraries ─────────────────────────────────────────────────────
@@ -190,6 +279,9 @@ lines.push("  '@xds/core/theme': {XDSTheme: ControlledXDSTheme},");
 
 // tokens.stylex
 lines.push("  '@xds/core/theme/tokens.stylex': xdsTokens,");
+
+// hooks (useMediaQuery, etc.)
+lines.push("  '@xds/core/hooks': XDSHooks,");
 
 // Per-component subpath entries
 for (const name of components) {

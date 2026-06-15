@@ -51,8 +51,9 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const styles = stylex.create({
   dropdown: {
@@ -400,7 +401,7 @@ export function XDSDropdownMenu({
           role="menu"
           onKeyDown={listKeyDown}
           {...mergeProps(
-            xdsClassName('dropdown-menu'),
+            xdsThemeProps('dropdown-menu'),
             stylex.props(styles.dropdown, xstyle),
             className,
             style,

@@ -24,9 +24,10 @@ import {XDSLayoutSlotsContext, type LayoutSlots} from './XDSLayoutSlotsContext';
 import {XDSLayoutDividerContext} from './XDSLayoutDividerContext';
 import {stack} from '../Stack/stack.stylex';
 import {stackItem} from '../Stack/stackItem.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import type {SpacingStep} from '../utils/types';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 import {
   layoutPaddingOuterXVarStyles,
   layoutPaddingOuterYVarStyles,
@@ -257,7 +258,7 @@ export function XDSLayout({
       <div
         ref={ref}
         {...mergeProps(
-          xdsClassName('layout', {height}),
+          xdsThemeProps('layout', {height}),
           stylex.props(
             styles.layoutOuter,
             isFill ? styles.fill : styles.auto,

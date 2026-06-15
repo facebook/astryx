@@ -125,6 +125,15 @@ export const docsDense = {
   name: 'ChatLayout',
   displayName: 'Chat Layout',
   description: 'layout shell for full chat; msgs in page flow, composer fixed bottom w/ frosted glass dock; auto density via container width; scrollRef delegates to parent/body',
+  usage: {
+    bestPractices: [
+      {guidance: true, description: 'Pass XDSChatMessageList as children and XDSChatComposer as composer prop for complete chat.'},
+      {guidance: true, description: 'Provide emptyState so new conversations show a prompt, not blank screen.'},
+      {guidance: true, description: 'Use scrollRef when chat is embedded in a page where a parent element handles scrolling.'},
+      {guidance: false, description: 'Apply fixed height on layout; let it fill container with flex: 1.'},
+      {guidance: false, description: 'Render multiple ChatLayout instances in same scroll container; each expects to own its scroll context.'},
+    ],
+  },
   propDescriptions: {
     children: 'msg content; typically XDSChatMessageList',
     composer: 'composer element; typically XDSChatComposer; fixed bottom w/ frosted glass',
