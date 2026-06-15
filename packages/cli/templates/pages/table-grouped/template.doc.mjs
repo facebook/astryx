@@ -5,7 +5,8 @@ export const doc = {
   type: 'page',
   name: 'Grouped Table',
   displayName: 'Grouped Table',
-  description: 'Grouped data table with collapsible status sections, PowerSearch, and detail panel',
+  description:
+    'Grouped data table with collapsible status sections, PowerSearch, and a resizable detail panel.',
   isReady: true,
   category: 'Table - Grouped',
 };
