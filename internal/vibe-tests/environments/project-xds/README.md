@@ -51,4 +51,16 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSIconButton} from '@xds/core/IconButton';
 import {XDSCard} from '@xds/core/Card';
 import {XDSText, XDSHeading} from '@xds/core/Text';
+import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
+import {XDSTheme} from '@xds/core/theme';
 ```
+
+## Event Handlers
+
+XDS is a React DOM library. Use standard React DOM event handlers:
+
+```tsx
+<XDSButton label="Save" onClick={() => handleSave()} />
+```
+
+Do NOT use React Native patterns like `onPress` — they don't exist in XDS.
