@@ -39,7 +39,7 @@ export const docs = {
       name: 'placeholder',
       type: 'string',
       description: 'Placeholder text shown when the input is empty.',
-      default: "'Type a message…'",
+      default: "'Type a message...'",
     },
     {
       name: 'isDisabled',
