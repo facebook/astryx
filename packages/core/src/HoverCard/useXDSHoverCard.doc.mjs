@@ -33,7 +33,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Use for rich content previews such as user profiles, entity summaries, and link previews.'},
       {guidance: true, description: 'Prefer the XDSHoverCard component for standard trigger-content pairs; use the hook for custom trigger patterns.'},
-      {guidance: false, description: 'Use for simple text hints — use XDSTooltip or useXDSTooltip instead.'},
+      {guidance: false, description: 'Use for simple text hints: use XDSTooltip or useXDSTooltip instead.'},
     ],
   },
   relatedComponents: ['HoverCard', 'Tooltip', 'Popover'],
@@ -72,7 +72,7 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Use for rich previews: profiles, entity summaries, link previews.'},
       {guidance: true, description: 'Prefer XDSHoverCard for standard trigger-content pairs; use hook for custom trigger patterns.'},
-      {guidance: false, description: 'Use for simple text hints — use XDSTooltip / useXDSTooltip instead.'},
+      {guidance: false, description: 'Use for simple text hints: use XDSTooltip / useXDSTooltip instead.'},
     ],
   },
 };

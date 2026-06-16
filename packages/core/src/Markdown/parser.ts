@@ -426,19 +426,28 @@ const ANGLE_SCHEME = '[a-zA-Z][a-zA-Z0-9+.-]*';
 const ANGLE_URL_BODY = '[^<>\\s]*';
 
 /** Bare http(s) URL up to whitespace or `<`. Trailing punctuation is peeled afterwards. */
-const URL_LITERAL_RE = new RegExp(`${SCHEME}${ANY_NON_WHITESPACE_OR_ANGLE}`, 'g');
+const URL_LITERAL_RE = new RegExp(
+  `${SCHEME}${ANY_NON_WHITESPACE_OR_ANGLE}`,
+  'g',
+);
 
 /** Bare www. URL. Resulting href gets `http://` prepended. */
 const WWW_LITERAL_RE = new RegExp(`www\\.${ANY_NON_WHITESPACE_OR_ANGLE}`, 'g');
 
 /** Bare email: local-part@domain (at least one dot in domain). */
-const EMAIL_LITERAL_RE = new RegExp(`${EMAIL_LOCAL_PART}@${DOMAIN_WITH_DOT}`, 'g');
+const EMAIL_LITERAL_RE = new RegExp(
+  `${EMAIL_LOCAL_PART}@${DOMAIN_WITH_DOT}`,
+  'g',
+);
 
 /** Angle-bracket autolink: `<scheme:url>` (CommonMark §6.5). */
 const ANGLE_URL_RE = new RegExp(`<(${ANGLE_SCHEME}:${ANGLE_URL_BODY})>`, 'g');
 
 /** Angle-bracket email: `<user@host.tld>`. */
-const ANGLE_EMAIL_RE = new RegExp(`<(${EMAIL_LOCAL_PART}@${DOMAIN_WITH_DOT})>`, 'g');
+const ANGLE_EMAIL_RE = new RegExp(
+  `<(${EMAIL_LOCAL_PART}@${DOMAIN_WITH_DOT})>`,
+  'g',
+);
 
 /** Characters treated as trailing sentence punctuation per GFM §6.9. */
 const TRAILING_PUNCT_CHARS = new Set('?!.,:*_~');

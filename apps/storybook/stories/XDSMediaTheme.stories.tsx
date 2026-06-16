@@ -25,7 +25,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          'Inverted surface theming context. Wraps children so they render correctly on dark or light backgrounds — buttons, links, text, and icons all pick up the right colors automatically.',
+          'Inverted surface theming context. Wraps children so they render correctly on dark or light backgrounds; buttons, links, text, and icons all pick up the right colors automatically.',
       },
     },
   },
@@ -49,7 +49,8 @@ function OnDarkDemo() {
       <XDSMediaTheme mode="dark">
         <XDSStack gap={3}>
           <XDSText>
-            Content on a dark surface — text, icons, and interactive elements
+            
+            Content on a dark surface: text, icons, and interactive elements
             automatically adapt.
           </XDSText>
           <XDSStack direction="horizontal" gap={2} align="center" wrap="wrap">
@@ -107,7 +108,8 @@ function OnLightDemo() {
           <XDSMediaTheme mode="light">
             <XDSStack gap={3}>
               <XDSText>
-                Content on a light surface in dark mode — text and icons become
+                
+                Content on a light surface in dark mode: text and icons become
                 dark.
               </XDSText>
               <XDSStack
@@ -136,7 +138,7 @@ export const OnLight: StoryObj = {
     docs: {
       description: {
         story:
-          'Content on a light surface in dark mode. The inverse of OnDark — dark text on a light background when the page is dark.',
+          'Content on a light surface in dark mode. The inverse of OnDark: dark text on a light background when the page is dark.',
       },
     },
   },
@@ -210,7 +212,7 @@ export const ToastExample: StoryObj = {
     docs: {
       description: {
         story:
-          'Toast-like notifications using XDSMediaTheme. The dark surface sets up the right token context — buttons and text just work without manual color overrides.',
+          'Toast-like notifications using XDSMediaTheme. The dark surface sets up the right token context; buttons and text just work without manual color overrides.',
       },
     },
   },
@@ -232,7 +234,8 @@ function ComponentOverrideBoundaryDemo() {
     <XDSTheme theme={brutalistTheme}>
       <XDSStack gap={4}>
         <XDSText weight="semibold">
-          Brutalist theme — notice the component overrides: pill buttons,
+          
+          Brutalist theme, notice the component overrides: pill buttons,
           uppercase text, thick card borders, bordered ghost buttons.
         </XDSText>
 
@@ -288,7 +291,7 @@ export const ComponentOverrideBoundary: StoryObj = {
     docs: {
       description: {
         story:
-          'Shows component overrides flowing through to the media context. Brutalist theme applies bold component overrides (pill buttons, uppercase, thick borders) — these are preserved inside XDSMediaTheme. Only the color tokens change for the inverted surface.',
+          'Shows component overrides flowing through to the media context. Brutalist theme applies bold component overrides (pill buttons, uppercase, thick borders); these are preserved inside XDSMediaTheme. Only the color tokens change for the inverted surface.',
       },
     },
   },
@@ -358,7 +361,7 @@ export const AcrossThemes: StoryObj = {
     docs: {
       description: {
         story:
-          'Side-by-side comparison across themes. Left column shows normal surface with themed component overrides. Right column shows XDSMediaTheme dark surface — same components, inverted tokens, default styles.',
+          'Side-by-side comparison across themes. Left column shows normal surface with themed component overrides. Right column shows XDSMediaTheme dark surface: same components, inverted tokens, default styles.',
       },
     },
   },
@@ -387,7 +390,7 @@ function CustomOverridesDemo() {
     <XDSTheme theme={customTheme}>
       <XDSStack gap={3}>
         <XDSText>
-          This theme has a custom <code>onDark</code> config — the accent color
+          This theme has a custom <code>onDark</code>  config; the accent color
           on dark surfaces is a lighter purple instead of plain white.
         </XDSText>
         <div
@@ -611,7 +614,7 @@ export const RegionalDetection: StoryObj = {
     docs: {
       description: {
         story:
-          'Regional detection samples a specific area of the image instead of the full average. Useful when text overlays a specific region — the sunset image is light overall but dark at the bottom where the text sits.',
+          'Regional detection samples a specific area of the image instead of the full average. Useful when text overlays a specific region: the sunset image is light overall but dark at the bottom where the text sits.',
       },
     },
   },

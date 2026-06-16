@@ -7,12 +7,12 @@ export const docs = {
   subComponentOf: 'Chat',
   displayName: 'Chat Message Bubble',
   isHiddenFromOverview: true,
-  description: 'Styled content container — the chat “bubble.” Reads sender from parent XDSChatMessage context to auto-style the background. Use filled for standard messages and ghost when content needs alignment without a visible boundary. Supports name/metadata slots aligned with bubble padding, and multi-bubble grouping via the group prop for consecutive messages from the same sender.',
+  description: 'Styled content container for the chat "bubble." Reads sender from parent XDSChatMessage context to auto-style the background. Use filled for standard messages and ghost when content needs alignment without a visible boundary. Supports name/metadata slots aligned with bubble padding, and multi-bubble grouping via the group prop for consecutive messages from the same sender.',
   props: [
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'Bubble content — text, XDSMarkdown, or any ReactNode.',
+      description: 'Bubble content: text, XDSMarkdown, or any ReactNode.',
       required: true,
     },
     {

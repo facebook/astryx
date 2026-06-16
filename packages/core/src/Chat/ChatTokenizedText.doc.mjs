@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Chat',
   displayName: 'Chat Tokenized Text',
   isHiddenFromOverview: true,
-  description: 'Renders a text string with token patterns replaced by inline XDSBadge components. Wrap any message body inside XDSChatMessageBubble to turn raw @mentions, #tags, or /commands into styled badges. When no tokens match or none are provided, the text renders as-is — so you can use ChatTokenizedText unconditionally on every message.',
+  description: 'Renders a text string with token patterns replaced by inline XDSBadge components. Wrap any message body inside XDSChatMessageBubble to turn raw @mentions, #tags, or /commands into styled badges. When no tokens match or none are provided, the text renders as-is: so you can use ChatTokenizedText unconditionally on every message.',
   props: [
     {
       name: 'children',
@@ -18,7 +18,7 @@ export const docs = {
     {
       name: 'tokens',
       type: 'XDSChatComposerToken[]',
-      description: 'Token definitions — same type returned by trigger onSelect. Each token has a value (the string to match), label (display text), and optional variant and icon. Uses the same type as the composer input, so token definitions work for both input and display.',
+      description: 'Token definitions: same type returned by trigger onSelect. Each token has a value (the string to match), label (display text), and optional variant and icon. Uses the same type as the composer input, so token definitions work for both input and display.',
     },
   ],
 };

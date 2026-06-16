@@ -30,7 +30,7 @@ export const docs = {
     {
       name: 'heading',
       type: 'ReactNode',
-      description: 'Heading slot content (logo, brand) — positioned at the left edge of the nav bar.',
+      description: 'Heading slot content (logo, brand): positioned at the left edge of the nav bar.',
       slotElements: [
         {
           __element: 'XDSText',
@@ -45,7 +45,7 @@ export const docs = {
     {
       name: 'startContent',
       type: 'ReactNode',
-      description: 'Start content slot for navigation items or breadcrumbs — positioned after the heading, left-aligned.',
+      description: 'Start content slot for navigation items or breadcrumbs: positioned after the heading, left-aligned.',
       slotElements: [
         {
           __element: 'XDSIcon',
@@ -73,7 +73,7 @@ export const docs = {
     {
       name: 'centerContent',
       type: 'ReactNode',
-      description: 'Center content slot (tabs, search bar, primary navigation) — when provided, switches the layout to a three-column CSS grid for true horizontal centering.',
+      description: 'Center content slot (tabs, search bar, primary navigation): when provided, switches the layout to a three-column CSS grid for true horizontal centering.',
       slotElements: [
         {
           __element: 'XDSText',
@@ -88,7 +88,7 @@ export const docs = {
     {
       name: 'endContent',
       type: 'ReactNode',
-      description: 'End content slot for search, icons, or user profile — positioned at the right edge.',
+      description: 'End content slot for search, icons, or user profile: positioned at the right edge.',
       slotElements: [
         {
           __element: 'XDSIcon',
@@ -113,7 +113,7 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
   components: [

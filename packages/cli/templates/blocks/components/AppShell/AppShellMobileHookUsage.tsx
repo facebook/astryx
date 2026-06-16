@@ -54,7 +54,8 @@ export default function AppShellMobileHookUsage() {
         </XDSText>
       </XDSHStack>
       <XDSText type="body" color="secondary">
-        This button controls the nearest AppShell mobile nav from context — in
+        
+        This button controls the nearest AppShell mobile nav from context; in
         the docsite it opens and closes the surrounding page navigation.
       </XDSText>
     </XDSVStack>

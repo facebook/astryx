@@ -3,16 +3,48 @@
 /**
  * Astryx Theme
  *
- * Minimal — only two brand decisions:
- *   1. Accent color: #292724 (warm near-black)
- *   2. Typography: Figtree
+ * The Astryx brand uses its blue ONLY for the logo/wordmark. Everything else
+ * in the UI — buttons, links, focus rings, the Switch "on" track, accent
+ * icons, and tints — is driven by the high-emphasis PRIMARY ink (warm
+ * near-black). So the theme makes the accent tokens resolve to PRIMARY, and
+ * the brand blue lives in its own BRAND_BLUE constant reserved for the logo
+ * (applied by the hero, not by any semantic token here).
  *
- * Everything else (surfaces, text, borders, status, radius, motion) is
- * inherited from the default XDS theme behavior so the design system
- * stays the source of truth and Astryx is a thin brand layer on top.
+ *   1. PRIMARY    — the high-emphasis foreground ink (warm near-black). Drives
+ *      primary text/icons AND the accent tokens, so all interactive UI reads
+ *      as near-black rather than blue. See `PRIMARY` below.
+ *   2. BRAND_BLUE — the Astryx brand blue, reserved for the logo only. Not
+ *      wired to any semantic accent token; the hero paints the wordmark with
+ *      it directly. See `BRAND_BLUE` below.
+ *
+ * The only other overrides are the cream body color, Figtree typography, a
+ * +4px radius bump, semibold display headings, and pill buttons. The neutral
+ * gray ramp (surfaces, borders, secondary/disabled text, skeleton/track,
+ * categorical gray) is intentionally left at the XDS defaults — Astryx is a
+ * thin brand layer of primary + accent + body on top of the design system.
  */
 
 import {defineTheme} from '@xds/core/theme';
+
+// === PRIMARY (high-emphasis foreground ink — drives accent too) ==============
+// Warm near-black that harmonizes with the cream body (light) and a warm
+// off-white (dark). This is the primary text/icon color, and it ALSO drives
+// the accent tokens (see below) so buttons/links/focus read as near-black.
+const PRIMARY = 'light-dark(#15110C, #DFE2E5)';
+
+// A warm near-black tint for the accent-muted surface (subtle hover/selected
+// backgrounds). Mirrors PRIMARY's hue so muted accent fills match the primary-
+// driven UI instead of staying blue. Dark mode uses a light warm tint.
+const PRIMARY_MUTED =
+  'light-dark(rgba(21, 17, 12, 0.08), rgba(223, 226, 229, 0.14))';
+
+// === BRAND_BLUE (logo only) ==================================================
+// Brand blue (#225BFF) — the same blue baked into the Astryx logo/favicon.
+// Reserved for the wordmark; the hero applies it directly (this theme does not
+// point any accent token at it). Dark mode uses a lighter blue (#3D87FF) so the
+// logo stays legible on the dark body. Exported so the hero can reference the
+// exact brand value instead of hardcoding it.
+export const BRAND_BLUE = 'light-dark(#225BFF, #3D87FF)';
 
 export const astryxTheme = defineTheme({
   name: 'astryx',
@@ -23,26 +55,36 @@ export const astryxTheme = defineTheme({
   // surfaces come out brown). Setting --color-accent directly leaves every
   // other token at the XDS default.
   tokens: {
-    '--color-accent': '#292724',
-    // Setting --color-accent alone leaves the *derived* accent tokens
-    // (text/icon/muted) at the XDS default blue, so links and accent icons
-    // across the docsite stayed blue. Point them at the brand accent too.
-    // light-dark() keeps dark mode legible (near-black is invisible on dark).
-    '--color-text-accent': 'light-dark(#292724, #E8E3DA)',
-    '--color-icon-accent': 'light-dark(#292724, #E8E3DA)',
-    '--color-accent-muted':
-      'light-dark(rgba(41, 39, 36, 0.12), rgba(232, 227, 218, 0.16))',
+    // --- ACCENT tokens → PRIMARY ---
+    // The brand blue is reserved for the logo, so every accent token resolves
+    // to the warm PRIMARY ink instead. This makes all interactive UI (buttons,
+    // links, focus rings, the Switch "on" track, accent icons, tints) read as
+    // near-black rather than blue. The on-accent ink is set below so the
+    // contrast holds in both modes (the accent flips light↔dark with PRIMARY).
+    '--color-accent': PRIMARY,
+    '--color-text-accent': PRIMARY,
+    '--color-icon-accent': PRIMARY,
+    '--color-accent-muted': PRIMARY_MUTED,
+    // On-accent (the label/icon ON a filled accent surface, e.g. primary
+    // button text) must invert with the accent: PRIMARY is near-black in light
+    // and near-white in dark, so the on-accent ink is white in light and
+    // near-black in dark. Without this it stays the XDS default white and
+    // becomes unreadable on the light dark-mode accent fill.
+    '--color-on-accent': 'light-dark(#FFFFFF, #15110C)',
     // Mode-aware so the page background flips with dark mode. Light keeps the
     // warm Astryx cream; dark falls back to the XDS default body color
     // (a flat static value here would freeze the page in light mode).
     '--color-background-body': 'light-dark(#F8F4ED, #111112)',
-    // Re-tint the categorical "gray" surface to match the page body
-    // background. Cards rendered with `variant="gray"` (e.g. landing
-    // feature cards) blend into the body, reading as content groups
-    // shaped by padding + corners rather than as a coloured surface.
-    // Dark mode keeps the default --color-background-gray tint so
-    // recessed surfaces stay readable against the dark body.
-    '--color-background-gray': 'light-dark(#F8F4ED, rgba(102, 106, 114, 0.30))',
+
+    // --- PRIMARY (high-emphasis foreground ink) ---
+    // Both primary foreground tokens point at the single PRIMARY decision
+    // above (which also drives the accent tokens). Secondary, disabled, and the
+    // rest of the neutral gray ramp (surfaces, borders, skeleton/track,
+    // categorical gray) are intentionally left at the XDS defaults — only the
+    // primary ink is a brand decision.
+    '--color-text-primary': PRIMARY,
+    '--color-icon-primary': PRIMARY,
+
     // Astryx display headings render semibold (XDS default is normal weight).
     '--text-display-1-weight': 'var(--font-weight-semibold)',
     '--text-display-2-weight': 'var(--font-weight-semibold)',

@@ -269,8 +269,8 @@ export const PersonalityAxes: StoryObj = {
       <XDSStack direction="vertical" gap={3}>
         <XDSHeading level={3}>Personality Axes (Conceptual)</XDSHeading>
         <XDSText type="supporting">
-          Shape personality parameters adjust the <em>feel</em> of icons without
-          changing their structure. All adjustments are relative — preserving
+          Shape personality parameters adjust the <em>feel</em>  of icons without
+          changing their structure. All adjustments are relative, preserving
           the artist&apos;s hierarchy of sharp vs soft. These icons show the
           concept; path manipulation is not yet implemented.
         </XDSText>
@@ -324,9 +324,10 @@ export const PersonalityAxes: StoryObj = {
         </div>
 
         <XDSText type="supporting">
+          
           Note: opacity/stroke-width are used as visual placeholders here. The
-          real implementation will modify path geometry — rounding corners,
-          bowing segments, adjusting curve tension — all at build time via the
+          real implementation will modify path geometry, rounding corners,
+          bowing segments, adjusting curve tension, all at build time via the
           theme pipeline.
         </XDSText>
       </XDSStack>
@@ -486,16 +487,18 @@ export const PathTransformPlayground: StoryObj = {
       <XDSStack direction="vertical" gap={4}>
         <XDSHeading level={3}>Path Transform Playground</XDSHeading>
         <XDSText type="supporting">
+          
           Live path manipulation with sagitta-corrected corner rounding. Sharp
-          corners (like star tips) round less aggressively than gentle corners —
+          corners (like star tips) round less aggressively than gentle corners,
           achieving equal <em>perceived</em> roundness at all angles.
         </XDSText>
 
         {/* Corner Rounding */}
         <XDSHeading level={4}>Corner Rounding (sagitta-corrected)</XDSHeading>
         <XDSText type="supporting">
+          
           Same cornerRounding value across all shapes. Sharp corners get less
-          radius, gentle corners get more — visually balanced.
+          radius, gentle corners get more, visually balanced.
         </XDSText>
         <div
           style={{

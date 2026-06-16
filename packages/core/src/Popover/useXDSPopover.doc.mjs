@@ -34,7 +34,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Use for interactive content such as menus, pickers, forms, and command panels that need focus management.'},
       {guidance: true, description: 'Prefer the XDSPopover component for standard trigger-content pairs; use the hook for custom trigger patterns.'},
-      {guidance: false, description: 'Use for non-interactive hover previews — use useXDSHoverCard or useXDSTooltip instead.'},
+      {guidance: false, description: 'Use for non-interactive hover previews: use useXDSHoverCard or useXDSTooltip instead.'},
     ],
   },
   relatedComponents: ['Popover', 'DropdownMenu', 'HoverCard'],
@@ -74,7 +74,7 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Use for menus, pickers, forms, command panels needing focus management.'},
       {guidance: true, description: 'Prefer XDSPopover for standard trigger-content pairs; use hook for custom trigger patterns.'},
-      {guidance: false, description: 'Use for non-interactive hover previews — use useXDSHoverCard / useXDSTooltip instead.'},
+      {guidance: false, description: 'Use for non-interactive hover previews: use useXDSHoverCard / useXDSTooltip instead.'},
     ],
   },
 };

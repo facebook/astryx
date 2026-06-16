@@ -12,7 +12,7 @@ export const docs = {
     {
       name: 'handleRef',
       type: 'React.Ref<XDSChatComposerInputHandle>',
-      description: 'Imperative handle for programmatic control — insertToken, insertText, focus, and getValue.',
+      description: 'Imperative handle for programmatic control: insertToken, insertText, focus, and getValue.',
     },
     {
       name: 'value',
@@ -28,7 +28,7 @@ export const docs = {
       name: 'placeholder',
       type: 'string',
       description: 'Placeholder text shown when the input is empty.',
-      default: "'Type a message…'",
+      default: "'Type a message...'",
     },
     {
       name: 'maxRows',

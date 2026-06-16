@@ -36,7 +36,7 @@ export const docs = {
     {
       name: 'href',
       type: 'string',
-      description: 'Deprecated — use headingHref instead. URL to navigate to when clicked.',
+      description: 'Deprecated: use headingHref instead. URL to navigate to when clicked.',
     },
     {
       name: 'superheading',
@@ -179,7 +179,7 @@ export const docsDense = {
     logo: 'Logo before heading text. Image, XDSNavIcon, or ReactNode.',
     heading: 'Product/app name.',
     headingHref: 'Link for heading (product home). Only href + no menu → whole heading is link.',
-    href: 'Deprecated — use headingHref.',
+    href: 'Deprecated: use headingHref.',
     superheading: 'Text above heading (suite name). Smaller secondary style.',
     superheadingHref: 'Link for superheading. Independent inline link when menu present.',
     subheading: 'Text below heading (account context). Smaller secondary style.',

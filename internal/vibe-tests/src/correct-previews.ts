@@ -130,7 +130,7 @@ ${docs}
 3. If a prop name is wrong, use the correct one from the docs.
 4. If a prop value is wrong (e.g. "small" → "sm"), use the correct value.
 5. If a component doesn't exist, replace with the closest real equivalent.
-6. Output ONLY the corrected .tsx file — no explanation, no markdown fences.
+6. Output ONLY the corrected .tsx file: no explanation, no markdown fences.
 `;
 }
 

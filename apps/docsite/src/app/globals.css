@@ -87,18 +87,59 @@ body:has([data-home-page]) #xds-app-shell-main {
   transition: background 300ms ease;
 }
 
-/* On the home page only, blend the top nav with the cream body background.
-   Use the solid body color (not a color-mix) so it matches perfectly even
-   without anything scrolled behind it. The backdrop-filter blur from the
-   .xds-top-nav rule above is preserved. */
+/* On the home page only, make the top nav transparent so the slide-themed
+   navBackdrop band rendered behind it (inside the hero reel's themed scope)
+   shows through and retints the nav strip with the ACTIVE theme's body color.
+   Without this the nav would paint Astryx's default body color and never
+   follow the reel. The backdrop-filter blur from the .xds-top-nav rule above
+   is preserved. */
 body:has([data-home-page]) .xds-top-nav:where(:not(.xds-app-shell .xds-app-shell *)) {
-  background: var(--color-background-body);
+  background: transparent;
 }
 
 /* When the home page IntersectionObserver detects the theming showcase has
    reached the top, switch the nav back to a surface-tinted frosted bar. */
 body[data-nav-mode='surface'] .xds-top-nav:where(:not(.xds-app-shell .xds-app-shell *)) {
   background: color-mix(in srgb, var(--color-background-surface) 80%, transparent);
+}
+
+/* Light ink for hero text + nav on a dark slide's backdrop (e.g. Gothic). They
+   live in the Astryx context, so they can't pull the dark slide's own light
+   tokens — define one var here (inherited by both) instead of literals. */
+body[data-hero-dark] {
+  --hero-on-dark: #e8e3da;
+}
+/* Dark hero slide: switch the transparent nav's text to that light ink. Skipped
+   in surface mode (scrolled past the hero onto the white showcase). */
+body[data-hero-dark]:not([data-nav-mode='surface'])
+  .xds-top-nav:where(:not(.xds-app-shell .xds-app-shell *)) {
+  color: var(--hero-on-dark);
+}
+body[data-hero-dark]:not([data-nav-mode='surface'])
+  .xds-top-nav:where(:not(.xds-app-shell .xds-app-shell *)) a,
+body[data-hero-dark]:not([data-nav-mode='surface'])
+  .xds-top-nav:where(:not(.xds-app-shell .xds-app-shell *)) button {
+  color: var(--hero-on-dark);
+}
+
+/* Hide the prev/next chevron buttons inside the home page's hero theme
+   switcher pagination so only the dot indicators show. XDSPagination's
+   variant="dots" ships with chevrons by default; the hero wants a minimal
+   indicator-only treatment. Scoped to [data-home-page] so other
+   XDSPagination instances across the site stay untouched. */
+[data-home-page] .xds-pagination button[aria-label='Go to previous page'],
+[data-home-page] .xds-pagination button[aria-label='Go to next page'] {
+  display: none;
+}
+
+/* On dark hero slides the dots render in Astryx, whose --color-accent is a
+   near-black ink — invisible on the dark backdrop, so the active dot and the
+   keyboard focus ring disappear. Repaint both with the light hero ink. */
+body[data-hero-dark] [data-home-page] .xds-pagination-dot.active {
+  background-color: var(--hero-on-dark);
+}
+body[data-hero-dark] [data-home-page] .xds-pagination-dot:focus-visible {
+  outline-color: var(--hero-on-dark);
 }
 
 /* The /themes/<name> dedicated page renders a faux app top nav INSIDE

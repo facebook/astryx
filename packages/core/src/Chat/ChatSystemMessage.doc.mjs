@@ -6,18 +6,18 @@ export const docs = {
   name: 'ChatSystemMessage',
   subComponentOf: 'Chat',
   displayName: 'Chat System Message',
-  description: 'Centered system message for non-sender content like date separators, membership changes, and status notices. It is not a chat bubble — it has no avatar, no alignment, and no sender context. Use the divider variant for temporal breaks and default for inline status updates.',
+  description: 'Centered system message for non-sender content like date separators, membership changes, and status notices. It is not a chat bubble; it has no avatar, no alignment, and no sender context. Use the divider variant for temporal breaks and default for inline status updates.',
   props: [
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'System message content — a short, factual string like a date, a join/leave notice, or a status change.',
+      description: 'System message content: a short, factual string like a date, a join/leave notice, or a status change.',
       required: true,
     },
     {
       name: 'variant',
       type: "'default' | 'divider'",
-      description: "Visual variant. 'default' renders centered text. 'divider' adds horizontal lines on each side via XDSDivider — use for date separators and section breaks.",
+      description: "Visual variant. 'default' renders centered text. 'divider' adds horizontal lines on each side via XDSDivider: use for date separators and section breaks.",
       default: "'default'",
     },
     {
