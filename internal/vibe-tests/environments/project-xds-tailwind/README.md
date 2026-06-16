@@ -29,10 +29,12 @@ import {XDSTheme} from '@xds/core/theme';
 
 ## Event Handlers
 
-XDS is a React DOM library. Use standard React DOM event handlers:
+XDS is a React DOM library. Use standard React DOM event handler props such as
+`onClick`, `onChange`, and `onKeyDown`. For button activation, use `onClick`:
 
 ```tsx
 <XDSButton label="Save" onClick={() => handleSave()} />
 ```
 
-Do NOT use React Native patterns like `onPress` — they don't exist in XDS.
+Do NOT use cross-platform activation props like `onPress` unless a component
+explicitly documents them.
