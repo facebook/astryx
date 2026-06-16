@@ -90,6 +90,16 @@ const styles = stylex.create({
     width: '100%',
     overflowX: 'auto' as const,
   },
+  // Align the table edge with the header/filter row, which are inset by
+  // --spacing-6. The card is padding={0}, so without this the table sits flush
+  // to the card edge. The first/last columns (checkbox/actions) center their
+  // content, so the table edge — not cell padding — is what reads against the
+  // header; insetting by the same --spacing-6 token lines them up in every
+  // theme's spacing scale.
+  inventoryTableWrap: {
+    paddingInline: 'var(--spacing-6)',
+    paddingBlockEnd: 'var(--spacing-2)',
+  },
   searchInput: {
     flex: 1,
     minWidth: 0,
@@ -154,7 +164,10 @@ const styles = stylex.create({
     flex: 1,
   },
   quantityInput: {
-    width: 40,
+    // minWidth (not a hard width) so the field grows to fit the digit + the
+    // theme's input padding. A fixed 40px was too tight on themes with larger
+    // padding / bigger type scale (e.g. Matcha, Y2K), clipping the value.
+    minWidth: 64,
     flexShrink: 0,
   },
   cartButton: {
@@ -193,21 +206,6 @@ const inlineStyles: Record<string, CSSProperties> = {
     fontSize: 'var(--font-size-sm)',
     fontWeight: 600,
     flexShrink: 0,
-  },
-  sparkline: {
-    display: 'flex',
-    alignItems: 'flex-end',
-    justifyContent: 'space-around',
-    height: 120,
-    width: '100%',
-    gap: 8,
-  },
-  sparkLabels: {
-    display: 'flex',
-    justifyContent: 'space-around',
-    width: '100%',
-    color: 'var(--color-text-secondary)',
-    fontSize: 'var(--font-size-xs)',
   },
   kpiValue: {
     fontSize: 24,
@@ -254,23 +252,25 @@ const inlineStyles: Record<string, CSSProperties> = {
   },
 };
 
-// Sparkline bar — height is data-driven, so it's a function returning an
-// inline style object (same reasoning as inlineStyles above).
-const sparkBarStyle = (height: string): CSSProperties => ({
-  flex: 1,
-  minWidth: 0,
-  borderRadius: 'var(--radius-element)',
-  backgroundColor: 'var(--color-background-green)',
-  height,
-});
-
 const PRODUCT_IMAGE_KEYS = ['watch', 'headphones', 'backpack'];
+
+/** Categorical badge variants usable for showcase product/inventory tags. */
+export type ShowcaseBadgeVariant =
+  | 'blue'
+  | 'cyan'
+  | 'green'
+  | 'orange'
+  | 'pink'
+  | 'purple'
+  | 'red'
+  | 'teal'
+  | 'yellow';
 
 export interface ProductSpec {
   name: string;
   description: string;
   badge: string;
-  badgeVariant: 'blue' | 'green' | 'orange' | 'yellow';
+  badgeVariant: ShowcaseBadgeVariant;
 }
 
 const DEFAULT_PRODUCTS: ProductSpec[] = [
@@ -438,7 +438,7 @@ function StorePreview({
           <XDSVStack gap={10} xstyle={[styles.content, styles.contentFluid]}>
             <XDSCenter>
               <XDSVStack gap={4} hAlign="center" xstyle={styles.heroText}>
-                <XDSText type="display-3" xstyle={styles.heroHeadline}>
+                <XDSText type="display-2" xstyle={styles.heroHeadline}>
                   Little joys,
                   <br />
                   everywhere you go
@@ -492,6 +492,7 @@ function StorePreview({
                           <XDSButton
                             label="Add to cart"
                             variant="secondary"
+                            size="sm"
                             href="#"
                             xstyle={styles.cartButton}
                           />
@@ -830,9 +831,6 @@ function ChatCard() {
   );
 }
 
-const SPARKLINE_DATA = [55, 70, 92, 78, 60];
-const SPARKLINE_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May'];
-
 interface ActivityRow {
   id: string;
   icon: ReactNode;
@@ -896,19 +894,6 @@ function LatestActivityCard({isMobile}: {isMobile: boolean}) {
       <XDSVStack gap={4} xstyle={styles.activityCardStack}>
         <XDSHeading level={2}>Revenue</XDSHeading>
 
-        <XDSVStack gap={2}>
-          <div style={inlineStyles.sparkline} aria-hidden="true">
-            {SPARKLINE_DATA.map((value, i) => (
-              <div key={i} style={sparkBarStyle(value + '%')} />
-            ))}
-          </div>
-          <div style={inlineStyles.sparkLabels} aria-hidden="true">
-            {SPARKLINE_LABELS.map(label => (
-              <span key={label}>{label}</span>
-            ))}
-          </div>
-        </XDSVStack>
-
         <XDSGrid columns={isMobile ? 1 : 2} gap={3}>
           <XDSVStack gap={0}>
             <span style={inlineStyles.kpiValue}>18K</span>
@@ -959,7 +944,7 @@ function LatestActivityCard({isMobile}: {isMobile: boolean}) {
   );
 }
 
-type TagSpec = {label: string; variant: 'blue' | 'green' | 'orange' | 'yellow'};
+type TagSpec = {label: string; variant: ShowcaseBadgeVariant};
 
 export interface InventoryRow extends Record<string, unknown> {
   id: string;
@@ -1098,6 +1083,7 @@ function ActionsCell() {
   return (
     <XDSMoreMenu
       label="Row actions"
+      size="sm"
       items={[
         {label: 'Edit'},
         {label: 'Duplicate'},
@@ -1236,51 +1222,66 @@ function InventoryCard({
         </div>
       )}
 
-      <XDSTable<InventoryRow>
-        data={inventory}
-        columns={[
-          {
-            key: 'select',
-            header: '',
-            width: pixel(48),
-            renderCell: row => <SelectCell row={row} />,
-          },
-          {
-            key: 'item',
-            header: 'Item',
-            width: proportional(3),
-            renderCell: row => <ItemCell row={row} images={images} />,
-          },
-          {
-            key: 'available',
-            header: 'Available',
-            width: pixel(100),
-            renderCell: row => <XDSText type="body">{row.available}</XDSText>,
-          },
-          {
-            key: 'location',
-            header: 'Location',
-            width: pixel(100),
-            renderCell: row => <XDSText type="body">{row.location}</XDSText>,
-          },
-          {
-            key: 'tags',
-            header: 'Tags',
-            width: proportional(2),
-            align: 'end',
-            renderCell: row => <TagsCell row={row} />,
-          },
-          {
-            key: 'actions',
-            header: '',
-            width: pixel(48),
-            renderCell: () => <ActionsCell />,
-          },
-        ]}
-        density="spacious"
-        dividers="rows"
-        hasHover
-      />
+      <div {...stylex.props(styles.inventoryTableWrap)}>
+        <XDSTable<InventoryRow>
+          data={inventory}
+          columns={[
+            {
+              key: 'select',
+              header: '',
+              // Wide enough that the control + the theme's cell padding (up to
+              // --spacing-4 = 16px/side on spacious density) fit inside the cell,
+              // so the control's hover background doesn't overflow toward the
+              // card's clipped (rounded) edge on larger-padding themes.
+              width: pixel(64),
+              renderCell: row => <SelectCell row={row} />,
+            },
+            {
+              key: 'item',
+              header: 'Item',
+              // Lower min-width (default is 120) so the table's aggregate
+              // min-width stays below the card's content area in every theme.
+              // Larger-spacing themes (Y2K, Matcha) have a narrower content area
+              // after the --spacing-6 inset; the default mins pushed the table
+              // past it and clipped the trailing actions column.
+              width: proportional(3, {minWidth: 80}),
+              renderCell: row => <ItemCell row={row} images={images} />,
+            },
+            {
+              key: 'available',
+              header: 'Available',
+              width: pixel(100),
+              renderCell: row => <XDSText type="body">{row.available}</XDSText>,
+            },
+            {
+              key: 'location',
+              header: 'Location',
+              width: pixel(100),
+              renderCell: row => <XDSText type="body">{row.location}</XDSText>,
+            },
+            {
+              key: 'tags',
+              header: 'Tags',
+              width: proportional(2, {minWidth: 80}),
+              align: 'end',
+              renderCell: row => <TagsCell row={row} />,
+            },
+            {
+              key: 'actions',
+              header: '',
+              // Match the select column: fit the sm more-menu button + cell
+              // padding so its hover background stays clear of the card's
+              // clipped rounded edge across themes.
+              width: pixel(64),
+              align: 'end',
+              renderCell: () => <ActionsCell />,
+            },
+          ]}
+          density="spacious"
+          dividers="rows"
+          hasHover
+        />
+      </div>
     </XDSCard>
   );
 }
