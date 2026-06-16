@@ -602,8 +602,9 @@ export const NoDividers: Story = {
           content={
             <XDSLayoutContent>
               <p {...stylex.props(styles.bodyText)}>
+                
                 When dividers are not used, the layout automatically collapses
-                spacing between sections for a seamless visual flow.
+                spacing between sections for a smooth visual flow.
               </p>
             </XDSLayoutContent>
           }
@@ -942,7 +943,8 @@ export const ContentWidthWithDividers: Story = {
   render: () => (
     <XDSVStack gap={4} xstyle={styles.storySection}>
       <p {...stylex.props(styles.sectionLabel)}>
-        contentWidth=640 in a 900px container — dividers remain full-bleed while
+        
+        contentWidth=640 in a 900px container; dividers remain full-bleed while
         content is constrained
       </p>
       <div {...stylex.props(styles.cwContainer, styles.cwContainer900)}>
@@ -992,7 +994,8 @@ export const ContentWidthWithStartPanel: Story = {
   render: () => (
     <XDSVStack gap={4} xstyle={styles.storySection}>
       <p {...stylex.props(styles.sectionLabel)}>
-        contentWidth=640 with a 200px start panel — the middle row (panel +
+        
+        contentWidth=640 with a 200px start panel: the middle row (panel +
         content) is constrained
       </p>
       <div {...stylex.props(styles.cwContainer, styles.cwContainer900)}>
@@ -1093,7 +1096,8 @@ export const ContentWidthNoDividers: Story = {
   render: () => (
     <XDSVStack gap={4} xstyle={styles.storySection}>
       <p {...stylex.props(styles.sectionLabel)}>
-        contentWidth=640 without dividers — constraint works the same
+        
+        contentWidth=640 without dividers: constraint works the same
       </p>
       <div {...stylex.props(styles.cwContainer, styles.cwContainer900)}>
         <XDSLayout
@@ -1106,8 +1110,9 @@ export const ContentWidthNoDividers: Story = {
           content={
             <XDSLayoutContent>
               <p {...stylex.props(styles.bodyText)}>
+                
                 Even without dividers, the content is constrained to 640px and
-                centered. The visual flow is seamless with no divider lines.
+                centered. The visual flow is continuous with no divider lines.
               </p>
               <br />
               <div {...stylex.props(styles.placeholder)}>
@@ -1135,7 +1140,8 @@ export const ContentWidthNarrower: Story = {
   render: () => (
     <XDSVStack gap={4} xstyle={styles.storySection}>
       <p {...stylex.props(styles.sectionLabel)}>
-        contentWidth=400 in a 900px container — content is visibly centered
+        
+        contentWidth=400 in a 900px container: content is visibly centered
       </p>
       <div {...stylex.props(styles.cwContainer, styles.cwContainer900)}>
         <XDSLayout
@@ -1149,8 +1155,9 @@ export const ContentWidthNarrower: Story = {
           content={
             <XDSLayoutContent>
               <p {...stylex.props(styles.bodyText)}>
+                
                 This content is constrained to 400px inside a 900px container.
-                Notice the visible centering — great for focused forms or
+                Notice the visible centering, great for focused forms or
                 settings pages.
               </p>
               <br />
@@ -1179,7 +1186,8 @@ export const ContentWidthWider: Story = {
   render: () => (
     <XDSVStack gap={4} xstyle={styles.storySection}>
       <p {...stylex.props(styles.sectionLabel)}>
-        contentWidth=2000 in a 350px container — degrades gracefully to 100%
+        
+        contentWidth=2000 in a 350px container, degrades gracefully to 100%
       </p>
       <div {...stylex.props(styles.cwContainer, styles.cwContainer350)}>
         <XDSLayout
@@ -1193,8 +1201,9 @@ export const ContentWidthWider: Story = {
           content={
             <XDSLayoutContent>
               <p {...stylex.props(styles.bodyText)}>
+                
                 The contentWidth is 2000px but the container is only 350px. The
-                content fills 100% of the available space — no overflow or
+                content fills 100% of the available space, with no overflow or
                 scrollbar.
               </p>
             </XDSLayoutContent>
