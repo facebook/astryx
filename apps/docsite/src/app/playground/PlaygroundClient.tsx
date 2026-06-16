@@ -61,7 +61,6 @@ import {
   ExternalLink,
   Moon,
   Palette,
-  SlidersHorizontal,
   Sun,
   Monitor,
   Smartphone,
@@ -81,7 +80,6 @@ import {templates} from '../../generated/templateRegistry';
 import {PreviewStage, type Viewport} from './PreviewStage';
 import {ConfirmDialog} from './ConfirmDialog';
 import {BRAND_ICON} from '../../components/XDSWordmark';
-import {PropertyPanel} from './PropertyPanel';
 import {annotateInstanceIds} from './babelParser';
 import {trackCopy} from '../../lib/analytics';
 import {PlaygroundThemeEditor} from '../../components/themePlayground/PlaygroundThemeEditor';
@@ -288,8 +286,8 @@ function configureMonaco(monaco: MonacoInstance) {
     });
 }
 
-type LeftView = 'code' | 'property' | 'theme';
-type MobileTopTab = 'preview' | 'code' | 'property' | 'theme';
+type LeftView = 'code' | 'theme';
+type MobileTopTab = 'preview' | 'code' | 'theme';
 type BuildStatus = 'idle' | 'building' | 'finished' | 'error';
 const MOBILE_BREAKPOINT_QUERY = '(max-width: 768px)';
 
@@ -434,10 +432,6 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
   const [exportTheme, setExportTheme] = useState<XDSDefinedTheme | null>(null);
   const [previewReady, setPreviewReady] = useState(false);
   const [isTargeting, setIsTargeting] = useState(false);
-  const [targetedComponent, setTargetedComponent] = useState<string | null>(
-    null,
-  );
-  const [targetedInstance, setTargetedInstance] = useState(0);
   // The theme value awaiting confirmation from the "Example themes" dropdown.
   // Applying an example theme re-seeds the Theme editor and discards the
   // current theme, so we hold the pending choice until the user confirms.
@@ -527,21 +521,23 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
     }
   }, [themeParam]);
 
-  const send = useCallback((c: string) => {
+  const send = useCallback((c: string, source?: string) => {
     const win = iframeRef.current?.contentWindow;
     if (!win) {
       return;
     }
     win.postMessage(
-      c ? {type: 'preview-code', code: c} : {type: 'preview-clear'},
+      c ? {type: 'preview-code', code: c, source} : {type: 'preview-clear'},
       window.location.origin,
     );
   }, []);
 
   // Send the preview an instance-annotated copy of the code (markers let the
-  // preview map a selected component to its DOM node for the focus-ring flash).
+  // preview map a selected component to its DOM node for the focus-ring flash),
+  // plus the clean source so the in-preview Properties popover can parse + edit
+  // against un-annotated offsets.
   const postCode = useCallback(
-    (c: string) => send(annotateInstanceIds(c)),
+    (c: string) => send(annotateInstanceIds(c), c),
     [send],
   );
 
@@ -562,14 +558,6 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
     },
     [mode],
   );
-
-  // Persistently highlight the DOM node for a given component instance.
-  const selectInstance = useCallback((component: string, index: number) => {
-    iframeRef.current?.contentWindow?.postMessage(
-      {type: 'preview-select', id: `${component}#${index}`},
-      window.location.origin,
-    );
-  }, []);
 
   const toggleTargeting = useCallback((pressed?: boolean) => {
     setIsTargeting(prev => {
@@ -598,13 +586,19 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
       if (e.data?.type === 'preview-rendered') {
         setBuildStatus('finished');
       }
+      // A prop knob edited in the in-preview Properties popover sends back the
+      // new clean code; adopt it as the source of truth (drives Monaco, the
+      // URL hash, and the debounced re-render of the preview).
+      if (e.data?.type === 'preview-edit-code') {
+        setCode(e.data.code);
+      }
       if (e.data?.type === 'preview-error') {
         setBuildStatus('error');
       }
       if (e.data?.type === 'targeting-select') {
-        setTargetedComponent(e.data.component);
-        setTargetedInstance(e.data.index);
-        setActiveView('property');
+        // The preview draws the selection badge itself; just exit targeting
+        // mode. Properties are edited via the badge's popover now, so the left
+        // panel stays on whatever view is currently open.
         setIsTargeting(false);
         iframeRef.current?.contentWindow?.postMessage(
           {type: 'targeting-disable'},
@@ -802,24 +796,6 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
     return () => cancelAnimationFrame(id);
   }, [activeView]);
 
-  // Jump to a specific source offset in the editor (used by the Property view's
-  // "set in code" links). Switches to the Code view, then reveals + selects the
-  // position once Monaco is visible.
-  const revealInCode = useCallback((offset: number) => {
-    setActiveView('code');
-    requestAnimationFrame(() => {
-      const editor = editorRef.current;
-      const model = editor?.getModel();
-      if (!editor || !model) {
-        return;
-      }
-      const pos = model.getPositionAt(offset);
-      editor.setPosition(pos);
-      editor.revealPositionInCenter(pos);
-      editor.focus();
-    });
-  }, []);
-
   // Dropdown items for "Themes" — derived from the registered playground
   // themes (PLAYGROUND_THEME_OPTIONS) so any installed @xds/theme-* package
   // shows up automatically. Selecting one prompts for confirmation (it discards
@@ -894,7 +870,7 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
 
   const handleMobileTabChange = useCallback((tab: MobileTopTab) => {
     setMobileTab(tab);
-    if (tab === 'code' || tab === 'property' || tab === 'theme') {
+    if (tab === 'code' || tab === 'theme') {
       setActiveView(tab);
     }
   }, []);
@@ -926,12 +902,6 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
             value="code"
             label="Code"
             icon={<Code2 size={14} />}
-            isLabelHidden
-          />
-          <XDSTab
-            value="property"
-            label="Properties"
-            icon={<SlidersHorizontal size={14} />}
             isLabelHidden
           />
           <XDSTab
@@ -973,15 +943,6 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
           onClick={() => {
             setActiveView('code');
             setMobileTab('code');
-          }}
-        />
-        <XDSSideNavItem
-          label="Properties"
-          icon={SlidersHorizontal}
-          isSelected={activeView === 'property'}
-          onClick={() => {
-            setActiveView('property');
-            setMobileTab('property');
           }}
         />
         <XDSSideNavItem
@@ -1063,26 +1024,6 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                 options={editorOptions}
               />
             </div>
-
-            {activeView === 'property' && (
-              <PropertyPanel
-                code={code}
-                onCodeChange={setCode}
-                onRevealInCode={revealInCode}
-                onFlashInstance={selectInstance}
-                externalSelection={
-                  targetedComponent != null
-                    ? {
-                        component: targetedComponent,
-                        instanceIndex: targetedInstance,
-                      }
-                    : undefined
-                }
-                onExternalSelectionConsumed={() => {
-                  setTargetedComponent(null);
-                }}
-              />
-            )}
 
             {/* Theme: stays mounted (hidden when inactive) to preserve the
                 editor's token/component state across tab switches — it only
@@ -1210,8 +1151,6 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                     onOpenChange={open => {
                       if (open) {
                         setShareUrl(window.location.href);
-                        // Snapshot the live (ref-held) theme so the download
-                        // link below can derive its href from reactive state.
                         setExportTheme(
                           customThemeRef.current ?? editorInitialTheme,
                         );
@@ -1274,11 +1213,6 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                               icon={<Download size={16} />}
                               onClick={() => downloadLinkRef.current?.click()}
                             />
-                            {/* The real download target: a normally-rendered
-                                link whose href/download come from reactive
-                                state. The button above clicks it, so the
-                                browser performs a native download without us
-                                fabricating an <a> in the handler. */}
                             {themeExport && (
                               <a
                                 ref={downloadLinkRef}

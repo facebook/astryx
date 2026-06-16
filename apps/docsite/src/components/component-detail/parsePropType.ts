@@ -221,6 +221,17 @@ export function parsePropType(
   }
 
   const parts = splitUnion(t);
+
+  // A union of only the primitives `string`/`number` (e.g. `number | string`,
+  // optionally nullable) is editable as free text — accepts e.g. "64px" or 64.
+  const nonNullishParts = parts.filter(p => p !== 'null' && p !== 'undefined');
+  if (
+    nonNullishParts.length > 0 &&
+    nonNullishParts.every(p => p === 'string' || p === 'number')
+  ) {
+    return {kind: 'string'};
+  }
+
   const literals: string[] = [];
   const optionValues: Record<string, EnumOptionValue> = {};
   let allowEmpty = false;
