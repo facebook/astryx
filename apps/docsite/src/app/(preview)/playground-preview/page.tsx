@@ -25,6 +25,8 @@ import {
   themeByValue,
   DEFAULT_PLAYGROUND_THEME,
 } from '../../playground/playgroundThemes';
+import {astryxTheme} from '../../../themes/astryx';
+import {useThemeMode} from '../../providers';
 import {PropertyPanel} from '../../playground/PropertyPanel';
 import {runCode, setTypeScript} from './runner';
 import type * as TS from 'typescript';
@@ -198,8 +200,11 @@ function TargetLabel({
 const labelRoots = new WeakMap<HTMLElement, Root>();
 const activeLabels = new Set<HTMLDivElement>();
 
-let activeTheme: XDSDefinedTheme = FALLBACK_THEME;
-let activeThemeMode: ThemeMode = 'system';
+// The selection tool (badges, popover, ring) is Playground chrome, not preview
+// content — it always renders on the site theme (Astryx) so it stays visually
+// distinct from whatever theme the preview is showing. We only track the site
+// color mode so the chrome matches light/dark.
+let activeSiteMode: ThemeMode = 'light';
 
 let cleanSource = '';
 
@@ -216,7 +221,7 @@ function renderTargetLabel(label: HTMLDivElement) {
   const isInteractive = label.dataset.interactive === 'true';
   const id = label.dataset.labelId ?? '';
   root.render(
-    <XDSTheme theme={activeTheme} mode={activeThemeMode}>
+    <XDSTheme theme={astryxTheme} mode={activeSiteMode}>
       <TargetLabel
         name={name}
         isInteractive={isInteractive}
@@ -721,13 +726,13 @@ export default function PreviewPage() {
     [postToParent],
   );
 
-  // Keep the overlay badges (rendered outside this React tree) in sync with the
-  // active theme so their XDS components resolve the right tokens.
+  // Keep the overlay badges (rendered in their own roots, outside this React
+  // tree) on the site theme but matching the site's light/dark mode.
+  const {mode: siteMode} = useThemeMode();
   useEffect(() => {
-    activeTheme = theme;
-    activeThemeMode = themeMode;
+    activeSiteMode = siteMode;
     refreshTargetLabels();
-  }, [theme, themeMode]);
+  }, [siteMode]);
 
   const stageStyle: CSSProperties = fill
     ? {
