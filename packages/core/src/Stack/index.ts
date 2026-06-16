@@ -24,3 +24,23 @@ export {XDSVStack, type XDSVStackProps} from '../VStack';
 
 export {XDSStackItem} from './XDSStackItem';
 export type {XDSStackItemProps} from './XDSStackItem';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSHStack as HStack,
+  XDSStack as Stack,
+  XDSStackItem as StackItem,
+  XDSVStack as VStack,
+} from '.';
+export type {
+  XDSHStackProps as HStackProps,
+  XDSStackItemProps as StackItemProps,
+  XDSStackProps as StackProps,
+  XDSVStackProps as VStackProps,
+} from '.';
+// <compat-aliases:end>

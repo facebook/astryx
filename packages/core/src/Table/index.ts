@@ -100,3 +100,59 @@ export type {
   XDSTableFilterValue,
   XDSTableFilterFieldRef,
 } from './plugins/filtering';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSTable as Table,
+  XDSTableBody as TableBody,
+  XDSTableCell as TableCell,
+  XDSTableContext as TableContext,
+  XDSTableFooter as TableFooter,
+  XDSTableHeader as TableHeader,
+  XDSTableHeaderCell as TableHeaderCell,
+  XDSTableRow as TableRow,
+  useXDSBaseTablePlugins as useBaseTablePlugins,
+  useXDSTableColumnResize as useTableColumnResize,
+  useXDSTableColumnSettings as useTableColumnSettings,
+  useXDSTableColumnSettingsState as useTableColumnSettingsState,
+  useXDSTableFilterState as useTableFilterState,
+  useXDSTableFiltering as useTableFiltering,
+  useXDSTablePagination as useTablePagination,
+  useXDSTableSelection as useTableSelection,
+  useXDSTableSelectionState as useTableSelectionState,
+  useXDSTableSortable as useTableSortable,
+  useXDSTableSortableState as useTableSortableState,
+} from '.';
+export type {
+  XDSBaseTableProps as BaseTableProps,
+  XDSColumnSettingsOption as ColumnSettingsOption,
+  XDSTableBodyProps as TableBodyProps,
+  XDSTableCellProps as TableCellProps,
+  XDSTableColumn as TableColumn,
+  XDSTableColumnAlign as TableColumnAlign,
+  XDSTableContextValue as TableContextValue,
+  XDSTableDensity as TableDensity,
+  XDSTableDividers as TableDividers,
+  XDSTableFilterFieldRef as TableFilterFieldRef,
+  XDSTableFilterState as TableFilterState,
+  XDSTableFilterValue as TableFilterValue,
+  XDSTableFilterVariant as TableFilterVariant,
+  XDSTableFooterProps as TableFooterProps,
+  XDSTableHeaderCellProps as TableHeaderCellProps,
+  XDSTableHeaderProps as TableHeaderProps,
+  XDSTableProps as TableProps,
+  XDSTableRowProps as TableRowProps,
+  XDSTableSortComparator as TableSortComparator,
+  XDSTableSortDirection as TableSortDirection,
+  XDSTableSortEntry as TableSortEntry,
+  XDSTableSortState as TableSortState,
+  XDSTableSortableColumnConfig as TableSortableColumnConfig,
+  XDSTableTextOverflow as TableTextOverflow,
+  XDSTableVerticalAlign as TableVerticalAlign,
+} from '.';
+// <compat-aliases:end>

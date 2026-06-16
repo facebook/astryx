@@ -18,3 +18,20 @@ export type {
   XDSNumberInputStatus,
   XDSNumberInputStatusType,
 } from './XDSNumberInput';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSNumberInput as NumberInput,
+} from '.';
+export type {
+  XDSNumberInputProps as NumberInputProps,
+  XDSNumberInputSize as NumberInputSize,
+  XDSNumberInputStatus as NumberInputStatus,
+  XDSNumberInputStatusType as NumberInputStatusType,
+} from '.';
+// <compat-aliases:end>

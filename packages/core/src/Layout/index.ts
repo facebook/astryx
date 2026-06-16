@@ -81,3 +81,41 @@ export type {LayoutArea} from './XDSLayoutAreaContext';
 
 export {XDSLayoutDividerContext} from './XDSLayoutDividerContext';
 export type {LayoutDividerContextValue} from './XDSLayoutDividerContext';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSCard as Card,
+  XDSHStack as HStack,
+  XDSLayout as Layout,
+  XDSLayoutAreaContext as LayoutAreaContext,
+  XDSLayoutContent as LayoutContent,
+  XDSLayoutDividerContext as LayoutDividerContext,
+  XDSLayoutFooter as LayoutFooter,
+  XDSLayoutHeader as LayoutHeader,
+  XDSLayoutPanel as LayoutPanel,
+  XDSSection as Section,
+  XDSStack as Stack,
+  XDSStackItem as StackItem,
+  XDSVStack as VStack,
+} from '.';
+export type {
+  XDSCardProps as CardProps,
+  XDSHStackProps as HStackProps,
+  XDSLayoutContentProps as LayoutContentProps,
+  XDSLayoutFooterProps as LayoutFooterProps,
+  XDSLayoutHeaderProps as LayoutHeaderProps,
+  XDSLayoutHeight as LayoutHeight,
+  XDSLayoutPanelProps as LayoutPanelProps,
+  XDSLayoutProps as LayoutProps,
+  XDSSectionProps as SectionProps,
+  XDSSectionVariant as SectionVariant,
+  XDSStackItemProps as StackItemProps,
+  XDSStackProps as StackProps,
+  XDSVStackProps as VStackProps,
+} from '.';
+// <compat-aliases:end>

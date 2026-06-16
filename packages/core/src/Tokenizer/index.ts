@@ -21,3 +21,23 @@ export type {
   XDSTokenizerStatus,
   XDSTokenizerStatusType,
 } from './XDSTokenizer';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSTokenizer as Tokenizer,
+} from '.';
+export type {
+  XDSTokenizerChange as TokenizerChange,
+  XDSTokenizerHandle as TokenizerHandle,
+  XDSTokenizerOverflowBehavior as TokenizerOverflowBehavior,
+  XDSTokenizerProps as TokenizerProps,
+  XDSTokenizerSize as TokenizerSize,
+  XDSTokenizerStatus as TokenizerStatus,
+  XDSTokenizerStatusType as TokenizerStatusType,
+} from '.';
+// <compat-aliases:end>

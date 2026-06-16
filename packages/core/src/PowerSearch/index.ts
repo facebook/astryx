@@ -84,3 +84,22 @@ export type {
   PowerSearchComponentOverride,
   XDSPowerSearchComponents,
 } from './types';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSPowerSearch as PowerSearch,
+  XDSPowerSearchFilterEditor as PowerSearchFilterEditor,
+  XDSPowerSearchToken as PowerSearchToken,
+} from '.';
+export type {
+  XDSPowerSearchComponents as PowerSearchComponents,
+  XDSPowerSearchHandle as PowerSearchHandle,
+  XDSPowerSearchProps as PowerSearchProps,
+  XDSPowerSearchSize as PowerSearchSize,
+} from '.';
+// <compat-aliases:end>

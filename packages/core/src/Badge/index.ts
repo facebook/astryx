@@ -17,3 +17,19 @@ export type {
   XDSBadgeVariant,
   XDSBadgeVariantMap,
 } from './XDSBadge';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSBadge as Badge,
+} from '.';
+export type {
+  XDSBadgeProps as BadgeProps,
+  XDSBadgeVariant as BadgeVariant,
+  XDSBadgeVariantMap as BadgeVariantMap,
+} from '.';
+// <compat-aliases:end>

@@ -15,3 +15,21 @@ export {XDSList} from './XDSList';
 export type {XDSListProps, XDSListStyle, XDSListDensity} from './XDSList';
 export {XDSListItem} from './XDSListItem';
 export type {XDSListItemProps} from './XDSListItem';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSList as List,
+  XDSListItem as ListItem,
+} from '.';
+export type {
+  XDSListDensity as ListDensity,
+  XDSListItemProps as ListItemProps,
+  XDSListProps as ListProps,
+  XDSListStyle as ListStyle,
+} from '.';
+// <compat-aliases:end>

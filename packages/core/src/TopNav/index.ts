@@ -37,3 +37,33 @@ export {
   useXDSTopNavRenderMode,
 } from './XDSTopNavRenderContext';
 export type {XDSTopNavRenderMode} from './XDSTopNavRenderContext';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSTopNav as TopNav,
+  XDSTopNavHeading as TopNavHeading,
+  XDSTopNavItem as TopNavItem,
+  XDSTopNavMegaMenu as TopNavMegaMenu,
+  XDSTopNavMegaMenuFeaturedCard as TopNavMegaMenuFeaturedCard,
+  XDSTopNavMegaMenuItem as TopNavMegaMenuItem,
+  XDSTopNavMenu as TopNavMenu,
+  XDSTopNavRenderContext as TopNavRenderContext,
+  useXDSTopNavRenderMode as useTopNavRenderMode,
+} from '.';
+export type {
+  XDSTopNavHeadingProps as TopNavHeadingProps,
+  XDSTopNavItemProps as TopNavItemProps,
+  XDSTopNavMegaMenuFeaturedCardProps as TopNavMegaMenuFeaturedCardProps,
+  XDSTopNavMegaMenuItemProps as TopNavMegaMenuItemProps,
+  XDSTopNavMegaMenuProps as TopNavMegaMenuProps,
+  XDSTopNavMenuItemData as TopNavMenuItemData,
+  XDSTopNavMenuProps as TopNavMenuProps,
+  XDSTopNavProps as TopNavProps,
+  XDSTopNavRenderMode as TopNavRenderMode,
+} from '.';
+// <compat-aliases:end>

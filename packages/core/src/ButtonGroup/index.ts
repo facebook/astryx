@@ -17,3 +17,20 @@ export type {
   XDSButtonGroupOrientation,
   XDSButtonGroupContextValue,
 } from './XDSButtonGroupContext';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSButtonGroup as ButtonGroup,
+  useXDSButtonGroup as useButtonGroup,
+} from '.';
+export type {
+  XDSButtonGroupContextValue as ButtonGroupContextValue,
+  XDSButtonGroupOrientation as ButtonGroupOrientation,
+  XDSButtonGroupProps as ButtonGroupProps,
+} from '.';
+// <compat-aliases:end>
