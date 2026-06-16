@@ -18,7 +18,7 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'Item content — render icons, descriptions, keyboard shortcuts, etc.',
+      description: 'Item content: render icons, descriptions, keyboard shortcuts, etc.',
       required: true,
     },
     {
@@ -75,7 +75,7 @@ export const docsDense = {
   description: 'selectable item; arbitrary children; registers w/ context for kbd nav',
   propDescriptions: {
     value: 'unique id for selection',
-    children: 'item content — icons, descriptions, shortcuts',
+    children: 'item content: icons, descriptions, shortcuts',
     onSelect: 'called on click or Enter',
     isHighlighted: 'keyboard focus; derived from context inside palette',
     isSelected: 'selected in picker mode',

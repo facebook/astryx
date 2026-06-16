@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Chat',
   displayName: 'Chat Send Button',
   isHiddenFromOverview: true,
-  description: 'Circular send/stop toggle button for the chat composer. Place it inside XDSChatComposer where it reads context automatically — no wiring needed. When streaming starts, the button switches from a primary send icon to a secondary stop icon. Override any context value via props for standalone or custom usage.',
+  description: 'Circular send/stop toggle button for the chat composer. Place it inside XDSChatComposer where it reads context automatically: no wiring needed. When streaming starts, the button switches from a primary send icon to a secondary stop icon. Override any context value via props for standalone or custom usage.',
   props: [
     {
       name: 'isStopShown',
@@ -66,7 +66,7 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
 };

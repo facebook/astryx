@@ -68,7 +68,7 @@ export const docs = {
     {
       name: 'variant',
       type: "'default' | 'supporting'",
-      description: 'Visual variant — supporting is smaller with secondary text styling.',
+      description: 'Visual variant: supporting is smaller with secondary text styling.',
       default: "'default'",
     },
     {
@@ -80,7 +80,7 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
   components: [

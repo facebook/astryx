@@ -17,7 +17,7 @@ export const docs = {
     {
       name: 'items',
       type: 'ReactNode',
-      description: 'Menu items slot — typically XDSTopNavMegaMenuItem components, but accepts any ReactNode.',
+      description: 'Menu items slot: typically XDSTopNavMegaMenuItem components, but accepts any ReactNode.',
       slotElements: [
         {
           __element: 'XDSTopNavItem',
@@ -31,7 +31,7 @@ export const docs = {
     {
       name: 'featured',
       type: 'ReactNode',
-      description: 'Featured content slot — rendered in the right panel on desktop, below items in the mobile drawer.',
+      description: 'Featured content slot: rendered in the right panel on desktop, below items in the mobile drawer.',
       slotElements: [
         {
           __element: 'XDSCard',
@@ -109,8 +109,8 @@ export const docsDense = {
   description: 'Nav item w/ full-width mega menu panel on hover. Slots API w/ items+featured ReactNode props. Mobile drawer inline collapsible.',
   propDescriptions: {
     label: 'Trigger button visible label.',
-    items: 'Menu items slot — typically XDSTopNavMegaMenuItem, accepts any ReactNode.',
-    featured: 'Featured content slot — right panel desktop, below items in drawer.',
+    items: 'Menu items slot: typically XDSTopNavMegaMenuItem, accepts any ReactNode.',
+    featured: 'Featured content slot: right panel desktop, below items in drawer.',
     delay: 'Show delay ms on hover.',
     hideDelay: 'Hide delay ms after mouse leaves.',
     onOpenChange: 'Fired on open/close. For coordinating wrapper styles.',

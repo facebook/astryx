@@ -40,7 +40,7 @@ export const docs = {
     {
       name: 'columns',
       type: 'XDSTableColumn<T>[]',
-      description: 'Column definitions — each column has {key, header, width?, align?, renderCell?}. The `header` field sets the column heading text. If omitted, columns are auto-generated from data object keys.',
+      description: 'Column definitions: each column has {key, header, width?, align?, renderCell?}. The `header` field sets the column heading text. If omitted, columns are auto-generated from data object keys.',
     },
     {
       name: 'idKey',
@@ -79,12 +79,12 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'Children mode — render XDSTableRow/XDSTableCell directly instead of using data-driven rendering.',
+      description: 'Children mode: render XDSTableRow/XDSTableCell directly instead of using data-driven rendering.',
     },
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
   components: [

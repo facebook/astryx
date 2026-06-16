@@ -25,7 +25,7 @@ export const docs = {
     {
       name: 'options',
       type: 'XDSSelectorOption[]',
-      description: 'Array of items — strings, objects with value/label/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
+      description: 'Array of items: strings, objects with value/label/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
       required: true,
     },
     {
@@ -106,7 +106,7 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
   components: [

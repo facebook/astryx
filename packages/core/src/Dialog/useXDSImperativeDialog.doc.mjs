@@ -26,7 +26,7 @@ export const docs = {
     {
       name: 'element',
       type: 'ReactNode',
-      description: 'The dialog element — render this in your JSX tree.',
+      description: 'The dialog element: render this in your JSX tree.',
     },
   ],
 };
@@ -38,6 +38,6 @@ export const docsDense = {
     show: 'show the dialog with given content; options = XDSDialog props minus isOpen/onOpenChange/children',
     hide: 'hide the dialog',
     isOpen: 'whether the dialog is currently open',
-    element: 'the dialog element — render this in your JSX tree',
+    element: 'the dialog element: render this in your JSX tree',
   },
 };
