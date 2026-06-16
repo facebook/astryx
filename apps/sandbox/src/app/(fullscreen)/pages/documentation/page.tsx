@@ -552,7 +552,7 @@ const COMPONENT_DOCS: Record<
       'In toolbars and action bars for contextual operations',
     ],
     whenNotToUse: [
-      'For navigation to another page — use Link instead',
+      'For navigation to another page; use Link instead',
       'To toggle a state on/off — use ToggleButton or Switch instead',
       'When the action is part of a menu — use DropdownMenu instead',
     ],
