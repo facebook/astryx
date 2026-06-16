@@ -224,6 +224,35 @@ export const butterTheme = defineTheme({
   },
 
   components: {
+    // TopNav uses Butter's blue accent: the heading and the selected item are
+    // the full brand blue; unselected items (default + hover) use a lighter
+    // blue. Dark mode keeps the theme's butter-yellow accent.
+    'top-nav-heading': {
+      // The heading text is an inner span that reads --color-text-primary, so
+      // redirect that token (not just `color`) to the brand blue so the text
+      // itself turns blue, not only the container.
+      base: {
+        color: 'light-dark(#225BFF, #FDEE8C)',
+        '--color-text-primary': 'light-dark(#225BFF, #FDEE8C)',
+      },
+    },
+    'top-nav-item': {
+      base: {
+        color: 'light-dark(#6E92FF, #FDEE8CCC)',
+      },
+      // Selected item: full brand blue, no pill background — rely on weight +
+      // color for emphasis. Hover/active keep the neutral overlay.
+      selected: {
+        color: 'light-dark(#225BFF, #FDEE8C)',
+        backgroundColor: 'transparent',
+        ':hover': {
+          backgroundColor: 'var(--color-overlay-hover)',
+        },
+        ':active': {
+          backgroundColor: 'var(--color-overlay-pressed)',
+        },
+      },
+    },
     button: {
       // Radius intentionally not pinned, so buttons keep core's
       // `var(--_button-radius, --radius-element)`: standalone buttons stay 8px,
