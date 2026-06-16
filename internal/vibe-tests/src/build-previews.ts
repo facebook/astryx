@@ -444,7 +444,7 @@ function ensureBaselineShims(): void {
   const utilsPath = path.join(baselineDir, 'lib', 'utils.ts');
   if (!fs.existsSync(utilsPath)) {
     throw new Error(
-      'Baseline components not found at .baseline/ — run pnpm install in internal/vibe-tests',
+      'Baseline components not found at .baseline/: run pnpm install in internal/vibe-tests',
     );
   }
 }
