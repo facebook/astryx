@@ -114,8 +114,6 @@ type PreviewMessage =
       customTokens?: Record<string, string>;
       customComponents?: unknown;
     }
-  | {type: 'preview-highlight'; id: string}
-  | {type: 'preview-select'; id: string}
   | {type: 'targeting-enable'}
   | {type: 'targeting-disable'};
 
@@ -341,20 +339,6 @@ function clearSelectionOverlay() {
   if (selectionState.overlay) {
     selectionState.overlay.dataset.visible = 'false';
   }
-}
-
-/** Briefly flash a focus ring on the element marked with the given data-pg-id. */
-function flashElement(id: string) {
-  const el = document.querySelector<HTMLElement>(`[data-pg-id="${id}"]`);
-  if (!el) {
-    return;
-  }
-  el.classList.remove('pg-flash');
-  // Force reflow so re-adding the class restarts the animation.
-  void el.offsetWidth;
-  el.classList.add('pg-flash');
-  el.scrollIntoView({block: 'nearest', behavior: 'smooth'});
-  window.setTimeout(() => el.classList.remove('pg-flash'), 1000);
 }
 
 /**
@@ -691,12 +675,6 @@ export default function PreviewPage() {
           break;
         case 'preview-theme':
           handleTheme(event.data);
-          break;
-        case 'preview-highlight':
-          flashElement(event.data.id);
-          break;
-        case 'preview-select':
-          selectElement(event.data.id);
           break;
         case 'targeting-enable':
           targetingRef.current?.enable();

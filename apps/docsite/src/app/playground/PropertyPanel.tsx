@@ -2,18 +2,18 @@
 
 /**
  * @file PropertyPanel.tsx
- * @input Current editor code + onCodeChange callback
- * @output Component selector + instance picker + literal-bound prop knobs
- * @position Playground left panel — "Property" tab.
+ * @input Current editor code + the selected instance + onCodeChange callback
+ * @output Literal-bound prop knobs for one component instance + "Apply" footer
+ * @position Playground in-preview "Properties" popover (anchored to the selection badge).
  *
- * Parses the code, lists the XDS components used, and renders the docs-style
- * props table for the selected component instance. Changing a knob performs a
- * targeted source-range edit (see babelParser) against a local draft; edits are
- * buffered and only written back through onCodeChange when the user clicks
- * "Apply" (pinned at the bottom of the popover, outside the scroll area). Only
- * literal props (boolean / enum / string / number) are editable; enum controls
- * preserve typed option values for mixed literal unions. Props set to an
- * expression are shown read-only ("set in code") to avoid clobbering.
+ * Parses the code and renders the docs-style props table for the externally
+ * selected component instance. Changing a knob performs a targeted source-range
+ * edit (see babelParser) against a local draft; edits are buffered and only
+ * written back through onCodeChange when the user clicks "Apply" (pinned at the
+ * bottom of the popover, outside the scroll area). Only literal props (boolean /
+ * enum / string / number) are editable; enum controls preserve typed option
+ * values for mixed literal unions. Props set to an expression are shown
+ * read-only ("set in code") to avoid clobbering.
  */
 
 'use client';
@@ -23,14 +23,12 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSLayout, XDSLayoutContent, XDSLayoutFooter} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSSelector} from '@xds/core/Selector';
-import {XDSLink} from '@xds/core/Link';
 import {XDSSwitch} from '@xds/core/Switch';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSEmptyState} from '@xds/core/EmptyState';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSButton} from '@xds/core/Button';
-// SegmentedControl removed — targeting selects the exact instance.
 import {
   coerceDefault,
   coerceEnumOption,
@@ -46,7 +44,7 @@ import {
   type AttrInfo,
   type InstanceInfo,
 } from './babelParser';
-import {getComponentByModule, getUsedComponents} from './usedComponents';
+import {getComponentByModule} from './usedComponents';
 
 const NUMERIC_RE = /^-?\d+(\.\d+)?$/;
 
@@ -97,13 +95,7 @@ function isSupportedProp(prop: PropDoc): boolean {
   if (UNSUPPORTED_PROP_TYPES.has(prop.type.trim())) {
     return false;
   }
-  const control = parsePropType(prop.type, prop.name, prop.slotElements);
-  return (
-    control.kind === 'boolean' ||
-    control.kind === 'enum' ||
-    control.kind === 'string' ||
-    control.kind === 'number'
-  );
+  return isEditable(parsePropType(prop.type, prop.name, prop.slotElements));
 }
 
 interface PropRowProps {
@@ -111,16 +103,9 @@ interface PropRowProps {
   instance: InstanceInfo;
   code: string;
   onCodeChange: (code: string) => void;
-  onRevealInCode?: (offset: number) => void;
 }
 
-function PropRow({
-  prop,
-  instance,
-  code,
-  onCodeChange,
-  onRevealInCode,
-}: PropRowProps) {
+function PropRow({prop, instance, code, onCodeChange}: PropRowProps) {
   const control = useMemo(
     () => parsePropType(prop.type, prop.name, prop.slotElements),
     [prop],
@@ -180,27 +165,11 @@ function PropRow({
 
   let controlEl: React.ReactNode;
   if (!editable) {
-    if (attr && onRevealInCode) {
-      const line = code.slice(0, attr.start).split('\n').length;
-      controlEl = (
-        <XDSLink
-          href="#code"
-          hasUnderline
-          tooltip={`Go to line ${line}`}
-          onClick={e => {
-            e.preventDefault();
-            onRevealInCode(attr.start);
-          }}>
-          <XDSText type="supporting">set in code</XDSText>
-        </XDSLink>
-      );
-    } else {
-      controlEl = (
-        <XDSText type="supporting" color={attr ? 'secondary' : 'disabled'}>
-          {attr ? 'set in code' : '—'}
-        </XDSText>
-      );
-    }
+    controlEl = (
+      <XDSText type="supporting" color={attr ? 'secondary' : 'disabled'}>
+        {attr ? 'set in code' : '—'}
+      </XDSText>
+    );
   } else if (control.kind === 'boolean') {
     const checked = attr
       ? attr.value === true
@@ -273,10 +242,8 @@ interface ExternalSelection {
 interface PropertyPanelProps {
   code: string;
   onCodeChange: (code: string) => void;
-  onRevealInCode?: (offset: number) => void;
-  /** Driven by the targeting system — overrides the current selection once. */
-  externalSelection?: ExternalSelection;
-  onExternalSelectionConsumed?: () => void;
+  /** The component instance to edit (chosen via the in-preview selection). */
+  externalSelection: ExternalSelection;
   /** Called after edits are flushed via "Apply" (e.g. to close the popover). */
   onApplied?: () => void;
 }
@@ -284,13 +251,10 @@ interface PropertyPanelProps {
 export function PropertyPanel({
   code,
   onCodeChange,
-  onRevealInCode,
   externalSelection,
-  onExternalSelectionConsumed,
   onApplied,
 }: PropertyPanelProps) {
-  const [selected, setSelected] = useState<string | null>(null);
-  const [instanceIndex, setInstanceIndex] = useState(0);
+  const {component: selected, instanceIndex} = externalSelection;
   const lastInstances = useRef<InstanceInfo[]>([]);
 
   // Buffer prop edits locally; knobs mutate the draft and only take effect when
@@ -319,48 +283,12 @@ export function PropertyPanel({
     return lastInstances.current;
   }, [draft]);
 
-  const used = useMemo(() => getUsedComponents(instances), [instances]);
-
-  // Keep selection valid as the code changes.
-  useEffect(() => {
-    if (used.length === 0) {
-      if (selected !== null) {
-        setSelected(null);
-      }
-      return;
-    }
-    if (selected == null || !used.some(u => u.module === selected)) {
-      setSelected(used[0].module);
-      setInstanceIndex(0);
-    }
-  }, [used, selected]);
-
   const componentInstances = useMemo(
     () => instances.filter(i => i.component === selected),
     [instances, selected],
   );
 
-  // Clamp instance index when the count shrinks.
-  useEffect(() => {
-    if (instanceIndex > 0 && instanceIndex >= componentInstances.length) {
-      setInstanceIndex(Math.max(0, componentInstances.length - 1));
-    }
-  }, [componentInstances, instanceIndex]);
-
-  // Apply external selection from the targeting system.
-  useEffect(() => {
-    if (!externalSelection) {
-      return;
-    }
-    const {component, instanceIndex: idx} = externalSelection;
-    if (used.some(u => u.module === component)) {
-      setSelected(component);
-      setInstanceIndex(idx);
-    }
-    onExternalSelectionConsumed?.();
-  }, [externalSelection, used, onExternalSelectionConsumed]);
-
-  if (used.length === 0) {
+  if (instances.length === 0) {
     return (
       <div {...stylex.props(s.emptyWrap)}>
         <XDSEmptyState
@@ -372,7 +300,7 @@ export function PropertyPanel({
     );
   }
 
-  const entry = selected ? getComponentByModule(selected) : undefined;
+  const entry = getComponentByModule(selected);
   const targetInstance =
     componentInstances[Math.min(instanceIndex, componentInstances.length - 1)];
   const props = entry?.props ?? [];
@@ -405,7 +333,6 @@ export function PropertyPanel({
             instance={targetInstance}
             code={draft}
             onCodeChange={setDraft}
-            onRevealInCode={onRevealInCode}
           />
         ))}
       </XDSList>
