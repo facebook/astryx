@@ -31,6 +31,8 @@ export interface XDSVitePluginLegacyOptions {
   libraryPattern?: string;
   layers?: {
     library?: string;
+    /** Layer name for theme overrides @default 'xds-theme' */
+    theme?: string;
     product?: string;
   };
 }
@@ -60,6 +62,15 @@ export interface XDSVitePluginOptions {
   layers?: {
     /** Layer name for XDS library styles @default 'xds-base' */
     library?: string;
+    /**
+     * Layer name for XDS theme overrides @default 'xds-theme'
+     *
+     * Configurable to support the XDS-prefix migration (P2380608025): a
+     * consumer can opt into the rebranded `astryx-theme` layer before the
+     * final cutover by setting this (and the matching runtime theme-layer
+     * name). Defaults to `xds-theme` so existing consumers are unaffected.
+     */
+    theme?: string;
     /** Layer name for product styles @default 'product' */
     product?: string;
   };
@@ -113,6 +124,7 @@ export function xdsStylex(
   } = opts;
 
   const libraryLayer = layers.library ?? 'xds-base';
+  const themeLayer = layers.theme ?? 'xds-theme';
   const productLayer = layers.product ?? 'product';
 
   // Build StyleX options with sensible defaults
@@ -157,7 +169,7 @@ export function xdsStylex(
       return [
         {
           tag: 'style',
-          children: `@layer reset, ${libraryLayer}, xds-theme, ${productLayer};`,
+          children: `@layer reset, ${libraryLayer}, ${themeLayer}, ${productLayer};`,
           injectTo: 'head-prepend',
         },
       ];
@@ -293,6 +305,7 @@ function xdsStylexLegacy(options: XDSVitePluginLegacyOptions): Plugin[] {
   } = options;
 
   const libraryLayer = layers.library ?? 'xds-base';
+  const themeLayer = layers.theme ?? 'xds-theme';
   const productLayer = layers.product ?? 'product';
 
   const xdsBabelPlugin = path.resolve(__dirname, 'babel.js');
@@ -322,7 +335,7 @@ function xdsStylexLegacy(options: XDSVitePluginLegacyOptions): Plugin[] {
       return [
         {
           tag: 'style',
-          children: `@layer reset, ${libraryLayer}, xds-theme, ${productLayer};`,
+          children: `@layer reset, ${libraryLayer}, ${themeLayer}, ${productLayer};`,
           injectTo: 'head-prepend',
         },
       ];
