@@ -258,8 +258,7 @@ export interface XDSAppShellProps extends XDSBaseProps<HTMLDivElement> {
    *   return (
    *     <XDSAppShell
    *       sideNav={hasSidebar ? sidebar : undefined}
-   *       mobileNav={hasSidebar ? { breakpoint: 'md' } : false}
-   *     >
+   *       mobileNav={hasSidebar ? { breakpoint: 'md' } : false}>
    *       {children}
    *     </XDSAppShell>
    *   );
