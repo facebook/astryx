@@ -26,9 +26,7 @@ export interface ThemeShowcaseContent {
 
 const XDS_CDN = 'https://lookaside.facebook.com/assets/xds_oss';
 
-// Matcha café — six matcha-drink photos mapped onto the showcase slots.
-//   watch → classic latte · headphones → strawberry · backpack → ube
-//   wallet → vanilla · tumbler → hazelnut · throw_ → mocha
+// Matcha café — matcha-drink photos.
 const MATCHA_IMAGES: Record<string, string> = {
   watch: `${XDS_CDN}/matcha-product-1.png`,
   headphones: `${XDS_CDN}/matcha-product-2.png`,
@@ -130,10 +128,8 @@ const MATCHA_CONTENT: ThemeShowcaseContent = {
   ],
 };
 
-// Butter bakery — five butter/breakfast photos across the six showcase slots.
-//   watch → croissant · headphones → pancake · backpack → waffle
-//   wallet → toast · tumbler → butter stick · throw_ → croissant (reused; only
-//   five Butter assets exist)
+// Butter bakery — butter/breakfast photos. Only five Butter assets exist, so
+// the croissant is reused for the sixth slot.
 const BUTTER_IMAGES: Record<string, string> = {
   watch: `${XDS_CDN}/Butter-Croissant.png`,
   headphones: `${XDS_CDN}/Butter-Pancake.png`,
@@ -235,37 +231,34 @@ const BUTTER_CONTENT: ThemeShowcaseContent = {
   ],
 };
 
-// Stone homeware — five speckled-stoneware photos across the six slots.
-//   watch → mug · headphones → shallow bowl · backpack → tumbler
-//   wallet → plate · tumbler → deep bowl · throw_ → mug (reused; only five
-//   light-product assets exist)
+// Stone homeware — stoneware photos on stone plinths.
 const STONE_IMAGES: Record<string, string> = {
-  watch: `${XDS_CDN}/light-product-1.png`,
-  headphones: `${XDS_CDN}/light-product-2.png`,
-  backpack: `${XDS_CDN}/light-product-3.png`,
-  wallet: `${XDS_CDN}/light-product-4.png`,
-  tumbler: `${XDS_CDN}/light-product-5.png`,
-  throw_: `${XDS_CDN}/light-product-1.png`,
+  watch: `${XDS_CDN}/Stone-bowl.png`,
+  headphones: `${XDS_CDN}/Stone-cup.png`,
+  backpack: `${XDS_CDN}/Stone-plate.png`,
+  wallet: `${XDS_CDN}/Stone-servingbowl.png`,
+  tumbler: `${XDS_CDN}/Stone-teapot.png`,
+  throw_: `${XDS_CDN}/Stone-vase.png`,
 };
 
 const STONE_CONTENT: ThemeShowcaseContent = {
   images: STONE_IMAGES,
   products: [
     {
-      name: 'Speckled Mug',
+      name: 'Speckled Bowl',
       description: 'Hand-thrown stoneware with a raw clay foot.',
       badge: 'New',
       badgeVariant: 'blue',
     },
     {
-      name: 'Stoneware Bowl',
-      description: 'Shallow serving bowl, reactive matte glaze.',
+      name: 'Ceramic Cup',
+      description: 'Everyday cup and saucer with a tactile finish.',
       badge: 'Popular',
       badgeVariant: 'green',
     },
     {
-      name: 'Ceramic Tumbler',
-      description: 'Everyday cup with a speckled, tactile finish.',
+      name: 'Stoneware Plate',
+      description: 'Reactive matte glaze in a soft olive tone.',
       badge: 'Limited',
       badgeVariant: 'yellow',
     },
@@ -273,84 +266,81 @@ const STONE_CONTENT: ThemeShowcaseContent = {
   inventory: [
     {
       id: 'a',
-      name: 'Speckled Mug',
-      meta: 'Stoneware, 12oz',
+      name: 'Speckled Bowl',
+      meta: 'Stoneware, 16cm',
       available: 64,
       location: 'Shelf 1',
       tags: [{label: 'New', variant: 'blue'}],
       imageKey: 'watch',
-      thumbnailFallback: 'M',
+      thumbnailFallback: 'B',
       selected: false,
     },
     {
       id: 'b',
-      name: 'Stoneware Bowl',
-      meta: 'Reactive glaze, 16cm',
+      name: 'Ceramic Cup',
+      meta: 'Cup + saucer, 8oz',
       available: 38,
       location: 'Shelf 2',
       tags: [{label: 'Popular', variant: 'green'}],
       imageKey: 'headphones',
-      thumbnailFallback: 'B',
+      thumbnailFallback: 'C',
       selected: true,
     },
     {
       id: 'c',
-      name: 'Ceramic Tumbler',
-      meta: 'Speckled, 10oz',
+      name: 'Stoneware Plate',
+      meta: 'Reactive glaze, 22cm',
       available: 51,
       location: 'Shelf 1',
       tags: [{label: 'Limited', variant: 'yellow'}],
       imageKey: 'backpack',
-      thumbnailFallback: 'T',
+      thumbnailFallback: 'P',
       selected: false,
     },
     {
       id: 'd',
-      name: 'Dinner Plate',
-      meta: 'Two-tone, 22cm',
+      name: 'Serving Bowl',
+      meta: 'Two-tone, 24cm',
       available: 15,
       location: 'Shelf 3',
       tags: [{label: 'Tableware', variant: 'orange'}],
       imageKey: 'wallet',
-      thumbnailFallback: 'P',
+      thumbnailFallback: 'S',
       selected: true,
     },
     {
       id: 'e',
-      name: 'Deep Serving Bowl',
-      meta: 'Matte clay foot, 20cm',
+      name: 'Stoneware Teapot',
+      meta: 'Matte clay, 700ml',
       available: 27,
       location: 'Shelf 2',
       tags: [{label: 'Kitchen', variant: 'green'}],
       imageKey: 'tumbler',
-      thumbnailFallback: 'D',
+      thumbnailFallback: 'T',
       selected: false,
     },
     {
       id: 'f',
-      name: 'Espresso Cup',
-      meta: 'Stoneware, 3oz',
+      name: 'Bud Vase',
+      meta: 'Olive glaze, 18cm',
       available: 19,
       location: 'Shelf 1',
       tags: [{label: 'Small batch', variant: 'orange'}],
       imageKey: 'throw_',
-      thumbnailFallback: 'E',
+      thumbnailFallback: 'V',
       selected: true,
     },
   ],
 };
 
-// Y2K trinkets — five iridescent/holo charms across the six slots.
-//   watch → flip phone · headphones → puffy heart · backpack → butterfly
-//   wallet → glow stars · tumbler → daisy charm · throw_ → heart (reused; only
-//   five Y2K assets exist)
+// Y2K trinkets — iridescent/holo objects.
 const Y2K_IMAGES: Record<string, string> = {
   watch: `${XDS_CDN}/Y2K-Phone.png`,
-  headphones: `${XDS_CDN}/Y2K-Heart.png`,
+  headphones: `${XDS_CDN}/Y2K-Star.png`,
   backpack: `${XDS_CDN}/Y2K-Butterfly.png`,
-  wallet: `${XDS_CDN}/Y2K-Star.png`,
+  wallet: `${XDS_CDN}/Y2K-Heart.png`,
   tumbler: `${XDS_CDN}/Y2K-Flower.png`,
-  throw_: `${XDS_CDN}/Y2K-Heart.png`,
+  throw_: `${XDS_CDN}/Y2K-Couch.png`,
 };
 
 const Y2K_CONTENT: ThemeShowcaseContent = {
@@ -363,10 +353,10 @@ const Y2K_CONTENT: ThemeShowcaseContent = {
       badgeVariant: 'blue',
     },
     {
-      name: 'Puffy Heart Charm',
-      description: 'Squishy holographic heart for your bag.',
+      name: 'Glow Star Set',
+      description: 'Glow-in-the-dark stars, pack of three.',
       badge: 'Popular',
-      badgeVariant: 'pink',
+      badgeVariant: 'green',
     },
     {
       name: 'Glitter Butterfly',
@@ -389,13 +379,13 @@ const Y2K_CONTENT: ThemeShowcaseContent = {
     },
     {
       id: 'b',
-      name: 'Puffy Heart Charm',
-      meta: 'Squishy, holo finish',
+      name: 'Glow Star Set',
+      meta: 'Glow-in-the-dark, pack of 3',
       available: 38,
       location: 'Bin 2',
-      tags: [{label: 'Popular', variant: 'pink'}],
+      tags: [{label: 'Popular', variant: 'green'}],
       imageKey: 'headphones',
-      thumbnailFallback: 'H',
+      thumbnailFallback: 'S',
       selected: true,
     },
     {
@@ -411,13 +401,13 @@ const Y2K_CONTENT: ThemeShowcaseContent = {
     },
     {
       id: 'd',
-      name: 'Glow Star Set',
-      meta: 'Glow-in-the-dark, pack of 3',
+      name: 'Puffy Heart Charm',
+      meta: 'Squishy, holo finish',
       available: 12,
       location: 'Bin 3',
-      tags: [{label: 'Classic', variant: 'green'}],
+      tags: [{label: 'Classic', variant: 'pink'}],
       imageKey: 'wallet',
-      thumbnailFallback: 'S',
+      thumbnailFallback: 'H',
       selected: true,
     },
     {
@@ -433,13 +423,115 @@ const Y2K_CONTENT: ThemeShowcaseContent = {
     },
     {
       id: 'f',
-      name: 'Heart Sticker Pack',
-      meta: 'Holo, sheet of 12',
+      name: 'Inflatable Couch',
+      meta: 'Transparent pink, 2-seater',
       available: 19,
       location: 'Bin 1',
-      tags: [{label: 'Limited', variant: 'purple'}],
+      tags: [{label: 'Limited', variant: 'pink'}],
       imageKey: 'throw_',
-      thumbnailFallback: 'H',
+      thumbnailFallback: 'C',
+      selected: true,
+    },
+  ],
+};
+
+// Gothic botanicals — moody single-stem floral photos.
+const GOTHIC_IMAGES: Record<string, string> = {
+  watch: `${XDS_CDN}/Gothic-1.png`,
+  headphones: `${XDS_CDN}/Gothic-2.png`,
+  backpack: `${XDS_CDN}/Gothic-3.png`,
+  wallet: `${XDS_CDN}/Gothic-4.png`,
+  tumbler: `${XDS_CDN}/Gothic-5.png`,
+  throw_: `${XDS_CDN}/Gothic-6.png`,
+};
+
+const GOTHIC_CONTENT: ThemeShowcaseContent = {
+  images: GOTHIC_IMAGES,
+  products: [
+    {
+      name: 'Dried Sea Holly',
+      description: 'A single preserved thistle stem with a steely bloom.',
+      badge: 'New',
+      badgeVariant: 'blue',
+    },
+    {
+      name: 'Garden Rose',
+      description: 'One peach bloom, cut fresh each morning.',
+      badge: 'Popular',
+      badgeVariant: 'red',
+    },
+    {
+      name: 'Lilac Ranunculus',
+      description: 'Layered petals in a soft mauve.',
+      badge: 'Limited',
+      badgeVariant: 'purple',
+    },
+  ],
+  inventory: [
+    {
+      id: 'a',
+      name: 'Dried Sea Holly',
+      meta: 'Preserved, single stem',
+      available: 64,
+      location: 'Cooler 1',
+      tags: [{label: 'New', variant: 'blue'}],
+      imageKey: 'watch',
+      thumbnailFallback: 'S',
+      selected: false,
+    },
+    {
+      id: 'b',
+      name: 'Garden Rose',
+      meta: 'Fresh cut, peach',
+      available: 38,
+      location: 'Cooler 2',
+      tags: [{label: 'Popular', variant: 'red'}],
+      imageKey: 'headphones',
+      thumbnailFallback: 'R',
+      selected: true,
+    },
+    {
+      id: 'c',
+      name: 'Lilac Ranunculus',
+      meta: 'Fresh cut, mauve',
+      available: 51,
+      location: 'Cooler 2',
+      tags: [{label: 'Limited', variant: 'purple'}],
+      imageKey: 'backpack',
+      thumbnailFallback: 'L',
+      selected: false,
+    },
+    {
+      id: 'd',
+      name: 'Coral Poppy',
+      meta: 'Fresh cut, single stem',
+      available: 15,
+      location: 'Cooler 3',
+      tags: [{label: 'Seasonal', variant: 'orange'}],
+      imageKey: 'wallet',
+      thumbnailFallback: 'P',
+      selected: true,
+    },
+    {
+      id: 'e',
+      name: 'Pink Tulip',
+      meta: 'Fresh cut, single stem',
+      available: 27,
+      location: 'Cooler 2',
+      tags: [{label: 'Spring', variant: 'pink'}],
+      imageKey: 'tumbler',
+      thumbnailFallback: 'T',
+      selected: false,
+    },
+    {
+      id: 'f',
+      name: 'Dried Nigella Pods',
+      meta: 'Preserved, branch',
+      available: 19,
+      location: 'Cooler 1',
+      tags: [{label: 'Small batch', variant: 'green'}],
+      imageKey: 'throw_',
+      thumbnailFallback: 'N',
       selected: true,
     },
   ],
@@ -450,6 +542,7 @@ const CONTENT_BY_THEME: Record<string, ThemeShowcaseContent> = {
   butter: BUTTER_CONTENT,
   stone: STONE_CONTENT,
   y2k: Y2K_CONTENT,
+  gothic: GOTHIC_CONTENT,
 };
 
 /**

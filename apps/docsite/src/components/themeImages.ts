@@ -33,7 +33,6 @@ export interface ThemeImageSet {
   throw_: string;
 }
 
-// Shared xds_oss asset CDN base.
 const XDS_CDN = 'https://lookaside.facebook.com/assets/xds_oss';
 
 /**
