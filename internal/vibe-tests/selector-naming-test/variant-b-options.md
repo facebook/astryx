@@ -58,15 +58,15 @@ import {XDSSelector, XDSSelectorOption} from '@xds/core';
   label="User"
   options={users.map(u => ({value: u.id, label: u.name, icon: 'user'}))}
   value={selectedUser}
-  onChange={setSelectedUser}>
-  {option => (
+  onChange={setSelectedUser}
+  renderOption={option => (
     <XDSSelectorOption
       icon={option.icon}
       label={option.label}
       description={option.email}
     />
   )}
-</XDSSelector>
+/>
 ```
 
 ## Props
@@ -88,7 +88,7 @@ import {XDSSelector, XDSSelectorOption} from '@xds/core';
 | isOptional    | boolean                                                       | false       | Show optional indicator               |
 | isRequired    | boolean                                                       | false       | Show required indicator               |
 | status        | { type: 'warning' \| 'error' \| 'success', message?: string } | —           | Validation status                     |
-| children      | (option: OptionData) => ReactNode                             | —           | Custom option renderer                |
+| renderOption  | (option: OptionData) => ReactNode                             | —           | Custom option renderer                |
 
 ### XDSSelectorOption (for custom rendering)
 

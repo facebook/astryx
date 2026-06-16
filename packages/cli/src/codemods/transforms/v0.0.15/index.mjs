@@ -30,6 +30,10 @@ import migrateThemeSelectorsToDataAttrs, {
   meta as migrateThemeSelectorsToDataAttrsMeta,
 } from './migrate-theme-selectors-to-data-attrs.mjs';
 
+import migrateSelectorChildrenToRenderOption, {
+  meta as migrateSelectorChildrenToRenderOptionMeta,
+} from './migrate-selector-children-to-render-option.mjs';
+
 export default [
   {
     name: 'rename-date-picker-to-input',
@@ -61,5 +65,10 @@ export default [
     transform: migrateThemeSelectorsToDataAttrs,
     meta: migrateThemeSelectorsToDataAttrsMeta,
     optional: true,
+  },
+  {
+    name: 'migrate-selector-children-to-render-option',
+    transform: migrateSelectorChildrenToRenderOption,
+    meta: migrateSelectorChildrenToRenderOptionMeta,
   },
 ];

@@ -418,7 +418,7 @@ interface XDSSelectorPropsBase<
    * Custom render function for options.
    * Only called for selectable options (not dividers/sections).
    */
-  children?: (option: XDSSelectorOptionData) => ReactNode;
+  renderOption?: (option: XDSSelectorOptionData) => ReactNode;
 
   /**
    * Whether to show a search input for filtering options.
@@ -533,7 +533,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     status,
     labelTooltip,
     startIcon,
-    children,
+    renderOption,
     hasSearch = false,
     searchPlaceholder = 'Search...',
     placement,
@@ -763,14 +763,18 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
             item.disabled && styles.itemDisabled,
           )}>
           <span {...stylex.props(styles.itemContent)}>
-            {children ? children(item) : <DefaultOption option={item} />}
+            {renderOption ? (
+              renderOption(item)
+            ) : (
+              <DefaultOption option={item} />
+            )}
           </span>
           {isSelected && <XDSIcon icon="check" size="sm" color="accent" />}
         </div>
       );
     },
     [
-      children,
+      renderOption,
       highlightedIndex,
       size,
       normalizedValue,
