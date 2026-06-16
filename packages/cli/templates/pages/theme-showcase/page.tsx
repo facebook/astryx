@@ -138,6 +138,12 @@ const styles = stylex.create({
     textAlign: 'center' as const,
     maxWidth: 560,
   },
+  // Hero headline painted with the theme's accent-text ink. XDSText has no
+  // 'accent' color value, so we set the dedicated --color-text-accent token
+  // directly (distinct from --color-accent / the 'active' color).
+  heroHeadline: {
+    color: 'var(--color-text-accent)',
+  },
   centerText: {
     textAlign: 'center',
   },
@@ -432,7 +438,7 @@ function StorePreview({
           <XDSVStack gap={10} xstyle={[styles.content, styles.contentFluid]}>
             <XDSCenter>
               <XDSVStack gap={4} hAlign="center" xstyle={styles.heroText}>
-                <XDSText type="display-3">
+                <XDSText type="display-3" xstyle={styles.heroHeadline}>
                   Little joys,
                   <br />
                   everywhere you go
