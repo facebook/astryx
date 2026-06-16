@@ -81,10 +81,12 @@ function findDocByComponent(name) {
 }
 
 function hasXDSFile(dir, name) {
-  const target = `XDS${name}.tsx`;
+  // Match the current `XDS{Name}.tsx` convention and the post-migration bare
+  // `{Name}.tsx` form (XDS-prefix migration P2380608025, P4).
+  const targets = [`XDS${name}.tsx`, `${name}.tsx`];
   try {
     for (const f of fs.readdirSync(dir, {withFileTypes: true})) {
-      if (f.name === target) return true;
+      if (targets.includes(f.name)) return true;
       if (f.isDirectory() && hasXDSFile(path.join(dir, f.name), name)) return true;
     }
   } catch {}
