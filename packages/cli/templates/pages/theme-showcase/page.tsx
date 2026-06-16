@@ -281,13 +281,16 @@ const PRODUCTS = [
   },
 ];
 
+// Neutral product photos, served from the shared xds_oss asset CDN so the
+// scaffolded template renders real imagery without needing local public assets.
+const NEUTRAL_CDN = 'https://lookaside.facebook.com/assets/xds_oss';
 const PREVIEW_IMAGES: Record<string, string> = {
-  watch: '/neutral/preview-watch.png',
-  headphones: '/neutral/preview-headphones.png',
-  backpack: '/neutral/preview-backpack.png',
-  wallet: '/neutral/preview-wallet.png',
-  mug: '/neutral/preview-mug.png',
-  throw_: '/neutral/preview-throw.png',
+  watch: `${NEUTRAL_CDN}/Neutral-Watch.png`,
+  headphones: `${NEUTRAL_CDN}/Neutral-Headphones.png`,
+  backpack: `${NEUTRAL_CDN}/Neutral-Backpack.png`,
+  wallet: `${NEUTRAL_CDN}/Neutral-Wallet.png`,
+  tumbler: `${NEUTRAL_CDN}/Neutral-Tumbler.png`,
+  throw_: `${NEUTRAL_CDN}/Neutral-Blanket.png`,
 };
 
 export default function ThemeShowcase() {
@@ -984,12 +987,12 @@ const INVENTORY: InventoryRow[] = [
   },
   {
     id: 'e',
-    name: 'Travel Mug',
+    name: 'Travel Tumbler',
     meta: 'Vacuum insulated, 16oz',
     available: 87,
     location: 'Aisle 5',
     tags: [{label: 'Drinkware', variant: 'green'}],
-    imageKey: 'mug',
+    imageKey: 'tumbler',
     thumbnailFallback: 'T',
     selected: false,
   },
