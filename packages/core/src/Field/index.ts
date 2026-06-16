@@ -40,3 +40,29 @@ export {
 
 // Shared input components
 export {XDSInputClearButton} from './XDSInputClearButton';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSField as Field,
+  XDSFieldLabel as FieldLabel,
+  XDSFieldStatus as FieldStatus,
+  XDSInputClearButton as InputClearButton,
+} from '.';
+export type {
+  XDSFieldLabelProps as FieldLabelProps,
+  XDSFieldProps as FieldProps,
+  XDSFieldStatusInput as FieldStatusInput,
+  XDSFieldStatusProps as FieldStatusProps,
+  XDSFieldStatusType as FieldStatusType,
+  XDSFieldStatusVariant as FieldStatusVariant,
+  XDSFieldStatusVariantMap as FieldStatusVariantMap,
+  XDSInputSize as InputSize,
+  XDSInputStatus as InputStatus,
+  XDSInputStatusType as InputStatusType,
+} from '.';
+// <compat-aliases:end>

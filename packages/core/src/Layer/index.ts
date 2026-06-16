@@ -63,3 +63,34 @@ export type {
   XDSTooltipReturn,
   XDSTooltipProps,
 } from '../Tooltip';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSHoverCard as HoverCard,
+  XDSLayerContext as LayerContext,
+  XDSLayerProvider as LayerProvider,
+  XDSPopover as Popover,
+  XDSTooltip as Tooltip,
+  useXDSHoverCard as useHoverCard,
+  useXDSLayer as useLayer,
+  useXDSLayerContext as useLayerContext,
+  useXDSPopover as usePopover,
+  useXDSTooltip as useTooltip,
+} from '.';
+export type {
+  XDSHoverCardOptions as HoverCardOptions,
+  XDSHoverCardProps as HoverCardProps,
+  XDSHoverCardReturn as HoverCardReturn,
+  XDSLayerContextValue as LayerContextValue,
+  XDSLayerProviderProps as LayerProviderProps,
+  XDSPopoverProps as PopoverProps,
+  XDSTooltipOptions as TooltipOptions,
+  XDSTooltipProps as TooltipProps,
+  XDSTooltipReturn as TooltipReturn,
+} from '.';
+// <compat-aliases:end>

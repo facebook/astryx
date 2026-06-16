@@ -159,3 +159,40 @@ export type {
   TypographyRole,
   FontWeight,
 } from './types';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSMediaTheme as MediaTheme,
+  XDSTheme as Theme,
+  XDSThemeContext as ThemeContext,
+  useXDSSyntaxTheme as useSyntaxTheme,
+  useXDSTheme as useTheme,
+} from '.';
+export type {
+  XDSBuiltinTextType as BuiltinTextType,
+  XDSColorScaleConfig as ColorScaleConfig,
+  XDSComponentStyleMap as ComponentStyleMap,
+  XDSCoreTokenName as CoreTokenName,
+  XDSCustomTextTypes as CustomTextTypes,
+  XDSDefineThemeInput as DefineThemeInput,
+  XDSDefinedTheme as DefinedTheme,
+  XDSMediaThemeProps as MediaThemeProps,
+  XDSMotionScaleConfig as MotionScaleConfig,
+  XDSRadiusScaleConfig as RadiusScaleConfig,
+  XDSResolvedThemeMode as ResolvedThemeMode,
+  XDSStyleOverrides as StyleOverrides,
+  XDSTextColor as TextColor,
+  XDSTextSize as TextSize,
+  XDSTextType as TextType,
+  XDSTextWeight as TextWeight,
+  XDSThemeContextValue as ThemeContextValue,
+  XDSTokenName as TokenName,
+  XDSTokenValue as TokenValue,
+  XDSTypeScaleConfig as TypeScaleConfig,
+} from '.';
+// <compat-aliases:end>

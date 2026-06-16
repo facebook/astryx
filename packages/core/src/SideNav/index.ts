@@ -37,3 +37,31 @@ export {
   useXDSSideNavRenderMode,
 } from './XDSSideNavRenderContext';
 export type {XDSSideNavRenderMode} from './XDSSideNavRenderContext';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSSideNav as SideNav,
+  XDSSideNavCollapseButton as SideNavCollapseButton,
+  XDSSideNavHeading as SideNavHeading,
+  XDSSideNavItem as SideNavItem,
+  XDSSideNavRenderContext as SideNavRenderContext,
+  XDSSideNavSection as SideNavSection,
+  useXDSSideNavCollapse as useSideNavCollapse,
+  useXDSSideNavRenderMode as useSideNavRenderMode,
+} from '.';
+export type {
+  XDSSideNavCollapseButtonProps as SideNavCollapseButtonProps,
+  XDSSideNavCollapseState as SideNavCollapseState,
+  XDSSideNavHeadingProps as SideNavHeadingProps,
+  XDSSideNavImperativeCollapseHandle as SideNavImperativeCollapseHandle,
+  XDSSideNavItemProps as SideNavItemProps,
+  XDSSideNavProps as SideNavProps,
+  XDSSideNavRenderMode as SideNavRenderMode,
+  XDSSideNavSectionProps as SideNavSectionProps,
+} from '.';
+// <compat-aliases:end>

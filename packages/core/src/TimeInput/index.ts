@@ -20,3 +20,21 @@ export type {
   XDSTimeInputStatusType,
 } from './XDSTimeInput';
 export type {ISOTimeString} from '../utils';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSTimeInput as TimeInput,
+} from '.';
+export type {
+  XDSTimeInputHourFormat as TimeInputHourFormat,
+  XDSTimeInputProps as TimeInputProps,
+  XDSTimeInputSize as TimeInputSize,
+  XDSTimeInputStatus as TimeInputStatus,
+  XDSTimeInputStatusType as TimeInputStatusType,
+} from '.';
+// <compat-aliases:end>
