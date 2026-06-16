@@ -13,14 +13,15 @@
  *   2. ThemeCardShowcase — the inventory table thumbnails, which use all
  *      six.
  *
- * Adding photos for a new theme:
- *   1. Drop the 6 PNGs into public/<theme-slug>/preview-<item>.png
- *   2. Add an entry to THEME_IMAGES below pointing at those paths
- *   3. That's it — both consumers pick them up automatically
+ * Photos are served from the shared `xds_oss` asset CDN, named
+ * `<TitleTheme>-<Item>.png` (e.g. `Neutral-Watch.png`). The `cdnSet()` helper
+ * builds the 6 URLs from a theme's title-case name, so adding a theme is just
+ * one entry once its assets exist on the CDN.
  *
- * Themes not listed in THEME_IMAGES fall back to the neutral image set,
- * so the page never has missing thumbnails — just the most neutral
- * possible product photos until a bespoke set lands.
+ * Readiness gate: a theme only uses its own set once `ready: true`. Until its
+ * photos are uploaded, it stays `ready: false` and falls back to the Neutral
+ * set — so the page never shows broken/404 thumbnails while a set is in
+ * progress. Flip `ready` to `true` the moment the assets land.
  */
 
 export interface ThemeImageSet {
@@ -32,38 +33,84 @@ export interface ThemeImageSet {
   throw_: string;
 }
 
-// Neutral product photos, served from the shared xds_oss asset CDN.
-const NEUTRAL_CDN = 'https://lookaside.facebook.com/assets/xds_oss';
-const NEUTRAL_IMAGES: ThemeImageSet = {
-  watch: `${NEUTRAL_CDN}/Neutral-Watch.png`,
-  headphones: `${NEUTRAL_CDN}/Neutral-Headphones.png`,
-  backpack: `${NEUTRAL_CDN}/Neutral-Backpack.png`,
-  wallet: `${NEUTRAL_CDN}/Neutral-Wallet.png`,
-  tumbler: `${NEUTRAL_CDN}/Neutral-Tumbler.png`,
-  throw_: `${NEUTRAL_CDN}/Neutral-Blanket.png`,
-};
+// Shared xds_oss asset CDN base.
+const XDS_CDN = 'https://lookaside.facebook.com/assets/xds_oss';
 
 /**
- * Per-theme image overrides. Keyed by theme name (matches XDSDefinedTheme.name
- * and the slug used in /themes/<slug> URLs). Themes not listed here fall back
- * to the neutral set via getThemeImages().
- *
- * To add a new theme:
- *   1. Drop images into public/<theme-name>/preview-*.png
- *   2. Add an entry below:
- *      butter: {
- *        watch: '/butter/preview-watch.png',
- *        ...etc
- *      }
+ * Per-item CDN file suffix. The asset names don't always match the registry
+ * key 1:1 (e.g. the `throw_` slot is served as `*-Blanket.png`), so map each
+ * key to its canonical file item name here.
  */
-const THEME_IMAGES: Record<string, ThemeImageSet> = {
-  neutral: NEUTRAL_IMAGES,
+const ITEM_FILE: Record<keyof ThemeImageSet, string> = {
+  watch: 'Watch',
+  headphones: 'Headphones',
+  backpack: 'Backpack',
+  wallet: 'Wallet',
+  tumbler: 'Tumbler',
+  throw_: 'Blanket',
 };
 
 /**
- * Resolve the image set for a theme name. Falls back to NEUTRAL_IMAGES for
- * themes that don't have their own image set yet.
+ * Build a full image set for a theme from its title-case name, following the
+ * `<TitleTheme>-<Item>.png` CDN convention. `overrides` lets a theme point an
+ * individual slot at a differently-named asset without hand-writing all six.
+ */
+function cdnSet(
+  titleTheme: string,
+  overrides: Partial<ThemeImageSet> = {},
+): ThemeImageSet {
+  const url = (item: string) => `${XDS_CDN}/${titleTheme}-${item}.png`;
+  return {
+    watch: overrides.watch ?? url(ITEM_FILE.watch),
+    headphones: overrides.headphones ?? url(ITEM_FILE.headphones),
+    backpack: overrides.backpack ?? url(ITEM_FILE.backpack),
+    wallet: overrides.wallet ?? url(ITEM_FILE.wallet),
+    tumbler: overrides.tumbler ?? url(ITEM_FILE.tumbler),
+    throw_: overrides.throw_ ?? url(ITEM_FILE.throw_),
+  };
+}
+
+const NEUTRAL_IMAGES: ThemeImageSet = cdnSet('Neutral');
+
+interface ThemeImageEntry {
+  images: ThemeImageSet;
+  /**
+   * Whether this theme's bespoke photos exist on the CDN yet. When false, the
+   * theme falls back to NEUTRAL_IMAGES so no broken thumbnails are shown. Flip
+   * to true once all six assets are uploaded.
+   */
+  ready: boolean;
+}
+
+/**
+ * Per-theme image overrides, keyed by theme name (matches XDSDefinedTheme.name
+ * and the slug used in /themes/<slug> URLs).
+ *
+ * Each non-ready entry is pre-wired to the `<TitleTheme>-<Item>.png` convention
+ * so it can be turned on by flipping `ready: true` (and adjusting any slot
+ * whose asset is named differently via the cdnSet overrides). Confirm the exact
+ * uploaded asset names before flipping each one on.
+ */
+const THEME_IMAGES: Record<string, ThemeImageEntry> = {
+  neutral: {images: NEUTRAL_IMAGES, ready: true},
+
+  // Pending bespoke photo sets — fall back to Neutral until their CDN assets
+  // exist. Flip `ready: true` per theme once uploaded.
+  butter: {images: cdnSet('Butter'), ready: false},
+  matcha: {images: cdnSet('Matcha'), ready: false},
+  daily: {images: cdnSet('Daily'), ready: false},
+  gothic: {images: cdnSet('Gothic'), ready: false},
+  y2k: {images: cdnSet('Y2K'), ready: false},
+  stone: {images: cdnSet('Stone'), ready: false},
+  chocolate: {images: cdnSet('Chocolate'), ready: false},
+};
+
+/**
+ * Resolve the image set for a theme name. Returns a theme's bespoke set only
+ * when it's marked ready; otherwise falls back to NEUTRAL_IMAGES so the page
+ * never renders missing/404 thumbnails.
  */
 export function getThemeImages(themeName: string): ThemeImageSet {
-  return THEME_IMAGES[themeName] ?? NEUTRAL_IMAGES;
+  const entry = THEME_IMAGES[themeName];
+  return entry?.ready ? entry.images : NEUTRAL_IMAGES;
 }
