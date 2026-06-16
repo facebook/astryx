@@ -47,12 +47,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Syntax themes support light-dark() tuples — each token can have different values for light and dark mode, resolved automatically by the color scheme.',
+          'Syntax themes support light-dark() tuples: each token can have different values for light and dark mode, resolved automatically by the color scheme.',
       },
       {
         guidance: false,
         description:
-          'Wrap individual CodeBlock instances with XDSSyntaxTheme — use the syntaxTheme prop on XDSCodeBlock directly for per-instance overrides.',
+          'Wrap individual CodeBlock instances with XDSSyntaxTheme: use the syntaxTheme prop on XDSCodeBlock directly for per-instance overrides.',
       },
     ],
   },
@@ -62,7 +62,7 @@ export const docs = {
       type: 'SyntaxTheme',
       required: true,
       description:
-        'Syntax highlighting theme — a preset from @xds/core/theme/syntax or a custom theme created with defineSyntaxTheme().',
+        'Syntax highlighting theme: a preset from @xds/core/theme/syntax or a custom theme created with defineSyntaxTheme().',
     },
     {
       name: 'children',
@@ -93,17 +93,17 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Syntax themes support light-dark() tuples — each token can have different values for light/dark mode, resolved automatically by color scheme.',
+          'Syntax themes support light-dark() tuples: each token can have different values for light/dark mode, resolved automatically by color scheme.',
       },
       {
         guidance: false,
         description:
-          'Wrap individual CodeBlock instances w/ XDSSyntaxTheme — use syntaxTheme prop on XDSCodeBlock directly for per-instance overrides instead.',
+          'Wrap individual CodeBlock instances w/ XDSSyntaxTheme: use syntaxTheme prop on XDSCodeBlock directly for per-instance overrides instead.',
       },
     ],
   },
   propDescriptions: {
     theme:
-      'syntax highlighting theme — preset from @xds/core/theme/syntax or custom theme created w/ defineSyntaxTheme(). **(required)**',
+      'syntax highlighting theme: preset from @xds/core/theme/syntax or custom theme created w/ defineSyntaxTheme(). **(required)**',
   },
 };

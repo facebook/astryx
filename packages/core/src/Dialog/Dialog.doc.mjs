@@ -75,7 +75,7 @@ export const docs = {
     {
       name: 'variant',
       type: "'standard' | 'fullscreen'",
-      description: 'Dialog variant — fullscreen expands to fill the entire viewport.',
+      description: 'Dialog variant: fullscreen expands to fill the entire viewport.',
       default: "'standard'",
     },
     {

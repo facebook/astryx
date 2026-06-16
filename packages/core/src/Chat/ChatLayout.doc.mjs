@@ -11,13 +11,13 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'Message content — typically XDSChatMessageList. Flows naturally in the page and scrolls with the container.',
+      description: 'Message content: typically XDSChatMessageList. Flows naturally in the page and scrolls with the container.',
       required: true,
     },
     {
       name: 'composer',
       type: 'ReactNode',
-      description: 'Composer element — typically XDSChatComposer. Fixed to the bottom with a frosted glass dock.',
+      description: 'Composer element: typically XDSChatComposer. Fixed to the bottom with a frosted glass dock.',
       required: true,
       slotElements: [
         {
@@ -71,11 +71,11 @@ export const docs = {
       },
       {
         guidance: false,
-        description: "Don't apply a fixed height on the layout — let it fill its container with flex: 1.",
+        description: "Don't apply a fixed height on the layout; let it fill its container with flex: 1.",
       },
       {
         guidance: false,
-        description: "Don't render multiple ChatLayout instances in the same scroll container — each expects to own its scroll context.",
+        description: "Don't render multiple ChatLayout instances in the same scroll container; each expects to own its scroll context.",
       },
     ],
     anatomy: [
