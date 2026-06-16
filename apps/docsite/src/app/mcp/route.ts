@@ -114,7 +114,7 @@ const handler = createMcpHandler(
     // ══════════════════════════════════════════════════════════════════
     server.tool(
       'search',
-      `Search Astryx (XDS) design system — finds components, documentation topics, and page templates.\n\n` +
+      `Search Astryx (XDS) design system: finds components, documentation topics, and page templates.\n\n` +
         `Returns brief results (name, description, key info). Use the "get" tool with a ` +
         `specific name for full details including props and code examples.\n\n` +
         `Examples: "dropdown menu", "form inputs", "theming", "dashboard template", ` +
