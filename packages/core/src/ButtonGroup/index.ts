@@ -13,4 +13,7 @@ export {XDSButtonGroup} from './XDSButtonGroup';
 export type {XDSButtonGroupProps} from './XDSButtonGroup';
 
 export {useXDSButtonGroup} from './XDSButtonGroupContext';
-export type {XDSButtonGroupOrientation} from './XDSButtonGroupContext';
+export type {
+  XDSButtonGroupOrientation,
+  XDSButtonGroupContextValue,
+} from './XDSButtonGroupContext';
