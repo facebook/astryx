@@ -260,31 +260,38 @@ const sparkBarStyle = (height: string): CSSProperties => ({
 
 const PRODUCT_IMAGE_KEYS = ['watch', 'headphones', 'backpack'];
 
-const PRODUCTS = [
+export interface ProductSpec {
+  name: string;
+  description: string;
+  badge: string;
+  badgeVariant: 'blue' | 'green' | 'orange' | 'yellow';
+}
+
+const DEFAULT_PRODUCTS: ProductSpec[] = [
   {
     name: 'Minimalist Watch',
     description: 'Clean design meets everyday durability.',
     badge: 'New',
-    badgeVariant: 'blue' as const,
+    badgeVariant: 'blue',
   },
   {
     name: 'Wireless Headphones',
     description: 'Immersive sound, all-day comfort.',
     badge: 'Popular',
-    badgeVariant: 'green' as const,
+    badgeVariant: 'green',
   },
   {
     name: 'Canvas Backpack',
     description: 'Water-resistant canvas with a quiet, modern profile.',
     badge: 'Limited',
-    badgeVariant: 'yellow' as const,
+    badgeVariant: 'yellow',
   },
 ];
 
 // Neutral product photos, served from the shared xds_oss asset CDN so the
 // scaffolded template renders real imagery without needing local public assets.
 const NEUTRAL_CDN = 'https://lookaside.facebook.com/assets/xds_oss';
-const PREVIEW_IMAGES: Record<string, string> = {
+const DEFAULT_IMAGES: Record<string, string> = {
   watch: `${NEUTRAL_CDN}/Neutral-Watch.png`,
   headphones: `${NEUTRAL_CDN}/Neutral-Headphones.png`,
   backpack: `${NEUTRAL_CDN}/Neutral-Backpack.png`,
@@ -293,8 +300,20 @@ const PREVIEW_IMAGES: Record<string, string> = {
   throw_: `${NEUTRAL_CDN}/Neutral-Blanket.png`,
 };
 
-export default function ThemeShowcase() {
-  const images: Record<string, string> = PREVIEW_IMAGES;
+export interface ThemeShowcaseProps {
+  /** Product card images keyed by slot (watch/headphones/backpack/…). */
+  images?: Record<string, string>;
+  /** The three hero product cards. Defaults to the neutral store products. */
+  products?: ProductSpec[];
+  /** Inventory table rows. Defaults to the neutral store inventory. */
+  inventory?: InventoryRow[];
+}
+
+export default function ThemeShowcase({
+  images = DEFAULT_IMAGES,
+  products = DEFAULT_PRODUCTS,
+  inventory = DEFAULT_INVENTORY,
+}: ThemeShowcaseProps = {}) {
   const {isMobile} = useXDSAppShellMobile();
   return (
     <div
@@ -302,13 +321,17 @@ export default function ThemeShowcase() {
         minHeight: '100%',
         backgroundColor: 'var(--color-background-body)',
       }}>
-      <StorePreview images={images} isMobile={isMobile} />
+      <StorePreview images={images} products={products} isMobile={isMobile} />
       <div
         style={{
           padding: 'var(--spacing-6)',
           backgroundColor: 'var(--color-background-surface)',
         }}>
-        <CardShowcase images={images} isMobile={isMobile} />
+        <CardShowcase
+          images={images}
+          inventory={inventory}
+          isMobile={isMobile}
+        />
       </div>
     </div>
   );
@@ -316,9 +339,11 @@ export default function ThemeShowcase() {
 
 function CardShowcase({
   images,
+  inventory,
   isMobile,
 }: {
   images: Record<string, string>;
+  inventory: InventoryRow[];
   isMobile: boolean;
 }) {
   const columns = isMobile ? 1 : ({minWidth: 200, repeat: 'fit'} as const);
@@ -335,7 +360,7 @@ function CardShowcase({
       </XDSGrid>
       <XDSGrid columns={columns} gap={4}>
         <XDSGridSpan columns={isMobile ? 1 : 3}>
-          <InventoryCard images={images} />
+          <InventoryCard images={images} inventory={inventory} />
         </XDSGridSpan>
         <XDSGridSpan columns={1}>
           <LatestActivityCard isMobile={isMobile} />
@@ -347,9 +372,11 @@ function CardShowcase({
 
 function StorePreview({
   images,
+  products,
   isMobile,
 }: {
   images: Record<string, string>;
+  products: ProductSpec[];
   isMobile: boolean;
 }) {
   return (
@@ -418,7 +445,7 @@ function StorePreview({
             </XDSCenter>
 
             <XDSGrid columns={isMobile ? 1 : {minWidth: 200, max: 3}} gap={4}>
-              {PRODUCTS.map((p, i) => (
+              {products.map((p, i) => (
                 <XDSCard key={p.name} padding={0} height="100%">
                   <XDSVStack gap={0} xstyle={styles.cardStack}>
                     <XDSAspectRatio ratio={1}>
@@ -928,7 +955,7 @@ function LatestActivityCard({isMobile}: {isMobile: boolean}) {
 
 type TagSpec = {label: string; variant: 'blue' | 'green' | 'orange' | 'yellow'};
 
-interface InventoryRow extends Record<string, unknown> {
+export interface InventoryRow extends Record<string, unknown> {
   id: string;
   name: string;
   meta: string;
@@ -940,7 +967,7 @@ interface InventoryRow extends Record<string, unknown> {
   selected: boolean;
 }
 
-const INVENTORY: InventoryRow[] = [
+const DEFAULT_INVENTORY: InventoryRow[] = [
   {
     id: 'a',
     name: 'Minimalist Watch',
@@ -1010,9 +1037,6 @@ const INVENTORY: InventoryRow[] = [
 ];
 
 const LOW_STOCK_THRESHOLD = 25;
-const LOW_STOCK_COUNT = INVENTORY.filter(
-  row => row.available < LOW_STOCK_THRESHOLD,
-).length;
 
 function SelectCell({row}: {row: InventoryRow}) {
   return (
@@ -1079,7 +1103,16 @@ function ActionsCell() {
   );
 }
 
-function InventoryCard({images}: {images: Record<string, string>}) {
+function InventoryCard({
+  images,
+  inventory,
+}: {
+  images: Record<string, string>;
+  inventory: InventoryRow[];
+}) {
+  const lowStockCount = inventory.filter(
+    row => row.available < LOW_STOCK_THRESHOLD,
+  ).length;
   return (
     <XDSCard padding={0} xstyle={styles.inventoryCard}>
       <XDSHStack
@@ -1188,17 +1221,17 @@ function InventoryCard({images}: {images: Record<string, string>}) {
         </XDSHStack>
       </XDSHStack>
 
-      {LOW_STOCK_COUNT > 0 && (
+      {lowStockCount > 0 && (
         <div style={inlineStyles.inventoryBannerWrap}>
           <XDSBanner
             status="warning"
-            title={LOW_STOCK_COUNT + ' items are running low'}
+            title={lowStockCount + ' items are running low'}
           />
         </div>
       )}
 
       <XDSTable<InventoryRow>
-        data={INVENTORY}
+        data={inventory}
         columns={[
           {
             key: 'select',
