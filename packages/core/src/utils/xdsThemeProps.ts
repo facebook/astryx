@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {legacyStableClassName} from '../naming';
+
 export type XDSClassValue = string | number | undefined | null;
 export type XDSClassProps = Record<string, XDSClassValue>;
 export type XDSThemeDataAttributes = Record<
@@ -26,6 +28,10 @@ function classTokenForPropValue(prop: string, value: string): string {
  * `data-size`, `data-level`, etc.) so consumers can migrate CSS selectors
  * away from collision-prone bare class names while old selectors keep working.
  *
+ * The `xds-`/`astryx-` prefix comes from the centralized naming module
+ * (`packages/core/src/naming.ts`) so the prefix migration flips in one place.
+ *
+ * <!-- SYNC: packages/core/src/naming.ts (namespace prefix source of truth) -->
  * <!-- SYNC: packages/cli/src/commands/build-theme.mjs (parseStyleKey + selector generation) -->
  * <!-- SYNC: packages/core/src/utils/parseStyleKey.ts -->
  *
@@ -50,7 +56,7 @@ function classTokenForPropValue(prop: string, value: string): string {
  * ```
  */
 function legacyClassName(component: string, props?: XDSClassProps): string {
-  const classes = [`xds-${component}`];
+  const classes = [legacyStableClassName(component)];
 
   if (props) {
     for (const [prop, value] of Object.entries(props)) {

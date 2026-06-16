@@ -62,6 +62,11 @@ const STATIC_EXPORTS = {
     types: './src/tailwind-theme.css.d.ts',
     default: './src/tailwind-theme.css',
   },
+  './naming': {
+    source: './src/naming.ts',
+    types: './dist/naming.d.ts',
+    default: './dist/naming.js',
+  },
   './theme/tokens': {
     source: './src/theme/tokens.ts',
     types: './dist/theme/tokens.d.ts',
@@ -222,7 +227,7 @@ function main() {
 
   const dirs = discoverExportDirs();
   console.log(
-    `✓ Synced ${Object.keys(newExports).length} exports (${dirs.length} components/modules)`
+    `✓ Synced ${Object.keys(newExports).length} exports (${dirs.length} components/modules)`,
   );
 }
 
