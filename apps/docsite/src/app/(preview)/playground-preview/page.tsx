@@ -13,6 +13,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import {createRoot, type Root} from 'react-dom/client';
+import * as stylex from '@stylexjs/stylex';
 import {Settings, X} from 'lucide-react';
 import {XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
@@ -119,6 +120,12 @@ type PreviewMessage =
   | {type: 'targeting-disable'};
 
 // Blue label for selected instance with a popover for its properties
+const styles = stylex.create({
+  badge: {minHeight: 32},
+  badgeActions: {marginRight: -10},
+  popover: {paddingBlock: 0, paddingInline: 0},
+});
+
 function TargetLabel({
   name,
   isInteractive,
@@ -135,10 +142,10 @@ function TargetLabel({
   const [isOpen, setIsOpen] = useState(false);
   const badge = (
     <XDSMediaTheme mode="dark">
-      <XDSHStack gap={2} vAlign="center" style={{minHeight: 32}}>
+      <XDSHStack gap={2} vAlign="center" xstyle={styles.badge}>
         <XDSText>{name}</XDSText>
         {isInteractive && (
-          <XDSHStack style={{marginRight: -10}}>
+          <XDSHStack xstyle={styles.badgeActions}>
             <XDSButton
               label="Properties"
               variant="ghost"
@@ -173,10 +180,10 @@ function TargetLabel({
       label="Component properties"
       placement="below"
       alignment="start"
-      width={360}
+      width={400}
       isOpen={isOpen}
       onOpenChange={setIsOpen}
-      style={{maxHeight: 360, display: 'flex', flexDirection: 'column'}}
+      xstyle={styles.popover}
       content={
         <PropertyPanel
           code={code}

@@ -20,7 +20,7 @@
 
 import {useEffect, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSLayout, XDSLayoutContent, XDSLayoutFooter} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSLink} from '@xds/core/Link';
@@ -28,7 +28,6 @@ import {XDSSwitch} from '@xds/core/Switch';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSEmptyState} from '@xds/core/EmptyState';
-import {XDSDivider} from '@xds/core/Divider';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSButton} from '@xds/core/Button';
 // SegmentedControl removed — targeting selects the exact instance.
@@ -52,20 +51,10 @@ import {getComponentByModule, getUsedComponents} from './usedComponents';
 const NUMERIC_RE = /^-?\d+(\.\d+)?$/;
 
 const s = stylex.create({
-  root: {
-    display: 'flex',
-    flexDirection: 'column',
-    flex: 1,
-    minHeight: 0,
-  },
-  body: {
-    flex: 1,
-    minHeight: 0,
-    overflowY: 'auto',
-  },
-  footer: {
-    flexShrink: 0,
-    paddingTop: 'var(--spacing-3)',
+  // Cap the scrollable content area. The popover itself is unbounded, so the
+  // footer always sits directly below the content, outside the scroll region.
+  contentScroll: {
+    maxHeight: 360,
   },
   applyBtn: {
     width: '100%',
@@ -408,63 +397,40 @@ export function PropertyPanel({
     body = null;
   } else {
     body = (
-      <XDSVStack gap={3}>
-        {required.length > 0 && (
-          <XDSList
-            header={
-              <XDSText type="label" color="secondary">
-                Required
-              </XDSText>
-            }>
-            {required.map(prop => (
-              <PropRow
-                key={prop.name}
-                prop={prop}
-                instance={targetInstance}
-                code={draft}
-                onCodeChange={setDraft}
-                onRevealInCode={onRevealInCode}
-              />
-            ))}
-          </XDSList>
-        )}
-        {required.length > 0 && optional.length > 0 && <XDSDivider />}
-        {optional.length > 0 && (
-          <XDSList
-            header={
-              <XDSText type="label" color="secondary">
-                Optional
-              </XDSText>
-            }>
-            {optional.map(prop => (
-              <PropRow
-                key={prop.name}
-                prop={prop}
-                instance={targetInstance}
-                code={draft}
-                onCodeChange={setDraft}
-                onRevealInCode={onRevealInCode}
-              />
-            ))}
-          </XDSList>
-        )}
-      </XDSVStack>
+      <XDSList>
+        {[...required, ...optional].map(prop => (
+          <PropRow
+            key={prop.name}
+            prop={prop}
+            instance={targetInstance}
+            code={draft}
+            onCodeChange={setDraft}
+            onRevealInCode={onRevealInCode}
+          />
+        ))}
+      </XDSList>
     );
   }
 
   return (
-    <div {...stylex.props(s.root)}>
-      <div {...stylex.props(s.body)}>{body}</div>
-      <XDSDivider />
-      <div {...stylex.props(s.footer)}>
-        <XDSButton
-          label="Apply"
-          variant="primary"
-          isDisabled={!isDirty}
-          onClick={applyChanges}
-          xstyle={s.applyBtn}
-        />
-      </div>
-    </div>
+    <XDSLayout
+      height="auto"
+      content={
+        <XDSLayoutContent padding={3} xstyle={s.contentScroll}>
+          {body}
+        </XDSLayoutContent>
+      }
+      footer={
+        <XDSLayoutFooter hasDivider padding={3}>
+          <XDSButton
+            label="Apply"
+            variant="primary"
+            isDisabled={!isDirty}
+            onClick={applyChanges}
+            xstyle={s.applyBtn}
+          />
+        </XDSLayoutFooter>
+      }
+    />
   );
 }
