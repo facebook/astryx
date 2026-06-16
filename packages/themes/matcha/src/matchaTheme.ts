@@ -109,8 +109,12 @@ export const matchaTheme = defineTheme({
     '--color-warning-muted': ['#FFB60020', '#ffc94020'],
 
     // Border
-    '--color-border': ['#C0CBA9', '#C0CBA91A'],
-    '--color-border-emphasized': ['#707E46', '#5a6440'],
+    // Light default border lightened from #C0CBA9 (a solid, fairly heavy sage)
+    // to a paler sage so inputs/dividers read softer; same matcha hue.
+    // Emphasized (used by card borders) softened from a dark #707E46 to a
+    // mid sage so card outlines read less heavy. Dark mode unchanged.
+    '--color-border': ['#DCE3CE', '#C0CBA91A'],
+    '--color-border-emphasized': ['#B7C29E', '#5a6440'],
 
     // Effects
     '--color-skeleton': ['#C0CBA9', '#5a6440'],
