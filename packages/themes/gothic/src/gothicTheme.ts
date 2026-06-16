@@ -47,11 +47,8 @@ export const gothicTheme = defineTheme({
   name: 'gothic',
 
   typography: {
-    // base 16 / ratio 1.25 — bumped from 14 / 1.2 so display sizes read large
-    // enough to carry the theme (the previous scale matched Neutral's modest
-    // 35px display-2, and the blackletter display face renders optically small,
-    // so it felt undersized). Larger base + ratio scales body/headings/display
-    // up together.
+    // base 16 / ratio 1.25 — larger scale so the (optically small) blackletter
+    // display sizes read large enough to carry the theme.
     scale: {base: 16, ratio: 1.25},
     body: {
       family: 'Fustat',

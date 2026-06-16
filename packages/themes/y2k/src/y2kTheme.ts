@@ -4,7 +4,8 @@
  * Y2K Theme
  *
  * A bubbly, playful pop theme inspired by early 2000s aesthetics.
- * Cream body, charcoal accent, Poppins + Crimson Text typography.
+ * Periwinkle body (#CCCFFA), charcoal accent, Poppins for body/headings, and
+ * Crimson Text for display sizes.
  * Core neutral: H=75 C=8 (warm cream neutral derived from #FFF6ED)
  */
 
@@ -89,7 +90,7 @@ export const y2kTheme = defineTheme({
     '--color-accent-muted': ['#2d241b14', '#fbefe220'],
     '--color-neutral': ['#2d241b10', '#fbefe21A'],
     '--color-background-surface': ['#FFFFFF', '#221a10'],
-    '--color-background-body': ['#FFF6ED', '#190f00'],
+    '--color-background-body': ['#CCCFFA', '#190f00'],
     '--color-overlay': ['#2d241b80', '#2d241bCC'],
     '--color-overlay-hover': ['#2d241b0D', '#fbefe20D'],
     '--color-overlay-pressed': ['#2d241b1A', '#fbefe21A'],
@@ -126,11 +127,10 @@ export const y2kTheme = defineTheme({
     '--color-warning': ['#FFE08A', '#FFE08A'],
     '--color-warning-muted': ['#FFE08A', '#FFE08A'],
 
-    // Border — neutral H=75 (cream)
-    // Emphasized (used by card borders) softened from a dark #675d52 to a mid
-    // warm taupe so card outlines read less heavy. Default + dark unchanged.
-    '--color-border': ['#ede0d4', '#fbefe21A'],
-    '--color-border-emphasized': ['#C9BBA9', '#5b5146'],
+    // Bold charcoal borders in light mode (default + card) for the heavy-outline
+    // Y2K look. Dark mode unchanged.
+    '--color-border': ['#2F292E', '#fbefe21A'],
+    '--color-border-emphasized': ['#2F292E', '#5b5146'],
 
     // Effects
     '--color-skeleton': ['#d1c5b8', '#5b5146'],
@@ -216,6 +216,34 @@ export const y2kTheme = defineTheme({
   },
 
   components: {
+    // Display sizes use a Crimson Text serif, distinct from the Poppins
+    // used for body/headings.
+    text: {
+      'type:display-1': {
+        fontFamily: '"Crimson Text", Georgia, "Times New Roman", Times, serif',
+      },
+      'type:display-2': {
+        fontFamily: '"Crimson Text", Georgia, "Times New Roman", Times, serif',
+      },
+      'type:display-3': {
+        fontFamily: '"Crimson Text", Georgia, "Times New Roman", Times, serif',
+      },
+    },
+
+    // TopNav items: drop the pill background on the selected state and rely on
+    // weight + primary text color for emphasis. Hover/active keep the neutral
+    // overlay from the base styles.
+    'top-nav-item': {
+      selected: {
+        backgroundColor: 'transparent',
+        ':hover': {
+          backgroundColor: 'var(--color-overlay-hover)',
+        },
+        ':active': {
+          backgroundColor: 'var(--color-overlay-pressed)',
+        },
+      },
+    },
     button: {
       base: {
         borderRadius: '0px',

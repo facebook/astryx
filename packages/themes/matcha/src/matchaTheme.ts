@@ -36,10 +36,7 @@ export const matchaTheme = defineTheme({
   name: 'matcha',
 
   typography: {
-    // base 16 / ratio 1.25 — the earlier 18 / 1.414 (√2) ran large: the big
-    // base plus the steep ratio made headings/display grow aggressively. This
-    // brings Matcha in line with the other themes' geometric scale while
-    // keeping clear hierarchy.
+    // base 16 / ratio 1.25 — aligned with the other themes' geometric scale.
     scale: {base: 16, ratio: 1.25},
     body: {
       family: 'DM Sans',
@@ -109,10 +106,7 @@ export const matchaTheme = defineTheme({
     '--color-warning-muted': ['#FFB60020', '#ffc94020'],
 
     // Border
-    // Light default border lightened from #C0CBA9 (a solid, fairly heavy sage)
-    // to a paler sage so inputs/dividers read softer; same matcha hue.
-    // Emphasized (used by card borders) softened from a dark #707E46 to a
-    // mid sage so card outlines read less heavy. Dark mode unchanged.
+    // Softer sage borders (default + emphasized/card) in light mode.
     '--color-border': ['#DCE3CE', '#C0CBA91A'],
     '--color-border-emphasized': ['#B7C29E', '#5a6440'],
 
@@ -207,10 +201,8 @@ export const matchaTheme = defineTheme({
     '--radius-container': '18px',
     '--radius-page': '42px',
 
-    // Font sizes are generated from typography.scale ({base: 16, ratio: 1.25})
-    // above — no explicit --font-size-* overrides, so the scale stays the single
-    // source of truth. (The previous hardcoded √2 ramp re-pinned everything and
-    // made headings run large regardless of the scale config.)
+    // No explicit --font-size-* overrides — font sizes come from
+    // typography.scale above, keeping the scale the single source of truth.
 
     // =========================================================================
     // Element sizes

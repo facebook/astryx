@@ -115,9 +115,7 @@ export const butterTheme = defineTheme({
     '--color-success': ['#004700', '#99d94b'],
     '--color-success-muted': ['#00470033', '#99d94b40'],
 
-    // Border
-    // Emphasized (used by card borders) softened from a dark #79786a to a mid
-    // taupe so card outlines read less heavy. Default + dark unchanged.
+    // Border — softer taupe card outline (emphasized) in light mode.
     '--color-border': ['#e5e3d4', '#f3f2e21A'],
     '--color-border-emphasized': ['#C7C4B2', '#939184'],
 
@@ -227,11 +225,9 @@ export const butterTheme = defineTheme({
 
   components: {
     button: {
-      // Generous padding around the label. Radius is intentionally NOT pinned
-      // here so buttons inherit core's `var(--_button-radius, --radius-element)`
-      // behavior: standalone buttons fall back to --radius-element (8px), while
-      // contexts that set --_button-radius (e.g. the chat composer) round their
-      // buttons fully — matching the other themes.
+      // Radius intentionally not pinned, so buttons keep core's
+      // `var(--_button-radius, --radius-element)`: standalone buttons stay 8px,
+      // while the chat composer (which sets --_button-radius) rounds them fully.
       base: {
         paddingBlock: 'var(--spacing-3)',
         paddingInline: 'var(--spacing-4)',
