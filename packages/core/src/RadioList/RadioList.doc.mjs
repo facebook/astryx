@@ -117,7 +117,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Keep the number of options small: typically 2 to 7 choices.' },
       { guidance: true, description: 'Use clear, concise labels that differentiate each option at a glance.' },
-      { guidance: true, description: "Pre-select a default option when there's a sensible default; don't leave the group empty unless the choice is truly optional." },
+      { guidance: true, description: "Pre-select a default option when there's a sensible default; don't leave the group empty unless the choice is optional." },
       { guidance: false, description: 'Use when multiple selections are needed; use CheckboxList instead.' },
       { guidance: false, description: 'Use for long lists; use Selector for better discoverability.' },
       { guidance: false, description: 'Use horizontal layout with more than 4 options; it wraps awkwardly.' },
@@ -138,7 +138,7 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Keep the number of options small: typically 2 to 7 choices.' },
       { guidance: true, description: 'Use clear, concise labels that differentiate each option at a glance.' },
-      { guidance: true, description: "Pre-select a default option when there's a sensible default; don't leave the group empty unless the choice is truly optional." },
+      { guidance: true, description: "Pre-select a default option when there's a sensible default; don't leave the group empty unless the choice is optional." },
       { guidance: false, description: 'Use when multiple selections are needed; use CheckboxList instead.' },
       { guidance: false, description: 'Use for long lists; use Selector for better discoverability.' },
       { guidance: false, description: 'Use horizontal layout with more than 4 options; it wraps awkwardly.' },
@@ -161,7 +161,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Keep the number of options small: typically 2 to 7 choices.' },
       { guidance: true, description: 'Use clear, concise labels that differentiate each option at a glance.' },
-      { guidance: true, description: "Pre-select a default option when there's a sensible default; don't leave the group empty unless the choice is truly optional." },
+      { guidance: true, description: "Pre-select a default option when there's a sensible default; don't leave the group empty unless the choice is optional." },
       { guidance: false, description: 'Use when multiple selections are needed; use CheckboxList instead.' },
       { guidance: false, description: 'Use for long lists; use Selector for better discoverability.' },
       { guidance: false, description: 'Use horizontal layout with more than 4 options; it wraps awkwardly.' },
