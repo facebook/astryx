@@ -34,8 +34,9 @@ export default function App() {
             <XDSVStack gap={2}>
               <XDSHeading level={1}>XDS + Vite + Tailwind</XDSHeading>
               <XDSText type="body" color="secondary">
+                
                 XDS handles components and design tokens. Tailwind handles page
-                layout and custom styling — powered by the token bridge.
+                layout and custom styling, powered by the token bridge.
               </XDSText>
             </XDSVStack>
 
