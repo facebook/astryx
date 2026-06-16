@@ -90,12 +90,8 @@ const styles = stylex.create({
     width: '100%',
     overflowX: 'auto' as const,
   },
-  // Align the table edge with the header/filter row, which are inset by
-  // --spacing-6. The card is padding={0}, so without this the table sits flush
-  // to the card edge. The first/last columns (checkbox/actions) center their
-  // content, so the table edge — not cell padding — is what reads against the
-  // header; insetting by the same --spacing-6 token lines them up in every
-  // theme's spacing scale.
+  // Inset the table by --spacing-6 (the card is padding={0}) so its edge lines
+  // up with the header/filter row in every theme's spacing scale.
   inventoryTableWrap: {
     paddingInline: 'var(--spacing-6)',
     paddingBlockEnd: 'var(--spacing-2)',
@@ -187,16 +183,16 @@ const inlineStyles: Record<string, CSSProperties> = {
     paddingBottom: 'var(--spacing-4)',
   },
   thumbnail: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     borderRadius: 'var(--radius-element)',
     objectFit: 'cover',
     display: 'block',
     flexShrink: 0,
   },
   thumbnailFallback: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     borderRadius: 'var(--radius-element)',
     backgroundColor: 'var(--color-background-muted)',
     color: 'var(--color-text-secondary)',
@@ -1239,11 +1235,8 @@ function InventoryCard({
             {
               key: 'item',
               header: 'Item',
-              // Lower min-width (default is 120) so the table's aggregate
-              // min-width stays below the card's content area in every theme.
-              // Larger-spacing themes (Y2K, Matcha) have a narrower content area
-              // after the --spacing-6 inset; the default mins pushed the table
-              // past it and clipped the trailing actions column.
+              // Lower min-width (default 120) so the table fits its container on
+              // larger-spacing themes instead of overflowing the actions column.
               width: proportional(3, {minWidth: 80}),
               renderCell: row => <ItemCell row={row} images={images} />,
             },
