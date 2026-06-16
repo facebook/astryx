@@ -12,12 +12,19 @@ import React, {
   type ErrorInfo,
   type ReactNode,
 } from 'react';
-import {XDSTheme, defineTheme} from '@xds/core/theme';
+import {createRoot, type Root} from 'react-dom/client';
+import {Settings, X} from 'lucide-react';
+import {XDSHStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
+import {XDSButton} from '@xds/core/Button';
+import {XDSPopover} from '@xds/core/Popover';
+import {XDSTheme, XDSMediaTheme, defineTheme} from '@xds/core/theme';
 import type {ThemeMode, XDSDefinedTheme} from '@xds/core/theme';
 import {
   themeByValue,
   DEFAULT_PLAYGROUND_THEME,
 } from '../../playground/playgroundThemes';
+import {PropertyPanel} from '../../playground/PropertyPanel';
 import {runCode, setTypeScript} from './runner';
 import type * as TS from 'typescript';
 
@@ -94,7 +101,7 @@ function ErrorDisplay({message}: {message: string}) {
 
 type PreviewMessage =
   | {type: 'preview-ping'}
-  | {type: 'preview-code'; code: string}
+  | {type: 'preview-code'; code: string; source: string}
   | {type: 'preview-clear'}
   | {
       type: 'preview-theme';
@@ -110,6 +117,136 @@ type PreviewMessage =
   | {type: 'preview-select'; id: string}
   | {type: 'targeting-enable'}
   | {type: 'targeting-disable'};
+
+// Blue label for selected instance with a popover for its properties
+function TargetLabel({
+  name,
+  isInteractive,
+  id,
+  code,
+  onCodeChange,
+}: {
+  name: string;
+  isInteractive: boolean;
+  id: string;
+  code: string;
+  onCodeChange: (code: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const badge = (
+    <XDSMediaTheme mode="dark">
+      <XDSHStack gap={2} vAlign="center" style={{minHeight: 32}}>
+        <XDSText>{name}</XDSText>
+        {isInteractive && (
+          <XDSHStack style={{marginRight: -10}}>
+            <XDSButton
+              label="Properties"
+              variant="ghost"
+              size="sm"
+              isIconOnly
+              icon={<Settings size={12} />}
+            />
+            <XDSButton
+              label="Deselect"
+              variant="ghost"
+              size="sm"
+              isIconOnly
+              icon={<X size={12} />}
+              onClick={() => clearSelectionOverlay()}
+            />
+          </XDSHStack>
+        )}
+      </XDSHStack>
+    </XDSMediaTheme>
+  );
+
+  if (!isInteractive) {
+    return badge;
+  }
+
+  const sep = id.lastIndexOf('#');
+  const component = sep >= 0 ? id.slice(0, sep) : id;
+  const instanceIndex = sep >= 0 ? Number(id.slice(sep + 1)) : 0;
+
+  return (
+    <XDSPopover
+      label="Component properties"
+      placement="below"
+      alignment="start"
+      width={360}
+      isOpen={isOpen}
+      onOpenChange={setIsOpen}
+      style={{maxHeight: 360, display: 'flex', flexDirection: 'column'}}
+      content={
+        <PropertyPanel
+          code={code}
+          onCodeChange={onCodeChange}
+          externalSelection={{component, instanceIndex}}
+          onApplied={() => setIsOpen(false)}
+        />
+      }>
+      {badge}
+    </XDSPopover>
+  );
+}
+
+const labelRoots = new WeakMap<HTMLElement, Root>();
+const activeLabels = new Set<HTMLDivElement>();
+
+let activeTheme: XDSDefinedTheme = FALLBACK_THEME;
+let activeThemeMode: ThemeMode = 'system';
+
+let cleanSource = '';
+
+function postEditToParent(code: string) {
+  window.parent.postMessage({type: 'preview-edit-code', code}, '*');
+}
+
+function renderTargetLabel(label: HTMLDivElement) {
+  const root = labelRoots.get(label);
+  if (!root) {
+    return;
+  }
+  const name = label.dataset.labelText ?? '';
+  const isInteractive = label.dataset.interactive === 'true';
+  const id = label.dataset.labelId ?? '';
+  root.render(
+    <XDSTheme theme={activeTheme} mode={activeThemeMode}>
+      <TargetLabel
+        name={name}
+        isInteractive={isInteractive}
+        id={id}
+        code={cleanSource}
+        onCodeChange={postEditToParent}
+      />
+    </XDSTheme>,
+  );
+}
+
+function createTargetLabel(isInteractive: boolean): HTMLDivElement {
+  const label = document.createElement('div');
+  label.className = 'pg-target-label';
+  label.dataset.interactive = String(isInteractive);
+  label.dataset.labelText = '';
+  labelRoots.set(label, createRoot(label));
+  activeLabels.add(label);
+  renderTargetLabel(label);
+  return label;
+}
+
+function setTargetLabelText(label: HTMLDivElement, value: string) {
+  if (label.dataset.labelText === value) {
+    return;
+  }
+  label.dataset.labelText = value;
+  renderTargetLabel(label);
+}
+
+function refreshTargetLabels() {
+  for (const label of activeLabels) {
+    renderTargetLabel(label);
+  }
+}
 
 /**
  * Persistent selection overlay — same visual treatment as the hover overlay
@@ -129,8 +266,7 @@ function ensureSelectionOverlay() {
   }
   const overlay = document.createElement('div');
   overlay.className = 'pg-target-selection';
-  const label = document.createElement('div');
-  label.className = 'pg-target-label';
+  const label = createTargetLabel(true);
   overlay.appendChild(label);
   document.body.appendChild(overlay);
   selectionState.overlay = overlay;
@@ -154,8 +290,16 @@ function updateSelectionPosition() {
   overlay.style.height = `${rect.height + 4}px`;
   overlay.dataset.visible = 'true';
 
+  // Carry the full id (Component#index) so the selection badge's popover can
+  // scope its PropertyPanel to this exact instance. Re-render only when the
+  // name or id actually changes (this runs every animation frame).
   const sep = id.lastIndexOf('#');
-  label.textContent = sep >= 0 ? id.slice(0, sep) : id;
+  const name = sep >= 0 ? id.slice(0, sep) : id;
+  if (label.dataset.labelText !== name || label.dataset.labelId !== id) {
+    label.dataset.labelText = name;
+    label.dataset.labelId = id;
+    renderTargetLabel(label);
+  }
 
   if (rect.top < 28) {
     label.classList.add('pg-target-label-bottom');
@@ -226,8 +370,7 @@ function createTargetingController(
     }
     overlayEl = document.createElement('div');
     overlayEl.className = 'pg-target-overlay';
-    labelEl = document.createElement('div');
-    labelEl.className = 'pg-target-label';
+    labelEl = createTargetLabel(false);
     overlayEl.appendChild(labelEl);
     document.body.appendChild(overlayEl);
   }
@@ -267,7 +410,7 @@ function createTargetingController(
     overlayEl.dataset.visible = 'true';
 
     const parsed = parsePgId(pgId);
-    labelEl.textContent = parsed ? parsed.component : pgId;
+    setTargetLabelText(labelEl, parsed ? parsed.component : pgId);
 
     // Flip label below if it would overflow above the viewport
     if (rect.top < 28) {
@@ -456,7 +599,11 @@ export default function PreviewPage() {
       if (result.Component) {
         setComponent(() => result.Component);
         setError(null);
-        clearSelectionOverlay();
+        // Intentionally do NOT clear the selection overlay here: a prop edit
+        // from the badge popover re-renders the component, and the popover
+        // must stay anchored to the (still-present) selection badge. The rAF
+        // tracker re-attaches to the same data-pg-id, and updateSelectionPosition
+        // hides the overlay on its own if the selected element disappears.
         setFill(true);
         setResetKey(k => k + 1);
         postToParent({type: 'preview-rendered'});
@@ -526,6 +673,10 @@ export default function PreviewPage() {
           postToParent({type: 'preview-ready'});
           break;
         case 'preview-code':
+          // Keep the clean source current for the badge popover, then refresh
+          // any live badges so an open popover re-parses against it.
+          cleanSource = event.data.source ?? event.data.code;
+          refreshTargetLabels();
           handleCode(event.data.code);
           break;
         case 'preview-clear':
@@ -584,6 +735,14 @@ export default function PreviewPage() {
     },
     [postToParent],
   );
+
+  // Keep the overlay badges (rendered outside this React tree) in sync with the
+  // active theme so their XDS components resolve the right tokens.
+  useEffect(() => {
+    activeTheme = theme;
+    activeThemeMode = themeMode;
+    refreshTargetLabels();
+  }, [theme, themeMode]);
 
   const stageStyle: CSSProperties = fill
     ? {

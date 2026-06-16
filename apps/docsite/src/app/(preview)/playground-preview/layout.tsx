@@ -40,14 +40,14 @@ export default function PreviewLayout({children}: {children: React.ReactNode}) {
           position: absolute;
           bottom: 100%;
           left: -2px;
-          margin-bottom: 4px;
-          padding: 2px 8px;
+          margin-bottom: var(--spacing-1, 4px);
+          padding: var(--spacing-0-5, 2px) var(--spacing-3, 12px);
           font: 500 11px/16px ui-sans-serif, system-ui, sans-serif;
-          color: #fff;
           background: var(--color-border-focus, #1877f2);
-          border-radius: 4px;
+          border-radius: var(--radius-corner, 4px);
           white-space: nowrap;
           user-select: none;
+          pointer-events: auto;
         }
         .pg-target-label-bottom {
           top: 100%;
