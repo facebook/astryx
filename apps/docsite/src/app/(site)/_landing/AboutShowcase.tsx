@@ -227,7 +227,7 @@ const columns: AboutColumn[] = [
   {
     title: "Ready for what's next",
     description:
-      'The quality bar is accelerating. Astryx pairs opinionated foundations with flexible patterns so your system keeps pace — no matter how the craft evolves.',
+      'The quality bar is accelerating. Astryx pairs opinionated foundations with flexible patterns so your system keeps pace, no matter how the craft evolves.',
     ctaLabel: "See what's new →",
     ctaHref: '/changelog',
     shape: <YellowDiamondShape />,
