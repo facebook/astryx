@@ -257,7 +257,8 @@ function ShowcaseHeading() {
         type="body"
         color="secondary"
         xstyle={styles.descriptionWidth}>
-        Astryx makes it effortless to apply your brand — no rewrites needed.
+        
+        Astryx makes it easy to apply your brand; no rewrites needed.
         Customize your theme at the token level: color, typography, radius, and
         motion.
       </XDSText>
