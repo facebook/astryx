@@ -4,7 +4,7 @@
  * Per-theme product image registry.
  *
  * Each theme can ship its own set of 6 product photos (watch, headphones,
- * backpack, wallet, mug, throw). These images appear in two places on the
+ * backpack, wallet, tumbler, throw). These images appear in two places on the
  * dedicated /themes/<name> page:
  *
  *   1. ThemeShowcasePreview — the live themed fake "Studio" app, where the
@@ -28,17 +28,19 @@ export interface ThemeImageSet {
   headphones: string;
   backpack: string;
   wallet: string;
-  mug: string;
+  tumbler: string;
   throw_: string;
 }
 
+// Neutral product photos, served from the shared xds_oss asset CDN.
+const NEUTRAL_CDN = 'https://lookaside.facebook.com/assets/xds_oss';
 const NEUTRAL_IMAGES: ThemeImageSet = {
-  watch: '/neutral/preview-watch.png',
-  headphones: '/neutral/preview-headphones.png',
-  backpack: '/neutral/preview-backpack.png',
-  wallet: '/neutral/preview-wallet.png',
-  mug: '/neutral/preview-mug.png',
-  throw_: '/neutral/preview-throw.png',
+  watch: `${NEUTRAL_CDN}/Neutral-Watch.png`,
+  headphones: `${NEUTRAL_CDN}/Neutral-Headphones.png`,
+  backpack: `${NEUTRAL_CDN}/Neutral-Backpack.png`,
+  wallet: `${NEUTRAL_CDN}/Neutral-Wallet.png`,
+  tumbler: `${NEUTRAL_CDN}/Neutral-Tumbler.png`,
+  throw_: `${NEUTRAL_CDN}/Neutral-Blanket.png`,
 };
 
 /**
