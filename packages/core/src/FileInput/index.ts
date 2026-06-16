@@ -17,3 +17,19 @@ export type {
   XDSFileInputStatus,
   XDSFileInputStatusType,
 } from './XDSFileInput';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSFileInput as FileInput,
+} from '.';
+export type {
+  XDSFileInputProps as FileInputProps,
+  XDSFileInputStatus as FileInputStatus,
+  XDSFileInputStatusType as FileInputStatusType,
+} from '.';
+// <compat-aliases:end>

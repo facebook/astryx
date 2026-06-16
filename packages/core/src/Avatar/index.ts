@@ -19,3 +19,22 @@ export type {
   XDSAvatarStatusDotVariant,
   XDSAvatarStatusDotVariantMap,
 } from './XDSAvatarStatusDot';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSAvatar as Avatar,
+  XDSAvatarStatusDot as AvatarStatusDot,
+} from '.';
+export type {
+  XDSAvatarProps as AvatarProps,
+  XDSAvatarSize as AvatarSize,
+  XDSAvatarStatusDotProps as AvatarStatusDotProps,
+  XDSAvatarStatusDotVariant as AvatarStatusDotVariant,
+  XDSAvatarStatusDotVariantMap as AvatarStatusDotVariantMap,
+} from '.';
+// <compat-aliases:end>

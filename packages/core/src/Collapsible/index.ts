@@ -23,3 +23,21 @@ export type {
   UseXDSCollapsibleOptions,
   UseXDSCollapsibleReturn,
 } from './useXDSCollapsible';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSCollapsible as Collapsible,
+  XDSCollapsibleGroup as CollapsibleGroup,
+  useXDSCollapsible as useCollapsible,
+} from '.';
+export type {
+  XDSCollapsibleConfig as CollapsibleConfig,
+  XDSCollapsibleGroupProps as CollapsibleGroupProps,
+  XDSCollapsibleProps as CollapsibleProps,
+} from '.';
+// <compat-aliases:end>

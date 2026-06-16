@@ -10,7 +10,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest --coverage",
     "check:package-boundaries": "node scripts/check-package-boundaries.js",
-    "check:repo": "pnpm check:sync && pnpm check:package-boundaries",
+    "check:repo": "pnpm check:sync && pnpm check:package-boundaries && pnpm compat:aliases:check",
     "check:sync": "node scripts/check-sync.js",
     "lint": "pnpm check:repo && eslint . --cache",
     "lint:strict": "pnpm check:repo && XDS_STRICT_LINT=1 eslint . --cache",
@@ -27,7 +27,9 @@
     "release": "pnpm build && changeset publish",
     "prepare": "husky install",
     "dev:sandbox": "pnpm -F @xds/core build && pnpm -F @xds/sandbox dev",
-    "dev:sandbox:source": "XDS_SOURCE=1 pnpm -F @xds/sandbox dev"
+    "dev:sandbox:source": "XDS_SOURCE=1 pnpm -F @xds/sandbox dev",
+    "compat:aliases": "node scripts/generate-compat-aliases.mjs",
+    "compat:aliases:check": "node scripts/generate-compat-aliases.mjs --check"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",

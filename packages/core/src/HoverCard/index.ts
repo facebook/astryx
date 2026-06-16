@@ -22,3 +22,20 @@ export type {
 // HoverCard component
 export {XDSHoverCard} from './XDSHoverCard';
 export type {XDSHoverCardProps} from './XDSHoverCard';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSHoverCard as HoverCard,
+  useXDSHoverCard as useHoverCard,
+} from '.';
+export type {
+  XDSHoverCardOptions as HoverCardOptions,
+  XDSHoverCardProps as HoverCardProps,
+  XDSHoverCardReturn as HoverCardReturn,
+} from '.';
+// <compat-aliases:end>

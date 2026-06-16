@@ -34,3 +34,29 @@ export type {XDSCommandPaletteEmptyProps} from './XDSCommandPaletteEmpty';
 
 export {useCommandPaletteContext} from './CommandPaletteContext';
 export type {CommandPaletteContextValue} from './CommandPaletteContext';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSCommandPalette as CommandPalette,
+  XDSCommandPaletteEmpty as CommandPaletteEmpty,
+  XDSCommandPaletteFooter as CommandPaletteFooter,
+  XDSCommandPaletteGroup as CommandPaletteGroup,
+  XDSCommandPaletteInput as CommandPaletteInput,
+  XDSCommandPaletteItem as CommandPaletteItem,
+  XDSCommandPaletteList as CommandPaletteList,
+} from '.';
+export type {
+  XDSCommandPaletteEmptyProps as CommandPaletteEmptyProps,
+  XDSCommandPaletteFooterProps as CommandPaletteFooterProps,
+  XDSCommandPaletteGroupProps as CommandPaletteGroupProps,
+  XDSCommandPaletteInputProps as CommandPaletteInputProps,
+  XDSCommandPaletteItemProps as CommandPaletteItemProps,
+  XDSCommandPaletteListProps as CommandPaletteListProps,
+  XDSCommandPaletteProps as CommandPaletteProps,
+} from '.';
+// <compat-aliases:end>

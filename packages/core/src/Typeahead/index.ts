@@ -34,3 +34,26 @@ export type {
 // Typeahead item
 export {XDSTypeaheadItem} from './XDSTypeaheadItem';
 export type {XDSTypeaheadItemProps} from './XDSTypeaheadItem';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Prefixed names above remain canonical + module-augmentation targets.
+// These bare re-exports reference the SAME values/types.
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  XDSBaseTypeahead as BaseTypeahead,
+  XDSTypeahead as Typeahead,
+  XDSTypeaheadItem as TypeaheadItem,
+} from '.';
+export type {
+  XDSBaseTypeaheadProps as BaseTypeaheadProps,
+  XDSSearchSource as SearchSource,
+  XDSSearchableItem as SearchableItem,
+  XDSTypeaheadItemProps as TypeaheadItemProps,
+  XDSTypeaheadProps as TypeaheadProps,
+  XDSTypeaheadSize as TypeaheadSize,
+  XDSTypeaheadStatus as TypeaheadStatus,
+  XDSTypeaheadStatusType as TypeaheadStatusType,
+} from '.';
+// <compat-aliases:end>
