@@ -18,7 +18,7 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSSelectableCard} from '@xds/core/SelectableCard';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSDivider} from '@xds/core/Divider';
-import ThemeShowcase from '../../../../packages/cli/templates/pages/theme-showcase/page';
+import {ThemeShowcaseStore} from '../../../../packages/cli/templates/pages/theme-showcase/page';
 import {getThemeShowcaseContent} from './themeShowcaseContent';
 import {buildPlaygroundHref} from './playgroundLink';
 import {packages} from '../generated/packageRegistry';
@@ -921,7 +921,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
             <XDSTheme theme={selectedTheme} mode={mode}>
               {/* Bespoke per-theme content (e.g. Matcha's café menu); falls
                   back to the template's neutral defaults when undefined. */}
-              <ThemeShowcase
+              <ThemeShowcaseStore
                 {...getThemeShowcaseContent(
                   selectedPkgName.replace('@xds/theme-', ''),
                 )}

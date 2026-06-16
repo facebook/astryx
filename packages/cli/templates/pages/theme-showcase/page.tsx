@@ -311,7 +311,15 @@ export interface ThemeShowcaseProps {
   inventory?: InventoryRow[];
 }
 
-export default function ThemeShowcase({
+// Default export is the route page (sandbox renders this as a Next.js page, so
+// it must take no props / satisfy PageProps). It renders the store with the
+// neutral defaults. Consumers that need per-theme content import the named
+// `ThemeShowcaseStore` below and pass images/products/inventory.
+export default function ThemeShowcase() {
+  return <ThemeShowcaseStore />;
+}
+
+export function ThemeShowcaseStore({
   images = DEFAULT_IMAGES,
   products = DEFAULT_PRODUCTS,
   inventory = DEFAULT_INVENTORY,
