@@ -246,6 +246,11 @@ export const docsZh = {
       {
         guidance: true,
         description:
+          'Use renderOption for custom option rows; the checkbox affordance remains owned by XDSMultiSelector.',
+      },
+      {
+        guidance: true,
+        description:
           'Enable select-all when most users will want all or nearly all options selected.',
       },
       {
@@ -277,6 +282,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Enable search filtering when the list exceeds ~15 options.',
+      },
+      {
+        guidance: true,
+        description:
+          'renderOption for custom rows; checkbox affordance stays owned by XDSMultiSelector.',
       },
       {
         guidance: true,
