@@ -16,8 +16,6 @@ import {docTopics} from '../generated/docsRegistry';
 import {templates} from '../generated/templateRegistry';
 
 import type {ComponentEntry} from '../generated/componentRegistry';
-import type {DocTopic} from '../generated/docsRegistry';
-import type {TemplateEntry} from '../generated/templateRegistry';
 
 // ── Replicate MCP server logic for testing ─────────────────────────────
 // These mirror the runtime logic in apps/docsite/src/app/[transport]/route.ts
@@ -58,19 +56,35 @@ function resolveKeywords(query: string): string[] {
 function score(text: string, query: string): number {
   const lower = text.toLowerCase();
   const queryLower = query.toLowerCase();
-  if (lower === queryLower) {return 100;}
-  if (lower.startsWith(queryLower)) {return 90;}
-  if (lower.includes(queryLower)) {return 85;}
+  if (lower === queryLower) {
+    return 100;
+  }
+  if (lower.startsWith(queryLower)) {
+    return 90;
+  }
+  if (lower.includes(queryLower)) {
+    return 85;
+  }
   const words = queryLower.split(/\s+/).filter(w => w.length > 1);
-  if (words.length === 0) {return 0;}
+  if (words.length === 0) {
+    return 0;
+  }
   let matched = 0;
   for (const word of words) {
-    if (lower.includes(word)) {matched++;}
+    if (lower.includes(word)) {
+      matched++;
+    }
   }
   const ratio = matched / words.length;
-  if (ratio === 1) {return 75;}
-  if (ratio >= 0.5) {return 50;}
-  if (ratio > 0) {return 30;}
+  if (ratio === 1) {
+    return 75;
+  }
+  if (ratio >= 0.5) {
+    return 50;
+  }
+  if (ratio > 0) {
+    return 30;
+  }
   return 0;
 }
 
