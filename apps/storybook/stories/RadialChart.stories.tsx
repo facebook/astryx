@@ -2,16 +2,16 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSRadialChart,
-  XDSRadialGrid,
-  XDSRadialArea,
-  XDSRadialAxis,
-  XDSRadialSlice,
-  XDSChartLegend,
-  useXDSChartColors,
+  RadialChart,
+  RadialGrid,
+  RadialArea,
+  RadialAxis,
+  RadialSlice,
+  ChartLegend,
+  useChartColors,
 } from '@xds/lab';
-import {XDSStack} from '@xds/core';
-import {XDSHeading} from '@xds/core/Text';
+import {Stack} from '@xds/core';
+import {Heading} from '@xds/core/Text';
 
 const meta: Meta = {
   title: 'Lab/RadialChart',
@@ -51,29 +51,29 @@ const spiderData = [
 /** Spider/radar chart comparing three models across five dimensions */
 export const SpiderChart: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
+    const colors = useChartColors();
     const c = colors.categorical(3);
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Spider Chart</XDSHeading>
-        <XDSRadialChart
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Spider Chart</Heading>
+        <RadialChart
           data={spiderData}
           axes={['speed', 'handling', 'comfort', 'safety', 'efficiency']}
           height={400}>
-          <XDSRadialGrid rings={5} />
-          <XDSRadialArea dataKey="Model A" color={c[0]} dots />
-          <XDSRadialArea dataKey="Model B" color={c[1]} dots />
-          <XDSRadialArea dataKey="Model C" color={c[2]} dots />
-          <XDSRadialAxis />
-          <XDSChartLegend
+          <RadialGrid rings={5} />
+          <RadialArea dataKey="Model A" color={c[0]} dots />
+          <RadialArea dataKey="Model B" color={c[1]} dots />
+          <RadialArea dataKey="Model C" color={c[2]} dots />
+          <RadialAxis />
+          <ChartLegend
             items={[
               {label: 'Model A', color: c[0]},
               {label: 'Model B', color: c[1]},
               {label: 'Model C', color: c[2]},
             ]}
           />
-        </XDSRadialChart>
-      </XDSStack>
+        </RadialChart>
+      </Stack>
     );
   },
 };
@@ -90,24 +90,24 @@ const pieData = [
 /** Pie chart — revenue by region */
 export const PieChart: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
+    const colors = useChartColors();
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Pie Chart</XDSHeading>
-        <XDSRadialChart
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Pie Chart</Heading>
+        <RadialChart
           data={pieData}
           valueKey="revenue"
           labelKey="region"
           height={400}>
-          <XDSRadialSlice colors={colors.categorical(5)} />
-          <XDSChartLegend
+          <RadialSlice colors={colors.categorical(5)} />
+          <ChartLegend
             items={pieData.map((d, i) => ({
               label: d.region,
               color: colors.categorical(5)[i],
             }))}
           />
-        </XDSRadialChart>
-      </XDSStack>
+        </RadialChart>
+      </Stack>
     );
   },
 };
@@ -115,25 +115,25 @@ export const PieChart: StoryObj = {
 /** Donut chart — same data with inner radius */
 export const DonutChart: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
+    const colors = useChartColors();
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Donut Chart</XDSHeading>
-        <XDSRadialChart
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Donut Chart</Heading>
+        <RadialChart
           data={pieData}
           valueKey="revenue"
           labelKey="region"
           innerRadius={0.55}
           height={400}>
-          <XDSRadialSlice colors={colors.categorical(5)} />
-          <XDSChartLegend
+          <RadialSlice colors={colors.categorical(5)} />
+          <ChartLegend
             items={pieData.map((d, i) => ({
               label: d.region,
               color: colors.categorical(5)[i],
             }))}
           />
-        </XDSRadialChart>
-      </XDSStack>
+        </RadialChart>
+      </Stack>
     );
   },
 };
@@ -141,22 +141,22 @@ export const DonutChart: StoryObj = {
 /** Spider with donut center */
 export const SpiderDonut: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
+    const colors = useChartColors();
     const c = colors.categorical(2);
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Spider with Inner Radius</XDSHeading>
-        <XDSRadialChart
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Spider with Inner Radius</Heading>
+        <RadialChart
           data={spiderData}
           axes={['speed', 'handling', 'comfort', 'safety', 'efficiency']}
           innerRadius={0.2}
           height={400}>
-          <XDSRadialGrid rings={4} />
-          <XDSRadialArea dataKey="Model A" color={c[0]} dots />
-          <XDSRadialArea dataKey="Model B" color={c[1]} dots />
-          <XDSRadialAxis />
-        </XDSRadialChart>
-      </XDSStack>
+          <RadialGrid rings={4} />
+          <RadialArea dataKey="Model A" color={c[0]} dots />
+          <RadialArea dataKey="Model B" color={c[1]} dots />
+          <RadialAxis />
+        </RadialChart>
+      </Stack>
     );
   },
 };

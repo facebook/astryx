@@ -2,10 +2,10 @@
 
 import React, {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSPowerSearch} from '@xds/core/PowerSearch';
+import {PowerSearch} from '@xds/core/PowerSearch';
 import type {PowerSearchConfig, PowerSearchFilter} from '@xds/core/PowerSearch';
-import type {XDSSearchSource, XDSSearchableItem} from '@xds/core/Typeahead';
-import {XDSButton} from '@xds/core/Button';
+import type {SearchSource, SearchableItem} from '@xds/core/Typeahead';
+import {Button} from '@xds/core/Button';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
 // =============================================================================
@@ -37,7 +37,7 @@ const tagValues = [
   {value: 'infra', label: 'Infrastructure'},
 ];
 
-const users: XDSSearchableItem[] = [
+const users: SearchableItem[] = [
   {
     id: 'user-1',
     label: 'Alice Johnson',
@@ -70,7 +70,7 @@ const users: XDSSearchableItem[] = [
   },
 ];
 
-const userSource: XDSSearchSource = {
+const userSource: SearchSource = {
   search: (query: string) =>
     users.filter(u => u.label.toLowerCase().includes(query.toLowerCase())),
   bootstrap: () => users,
@@ -294,9 +294,9 @@ const fullConfig: PowerSearchConfig = {
 // Meta
 // =============================================================================
 
-const meta: Meta<typeof XDSPowerSearch> = {
+const meta: Meta<typeof PowerSearch> = {
   title: 'Core/PowerSearch',
-  component: XDSPowerSearch,
+  component: PowerSearch,
   tags: ['autodocs'],
   decorators: [
     Story => (
@@ -321,7 +321,7 @@ const meta: Meta<typeof XDSPowerSearch> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSPowerSearch>;
+type Story = StoryObj<typeof PowerSearch>;
 
 // =============================================================================
 // Stories
@@ -331,7 +331,7 @@ export const Default: Story = {
   render: args => {
     const [filters, setFilters] = useState<PowerSearchFilter[]>([]);
     return (
-      <XDSPowerSearch
+      <PowerSearch
         {...args}
         config={basicConfig}
         filters={filters}
@@ -355,7 +355,7 @@ export const WithPresetFilters: Story = {
       },
     ]);
     return (
-      <XDSPowerSearch
+      <PowerSearch
         {...args}
         config={basicConfig}
         filters={filters}
@@ -374,7 +374,7 @@ export const FullFeatured: Story = {
     const [filters, setFilters] = useState<PowerSearchFilter[]>([]);
     return (
       <div>
-        <XDSPowerSearch
+        <PowerSearch
           {...args}
           config={fullConfig}
           filters={filters}
@@ -426,7 +426,7 @@ export const WithEnumListFilters: Story = {
       },
     ]);
     return (
-      <XDSPowerSearch
+      <PowerSearch
         {...args}
         config={fullConfig}
         filters={filters}
@@ -463,7 +463,7 @@ export const WithEntityFilters: Story = {
       },
     ]);
     return (
-      <XDSPowerSearch
+      <PowerSearch
         {...args}
         config={fullConfig}
         filters={filters}
@@ -499,7 +499,7 @@ export const WithNumericFilters: Story = {
       },
     ]);
     return (
-      <XDSPowerSearch
+      <PowerSearch
         {...args}
         config={fullConfig}
         filters={filters}
@@ -533,7 +533,7 @@ export const WithDateFilters: Story = {
       },
     ]);
     return (
-      <XDSPowerSearch
+      <PowerSearch
         {...args}
         config={fullConfig}
         filters={filters}
@@ -560,7 +560,7 @@ export const WithEmptyFilter: Story = {
       {field: 'unread', operator: 'yes', value: {type: 'empty'}},
     ]);
     return (
-      <XDSPowerSearch
+      <PowerSearch
         {...args}
         config={fullConfig}
         filters={filters}
@@ -592,7 +592,7 @@ export const ReadOnly: Story = {
       },
     ];
     return (
-      <XDSPowerSearch
+      <PowerSearch
         {...args}
         config={basicConfig}
         filters={filters}
@@ -613,7 +613,7 @@ export const Disabled: Story = {
       {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
     ];
     return (
-      <XDSPowerSearch
+      <PowerSearch
         {...args}
         config={basicConfig}
         filters={filters}
@@ -631,7 +631,7 @@ export const WithError: Story = {
   render: args => {
     const [filters, setFilters] = useState<PowerSearchFilter[]>([]);
     return (
-      <XDSPowerSearch
+      <PowerSearch
         {...args}
         config={basicConfig}
         filters={filters}
@@ -656,7 +656,7 @@ export const WithWarning: Story = {
       },
     ]);
     return (
-      <XDSPowerSearch
+      <PowerSearch
         {...args}
         config={basicConfig}
         filters={filters}
@@ -713,7 +713,7 @@ export const ManyFilters: Story = {
       },
     ]);
     return (
-      <XDSPowerSearch
+      <PowerSearch
         {...args}
         config={fullConfig}
         filters={filters}
@@ -740,7 +740,7 @@ export const WithOnChangeTracking: Story = {
     const [log, setLog] = useState<string[]>([]);
     return (
       <div>
-        <XDSPowerSearch
+        <PowerSearch
           {...args}
           config={basicConfig}
           filters={filters}
@@ -888,7 +888,7 @@ export const WithNestedFilters: Story = {
     ]);
     return (
       <div>
-        <XDSPowerSearch
+        <PowerSearch
           {...args}
           config={nestedConfig}
           filters={filters}
@@ -977,7 +977,7 @@ export const WithContentSearchFieldKey: Story = {
     const [filters, setFilters] = useState<PowerSearchFilter[]>([]);
     return (
       <div>
-        <XDSPowerSearch
+        <PowerSearch
           {...args}
           config={contentSearchConfig}
           filters={filters}
@@ -1018,7 +1018,7 @@ export const SizeVariants: Story = {
     ]);
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
-        <XDSPowerSearch
+        <PowerSearch
           label="Small (28px)"
           config={basicConfig}
           filters={smFilters}
@@ -1026,7 +1026,7 @@ export const SizeVariants: Story = {
           placeholder="Small size"
           size="sm"
         />
-        <XDSPowerSearch
+        <PowerSearch
           label="Medium (32px)"
           config={basicConfig}
           filters={mdFilters}
@@ -1034,7 +1034,7 @@ export const SizeVariants: Story = {
           placeholder="Medium size (default)"
           size="md"
         />
-        <XDSPowerSearch
+        <PowerSearch
           label="Large (36px)"
           config={basicConfig}
           filters={lgFilters}
@@ -1051,7 +1051,7 @@ export const WithStartIcon: Story = {
   render: args => {
     const [filters, setFilters] = useState<PowerSearchFilter[]>([]);
     return (
-      <XDSPowerSearch
+      <PowerSearch
         {...args}
         config={basicConfig}
         filters={filters}
@@ -1074,7 +1074,7 @@ export const WithResultCount: Story = {
       {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
     ]);
     return (
-      <XDSPowerSearch
+      <PowerSearch
         {...args}
         config={basicConfig}
         filters={filters}
@@ -1096,14 +1096,14 @@ export const WithEndContentPowerSearch: Story = {
   render: args => {
     const [filters, setFilters] = useState<PowerSearchFilter[]>([]);
     return (
-      <XDSPowerSearch
+      <PowerSearch
         {...args}
         config={basicConfig}
         filters={filters}
         onChange={newFilters => setFilters([...newFilters])}
         resultCount={42}
         endContent={
-          <XDSButton
+          <Button
             label="Save"
             variant="primary"
             size="sm"
@@ -1155,7 +1155,7 @@ export const OverflowInline: Story = {
       useState<PowerSearchFilter[]>(overflowFilters);
     return (
       <div>
-        <XDSPowerSearch
+        <PowerSearch
           {...args}
           config={fullConfig}
           filters={filters}
@@ -1180,7 +1180,7 @@ export const OverflowLayer: Story = {
       useState<PowerSearchFilter[]>(overflowFilters);
     return (
       <div>
-        <XDSPowerSearch
+        <PowerSearch
           {...args}
           config={fullConfig}
           filters={filters}
@@ -1204,12 +1204,12 @@ export const OverflowLayer: Story = {
 // =============================================================================
 
 import type {
-  XDSPowerSearchComponents,
+  PowerSearchComponents,
   PowerSearchTokenProps,
   PowerSearchEditorProps,
 } from '@xds/core/PowerSearch';
-import {XDSToken} from '@xds/core/Token';
-import {XDSHStack} from '@xds/core/Stack';
+import {Token} from '@xds/core/Token';
+import {HStack} from '@xds/core/Stack';
 
 function StatusToken({
   filter,
@@ -1229,7 +1229,7 @@ function StatusToken({
     blocked: '#ef4444',
   };
   return (
-    <XDSToken
+    <Token
       label={`${field.label}: ${operator.label}`}
       endContent={
         <span style={{fontWeight: 600, color: colors[value] ?? 'inherit'}}>
@@ -1265,7 +1265,7 @@ function CustomIntegerEditor({
       <p style={{margin: '0 0 12px', fontSize: 13}}>
         Custom range editor for integer fields:
       </p>
-      <XDSHStack gap={2} vAlign="center">
+      <HStack gap={2} vAlign="center">
         <input
           type="range"
           min={0}
@@ -1285,7 +1285,7 @@ function CustomIntegerEditor({
           disabled={isReadOnly}
         />
         <span style={{fontSize: 12, whiteSpace: 'nowrap'}}>{current}</span>
-      </XDSHStack>
+      </HStack>
       <div
         style={{
           marginTop: 12,
@@ -1299,7 +1299,7 @@ function CustomIntegerEditor({
   );
 }
 
-const customComponents: XDSPowerSearchComponents = {
+const customComponents: PowerSearchComponents = {
   enum: {Token: StatusToken},
   integer: {Editor: CustomIntegerEditor},
 };
@@ -1316,7 +1316,7 @@ export const WithCustomComponents: Story = {
     ]);
     return (
       <div>
-        <XDSPowerSearch
+        <PowerSearch
           {...args}
           config={fullConfig}
           filters={filters}

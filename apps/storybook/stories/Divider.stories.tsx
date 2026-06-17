@@ -2,11 +2,11 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Divider} from '@xds/core/Divider';
+import {Card} from '@xds/core/Card';
+import {Section} from '@xds/core/Section';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
@@ -20,9 +20,9 @@ const styles = stylex.create({
   },
 });
 
-const meta: Meta<typeof XDSDivider> = {
+const meta: Meta<typeof Divider> = {
   title: 'Core/Divider',
-  component: XDSDivider,
+  component: Divider,
   tags: ['autodocs'],
   argTypes: {
     orientation: {
@@ -47,20 +47,20 @@ const meta: Meta<typeof XDSDivider> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSDivider>;
+type Story = StoryObj<typeof Divider>;
 
 export const Default: Story = {
   args: {},
   render: args => (
-    <XDSSection variant="muted">
-      <XDSCard>
-        <XDSVStack gap={3}>
-          <XDSText type="body">Content above</XDSText>
-          <XDSDivider {...args} />
-          <XDSText type="body">Content below</XDSText>
-        </XDSVStack>
-      </XDSCard>
-    </XDSSection>
+    <Section variant="muted">
+      <Card>
+        <VStack gap={3}>
+          <Text type="body">Content above</Text>
+          <Divider {...args} />
+          <Text type="body">Content below</Text>
+        </VStack>
+      </Card>
+    </Section>
   ),
 };
 
@@ -69,65 +69,65 @@ export const WithLabel: Story = {
     label: 'or',
   },
   render: args => (
-    <XDSSection variant="muted">
-      <XDSCard>
-        <XDSVStack gap={3}>
-          <XDSText type="body">Content above</XDSText>
-          <XDSDivider {...args} />
-          <XDSText type="body">Content below</XDSText>
-        </XDSVStack>
-      </XDSCard>
-    </XDSSection>
+    <Section variant="muted">
+      <Card>
+        <VStack gap={3}>
+          <Text type="body">Content above</Text>
+          <Divider {...args} />
+          <Text type="body">Content below</Text>
+        </VStack>
+      </Card>
+    </Section>
   ),
 };
 
 export const Variants: Story = {
   render: () => (
-    <XDSSection variant="muted">
+    <Section variant="muted">
       <div {...stylex.props(styles.storyWrapper)}>
-        <XDSCard>
-          <XDSVStack gap={3}>
-            <XDSText type="supporting">Subtle (default)</XDSText>
-            <XDSDivider variant="subtle" />
-          </XDSVStack>
-        </XDSCard>
-        <XDSCard>
-          <XDSVStack gap={3}>
-            <XDSText type="supporting">Strong</XDSText>
-            <XDSDivider variant="strong" />
-          </XDSVStack>
-        </XDSCard>
+        <Card>
+          <VStack gap={3}>
+            <Text type="supporting">Subtle (default)</Text>
+            <Divider variant="subtle" />
+          </VStack>
+        </Card>
+        <Card>
+          <VStack gap={3}>
+            <Text type="supporting">Strong</Text>
+            <Divider variant="strong" />
+          </VStack>
+        </Card>
       </div>
-    </XDSSection>
+    </Section>
   ),
 };
 
 export const FullBleed: Story = {
   render: () => (
-    <XDSSection variant="muted">
+    <Section variant="muted">
       <div {...stylex.props(styles.storyWrapper)}>
-        <XDSCard>
-          <XDSVStack gap={3}>
-            <XDSText type="label">Normal divider</XDSText>
-            <XDSText type="body">
+        <Card>
+          <VStack gap={3}>
+            <Text type="label">Normal divider</Text>
+            <Text type="body">
               The divider respects container padding.
-            </XDSText>
-            <XDSDivider />
-            <XDSText type="body">Content below the divider.</XDSText>
-          </XDSVStack>
-        </XDSCard>
-        <XDSCard>
-          <XDSVStack gap={3}>
-            <XDSText type="label">Full bleed divider</XDSText>
-            <XDSText type="body">
+            </Text>
+            <Divider />
+            <Text type="body">Content below the divider.</Text>
+          </VStack>
+        </Card>
+        <Card>
+          <VStack gap={3}>
+            <Text type="label">Full bleed divider</Text>
+            <Text type="body">
               The divider extends to container edges.
-            </XDSText>
-            <XDSDivider isFullBleed />
-            <XDSText type="body">Content below the divider.</XDSText>
-          </XDSVStack>
-        </XDSCard>
+            </Text>
+            <Divider isFullBleed />
+            <Text type="body">Content below the divider.</Text>
+          </VStack>
+        </Card>
       </div>
-    </XDSSection>
+    </Section>
   ),
 };
 
@@ -136,15 +136,15 @@ export const Vertical: Story = {
     orientation: 'vertical',
   },
   render: args => (
-    <XDSSection variant="muted">
-      <XDSCard height={200}>
-        <XDSHStack gap={4} xstyle={styles.fullHeight}>
-          <XDSText type="body">Left content</XDSText>
-          <XDSDivider {...args} />
-          <XDSText type="body">Right content</XDSText>
-        </XDSHStack>
-      </XDSCard>
-    </XDSSection>
+    <Section variant="muted">
+      <Card height={200}>
+        <HStack gap={4} xstyle={styles.fullHeight}>
+          <Text type="body">Left content</Text>
+          <Divider {...args} />
+          <Text type="body">Right content</Text>
+        </HStack>
+      </Card>
+    </Section>
   ),
 };
 
@@ -154,49 +154,49 @@ export const VerticalWithLabel: Story = {
     label: 'OR',
   },
   render: args => (
-    <XDSSection variant="muted">
-      <XDSCard height={200}>
-        <XDSHStack gap={4} xstyle={styles.fullHeight}>
-          <XDSText type="body">Option A</XDSText>
-          <XDSDivider {...args} />
-          <XDSText type="body">Option B</XDSText>
-        </XDSHStack>
-      </XDSCard>
-    </XDSSection>
+    <Section variant="muted">
+      <Card height={200}>
+        <HStack gap={4} xstyle={styles.fullHeight}>
+          <Text type="body">Option A</Text>
+          <Divider {...args} />
+          <Text type="body">Option B</Text>
+        </HStack>
+      </Card>
+    </Section>
   ),
 };
 
 export const InCard: Story = {
   render: () => (
-    <XDSSection variant="muted">
-      <XDSCard>
-        <XDSVStack gap={3}>
-          <XDSText type="label">Card Title</XDSText>
-          <XDSDivider />
-          <XDSText type="body">
+    <Section variant="muted">
+      <Card>
+        <VStack gap={3}>
+          <Text type="label">Card Title</Text>
+          <Divider />
+          <Text type="body">
             This demonstrates how a divider can be used to separate content
             sections within a card or panel.
-          </XDSText>
-          <XDSDivider label="More Info" />
-          <XDSText type="supporting">
+          </Text>
+          <Divider label="More Info" />
+          <Text type="supporting">
             Additional details can appear below a labeled divider.
-          </XDSText>
-        </XDSVStack>
-      </XDSCard>
-    </XDSSection>
+          </Text>
+        </VStack>
+      </Card>
+    </Section>
   ),
 };
 
 export const FullBleedVertical: Story = {
   render: () => (
-    <XDSSection variant="muted">
-      <XDSCard height={200}>
-        <XDSHStack gap={4} xstyle={styles.fullHeight}>
-          <XDSText type="body">Left content</XDSText>
-          <XDSDivider orientation="vertical" isFullBleed />
-          <XDSText type="body">Right content</XDSText>
-        </XDSHStack>
-      </XDSCard>
-    </XDSSection>
+    <Section variant="muted">
+      <Card height={200}>
+        <HStack gap={4} xstyle={styles.fullHeight}>
+          <Text type="body">Left content</Text>
+          <Divider orientation="vertical" isFullBleed />
+          <Text type="body">Right content</Text>
+        </HStack>
+      </Card>
+    </Section>
   ),
 };

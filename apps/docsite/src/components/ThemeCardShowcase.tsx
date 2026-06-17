@@ -35,32 +35,32 @@ import {
   Smartphone,
   Wallet,
 } from 'lucide-react';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
-import {XDSCard} from '@xds/core/Card';
-import {XDSButton} from '@xds/core/Button';
-import {XDSLink} from '@xds/core/Link';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSBanner} from '@xds/core/Banner';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
-import {XDSItem} from '@xds/core/Item';
-import {XDSTable, proportional, pixel} from '@xds/core/Table';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
-import {XDSSelectableCard} from '@xds/core/SelectableCard';
-import {XDSMoreMenu} from '@xds/core/MoreMenu';
+import {Text, Heading} from '@xds/core/Text';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Grid, GridSpan} from '@xds/core/Grid';
+import {Card} from '@xds/core/Card';
+import {Button} from '@xds/core/Button';
+import {Link} from '@xds/core/Link';
+import {Badge} from '@xds/core/Badge';
+import {Banner} from '@xds/core/Banner';
+import {Divider} from '@xds/core/Divider';
+import {CheckboxInput} from '@xds/core/CheckboxInput';
+import {Item} from '@xds/core/Item';
+import {Table, proportional, pixel} from '@xds/core/Table';
+import {TextInput} from '@xds/core/TextInput';
+import {Selector} from '@xds/core/Selector';
+import {RadioList, RadioListItem} from '@xds/core/RadioList';
+import {SelectableCard} from '@xds/core/SelectableCard';
+import {MoreMenu} from '@xds/core/MoreMenu';
 import {
-  XDSChatComposer,
-  XDSChatMessage,
-  XDSChatMessageBubble,
-  XDSChatMessageList,
-  XDSChatSystemMessage,
+  ChatComposer,
+  ChatMessage,
+  ChatMessageBubble,
+  ChatMessageList,
+  ChatSystemMessage,
 } from '@xds/core/Chat';
-import {XDSTheme} from '@xds/core/theme';
-import type {XDSDefinedTheme} from '@xds/core/theme';
+import {Theme} from '@xds/core/theme';
+import type {DefinedTheme} from '@xds/core/theme';
 import type {ThemeImageSet} from './themeImages';
 
 const styles = stylex.create({
@@ -78,7 +78,7 @@ const styles = stylex.create({
   // content-min-width — causing form inputs to overflow the card
   // at narrow viewports. Force min-width: 0 + width: 100% so the
   // stack always respects the parent's available width and lets
-  // its children (XDSTextInput, etc.) shrink with it.
+  // its children (TextInput, etc.) shrink with it.
   checkoutStack: {
     minWidth: 0,
     width: '100%',
@@ -93,8 +93,8 @@ const styles = stylex.create({
     textAlign: 'center',
     wordBreak: 'break-word',
   },
-  // KNOWN-GAP (XDSGridSpan): when an auto-fit XDSGrid produces
-  // fewer tracks than an XDSGridSpan claims, the span keeps its
+  // KNOWN-GAP (GridSpan): when an auto-fit Grid produces
+  // fewer tracks than an GridSpan claims, the span keeps its
   // original count and leaves empty tracks beside smaller cards
   // (e.g. Chat claims 2-of-3, but if only 2 tracks fit, Checkout
   // ends up alone on its row with one empty track beside it).
@@ -103,7 +103,7 @@ const styles = stylex.create({
   // fitting) collapses each row to a single column at narrow
   // widths so cards always reach the row edge.
   //
-  // Ideally XDSGridSpan would clamp `span N` to the available
+  // Ideally GridSpan would clamp `span N` to the available
   // track count automatically; until that lands in @xds/core,
   // this xstyle is the load-bearing workaround for both grid rows
   // below.
@@ -117,7 +117,7 @@ const styles = stylex.create({
   // and table each own their own padding. Background uses --color-
   // background-surface (the lifted-above-body tone) so the inventory
   // reads as a distinct interactive surface against the page chrome.
-  // Keeps the XDSCard default variant's border (via --color-border-
+  // Keeps the Card default variant's border (via --color-border-
   // emphasized) so it reads as a bordered card.
   inventoryCard: {
     backgroundColor: 'var(--color-background-surface)',
@@ -133,7 +133,7 @@ const styles = stylex.create({
     paddingInline: 'var(--spacing-6)',
     width: '100%',
   },
-  // Wraps the low-stock XDSBanner above the table so it inherits the
+  // Wraps the low-stock Banner above the table so it inherits the
   // table's horizontal padding rather than running edge-to-edge.
   inventoryBannerWrap: {
     paddingInline: 'var(--spacing-6)',
@@ -233,7 +233,7 @@ const styles = stylex.create({
     paddingBlock: 'var(--spacing-4)',
     paddingInline: 'var(--spacing-4)',
   },
-  // Body wraps XDSChatMessageList in a flex-grow cell so the list
+  // Body wraps ChatMessageList in a flex-grow cell so the list
   // expands to fill the card. The list owns its own internal
   // padding (density-based, balanced = spacing-4), so we don't add
   // any here — otherwise the first message ends up double-padded
@@ -267,7 +267,7 @@ const styles = stylex.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
-  // Negative inline margin to cancel out XDSItem's --spacing-2
+  // Negative inline margin to cancel out Item's --spacing-2
   // internal padding so item content sits flush with the heading
   // above. The item's hover/focus background still extends
   // correctly because the padding is preserved on each row.
@@ -298,7 +298,7 @@ const styles = stylex.create({
 });
 
 interface ThemeCardShowcaseProps {
-  theme: XDSDefinedTheme;
+  theme: DefinedTheme;
   images: ThemeImageSet;
   /**
    * Color mode forwarded from ThemePackagePage's mode toggle in the
@@ -314,9 +314,9 @@ export function ThemeCardShowcase({
   mode,
 }: ThemeCardShowcaseProps) {
   return (
-    <XDSTheme theme={theme} mode={mode}>
-      <XDSVStack gap={8}>
-        {/* Top row: Checkout (1/3) + Chat (2/3) via XDSGridSpan.
+    <Theme theme={theme} mode={mode}>
+      <VStack gap={8}>
+        {/* Top row: Checkout (1/3) + Chat (2/3) via GridSpan.
             Uses `repeat: 'fit'` so when the viewport is too narrow
             to fit 3 tracks of at least 200px, the remaining tracks
             collapse and the occupied ones stretch to fill the row
@@ -325,50 +325,50 @@ export function ThemeCardShowcase({
             which prevents auto-fit from stretching cells beyond
             that fraction at narrow widths (the cards would never
             fill the full row even with one card per row). */}
-        <XDSGrid columns={{minWidth: 200, repeat: 'fit'}} gap={4}>
-          <XDSGridSpan columns={1} xstyle={styles.fullSpanAtNarrow}>
+        <Grid columns={{minWidth: 200, repeat: 'fit'}} gap={4}>
+          <GridSpan columns={1} xstyle={styles.fullSpanAtNarrow}>
             <CheckoutCard />
-          </XDSGridSpan>
-          <XDSGridSpan columns={2} xstyle={styles.fullSpanAtNarrow}>
+          </GridSpan>
+          <GridSpan columns={2} xstyle={styles.fullSpanAtNarrow}>
             <ChatCard />
-          </XDSGridSpan>
-        </XDSGrid>
+          </GridSpan>
+        </Grid>
         {/* Bottom row: Inventory (3 cols) + Latest activity sidebar
             (1 col). `repeat: 'fit'` (auto-fit) stretches occupied
             tracks to fill the row when columns collapse at narrow
             viewports — same reasoning as the top row: no `max`
             cap so cells can stretch beyond the (100% / max)
             fraction when only one card per row fits. */}
-        <XDSGrid columns={{minWidth: 200, repeat: 'fit'}} gap={4}>
-          <XDSGridSpan columns={3} xstyle={styles.fullSpanAtNarrow}>
+        <Grid columns={{minWidth: 200, repeat: 'fit'}} gap={4}>
+          <GridSpan columns={3} xstyle={styles.fullSpanAtNarrow}>
             <InventoryCard images={images} />
-          </XDSGridSpan>
-          <XDSGridSpan columns={1} xstyle={styles.fullSpanAtNarrow}>
+          </GridSpan>
+          <GridSpan columns={1} xstyle={styles.fullSpanAtNarrow}>
             <LatestActivityCard />
-          </XDSGridSpan>
-        </XDSGrid>
-      </XDSVStack>
-    </XDSTheme>
+          </GridSpan>
+        </Grid>
+      </VStack>
+    </Theme>
   );
 }
 
 // =============================================================================
 // Card 4 — Checkout form
-// Components exercised: heading + supporting subtitle, XDSTextInput
-// (email), XDSTextInput with startIcon (card number), 2-column grid
-// for expiry + CVC, XDSSelector (country dropdown), full-width
+// Components exercised: heading + supporting subtitle, TextInput
+// (email), TextInput with startIcon (card number), 2-column grid
+// for expiry + CVC, Selector (country dropdown), full-width
 // primary button with leading icon. Demonstrates a realistic
 // multi-input form composition.
 // =============================================================================
 
 function CheckoutCard() {
   return (
-    <XDSCard padding={5} xstyle={styles.card}>
-      <XDSVStack gap={4} xstyle={styles.checkoutStack}>
-        <XDSHeading level={2}>Checkout</XDSHeading>
+    <Card padding={5} xstyle={styles.card}>
+      <VStack gap={4} xstyle={styles.checkoutStack}>
+        <Heading level={2}>Checkout</Heading>
 
-        <XDSVStack gap={3} xstyle={styles.checkoutStack}>
-          <XDSTextInput
+        <VStack gap={3} xstyle={styles.checkoutStack}>
+          <TextInput
             label="Email"
             placeholder="you@studio.com"
             value=""
@@ -384,44 +384,44 @@ function CheckoutCard() {
               caveat under all three options. Static demo: value is
               hard-coded to "economy"; tapping other rows does
               nothing. */}
-          <XDSRadioList
+          <RadioList
             label="Shipping method"
             description="Delivery time may vary based on location and availability."
             value="economy"
             onChange={() => {}}>
-            <XDSRadioListItem
+            <RadioListItem
               value="economy"
               label="Economy Shipping"
               description="Delivered in 5–7 business days"
               endContent={
-                <XDSText type="body" weight="bold">
+                <Text type="body" weight="bold">
                   $12.00
-                </XDSText>
+                </Text>
               }
             />
-            <XDSRadioListItem
+            <RadioListItem
               value="standard"
               label="Standard Shipping"
               description="Delivered in 3–5 business days"
               endContent={
-                <XDSText type="body" weight="bold">
+                <Text type="body" weight="bold">
                   $16.00
-                </XDSText>
+                </Text>
               }
             />
-            <XDSRadioListItem
+            <RadioListItem
               value="express"
               label="Express Shipping"
               description="Delivered in 1–2 business days"
               endContent={
-                <XDSText type="body" weight="bold">
+                <Text type="body" weight="bold">
                   $24.00
-                </XDSText>
+                </Text>
               }
             />
-          </XDSRadioList>
+          </RadioList>
 
-          {/* Payment method picker — 3 horizontal XDSSelectableCards
+          {/* Payment method picker — 3 horizontal SelectableCards
               in an equal-width grid. Each card has a centered icon
               above a short label. Selected card gets the built-in
               accent border treatment. Static demo: "card" is hard-
@@ -429,60 +429,60 @@ function CheckoutCard() {
               Uses the responsive {minWidth, max} grid pattern so
               cards collapse to fewer columns when the Checkout
               column itself is too narrow to fit 3 abreast. */}
-          <XDSVStack gap={2} xstyle={styles.checkoutStack}>
-            <XDSText type="supporting" weight="bold">
+          <VStack gap={2} xstyle={styles.checkoutStack}>
+            <Text type="supporting" weight="bold">
               Payment method
-            </XDSText>
-            <XDSGrid columns={{minWidth: 70, max: 3}} gap={2}>
-              <XDSSelectableCard
+            </Text>
+            <Grid columns={{minWidth: 70, max: 3}} gap={2}>
+              <SelectableCard
                 label="Pay with card"
                 isSelected={true}
                 onChange={() => {}}
                 padding={3}>
-                <XDSVStack
+                <VStack
                   gap={1}
                   hAlign="center"
                   xstyle={styles.paymentCardContent}>
                   <CreditCard size={20} />
-                  <XDSText type="supporting" weight="bold">
+                  <Text type="supporting" weight="bold">
                     Card
-                  </XDSText>
-                </XDSVStack>
-              </XDSSelectableCard>
-              <XDSSelectableCard
+                  </Text>
+                </VStack>
+              </SelectableCard>
+              <SelectableCard
                 label="Pay with Apple Pay"
                 isSelected={false}
                 onChange={() => {}}
                 padding={3}>
-                <XDSVStack
+                <VStack
                   gap={1}
                   hAlign="center"
                   xstyle={styles.paymentCardContent}>
                   <Smartphone size={20} />
-                  <XDSText type="supporting" weight="bold">
+                  <Text type="supporting" weight="bold">
                     Apple Pay
-                  </XDSText>
-                </XDSVStack>
-              </XDSSelectableCard>
-              <XDSSelectableCard
+                  </Text>
+                </VStack>
+              </SelectableCard>
+              <SelectableCard
                 label="Pay with Google Pay"
                 isSelected={false}
                 onChange={() => {}}
                 padding={3}>
-                <XDSVStack
+                <VStack
                   gap={1}
                   hAlign="center"
                   xstyle={styles.paymentCardContent}>
                   <Wallet size={20} />
-                  <XDSText type="supporting" weight="bold">
+                  <Text type="supporting" weight="bold">
                     Google Pay
-                  </XDSText>
-                </XDSVStack>
-              </XDSSelectableCard>
-            </XDSGrid>
-          </XDSVStack>
+                  </Text>
+                </VStack>
+              </SelectableCard>
+            </Grid>
+          </VStack>
 
-          <XDSTextInput
+          <TextInput
             label="Card number"
             placeholder="1234 1234 1234 1234"
             value=""
@@ -496,25 +496,25 @@ function CheckoutCard() {
               {minWidth: 90} threshold per cell) the grid collapses
               to a single column stack so neither input clips past
               the card edge. */}
-          <XDSGrid columns={{minWidth: 90, max: 2}} gap={2}>
-            <XDSTextInput
+          <Grid columns={{minWidth: 90, max: 2}} gap={2}>
+            <TextInput
               label="Expiry"
               placeholder="MM / YY"
               value=""
               onChange={() => {}}
               size="lg"
             />
-            <XDSTextInput
+            <TextInput
               label="CVC"
               placeholder="123"
               value=""
               onChange={() => {}}
               size="lg"
             />
-          </XDSGrid>
+          </Grid>
 
-          {/* Country — XDSSelector (dropdown). */}
-          <XDSSelector
+          {/* Country — Selector (dropdown). */}
+          <Selector
             label="Country"
             value="us"
             onChange={() => {}}
@@ -528,28 +528,28 @@ function CheckoutCard() {
               {value: 'au', label: 'Australia'},
             ]}
           />
-        </XDSVStack>
+        </VStack>
 
         {/* 1-click checkout opt-in — pre-checked, with a helper
-            description underneath. Uses XDSCheckboxInput's built-in
+            description underneath. Uses CheckboxInput's built-in
             `description` slot rather than hand-stacking a second
             text row, so the helper inherits the right indentation
             and secondary text color from the primitive. */}
-        <XDSCheckboxInput
+        <CheckboxInput
           label="Securely save my information for 1-click checkout"
           description="Pay faster on Studio and everywhere Link is accepted."
           value={true}
           onChange={() => {}}
         />
 
-        <XDSButton
+        <Button
           variant="primary"
           size="lg"
           label="Pay now"
           icon={<Lock size={16} />}
         />
-      </XDSVStack>
-    </XDSCard>
+      </VStack>
+    </Card>
   );
 }
 
@@ -559,9 +559,9 @@ function CheckoutCard() {
 // Compact chat surface modeled after a typical product messaging UI.
 // Header has avatar + name + status, followed by a short message
 // thread (date divider + 4 alternating-sender bubbles), and an
-// XDSChatComposer at the bottom. All built from real XDS chat
-// primitives (XDSChatMessage, XDSChatMessageBubble, XDSChatMessageList,
-// XDSChatSystemMessage, XDSChatComposer) so the showcase demonstrates
+// ChatComposer at the bottom. All built from real XDS chat
+// primitives (ChatMessage, ChatMessageBubble, ChatMessageList,
+// ChatSystemMessage, ChatComposer) so the showcase demonstrates
 // theme tokens flowing through the full chat surface.
 // =============================================================================
 
@@ -577,21 +577,21 @@ const SUGGESTED_QUESTIONS = [
 // canvas IS the surface, not a conversation window.
 function ChatCard() {
   return (
-    <XDSCard padding={0} xstyle={styles.chatCard}>
+    <Card padding={0} xstyle={styles.chatCard}>
       {/* Header — heading on the left, action chrome (Export, Close)
           on the right. Uses level=2 so it matches the heading scale
           of the other cards (Inventory, Revenue, Checkout). Common
           chat-panel pattern where the surface owns its own dismiss
           and export affordances. */}
-      <XDSHStack
+      <HStack
         hAlign="between"
         vAlign="center"
         gap={3}
         xstyle={styles.chatHeader}>
-        <XDSHeading level={2}>Studio AI</XDSHeading>
+        <Heading level={2}>Studio AI</Heading>
 
-        <XDSHStack gap={1} vAlign="center">
-          <XDSButton
+        <HStack gap={1} vAlign="center">
+          <Button
             variant="ghost"
             size="sm"
             isIconOnly
@@ -599,7 +599,7 @@ function ChatCard() {
             tooltip="Export conversation"
             icon={<Download size={16} />}
           />
-          <XDSButton
+          <Button
             variant="ghost"
             size="sm"
             isIconOnly
@@ -607,92 +607,92 @@ function ChatCard() {
             tooltip="Close chat"
             icon={<X size={16} />}
           />
-        </XDSHStack>
-      </XDSHStack>
+        </HStack>
+      </HStack>
 
-      <XDSDivider variant="subtle" />
+      <Divider variant="subtle" />
 
       {/* Message canvas — wider Copilot-style layout. Thread is a
           multi-turn concierge session about order #1043, with a
           "Today" system divider at the top and one structured-data
-          block (compact order summary rendered as XDSItem rows
+          block (compact order summary rendered as Item rows
           with a trailing track-package link). */}
       <div {...stylex.props(styles.chatBody)}>
-        <XDSChatMessageList>
-          <XDSChatSystemMessage>Today</XDSChatSystemMessage>
+        <ChatMessageList>
+          <ChatSystemMessage>Today</ChatSystemMessage>
 
-          <XDSChatMessage sender="user">
-            <XDSChatMessageBubble variant="filled">
+          <ChatMessage sender="user">
+            <ChatMessageBubble variant="filled">
               Where’s my order?
-            </XDSChatMessageBubble>
-          </XDSChatMessage>
+            </ChatMessageBubble>
+          </ChatMessage>
 
-          <XDSChatMessage sender="assistant">
-            <XDSVStack gap={3}>
-              <XDSText type="body">
+          <ChatMessage sender="assistant">
+            <VStack gap={3}>
+              <Text type="body">
                 Your order #1043 — the Minimalist Watch and Linen Throw —
                 shipped this morning from the Aisle 3 warehouse and is currently
                 in transit with UPS. It’s on track to arrive at your address by
                 end of day tomorrow.
-              </XDSText>
-              <XDSText type="body">
+              </Text>
+              <Text type="body">
                 Let me know if you’d like to reschedule the delivery, redirect
                 it to a pickup point, or start a return once it arrives.
-              </XDSText>
-            </XDSVStack>
-          </XDSChatMessage>
+              </Text>
+            </VStack>
+          </ChatMessage>
 
-          <XDSChatMessage sender="user">
-            <XDSChatMessageBubble variant="filled">
+          <ChatMessage sender="user">
+            <ChatMessageBubble variant="filled">
               Can you show me the full details?
-            </XDSChatMessageBubble>
-          </XDSChatMessage>
+            </ChatMessageBubble>
+          </ChatMessage>
 
-          <XDSChatMessage sender="assistant">
-            <XDSVStack gap={3}>
-              <XDSText type="body">
+          <ChatMessage sender="assistant">
+            <VStack gap={3}>
+              <Text type="body">
                 Here’s everything I have on order #1043:
-              </XDSText>
-              {/* Compact order-summary block — XDSItem rows give
+              </Text>
+              {/* Compact order-summary block — Item rows give
                   a label/description + endContent value pair without
-                  any custom layout code. Wrapped in XDSCard so the
+                  any custom layout code. Wrapped in Card so the
                   block reads as a distinct artifact within the
                   prose, similar to a Copilot tool-call result. */}
-              <XDSCard padding={3}>
-                <XDSVStack gap={1}>
-                  <XDSItem
+              <Card padding={3}>
+                <VStack gap={1}>
+                  <Item
                     label="Items"
                     description="Minimalist Watch · Linen Throw"
                     endContent={
-                      <XDSText type="body" weight="bold">
+                      <Text type="body" weight="bold">
                         $248
-                      </XDSText>
+                      </Text>
                     }
                   />
-                  <XDSItem
+                  <Item
                     label="Shipping"
                     description="UPS Ground"
                     endContent={
-                      <XDSText type="body" weight="bold">
+                      <Text type="body" weight="bold">
                         $12
-                      </XDSText>
+                      </Text>
                     }
                   />
-                  <XDSItem
+                  <Item
                     label="Estimated arrival"
                     description="Tomorrow by 8pm"
-                    endContent={<XDSBadge variant="green" label="On time" />}
+                    endContent={<Badge variant="green" label="On time" />}
                   />
-                  <XDSItem
+                  <Item
                     label="Tracking"
                     description="UPS 1Z 999 AA1 0123 4567 84"
-                    endContent={<XDSLink href="#">Track →</XDSLink>}
+                    endContent={<Link href="#">Track →</Link>}
                   />
-                </XDSVStack>
-              </XDSCard>
-            </XDSVStack>
-          </XDSChatMessage>
-        </XDSChatMessageList>
+                </VStack>
+              </Card>
+            </VStack>
+          </ChatMessage>
+        </ChatMessageList>
       </div>
 
       {/* Suggested follow-up questions — quick chips above composer.
@@ -700,29 +700,29 @@ function ChatCard() {
           rather than a left-anchored toolbar. Static demo: no real
           send wiring; tapping does nothing. */}
       <div {...stylex.props(styles.chatSuggestions)}>
-        <XDSHStack gap={1} hAlign="center" wrap="wrap">
+        <HStack gap={1} hAlign="center" wrap="wrap">
           {SUGGESTED_QUESTIONS.map(question => (
-            <XDSButton
+            <Button
               key={question}
               variant="secondary"
               size="sm"
               label={question}
             />
           ))}
-        </XDSHStack>
+        </HStack>
       </div>
 
-      {/* Composer — full Copilot pattern via XDSChatComposer slots:
+      {/* Composer — full Copilot pattern via ChatComposer slots:
           footerActions = attach + Smart mode picker
           sendActions = voice/dictation icon */}
       <div {...stylex.props(styles.chatComposer)}>
-        <XDSChatComposer
+        <ChatComposer
           value=""
           onChange={() => {}}
           onSubmit={() => {}}
           placeholder="Ask Studio AI…"
           footerActions={
-            <XDSButton
+            <Button
               variant="ghost"
               size="md"
               isIconOnly
@@ -732,7 +732,7 @@ function ChatCard() {
             />
           }
           sendActions={
-            <XDSButton
+            <Button
               variant="ghost"
               size="md"
               isIconOnly
@@ -743,7 +743,7 @@ function ChatCard() {
           }
         />
       </div>
-    </XDSCard>
+    </Card>
   );
 }
 
@@ -755,9 +755,9 @@ function ChatCard() {
 // library) + a "Monthly" badge, two KPI summary numbers below the
 // chart, then a 4-item activity feed at the bottom.
 //
-// Components exercised: XDSCard (surface bg), XDSHeading, XDSBadge
-// (categorical), XDSItem (avatar + label + description rows),
-// XDSDivider, XDSLink, hand-rolled CSS sparkline.
+// Components exercised: Card (surface bg), Heading, Badge
+// (categorical), Item (avatar + label + description rows),
+// Divider, Link, hand-rolled CSS sparkline.
 // =============================================================================
 
 const SPARKLINE_DATA = [55, 70, 92, 78, 60];
@@ -825,14 +825,14 @@ function formatAmount(amount: number): string {
 
 function LatestActivityCard() {
   return (
-    <XDSCard padding={5} xstyle={styles.activityCard}>
-      <XDSVStack gap={4} xstyle={styles.activityCardStack}>
-        <XDSHeading level={2}>Revenue</XDSHeading>
+    <Card padding={5} xstyle={styles.activityCard}>
+      <VStack gap={4} xstyle={styles.activityCardStack}>
+        <Heading level={2}>Revenue</Heading>
 
         {/* Hand-rolled CSS sparkline — 5 vertical bars. Heights set
             via inline `height` so the bars are data-driven without
             generating a stylex class per row. */}
-        <XDSVStack gap={2}>
+        <VStack gap={2}>
           <div {...stylex.props(styles.sparkline)} aria-hidden="true">
             {SPARKLINE_DATA.map((value, i) => (
               <div
@@ -847,33 +847,33 @@ function LatestActivityCard() {
               <span key={label}>{label}</span>
             ))}
           </div>
-        </XDSVStack>
+        </VStack>
 
-        <XDSGrid columns={2} gap={3}>
-          <XDSVStack gap={0}>
+        <Grid columns={2} gap={3}>
+          <VStack gap={0}>
             <span {...stylex.props(styles.kpiValue)}>18K</span>
-            <XDSText type="supporting" color="secondary">
+            <Text type="supporting" color="secondary">
               Monthly revenue
-            </XDSText>
-          </XDSVStack>
-          <XDSVStack gap={0}>
+            </Text>
+          </VStack>
+          <VStack gap={0}>
             <span {...stylex.props(styles.kpiValue)}>+12%</span>
-            <XDSText type="supporting" color="secondary">
+            <Text type="supporting" color="secondary">
               Order growth
-            </XDSText>
-          </XDSVStack>
-        </XDSGrid>
+            </Text>
+          </VStack>
+        </Grid>
 
-        <XDSDivider variant="subtle" />
+        <Divider variant="subtle" />
 
-        <XDSHStack hAlign="between" vAlign="center">
-          <XDSHeading level={3}>Activity</XDSHeading>
-          <XDSLink href="#">See all</XDSLink>
-        </XDSHStack>
+        <HStack hAlign="between" vAlign="center">
+          <Heading level={3}>Activity</Heading>
+          <Link href="#">See all</Link>
+        </HStack>
 
-        <XDSVStack gap={1} xstyle={styles.activityListFade}>
+        <VStack gap={1} xstyle={styles.activityListFade}>
           {ACTIVITY.map(item => (
-            <XDSItem
+            <Item
               key={item.id}
               startContent={
                 <div {...stylex.props(styles.activityIcon)} aria-hidden="true">
@@ -883,19 +883,19 @@ function LatestActivityCard() {
               label={item.label}
               description={item.detail}
               endContent={
-                <XDSText
+                <Text
                   type="body"
                   weight="bold"
                   color={item.amount < 0 ? 'secondary' : 'primary'}>
                   {formatAmount(item.amount)}
-                </XDSText>
+                </Text>
               }
               href="#"
             />
           ))}
-        </XDSVStack>
-      </XDSVStack>
-    </XDSCard>
+        </VStack>
+      </VStack>
+    </Card>
   );
 }
 
@@ -909,19 +909,19 @@ function LatestActivityCard() {
 // Everything is a static demo — no real filtering, sorting, or
 // selection wiring — to keep the focus on theme component fidelity.
 //
-// Components exercised: XDSHeading, XDSButton (primary + ghost),
-// XDSTextInput (with start icon), XDSCheckboxInput, XDSTable (custom
-// renderers + proportional widths + dividers + hover), XDSBadge
-// (categorical variants), XDSMoreMenu, XDSCard, XDSDivider, XDSIcon
+// Components exercised: Heading, Button (primary + ghost),
+// TextInput (with start icon), CheckboxInput, Table (custom
+// renderers + proportional widths + dividers + hover), Badge
+// (categorical variants), MoreMenu, Card, Divider, Icon
 // (via lucide-react).
 // =============================================================================
 
 type TagSpec = {label: string; variant: 'blue' | 'green' | 'orange' | 'yellow'};
 
-// `extends Record<string, unknown>` is load-bearing: XDSTable's
+// `extends Record<string, unknown>` is load-bearing: Table's
 // generic constraint requires it, and Next.js's production build
 // enforces it strictly (dev builds let it slide). Without it the
-// Vercel preview fails to compile at `<XDSTable<InventoryRow>>`
+// Vercel preview fails to compile at `<Table<InventoryRow>>`
 // below. The `unknown` value type is broad enough to accept
 // `tags: TagSpec[]` and any other field shape we add later.
 interface InventoryRow extends Record<string, unknown> {
@@ -1023,7 +1023,7 @@ const LOW_STOCK_COUNT = INVENTORY.filter(
 
 function SelectCell({row}: {row: InventoryRow}) {
   return (
-    <XDSCheckboxInput
+    <CheckboxInput
       label={`Select ${row.name}`}
       isLabelHidden
       value={row.selected}
@@ -1035,7 +1035,7 @@ function SelectCell({row}: {row: InventoryRow}) {
 function ItemCell({row, images}: {row: InventoryRow; images: ThemeImageSet}) {
   const thumbnailSrc = row.imageKey ? images[row.imageKey] : undefined;
   return (
-    <XDSHStack gap={3} vAlign="center">
+    <HStack gap={3} vAlign="center">
       {thumbnailSrc ? (
         <img src={thumbnailSrc} alt="" {...stylex.props(styles.thumbnail)} />
       ) : (
@@ -1043,31 +1043,31 @@ function ItemCell({row, images}: {row: InventoryRow; images: ThemeImageSet}) {
           {row.thumbnailFallback}
         </div>
       )}
-      <XDSVStack gap={0} style={{minWidth: 0}}>
-        <XDSText type="body" weight="bold">
+      <VStack gap={0} style={{minWidth: 0}}>
+        <Text type="body" weight="bold">
           {row.name}
-        </XDSText>
-        <XDSText type="supporting" color="secondary">
+        </Text>
+        <Text type="supporting" color="secondary">
           {row.meta}
-        </XDSText>
-      </XDSVStack>
-    </XDSHStack>
+        </Text>
+      </VStack>
+    </HStack>
   );
 }
 
 function TagsCell({row}: {row: InventoryRow}) {
   return (
-    <XDSHStack gap={1} wrap="wrap" hAlign="end">
+    <HStack gap={1} wrap="wrap" hAlign="end">
       {row.tags.map(tag => (
-        <XDSBadge key={tag.label} label={tag.label} variant={tag.variant} />
+        <Badge key={tag.label} label={tag.label} variant={tag.variant} />
       ))}
-    </XDSHStack>
+    </HStack>
   );
 }
 
 function ActionsCell() {
   return (
-    <XDSMoreMenu
+    <MoreMenu
       label="Row actions"
       items={[
         {label: 'Edit'},
@@ -1084,31 +1084,31 @@ function ActionsCell() {
 
 function InventoryCard({images}: {images: ThemeImageSet}) {
   return (
-    <XDSCard padding={0} xstyle={styles.inventoryCard}>
+    <Card padding={0} xstyle={styles.inventoryCard}>
       {/* Heading + primary action */}
-      <XDSHStack
+      <HStack
         hAlign="between"
         vAlign="center"
         xstyle={styles.inventoryHeader}>
-        <XDSHeading level={2}>Inventory</XDSHeading>
-        <XDSButton
+        <Heading level={2}>Inventory</Heading>
+        <Button
           label="Add item"
           variant="primary"
           size="sm"
           icon={<Plus size={16} />}
         />
-      </XDSHStack>
+      </HStack>
 
-      <XDSDivider variant="subtle" />
+      <Divider variant="subtle" />
 
       {/* Filter row — search, filter pills, view toggle */}
-      <XDSHStack
+      <HStack
         gap={3}
         vAlign="center"
         hAlign="between"
         xstyle={styles.inventoryFilterRow}>
-        <XDSHStack gap={2} vAlign="center" style={{flex: 1, minWidth: 0}}>
-          <XDSTextInput
+        <HStack gap={2} vAlign="center" style={{flex: 1, minWidth: 0}}>
+          <TextInput
             label="Search inventory"
             isLabelHidden
             placeholder="Type and hit enter…"
@@ -1117,7 +1117,7 @@ function InventoryCard({images}: {images: ThemeImageSet}) {
             startIcon={<Search size={16} />}
             xstyle={styles.searchInput}
           />
-          <XDSSelector
+          <Selector
             label="Categories"
             isLabelHidden
             placeholder="Categories"
@@ -1127,7 +1127,7 @@ function InventoryCard({images}: {images: ThemeImageSet}) {
             onChange={() => {}}
             options={['Wearables', 'Audio', 'Bags', 'Drinkware', 'Home']}
           />
-          <XDSSelector
+          <Selector
             label="Locations"
             isLabelHidden
             placeholder="Locations"
@@ -1144,7 +1144,7 @@ function InventoryCard({images}: {images: ThemeImageSet}) {
               'Aisle 6',
             ]}
           />
-          <XDSSelector
+          <Selector
             label="Tags"
             isLabelHidden
             placeholder="Tags"
@@ -1161,9 +1161,9 @@ function InventoryCard({images}: {images: ThemeImageSet}) {
               'Home',
             ]}
           />
-        </XDSHStack>
-        <XDSHStack gap={1} vAlign="center">
-          <XDSButton
+        </HStack>
+        <HStack gap={1} vAlign="center">
+          <Button
             variant="ghost"
             size="sm"
             isIconOnly
@@ -1171,7 +1171,7 @@ function InventoryCard({images}: {images: ThemeImageSet}) {
             tooltip="List view"
             icon={<List size={18} />}
           />
-          <XDSButton
+          <Button
             variant="ghost"
             size="sm"
             isIconOnly
@@ -1179,23 +1179,23 @@ function InventoryCard({images}: {images: ThemeImageSet}) {
             tooltip="Grid view"
             icon={<LayoutGrid size={18} />}
           />
-        </XDSHStack>
-      </XDSHStack>
+        </HStack>
+      </HStack>
 
-      {/* Low-stock warning — surfaces a contextual XDSBanner above
+      {/* Low-stock warning — surfaces a contextual Banner above
           the table when any inventory rows fall below LOW_STOCK_
           THRESHOLD. Wrapped in inventoryBannerWrap so the banner
           inherits the table's horizontal padding. */}
       {LOW_STOCK_COUNT > 0 && (
         <div {...stylex.props(styles.inventoryBannerWrap)}>
-          <XDSBanner
+          <Banner
             status="warning"
             title={`${LOW_STOCK_COUNT} items are running low`}
           />
         </div>
       )}
 
-      <XDSTable<InventoryRow>
+      <Table<InventoryRow>
         data={INVENTORY}
         columns={[
           {
@@ -1218,13 +1218,13 @@ function InventoryCard({images}: {images: ThemeImageSet}) {
             // Frees the remaining horizontal space for Item and
             // pushes Available/Location closer to Tags.
             width: pixel(100),
-            renderCell: row => <XDSText type="body">{row.available}</XDSText>,
+            renderCell: row => <Text type="body">{row.available}</Text>,
           },
           {
             key: 'location',
             header: 'Location',
             width: pixel(100),
-            renderCell: row => <XDSText type="body">{row.location}</XDSText>,
+            renderCell: row => <Text type="body">{row.location}</Text>,
           },
           {
             key: 'tags',
@@ -1244,6 +1244,6 @@ function InventoryCard({images}: {images: ThemeImageSet}) {
         dividers="rows"
         hasHover
       />
-    </XDSCard>
+    </Card>
   );
 }

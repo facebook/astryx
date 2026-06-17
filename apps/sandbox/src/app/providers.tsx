@@ -3,8 +3,8 @@
 'use client';
 
 import {useState, createContext, useContext, useEffect} from 'react';
-import {XDSTheme} from '@xds/core/theme';
-import {XDSLayerProvider} from '@xds/core/Layer';
+import {Theme} from '@xds/core/theme';
+import {LayerProvider} from '@xds/core/Layer';
 import {defaultTheme} from '@xds/theme-default/built';
 import {neutralTheme} from '@xds/theme-neutral/built';
 import {brutalistTheme} from '@xds/theme-brutalist/built';
@@ -14,7 +14,7 @@ import {stoneTheme} from '@xds/theme-stone/built';
 import {gothicTheme} from '@xds/theme-gothic/built';
 import {chocolateTheme} from '@xds/theme-chocolate/built';
 import {y2kTheme} from '@xds/theme-y2k/built';
-import type {XDSDefinedTheme, ThemeMode} from '@xds/core/theme';
+import type {DefinedTheme, ThemeMode} from '@xds/core/theme';
 
 /**
  * Ordered list of available themes — single source of truth.
@@ -26,7 +26,7 @@ import type {XDSDefinedTheme, ThemeMode} from '@xds/core/theme';
 export const SANDBOX_THEMES: ReadonlyArray<{
   id: string;
   label: string;
-  theme: XDSDefinedTheme;
+  theme: DefinedTheme;
 }> = [
   {id: 'default', label: 'Default', theme: defaultTheme},
   {id: 'neutral', label: 'Neutral', theme: neutralTheme},
@@ -39,7 +39,7 @@ export const SANDBOX_THEMES: ReadonlyArray<{
   {id: 'y2k', label: 'Y2K', theme: y2kTheme},
 ];
 
-const themes: Record<string, XDSDefinedTheme> = Object.fromEntries(
+const themes: Record<string, DefinedTheme> = Object.fromEntries(
   SANDBOX_THEMES.map(t => [t.id, t.theme]),
 );
 
@@ -178,9 +178,9 @@ export function Providers({children}: {children: React.ReactNode}) {
 
   return (
     <ThemeContext.Provider value={{themeName, setThemeName, mode, setMode}}>
-      <XDSTheme theme={theme} mode={mode}>
-        <XDSLayerProvider>{children}</XDSLayerProvider>
-      </XDSTheme>
+      <Theme theme={theme} mode={mode}>
+        <LayerProvider>{children}</LayerProvider>
+      </Theme>
     </ThemeContext.Provider>
   );
 }

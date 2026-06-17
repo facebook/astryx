@@ -10,9 +10,9 @@ import {compressCode, decompressCode} from '../lib/compress';
 import {compressToEncodedURIComponent} from 'lz-string';
 
 describe('compress', () => {
-  const SAMPLE = `import {XDSButton} from '@xds/core/Button';
+  const SAMPLE = `import {Button} from '@xds/core/Button';
 export default function Demo() {
-  return <XDSButton label="Hello" variant="primary" />;
+  return <Button label="Hello" variant="primary" />;
 }`;
 
   it('round-trips code through compress/decompress', () => {

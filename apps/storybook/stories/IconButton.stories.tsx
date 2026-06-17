@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSIconButton} from '@xds/core/IconButton';
+import {IconButton} from '@xds/core/IconButton';
 import {
   Cog6ToothIcon,
   TrashIcon,
@@ -12,9 +12,9 @@ import {
   BellIcon,
 } from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSIconButton> = {
+const meta: Meta<typeof IconButton> = {
   title: 'Core/IconButton',
-  component: XDSIconButton,
+  component: IconButton,
   tags: ['autodocs'],
   argTypes: {
     label: {
@@ -43,7 +43,7 @@ const meta: Meta<typeof XDSIconButton> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSIconButton>;
+type Story = StoryObj<typeof IconButton>;
 
 export const Default: Story = {
   args: {

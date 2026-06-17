@@ -19,16 +19,16 @@
 
 import {useEffect, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSLink} from '@xds/core/Link';
-import {XDSSwitch} from '@xds/core/Switch';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSNumberInput} from '@xds/core/NumberInput';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSEmptyState} from '@xds/core/EmptyState';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Text, Heading} from '@xds/core/Text';
+import {Selector} from '@xds/core/Selector';
+import {Link} from '@xds/core/Link';
+import {Switch} from '@xds/core/Switch';
+import {TextInput} from '@xds/core/TextInput';
+import {NumberInput} from '@xds/core/NumberInput';
+import {Divider} from '@xds/core/Divider';
+import {EmptyState} from '@xds/core/EmptyState';
+import {DropdownMenu} from '@xds/core/DropdownMenu';
 // SegmentedControl removed — targeting selects the exact instance.
 import {ChevronDown} from 'lucide-react';
 import {
@@ -175,7 +175,7 @@ function PropRow({
     if (attr && onRevealInCode) {
       const line = code.slice(0, attr.start).split('\n').length;
       controlEl = (
-        <XDSLink
+        <Link
           href="#code"
           hasUnderline
           tooltip={`Go to line ${line}`}
@@ -183,14 +183,14 @@ function PropRow({
             e.preventDefault();
             onRevealInCode(attr.start);
           }}>
-          <XDSText type="supporting">set in code</XDSText>
-        </XDSLink>
+          <Text type="supporting">set in code</Text>
+        </Link>
       );
     } else {
       controlEl = (
-        <XDSText type="supporting" color={attr ? 'secondary' : 'disabled'}>
+        <Text type="supporting" color={attr ? 'secondary' : 'disabled'}>
           {attr ? 'set in code' : '—'}
-        </XDSText>
+        </Text>
       );
     }
   } else if (control.kind === 'boolean') {
@@ -198,7 +198,7 @@ function PropRow({
       ? attr.value === true
       : coerceDefault(prop.default, control) === true;
     controlEl = (
-      <XDSSwitch
+      <Switch
         label={prop.name}
         isLabelHidden
         value={!!checked}
@@ -209,7 +209,7 @@ function PropRow({
     const def = coerceDefault(prop.default, control) as string | undefined;
     const value = String(attr?.value ?? def ?? control.options[0]);
     controlEl = (
-      <XDSSelector
+      <Selector
         label={prop.name}
         isLabelHidden
         size="sm"
@@ -221,7 +221,7 @@ function PropRow({
   } else if (control.kind === 'string') {
     const value = typeof attr?.value === 'string' ? attr.value : '';
     controlEl = (
-      <XDSTextInput
+      <TextInput
         label={prop.name}
         isLabelHidden
         placeholder="value"
@@ -233,7 +233,7 @@ function PropRow({
     const def = coerceDefault(prop.default, control) as number | undefined;
     const value = typeof attr?.value === 'number' ? attr.value : (def ?? 0);
     controlEl = (
-      <XDSNumberInput
+      <NumberInput
         label={prop.name}
         isLabelHidden
         value={value}
@@ -244,17 +244,17 @@ function PropRow({
 
   return (
     <div {...stylex.props(s.row)}>
-      <XDSHStack gap={3} vAlign="start">
+      <HStack gap={3} vAlign="start">
         <div style={{flex: 1, minWidth: 0}}>
-          <XDSText type="body" weight="bold">
+          <Text type="body" weight="bold">
             {prop.name}
-          </XDSText>
-          <XDSText type="code" color="secondary" display="block">
+          </Text>
+          <Text type="code" color="secondary" display="block">
             {prop.type}
-          </XDSText>
+          </Text>
         </div>
         <div {...stylex.props(s.control)}>{controlEl}</div>
-      </XDSHStack>
+      </HStack>
     </div>
   );
 }
@@ -340,7 +340,7 @@ export function PropertyPanel({
   if (used.length === 0) {
     return (
       <div {...stylex.props(s.emptyWrap)}>
-        <XDSEmptyState
+        <EmptyState
           title="No components detected"
           description="Add a component in the Code tab to view properties."
           isCompact
@@ -374,11 +374,11 @@ export function PropertyPanel({
   return (
     <div {...stylex.props(s.root)}>
       <div {...stylex.props(s.header)}>
-        <XDSVStack gap={2}>
-          <XDSHStack gap={0} vAlign="center">
-            <XDSHeading level={3}>{selectedLabel}</XDSHeading>
+        <VStack gap={2}>
+          <HStack gap={0} vAlign="center">
+            <Heading level={3}>{selectedLabel}</Heading>
             {menuItems.length > 0 && (
-              <XDSDropdownMenu
+              <DropdownMenu
                 button={{
                   label: 'Switch component',
                   tooltip: 'Switch component',
@@ -391,29 +391,29 @@ export function PropertyPanel({
                 items={menuItems}
               />
             )}
-          </XDSHStack>
-        </XDSVStack>
+          </HStack>
+        </VStack>
       </div>
 
       <div {...stylex.props(s.scroll)}>
         {!entry ? (
-          <XDSText type="supporting" color="secondary">
+          <Text type="supporting" color="secondary">
             {selected} is not part of @xds/core — no editable props.
-          </XDSText>
+          </Text>
         ) : props.length === 0 ? (
-          <XDSText type="supporting" color="secondary">
+          <Text type="supporting" color="secondary">
             {entry.displayName} has no documented props.
-          </XDSText>
+          </Text>
         ) : targetInstance == null ? null : (
-          <XDSVStack gap={1}>
+          <VStack gap={1}>
             {required.length > 0 && (
               <>
-                <XDSHeading level={5} color="secondary">
+                <Heading level={5} color="secondary">
                   Required
-                </XDSHeading>
+                </Heading>
                 {required.map(prop => (
                   <div key={prop.name}>
-                    <XDSDivider />
+                    <Divider />
                     <PropRow
                       prop={prop}
                       instance={targetInstance}
@@ -427,15 +427,15 @@ export function PropertyPanel({
             )}
             {optional.length > 0 && (
               <>
-                <XDSHeading
+                <Heading
                   level={5}
                   color="secondary"
                   style={{marginTop: 'var(--spacing-2)'}}>
                   Optional
-                </XDSHeading>
+                </Heading>
                 {optional.map(prop => (
                   <div key={prop.name}>
-                    <XDSDivider />
+                    <Divider />
                     <PropRow
                       prop={prop}
                       instance={targetInstance}
@@ -447,7 +447,7 @@ export function PropertyPanel({
                 ))}
               </>
             )}
-          </XDSVStack>
+          </VStack>
         )}
       </div>
     </div>

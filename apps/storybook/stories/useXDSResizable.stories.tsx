@@ -7,8 +7,8 @@ import {
   radiusVars,
   spacingVars,
 } from '@xds/core/theme/tokens.stylex';
-import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
-import {XDSLayout, XDSLayoutContent, XDSLayoutPanel} from '@xds/core/Layout';
+import {useResizable, ResizeHandle} from '@xds/core/Resizable';
+import {Layout, LayoutContent, LayoutPanel} from '@xds/core/Layout';
 
 const s = stylex.create({
   shell: {
@@ -36,7 +36,7 @@ function HookDemo({children}: {children: React.ReactNode}) {
 }
 
 const meta: Meta<typeof HookDemo> = {
-  title: 'Core/useXDSResizable',
+  title: 'Core/useResizable',
   component: HookDemo,
   tags: ['autodocs'],
   parameters: {
@@ -45,7 +45,7 @@ const meta: Meta<typeof HookDemo> = {
       description: {
         component:
           'Hook that manages resize state for panel regions. ' +
-          'Pair with XDSResizeHandle for interactive resizing.',
+          'Pair with ResizeHandle for interactive resizing.',
       },
     },
   },
@@ -56,28 +56,28 @@ type Story = StoryObj<typeof HookDemo>;
 /** Two side-by-side panels with a divider handle. */
 export const Horizontal: Story = {
   render: () => {
-    const sidebar = useXDSResizable({
+    const sidebar = useResizable({
       defaultSize: 200,
       minSizePx: 100,
       maxSizePx: 500,
     });
     return (
       <div {...stylex.props(s.shell)}>
-        <XDSLayout
+        <Layout
           height="fill"
           start={
             <>
-              <XDSLayoutPanel width={sidebar.size} hasDivider={false}>
+              <LayoutPanel width={sidebar.size} hasDivider={false}>
                 Sidebar
-              </XDSLayoutPanel>
-              <XDSResizeHandle
+              </LayoutPanel>
+              <ResizeHandle
                 direction="horizontal"
                 hasDivider
                 resizable={sidebar.props}
               />
             </>
           }
-          content={<XDSLayoutContent>Content</XDSLayoutContent>}
+          content={<LayoutContent>Content</LayoutContent>}
         />
       </div>
     );
@@ -87,28 +87,28 @@ export const Horizontal: Story = {
 /** Vertical layout — top and bottom panels. */
 export const Vertical: Story = {
   render: () => {
-    const top = useXDSResizable({
+    const top = useResizable({
       defaultSize: 150,
       minSizePx: 60,
       maxSizePx: 250,
     });
     return (
       <div {...stylex.props(s.shell)}>
-        <XDSLayout
+        <Layout
           height="fill"
           header={
             <>
-              <XDSLayoutPanel width="100%" padding={4}>
+              <LayoutPanel width="100%" padding={4}>
                 <div style={{height: top.size}}>Header</div>
-              </XDSLayoutPanel>
-              <XDSResizeHandle
+              </LayoutPanel>
+              <ResizeHandle
                 direction="vertical"
                 hasDivider
                 resizable={top.props}
               />
             </>
           }
-          content={<XDSLayoutContent>Content</XDSLayoutContent>}
+          content={<LayoutContent>Content</LayoutContent>}
         />
       </div>
     );
@@ -118,44 +118,44 @@ export const Vertical: Story = {
 /** Three panels with two handles — mail client layout. */
 export const ThreePanel: Story = {
   render: () => {
-    const left = useXDSResizable({
+    const left = useResizable({
       defaultSize: 180,
       minSizePx: 120,
       maxSizePx: 300,
     });
-    const right = useXDSResizable({
+    const right = useResizable({
       defaultSize: 220,
       minSizePx: 150,
       maxSizePx: 400,
     });
     return (
       <div {...stylex.props(s.shell)}>
-        <XDSLayout
+        <Layout
           height="fill"
           start={
             <>
-              <XDSLayoutPanel width={left.size} hasDivider={false}>
+              <LayoutPanel width={left.size} hasDivider={false}>
                 Folders
-              </XDSLayoutPanel>
-              <XDSResizeHandle
+              </LayoutPanel>
+              <ResizeHandle
                 direction="horizontal"
                 hasDivider
                 resizable={left.props}
               />
             </>
           }
-          content={<XDSLayoutContent>Inbox</XDSLayoutContent>}
+          content={<LayoutContent>Inbox</LayoutContent>}
           end={
             <>
-              <XDSResizeHandle
+              <ResizeHandle
                 direction="horizontal"
                 hasDivider
                 isReversed
                 resizable={right.props}
               />
-              <XDSLayoutPanel width={right.size} hasDivider={false}>
+              <LayoutPanel width={right.size} hasDivider={false}>
                 Preview
-              </XDSLayoutPanel>
+              </LayoutPanel>
             </>
           }
         />
@@ -167,26 +167,26 @@ export const ThreePanel: Story = {
 /** Nested — horizontal split with a vertical split inside. */
 export const Nested: Story = {
   render: () => {
-    const sidebar = useXDSResizable({
+    const sidebar = useResizable({
       defaultSize: 200,
       minSizePx: 120,
       maxSizePx: 350,
     });
-    const editor = useXDSResizable({
+    const editor = useResizable({
       defaultSize: 200,
       minSizePx: 80,
       maxSizePx: 250,
     });
     return (
       <div {...stylex.props(s.shell)}>
-        <XDSLayout
+        <Layout
           height="fill"
           start={
             <>
-              <XDSLayoutPanel width={sidebar.size} hasDivider={false}>
+              <LayoutPanel width={sidebar.size} hasDivider={false}>
                 Explorer
-              </XDSLayoutPanel>
-              <XDSResizeHandle
+              </LayoutPanel>
+              <ResizeHandle
                 direction="horizontal"
                 hasDivider
                 resizable={sidebar.props}
@@ -194,7 +194,7 @@ export const Nested: Story = {
             </>
           }
           content={
-            <XDSLayoutContent padding={0}>
+            <LayoutContent padding={0}>
               <div
                 style={{
                   display: 'flex',
@@ -211,7 +211,7 @@ export const Nested: Story = {
                   }}>
                   Editor
                 </div>
-                <XDSResizeHandle
+                <ResizeHandle
                   direction="vertical"
                   hasDivider
                   resizable={editor.props}
@@ -226,7 +226,7 @@ export const Nested: Story = {
                   Terminal
                 </div>
               </div>
-            </XDSLayoutContent>
+            </LayoutContent>
           }
         />
       </div>
@@ -237,28 +237,28 @@ export const Nested: Story = {
 /** Always-visible pill grip with divider line. */
 export const AlwaysVisible: Story = {
   render: () => {
-    const sidebar = useXDSResizable({
+    const sidebar = useResizable({
       defaultSize: 250,
       minSizePx: 100,
       maxSizePx: 500,
     });
     return (
       <div {...stylex.props(s.shell)}>
-        <XDSLayout
+        <Layout
           height="fill"
           start={
             <>
-              <XDSLayoutPanel width={sidebar.size} hasDivider={false}>
+              <LayoutPanel width={sidebar.size} hasDivider={false}>
                 Sidebar
-              </XDSLayoutPanel>
-              <XDSResizeHandle
+              </LayoutPanel>
+              <ResizeHandle
                 direction="horizontal"
                 hasDivider
                 resizable={sidebar.props}
               />
             </>
           }
-          content={<XDSLayoutContent>Content</XDSLayoutContent>}
+          content={<LayoutContent>Content</LayoutContent>}
         />
       </div>
     );
@@ -268,36 +268,36 @@ export const AlwaysVisible: Story = {
 /** Mixed container styles — no divider lines, relying on background contrast. */
 export const MixedContainers: Story = {
   render: () => {
-    const sidebar = useXDSResizable({
+    const sidebar = useResizable({
       defaultSize: 200,
       minSizePx: 120,
       maxSizePx: 350,
     });
-    const editor = useXDSResizable({
+    const editor = useResizable({
       defaultSize: 200,
       minSizePx: 80,
       maxSizePx: 250,
     });
     return (
       <div {...stylex.props(s.shell)}>
-        <XDSLayout
+        <Layout
           height="fill"
           start={
             <>
-              <XDSLayoutPanel
+              <LayoutPanel
                 width={sidebar.size}
                 hasDivider={false}
                 xstyle={s.muted}>
                 Explorer
-              </XDSLayoutPanel>
-              <XDSResizeHandle
+              </LayoutPanel>
+              <ResizeHandle
                 direction="horizontal"
                 resizable={sidebar.props}
               />
             </>
           }
           content={
-            <XDSLayoutContent padding={0}>
+            <LayoutContent padding={0}>
               <div
                 style={{
                   display: 'flex',
@@ -313,7 +313,7 @@ export const MixedContainers: Story = {
                   }}>
                   Editor
                 </div>
-                <XDSResizeHandle
+                <ResizeHandle
                   direction="vertical"
                   resizable={editor.props}
                 />
@@ -328,7 +328,7 @@ export const MixedContainers: Story = {
                   Terminal
                 </div>
               </div>
-            </XDSLayoutContent>
+            </LayoutContent>
           }
         />
       </div>

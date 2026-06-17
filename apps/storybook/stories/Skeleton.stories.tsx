@@ -1,13 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSSkeleton} from '@xds/core/Skeleton';
-import {XDSCard} from '@xds/core/Card';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {Skeleton} from '@xds/core/Skeleton';
+import {Card} from '@xds/core/Card';
+import {HStack, VStack} from '@xds/core/Layout';
 
-const meta: Meta<typeof XDSSkeleton> = {
+const meta: Meta<typeof Skeleton> = {
   title: 'Core/Skeleton',
-  component: XDSSkeleton,
+  component: Skeleton,
   tags: ['autodocs'],
   argTypes: {
     width: {
@@ -31,7 +31,7 @@ const meta: Meta<typeof XDSSkeleton> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSSkeleton>;
+type Story = StoryObj<typeof Skeleton>;
 
 export const Default: Story = {
   args: {
@@ -44,59 +44,59 @@ export const Default: Story = {
 
 export const Shapes: Story = {
   render: () => (
-    <XDSHStack gap={4} vAlign="center">
-      <XDSSkeleton width={40} height={40} radius="rounded" />
-      <XDSSkeleton width={100} height={20} radius={3} />
-      <XDSSkeleton width={120} height={32} radius={2} />
-      <XDSSkeleton width={80} height={80} radius="none" />
-    </XDSHStack>
+    <HStack gap={4} vAlign="center">
+      <Skeleton width={40} height={40} radius="rounded" />
+      <Skeleton width={100} height={20} radius={3} />
+      <Skeleton width={120} height={32} radius={2} />
+      <Skeleton width={80} height={80} radius="none" />
+    </HStack>
   ),
 };
 
 export const StaggeredList: Story = {
   render: () => (
-    <XDSVStack gap={2}>
-      <XDSSkeleton width={300} height={16} index={0} />
-      <XDSSkeleton width={280} height={16} index={1} />
-      <XDSSkeleton width={320} height={16} index={2} />
-      <XDSSkeleton width={260} height={16} index={3} />
-      <XDSSkeleton width={290} height={16} index={4} />
-    </XDSVStack>
+    <VStack gap={2}>
+      <Skeleton width={300} height={16} index={0} />
+      <Skeleton width={280} height={16} index={1} />
+      <Skeleton width={320} height={16} index={2} />
+      <Skeleton width={260} height={16} index={3} />
+      <Skeleton width={290} height={16} index={4} />
+    </VStack>
   ),
 };
 
 export const CardSkeleton: Story = {
   render: () => (
-    <XDSCard width={320}>
-      <XDSVStack gap={3}>
+    <Card width={320}>
+      <VStack gap={3}>
         {/* Avatar and name row */}
-        <XDSHStack gap={3} vAlign="center">
-          <XDSSkeleton width={40} height={40} radius="rounded" index={0} />
-          <XDSVStack gap={1}>
-            <XDSSkeleton width={120} height={14} index={1} />
-            <XDSSkeleton width={80} height={12} index={2} />
-          </XDSVStack>
-        </XDSHStack>
+        <HStack gap={3} vAlign="center">
+          <Skeleton width={40} height={40} radius="rounded" index={0} />
+          <VStack gap={1}>
+            <Skeleton width={120} height={14} index={1} />
+            <Skeleton width={80} height={12} index={2} />
+          </VStack>
+        </HStack>
         {/* Content lines */}
-        <XDSSkeleton width="100%" height={14} index={3} />
-        <XDSSkeleton width="90%" height={14} index={4} />
-        <XDSSkeleton width="75%" height={14} index={5} />
-      </XDSVStack>
-    </XDSCard>
+        <Skeleton width="100%" height={14} index={3} />
+        <Skeleton width="90%" height={14} index={4} />
+        <Skeleton width="75%" height={14} index={5} />
+      </VStack>
+    </Card>
   ),
 };
 
 export const TableRowSkeleton: Story = {
   render: () => (
-    <XDSVStack gap={2}>
+    <VStack gap={2}>
       {[0, 1, 2, 3].map(rowIndex => (
-        <XDSHStack key={rowIndex} gap={4} vAlign="center">
-          <XDSSkeleton width={50} height={16} index={rowIndex * 4} />
-          <XDSSkeleton width={180} height={16} index={rowIndex * 4 + 1} />
-          <XDSSkeleton width={100} height={16} index={rowIndex * 4 + 2} />
-          <XDSSkeleton width={80} height={16} index={rowIndex * 4 + 3} />
-        </XDSHStack>
+        <HStack key={rowIndex} gap={4} vAlign="center">
+          <Skeleton width={50} height={16} index={rowIndex * 4} />
+          <Skeleton width={180} height={16} index={rowIndex * 4 + 1} />
+          <Skeleton width={100} height={16} index={rowIndex * 4 + 2} />
+          <Skeleton width={80} height={16} index={rowIndex * 4 + 3} />
+        </HStack>
       ))}
-    </XDSVStack>
+    </VStack>
   ),
 };

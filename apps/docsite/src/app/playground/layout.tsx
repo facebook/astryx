@@ -2,7 +2,7 @@
 
 /**
  * Page type: playground (full-bleed tool)
- * The PlaygroundClient owns its XDSAppShell so its stateful side navigation
+ * The PlaygroundClient owns its AppShell so its stateful side navigation
  * can drive Code / Properties / Theme tabs and still get AppShell mobile nav.
  * Theme context is provided by the root <Providers> (app/providers.tsx), so
  * this route layout intentionally adds no extra chrome or scroll container.

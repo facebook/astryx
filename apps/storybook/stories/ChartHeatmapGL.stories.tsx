@@ -2,15 +2,15 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSChart,
-  XDSChartAxis,
-  XDSChartHeatmapGL,
-  XDSChartLegend,
-  useXDSChartColors,
+  Chart,
+  ChartAxis,
+  ChartHeatmapGL,
+  ChartLegend,
+  useChartColors,
   type SequentialHue,
 } from '@xds/lab';
-import {XDSStack, XDSText} from '@xds/core';
-import {XDSHeading} from '@xds/core/Text';
+import {Stack, Text} from '@xds/core';
+import {Heading} from '@xds/core/Text';
 
 const meta: Meta = {title: 'Lab/ChartHeatmapGL'};
 export default meta;
@@ -38,54 +38,54 @@ const gridData = days.flatMap((day, di) =>
 );
 
 function ActivityGridDemo() {
-  const colors = useXDSChartColors();
+  const colors = useChartColors();
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Heatmap \u2014 Activity by Day x Hour</XDSHeading>
-      <XDSChart data={gridData} xKey="hour" yKeys={['activity']} height={280}>
-        <XDSChartAxis position="bottom" />
-        <XDSChartHeatmapGL
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Heatmap \u2014 Activity by Day x Hour</Heading>
+      <Chart data={gridData} xKey="hour" yKeys={['activity']} height={280}>
+        <ChartAxis position="bottom" />
+        <ChartHeatmapGL
           xKey="hour"
           yKey="day"
           valueKey="activity"
           colorRange={colors.sequential.blue(5)}
         />
-        <XDSChartLegend
+        <ChartLegend
           gradient={colors.sequential.blue(5)}
           domain={[0, 100]}
           label="Activity"
         />
-      </XDSChart>
-    </XDSStack>
+      </Chart>
+    </Stack>
   );
 }
 export const ActivityGrid: StoryObj = {render: () => <ActivityGridDemo />};
 
 function ColorRampsDemo() {
-  const colors = useXDSChartColors();
+  const colors = useChartColors();
   const hues: SequentialHue[] = ['blue', 'shamrock', 'orange', 'purple', 'red'];
   return (
-    <XDSStack direction="vertical" gap={6}>
-      <XDSHeading level={3}>Heatmap Color Ramps</XDSHeading>
+    <Stack direction="vertical" gap={6}>
+      <Heading level={3}>Heatmap Color Ramps</Heading>
       {hues.map(hue => (
-        <XDSStack key={hue} direction="vertical" gap={1}>
-          <XDSText type="label">sequential.{hue}(5)</XDSText>
-          <XDSChart
+        <Stack key={hue} direction="vertical" gap={1}>
+          <Text type="label">sequential.{hue}(5)</Text>
+          <Chart
             data={gridData}
             xKey="hour"
             yKeys={['activity']}
             height={200}>
-            <XDSChartAxis position="bottom" />
-            <XDSChartHeatmapGL
+            <ChartAxis position="bottom" />
+            <ChartHeatmapGL
               xKey="hour"
               yKey="day"
               valueKey="activity"
               colorRange={colors.sequential[hue](5)}
             />
-          </XDSChart>
-        </XDSStack>
+          </Chart>
+        </Stack>
       ))}
-    </XDSStack>
+    </Stack>
   );
 }
 export const ColorRamps: StoryObj = {render: () => <ColorRampsDemo />};
@@ -103,25 +103,25 @@ const bigGrid = bigRows.flatMap(row =>
 );
 
 function LargeGridDemo() {
-  const colors = useXDSChartColors();
+  const colors = useChartColors();
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Heatmap \u2014 50x50 Grid</XDSHeading>
-      <XDSChart data={bigGrid} xKey="col" yKeys={['value']} height={400}>
-        <XDSChartHeatmapGL
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Heatmap \u2014 50x50 Grid</Heading>
+      <Chart data={bigGrid} xKey="col" yKeys={['value']} height={400}>
+        <ChartHeatmapGL
           xKey="col"
           yKey="row"
           valueKey="value"
           colorRange={colors.sequential.red(5)}
           cellGap={0}
         />
-        <XDSChartLegend
+        <ChartLegend
           gradient={colors.sequential.red(5)}
           domain={[0, 100]}
           label="Intensity"
         />
-      </XDSChart>
-    </XDSStack>
+      </Chart>
+    </Stack>
   );
 }
 export const LargeGrid: StoryObj = {render: () => <LargeGridDemo />};

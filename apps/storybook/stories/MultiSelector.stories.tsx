@@ -2,11 +2,11 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {XDSMultiSelector} from '@xds/core/MultiSelector';
+import {MultiSelector} from '@xds/core/MultiSelector';
 
-const meta: Meta<typeof XDSMultiSelector> = {
+const meta: Meta<typeof MultiSelector> = {
   title: 'Core/MultiSelector',
-  component: XDSMultiSelector,
+  component: MultiSelector,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
@@ -37,14 +37,14 @@ const meta: Meta<typeof XDSMultiSelector> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSMultiSelector>;
+type Story = StoryObj<typeof MultiSelector>;
 
 // Basic with strings
 export const Default: Story = {
   render: args => {
     const [value, setValue] = useState<string[]>(['Role', 'Created']);
     return (
-      <XDSMultiSelector
+      <MultiSelector
         {...args}
         label={args.label ?? 'Columns'}
         options={args.options ?? ['Name', 'Email', 'Role', 'Status', 'Created']}
@@ -63,7 +63,7 @@ export const Sections: Story = {
   render: () => {
     const [value, setValue] = useState<string[]>([]);
     return (
-      <XDSMultiSelector
+      <MultiSelector
         label="Permissions"
         options={[
           {
@@ -98,7 +98,7 @@ export const SelectAll: Story = {
   render: () => {
     const [value, setValue] = useState<string[]>([]);
     return (
-      <XDSMultiSelector
+      <MultiSelector
         label="Columns"
         options={['Name', 'Email', 'Role', 'Status', 'Created', 'Updated']}
         value={value}
@@ -116,7 +116,7 @@ export const Searchable: Story = {
   render: () => {
     const [value, setValue] = useState<string[]>([]);
     return (
-      <XDSMultiSelector
+      <MultiSelector
         label="Countries"
         options={[
           'United States',
@@ -156,21 +156,21 @@ export const TriggerModes: Story = {
     return (
       <div
         style={{display: 'flex', flexDirection: 'column', gap: 16, width: 300}}>
-        <XDSMultiSelector
+        <MultiSelector
           label="Count (default)"
           options={['Name', 'Email', 'Role', 'Status', 'Created']}
           value={value1}
           onChange={setValue1}
           triggerDisplay="count"
         />
-        <XDSMultiSelector
+        <MultiSelector
           label="Labels"
           options={['Name', 'Email', 'Role', 'Status', 'Created']}
           value={value2}
           onChange={setValue2}
           triggerDisplay="labels"
         />
-        <XDSMultiSelector
+        <MultiSelector
           label="Badges"
           options={['Name', 'Email', 'Role', 'Status', 'Created']}
           value={value3}
@@ -189,7 +189,7 @@ export const DisabledItems: Story = {
   render: () => {
     const [value, setValue] = useState<string[]>(['admin']);
     return (
-      <XDSMultiSelector
+      <MultiSelector
         label="Roles"
         options={[
           {value: 'admin', label: 'Admin', disabled: true},
@@ -216,7 +216,7 @@ export const Status: Story = {
     return (
       <div
         style={{display: 'flex', flexDirection: 'column', gap: 16, width: 300}}>
-        <XDSMultiSelector
+        <MultiSelector
           label="Error"
           options={['Name', 'Email', 'Role']}
           value={value1}
@@ -224,14 +224,14 @@ export const Status: Story = {
           status={{type: 'error', message: 'Please select at least one column'}}
           placeholder="Select..."
         />
-        <XDSMultiSelector
+        <MultiSelector
           label="Warning"
           options={['Name', 'Email', 'Role']}
           value={value2}
           onChange={setValue2}
           status={{type: 'warning', message: 'Email column has issues'}}
         />
-        <XDSMultiSelector
+        <MultiSelector
           label="Success"
           options={['Name', 'Email', 'Role']}
           value={value3}
@@ -253,7 +253,7 @@ export const Sizes: Story = {
     return (
       <div
         style={{display: 'flex', flexDirection: 'column', gap: 16, width: 300}}>
-        <XDSMultiSelector
+        <MultiSelector
           label="Small"
           size="sm"
           options={['Name', 'Email', 'Role']}
@@ -261,7 +261,7 @@ export const Sizes: Story = {
           onChange={setValue1}
           placeholder="Small (28px)"
         />
-        <XDSMultiSelector
+        <MultiSelector
           label="Medium"
           size="md"
           options={['Name', 'Email', 'Role']}
@@ -269,7 +269,7 @@ export const Sizes: Story = {
           onChange={setValue2}
           placeholder="Medium (32px)"
         />
-        <XDSMultiSelector
+        <MultiSelector
           label="Large"
           size="lg"
           options={['Name', 'Email', 'Role']}
@@ -291,7 +291,7 @@ export const FormComposition: Story = {
     return (
       <div
         style={{display: 'flex', flexDirection: 'column', gap: 16, width: 300}}>
-        <XDSMultiSelector
+        <MultiSelector
           label="Visible columns"
           description="Choose which columns to display in the table"
           options={[
@@ -307,7 +307,7 @@ export const FormComposition: Story = {
           isRequired
           triggerDisplay="labels"
         />
-        <XDSMultiSelector
+        <MultiSelector
           label="Status filter"
           description="Filter by status"
           options={['Active', 'Inactive', 'Pending', 'Archived']}
@@ -342,7 +342,7 @@ export const ColumnVisibility: Story = {
       'status',
     ]);
     return (
-      <XDSMultiSelector
+      <MultiSelector
         label="Columns"
         isLabelHidden
         options={allColumns}
@@ -362,7 +362,7 @@ export const Clearable: Story = {
   render: args => {
     const [value, setValue] = useState<string[]>(['react', 'typescript']);
     return (
-      <XDSMultiSelector
+      <MultiSelector
         {...args}
         options={[
           {value: 'react', label: 'React'},

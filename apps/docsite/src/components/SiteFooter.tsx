@@ -2,10 +2,10 @@
 
 import {Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSText} from '@xds/core/Text';
-import {XDSLink} from '@xds/core/Link';
-import {XDSHStack} from '@xds/core/Stack';
-import {XDSDivider} from '@xds/core/Divider';
+import {Text} from '@xds/core/Text';
+import {Link} from '@xds/core/Link';
+import {HStack} from '@xds/core/Stack';
+import {Divider} from '@xds/core/Divider';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
@@ -35,27 +35,27 @@ export function SiteFooter() {
 
   return (
     <footer {...stylex.props(styles.footer)}>
-      <XDSHStack gap={3} wrap="wrap" justify="center" align="center">
-        <XDSText type="supporting" color="primary">
+      <HStack gap={3} wrap="wrap" justify="center" align="center">
+        <Text type="supporting" color="primary">
           Copyright ©{year} Meta Platforms, Inc.
-        </XDSText>
+        </Text>
         {links.map(link => (
           <Fragment key={link.href}>
-            <XDSDivider
+            <Divider
               orientation="vertical"
               variant="strong"
               style={{height: '0.75em'}}
             />
-            <XDSLink
+            <Link
               type="supporting"
               color="primary"
               label={link.label}
               href={link.href}>
               {link.label}
-            </XDSLink>
+            </Link>
           </Fragment>
         ))}
-      </XDSHStack>
+      </HStack>
     </footer>
   );
 }

@@ -2,14 +2,14 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSStepper, XDSStep} from '@xds/lab/Stepper';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText} from '@xds/core/Text';
+import {Stepper, Step} from '@xds/lab/Stepper';
+import {TextInput} from '@xds/core/TextInput';
+import {Button} from '@xds/core/Button';
+import {Text} from '@xds/core/Text';
 
-const meta: Meta<typeof XDSStepper> = {
+const meta: Meta<typeof Stepper> = {
   title: 'Lab/Stepper',
-  component: XDSStepper,
+  component: Stepper,
   tags: ['autodocs'],
   argTypes: {
     activeStep: {
@@ -25,57 +25,57 @@ const meta: Meta<typeof XDSStepper> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSStepper>;
+type Story = StoryObj<typeof Stepper>;
 
 export const Default: Story = {
   args: {activeStep: 1},
   render: args => (
-    <XDSStepper activeStep={args.activeStep} orientation={args.orientation}>
-      <XDSStep step={0} label="Account" />
-      <XDSStep step={1} label="Profile" />
-      <XDSStep step={2} label="Review" />
-    </XDSStepper>
+    <Stepper activeStep={args.activeStep} orientation={args.orientation}>
+      <Step step={0} label="Account" />
+      <Step step={1} label="Profile" />
+      <Step step={2} label="Review" />
+    </Stepper>
   ),
 };
 
 export const AllCompleted: Story = {
   render: () => (
-    <XDSStepper activeStep={3}>
-      <XDSStep step={0} label="Account" />
-      <XDSStep step={1} label="Profile" />
-      <XDSStep step={2} label="Review" />
-    </XDSStepper>
+    <Stepper activeStep={3}>
+      <Step step={0} label="Account" />
+      <Step step={1} label="Profile" />
+      <Step step={2} label="Review" />
+    </Stepper>
   ),
 };
 
 export const FirstStep: Story = {
   render: () => (
-    <XDSStepper activeStep={0}>
-      <XDSStep step={0} label="Account" />
-      <XDSStep step={1} label="Profile" />
-      <XDSStep step={2} label="Review" />
-    </XDSStepper>
+    <Stepper activeStep={0}>
+      <Step step={0} label="Account" />
+      <Step step={1} label="Profile" />
+      <Step step={2} label="Review" />
+    </Stepper>
   ),
 };
 
 export const WithDescriptions: Story = {
   render: () => (
-    <XDSStepper activeStep={1}>
-      <XDSStep step={0} label="Account" description="Create your account" />
-      <XDSStep step={1} label="Profile" description="Set up your profile" />
-      <XDSStep step={2} label="Review" description="Review and confirm" />
-    </XDSStepper>
+    <Stepper activeStep={1}>
+      <Step step={0} label="Account" description="Create your account" />
+      <Step step={1} label="Profile" description="Set up your profile" />
+      <Step step={2} label="Review" description="Review and confirm" />
+    </Stepper>
   ),
 };
 
 export const Vertical: Story = {
   render: () => (
     <div style={{maxWidth: 400}}>
-      <XDSStepper activeStep={1} orientation="vertical">
-        <XDSStep step={0} label="Account" description="Create your account" />
-        <XDSStep step={1} label="Profile" description="Set up your profile" />
-        <XDSStep step={2} label="Review" description="Review and confirm" />
-      </XDSStepper>
+      <Stepper activeStep={1} orientation="vertical">
+        <Step step={0} label="Account" description="Create your account" />
+        <Step step={1} label="Profile" description="Set up your profile" />
+        <Step step={2} label="Review" description="Review and confirm" />
+      </Stepper>
     </div>
   ),
 };
@@ -85,44 +85,44 @@ export const NonLinear: Story = {
   render: () => {
     const [activeStep, setActiveStep] = useState(1);
     return (
-      <XDSStepper activeStep={activeStep} onStepClick={setActiveStep}>
-        <XDSStep step={0} label="Account" />
-        <XDSStep step={1} label="Profile" />
-        <XDSStep step={2} label="Review" />
-      </XDSStepper>
+      <Stepper activeStep={activeStep} onStepClick={setActiveStep}>
+        <Step step={0} label="Account" />
+        <Step step={1} label="Profile" />
+        <Step step={2} label="Review" />
+      </Stepper>
     );
   },
 };
 
 export const WithError: Story = {
   render: () => (
-    <XDSStepper activeStep={1}>
-      <XDSStep step={0} label="Account" />
-      <XDSStep step={1} label="Profile" hasError />
-      <XDSStep step={2} label="Review" />
-    </XDSStepper>
+    <Stepper activeStep={1}>
+      <Step step={0} label="Account" />
+      <Step step={1} label="Profile" hasError />
+      <Step step={2} label="Review" />
+    </Stepper>
   ),
 };
 
 export const WithDisabled: Story = {
   render: () => (
-    <XDSStepper activeStep={1}>
-      <XDSStep step={0} label="Account" />
-      <XDSStep step={1} label="Profile" />
-      <XDSStep step={2} label="Review" isDisabled />
-    </XDSStepper>
+    <Stepper activeStep={1}>
+      <Step step={0} label="Account" />
+      <Step step={1} label="Profile" />
+      <Step step={2} label="Review" isDisabled />
+    </Stepper>
   ),
 };
 
 export const FiveSteps: Story = {
   render: () => (
-    <XDSStepper activeStep={2}>
-      <XDSStep step={0} label="Cart" />
-      <XDSStep step={1} label="Shipping" />
-      <XDSStep step={2} label="Payment" />
-      <XDSStep step={3} label="Review" />
-      <XDSStep step={4} label="Confirm" />
-    </XDSStepper>
+    <Stepper activeStep={2}>
+      <Step step={0} label="Cart" />
+      <Step step={1} label="Shipping" />
+      <Step step={2} label="Payment" />
+      <Step step={3} label="Review" />
+      <Step step={4} label="Confirm" />
+    </Stepper>
   ),
 };
 
@@ -132,15 +132,15 @@ export const VerticalNonLinear: Story = {
     const [activeStep, setActiveStep] = useState(2);
     return (
       <div style={{maxWidth: 400}}>
-        <XDSStepper
+        <Stepper
           activeStep={activeStep}
           orientation="vertical"
           onStepClick={setActiveStep}>
-          <XDSStep step={0} label="Account" description="Create your account" />
-          <XDSStep step={1} label="Profile" description="Set up your profile" />
-          <XDSStep step={2} label="Review" description="Review and confirm" />
-          <XDSStep step={3} label="Done" description="All finished!" />
-        </XDSStepper>
+          <Step step={0} label="Account" description="Create your account" />
+          <Step step={1} label="Profile" description="Set up your profile" />
+          <Step step={2} label="Review" description="Review and confirm" />
+          <Step step={3} label="Done" description="All finished!" />
+        </Stepper>
       </div>
     );
   },
@@ -152,22 +152,22 @@ export const VerticalWithContent: Story = {
     const [activeStep, setActiveStep] = useState(1);
     return (
       <div style={{maxWidth: 480}}>
-        <XDSStepper activeStep={activeStep} orientation="vertical">
-          <XDSStep step={0} label="Account" description="Create your account">
+        <Stepper activeStep={activeStep} orientation="vertical">
+          <Step step={0} label="Account" description="Create your account">
             {activeStep === 0 && (
               <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-                <XDSTextInput
+                <TextInput
                   label="Email"
                   placeholder="you@example.com"
                   value=""
                 />
-                <XDSTextInput
+                <TextInput
                   label="Password"
                   placeholder="••••••••"
                   value=""
                 />
                 <div>
-                  <XDSButton
+                  <Button
                     label="Continue"
                     variant="primary"
                     onClick={() => setActiveStep(1)}
@@ -175,31 +175,31 @@ export const VerticalWithContent: Story = {
                 </div>
               </div>
             )}
-          </XDSStep>
-          <XDSStep
+          </Step>
+          <Step
             step={1}
             label="Profile"
             description="Tell us about yourself">
             {activeStep === 1 && (
               <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-                <XDSTextInput
+                <TextInput
                   label="Full name"
                   placeholder="Jane Doe"
                   value=""
                 />
-                <XDSTextInput
+                <TextInput
                   label="Company"
                   placeholder="Acme Inc."
                   value=""
                 />
-                <XDSTextInput label="Role" placeholder="Engineer" value="" />
+                <TextInput label="Role" placeholder="Engineer" value="" />
                 <div style={{display: 'flex', gap: 8}}>
-                  <XDSButton
+                  <Button
                     label="Back"
                     variant="secondary"
                     onClick={() => setActiveStep(0)}
                   />
-                  <XDSButton
+                  <Button
                     label="Continue"
                     variant="primary"
                     onClick={() => setActiveStep(2)}
@@ -207,21 +207,21 @@ export const VerticalWithContent: Story = {
                 </div>
               </div>
             )}
-          </XDSStep>
-          <XDSStep step={2} label="Review" description="Confirm your details">
+          </Step>
+          <Step step={2} label="Review" description="Confirm your details">
             {activeStep === 2 && (
               <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-                <XDSText type="body">
+                <Text type="body">
                   Review your account details and click Finish to complete
                   setup.
-                </XDSText>
+                </Text>
                 <div style={{display: 'flex', gap: 8}}>
-                  <XDSButton
+                  <Button
                     label="Back"
                     variant="secondary"
                     onClick={() => setActiveStep(1)}
                   />
-                  <XDSButton
+                  <Button
                     label="Finish"
                     variant="primary"
                     onClick={() => setActiveStep(3)}
@@ -229,8 +229,8 @@ export const VerticalWithContent: Story = {
                 </div>
               </div>
             )}
-          </XDSStep>
-        </XDSStepper>
+          </Step>
+        </Stepper>
       </div>
     );
   },

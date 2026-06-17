@@ -2,7 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSStack, XDSStackItem} from '@xds/core/Layout';
+import {Stack, StackItem} from '@xds/core/Layout';
 import {
   colorVars,
   spacingVars,
@@ -118,9 +118,9 @@ const Box = ({
   </div>
 );
 
-const meta: Meta<typeof XDSStack> = {
+const meta: Meta<typeof Stack> = {
   title: 'Core/Stack',
-  component: XDSStack,
+  component: Stack,
   tags: ['autodocs'],
   argTypes: {
     direction: {
@@ -170,7 +170,7 @@ const meta: Meta<typeof XDSStack> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSStack>;
+type Story = StoryObj<typeof Stack>;
 
 // ============================================================================
 // Basic examples
@@ -182,11 +182,11 @@ export const Default: Story = {
     children: null,
   },
   render: args => (
-    <XDSStack {...args}>
+    <Stack {...args}>
       <Box>Item 1</Box>
       <Box>Item 2</Box>
       <Box>Item 3</Box>
-    </XDSStack>
+    </Stack>
   ),
 };
 
@@ -196,11 +196,11 @@ export const Horizontal: Story = {
     gap: 2,
   },
   render: args => (
-    <XDSStack {...args}>
+    <Stack {...args}>
       <Box>Item 1</Box>
       <Box>Item 2</Box>
       <Box>Item 3</Box>
-    </XDSStack>
+    </Stack>
   ),
 };
 
@@ -210,11 +210,11 @@ export const Vertical: Story = {
     gap: 4,
   },
   render: args => (
-    <XDSStack {...args}>
+    <Stack {...args}>
       <Box>Item 1</Box>
       <Box>Item 2</Box>
       <Box>Item 3</Box>
-    </XDSStack>
+    </Stack>
   ),
 };
 
@@ -231,7 +231,7 @@ export const HorizontalAlignments: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <div>
         <h4 {...stylex.props(styles.heading)}>hAlign: start (default)</h4>
-        <XDSStack
+        <Stack
           direction="horizontal"
           gap={2}
           hAlign="start"
@@ -243,11 +243,11 @@ export const HorizontalAlignments: Story = {
           <Box>A</Box>
           <Box>B</Box>
           <Box>C</Box>
-        </XDSStack>
+        </Stack>
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>hAlign: center</h4>
-        <XDSStack
+        <Stack
           direction="horizontal"
           gap={2}
           hAlign="center"
@@ -259,11 +259,11 @@ export const HorizontalAlignments: Story = {
           <Box>A</Box>
           <Box>B</Box>
           <Box>C</Box>
-        </XDSStack>
+        </Stack>
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>hAlign: end</h4>
-        <XDSStack
+        <Stack
           direction="horizontal"
           gap={2}
           hAlign="end"
@@ -275,11 +275,11 @@ export const HorizontalAlignments: Story = {
           <Box>A</Box>
           <Box>B</Box>
           <Box>C</Box>
-        </XDSStack>
+        </Stack>
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>hAlign: between</h4>
-        <XDSStack
+        <Stack
           direction="horizontal"
           gap={2}
           hAlign="between"
@@ -291,11 +291,11 @@ export const HorizontalAlignments: Story = {
           <Box>A</Box>
           <Box>B</Box>
           <Box>C</Box>
-        </XDSStack>
+        </Stack>
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>hAlign: evenly</h4>
-        <XDSStack
+        <Stack
           direction="horizontal"
           gap={2}
           hAlign="evenly"
@@ -307,7 +307,7 @@ export const HorizontalAlignments: Story = {
           <Box>A</Box>
           <Box>B</Box>
           <Box>C</Box>
-        </XDSStack>
+        </Stack>
       </div>
     </div>
   ),
@@ -322,7 +322,7 @@ export const HorizontalCrossAxisAlignment: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <div>
         <h4 {...stylex.props(styles.heading)}>vAlign: start</h4>
-        <XDSStack
+        <Stack
           direction="horizontal"
           gap={2}
           vAlign="start"
@@ -332,11 +332,11 @@ export const HorizontalCrossAxisAlignment: Story = {
             B<br />B
           </Box>
           <Box>C</Box>
-        </XDSStack>
+        </Stack>
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>vAlign: center</h4>
-        <XDSStack
+        <Stack
           direction="horizontal"
           gap={2}
           vAlign="center"
@@ -346,11 +346,11 @@ export const HorizontalCrossAxisAlignment: Story = {
             B<br />B
           </Box>
           <Box>C</Box>
-        </XDSStack>
+        </Stack>
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>vAlign: end</h4>
-        <XDSStack
+        <Stack
           direction="horizontal"
           gap={2}
           vAlign="end"
@@ -360,11 +360,11 @@ export const HorizontalCrossAxisAlignment: Story = {
             B<br />B
           </Box>
           <Box>C</Box>
-        </XDSStack>
+        </Stack>
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>vAlign: stretch (default)</h4>
-        <XDSStack
+        <Stack
           direction="horizontal"
           gap={2}
           vAlign="stretch"
@@ -374,7 +374,7 @@ export const HorizontalCrossAxisAlignment: Story = {
             B<br />B
           </Box>
           <Box>C</Box>
-        </XDSStack>
+        </Stack>
       </div>
     </div>
   ),
@@ -387,7 +387,7 @@ export const VerticalAlignments: Story = {
         <h4 {...stylex.props(styles.heading)}>
           direction=&quot;vertical&quot;, hAlign: start
         </h4>
-        <XDSStack
+        <Stack
           direction="vertical"
           gap={2}
           hAlign="start"
@@ -399,13 +399,13 @@ export const VerticalAlignments: Story = {
           <Box>A</Box>
           <Box>BB</Box>
           <Box>CCC</Box>
-        </XDSStack>
+        </Stack>
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>
           direction=&quot;vertical&quot;, hAlign: center
         </h4>
-        <XDSStack
+        <Stack
           direction="vertical"
           gap={2}
           hAlign="center"
@@ -417,13 +417,13 @@ export const VerticalAlignments: Story = {
           <Box>A</Box>
           <Box>BB</Box>
           <Box>CCC</Box>
-        </XDSStack>
+        </Stack>
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>
           direction=&quot;vertical&quot;, hAlign: end
         </h4>
-        <XDSStack
+        <Stack
           direction="vertical"
           gap={2}
           hAlign="end"
@@ -435,13 +435,13 @@ export const VerticalAlignments: Story = {
           <Box>A</Box>
           <Box>BB</Box>
           <Box>CCC</Box>
-        </XDSStack>
+        </Stack>
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>
           direction=&quot;vertical&quot;, hAlign: stretch
         </h4>
-        <XDSStack
+        <Stack
           direction="vertical"
           gap={2}
           hAlign="stretch"
@@ -453,7 +453,7 @@ export const VerticalAlignments: Story = {
           <Box>A</Box>
           <Box>BB</Box>
           <Box>CCC</Box>
-        </XDSStack>
+        </Stack>
       </div>
     </div>
   ),
@@ -470,7 +470,7 @@ export const Wrapping: Story = {
     wrap: 'wrap',
   },
   render: args => (
-    <XDSStack
+    <Stack
       {...args}
       xstyle={[
         styles.container,
@@ -482,17 +482,17 @@ export const Wrapping: Story = {
       <Box>Item 3</Box>
       <Box>Item 4</Box>
       <Box>Item 5</Box>
-    </XDSStack>
+    </Stack>
   ),
 };
 
 // ============================================================================
-// XDSStackItem examples (merged from StackItem stories)
+// StackItem examples (merged from StackItem stories)
 // ============================================================================
 
 export const StackItemFillSize: Story = {
   render: () => (
-    <XDSStack
+    <Stack
       direction="horizontal"
       gap={2}
       xstyle={[
@@ -500,16 +500,16 @@ export const StackItemFillSize: Story = {
         styles.containerWidthMedium,
         styles.containerPadding,
       ]}>
-      <XDSStackItem size="static">
+      <StackItem size="static">
         <Box alt>Static</Box>
-      </XDSStackItem>
-      <XDSStackItem size="fill">
+      </StackItem>
+      <StackItem size="fill">
         <Box>Fill (grows to fill remaining space)</Box>
-      </XDSStackItem>
-      <XDSStackItem size="static">
+      </StackItem>
+      <StackItem size="static">
         <Box alt>Static</Box>
-      </XDSStackItem>
-    </XDSStack>
+      </StackItem>
+    </Stack>
   ),
 };
 
@@ -517,7 +517,7 @@ export const StackItemEqualFill: Story = {
   render: () => (
     <div>
       <h4 {...stylex.props(styles.heading)}>Equal Fill (1:1:1)</h4>
-      <XDSStack
+      <Stack
         direction="horizontal"
         gap={2}
         xstyle={[
@@ -525,23 +525,23 @@ export const StackItemEqualFill: Story = {
           styles.containerWidthMedium,
           styles.containerPadding,
         ]}>
-        <XDSStackItem size="fill">
+        <StackItem size="fill">
           <Box>fill</Box>
-        </XDSStackItem>
-        <XDSStackItem size="fill">
+        </StackItem>
+        <StackItem size="fill">
           <Box green>fill</Box>
-        </XDSStackItem>
-        <XDSStackItem size="fill">
+        </StackItem>
+        <StackItem size="fill">
           <Box purple>fill</Box>
-        </XDSStackItem>
-      </XDSStack>
+        </StackItem>
+      </Stack>
     </div>
   ),
 };
 
 export const StackItemCrossAlignSelf: Story = {
   render: () => (
-    <XDSStack
+    <Stack
       direction="horizontal"
       gap={2}
       xstyle={[
@@ -549,19 +549,19 @@ export const StackItemCrossAlignSelf: Story = {
         styles.containerHeightMedium,
         styles.containerPadding,
       ]}>
-      <XDSStackItem crossAlignSelf="start">
+      <StackItem crossAlignSelf="start">
         <Box>start</Box>
-      </XDSStackItem>
-      <XDSStackItem crossAlignSelf="center">
+      </StackItem>
+      <StackItem crossAlignSelf="center">
         <Box green>center</Box>
-      </XDSStackItem>
-      <XDSStackItem crossAlignSelf="end">
+      </StackItem>
+      <StackItem crossAlignSelf="end">
         <Box purple>end</Box>
-      </XDSStackItem>
-      <XDSStackItem crossAlignSelf="stretch">
+      </StackItem>
+      <StackItem crossAlignSelf="stretch">
         <Box orange>stretch</Box>
-      </XDSStackItem>
-    </XDSStack>
+      </StackItem>
+    </Stack>
   ),
 };
 
@@ -571,7 +571,7 @@ export const StackItemCrossAlignSelf: Story = {
 
 export const HeaderLayout: Story = {
   render: () => (
-    <XDSStack
+    <Stack
       direction="horizontal"
       gap={2}
       xstyle={[
@@ -579,22 +579,22 @@ export const HeaderLayout: Story = {
         styles.containerWidthLarge,
         styles.containerPadding,
       ]}>
-      <XDSStackItem size="static">
+      <StackItem size="static">
         <Box alt>Logo</Box>
-      </XDSStackItem>
-      <XDSStackItem size="fill">
+      </StackItem>
+      <StackItem size="fill">
         <Box>Navigation</Box>
-      </XDSStackItem>
-      <XDSStackItem size="static">
+      </StackItem>
+      <StackItem size="static">
         <Box alt>Actions</Box>
-      </XDSStackItem>
-    </XDSStack>
+      </StackItem>
+    </Stack>
   ),
 };
 
 export const SidebarLayout: Story = {
   render: () => (
-    <XDSStack
+    <Stack
       direction="horizontal"
       gap={2}
       xstyle={[
@@ -603,34 +603,34 @@ export const SidebarLayout: Story = {
         styles.containerHeightLarge,
         styles.containerPadding,
       ]}>
-      <XDSStackItem size="static" xstyle={styles.sidebarWidth}>
+      <StackItem size="static" xstyle={styles.sidebarWidth}>
         <Box alt>Sidebar</Box>
-      </XDSStackItem>
-      <XDSStackItem size="fill">
+      </StackItem>
+      <StackItem size="fill">
         <Box>Main Content</Box>
-      </XDSStackItem>
-    </XDSStack>
+      </StackItem>
+    </Stack>
   ),
 };
 
 export const PageLayout: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={2} xstyle={styles.containerWidthLarge}>
-      <XDSStack
+    <Stack direction="vertical" gap={2} xstyle={styles.containerWidthLarge}>
+      <Stack
         direction="horizontal"
         gap={2}
         xstyle={[styles.container, styles.containerPadding]}>
-        <XDSStackItem size="static">
+        <StackItem size="static">
           <Box alt>Logo</Box>
-        </XDSStackItem>
-        <XDSStackItem size="fill">
+        </StackItem>
+        <StackItem size="fill">
           <Box>Navigation</Box>
-        </XDSStackItem>
-        <XDSStackItem size="static">
+        </StackItem>
+        <StackItem size="static">
           <Box alt>Actions</Box>
-        </XDSStackItem>
-      </XDSStack>
-      <XDSStack
+        </StackItem>
+      </Stack>
+      <Stack
         direction="horizontal"
         gap={2}
         xstyle={[
@@ -638,13 +638,13 @@ export const PageLayout: Story = {
           styles.containerHeightLarge,
           styles.containerPadding,
         ]}>
-        <XDSStackItem size="static" xstyle={styles.sidebarWidth}>
+        <StackItem size="static" xstyle={styles.sidebarWidth}>
           <Box alt>Sidebar</Box>
-        </XDSStackItem>
-        <XDSStackItem size="fill">
+        </StackItem>
+        <StackItem size="fill">
           <Box>Main Content</Box>
-        </XDSStackItem>
-      </XDSStack>
-    </XDSStack>
+        </StackItem>
+      </Stack>
+    </Stack>
   ),
 };

@@ -4,11 +4,11 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSLayout, XDSLayoutHeader, XDSLayoutContent} from '@xds/core/Layout';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSVStack} from '@xds/core/Stack';
+import {Heading, Text} from '@xds/core/Text';
+import {Layout, LayoutHeader, LayoutContent} from '@xds/core/Layout';
+import {TextInput} from '@xds/core/TextInput';
+import {Grid} from '@xds/core/Grid';
+import {VStack} from '@xds/core/Stack';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {categories} from '../../sandboxPages';
 import {ProjectCard} from '../../ProjectCard';
@@ -42,34 +42,34 @@ export function CategoryContent({slug}: {slug: string}) {
 
   if (!category) {
     return (
-      <XDSLayout
+      <Layout
         header={
-          <XDSLayoutHeader hasDivider padding={6}>
-            <XDSHeading level={1}>Not Found</XDSHeading>
-          </XDSLayoutHeader>
+          <LayoutHeader hasDivider padding={6}>
+            <Heading level={1}>Not Found</Heading>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent padding={6}>
-            <XDSText type="body" color="secondary">
+          <LayoutContent padding={6}>
+            <Text type="body" color="secondary">
               Category &quot;{slug}&quot; doesn&apos;t exist.
-            </XDSText>
-          </XDSLayoutContent>
+            </Text>
+          </LayoutContent>
         }
       />
     );
   }
 
   return (
-    <XDSLayout
+    <Layout
       header={
-        <XDSLayoutHeader hasDivider padding={6}>
-          <XDSHeading level={1}>{category.label}</XDSHeading>
-        </XDSLayoutHeader>
+        <LayoutHeader hasDivider padding={6}>
+          <Heading level={1}>{category.label}</Heading>
+        </LayoutHeader>
       }
       content={
-        <XDSLayoutContent padding={6}>
-          <XDSVStack gap={6}>
-            <XDSTextInput
+        <LayoutContent padding={6}>
+          <VStack gap={6}>
+            <TextInput
               label="Search"
               isLabelHidden
               placeholder="Search..."
@@ -81,19 +81,19 @@ export function CategoryContent({slug}: {slug: string}) {
 
             {filtered.length === 0 ? (
               <div {...stylex.props(styles.emptyState)}>
-                <XDSText type="supporting" color="secondary">
+                <Text type="supporting" color="secondary">
                   No results found.
-                </XDSText>
+                </Text>
               </div>
             ) : (
-              <XDSGrid columns={{minWidth: 320}} gap={4}>
+              <Grid columns={{minWidth: 320}} gap={4}>
                 {filtered.map(page => (
                   <ProjectCard key={page.href} page={page} />
                 ))}
-              </XDSGrid>
+              </Grid>
             )}
-          </XDSVStack>
-        </XDSLayoutContent>
+          </VStack>
+        </LayoutContent>
       }
     />
   );

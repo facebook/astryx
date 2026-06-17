@@ -3,17 +3,17 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSTable,
-  useXDSTableColumnSettings,
-  useXDSTableColumnSettingsState,
-  useXDSTableSelection,
-  useXDSTableSelectionState,
+  Table,
+  useTableColumnSettings,
+  useTableColumnSettingsState,
+  useTableSelection,
+  useTableSelectionState,
 } from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
-import {XDSMultiSelector} from '@xds/core/MultiSelector';
-import {XDSButton} from '@xds/core/Button';
-import {XDSToolbar} from '@xds/core/Toolbar';
-import {XDSText} from '@xds/core/Text';
+import type {TableColumn} from '@xds/core/Table';
+import {MultiSelector} from '@xds/core/MultiSelector';
+import {Button} from '@xds/core/Button';
+import {Toolbar} from '@xds/core/Toolbar';
+import {Text} from '@xds/core/Text';
 
 // =============================================================================
 // Sample Data
@@ -71,7 +71,7 @@ const users: User[] = [
   },
 ];
 
-const allColumns: XDSTableColumn<User>[] = [
+const allColumns: TableColumn<User>[] = [
   {key: 'name', header: 'Name'},
   {key: 'email', header: 'Email'},
   {key: 'role', header: 'Role'},
@@ -114,13 +114,13 @@ export const BasicColumnToggle: Story = {
     const [activeKeys, setActiveKeys] =
       useState<UserColumnKey[]>(defaultActiveKeys);
 
-    const state = useXDSTableColumnSettingsState<UserColumnKey>({
+    const state = useTableColumnSettingsState<UserColumnKey>({
       columns: columnOptions,
       activeColumnKeys: activeKeys,
       onChangeActiveColumnKeys: (keys: ReadonlyArray<UserColumnKey>) =>
         setActiveKeys([...keys]),
     });
-    const plugin = useXDSTableColumnSettings<User, UserColumnKey>(
+    const plugin = useTableColumnSettings<User, UserColumnKey>(
       state.columnSettingsConfig,
     );
     const selectorOptions = columnOptions.map(c => ({
@@ -131,11 +131,11 @@ export const BasicColumnToggle: Story = {
 
     return (
       <div style={{maxWidth: 700}}>
-        <XDSToolbar
+        <Toolbar
           label="Table actions"
-          startContent={<XDSText type="label">Users</XDSText>}
+          startContent={<Text type="label">Users</Text>}
           endContent={
-            <XDSMultiSelector
+            <MultiSelector
               label="Columns"
               isLabelHidden
               options={selectorOptions}
@@ -144,7 +144,7 @@ export const BasicColumnToggle: Story = {
             />
           }
         />
-        <XDSTable
+        <Table
           data={users}
           columns={allColumns}
           idKey="id"
@@ -163,13 +163,13 @@ export const DisabledColumns: Story = {
       'role',
     ]);
 
-    const state = useXDSTableColumnSettingsState<UserColumnKey>({
+    const state = useTableColumnSettingsState<UserColumnKey>({
       columns: columnOptions,
       activeColumnKeys: activeKeys,
       onChangeActiveColumnKeys: (keys: ReadonlyArray<UserColumnKey>) =>
         setActiveKeys([...keys]),
     });
-    const plugin = useXDSTableColumnSettings<User, UserColumnKey>(
+    const plugin = useTableColumnSettings<User, UserColumnKey>(
       state.columnSettingsConfig,
     );
     const selectorOptions = columnOptions.map(c => ({
@@ -180,14 +180,14 @@ export const DisabledColumns: Story = {
 
     return (
       <div style={{maxWidth: 700}}>
-        <XDSText type="supporting">
+        <Text type="supporting">
           &quot;Name&quot; is always visible and cannot be unchecked.
-        </XDSText>
-        <XDSToolbar
+        </Text>
+        <Toolbar
           label="Table actions"
-          startContent={<XDSText type="label">Users</XDSText>}
+          startContent={<Text type="label">Users</Text>}
           endContent={
-            <XDSMultiSelector
+            <MultiSelector
               label="Columns"
               isLabelHidden
               options={selectorOptions}
@@ -196,7 +196,7 @@ export const DisabledColumns: Story = {
             />
           }
         />
-        <XDSTable
+        <Table
           data={users}
           columns={allColumns}
           idKey="id"
@@ -213,14 +213,14 @@ export const ResetToDefault: Story = {
 
     const [activeKeys, setActiveKeys] = useState<UserColumnKey[]>(defaultKeys);
 
-    const state = useXDSTableColumnSettingsState<UserColumnKey>({
+    const state = useTableColumnSettingsState<UserColumnKey>({
       columns: columnOptions,
       activeColumnKeys: activeKeys,
       onChangeActiveColumnKeys: (keys: ReadonlyArray<UserColumnKey>) =>
         setActiveKeys([...keys]),
       defaultColumnKeys: defaultKeys,
     });
-    const plugin = useXDSTableColumnSettings<User, UserColumnKey>(
+    const plugin = useTableColumnSettings<User, UserColumnKey>(
       state.columnSettingsConfig,
     );
     const selectorOptions = columnOptions.map(c => ({
@@ -231,21 +231,21 @@ export const ResetToDefault: Story = {
 
     return (
       <div style={{maxWidth: 700}}>
-        <XDSText type="supporting">
+        <Text type="supporting">
           Toggle columns, then reset to restore the default set (Name, Email,
           Role).
-        </XDSText>
-        <XDSToolbar
+        </Text>
+        <Toolbar
           label="Table actions"
-          startContent={<XDSText type="label">Users</XDSText>}
+          startContent={<Text type="label">Users</Text>}
           endContent={
             <>
-              <XDSButton
+              <Button
                 label="Reset to default"
                 variant="secondary"
                 onClick={state.resetToDefault}
               />
-              <XDSMultiSelector
+              <MultiSelector
                 label="Columns"
                 isLabelHidden
                 options={selectorOptions}
@@ -255,7 +255,7 @@ export const ResetToDefault: Story = {
             </>
           }
         />
-        <XDSTable
+        <Table
           data={users}
           columns={allColumns}
           idKey="id"
@@ -272,13 +272,13 @@ export const WithSelection: Story = {
       useState<UserColumnKey[]>(defaultActiveKeys);
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-    const state = useXDSTableColumnSettingsState<UserColumnKey>({
+    const state = useTableColumnSettingsState<UserColumnKey>({
       columns: columnOptions,
       activeColumnKeys: activeKeys,
       onChangeActiveColumnKeys: (keys: ReadonlyArray<UserColumnKey>) =>
         setActiveKeys([...keys]),
     });
-    const columnPlugin = useXDSTableColumnSettings<User, UserColumnKey>(
+    const columnPlugin = useTableColumnSettings<User, UserColumnKey>(
       state.columnSettingsConfig,
     );
     const selectorOptions = columnOptions.map(c => ({
@@ -287,25 +287,25 @@ export const WithSelection: Story = {
       disabled: c.isAlwaysVisible === true,
     }));
 
-    const {selectionConfig} = useXDSTableSelectionState<User>({
+    const {selectionConfig} = useTableSelectionState<User>({
       data: users,
       idKey: 'id',
       selectedKeys,
       setSelectedKeys,
     });
-    const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
+    const selectionPlugin = useTableSelection<User>(selectionConfig);
 
     return (
       <div style={{maxWidth: 700}}>
-        <XDSToolbar
+        <Toolbar
           label="Table actions"
           startContent={
-            <XDSText type="supporting">
+            <Text type="supporting">
               {selectedKeys.size} of {users.length} selected
-            </XDSText>
+            </Text>
           }
           endContent={
-            <XDSMultiSelector
+            <MultiSelector
               label="Columns"
               isLabelHidden
               options={selectorOptions}
@@ -314,7 +314,7 @@ export const WithSelection: Story = {
             />
           }
         />
-        <XDSTable
+        <Table
           data={users}
           columns={allColumns}
           idKey="id"

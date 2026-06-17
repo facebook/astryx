@@ -6,13 +6,13 @@
  * name and seeds the editor with the full theme object.
  */
 
-import type {XDSDefinedTheme} from '@xds/core/theme';
+import type {DefinedTheme} from '@xds/core/theme';
 import {themeObjectsFull} from '../../generated/themeRegistry';
 
 export interface ThemeListEntry {
   name: string;
   label: string;
-  theme: XDSDefinedTheme;
+  theme: DefinedTheme;
 }
 
 export function getThemeList(): ThemeListEntry[] {

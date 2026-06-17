@@ -3,9 +3,9 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSTable, pixel} from '@xds/core/Table';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Text, Heading} from '@xds/core/Text';
+import {Table, pixel} from '@xds/core/Table';
 import type {TokenTableProps} from './types';
 import {resolveToken, getTokensByPrefix} from './helpers';
 
@@ -34,7 +34,7 @@ export function RadiusTokenTable({theme}: TokenTableProps) {
   }));
 
   return (
-    <XDSTable
+    <Table
       data={data as Record<string, unknown>[]}
       columns={[
         {key: 'tokenName', header: 'Token', width: pixel(200)},
@@ -42,15 +42,15 @@ export function RadiusTokenTable({theme}: TokenTableProps) {
           key: 'value',
           header: 'Value',
           renderCell: (item: Record<string, unknown>) => (
-            <XDSHStack gap={2} vAlign="center">
+            <HStack gap={2} vAlign="center">
               <div
                 {...stylex.props(styles.radiusBox)}
                 style={{borderRadius: item.value as string}}
               />
-              <XDSText type="code" color="secondary">
+              <Text type="code" color="secondary">
                 {item.value as string}
-              </XDSText>
-            </XDSHStack>
+              </Text>
+            </HStack>
           ),
         },
       ]}
@@ -73,7 +73,7 @@ export function BorderTokenTable({theme}: TokenTableProps) {
   }));
 
   return (
-    <XDSTable
+    <Table
       data={data as Record<string, unknown>[]}
       columns={[
         {key: 'tokenName', header: 'Token', width: pixel(200)},
@@ -81,15 +81,15 @@ export function BorderTokenTable({theme}: TokenTableProps) {
           key: 'value',
           header: 'Value',
           renderCell: (item: Record<string, unknown>) => (
-            <XDSHStack gap={2} vAlign="center">
+            <HStack gap={2} vAlign="center">
               <div
                 {...stylex.props(styles.borderLine)}
                 style={{borderBottomWidth: item.value as string}}
               />
-              <XDSText type="code" color="secondary">
+              <Text type="code" color="secondary">
                 {item.value as string}
-              </XDSText>
-            </XDSHStack>
+              </Text>
+            </HStack>
           ),
         },
       ]}
@@ -102,15 +102,15 @@ export function BorderTokenTable({theme}: TokenTableProps) {
 
 export function ShapeTokenTable({theme}: TokenTableProps) {
   return (
-    <XDSVStack gap={6}>
-      <XDSVStack gap={3}>
-        <XDSHeading level={3}>Radius</XDSHeading>
+    <VStack gap={6}>
+      <VStack gap={3}>
+        <Heading level={3}>Radius</Heading>
         <RadiusTokenTable theme={theme} />
-      </XDSVStack>
-      <XDSVStack gap={3}>
-        <XDSHeading level={3}>Border</XDSHeading>
+      </VStack>
+      <VStack gap={3}>
+        <Heading level={3}>Border</Heading>
         <BorderTokenTable theme={theme} />
-      </XDSVStack>
-    </XDSVStack>
+      </VStack>
+    </VStack>
   );
 }

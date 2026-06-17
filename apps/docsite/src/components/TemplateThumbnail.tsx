@@ -10,8 +10,8 @@ import {
   useCallback,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSSkeleton} from '@xds/core/Skeleton';
-import {XDSTheme} from '@xds/core/theme';
+import {Skeleton} from '@xds/core/Skeleton';
+import {Theme} from '@xds/core/theme';
 import {neutralTheme} from '@xds/theme-neutral/built';
 import {useThemeMode} from '../app/providers';
 import {TEMPLATE_COMPONENTS} from './templateComponents';
@@ -25,7 +25,7 @@ const styles = stylex.create({
     overflow: 'hidden',
     position: 'relative' as const,
     borderRadius: 'var(--radius-container)',
-    // Templates render transparent (content-only, no XDSAppShell), so the
+    // Templates render transparent (content-only, no AppShell), so the
     // thumbnail host supplies the page background — use the app surface color.
     backgroundColor: 'var(--color-background-surface)',
     contentVisibility: 'auto',
@@ -107,12 +107,12 @@ export function TemplateThumbnail({slug}: {slug: string}) {
           <Suspense
             fallback={
               <div {...stylex.props(styles.skeleton)}>
-                <XDSSkeleton width="100%" height="100%" />
+                <Skeleton width="100%" height="100%" />
               </div>
             }>
-            <XDSTheme theme={neutralTheme} mode={mode}>
+            <Theme theme={neutralTheme} mode={mode}>
               <Component />
-            </XDSTheme>
+            </Theme>
           </Suspense>
         </div>
       )}

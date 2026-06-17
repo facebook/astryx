@@ -2,7 +2,7 @@
 
 import type {Preview, Decorator} from '@storybook/react';
 import * as React from 'react';
-import {XDSTheme, XDSLayerProvider} from '@xds/core';
+import {Theme, LayerProvider} from '@xds/core';
 import {defaultTheme} from '@xds/theme-default';
 import {neutralTheme} from '@xds/theme-neutral';
 import {brutalistTheme} from '@xds/theme-brutalist';
@@ -23,18 +23,18 @@ const themes = {
  *
  * Sets `color-scheme` on the document root so that CSS `light-dark()`
  * resolves correctly at every level of the page — not just inside the
- * XDSTheme wrapper div.  Without this, the iframe's `<html>` and
+ * Theme wrapper div.  Without this, the iframe's `<html>` and
  * `<body>` keep the browser-default `color-scheme` (typically "light")
  * and toggling the toolbar has no visible effect.
  */
-const withXDSTheme: Decorator = (Story, context) => {
+const withTheme: Decorator = (Story, context) => {
   // Get theme selection from toolbar
   const themeKey = (context.globals?.xdsTheme || 'default') as string;
   const mode = context.globals?.colorMode === 'dark' ? 'dark' : 'light';
 
   // Sync color-scheme to the document root so light-dark() works
   // everywhere, including on <html>/<body> backgrounds and any
-  // elements rendered outside the XDSTheme wrapper.
+  // elements rendered outside the Theme wrapper.
   React.useEffect(() => {
     document.documentElement.style.setProperty('color-scheme', mode);
   }, [mode]);
@@ -55,8 +55,8 @@ const withXDSTheme: Decorator = (Story, context) => {
   const theme = themes[themeKey as keyof typeof themes] || defaultTheme;
 
   return (
-    <XDSTheme theme={theme} mode={mode}>
-      <XDSLayerProvider>
+    <Theme theme={theme} mode={mode}>
+      <LayerProvider>
         <div
           style={{
             backgroundColor: 'var(--color-background-surface)',
@@ -64,8 +64,8 @@ const withXDSTheme: Decorator = (Story, context) => {
           }}>
           <Story />
         </div>
-      </XDSLayerProvider>
-    </XDSTheme>
+      </LayerProvider>
+    </Theme>
   );
 };
 
@@ -114,7 +114,7 @@ const preview: Preview = {
     xdsTheme: 'default',
     colorMode: 'light',
   },
-  decorators: [withXDSTheme],
+  decorators: [withTheme],
 };
 
 export default preview;

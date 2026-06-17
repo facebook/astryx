@@ -4,12 +4,12 @@
 
 import {useEffect, useRef, type Ref, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSLink} from '@xds/core/Link';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSButton} from '@xds/core/Button';
-import {XDSTheme} from '@xds/core/theme';
+import {Heading, Text} from '@xds/core/Text';
+import {Link} from '@xds/core/Link';
+import {VStack} from '@xds/core/Layout';
+import {Grid} from '@xds/core/Grid';
+import {Button} from '@xds/core/Button';
+import {Theme} from '@xds/core/theme';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {astryxTheme} from '../../themes/astryxTheme';
 import {
@@ -120,14 +120,14 @@ const styles = stylex.create({
 });
 
 // Renders hero controls (CTAs, dots) in the active slide's mode. Always renders
-// the same <XDSTheme> element and only toggles `mode` — swapping the element type
-// (Fragment ↔ XDSTheme) would remount the subtree and drop keyboard focus from
+// the same <Theme> element and only toggles `mode` — swapping the element type
+// (Fragment ↔ Theme) would remount the subtree and drop keyboard focus from
 // the dot the user just activated.
 function DarkScope({isDark, children}: {isDark: boolean; children: ReactNode}) {
   return (
-    <XDSTheme theme={astryxTheme} mode={isDark ? 'dark' : 'light'}>
+    <Theme theme={astryxTheme} mode={isDark ? 'dark' : 'light'}>
       {children}
-    </XDSTheme>
+    </Theme>
   );
 }
 
@@ -145,42 +145,42 @@ function HeroContent({contentRef}: {contentRef: Ref<HTMLElement>}) {
     return () => document.body.removeAttribute('data-hero-dark');
   }, [isDark]);
   return (
-    <XDSVStack
+    <VStack
       ref={contentRef}
       data-home-page="true"
       align="stretch"
       xstyle={[styles.heroContent, isDark && styles.heroTextDark]}>
       <HeroReelWordmark />
-      <XDSHeading
+      <Heading
         level={1}
         type="display-1"
         color={isDark ? 'inherit' : 'primary'}
         xstyle={styles.heroHeadline}>
         An open source design system that's{' '}
-        <XDSText as="span" type="inherit" color="inherit" weight="semibold">
+        <Text as="span" type="inherit" color="inherit" weight="semibold">
           fully customizable and agent ready
-        </XDSText>
-      </XDSHeading>
-      <XDSVStack gap={4} align="center">
+        </Text>
+      </Heading>
+      <VStack gap={4} align="center">
         <DarkScope isDark={isDark}>
-          <XDSGrid columns={2} gap={3} xstyle={styles.heroButtons}>
-            <XDSButton
+          <Grid columns={2} gap={3} xstyle={styles.heroButtons}>
+            <Button
               variant="primary"
               size="lg"
               label="Get started"
               href="/docs/getting-started"
             />
-            <XDSButton
+            <Button
               variant="secondary"
               size="lg"
               label="Browse components"
               href="/components"
             />
-          </XDSGrid>
+          </Grid>
         </DarkScope>
-        <XDSText display="block" color={isDark ? 'inherit' : 'secondary'}>
+        <Text display="block" color={isDark ? 'inherit' : 'secondary'}>
           Currently in Beta · Built on{' '}
-          <XDSLink
+          <Link
             type="body"
             color="inherit"
             href="https://react.dev"
@@ -188,9 +188,9 @@ function HeroContent({contentRef}: {contentRef: Ref<HTMLElement>}) {
             rel="noopener noreferrer"
             hasUnderline>
             React
-          </XDSLink>{' '}
+          </Link>{' '}
           and{' '}
-          <XDSLink
+          <Link
             type="body"
             color="inherit"
             href="https://stylexjs.com"
@@ -198,19 +198,19 @@ function HeroContent({contentRef}: {contentRef: Ref<HTMLElement>}) {
             rel="noopener noreferrer"
             hasUnderline>
             StyleX
-          </XDSLink>
-        </XDSText>
+          </Link>
+        </Text>
         {/* Theme switcher dots — jump straight to any theme in the reel. */}
         <DarkScope isDark={isDark}>
           <HeroReelDots />
         </DarkScope>
-      </XDSVStack>
+      </VStack>
       {/* Narrow-screen collage — rendered inside the (fixed) hero content so it's
           pinned with the text and sits a consistent --hero-gap below it. The
           desktop overlap layer (HeroReelCards) hides below 1024px; this
           self-hides at ≥1024px. */}
       <HeroReelStack />
-    </XDSVStack>
+    </VStack>
   );
 }
 
@@ -300,11 +300,11 @@ export default function HomePage() {
         <div {...stylex.props(styles.heroSpacer)} aria-hidden="true" />
         <HeroContent contentRef={heroContentRef} />
       </HeroReelProvider>
-      <XDSVStack ref={showcaseRef} xstyle={styles.showcaseOverlay}>
+      <VStack ref={showcaseRef} xstyle={styles.showcaseOverlay}>
         <FeaturesShowcase />
         <AboutShowcase />
         <DiscoverShowcase />
-      </XDSVStack>
+      </VStack>
     </div>
   );
 }

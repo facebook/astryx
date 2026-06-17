@@ -27,32 +27,32 @@ import {useSearchParams} from 'next/navigation';
 import dynamic from 'next/dynamic';
 import {loader} from '@monaco-editor/react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSAppShell} from '@xds/core/AppShell';
+import {AppShell} from '@xds/core/AppShell';
 import {compressCode, decompressCode} from '../../lib/compress';
-import {XDSButton} from '@xds/core/Button';
-import {XDSLink} from '@xds/core/Link';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
-import {XDSPopover} from '@xds/core/Popover';
-import {XDSTextInput} from '@xds/core/TextInput';
+import {Button} from '@xds/core/Button';
+import {Link} from '@xds/core/Link';
+import {HStack, VStack} from '@xds/core/Layout';
+import {Popover} from '@xds/core/Popover';
+import {TextInput} from '@xds/core/TextInput';
 import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
+  SideNav,
+  SideNavHeading,
+  SideNavItem,
+  SideNavSection,
 } from '@xds/core/SideNav';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSStatusDot} from '@xds/core/StatusDot';
-import {XDSToolbar} from '@xds/core/Toolbar';
+import {Text, Heading} from '@xds/core/Text';
+import {StatusDot} from '@xds/core/StatusDot';
+import {Toolbar} from '@xds/core/Toolbar';
 import {
-  XDSSegmentedControl,
-  XDSSegmentedControlItem,
+  SegmentedControl,
+  SegmentedControlItem,
 } from '@xds/core/SegmentedControl';
-import {XDSTab, XDSTabList} from '@xds/core/TabList';
-import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
+import {Tab, TabList} from '@xds/core/TabList';
+import {TopNav, TopNavHeading} from '@xds/core/TopNav';
+import {DropdownMenu} from '@xds/core/DropdownMenu';
 import {useMediaQuery} from '@xds/core/hooks';
-import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
-import {XDSToggleButton} from '@xds/core/ToggleButton';
+import {useResizable, ResizeHandle} from '@xds/core/Resizable';
+import {ToggleButton} from '@xds/core/ToggleButton';
 import {
   Check,
   Code2,
@@ -80,7 +80,7 @@ import {
 import {templates} from '../../generated/templateRegistry';
 import {PreviewStage, type Viewport} from './PreviewStage';
 import {ConfirmDialog} from './ConfirmDialog';
-import {BRAND_ICON} from '../../components/XDSWordmark';
+import {BRAND_ICON} from '../../components/Wordmark';
 import {PropertyPanel} from './PropertyPanel';
 import {annotateInstanceIds} from './babelParser';
 import {trackCopy} from '../../lib/analytics';
@@ -90,7 +90,7 @@ import {DEFAULT_CODE} from './defaultCode';
 import {stripCodeExampleCopyrightHeader} from '../../lib/codeExamples';
 
 import type * as MonacoTypes from 'monaco-editor';
-import type {XDSDefinedTheme} from '@xds/core/theme';
+import type {DefinedTheme} from '@xds/core/theme';
 import {xdsTokenDefaults} from '@xds/core/theme';
 
 // Source of the theme-showcase template — a set of real product surfaces
@@ -136,7 +136,7 @@ const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
         alignItems: 'center',
         justifyContent: 'center',
       }}>
-      <XDSText color="secondary">Loading editor…</XDSText>
+      <Text color="secondary">Loading editor…</Text>
     </div>
   ),
 });
@@ -431,7 +431,7 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
   // open so the download link below can be built declaratively from reactive
   // state. The popover is in the toolbar, so the theme isn't being edited
   // while it's open — the snapshot stays current.
-  const [exportTheme, setExportTheme] = useState<XDSDefinedTheme | null>(null);
+  const [exportTheme, setExportTheme] = useState<DefinedTheme | null>(null);
   const [previewReady, setPreviewReady] = useState(false);
   const [isTargeting, setIsTargeting] = useState(false);
   const [targetedComponent, setTargetedComponent] = useState<string | null>(
@@ -470,9 +470,9 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
   activeViewRef.current = activeView;
   // Latest theme authored in the Theme view, retained so a mode toggle can
   // re-post it (the iframe clears the custom theme on any string-only push).
-  const customThemeRef = useRef<XDSDefinedTheme | null>(null);
+  const customThemeRef = useRef<DefinedTheme | null>(null);
 
-  const editorPanel = useXDSResizable({
+  const editorPanel = useResizable({
     defaultSize: 440,
     minSizePx: 340,
     maxSizePx: 760,
@@ -548,7 +548,7 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
   // Push a theme authored in the Theme view to the preview. Sent as raw tokens
   // + components (see the preview-theme protocol) so it survives postMessage.
   const postCustomTheme = useCallback(
-    (customTheme: XDSDefinedTheme) => {
+    (customTheme: DefinedTheme) => {
       customThemeRef.current = customTheme;
       iframeRef.current?.contentWindow?.postMessage(
         {
@@ -908,42 +908,42 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
   }, []);
 
   const mobileTopNav = isMobile ? (
-    <XDSTopNav
+    <TopNav
       label="Playground navigation"
-      heading={<XDSTopNavHeading logo={BRAND_ICON} headingHref="/" />}
+      heading={<TopNavHeading logo={BRAND_ICON} headingHref="/" />}
       centerContent={
-        <XDSTabList
+        <TabList
           value={mobileTab}
           onChange={value => handleMobileTabChange(value as MobileTopTab)}
           size="sm">
-          <XDSTab
+          <Tab
             value="preview"
             label="Preview"
             icon={<Monitor size={14} />}
             isLabelHidden
           />
-          <XDSTab
+          <Tab
             value="code"
             label="Code"
             icon={<Code2 size={14} />}
             isLabelHidden
           />
-          <XDSTab
+          <Tab
             value="property"
             label="Properties"
             icon={<SlidersHorizontal size={14} />}
             isLabelHidden
           />
-          <XDSTab
+          <Tab
             value="theme"
             label="Theme"
             icon={<Palette size={14} />}
             isLabelHidden
           />
-        </XDSTabList>
+        </TabList>
       }
       endContent={
-        <XDSButton
+        <Button
           label={copied ? '✓ Copied' : 'Share'}
           variant="primary"
           size="md"
@@ -954,9 +954,9 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
   ) : undefined;
 
   const playgroundSideNav = (
-    <XDSSideNav
+    <SideNav
       header={
-        <XDSSideNavHeading
+        <SideNavHeading
           icon={BRAND_ICON}
           heading="Playground"
           headingHref="/"
@@ -965,8 +965,8 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
       }
       collapsible={{isCollapsed: true, hasButton: false}}
       xstyle={s.desktopCollapsedSideNav}>
-      <XDSSideNavSection title="Playground views" isHeaderHidden>
-        <XDSSideNavItem
+      <SideNavSection title="Playground views" isHeaderHidden>
+        <SideNavItem
           label="Code"
           icon={Code2}
           isSelected={activeView === 'code'}
@@ -975,7 +975,7 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
             setMobileTab('code');
           }}
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Properties"
           icon={SlidersHorizontal}
           isSelected={activeView === 'property'}
@@ -984,7 +984,7 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
             setMobileTab('property');
           }}
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Theme"
           icon={Palette}
           isSelected={activeView === 'theme'}
@@ -993,15 +993,15 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
             setMobileTab('theme');
           }}
         />
-      </XDSSideNavSection>
-    </XDSSideNav>
+      </SideNavSection>
+    </SideNav>
   );
 
   const showEditorPanel = !isMobile || mobileTab !== 'preview';
   const showPreviewPanel = !isMobile || mobileTab === 'preview';
 
   return (
-    <XDSAppShell
+    <AppShell
       variant="section"
       height="fill"
       contentPadding={0}
@@ -1009,7 +1009,7 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
       topNav={mobileTopNav}
       sideNav={playgroundSideNav}>
       {/* Playground content */}
-      <XDSHStack
+      <HStack
         data-playground-page="true"
         align="stretch"
         height="100%"
@@ -1017,17 +1017,17 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
         xstyle={s.root}
         onPointerDownCapture={handleResizeProbe}>
         {/* Left panel — editor */}
-        <XDSVStack
+        <VStack
           xstyle={[s.leftPanel, !showEditorPanel && s.hidden]}
           width={isMobile ? '100%' : editorPanel.size || 440}>
           {!isMobile && (
-            <XDSHStack
+            <HStack
               justify="between"
               align="center"
               xstyle={s.leftPanelHeader}>
-              <XDSHeading level={3}>Playground</XDSHeading>
-              <XDSHStack gap={2} align="center">
-                <XDSDropdownMenu
+              <Heading level={3}>Playground</Heading>
+              <HStack gap={2} align="center">
+                <DropdownMenu
                   button={{
                     label: 'Themes',
                     variant: 'secondary',
@@ -1036,7 +1036,7 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                   hasChevron
                   items={themeMenuItems}
                 />
-                <XDSDropdownMenu
+                <DropdownMenu
                   button={{
                     label: 'Templates',
                     variant: 'secondary',
@@ -1045,8 +1045,8 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                   hasChevron
                   items={templateMenuItems}
                 />
-              </XDSHStack>
-            </XDSHStack>
+              </HStack>
+            </HStack>
           )}
           <div {...stylex.props(s.tabBody)}>
             {/* Code: Monaco stays mounted to preserve typedefs + editor state */}
@@ -1100,10 +1100,10 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
               />
             </div>
           </div>
-        </XDSVStack>
+        </VStack>
 
         {!isMobile && (
-          <XDSResizeHandle
+          <ResizeHandle
             label="Resize editor panel"
             resizable={editorPanel.props}
             pillPlacement="center"
@@ -1112,12 +1112,12 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
         )}
 
         {/* Right panel — preview */}
-        <XDSVStack xstyle={[s.rightPanel, !showPreviewPanel && s.hidden]}>
+        <VStack xstyle={[s.rightPanel, !showPreviewPanel && s.hidden]}>
           {!isMobile && (
-            <XDSToolbar
+            <Toolbar
               label="Preview controls"
               startContent={
-                <XDSToggleButton
+                <ToggleButton
                   label="Target element"
                   tooltip={
                     isTargeting
@@ -1132,8 +1132,8 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                 />
               }
               centerContent={
-                <XDSHStack gap={2} vAlign="center">
-                  <XDSButton
+                <HStack gap={2} vAlign="center">
+                  <Button
                     label={
                       mode === 'light' ? 'Switch to dark' : 'Switch to light'
                     }
@@ -1146,25 +1146,25 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                     }
                     onClick={togglePreviewMode}
                   />
-                  <XDSSegmentedControl
+                  <SegmentedControl
                     label="Viewport size"
                     size="md"
                     value={viewport}
                     onChange={v => setViewport(v as Viewport)}>
-                    <XDSSegmentedControlItem
+                    <SegmentedControlItem
                       value="desktop"
                       label="Desktop"
                       isLabelHidden
                       icon={<Monitor size={20} />}
                     />
-                    <XDSSegmentedControlItem
+                    <SegmentedControlItem
                       value="phone"
                       label="Phone"
                       isLabelHidden
                       icon={<Smartphone size={20} />}
                     />
-                  </XDSSegmentedControl>
-                  <XDSButton
+                  </SegmentedControl>
+                  <Button
                     label="Expand"
                     tooltip="Fullscreen preview"
                     variant="ghost"
@@ -1173,24 +1173,24 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                     icon={<Maximize2 size={20} />}
                     onClick={expandPreview}
                   />
-                </XDSHStack>
+                </HStack>
               }
               endContent={
-                <XDSHStack gap={4} vAlign="center">
+                <HStack gap={4} vAlign="center">
                   {buildStatus !== 'idle' && (
                     <div
                       {...stylex.props(s.buildStatus)}
                       style={{opacity: statusFading ? 0 : 1}}>
-                      <XDSStatusDot
+                      <StatusDot
                         variant={BUILD_STATUS_META[buildStatus].variant}
                         label={BUILD_STATUS_META[buildStatus].label}
                         isPulsing={buildStatus === 'building'}
                       />
-                      <XDSText type="supporting" color="secondary">
+                      <Text type="supporting" color="secondary">
                         {BUILD_STATUS_META[buildStatus].label}
-                      </XDSText>
+                      </Text>
                       {buildStatus === 'error' && (
-                        <XDSButton
+                        <Button
                           label="Rebuild"
                           tooltip="Rebuild"
                           variant="ghost"
@@ -1202,7 +1202,7 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                       )}
                     </div>
                   )}
-                  <XDSPopover
+                  <Popover
                     label="Share template"
                     placement="below"
                     alignment="end"
@@ -1218,13 +1218,13 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                       }
                     }}
                     content={
-                      <XDSVStack gap={6}>
-                        <XDSVStack gap={2}>
-                          <XDSText type="label" weight="semibold">
+                      <VStack gap={6}>
+                        <VStack gap={2}>
+                          <Text type="label" weight="semibold">
                             Share Playground
-                          </XDSText>
-                          <XDSHStack gap={2} vAlign="center" width="100%">
-                            <XDSTextInput
+                          </Text>
+                          <HStack gap={2} vAlign="center" width="100%">
+                            <TextInput
                               label="Share URL"
                               isLabelHidden
                               isDisabled
@@ -1232,7 +1232,7 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                               onChange={() => {}}
                               xstyle={s.shareInput}
                             />
-                            <XDSButton
+                            <Button
                               label={copied ? 'Copied' : 'Copy URL'}
                               tooltip={copied ? 'Copied' : 'Copy URL'}
                               variant="secondary"
@@ -1247,14 +1247,14 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                               }
                               onClick={handleShare}
                             />
-                          </XDSHStack>
-                        </XDSVStack>
-                        <XDSVStack gap={2}>
-                          <XDSText type="label" weight="semibold">
+                          </HStack>
+                        </VStack>
+                        <VStack gap={2}>
+                          <Text type="label" weight="semibold">
                             Export Theme File
-                          </XDSText>
-                          <XDSHStack gap={2} vAlign="center" width="100%">
-                            <XDSTextInput
+                          </Text>
+                          <HStack gap={2} vAlign="center" width="100%">
+                            <TextInput
                               label="Theme name"
                               isLabelHidden
                               placeholder="Enter theme name"
@@ -1264,7 +1264,7 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                               }
                               xstyle={s.shareInput}
                             />
-                            <XDSButton
+                            <Button
                               label="Download theme"
                               tooltip="Download theme"
                               variant="secondary"
@@ -1290,21 +1290,21 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                                 Download theme file
                               </a>
                             )}
-                          </XDSHStack>
-                          <XDSLink href="/docs/theme" hasUnderline>
+                          </HStack>
+                          <Link href="/docs/theme" hasUnderline>
                             Learn about using themes
-                          </XDSLink>
-                        </XDSVStack>
-                      </XDSVStack>
+                          </Link>
+                        </VStack>
+                      </VStack>
                     }>
-                    <XDSButton
+                    <Button
                       label="Export"
                       variant="primary"
                       size="md"
                       endContent={<ExternalLink size={16} />}
                     />
-                  </XDSPopover>
-                </XDSHStack>
+                  </Popover>
+                </HStack>
               }
             />
           )}
@@ -1316,8 +1316,8 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
             isInteractionDisabled={isResizing}
             isFullBleed={isMobile}
           />
-        </XDSVStack>
-      </XDSHStack>
+        </VStack>
+      </HStack>
 
       <ConfirmDialog
         isOpen={pendingExampleTheme != null}
@@ -1344,6 +1344,6 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
           setPendingTemplateSource(null);
         }}
       />
-    </XDSAppShell>
+    </AppShell>
   );
 }

@@ -2,12 +2,12 @@
 
 'use client';
 
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSDivider} from '@xds/core';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Button} from '@xds/core/Button';
+import {Text, Heading} from '@xds/core/Text';
+import {TextInput} from '@xds/core/TextInput';
+import {Badge} from '@xds/core/Badge';
+import {Divider} from '@xds/core';
 
 export default function Home() {
   return (
@@ -20,67 +20,67 @@ export default function Home() {
         padding: '2rem',
       }}>
       <div style={{maxWidth: 640, width: '100%'}}>
-        <XDSVStack gap={6}>
-          <XDSVStack gap={2}>
-            <XDSHeading level={1}>XDS Example — Next.js (Dist)</XDSHeading>
-            <XDSText type="body" color="secondary">
+        <VStack gap={6}>
+          <VStack gap={2}>
+            <Heading level={1}>XDS Example — Next.js (Dist)</Heading>
+            <Text type="body" color="secondary">
               This example consumes{' '}
-              <XDSText type="body" weight="bold">
+              <Text type="body" weight="bold">
                 @xds/core
-              </XDSText>{' '}
+              </Text>{' '}
               as a pre-built dist package — no StyleX build plugin needed. Plain
               inline styles handle layout. XDS handles components, theming, and
               design tokens.
-            </XDSText>
-          </XDSVStack>
+            </Text>
+          </VStack>
 
-          <XDSDivider />
+          <Divider />
 
           {/* Buttons */}
-          <XDSVStack gap={3}>
-            <XDSHeading level={2}>Buttons</XDSHeading>
-            <XDSHStack gap={3} vAlign="center">
-              <XDSButton label="Primary" variant="primary" />
-              <XDSButton label="Secondary" variant="secondary" />
-              <XDSButton label="Ghost" variant="ghost" />
-            </XDSHStack>
-          </XDSVStack>
+          <VStack gap={3}>
+            <Heading level={2}>Buttons</Heading>
+            <HStack gap={3} vAlign="center">
+              <Button label="Primary" variant="primary" />
+              <Button label="Secondary" variant="secondary" />
+              <Button label="Ghost" variant="ghost" />
+            </HStack>
+          </VStack>
 
-          <XDSDivider />
+          <Divider />
 
           {/* Badges */}
-          <XDSVStack gap={3}>
-            <XDSHeading level={2}>Badges</XDSHeading>
-            <XDSHStack gap={3} vAlign="center">
-              <XDSBadge variant="info" label="Info" />
-              <XDSBadge variant="success" label="Success" />
-              <XDSBadge variant="warning" label="Warning" />
-              <XDSBadge variant="error" label="Error" />
-            </XDSHStack>
-          </XDSVStack>
+          <VStack gap={3}>
+            <Heading level={2}>Badges</Heading>
+            <HStack gap={3} vAlign="center">
+              <Badge variant="info" label="Info" />
+              <Badge variant="success" label="Success" />
+              <Badge variant="warning" label="Warning" />
+              <Badge variant="error" label="Error" />
+            </HStack>
+          </VStack>
 
-          <XDSDivider />
+          <Divider />
 
           {/* Text Input */}
-          <XDSVStack gap={3}>
-            <XDSHeading level={2}>Text Input</XDSHeading>
-            <XDSTextInput label="Email address" placeholder="you@example.com" />
-          </XDSVStack>
+          <VStack gap={3}>
+            <Heading level={2}>Text Input</Heading>
+            <TextInput label="Email address" placeholder="you@example.com" />
+          </VStack>
 
-          <XDSDivider />
+          <Divider />
 
           {/* Typography */}
-          <XDSVStack gap={3}>
-            <XDSHeading level={2}>Typography</XDSHeading>
-            <XDSText type="large" weight="bold">
+          <VStack gap={3}>
+            <Heading level={2}>Typography</Heading>
+            <Text type="large" weight="bold">
               Large bold text
-            </XDSText>
-            <XDSText type="body">Default body text</XDSText>
-            <XDSText type="supporting" color="secondary">
+            </Text>
+            <Text type="body">Default body text</Text>
+            <Text type="supporting" color="secondary">
               Supporting text in secondary color
-            </XDSText>
-          </XDSVStack>
-        </XDSVStack>
+            </Text>
+          </VStack>
+        </VStack>
       </div>
     </main>
   );

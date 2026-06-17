@@ -2,15 +2,15 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSInputGroup} from '@xds/core/InputGroup';
-import {XDSInputGroupText} from '@xds/core/InputGroup';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSNumberInput} from '@xds/core/NumberInput';
-import {XDSIcon} from '@xds/core/Icon';
+import {InputGroup} from '@xds/core/InputGroup';
+import {InputGroupText} from '@xds/core/InputGroup';
+import {TextInput} from '@xds/core/TextInput';
+import {NumberInput} from '@xds/core/NumberInput';
+import {Icon} from '@xds/core/Icon';
 
-const meta: Meta<typeof XDSInputGroup> = {
+const meta: Meta<typeof InputGroup> = {
   title: 'Core/InputGroup',
-  component: XDSInputGroup,
+  component: InputGroup,
   tags: ['autodocs'],
   argTypes: {
     label: {control: 'text', description: 'Label text (required)'},
@@ -26,22 +26,22 @@ const meta: Meta<typeof XDSInputGroup> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSInputGroup>;
+type Story = StoryObj<typeof InputGroup>;
 
 export const WithPrefix: Story = {
   render: args => {
     const [value, setValue] = useState('');
     return (
-      <XDSInputGroup {...args}>
-        <XDSInputGroupText>$</XDSInputGroupText>
-        <XDSTextInput
+      <InputGroup {...args}>
+        <InputGroupText>$</InputGroupText>
+        <TextInput
           label="Amount"
           isLabelHidden
           value={value}
           onChange={setValue}
           placeholder="0.00"
         />
-      </XDSInputGroup>
+      </InputGroup>
     );
   },
   args: {
@@ -53,16 +53,16 @@ export const WithSuffix: Story = {
   render: args => {
     const [value, setValue] = useState('');
     return (
-      <XDSInputGroup {...args}>
-        <XDSTextInput
+      <InputGroup {...args}>
+        <TextInput
           label="Weight"
           isLabelHidden
           value={value}
           onChange={setValue}
           placeholder="0"
         />
-        <XDSInputGroupText>kg</XDSInputGroupText>
-      </XDSInputGroup>
+        <InputGroupText>kg</InputGroupText>
+      </InputGroup>
     );
   },
   args: {
@@ -74,17 +74,17 @@ export const WithPrefixAndSuffix: Story = {
   render: args => {
     const [value, setValue] = useState('');
     return (
-      <XDSInputGroup {...args}>
-        <XDSInputGroupText>https://</XDSInputGroupText>
-        <XDSTextInput
+      <InputGroup {...args}>
+        <InputGroupText>https://</InputGroupText>
+        <TextInput
           label="URL"
           isLabelHidden
           value={value}
           onChange={setValue}
           placeholder="example"
         />
-        <XDSInputGroupText>.com</XDSInputGroupText>
-      </XDSInputGroup>
+        <InputGroupText>.com</InputGroupText>
+      </InputGroup>
     );
   },
   args: {
@@ -96,18 +96,18 @@ export const WithIconPrefix: Story = {
   render: args => {
     const [value, setValue] = useState('');
     return (
-      <XDSInputGroup {...args}>
-        <XDSInputGroupText>
-          <XDSIcon icon="search" size="sm" color="secondary" />
-        </XDSInputGroupText>
-        <XDSTextInput
+      <InputGroup {...args}>
+        <InputGroupText>
+          <Icon icon="search" size="sm" color="secondary" />
+        </InputGroupText>
+        <TextInput
           label="Search"
           isLabelHidden
           value={value}
           onChange={setValue}
           placeholder="Search..."
         />
-      </XDSInputGroup>
+      </InputGroup>
     );
   },
   args: {
@@ -120,16 +120,16 @@ export const WithNumberInput: Story = {
   render: args => {
     const [value, setValue] = useState<number | undefined>(undefined);
     return (
-      <XDSInputGroup {...args}>
-        <XDSInputGroupText>$</XDSInputGroupText>
-        <XDSNumberInput
+      <InputGroup {...args}>
+        <InputGroupText>$</InputGroupText>
+        <NumberInput
           label="Amount"
           isLabelHidden
           value={value}
           onChange={setValue}
           placeholder="0.00"
         />
-      </XDSInputGroup>
+      </InputGroup>
     );
   },
   args: {
@@ -141,16 +141,16 @@ export const WithDescription: Story = {
   render: args => {
     const [value, setValue] = useState('');
     return (
-      <XDSInputGroup {...args}>
-        <XDSInputGroupText>@</XDSInputGroupText>
-        <XDSTextInput
+      <InputGroup {...args}>
+        <InputGroupText>@</InputGroupText>
+        <TextInput
           label="Username"
           isLabelHidden
           value={value}
           onChange={setValue}
           placeholder="username"
         />
-      </XDSInputGroup>
+      </InputGroup>
     );
   },
   args: {
@@ -163,16 +163,16 @@ export const WithErrorStatus: Story = {
   render: args => {
     const [value, setValue] = useState('');
     return (
-      <XDSInputGroup {...args}>
-        <XDSInputGroupText>$</XDSInputGroupText>
-        <XDSTextInput
+      <InputGroup {...args}>
+        <InputGroupText>$</InputGroupText>
+        <TextInput
           label="Amount"
           isLabelHidden
           value={value}
           onChange={setValue}
           placeholder="0.00"
         />
-      </XDSInputGroup>
+      </InputGroup>
     );
   },
   args: {
@@ -185,16 +185,16 @@ export const SmallSize: Story = {
   render: args => {
     const [value, setValue] = useState('');
     return (
-      <XDSInputGroup {...args}>
-        <XDSInputGroupText>$</XDSInputGroupText>
-        <XDSTextInput
+      <InputGroup {...args}>
+        <InputGroupText>$</InputGroupText>
+        <TextInput
           label="Amount"
           isLabelHidden
           value={value}
           onChange={setValue}
           placeholder="0.00"
         />
-      </XDSInputGroup>
+      </InputGroup>
     );
   },
   args: {
@@ -208,16 +208,16 @@ export const FullWidth: Story = {
     const [value, setValue] = useState('');
     return (
       <div style={{maxWidth: 500}}>
-        <XDSInputGroup {...args}>
-          <XDSInputGroupText>https://</XDSInputGroupText>
-          <XDSTextInput
+        <InputGroup {...args}>
+          <InputGroupText>https://</InputGroupText>
+          <TextInput
             label="URL"
             isLabelHidden
             value={value}
             onChange={setValue}
             placeholder="example.com"
           />
-        </XDSInputGroup>
+        </InputGroup>
       </div>
     );
   },
@@ -231,23 +231,23 @@ export const TwoInputs: Story = {
     const [left, setLeft] = useState('');
     const [right, setRight] = useState('');
     return (
-      <XDSInputGroup {...args}>
-        <XDSTextInput
+      <InputGroup {...args}>
+        <TextInput
           label="Address"
           isLabelHidden
           value={left}
           onChange={setLeft}
           placeholder="Address"
         />
-        <XDSInputGroupText>@</XDSInputGroupText>
-        <XDSTextInput
+        <InputGroupText>@</InputGroupText>
+        <TextInput
           label="Domain"
           isLabelHidden
           value={right}
           onChange={setRight}
           placeholder="Domain"
         />
-      </XDSInputGroup>
+      </InputGroup>
     );
   },
   args: {
@@ -270,49 +270,49 @@ export const AllVariations: Story = {
           gap: '16px',
           maxWidth: '400px',
         }}>
-        <XDSInputGroup label="Price">
-          <XDSInputGroupText>$</XDSInputGroupText>
-          <XDSTextInput
+        <InputGroup label="Price">
+          <InputGroupText>$</InputGroupText>
+          <TextInput
             label="Amount"
             isLabelHidden
             value={v1}
             onChange={setV1}
             placeholder="0.00"
           />
-        </XDSInputGroup>
-        <XDSInputGroup label="Website">
-          <XDSInputGroupText>https://</XDSInputGroupText>
-          <XDSTextInput
+        </InputGroup>
+        <InputGroup label="Website">
+          <InputGroupText>https://</InputGroupText>
+          <TextInput
             label="URL"
             isLabelHidden
             value={v2}
             onChange={setV2}
             placeholder="example"
           />
-          <XDSInputGroupText>.com</XDSInputGroupText>
-        </XDSInputGroup>
-        <XDSInputGroup label="Weight">
-          <XDSTextInput
+          <InputGroupText>.com</InputGroupText>
+        </InputGroup>
+        <InputGroup label="Weight">
+          <TextInput
             label="Weight"
             isLabelHidden
             value={v3}
             onChange={setV3}
             placeholder="0"
           />
-          <XDSInputGroupText>kg</XDSInputGroupText>
-        </XDSInputGroup>
-        <XDSInputGroup
+          <InputGroupText>kg</InputGroupText>
+        </InputGroup>
+        <InputGroup
           label="Price"
           status={{type: 'error', message: 'Price is required'}}>
-          <XDSInputGroupText>$</XDSInputGroupText>
-          <XDSTextInput
+          <InputGroupText>$</InputGroupText>
+          <TextInput
             label="Amount"
             isLabelHidden
             value={v4}
             onChange={setV4}
             placeholder="0.00"
           />
-        </XDSInputGroup>
+        </InputGroup>
       </div>
     );
   },

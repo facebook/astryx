@@ -2,10 +2,10 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSPowerSearch, usePowerSearchConfig} from '@xds/core/PowerSearch';
+import {PowerSearch, usePowerSearchConfig} from '@xds/core/PowerSearch';
 import type {PowerSearchFilter} from '@xds/core/PowerSearch';
-import {XDSTable, pixel, proportional} from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
+import {Table, pixel, proportional} from '@xds/core/Table';
+import type {TableColumn} from '@xds/core/Table';
 
 // =============================================================================
 // Field definitions
@@ -149,7 +149,7 @@ const books: Book[] = [
   },
 ];
 
-const columns: XDSTableColumn<Book>[] = [
+const columns: TableColumn<Book>[] = [
   {key: 'title', header: 'Title', width: proportional(2)},
   {key: 'author', header: 'Author', width: proportional(2)},
   {key: 'year', header: 'Year', width: pixel(100)},
@@ -193,14 +193,14 @@ export const Default: Story = {
 
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
-        <XDSPowerSearch
+        <PowerSearch
           config={config}
           filters={filters}
           onChange={newFilters => setFilters([...newFilters])}
           placeholder="Filter books by title, author, year, genre..."
           resultCount={filteredBooks.length}
         />
-        <XDSTable data={filteredBooks} columns={columns} idKey="id" hasHover />
+        <Table data={filteredBooks} columns={columns} idKey="id" hasHover />
       </div>
     );
   },
@@ -216,14 +216,14 @@ export const WithPresetFilters: Story = {
 
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
-        <XDSPowerSearch
+        <PowerSearch
           config={config}
           filters={filters}
           onChange={newFilters => setFilters([...newFilters])}
           placeholder="Filter books..."
           resultCount={filteredBooks.length}
         />
-        <XDSTable
+        <Table
           data={filteredBooks}
           columns={columns}
           idKey="id"

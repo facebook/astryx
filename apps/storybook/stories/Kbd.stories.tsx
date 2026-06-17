@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSKbd} from '@xds/core/Kbd';
-import {XDSText} from '@xds/core/Text';
+import {Kbd} from '@xds/core/Kbd';
+import {Text} from '@xds/core/Text';
 
-const meta: Meta<typeof XDSKbd> = {
+const meta: Meta<typeof Kbd> = {
   title: 'Core/Kbd',
-  component: XDSKbd,
+  component: Kbd,
   tags: ['autodocs'],
   argTypes: {
     keys: {
@@ -18,7 +18,7 @@ const meta: Meta<typeof XDSKbd> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSKbd>;
+type Story = StoryObj<typeof Kbd>;
 
 // =============================================================================
 // Basic Usage
@@ -37,10 +37,10 @@ export const Default: Story = {
 export const ModifierCombinations: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-      <XDSKbd keys="mod+k" />
-      <XDSKbd keys="shift+enter" />
-      <XDSKbd keys="ctrl+c" />
-      <XDSKbd keys="alt+tab" />
+      <Kbd keys="mod+k" />
+      <Kbd keys="shift+enter" />
+      <Kbd keys="ctrl+c" />
+      <Kbd keys="alt+tab" />
     </div>
   ),
 };
@@ -52,9 +52,9 @@ export const ModifierCombinations: Story = {
 export const MultipleModifiers: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-      <XDSKbd keys="mod+shift+z" />
-      <XDSKbd keys="ctrl+alt+delete" />
-      <XDSKbd keys="mod+shift+p" />
+      <Kbd keys="mod+shift+z" />
+      <Kbd keys="ctrl+alt+delete" />
+      <Kbd keys="mod+shift+p" />
     </div>
   ),
 };
@@ -72,43 +72,43 @@ export const SpecialKeys: Story = {
         gap: '12px',
       }}>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-        <XDSText type="label" style={{width: '100px'}}>
+        <Text type="label" style={{width: '100px'}}>
           Escape:
-        </XDSText>
-        <XDSKbd keys="escape" />
+        </Text>
+        <Kbd keys="escape" />
       </div>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-        <XDSText type="label" style={{width: '100px'}}>
+        <Text type="label" style={{width: '100px'}}>
           Enter:
-        </XDSText>
-        <XDSKbd keys="enter" />
+        </Text>
+        <Kbd keys="enter" />
       </div>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-        <XDSText type="label" style={{width: '100px'}}>
+        <Text type="label" style={{width: '100px'}}>
           Backspace:
-        </XDSText>
-        <XDSKbd keys="backspace" />
+        </Text>
+        <Kbd keys="backspace" />
       </div>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-        <XDSText type="label" style={{width: '100px'}}>
+        <Text type="label" style={{width: '100px'}}>
           Tab:
-        </XDSText>
-        <XDSKbd keys="tab" />
+        </Text>
+        <Kbd keys="tab" />
       </div>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-        <XDSText type="label" style={{width: '100px'}}>
+        <Text type="label" style={{width: '100px'}}>
           Space:
-        </XDSText>
-        <XDSKbd keys="space" />
+        </Text>
+        <Kbd keys="space" />
       </div>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-        <XDSText type="label" style={{width: '100px'}}>
+        <Text type="label" style={{width: '100px'}}>
           Arrow Keys:
-        </XDSText>
-        <XDSKbd keys="up" />
-        <XDSKbd keys="down" />
-        <XDSKbd keys="left" />
-        <XDSKbd keys="right" />
+        </Text>
+        <Kbd keys="up" />
+        <Kbd keys="down" />
+        <Kbd keys="left" />
+        <Kbd keys="right" />
       </div>
     </div>
   ),
@@ -121,12 +121,12 @@ export const SpecialKeys: Story = {
 export const SingleLetterKeys: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-      <XDSKbd keys="a" />
-      <XDSKbd keys="b" />
-      <XDSKbd keys="c" />
-      <XDSKbd keys="x" />
-      <XDSKbd keys="y" />
-      <XDSKbd keys="z" />
+      <Kbd keys="a" />
+      <Kbd keys="b" />
+      <Kbd keys="c" />
+      <Kbd keys="x" />
+      <Kbd keys="y" />
+      <Kbd keys="z" />
     </div>
   ),
 };
@@ -144,32 +144,32 @@ export const AllModifierSymbols: Story = {
         gap: '12px',
       }}>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-        <XDSText type="label" style={{width: '120px'}}>
+        <Text type="label" style={{width: '120px'}}>
           Cmd (mod):
-        </XDSText>
-        <XDSKbd keys="mod" />
-        <XDSText type="supporting">⌘</XDSText>
+        </Text>
+        <Kbd keys="mod" />
+        <Text type="supporting">⌘</Text>
       </div>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-        <XDSText type="label" style={{width: '120px'}}>
+        <Text type="label" style={{width: '120px'}}>
           Ctrl:
-        </XDSText>
-        <XDSKbd keys="ctrl" />
-        <XDSText type="supporting">⌃</XDSText>
+        </Text>
+        <Kbd keys="ctrl" />
+        <Text type="supporting">⌃</Text>
       </div>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-        <XDSText type="label" style={{width: '120px'}}>
+        <Text type="label" style={{width: '120px'}}>
           Alt/Option:
-        </XDSText>
-        <XDSKbd keys="alt" />
-        <XDSText type="supporting">⌥</XDSText>
+        </Text>
+        <Kbd keys="alt" />
+        <Text type="supporting">⌥</Text>
       </div>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-        <XDSText type="label" style={{width: '120px'}}>
+        <Text type="label" style={{width: '120px'}}>
           Shift:
-        </XDSText>
-        <XDSKbd keys="shift" />
-        <XDSText type="supporting">⇧</XDSText>
+        </Text>
+        <Kbd keys="shift" />
+        <Text type="supporting">⇧</Text>
       </div>
     </div>
   ),
@@ -182,19 +182,19 @@ export const AllModifierSymbols: Story = {
 export const InlineWithText: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
-      <XDSText type="body">
-        Press <XDSKbd keys="mod+k" /> to open the command palette.
-      </XDSText>
-      <XDSText type="body">
-        Use <XDSKbd keys="mod+shift+p" /> to access all commands.
-      </XDSText>
-      <XDSText type="body">
-        Press <XDSKbd keys="escape" /> to close the dialog.
-      </XDSText>
-      <XDSText type="body">
-        Navigate with <XDSKbd keys="up" /> and <XDSKbd keys="down" /> arrow
-        keys, then press <XDSKbd keys="enter" /> to select.
-      </XDSText>
+      <Text type="body">
+        Press <Kbd keys="mod+k" /> to open the command palette.
+      </Text>
+      <Text type="body">
+        Use <Kbd keys="mod+shift+p" /> to access all commands.
+      </Text>
+      <Text type="body">
+        Press <Kbd keys="escape" /> to close the dialog.
+      </Text>
+      <Text type="body">
+        Navigate with <Kbd keys="up" /> and <Kbd keys="down" /> arrow
+        keys, then press <Kbd keys="enter" /> to select.
+      </Text>
     </div>
   ),
 };
@@ -222,8 +222,8 @@ export const MenuShortcuts: Story = {
           alignItems: 'center',
           padding: '8px',
         }}>
-        <XDSText type="body">Cut</XDSText>
-        <XDSKbd keys="mod+x" />
+        <Text type="body">Cut</Text>
+        <Kbd keys="mod+x" />
       </div>
       <div
         style={{
@@ -232,8 +232,8 @@ export const MenuShortcuts: Story = {
           alignItems: 'center',
           padding: '8px',
         }}>
-        <XDSText type="body">Copy</XDSText>
-        <XDSKbd keys="mod+c" />
+        <Text type="body">Copy</Text>
+        <Kbd keys="mod+c" />
       </div>
       <div
         style={{
@@ -242,8 +242,8 @@ export const MenuShortcuts: Story = {
           alignItems: 'center',
           padding: '8px',
         }}>
-        <XDSText type="body">Paste</XDSText>
-        <XDSKbd keys="mod+v" />
+        <Text type="body">Paste</Text>
+        <Kbd keys="mod+v" />
       </div>
       <div
         style={{
@@ -252,8 +252,8 @@ export const MenuShortcuts: Story = {
           alignItems: 'center',
           padding: '8px',
         }}>
-        <XDSText type="body">Undo</XDSText>
-        <XDSKbd keys="mod+z" />
+        <Text type="body">Undo</Text>
+        <Kbd keys="mod+z" />
       </div>
       <div
         style={{
@@ -262,8 +262,8 @@ export const MenuShortcuts: Story = {
           alignItems: 'center',
           padding: '8px',
         }}>
-        <XDSText type="body">Redo</XDSText>
-        <XDSKbd keys="mod+shift+z" />
+        <Text type="body">Redo</Text>
+        <Kbd keys="mod+shift+z" />
       </div>
     </div>
   ),

@@ -3,7 +3,7 @@
 'use client';
 
 import type {ReactNode} from 'react';
-import {XDSText} from '@xds/core/Text';
+import {Text} from '@xds/core/Text';
 import {getTokenLabel} from './helpers';
 
 /**
@@ -30,9 +30,9 @@ export function TokenRow({
         gap: 12,
       }}>
       <div style={{flex: 1, minWidth: 0}}>
-        <XDSText type="body" color="primary" maxLines={1}>
+        <Text type="body" color="primary" maxLines={1}>
           {getTokenLabel(tokenName)}
-        </XDSText>
+        </Text>
       </div>
       <div
         style={{

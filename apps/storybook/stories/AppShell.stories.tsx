@@ -2,20 +2,20 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSBanner} from '@xds/core/Banner';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSText} from '@xds/core/Text';
-import {XDSMobileNav} from '@xds/core/MobileNav';
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
-import {XDSNavIcon} from '@xds/core/NavIcon';
+import {AppShell} from '@xds/core/AppShell';
+import {Banner} from '@xds/core/Banner';
+import {Badge} from '@xds/core/Badge';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
+import {Text} from '@xds/core/Text';
+import {MobileNav} from '@xds/core/MobileNav';
+import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
+import {NavIcon} from '@xds/core/NavIcon';
 import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
+  SideNav,
+  SideNavHeading,
+  SideNavItem,
+  SideNavSection,
 } from '@xds/core/SideNav';
 import {useMediaQuery} from '@xds/core/hooks';
 import * as stylex from '@stylexjs/stylex';
@@ -62,14 +62,14 @@ const styles = stylex.create({
 function MockContent({paragraphs = 3}: {paragraphs?: number}) {
   return (
     <>
-      <XDSText type="large">Page Content</XDSText>
+      <Text type="large">Page Content</Text>
       <div {...stylex.props(styles.longContent)}>
         {Array.from({length: paragraphs}, (_, i) => (
-          <XDSText type="body" key={i}>
+          <Text type="body" key={i}>
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
             eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim
             ad minim veniam, quis nostrud exercitation ullamco laboris.
-          </XDSText>
+          </Text>
         ))}
       </div>
     </>
@@ -86,26 +86,26 @@ function MockContent({paragraphs = 3}: {paragraphs?: number}) {
  */
 function AppTopNav({endContent}: {endContent?: React.ReactNode}) {
   return (
-    <XDSTopNav
+    <TopNav
       label="Main navigation"
       heading={
-        <XDSTopNavHeading
+        <TopNavHeading
           heading="Acme App"
           logo={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
         />
       }
       startContent={
         <>
-          <XDSTopNavItem label="Home" href="#" isSelected />
-          <XDSTopNavItem label="Products" href="#" />
-          <XDSTopNavItem label="Docs" href="#" />
+          <TopNavItem label="Home" href="#" isSelected />
+          <TopNavItem label="Products" href="#" />
+          <TopNavItem label="Docs" href="#" />
         </>
       }
       endContent={
         endContent ?? (
-          <XDSButton
+          <Button
             label="Profile"
             variant="ghost"
             icon={<UserCircleIcon style={{width: 16, height: 16}} />}
@@ -124,44 +124,44 @@ function AppTopNav({endContent}: {endContent?: React.ReactNode}) {
  */
 function SideNavWithoutHeader() {
   return (
-    <XDSSideNav>
-      <XDSSideNavSection title="Main" isHeaderHidden>
-        <XDSSideNavItem
+    <SideNav>
+      <SideNavSection title="Main" isHeaderHidden>
+        <SideNavItem
           label="Dashboard"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
           isSelected
           href="#"
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Analytics"
           icon={ChartBarIcon}
           selectedIcon={ChartBarIconSolid}
           href="#"
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Projects"
           icon={FolderIcon}
           selectedIcon={FolderIconSolid}
           href="#"
-          endContent={<XDSBadge label={12} />}
+          endContent={<Badge label={12} />}
         />
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Organization">
-        <XDSSideNavItem
+      </SideNavSection>
+      <SideNavSection title="Organization">
+        <SideNavItem
           label="Team"
           icon={UserGroupIcon}
           selectedIcon={UserGroupIconSolid}
           href="#"
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Settings"
           icon={Cog6ToothIcon}
           selectedIcon={Cog6ToothIconSolid}
           href="#"
         />
-      </XDSSideNavSection>
-    </XDSSideNav>
+      </SideNavSection>
+    </SideNav>
   );
 }
 
@@ -171,53 +171,53 @@ function SideNavWithoutHeader() {
  */
 function SideNavWithHeader() {
   return (
-    <XDSSideNav
+    <SideNav
       header={
-        <XDSSideNavHeading
+        <SideNavHeading
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
           heading="Acme App"
           headingHref="#"
         />
       }>
-      <XDSSideNavSection title="Main" isHeaderHidden>
-        <XDSSideNavItem
+      <SideNavSection title="Main" isHeaderHidden>
+        <SideNavItem
           label="Dashboard"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
           isSelected
           href="#"
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Analytics"
           icon={ChartBarIcon}
           selectedIcon={ChartBarIconSolid}
           href="#"
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Projects"
           icon={FolderIcon}
           selectedIcon={FolderIconSolid}
           href="#"
-          endContent={<XDSBadge label={12} />}
+          endContent={<Badge label={12} />}
         />
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Organization">
-        <XDSSideNavItem
+      </SideNavSection>
+      <SideNavSection title="Organization">
+        <SideNavItem
           label="Team"
           icon={UserGroupIcon}
           selectedIcon={UserGroupIconSolid}
           href="#"
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Settings"
           icon={Cog6ToothIcon}
           selectedIcon={Cog6ToothIconSolid}
           href="#"
         />
-      </XDSSideNavSection>
-    </XDSSideNav>
+      </SideNavSection>
+    </SideNav>
   );
 }
 
@@ -225,9 +225,9 @@ function SideNavWithHeader() {
 // Meta
 // =============================================================================
 
-const meta: Meta<typeof XDSAppShell> = {
+const meta: Meta<typeof AppShell> = {
   title: 'Core/AppShell',
-  component: XDSAppShell,
+  component: AppShell,
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
@@ -246,7 +246,7 @@ const meta: Meta<typeof XDSAppShell> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSAppShell>;
+type Story = StoryObj<typeof AppShell>;
 
 // =============================================================================
 // Playground (interactive controls)
@@ -257,7 +257,7 @@ type Story = StoryObj<typeof XDSAppShell>;
  * When top nav is turned off, the side nav automatically shows a header
  * with the app title since there's no top bar to display it.
  */
-export const Playground: StoryObj<typeof XDSAppShell> = {
+export const Playground: StoryObj<typeof AppShell> = {
   argTypes: {
     variant: {
       control: 'radio',
@@ -275,14 +275,14 @@ export const Playground: StoryObj<typeof XDSAppShell> = {
   },
   render: function PlaygroundStory(args) {
     return (
-      <XDSAppShell
+      <AppShell
         contentPadding={6}
         topNav={<AppTopNav />}
         sideNav={<SideNavWithoutHeader />}
         variant={args.variant}
         height={args.height}>
         <MockContent />
-      </XDSAppShell>
+      </AppShell>
     );
   },
 };
@@ -298,12 +298,12 @@ export const Playground: StoryObj<typeof XDSAppShell> = {
  */
 export const TopNavWithSideNav: Story = {
   render: () => (
-    <XDSAppShell
+    <AppShell
       contentPadding={6}
       topNav={<AppTopNav />}
       sideNav={<SideNavWithoutHeader />}>
       <MockContent />
-    </XDSAppShell>
+    </AppShell>
   ),
 };
 
@@ -314,9 +314,9 @@ export const TopNavWithSideNav: Story = {
  */
 export const SideNavOnly: Story = {
   render: () => (
-    <XDSAppShell contentPadding={6} sideNav={<SideNavWithHeader />}>
+    <AppShell contentPadding={6} sideNav={<SideNavWithHeader />}>
       <MockContent />
-    </XDSAppShell>
+    </AppShell>
   ),
 };
 
@@ -326,9 +326,9 @@ export const SideNavOnly: Story = {
  */
 export const TopNavOnly: Story = {
   render: () => (
-    <XDSAppShell contentPadding={6} topNav={<AppTopNav />}>
+    <AppShell contentPadding={6} topNav={<AppTopNav />}>
       <MockContent paragraphs={5} />
-    </XDSAppShell>
+    </AppShell>
   ),
 };
 
@@ -342,14 +342,14 @@ export const TopNavOnly: Story = {
  */
 export const FullFeatured: Story = {
   render: () => (
-    <XDSAppShell
+    <AppShell
       contentPadding={6}
       topNav={<AppTopNav />}
       sideNav={
-        <XDSSideNav
+        <SideNav
           footerIcons={
             <>
-              <XDSButton
+              <Button
                 label="Help"
                 variant="ghost"
                 icon={
@@ -357,13 +357,13 @@ export const FullFeatured: Story = {
                 }
                 isIconOnly
               />
-              <XDSButton
+              <Button
                 label="Notifications"
                 variant="ghost"
                 icon={<BellIcon style={{width: 16, height: 16}} />}
                 isIconOnly
               />
-              <XDSButton
+              <Button
                 label="Profile"
                 variant="ghost"
                 icon={<UserCircleIcon style={{width: 16, height: 16}} />}
@@ -371,65 +371,65 @@ export const FullFeatured: Story = {
               />
             </>
           }>
-          <XDSSideNavSection title="Main" isHeaderHidden>
-            <XDSSideNavItem
+          <SideNavSection title="Main" isHeaderHidden>
+            <SideNavItem
               label="Dashboard"
               icon={HomeIcon}
               selectedIcon={HomeIconSolid}
               isSelected
               href="#"
             />
-            <XDSSideNavItem
+            <SideNavItem
               label="Analytics"
               icon={ChartBarIcon}
               selectedIcon={ChartBarIconSolid}
               href="#"
-              endContent={<XDSBadge variant="info" label="New" />}
+              endContent={<Badge variant="info" label="New" />}
             />
-            <XDSSideNavItem
+            <SideNavItem
               label="Projects"
               icon={FolderIcon}
               selectedIcon={FolderIconSolid}
               href="#"
-              endContent={<XDSBadge label={12} />}
+              endContent={<Badge label={12} />}
             />
-          </XDSSideNavSection>
-          <XDSSideNavSection title="Organization">
-            <XDSSideNavItem
+          </SideNavSection>
+          <SideNavSection title="Organization">
+            <SideNavItem
               label="Team"
               icon={UserGroupIcon}
               selectedIcon={UserGroupIconSolid}
               href="#"
             />
-            <XDSSideNavItem
+            <SideNavItem
               label="Settings"
               icon={Cog6ToothIcon}
               selectedIcon={Cog6ToothIconSolid}
               href="#">
-              <XDSSideNavItem label="General" href="#" />
-              <XDSSideNavItem label="Security" href="#" />
-              <XDSSideNavItem label="Integrations" href="#" />
-            </XDSSideNavItem>
-          </XDSSideNavSection>
-          <XDSSideNavSection title="Resources">
-            <XDSSideNavItem
+              <SideNavItem label="General" href="#" />
+              <SideNavItem label="Security" href="#" />
+              <SideNavItem label="Integrations" href="#" />
+            </SideNavItem>
+          </SideNavSection>
+          <SideNavSection title="Resources">
+            <SideNavItem
               label="Documentation"
               icon={DocumentTextIcon}
               selectedIcon={DocumentTextIconSolid}
               href="#"
             />
-            <XDSSideNavItem
+            <SideNavItem
               label="Compliance"
               icon={ShieldCheckIcon}
               selectedIcon={ShieldCheckIconSolid}
               href="#"
               isDisabled
             />
-          </XDSSideNavSection>
-        </XDSSideNav>
+          </SideNavSection>
+        </SideNav>
       }
       banner={
-        <XDSBanner
+        <Banner
           status="info"
           container="section"
           title="System maintenance scheduled"
@@ -438,7 +438,7 @@ export const FullFeatured: Story = {
         />
       }>
       <MockContent />
-    </XDSAppShell>
+    </AppShell>
   ),
 };
 
@@ -448,13 +448,13 @@ export const FullFeatured: Story = {
  */
 export const AutoHeight: Story = {
   render: () => (
-    <XDSAppShell
+    <AppShell
       contentPadding={6}
       topNav={<AppTopNav />}
       sideNav={<SideNavWithoutHeader />}
       height="auto">
       <MockContent paragraphs={20} />
-    </XDSAppShell>
+    </AppShell>
   ),
 };
 
@@ -468,14 +468,14 @@ export const AutoHeight: Story = {
 export const ControlledCollapse: Story = {
   render: function ControlledCollapseStory() {
     return (
-      <XDSAppShell
+      <AppShell
         contentPadding={6}
         topNav={
-          <XDSTopNav
+          <TopNav
             label="Main navigation"
-            heading={<XDSTopNavHeading heading="Acme App" />}
+            heading={<TopNavHeading heading="Acme App" />}
             endContent={
-              <XDSButton
+              <Button
                 label="Toggle sidebar"
                 variant="ghost"
                 icon={<Bars3Icon style={{width: 16, height: 16}} />}
@@ -486,7 +486,7 @@ export const ControlledCollapse: Story = {
         }
         sideNav={<SideNavWithoutHeader />}>
         <MockContent />
-      </XDSAppShell>
+      </AppShell>
     );
   },
 };
@@ -497,9 +497,9 @@ export const ControlledCollapse: Story = {
  */
 export const ContentOnly: Story = {
   render: () => (
-    <XDSAppShell contentPadding={6}>
+    <AppShell contentPadding={6}>
       <MockContent paragraphs={5} />
-    </XDSAppShell>
+    </AppShell>
   ),
 };
 
@@ -509,12 +509,12 @@ export const ContentOnly: Story = {
  */
 export const WithBanner: Story = {
   render: () => (
-    <XDSAppShell
+    <AppShell
       contentPadding={6}
       topNav={<AppTopNav />}
       sideNav={<SideNavWithoutHeader />}
       banner={
-        <XDSBanner
+        <Banner
           status="info"
           container="section"
           title="System maintenance scheduled"
@@ -523,7 +523,7 @@ export const WithBanner: Story = {
         />
       }>
       <MockContent />
-    </XDSAppShell>
+    </AppShell>
   ),
 };
 
@@ -533,10 +533,10 @@ export const WithBanner: Story = {
  *
  * - Desktop (>768px): Standard AppShell with TopNav + inline SideNav
  * - Mobile (≤768px): SideNav hides, TopNav shows a hamburger button that
- *   opens the `mobileNav` drawer (an XDSMobileNav rendered by AppShell)
+ *   opens the `mobileNav` drawer (an MobileNav rendered by AppShell)
  *
  * The nav sections are defined once and shared between `sideNav` and
- * `mobileNav`. AppShell handles rendering the XDSMobileNav internally —
+ * `mobileNav`. AppShell handles rendering the MobileNav internally —
  * you just pass the content and control open/close state.
  *
  * Resize the viewport or use Storybook's viewport addon to see the
@@ -550,56 +550,56 @@ export const WithMobileNav: Story = {
 
     const navSections = (
       <>
-        <XDSSideNavSection title="Main" isHeaderHidden>
-          <XDSSideNavItem
+        <SideNavSection title="Main" isHeaderHidden>
+          <SideNavItem
             label="Dashboard"
             icon={HomeIcon}
             selectedIcon={HomeIconSolid}
             isSelected
             href="#"
           />
-          <XDSSideNavItem
+          <SideNavItem
             label="Analytics"
             icon={ChartBarIcon}
             selectedIcon={ChartBarIconSolid}
             href="#"
           />
-          <XDSSideNavItem
+          <SideNavItem
             label="Projects"
             icon={FolderIcon}
             selectedIcon={FolderIconSolid}
             href="#"
-            endContent={<XDSBadge label={12} />}
+            endContent={<Badge label={12} />}
           />
-        </XDSSideNavSection>
-        <XDSSideNavSection title="Organization">
-          <XDSSideNavItem
+        </SideNavSection>
+        <SideNavSection title="Organization">
+          <SideNavItem
             label="Team"
             icon={UserGroupIcon}
             selectedIcon={UserGroupIconSolid}
             href="#"
           />
-          <XDSSideNavItem
+          <SideNavItem
             label="Settings"
             icon={Cog6ToothIcon}
             selectedIcon={Cog6ToothIconSolid}
             href="#"
           />
-        </XDSSideNavSection>
+        </SideNavSection>
       </>
     );
 
     return (
-      <XDSAppShell
+      <AppShell
         contentPadding={6}
         topNav={
-          <XDSTopNav
+          <TopNav
             label="Main navigation"
             heading={
-              <XDSTopNavHeading
+              <TopNavHeading
                 heading="Acme App"
                 logo={
-                  <XDSNavIcon
+                  <NavIcon
                     icon={<CubeIcon style={{width: 16, height: 16}} />}
                   />
                 }
@@ -607,30 +607,30 @@ export const WithMobileNav: Story = {
             }
             startContent={
               isMobile ? (
-                <XDSButton
+                <Button
                   label="Menu"
                   variant="ghost"
-                  icon={<XDSIcon icon="menu" color="inherit" />}
+                  icon={<Icon icon="menu" color="inherit" />}
                   onClick={() => setMobileNavOpen(true)}
                   isIconOnly
                 />
               ) : (
                 <>
-                  <XDSTopNavItem label="Home" href="#" isSelected />
-                  <XDSTopNavItem label="Products" href="#" />
-                  <XDSTopNavItem label="Docs" href="#" />
+                  <TopNavItem label="Home" href="#" isSelected />
+                  <TopNavItem label="Products" href="#" />
+                  <TopNavItem label="Docs" href="#" />
                 </>
               )
             }
             endContent={
               <>
-                <XDSButton
+                <Button
                   label="Notifications"
                   variant="ghost"
                   icon={<BellIcon style={{width: 16, height: 16}} />}
                   isIconOnly
                 />
-                <XDSButton
+                <Button
                   label="Profile"
                   variant="ghost"
                   icon={<UserCircleIcon style={{width: 16, height: 16}} />}
@@ -640,17 +640,17 @@ export const WithMobileNav: Story = {
             }
           />
         }
-        sideNav={<XDSSideNav>{navSections}</XDSSideNav>}
+        sideNav={<SideNav>{navSections}</SideNav>}
         mobileNav={
-          <XDSMobileNav
+          <MobileNav
             isOpen={mobileNavOpen}
             onOpenChange={open => setMobileNavOpen(open)}
             header="Acme App">
             {navSections}
-          </XDSMobileNav>
+          </MobileNav>
         }>
         <MockContent />
-      </XDSAppShell>
+      </AppShell>
     );
   },
 };

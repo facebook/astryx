@@ -214,7 +214,7 @@ lines.push('');
 // ── Hooks ──────────────────────────────────────────────────────────────
 // camelCase, so the PascalCase component scan skips it — add it explicitly so
 // templates using useMediaQuery etc. render.
-lines.push("import * as XDSHooks from '@xds/core/hooks';");
+lines.push("import * as Hooks from '@xds/core/hooks';");
 lines.push('');
 
 // ── Icon libraries ─────────────────────────────────────────────────────
@@ -281,7 +281,7 @@ lines.push("  '@xds/core/theme': {Theme: ControlledTheme},");
 lines.push("  '@xds/core/theme/tokens.stylex': xdsTokens,");
 
 // hooks (useMediaQuery, etc.)
-lines.push("  '@xds/core/hooks': XDSHooks,");
+lines.push("  '@xds/core/hooks': Hooks,");
 
 // Per-component subpath entries
 for (const name of components) {

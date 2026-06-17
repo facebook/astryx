@@ -4,17 +4,17 @@
 
 import stylex from '@stylexjs/stylex';
 import {Search, User, ShoppingBag} from 'lucide-react';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSCard} from '@xds/core/Card';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSSection} from '@xds/core/Section';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
-import {XDSNumberInput} from '@xds/core/NumberInput';
+import {Text, Heading} from '@xds/core/Text';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Button} from '@xds/core/Button';
+import {Card} from '@xds/core/Card';
+import {Center} from '@xds/core/Center';
+import {Section} from '@xds/core/Section';
+import {Grid} from '@xds/core/Grid';
+import {Badge} from '@xds/core/Badge';
+import {AspectRatio} from '@xds/core/AspectRatio';
+import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
+import {NumberInput} from '@xds/core/NumberInput';
 import type {ThemeImageSet} from './themeImages';
 const styles = stylex.create({
   productImage: {
@@ -67,7 +67,7 @@ const styles = stylex.create({
   // Fluid mode used by the theme playground. Caps the showcase at
   // a sensible max-width so the product grid (3 cards at 240px min +
   // 16px gap) fills the container naturally — wider caps left a
-  // gutter of unused space on the trailing edge because XDSGrid's
+  // gutter of unused space on the trailing edge because Grid's
   // auto-fill column algorithm pads tracks to the start of the row.
   // Stays centered via the base `content` rule's marginInline:auto.
   contentFluid: {
@@ -77,7 +77,7 @@ const styles = stylex.create({
   // pinches block-level children to the centre via hAlign="center",
   // but heading/description text still anchors to the start of its
   // own block unless `text-align: center` is applied. We use a
-  // stylex rule instead of the XDSHeading/XDSText `justify` prop
+  // stylex rule instead of the Heading/Text `justify` prop
   // because the docsite consumes the published @xds/core build,
   // which doesn't expose `justify` yet.
   centerText: {
@@ -129,28 +129,28 @@ export function ThemeShowcasePreview({
 }: ThemeShowcasePreviewProps) {
   return (
     <div data-theme-preview="true">
-      <XDSVStack gap={0}>
+      <VStack gap={0}>
         {/* Fake app top nav — sits at the top of the preview so the
           surface reads like a real product chrome (brand · primary
           nav · actions) rather than a bare design canvas. The
           brand wordmark, nav items, and end-content actions stay
           generic so the same nav makes sense across every theme
           (neutral, butter, y2k, stone, etc.). */}
-        <XDSTopNav
+        <TopNav
           label="Theme preview navigation"
-          heading={<XDSTopNavHeading heading="Studio" />}
+          heading={<TopNavHeading heading="Studio" />}
           centerContent={
             <>
-              <XDSTopNavItem label="Shop" href="#" isSelected />
-              <XDSTopNavItem label="New In" href="#" />
-              <XDSTopNavItem label="Stories" href="#" />
-              <XDSTopNavItem label="Help" href="#" />
+              <TopNavItem label="Shop" href="#" isSelected />
+              <TopNavItem label="New In" href="#" />
+              <TopNavItem label="Stories" href="#" />
+              <TopNavItem label="Help" href="#" />
             </>
           }
           endContent={
-            <XDSHStack gap={2} vAlign="center">
-              <XDSHStack gap={0.5}>
-                <XDSButton
+            <HStack gap={2} vAlign="center">
+              <HStack gap={0.5}>
+                <Button
                   label="Search"
                   tooltip="Search"
                   variant="ghost"
@@ -158,7 +158,7 @@ export function ThemeShowcasePreview({
                   icon={<Search size={20} />}
                   href="#"
                 />
-                <XDSButton
+                <Button
                   label="Account"
                   tooltip="Account"
                   variant="ghost"
@@ -166,7 +166,7 @@ export function ThemeShowcasePreview({
                   icon={<User size={20} />}
                   href="#"
                 />
-                <XDSButton
+                <Button
                   label="Cart"
                   tooltip="Cart"
                   variant="ghost"
@@ -174,62 +174,62 @@ export function ThemeShowcasePreview({
                   icon={<ShoppingBag size={20} />}
                   href="#"
                 />
-              </XDSHStack>
-              <XDSButton label="Sign in" variant="primary" href="#" />
-            </XDSHStack>
+              </HStack>
+              <Button label="Sign in" variant="primary" href="#" />
+            </HStack>
           }
         />
 
-        <XDSSection padding={8} variant="transparent">
-          <XDSVStack
+        <Section padding={8} variant="transparent">
+          <VStack
             gap={10}
             xstyle={
               fluid ? [styles.content, styles.contentFluid] : styles.content
             }>
-            <XDSCenter>
-              <XDSVStack gap={4} hAlign="center" xstyle={styles.heroText}>
-                <XDSText type="display-3">
+            <Center>
+              <VStack gap={4} hAlign="center" xstyle={styles.heroText}>
+                <Text type="display-3">
                   Little joys,
                   <br />
                   everywhere you go
-                </XDSText>
-                <XDSText type="body" color="secondary">
+                </Text>
+                <Text type="body" color="secondary">
                   We believe the smallest details are the ones that matter most.
                   Turn an ordinary day into something worth remembering.
-                </XDSText>
-              </XDSVStack>
-            </XDSCenter>
+                </Text>
+              </VStack>
+            </Center>
 
-            <XDSGrid columns={{minWidth: 240}} gap={4}>
+            <Grid columns={{minWidth: 240}} gap={4}>
               {PRODUCTS.map((p, i) => (
-                <XDSCard key={p.name} padding={0} height="100%">
-                  <XDSVStack gap={0} xstyle={styles.cardStack}>
-                    <XDSAspectRatio ratio={1}>
+                <Card key={p.name} padding={0} height="100%">
+                  <VStack gap={0} xstyle={styles.cardStack}>
+                    <AspectRatio ratio={1}>
                       <img
                         src={images[PRODUCT_IMAGE_KEYS[i]]}
                         alt={p.name}
                         {...stylex.props(styles.productImage)}
                       />
-                    </XDSAspectRatio>
+                    </AspectRatio>
                     <div {...stylex.props(styles.cardBody)}>
-                      <XDSVStack
+                      <VStack
                         gap={2}
                         hAlign="center"
                         xstyle={styles.cardStack}>
-                        <XDSHStack>
-                          <XDSBadge label={p.badge} variant={p.badgeVariant} />
-                        </XDSHStack>
-                        <XDSHeading level={2} xstyle={styles.centerText}>
+                        <HStack>
+                          <Badge label={p.badge} variant={p.badgeVariant} />
+                        </HStack>
+                        <Heading level={2} xstyle={styles.centerText}>
                           {p.name}
-                        </XDSHeading>
-                        <XDSText
+                        </Heading>
+                        <Text
                           type="supporting"
                           color="secondary"
                           xstyle={[styles.cardDescription, styles.centerText]}>
                           {p.description}
-                        </XDSText>
-                        <XDSHStack gap={2} vAlign="center" hAlign="center">
-                          <XDSNumberInput
+                        </Text>
+                        <HStack gap={2} vAlign="center" hAlign="center">
+                          <NumberInput
                             label="Quantity"
                             isLabelHidden
                             value={1}
@@ -239,22 +239,22 @@ export function ThemeShowcasePreview({
                             size="sm"
                             xstyle={styles.quantityInput}
                           />
-                          <XDSButton
+                          <Button
                             label="Add to cart"
                             variant="secondary"
                             href="#"
                             xstyle={styles.cartButton}
                           />
-                        </XDSHStack>
-                      </XDSVStack>
+                        </HStack>
+                      </VStack>
                     </div>
-                  </XDSVStack>
-                </XDSCard>
+                  </VStack>
+                </Card>
               ))}
-            </XDSGrid>
-          </XDSVStack>
-        </XDSSection>
-      </XDSVStack>
+            </Grid>
+          </VStack>
+        </Section>
+      </VStack>
     </div>
   );
 }

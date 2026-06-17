@@ -3,28 +3,28 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {
-  XDSTable,
-  XDSTableRow,
-  XDSTableCell,
-  XDSTableHeaderCell,
-  XDSTableHeader,
-  XDSTableBody,
+  Table,
+  TableRow,
+  TableCell,
+  TableHeaderCell,
+  TableHeader,
+  TableBody,
   proportional,
   pixel,
 } from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
-import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
+import type {TableColumn} from '@xds/core/Table';
+import {Card} from '@xds/core/Card';
+import {Section} from '@xds/core/Section';
 import {
-  XDSLayout,
-  XDSLayoutHeader,
-  XDSLayoutContent,
-  XDSLayoutFooter,
-  XDSVStack,
-  XDSHStack,
+  Layout,
+  LayoutHeader,
+  LayoutContent,
+  LayoutFooter,
+  VStack,
+  HStack,
 } from '@xds/core/Layout';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
+import {Heading, Text} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
 import {
   colorDefaults,
   spacingDefaults,
@@ -87,7 +87,7 @@ const users: User[] = [
   },
 ];
 
-const columns: XDSTableColumn<User>[] = [
+const columns: TableColumn<User>[] = [
   {key: 'name', header: 'Name', width: proportional(1)},
   {key: 'email', header: 'Email', width: proportional(2)},
   {key: 'role', header: 'Role', width: proportional(1)},
@@ -100,7 +100,7 @@ const columns: XDSTableColumn<User>[] = [
 
 const meta: Meta = {
   title: 'Core/Table',
-  component: XDSTable,
+  component: Table,
   tags: ['autodocs'],
   argTypes: {
     density: {
@@ -201,7 +201,7 @@ export const NoDividers: Story = {
 
 export const AutoColumns: Story = {
   render: () => (
-    <XDSTable
+    <Table
       data={[
         {name: 'Alice', role: 'Engineer', status: 'Active'},
         {name: 'Bob', role: 'Designer', status: 'Away'},
@@ -213,7 +213,7 @@ export const AutoColumns: Story = {
 
 export const CustomCellRenderer: Story = {
   render: () => {
-    const cols: XDSTableColumn<User>[] = [
+    const cols: TableColumn<User>[] = [
       {key: 'name', header: 'Name'},
       {
         key: 'email',
@@ -250,43 +250,43 @@ export const CustomCellRenderer: Story = {
       {key: 'age', header: 'Age', width: pixel(80)},
     ];
 
-    return <XDSTable data={users} columns={cols} idKey="id" hasHover />;
+    return <Table data={users} columns={cols} idKey="id" hasHover />;
   },
 };
 
 export const ChildrenMode: Story = {
   render: () => (
-    <XDSTable density="balanced" dividers="rows" isStriped hasHover>
-      <XDSTableHeader>
-        <XDSTableRow>
-          <XDSTableHeaderCell>Name</XDSTableHeaderCell>
-          <XDSTableHeaderCell>Email</XDSTableHeaderCell>
-          <XDSTableHeaderCell>Role</XDSTableHeaderCell>
-        </XDSTableRow>
-      </XDSTableHeader>
-      <XDSTableBody>
-        <XDSTableRow>
-          <XDSTableCell>Alice</XDSTableCell>
-          <XDSTableCell>alice@example.com</XDSTableCell>
-          <XDSTableCell>Engineer</XDSTableCell>
-        </XDSTableRow>
-        <XDSTableRow>
-          <XDSTableCell>Bob</XDSTableCell>
-          <XDSTableCell>bob@example.com</XDSTableCell>
-          <XDSTableCell>Designer</XDSTableCell>
-        </XDSTableRow>
-        <XDSTableRow>
-          <XDSTableCell>Charlie</XDSTableCell>
-          <XDSTableCell>charlie@example.com</XDSTableCell>
-          <XDSTableCell>PM</XDSTableCell>
-        </XDSTableRow>
-        <XDSTableRow>
-          <XDSTableCell>Diana</XDSTableCell>
-          <XDSTableCell>diana@example.com</XDSTableCell>
-          <XDSTableCell>Engineer</XDSTableCell>
-        </XDSTableRow>
-      </XDSTableBody>
-    </XDSTable>
+    <Table density="balanced" dividers="rows" isStriped hasHover>
+      <TableHeader>
+        <TableRow>
+          <TableHeaderCell>Name</TableHeaderCell>
+          <TableHeaderCell>Email</TableHeaderCell>
+          <TableHeaderCell>Role</TableHeaderCell>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        <TableRow>
+          <TableCell>Alice</TableCell>
+          <TableCell>alice@example.com</TableCell>
+          <TableCell>Engineer</TableCell>
+        </TableRow>
+        <TableRow>
+          <TableCell>Bob</TableCell>
+          <TableCell>bob@example.com</TableCell>
+          <TableCell>Designer</TableCell>
+        </TableRow>
+        <TableRow>
+          <TableCell>Charlie</TableCell>
+          <TableCell>charlie@example.com</TableCell>
+          <TableCell>PM</TableCell>
+        </TableRow>
+        <TableRow>
+          <TableCell>Diana</TableCell>
+          <TableCell>diana@example.com</TableCell>
+          <TableCell>Engineer</TableCell>
+        </TableRow>
+      </TableBody>
+    </Table>
   ),
 };
 
@@ -295,7 +295,7 @@ export const AllDensities: Story = {
     <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
       <div>
         <p style={{margin: '0 0 8px', fontWeight: 600}}>Compact</p>
-        <XDSTable
+        <Table
           data={users.slice(0, 3)}
           columns={columns}
           idKey="id"
@@ -304,7 +304,7 @@ export const AllDensities: Story = {
       </div>
       <div>
         <p style={{margin: '0 0 8px', fontWeight: 600}}>Balanced (default)</p>
-        <XDSTable
+        <Table
           data={users.slice(0, 3)}
           columns={columns}
           idKey="id"
@@ -313,7 +313,7 @@ export const AllDensities: Story = {
       </div>
       <div>
         <p style={{margin: '0 0 8px', fontWeight: 600}}>Spacious</p>
-        <XDSTable
+        <Table
           data={users.slice(0, 3)}
           columns={columns}
           idKey="id"
@@ -370,7 +370,7 @@ const overflowData: OverflowRow[] = [
  */
 export const OverflowBehavior: Story = {
   render: () => {
-    const cols: XDSTableColumn<OverflowRow>[] = [
+    const cols: TableColumn<OverflowRow>[] = [
       {key: 'scenario', header: 'Scenario', width: pixel(160)},
       {key: 'content', header: 'Content', width: proportional(1)},
     ];
@@ -385,7 +385,7 @@ export const OverflowBehavior: Story = {
         }}>
         <div>
           <h4 style={{margin: '0 0 8px'}}>Wrap (default)</h4>
-          <XDSTable
+          <Table
             data={overflowData}
             columns={cols}
             dividers="grid"
@@ -394,7 +394,7 @@ export const OverflowBehavior: Story = {
         </div>
         <div>
           <h4 style={{margin: '0 0 8px'}}>Truncate (with tooltip on hover)</h4>
-          <XDSTable
+          <Table
             data={overflowData}
             columns={cols}
             dividers="grid"
@@ -436,7 +436,7 @@ const containerStoryStyles = stylex.create({
   },
 });
 
-const simpleColumns: XDSTableColumn<User>[] = [
+const simpleColumns: TableColumn<User>[] = [
   {key: 'name', header: 'Name', width: proportional(1)},
   {key: 'role', header: 'Role', width: proportional(1)},
   {key: 'email', header: 'Email', width: proportional(2)},
@@ -462,17 +462,17 @@ export const InCard: Story = {
         <h4 {...stylex.props(containerStoryStyles.heading)}>
           Table in Card (auto bleed)
         </h4>
-        <XDSCard width={480}>
-          <XDSTable data={users.slice(0, 4)} columns={simpleColumns} />
-        </XDSCard>
+        <Card width={480}>
+          <Table data={users.slice(0, 4)} columns={simpleColumns} />
+        </Card>
       </div>
       <div>
         <h4 {...stylex.props(containerStoryStyles.heading)}>
           Before: Card padding={0} (old pattern)
         </h4>
-        <XDSCard width={480} padding={0}>
-          <XDSTable data={users.slice(0, 4)} columns={simpleColumns} />
-        </XDSCard>
+        <Card width={480} padding={0}>
+          <Table data={users.slice(0, 4)} columns={simpleColumns} />
+        </Card>
       </div>
     </div>
   ),
@@ -492,17 +492,17 @@ export const InCardWithHeading: Story = {
     ),
   ],
   render: () => (
-    <XDSCard width={520}>
-      <XDSVStack gap={3}>
-        <XDSHeading level={3}>Team Members</XDSHeading>
-        <XDSTable data={users.slice(0, 4)} columns={simpleColumns} hasHover />
-      </XDSVStack>
-    </XDSCard>
+    <Card width={520}>
+      <VStack gap={3}>
+        <Heading level={3}>Team Members</Heading>
+        <Table data={users.slice(0, 4)} columns={simpleColumns} hasHover />
+      </VStack>
+    </Card>
   ),
 };
 
 /**
- * Table inside a Card with XDSLayout — header, content with table, footer.
+ * Table inside a Card with Layout — header, content with table, footer.
  * The table bleeds within the layout content area while header/footer
  * retain their own padding.
  */
@@ -515,32 +515,32 @@ export const InCardWithLayout: Story = {
     ),
   ],
   render: () => (
-    <XDSCard width={560}>
-      <XDSLayout
+    <Card width={560}>
+      <Layout
         header={
-          <XDSLayoutHeader hasDivider>
-            <XDSHeading level={3}>User Directory</XDSHeading>
-          </XDSLayoutHeader>
+          <LayoutHeader hasDivider>
+            <Heading level={3}>User Directory</Heading>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent>
-            <XDSTable data={users} columns={simpleColumns} hasHover isStriped />
-          </XDSLayoutContent>
+          <LayoutContent>
+            <Table data={users} columns={simpleColumns} hasHover isStriped />
+          </LayoutContent>
         }
         footer={
-          <XDSLayoutFooter hasDivider>
-            <XDSHStack gap={2} hAlign="end">
-              <XDSButton label="Export" variant="secondary">
+          <LayoutFooter hasDivider>
+            <HStack gap={2} hAlign="end">
+              <Button label="Export" variant="secondary">
                 Export
-              </XDSButton>
-              <XDSButton label="Add User" variant="primary">
+              </Button>
+              <Button label="Add User" variant="primary">
                 Add User
-              </XDSButton>
-            </XDSHStack>
-          </XDSLayoutFooter>
+              </Button>
+            </HStack>
+          </LayoutFooter>
         }
       />
-    </XDSCard>
+    </Card>
   ),
 };
 
@@ -557,21 +557,21 @@ export const InCardWithSection: Story = {
     ),
   ],
   render: () => (
-    <XDSCard width={520}>
-      <XDSVStack gap={3}>
-        <XDSHeading level={3}>Dashboard</XDSHeading>
+    <Card width={520}>
+      <VStack gap={3}>
+        <Heading level={3}>Dashboard</Heading>
         <p {...stylex.props(containerStoryStyles.text)}>
           The table below is in a wash section for visual separation.
         </p>
-      </XDSVStack>
-      <XDSSection variant="muted">
-        <XDSTable
+      </VStack>
+      <Section variant="muted">
+        <Table
           data={users.slice(0, 3)}
           columns={simpleColumns}
           density="compact"
         />
-      </XDSSection>
-    </XDSCard>
+      </Section>
+    </Card>
   ),
 };
 
@@ -593,16 +593,16 @@ export const InCardDensities: Story = {
       {(['compact', 'balanced', 'spacious'] as const).map(density => (
         <div key={density}>
           <h4 {...stylex.props(containerStoryStyles.heading)}>{density}</h4>
-          <XDSCard width={400}>
-            <XDSVStack gap={2}>
-              <XDSHeading level={4}>Team</XDSHeading>
-              <XDSTable
+          <Card width={400}>
+            <VStack gap={2}>
+              <Heading level={4}>Team</Heading>
+              <Table
                 data={users.slice(0, 3)}
                 columns={simpleColumns}
                 density={density}
               />
-            </XDSVStack>
-          </XDSCard>
+            </VStack>
+          </Card>
         </div>
       ))}
     </div>
@@ -628,14 +628,14 @@ export const StandaloneVsContainer: Story = {
           Standalone (no container)
         </h4>
         <div style={{width: 400}}>
-          <XDSTable data={users.slice(0, 3)} columns={simpleColumns} />
+          <Table data={users.slice(0, 3)} columns={simpleColumns} />
         </div>
       </div>
       <div>
         <h4 {...stylex.props(containerStoryStyles.heading)}>Inside Card</h4>
-        <XDSCard width={400}>
-          <XDSTable data={users.slice(0, 3)} columns={simpleColumns} />
-        </XDSCard>
+        <Card width={400}>
+          <Table data={users.slice(0, 3)} columns={simpleColumns} />
+        </Card>
       </div>
     </div>
   ),
@@ -691,7 +691,7 @@ const transactions: Transaction[] = [
   },
 ];
 
-const alignedColumns: XDSTableColumn<Transaction>[] = [
+const alignedColumns: TableColumn<Transaction>[] = [
   {key: 'description', header: 'Description', width: proportional(2)},
   {key: 'category', header: 'Category'},
   {key: 'quantity', header: 'Qty', align: 'center', width: pixel(80)},
@@ -711,7 +711,7 @@ const alignedColumns: XDSTableColumn<Transaction>[] = [
  */
 export const ColumnAlignment: Story = {
   render: () => (
-    <XDSTable
+    <Table
       data={transactions}
       columns={alignedColumns}
       idKey="id"
@@ -753,7 +753,7 @@ const teamMembers: TeamMember[] = [
   },
 ];
 
-const verticalAlignColumns: XDSTableColumn<TeamMember>[] = [
+const verticalAlignColumns: TableColumn<TeamMember>[] = [
   {key: 'name', header: 'Name', width: pixel(140)},
   {
     key: 'bio',
@@ -791,7 +791,7 @@ export const VerticalAlignment: Story = {
           <p style={{margin: '0 0 8px', fontWeight: 600}}>
             verticalAlign=&quot;{vAlign}&quot;
           </p>
-          <XDSTable
+          <Table
             data={teamMembers}
             columns={verticalAlignColumns}
             idKey="id"
@@ -844,7 +844,7 @@ const mobileData: Employee[] = [
   },
 ];
 
-const mobileColumns: XDSTableColumn<Employee>[] = [
+const mobileColumns: TableColumn<Employee>[] = [
   {key: 'name', header: 'Name'},
   {key: 'department', header: 'Department'},
   {key: 'title', header: 'Title'},
@@ -877,7 +877,7 @@ export const ResponsiveScroll: Story = {
             border: '1px dashed #ccc',
             borderRadius: '8px',
           }}>
-          <XDSTable
+          <Table
             data={mobileData}
             columns={mobileColumns}
             idKey="id"
@@ -897,7 +897,7 @@ export const ResponsiveScroll: Story = {
             border: '1px dashed #ccc',
             borderRadius: '8px',
           }}>
-          <XDSTable
+          <Table
             data={mobileData}
             columns={mobileColumns}
             idKey="id"
@@ -911,7 +911,7 @@ export const ResponsiveScroll: Story = {
         <p style={{margin: '0 0 8px', fontWeight: 600}}>
           Full width — no scroll needed
         </p>
-        <XDSTable
+        <Table
           data={mobileData}
           columns={mobileColumns}
           idKey="id"
@@ -937,8 +937,8 @@ export const ResponsiveScrollInCard: Story = {
         border: '1px dashed #ccc',
         borderRadius: '8px',
       }}>
-      <XDSCard>
-        <XDSTable
+      <Card>
+        <Table
           data={mobileData}
           columns={mobileColumns}
           idKey="id"
@@ -946,7 +946,7 @@ export const ResponsiveScrollInCard: Story = {
           density="compact"
           textOverflow="truncate"
         />
-      </XDSCard>
+      </Card>
     </div>
   ),
 };
@@ -1002,15 +1002,15 @@ const propData: PropEntry[] = [
  */
 export const PropsTablePattern: Story = {
   render: () => {
-    const cols: XDSTableColumn<PropEntry>[] = [
+    const cols: TableColumn<PropEntry>[] = [
       {
         key: 'name',
         header: 'Prop',
         width: pixel(140),
         renderCell: (item: PropEntry) => (
-          <XDSText type="code" weight="bold">
+          <Text type="code" weight="bold">
             {item.name}
-          </XDSText>
+          </Text>
         ),
       },
       {
@@ -1018,9 +1018,9 @@ export const PropsTablePattern: Story = {
         header: 'Type',
         width: pixel(240),
         renderCell: (item: PropEntry) => (
-          <XDSText type="code" color="secondary">
+          <Text type="code" color="secondary">
             {item.type}
-          </XDSText>
+          </Text>
         ),
       },
       {key: 'description', header: 'Description'},
@@ -1038,7 +1038,7 @@ export const PropsTablePattern: Story = {
               border: '1px dashed #ccc',
               borderRadius: '8px',
             }}>
-            <XDSTable
+            <Table
               data={propData}
               columns={cols}
               density="spacious"
@@ -1050,7 +1050,7 @@ export const PropsTablePattern: Story = {
           <p style={{margin: '0 0 8px', fontWeight: 600}}>
             Full width — normal desktop experience
           </p>
-          <XDSTable
+          <Table
             data={propData}
             columns={cols}
             density="spacious"

@@ -3,9 +3,9 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSTable, proportional} from '@xds/core/Table';
-import type {XDSTextType} from '@xds/core';
-import type {XDSHeadingLevel} from '@xds/core/Text';
+import {Table, proportional} from '@xds/core/Table';
+import type {TextType} from '@xds/core';
+import type {HeadingLevel} from '@xds/core/Text';
 import type {TokenTableProps} from './types';
 import {resolveToken} from './helpers';
 
@@ -18,8 +18,8 @@ const styles = stylex.create({
   },
 });
 
-const HEADING_LEVELS: XDSHeadingLevel[] = [1, 2, 3, 4, 5, 6];
-const TEXT_TYPES: XDSTextType[] = [
+const HEADING_LEVELS: HeadingLevel[] = [1, 2, 3, 4, 5, 6];
+const TEXT_TYPES: TextType[] = [
   'display-1',
   'display-2',
   'display-3',
@@ -115,7 +115,7 @@ export function TypographyTokenTable({theme}: TokenTableProps) {
   });
 
   return (
-    <XDSTable
+    <Table
       data={data as Record<string, unknown>[]}
       columns={[
         {

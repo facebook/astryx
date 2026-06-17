@@ -2,11 +2,11 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
-import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
-import {XDSText} from '@xds/core/Text';
-import {XDSVStack} from '@xds/core/Stack';
+import {Grid, GridSpan} from '@xds/core/Grid';
+import {Card} from '@xds/core/Card';
+import {Section} from '@xds/core/Section';
+import {Text} from '@xds/core/Text';
+import {VStack} from '@xds/core/Stack';
 import {
   colorVars,
   spacingVars,
@@ -48,9 +48,9 @@ const styles = stylex.create({
   },
 });
 
-const meta: Meta<typeof XDSGrid> = {
+const meta: Meta<typeof Grid> = {
   title: 'Core/Grid',
-  component: XDSGrid,
+  component: Grid,
   tags: ['autodocs'],
   argTypes: {
     columns: {
@@ -87,17 +87,17 @@ const meta: Meta<typeof XDSGrid> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSGrid>;
+type Story = StoryObj<typeof Grid>;
 
 const GridItem = ({children}: {children: React.ReactNode}) => (
   <div {...stylex.props(styles.item)}>
-    <XDSText type="body">{children}</XDSText>
+    <Text type="body">{children}</Text>
   </div>
 );
 
 const FeaturedItem = ({children}: {children: React.ReactNode}) => (
   <div {...stylex.props(styles.featuredItem)}>
-    <XDSText type="body">{children}</XDSText>
+    <Text type="body">{children}</Text>
   </div>
 );
 
@@ -108,14 +108,14 @@ export const Default: Story = {
   },
   render: args => (
     <div {...stylex.props(styles.container)}>
-      <XDSGrid {...args}>
+      <Grid {...args}>
         <GridItem>Item 1</GridItem>
         <GridItem>Item 2</GridItem>
         <GridItem>Item 3</GridItem>
         <GridItem>Item 4</GridItem>
         <GridItem>Item 5</GridItem>
         <GridItem>Item 6</GridItem>
-      </XDSGrid>
+      </Grid>
     </div>
   ),
 };
@@ -124,21 +124,21 @@ export const FixedColumns: Story = {
   render: () => (
     <div {...stylex.props(styles.storyWrapper)}>
       <div {...stylex.props(styles.container)}>
-        <XDSText type="supporting" xstyle={styles.sectionLabel}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
           2 Columns
-        </XDSText>
-        <XDSGrid columns={2} gap={4}>
+        </Text>
+        <Grid columns={2} gap={4}>
           <GridItem>Item 1</GridItem>
           <GridItem>Item 2</GridItem>
           <GridItem>Item 3</GridItem>
           <GridItem>Item 4</GridItem>
-        </XDSGrid>
+        </Grid>
       </div>
       <div {...stylex.props(styles.container)}>
-        <XDSText type="supporting" xstyle={styles.sectionLabel}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
           4 Columns
-        </XDSText>
-        <XDSGrid columns={4} gap={4}>
+        </Text>
+        <Grid columns={4} gap={4}>
           <GridItem>Item 1</GridItem>
           <GridItem>Item 2</GridItem>
           <GridItem>Item 3</GridItem>
@@ -147,7 +147,7 @@ export const FixedColumns: Story = {
           <GridItem>Item 6</GridItem>
           <GridItem>Item 7</GridItem>
           <GridItem>Item 8</GridItem>
-        </XDSGrid>
+        </Grid>
       </div>
     </div>
   ),
@@ -160,32 +160,32 @@ export const FixedColumns: Story = {
  */
 export const ResponsiveAutoFit: Story = {
   render: () => (
-    <XDSVStack gap={6}>
+    <VStack gap={6}>
       <div {...stylex.props(styles.container)}>
-        <XDSText type="supporting" xstyle={styles.sectionLabel}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
           {
             'columns={{minWidth: 200}} with 2 items — cards stretch to fill (auto-fit)'
           }
-        </XDSText>
-        <XDSGrid columns={{minWidth: 200}} gap={4}>
+        </Text>
+        <Grid columns={{minWidth: 200}} gap={4}>
           <GridItem>Item 1</GridItem>
           <GridItem>Item 2</GridItem>
-        </XDSGrid>
+        </Grid>
       </div>
       <div {...stylex.props(styles.container)}>
-        <XDSText type="supporting" xstyle={styles.sectionLabel}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
           Same grid with 6 items — looks fine because items fill the tracks
-        </XDSText>
-        <XDSGrid columns={{minWidth: 200}} gap={4}>
+        </Text>
+        <Grid columns={{minWidth: 200}} gap={4}>
           <GridItem>Item 1</GridItem>
           <GridItem>Item 2</GridItem>
           <GridItem>Item 3</GridItem>
           <GridItem>Item 4</GridItem>
           <GridItem>Item 5</GridItem>
           <GridItem>Item 6</GridItem>
-        </XDSGrid>
+        </Grid>
       </div>
-    </XDSVStack>
+    </VStack>
   ),
 };
 
@@ -193,15 +193,15 @@ export const ResponsiveAutoFit: Story = {
 export const ResponsiveAutoFill: Story = {
   render: () => (
     <div {...stylex.props(styles.container)}>
-      <XDSText type="supporting" xstyle={styles.sectionLabel}>
+      <Text type="supporting" xstyle={styles.sectionLabel}>
         Resize the viewport — columns auto-fill, empty tracks preserved (min
         200px per item)
-      </XDSText>
-      <XDSGrid columns={{minWidth: 200}} gap={4}>
+      </Text>
+      <Grid columns={{minWidth: 200}} gap={4}>
         <GridItem>Item 1</GridItem>
         <GridItem>Item 2</GridItem>
         <GridItem>Item 3</GridItem>
-      </XDSGrid>
+      </Grid>
     </div>
   ),
 };
@@ -209,44 +209,44 @@ export const ResponsiveAutoFill: Story = {
 /** Side-by-side comparison: auto-fill vs auto-fit with few items */
 export const FillVsFitComparison: Story = {
   render: () => (
-    <XDSVStack gap={6}>
+    <VStack gap={6}>
       <div {...stylex.props(styles.container)}>
-        <XDSText type="supporting" xstyle={styles.sectionLabel}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
           auto-fill (default) — items stay consistent width, empty tracks
           preserved
-        </XDSText>
-        <XDSGrid columns={{minWidth: 250}} gap={4}>
+        </Text>
+        <Grid columns={{minWidth: 250}} gap={4}>
           <GridItem>Item 1</GridItem>
           <GridItem>Item 2</GridItem>
-        </XDSGrid>
+        </Grid>
       </div>
       <div {...stylex.props(styles.container)}>
-        <XDSText type="supporting" xstyle={styles.sectionLabel}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
           auto-fit — items stretch to fill all available space
-        </XDSText>
-        <XDSGrid columns={{minWidth: 250, repeat: 'fit'}} gap={4}>
+        </Text>
+        <Grid columns={{minWidth: 250, repeat: 'fit'}} gap={4}>
           <GridItem>Item 1</GridItem>
           <GridItem>Item 2</GridItem>
-        </XDSGrid>
+        </Grid>
       </div>
-    </XDSVStack>
+    </VStack>
   ),
 };
 
 export const CappedResponsive: Story = {
   render: () => (
     <div {...stylex.props(styles.container)}>
-      <XDSText type="supporting" xstyle={styles.sectionLabel}>
+      <Text type="supporting" xstyle={styles.sectionLabel}>
         Responsive with max 3 columns (min 250px per item, capped via track-max)
-      </XDSText>
-      <XDSGrid columns={{minWidth: 250, max: 3}} gap={4}>
+      </Text>
+      <Grid columns={{minWidth: 250, max: 3}} gap={4}>
         <GridItem>Item 1</GridItem>
         <GridItem>Item 2</GridItem>
         <GridItem>Item 3</GridItem>
         <GridItem>Item 4</GridItem>
         <GridItem>Item 5</GridItem>
         <GridItem>Item 6</GridItem>
-      </XDSGrid>
+      </Grid>
     </div>
   ),
 };
@@ -254,23 +254,23 @@ export const CappedResponsive: Story = {
 export const WithGridSpan: Story = {
   render: () => (
     <div {...stylex.props(styles.container)}>
-      <XDSText type="supporting" xstyle={styles.sectionLabel}>
-        Using XDSGridSpan to span multiple columns/rows
-      </XDSText>
-      <XDSGrid columns={4} gap={4}>
-        <XDSGridSpan columns={2}>
+      <Text type="supporting" xstyle={styles.sectionLabel}>
+        Using GridSpan to span multiple columns/rows
+      </Text>
+      <Grid columns={4} gap={4}>
+        <GridSpan columns={2}>
           <FeaturedItem>Spans 2 columns</FeaturedItem>
-        </XDSGridSpan>
+        </GridSpan>
         <GridItem>Normal</GridItem>
         <GridItem>Normal</GridItem>
         <GridItem>Normal</GridItem>
-        <XDSGridSpan columns={3}>
+        <GridSpan columns={3}>
           <FeaturedItem>Spans 3 columns</FeaturedItem>
-        </XDSGridSpan>
-        <XDSGridSpan columns="full">
+        </GridSpan>
+        <GridSpan columns="full">
           <FeaturedItem>Full width (spans all columns)</FeaturedItem>
-        </XDSGridSpan>
-      </XDSGrid>
+        </GridSpan>
+      </Grid>
     </div>
   ),
 };
@@ -278,44 +278,44 @@ export const WithGridSpan: Story = {
 export const GridSpanWithRows: Story = {
   render: () => (
     <div {...stylex.props(styles.container)}>
-      <XDSText type="supporting" xstyle={styles.sectionLabel}>
+      <Text type="supporting" xstyle={styles.sectionLabel}>
         Grid items spanning both columns and rows
-      </XDSText>
-      <XDSGrid columns={4} gap={4}>
-        <XDSGridSpan columns={2} rows={2}>
+      </Text>
+      <Grid columns={4} gap={4}>
+        <GridSpan columns={2} rows={2}>
           <FeaturedItem>2x2 Featured</FeaturedItem>
-        </XDSGridSpan>
+        </GridSpan>
         <GridItem>Item 1</GridItem>
         <GridItem>Item 2</GridItem>
         <GridItem>Item 3</GridItem>
         <GridItem>Item 4</GridItem>
         <GridItem>Item 5</GridItem>
         <GridItem>Item 6</GridItem>
-      </XDSGrid>
+      </Grid>
     </div>
   ),
 };
 
 export const GalleryExample: Story = {
   render: () => (
-    <XDSSection variant="muted">
-      <XDSText type="supporting" xstyle={styles.sectionLabel}>
+    <Section variant="muted">
+      <Text type="supporting" xstyle={styles.sectionLabel}>
         Gallery/Card Grid — Responsive with min 280px cards (auto-fill)
-      </XDSText>
-      <XDSGrid columns={{minWidth: 280}} gap={5}>
+      </Text>
+      <Grid columns={{minWidth: 280}} gap={5}>
         {Array.from({length: 8}, (_, i) => (
-          <XDSCard key={i}>
+          <Card key={i}>
             <div {...stylex.props(styles.cardImage)} />
-            <XDSText type="label" display="block">
+            <Text type="label" display="block">
               Card Title {i + 1}
-            </XDSText>
-            <XDSText type="supporting" display="block">
+            </Text>
+            <Text type="supporting" display="block">
               A brief description of the card content goes here.
-            </XDSText>
-          </XDSCard>
+            </Text>
+          </Card>
         ))}
-      </XDSGrid>
-    </XDSSection>
+      </Grid>
+    </Section>
   ),
 };
 
@@ -323,30 +323,30 @@ export const DifferentGaps: Story = {
   render: () => (
     <div {...stylex.props(styles.storyWrapper)}>
       <div {...stylex.props(styles.container)}>
-        <XDSText type="supporting" xstyle={styles.sectionLabel}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
           Same gap for rows and columns (gap=4)
-        </XDSText>
-        <XDSGrid columns={3} gap={4}>
+        </Text>
+        <Grid columns={3} gap={4}>
           <GridItem>Item 1</GridItem>
           <GridItem>Item 2</GridItem>
           <GridItem>Item 3</GridItem>
           <GridItem>Item 4</GridItem>
           <GridItem>Item 5</GridItem>
           <GridItem>Item 6</GridItem>
-        </XDSGrid>
+        </Grid>
       </div>
       <div {...stylex.props(styles.container)}>
-        <XDSText type="supporting" xstyle={styles.sectionLabel}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
           Different gaps: rowGap=2, columnGap=6
-        </XDSText>
-        <XDSGrid columns={3} rowGap={2} columnGap={6}>
+        </Text>
+        <Grid columns={3} rowGap={2} columnGap={6}>
           <GridItem>Item 1</GridItem>
           <GridItem>Item 2</GridItem>
           <GridItem>Item 3</GridItem>
           <GridItem>Item 4</GridItem>
           <GridItem>Item 5</GridItem>
           <GridItem>Item 6</GridItem>
-        </XDSGrid>
+        </Grid>
       </div>
     </div>
   ),
@@ -354,64 +354,64 @@ export const DifferentGaps: Story = {
 
 export const DashboardLayout: Story = {
   render: () => (
-    <XDSSection variant="muted">
-      <XDSText type="supporting" xstyle={styles.sectionLabel}>
+    <Section variant="muted">
+      <Text type="supporting" xstyle={styles.sectionLabel}>
         Dashboard-style layout with different sized widgets
-      </XDSText>
-      <XDSGrid columns={4} gap={4}>
-        <XDSGridSpan columns={2} rows={2}>
-          <XDSCard>
-            <XDSText type="label" display="block">
+      </Text>
+      <Grid columns={4} gap={4}>
+        <GridSpan columns={2} rows={2}>
+          <Card>
+            <Text type="label" display="block">
               Main Chart
-            </XDSText>
-            <XDSText type="supporting" display="block">
+            </Text>
+            <Text type="supporting" display="block">
               Large visualization widget
-            </XDSText>
-          </XDSCard>
-        </XDSGridSpan>
-        <XDSCard>
-          <XDSText type="label" display="block">
+            </Text>
+          </Card>
+        </GridSpan>
+        <Card>
+          <Text type="label" display="block">
             Metric 1
-          </XDSText>
-          <XDSText type="supporting" display="block">
+          </Text>
+          <Text type="supporting" display="block">
             Quick stat
-          </XDSText>
-        </XDSCard>
-        <XDSCard>
-          <XDSText type="label" display="block">
+          </Text>
+        </Card>
+        <Card>
+          <Text type="label" display="block">
             Metric 2
-          </XDSText>
-          <XDSText type="supporting" display="block">
+          </Text>
+          <Text type="supporting" display="block">
             Quick stat
-          </XDSText>
-        </XDSCard>
-        <XDSCard>
-          <XDSText type="label" display="block">
+          </Text>
+        </Card>
+        <Card>
+          <Text type="label" display="block">
             Metric 3
-          </XDSText>
-          <XDSText type="supporting" display="block">
+          </Text>
+          <Text type="supporting" display="block">
             Quick stat
-          </XDSText>
-        </XDSCard>
-        <XDSCard>
-          <XDSText type="label" display="block">
+          </Text>
+        </Card>
+        <Card>
+          <Text type="label" display="block">
             Metric 4
-          </XDSText>
-          <XDSText type="supporting" display="block">
+          </Text>
+          <Text type="supporting" display="block">
             Quick stat
-          </XDSText>
-        </XDSCard>
-        <XDSGridSpan columns="full">
-          <XDSCard>
-            <XDSText type="label" display="block">
+          </Text>
+        </Card>
+        <GridSpan columns="full">
+          <Card>
+            <Text type="label" display="block">
               Full-width Section
-            </XDSText>
-            <XDSText type="supporting" display="block">
+            </Text>
+            <Text type="supporting" display="block">
               This section spans the entire width of the grid
-            </XDSText>
-          </XDSCard>
-        </XDSGridSpan>
-      </XDSGrid>
-    </XDSSection>
+            </Text>
+          </Card>
+        </GridSpan>
+      </Grid>
+    </Section>
   ),
 };

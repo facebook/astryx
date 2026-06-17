@@ -2,16 +2,16 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState, useRef, useEffect, useCallback} from 'react';
-import {XDSCodeEditor} from '@xds/lab';
+import {CodeEditor} from '@xds/lab';
 
-const meta: Meta<typeof XDSCodeEditor> = {
+const meta: Meta<typeof CodeEditor> = {
   title: 'Lab/CodeEditorPerf',
-  component: XDSCodeEditor,
+  component: CodeEditor,
   parameters: {layout: 'fullscreen'},
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSCodeEditor>;
+type Story = StoryObj<typeof CodeEditor>;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -117,7 +117,7 @@ function StressTestImpl() {
           <Metric label="Mount" value={`${mountTime.toFixed(1)}ms`} />
         )}
       </div>
-      <XDSCodeEditor
+      <CodeEditor
         value={code}
         onChange={setCode}
         language="typescript"
@@ -204,7 +204,7 @@ function TypingLatencyImpl() {
           Type in the editor to measure input latency
         </span>
       </div>
-      <XDSCodeEditor
+      <CodeEditor
         value={code}
         onChange={handleChange}
         language="typescript"

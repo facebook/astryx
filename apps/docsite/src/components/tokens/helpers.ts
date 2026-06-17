@@ -1,23 +1,23 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {useContext, useMemo} from 'react';
-import type {UseXDSThemeReturn} from '@xds/core/theme';
+import type {UseThemeReturn} from '@xds/core/theme';
 import {
   borderDefaults,
-  XDSThemeContext,
+  ThemeContext,
   xdsTokenDefaults,
 } from '@xds/core/theme';
-import type {XDSTokenValue} from '@xds/core/theme';
+import type {TokenValue} from '@xds/core/theme';
 
 const extraDefaults: Record<string, string> = {
   ...borderDefaults,
 };
 
-export function resolveToken(theme: UseXDSThemeReturn, name: string): string {
+export function resolveToken(theme: UseThemeReturn, name: string): string {
   return theme.token(name) || extraDefaults[name] || '';
 }
 
-function resolveValue(value: XDSTokenValue, mode: 'light' | 'dark'): string {
+function resolveValue(value: TokenValue, mode: 'light' | 'dark'): string {
   if (Array.isArray(value)) {
     return mode === 'dark' ? value[1] : value[0];
   }
@@ -37,7 +37,7 @@ function resolveValue(value: XDSTokenValue, mode: 'light' | 'dark'): string {
 function buildTokenMap(
   rawTheme: {
     tokens: Record<string, string>;
-    __inputTokens?: Partial<Record<string, XDSTokenValue>>;
+    __inputTokens?: Partial<Record<string, TokenValue>>;
   } | null,
   mode: 'light' | 'dark',
 ): Record<string, string> {
@@ -69,7 +69,7 @@ export function useResolveTokenForMode(): (
   name: string,
   mode: 'light' | 'dark',
 ) => string {
-  const ctx = useContext(XDSThemeContext);
+  const ctx = useContext(ThemeContext);
   const rawTheme = ctx?.theme ?? null;
 
   const lightTokens = useMemo(
@@ -85,12 +85,12 @@ export function useResolveTokenForMode(): (
   };
 }
 
-export function hasDualMode(_theme: UseXDSThemeReturn): boolean {
+export function hasDualMode(_theme: UseThemeReturn): boolean {
   return true;
 }
 
 export function getTokensByPrefix(
-  theme: UseXDSThemeReturn,
+  theme: UseThemeReturn,
   prefix: string,
 ): string[] {
   const allKeys = new Set([

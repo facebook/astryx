@@ -2,10 +2,10 @@
 
 'use client';
 
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSTable} from '@xds/core/Table';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {Badge} from '@xds/core/Badge';
+import {Table} from '@xds/core/Table';
 
 /**
  * Renders list content blocks: ordered, unordered, do, dont,
@@ -30,14 +30,14 @@ export function ListBlock({
     });
 
     return (
-      <XDSTable
+      <Table
         data={data as Record<string, unknown>[]}
         columns={[
           {
             key: 'guidance',
             header: 'Guidance',
             renderCell: (item: Record<string, unknown>) => (
-              <XDSBadge
+              <Badge
                 label={item.guidance as string}
                 variant={(item.isDo as boolean) ? 'success' : 'error'}
               />
@@ -52,22 +52,22 @@ export function ListBlock({
   }
 
   return (
-    <XDSVStack gap={1}>
+    <VStack gap={1}>
       {items.map((item, i) => (
-        <XDSHStack key={i} gap={2} vAlign="center">
+        <HStack key={i} gap={2} vAlign="center">
           {listStyle === 'ordered' && (
-            <XDSText type="body" color="secondary">
+            <Text type="body" color="secondary">
               {i + 1}.
-            </XDSText>
+            </Text>
           )}
           {listStyle === 'unordered' && (
-            <XDSText type="body" color="secondary">
+            <Text type="body" color="secondary">
               •
-            </XDSText>
+            </Text>
           )}
-          <XDSText>{item}</XDSText>
-        </XDSHStack>
+          <Text>{item}</Text>
+        </HStack>
       ))}
-    </XDSVStack>
+    </VStack>
   );
 }

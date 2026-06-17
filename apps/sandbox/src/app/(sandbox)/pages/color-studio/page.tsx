@@ -3,17 +3,17 @@
 'use client';
 
 import {useState, useCallback, useMemo} from 'react';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSButton} from '@xds/core/Button';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSIconButton} from '@xds/core/IconButton';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSSlider} from '@xds/core/Slider';
-import {XDSNumberInput} from '@xds/core/NumberInput';
+import {TextInput} from '@xds/core/TextInput';
+import {Button} from '@xds/core/Button';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Text, Heading} from '@xds/core/Text';
+import {IconButton} from '@xds/core/IconButton';
+import {Selector} from '@xds/core/Selector';
+import {Slider} from '@xds/core/Slider';
+import {NumberInput} from '@xds/core/NumberInput';
 import {
-  XDSSegmentedControl,
-  XDSSegmentedControlItem,
+  SegmentedControl,
+  SegmentedControlItem,
 } from '@xds/core/SegmentedControl';
 
 import {
@@ -180,7 +180,7 @@ function PaletteEntry({
   );
 
   return (
-    <XDSHStack gap={2} vAlign="center" style={{padding: '6px 0'}}>
+    <HStack gap={2} vAlign="center" style={{padding: '6px 0'}}>
       <div style={S.swatch(color.hex)}>
         <input
           type="color"
@@ -190,7 +190,7 @@ function PaletteEntry({
         />
       </div>
       <div style={{flex: 1, minWidth: 0}}>
-        <XDSTextInput
+        <TextInput
           label="Hex"
           isLabelHidden
           value={color.hex}
@@ -203,7 +203,7 @@ function PaletteEntry({
           size="sm"
         />
       </div>
-      <XDSSelector
+      <Selector
         label="Role"
         isLabelHidden
         options={roleOptions}
@@ -214,7 +214,7 @@ function PaletteEntry({
         size="sm"
       />
       {canRemove && (
-        <XDSIconButton
+        <IconButton
           label="Remove"
           variant="ghost"
           size="sm"
@@ -222,7 +222,7 @@ function PaletteEntry({
           icon={<span style={{fontSize: 14, lineHeight: 1}}>✕</span>}
         />
       )}
-    </XDSHStack>
+    </HStack>
   );
 }
 
@@ -448,7 +448,7 @@ function ExportPanel({
   }, [code]);
 
   return (
-    <XDSButton
+    <Button
       label={copied ? 'Copied!' : 'Export'}
       variant="ghost"
       size="sm"
@@ -535,20 +535,20 @@ export default function ColorStudioPage() {
       <aside style={S.sidebar}>
         <div style={S.sidebarPanel}>
           <div style={S.sidebarHeader}>
-            <XDSHeading level={4}>Color Studio</XDSHeading>
+            <Heading level={4}>Color Studio</Heading>
             <ExportPanel palette={palette} options={themeOptions} />
           </div>
 
           <div style={S.sidebarScroll}>
-            <XDSVStack gap={5}>
+            <VStack gap={5}>
               {/* Controls */}
-              <XDSHStack
+              <HStack
                 vAlign="center"
                 style={{justifyContent: 'space-between'}}>
-                <XDSText type="supporting" color="secondary">
+                <Text type="supporting" color="secondary">
                   Steps
-                </XDSText>
-                <XDSNumberInput
+                </Text>
+                <NumberInput
                   label="Steps"
                   isLabelHidden
                   value={stepCount}
@@ -558,20 +558,20 @@ export default function ColorStudioPage() {
                   step={1}
                   size="sm"
                 />
-              </XDSHStack>
+              </HStack>
 
-              <XDSHStack
+              <HStack
                 vAlign="center"
                 gap={3}
                 style={{justifyContent: 'space-between'}}>
-                <XDSText
+                <Text
                   type="supporting"
                   color="secondary"
                   style={{flexShrink: 0}}>
                   Vibrancy
-                </XDSText>
+                </Text>
                 <div style={{flex: 1}}>
-                  <XDSSlider
+                  <Slider
                     label="Vibrancy"
                     isLabelHidden
                     min={50}
@@ -582,41 +582,41 @@ export default function ColorStudioPage() {
                     formatValue={v => `${Math.round(v)}%`}
                   />
                 </div>
-              </XDSHStack>
+              </HStack>
 
-              <XDSHStack
+              <HStack
                 vAlign="center"
                 style={{justifyContent: 'space-between'}}>
-                <XDSText type="supporting" color="secondary">
+                <Text type="supporting" color="secondary">
                   Gray
-                </XDSText>
-                <XDSSegmentedControl
+                </Text>
+                <SegmentedControl
                   label="Gray tone"
                   value={grayTone}
                   onChange={v => setGrayTone(v as 'warm' | 'neutral' | 'cool')}
                   size="sm">
-                  <XDSSegmentedControlItem value="warm" label="Warm" />
-                  <XDSSegmentedControlItem value="neutral" label="Neutral" />
-                  <XDSSegmentedControlItem value="cool" label="Cool" />
-                </XDSSegmentedControl>
-              </XDSHStack>
+                  <SegmentedControlItem value="warm" label="Warm" />
+                  <SegmentedControlItem value="neutral" label="Neutral" />
+                  <SegmentedControlItem value="cool" label="Cool" />
+                </SegmentedControl>
+              </HStack>
 
               {/* Color Set — colors with role assignments */}
-              <XDSVStack gap={2}>
-                <XDSHStack
+              <VStack gap={2}>
+                <HStack
                   vAlign="center"
                   style={{justifyContent: 'space-between'}}>
-                  <XDSText type="label" weight="semibold">
+                  <Text type="label" weight="semibold">
                     Brand Colors
-                  </XDSText>
-                  <XDSIconButton
+                  </Text>
+                  <IconButton
                     label="Add color"
                     variant="ghost"
                     size="sm"
                     onClick={addColor}
                     icon={<span style={{fontSize: 16, lineHeight: 1}}>+</span>}
                   />
-                </XDSHStack>
+                </HStack>
                 {palette.map(c => (
                   <PaletteEntry
                     key={c.id}
@@ -627,17 +627,17 @@ export default function ColorStudioPage() {
                     onRemove={removeColor}
                   />
                 ))}
-              </XDSVStack>
+              </VStack>
 
               {/* Custom Colors — extra ramps without roles */}
-              <XDSVStack gap={2}>
-                <XDSHStack
+              <VStack gap={2}>
+                <HStack
                   vAlign="center"
                   style={{justifyContent: 'space-between'}}>
-                  <XDSText type="label" weight="semibold">
+                  <Text type="label" weight="semibold">
                     Color Sets
-                  </XDSText>
-                  <XDSIconButton
+                  </Text>
+                  <IconButton
                     label="Add custom color"
                     variant="ghost"
                     size="sm"
@@ -651,14 +651,14 @@ export default function ColorStudioPage() {
                     }}
                     icon={<span style={{fontSize: 16, lineHeight: 1}}>+</span>}
                   />
-                </XDSHStack>
+                </HStack>
                 {customChannels.length === 0 && (
-                  <XDSText type="supporting" color="secondary">
+                  <Text type="supporting" color="secondary">
                     Add colors to generate extra ramps
-                  </XDSText>
+                  </Text>
                 )}
                 {customChannels.map(cc => (
-                  <XDSHStack
+                  <HStack
                     key={cc.id}
                     gap={2}
                     vAlign="center"
@@ -678,7 +678,7 @@ export default function ColorStudioPage() {
                       />
                     </div>
                     <div style={{flex: 1, minWidth: 0}}>
-                      <XDSTextInput
+                      <TextInput
                         label="Name"
                         isLabelHidden
                         value={cc.name}
@@ -692,7 +692,7 @@ export default function ColorStudioPage() {
                         size="sm"
                       />
                     </div>
-                    <XDSIconButton
+                    <IconButton
                       label="Remove"
                       variant="ghost"
                       size="sm"
@@ -705,10 +705,10 @@ export default function ColorStudioPage() {
                         <span style={{fontSize: 14, lineHeight: 1}}>✕</span>
                       }
                     />
-                  </XDSHStack>
+                  </HStack>
                 ))}
-              </XDSVStack>
-            </XDSVStack>
+              </VStack>
+            </VStack>
           </div>
         </div>
       </aside>

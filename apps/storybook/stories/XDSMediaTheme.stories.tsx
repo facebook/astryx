@@ -2,25 +2,25 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as React from 'react';
-import {XDSMediaTheme, defineTheme} from '@xds/core/theme';
-import {XDSButton} from '@xds/core/Button';
-import {XDSLink} from '@xds/core/Link';
-import {XDSText} from '@xds/core/Text';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSStack} from '@xds/core/Stack';
-import {XDSTheme} from '@xds/core/theme';
+import {MediaTheme, defineTheme} from '@xds/core/theme';
+import {Button} from '@xds/core/Button';
+import {Link} from '@xds/core/Link';
+import {Text} from '@xds/core/Text';
+import {Badge} from '@xds/core/Badge';
+import {Icon} from '@xds/core/Icon';
+import {Stack} from '@xds/core/Stack';
+import {Theme} from '@xds/core/theme';
 import {defaultTheme} from '@xds/theme-default';
 import {neutralTheme} from '@xds/theme-neutral';
 import {brutalistTheme} from '@xds/theme-brutalist';
-import {XDSCard} from '@xds/core/Card';
+import {Card} from '@xds/core/Card';
 
 // =============================================================================
 // Meta
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Core/XDSMediaTheme',
+  title: 'Core/MediaTheme',
   parameters: {
     docs: {
       description: {
@@ -46,27 +46,27 @@ function OnDarkDemo() {
         borderRadius: 'var(--radius-container)',
         padding: 16,
       }}>
-      <XDSMediaTheme mode="dark">
-        <XDSStack gap={3}>
-          <XDSText>
+      <MediaTheme mode="dark">
+        <Stack gap={3}>
+          <Text>
             Content on a dark surface — text, icons, and interactive elements
             automatically adapt.
-          </XDSText>
-          <XDSStack direction="horizontal" gap={2} align="center" wrap="wrap">
-            <XDSButton label="Primary" />
-            <XDSButton label="Secondary" variant="secondary" />
-            <XDSButton label="Ghost" variant="ghost" />
-            <XDSLink href="#" hasUnderline>
+          </Text>
+          <Stack direction="horizontal" gap={2} align="center" wrap="wrap">
+            <Button label="Primary" />
+            <Button label="Secondary" variant="secondary" />
+            <Button label="Ghost" variant="ghost" />
+            <Link href="#" hasUnderline>
               A link
-            </XDSLink>
-          </XDSStack>
-          <XDSStack direction="horizontal" gap={2} align="center" wrap="wrap">
-            <XDSBadge label="Badge" />
-            <XDSIcon icon="info" size="md" />
-            <XDSIcon icon="success" size="md" />
-          </XDSStack>
-        </XDSStack>
-      </XDSMediaTheme>
+            </Link>
+          </Stack>
+          <Stack direction="horizontal" gap={2} align="center" wrap="wrap">
+            <Badge label="Badge" />
+            <Icon icon="info" size="md" />
+            <Icon icon="success" size="md" />
+          </Stack>
+        </Stack>
+      </MediaTheme>
     </div>
   );
 }
@@ -89,13 +89,13 @@ export const OnDark: StoryObj = {
 
 function OnLightDemo() {
   return (
-    <XDSTheme theme={defaultTheme} mode="dark">
+    <Theme theme={defaultTheme} mode="dark">
       <div
         style={{
           padding: 16,
           backgroundColor: 'var(--color-background-surface)',
         }}>
-        <XDSText>Dark mode page background</XDSText>
+        <Text>Dark mode page background</Text>
         <div
           style={{
             backgroundColor:
@@ -104,29 +104,29 @@ function OnLightDemo() {
             padding: 16,
             marginTop: 12,
           }}>
-          <XDSMediaTheme mode="light">
-            <XDSStack gap={3}>
-              <XDSText>
+          <MediaTheme mode="light">
+            <Stack gap={3}>
+              <Text>
                 Content on a light surface in dark mode — text and icons become
                 dark.
-              </XDSText>
-              <XDSStack
+              </Text>
+              <Stack
                 direction="horizontal"
                 gap={2}
                 align="center"
                 wrap="wrap">
-                <XDSButton label="Primary" />
-                <XDSButton label="Secondary" variant="secondary" />
-                <XDSButton label="Ghost" variant="ghost" />
-                <XDSLink href="#" hasUnderline>
+                <Button label="Primary" />
+                <Button label="Secondary" variant="secondary" />
+                <Button label="Ghost" variant="ghost" />
+                <Link href="#" hasUnderline>
                   A link
-                </XDSLink>
-              </XDSStack>
-            </XDSStack>
-          </XDSMediaTheme>
+                </Link>
+              </Stack>
+            </Stack>
+          </MediaTheme>
         </div>
       </div>
-    </XDSTheme>
+    </Theme>
   );
 }
 
@@ -148,7 +148,7 @@ export const OnLight: StoryObj = {
 
 function ToastDemo() {
   return (
-    <XDSStack gap={3}>
+    <Stack gap={3}>
       {/* Info toast */}
       <div
         style={{
@@ -160,19 +160,19 @@ function ToastDemo() {
           maxWidth: 400,
           width: '100%',
         }}>
-        <XDSMediaTheme mode="dark">
-          <XDSStack direction="horizontal" gap={3} align="center" wrap="wrap">
-            <XDSText style={{flex: 1}}>Changes saved successfully.</XDSText>
-            <XDSButton label="Undo" variant="secondary" size="sm" />
-            <XDSButton
+        <MediaTheme mode="dark">
+          <Stack direction="horizontal" gap={3} align="center" wrap="wrap">
+            <Text style={{flex: 1}}>Changes saved successfully.</Text>
+            <Button label="Undo" variant="secondary" size="sm" />
+            <Button
               label="Dismiss"
               variant="ghost"
               size="sm"
-              icon={<XDSIcon icon="close" size="sm" />}
+              icon={<Icon icon="close" size="sm" />}
               isIconOnly
             />
-          </XDSStack>
-        </XDSMediaTheme>
+          </Stack>
+        </MediaTheme>
       </div>
       {/* Error toast */}
       <div
@@ -185,22 +185,22 @@ function ToastDemo() {
           maxWidth: 400,
           width: '100%',
         }}>
-        <XDSMediaTheme mode="dark">
-          <XDSStack direction="horizontal" gap={3} align="center" wrap="wrap">
-            <XDSText style={{flex: 1}}>
+        <MediaTheme mode="dark">
+          <Stack direction="horizontal" gap={3} align="center" wrap="wrap">
+            <Text style={{flex: 1}}>
               Failed to save. Check your connection.
-            </XDSText>
-            <XDSButton
+            </Text>
+            <Button
               label="Dismiss"
               variant="ghost"
               size="sm"
-              icon={<XDSIcon icon="close" size="sm" />}
+              icon={<Icon icon="close" size="sm" />}
               isIconOnly
             />
-          </XDSStack>
-        </XDSMediaTheme>
+          </Stack>
+        </MediaTheme>
       </div>
-    </XDSStack>
+    </Stack>
   );
 }
 
@@ -210,7 +210,7 @@ export const ToastExample: StoryObj = {
     docs: {
       description: {
         story:
-          'Toast-like notifications using XDSMediaTheme. The dark surface sets up the right token context — buttons and text just work without manual color overrides.',
+          'Toast-like notifications using MediaTheme. The dark surface sets up the right token context — buttons and text just work without manual color overrides.',
       },
     },
   },
@@ -223,33 +223,33 @@ export const ToastExample: StoryObj = {
 /**
  * This is the key demo: themes with component overrides (brutalist has pill
  * buttons, uppercase text, thick borders on cards/ghost buttons). Inside
- * XDSMediaTheme, those component overrides STILL apply — structural styling
+ * MediaTheme, those component overrides STILL apply — structural styling
  * is preserved. Only the color tokens change for the inverted surface.
  */
 
 function ComponentOverrideBoundaryDemo() {
   return (
-    <XDSTheme theme={brutalistTheme}>
-      <XDSStack gap={4}>
-        <XDSText weight="semibold">
+    <Theme theme={brutalistTheme}>
+      <Stack gap={4}>
+        <Text weight="semibold">
           Brutalist theme — notice the component overrides: pill buttons,
           uppercase text, thick card borders, bordered ghost buttons.
-        </XDSText>
+        </Text>
 
         {/* Normal surface — themed component overrides apply */}
-        <XDSCard>
-          <XDSStack gap={2} style={{padding: 16}}>
-            <XDSText type="supporting" weight="semibold">
+        <Card>
+          <Stack gap={2} style={{padding: 16}}>
+            <Text type="supporting" weight="semibold">
               Normal surface (themed overrides)
-            </XDSText>
-            <XDSStack direction="horizontal" gap={2} align="center" wrap="wrap">
-              <XDSButton label="Primary" />
-              <XDSButton label="Secondary" variant="secondary" />
-              <XDSButton label="Ghost" variant="ghost" />
-              <XDSBadge label="Badge" />
-            </XDSStack>
-          </XDSStack>
-        </XDSCard>
+            </Text>
+            <Stack direction="horizontal" gap={2} align="center" wrap="wrap">
+              <Button label="Primary" />
+              <Button label="Secondary" variant="secondary" />
+              <Button label="Ghost" variant="ghost" />
+              <Badge label="Badge" />
+            </Stack>
+          </Stack>
+        </Card>
 
         {/* Inverted surface — scope boundary blocks component overrides */}
         <div
@@ -259,26 +259,26 @@ function ComponentOverrideBoundaryDemo() {
             borderRadius: 'var(--radius-element)',
             padding: 16,
           }}>
-          <XDSMediaTheme mode="dark">
-            <XDSStack gap={2}>
-              <XDSText type="supporting" weight="semibold">
+          <MediaTheme mode="dark">
+            <Stack gap={2}>
+              <Text type="supporting" weight="semibold">
                 Dark surface (same overrides, inverted tokens)
-              </XDSText>
-              <XDSStack
+              </Text>
+              <Stack
                 direction="horizontal"
                 gap={2}
                 align="center"
                 wrap="wrap">
-                <XDSButton label="Primary" />
-                <XDSButton label="Secondary" variant="secondary" />
-                <XDSButton label="Ghost" variant="ghost" />
-                <XDSBadge label="Badge" />
-              </XDSStack>
-            </XDSStack>
-          </XDSMediaTheme>
+                <Button label="Primary" />
+                <Button label="Secondary" variant="secondary" />
+                <Button label="Ghost" variant="ghost" />
+                <Badge label="Badge" />
+              </Stack>
+            </Stack>
+          </MediaTheme>
         </div>
-      </XDSStack>
-    </XDSTheme>
+      </Stack>
+    </Theme>
   );
 }
 
@@ -288,7 +288,7 @@ export const ComponentOverrideBoundary: StoryObj = {
     docs: {
       description: {
         story:
-          'Shows component overrides flowing through to the media context. Brutalist theme applies bold component overrides (pill buttons, uppercase, thick borders) — these are preserved inside XDSMediaTheme. Only the color tokens change for the inverted surface.',
+          'Shows component overrides flowing through to the media context. Brutalist theme applies bold component overrides (pill buttons, uppercase, thick borders) — these are preserved inside MediaTheme. Only the color tokens change for the inverted surface.',
       },
     },
   },
@@ -300,16 +300,16 @@ export const ComponentOverrideBoundary: StoryObj = {
 
 function ThemedDemo() {
   return (
-    <XDSStack gap={4}>
+    <Stack gap={4}>
       {[
         {theme: defaultTheme, label: 'Default Theme'},
         {theme: neutralTheme, label: 'Neutral Theme'},
         {theme: brutalistTheme, label: 'Brutalist Theme'},
       ].map(({theme, label}) => (
-        <XDSTheme key={label} theme={theme}>
-          <XDSStack gap={2}>
-            <XDSText weight="semibold">{label}</XDSText>
-            <XDSStack direction="horizontal" gap={3}>
+        <Theme key={label} theme={theme}>
+          <Stack gap={2}>
+            <Text weight="semibold">{label}</Text>
+            <Stack direction="horizontal" gap={3}>
               {/* Normal surface */}
               <div
                 style={{
@@ -319,12 +319,12 @@ function ThemedDemo() {
                   padding: 16,
                   flex: 1,
                 }}>
-                <XDSStack gap={2}>
-                  <XDSText type="supporting">Normal surface</XDSText>
-                  <XDSButton label="Button" variant="secondary" />
-                  <XDSButton label="Ghost" variant="ghost" />
-                  <XDSLink href="#">Link</XDSLink>
-                </XDSStack>
+                <Stack gap={2}>
+                  <Text type="supporting">Normal surface</Text>
+                  <Button label="Button" variant="secondary" />
+                  <Button label="Ghost" variant="ghost" />
+                  <Link href="#">Link</Link>
+                </Stack>
               </div>
               {/* Inverted surface */}
               <div
@@ -335,20 +335,20 @@ function ThemedDemo() {
                   padding: 16,
                   flex: 1,
                 }}>
-                <XDSMediaTheme mode="dark">
-                  <XDSStack gap={2}>
-                    <XDSText type="supporting">Dark surface</XDSText>
-                    <XDSButton label="Button" variant="secondary" />
-                    <XDSButton label="Ghost" variant="ghost" />
-                    <XDSLink href="#">Link</XDSLink>
-                  </XDSStack>
-                </XDSMediaTheme>
+                <MediaTheme mode="dark">
+                  <Stack gap={2}>
+                    <Text type="supporting">Dark surface</Text>
+                    <Button label="Button" variant="secondary" />
+                    <Button label="Ghost" variant="ghost" />
+                    <Link href="#">Link</Link>
+                  </Stack>
+                </MediaTheme>
               </div>
-            </XDSStack>
-          </XDSStack>
-        </XDSTheme>
+            </Stack>
+          </Stack>
+        </Theme>
       ))}
-    </XDSStack>
+    </Stack>
   );
 }
 
@@ -358,7 +358,7 @@ export const AcrossThemes: StoryObj = {
     docs: {
       description: {
         story:
-          'Side-by-side comparison across themes. Left column shows normal surface with themed component overrides. Right column shows XDSMediaTheme dark surface — same components, inverted tokens, default styles.',
+          'Side-by-side comparison across themes. Left column shows normal surface with themed component overrides. Right column shows MediaTheme dark surface — same components, inverted tokens, default styles.',
       },
     },
   },
@@ -384,12 +384,12 @@ const customTheme = defineTheme({
 
 function CustomOverridesDemo() {
   return (
-    <XDSTheme theme={customTheme}>
-      <XDSStack gap={3}>
-        <XDSText>
+    <Theme theme={customTheme}>
+      <Stack gap={3}>
+        <Text>
           This theme has a custom <code>onDark</code> config — the accent color
           on dark surfaces is a lighter purple instead of plain white.
-        </XDSText>
+        </Text>
         <div
           style={{
             backgroundColor:
@@ -397,18 +397,18 @@ function CustomOverridesDemo() {
             borderRadius: 'var(--radius-container)',
             padding: 16,
           }}>
-          <XDSMediaTheme mode="dark">
-            <XDSStack direction="horizontal" gap={2} align="center" wrap="wrap">
-              <XDSButton label="Accent button" />
-              <XDSButton label="Secondary" variant="secondary" />
-              <XDSLink href="#" hasUnderline>
+          <MediaTheme mode="dark">
+            <Stack direction="horizontal" gap={2} align="center" wrap="wrap">
+              <Button label="Accent button" />
+              <Button label="Secondary" variant="secondary" />
+              <Link href="#" hasUnderline>
                 Accent link
-              </XDSLink>
-            </XDSStack>
-          </XDSMediaTheme>
+              </Link>
+            </Stack>
+          </MediaTheme>
         </div>
-      </XDSStack>
-    </XDSTheme>
+      </Stack>
+    </Theme>
   );
 }
 
@@ -488,14 +488,14 @@ function ImageCard({url, label}: {url: string; label: string}) {
               ? 'linear-gradient(transparent, rgba(255,255,255,0.8))'
               : 'linear-gradient(transparent, rgba(0,0,0,0.7))',
         }}>
-        <XDSMediaTheme mode={surface ?? 'dark'}>
-          <XDSStack gap={1}>
-            <XDSText weight="semibold">{label}</XDSText>
-            <XDSText type="supporting">
+        <MediaTheme mode={surface ?? 'dark'}>
+          <Stack gap={1}>
+            <Text weight="semibold">{label}</Text>
+            <Text type="supporting">
               Detected: <strong>{surface ?? 'loading...'}</strong>
-            </XDSText>
-          </XDSStack>
-        </XDSMediaTheme>
+            </Text>
+          </Stack>
+        </MediaTheme>
       </div>
     </div>
   );
@@ -503,18 +503,18 @@ function ImageCard({url, label}: {url: string; label: string}) {
 
 function AutoDetectDemo() {
   return (
-    <XDSStack gap={3}>
-      <XDSText>
+    <Stack gap={3}>
+      <Text>
         Each card auto-detects whether the image is dark or light using{' '}
         <code>useImageMode</code>, then applies the correct{' '}
-        <code>XDSMediaTheme</code> surface. Text color adapts automatically.
-      </XDSText>
-      <XDSStack direction="horizontal" gap={3} style={{flexWrap: 'wrap'}}>
+        <code>MediaTheme</code> surface. Text color adapts automatically.
+      </Text>
+      <Stack direction="horizontal" gap={3} style={{flexWrap: 'wrap'}}>
         {DEMO_IMAGES.map(img => (
           <ImageCard key={img.url} {...img} />
         ))}
-      </XDSStack>
-    </XDSStack>
+      </Stack>
+    </Stack>
   );
 }
 
@@ -524,7 +524,7 @@ export const AutoDetectFromImage: StoryObj = {
     docs: {
       description: {
         story:
-          'Auto-detects image luminance via `useImageMode` hook and applies the correct `XDSMediaTheme` surface. Uses OffscreenCanvas to sample the image without interrupting the render loop.',
+          'Auto-detects image luminance via `useImageMode` hook and applies the correct `MediaTheme` surface. Uses OffscreenCanvas to sample the image without interrupting the render loop.',
       },
     },
   },
@@ -544,13 +544,13 @@ function RegionalDetectDemo() {
   const fullSurface = useImageMode(url);
 
   return (
-    <XDSStack gap={3}>
-      <XDSText>
+    <Stack gap={3}>
+      <Text>
         The sunset image has a light sky and dark horizon. Full-image detection
         says <strong>{fullSurface ?? '...'}</strong>, but sampling just the
         bottom 30% (where text sits) says{' '}
         <strong>{bottomSurface ?? '...'}</strong>.
-      </XDSText>
+      </Text>
       <div
         style={{
           position: 'relative',
@@ -591,17 +591,17 @@ function RegionalDetectDemo() {
             right: 0,
             padding: '12px 16px',
           }}>
-          <XDSMediaTheme mode={bottomSurface ?? 'dark'}>
-            <XDSStack gap={1}>
-              <XDSText weight="semibold">Regional sampling</XDSText>
-              <XDSText type="supporting">
+          <MediaTheme mode={bottomSurface ?? 'dark'}>
+            <Stack gap={1}>
+              <Text weight="semibold">Regional sampling</Text>
+              <Text type="supporting">
                 Bottom 30% → {bottomSurface ?? 'loading...'}
-              </XDSText>
-            </XDSStack>
-          </XDSMediaTheme>
+              </Text>
+            </Stack>
+          </MediaTheme>
         </div>
       </div>
-    </XDSStack>
+    </Stack>
   );
 }
 

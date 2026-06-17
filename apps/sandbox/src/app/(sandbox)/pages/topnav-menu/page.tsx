@@ -2,16 +2,16 @@
 
 'use client';
 
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
+import {VStack} from '@xds/core/Layout';
+import {Text, Heading} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
 import {
-  XDSTopNav,
-  XDSTopNavHeading,
-  XDSTopNavItem,
-  XDSTopNavMenu,
+  TopNav,
+  TopNavHeading,
+  TopNavItem,
+  TopNavMenu,
 } from '@xds/core/TopNav';
-import {XDSNavIcon} from '@xds/core/NavIcon';
+import {NavIcon} from '@xds/core/NavIcon';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
@@ -96,61 +96,61 @@ const scienceItems = [
 ];
 
 /**
- * Demo page for XDSTopNavMenu — a nav item with hover-triggered overflow menu.
+ * Demo page for TopNavMenu — a nav item with hover-triggered overflow menu.
  */
 export default function TopNavMenuPage() {
   return (
     <div {...stylex.props(styles.container)}>
-      <XDSVStack gap={6}>
-        <XDSVStack gap={2}>
-          <XDSHeading level={1}>TopNav Menu</XDSHeading>
-          <XDSText type="body" color="secondary">
+      <VStack gap={6}>
+        <VStack gap={2}>
+          <Heading level={1}>TopNav Menu</Heading>
+          <Text type="body" color="secondary">
             A nav item with a hover-triggered overflow menu. Hover over
             &quot;Products&quot; or &quot;Science&quot; to see the popover.
-          </XDSText>
-        </XDSVStack>
+          </Text>
+        </VStack>
 
         {/* Marketing-style nav with overflow menus */}
-        <XDSVStack gap={3}>
-          <XDSHeading level={2}>Marketing Nav</XDSHeading>
+        <VStack gap={3}>
+          <Heading level={2}>Marketing Nav</Heading>
           <div {...stylex.props(styles.navWrapper)}>
-            <XDSTopNav
+            <TopNav
               label="Marketing navigation"
               heading={
-                <XDSTopNavHeading
+                <TopNavHeading
                   heading="Marketing"
-                  logo={<XDSNavIcon icon={<LogoIcon />} />}
+                  logo={<NavIcon icon={<LogoIcon />} />}
                   href="#"
                 />
               }
               startContent={
                 <>
-                  <XDSTopNavMenu label="Products" items={productItems} />
-                  <XDSTopNavMenu label="Science" items={scienceItems} />
-                  <XDSTopNavItem label="Learn" href="#" />
+                  <TopNavMenu label="Products" items={productItems} />
+                  <TopNavMenu label="Science" items={scienceItems} />
+                  <TopNavItem label="Learn" href="#" />
                 </>
               }
               endContent={
                 <>
-                  <XDSButton label="Login" variant="ghost" />
-                  <XDSButton label="Get started" variant="primary" />
+                  <Button label="Login" variant="ghost" />
+                  <Button label="Get started" variant="primary" />
                 </>
               }
             />
           </div>
-        </XDSVStack>
+        </VStack>
 
         {/* Simple nav with one overflow menu */}
-        <XDSVStack gap={3}>
-          <XDSHeading level={2}>Simple Nav</XDSHeading>
+        <VStack gap={3}>
+          <Heading level={2}>Simple Nav</Heading>
           <div {...stylex.props(styles.navWrapper)}>
-            <XDSTopNav
+            <TopNav
               label="Simple navigation"
-              heading={<XDSTopNavHeading heading="App" href="#" />}
+              heading={<TopNavHeading heading="App" href="#" />}
               startContent={
                 <>
-                  <XDSTopNavItem label="Home" href="#" isSelected />
-                  <XDSTopNavMenu
+                  <TopNavItem label="Home" href="#" isSelected />
+                  <TopNavMenu
                     label="More"
                     items={[
                       {
@@ -169,8 +169,8 @@ export default function TopNavMenuPage() {
               }
             />
           </div>
-        </XDSVStack>
-      </XDSVStack>
+        </VStack>
+      </VStack>
     </div>
   );
 }

@@ -37,7 +37,7 @@ export interface AttrInfo {
 }
 
 export interface InstanceInfo {
-  /** Component module name as written, e.g. `XDSButton`. */
+  /** Component module name as written, e.g. `Button`. */
   component: string;
   /** Start offset of the opening element (`<`). */
   openingStart: number;
@@ -45,9 +45,9 @@ export interface InstanceInfo {
    * Offset of the safe insertion point for new attributes — immediately after
    * the element name, or after an explicit JSX type argument when present.
    *
-   * For a generic call like `<XDSTable<Item> ...>` the name node ends right
-   * after `XDSTable`, but inserting there would split the `<Item>` type
-   * argument (`<XDSTable data-pg-id="…"<Item>`), producing invalid JSX. We
+   * For a generic call like `<Table<Item> ...>` the name node ends right
+   * after `Table`, but inserting there would split the `<Item>` type
+   * argument (`<Table data-pg-id="…"<Item>`), producing invalid JSX. We
    * advance past the type argument so attributes land after `<Item>`.
    */
   nameEnd: number;
@@ -61,7 +61,7 @@ function readAttrValue(attr: Node): {
   value?: string | number | boolean;
 } {
   const value = attr.value as Node | null | undefined;
-  // Boolean shorthand: `<XDSButton isDisabled />`
+  // Boolean shorthand: `<Button isDisabled />`
   if (value == null) {
     return {valueKind: 'boolean', value: true};
   }
@@ -100,7 +100,7 @@ function readAttrValue(attr: Node): {
 /**
  * Find the offset just past the element name where new attributes can be
  * safely spliced in. Normally this is the end of the name node, but a generic
- * JSX call carries an explicit type argument (`<XDSTable<Item> ...>`) that sits
+ * JSX call carries an explicit type argument (`<Table<Item> ...>`) that sits
  * between the name and the attribute list. Babel attaches it as
  * `typeArguments` (older builds: `typeParameters`); we advance past it so an
  * inserted attribute does not bisect `<Item>` and corrupt the JSX.

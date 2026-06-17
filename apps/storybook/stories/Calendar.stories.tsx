@@ -3,25 +3,25 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSCalendar,
+  Calendar,
   type ISODateString,
   type DateRange,
 } from '@xds/core/Calendar';
 
-const meta: Meta<typeof XDSCalendar> = {
+const meta: Meta<typeof Calendar> = {
   title: 'Core/Calendar',
-  component: XDSCalendar,
+  component: Calendar,
   tags: ['autodocs'],
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSCalendar>;
+type Story = StoryObj<typeof Calendar>;
 
 export const Default: Story = {
   render: () => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
     return (
-      <XDSCalendar
+      <Calendar
         mode="single"
         value={value}
         onChange={val => setValue(val)}
@@ -34,7 +34,7 @@ export const WithSelectedDate: Story = {
   render: () => {
     const [value, setValue] = useState<ISODateString>('2026-01-15');
     return (
-      <XDSCalendar
+      <Calendar
         mode="single"
         value={value}
         onChange={val => setValue(val)}
@@ -48,7 +48,7 @@ export const RangeSelection: Story = {
   render: () => {
     const [value, setValue] = useState<DateRange | undefined>(undefined);
     return (
-      <XDSCalendar
+      <Calendar
         mode="range"
         value={value}
         onChange={range => setValue(range)}
@@ -65,7 +65,7 @@ export const RangeWithValue: Story = {
       end: '2026-01-20',
     });
     return (
-      <XDSCalendar
+      <Calendar
         mode="range"
         value={value}
         onChange={range => setValue(range)}
@@ -79,7 +79,7 @@ export const TwoMonths: Story = {
   render: () => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
     return (
-      <XDSCalendar
+      <Calendar
         mode="single"
         numberOfMonths={2}
         value={value}
@@ -94,7 +94,7 @@ export const TwoMonthsRangeSelection: Story = {
   render: () => {
     const [value, setValue] = useState<DateRange | undefined>(undefined);
     return (
-      <XDSCalendar
+      <Calendar
         mode="range"
         numberOfMonths={2}
         value={value}
@@ -109,7 +109,7 @@ export const MinMaxBoundary: Story = {
   render: () => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
     return (
-      <XDSCalendar
+      <Calendar
         mode="single"
         min={'2026-01-10' as ISODateString}
         max={'2026-03-20' as ISODateString}
@@ -125,7 +125,7 @@ export const WithDateConstraints: Story = {
   render: () => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
     return (
-      <XDSCalendar
+      <Calendar
         mode="single"
         min={'2026-01-10' as ISODateString}
         max={'2026-01-25' as ISODateString}
@@ -145,7 +145,7 @@ export const WeekdaysOnly: Story = {
       return day !== 0 && day !== 6;
     };
     return (
-      <XDSCalendar
+      <Calendar
         mode="single"
         dateConstraints={[isWeekday]}
         value={value}
@@ -160,7 +160,7 @@ export const WithWeekNumbers: Story = {
   render: () => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
     return (
-      <XDSCalendar
+      <Calendar
         mode="single"
         hasWeekNumbers
         value={value}
@@ -175,7 +175,7 @@ export const MondayStart: Story = {
   render: () => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
     return (
-      <XDSCalendar
+      <Calendar
         mode="single"
         weekStartsOn={1}
         value={value}
@@ -207,7 +207,7 @@ export const AllVariations: Story = {
       <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
         <div>
           <h3 style={{marginBottom: '8px'}}>Single Date Selection</h3>
-          <XDSCalendar
+          <Calendar
             mode="single"
             value={singleValue}
             onChange={val => setSingleValue(val)}
@@ -220,7 +220,7 @@ export const AllVariations: Story = {
 
         <div>
           <h3 style={{marginBottom: '8px'}}>Range Selection (Two Months)</h3>
-          <XDSCalendar
+          <Calendar
             mode="range"
             numberOfMonths={2}
             value={rangeValue}
@@ -237,7 +237,7 @@ export const AllVariations: Story = {
 
         <div>
           <h3 style={{marginBottom: '8px'}}>Weekdays Only with Week Numbers</h3>
-          <XDSCalendar
+          <Calendar
             mode="single"
             hasWeekNumbers
             dateConstraints={[isWeekday]}

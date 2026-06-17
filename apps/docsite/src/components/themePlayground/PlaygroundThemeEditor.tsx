@@ -15,7 +15,7 @@
 'use client';
 
 import * as React from 'react';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {TabList, Tab} from '@xds/core/TabList';
 import {
   defineTheme,
   expandTypeScale,
@@ -33,7 +33,7 @@ import {
   durationDefaults,
   easeDefaults,
 } from '@xds/core/theme';
-import type {XDSDefinedTheme} from '@xds/core/theme';
+import type {DefinedTheme} from '@xds/core/theme';
 import {EditorSections} from './EditorSections';
 import {ComponentTokensPanel} from './ComponentTokensPanel';
 import type {CustomOverride} from './ComponentTokensPanel';
@@ -63,9 +63,9 @@ interface PlaygroundThemeEditorProps {
   /** Light/dark mode, owned by the playground so editor + preview stay in sync. */
   mode: 'light' | 'dark';
   /** Optional theme to seed the editor's token + component state from. */
-  initialTheme?: XDSDefinedTheme;
+  initialTheme?: DefinedTheme;
   /** Called whenever the composed theme changes so the parent can apply it. */
-  onThemeChange: (theme: XDSDefinedTheme) => void;
+  onThemeChange: (theme: DefinedTheme) => void;
 }
 
 export function PlaygroundThemeEditor({
@@ -119,7 +119,7 @@ export function PlaygroundThemeEditor({
       baseComponents,
       buildComponentOverrides(componentTokens),
       customMap,
-    ) as XDSDefinedTheme['components'];
+    ) as DefinedTheme['components'];
     return defineTheme({name: 'custom', tokens: coreTokens, components});
   }, [tokens, customOverrides, baseComponents]);
 
@@ -290,14 +290,14 @@ export function PlaygroundThemeEditor({
           standalone. */}
       <style>{`@import url("${GOOGLE_FONTS_URL}");`}</style>
       {/* Tab strip */}
-      <XDSTabList
+      <TabList
         hasDivider
         value={panelTab}
         onChange={v => setPanelTab(v as 'theme' | 'components' | 'tokens')}>
-        <XDSTab value="theme" label="Base Styles" />
-        <XDSTab value="components" label="Components" />
-        <XDSTab value="tokens" label="Advanced" />
-      </XDSTabList>
+        <Tab value="theme" label="Base Styles" />
+        <Tab value="components" label="Components" />
+        <Tab value="tokens" label="Advanced" />
+      </TabList>
 
       {/* Scrollable editor content */}
       <div style={{flex: 1, overflow: 'auto', padding: 16}}>

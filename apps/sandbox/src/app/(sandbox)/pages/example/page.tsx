@@ -4,13 +4,13 @@
 
 import {useState} from 'react';
 
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSDivider} from '@xds/core';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Button} from '@xds/core/Button';
+import {Text, Heading} from '@xds/core/Text';
+import {TextInput} from '@xds/core/TextInput';
+import {CheckboxInput} from '@xds/core/CheckboxInput';
+import {Badge} from '@xds/core/Badge';
+import {Divider} from '@xds/core';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
@@ -34,89 +34,89 @@ export default function ExamplePage() {
 
   return (
     <div {...stylex.props(styles.container)}>
-      <XDSVStack gap={6}>
-        <XDSVStack gap={2}>
-          <XDSHeading level={1}>Example Page</XDSHeading>
-          <XDSText type="body" color="secondary">
+      <VStack gap={6}>
+        <VStack gap={2}>
+          <Heading level={1}>Example Page</Heading>
+          <Text type="body" color="secondary">
             A scaffold showing common XDS components. Copy this file to create
             new pages.
-          </XDSText>
-        </XDSVStack>
+          </Text>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
         {/* Buttons */}
-        <XDSVStack gap={3}>
-          <XDSHeading level={2}>Buttons</XDSHeading>
-          <XDSHStack gap={3} vAlign="center">
-            <XDSButton label="Primary" variant="primary" />
-            <XDSButton label="Secondary" variant="secondary" />
-            <XDSButton label="Ghost" variant="ghost" />
-          </XDSHStack>
-          <XDSHStack gap={3} vAlign="center">
-            <XDSButton label="Small" size="sm" />
-            <XDSButton label="Medium" size="md" />
-            <XDSButton label="Large" size="lg" />
-          </XDSHStack>
-        </XDSVStack>
+        <VStack gap={3}>
+          <Heading level={2}>Buttons</Heading>
+          <HStack gap={3} vAlign="center">
+            <Button label="Primary" variant="primary" />
+            <Button label="Secondary" variant="secondary" />
+            <Button label="Ghost" variant="ghost" />
+          </HStack>
+          <HStack gap={3} vAlign="center">
+            <Button label="Small" size="sm" />
+            <Button label="Medium" size="md" />
+            <Button label="Large" size="lg" />
+          </HStack>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
         {/* Badges */}
-        <XDSVStack gap={3}>
-          <XDSHeading level={2}>Badges</XDSHeading>
-          <XDSHStack gap={3} vAlign="center">
-            <XDSBadge variant="info" label='Info' />
-            <XDSBadge variant="success" label='Success' />
-            <XDSBadge variant="warning" label='Warning' />
-            <XDSBadge variant="error" label='Error' />
-          </XDSHStack>
-        </XDSVStack>
+        <VStack gap={3}>
+          <Heading level={2}>Badges</Heading>
+          <HStack gap={3} vAlign="center">
+            <Badge variant="info" label='Info' />
+            <Badge variant="success" label='Success' />
+            <Badge variant="warning" label='Warning' />
+            <Badge variant="error" label='Error' />
+          </HStack>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
         {/* Typography */}
-        <XDSVStack gap={3}>
-          <XDSHeading level={2}>Typography</XDSHeading>
-          <XDSHeading level={3}>Heading 3</XDSHeading>
-          <XDSText type="large" weight="bold">
+        <VStack gap={3}>
+          <Heading level={2}>Typography</Heading>
+          <Heading level={3}>Heading 3</Heading>
+          <Text type="large" weight="bold">
             Large bold text
-          </XDSText>
-          <XDSText type="body">Default body text</XDSText>
-          <XDSText type="supporting" color="secondary">
+          </Text>
+          <Text type="body">Default body text</Text>
+          <Text type="supporting" color="secondary">
             Supporting text in secondary color
-          </XDSText>
-        </XDSVStack>
+          </Text>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
         {/* Form Controls */}
-        <XDSVStack gap={3}>
-          <XDSHeading level={2}>Form Controls</XDSHeading>
-          <XDSTextInput
+        <VStack gap={3}>
+          <Heading level={2}>Form Controls</Heading>
+          <TextInput
             label="Name"
             placeholder="Enter your name"
             value={name}
             onChange={setName}
           />
-          <XDSTextInput
+          <TextInput
             label="Email"
             placeholder="you@example.com"
             value={email}
             onChange={setEmail}
           />
-          <XDSCheckboxInput
+          <CheckboxInput
             label="Enable notifications"
             value={notifications}
             onChange={setNotifications}
           />
-          <XDSCheckboxInput
+          <CheckboxInput
             label="Subscribe to updates"
             value={updates}
             onChange={setUpdates}
           />
-        </XDSVStack>
-      </XDSVStack>
+        </VStack>
+      </VStack>
     </div>
   );
 }

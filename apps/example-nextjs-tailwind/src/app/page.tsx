@@ -3,14 +3,14 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSCard} from '@xds/core/Card';
-import {XDSDivider} from '@xds/core';
-import {XDSAvatar} from '@xds/core/Avatar';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Button} from '@xds/core/Button';
+import {Text, Heading} from '@xds/core/Text';
+import {TextInput} from '@xds/core/TextInput';
+import {Badge} from '@xds/core/Badge';
+import {Card} from '@xds/core/Card';
+import {Divider} from '@xds/core';
+import {Avatar} from '@xds/core/Avatar';
 
 /* ─── Shadcn-style Tailwind components ─────────────────── */
 
@@ -53,51 +53,51 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-body p-8">
       <div className="mx-auto max-w-3xl">
-        <XDSVStack gap={8}>
-          <XDSVStack gap={2}>
-            <XDSHeading level={1}>XDS + Tailwind</XDSHeading>
-            <XDSText type="body" color="secondary">
+        <VStack gap={8}>
+          <VStack gap={2}>
+            <Heading level={1}>XDS + Tailwind</Heading>
+            <Text type="body" color="secondary">
               Pre-built dist package — no StyleX plugin needed. Tailwind handles
               layout, XDS handles components and tokens.
-            </XDSText>
-          </XDSVStack>
+            </Text>
+          </VStack>
 
-          <XDSDivider />
+          <Divider />
 
           {/* Tailwind utilities on XDS components */}
-          <XDSVStack gap={3}>
-            <XDSHeading level={2}>Tailwind on XDS components</XDSHeading>
-            <XDSCard className="border-2 border-blue-500 shadow-lg">
-              <XDSText type="body">
-                XDSCard with{' '}
+          <VStack gap={3}>
+            <Heading level={2}>Tailwind on XDS components</Heading>
+            <Card className="border-2 border-blue-500 shadow-lg">
+              <Text type="body">
+                Card with{' '}
                 <code className="rounded bg-gray-100 px-1 py-0.5 text-sm">
                   border-2 border-blue-500 shadow-lg
                 </code>
-              </XDSText>
-            </XDSCard>
-            <XDSHStack gap={3} vAlign="center">
-              <XDSButton
+              </Text>
+            </Card>
+            <HStack gap={3} vAlign="center">
+              <Button
                 label="Rounded Full"
                 variant="primary"
                 className="rounded-full"
               />
-              <XDSButton
+              <Button
                 label="Uppercase"
                 variant="ghost"
                 className="uppercase tracking-wider"
               />
-            </XDSHStack>
-            <XDSText type="body" className="text-blue-600 italic">
-              XDSText with text-blue-600 and italic
-            </XDSText>
-          </XDSVStack>
+            </HStack>
+            <Text type="body" className="text-blue-600 italic">
+              Text with text-blue-600 and italic
+            </Text>
+          </VStack>
 
-          <XDSDivider />
+          <Divider />
 
           {/* Tailwind Bridge — the main demo */}
-          <XDSVStack gap={3}>
-            <XDSHeading level={2}>Tailwind Bridge</XDSHeading>
-            <XDSText type="supporting" color="secondary">
+          <VStack gap={3}>
+            <Heading level={2}>Tailwind Bridge</Heading>
+            <Text type="supporting" color="secondary">
               With{' '}
               <code className="rounded-sm bg-gray-100 px-1 py-0.5 text-xs">
                 @xds/core/tailwind-theme.css
@@ -107,13 +107,13 @@ export default function Home() {
                 var()
               </code>{' '}
               needed.
-            </XDSText>
+            </Text>
 
             {/* Before / After comparison */}
             <div className="grid grid-cols-2 gap-6">
               {/* Before: verbose arbitrary values */}
-              <XDSVStack gap={2}>
-                <XDSText type="label">Before (arbitrary values)</XDSText>
+              <VStack gap={2}>
+                <Text type="label">Before (arbitrary values)</Text>
                 <div className="rounded-[var(--radius-container)] border border-[var(--color-border)] bg-[var(--color-background-surface)] p-[var(--spacing-4)]">
                   <p className="text-[var(--color-text-primary)] text-[var(--font-size-base)]">
                     35+ chars per token 😬
@@ -122,11 +122,11 @@ export default function Home() {
                     bg-[var(--color-background-surface)]
                   </p>
                 </div>
-              </XDSVStack>
+              </VStack>
 
               {/* After: clean bridge utilities */}
-              <XDSVStack gap={2}>
-                <XDSText type="label">After (bridge utilities)</XDSText>
+              <VStack gap={2}>
+                <Text type="label">After (bridge utilities)</Text>
                 <div className="rounded-lg border border-border bg-surface p-4">
                   <p className="text-base text-primary">
                     Short and clean ✨
@@ -135,11 +135,11 @@ export default function Home() {
                     bg-surface text-primary
                   </p>
                 </div>
-              </XDSVStack>
+              </VStack>
             </div>
 
             {/* Status colors */}
-            <XDSText type="label">Status colors</XDSText>
+            <Text type="label">Status colors</Text>
             <div className="flex gap-3">
               <div className="flex items-center gap-2 rounded-md bg-success/10 px-3 py-2">
                 <div className="h-2 w-2 rounded-full bg-success" />
@@ -160,7 +160,7 @@ export default function Home() {
             </div>
 
             {/* Hue palette */}
-            <XDSText type="label">Hue palette (subtle / ring / vivid)</XDSText>
+            <Text type="label">Hue palette (subtle / ring / vivid)</Text>
             <div className="grid grid-cols-5 gap-3">
               <div className="rounded-md border border-blue-ring bg-blue-subtle p-3 text-center">
                 <span className="text-sm font-medium text-blue-vivid">
@@ -188,7 +188,7 @@ export default function Home() {
             </div>
 
             {/* Semantic surfaces */}
-            <XDSText type="label">Semantic surfaces</XDSText>
+            <Text type="label">Semantic surfaces</Text>
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-lg bg-surface p-4 shadow-sm">
                 <p className="text-sm font-medium text-primary">bg-surface</p>
@@ -205,7 +205,7 @@ export default function Home() {
             </div>
 
             {/* Spacing + radius */}
-            <XDSText type="label">Spacing &amp; radius</XDSText>
+            <Text type="label">Spacing &amp; radius</Text>
             <div className="flex items-end gap-3">
               <div className="rounded-xs bg-accent-bg p-1 text-center">
                 <span className="text-xs text-on-accent">p-1</span>
@@ -223,32 +223,32 @@ export default function Home() {
                 <span className="text-xs text-on-accent">p-6</span>
               </div>
             </div>
-          </XDSVStack>
+          </VStack>
 
-          <XDSDivider />
+          <Divider />
 
           {/* Shadcn-style components alongside XDS */}
-          <XDSVStack gap={3}>
-            <XDSHeading level={2}>Shadcn-style components</XDSHeading>
+          <VStack gap={3}>
+            <Heading level={2}>Shadcn-style components</Heading>
             <div className="grid grid-cols-2 gap-6">
-              <XDSCard>
-                <XDSVStack gap={3}>
-                  <XDSHStack gap={2} vAlign="center">
-                    <XDSAvatar name="Jane Doe" size="small" />
-                    <XDSVStack gap={0}>
-                      <XDSText type="label">Jane Doe</XDSText>
-                      <XDSText type="supporting" color="secondary">
+              <Card>
+                <VStack gap={3}>
+                  <HStack gap={2} vAlign="center">
+                    <Avatar name="Jane Doe" size="small" />
+                    <VStack gap={0}>
+                      <Text type="label">Jane Doe</Text>
+                      <Text type="supporting" color="secondary">
                         Engineer
-                      </XDSText>
-                    </XDSVStack>
-                  </XDSHStack>
-                  <XDSHStack gap={2}>
-                    <XDSBadge variant="info" label="React" />
-                    <XDSBadge variant="success" label="TS" />
-                  </XDSHStack>
-                  <XDSButton label="View Profile" variant="secondary" />
-                </XDSVStack>
-              </XDSCard>
+                      </Text>
+                    </VStack>
+                  </HStack>
+                  <HStack gap={2}>
+                    <Badge variant="info" label="React" />
+                    <Badge variant="success" label="TS" />
+                  </HStack>
+                  <Button label="View Profile" variant="secondary" />
+                </VStack>
+              </Card>
 
               <TailwindCard>
                 <div className="flex flex-col gap-3">
@@ -275,28 +275,28 @@ export default function Home() {
                 </div>
               </TailwindCard>
             </div>
-          </XDSVStack>
+          </VStack>
 
-          <XDSDivider />
+          <Divider />
 
           {/* Forms */}
-          <XDSVStack gap={3}>
-            <XDSHeading level={2}>Form elements</XDSHeading>
+          <VStack gap={3}>
+            <Heading level={2}>Form elements</Heading>
             <div className="grid grid-cols-2 gap-6">
-              <XDSVStack gap={3}>
-                <XDSTextInput
+              <VStack gap={3}>
+                <TextInput
                   label="XDS Input"
                   placeholder="Enter name"
                   value={input1}
                   onChange={setInput1}
                 />
-                <XDSTextInput
+                <TextInput
                   label="XDS Email"
                   placeholder="you@example.com"
                   value={input2}
                   onChange={setInput2}
                 />
-              </XDSVStack>
+              </VStack>
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-medium">Tailwind Input</label>
@@ -316,23 +316,23 @@ export default function Home() {
                 </div>
               </div>
             </div>
-          </XDSVStack>
+          </VStack>
 
-          <XDSDivider />
+          <Divider />
 
           {/* Typography */}
-          <XDSVStack gap={3}>
-            <XDSHeading level={2}>Typography</XDSHeading>
+          <VStack gap={3}>
+            <Heading level={2}>Typography</Heading>
             <div className="grid grid-cols-2 gap-6">
-              <XDSVStack gap={2}>
-                <XDSHeading level={1}>Heading 1</XDSHeading>
-                <XDSHeading level={2}>Heading 2</XDSHeading>
-                <XDSHeading level={3}>Heading 3</XDSHeading>
-                <XDSText type="body">Body text</XDSText>
-                <XDSText type="supporting" color="secondary">
+              <VStack gap={2}>
+                <Heading level={1}>Heading 1</Heading>
+                <Heading level={2}>Heading 2</Heading>
+                <Heading level={3}>Heading 3</Heading>
+                <Text type="body">Body text</Text>
+                <Text type="supporting" color="secondary">
                   Supporting text
-                </XDSText>
-              </XDSVStack>
+                </Text>
+              </VStack>
               <div className="flex flex-col gap-2">
                 <h1 className="text-3xl font-bold">Heading 1</h1>
                 <h2 className="text-2xl font-semibold">Heading 2</h2>
@@ -345,8 +345,8 @@ export default function Home() {
                 </ul>
               </div>
             </div>
-          </XDSVStack>
-        </XDSVStack>
+          </VStack>
+        </VStack>
       </div>
     </main>
   );

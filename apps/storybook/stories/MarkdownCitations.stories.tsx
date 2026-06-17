@@ -2,24 +2,24 @@
 
 import {useState, useEffect, useCallback} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSMarkdown} from '@xds/core/Markdown';
-import type {XDSMarkdownSource} from '@xds/core/Markdown';
-import {XDSButton} from '@xds/core/Button';
+import {Markdown} from '@xds/core/Markdown';
+import type {MarkdownSource} from '@xds/core/Markdown';
+import {Button} from '@xds/core/Button';
 
-const meta: Meta<typeof XDSMarkdown> = {
+const meta: Meta<typeof Markdown> = {
   title: 'Core/MarkdownCitations',
-  component: XDSMarkdown,
+  component: Markdown,
   tags: ['autodocs'],
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSMarkdown>;
+type Story = StoryObj<typeof Markdown>;
 
 // ---------------------------------------------------------------------------
 // Shared sources
 // ---------------------------------------------------------------------------
 
-const SEARCH_SOURCES: Record<string, XDSMarkdownSource> = {
+const SEARCH_SOURCES: Record<string, MarkdownSource> = {
   abc1: {
     title: 'Tokyo - Wikipedia',
     url: 'https://en.wikipedia.org/wiki/Tokyo',
@@ -160,7 +160,7 @@ export const StreamingWithCitations: Story = {
             gap: 8,
             alignItems: 'center',
           }}>
-          <XDSButton
+          <Button
             label="Replay"
             variant="secondary"
             size="sm"
@@ -173,14 +173,14 @@ export const StreamingWithCitations: Story = {
               : 'Complete'}
           </span>
         </div>
-        <XDSMarkdown
+        <Markdown
           key={key}
           isStreaming={isStreaming}
           density="compact"
           headingLevelStart={3}
           sources={SEARCH_SOURCES}>
           {text.slice(0, charIndex)}
-        </XDSMarkdown>
+        </Markdown>
       </div>
     );
   },

@@ -9,13 +9,13 @@ import {
   isValidElement,
 } from 'react';
 import {
-  XDSSVGIcon,
+  SVGIcon,
   type SVGIconVariation,
   type SVGIconDef,
   type IconShape,
   type IconShapeRole,
 } from '@xds/lab';
-import {XDSStack, XDSText} from '@xds/core';
+import {Stack, Text} from '@xds/core';
 import {defaultIcons} from '../../../packages/core/src/Icon/defaultIcons';
 
 // =============================================================================
@@ -249,16 +249,16 @@ export const DefaultRegistryIcons: StoryObj = {
     }
 
     return (
-      <XDSStack direction="vertical" gap={3}>
-        <XDSText type="large">
+      <Stack direction="vertical" gap={3}>
+        <Text type="large">
           Default Registry Icons \u2192 SVGIcon System
-        </XDSText>
-        <XDSText type="supporting">
+        </Text>
+        <Text type="supporting">
           {converted.length} icons auto-converted. Heuristic: containment-based
           layer classification (only elements fully contained within a larger
           shape become secondary). Peer elements (same size, not contained) stay
           primary.
-        </XDSText>
+        </Text>
 
         <div
           style={{
@@ -269,30 +269,30 @@ export const DefaultRegistryIcons: StoryObj = {
           }}>
           <div />
           {VARIATIONS.map(v => (
-            <XDSText
+            <Text
               key={v}
               type="label"
               style={{textAlign: 'center', fontSize: 10}}>
               {v}
-            </XDSText>
+            </Text>
           ))}
 
           {converted.map(({name, def}) => (
             <Fragment key={name}>
-              <XDSText type="label" style={{fontSize: 11}}>
+              <Text type="label" style={{fontSize: 11}}>
                 {name}
-              </XDSText>
+              </Text>
               {VARIATIONS.map(v => (
                 <div
                   key={`${name}-${v}`}
                   style={{display: 'flex', justifyContent: 'center'}}>
-                  <XDSSVGIcon icon={def} variation={v} size="lg" />
+                  <SVGIcon icon={def} variation={v} size="lg" />
                 </div>
               ))}
             </Fragment>
           ))}
         </div>
-      </XDSStack>
+      </Stack>
     );
   },
 };

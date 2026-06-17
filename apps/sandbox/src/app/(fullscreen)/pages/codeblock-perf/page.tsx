@@ -4,18 +4,18 @@
 
 import * as React from 'react';
 import {useState, useCallback, useRef, useLayoutEffect} from 'react';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSHStack, XDSVStack} from '@xds/core/Stack';
-import {XDSButton} from '@xds/core/Button';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSCard} from '@xds/core/Card';
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSSection} from '@xds/core/Section';
-import {XDSGrid} from '@xds/core/Grid';
+import {CodeBlock} from '@xds/core/CodeBlock';
+import {Text, Heading} from '@xds/core/Text';
+import {HStack, VStack} from '@xds/core/Stack';
+import {Button} from '@xds/core/Button';
+import {Badge} from '@xds/core/Badge';
+import {Card} from '@xds/core/Card';
+import {AppShell} from '@xds/core/AppShell';
+import {Section} from '@xds/core/Section';
+import {Grid} from '@xds/core/Grid';
 import {
-  XDSSegmentedControl,
-  XDSSegmentedControlItem,
+  SegmentedControl,
+  SegmentedControlItem,
 } from '@xds/core/SegmentedControl';
 
 // ---------------------------------------------------------------------------
@@ -242,10 +242,10 @@ function Metric({
   thresholds?: {good: number; warn: number};
 }) {
   return (
-    <XDSHStack gap={1} vAlign="center">
-      <XDSBadge variant={metricVariant(value, thresholds)} label={label} />
-      <XDSText type="code">{formatMetric(value, unit)}</XDSText>
-    </XDSHStack>
+    <HStack gap={1} vAlign="center">
+      <Badge variant={metricVariant(value, thresholds)} label={label} />
+      <Text type="code">{formatMetric(value, unit)}</Text>
+    </HStack>
   );
 }
 
@@ -257,7 +257,7 @@ function MetricsBar({
   onScrollTest: () => void;
 }) {
   return (
-    <XDSHStack gap={3} vAlign="center" wrap="wrap">
+    <HStack gap={3} vAlign="center" wrap="wrap">
       <Metric
         label="mount"
         value={metrics.mountMs}
@@ -278,13 +278,13 @@ function MetricsBar({
         thresholds={{good: 120, warn: 55}}
       />
       <Metric label="drops" value={metrics.scrollFrameDrops} unit="" />
-      <XDSButton
+      <Button
         size="sm"
         variant="secondary"
         label="Scroll test"
         onClick={onScrollTest}
       />
-    </XDSHStack>
+    </HStack>
   );
 }
 
@@ -324,16 +324,16 @@ function PerfPanel({
 
   return (
     <DeferredMount>
-      <XDSVStack gap={3}>
-        <XDSHStack gap={2} vAlign="center">
-          <XDSText type="label">{label}</XDSText>
-          <XDSBadge label={mode} />
-        </XDSHStack>
-        <XDSCard padding={3}>
+      <VStack gap={3}>
+        <HStack gap={2} vAlign="center">
+          <Text type="label">{label}</Text>
+          <Badge label={mode} />
+        </HStack>
+        <Card padding={3}>
           <MetricsBar metrics={metrics} onScrollTest={runScrollTest} />
-        </XDSCard>
+        </Card>
         <div ref={scrollRef}>
-          <XDSCodeBlock
+          <CodeBlock
             code={code}
             language="typescript"
             title={`${lineCount.toLocaleString()} lines`}
@@ -342,7 +342,7 @@ function PerfPanel({
             highlightMode={mode}
           />
         </div>
-      </XDSVStack>
+      </VStack>
     </DeferredMount>
   );
 }
@@ -370,48 +370,48 @@ export default function CodeBlockPerfPage() {
   const columns = viewMode === 'both' ? 2 : 1;
 
   return (
-    <XDSAppShell contentPadding={4} height="fill">
-      <XDSVStack gap={4}>
-        <XDSVStack gap={1}>
-          <XDSHeading level={2}>CodeBlock Performance</XDSHeading>
-          <XDSText type="body" color="secondary">
+    <AppShell contentPadding={4} height="fill">
+      <VStack gap={4}>
+        <VStack gap={1}>
+          <Heading level={2}>CodeBlock Performance</Heading>
+          <Text type="body" color="secondary">
             Compare CSS Highlight API (ranges) vs span-based rendering side by
             side, or run each in isolation.
-          </XDSText>
-        </XDSVStack>
+          </Text>
+        </VStack>
 
-        <XDSSection variant="muted" padding={3} dividers={['bottom']}>
-          <XDSHStack gap={4} vAlign="center" wrap="wrap">
-            <XDSSegmentedControl
+        <Section variant="muted" padding={3} dividers={['bottom']}>
+          <HStack gap={4} vAlign="center" wrap="wrap">
+            <SegmentedControl
               label="Line count"
               value={lineCount}
               onChange={setLineCount}
               size="sm">
               {LINE_OPTIONS.map(n => (
-                <XDSSegmentedControlItem
+                <SegmentedControlItem
                   key={n}
                   value={n}
                   label={Number(n).toLocaleString()}
                 />
               ))}
-            </XDSSegmentedControl>
-            <XDSSegmentedControl
+            </SegmentedControl>
+            <SegmentedControl
               label="View"
               value={viewMode}
               onChange={v => setViewMode(v as ViewMode)}
               size="sm">
               {VIEW_OPTIONS.map(v => (
-                <XDSSegmentedControlItem
+                <SegmentedControlItem
                   key={v}
                   value={v}
                   label={VIEW_LABELS[v]}
                 />
               ))}
-            </XDSSegmentedControl>
-          </XDSHStack>
-        </XDSSection>
+            </SegmentedControl>
+          </HStack>
+        </Section>
 
-        <XDSGrid columns={columns} gap={4}>
+        <Grid columns={columns} gap={4}>
           {showRanges && (
             <PerfPanel
               key={`ranges-${lineCount}`}
@@ -430,8 +430,8 @@ export default function CodeBlockPerfPage() {
               maxHeight={500}
             />
           )}
-        </XDSGrid>
-      </XDSVStack>
-    </XDSAppShell>
+        </Grid>
+      </VStack>
+    </AppShell>
   );
 }

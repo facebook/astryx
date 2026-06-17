@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSVegaChart, buildVegaLiteConfig} from '@xds/vega';
+import {VegaChart, buildVegaLiteConfig} from '@xds/vega';
 import type {AnySpec} from '@xds/vega';
-import {useXDSTheme} from '@xds/core';
+import {useTheme} from '@xds/core';
 
 // ---------------------------------------------------------------------------
 // Stocks dataset URL from vega-datasets
@@ -302,19 +302,19 @@ const weatherHeatmapSpec: AnySpec = {
 // Themed wrapper — resolves XDS tokens into a Vega-Lite config
 // ---------------------------------------------------------------------------
 
-function ThemedVegaChart(props: React.ComponentProps<typeof XDSVegaChart>) {
-  const {token} = useXDSTheme();
+function ThemedVegaChart(props: React.ComponentProps<typeof VegaChart>) {
+  const {token} = useTheme();
   const config = buildVegaLiteConfig(token);
-  return <XDSVegaChart {...props} compileOptions={{config}} />;
+  return <VegaChart {...props} compileOptions={{config}} />;
 }
 
 // ---------------------------------------------------------------------------
 // Storybook meta
 // ---------------------------------------------------------------------------
 
-const meta: Meta<typeof XDSVegaChart> = {
-  title: 'Vega/XDSVegaChart',
-  component: XDSVegaChart,
+const meta: Meta<typeof VegaChart> = {
+  title: 'Vega/VegaChart',
+  component: VegaChart,
   tags: ['autodocs'],
   parameters: {
     layout: 'padded',
@@ -322,7 +322,7 @@ const meta: Meta<typeof XDSVegaChart> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSVegaChart>;
+type Story = StoryObj<typeof VegaChart>;
 
 export const StocksLineChart: Story = {
   name: 'Range: Category - Stocks Line Chart',

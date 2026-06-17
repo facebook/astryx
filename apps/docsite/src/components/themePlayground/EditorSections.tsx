@@ -4,17 +4,17 @@
 
 import * as React from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSText} from '@xds/core/Text';
-import {XDSVStack, XDSHStack} from '@xds/core/Stack';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSNumberInput} from '@xds/core/NumberInput';
-import {XDSSwitch} from '@xds/core/Switch';
-import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
-import {XDSTooltip} from '@xds/core/Tooltip';
-import {XDSIcon} from '@xds/core/Icon';
+import {Text} from '@xds/core/Text';
+import {VStack, HStack} from '@xds/core/Stack';
+import {Selector} from '@xds/core/Selector';
+import {NumberInput} from '@xds/core/NumberInput';
+import {Switch} from '@xds/core/Switch';
+import {ToggleButton, ToggleButtonGroup} from '@xds/core/ToggleButton';
+import {Tooltip} from '@xds/core/Tooltip';
+import {Icon} from '@xds/core/Icon';
 import {expandRadiusScale, expandTypeScale} from '@xds/core/theme';
 import {ColorSwatch} from './ColorSwatch';
-import {XDSSelectableCard} from '@xds/core/SelectableCard';
+import {SelectableCard} from '@xds/core/SelectableCard';
 import {FONT_OPTIONS, RATIO_OPTIONS, UNIFIED_PRESETS} from './constants';
 
 const styles = stylex.create({
@@ -172,16 +172,16 @@ export function EditorSections({
   })();
 
   return (
-    <XDSVStack gap={5}>
+    <VStack gap={5}>
       {/* Color Section */}
-      <XDSVStack gap={3}>
-        <XDSHStack
+      <VStack gap={3}>
+        <HStack
           vAlign="center"
           style={{marginBottom: 4, justifyContent: 'space-between'}}>
-          <XDSText type="label" color="secondary">
+          <Text type="label" color="secondary">
             Create from accent
-          </XDSText>
-          <XDSSwitch
+          </Text>
+          <Switch
             label="Create from accent"
             isLabelHidden
             value={autoPickColors}
@@ -199,8 +199,8 @@ export function EditorSections({
               }
             }}
           />
-        </XDSHStack>
-        <XDSVStack gap={0}>
+        </HStack>
+        <VStack gap={0}>
           <ColorSwatch
             tokenName="--color-accent"
             value={tokens['--color-accent'] || ''}
@@ -236,14 +236,14 @@ export function EditorSections({
               ))}
             </>
           )}
-        </XDSVStack>
-      </XDSVStack>
+        </VStack>
+      </VStack>
 
       {/* Presets Section */}
-      <XDSVStack gap={3}>
-        <XDSText type="label" color="secondary">
+      <VStack gap={3}>
+        <Text type="label" color="secondary">
           Preset
-        </XDSText>
+        </Text>
         <div
           style={{
             display: 'grid',
@@ -272,7 +272,7 @@ export function EditorSections({
               ? 'var(--color-accent)'
               : 'var(--color-text-disabled)';
             return (
-              <XDSSelectableCard
+              <SelectableCard
                 key={key}
                 label={`${key.charAt(0).toUpperCase() + key.slice(1)} preset`}
                 isSelected={isSelected}
@@ -322,34 +322,34 @@ export function EditorSections({
                       opacity={0.7}
                     />
                   </svg>
-                  <XDSText
+                  <Text
                     type="supporting"
                     color={isSelected ? 'primary' : 'secondary'}>
                     {key.charAt(0).toUpperCase() + key.slice(1)}
-                  </XDSText>
+                  </Text>
                 </div>
-              </XDSSelectableCard>
+              </SelectableCard>
             );
           })}
         </div>
-      </XDSVStack>
+      </VStack>
 
       {/* Typography Section */}
-      <XDSVStack gap={3}>
-        <XDSVStack gap={4}>
-          <XDSVStack gap={3}>
+      <VStack gap={3}>
+        <VStack gap={4}>
+          <VStack gap={3}>
             {[
               {token: '--font-family-heading', label: 'Heading Font'},
               {token: '--font-family-body', label: 'Body Font'},
             ].map(({token, label}) => (
               <div key={token}>
-                <XDSText
+                <Text
                   type="label"
                   color="secondary"
                   style={{marginBottom: 4, display: 'block'}}>
                   {label}
-                </XDSText>
-                <XDSSelector
+                </Text>
+                <Selector
                   label={label}
                   isLabelHidden
                   size="sm"
@@ -362,13 +362,13 @@ export function EditorSections({
               </div>
             ))}
             <div>
-              <XDSText
+              <Text
                 type="label"
                 color="secondary"
                 style={{marginBottom: 4, display: 'block'}}>
                 Type Scale
-              </XDSText>
-              <XDSSelector
+              </Text>
+              <Selector
                 label="Type Scale"
                 isLabelHidden
                 size="sm"
@@ -402,19 +402,19 @@ export function EditorSections({
                 }}
               />
             </div>
-          </XDSVStack>
+          </VStack>
           <div>
-            <XDSHStack gap={1} vAlign="center" style={{marginBottom: 4}}>
-              <XDSText type="label" color="secondary">
+            <HStack gap={1} vAlign="center" style={{marginBottom: 4}}>
+              <Text type="label" color="secondary">
                 Type Size
-              </XDSText>
-              <XDSTooltip
+              </Text>
+              <Tooltip
                 content={`Geometric scale: size = round(base × ratio^step). Base = ${typeSizeMatch ?? typeScaleBase}px, ratio = ${typeScaleRatio.toFixed(3)}.`}>
-                <XDSIcon icon="info" size="sm" color="secondary" />
-              </XDSTooltip>
-            </XDSHStack>
+                <Icon icon="info" size="sm" color="secondary" />
+              </Tooltip>
+            </HStack>
             <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-              <XDSToggleButtonGroup
+              <ToggleButtonGroup
                 label="Type size preset"
                 type="single"
                 size="sm"
@@ -422,13 +422,13 @@ export function EditorSections({
                 onChange={(v: string | null) => {
                   if (v != null) {onApplyTypeScale(Number(v), typeScaleRatio);}
                 }}>
-                <XDSToggleButton label="S" value="12" />
-                <XDSToggleButton label="M" value="14" />
-                <XDSToggleButton label="L" value="16" />
-                <XDSToggleButton label="XL" value="18" />
-              </XDSToggleButtonGroup>
+                <ToggleButton label="S" value="12" />
+                <ToggleButton label="M" value="14" />
+                <ToggleButton label="L" value="16" />
+                <ToggleButton label="XL" value="18" />
+              </ToggleButtonGroup>
               <div style={{flex: 1}} />
-              <XDSNumberInput
+              <NumberInput
                 label="Type size"
                 isLabelHidden
                 value={typeSizeMatch ?? null}
@@ -442,24 +442,24 @@ export function EditorSections({
               />
             </div>
           </div>
-        </XDSVStack>
-      </XDSVStack>
+        </VStack>
+      </VStack>
 
       {/* Shape & Layout Section */}
-      <XDSVStack gap={3}>
-        <XDSVStack gap={4}>
+      <VStack gap={3}>
+        <VStack gap={4}>
           <div>
-            <XDSHStack gap={1} vAlign="center" style={{marginBottom: 4}}>
-              <XDSText type="label" color="secondary">
+            <HStack gap={1} vAlign="center" style={{marginBottom: 4}}>
+              <Text type="label" color="secondary">
                 Corner Radius
-              </XDSText>
-              <XDSTooltip
+              </Text>
+              <Tooltip
                 content={`Linear scale: inner = ${radiusMatch ?? radiusBase}px, element = ${(radiusMatch ?? radiusBase) * 2}px, container = ${(radiusMatch ?? radiusBase) * 3}px, page = ${Math.round((radiusMatch ?? radiusBase) * 7)}px.`}>
-                <XDSIcon icon="info" size="sm" color="secondary" />
-              </XDSTooltip>
-            </XDSHStack>
+                <Icon icon="info" size="sm" color="secondary" />
+              </Tooltip>
+            </HStack>
             <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-              <XDSToggleButtonGroup
+              <ToggleButtonGroup
                 label="Radius preset"
                 type="single"
                 size="sm"
@@ -467,13 +467,13 @@ export function EditorSections({
                 onChange={(v: string | null) => {
                   if (v != null) {onApplyRadiusScale(Number(v));}
                 }}>
-                <XDSToggleButton label="S" value="2" />
-                <XDSToggleButton label="M" value="4" />
-                <XDSToggleButton label="L" value="6" />
-                <XDSToggleButton label="XL" value="12" />
-              </XDSToggleButtonGroup>
+                <ToggleButton label="S" value="2" />
+                <ToggleButton label="M" value="4" />
+                <ToggleButton label="L" value="6" />
+                <ToggleButton label="XL" value="12" />
+              </ToggleButtonGroup>
               <div style={{flex: 1}} />
-              <XDSNumberInput
+              <NumberInput
                 label="Radius"
                 isLabelHidden
                 value={radiusMatch ?? null}
@@ -488,17 +488,17 @@ export function EditorSections({
             </div>
           </div>
           <div>
-            <XDSHStack gap={1} vAlign="center" style={{marginBottom: 4}}>
-              <XDSText type="label" color="secondary">
+            <HStack gap={1} vAlign="center" style={{marginBottom: 4}}>
+              <Text type="label" color="secondary">
                 Spacing
-              </XDSText>
-              <XDSTooltip
+              </Text>
+              <Tooltip
                 content={`Linear scale: step N = ${spacingMatch ?? spacingBase}px × N.`}>
-                <XDSIcon icon="info" size="sm" color="secondary" />
-              </XDSTooltip>
-            </XDSHStack>
+                <Icon icon="info" size="sm" color="secondary" />
+              </Tooltip>
+            </HStack>
             <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-              <XDSToggleButtonGroup
+              <ToggleButtonGroup
                 label="Spacing preset"
                 type="single"
                 size="sm"
@@ -506,13 +506,13 @@ export function EditorSections({
                 onChange={(v: string | null) => {
                   if (v != null) {onApplySpacingScale(Number(v));}
                 }}>
-                <XDSToggleButton label="S" value="2" />
-                <XDSToggleButton label="M" value="4" />
-                <XDSToggleButton label="L" value="6" />
-                <XDSToggleButton label="XL" value="8" />
-              </XDSToggleButtonGroup>
+                <ToggleButton label="S" value="2" />
+                <ToggleButton label="M" value="4" />
+                <ToggleButton label="L" value="6" />
+                <ToggleButton label="XL" value="8" />
+              </ToggleButtonGroup>
               <div style={{flex: 1}} />
-              <XDSNumberInput
+              <NumberInput
                 label="Spacing"
                 isLabelHidden
                 value={spacingMatch ?? null}
@@ -527,17 +527,17 @@ export function EditorSections({
             </div>
           </div>
           <div>
-            <XDSHStack gap={1} vAlign="center" style={{marginBottom: 4}}>
-              <XDSText type="label" color="secondary">
+            <HStack gap={1} vAlign="center" style={{marginBottom: 4}}>
+              <Text type="label" color="secondary">
                 Element Size
-              </XDSText>
-              <XDSTooltip
+              </Text>
+              <Tooltip
                 content={`sm = ${(sizeMatch ?? sizeBase) - 4}px, md = ${sizeMatch ?? sizeBase}px, lg = ${(sizeMatch ?? sizeBase) + 4}px.`}>
-                <XDSIcon icon="info" size="sm" color="secondary" />
-              </XDSTooltip>
-            </XDSHStack>
+                <Icon icon="info" size="sm" color="secondary" />
+              </Tooltip>
+            </HStack>
             <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-              <XDSToggleButtonGroup
+              <ToggleButtonGroup
                 label="Element size preset"
                 type="single"
                 size="sm"
@@ -545,13 +545,13 @@ export function EditorSections({
                 onChange={(v: string | null) => {
                   if (v != null) {onApplySizeScale(Number(v));}
                 }}>
-                <XDSToggleButton label="S" value="28" />
-                <XDSToggleButton label="M" value="32" />
-                <XDSToggleButton label="L" value="40" />
-                <XDSToggleButton label="XL" value="48" />
-              </XDSToggleButtonGroup>
+                <ToggleButton label="S" value="28" />
+                <ToggleButton label="M" value="32" />
+                <ToggleButton label="L" value="40" />
+                <ToggleButton label="XL" value="48" />
+              </ToggleButtonGroup>
               <div style={{flex: 1}} />
-              <XDSNumberInput
+              <NumberInput
                 label="Element size"
                 isLabelHidden
                 value={sizeMatch ?? null}
@@ -565,22 +565,22 @@ export function EditorSections({
               />
             </div>
           </div>
-        </XDSVStack>
-      </XDSVStack>
+        </VStack>
+      </VStack>
 
       {/* Motion Section */}
-      <XDSVStack gap={3}>
-        <XDSHStack gap={1} vAlign="center" style={{marginBottom: 4}}>
-          <XDSText type="label" color="secondary">
+      <VStack gap={3}>
+        <HStack gap={1} vAlign="center" style={{marginBottom: 4}}>
+          <Text type="label" color="secondary">
             Duration
-          </XDSText>
-          <XDSTooltip
+          </Text>
+          <Tooltip
             content={`Speed multiplier for all motion. Current: ${durationStep}× (e.g. medium = ${Math.round(410 / durationStep)}ms).`}>
-            <XDSIcon icon="info" size="sm" color="secondary" />
-          </XDSTooltip>
-        </XDSHStack>
+            <Icon icon="info" size="sm" color="secondary" />
+          </Tooltip>
+        </HStack>
         <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-          <XDSToggleButtonGroup
+          <ToggleButtonGroup
             label="Duration preset"
             type="single"
             size="sm"
@@ -588,13 +588,13 @@ export function EditorSections({
             onChange={(v: string | null) => {
               if (v != null) {onApplyDurationScale(Number(v));}
             }}>
-            <XDSToggleButton label="0.5×" value="0.5" />
-            <XDSToggleButton label="1×" value="1" />
-            <XDSToggleButton label="1.5×" value="1.5" />
-            <XDSToggleButton label="2×" value="2" />
-          </XDSToggleButtonGroup>
+            <ToggleButton label="0.5×" value="0.5" />
+            <ToggleButton label="1×" value="1" />
+            <ToggleButton label="1.5×" value="1.5" />
+            <ToggleButton label="2×" value="2" />
+          </ToggleButtonGroup>
           <div style={{flex: 1}} />
-          <XDSNumberInput
+          <NumberInput
             label="Duration"
             isLabelHidden
             value={durationStep}
@@ -608,7 +608,7 @@ export function EditorSections({
             size="sm"
           />
         </div>
-      </XDSVStack>
-    </XDSVStack>
+      </VStack>
+    </VStack>
   );
 }

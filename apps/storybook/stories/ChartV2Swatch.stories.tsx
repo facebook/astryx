@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSChartV2Swatch} from '@xds/lab';
+import {ChartV2Swatch} from '@xds/lab';
 
-const meta: Meta<typeof XDSChartV2Swatch> = {
+const meta: Meta<typeof ChartV2Swatch> = {
   title: 'Lab/ChartV2Swatch',
-  component: XDSChartV2Swatch,
+  component: ChartV2Swatch,
   argTypes: {
     color: {control: 'color'},
     variant: {
