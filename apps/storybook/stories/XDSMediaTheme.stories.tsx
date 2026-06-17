@@ -49,7 +49,6 @@ function OnDarkDemo() {
       <XDSMediaTheme mode="dark">
         <XDSStack gap={3}>
           <XDSText>
-            
             Content on a dark surface: text, icons, and interactive elements
             automatically adapt.
           </XDSText>
@@ -108,7 +107,6 @@ function OnLightDemo() {
           <XDSMediaTheme mode="light">
             <XDSStack gap={3}>
               <XDSText>
-                
                 Content on a light surface in dark mode: text and icons become
                 dark.
               </XDSText>
@@ -234,7 +232,6 @@ function ComponentOverrideBoundaryDemo() {
     <XDSTheme theme={brutalistTheme}>
       <XDSStack gap={4}>
         <XDSText weight="semibold">
-          
           Brutalist theme, notice the component overrides: pill buttons,
           uppercase text, thick card borders, bordered ghost buttons.
         </XDSText>
@@ -390,7 +387,7 @@ function CustomOverridesDemo() {
     <XDSTheme theme={customTheme}>
       <XDSStack gap={3}>
         <XDSText>
-          This theme has a custom <code>onDark</code>  config; the accent color
+          This theme has a custom <code>onDark</code> config; the accent color
           on dark surfaces is a lighter purple instead of plain white.
         </XDSText>
         <div

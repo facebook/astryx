@@ -96,7 +96,6 @@ export const Default: Story = {
     return (
       <div style={{maxWidth: 600}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
-          
           Drag the right edge of any column header to resize. The last
           proportional column has no handle; it flexes to fill remaining space.
         </p>

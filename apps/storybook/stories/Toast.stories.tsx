@@ -289,7 +289,6 @@ export const NoProvider: StoryObj = {
       <XDSCard padding={4}>
         <XDSStack gap={2}>
           <p style={{margin: 0, fontSize: 14}}>
-            
             No XDSLayerProvider: the hook creates a fallback viewport on
             document.body automatically.
           </p>
@@ -348,7 +347,6 @@ function DialogToastContent({onClose}: {onClose: () => void}) {
   return (
     <XDSStack gap={3}>
       <p>
-        
         This dialog has its own toast viewport. Toasts fired here render inside
         the dialog, above its overlay.
       </p>

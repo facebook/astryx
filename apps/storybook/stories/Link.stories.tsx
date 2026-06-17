@@ -371,7 +371,6 @@ export const LinkVsButtonComparison: Story = {
         </div>
       </div>
       <XDSText type="body" size="sm" color="secondary">
-        
         Both look the same, but inspect the DOM to see the semantic difference.
       </XDSText>
     </div>
