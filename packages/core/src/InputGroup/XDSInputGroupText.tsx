@@ -92,10 +92,12 @@ export function XDSInputGroupText({
   xstyle,
   className,
   style,
+  ...rest
 }: XDSInputGroupTextProps) {
   return (
     <div
       ref={ref}
+      {...rest}
       {...mergeProps(
         xdsThemeProps('input-group-text'),
         stylex.props(styles.text, xstyle),
