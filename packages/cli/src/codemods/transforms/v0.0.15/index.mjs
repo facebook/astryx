@@ -34,6 +34,10 @@ import dropXdsPrefixImports, {
   meta as dropXdsPrefixImportsMeta,
 } from './drop-xds-prefix-imports.mjs';
 
+import rebrandXdsCssNamespace, {
+  meta as rebrandXdsCssNamespaceMeta,
+} from './rebrand-xds-css-namespace.mjs';
+
 export default [
   {
     name: 'rename-date-picker-to-input',
@@ -73,6 +77,15 @@ export default [
     name: 'drop-xds-prefix-imports',
     transform: dropXdsPrefixImports,
     meta: dropXdsPrefixImportsMeta,
+    optional: true,
+  },
+  {
+    // XDS-prefix migration (P2380608025). Optional + not version-tied:
+    // consumers run it explicitly to rebrand override CSS/markup, e.g.
+    //   xds upgrade --codemod rebrand-xds-css-namespace --codemod-only --apply
+    name: 'rebrand-xds-css-namespace',
+    transform: rebrandXdsCssNamespace,
+    meta: rebrandXdsCssNamespaceMeta,
     optional: true,
   },
 ];
