@@ -227,6 +227,11 @@ export const docsZh = {
       {
         guidance: true,
         description:
+          'Use renderOption for custom option rows. Do not pass XDSSelectorOption directly as JSX children.',
+      },
+      {
+        guidance: true,
+        description:
           'Set a meaningful placeholder that hints at the expected selection (e.g. "Choose a country" not "Select...").',
       },
       {
@@ -305,6 +310,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Use sections and dividers to organize options when the list exceeds ~8 items.',
+      },
+      {
+        guidance: true,
+        description:
+          'renderOption for custom rows; do not pass XDSSelectorOption as JSX children.',
       },
       {
         guidance: true,
