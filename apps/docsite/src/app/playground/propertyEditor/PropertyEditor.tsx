@@ -1,14 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file PropertyPanel.tsx
+ * @file PropertyEditor.tsx
  * @input Current editor code + the selected instance + onCodeChange callback
  * @output Literal-bound prop knobs for one component instance + "Apply" footer
  * @position Playground in-preview "Properties" popover (anchored to the selection badge).
  *
  * Parses the code and renders the docs-style props table for the externally
  * selected component instance. Changing a knob performs a targeted source-range
- * edit (see babelParser) against a local draft; edits are buffered and only
+ * edit (see componentInstances) against a local draft; edits are buffered and only
  * written back through onCodeChange when the user clicks "Apply" (pinned at the
  * bottom of the popover, outside the scroll area). Only literal props (boolean /
  * enum / string / number) are editable; enum controls preserve typed option
@@ -28,14 +28,15 @@ import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSEmptyState} from '@xds/core/EmptyState';
 import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSCenter} from '@xds/core/Center';
 import {XDSButton} from '@xds/core/Button';
 import {
   coerceDefault,
   coerceEnumOption,
   parsePropType,
   type PropControlDescriptor,
-} from '../../components/component-detail/parsePropType';
-import type {PropDoc} from '../../generated/componentRegistry';
+} from '../../../components/component-detail/parsePropType';
+import type {PropDoc} from '../../../generated/componentRegistry';
 import {
   analyzeCode,
   formatAttr,
@@ -43,8 +44,8 @@ import {
   setAttribute,
   type AttrInfo,
   type InstanceInfo,
-} from './babelParser';
-import {getComponentByModule} from './usedComponents';
+} from './componentInstances';
+import {getComponentByModule} from './componentLookup';
 
 const NUMERIC_RE = /^-?\d+(\.\d+)?$/;
 
@@ -62,9 +63,6 @@ const s = stylex.create({
   },
   emptyWrap: {
     flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
     padding: 'var(--spacing-6)',
   },
 });
@@ -81,7 +79,7 @@ function isEditable(control: PropControlDescriptor, attr?: AttrInfo): boolean {
   );
 }
 
-// Prop types that have no inline control in the popover panel and so are
+// Prop types that have no inline control in the popover and so are
 // hidden entirely (ReactNode parses to a string control but isn't meaningfully
 // editable here; StyleXStyles/AriaRole have no control at all).
 const UNSUPPORTED_PROP_TYPES = new Set([
@@ -90,7 +88,7 @@ const UNSUPPORTED_PROP_TYPES = new Set([
   'AriaRole',
 ]);
 
-/** Whether a prop can be edited through the panel (and should be shown). */
+/** Whether a prop can be edited through the editor (and should be shown). */
 function isSupportedProp(prop: PropDoc): boolean {
   if (UNSUPPORTED_PROP_TYPES.has(prop.type.trim())) {
     return false;
@@ -239,7 +237,7 @@ interface ExternalSelection {
   instanceIndex: number;
 }
 
-interface PropertyPanelProps {
+interface PropertyEditorProps {
   code: string;
   onCodeChange: (code: string) => void;
   /** The component instance to edit (chosen via the in-preview selection). */
@@ -248,12 +246,12 @@ interface PropertyPanelProps {
   onApplied?: () => void;
 }
 
-export function PropertyPanel({
+export function PropertyEditor({
   code,
   onCodeChange,
   externalSelection,
   onApplied,
-}: PropertyPanelProps) {
+}: PropertyEditorProps) {
   const {component: selected, instanceIndex} = externalSelection;
   const lastInstances = useRef<InstanceInfo[]>([]);
 
@@ -290,13 +288,13 @@ export function PropertyPanel({
 
   if (instances.length === 0) {
     return (
-      <div {...stylex.props(s.emptyWrap)}>
+      <XDSCenter xstyle={s.emptyWrap}>
         <XDSEmptyState
           title="No components detected"
           description="Add a component in the Code tab to view properties."
           isCompact
         />
-      </div>
+      </XDSCenter>
     );
   }
 

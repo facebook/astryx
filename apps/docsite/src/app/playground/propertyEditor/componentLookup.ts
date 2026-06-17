@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file usedComponents.ts
+ * @file componentLookup.ts
  * @input Generated component registry
  * @output Module-name → ComponentEntry lookup
  * @position Playground Properties popover support.
@@ -10,7 +10,7 @@
 import {
   components,
   type ComponentEntry,
-} from '../../generated/componentRegistry';
+} from '../../../generated/componentRegistry';
 
 const byModuleName: Map<string, ComponentEntry> = (() => {
   const map = new Map<string, ComponentEntry>();

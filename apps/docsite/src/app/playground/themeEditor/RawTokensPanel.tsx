@@ -2,7 +2,9 @@
 
 'use client';
 
-import * as React from 'react';
+import {useState} from 'react';
+import type {ReactNode} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {XDSText} from '@xds/core/Text';
 import {XDSVStack} from '@xds/core/Stack';
 import {XDSTextInput} from '@xds/core/TextInput';
@@ -33,6 +35,54 @@ import {ColorSwatch} from './ColorSwatch';
 import {TokenRow} from './TokenRow';
 import {COLOR_CATEGORIES, TYPOGRAPHY_CATEGORIES} from './constants';
 
+const s = stylex.create({
+  scrollX: {
+    overflowX: 'auto',
+  },
+  categoryHeading: {
+    display: 'block',
+    paddingTop: 'var(--spacing-2)',
+    paddingBottom: 'var(--spacing-1)',
+  },
+  spacingPreview: {
+    height: 24,
+    backgroundColor: 'var(--color-accent)',
+    borderRadius: 4,
+    flexShrink: 0,
+  },
+  radiusPreview: {
+    width: 32,
+    height: 32,
+    backgroundColor: 'var(--color-accent)',
+    flexShrink: 0,
+  },
+  typePreview: {
+    width: 48,
+    height: 32,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: 'var(--color-text-primary)',
+    flexShrink: 0,
+  },
+  inputSm: {
+    width: 80,
+  },
+  inputLg: {
+    width: 200,
+  },
+});
+
+const dynamic = stylex.create({
+  spacingWidth: (width: number) => ({width}),
+  radius: (radius: string) => ({borderRadius: radius}),
+  font: (
+    fontSize: string,
+    fontWeight: string | number,
+    fontFamily: string,
+  ) => ({fontSize, fontWeight, fontFamily}),
+});
+
 const TOKEN_GROUPS = {
   colors: {label: 'Colors', tokens: colorDefaults},
   spacing: {label: 'Spacing', tokens: spacingDefaults},
@@ -49,7 +99,7 @@ const TOKEN_GROUPS = {
 
 type TokenGroupKey = keyof typeof TOKEN_GROUPS;
 
-const TOKEN_ICONS: Record<TokenGroupKey, React.ReactNode> = {
+const TOKEN_ICONS: Record<TokenGroupKey, ReactNode> = {
   colors: <PaletteOutline16Icon />,
   spacing: <FourRectangleGridOutline16Icon />,
   radius: <FrameDashedOutline16Icon />,
@@ -60,92 +110,61 @@ const TOKEN_ICONS: Record<TokenGroupKey, React.ReactNode> = {
   easing: <BoltOutline16Icon />,
 };
 
-function SpacingEditor({
-  tokenName,
-  value,
-  onChange,
-}: {
+interface EditorProps {
   tokenName: string;
   value: string;
   onChange: (name: string, value: string) => void;
-}) {
+}
+
+function SpacingEditor({tokenName, value, onChange}: EditorProps) {
   const numValue = parseInt(value, 10);
   return (
     <TokenRow
       tokenName={tokenName}
       preview={
         <div
-          style={{
-            width: Math.min(numValue, 48),
-            height: 24,
-            backgroundColor: 'var(--color-accent)',
-            borderRadius: 4,
-            flexShrink: 0,
-          }}
+          {...stylex.props(
+            s.spacingPreview,
+            dynamic.spacingWidth(Math.min(numValue, 48)),
+          )}
         />
       }
       input={
-        <div style={{width: 80}}>
-          <XDSTextInput
-            label="Value"
-            isLabelHidden
-            value={value}
-            onChange={val => onChange(tokenName, val)}
-            size="sm"
-          />
-        </div>
+        <XDSTextInput
+          label="Value"
+          isLabelHidden
+          value={value}
+          onChange={val => onChange(tokenName, val)}
+          size="sm"
+          xstyle={s.inputSm}
+        />
       }
     />
   );
 }
 
-function RadiusEditor({
-  tokenName,
-  value,
-  onChange,
-}: {
-  tokenName: string;
-  value: string;
-  onChange: (name: string, value: string) => void;
-}) {
+function RadiusEditor({tokenName, value, onChange}: EditorProps) {
   return (
     <TokenRow
       tokenName={tokenName}
       preview={
-        <div
-          style={{
-            width: 32,
-            height: 32,
-            backgroundColor: 'var(--color-accent)',
-            borderRadius: value,
-            flexShrink: 0,
-          }}
-        />
+        <div {...stylex.props(s.radiusPreview, dynamic.radius(value))} />
       }
       input={
-        <div style={{width: 80}}>
-          <XDSTextInput
-            label="Value"
-            isLabelHidden
-            value={value}
-            onChange={val => onChange(tokenName, val)}
-            size="sm"
-          />
-        </div>
+        <XDSTextInput
+          label="Value"
+          isLabelHidden
+          value={value}
+          onChange={val => onChange(tokenName, val)}
+          size="sm"
+          xstyle={s.inputSm}
+        />
       }
     />
   );
 }
 
-function TypographyEditor({
-  tokenName,
-  value,
-  onChange,
-}: {
-  tokenName: string;
-  value: string;
-  onChange: (name: string, value: string) => void;
-}) {
+function TypographyEditor({tokenName, value, onChange}: EditorProps) {
   const isFont = tokenName.includes('font-') && !tokenName.includes('weight');
   const isSize = tokenName.includes('text-') && tokenName.includes('size');
   const isWeight = tokenName.includes('weight');
@@ -155,58 +174,44 @@ function TypographyEditor({
       tokenName={tokenName}
       preview={
         <div
-          style={{
-            width: 48,
-            height: 32,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: isSize ? value : '14px',
-            fontWeight: isWeight ? value : 400,
-            fontFamily: isFont ? value : 'inherit',
-            color: 'var(--color-text-primary)',
-            flexShrink: 0,
-          }}>
+          {...stylex.props(
+            s.typePreview,
+            dynamic.font(
+              isSize ? value : '14px',
+              isWeight ? value : 400,
+              isFont ? value : 'inherit',
+            ),
+          )}>
           Aa
         </div>
       }
       input={
-        <div style={{width: 200}}>
-          <XDSTextInput
-            label="Value"
-            isLabelHidden
-            value={value}
-            onChange={val => onChange(tokenName, val)}
-            size="sm"
-          />
-        </div>
+        <XDSTextInput
+          label="Value"
+          isLabelHidden
+          value={value}
+          onChange={val => onChange(tokenName, val)}
+          size="sm"
+          xstyle={s.inputLg}
+        />
       }
     />
   );
 }
 
-function GenericEditor({
-  tokenName,
-  value,
-  onChange,
-}: {
-  tokenName: string;
-  value: string;
-  onChange: (name: string, value: string) => void;
-}) {
+function GenericEditor({tokenName, value, onChange}: EditorProps) {
   return (
     <TokenRow
       tokenName={tokenName}
       input={
-        <div style={{width: 200}}>
-          <XDSTextInput
-            label="Value"
-            isLabelHidden
-            value={value}
-            onChange={val => onChange(tokenName, val)}
-            size="sm"
-          />
-        </div>
+        <XDSTextInput
+          label="Value"
+          isLabelHidden
+          value={value}
+          onChange={val => onChange(tokenName, val)}
+          size="sm"
+          xstyle={s.inputLg}
+        />
       }
     />
   );
@@ -223,11 +228,11 @@ export function RawTokensPanel({
   mode,
   onTokenChange,
 }: RawTokensPanelProps) {
-  const [activeGroup, setActiveGroup] = React.useState<TokenGroupKey>('colors');
+  const [activeGroup, setActiveGroup] = useState<TokenGroupKey>('colors');
 
   return (
     <XDSVStack gap={3}>
-      <div style={{overflowX: 'auto'}}>
+      <div {...stylex.props(s.scrollX)}>
         <XDSToggleButtonGroup
           label="Token category"
           type="single"
@@ -261,10 +266,7 @@ export function RawTokensPanel({
                   type="label"
                   color="primary"
                   weight="semibold"
-                  style={{
-                    padding: '8px 0 4px',
-                    display: 'block',
-                  }}>
+                  xstyle={s.categoryHeading}>
                   {category}
                 </XDSText>
                 {tokenNames
@@ -317,7 +319,7 @@ export function RawTokensPanel({
                   type="label"
                   color="primary"
                   weight="semibold"
-                  style={{padding: '8px 0 4px', display: 'block'}}>
+                  xstyle={s.categoryHeading}>
                   {category}
                 </XDSText>
                 {tokenNames.map(tokenName => (

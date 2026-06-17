@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file playgroundThemes.ts
+ * @file previewThemes.ts
  * @input generated theme registry + package registry
  * @output Selectable theme options + value→theme lookup for the playground
  * @position Playground — single source of truth for selectable themes.
@@ -15,7 +15,7 @@ import type {XDSDefinedTheme} from '@xds/core/theme';
 import {themeObjectsFull} from '../../generated/themeRegistry';
 import {packages} from '../../generated/packageRegistry';
 
-export interface PlaygroundTheme {
+interface PlaygroundTheme {
   /** Short, stable key used as the selector value + postMessage payload. */
   value: string;
   /** Human-readable label shown in the selector. */
@@ -45,9 +45,7 @@ function toLabel(packageName: string, shortName: string): string {
   return base.charAt(0).toUpperCase() + base.slice(1);
 }
 
-export const PLAYGROUND_THEMES: PlaygroundTheme[] = Object.entries(
-  themeObjectsFull,
-)
+const PLAYGROUND_THEMES: PlaygroundTheme[] = Object.entries(themeObjectsFull)
   .map(([packageName, theme]) => {
     const value = toShortName(packageName);
     return {value, label: toLabel(packageName, value), theme};

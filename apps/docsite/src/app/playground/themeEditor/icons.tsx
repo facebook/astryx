@@ -7,11 +7,8 @@
  * 16px size the editor expects, so the ported component code stays unchanged.
  */
 
-import * as React from 'react';
+import type {ComponentType, ReactElement} from 'react';
 import {
-  ArrowLeft,
-  Sun,
-  Moon,
   Palette,
   LayoutGrid,
   Copy,
@@ -24,13 +21,8 @@ import {
 } from 'lucide-react';
 
 const sized =
-  (Icon: React.ComponentType<LucideProps>) =>
-  (props: LucideProps): React.ReactElement => <Icon size={16} {...props} />;
-
-// ThemeEditorView
-export const ArrowLeftFilled16Icon = sized(ArrowLeft);
-export const LargeHalfCircle8RaysLargeOutline16Icon = sized(Sun);
-export const CrescentOutline16Icon = sized(Moon);
+  (Icon: ComponentType<LucideProps>) =>
+  (props: LucideProps): ReactElement => <Icon size={16} {...props} />;
 
 // RawTokensPanel token-category icons
 export const PaletteOutline16Icon = sized(Palette);

@@ -65,7 +65,7 @@ export const UNIFIED_PRESETS = {
   },
 } as const;
 
-export const RADIUS_OPTIONS = [
+const RADIUS_OPTIONS = [
   {value: 'var(--radius-none)', token: '--radius-none', label: 'None'},
   {value: 'var(--radius-inner)', token: '--radius-inner', label: 'Inner'},
   {value: 'var(--radius-element)', token: '--radius-element', label: 'Element'},
@@ -78,7 +78,7 @@ export const RADIUS_OPTIONS = [
   {value: 'var(--radius-full)', token: '--radius-full', label: 'Full'},
 ];
 
-export const SPACING_OPTIONS = [
+const SPACING_OPTIONS = [
   {value: 'var(--spacing-0-5)', token: '--spacing-0-5', label: '0.5'},
   {value: 'var(--spacing-1)', token: '--spacing-1', label: '1'},
   {value: 'var(--spacing-2)', token: '--spacing-2', label: '2'},
@@ -102,7 +102,7 @@ export function resolveOptionLabel(
   return option.label;
 }
 
-export interface ComponentVar {
+interface ComponentVar {
   name: string;
   default: string;
   description: string;

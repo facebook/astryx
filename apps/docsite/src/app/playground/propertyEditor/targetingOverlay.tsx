@@ -2,130 +2,40 @@
 
 'use client';
 
-import React, {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ErrorInfo,
-  type ReactNode,
-} from 'react';
+/**
+ * @file targetingOverlay.tsx
+ * @input Pointer events inside the preview iframe + the current clean source
+ * @output Hover/selection overlays, the selection badge, and the Properties popover
+ * @position Playground preview iframe — the element-targeting half of property editing.
+ *
+ * Runs inside the preview iframe. The hover/selection overlays and their labels
+ * are vanilla DOM (created imperatively and positioned every animation frame for
+ * performance); each label hosts a React root rendering the selection badge,
+ * whose popover embeds the PropertyEditor. The preview page drives this via
+ * createTargetingController() and the setActiveSiteMode/setCleanSource setters.
+ */
+
+import {useState} from 'react';
 import {createRoot, type Root} from 'react-dom/client';
 import * as stylex from '@stylexjs/stylex';
+import './targetingOverlay.css';
 import {Settings, X} from 'lucide-react';
 import {XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSPopover} from '@xds/core/Popover';
-import {XDSTheme, XDSMediaTheme, defineTheme} from '@xds/core/theme';
-import type {ThemeMode, XDSDefinedTheme} from '@xds/core/theme';
-import {
-  themeByValue,
-  DEFAULT_PLAYGROUND_THEME,
-} from '../../playground/playgroundThemes';
+import {XDSTheme, XDSMediaTheme} from '@xds/core/theme';
+import type {ThemeMode} from '@xds/core/theme';
 import {astryxTheme} from '../../../themes/astryx';
-import {useThemeMode} from '../../providers';
-import {PropertyPanel} from '../../playground/PropertyPanel';
-import {runCode, setTypeScript} from './runner';
-import type * as TS from 'typescript';
+import {PropertyEditor} from './PropertyEditor';
 
-const FALLBACK_THEME =
-  themeByValue[DEFAULT_PLAYGROUND_THEME] ?? Object.values(themeByValue)[0];
-
-// useLayoutEffect warns during SSR; the preview measures real DOM only on the
-// client, so fall back to useEffect on the server.
-const useIsomorphicLayoutEffect =
-  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
-
-interface ErrorBoundaryProps {
-  resetKey: unknown;
-  children: ReactNode;
-  onError: (error: Error) => void;
-}
-
-interface ErrorBoundaryState {
-  error: Error | null;
-}
-
-class ErrorBoundary extends React.Component<
-  ErrorBoundaryProps,
-  ErrorBoundaryState
-> {
-  state: ErrorBoundaryState = {error: null};
-
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return {error};
-  }
-
-  componentDidCatch(error: Error, _info: ErrorInfo): void {
-    this.props.onError(error);
-  }
-
-  componentDidUpdate(prevProps: ErrorBoundaryProps): void {
-    if (prevProps.resetKey !== this.props.resetKey && this.state.error) {
-      this.setState({error: null});
-    }
-  }
-
-  render(): ReactNode {
-    if (this.state.error) {
-      return <ErrorDisplay message={this.state.error.message} />;
-    }
-    return this.props.children;
-  }
-}
-
-function ErrorDisplay({message}: {message: string}) {
-  const [expanded, setExpanded] = useState(false);
-  const preview = message.length > 120 ? message.slice(0, 120) + '…' : message;
-
-  return (
-    <div
-      style={{
-        padding: 16,
-        fontFamily: 'ui-monospace, monospace',
-        fontSize: 13,
-        color: '#ef4444',
-        lineHeight: 1.5,
-      }}>
-      <div
-        style={{fontWeight: 600, marginBottom: 8, cursor: 'pointer'}}
-        onClick={() => setExpanded(e => !e)}>
-        ⚠ Render Error {message.length > 120 && (expanded ? '▾' : '▸')}
-      </div>
-      <pre style={{whiteSpace: 'pre-wrap', margin: 0}}>
-        {expanded ? message : preview}
-      </pre>
-    </div>
-  );
-}
-
-type PreviewMessage =
-  | {type: 'preview-ping'}
-  | {type: 'preview-code'; code: string; source: string}
-  | {type: 'preview-clear'}
-  | {
-      type: 'preview-theme';
-      mode?: string;
-      theme?: string;
-      // A custom theme authored in the editor. Sent as raw token map +
-      // components (not a defineTheme result) so the payload stays reliably
-      // structured-clone-safe across postMessage; the iframe rebuilds it.
-      customTokens?: Record<string, string>;
-      customComponents?: unknown;
-    }
-  | {type: 'targeting-enable'}
-  | {type: 'targeting-disable'};
-
-// Blue label for selected instance with a popover for its properties
 const styles = stylex.create({
   badge: {minHeight: 32},
   badgeActions: {marginRight: -10},
   popover: {paddingBlock: 0, paddingInline: 0},
 });
 
+// Blue label for a selected instance with a popover for its properties.
 function TargetLabel({
   name,
   isInteractive,
@@ -185,7 +95,7 @@ function TargetLabel({
       onOpenChange={setIsOpen}
       xstyle={styles.popover}
       content={
-        <PropertyPanel
+        <PropertyEditor
           code={code}
           onCodeChange={onCodeChange}
           externalSelection={{component, instanceIndex}}
@@ -207,6 +117,16 @@ const activeLabels = new Set<HTMLDivElement>();
 let activeSiteMode: ThemeMode = 'light';
 
 let cleanSource = '';
+
+/** The site color mode the badges render in (set by the preview page). */
+export function setActiveSiteMode(mode: ThemeMode) {
+  activeSiteMode = mode;
+}
+
+/** The un-annotated source the popover's PropertyEditor edits against. */
+export function setCleanSource(source: string) {
+  cleanSource = source;
+}
 
 function postEditToParent(code: string) {
   window.parent.postMessage({type: 'preview-edit-code', code}, '*');
@@ -252,7 +172,8 @@ function setTargetLabelText(label: HTMLDivElement, value: string) {
   renderTargetLabel(label);
 }
 
-function refreshTargetLabels() {
+/** Re-render every live badge (e.g. after the site mode or source changes). */
+export function refreshTargetLabels() {
   for (const label of activeLabels) {
     renderTargetLabel(label);
   }
@@ -301,7 +222,7 @@ function updateSelectionPosition() {
   overlay.dataset.visible = 'true';
 
   // Carry the full id (Component#index) so the selection badge's popover can
-  // scope its PropertyPanel to this exact instance. Re-render only when the
+  // scope its PropertyEditor to this exact instance. Re-render only when the
   // name or id actually changes (this runs every animation frame).
   const sep = id.lastIndexOf('#');
   const name = sep >= 0 ? id.slice(0, sep) : id;
@@ -351,7 +272,7 @@ function clearSelectionOverlay() {
  * intercepts pointer events to highlight hovered XDS components and report
  * clicks back to the parent frame.
  */
-function createTargetingController(
+export function createTargetingController(
   postToParent: (msg: Record<string, unknown>) => void,
 ) {
   let enabled = false;
@@ -531,243 +452,4 @@ function createTargetingController(
   }
 
   return {enable, disable, clearSelection};
-}
-
-function isPreviewMessage(data: unknown): data is PreviewMessage {
-  return (
-    typeof data === 'object' &&
-    data !== null &&
-    'type' in data &&
-    typeof (data as {type: unknown}).type === 'string'
-  );
-}
-
-export default function PreviewPage() {
-  const [Component, setComponent] = useState<React.ComponentType | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [themeMode, setThemeMode] = useState<ThemeMode>('system');
-  const [themeName, setThemeName] = useState(DEFAULT_PLAYGROUND_THEME);
-  // A custom theme authored in the playground theme editor. When set it takes
-  // precedence over the registered theme resolved from themeName.
-  const [customTheme, setCustomTheme] = useState<XDSDefinedTheme | null>(null);
-  const [resetKey, setResetKey] = useState(0);
-  const [tsReady, setTsReady] = useState(false);
-  // Whether the rendered output should fill the stage (full-page templates) vs
-  // be centered as a small example. Defaults to fill so templates are never
-  // shrunk; the layout effect downgrades small content to centered.
-  const [fill, setFill] = useState(true);
-  const readyRef = useRef(false);
-  const stageRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  // Load the TypeScript compiler from public/vendor — self-hosted because
-  // corpnet blocks external CDNs. The UMD sets window.ts in the browser
-  // (this iframe has no AMD loader, so there's no define() conflict).
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = '/vendor/typescript.js';
-    script.onload = () => {
-      const w = window as unknown as {ts?: typeof TS};
-      if (w.ts) {
-        setTypeScript(w.ts);
-        setTsReady(true);
-      }
-    };
-    document.head.appendChild(script);
-  }, []);
-
-  const theme = customTheme ?? themeByValue[themeName] ?? FALLBACK_THEME;
-
-  const postToParent = useCallback((msg: Record<string, unknown>) => {
-    window.parent.postMessage(msg, '*');
-  }, []);
-
-  const targetingRef = useRef<ReturnType<
-    typeof createTargetingController
-  > | null>(null);
-  if (targetingRef.current == null && typeof window !== 'undefined') {
-    targetingRef.current = createTargetingController(postToParent);
-  }
-
-  const handleCode = useCallback(
-    (code: string) => {
-      const result = runCode(code);
-      if (result.Component) {
-        setComponent(() => result.Component);
-        setError(null);
-        // Intentionally do NOT clear the selection overlay here: a prop edit
-        // from the badge popover re-renders the component, and the popover
-        // must stay anchored to the (still-present) selection badge. The rAF
-        // tracker re-attaches to the same data-pg-id, and updateSelectionPosition
-        // hides the overlay on its own if the selected element disappears.
-        setFill(true);
-        setResetKey(k => k + 1);
-        postToParent({type: 'preview-rendered'});
-      } else {
-        setComponent(null);
-        setError(`[${result.phase}] ${result.error}`);
-        postToParent({
-          type: 'preview-error',
-          error: result.error,
-          phase: result.phase,
-        });
-      }
-    },
-    [postToParent],
-  );
-
-  const handleClear = useCallback(() => {
-    setComponent(null);
-    setError(null);
-  }, []);
-
-  const handleTheme = useCallback(
-    (msg: {
-      mode?: string;
-      theme?: string;
-      customTokens?: Record<string, string>;
-      customComponents?: unknown;
-    }) => {
-      if (
-        msg.mode === 'light' ||
-        msg.mode === 'dark' ||
-        msg.mode === 'system'
-      ) {
-        setThemeMode(msg.mode);
-      }
-      if (msg.customTokens) {
-        setCustomTheme(
-          defineTheme({
-            name: 'custom',
-            tokens: msg.customTokens,
-            components: msg.customComponents as XDSDefinedTheme['components'],
-          }),
-        );
-      } else {
-        // No custom tokens — fall back to the registered theme by key.
-        setCustomTheme(null);
-        if (msg.theme && msg.theme in themeByValue) {
-          setThemeName(msg.theme);
-        }
-      }
-    },
-    [],
-  );
-
-  useEffect(() => {
-    if (!tsReady) {
-      return;
-    }
-
-    function onMessage(event: MessageEvent) {
-      if (!isPreviewMessage(event.data)) {
-        return;
-      }
-
-      switch (event.data.type) {
-        case 'preview-ping':
-          postToParent({type: 'preview-ready'});
-          break;
-        case 'preview-code':
-          // Keep the clean source current for the badge popover, then refresh
-          // any live badges so an open popover re-parses against it.
-          cleanSource = event.data.source ?? event.data.code;
-          refreshTargetLabels();
-          handleCode(event.data.code);
-          break;
-        case 'preview-clear':
-          handleClear();
-          break;
-        case 'preview-theme':
-          handleTheme(event.data);
-          break;
-        case 'targeting-enable':
-          targetingRef.current?.enable();
-          break;
-        case 'targeting-disable':
-          targetingRef.current?.disable();
-          break;
-      }
-    }
-
-    window.addEventListener('message', onMessage);
-
-    if (!readyRef.current) {
-      readyRef.current = true;
-      postToParent({type: 'preview-ready'});
-    }
-
-    return () => window.removeEventListener('message', onMessage);
-  }, [tsReady, postToParent, handleCode, handleClear, handleTheme]);
-
-  // After each successful render (measured in fill/block layout), decide
-  // whether the content is a small example that should be centered. Full-page
-  // templates (e.g. XDSAppShell at 100dvh) fill a dimension and stay as-is.
-  useIsomorphicLayoutEffect(() => {
-    const stage = stageRef.current;
-    const root = contentRef.current?.firstElementChild as HTMLElement | null;
-    if (!stage || !root) {
-      return;
-    }
-    const rect = root.getBoundingClientRect();
-    const fillsWidth = rect.width >= stage.clientWidth - 2;
-    const fillsHeight = rect.height >= stage.clientHeight - 2;
-    setFill(fillsWidth || fillsHeight);
-  }, [resetKey]);
-
-  const handleBoundaryError = useCallback(
-    (err: Error) => {
-      postToParent({
-        type: 'preview-error',
-        error: err.message,
-        phase: 'runtime',
-      });
-    },
-    [postToParent],
-  );
-
-  // Keep the overlay badges (rendered in their own roots, outside this React
-  // tree) on the site theme but matching the site's light/dark mode.
-  const {mode: siteMode} = useThemeMode();
-  useEffect(() => {
-    activeSiteMode = siteMode;
-    refreshTargetLabels();
-  }, [siteMode]);
-
-  const stageStyle: CSSProperties = fill
-    ? {
-        // Definite height so templates sized with `height: 100%` resolve.
-        height: '100%',
-        minHeight: '100%',
-        display: 'block',
-        backgroundColor: 'var(--color-background-surface)',
-      }
-    : {
-        minHeight: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 'var(--spacing-4, 16px)',
-        boxSizing: 'border-box',
-        backgroundColor: 'var(--color-background-surface)',
-      };
-
-  const contentStyle: CSSProperties = fill
-    ? {height: '100%', width: '100%'}
-    : {};
-
-  return (
-    <XDSTheme theme={theme} mode={themeMode}>
-      <div ref={stageRef} style={stageStyle}>
-        {error && <ErrorDisplay message={error} />}
-        {Component && (
-          <div ref={contentRef} style={contentStyle}>
-            <ErrorBoundary resetKey={resetKey} onError={handleBoundaryError}>
-              <Component />
-            </ErrorBoundary>
-          </div>
-        )}
-      </div>
-    </XDSTheme>
-  );
 }
