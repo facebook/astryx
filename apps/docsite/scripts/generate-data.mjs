@@ -406,8 +406,10 @@ async function generateComponentRegistry() {
           // .doc.mjs file. Inherits family fields (group, category, keywords,
           // theming, playground, importPath) from the directory's primary doc
           // unless the sub-component doc overrides them; owns its name,
-          // description, props, and usage. Produces a registry
-          // entry identical to the legacy inline `components[]` expansion.
+          // description, props, and usage. When no usage block is authored,
+          // use the sub-component description as the usage summary instead of
+          // inheriting parent prose. Produces a registry entry identical to the
+          // legacy inline `components[]` expansion.
           const parentMeta = dirPrimaryMeta || {};
           const subName = (doc.name || '').replace(/^XDS/, '');
           if (subName) {
@@ -439,9 +441,9 @@ async function generateComponentRegistry() {
                   : [],
               usage: doc.usage
                 ? sanitizeForJson(doc.usage)
-                : isHookEntry && doc.description
+                : doc.description
                   ? {description: doc.description}
-                  : parentMeta.usage ?? null,
+                  : null,
               theming: isHookEntry
                 ? null
                 : doc.theming
