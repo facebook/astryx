@@ -23,8 +23,8 @@ export const docs = {
   props: [
     {
       name: 'type',
-      type: "'body' | 'large' | 'label' | 'supporting' | 'code'",
-      description: 'Semantic text type. Determines size, weight, and line-height from the theme.',
+      type: "'body' | 'large' | 'label' | 'supporting' | 'code' | 'display-1' | 'display-2' | 'display-3'",
+      description: 'Semantic text type. Determines size, weight, and line-height from the theme. Note: this prop is called `type`, not `variant`.',
       default: "'body'",
     },
     {
@@ -125,6 +125,8 @@ export const docs = {
       { guidance: false, description: 'Override size and weight when a semantic type already matches \u2014 extra overrides fight the theme and break when themes change.' },
       { guidance: false, description: 'Skip heading levels in the document outline \u2014 go h1 then h2 then h3, never h1 then h3.' },
       { guidance: false, description: 'Use raw HTML tags like <p>, <h1>\u2013<h6>, or <span> for text \u2014 XDSText and XDSHeading apply the correct theme tokens automatically.' },
+      { guidance: false, description: 'Pass a `variant` prop \u2014 XDSText does not have a `variant` prop. Use `type` for semantic styling (body, label, large, supporting, code) or use XDSHeading for headings.' },
+      { guidance: false, description: 'Use XDSText for headings \u2014 use XDSHeading with a `level` prop (1\u20136) for section titles and headings.' },
     ],
   },
 };
@@ -142,6 +144,8 @@ export const docsZh = {
       { guidance: false, description: 'Override size and weight when a semantic type already matches \u2014 extra overrides fight the theme and break when themes change.' },
       { guidance: false, description: 'Skip heading levels in the document outline \u2014 go h1 then h2 then h3, never h1 then h3.' },
       { guidance: false, description: 'Use raw HTML tags like <p>, <h1>\u2013<h6>, or <span> for text \u2014 XDSText and XDSHeading apply the correct theme tokens automatically.' },
+      { guidance: false, description: 'Pass a `variant` prop \u2014 XDSText does not have a `variant` prop. Use `type` for semantic styling (body, label, large, supporting, code) or use XDSHeading for headings.' },
+      { guidance: false, description: 'Use XDSText for headings \u2014 use XDSHeading with a `level` prop (1\u20136) for section titles and headings.' },
     ],
   },
 };
@@ -160,6 +164,7 @@ export const docsDense = {
       { guidance: false, description: 'Override size/weight when a semantic type already matches.' },
       { guidance: false, description: 'Skip heading levels \u2014 sequential h1 \u2192 h2 \u2192 h3.' },
       { guidance: false, description: 'Raw <p>/<h1>/<span> \u2014 use XDSText/XDSHeading for theme tokens.' },
+      { guidance: false, description: '`variant` prop \u2014 does not exist. Use `type` for text styling or XDSHeading for headings.' },
     ],
   },
 };

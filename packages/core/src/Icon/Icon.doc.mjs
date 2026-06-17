@@ -11,7 +11,7 @@ export const docs = {
     {
       name: 'icon',
       type: 'XDSIconName | ComponentType<SVGProps>',
-      description: 'Semantic icon name or SVG component. Run `npx xds docs icons` for valid names.',
+      description: 'Semantic icon name or SVG component. Run `npx xds docs icons` for valid names. Note: this prop is called `icon`, not `name`.',
       required: true,
     },
     {
@@ -43,6 +43,7 @@ export const docs = {
       { guidance: false, description: 'Resize icons with arbitrary pixel values; use the provided size props.' },
       { guidance: false, description: 'Mix icon styles (e.g. outline and filled) within the same context.' },
       { guidance: false, description: 'Render raw SVG elements; always wrap in Icon for consistent sizing and color.' },
+      { guidance: false, description: 'Pass a `name` prop \u2014 XDSIcon uses `icon` (not `name`) to specify which icon to render.' },
     ],
   },
 };
@@ -87,6 +88,7 @@ export const docsZh = {
       { guidance: false, description: 'Resize icons with arbitrary pixel values; use the provided size props.' },
       { guidance: false, description: 'Mix icon styles (e.g. outline and filled) within the same context.' },
       { guidance: false, description: 'Render raw SVG elements; always wrap in Icon for consistent sizing and color.' },
+      { guidance: false, description: 'Pass a `name` prop \u2014 XDSIcon uses `icon` (not `name`) to specify which icon to render.' },
     ],
   },
 };
@@ -106,6 +108,7 @@ export const docsDense = {
       { guidance: false, description: 'Resize icons with arbitrary pixel values; use the provided size props.' },
       { guidance: false, description: 'Mix icon styles (e.g. outline and filled) within the same context.' },
       { guidance: false, description: 'Render raw SVG elements; always wrap in Icon for consistent sizing and color.' },
+      { guidance: false, description: '`name` prop \u2014 does not exist. Use `icon` to specify which icon to render.' },
     ],
   },
   propDescriptions: {
