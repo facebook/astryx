@@ -343,7 +343,12 @@ function parsePadding(props) {
 }
 
 function expandContainerPadding(component, parsed) {
-  const prefix = `--xds-${component}-padding`;
+  // Emit the rebranded --astryx-<component>-padding tokens. The component reads
+  // them via an inverted fallback (var(--xds-*, var(--astryx-*, default))) so a
+  // legacy --xds-* override still wins during compat (XDS-prefix migration
+  // P2380608025). Keep the `astryx` literal in sync with packages/core/src/naming.ts
+  // (NAMESPACE) and the primary path in generateThemeRules.ts.
+  const prefix = `--astryx-${component}-padding`;
   const tokens = [];
 
   // Resolve effective inline values (inlineStart/End override inline)
