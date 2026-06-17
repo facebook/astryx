@@ -8,6 +8,7 @@ vi.mock('@xds/core', () => ({
   XDSBadge: () => null,
   XDSIcon: () => null,
   XDSSideNavItem: () => null,
+  XDSText: () => null,
 }));
 
 describe('component detail element resolution', () => {
@@ -37,5 +38,24 @@ describe('component detail element resolution', () => {
     expect(resolved.before.props).toMatchObject({icon: 'check', size: 'sm'});
     expect(isValidElement(resolved.children[0])).toBe(true);
     expect(resolved.children[0].props).toMatchObject({label: '3'});
+  });
+
+  it('resolves descriptor values nested inside status-like object props', () => {
+    const resolved = resolveValue({
+      status: {
+        type: 'error',
+        message: {
+          __element: 'XDSText',
+          props: {type: 'body'},
+          children: 'Bad date',
+        },
+      },
+    }) as {
+      status: {type: string; message: ReactElement<Record<string, unknown>>};
+    };
+
+    expect(resolved.status.type).toBe('error');
+    expect(isValidElement(resolved.status.message)).toBe(true);
+    expect(resolved.status.message.props.children).toBe('Bad date');
   });
 });

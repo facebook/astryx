@@ -128,6 +128,18 @@ export function parsePropType(
     return {kind: 'unknown'};
   }
 
+  // Status objects are edited as typed validation-state objects, not slot
+  // elements. Check this before slotElements so a stale/generated descriptor on
+  // a status row cannot make the preview pass a React element where components
+  // expect {type, message}.
+  if (isInputStatusType(t, propName)) {
+    return {
+      kind: 'input-status',
+      options: parseStatusOptions(t),
+      allowEmpty: true,
+    };
+  }
+
   // If slotElements is declared, use it directly for the element control
   if (slotElements && slotElements.length > 0) {
     const options = slotElements.map(el => ({
@@ -170,13 +182,6 @@ export function parsePropType(
   }
   if (t === 'SyntaxTheme') {
     return {kind: 'syntax-theme'};
-  }
-  if (isInputStatusType(t, propName)) {
-    return {
-      kind: 'input-status',
-      options: parseStatusOptions(t),
-      allowEmpty: true,
-    };
   }
   if (t === 'XDSIconType' || t === 'XDSIconName') {
     return {
