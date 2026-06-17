@@ -18,6 +18,7 @@
 import type {XDSDefinedTheme} from './defineTheme';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {getDerivedVars} from './derivedVarRegistry';
+import {cssVar} from '../naming';
 
 // =============================================================================
 // Types
@@ -144,12 +145,16 @@ function parsePadding(props: [string, string][]): ParsedPadding {
 /**
  * Expand parsed padding into component-scoped public tokens.
  *
- * Emits --xds-<component>-padding (shorthand) and directional overrides:
- *   --xds-card-padding: 20px
- *   --xds-card-padding-inline: 20px
- *   --xds-card-padding-block-start: 20px
- *   --xds-card-padding-block-end: 20px
+ * Emits the rebranded --astryx-<component>-padding tokens (shorthand +
+ * directional overrides), e.g.:
+ *   --astryx-card-padding: 20px
+ *   --astryx-card-padding-inline: 20px
+ *   --astryx-card-padding-block-start: 20px
+ *   --astryx-card-padding-block-end: 20px
  *
+ * The component reads these with an inverted fallback chain
+ * (var(--xds-*, var(--astryx-*, default))) so a legacy --xds-* override set by
+ * existing consumer code still wins during the compat window (P2380608025).
  * The container.stylex.ts default styles read these via var() fallbacks,
  * so the theme CSS sets the value and the component picks it up through
  * CSS custom property cascade — no layer competition with StyleX output.
@@ -158,7 +163,7 @@ function expandContainerPadding(
   component: string,
   parsed: ParsedPadding,
 ): [string, string][] {
-  const prefix = `--xds-${component}-padding`;
+  const prefix = cssVar(`${component}-padding`);
   const tokens: [string, string][] = [];
 
   // Resolve effective inline values (inlineStart/End override inline)
