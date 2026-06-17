@@ -49,7 +49,6 @@ import {XDSSpinner} from '../Spinner';
 import {XDSCalendar, type ISODateString, type DateRange} from '../Calendar';
 import {useXDSPopover} from '../Popover';
 import {mergeProps} from '../utils';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {xdsThemeProps} from '../utils/xdsThemeProps';
@@ -316,11 +315,6 @@ export interface XDSDateRangeInputProps extends Omit<
    * @default 2
    */
   numberOfMonths?: 1 | 2;
-
-  /**
-   * Style overrides.
-   */
-  xstyle?: StyleXStyles;
 }
 
 /**

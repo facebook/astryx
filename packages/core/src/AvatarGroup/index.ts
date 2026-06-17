@@ -17,3 +17,4 @@ export {XDSAvatarGroupOverflow} from './XDSAvatarGroupOverflow';
 export type {XDSAvatarGroupOverflowProps} from './XDSAvatarGroupOverflow';
 
 export {useXDSAvatarGroup} from './XDSAvatarGroupContext';
+export type {XDSAvatarGroupContextValue} from './XDSAvatarGroupContext';

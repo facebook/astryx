@@ -125,7 +125,7 @@ export const WithAction: StoryObj = {
     docs: {
       description: {
         story:
-          'Use `endContent` for trailing actions — buttons, links, or any content.',
+          'Use `endContent` for trailing actions: buttons, links, or any content.',
       },
     },
   },
@@ -155,7 +155,7 @@ export const ErrorPersists: StoryObj = {
     docs: {
       description: {
         story:
-          'Error toasts default to `isAutoHide: false` — they persist until the user dismisses them.',
+          'Error toasts default to `isAutoHide: false`; they persist until the user dismisses them.',
       },
     },
   },
@@ -289,7 +289,7 @@ export const NoProvider: StoryObj = {
       <XDSCard padding={4}>
         <XDSStack gap={2}>
           <p style={{margin: 0, fontSize: 14}}>
-            No XDSLayerProvider — the hook creates a fallback viewport on
+            No XDSLayerProvider: the hook creates a fallback viewport on
             document.body automatically.
           </p>
           <XDSButton
@@ -336,7 +336,7 @@ export const ToastOverDialog: StoryObj = {
     docs: {
       description: {
         story:
-          "Dialog with its own `XDSToastViewport` — toasts render inside the dialog's top layer context and appear above the dialog overlay.",
+          "Dialog with its own `XDSToastViewport`: toasts render inside the dialog's top layer context and appear above the dialog overlay.",
       },
     },
   },
@@ -348,7 +348,7 @@ function DialogToastContent({onClose}: {onClose: () => void}) {
     <XDSStack gap={3}>
       <p>
         This dialog has its own toast viewport. Toasts fired here render inside
-        the dialog — above its overlay.
+        the dialog, above its overlay.
       </p>
       <XDSStack direction="horizontal" gap={2} wrap="wrap">
         <XDSButton label="Close" variant="secondary" onClick={onClose} />

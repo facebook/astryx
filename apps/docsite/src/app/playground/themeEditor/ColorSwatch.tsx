@@ -2,6 +2,7 @@
 
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {TokenRow} from './TokenRow';
 import {
@@ -9,6 +10,40 @@ import {
   parseColorWithAlpha,
   colorWithAlphaToString,
 } from './helpers';
+
+const s = stylex.create({
+  swatch: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    border: '1px solid var(--color-border-emphasized)',
+    flexShrink: 0,
+    position: 'relative',
+  },
+  swatchInteractive: {
+    cursor: 'pointer',
+  },
+  // Native color input overlaid transparently on the swatch (XDS has no color
+  // picker), so clicking the swatch opens the OS picker.
+  colorInput: {
+    position: 'absolute',
+    inset: 0,
+    width: '100%',
+    height: '100%',
+    opacity: 0,
+    cursor: 'pointer',
+    border: 'none',
+    padding: 0,
+    zIndex: 1,
+  },
+  input: {
+    width: 120,
+  },
+});
+
+const dynamic = stylex.create({
+  fill: (color: string) => ({backgroundColor: color}),
+});
 
 export function ColorSwatch({
   tokenName,
@@ -47,41 +82,17 @@ export function ColorSwatch({
       tokenName={tokenName}
       preview={
         <div
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 6,
-            backgroundColor: displayValue,
-            border: '1px solid var(--color-border-emphasized)',
-            flexShrink: 0,
-            position: 'relative',
-            cursor: hasColorPicker ? 'pointer' : undefined,
-          }}>
-          <div
-            style={{
-              width: '100%',
-              height: '100%',
-              borderRadius: 6,
-              backgroundColor: displayValue,
-              pointerEvents: 'none',
-            }}
-          />
+          {...stylex.props(
+            s.swatch,
+            hasColorPicker && s.swatchInteractive,
+            dynamic.fill(displayValue),
+          )}>
           {hasColorPicker && colorParsed && (
             <input
               type="color"
               value={colorParsed.hex}
               onChange={e => handleColorChange(e.target.value)}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                width: '100%',
-                height: '100%',
-                opacity: 0,
-                cursor: 'pointer',
-                border: 'none',
-                padding: 0,
-                zIndex: 1,
-              }}
+              {...stylex.props(s.colorInput)}
             />
           )}
         </div>
@@ -115,7 +126,7 @@ export function ColorSwatch({
               onChange(tokenName, newValue);
             }
           }}
-          style={{width: 120}}
+          xstyle={s.input}
         />
       }
     />

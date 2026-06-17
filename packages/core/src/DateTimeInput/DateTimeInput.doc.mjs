@@ -150,7 +150,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Provide clear labels and descriptions so users understand what datetime is expected.' },
       { guidance: true, description: 'Use min and max to restrict selectable datetimes to valid ranges.' },
-      { guidance: true, description: 'Use hasClear when the datetime is optional so the user can easily reset it.' },
+      { guidance: true, description: 'Use hasClear when the datetime is optional so the user can reset it.' },
       { guidance: true, description: "Choose the hour format (12h or 24h) that matches your audience's locale." },
       { guidance: false, description: 'Use DateTimeInput when only a date is needed; use DateInput instead.' },
       { guidance: false, description: 'Use DateTimeInput when only a time is needed; use TimeInput instead.' },
@@ -177,7 +177,7 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Provide clear labels and descriptions so users understand what datetime is expected.' },
       { guidance: true, description: 'Use min and max to restrict selectable datetimes to valid ranges.' },
-      { guidance: true, description: 'Use hasClear when the datetime is optional so the user can easily reset it.' },
+      { guidance: true, description: 'Use hasClear when the datetime is optional so the user can reset it.' },
       { guidance: true, description: "Choose the hour format (12h or 24h) that matches your audience's locale." },
       { guidance: false, description: 'Use DateTimeInput when only a date is needed; use DateInput instead.' },
       { guidance: false, description: 'Use DateTimeInput when only a time is needed; use TimeInput instead.' },

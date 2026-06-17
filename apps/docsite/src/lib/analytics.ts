@@ -114,8 +114,3 @@ export function trackToggle(
 ) {
   track('toggle', props(p));
 }
-
-/** Theme exported. */
-export function trackExport(p: BaseProps) {
-  track('export', props(p));
-}

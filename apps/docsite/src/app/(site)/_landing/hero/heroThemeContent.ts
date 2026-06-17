@@ -13,7 +13,7 @@
 import type {XDSDefinedTheme} from '@xds/core/theme';
 import {packages} from '../../../../generated/packageRegistry';
 import {themeObjects} from '../../../../generated/themeRegistry';
-import {astryxTheme} from '../../../../themes/astryxTheme';
+import {astryxTheme, BRAND_BLUE} from '../../../../themes/astryxTheme';
 
 // Sentinel for the docsite's local brand theme (not an @xds/theme-* package).
 const ASTRYX = 'astryx';
@@ -294,13 +294,23 @@ function themeFor(name: string): XDSDefinedTheme | null {
   return themeObjects[name] ?? null;
 }
 
-// Default wordmark color (theme accent — a dark ink on light themes).
-const DEFAULT_WORDMARK_COLOR = 'var(--color-text-accent)';
+// Wordmark color — by default the theme's accent text token. Each theme's
+// --color-text-accent is already mode-correct (a dark ink on light themes,
+// a light ink on dark-only themes like Gothic where accent === #E8F1F6).
+const WORDMARK_COLOR = 'var(--color-text-accent)';
 
-// Per-theme wordmark overrides (dark themes need a light ink on their dark fill).
+// Per-theme wordmark overrides. Astryx is special: its theme repoints every
+// accent token to the warm primary ink (the brand blue is reserved for the
+// logo), so --color-text-accent is now near-black. The wordmark therefore
+// uses the brand blue directly so the Astryx logo stays blue while the rest of
+// the slide's UI reads as primary. Other themes fall back to WORDMARK_COLOR.
 const WORDMARK_COLOR_BY_THEME: Record<string, string> = {
-  '@xds/theme-gothic': 'var(--color-text-primary)',
+  [ASTRYX]: BRAND_BLUE,
 };
+
+function wordmarkColorFor(name: string): string {
+  return WORDMARK_COLOR_BY_THEME[name] ?? WORDMARK_COLOR;
+}
 
 // Dark-first themes (rendered in dark mode; hero text/nav go light).
 const DARK_THEMES: ReadonlySet<string> = new Set<string>(['@xds/theme-gothic']);
@@ -359,8 +369,7 @@ export const HERO_THEME_SLIDES: ReadonlyArray<HeroThemeSlide> = REEL_THEMES.map(
           theme,
           content: CONTENT_BY_THEME[name] ?? fallbackContent(name),
           aurora: AURORA_BY_THEME[name] ?? DEFAULT_AURORA,
-          wordmarkColor:
-            WORDMARK_COLOR_BY_THEME[name] ?? DEFAULT_WORDMARK_COLOR,
+          wordmarkColor: wordmarkColorFor(name),
           isDark: DARK_THEMES.has(name),
           mode: DARK_THEMES.has(name) ? 'dark' : 'light',
         }

@@ -73,7 +73,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Hardcode light/dark colors in data visualizations — resolve them through the current theme instead.',
+          'Hardcode light/dark colors in data visualizations: resolve them through the current theme instead.',
       },
       {
         guidance: false,
@@ -122,7 +122,7 @@ export const docsDense = {
       },
       {
         guidance: false,
-        description: 'Hardcode light/dark chart colors — resolve from current theme.',
+        description: 'Hardcode light/dark chart colors: resolve from current theme.',
       },
       {
         guidance: false,

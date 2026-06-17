@@ -134,7 +134,7 @@ export const docs = {
       {guidance: true, description: 'Add a description to communicate constraints like file size limits or accepted formats.'},
       {guidance: true, description: 'Use changeAction for immediate upload workflows that benefit from optimistic UI.'},
       {guidance: false, description: "Don't use FileInput for directory or folder uploads; that is not supported in v1."},
-      {guidance: false, description: "Don't avoid dropzone mode unless space is very constrained; drag-and-drop is the expected interaction for file uploads."},
+      {guidance: false, description: "Don't avoid dropzone mode unless space is constrained; drag-and-drop is the expected interaction for file uploads."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text that identifies the field. Always rendered for accessibility even when visually hidden.'},
@@ -247,7 +247,7 @@ export const docsZh = {
       {guidance: true, description: 'Use maxSize and maxFiles to prevent oversized uploads.'},
       {guidance: true, description: 'Add a description to communicate constraints.'},
       {guidance: false, description: "Don't use FileInput for directory uploads."},
-      {guidance: false, description: "Don't use mode='input' unless space is very constrained; dropzone mode provides a better experience."},
+      {guidance: false, description: "Don't use mode='input' unless space is constrained; dropzone mode provides a better experience."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text identifying the field.'},
@@ -271,7 +271,7 @@ export const docsDense = {
       {guidance: true, description: 'Add a description to communicate constraints.'},
       {guidance: true, description: 'Use changeAction for immediate upload workflows that benefit from optimistic UI.'},
       {guidance: false, description: "Don't use FileInput for directory uploads."},
-      {guidance: false, description: "Don't use mode='input' unless space is very constrained; dropzone mode provides a better experience."},
+      {guidance: false, description: "Don't use mode='input' unless space is constrained; dropzone mode provides a better experience."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text identifying the field.'},

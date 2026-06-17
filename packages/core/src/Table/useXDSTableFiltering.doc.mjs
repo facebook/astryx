@@ -12,7 +12,7 @@ export const docs = {
     {
       name: 'filters',
       type: 'XDSTableFilterState',
-      description: 'Current filter state — map from column key to filter value.',
+      description: 'Current filter state: map from column key to filter value.',
       required: true,
     },
     {
@@ -61,7 +61,7 @@ export const docsDense = {
   name: 'useXDSTableFiltering',
   isHiddenFromOverview: true,
   displayName: 'useXDSTableFiltering',
-  description: 'Table filtering plugin — inline column filters (popover/inline). Pairs w/ useXDSTableFilterState.',
+  description: 'Table filtering plugin: inline column filters (popover/inline). Pairs w/ useXDSTableFilterState.',
   propDescriptions: {
     filters: 'Current filter state map (columnKey → value).',
     onFilterChange: 'Called on filter change. null clears.',

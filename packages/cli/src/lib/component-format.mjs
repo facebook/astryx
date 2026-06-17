@@ -128,7 +128,7 @@ export function formatFull(docs, options = {}) {
   sections.push(desc + '\n');
 
   if (options.importHint) {
-    const displayName = docs.components?.[0]?.name || `XDS${docs.name}`;
+    const displayName = `XDS${docs.name}`;
     sections.push(`**Import:** \`import {${displayName}} from '${options.importHint}';\`\n`);
   }
 

@@ -35,7 +35,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Add nested XDSLayerProvider instances — nested providers are ignored and add unnecessary tree depth.',
+          'Add nested XDSLayerProvider instances: nested providers are ignored and add unnecessary tree depth.',
       },
     ],
   },

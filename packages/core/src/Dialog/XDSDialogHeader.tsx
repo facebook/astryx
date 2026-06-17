@@ -126,6 +126,9 @@ export function XDSDialogHeader({
   startContent,
   endContent,
   hasDivider,
+  xstyle,
+  className,
+  style,
   ref,
 }: XDSDialogHeaderProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -142,7 +145,12 @@ export function XDSDialogHeader({
   }, [shouldAutoFocus]);
 
   return (
-    <XDSLayoutHeader ref={ref} hasDivider={hasDivider}>
+    <XDSLayoutHeader
+      ref={ref}
+      hasDivider={hasDivider}
+      xstyle={xstyle}
+      className={className}
+      style={style}>
       <div {...stylex.props(styles.container)}>
         {startContent && (
           <div {...stylex.props(styles.actions)}>{startContent}</div>

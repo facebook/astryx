@@ -3,20 +3,20 @@
 /**
  * @file PreviewStage.tsx
  * @input viewport size, fullscreen flag, iframe ref
- * @output Responsive preview frame hosting the /playground-preview iframe
+ * @output Responsive preview frame hosting the /playground/preview iframe
  * @position Playground right panel — preview surface.
  *
  * Keeps a SINGLE iframe element mounted across viewport + fullscreen changes
  * (only the wrapper styles change) so the parent's postMessage channel to the
- * preview never resets. Desktop = fill; Phone = a fixed 375px-wide frame
- * (content reflows natively at mobile width, no scaling). Mirrors the Nest
- * craft editor's viewport behavior and dimensions.
+ * preview never resets. Desktop = fill; Phone = a fixed 402px-wide frame
+ * (content reflows natively at mobile width, no scaling).
  */
 
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
 import {XDSCard} from '@xds/core/Card';
+import {XDSCenter} from '@xds/core/Center';
 import {XDSButton} from '@xds/core/Button';
 import {Minimize2} from 'lucide-react';
 
@@ -30,9 +30,6 @@ const s = stylex.create({
   area: {
     flex: 1,
     minHeight: 0,
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'stretch',
     overflow: 'hidden',
     paddingInline: 'var(--spacing-4)',
     paddingBlockEnd: 'var(--spacing-4)',
@@ -42,9 +39,6 @@ const s = stylex.create({
     paddingInline: 0,
     paddingBlockEnd: 0,
     paddingBlockStart: 0,
-  },
-  areaCenter: {
-    alignItems: 'center',
   },
   fullscreen: {
     position: 'fixed',
@@ -99,6 +93,14 @@ const s = stylex.create({
   },
 });
 
+// Runtime sizing — the preview frame is a fixed device size or fills its area.
+const dynamic = stylex.create({
+  size: (width: number | string, height: number | string) => ({
+    width,
+    height,
+  }),
+});
+
 interface PreviewStageProps {
   viewport: Viewport;
   isFullscreen: boolean;
@@ -123,13 +125,13 @@ export function PreviewStage({
   const height = isPhone ? PHONE_HEIGHT : '100%';
 
   return (
-    <div
-      {...stylex.props(
+    <XDSCenter
+      axis={isPhone ? 'both' : 'horizontal'}
+      xstyle={[
         s.area,
         isFullBleed && !isFullscreen && s.areaFullBleed,
-        isPhone && s.areaCenter,
         isFullscreen && s.fullscreen,
-      )}>
+      ]}>
       {isFullscreen && (
         <XDSCard padding={0} xstyle={s.exitButtonCard}>
           <XDSButton
@@ -149,16 +151,16 @@ export function PreviewStage({
           s.card,
           (isFullscreen || isFullBleed) && s.cardFullscreen,
           isFullBleed && !isFullscreen && s.cardFullBleed,
-        ]}
-        style={{width, height}}>
+          dynamic.size(width, height),
+        ]}>
         <iframe
           ref={iframeRef}
-          src="/playground-preview"
+          src="/playground/preview"
           sandbox="allow-scripts allow-same-origin"
           title="Preview"
           {...stylex.props(s.iframe, isInteractionDisabled && s.iframeInert)}
         />
       </XDSCard>
-    </div>
+    </XDSCenter>
   );
 }

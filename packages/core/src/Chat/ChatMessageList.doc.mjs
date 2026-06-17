@@ -12,7 +12,7 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'Message elements — typically XDSChatMessage or XDSChatSystemMessage.',
+      description: 'Message elements: typically XDSChatMessage or XDSChatSystemMessage.',
       required: true,
     },
     {
@@ -32,12 +32,12 @@ export const docs = {
     {
       name: 'scrollToTopAction',
       type: '() => Promise<void>',
-      description: 'Async action fired when user scrolls to top. Use for loading older messages. Wrapped in useTransition — shows a spinner at the top while pending.',
+      description: 'Async action fired when user scrolls to top. Use for loading older messages. Wrapped in useTransition: shows a spinner at the top while pending.',
     },
     {
       name: 'density',
       type: "'compact' | 'balanced' | 'spacious'",
-      description: 'Visual density — flows to child messages via context.',
+      description: 'Visual density: flows to child messages via context.',
       default: "'balanced'",
     },
     {

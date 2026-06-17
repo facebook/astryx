@@ -140,8 +140,8 @@ importers:
         specifier: ^0.8.2
         version: 0.8.3
       lucide-react:
-        specifier: ^1.17.0
-        version: 1.17.0(react@19.2.7)
+        specifier: ^1.18.0
+        version: 1.18.0(react@19.2.7)
       lz-string:
         specifier: ^1.5.0
         version: 1.5.0
@@ -672,8 +672,8 @@ importers:
         specifier: ^1.0.0
         version: 1.1.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       lucide-react:
-        specifier: ^1.17.0
-        version: 1.17.0(react@19.2.7)
+        specifier: ^1.18.0
+        version: 1.18.0(react@19.2.7)
       postcss:
         specifier: ^8.5.10
         version: 8.5.15
@@ -827,8 +827,8 @@ importers:
         specifier: 0.0.14
         version: link:../../core
       lucide-react:
-        specifier: ^1.17.0
-        version: 1.17.0(react@19.2.7)
+        specifier: ^1.18.0
+        version: 1.18.0(react@19.2.7)
       react:
         specifier: '>=19'
         version: 19.2.7
@@ -843,8 +843,8 @@ importers:
         specifier: 0.0.14
         version: link:../../core
       lucide-react:
-        specifier: ^1.17.0
-        version: 1.17.0(react@19.2.7)
+        specifier: ^1.18.0
+        version: 1.18.0(react@19.2.7)
       react:
         specifier: '>=19'
         version: 19.2.7
@@ -859,8 +859,8 @@ importers:
         specifier: 0.0.14
         version: link:../../core
       lucide-react:
-        specifier: ^1.17.0
-        version: 1.17.0(react@19.2.7)
+        specifier: ^1.18.0
+        version: 1.18.0(react@19.2.7)
       react:
         specifier: '>=19'
         version: 19.2.7
@@ -891,8 +891,8 @@ importers:
         specifier: 0.0.14
         version: link:../../core
       lucide-react:
-        specifier: ^1.17.0
-        version: 1.17.0(react@19.2.7)
+        specifier: ^1.18.0
+        version: 1.18.0(react@19.2.7)
       react:
         specifier: '>=19'
         version: 19.2.7
@@ -907,8 +907,8 @@ importers:
         specifier: 0.0.14
         version: link:../../core
       lucide-react:
-        specifier: ^1.17.0
-        version: 1.17.0(react@19.2.7)
+        specifier: ^1.18.0
+        version: 1.18.0(react@19.2.7)
       react:
         specifier: '>=19'
         version: 19.2.7
@@ -923,8 +923,8 @@ importers:
         specifier: 0.0.14
         version: link:../../core
       lucide-react:
-        specifier: ^1.17.0
-        version: 1.17.0(react@19.2.7)
+        specifier: ^1.18.0
+        version: 1.18.0(react@19.2.7)
       react:
         specifier: '>=19'
         version: 19.2.7
@@ -939,8 +939,8 @@ importers:
         specifier: 0.0.14
         version: link:../../core
       lucide-react:
-        specifier: ^1.17.0
-        version: 1.17.0(react@19.2.7)
+        specifier: ^1.18.0
+        version: 1.18.0(react@19.2.7)
       react:
         specifier: '>=19'
         version: 19.2.7
@@ -955,8 +955,8 @@ importers:
         specifier: 0.0.14
         version: link:../../core
       lucide-react:
-        specifier: ^1.17.0
-        version: 1.17.0(react@19.2.7)
+        specifier: ^1.18.0
+        version: 1.18.0(react@19.2.7)
       react:
         specifier: '>=19'
         version: 19.2.7
@@ -5265,8 +5265,8 @@ packages:
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
 
-  lucide-react@1.17.0:
-    resolution: {integrity: sha512-9FA9evdox/JQL5PT57fdA1x/yg8T7knJ98+zjTL3UfKza6pflQUUh3XtaQIHKvnsJw1lmsEyHVlt5jchYxOQ5w==}
+  lucide-react@1.18.0:
+    resolution: {integrity: sha512-LZDb7H/0YfM+RJncD0hDQRCAu+vSGODqpe35TuVI8EuXaRjkczbsx7p8dY4J87F/MUSj6bpYqeI8nw8qXaAdmA==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
@@ -10744,7 +10744,7 @@ snapshots:
     dependencies:
       yallist: 3.1.1
 
-  lucide-react@1.17.0(react@19.2.7):
+  lucide-react@1.18.0(react@19.2.7):
     dependencies:
       react: 19.2.7
 

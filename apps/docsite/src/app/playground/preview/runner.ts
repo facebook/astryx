@@ -115,7 +115,11 @@ function buildGlobalScope(): Record<string, unknown> {
   const vars: Record<string, unknown> = {};
   for (const moduleExports of Object.values(scope)) {
     for (const [name, value] of Object.entries(moduleExports)) {
-      if (name !== 'default' && name !== '__esModule' && !RESERVED_GLOBALS.has(name)) {
+      if (
+        name !== 'default' &&
+        name !== '__esModule' &&
+        !RESERVED_GLOBALS.has(name)
+      ) {
         vars[name] = value;
       }
     }
@@ -124,6 +128,16 @@ function buildGlobalScope(): Record<string, unknown> {
   vars.React = scope['react']?.default ?? scope['react'];
   return vars;
 }
+
+// The global scope and require resolver depend only on the static `scope`
+// import, so build them once and reuse across every run (evaluate() is on the
+// hot path — it runs on every debounced edit).
+let globalScopeCache: Record<string, unknown> | null = null;
+function getGlobalScope(): Record<string, unknown> {
+  return (globalScopeCache ??= buildGlobalScope());
+}
+
+const sharedRequire = makeRequire();
 
 function compile(code: string): string {
   if (ts == null) {
@@ -158,7 +172,8 @@ function compile(code: string): string {
 function findDeclaredIdentifiers(compiled: string): Set<string> {
   const names = new Set<string>();
   // Top-level declarations (function/class and simple const/let/var bindings).
-  const declRe = /^(?:export\s+)?(?:const|let|var|function\*?|class)\s+([A-Za-z_$][\w$]*)/gm;
+  const declRe =
+    /^(?:export\s+)?(?:const|let|var|function\*?|class)\s+([A-Za-z_$][\w$]*)/gm;
   let m: RegExpExecArray | null;
   while ((m = declRe.exec(compiled)) !== null) {
     names.add(m[1]);
@@ -169,21 +184,24 @@ function findDeclaredIdentifiers(compiled: string): Set<string> {
 function evaluate(compiled: string): React.ComponentType {
   const exportsObj: Record<string, unknown> = {};
   const moduleObj = {exports: exportsObj};
-  const requireFn = makeRequire();
-  const globals = buildGlobalScope();
+  const globals = getGlobalScope();
 
   // Don't inject globals the user already declares — a parameter and a
   // top-level `const`/`function`/`class` of the same name can't coexist.
   const declared = findDeclaredIdentifiers(compiled);
   const globalNames = Object.keys(globals).filter(
-    name => !declared.has(name) && name !== 'module' && name !== 'exports' && name !== 'require',
+    name =>
+      !declared.has(name) &&
+      name !== 'module' &&
+      name !== 'exports' &&
+      name !== 'require',
   );
 
   const keys = ['module', 'exports', 'require', ...globalNames];
   const values = [
     moduleObj,
     exportsObj,
-    requireFn,
+    sharedRequire,
     ...globalNames.map(name => globals[name]),
   ];
 

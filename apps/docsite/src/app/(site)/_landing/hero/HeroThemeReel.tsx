@@ -28,6 +28,7 @@ import {XDSTheme} from '@xds/core/theme';
 import {XDSText} from '@xds/core/Text';
 import {XDSPagination} from '@xds/core/Pagination';
 import {useMediaQuery} from '@xds/core/hooks';
+import {useThemeMode} from '../../../providers';
 import {HERO_THEME_SLIDES, type HeroThemeSlide} from './heroThemeContent';
 import {AstryxWordmark} from './AstryxWordmark';
 import {HeroFloatingCards} from './HeroFloatingCards';
@@ -45,6 +46,8 @@ interface HeroReelState {
   /** Whether entrance/cycle animation should run (false under reduced-motion). */
   animate: boolean;
   setPaused: (paused: boolean) => void;
+  /** The docsite's active color mode (from the global theme toggle / OS). */
+  userMode: 'light' | 'dark';
 }
 
 const HeroReelContext = createContext<HeroReelState | null>(null);
@@ -54,16 +57,32 @@ function useHeroReel(): HeroReelState | null {
 }
 
 /**
- * Whether the active reel slide is a dark-first theme. The hero text + nav use
- * this to switch to light colors on dark slides (e.g. Gothic) so they stay
- * readable on the dark per-slide background.
+ * The color mode a slide should render in: dark-first themes (e.g. Gothic) are
+ * always dark; every other theme follows the docsite's color mode so the hero
+ * respects the user's light/dark toggle.
+ */
+function effectiveMode(
+  slide: HeroThemeSlide,
+  userMode: 'light' | 'dark',
+): 'light' | 'dark' {
+  return slide.isDark ? 'dark' : userMode;
+}
+
+/**
+ * Whether the active hero slide should render with light text/nav. True when
+ * the slide is a dark-first theme (e.g. Gothic) OR the docsite is in dark mode —
+ * in both cases the hero sits on a dark body and its text/nav must go light.
  */
 export function useHeroReelIsDark(): boolean {
   const reel = useContext(HeroReelContext);
   if (!reel || reel.slides.length === 0) {
     return false;
   }
-  return reel.slides[reel.index]?.isDark ?? false;
+  const active = reel.slides[reel.index];
+  if (!active) {
+    return false;
+  }
+  return effectiveMode(active, reel.userMode) === 'dark';
 }
 
 const styles = stylex.create({
@@ -185,6 +204,7 @@ export function HeroReelProvider({children}: {children: ReactNode}) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const {mode: userMode} = useThemeMode();
 
   const goTo = useCallback(
     (next: number) => {
@@ -214,8 +234,8 @@ export function HeroReelProvider({children}: {children: ReactNode}) {
   }, []);
 
   const value = useMemo<HeroReelState>(
-    () => ({slides, index, goTo, animate: !reduceMotion, setPaused}),
-    [slides, index, goTo, reduceMotion],
+    () => ({slides, index, goTo, animate: !reduceMotion, setPaused, userMode}),
+    [slides, index, goTo, reduceMotion, userMode],
   );
 
   return (
@@ -251,7 +271,7 @@ export function HeroReelWordmark() {
 
   const active = reel.slides[reel.index];
   return (
-    <XDSTheme theme={active.theme} mode={active.mode}>
+    <XDSTheme theme={active.theme} mode={effectiveMode(active, reel.userMode)}>
       <div
         {...stylex.props(
           styles.wordmarkWrap,
@@ -281,7 +301,7 @@ export function HeroReelCards() {
   const shown = reel.animate ? mounted : true;
 
   return (
-    <XDSTheme theme={active.theme} mode={active.mode}>
+    <XDSTheme theme={active.theme} mode={effectiveMode(active, reel.userMode)}>
       <div {...stylex.props(styles.themeFill)} aria-hidden="true" />
       <div {...stylex.props(styles.navBackdrop)} aria-hidden="true" />
       <div
@@ -314,7 +334,7 @@ export function HeroReelStack() {
   }
   const active = reel.slides[reel.index];
   return (
-    <XDSTheme theme={active.theme} mode={active.mode}>
+    <XDSTheme theme={active.theme} mode={effectiveMode(active, reel.userMode)}>
       <HeroFloatingCards content={active.content} mounted layout="stack" />
     </XDSTheme>
   );
