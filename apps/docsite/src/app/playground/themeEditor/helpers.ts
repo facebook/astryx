@@ -63,6 +63,20 @@ export function getTokenLabel(tokenName: string): string {
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
+/**
+ * Build the `--spacing-*` token ramp from a base step: each token is
+ * `round(base × step)px`. Token keys derive from the step (e.g. 0.5 → "0-5").
+ */
+export function buildSpacingScale(base: number): Record<string, string> {
+  const steps = [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  const patch: Record<string, string> = {};
+  for (const step of steps) {
+    patch[`--spacing-${String(step).replace('.', '-')}`] =
+      `${Math.round(base * step)}px`;
+  }
+  return patch;
+}
+
 type ComponentStyleMap = Record<string, Record<string, Record<string, string>>>;
 
 export function buildComponentOverrides(
@@ -136,7 +150,10 @@ function serializeStyleObject(
     if (value && typeof value === 'object') {
       lines.push(`${pad}'${escapedKey}': {`);
       lines.push(
-        ...serializeStyleObject(value as Record<string, unknown>, indentLevel + 1),
+        ...serializeStyleObject(
+          value as Record<string, unknown>,
+          indentLevel + 1,
+        ),
       );
       lines.push(`${pad}},`);
     } else {
@@ -149,7 +166,7 @@ function serializeStyleObject(
   return lines;
 }
 
-export interface CustomOverrideEntry {
+interface CustomOverrideEntry {
   component: string;
   property: string;
   value: string;

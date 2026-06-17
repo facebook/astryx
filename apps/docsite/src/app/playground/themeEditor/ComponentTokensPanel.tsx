@@ -2,10 +2,10 @@
 
 'use client';
 
-import * as React from 'react';
+import {useCallback, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSVStack, XDSHStack} from '@xds/core/Stack';
+import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Stack';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
@@ -19,10 +19,20 @@ import {
 
 const styles = stylex.create({
   fullWidthField: {width: '100%'},
+  row: {
+    paddingBlock: 6,
+    gap: 10,
+  },
+  // minWidth: 0 lets the description truncate (maxLines) instead of overflowing.
+  rowLabel: {
+    minWidth: 0,
+  },
+  // Fixed-width value-control column for each component-token row.
+  rowControl: {
+    flexShrink: 0,
+    width: 180,
+  },
 });
-
-// Width of the value control column in each component-token row.
-const CONTROL_WIDTH = 180;
 
 /**
  * Read the value a seeded theme set for a component-token control, by reverse-
@@ -74,20 +84,22 @@ export function ComponentTokensPanel({
   onCustomOverridesChange,
   baseComponents,
 }: ComponentTokensPanelProps) {
-  const [customVars, setCustomVars] = React.useState<Set<string>>(new Set());
-  const [newComponent, setNewComponent] = React.useState('button');
-  const [newProperty, setNewProperty] = React.useState('');
-  const [newValue, setNewValue] = React.useState('');
+  const [customVars, setCustomVars] = useState<Set<string>>(new Set());
+  const [newComponent, setNewComponent] = useState('button');
+  const [newProperty, setNewProperty] = useState('');
+  const [newValue, setNewValue] = useState('');
   // Initialize from existing overrides to avoid duplicate keys after remount
-  const nextIdRef = React.useRef(
+  const nextIdRef = useRef(
     customOverrides.reduce((max, o) => {
       const num = parseInt(o.id.replace('custom-', ''), 10);
       return isNaN(num) ? max : Math.max(max, num + 1);
     }, 0),
   );
 
-  const handleAddCustom = React.useCallback(() => {
-    if (!newComponent || !newProperty || !newValue) {return;}
+  const handleAddCustom = useCallback(() => {
+    if (!newComponent || !newProperty || !newValue) {
+      return;
+    }
     onCustomOverridesChange([
       ...customOverrides,
       {
@@ -107,14 +119,14 @@ export function ComponentTokensPanel({
     onCustomOverridesChange,
   ]);
 
-  const handleRemoveCustom = React.useCallback(
+  const handleRemoveCustom = useCallback(
     (index: number) => {
       onCustomOverridesChange(customOverrides.filter((_, i) => i !== index));
     },
     [customOverrides, onCustomOverridesChange],
   );
 
-  const handleUpdateCustomValue = React.useCallback(
+  const handleUpdateCustomValue = useCallback(
     (index: number, value: string) => {
       const updated = [...customOverrides];
       updated[index] = {...updated[index], value};
@@ -141,21 +153,17 @@ export function ComponentTokensPanel({
                   v.options.some(o => o.value === currentValue));
 
               return (
-                <div
+                <XDSHStack
                   key={v.name}
-                  style={{
-                    padding: '6px 0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 10,
-                  }}>
-                  <div style={{flex: 1, minWidth: 0}}>
+                  vAlign="center"
+                  justify="between"
+                  xstyle={styles.row}>
+                  <XDSStackItem size="fill" xstyle={styles.rowLabel}>
                     <XDSText type="label" color="secondary" maxLines={1}>
                       {v.description}
                     </XDSText>
-                  </div>
-                  <div style={{flexShrink: 0, width: CONTROL_WIDTH}}>
+                  </XDSStackItem>
+                  <XDSStackItem xstyle={styles.rowControl}>
                     {!isPresetValue ? (
                       <XDSTextInput
                         label={v.name}
@@ -199,8 +207,8 @@ export function ComponentTokensPanel({
                         }}
                       />
                     )}
-                  </div>
-                </div>
+                  </XDSStackItem>
+                </XDSHStack>
               );
             })}
           </XDSVStack>
@@ -218,11 +226,11 @@ export function ComponentTokensPanel({
         {customOverrides.map((override, i) => (
           <XDSVStack key={override.id} gap={1}>
             <XDSHStack gap={2} vAlign="end">
-              <div style={{flex: 1, minWidth: 0}}>
+              <XDSStackItem size="fill" xstyle={styles.rowLabel}>
                 <XDSText type="supporting" color="secondary" maxLines={1}>
                   .xds-{override.component} → {override.property}
                 </XDSText>
-              </div>
+              </XDSStackItem>
               <XDSButton
                 label="Remove"
                 variant="ghost"

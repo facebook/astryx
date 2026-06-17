@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file babelParser.ts
+ * @file componentInstances.ts
  * @input Playground source code (TSX string)
  * @output Detected XDS component instances + targeted source-range editors
- * @position Playground Property tab — binds interactive knobs to real code.
+ * @position Playground — backs the Properties popover knobs and preview targeting.
  *
  * Uses @babel/parser (bundled, browser-safe — NOT a CDN) to parse the code and
  * walk the AST for `<XDS*>` JSX opening elements. Each attribute's character
@@ -19,7 +19,7 @@
 import {parse} from '@babel/parser';
 
 /** Literal value kinds we can round-trip through a knob. */
-export type AttrValueKind =
+type AttrValueKind =
   | 'boolean' // boolean shorthand or {true}/{false}
   | 'string' // "..." or {'...'}
   | 'number' // {123}
@@ -235,8 +235,8 @@ export function setAttribute(
 /**
  * Insert a `data-pg-id="Component#index"` marker on every `<XDS*>` element so
  * the preview can map a selected component/instance back to its DOM node. The
- * index is per-component-type in source order, matching the Property tab's
- * instance picker. Returns the original code unchanged on a parse error.
+ * index is per-component-type in source order, matching the Properties
+ * popover's instance picker. Returns the original code unchanged on a parse error.
  *
  * Markers are only applied to the copy SENT to the preview — never to the code
  * the user sees, edits, or shares.

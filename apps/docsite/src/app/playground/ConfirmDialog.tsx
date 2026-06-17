@@ -11,7 +11,7 @@
  *   user's current code or theme.
  */
 
-import {type ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import {XDSButton} from '@xds/core/Button';
 import {
   XDSHStack,
@@ -22,7 +22,7 @@ import {
 import {XDSText} from '@xds/core/Text';
 import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 
-export interface ConfirmDialogProps {
+interface ConfirmDialogProps {
   /** Whether the dialog is open. */
   isOpen: boolean;
   /** Dialog title shown in the header. */
@@ -68,7 +68,7 @@ export function ConfirmDialog({
           </XDSLayoutContent>
         }
         footer={
-          <XDSLayoutFooter hasDivider>
+          <XDSLayoutFooter>
             <XDSHStack gap={2} justify="end" width="100%">
               <XDSButton
                 variant="secondary"
@@ -87,5 +87,3 @@ export function ConfirmDialog({
     </XDSDialog>
   );
 }
-
-ConfirmDialog.displayName = 'ConfirmDialog';
