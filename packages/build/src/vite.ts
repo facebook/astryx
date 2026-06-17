@@ -29,6 +29,8 @@ export const LIGHTNINGCSS_TARGETS = {
 export interface XDSVitePluginLegacyOptions {
   stylexOptions: Parameters<typeof stylex.vite>[0];
   libraryPattern?: string;
+  /** StyleX atomic class-name prefix for XDS library styles. @default 'xds' */
+  stylexPrefix?: string;
   layers?: {
     library?: string;
     /** Layer name for theme overrides @default 'xds-theme' */
@@ -84,6 +86,19 @@ export interface XDSVitePluginOptions {
   lightningcssTargets?: Record<string, number>;
 
   /**
+   * StyleX atomic class-name prefix for XDS *library* styles. The product
+   * build uses a distinct prefix so library and product atoms never collide
+   * across layers.
+   *
+   * Configurable to support the XDS-prefix migration (P2380608025): a consumer
+   * can rebrand the library atom prefix to `astryx` before the final cutover.
+   * Defaults to `xds` so existing consumers are unaffected.
+   *
+   * @default 'xds'
+   */
+  stylexPrefix?: string;
+
+  /**
    * Extra StyleX options to merge.
    */
   stylexOverrides?: Record<string, unknown>;
@@ -120,6 +135,7 @@ export function xdsStylex(
     libraryPattern = XDS_LIBRARY_PATTERN,
     layers = {},
     lightningcssTargets,
+    stylexPrefix = 'xds',
     stylexOverrides = {},
   } = opts;
 
@@ -155,6 +171,7 @@ export function xdsStylex(
           xdsBabelPlugin,
           {
             ...stylexOptions,
+            libraryPrefix: stylexPrefix,
             babelConfig: undefined,
           },
         ],
@@ -301,6 +318,7 @@ function xdsStylexLegacy(options: XDSVitePluginLegacyOptions): Plugin[] {
   const {
     stylexOptions,
     libraryPattern = XDS_LIBRARY_PATTERN,
+    stylexPrefix = 'xds',
     layers = {},
   } = options;
 
@@ -321,6 +339,7 @@ function xdsStylexLegacy(options: XDSVitePluginLegacyOptions): Plugin[] {
           xdsBabelPlugin,
           {
             ...(stylexOptions as any),
+            libraryPrefix: stylexPrefix,
             babelConfig: undefined,
           },
         ],
