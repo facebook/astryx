@@ -3,11 +3,11 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  exampleFor: 'useXDSAppShellMobile',
-  name: 'useXDSAppShellMobile — Custom Mobile Trigger',
-  displayName: 'useXDSAppShellMobile — Custom Mobile Trigger',
+  exampleFor: 'useAppShellMobile',
+  name: 'useAppShellMobile — Custom Mobile Trigger',
+  displayName: 'useAppShellMobile — Custom Mobile Trigger',
   description:
-    'Custom mobile navigation trigger built with useXDSAppShellMobile. The trigger consumes the surrounding AppShell context instead of rendering its own shell.',
+    'Custom mobile navigation trigger built with useAppShellMobile. The trigger consumes the surrounding AppShell context instead of rendering its own shell.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['AppShell', 'Button', 'Text', 'Layout'],

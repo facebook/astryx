@@ -2,38 +2,38 @@
 
 'use client';
 
-import {XDSIconButton} from '@xds/core/IconButton';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSHStack} from '@xds/core/Stack';
+import {IconButton} from '@xds/core/IconButton';
+import {Icon} from '@xds/core/Icon';
+import {HStack} from '@xds/core/Stack';
 
 export default function IconButtactionBar() {
   return (
-    <XDSHStack gap={1}>
-      <XDSIconButton
+    <HStack gap={1}>
+      <IconButton
         label="Search"
-        icon={<XDSIcon icon="search" color="inherit" />}
+        icon={<Icon icon="search" color="inherit" />}
         variant="ghost"
       />
-      <XDSIconButton
+      <IconButton
         label="Copy"
-        icon={<XDSIcon icon="copy" color="inherit" />}
+        icon={<Icon icon="copy" color="inherit" />}
         variant="ghost"
       />
-      <XDSIconButton
+      <IconButton
         label="Info"
-        icon={<XDSIcon icon="info" color="inherit" />}
+        icon={<Icon icon="info" color="inherit" />}
         variant="ghost"
       />
-      <XDSIconButton
+      <IconButton
         label="Menu"
-        icon={<XDSIcon icon="menu" color="inherit" />}
+        icon={<Icon icon="menu" color="inherit" />}
         variant="ghost"
       />
-      <XDSIconButton
+      <IconButton
         label="Close"
-        icon={<XDSIcon icon="close" color="inherit" />}
+        icon={<Icon icon="close" color="inherit" />}
         variant="ghost"
       />
-    </XDSHStack>
+    </HStack>
   );
 }

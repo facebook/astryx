@@ -2,7 +2,7 @@
 
 'use client';
 
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {CodeBlock} from '@xds/core/CodeBlock';
 
 const code = Array.from(
   {length: 50},
@@ -11,7 +11,7 @@ const code = Array.from(
 
 export default function CodeBlockScrollableBlock() {
   return (
-    <XDSCodeBlock
+    <CodeBlock
       code={code}
       language="typescript"
       title="many-lines.ts"

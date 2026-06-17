@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 'use client';
 
-import {XDSAvatarGroup, XDSAvatarGroupOverflow} from '@xds/core/AvatarGroup';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {AvatarGroup, AvatarGroupOverflow} from '@xds/core/AvatarGroup';
+import {Avatar} from '@xds/core/Avatar';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const USERS = [
   {
@@ -36,28 +36,28 @@ const USERS = [
 
 export default function AvatarGroupShowcase() {
   return (
-    <XDSStack direction="vertical" gap={8}>
-      <XDSStack direction="vertical" gap={3}>
-        <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={8}>
+      <Stack direction="vertical" gap={3}>
+        <Text type="supporting" color="secondary">
           Team members
-        </XDSText>
-        <XDSAvatarGroup size="medium">
+        </Text>
+        <AvatarGroup size="medium">
           {USERS.map(u => (
-            <XDSAvatar key={u.key} src={u.src} name={u.name} />
+            <Avatar key={u.key} src={u.src} name={u.name} />
           ))}
-        </XDSAvatarGroup>
-      </XDSStack>
-      <XDSStack direction="vertical" gap={3}>
-        <XDSText type="supporting" color="secondary">
+        </AvatarGroup>
+      </Stack>
+      <Stack direction="vertical" gap={3}>
+        <Text type="supporting" color="secondary">
           With overflow
-        </XDSText>
-        <XDSAvatarGroup size="medium">
+        </Text>
+        <AvatarGroup size="medium">
           {USERS.slice(0, 3).map(u => (
-            <XDSAvatar key={u.key} src={u.src} name={u.name} />
+            <Avatar key={u.key} src={u.src} name={u.name} />
           ))}
-          <XDSAvatarGroupOverflow count={USERS.length - 3} />
-        </XDSAvatarGroup>
-      </XDSStack>
-    </XDSStack>
+          <AvatarGroupOverflow count={USERS.length - 3} />
+        </AvatarGroup>
+      </Stack>
+    </Stack>
   );
 }

@@ -2,7 +2,7 @@
 
 'use client';
 
-import {XDSMoreMenu} from '@xds/core/MoreMenu';
+import {MoreMenu} from '@xds/core/MoreMenu';
 import {
   PencilIcon,
   DocumentDuplicateIcon,
@@ -11,7 +11,7 @@ import {
 
 export default function MoreMenuWithSections() {
   return (
-    <XDSMoreMenu
+    <MoreMenu
       variant="secondary"
       label="Document actions"
       items={[

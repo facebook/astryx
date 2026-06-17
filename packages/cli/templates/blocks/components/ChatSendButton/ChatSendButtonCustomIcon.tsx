@@ -2,10 +2,10 @@
 
 'use client';
 
-import {XDSChatSendButton} from '@xds/core/Chat';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {ChatSendButton} from '@xds/core/Chat';
+import {Icon} from '@xds/core/Icon';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 import {
   CheckIcon,
   PaperAirplaneIcon,
@@ -15,32 +15,32 @@ import {XCircleIcon} from '@heroicons/react/24/outline';
 
 export default function ChatSendButtonCustomIcon() {
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Text type="supporting" color="secondary">
         Custom icons for send and stop states
-      </XDSText>
-      <XDSStack direction="horizontal" gap={4} vAlign="center">
-        <XDSChatSendButton
+      </Text>
+      <Stack direction="horizontal" gap={4} vAlign="center">
+        <ChatSendButton
           isDisabled={false}
           onSend={() => {}}
-          sendIcon={<XDSIcon icon={PaperAirplaneIcon} size="sm" />}
+          sendIcon={<Icon icon={PaperAirplaneIcon} size="sm" />}
         />
-        <XDSChatSendButton
+        <ChatSendButton
           isDisabled={false}
           onSend={() => {}}
-          sendIcon={<XDSIcon icon={CheckIcon} size="sm" />}
+          sendIcon={<Icon icon={CheckIcon} size="sm" />}
         />
-        <XDSChatSendButton
+        <ChatSendButton
           isDisabled={false}
           onSend={() => {}}
-          sendIcon={<XDSIcon icon={SparklesIcon} size="sm" />}
+          sendIcon={<Icon icon={SparklesIcon} size="sm" />}
         />
-        <XDSChatSendButton
+        <ChatSendButton
           isStopShown
           onStop={() => {}}
-          stopIcon={<XDSIcon icon={XCircleIcon} size="sm" />}
+          stopIcon={<Icon icon={XCircleIcon} size="sm" />}
         />
-      </XDSStack>
-    </XDSStack>
+      </Stack>
+    </Stack>
   );
 }

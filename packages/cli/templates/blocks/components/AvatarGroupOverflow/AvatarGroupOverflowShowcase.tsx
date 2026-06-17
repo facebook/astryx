@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 'use client';
 
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSAvatarGroup, XDSAvatarGroupOverflow} from '@xds/core/AvatarGroup';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Avatar} from '@xds/core/Avatar';
+import {AvatarGroup, AvatarGroupOverflow} from '@xds/core/AvatarGroup';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const USERS = [
   {
@@ -23,29 +23,29 @@ const USERS = [
 
 export default function AvatarGroupOverflowShowcase() {
   return (
-    <XDSStack direction="vertical" gap={8}>
-      <XDSStack direction="vertical" gap={3}>
-        <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={8}>
+      <Stack direction="vertical" gap={3}>
+        <Text type="supporting" color="secondary">
           Default overflow
-        </XDSText>
-        <XDSAvatarGroup size="medium">
+        </Text>
+        <AvatarGroup size="medium">
           {USERS.map(user => (
-            <XDSAvatar key={user.name} src={user.src} name={user.name} />
+            <Avatar key={user.name} src={user.src} name={user.name} />
           ))}
-          <XDSAvatarGroupOverflow count={5} />
-        </XDSAvatarGroup>
-      </XDSStack>
-      <XDSStack direction="vertical" gap={3}>
-        <XDSText type="supporting" color="secondary">
+          <AvatarGroupOverflow count={5} />
+        </AvatarGroup>
+      </Stack>
+      <Stack direction="vertical" gap={3}>
+        <Text type="supporting" color="secondary">
           Custom count text
-        </XDSText>
-        <XDSAvatarGroup size="medium">
+        </Text>
+        <AvatarGroup size="medium">
           {USERS.slice(0, 2).map(user => (
-            <XDSAvatar key={user.name} src={user.src} name={user.name} />
+            <Avatar key={user.name} src={user.src} name={user.name} />
           ))}
-          <XDSAvatarGroupOverflow count={12}>12+</XDSAvatarGroupOverflow>
-        </XDSAvatarGroup>
-      </XDSStack>
-    </XDSStack>
+          <AvatarGroupOverflow count={12}>12+</AvatarGroupOverflow>
+        </AvatarGroup>
+      </Stack>
+    </Stack>
   );
 }

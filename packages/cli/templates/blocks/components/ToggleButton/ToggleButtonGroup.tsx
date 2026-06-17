@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSIcon} from '@xds/core/Icon';
+import {ToggleButton, ToggleButtonGroup} from '@xds/core/ToggleButton';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {Icon} from '@xds/core/Icon';
 import {ListBulletIcon, Squares2X2Icon, TableCellsIcon} from '@heroicons/react/24/outline';
 import {BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon} from '@heroicons/react/24/outline';
 
@@ -15,67 +15,67 @@ export default function ToggleButtonGroup() {
   const [formats, setFormats] = useState<string[]>(['bold']);
 
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Single selection
-        </XDSText>
-        <XDSToggleButtonGroup value={view} onChange={setView} label="View mode">
-          <XDSToggleButton
+        </Text>
+        <ToggleButtonGroup value={view} onChange={setView} label="View mode">
+          <ToggleButton
             value="list"
             label="List view"
-            icon={<XDSIcon icon={ListBulletIcon} />}
+            icon={<Icon icon={ListBulletIcon} />}
             isIconOnly
           />
-          <XDSToggleButton
+          <ToggleButton
             value="grid"
             label="Grid view"
-            icon={<XDSIcon icon={Squares2X2Icon} />}
+            icon={<Icon icon={Squares2X2Icon} />}
             isIconOnly
           />
-          <XDSToggleButton
+          <ToggleButton
             value="table"
             label="Table view"
-            icon={<XDSIcon icon={TableCellsIcon} />}
+            icon={<Icon icon={TableCellsIcon} />}
             isIconOnly
           />
-        </XDSToggleButtonGroup>
-      </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+        </ToggleButtonGroup>
+      </Stack>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Multiple selections
-        </XDSText>
-        <XDSToggleButtonGroup
+        </Text>
+        <ToggleButtonGroup
           type="multiple"
           value={formats}
           onChange={setFormats}
           label="Text formatting">
-          <XDSToggleButton
+          <ToggleButton
             value="bold"
             label="Bold"
-            icon={<XDSIcon icon={BoldIcon} />}
+            icon={<Icon icon={BoldIcon} />}
             isIconOnly
           />
-          <XDSToggleButton
+          <ToggleButton
             value="italic"
             label="Italic"
-            icon={<XDSIcon icon={ItalicIcon} />}
+            icon={<Icon icon={ItalicIcon} />}
             isIconOnly
           />
-          <XDSToggleButton
+          <ToggleButton
             value="underline"
             label="Underline"
-            icon={<XDSIcon icon={UnderlineIcon} />}
+            icon={<Icon icon={UnderlineIcon} />}
             isIconOnly
           />
-          <XDSToggleButton
+          <ToggleButton
             value="strikethrough"
             label="Strikethrough"
-            icon={<XDSIcon icon={StrikethroughIcon} />}
+            icon={<Icon icon={StrikethroughIcon} />}
             isIconOnly
           />
-        </XDSToggleButtonGroup>
-      </XDSStack>
-    </XDSStack>
+        </ToggleButtonGroup>
+      </Stack>
+    </Stack>
   );
 }

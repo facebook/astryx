@@ -3,21 +3,21 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {DropdownMenu} from '@xds/core/DropdownMenu';
+import {Icon} from '@xds/core/Icon';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 import {EllipsisHorizontalIcon} from '@heroicons/react/24/outline';
 
 export default function DropdownMenuNoChevron() {
   const [lastAction, setLastAction] = useState<string | null>(null);
 
   return (
-    <XDSVStack gap={3}>
-      <XDSDropdownMenu
+    <VStack gap={3}>
+      <DropdownMenu
         button={{
           label: 'More actions',
-          icon: <XDSIcon icon={EllipsisHorizontalIcon} />,
+          icon: <Icon icon={EllipsisHorizontalIcon} />,
           variant: 'ghost',
           isIconOnly: true,
         }}
@@ -31,10 +31,10 @@ export default function DropdownMenuNoChevron() {
         ]}
       />
       {lastAction && (
-        <XDSText type="supporting" color="secondary">
+        <Text type="supporting" color="secondary">
           Last action: {lastAction}
-        </XDSText>
+        </Text>
       )}
-    </XDSVStack>
+    </VStack>
   );
 }

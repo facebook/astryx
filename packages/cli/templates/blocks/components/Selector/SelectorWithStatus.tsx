@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSVStack} from '@xds/core/Layout';
+import {Selector} from '@xds/core/Selector';
+import {VStack} from '@xds/core/Layout';
 
 export default function SelectorWithStatus() {
   const [value1, setValue1] = useState<string | undefined>();
@@ -12,8 +12,8 @@ export default function SelectorWithStatus() {
   const [value3, setValue3] = useState<string | undefined>('admin');
   return (
     <div style={{width: 300}}>
-      <XDSVStack gap={6}>
-        <XDSSelector
+      <VStack gap={6}>
+        <Selector
           label="Role"
           options={[
             {value: 'admin', label: 'Admin'},
@@ -25,7 +25,7 @@ export default function SelectorWithStatus() {
           placeholder="Choose a role..."
           status={{type: 'error', message: 'Please select a role'}}
         />
-        <XDSSelector
+        <Selector
           label="Role"
           options={[
             {value: 'admin', label: 'Admin'},
@@ -36,7 +36,7 @@ export default function SelectorWithStatus() {
           onChange={setValue2}
           status={{type: 'warning', message: 'Viewer has limited access'}}
         />
-        <XDSSelector
+        <Selector
           label="Role"
           options={[
             {value: 'admin', label: 'Admin'},
@@ -47,7 +47,7 @@ export default function SelectorWithStatus() {
           onChange={setValue3}
           status={{type: 'success'}}
         />
-      </XDSVStack>
+      </VStack>
     </div>
   );
 }

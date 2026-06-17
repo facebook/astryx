@@ -4,7 +4,7 @@
 export const doc = {
   type: 'block',
   exampleFor: 'Dialog',
-  alsoExampleFor: ['useXDSImperativeDialog'],
+  alsoExampleFor: ['useImperativeDialog'],
   name: 'Dialog — Form',
   displayName: 'Dialog — Form',
   description:

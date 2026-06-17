@@ -2,14 +2,14 @@
 
 'use client';
 
-import {XDSList, XDSListItem} from '@xds/core/List';
+import {List, ListItem} from '@xds/core/List';
 
 export default function ListShowcase() {
   return (
-    <XDSList>
-      <XDSListItem label="Notifications" description="Manage your alerts" />
-      <XDSListItem label="Privacy" description="Control your data" />
-      <XDSListItem label="Security" description="Password and 2FA" />
-    </XDSList>
+    <List>
+      <ListItem label="Notifications" description="Manage your alerts" />
+      <ListItem label="Privacy" description="Control your data" />
+      <ListItem label="Security" description="Password and 2FA" />
+    </List>
   );
 }

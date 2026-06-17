@@ -4,17 +4,17 @@
 
 import {useState} from 'react';
 import {
-  XDSChatComposer,
-  XDSChatComposerInput,
-  type XDSChatComposerTrigger,
+  ChatComposer,
+  ChatComposerInput,
+  type ChatComposerTrigger,
 } from '@xds/core/Chat';
 import {createStaticSource} from '@xds/core/Typeahead';
-import {XDSTypeaheadItem} from '@xds/core/Typeahead';
-import type {XDSSearchableItem} from '@xds/core/Typeahead';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {TypeaheadItem} from '@xds/core/Typeahead';
+import type {SearchableItem} from '@xds/core/Typeahead';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
-const USERS: XDSSearchableItem<{role: string}>[] = [
+const USERS: SearchableItem<{role: string}>[] = [
   {id: 'cindy', label: 'Cindy Zhang', auxiliaryData: {role: 'Design Systems'}},
   {id: 'alex', label: 'Alex Johnson', auxiliaryData: {role: 'Frontend'}},
   {id: 'sam', label: 'Sam Rivera', auxiliaryData: {role: 'Backend'}},
@@ -26,11 +26,11 @@ const userSource = createStaticSource(USERS);
 export default function ChatComposerInputMentionTrigger() {
   const [value, setValue] = useState('');
 
-  const mentionTrigger: XDSChatComposerTrigger = {
+  const mentionTrigger: ChatComposerTrigger = {
     character: '@',
     searchSource: userSource,
     renderItem: item => (
-      <XDSTypeaheadItem
+      <TypeaheadItem
         item={item}
         description={(item.auxiliaryData as {role: string})?.role}
       />
@@ -43,11 +43,11 @@ export default function ChatComposerInputMentionTrigger() {
   };
 
   return (
-    <XDSStack direction="vertical" gap={3} style={{width: '100%', maxWidth: 450}}>
-      <XDSChatComposer
+    <Stack direction="vertical" gap={3} style={{width: '100%', maxWidth: 450}}>
+      <ChatComposer
         onSubmit={() => setValue('')}
         input={
-          <XDSChatComposerInput
+          <ChatComposerInput
             value={value}
             onChange={setValue}
             triggers={[mentionTrigger]}
@@ -55,9 +55,9 @@ export default function ChatComposerInputMentionTrigger() {
           />
         }
       />
-      <XDSText type="supporting" color="secondary">
+      <Text type="supporting" color="secondary">
         Value: {JSON.stringify(value)}
-      </XDSText>
-    </XDSStack>
+      </Text>
+    </Stack>
   );
 }

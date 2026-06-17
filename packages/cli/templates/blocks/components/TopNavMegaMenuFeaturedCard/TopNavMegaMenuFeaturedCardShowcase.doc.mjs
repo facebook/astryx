@@ -6,7 +6,7 @@ export const doc = {
   exampleFor: 'TopNavMegaMenuFeaturedCard',
   name: 'TopNavMegaMenuFeaturedCard',
   displayName: 'Top Nav Mega Menu Featured Card',
-  description: 'Demonstrates XDSTopNavMegaMenuFeaturedCard with a title, description, and CTA link inside a mega menu.',
+  description: 'Demonstrates TopNavMegaMenuFeaturedCard with a title, description, and CTA link inside a mega menu.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

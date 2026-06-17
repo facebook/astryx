@@ -2,32 +2,32 @@
 
 'use client';
 
-import {XDSChatLayoutScrollButton} from '@xds/core/Chat';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {ChatLayoutScrollButton} from '@xds/core/Chat';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function ChatLayoutScrollButtonLabels() {
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Text type="supporting" color="secondary">
         Labels expand the button to give context
-      </XDSText>
-      <XDSStack direction="vertical" gap={3}>
-        <XDSChatLayoutScrollButton
+      </Text>
+      <Stack direction="vertical" gap={3}>
+        <ChatLayoutScrollButton
           isVisible={true}
           onClick={() => {}}
         />
-        <XDSChatLayoutScrollButton
+        <ChatLayoutScrollButton
           isVisible={true}
           label="New messages"
           onClick={() => {}}
         />
-        <XDSChatLayoutScrollButton
+        <ChatLayoutScrollButton
           isVisible={true}
           label="3 unread replies"
           onClick={() => {}}
         />
-      </XDSStack>
-    </XDSStack>
+      </Stack>
+    </Stack>
   );
 }

@@ -2,18 +2,18 @@
 
 'use client';
 
-import {XDSChatComposer, XDSChatComposerInput} from '@xds/core/Chat';
-import {XDSStack} from '@xds/core/Layout';
+import {ChatComposer, ChatComposerInput} from '@xds/core/Chat';
+import {Stack} from '@xds/core/Layout';
 
 export default function ChatComposerInputShowcase() {
   return (
-    <XDSStack direction="vertical" style={{width: '100%', maxWidth: 450}}>
-      <XDSChatComposer
+    <Stack direction="vertical" style={{width: '100%', maxWidth: 450}}>
+      <ChatComposer
         onSubmit={() => {}}
         input={
-          <XDSChatComposerInput placeholder="Ask me anything about XDS..." />
+          <ChatComposerInput placeholder="Ask me anything about XDS..." />
         }
       />
-    </XDSStack>
+    </Stack>
   );
 }

@@ -2,7 +2,7 @@
 
 'use client';
 
-import {XDSText} from '@xds/core/Text';
+import {Text} from '@xds/core/Text';
 
 export default function TextWordBreak() {
   return (
@@ -14,23 +14,23 @@ export default function TextWordBreak() {
         maxWidth: 400,
       }}>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           Break-word (default for multi-line)
-        </XDSText>
+        </Text>
         <div style={{width: 200, border: '1px solid #ccc', padding: 8}}>
-          <XDSText type="body" maxLines={2} wordBreak="break-word">
+          <Text type="body" maxLines={2} wordBreak="break-word">
             This is a verylongunbreakableword for a break-word example
-          </XDSText>
+          </Text>
         </div>
       </div>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           Break-all (default for single-line)
-        </XDSText>
+        </Text>
         <div style={{width: 200, border: '1px solid #ccc', padding: 8}}>
-          <XDSText type="body" maxLines={2} wordBreak="break-all">
+          <Text type="body" maxLines={2} wordBreak="break-all">
             Breaks anywhere: abcdefghijklmnopqrstuvwxyz0123456789
-          </XDSText>
+          </Text>
         </div>
       </div>
     </div>

@@ -2,25 +2,25 @@
 
 'use client';
 
-import {XDSTooltip} from '@xds/core/Tooltip';
-import {XDSButton} from '@xds/core/Button';
-import {XDSHStack} from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
+import {Tooltip} from '@xds/core/Tooltip';
+import {Button} from '@xds/core/Button';
+import {HStack} from '@xds/core/Layout';
+import {Center} from '@xds/core/Center';
 
 export default function TooltipActionBarTooltips() {
   return (
-    <XDSCenter>
-      <XDSHStack gap={4}>
-        <XDSTooltip content="Save your changes" placement="above">
-          <XDSButton label="Save" />
-        </XDSTooltip>
-        <XDSTooltip content="Discard changes" placement="above">
-          <XDSButton label="Cancel" />
-        </XDSTooltip>
-        <XDSTooltip content="Delete permanently" placement="above">
-          <XDSButton label="Delete" variant="destructive" />
-        </XDSTooltip>
-      </XDSHStack>
-    </XDSCenter>
+    <Center>
+      <HStack gap={4}>
+        <Tooltip content="Save your changes" placement="above">
+          <Button label="Save" />
+        </Tooltip>
+        <Tooltip content="Discard changes" placement="above">
+          <Button label="Cancel" />
+        </Tooltip>
+        <Tooltip content="Delete permanently" placement="above">
+          <Button label="Delete" variant="destructive" />
+        </Tooltip>
+      </HStack>
+    </Center>
   );
 }

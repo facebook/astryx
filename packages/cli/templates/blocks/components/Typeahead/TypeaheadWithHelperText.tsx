@@ -3,11 +3,11 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSTypeahead} from '@xds/core/Typeahead';
-import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
-import {XDSCenter} from '@xds/core/Center';
+import {Typeahead} from '@xds/core/Typeahead';
+import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
+import {Center} from '@xds/core/Center';
 
-const items: XDSSearchableItem[] = [
+const items: SearchableItem[] = [
   {id: '1', label: 'Engineering'},
   {id: '2', label: 'Design'},
   {id: '3', label: 'Marketing'},
@@ -18,17 +18,17 @@ const items: XDSSearchableItem[] = [
   {id: '8', label: 'Operations'},
 ];
 
-const searchSource: XDSSearchSource = {
+const searchSource: SearchSource = {
   search: (query: string) =>
     items.filter(i => i.label.toLowerCase().includes(query.toLowerCase())),
   bootstrap: () => items.slice(0, 5),
 };
 
 export default function TypeaheadWithHelperText() {
-  const [value, setValue] = useState<XDSSearchableItem | null>(null);
+  const [value, setValue] = useState<SearchableItem | null>(null);
   return (
-    <XDSCenter width={320}>
-      <XDSTypeahead
+    <Center width={320}>
+      <Typeahead
         label="Department"
         placeholder="Search departments..."
         searchSource={searchSource}
@@ -36,6 +36,6 @@ export default function TypeaheadWithHelperText() {
         onChange={setValue}
         description="Select the department this request should be routed to"
       />
-    </XDSCenter>
+    </Center>
   );
 }

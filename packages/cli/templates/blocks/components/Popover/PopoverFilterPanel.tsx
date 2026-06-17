@@ -3,12 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSPopover} from '@xds/core/Popover';
-import {XDSButton} from '@xds/core/Button';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSHeading} from '@xds/core/Text';
-import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
-import {XDSDivider} from '@xds/core/Divider';
+import {Popover} from '@xds/core/Popover';
+import {Button} from '@xds/core/Button';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Heading} from '@xds/core/Text';
+import {CheckboxInput} from '@xds/core/CheckboxInput';
+import {Divider} from '@xds/core/Divider';
 export default function PopoverFilterPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [filters, setFilters] = useState({
@@ -22,45 +22,45 @@ export default function PopoverFilterPanel() {
     setFilters(prev => ({...prev, [key]: !prev[key]}));
 
   return (
-    <XDSPopover
+    <Popover
       placement="below"
       label="Filter"
       width={240}
       isOpen={isOpen}
       onOpenChange={setIsOpen}
       content={
-        <XDSVStack gap={3}>
-          <XDSHeading level={4}>Filter by status</XDSHeading>
-          <XDSDivider />
-          <XDSCheckboxInput
+        <VStack gap={3}>
+          <Heading level={4}>Filter by status</Heading>
+          <Divider />
+          <CheckboxInput
             label="Active"
             value={filters.active}
             onChange={() => toggle('active')}
           />
-          <XDSCheckboxInput
+          <CheckboxInput
             label="Archived"
             value={filters.archived}
             onChange={() => toggle('archived')}
           />
-          <XDSCheckboxInput
+          <CheckboxInput
             label="Drafts"
             value={filters.drafts}
             onChange={() => toggle('drafts')}
           />
-          <XDSCheckboxInput
+          <CheckboxInput
             label="Shared with me"
             value={filters.shared}
             onChange={() => toggle('shared')}
           />
-          <XDSDivider />
-          <XDSHStack gap={2} hAlign="end">
-            <XDSButton
+          <Divider />
+          <HStack gap={2} hAlign="end">
+            <Button
               label="Apply"
               variant="primary"
               onClick={() => setIsOpen(false)}>
               Apply
-            </XDSButton>
-            <XDSButton
+            </Button>
+            <Button
               label="Reset"
               variant="ghost"
               onClick={() =>
@@ -72,11 +72,11 @@ export default function PopoverFilterPanel() {
                 })
               }>
               Reset
-            </XDSButton>
-          </XDSHStack>
-        </XDSVStack>
+            </Button>
+          </HStack>
+        </VStack>
       }>
-      <XDSButton label="Filter">Filter</XDSButton>
-    </XDSPopover>
+      <Button label="Filter">Filter</Button>
+    </Popover>
   );
 }

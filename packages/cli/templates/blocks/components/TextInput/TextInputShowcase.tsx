@@ -2,12 +2,12 @@
 
 'use client';
 
-import {XDSTextInput} from '@xds/core/TextInput';
+import {TextInput} from '@xds/core/TextInput';
 
 export default function TextInputShowcase() {
   return (
     <div style={{width: 300}}>
-      <XDSTextInput
+      <TextInput
         label="Name"
         value=""
         onChange={() => {}}

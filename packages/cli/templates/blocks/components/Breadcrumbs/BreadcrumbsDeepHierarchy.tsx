@@ -2,26 +2,26 @@
 
 'use client';
 
-import {XDSBreadcrumbs, XDSBreadcrumbItem} from '@xds/core/Breadcrumbs';
-import {XDSIcon} from '@xds/core/Icon';
+import {Breadcrumbs, BreadcrumbItem} from '@xds/core/Breadcrumbs';
+import {Icon} from '@xds/core/Icon';
 import {HomeIcon} from '@heroicons/react/24/outline';
 
 export default function BreadcrumbsDeepHierarchy() {
   return (
-    <XDSBreadcrumbs>
-      <XDSBreadcrumbItem
+    <Breadcrumbs>
+      <BreadcrumbItem
         href="/"
-        startIcon={<XDSIcon icon={HomeIcon} size="sm" />}>
+        startIcon={<Icon icon={HomeIcon} size="sm" />}>
         Home
-      </XDSBreadcrumbItem>
-      <XDSBreadcrumbItem href="/products">Products</XDSBreadcrumbItem>
-      <XDSBreadcrumbItem href="/products/electronics">
+      </BreadcrumbItem>
+      <BreadcrumbItem href="/products">Products</BreadcrumbItem>
+      <BreadcrumbItem href="/products/electronics">
         Electronics
-      </XDSBreadcrumbItem>
-      <XDSBreadcrumbItem href="/products/electronics/phones">
+      </BreadcrumbItem>
+      <BreadcrumbItem href="/products/electronics/phones">
         Phones
-      </XDSBreadcrumbItem>
-      <XDSBreadcrumbItem isCurrent>iPhone 15 Pro</XDSBreadcrumbItem>
-    </XDSBreadcrumbs>
+      </BreadcrumbItem>
+      <BreadcrumbItem isCurrent>iPhone 15 Pro</BreadcrumbItem>
+    </Breadcrumbs>
   );
 }

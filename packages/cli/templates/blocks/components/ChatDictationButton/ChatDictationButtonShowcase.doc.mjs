@@ -6,7 +6,7 @@ export const doc = {
   exampleFor: 'ChatDictationButton',
   name: 'ChatDictationButton',
   displayName: 'Chat Dictation Button',
-  description: 'Interactive dictation button connected to the SpeechRecognition API via useXDSChatDictation. Click the mic to dictate into the composer.',
+  description: 'Interactive dictation button connected to the SpeechRecognition API via useChatDictation. Click the mic to dictate into the composer.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

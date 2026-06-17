@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSDateInput} from '@xds/core/DateInput';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {DateInput} from '@xds/core/DateInput';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 type DateString =
   `${number}${number}${number}${number}-${number}${number}-${number}${number}`;
@@ -16,11 +16,11 @@ export default function DateInputClearable() {
   );
 
   return (
-    <XDSStack direction="vertical" gap={4} width="100%" style={{maxWidth: 400}}>
-      <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4} width="100%" style={{maxWidth: 400}}>
+      <Text type="supporting" color="secondary">
         {value ? `Selected: ${value}` : 'No date selected'}
-      </XDSText>
-      <XDSDateInput
+      </Text>
+      <DateInput
         label="Event date"
         description="Pick a date for your event"
         placeholder="Select a date"
@@ -28,6 +28,6 @@ export default function DateInputClearable() {
         onChange={setValue}
         hasClear
       />
-    </XDSStack>
+    </Stack>
   );
 }

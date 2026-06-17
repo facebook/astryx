@@ -2,46 +2,46 @@
 
 'use client';
 
-import {XDSItem} from '@xds/core/Item';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSText} from '@xds/core/Text';
-import {XDSStack} from '@xds/core/Layout';
+import {Item} from '@xds/core/Item';
+import {Avatar} from '@xds/core/Avatar';
+import {Badge} from '@xds/core/Badge';
+import {Icon} from '@xds/core/Icon';
+import {Text} from '@xds/core/Text';
+import {Stack} from '@xds/core/Layout';
 import {UserIcon, DocumentIcon, BellIcon} from '@heroicons/react/24/outline';
 
 export default function ItemShowcase() {
   return (
-    <XDSStack gap={0}>
-      <XDSItem
-        startContent={<XDSAvatar name="Alice Johnson" size={40} />}
+    <Stack gap={0}>
+      <Item
+        startContent={<Avatar name="Alice Johnson" size={40} />}
         label="Alice Johnson"
         description="Engineering Lead"
-        endContent={<XDSBadge label="Admin" />}
+        endContent={<Badge label="Admin" />}
         onClick={() => {}}
       />
-      <XDSItem
-        startContent={<XDSIcon icon={BellIcon} size="sm" />}
+      <Item
+        startContent={<Icon icon={BellIcon} size="sm" />}
         label="Build completed successfully"
         description="Pipeline #4521 — all 42 tests passed"
-        endContent={<XDSText color="secondary">5h ago</XDSText>}
+        endContent={<Text color="secondary">5h ago</Text>}
         descriptionLines={1}
         onClick={() => {}}
       />
-      <XDSItem
-        startContent={<XDSIcon icon={DocumentIcon} size="sm" />}
+      <Item
+        startContent={<Icon icon={DocumentIcon} size="sm" />}
         label="design-spec.pdf"
         description="Modified 2 hours ago"
-        endContent={<XDSText color="secondary">2.4 MB</XDSText>}
+        endContent={<Text color="secondary">2.4 MB</Text>}
         isSelected
         onClick={() => {}}
       />
-      <XDSItem
-        startContent={<XDSIcon icon={UserIcon} size="sm" />}
+      <Item
+        startContent={<Icon icon={UserIcon} size="sm" />}
         label="Compact menu item"
         density="compact"
         onClick={() => {}}
       />
-    </XDSStack>
+    </Stack>
   );
 }

@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSTable, proportional, pixel} from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
+import {Table, proportional, pixel} from '@xds/core/Table';
+import type {TableColumn} from '@xds/core/Table';
 
 interface User extends Record<string, unknown> {
   id: string;
@@ -51,7 +51,7 @@ const users: User[] = [
   },
 ];
 
-const columns: XDSTableColumn<User>[] = [
+const columns: TableColumn<User>[] = [
   {key: 'name', header: 'Name'},
   {key: 'email', header: 'Email', width: proportional(2)},
   {key: 'role', header: 'Role'},
@@ -59,7 +59,5 @@ const columns: XDSTableColumn<User>[] = [
 ];
 
 export default function TableStripedTable() {
-  return (
-    <XDSTable data={users} columns={columns} idKey="id" isStriped hasHover />
-  );
+  return (<Table data={users} columns={columns} idKey="id" isStriped hasHover />);
 }

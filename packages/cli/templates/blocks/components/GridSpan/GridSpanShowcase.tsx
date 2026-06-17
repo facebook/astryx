@@ -2,51 +2,51 @@
 
 'use client';
 
-import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
-import {XDSCard} from '@xds/core/Card';
-import {XDSText} from '@xds/core/Text';
+import {Grid, GridSpan} from '@xds/core/Grid';
+import {Card} from '@xds/core/Card';
+import {Text} from '@xds/core/Text';
 
 export default function GridSpanShowcase() {
   return (
-    <XDSGrid columns={4} gap={3} width={400}>
-      <XDSGridSpan columns={3}>
-        <XDSCard height={80}>
-          <XDSText type="body" color="secondary">
+    <Grid columns={4} gap={3} width={400}>
+      <GridSpan columns={3}>
+        <Card height={80}>
+          <Text type="body" color="secondary">
             Spans 3 columns
-          </XDSText>
-        </XDSCard>
-      </XDSGridSpan>
-      <XDSCard height={80}>
-        <XDSText type="body" color="secondary">
+          </Text>
+        </Card>
+      </GridSpan>
+      <Card height={80}>
+        <Text type="body" color="secondary">
           1 col
-        </XDSText>
-      </XDSCard>
-      <XDSGridSpan rows={2}>
-        <XDSCard>
-          <XDSText type="body" color="secondary">
+        </Text>
+      </Card>
+      <GridSpan rows={2}>
+        <Card>
+          <Text type="body" color="secondary">
             1 col
-          </XDSText>
-        </XDSCard>
-      </XDSGridSpan>
-      <XDSGridSpan columns={3}>
-        <XDSCard height={80}>
-          <XDSText type="body" color="secondary">
+          </Text>
+        </Card>
+      </GridSpan>
+      <GridSpan columns={3}>
+        <Card height={80}>
+          <Text type="body" color="secondary">
             Full-width row
-          </XDSText>
-        </XDSCard>
-      </XDSGridSpan>
-      <XDSCard height={80}>
-        <XDSText type="body" color="secondary">
+          </Text>
+        </Card>
+      </GridSpan>
+      <Card height={80}>
+        <Text type="body" color="secondary">
           1 col
-        </XDSText>
-      </XDSCard>
-      <XDSGridSpan columns={2}>
-        <XDSCard height={80}>
-          <XDSText type="body" color="secondary">
+        </Text>
+      </Card>
+      <GridSpan columns={2}>
+        <Card height={80}>
+          <Text type="body" color="secondary">
             Spans 2 columns
-          </XDSText>
-        </XDSCard>
-      </XDSGridSpan>
-    </XDSGrid>
+          </Text>
+        </Card>
+      </GridSpan>
+    </Grid>
   );
 }

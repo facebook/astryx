@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSIconButton} from '@xds/core/IconButton';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSHStack} from '@xds/core/Stack';
+import {IconButton} from '@xds/core/IconButton';
+import {Icon} from '@xds/core/Icon';
+import {HStack} from '@xds/core/Stack';
 
 export default function IconButtonLoadingToggle() {
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -16,27 +16,27 @@ export default function IconButtonLoadingToggle() {
   }
 
   return (
-    <XDSHStack gap={2}>
-      <XDSIconButton
+    <HStack gap={2}>
+      <IconButton
         label="Copy"
-        icon={<XDSIcon icon="copy" color="inherit" />}
+        icon={<Icon icon="copy" color="inherit" />}
         variant="primary"
         isLoading={loadingId === 'copy'}
         onClick={() => handleClick('copy')}
       />
-      <XDSIconButton
+      <IconButton
         label="Search"
-        icon={<XDSIcon icon="search" color="inherit" />}
+        icon={<Icon icon="search" color="inherit" />}
         isLoading={loadingId === 'search'}
         onClick={() => handleClick('search')}
       />
-      <XDSIconButton
+      <IconButton
         label="Close"
-        icon={<XDSIcon icon="close" color="inherit" />}
+        icon={<Icon icon="close" color="inherit" />}
         variant="ghost"
         isLoading={loadingId === 'close'}
         onClick={() => handleClick('close')}
       />
-    </XDSHStack>
+    </HStack>
   );
 }

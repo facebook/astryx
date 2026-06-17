@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {XDSMultiSelector} from '@xds/core/MultiSelector';
+import {MultiSelector} from '@xds/core/MultiSelector';
 
 export default function MultiSelectorShowcase() {
   return (
     <div style={{width: 300}}>
-      <XDSMultiSelector
+      <MultiSelector
         label="Columns"
         options={['Name', 'Email', 'Role', 'Status', 'Created']}
         value={[]}

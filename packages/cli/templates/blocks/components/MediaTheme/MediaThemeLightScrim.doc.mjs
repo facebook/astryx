@@ -7,7 +7,7 @@ export const doc = {
   name: 'MediaTheme — Light Scrim',
   displayName: 'MediaTheme — Light Scrim',
   description:
-    'A light scrim over an image. Use XDSMediaTheme mode="light" so text and ghost buttons use dark-on-light tokens.',
+    'A light scrim over an image. Use MediaTheme mode="light" so text and ghost buttons use dark-on-light tokens.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: [

@@ -3,16 +3,16 @@
 'use client';
 
 import {
-  XDSVStack,
-  XDSHStack,
-  XDSLayout,
-  XDSLayoutContent,
+  VStack,
+  HStack,
+  Layout,
+  LayoutContent,
 } from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSDivider} from '@xds/core/Divider';
+import {Text, Heading} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {AspectRatio} from '@xds/core/AspectRatio';
+import {Grid} from '@xds/core/Grid';
+import {Divider} from '@xds/core/Divider';
 import * as stylex from '@stylexjs/stylex';
 
 // Image fill is a plain inline style (not stylex) so it survives the playground
@@ -76,14 +76,14 @@ const IMAGES = [
 
 function StatBlock({value, label}: {value: string; label: string}) {
   return (
-    <XDSVStack gap={0}>
-      <XDSText type="large" weight="bold">
+    <VStack gap={0}>
+      <Text type="large" weight="bold">
         {value}
-      </XDSText>
-      <XDSText type="supporting" color="secondary">
+      </Text>
+      <Text type="supporting" color="secondary">
         {label}
-      </XDSText>
-    </XDSVStack>
+      </Text>
+    </VStack>
   );
 }
 
@@ -91,13 +91,13 @@ function StatBlock({value, label}: {value: string; label: string}) {
 
 function ImageGrid() {
   return (
-    <XDSGrid columns={3} gap={3}>
+    <Grid columns={3} gap={3}>
       {IMAGES.map(img => (
-        <XDSAspectRatio key={img.src} ratio={1} xstyle={styles.imageClip}>
+        <AspectRatio key={img.src} ratio={1} xstyle={styles.imageClip}>
           <img src={img.src} alt={img.alt} style={imageStyle} />
-        </XDSAspectRatio>
+        </AspectRatio>
       ))}
-    </XDSGrid>
+    </Grid>
   );
 }
 
@@ -105,50 +105,50 @@ function ImageGrid() {
 
 export default function SideGalleryTemplate() {
   return (
-    <XDSLayout
+    <Layout
       height="auto"
       contentWidth={1400}
       content={
-        <XDSLayoutContent padding={6}>
-          <XDSGrid
+        <LayoutContent padding={6}>
+          <Grid
             columns={{minWidth: 360, repeat: 'fit'}}
             gap={8}
             align="center">
             {/* Left side: Text + CTA */}
-            <XDSVStack gap={6} vAlign="center">
-              <XDSVStack gap={3}>
-                <XDSText type="supporting" color="secondary" weight="semibold">
+            <VStack gap={6} vAlign="center">
+              <VStack gap={3}>
+                <Text type="supporting" color="secondary" weight="semibold">
                   COLORFUL
-                </XDSText>
-                <XDSHeading level={1}>
+                </Text>
+                <Heading level={1}>
                   Make every day a little more delightful, one small detail at a
                   time.
-                </XDSHeading>
-                <XDSText type="body" color="secondary">
+                </Heading>
+                <Text type="body" color="secondary">
                   The smallest details are the ones that matter most. A little
                   color that catches your eye and makes you pause; that&apos;s
                   what turns an ordinary day into something worth remembering.
-                </XDSText>
-              </XDSVStack>
+                </Text>
+              </VStack>
 
-              <XDSHStack gap={3} vAlign="center">
-                <XDSButton label="Explore" variant="primary" />
-              </XDSHStack>
+              <HStack gap={3} vAlign="center">
+                <Button label="Explore" variant="primary" />
+              </HStack>
 
-              <XDSVStack gap={4}>
-                <XDSDivider />
-                <XDSHStack gap={6}>
+              <VStack gap={4}>
+                <Divider />
+                <HStack gap={6}>
                   <StatBlock value="12k+" label="Photos" />
                   <StatBlock value="350+" label="Projects" />
                   <StatBlock value="8yrs" label="Experience" />
-                </XDSHStack>
-              </XDSVStack>
-            </XDSVStack>
+                </HStack>
+              </VStack>
+            </VStack>
 
             {/* Right side: Image Grid */}
             <ImageGrid />
-          </XDSGrid>
-        </XDSLayoutContent>
+          </Grid>
+        </LayoutContent>
       }
     />
   );

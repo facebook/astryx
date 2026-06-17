@@ -4,8 +4,8 @@
 export const doc = {
   type: 'block',
   exampleFor: 'Table',
-  alsoExampleFor: ['useXDSTableSortable'],
-  alsoShowcaseFor: ['useXDSTableSortable'],
+  alsoExampleFor: ['useTableSortable'],
+  alsoShowcaseFor: ['useTableSortable'],
   name: 'Table — Sortable Columns',
   displayName: 'Table — Sortable Columns',
   description:

@@ -3,17 +3,17 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
+import {Dialog, DialogHeader} from '@xds/core/Dialog';
 import {
-  XDSLayout,
-  XDSLayoutContent,
-  XDSLayoutFooter,
-  XDSHStack,
-  XDSVStack,
+  Layout,
+  LayoutContent,
+  LayoutFooter,
+  HStack,
+  VStack,
 } from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText} from '@xds/core/Text';
-import {XDSCard} from '@xds/core/Card';
+import {Button} from '@xds/core/Button';
+import {Text} from '@xds/core/Text';
+import {Card} from '@xds/core/Card';
 
 const SECTIONS = [
   {
@@ -42,58 +42,58 @@ export default function DialogFullscreenDialog() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <XDSCard>
-      <XDSVStack gap={3}>
-        <XDSVStack gap={1}>
-          <XDSText type="body" weight="bold">
+    <Card>
+      <VStack gap={3}>
+        <VStack gap={1}>
+          <Text type="body" weight="bold">
             Help &amp; Documentation
-          </XDSText>
-          <XDSText type="supporting" color="secondary">
+          </Text>
+          <Text type="supporting" color="secondary">
             5 articles · Last updated Apr 2026
-          </XDSText>
-        </XDSVStack>
-        <XDSButton
+          </Text>
+        </VStack>
+        <Button
           label="Open documentation"
           variant="secondary"
           onClick={() => setIsOpen(true)}
         />
-      </XDSVStack>
-      <XDSDialog isOpen={isOpen} onOpenChange={setIsOpen} variant="fullscreen">
-        <XDSLayout
+      </VStack>
+      <Dialog isOpen={isOpen} onOpenChange={setIsOpen} variant="fullscreen">
+        <Layout
           header={
-            <XDSDialogHeader
+            <DialogHeader
               title="Documentation"
               subtitle="Everything you need to get started"
               onOpenChange={setIsOpen}
             />
           }
           content={
-            <XDSLayoutContent>
-              <XDSVStack gap={4}>
+            <LayoutContent>
+              <VStack gap={4}>
                 {SECTIONS.map(({title, body}) => (
-                  <XDSVStack key={title} gap={1}>
-                    <XDSText type="body" weight="bold">
+                  <VStack key={title} gap={1}>
+                    <Text type="body" weight="bold">
                       {title}
-                    </XDSText>
-                    <XDSText type="body">{body}</XDSText>
-                  </XDSVStack>
+                    </Text>
+                    <Text type="body">{body}</Text>
+                  </VStack>
                 ))}
-              </XDSVStack>
-            </XDSLayoutContent>
+              </VStack>
+            </LayoutContent>
           }
           footer={
-            <XDSLayoutFooter>
-              <XDSHStack hAlign="end">
-                <XDSButton
+            <LayoutFooter>
+              <HStack hAlign="end">
+                <Button
                   label="Close"
                   variant="primary"
                   onClick={() => setIsOpen(false)}
                 />
-              </XDSHStack>
-            </XDSLayoutFooter>
+              </HStack>
+            </LayoutFooter>
           }
         />
-      </XDSDialog>
-    </XDSCard>
+      </Dialog>
+    </Card>
   );
 }

@@ -3,16 +3,16 @@
 'use client';
 
 import {
-  XDSTopNav,
-  XDSTopNavHeading,
-  XDSTopNavItem,
-  XDSTopNavMegaMenu,
-  XDSTopNavMegaMenuItem,
-  XDSTopNavMegaMenuFeaturedCard,
+  TopNav,
+  TopNavHeading,
+  TopNavItem,
+  TopNavMegaMenu,
+  TopNavMegaMenuItem,
+  TopNavMegaMenuFeaturedCard,
 } from '@xds/core/TopNav';
-import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
+import {NavIcon} from '@xds/core/NavIcon';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
 import {
   CubeIcon,
   ChartBarIcon,
@@ -24,46 +24,46 @@ import {
 
 export default function TopNavMegaMenu() {
   return (
-    <XDSTopNav
+    <TopNav
       label="Marketing navigation"
       heading={
-        <XDSTopNavHeading
+        <TopNavHeading
           heading="My App"
-          logo={<XDSNavIcon icon={<XDSIcon icon={CubeIcon} size="sm" />} />}
+          logo={<NavIcon icon={<Icon icon={CubeIcon} size="sm" />} />}
           href="#"
         />
       }
       startContent={
         <>
-          <XDSTopNavMegaMenu
+          <TopNavMegaMenu
             label="Products"
             items={
               <>
-                <XDSTopNavMegaMenuItem
+                <TopNavMegaMenuItem
                   title="Analytics"
                   description="Track and analyze user behavior across your apps"
                   icon={<ChartBarIcon />}
                   href="#analytics"
                 />
-                <XDSTopNavMegaMenuItem
+                <TopNavMegaMenuItem
                   title="Security"
                   description="Enterprise-grade protection for your data"
                   icon={<ShieldCheckIcon />}
                   href="#security"
                 />
-                <XDSTopNavMegaMenuItem
+                <TopNavMegaMenuItem
                   title="Automation"
                   description="Streamline workflows with intelligent tools"
                   icon={<BoltIcon />}
                   href="#automation"
                 />
-                <XDSTopNavMegaMenuItem
+                <TopNavMegaMenuItem
                   title="Developer Tools"
                   description="APIs, SDKs, and CLI for integration"
                   icon={<CodeBracketIcon />}
                   href="#dev-tools"
                 />
-                <XDSTopNavMegaMenuItem
+                <TopNavMegaMenuItem
                   title="Global Network"
                   description="Low-latency edge infra in 40+ regions"
                   icon={<GlobeAltIcon />}
@@ -72,7 +72,7 @@ export default function TopNavMegaMenu() {
               </>
             }
             featured={
-              <XDSTopNavMegaMenuFeaturedCard
+              <TopNavMegaMenuFeaturedCard
                 title="What's new in v4.0"
                 description="AI-powered analytics and real-time collaboration."
                 image="https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-1.png"
@@ -82,14 +82,14 @@ export default function TopNavMegaMenu() {
               />
             }
           />
-          <XDSTopNavItem label="Pricing" href="#" />
-          <XDSTopNavItem label="Docs" href="#" />
+          <TopNavItem label="Pricing" href="#" />
+          <TopNavItem label="Docs" href="#" />
         </>
       }
       endContent={
         <>
-          <XDSButton label="Sign in" variant="ghost" />
-          <XDSButton label="Get started" variant="primary" />
+          <Button label="Sign in" variant="ghost" />
+          <Button label="Get started" variant="primary" />
         </>
       }
     />

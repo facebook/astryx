@@ -6,7 +6,7 @@ export const doc = {
   name: 'AvatarGroupOverflow — Default Count',
   displayName: 'Avatar Group Overflow — Default Count',
   description:
-    'Use XDSAvatarGroupOverflow without children to render the standard +N overflow count.',
+    'Use AvatarGroupOverflow without children to render the standard +N overflow count.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['AvatarGroupOverflow', 'AvatarGroup', 'Avatar', 'Layout', 'Text'],

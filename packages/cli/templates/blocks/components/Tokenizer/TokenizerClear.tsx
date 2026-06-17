@@ -4,16 +4,16 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSTokenizer} from '@xds/core/Tokenizer';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
+import {Tokenizer} from '@xds/core/Tokenizer';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
 
 const styles = stylex.create({
   fixed: {width: 400},
 });
 
-const users: XDSSearchableItem[] = [
+const users: SearchableItem[] = [
   {id: '1', label: 'Alice Johnson'},
   {id: '2', label: 'Bob Smith'},
   {id: '3', label: 'Charlie Brown'},
@@ -21,21 +21,21 @@ const users: XDSSearchableItem[] = [
   {id: '5', label: 'Eve Williams'},
 ];
 
-const userSource: XDSSearchSource = {
+const userSource: SearchSource = {
   search: (query: string) =>
     users.filter(u => u.label.toLowerCase().includes(query.toLowerCase())),
   bootstrap: () => users,
 };
 
 export default function TokenizerClear() {
-  const [value, setValue] = useState<XDSSearchableItem[]>([users[0], users[1]]);
+  const [value, setValue] = useState<SearchableItem[]>([users[0], users[1]]);
 
   return (
-    <XDSStack direction="vertical" gap={2}>
-      <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={2}>
+      <Text type="supporting" color="secondary">
         Clear-all button appears when tokens are selected
-      </XDSText>
-      <XDSTokenizer
+      </Text>
+      <Tokenizer
         label="Team Members"
         placeholder="Search people..."
         searchSource={userSource}
@@ -44,6 +44,6 @@ export default function TokenizerClear() {
         hasClear
         xstyle={styles.fixed}
       />
-    </XDSStack>
+    </Stack>
   );
 }

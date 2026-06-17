@@ -3,13 +3,13 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSLayout, XDSLayoutHeader, XDSLayoutContent} from '@xds/core';
-import {XDSText} from '@xds/core';
-import {XDSButton} from '@xds/core';
-import {XDSHStack} from '@xds/core';
-import {XDSTable} from '@xds/core';
-import {XDSBadge} from '@xds/core';
-import type {XDSTableColumn} from '@xds/core';
+import {Layout, LayoutHeader, LayoutContent} from '@xds/core';
+import {Text} from '@xds/core';
+import {Button} from '@xds/core';
+import {HStack} from '@xds/core';
+import {Table} from '@xds/core';
+import {Badge} from '@xds/core';
+import type {TableColumn} from '@xds/core';
 
 type Item = {
   id: string;
@@ -24,21 +24,21 @@ const SAMPLE_DATA: Item[] = [
   {id: '3', name: 'Item Three', status: 'active', updatedAt: '2025-01-13'},
 ];
 
-const columns: XDSTableColumn<Item>[] = [
+const columns: TableColumn<Item>[] = [
   {
     key: 'name',
     header: 'Name',
     renderCell: (item: Item) => (
-      <XDSText type="body" weight="semibold">
+      <Text type="body" weight="semibold">
         {item.name}
-      </XDSText>
+      </Text>
     ),
   },
   {
     key: 'status',
     header: 'Status',
     renderCell: (item: Item) => (
-      <XDSBadge
+      <Badge
         variant={item.status === 'active' ? 'success' : 'neutral'}
         label={item.status}
       />
@@ -48,15 +48,15 @@ const columns: XDSTableColumn<Item>[] = [
     key: 'updatedAt',
     header: 'Updated',
     renderCell: (item: Item) => (
-      <XDSText type="body" color="secondary">
+      <Text type="body" color="secondary">
         {item.updatedAt}
-      </XDSText>
+      </Text>
     ),
   },
   {
     key: 'actions',
     header: 'Actions',
-    renderCell: () => <XDSButton label="Edit" variant="secondary" size="sm" />,
+    renderCell: () => <Button label="Edit" variant="secondary" size="sm" />,
   },
 ];
 
@@ -64,21 +64,21 @@ export default function TablePage() {
   const [data] = useState<Item[]>(SAMPLE_DATA);
 
   return (
-    <XDSLayout
+    <Layout
       header={
-        <XDSLayoutHeader hasDivider>
-          <XDSHStack vAlign="center" hAlign="between">
-            <XDSText type="large" weight="semibold">
+        <LayoutHeader hasDivider>
+          <HStack vAlign="center" hAlign="between">
+            <Text type="large" weight="semibold">
               Items
-            </XDSText>
-            <XDSButton label="Add Item" variant="primary" />
-          </XDSHStack>
-        </XDSLayoutHeader>
+            </Text>
+            <Button label="Add Item" variant="primary" />
+          </HStack>
+        </LayoutHeader>
       }
       content={
-        <XDSLayoutContent>
-          <XDSTable<Item> data={data} columns={columns} idKey="id" hasHover />
-        </XDSLayoutContent>
+        <LayoutContent>
+          <Table<Item> data={data} columns={columns} idKey="id" hasHover />
+        </LayoutContent>
       }
     />
   );

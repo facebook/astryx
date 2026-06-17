@@ -1,20 +1,20 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-// In production, use useXDSToast() hook for proper positioning, stacking, and lifecycle.
+// In production, use useToast() hook for proper positioning, stacking, and lifecycle.
 'use client';
 
-import {XDSToast} from '@xds/core/Toast';
-import {useXDSToast} from '@xds/core/Toast';
-import {XDSButton} from '@xds/core/Button';
+import {Toast} from '@xds/core/Toast';
+import {useToast} from '@xds/core/Toast';
+import {Button} from '@xds/core/Button';
 
 export default function ToastShowcase() {
-  const toast = useXDSToast();
+  const toast = useToast();
   return (
-    <XDSToast
+    <Toast
       type="info"
       body="Document saved successfully"
       endContent={
-        <XDSButton
+        <Button
           label="Show toast"
           variant="ghost"
           size="sm"

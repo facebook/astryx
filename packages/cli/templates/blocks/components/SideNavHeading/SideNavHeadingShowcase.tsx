@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSSideNav, XDSSideNavHeading} from '@xds/core/SideNav';
-import {XDSHStack} from '@xds/core/Layout';
+import {SideNav, SideNavHeading} from '@xds/core/SideNav';
+import {HStack} from '@xds/core/Layout';
 
 function AppIcon() {
   return (
@@ -15,20 +15,20 @@ function AppIcon() {
 
 export default function SideNavHeadingShowcase() {
   return (
-    <XDSHStack gap={6}>
-      <XDSSideNav
+    <HStack gap={6}>
+      <SideNav
         header={
-          <XDSSideNavHeading
+          <SideNavHeading
             heading="Analytics"
             icon={<AppIcon />}
             headingHref="/"
           />
         }>
         {null}
-      </XDSSideNav>
-      <XDSSideNav
+      </SideNav>
+      <SideNav
         header={
-          <XDSSideNavHeading
+          <SideNavHeading
             heading="Analytics"
             icon={<AppIcon />}
             superheading="Acme Corp"
@@ -37,7 +37,7 @@ export default function SideNavHeadingShowcase() {
           />
         }>
         {null}
-      </XDSSideNav>
-    </XDSHStack>
+      </SideNav>
+    </HStack>
   );
 }

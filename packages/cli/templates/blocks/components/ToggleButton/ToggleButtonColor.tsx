@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSToggleButton} from '@xds/core/ToggleButton';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSIcon} from '@xds/core/Icon';
+import {ToggleButton} from '@xds/core/ToggleButton';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {Icon} from '@xds/core/Icon';
 import {
   BoldIcon,
   ItalicIcon,
@@ -48,93 +48,93 @@ export default function ToggleButtonColor() {
     setReactions(prev => ({...prev, [key]: !prev[key]}));
 
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Toolbar
-        </XDSText>
-        <XDSStack direction="horizontal" gap={1}>
-          <XDSToggleButton
+        </Text>
+        <Stack direction="horizontal" gap={1}>
+          <ToggleButton
             label="Bold"
-            icon={<XDSIcon icon={BoldIcon} color="secondary" />}
-            pressedIcon={<XDSIcon icon={BoldSolid} color="accent" />}
+            icon={<Icon icon={BoldIcon} color="secondary" />}
+            pressedIcon={<Icon icon={BoldSolid} color="accent" />}
             isPressed={toolbar.bold}
             onPressedChange={() => toggleToolbar('bold')}
             isIconOnly
           />
-          <XDSToggleButton
+          <ToggleButton
             label="Italic"
-            icon={<XDSIcon icon={ItalicIcon} color="secondary" />}
-            pressedIcon={<XDSIcon icon={ItalicSolid} color="accent" />}
+            icon={<Icon icon={ItalicIcon} color="secondary" />}
+            pressedIcon={<Icon icon={ItalicSolid} color="accent" />}
             isPressed={toolbar.italic}
             onPressedChange={() => toggleToolbar('italic')}
             isIconOnly
           />
-          <XDSToggleButton
+          <ToggleButton
             label="Underline"
-            icon={<XDSIcon icon={UnderlineIcon} color="secondary" />}
-            pressedIcon={<XDSIcon icon={UnderlineSolid} color="accent" />}
+            icon={<Icon icon={UnderlineIcon} color="secondary" />}
+            pressedIcon={<Icon icon={UnderlineSolid} color="accent" />}
             isPressed={toolbar.underline}
             onPressedChange={() => toggleToolbar('underline')}
             isIconOnly
           />
-          <XDSToggleButton
+          <ToggleButton
             label="Strikethrough"
-            icon={<XDSIcon icon={StrikethroughIcon} color="secondary" />}
-            pressedIcon={<XDSIcon icon={StrikethroughIcon} color="accent" />}
+            icon={<Icon icon={StrikethroughIcon} color="secondary" />}
+            pressedIcon={<Icon icon={StrikethroughIcon} color="accent" />}
             isPressed={toolbar.strikethrough}
             onPressedChange={() => toggleToolbar('strikethrough')}
             isIconOnly
           />
-          <XDSToggleButton
+          <ToggleButton
             label="Link"
-            icon={<XDSIcon icon={LinkIcon} color="secondary" />}
-            pressedIcon={<XDSIcon icon={LinkIcon} color="accent" />}
+            icon={<Icon icon={LinkIcon} color="secondary" />}
+            pressedIcon={<Icon icon={LinkIcon} color="accent" />}
             isPressed={toolbar.link}
             onPressedChange={() => toggleToolbar('link')}
             isIconOnly
           />
-        </XDSStack>
-      </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+        </Stack>
+      </Stack>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Reactions
-        </XDSText>
-        <XDSStack direction="horizontal" gap={2}>
-          <XDSToggleButton
+        </Text>
+        <Stack direction="horizontal" gap={2}>
+          <ToggleButton
             label="Star"
-            icon={<XDSIcon icon={StarIcon} color="secondary" />}
-            pressedIcon={<XDSIcon icon={StarSolid} color="yellow" />}
+            icon={<Icon icon={StarIcon} color="secondary" />}
+            pressedIcon={<Icon icon={StarSolid} color="yellow" />}
             isPressed={reactions.star}
             onPressedChange={() => toggleReaction('star')}
             isIconOnly
           />
-          <XDSToggleButton
+          <ToggleButton
             label="Like"
-            icon={<XDSIcon icon={HeartIcon} color="secondary" />}
-            pressedIcon={<XDSIcon icon={HeartSolid} color="red" />}
+            icon={<Icon icon={HeartIcon} color="secondary" />}
+            pressedIcon={<Icon icon={HeartSolid} color="red" />}
             isPressed={reactions.heart}
             onPressedChange={() => toggleReaction('heart')}
             isIconOnly
           />
-          <XDSToggleButton
+          <ToggleButton
             label="Save"
-            icon={<XDSIcon icon={BookmarkIcon} color="secondary" />}
-            pressedIcon={<XDSIcon icon={BookmarkSolid} color="blue" />}
+            icon={<Icon icon={BookmarkIcon} color="secondary" />}
+            pressedIcon={<Icon icon={BookmarkSolid} color="blue" />}
             isPressed={reactions.bookmark}
             onPressedChange={() => toggleReaction('bookmark')}
             isIconOnly
           />
-          <XDSToggleButton
+          <ToggleButton
             label="Follow"
-            icon={<XDSIcon icon={BellIcon} color="secondary" />}
-            pressedIcon={<XDSIcon icon={BellIcon} color="accent" />}
+            icon={<Icon icon={BellIcon} color="secondary" />}
+            pressedIcon={<Icon icon={BellIcon} color="accent" />}
             isPressed={reactions.bell}
             onPressedChange={() => toggleReaction('bell')}
             isIconOnly
           />
-        </XDSStack>
-      </XDSStack>
-    </XDSStack>
+        </Stack>
+      </Stack>
+    </Stack>
   );
 }

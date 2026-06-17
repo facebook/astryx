@@ -1,13 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
+import {RadioList, RadioListItem} from '@xds/core/RadioList';
 
 export default function RadioListShowcase() {
   return (
-    <XDSRadioList label="Notification preference" value="" onChange={() => {}}>
-      <XDSRadioListItem label="Email" value="email" />
-      <XDSRadioListItem label="SMS" value="sms" />
-      <XDSRadioListItem label="Push notification" value="push" />
-    </XDSRadioList>
+    <RadioList label="Notification preference" value="" onChange={() => {}}>
+      <RadioListItem label="Email" value="email" />
+      <RadioListItem label="SMS" value="sms" />
+      <RadioListItem label="Push notification" value="push" />
+    </RadioList>
   );
 }

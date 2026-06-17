@@ -2,28 +2,28 @@
 
 'use client';
 
-import {XDSItem} from '@xds/core/Item';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Item} from '@xds/core/Item';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function ItemBasicItem() {
   return (
-    <XDSStack gap={0}>
-      <XDSItem
+    <Stack gap={0}>
+      <Item
         label="Quarterly planning"
         description="Agenda, notes, and action items"
-        endContent={<XDSText color="secondary">Today</XDSText>}
+        endContent={<Text color="secondary">Today</Text>}
       />
-      <XDSItem
+      <Item
         label="Customer research"
         description="Interview notes from the latest study"
-        endContent={<XDSText color="secondary">Yesterday</XDSText>}
+        endContent={<Text color="secondary">Yesterday</Text>}
       />
-      <XDSItem
+      <Item
         label="Launch checklist"
         description="Remaining tasks before release"
-        endContent={<XDSText color="secondary">Fri</XDSText>}
+        endContent={<Text color="secondary">Fri</Text>}
       />
-    </XDSStack>
+    </Stack>
   );
 }

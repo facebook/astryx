@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSTextArea} from '@xds/core/TextArea';
+import {TextArea} from '@xds/core/TextArea';
 import {PencilSquareIcon} from '@heroicons/react/24/outline';
 
 export default function TextAreaWithIcon() {
@@ -11,7 +11,7 @@ export default function TextAreaWithIcon() {
 
   return (
     <div style={{width: 400}}>
-      <XDSTextArea
+      <TextArea
         label="Meeting notes"
         description="Capture key decisions and action items."
         value={value}

@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSChatMessageList, XDSChatSystemMessage} from '@xds/core/Chat';
-import {XDSIcon} from '@xds/core/Icon';
+import {ChatMessageList, ChatSystemMessage} from '@xds/core/Chat';
+import {Icon} from '@xds/core/Icon';
 import {
   CheckCircleIcon,
   UserMinusIcon,
@@ -12,32 +12,26 @@ import {
 
 export default function ChatSystemMessageStatusUpdates() {
   return (
-    <XDSChatMessageList>
-      <XDSChatSystemMessage variant="divider">
+    <ChatMessageList>
+      <ChatSystemMessage variant="divider">
         March 14, 2026
-      </XDSChatSystemMessage>
-
-      <XDSChatSystemMessage icon={<XDSIcon icon={UserPlusIcon} />}>
+      </ChatSystemMessage>
+      <ChatSystemMessage icon={<Icon icon={UserPlusIcon} />}>
         Sarah Chen joined the conversation
-      </XDSChatSystemMessage>
-
-      <XDSChatSystemMessage>
+      </ChatSystemMessage>
+      <ChatSystemMessage>
         Topic changed to "Q2 Launch Planning"
-      </XDSChatSystemMessage>
-
-      <XDSChatSystemMessage variant="divider">
+      </ChatSystemMessage>
+      <ChatSystemMessage variant="divider">
         March 15, 2026
-      </XDSChatSystemMessage>
-
-      <XDSChatSystemMessage icon={<XDSIcon icon={UserMinusIcon} />}>
+      </ChatSystemMessage>
+      <ChatSystemMessage icon={<Icon icon={UserMinusIcon} />}>
         Alex Rivera left the conversation
-      </XDSChatSystemMessage>
-
-      <XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>
-
-      <XDSChatSystemMessage icon={<XDSIcon icon={CheckCircleIcon} />}>
+      </ChatSystemMessage>
+      <ChatSystemMessage variant="divider">Today</ChatSystemMessage>
+      <ChatSystemMessage icon={<Icon icon={CheckCircleIcon} />}>
         Conversation marked as resolved
-      </XDSChatSystemMessage>
-    </XDSChatMessageList>
+      </ChatSystemMessage>
+    </ChatMessageList>
   );
 }

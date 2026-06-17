@@ -3,10 +3,10 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSOverflowList} from '@xds/core/OverflowList';
-import {XDSButton} from '@xds/core/Button';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
-import {XDSCard} from '@xds/core/Card';
+import {OverflowList} from '@xds/core/OverflowList';
+import {Button} from '@xds/core/Button';
+import {DropdownMenu} from '@xds/core/DropdownMenu';
+import {Card} from '@xds/core/Card';
 
 const actions = ['Save', 'Edit', 'Duplicate', 'Share', 'Archive', 'Delete'];
 
@@ -22,11 +22,11 @@ const styles = stylex.create({
 
 export default function OverflowListOverflowDropdownActions() {
   return (
-    <XDSCard padding={2} xstyle={styles.resizable}>
-      <XDSOverflowList
+    <Card padding={2} xstyle={styles.resizable}>
+      <OverflowList
         gap={2}
         overflowRenderer={overflowItems => (
-          <XDSDropdownMenu
+          <DropdownMenu
             button={{
               label: `+${overflowItems.length}`,
               variant: 'ghost',
@@ -38,13 +38,13 @@ export default function OverflowListOverflowDropdownActions() {
             }))}
           />
         )}>
-        <XDSButton label="Save" size="sm" variant="primary" />
-        <XDSButton label="Edit" size="sm" />
-        <XDSButton label="Duplicate" size="sm" />
-        <XDSButton label="Share" size="sm" />
-        <XDSButton label="Archive" size="sm" />
-        <XDSButton label="Delete" size="sm" variant="destructive" />
-      </XDSOverflowList>
-    </XDSCard>
+        <Button label="Save" size="sm" variant="primary" />
+        <Button label="Edit" size="sm" />
+        <Button label="Duplicate" size="sm" />
+        <Button label="Share" size="sm" />
+        <Button label="Archive" size="sm" />
+        <Button label="Delete" size="sm" variant="destructive" />
+      </OverflowList>
+    </Card>
   );
 }

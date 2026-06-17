@@ -2,30 +2,30 @@
 
 'use client';
 
-import {useXDSStreamingText} from '@xds/core/hooks';
-import {XDSCard} from '@xds/core/Card';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {useStreamingText} from '@xds/core/hooks';
+import {Card} from '@xds/core/Card';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const response =
   'XDS hooks keep behavior reusable while components keep visuals consistent.';
 
-export default function UseXDSStreamingTextHookUsage() {
-  const displayedText = useXDSStreamingText(response, false, {
+export default function UseStreamingTextHookUsage() {
+  const displayedText = useStreamingText(response, false, {
     speed: 'fast',
   });
 
   return (
-    <XDSCard width={420} padding={4}>
-      <XDSVStack gap={2}>
-        <XDSText type="body" weight="bold">
+    <Card width={420} padding={4}>
+      <VStack gap={2}>
+        <Text type="body" weight="bold">
           Assistant response
-        </XDSText>
-        <XDSText type="body">{displayedText}</XDSText>
-        <XDSText type="supporting" color="secondary">
+        </Text>
+        <Text type="body">{displayedText}</Text>
+        <Text type="supporting" color="secondary">
           Complete
-        </XDSText>
-      </XDSVStack>
-    </XDSCard>
+        </Text>
+      </VStack>
+    </Card>
   );
 }
