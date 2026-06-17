@@ -321,8 +321,8 @@ describe('derived var expansion', () => {
     const rules = generateThemeRules(theme);
     const rule = rules.find(r => r.includes('.xds-card'));
     expect(rule).toBeDefined();
-    // Container expansion emits --xds-card-padding token
-    expect(rule).toContain('--xds-card-padding: 20px');
+    // Container expansion emits --astryx-card-padding token
+    expect(rule).toContain('--astryx-card-padding: 20px');
   });
 
   it('handles variant-specific derived vars', () => {
@@ -372,7 +372,7 @@ describe('brutalist-style derived expansion', () => {
     const rules = generateThemeRules(theme);
     const rule = rules.find(r => r.includes('.xds-card'));
     expect(rule).toBeDefined();
-    expect(rule).toContain('--xds-card-padding: 24px');
+    expect(rule).toContain('--astryx-card-padding: 24px');
   });
 
   it('dropdown-menu borderRadius + padding emit both derived vars', () => {
