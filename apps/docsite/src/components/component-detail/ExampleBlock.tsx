@@ -17,8 +17,15 @@ import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {buildPlaygroundHref} from '../playgroundLink';
 import {trackOpenPlayground} from '../../lib/analytics';
 import {MarkdownText} from '../MarkdownText';
+import {preventPreviewNavigation} from './previewNavigation';
 
-function LivePreview({entry}: {entry: ExampleEntry}) {
+function LivePreview({
+  entry,
+  componentName,
+}: {
+  entry: ExampleEntry;
+  componentName: string;
+}) {
   const [Component, setComponent] = useState<ComponentType | null>(null);
   const [error, setError] = useState(false);
 
@@ -28,6 +35,11 @@ function LivePreview({entry}: {entry: ExampleEntry}) {
       .then(mod => setComponent(() => mod.default))
       .catch(() => setError(true));
   }, [entry]);
+
+  const previewNavigationProps =
+    componentName === 'SideNav'
+      ? {onClickCapture: preventPreviewNavigation}
+      : {};
 
   if (error) {
     return (
@@ -56,7 +68,8 @@ function LivePreview({entry}: {entry: ExampleEntry}) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-      }}>
+      }}
+      {...previewNavigationProps}>
       <div style={{minWidth: 'fit-content', padding: 'var(--spacing-4)'}}>
         <Component />
       </div>
@@ -66,9 +79,10 @@ function LivePreview({entry}: {entry: ExampleEntry}) {
 
 interface ExampleBlockProps {
   entry: ExampleEntry;
+  componentName: string;
 }
 
-export function ExampleBlock({entry}: ExampleBlockProps) {
+export function ExampleBlock({entry, componentName}: ExampleBlockProps) {
   const [tab, setTab] = useState<string>('description');
 
   return (
@@ -78,7 +92,7 @@ export function ExampleBlock({entry}: ExampleBlockProps) {
           {entry.name}
         </XDSText>
 
-        <LivePreview entry={entry} />
+        <LivePreview entry={entry} componentName={componentName} />
 
         <XDSSection variant="muted" padding={1} dividers={['top']}>
           <XDSHStack
