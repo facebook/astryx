@@ -30,6 +30,10 @@ import migrateThemeSelectorsToDataAttrs, {
   meta as migrateThemeSelectorsToDataAttrsMeta,
 } from './migrate-theme-selectors-to-data-attrs.mjs';
 
+import dropXdsPrefixImports, {
+  meta as dropXdsPrefixImportsMeta,
+} from './drop-xds-prefix-imports.mjs';
+
 export default [
   {
     name: 'rename-date-picker-to-input',
@@ -60,6 +64,15 @@ export default [
     name: 'migrate-theme-selectors-to-data-attrs',
     transform: migrateThemeSelectorsToDataAttrs,
     meta: migrateThemeSelectorsToDataAttrsMeta,
+    optional: true,
+  },
+  {
+    // XDS-prefix migration (P2380608025). Optional + not tied to a version
+    // bump: consumers run it explicitly during their migration, e.g.
+    //   xds upgrade --codemod drop-xds-prefix-imports --codemod-only --apply
+    name: 'drop-xds-prefix-imports',
+    transform: dropXdsPrefixImports,
+    meta: dropXdsPrefixImportsMeta,
     optional: true,
   },
 ];
