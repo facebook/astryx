@@ -12,18 +12,24 @@ import {
   isValidElement,
   type ComponentType,
 } from 'react';
-import * as XDSCore from '@xds/core';
+import {xdsComponentMap} from '../../generated/xdsComponentMap';
 import type {ElementDescriptor} from '../../generated/componentRegistry';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyComponent = ComponentType<any>;
 
+/**
+ * Resolves an @xds/core component by name for the playground preview.
+ *
+ * Looks up a per-component, code-split lazy wrapper from the generated
+ * `xdsComponentMap` (see scripts/generate-component-map.mjs) so only the
+ * previewed component loads, instead of the whole `@xds/core` barrel (#2019).
+ * The wrapper self-suspends, so this lookup stays synchronous. Names are
+ * accepted with or without the `XDS` prefix.
+ */
 export function getXDSComponent(name: string): AnyComponent | null {
-  // Try both with and without XDS prefix
-  const withPrefix = `XDS${name}` as keyof typeof XDSCore;
-  const direct = name as keyof typeof XDSCore;
-  const value = XDSCore[withPrefix] ?? XDSCore[direct];
-  return typeof value === 'function' ? (value as AnyComponent) : null;
+  const key = name.replace(/^XDS/, '');
+  return xdsComponentMap[key] ?? null;
 }
 
 export function isElementDescriptor(v: unknown): v is ElementDescriptor {
