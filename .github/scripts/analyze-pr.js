@@ -149,7 +149,20 @@ function getPropsCount(componentName) {
   const componentDir = path.join(process.cwd(), CORE_SRC, componentName);
   try {
     const files = fs.readdirSync(componentDir);
-    const mainFile = files.find(f => f.startsWith('XDS') && f.endsWith('.tsx'));
+    // The main component file is `XDS{Name}.tsx` today, or the bare `{Name}.tsx`
+    // after the XDS-prefix migration (P2380608025, P4). Prefer the file named
+    // after the component directory (prefixed or bare); otherwise fall back to
+    // any prefixed/PascalCase component file in the directory.
+    const mainFile =
+      [`XDS${componentName}.tsx`, `${componentName}.tsx`].find(f =>
+        files.includes(f),
+      ) ||
+      files.find(
+        f =>
+          (/^XDS[A-Z]\w+\.tsx$/.test(f) || /^[A-Z]\w+\.tsx$/.test(f)) &&
+          !f.includes('.test.') &&
+          !f.includes('Context.'),
+      );
 
     if (!mainFile) return null;
 
