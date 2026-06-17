@@ -755,12 +755,42 @@ function installAgentsDocs(): void {
   }
 }
 
+/**
+ * Install AGENTS.md for the Astryx (unprefixed) target.
+ * Same as XDS docs but with bare component names (Button not XDSButton).
+ * This validates that agents perform equally well with unprefixed names.
+ */
+function installAstryxDocs(): void {
+  // First generate the standard XDS AGENTS.md
+  installAgentsDocs();
+
+  const vibeTestsDir = path.join(__dirname, '..');
+  const agentsMdPath = path.join(vibeTestsDir, 'AGENTS.md');
+
+  if (!fs.existsSync(agentsMdPath)) return;
+
+  // Post-process: strip XDS prefix from component/hook names
+  let content = fs.readFileSync(agentsMdPath, 'utf-8');
+
+  // XDSButton -> Button, XDSCard -> Card, etc. (PascalCase after XDS)
+  content = content.replace(/\bXDS([A-Z][a-zA-Z]*)/g, '$1');
+  // useXDSTheme -> useTheme, useXDSToast -> useToast
+  content = content.replace(/\buseXDS([A-Z][a-zA-Z]*)/g, 'use$1');
+  // Update the header/branding
+  content = content.replace(/\bXDS\b/g, 'Astryx');
+  content = content.replace(/`xds /g, '`astryx ');
+  content = content.replace(/npx xds /g, 'npx astryx ');
+
+  fs.writeFileSync(agentsMdPath, content);
+  console.log('✓ Post-processed AGENTS.md for Astryx (bare component names)');
+}
+
 interface InteractiveConfig {
   sample?: number;
   holdout?: boolean;
   persona: 'naive' | 'experienced' | 'adversarial';
   degradation?: boolean; // Enable degradation curve testing
-  target: 'xds' | 'baseline' | 'html'; // Target design system
+  target: 'xds' | 'baseline' | 'html' | 'astryx'; // Target design system
 }
 
 interface AgentTask {
@@ -970,6 +1000,11 @@ function generateSubagentPrompt(
       experienced: `Use only plain HTML elements and inline CSS. `,
       adversarial: `I know React component libraries exist but I want raw HTML/CSS. `,
     },
+    astryx: {
+      naive: '', // No special framing - same library, bare names
+      experienced: `Use Astryx components from @xds/core. `,
+      adversarial: `I'm used to Tailwind/baseline patterns but need to use your design system. `,
+    },
   };
 
   const framing = personaFraming[config.target]?.[config.persona] || '';
@@ -1064,7 +1099,7 @@ async function main() {
   const targetIndex = args.indexOf('--target');
   const target =
     targetIndex !== -1
-      ? (args[targetIndex + 1] as 'xds' | 'baseline' | 'html')
+      ? (args[targetIndex + 1] as 'xds' | 'baseline' | 'html' | 'astryx')
       : 'xds';
   const promptsIndex = args.indexOf('--prompts');
   const promptIds =
@@ -1088,6 +1123,8 @@ async function main() {
   // Install target-specific documentation for retrieval-led approach
   if (target === 'xds') {
     installAgentsDocs();
+  } else if (target === 'astryx') {
+    installAstryxDocs();
   } else if (target === 'baseline') {
     installBaselineDocs();
   } else if (target === 'html') {
@@ -1150,7 +1187,7 @@ async function main() {
     console.log(`Skill doc: ${skillDocOverride}`);
   }
   console.log(
-    `Mode: ${target === 'xds' ? 'AGENTS.md' : target === 'baseline' ? 'AGENTS.baseline.md' : 'AGENTS.html.md'} (retrieval-led)`,
+    `Mode: ${target === 'xds' || target === 'astryx' ? 'AGENTS.md' : target === 'baseline' ? 'AGENTS.baseline.md' : 'AGENTS.html.md'} (retrieval-led)`,
   );
   console.log(
     `Protocol: ${degradation ? 'Degradation (10-turn curve)' : 'One-shot'}`,
