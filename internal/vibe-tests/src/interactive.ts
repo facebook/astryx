@@ -780,6 +780,10 @@ function installAstryxDocs(): void {
   content = content.replace(/\bXDS\b/g, 'Astryx');
   content = content.replace(/`xds /g, '`astryx ');
   content = content.replace(/npx xds /g, 'npx astryx ');
+  // CSS custom properties: docs should reference the new --astryx-* names
+  // (the library still handles --xds-* via inverted fallback, but we don't
+  // recommend the legacy names in forward-facing docs)
+  content = content.replace(/--xds-/g, '--astryx-');
 
   fs.writeFileSync(agentsMdPath, content);
   console.log('✓ Post-processed AGENTS.md for Astryx (bare component names)');
