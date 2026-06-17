@@ -224,7 +224,14 @@ export function XDSIcon({
 }: XDSIconProps) {
   // String mode: resolve from icon registry, wrap in styled span
   if (typeof icon === 'string') {
-    return <IconFromRegistry name={icon} color={color} size={size} />;
+    return (
+      <IconFromRegistry
+        name={icon}
+        color={color}
+        size={size}
+        spanProps={props}
+      />
+    );
   }
 
   // Component mode: render SVG component directly with ref forwarding
@@ -259,10 +266,12 @@ function IconFromRegistry({
   name,
   color,
   size,
+  spanProps,
 }: {
   name: XDSIconName;
   color: XDSIconColor;
   size: XDSIconSize;
+  spanProps?: Omit<SVGProps<SVGSVGElement>, 'ref' | 'color'>;
 }) {
   const resolvedIcon = getIcon(name);
 
@@ -272,6 +281,7 @@ function IconFromRegistry({
 
   return (
     <span
+      {...(spanProps as React.HTMLAttributes<HTMLSpanElement>)}
       {...mergeProps(
         xdsThemeProps('icon', {size, color}),
         stylex.props(styles.span, colorStyles[color], spanSizeStyles[size]),
