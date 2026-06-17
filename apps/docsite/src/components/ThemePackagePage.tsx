@@ -32,6 +32,10 @@ import {trackOpenPlayground, trackToggle} from '../lib/analytics';
 const THEME_SHOWCASE_SOURCE =
   templates.find(t => t.slug === 'theme-showcase')?.source ?? '';
 
+// CDN host for the per-theme picker banners (same host as the showcase
+// product photos), so the artwork can be updated without a code change.
+const PICKER_CDN = 'https://lookaside.facebook.com/assets/xds_oss';
+
 // Gallery order — themes are listed in the same canonical visual-
 // closeness order used elsewhere (most restrained → most expressive).
 // Lives here so the sidebar's theme list reads in the same order as
@@ -241,50 +245,51 @@ const styles = stylex.create({
   // Per-theme bespoke picker artwork — one rule per theme that
   // has a custom photo (vs. the multi-radial-gradient default).
   // Each rule sets the picker card's background to a dedicated
-  // /theme-<slug>-picker.png image. These are SEPARATE files from
-  // the /theme-<slug>-preview.png images used on the /themes
-  // overview + detail page hero — these picker assets are sized
-  // and art-directed for the small 120px-tall picker card.
+  // theme-<slug>-picker.png banner hosted on the XDS asset CDN
+  // (see PICKER_CDN). These are SEPARATE files from the
+  // theme-<slug>-preview.png images used on the /themes overview +
+  // detail page hero — these picker assets are sized and
+  // art-directed for the small 120px-tall picker card.
   // background-size:cover so each image always fills the card
   // regardless of the source's intrinsic dimensions.
   surfaceButter: {
     backgroundColor: 'transparent',
-    backgroundImage: 'url(/theme-butter-picker.png)',
+    backgroundImage: `url(${PICKER_CDN}/theme-butter-picker.png)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
   },
   surfaceGothic: {
     backgroundColor: 'transparent',
-    backgroundImage: 'url(/theme-gothic-picker.png)',
+    backgroundImage: `url(${PICKER_CDN}/theme-gothic-picker.png)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
   },
   surfaceY2k: {
     backgroundColor: 'transparent',
-    backgroundImage: 'url(/theme-y2k-picker.png)',
+    backgroundImage: `url(${PICKER_CDN}/theme-y2k-picker.png)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
   },
   surfaceStone: {
     backgroundColor: 'transparent',
-    backgroundImage: 'url(/theme-stone-picker.png)',
+    backgroundImage: `url(${PICKER_CDN}/theme-stone-picker.png)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
   },
   surfaceNeutral: {
     backgroundColor: 'transparent',
-    backgroundImage: 'url(/theme-neutral-picker.png)',
+    backgroundImage: `url(${PICKER_CDN}/theme-neutral-picker.png)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
   },
   surfaceMatcha: {
     backgroundColor: 'transparent',
-    backgroundImage: 'url(/theme-matcha-picker.png)',
+    backgroundImage: `url(${PICKER_CDN}/theme-matcha-picker.png)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
@@ -301,20 +306,13 @@ const styles = stylex.create({
   labelAccent: {
     color: 'var(--color-accent)',
   },
-  // White wordmark override for cards whose photo backdrop is too
-  // dark / busy for the theme accent to read against (e.g. Stone's
-  // dark thistle photo). Uses --color-on-dark which resolves to
-  // white in both modes.
-  labelOnDark: {
-    color: 'var(--color-on-dark)',
-  },
   // Theme name on top of the gradient — rendered in the theme's
   // heading font so the wordmark previews the brand at a glance.
   // Color uses --color-text-primary so it reads against the soft
   // gradient backdrop in both light and dark themes.
   //
-  // Fixed fontSize (24px) overrides each theme's own heading type-
-  // scale so the picker reads at a uniform size across all 6 cards.
+  // Fixed fontSize (24px desktop / 20px narrow) overrides each theme's own
+  // heading type-scale so the picker reads at a uniform size across all 6 cards.
   // Without this, themes with larger heading defaults (e.g. Gothic's
   // Manufacturing Consent display family) render noticeably bigger
   // than themes with smaller defaults. Wide-glyph cursive fonts
@@ -335,7 +333,7 @@ const styles = stylex.create({
     // .xds-text.display-3 selector in each theme's @scope'd CSS (legacy class
     // selector; text also emits data-type="display-3")
     // applies the right family per card.
-    fontSize: 32,
+    fontSize: 24,
     lineHeight: 1.2,
     color: 'var(--color-text-primary)',
     maxWidth: '100%',
@@ -346,7 +344,7 @@ const styles = stylex.create({
     zIndex: 1,
   },
   mobileThemeCardLabel: {
-    fontSize: 24,
+    fontSize: 20,
   },
   // Mobile-only floating toolbar that replaces the sidebar at
   // narrow viewports. position:fixed so it stays pinned to the
@@ -452,9 +450,9 @@ const styles = stylex.create({
 // can swap the card's `surface` (background image) and the `label`
 // color (most use labelAccent so the wordmark reads as a brand
 // signature on top of the photo). Adding artwork for a new theme
-// is a two-step addition: drop a public/theme-<slug>-picker.png
-// file + a `surface<Name>` rule into the styles block above, then
-// reference both here.
+// is a two-step addition: upload a theme-<slug>-picker.png banner to
+// the asset CDN (PICKER_CDN) + add a `surface<Name>` rule into the
+// styles block above, then reference both here.
 const PICKER_OVERRIDES: Record<
   string,
   {surface: StyleXStyles; label?: StyleXStyles}
@@ -468,7 +466,7 @@ const PICKER_OVERRIDES: Record<
     label: styles.labelAccent,
   },
   '@xds/theme-y2k': {surface: styles.surfaceY2k, label: styles.labelAccent},
-  '@xds/theme-stone': {surface: styles.surfaceStone, label: styles.labelOnDark},
+  '@xds/theme-stone': {surface: styles.surfaceStone, label: styles.labelAccent},
   '@xds/theme-neutral': {
     surface: styles.surfaceNeutral,
     label: styles.labelAccent,
