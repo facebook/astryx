@@ -204,9 +204,9 @@ for (const t of SCOPE_THEMES) {
 }
 lines.push('');
 
-// ── XDSTheme + tokens ──────────────────────────────────────────────────
-lines.push("import {XDSTheme} from '@xds/core/theme';");
-lines.push("import type {XDSDefinedTheme} from '@xds/core/theme';");
+// ── Theme + tokens ──────────────────────────────────────────────────
+lines.push("import {Theme} from '@xds/core/theme';");
+lines.push("import type {DefinedTheme} from '@xds/core/theme';");
 lines.push("import {createElement, type ComponentProps} from 'react';");
 lines.push("import * as xdsTokens from '@xds/core/theme/tokens.stylex';");
 lines.push('');
@@ -228,16 +228,16 @@ for (const h of HEROICON_VARIANTS) {
 }
 lines.push('');
 
-// ── ControlledXDSTheme wrapper ─────────────────────────────────────────
+// ── ControlledTheme wrapper ─────────────────────────────────────────
 const themeEntries = SCOPE_THEMES.map(
   (t) => `  ${t.name.replace('Theme', '').toLowerCase()}: ${t.name},`,
 ).join('\n');
 
-lines.push(`const SCOPE_THEMES: Record<string, XDSDefinedTheme> = {
+lines.push(`const SCOPE_THEMES: Record<string, DefinedTheme> = {
 ${themeEntries}
 };
 
-const ControlledXDSTheme = (props: ComponentProps<typeof XDSTheme>) => {
+const ControlledTheme = (props: ComponentProps<typeof Theme>) => {
   const win =
     typeof window !== 'undefined'
       ? (window as unknown as Record<string, unknown>)
@@ -246,7 +246,7 @@ const ControlledXDSTheme = (props: ComponentProps<typeof XDSTheme>) => {
     (win?.__xds_preview_mode__ as 'light' | 'dark' | 'system') || 'system';
   const themeName = (win?.__xds_preview_theme__ as string) || 'default';
   const theme = SCOPE_THEMES[themeName] ?? ${SCOPE_THEMES[0].name};
-  return createElement(XDSTheme, {...props, theme, mode});
+  return createElement(Theme, {...props, theme, mode});
 };`);
 lines.push('');
 
@@ -274,8 +274,8 @@ for (const t of SCOPE_THEMES) {
   lines.push(`  '${t.pkg}/built': {default: ${t.name}, ${t.name}},`);
 }
 
-// XDSTheme (controlled wrapper)
-lines.push("  '@xds/core/theme': {XDSTheme: ControlledXDSTheme},");
+// Theme (controlled wrapper)
+lines.push("  '@xds/core/theme': {Theme: ControlledTheme},");
 
 // tokens.stylex
 lines.push("  '@xds/core/theme/tokens.stylex': xdsTokens,");
