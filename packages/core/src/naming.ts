@@ -135,3 +135,49 @@ export function cssVar(name: string): string {
 export function legacyCssVar(name: string): string {
   return `--${legacyCssVarNamespace}-${name}`;
 }
+
+// ---------------------------------------------------------------------------
+// Runtime theme-layer name (configurable)
+//
+// `XDSTheme` injects component overrides into a CSS cascade layer at runtime.
+// Per the P0 decision, CSS layer names stay `xds-*` through the entire compat
+// window (a layer cannot be aliased or dual-emitted), and are only rebranded
+// to `astryx-*` at the final cutover (P10).
+//
+// To let a consumer adopt the rebranded `astryx-theme` layer BEFORE the
+// cutover, the layer name is configurable. It must agree with the build-side
+// `layers.theme` option of `@xds/build`'s Vite plugin — otherwise the declared
+// layer order and the runtime-injected layer disagree (split brain). Default
+// is `xds-theme`, so existing consumers are unaffected.
+// ---------------------------------------------------------------------------
+
+/** The default (legacy) runtime theme-override layer name. */
+export const DEFAULT_THEME_LAYER = `${LEGACY_NAMESPACE}-theme`;
+
+/** The rebranded runtime theme-override layer name (final cutover target). */
+export const ASTRYX_THEME_LAYER = `${NAMESPACE}-theme`;
+
+let themeLayerName = DEFAULT_THEME_LAYER;
+
+/**
+ * Get the CSS cascade-layer name that `XDSTheme` injects component overrides
+ * into. Defaults to `xds-theme`.
+ */
+export function getThemeLayerName(): string {
+  return themeLayerName;
+}
+
+/**
+ * Set the CSS cascade-layer name that `XDSTheme` injects component overrides
+ * into. Call once at app initialization, BEFORE any `XDSTheme` renders, and
+ * keep it in sync with `@xds/build`'s `layers.theme` option.
+ *
+ * @example
+ * ```ts
+ * import {setThemeLayerName, ASTRYX_THEME_LAYER} from '@xds/core/naming';
+ * setThemeLayerName(ASTRYX_THEME_LAYER); // opt into `astryx-theme`
+ * ```
+ */
+export function setThemeLayerName(name: string): void {
+  themeLayerName = name;
+}

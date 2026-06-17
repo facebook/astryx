@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, afterEach} from 'vitest';
 import {
   LEGACY_NAMESPACE,
   NAMESPACE,
@@ -16,6 +16,10 @@ import {
   legacyDataAttr,
   cssVar,
   legacyCssVar,
+  DEFAULT_THEME_LAYER,
+  ASTRYX_THEME_LAYER,
+  getThemeLayerName,
+  setThemeLayerName,
 } from './naming';
 
 describe('naming constants', () => {
@@ -65,5 +69,31 @@ describe('cssVar', () => {
 
   it('builds legacy custom property names', () => {
     expect(legacyCssVar('card-padding')).toBe('--xds-card-padding');
+  });
+});
+
+describe('theme layer name (configurable)', () => {
+  afterEach(() => {
+    // Restore the default so test ordering can't leak state.
+    setThemeLayerName(DEFAULT_THEME_LAYER);
+  });
+
+  it('exposes the legacy and rebranded layer constants', () => {
+    expect(DEFAULT_THEME_LAYER).toBe('xds-theme');
+    expect(ASTRYX_THEME_LAYER).toBe('astryx-theme');
+  });
+
+  it('defaults to xds-theme', () => {
+    expect(getThemeLayerName()).toBe('xds-theme');
+  });
+
+  it('can be set to the rebranded astryx-theme layer (opt-in)', () => {
+    setThemeLayerName(ASTRYX_THEME_LAYER);
+    expect(getThemeLayerName()).toBe('astryx-theme');
+  });
+
+  it('accepts an arbitrary custom layer name', () => {
+    setThemeLayerName('my-design-system-theme');
+    expect(getThemeLayerName()).toBe('my-design-system-theme');
   });
 });

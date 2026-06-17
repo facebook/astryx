@@ -5,6 +5,11 @@ import {render, cleanup} from '@testing-library/react';
 import React from 'react';
 import {XDSTheme} from './XDSTheme';
 import {defineTheme} from './defineTheme';
+import {
+  setThemeLayerName,
+  DEFAULT_THEME_LAYER,
+  ASTRYX_THEME_LAYER,
+} from '../naming';
 
 const testTheme = defineTheme({
   name: 'test',
@@ -165,5 +170,55 @@ describe('XDSTheme', () => {
     const nestedWrapper = container.querySelector('[data-xds-theme="alt"]');
     expect(nestedWrapper).toBeTruthy();
     expect(nestedWrapper?.getAttribute('data-theme')).toBe('light');
+  });
+
+  // =========================================================================
+  // Configurable theme layer (XDS-prefix migration P2380608025)
+  // =========================================================================
+  describe('component-override layer name', () => {
+    /** Read the @layer name from the injected component-override <style>. */
+    function injectedLayerFor(themeName: string): string | null {
+      const style = document.head.querySelector(
+        `style[data-xds-theme="${themeName}"]`,
+      );
+      const text = style?.textContent ?? '';
+      const match = text.match(/@layer\s+([\w-]+)\s*\{/);
+      return match ? match[1] : null;
+    }
+
+    afterEach(() => {
+      setThemeLayerName(DEFAULT_THEME_LAYER);
+      // Remove injected theme <style> nodes so re-injection isn't deduped.
+      document.head
+        .querySelectorAll('style[data-xds-theme]')
+        .forEach(el => el.remove());
+    });
+
+    it('injects component overrides into xds-theme by default', () => {
+      const theme = defineTheme({
+        name: 'layer-default',
+        components: {button: {'variant:secondary': {backgroundColor: 'red'}}},
+      });
+      render(
+        <XDSTheme theme={theme}>
+          <span>x</span>
+        </XDSTheme>,
+      );
+      expect(injectedLayerFor('layer-default')).toBe('xds-theme');
+    });
+
+    it('injects into astryx-theme when configured (opt-in)', () => {
+      setThemeLayerName(ASTRYX_THEME_LAYER);
+      const theme = defineTheme({
+        name: 'layer-astryx',
+        components: {button: {'variant:secondary': {backgroundColor: 'red'}}},
+      });
+      render(
+        <XDSTheme theme={theme}>
+          <span>x</span>
+        </XDSTheme>,
+      );
+      expect(injectedLayerFor('layer-astryx')).toBe('astryx-theme');
+    });
   });
 });

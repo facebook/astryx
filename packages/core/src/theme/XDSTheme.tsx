@@ -44,6 +44,7 @@ import {colorVars, typographyVars} from './tokens.stylex';
 import {registerIcons} from '../Icon/globalIconRegistry';
 import {generateThemeCSS, type XDSDefinedTheme} from './defineTheme';
 import {XDSThemeContext} from './useXDSTheme';
+import {getThemeLayerName} from '../naming';
 
 /**
  * XDSTheme provider props
@@ -146,13 +147,16 @@ function useThemeStyleInjection(theme: XDSDefinedTheme): void {
       document.head.appendChild(proseStyle);
     }
 
-    // Component overrides go into @layer xds-theme — above StyleX layers
-    // so themes can intentionally restyle components.
+    // Component overrides go into the theme layer (default `xds-theme`) --
+    // above StyleX layers so themes can intentionally restyle components. The
+    // layer name is configurable via setThemeLayerName() so consumers can opt
+    // into the rebranded `astryx-theme` layer before the final cutover; it must
+    // match @xds/build's `layers.theme` option.
     if (component) {
       const compStyle = document.createElement('style');
       compStyle.setAttribute('data-xds-theme', theme.name);
       compStyle.setAttribute('data-xds-id', id);
-      compStyle.textContent = `@layer xds-theme {\n${component}\n}`;
+      compStyle.textContent = `@layer ${getThemeLayerName()} {\n${component}\n}`;
       document.head.appendChild(compStyle);
     }
 
