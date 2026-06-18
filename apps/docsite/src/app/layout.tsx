@@ -21,24 +21,14 @@ export const metadata: Metadata = {
   },
 };
 
-// Runs before first paint (in <head>, before <body> renders) so the correct
-// theme attributes are on <html> for the very first paint — eliminating the
-// flash of light theme when the OS prefers dark. It mirrors what the root
-// <XDSTheme> sync does post-hydration:
-//   - data-xds-theme="astryx" so @scope'd theme CSS applies immediately
-//   - data-theme="dark" when the OS prefers dark (Providers also defaults to
-//     the OS preference, so the two stay in sync; once the user manually
-//     toggles, Providers' client sync takes over).
-// Inlined as a string so it ships in the initial HTML and executes
-// synchronously. suppressHydrationWarning on <html> covers the attribute the
-// client may flip after a manual toggle.
-const THEME_INIT_SCRIPT = `(function(){try{var e=document.documentElement;e.setAttribute('data-xds-theme','astryx');if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches){e.setAttribute('data-theme','dark')}else{e.setAttribute('data-theme','light')}}catch(_){}})();`;
-
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
-    <html lang="en" data-xds-theme="astryx" suppressHydrationWarning>
+    // Server-render data-xds-theme so the Astryx theme's @scope'd tokens (body
+    // color, top spacing) apply on the first paint. Deliberately no data-theme:
+    // reset.css then keeps `color-scheme: light dark`, so the light-dark()
+    // tokens follow the OS preference with no script and no flash (#2713).
+    <html lang="en" data-xds-theme="astryx">
       <head>
-        <script dangerouslySetInnerHTML={{__html: THEME_INIT_SCRIPT}} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
