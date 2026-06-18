@@ -588,3 +588,16 @@ const handler = createMcpHandler(
 );
 
 export {handler as GET, handler as POST, handler as DELETE};
+
+// This catch-all `[transport]` segment exists for the MCP handler, which only
+// serves the `mcp`, `sse`, and `message` transports. Without constraining it,
+// the segment greedily matches every single-segment path (e.g. `/foo`), and
+// mcp-handler responds with a bare "Not found" — bypassing Next's not-found
+// boundary so users never see the styled 404 page. Pinning the valid params
+// and disabling dynamic params makes any other single-segment path fall
+// through to `app/not-found.tsx`. The MCP transports remain dynamic (the
+// handler reads the request body), so this only gates routing, not caching.
+export const dynamicParams = false;
+export function generateStaticParams() {
+  return [{transport: 'mcp'}, {transport: 'sse'}, {transport: 'message'}];
+}
