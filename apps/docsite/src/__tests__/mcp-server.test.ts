@@ -18,7 +18,7 @@ import {templates} from '../generated/templateRegistry';
 import type {ComponentEntry} from '../generated/componentRegistry';
 
 // ── Replicate MCP server logic for testing ─────────────────────────────
-// These mirror the runtime logic in apps/docsite/src/app/[transport]/route.ts
+// These mirror the runtime logic in apps/docsite/src/app/mcp/route.ts
 // without importing the Next.js route handler directly.
 
 const allComponents: ComponentEntry[] = Object.values(components).flat();
@@ -268,7 +268,7 @@ describe('MCP search simulation', () => {
 describe('MCP branding', () => {
   it('route file uses Astryx (XDS) in tool descriptions', async () => {
     const fs = await import('node:fs');
-    const routePath = new URL('../app/[transport]/route.ts', import.meta.url);
+    const routePath = new URL('../app/mcp/route.ts', import.meta.url);
     const source = fs.readFileSync(routePath, 'utf-8');
     expect(source).toContain('Search Astryx (XDS) design system');
     expect(source).toContain('Astryx (XDS) component');
@@ -279,7 +279,7 @@ describe('MCP branding', () => {
 
   it('route file does not contain hardcoded ALIASES map', async () => {
     const fs = await import('node:fs');
-    const routePath = new URL('../app/[transport]/route.ts', import.meta.url);
+    const routePath = new URL('../app/mcp/route.ts', import.meta.url);
     const source = fs.readFileSync(routePath, 'utf-8');
     expect(source).not.toContain('const ALIASES');
     expect(source).toContain('keywordIndex');
