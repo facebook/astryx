@@ -3,12 +3,12 @@
 'use client';
 
 import {
-  XDSChatDictationButton,
-  XDSChatComposer,
+  ChatDictationButton,
+  ChatComposer,
 } from '@xds/core/Chat';
 import type {UseSpeechRecognitionReturn} from '@xds/core/Chat';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const noop = () => {};
 
@@ -28,19 +28,19 @@ const idleDictation: UseSpeechRecognitionReturn = {
 
 export default function ChatDictationDictationInComposer() {
   return (
-    <XDSStack
+    <Stack
       direction="vertical"
       gap={3}
       style={{width: '100%', maxWidth: 450}}
     >
-      <XDSText type="supporting" color="secondary">
+      <Text type="supporting" color="secondary">
         Dictation button in the sendActions slot
-      </XDSText>
-      <XDSChatComposer
+      </Text>
+      <ChatComposer
         onSubmit={() => {}}
         placeholder="Type or tap the mic to dictate..."
-        sendActions={<XDSChatDictationButton dictation={idleDictation} />}
+        sendActions={<ChatDictationButton dictation={idleDictation} />}
       />
-    </XDSStack>
+    </Stack>
   );
 }

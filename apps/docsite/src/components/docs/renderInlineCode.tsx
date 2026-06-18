@@ -3,7 +3,7 @@
 'use client';
 
 import {Fragment} from 'react';
-import {XDSCode} from '@xds/core/CodeBlock';
+import {Code} from '@xds/core/CodeBlock';
 
 const INLINE_CODE = /`([^`]+)`/g;
 
@@ -16,7 +16,7 @@ export function renderInlineCode(text: string) {
     if (match.index > lastIndex) {
       nodes.push(text.slice(lastIndex, match.index));
     }
-    nodes.push(<XDSCode key={match.index}>{match[1]}</XDSCode>);
+    nodes.push(<Code key={match.index}>{match[1]}</Code>);
     lastIndex = match.index + match[0].length;
   }
   if (lastIndex < text.length) {

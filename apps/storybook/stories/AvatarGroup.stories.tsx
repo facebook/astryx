@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSAvatarGroup, XDSAvatarGroupOverflow} from '@xds/core/AvatarGroup';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSStatusDot} from '@xds/core/StatusDot';
+import {AvatarGroup, AvatarGroupOverflow} from '@xds/core/AvatarGroup';
+import {Avatar} from '@xds/core/Avatar';
+import {StatusDot} from '@xds/core/StatusDot';
 import {spacingVars, typographyVars} from '@xds/core/theme/tokens.stylex';
 
 const USERS = [
@@ -30,9 +30,9 @@ const storyStyles = stylex.create({
   },
 });
 
-const meta: Meta<typeof XDSAvatarGroup> = {
+const meta: Meta<typeof AvatarGroup> = {
   title: 'Core/AvatarGroup',
-  component: XDSAvatarGroup,
+  component: AvatarGroup,
   tags: ['autodocs'],
   argTypes: {
     size: {
@@ -44,78 +44,78 @@ const meta: Meta<typeof XDSAvatarGroup> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSAvatarGroup>;
+type Story = StoryObj<typeof AvatarGroup>;
 
 /** Basic avatar group showing all members. */
 export const Default: Story = {
   render: () => (
-    <XDSAvatarGroup size="medium">
+    <AvatarGroup size="medium">
       {USERS.slice(0, 3).map(u => (
-        <XDSAvatar key={u.key} src={u.src} name={u.name} />
+        <Avatar key={u.key} src={u.src} name={u.name} />
       ))}
-    </XDSAvatarGroup>
+    </AvatarGroup>
   ),
 };
 
 /** Sliced to 3 with "+N" overflow indicator. */
 export const WithOverflow: Story = {
   render: () => (
-    <XDSAvatarGroup size="medium">
+    <AvatarGroup size="medium">
       {USERS.slice(0, 3).map(u => (
-        <XDSAvatar key={u.key} src={u.src} name={u.name} />
+        <Avatar key={u.key} src={u.src} name={u.name} />
       ))}
-      <XDSAvatarGroupOverflow count={USERS.length - 3} />
-    </XDSAvatarGroup>
+      <AvatarGroupOverflow count={USERS.length - 3} />
+    </AvatarGroup>
   ),
 };
 
 /** Clickable overflow indicator. */
 export const ClickableOverflow: Story = {
   render: () => (
-    <XDSAvatarGroup size="medium">
+    <AvatarGroup size="medium">
       {USERS.slice(0, 3).map(u => (
-        <XDSAvatar key={u.key} src={u.src} name={u.name} />
+        <Avatar key={u.key} src={u.src} name={u.name} />
       ))}
-      <XDSAvatarGroupOverflow
+      <AvatarGroupOverflow
         count={USERS.length - 3}
         onClick={() => alert('Show all participants')}
       />
-    </XDSAvatarGroup>
+    </AvatarGroup>
   ),
 };
 
 /** Server-side total count (47 participants, only 3 rendered). */
 export const ServerSideCount: Story = {
   render: () => (
-    <XDSAvatarGroup size="medium">
+    <AvatarGroup size="medium">
       {USERS.slice(0, 3).map(u => (
-        <XDSAvatar key={u.key} src={u.src} name={u.name} />
+        <Avatar key={u.key} src={u.src} name={u.name} />
       ))}
-      <XDSAvatarGroupOverflow count={44} />
-    </XDSAvatarGroup>
+      <AvatarGroupOverflow count={44} />
+    </AvatarGroup>
   ),
 };
 
 /** Per-avatar status dots — just works with compositional API. */
 export const WithStatusDots: Story = {
   render: () => (
-    <XDSAvatarGroup size="medium">
-      <XDSAvatar
+    <AvatarGroup size="medium">
+      <Avatar
         src="https://i.pravatar.cc/150?img=1"
         name="Alice"
-        status={<XDSStatusDot variant="success" label="Online" />}
+        status={<StatusDot variant="success" label="Online" />}
       />
-      <XDSAvatar
+      <Avatar
         src="https://i.pravatar.cc/150?img=2"
         name="Bob"
-        status={<XDSStatusDot variant="warning" label="Away" />}
+        status={<StatusDot variant="warning" label="Away" />}
       />
-      <XDSAvatar
+      <Avatar
         src="https://i.pravatar.cc/150?img=3"
         name="Charlie"
-        status={<XDSStatusDot variant="error" label="Offline" />}
+        status={<StatusDot variant="error" label="Offline" />}
       />
-    </XDSAvatarGroup>
+    </AvatarGroup>
   ),
 };
 
@@ -126,12 +126,12 @@ export const AllSizes: Story = {
       {(['tiny', 'xsmall', 'small', 'medium', 'large'] as const).map(size => (
         <div key={size}>
           <h4 {...stylex.props(storyStyles.heading)}>{size}</h4>
-          <XDSAvatarGroup size={size}>
+          <AvatarGroup size={size}>
             {USERS.slice(0, 3).map(u => (
-              <XDSAvatar key={u.key} src={u.src} name={u.name} />
+              <Avatar key={u.key} src={u.src} name={u.name} />
             ))}
-            <XDSAvatarGroupOverflow count={USERS.length - 3} />
-          </XDSAvatarGroup>
+            <AvatarGroupOverflow count={USERS.length - 3} />
+          </AvatarGroup>
         </div>
       ))}
     </div>
@@ -141,45 +141,45 @@ export const AllSizes: Story = {
 /** Initials fallback when no images provided. */
 export const InitialsFallback: Story = {
   render: () => (
-    <XDSAvatarGroup size="medium">
+    <AvatarGroup size="medium">
       {USERS.slice(0, 4).map(u => (
-        <XDSAvatar key={u.key} name={u.name} />
+        <Avatar key={u.key} name={u.name} />
       ))}
-      <XDSAvatarGroupOverflow count={1} />
-    </XDSAvatarGroup>
+      <AvatarGroupOverflow count={1} />
+    </AvatarGroup>
   ),
 };
 
 /** Single avatar — no overlap applied. */
 export const SingleAvatar: Story = {
   render: () => (
-    <XDSAvatarGroup size="medium">
-      <XDSAvatar src="https://i.pravatar.cc/150?img=1" name="Alice Johnson" />
-    </XDSAvatarGroup>
+    <AvatarGroup size="medium">
+      <Avatar src="https://i.pravatar.cc/150?img=1" name="Alice Johnson" />
+    </AvatarGroup>
   ),
 };
 
 /** Large overflow count (99+). */
 export const LargeOverflowCount: Story = {
   render: () => (
-    <XDSAvatarGroup size="medium">
+    <AvatarGroup size="medium">
       {USERS.slice(0, 3).map(u => (
-        <XDSAvatar key={u.key} src={u.src} name={u.name} />
+        <Avatar key={u.key} src={u.src} name={u.name} />
       ))}
-      <XDSAvatarGroupOverflow count={999} />
-    </XDSAvatarGroup>
+      <AvatarGroupOverflow count={999} />
+    </AvatarGroup>
   ),
 };
 
 /** Zero overflow count edge case. */
 export const ZeroOverflow: Story = {
   render: () => (
-    <XDSAvatarGroup size="medium">
+    <AvatarGroup size="medium">
       {USERS.slice(0, 3).map(u => (
-        <XDSAvatar key={u.key} src={u.src} name={u.name} />
+        <Avatar key={u.key} src={u.src} name={u.name} />
       ))}
-      <XDSAvatarGroupOverflow count={0} />
-    </XDSAvatarGroup>
+      <AvatarGroupOverflow count={0} />
+    </AvatarGroup>
   ),
 };
 
@@ -187,12 +187,12 @@ export const ZeroOverflow: Story = {
 export const NarrowContainer: Story = {
   render: () => (
     <div style={{width: 120, border: '1px dashed grey', padding: 8}}>
-      <XDSAvatarGroup size="medium">
+      <AvatarGroup size="medium">
         {USERS.slice(0, 5).map(u => (
-          <XDSAvatar key={u.key} src={u.src} name={u.name} />
+          <Avatar key={u.key} src={u.src} name={u.name} />
         ))}
-        <XDSAvatarGroupOverflow count={10} />
-      </XDSAvatarGroup>
+        <AvatarGroupOverflow count={10} />
+      </AvatarGroup>
     </div>
   ),
 };
@@ -206,12 +206,12 @@ export const ManyAvatars: Story = {
       src: `https://i.pravatar.cc/150?img=${(i % 70) + 1}`,
     }));
     return (
-      <XDSAvatarGroup size="small">
+      <AvatarGroup size="small">
         {manyUsers.map(u => (
-          <XDSAvatar key={u.key} src={u.src} name={u.name} />
+          <Avatar key={u.key} src={u.src} name={u.name} />
         ))}
-        <XDSAvatarGroupOverflow count={37} />
-      </XDSAvatarGroup>
+        <AvatarGroupOverflow count={37} />
+      </AvatarGroup>
     );
   },
 };

@@ -2,53 +2,53 @@
 
 'use client';
 
-import {XDSThumbnail} from '@xds/core/Thumbnail';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Thumbnail} from '@xds/core/Thumbnail';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function ThumbnailStates() {
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Lifecycle: empty → uploading → processing → loaded
-        </XDSText>
-        <XDSStack direction="horizontal" gap={3} vAlign="end">
-          <XDSStack direction="vertical" gap={1} hAlign="center">
-            <XDSThumbnail label="report.pdf" />
-            <XDSText type="supporting" color="secondary">
+        </Text>
+        <Stack direction="horizontal" gap={3} vAlign="end">
+          <Stack direction="vertical" gap={1} hAlign="center">
+            <Thumbnail label="report.pdf" />
+            <Text type="supporting" color="secondary">
               Placeholder
-            </XDSText>
-          </XDSStack>
-          <XDSStack direction="vertical" gap={1} hAlign="center">
-            <XDSThumbnail isLoading label="uploading.jpg" />
-            <XDSText type="supporting" color="secondary">
+            </Text>
+          </Stack>
+          <Stack direction="vertical" gap={1} hAlign="center">
+            <Thumbnail isLoading label="uploading.jpg" />
+            <Text type="supporting" color="secondary">
               Skeleton
-            </XDSText>
-          </XDSStack>
-          <XDSStack direction="vertical" gap={1} hAlign="center">
-            <XDSThumbnail
+            </Text>
+          </Stack>
+          <Stack direction="vertical" gap={1} hAlign="center">
+            <Thumbnail
               src="https://lookaside.facebook.com/assets/xds_oss/moody-home-vertical-1.png"
               alt="Mountain landscape"
               isLoading
               label="landscape.jpg"
             />
-            <XDSText type="supporting" color="secondary">
+            <Text type="supporting" color="secondary">
               Uploading
-            </XDSText>
-          </XDSStack>
-          <XDSStack direction="vertical" gap={1} hAlign="center">
-            <XDSThumbnail
+            </Text>
+          </Stack>
+          <Stack direction="vertical" gap={1} hAlign="center">
+            <Thumbnail
               src="https://lookaside.facebook.com/assets/xds_oss/moody-home-vertical-1.png"
               alt="Mountain landscape"
               label="landscape.jpg"
             />
-            <XDSText type="supporting" color="secondary">
+            <Text type="supporting" color="secondary">
               Loaded
-            </XDSText>
-          </XDSStack>
-        </XDSStack>
-      </XDSStack>
-    </XDSStack>
+            </Text>
+          </Stack>
+        </Stack>
+      </Stack>
+    </Stack>
   );
 }

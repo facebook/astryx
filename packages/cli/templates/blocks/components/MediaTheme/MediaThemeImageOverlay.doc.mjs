@@ -7,7 +7,7 @@ export const doc = {
   name: 'MediaTheme — Image Overlay',
   displayName: 'MediaTheme — Image Overlay',
   description:
-    'A common image card pattern: place text and actions over a dark gradient and wrap the overlay content in XDSMediaTheme mode="dark".',
+    'A common image card pattern: place text and actions over a dark gradient and wrap the overlay content in MediaTheme mode="dark".',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: [

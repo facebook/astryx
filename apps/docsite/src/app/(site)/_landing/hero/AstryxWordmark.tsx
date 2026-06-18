@@ -15,7 +15,7 @@
  * Kept as a hand-authored component (not an <img>) specifically so the glyph
  * geometry stays identical to the brand asset while the color becomes a
  * single inherited property. @xds/core has no general-purpose image/logo
- * primitive (XDSThumbnail is attachment chrome; XDSIcon is a glyph registry),
+ * primitive (Thumbnail is attachment chrome; Icon is a glyph registry),
  * so an inline SVG is the right tool here.
  */
 

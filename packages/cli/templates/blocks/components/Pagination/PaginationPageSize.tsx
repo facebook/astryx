@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSPagination} from '@xds/core/Pagination';
-import {XDSHeading} from '@xds/core/Text';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSTable} from '@xds/core/Table';
+import {Pagination} from '@xds/core/Pagination';
+import {Heading} from '@xds/core/Text';
+import {Stack} from '@xds/core/Layout';
+import {Table} from '@xds/core/Table';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
@@ -42,9 +42,9 @@ export default function PaginationPageSize() {
   const [pageSize, setPageSize] = useState(10);
 
   return (
-    <XDSStack direction="vertical" xstyle={styles.root}>
-      <XDSHeading level={4}>Transactions</XDSHeading>
-      <XDSTable
+    <Stack direction="vertical" xstyle={styles.root}>
+      <Heading level={4}>Transactions</Heading>
+      <Table
         idKey="id"
         columns={[
           {key: 'date', header: 'Date'},
@@ -53,7 +53,7 @@ export default function PaginationPageSize() {
         ]}
         data={DATA}
       />
-      <XDSPagination
+      <Pagination
         page={page}
         onChange={setPage}
         totalItems={350}
@@ -63,6 +63,6 @@ export default function PaginationPageSize() {
         variant="count"
         xstyle={styles.pagination}
       />
-    </XDSStack>
+    </Stack>
   );
 }

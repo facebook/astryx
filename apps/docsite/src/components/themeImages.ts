@@ -42,7 +42,7 @@ const NEUTRAL_IMAGES: ThemeImageSet = {
 };
 
 /**
- * Per-theme image overrides. Keyed by theme name (matches XDSDefinedTheme.name
+ * Per-theme image overrides. Keyed by theme name (matches DefinedTheme.name
  * and the slug used in /themes/<slug> URLs). Themes not listed here fall back
  * to the neutral set via getThemeImages().
  *

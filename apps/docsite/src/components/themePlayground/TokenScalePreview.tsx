@@ -2,7 +2,7 @@
 
 'use client';
 
-import {XDSText, XDSHeading} from '@xds/core/Text';
+import {Text, Heading} from '@xds/core/Text';
 import {parseLightDark} from './helpers';
 
 const SECTION_STYLE: React.CSSProperties = {
@@ -92,9 +92,9 @@ export function TokenScalePreview({tokens}: {tokens: Record<string, string>}) {
         {(['display-1', 'display-2', 'display-3'] as const).map(type => (
           <div key={type} style={SCALE_ROW}>
             <div style={{overflow: 'hidden'}}>
-              <XDSText type={type} maxLines={1}>
+              <Text type={type} maxLines={1}>
                 Display
-              </XDSText>
+              </Text>
             </div>
             <span style={CODE_LABEL}>{type}</span>
             <span style={CODE_LABEL}>
@@ -105,9 +105,9 @@ export function TokenScalePreview({tokens}: {tokens: Record<string, string>}) {
         {([1, 2, 3, 4] as const).map(level => (
           <div key={level} style={SCALE_ROW}>
             <div style={{overflow: 'hidden'}}>
-              <XDSHeading level={level} maxLines={1}>
+              <Heading level={level} maxLines={1}>
                 Heading {level}
-              </XDSHeading>
+              </Heading>
             </div>
             <span style={CODE_LABEL}>h{level}</span>
             <span style={CODE_LABEL}>
@@ -119,11 +119,11 @@ export function TokenScalePreview({tokens}: {tokens: Record<string, string>}) {
           type => (
             <div key={type} style={SCALE_ROW}>
               <div style={{overflow: 'hidden'}}>
-                <XDSText type={type} maxLines={1}>
+                <Text type={type} maxLines={1}>
                   {type === 'code'
                     ? 'const theme = defineTheme()'
                     : 'The quick brown fox'}
-                </XDSText>
+                </Text>
               </div>
               <span style={CODE_LABEL}>{type}</span>
               <span style={CODE_LABEL}>

@@ -2,14 +2,14 @@
 
 'use client';
 
-import {XDSVStack, XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
+import {VStack, Layout, LayoutContent} from '@xds/core/Layout';
+import {Text, Heading} from '@xds/core/Text';
+import {AspectRatio} from '@xds/core/AspectRatio';
 import * as stylex from '@stylexjs/stylex';
 
 // ─── Styles ────────────────────────────────────────────────────────────────
 // The masonry needs a responsive column count AND a hero that spans 2 columns
-// on desktop but goes full-width on mobile. XDSGrid forces grid-template-columns
+// on desktop but goes full-width on mobile. Grid forces grid-template-columns
 // inline, so a responsive span can't be expressed through its props — this is a
 // @container grid (the sanctioned XDS pattern for container-responsive layout).
 // Image fill + radius are also custom because XDS has no image primitive (#2582).
@@ -39,13 +39,13 @@ const styles = stylex.create({
       '@container gallery (max-width: 720px)': '1 / -1',
     },
   },
-  // Fills the XDSAspectRatio box. No objectFit prop on XDSAspectRatio (#2582).
+  // Fills the AspectRatio box. No objectFit prop on AspectRatio (#2582).
   img: {
     width: '100%',
     height: '100%',
     objectFit: 'cover',
   },
-  // Rounds the image corners. No radius prop on XDSAspectRatio (#2582).
+  // Rounds the image corners. No radius prop on AspectRatio (#2582).
   clip: {
     borderRadius: 'var(--radius-element)',
   },
@@ -83,7 +83,7 @@ const IMAGES: GalleryImage[] = [
 ];
 
 // ─── Gallery Card ─────────────────────────────────────────────────────────
-// XDSAspectRatio gives every cell a definite, self-contained height from its
+// AspectRatio gives every cell a definite, self-contained height from its
 // ratio, so images can't overflow their grid cell (no row-track guesswork).
 
 function GalleryCard({
@@ -96,9 +96,9 @@ function GalleryCard({
   xstyle?: stylex.StyleXStyles;
 }) {
   return (
-    <XDSAspectRatio ratio={ratio} xstyle={[styles.clip, xstyle]}>
+    <AspectRatio ratio={ratio} xstyle={[styles.clip, xstyle]}>
       <img src={image.src} alt={image.title} {...stylex.props(styles.img)} />
-    </XDSAspectRatio>
+    </AspectRatio>
   );
 }
 
@@ -106,23 +106,23 @@ function GalleryCard({
 
 export default function MixedGalleryTemplate() {
   return (
-    <XDSLayout
+    <Layout
       height="auto"
       contentWidth={1400}
       content={
-        <XDSLayoutContent padding={6}>
-          <XDSVStack gap={6} xstyle={styles.container}>
+        <LayoutContent padding={6}>
+          <VStack gap={6} xstyle={styles.container}>
             {/* Header */}
-            <XDSVStack gap={2} hAlign="center">
-              <XDSHeading level={1} justify="center">
+            <VStack gap={2} hAlign="center">
+              <Heading level={1} justify="center">
                 Make every day a little more delightful, one detail at a time.
-              </XDSHeading>
-              <XDSText type="body" justify="center">
+              </Heading>
+              <Text type="body" justify="center">
                 We believe the smallest details are the ones that matter most.
                 That&apos;s what turns an ordinary day into something worth
                 remembering.
-              </XDSText>
-            </XDSVStack>
+              </Text>
+            </VStack>
 
             {/* Featured layout — a wide hero next to a single tile, above a row
                 of three. Every tile is 3:2 except the hero, which is 3:1 so that
@@ -145,8 +145,8 @@ export default function MixedGalleryTemplate() {
               <GalleryCard image={IMAGES[4]} ratio={3 / 2} />
               <GalleryCard image={IMAGES[1]} ratio={3 / 2} />
             </div>
-          </XDSVStack>
-        </XDSLayoutContent>
+          </VStack>
+        </LayoutContent>
       }
     />
   );

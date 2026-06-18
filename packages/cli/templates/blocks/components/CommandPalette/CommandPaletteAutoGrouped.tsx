@@ -3,7 +3,7 @@
 'use client';
 
 import {useMemo} from 'react';
-import {XDSCommandPalette} from '@xds/core/CommandPalette';
+import {CommandPalette} from '@xds/core/CommandPalette';
 import {createStaticSource} from '@xds/core/Typeahead';
 
 export default function CommandPaletteAutoGrouped() {
@@ -23,7 +23,7 @@ export default function CommandPaletteAutoGrouped() {
   );
 
   return (
-    <XDSCommandPalette
+    <CommandPalette
       isOpen
       isInline
       onOpenChange={() => {}}

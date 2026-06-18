@@ -10,16 +10,16 @@
 'use client';
 
 import {createElement, useState} from 'react';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
-import {XDSDivider} from '@xds/core';
-import {XDSSwitch} from '@xds/core/Switch';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSNumberInput} from '@xds/core/NumberInput';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSIconButton} from '@xds/core/IconButton';
+import {Heading, Text} from '@xds/core/Text';
+import {HStack, VStack} from '@xds/core/Layout';
+import {Divider} from '@xds/core';
+import {Switch} from '@xds/core/Switch';
+import {TextInput} from '@xds/core/TextInput';
+import {NumberInput} from '@xds/core/NumberInput';
+import {Selector} from '@xds/core/Selector';
+import {Icon} from '@xds/core/Icon';
+import {Badge} from '@xds/core/Badge';
+import {IconButton} from '@xds/core/IconButton';
 import {Minus, Plus} from 'lucide-react';
 import {useMediaQuery} from '@xds/core/hooks';
 import {allSyntaxPresets} from '@xds/core/theme/syntax';
@@ -80,10 +80,10 @@ function resolveSlotElement(
   }
   // Fallback for common components without slotElements declared
   switch (componentName) {
-    case 'XDSIcon':
-      return createElement(XDSIcon, {icon: 'check', size: 'sm'});
-    case 'XDSBadge':
-      return createElement(XDSBadge, {label: 'Badge'});
+    case 'Icon':
+      return createElement(Icon, {icon: 'check', size: 'sm'});
+    case 'Badge':
+      return createElement(Badge, {label: 'Badge'});
     default:
       return null;
   }
@@ -165,7 +165,7 @@ function ThemeControl({
     )?.value ?? themeOptions[0].value;
 
   return (
-    <XDSSelector
+    <Selector
       label="Theme"
       isLabelHidden
       value={selected}
@@ -201,7 +201,7 @@ function SyntaxThemeControl({
     )?.value ?? syntaxThemeOptions[0].value;
 
   return (
-    <XDSSelector
+    <Selector
       label="Syntax theme"
       isLabelHidden
       value={selected}
@@ -235,7 +235,7 @@ function ElementControl({
   if (control.options.length === 1) {
     const opt = control.options[0];
     return (
-      <XDSSwitch
+      <Switch
         label={opt.label}
         value={value != null}
         onChange={on =>
@@ -250,7 +250,7 @@ function ElementControl({
   }
 
   return (
-    <XDSSelector
+    <Selector
       label={prop.name}
       isLabelHidden
       placeholder="None"
@@ -319,13 +319,13 @@ function SlotListControl({
   };
 
   return (
-    <XDSHStack gap={2} vAlign="center">
-      <XDSText type="supporting" color="secondary">
+    <HStack gap={2} vAlign="center">
+      <Text type="supporting" color="secondary">
         {count} {control.options[0].label}
         {count !== 1 ? 's' : ''}
-      </XDSText>
-      <XDSHStack gap={1}>
-        <XDSIconButton
+      </Text>
+      <HStack gap={1}>
+        <IconButton
           label="Remove item"
           tooltip="Remove item"
           icon={<Minus size={16} />}
@@ -334,7 +334,7 @@ function SlotListControl({
           isDisabled={count === 0}
           onClick={removeItem}
         />
-        <XDSIconButton
+        <IconButton
           label="Add item"
           tooltip="Add item"
           icon={<Plus size={16} />}
@@ -342,8 +342,8 @@ function SlotListControl({
           size="sm"
           onClick={addItem}
         />
-      </XDSHStack>
-    </XDSHStack>
+      </HStack>
+    </HStack>
   );
 }
 
@@ -361,7 +361,7 @@ function InlineControl({
   switch (control.kind) {
     case 'boolean':
       return (
-        <XDSSwitch
+        <Switch
           label=""
           value={value === true}
           onChange={next => onChange(next)}
@@ -377,7 +377,7 @@ function InlineControl({
           ? 'None'
           : String(value ?? control.options[0]);
       return (
-        <XDSSelector
+        <Selector
           label={prop.name}
           isLabelHidden
           value={selected}
@@ -400,7 +400,7 @@ function InlineControl({
         ? ['None', ...control.options]
         : control.options;
       return (
-        <XDSSelector
+        <Selector
           label={prop.name}
           isLabelHidden
           value={selected}
@@ -421,7 +421,7 @@ function InlineControl({
       return <SyntaxThemeControl value={value} onChange={onChange} />;
     case 'string':
       return (
-        <XDSTextInput
+        <TextInput
           label=""
           placeholder="value"
           value={typeof value === 'string' ? value : ''}
@@ -430,7 +430,7 @@ function InlineControl({
       );
     case 'number':
       return (
-        <XDSNumberInput
+        <NumberInput
           label=""
           value={typeof value === 'number' ? value : 0}
           onChange={next => onChange(next)}
@@ -474,13 +474,13 @@ function PropRow({
 }) {
   if (isMobile) {
     return (
-      <XDSVStack gap={2} style={{paddingBlock: 8}}>
-        <XDSText type="body" weight="bold">
+      <VStack gap={2} style={{paddingBlock: 8}}>
+        <Text type="body" weight="bold">
           {prop.name}
-        </XDSText>
-        <XDSText type="code" display="block">
+        </Text>
+        <Text type="code" display="block">
           {formatType(prop.type, prop.default)}
-        </XDSText>
+        </Text>
         {prop.description != null && prop.description !== '' && (
           <MarkdownText type="body" color="secondary">
             {prop.description}
@@ -494,21 +494,21 @@ function PropRow({
             prop={prop}
           />
         )}
-      </XDSVStack>
+      </VStack>
     );
   }
 
   return (
-    <XDSHStack gap={3} style={{paddingBlock: 6}}>
+    <HStack gap={3} style={{paddingBlock: 6}}>
       <div style={{flexBasis: 200, flexShrink: 0}}>
-        <XDSText type="body" weight="bold">
+        <Text type="body" weight="bold">
           {prop.name}
-        </XDSText>
+        </Text>
       </div>
       <div style={{flex: 1}}>
-        <XDSText type="code" display="block">
+        <Text type="code" display="block">
           {formatType(prop.type, prop.default)}
-        </XDSText>
+        </Text>
         {prop.description != null && prop.description !== '' && (
           <MarkdownText type="body" color="secondary" style={{marginTop: 6}}>
             {prop.description}
@@ -525,7 +525,7 @@ function PropRow({
           />
         </div>
       )}
-    </XDSHStack>
+    </HStack>
   );
 }
 
@@ -552,14 +552,14 @@ export function PlaygroundPropsTable({
     <>
       {required.length > 0 && (
         <>
-          <XDSHeading level={4} color="secondary">
+          <Heading level={4} color="secondary">
             Required
-          </XDSHeading>
+          </Heading>
           {required
             .toSorted((a, b) => a.name.localeCompare(b.name))
             .map(prop => (
               <div key={prop.name}>
-                <XDSDivider />
+                <Divider />
                 <PropRow
                   prop={prop}
                   knob={knobMap.get(prop.name)}
@@ -573,14 +573,14 @@ export function PlaygroundPropsTable({
       )}
       {optional.length > 0 && (
         <>
-          <XDSHeading level={4} color="secondary" style={{marginTop: 8}}>
+          <Heading level={4} color="secondary" style={{marginTop: 8}}>
             Optional
-          </XDSHeading>
+          </Heading>
           {optional
             .toSorted((a, b) => a.name.localeCompare(b.name))
             .map(prop => (
               <div key={prop.name}>
-                <XDSDivider />
+                <Divider />
                 <PropRow
                   prop={prop}
                   knob={knobMap.get(prop.name)}

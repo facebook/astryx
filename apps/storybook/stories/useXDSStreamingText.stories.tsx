@@ -2,10 +2,10 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {useXDSStreamingText} from '@xds/core/hooks';
-import {XDSText} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSVStack} from '@xds/core/Layout';
+import {useStreamingText} from '@xds/core/hooks';
+import {Text} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {VStack} from '@xds/core/Layout';
 
 interface StreamingDemoProps {
   text: string;
@@ -25,7 +25,7 @@ function StreamingDemo({
   const indexRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const displayed = useXDSStreamingText(target, isStreaming, {speed});
+  const displayed = useStreamingText(target, isStreaming, {speed});
 
   const start = useCallback(() => {
     if (timerRef.current) {
@@ -58,17 +58,17 @@ function StreamingDemo({
   }, []);
 
   return (
-    <XDSVStack gap={4}>
+    <VStack gap={4}>
       <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
-        <XDSButton
+        <Button
           label={isStreaming ? 'Streaming...' : 'Start'}
           onClick={start}
           variant={isStreaming ? 'secondary' : 'primary'}
           isDisabled={isStreaming}
         />
-        <XDSText type="supporting">
+        <Text type="supporting">
           speed: {speed} · chunk: {chunkSize} chars every {chunkIntervalMs}ms
-        </XDSText>
+        </Text>
       </div>
       <div
         style={{
@@ -79,13 +79,13 @@ function StreamingDemo({
           whiteSpace: 'pre-wrap',
           fontFamily: 'var(--font-family-body)',
         }}>
-        <XDSText type="body">{displayed || '\u00a0'}</XDSText>
+        <Text type="body">{displayed || '\u00a0'}</Text>
       </div>
-      <XDSText type="supporting">
+      <Text type="supporting">
         {displayed.length} / {target.length} chars displayed
         {isStreaming ? ' · streaming' : target.length > 0 ? ' · done' : ''}
-      </XDSText>
-    </XDSVStack>
+      </Text>
+    </VStack>
   );
 }
 
@@ -93,7 +93,7 @@ const SAMPLE_TEXT =
   'Here is how you fetch a user in TypeScript:\n\nconst response = await fetch("/api/users/" + id);\nconst user = await response.json();\n\nKey points:\n- Always check response.ok before parsing\n- Use AbortController for cancellation\n- Consider a useUser hook for React apps\n\nThis approach gives you type-safe API calls with proper error handling.';
 
 const meta: Meta<typeof StreamingDemo> = {
-  title: 'Core/useXDSStreamingText',
+  title: 'Core/useStreamingText',
   component: StreamingDemo,
   tags: ['autodocs'],
   argTypes: {

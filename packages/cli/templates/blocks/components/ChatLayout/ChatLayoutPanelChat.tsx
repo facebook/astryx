@@ -3,14 +3,14 @@
 'use client';
 
 import {
-  XDSChatLayout,
-  XDSChatMessageList,
-  XDSChatMessage,
-  XDSChatMessageBubble,
-  XDSChatSystemMessage,
-  XDSChatComposer,
+  ChatLayout,
+  ChatMessageList,
+  ChatMessage,
+  ChatMessageBubble,
+  ChatSystemMessage,
+  ChatComposer,
 } from '@xds/core/Chat';
-import {XDSMarkdown} from '@xds/core/Markdown';
+import {Markdown} from '@xds/core/Markdown';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
@@ -26,38 +26,38 @@ const styles = stylex.create({
 export default function ChatLayoutPanelChat() {
   return (
     <div {...stylex.props(styles.panel)}>
-      <XDSChatLayout
+      <ChatLayout
         composer={
-          <XDSChatComposer onSubmit={() => {}} placeholder="Ask something..." />
+          <ChatComposer onSubmit={() => {}} placeholder="Ask something..." />
         }>
-        <XDSChatMessageList>
-          <XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>
+        <ChatMessageList>
+          <ChatSystemMessage variant="divider">Today</ChatSystemMessage>
 
-          <XDSChatMessage sender="user">
-            <XDSChatMessageBubble>
+          <ChatMessage sender="user">
+            <ChatMessageBubble>
               Can you review the Button component and fix the focus ring?
-            </XDSChatMessageBubble>
-          </XDSChatMessage>
+            </ChatMessageBubble>
+          </ChatMessage>
 
-          <XDSChatMessage sender="assistant">
-            <XDSMarkdown density="compact">{`I'll check the Button component now.
+          <ChatMessage sender="assistant">
+            <Markdown density="compact">{`I'll check the Button component now.
 
-Found the issue — the border radius was hardcoded. Replaced with the theme token.`}</XDSMarkdown>
-          </XDSChatMessage>
+Found the issue — the border radius was hardcoded. Replaced with the theme token.`}</Markdown>
+          </ChatMessage>
 
-          <XDSChatMessage sender="user">
-            <XDSChatMessageBubble>
+          <ChatMessage sender="user">
+            <ChatMessageBubble>
               Nice, can you also check the Card component?
-            </XDSChatMessageBubble>
-          </XDSChatMessage>
+            </ChatMessageBubble>
+          </ChatMessage>
 
-          <XDSChatMessage sender="assistant">
-            <XDSMarkdown density="compact">{`Checking the component now.
+          <ChatMessage sender="assistant">
+            <Markdown density="compact">{`Checking the component now.
 
-Found the issue — the border radius was hardcoded. Replaced with the theme token.`}</XDSMarkdown>
-          </XDSChatMessage>
-        </XDSChatMessageList>
-      </XDSChatLayout>
+Found the issue — the border radius was hardcoded. Replaced with the theme token.`}</Markdown>
+          </ChatMessage>
+        </ChatMessageList>
+      </ChatLayout>
     </div>
   );
 }

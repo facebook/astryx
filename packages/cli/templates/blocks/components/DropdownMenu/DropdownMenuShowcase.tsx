@@ -3,13 +3,13 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
+import {DropdownMenu} from '@xds/core/DropdownMenu';
 
 export default function DropdownMenuShowcase() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <XDSDropdownMenu
+    <DropdownMenu
       isMenuOpen={isMenuOpen}
       onOpenChange={setIsMenuOpen}
       hasAutoFocus={false}

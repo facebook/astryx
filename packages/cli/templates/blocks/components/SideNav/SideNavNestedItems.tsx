@@ -4,10 +4,10 @@
 
 import type {ComponentProps} from 'react';
 import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
+  SideNav,
+  SideNavHeading,
+  SideNavItem,
+  SideNavSection,
 } from '@xds/core/SideNav';
 
 function HomeIcon(props: ComponentProps<'svg'>) {
@@ -29,18 +29,18 @@ function CogIcon(props: ComponentProps<'svg'>) {
 
 export default function SideNavNestedItems() {
   return (
-    <XDSSideNav header={<XDSSideNavHeading heading="My App" />}>
-      <XDSSideNavSection title="Main">
-        <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected />
-        <XDSSideNavItem label="Settings" icon={CogIcon}>
-          <XDSSideNavItem label="General" href="/settings/general" />
-          <XDSSideNavItem label="Security" href="/settings/security" />
-          <XDSSideNavItem
+    <SideNav header={<SideNavHeading heading="My App" />}>
+      <SideNavSection title="Main">
+        <SideNavItem label="Dashboard" icon={HomeIcon} isSelected />
+        <SideNavItem label="Settings" icon={CogIcon}>
+          <SideNavItem label="General" href="/settings/general" />
+          <SideNavItem label="Security" href="/settings/security" />
+          <SideNavItem
             label="Notifications"
             href="/settings/notifications"
           />
-        </XDSSideNavItem>
-      </XDSSideNavSection>
-    </XDSSideNav>
+        </SideNavItem>
+      </SideNavSection>
+    </SideNav>
   );
 }

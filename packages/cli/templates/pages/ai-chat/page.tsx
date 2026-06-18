@@ -2,27 +2,27 @@
 
 'use client';
 
-import {XDSHStack, XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {HStack, Layout, LayoutContent} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 import {
-  XDSChatComposer,
-  XDSChatComposerInput,
-  XDSChatLayout,
-  XDSChatMessage,
-  XDSChatMessageBubble,
-  XDSChatMessageList,
-  XDSChatMessageMetadata,
-  XDSChatSystemMessage,
-  XDSChatTokenizedText,
-  XDSChatToolCalls,
+  ChatComposer,
+  ChatComposerInput,
+  ChatLayout,
+  ChatMessage,
+  ChatMessageBubble,
+  ChatMessageList,
+  ChatMessageMetadata,
+  ChatSystemMessage,
+  ChatTokenizedText,
+  ChatToolCalls,
 } from '@xds/core/Chat';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSMarkdown} from '@xds/core/Markdown';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
-import {XDSTimestamp} from '@xds/core/Timestamp';
-import {XDSToken} from '@xds/core/Token';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
+import {Avatar} from '@xds/core/Avatar';
+import {Markdown} from '@xds/core/Markdown';
+import {CodeBlock} from '@xds/core/CodeBlock';
+import {Timestamp} from '@xds/core/Timestamp';
+import {Token} from '@xds/core/Token';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
 
 import {AtSymbolIcon, PaperClipIcon} from '@heroicons/react/24/outline';
 
@@ -38,77 +38,77 @@ const MENTION_TOKENS = [
 
 export default function AIChatConversationTemplate() {
   return (
-    <XDSLayout
+    <Layout
       height="fill"
       content={
-        <XDSLayoutContent padding={0}>
-          <XDSChatLayout
+        <LayoutContent padding={0}>
+          <ChatLayout
             style={{height: '100%'}}
             composer={
-              <XDSChatComposer
+              <ChatComposer
                 onSubmit={() => {}}
                 placeholder="Ask anything"
-                input={<XDSChatComposerInput />}
+                input={<ChatComposerInput />}
                 headerActions={
                   <>
-                    <XDSButton
+                    <Button
                       label="Mention"
                       variant="ghost"
                       size="sm"
-                      icon={<XDSIcon icon={AtSymbolIcon} size="sm" />}
+                      icon={<Icon icon={AtSymbolIcon} size="sm" />}
                       isIconOnly
                     />
-                    <XDSButton
+                    <Button
                       label="Attach"
                       variant="ghost"
                       size="sm"
-                      icon={<XDSIcon icon={PaperClipIcon} size="sm" />}
+                      icon={<Icon icon={PaperClipIcon} size="sm" />}
                       isIconOnly
                     />
                   </>
                 }
               />
             }>
-            <XDSChatMessageList>
+            <ChatMessageList>
               {/* ── System message: date divider ── */}
-              <XDSChatSystemMessage variant="divider">
+              <ChatSystemMessage variant="divider">
                 Today
-              </XDSChatSystemMessage>
+              </ChatSystemMessage>
 
               {/* ── User message with tokenized mention and file attachments ── */}
-              <XDSChatMessage sender="user">
-                <XDSHStack gap={1} wrap="wrap">
-                  <XDSToken label="auth-service.ts" />
-                  <XDSToken label="middleware.ts" />
-                </XDSHStack>
-                <XDSChatMessageBubble
+              <ChatMessage sender="user">
+                <HStack gap={1} wrap="wrap">
+                  <Token label="auth-service.ts" />
+                  <Token label="middleware.ts" />
+                </HStack>
+                <ChatMessageBubble
                   metadata={
-                    <XDSChatMessageMetadata
+                    <ChatMessageMetadata
                       timestamp={
-                        <XDSTimestamp
+                        <Timestamp
                           value="2026-04-29T10:15:00"
                           format="time"
                         />
                       }
                     />
                   }>
-                  <XDSChatTokenizedText tokens={MENTION_TOKENS}>
+                  <ChatTokenizedText tokens={MENTION_TOKENS}>
                     @agent Can you review these auth files? The JWT refresh
                     logic seems broken — tokens expire but the middleware
                     doesn't catch it.
-                  </XDSChatTokenizedText>
-                </XDSChatMessageBubble>
-              </XDSChatMessage>
+                  </ChatTokenizedText>
+                </ChatMessageBubble>
+              </ChatMessage>
 
               {/* ── Assistant message with tool calls ── */}
-              <XDSChatMessage
+              <ChatMessage
                 sender="assistant"
-                avatar={<XDSAvatar name="Agent" size="small" />}>
-                <XDSChatMessageBubble variant="ghost" name="Agent">
+                avatar={<Avatar name="Agent" size="small" />}>
+                <ChatMessageBubble variant="ghost" name="Agent">
                   Looking into the auth files now. Let me read through the code
                   and trace the token refresh flow.
-                </XDSChatMessageBubble>
-                <XDSChatToolCalls
+                </ChatMessageBubble>
+                <ChatToolCalls
                   defaultIsExpanded
                   calls={[
                     {
@@ -134,8 +134,8 @@ export default function AIChatConversationTemplate() {
                 />
 
                 {/* Markdown response with analysis */}
-                <XDSChatMessageBubble variant="ghost">
-                  <XDSMarkdown density="compact">{`Found the issue. In \`middleware.ts\`, the token validation runs **before** the refresh check. When a token expires, the middleware rejects the request immediately instead of attempting a refresh.
+                <ChatMessageBubble variant="ghost">
+                  <Markdown density="compact">{`Found the issue. In \`middleware.ts\`, the token validation runs **before** the refresh check. When a token expires, the middleware rejects the request immediately instead of attempting a refresh.
 
 Here's the problematic sequence:
 
@@ -143,12 +143,12 @@ Here's the problematic sequence:
 2. \`validateToken()\` throws \`TokenExpiredError\`
 3. The catch block returns \`401\` — never reaching \`refreshToken()\`
 
-The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh before rejecting:`}</XDSMarkdown>
-                </XDSChatMessageBubble>
+The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh before rejecting:`}</Markdown>
+                </ChatMessageBubble>
 
                 {/* Code block with the fix */}
-                <XDSChatMessageBubble variant="ghost">
-                  <XDSCodeBlock
+                <ChatMessageBubble variant="ghost">
+                  <CodeBlock
                     title="middleware.ts"
                     language="typescript"
                     code={`async function authMiddleware(req: Request) {
@@ -170,9 +170,9 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
   return next(req);
 }`}
                   />
-                </XDSChatMessageBubble>
+                </ChatMessageBubble>
 
-                <XDSChatToolCalls
+                <ChatToolCalls
                   calls={[
                     {
                       name: 'edit',
@@ -185,29 +185,29 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
                   ]}
                 />
 
-                <XDSChatMessageMetadata
+                <ChatMessageMetadata
                   timestamp={
-                    <XDSTimestamp value="2026-04-29T10:15:30" format="time" />
+                    <Timestamp value="2026-04-29T10:15:30" format="time" />
                   }
                   footer={
-                    <XDSText type="supporting" color="secondary">
+                    <Text type="supporting" color="secondary">
                       Agent
-                    </XDSText>
+                    </Text>
                   }
                 />
-              </XDSChatMessage>
+              </ChatMessage>
 
               {/* ── User multi-bubble follow-up ── */}
-              <XDSChatMessage sender="user">
-                <XDSChatMessageBubble group="first">
+              <ChatMessage sender="user">
+                <ChatMessageBubble group="first">
                   Nice catch, that makes sense
-                </XDSChatMessageBubble>
-                <XDSChatMessageBubble
+                </ChatMessageBubble>
+                <ChatMessageBubble
                   group="last"
                   metadata={
-                    <XDSChatMessageMetadata
+                    <ChatMessageMetadata
                       timestamp={
-                        <XDSTimestamp
+                        <Timestamp
                           value="2026-04-29T10:16:00"
                           format="time"
                         />
@@ -216,14 +216,14 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
                     />
                   }>
                   Can you also add a test for the refresh path?
-                </XDSChatMessageBubble>
-              </XDSChatMessage>
+                </ChatMessageBubble>
+              </ChatMessage>
 
               {/* ── Assistant response with test code ── */}
-              <XDSChatMessage
+              <ChatMessage
                 sender="assistant"
-                avatar={<XDSAvatar name="Agent" size="small" />}>
-                <XDSChatToolCalls
+                avatar={<Avatar name="Agent" size="small" />}>
+                <ChatToolCalls
                   defaultIsExpanded
                   calls={[
                     {
@@ -249,19 +249,19 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
                     },
                   ]}
                 />
-                <XDSChatMessageBubble variant="ghost">
-                  <XDSMarkdown density="compact">{`Added a test for the refresh flow. All **4 tests** pass:
+                <ChatMessageBubble variant="ghost">
+                  <Markdown density="compact">{`Added a test for the refresh flow. All **4 tests** pass:
 
 | Test | Status |
 |------|--------|
 | Valid token passes through | ✅ |
 | Expired token triggers refresh | ✅ |
 | Expired token with invalid refresh returns 401 | ✅ |
-| Malformed token returns 401 immediately | ✅ |`}</XDSMarkdown>
-                </XDSChatMessageBubble>
+| Malformed token returns 401 immediately | ✅ |`}</Markdown>
+                </ChatMessageBubble>
 
-                <XDSChatMessageBubble variant="ghost">
-                  <XDSCodeBlock
+                <ChatMessageBubble variant="ghost">
+                  <CodeBlock
                     title="middleware.test.ts"
                     language="typescript"
                     code={`describe('authMiddleware', () => {
@@ -282,26 +282,26 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
   });
 });`}
                   />
-                </XDSChatMessageBubble>
-                <XDSChatMessageMetadata
+                </ChatMessageBubble>
+                <ChatMessageMetadata
                   timestamp={
-                    <XDSTimestamp value="2026-04-29T10:16:45" format="time" />
+                    <Timestamp value="2026-04-29T10:16:45" format="time" />
                   }
                 />
-              </XDSChatMessage>
+              </ChatMessage>
 
               {/* ── System message: status ── */}
-              <XDSChatSystemMessage>
+              <ChatSystemMessage>
                 Changes saved to workspace
-              </XDSChatSystemMessage>
+              </ChatSystemMessage>
 
               {/* ── User follow-up ── */}
-              <XDSChatMessage sender="user">
-                <XDSChatMessageBubble
+              <ChatMessage sender="user">
+                <ChatMessageBubble
                   metadata={
-                    <XDSChatMessageMetadata
+                    <ChatMessageMetadata
                       timestamp={
-                        <XDSTimestamp
+                        <Timestamp
                           value="2026-04-29T10:17:00"
                           format="time"
                         />
@@ -309,17 +309,17 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
                     />
                   }>
                   Perfect. Ship it — create a PR with these changes.
-                </XDSChatMessageBubble>
-              </XDSChatMessage>
+                </ChatMessageBubble>
+              </ChatMessage>
 
               {/* ── Assistant with running tool call ── */}
-              <XDSChatMessage
+              <ChatMessage
                 sender="assistant"
-                avatar={<XDSAvatar name="Agent" size="small" />}>
-                <XDSChatMessageBubble variant="ghost">
+                avatar={<Avatar name="Agent" size="small" />}>
+                <ChatMessageBubble variant="ghost">
                   On it — pushing the branch and opening a PR now.
-                </XDSChatMessageBubble>
-                <XDSChatToolCalls
+                </ChatMessageBubble>
+                <ChatToolCalls
                   calls={[
                     {
                       name: 'bash',
@@ -336,10 +336,10 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
                     },
                   ]}
                 />
-              </XDSChatMessage>
-            </XDSChatMessageList>
-          </XDSChatLayout>
-        </XDSLayoutContent>
+              </ChatMessage>
+            </ChatMessageList>
+          </ChatLayout>
+        </LayoutContent>
       }
     />
   );

@@ -2,31 +2,31 @@
 
 'use client';
 
-import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
-import {XDSLayout, XDSLayoutContent, XDSCard} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Dialog, DialogHeader} from '@xds/core/Dialog';
+import {Layout, LayoutContent, Card} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function DialogHeaderShowcase() {
   return (
-    <XDSDialog isOpen isInline onOpenChange={() => {}}>
-      <XDSLayout
+    <Dialog isOpen isInline onOpenChange={() => {}}>
+      <Layout
         header={
-          <XDSDialogHeader
+          <DialogHeader
             title="Edit Profile"
             subtitle="Update your personal information"
             onOpenChange={() => {}}
           />
         }
         content={
-          <XDSLayoutContent>
-            <XDSCard variant="muted">
-              <XDSText type="body" color="secondary">
+          <LayoutContent>
+            <Card variant="muted">
+              <Text type="body" color="secondary">
                 Dialog body content goes here.
-              </XDSText>
-            </XDSCard>
-          </XDSLayoutContent>
+              </Text>
+            </Card>
+          </LayoutContent>
         }
       />
-    </XDSDialog>
+    </Dialog>
   );
 }

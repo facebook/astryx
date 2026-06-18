@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSCalendar, type DateRange} from '@xds/core/Calendar';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Calendar, type DateRange} from '@xds/core/Calendar';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function CalendarRangeWithValue() {
   const [value, setValue] = useState<DateRange>({
@@ -14,18 +14,18 @@ export default function CalendarRangeWithValue() {
   });
 
   return (
-    <XDSStack direction="vertical" gap={4} hAlign="center">
-      <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4} hAlign="center">
+      <Text type="supporting" color="secondary">
         {value.start && value.end
           ? `${value.start} → ${value.end}`
           : 'Pick a start and end date'}
-      </XDSText>
-      <XDSCalendar
+      </Text>
+      <Calendar
         mode="range"
         value={value}
         onChange={range => setValue(range)}
         focusDate="2026-01-01"
       />
-    </XDSStack>
+    </Stack>
   );
 }

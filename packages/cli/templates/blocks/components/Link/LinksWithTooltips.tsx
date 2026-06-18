@@ -2,31 +2,31 @@
 
 'use client';
 
-import {XDSLink} from '@xds/core/Link';
-import {XDSHStack} from '@xds/core/Layout';
+import {Link} from '@xds/core/Link';
+import {HStack} from '@xds/core/Layout';
 
 export default function LinksWithTooltips() {
   return (
-    <XDSHStack gap={4} vAlign="center">
-      <XDSLink
+    <HStack gap={4} vAlign="center">
+      <Link
         href="#"
         tooltip="Configure your account settings"
         isStandalone>
         Settings
-      </XDSLink>
-      <XDSLink
+      </Link>
+      <Link
         href="#"
         tooltip="View and edit your profile"
         isStandalone>
         Profile
-      </XDSLink>
-      <XDSLink
+      </Link>
+      <Link
         href="#"
         tooltip="Get help and support"
         color="secondary"
         isStandalone>
         Help
-      </XDSLink>
-    </XDSHStack>
+      </Link>
+    </HStack>
   );
 }

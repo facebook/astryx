@@ -3,12 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSVStack, XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSSection} from '@xds/core/Section';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {VStack, Layout, LayoutContent} from '@xds/core/Layout';
+import {Center} from '@xds/core/Center';
+import {Text, Heading} from '@xds/core/Text';
+import {Grid} from '@xds/core/Grid';
+import {Section} from '@xds/core/Section';
+import {TabList, Tab} from '@xds/core/TabList';
 import * as stylex from '@stylexjs/stylex';
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
@@ -112,43 +112,43 @@ export default function ClassicGalleryTemplate() {
       : GALLERY_IMAGES.filter(img => img.category === filter);
 
   return (
-    <XDSLayout
+    <Layout
       height="auto"
       content={
-        <XDSLayoutContent padding={0}>
-          <XDSCenter axis="horizontal">
-            <XDSVStack gap={8} xstyle={styles.outer}>
+        <LayoutContent padding={0}>
+          <Center axis="horizontal">
+            <VStack gap={8} xstyle={styles.outer}>
               {/* Header */}
-              <XDSCenter axis="horizontal">
-                <XDSSection variant="transparent" maxWidth={680} padding={0}>
-                  <XDSVStack gap={4} hAlign="center" xstyle={styles.textCenter}>
-                    <XDSVStack gap={2} hAlign="center">
-                      <XDSHeading level={1}>
+              <Center axis="horizontal">
+                <Section variant="transparent" maxWidth={680} padding={0}>
+                  <VStack gap={4} hAlign="center" xstyle={styles.textCenter}>
+                    <VStack gap={2} hAlign="center">
+                      <Heading level={1}>
                         Make every day a little more delightful, one detail at a
                         time.
-                      </XDSHeading>
-                      <XDSText type="body" color="secondary">
+                      </Heading>
+                      <Text type="body" color="secondary">
                         We believe the smallest details are the ones that matter
                         most. A little color, a thoughtful touch, a moment that
                         catches your eye and makes you pause; that&apos;s what
                         turns an ordinary day into something worth remembering.
-                      </XDSText>
-                    </XDSVStack>
+                      </Text>
+                    </VStack>
 
-                    <XDSTabList
+                    <TabList
                       value={filter}
                       onChange={v => setFilter(v as Category)}>
-                      <XDSTab value="all" label="All" />
-                      <XDSTab value="lifestyle" label="Lifestyle" />
-                      <XDSTab value="scene" label="Scenery" />
-                      <XDSTab value="home" label="Home" />
-                    </XDSTabList>
-                  </XDSVStack>
-                </XDSSection>
-              </XDSCenter>
+                      <Tab value="all" label="All" />
+                      <Tab value="lifestyle" label="Lifestyle" />
+                      <Tab value="scene" label="Scenery" />
+                      <Tab value="home" label="Home" />
+                    </TabList>
+                  </VStack>
+                </Section>
+              </Center>
 
               {/* Gallery Grid */}
-              <XDSGrid columns={{minWidth: 260, repeat: 'fit'}} gap={4}>
+              <Grid columns={{minWidth: 260, repeat: 'fit'}} gap={4}>
                 {filteredImages.map((image, i) => (
                   <div key={i} {...stylex.props(styles.imageWrapper)}>
                     <img
@@ -158,10 +158,10 @@ export default function ClassicGalleryTemplate() {
                     />
                   </div>
                 ))}
-              </XDSGrid>
-            </XDSVStack>
-          </XDSCenter>
-        </XDSLayoutContent>
+              </Grid>
+            </VStack>
+          </Center>
+        </LayoutContent>
       }
     />
   );

@@ -3,30 +3,30 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useRef, useEffect} from 'react';
 import {
-  XDSChart,
-  XDSChartAxis,
-  XDSChartGrid,
-  XDSChartStreamGL,
-  useXDSChartColors,
-  useXDSChartRange,
-  type XDSChartStreamGLHandle,
+  Chart,
+  ChartAxis,
+  ChartGrid,
+  ChartStreamGL,
+  useChartColors,
+  useChartRange,
+  type ChartStreamGLHandle,
 } from '@xds/lab';
-import {XDSStack, XDSText} from '@xds/core';
-import {XDSHeading} from '@xds/core/Text';
+import {Stack, Text} from '@xds/core';
+import {Heading} from '@xds/core/Text';
 
 const meta: Meta = {
-  title: 'Lab/useXDSChartRange',
+  title: 'Lab/useChartRange',
 };
 
 export default meta;
 
-/** Known y-range — useXDSChartRange just manages the sliding x window */
+/** Known y-range — useChartRange just manages the sliding x window */
 export const KnownRange: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
-    const streamRef = useRef<XDSChartStreamGLHandle>(null);
+    const colors = useChartColors();
+    const streamRef = useRef<ChartStreamGLHandle>(null);
     const tRef = useRef(0);
-    const {xDomain, yDomain, push} = useXDSChartRange({
+    const {xDomain, yDomain, push} = useChartRange({
       xWindow: 300,
       yDomain: [0, 100],
     });
@@ -42,30 +42,30 @@ export const KnownRange: StoryObj = {
     }, [push]);
 
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Known Range (0-100%)</XDSHeading>
-        <XDSText type="supporting" color="secondary">
-          yDomain fixed at [0, 100]. useXDSChartRange manages xDomain sliding
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Known Range (0-100%)</Heading>
+        <Text type="supporting" color="secondary">
+          yDomain fixed at [0, 100]. useChartRange manages xDomain sliding
           window.
-        </XDSText>
-        <XDSChart
+        </Text>
+        <Chart
           data={[]}
           xKey="t"
           yKeys={[]}
           xDomain={xDomain}
           yDomain={yDomain}
           height={200}>
-          <XDSChartGrid horizontal />
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
-          <XDSChartStreamGL
+          <ChartGrid horizontal />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
+          <ChartStreamGL
             handleRef={streamRef}
             color={colors.categorical(1)[0]}
             bufferSize={300}
             lineWidth={1.5}
           />
-        </XDSChart>
-      </XDSStack>
+        </Chart>
+      </Stack>
     );
   },
 };
@@ -73,10 +73,10 @@ export const KnownRange: StoryObj = {
 /** Unknown y-range — auto-tracks from data with 10% padding */
 export const UnknownRange: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
-    const streamRef = useRef<XDSChartStreamGLHandle>(null);
+    const colors = useChartColors();
+    const streamRef = useRef<ChartStreamGLHandle>(null);
     const tRef = useRef(0);
-    const {xDomain, yDomain, push} = useXDSChartRange({
+    const {xDomain, yDomain, push} = useChartRange({
       xWindow: 300,
       yPadding: 0.1,
     });
@@ -93,30 +93,30 @@ export const UnknownRange: StoryObj = {
     }, [push]);
 
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Unknown Range (auto-tracks)</XDSHeading>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Unknown Range (auto-tracks)</Heading>
+        <Text type="supporting" color="secondary">
           No fixed yDomain. Range auto-expands as data reveals amplitude.
           Currently: [{yDomain[0].toFixed(1)}, {yDomain[1].toFixed(1)}]
-        </XDSText>
-        <XDSChart
+        </Text>
+        <Chart
           data={[]}
           xKey="t"
           yKeys={[]}
           xDomain={xDomain}
           yDomain={yDomain}
           height={200}>
-          <XDSChartGrid horizontal />
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
-          <XDSChartStreamGL
+          <ChartGrid horizontal />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
+          <ChartStreamGL
             handleRef={streamRef}
             color={colors.categorical(2)[1]}
             bufferSize={300}
             lineWidth={1.5}
           />
-        </XDSChart>
-      </XDSStack>
+        </Chart>
+      </Stack>
     );
   },
 };
@@ -124,11 +124,11 @@ export const UnknownRange: StoryObj = {
 /** Zero-centered — seismograph pattern with yCenter */
 export const ZeroCentered: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
-    const streamRef = useRef<XDSChartStreamGLHandle>(null);
+    const colors = useChartColors();
+    const streamRef = useRef<ChartStreamGLHandle>(null);
     const tRef = useRef(0);
     const quakeRef = useRef(0);
-    const {xDomain, yDomain, push} = useXDSChartRange({
+    const {xDomain, yDomain, push} = useChartRange({
       xWindow: 600,
       yCenter: true,
       yPadding: 0.05,
@@ -157,13 +157,13 @@ export const ZeroCentered: StoryObj = {
     }, [push]);
 
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Zero-Centered (seismograph)</XDSHeading>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Zero-Centered (seismograph)</Heading>
+        <Text type="supporting" color="secondary">
           yCenter=true keeps 0 at center. Range auto-expands on quake bursts.
           Currently: [{yDomain[0].toFixed(1)}, {yDomain[1].toFixed(1)}]
-        </XDSText>
-        <XDSChart
+        </Text>
+        <Chart
           data={[]}
           xKey="t"
           yKeys={[]}
@@ -171,18 +171,18 @@ export const ZeroCentered: StoryObj = {
           yDomain={yDomain}
           yBaseline="zero"
           height={220}>
-          <XDSChartGrid horizontal />
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
-          <XDSChartStreamGL
+          <ChartGrid horizontal />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
+          <ChartStreamGL
             handleRef={streamRef}
             color={colors.categorical(5)[3]}
             bufferSize={600}
             lineWidth={1}
             opacity={0.9}
           />
-        </XDSChart>
-      </XDSStack>
+        </Chart>
+      </Stack>
     );
   },
 };

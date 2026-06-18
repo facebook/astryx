@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSTable, proportional, pixel} from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
+import {Table, proportional, pixel} from '@xds/core/Table';
+import type {TableColumn} from '@xds/core/Table';
 
 interface Metric extends Record<string, unknown> {
   id: string;
@@ -36,7 +36,7 @@ const metrics: Metric[] = [
   {id: '5', metric: 'CSAT', q1: '4.2', q2: '4.3', q3: '4.5', q4: '4.6'},
 ];
 
-const columns: XDSTableColumn<Metric>[] = [
+const columns: TableColumn<Metric>[] = [
   {key: 'metric', header: 'Metric', width: proportional(2)},
   {key: 'q1', header: 'Q1', width: pixel(90), align: 'end'},
   {key: 'q2', header: 'Q2', width: pixel(90), align: 'end'},
@@ -46,7 +46,7 @@ const columns: XDSTableColumn<Metric>[] = [
 
 export default function TableGridDividersTable() {
   return (
-    <XDSTable
+    <Table
       data={metrics}
       columns={columns}
       idKey="id"

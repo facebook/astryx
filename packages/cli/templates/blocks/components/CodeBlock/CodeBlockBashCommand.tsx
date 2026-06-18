@@ -2,24 +2,24 @@
 
 'use client';
 
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
-import {XDSVStack} from '@xds/core/Stack';
+import {CodeBlock} from '@xds/core/CodeBlock';
+import {VStack} from '@xds/core/Stack';
 
 export default function CodeBlockBashCommand() {
   return (
-    <XDSVStack gap={4} style={{width: '100%', maxWidth: 400}}>
-      <XDSCodeBlock
+    <VStack gap={4} style={{width: '100%', maxWidth: 400}}>
+      <CodeBlock
         code="npm install @xds/core"
         language="bash"
         hasCopyButton
         style={{width: '100%'}}
       />
-      <XDSCodeBlock
+      <CodeBlock
         code="yarn add @stylexjs/stylex"
         language="bash"
         hasCopyButton
         style={{width: '100%'}}
       />
-    </XDSVStack>
+    </VStack>
   );
 }

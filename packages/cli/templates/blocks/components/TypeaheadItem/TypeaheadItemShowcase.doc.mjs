@@ -7,7 +7,7 @@ export const doc = {
   name: 'TypeaheadItem',
   displayName: 'Typeahead Item',
   description:
-    'Typeahead with custom item rendering using XDSTypeaheadItem for avatars and descriptions.',
+    'Typeahead with custom item rendering using TypeaheadItem for avatars and descriptions.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

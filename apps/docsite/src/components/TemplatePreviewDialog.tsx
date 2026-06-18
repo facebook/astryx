@@ -26,20 +26,20 @@ import {
   useTransition,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSCode} from '@xds/core/Code';
+import {Icon} from '@xds/core/Icon';
+import {Text, Heading} from '@xds/core/Text';
+import {Code} from '@xds/core/Code';
 import {
-  XDSVStack,
-  XDSHStack,
-  XDSLayout,
-  XDSLayoutHeader,
-  XDSLayoutContent,
+  VStack,
+  HStack,
+  Layout,
+  LayoutHeader,
+  LayoutContent,
 } from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSSkeleton} from '@xds/core/Skeleton';
-import {XDSDialog} from '@xds/core/Dialog';
-import {XDSTooltip} from '@xds/core/Tooltip';
+import {Button} from '@xds/core/Button';
+import {Skeleton} from '@xds/core/Skeleton';
+import {Dialog} from '@xds/core/Dialog';
+import {Tooltip} from '@xds/core/Tooltip';
 import {TemplatePreviewSurface} from './TemplatePreviewSurface';
 import {buildPlaygroundHref} from './playgroundLink';
 import {trackCopy, trackOpenPlayground, trackNavigate} from '../lib/analytics';
@@ -145,36 +145,36 @@ function TemplatePreviewHeader({
   const playgroundHref = item.source ? buildPlaygroundHref(item.source) : null;
 
   const metadata = (
-    <XDSVStack
+    <VStack
       gap={0.5}
       xstyle={
         isFullscreen ? styles.mobileHeaderMeta : styles.desktopHeaderMeta
       }>
-      <XDSHeading level={2}>{item.name}</XDSHeading>
+      <Heading level={2}>{item.name}</Heading>
       {item.description && (
-        <XDSText type="body" color="secondary">
+        <Text type="body" color="secondary">
           {item.description}
-        </XDSText>
+        </Text>
       )}
-    </XDSVStack>
+    </VStack>
   );
 
   const copyButton = (
-    <XDSHStack gap={2} vAlign="center">
-      <XDSCode>{`npx xds template ${item.slug}`}</XDSCode>
-      <XDSButton
+    <HStack gap={2} vAlign="center">
+      <Code>{`npx xds template ${item.slug}`}</Code>
+      <Button
         variant="ghost"
         isIconOnly
         size="lg"
         label={cmdCopied ? 'Copied!' : 'Copy install command'}
-        icon={<XDSIcon icon={cmdCopied ? 'check' : 'copy'} color="inherit" />}
+        icon={<Icon icon={cmdCopied ? 'check' : 'copy'} color="inherit" />}
         onClick={onCopyCommand}
       />
-    </XDSHStack>
+    </HStack>
   );
 
   const playgroundButton = playgroundHref ? (
-    <XDSButton
+    <Button
       label="Open in Playground"
       variant="primary"
       size="lg"
@@ -190,39 +190,39 @@ function TemplatePreviewHeader({
   ) : null;
 
   const closeButton = (
-    <XDSButton
+    <Button
       variant="secondary"
       isIconOnly
       label="Close preview"
       size="lg"
-      icon={<XDSIcon icon="close" color="inherit" />}
+      icon={<Icon icon="close" color="inherit" />}
       onClick={onClose}
       xstyle={isFullscreen ? styles.closeButton : undefined}
     />
   );
 
   const actions = (
-    <XDSHStack
+    <HStack
       gap={2}
       vAlign="center"
       xstyle={isFullscreen ? styles.actionsRow : undefined}>
       {copyButton}
       {playgroundButton}
       {!isFullscreen && closeButton}
-    </XDSHStack>
+    </HStack>
   );
 
   return isFullscreen ? (
-    <XDSVStack gap={3} xstyle={styles.headerRow}>
+    <VStack gap={3} xstyle={styles.headerRow}>
       {metadata}
       {actions}
       {closeButton}
-    </XDSVStack>
+    </VStack>
   ) : (
-    <XDSHStack gap={4} vAlign="start" xstyle={styles.headerRow}>
+    <HStack gap={4} vAlign="start" xstyle={styles.headerRow}>
       {metadata}
       {actions}
-    </XDSHStack>
+    </HStack>
   );
 }
 
@@ -304,7 +304,7 @@ export function TemplatePreviewDialog({
   const isFullscreen = variant === 'fullscreen';
 
   return (
-    <XDSDialog
+    <Dialog
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       variant={variant}
@@ -312,10 +312,10 @@ export function TemplatePreviewDialog({
       maxHeight={isFullscreen ? undefined : '92vh'}
       xstyle={isFullscreen ? undefined : styles.dialogTall}
       aria-label={current.name}>
-      <XDSLayout
+      <Layout
         height="fill"
         header={
-          <XDSLayoutHeader xstyle={styles.headerRow}>
+          <LayoutHeader xstyle={styles.headerRow}>
             <TemplatePreviewHeader
               item={current}
               isFullscreen={isFullscreen}
@@ -323,10 +323,10 @@ export function TemplatePreviewDialog({
               onCopyCommand={handleCopyCmd}
               onClose={() => onOpenChange(false)}
             />
-          </XDSLayoutHeader>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent isScrollable={false} padding={0}>
+          <LayoutContent isScrollable={false} padding={0}>
             <div {...stylex.props(styles.body)}>
               <TemplatePreviewSurface
                 key={deferredCurrent.slug}
@@ -334,48 +334,48 @@ export function TemplatePreviewDialog({
               />
               {isPending && (
                 <div {...stylex.props(styles.skeletonOverlay)}>
-                  <XDSSkeleton width="100%" height="100%" />
+                  <Skeleton width="100%" height="100%" />
                 </div>
               )}
             </div>
-          </XDSLayoutContent>
+          </LayoutContent>
         }
       />
 
       {count > 1 && !isFullscreen && (
         <>
           <div {...stylex.props(styles.navArrow, styles.navPrev)}>
-            <XDSTooltip
+            <Tooltip
               content={`Previous: ${items[(index - 1 + count) % count]?.name}`}
               placement="end">
-              <XDSButton
+              <Button
                 variant="secondary"
                 size="lg"
                 isIconOnly
                 label="Previous template"
-                icon={<XDSIcon icon="chevronLeft" color="inherit" />}
+                icon={<Icon icon="chevronLeft" color="inherit" />}
                 onClick={() => go(-1)}
                 xstyle={styles.navArrowButton}
               />
-            </XDSTooltip>
+            </Tooltip>
           </div>
           <div {...stylex.props(styles.navArrow, styles.navNext)}>
-            <XDSTooltip
+            <Tooltip
               content={`Next: ${items[(index + 1) % count]?.name}`}
               placement="start">
-              <XDSButton
+              <Button
                 variant="secondary"
                 size="lg"
                 isIconOnly
                 label="Next template"
-                icon={<XDSIcon icon="chevronRight" color="inherit" />}
+                icon={<Icon icon="chevronRight" color="inherit" />}
                 onClick={() => go(1)}
                 xstyle={styles.navArrowButton}
               />
-            </XDSTooltip>
+            </Tooltip>
           </div>
         </>
       )}
-    </XDSDialog>
+    </Dialog>
   );
 }

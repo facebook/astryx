@@ -3,17 +3,17 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSPopover} from '@xds/core/Popover';
-import {XDSButton} from '@xds/core/Button';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSDivider} from '@xds/core/Divider';
+import {Popover} from '@xds/core/Popover';
+import {Button} from '@xds/core/Button';
+import {VStack} from '@xds/core/Layout';
+import {Text, Heading} from '@xds/core/Text';
+import {Divider} from '@xds/core/Divider';
 
 export default function PopoverShowcase() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <XDSPopover
+    <Popover
       isOpen={isOpen}
       onOpenChange={setIsOpen}
       hasAutoFocus={false}
@@ -21,17 +21,17 @@ export default function PopoverShowcase() {
       label="Settings"
       width={280}
       content={
-        <XDSVStack gap={3}>
-          <XDSHeading level={4} tabIndex={0}>
+        <VStack gap={3}>
+          <Heading level={4} tabIndex={0}>
             Settings
-          </XDSHeading>
-          <XDSDivider />
-          <XDSText type="body">
+          </Heading>
+          <Divider />
+          <Text type="body">
             Notifications, dark mode, and sound preferences.
-          </XDSText>
-        </XDSVStack>
+          </Text>
+        </VStack>
       }>
-      <XDSButton label="Settings">Settings</XDSButton>
-    </XDSPopover>
+      <Button label="Settings">Settings</Button>
+    </Popover>
   );
 }

@@ -3,10 +3,10 @@
 'use client';
 
 import * as React from 'react';
-import {XDSText} from '@xds/core/Text';
-import {XDSVStack} from '@xds/core/Stack';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
+import {Text} from '@xds/core/Text';
+import {VStack} from '@xds/core/Stack';
+import {TextInput} from '@xds/core/TextInput';
+import {ToggleButton, ToggleButtonGroup} from '@xds/core/ToggleButton';
 import {
   PaletteOutline16Icon,
   FourRectangleGridOutline16Icon,
@@ -86,7 +86,7 @@ function SpacingEditor({
       }
       input={
         <div style={{width: 80}}>
-          <XDSTextInput
+          <TextInput
             label="Value"
             isLabelHidden
             value={value}
@@ -124,7 +124,7 @@ function RadiusEditor({
       }
       input={
         <div style={{width: 80}}>
-          <XDSTextInput
+          <TextInput
             label="Value"
             isLabelHidden
             value={value}
@@ -172,7 +172,7 @@ function TypographyEditor({
       }
       input={
         <div style={{width: 200}}>
-          <XDSTextInput
+          <TextInput
             label="Value"
             isLabelHidden
             value={value}
@@ -199,7 +199,7 @@ function GenericEditor({
       tokenName={tokenName}
       input={
         <div style={{width: 200}}>
-          <XDSTextInput
+          <TextInput
             label="Value"
             isLabelHidden
             value={value}
@@ -226,9 +226,9 @@ export function RawTokensPanel({
   const [activeGroup, setActiveGroup] = React.useState<TokenGroupKey>('colors');
 
   return (
-    <XDSVStack gap={3}>
+    <VStack gap={3}>
       <div style={{overflowX: 'auto'}}>
-        <XDSToggleButtonGroup
+        <ToggleButtonGroup
           label="Token category"
           type="single"
           size="sm"
@@ -239,7 +239,7 @@ export function RawTokensPanel({
             }
           }}>
           {(Object.keys(TOKEN_GROUPS) as TokenGroupKey[]).map(groupKey => (
-            <XDSToggleButton
+            <ToggleButton
               key={groupKey}
               label={TOKEN_GROUPS[groupKey].label}
               tooltip={TOKEN_GROUPS[groupKey].label}
@@ -248,16 +248,16 @@ export function RawTokensPanel({
               isIconOnly={activeGroup !== groupKey}
             />
           ))}
-        </XDSToggleButtonGroup>
+        </ToggleButtonGroup>
       </div>
 
-      <XDSVStack gap={1}>
+      <VStack gap={1}>
         {activeGroup === 'colors' &&
           Object.entries(COLOR_CATEGORIES).map(([category, tokenNames]) => {
             const seen = new Set<string>();
             return (
-              <XDSVStack key={category} gap={0}>
-                <XDSText
+              <VStack key={category} gap={0}>
+                <Text
                   type="label"
                   color="primary"
                   weight="semibold"
@@ -266,7 +266,7 @@ export function RawTokensPanel({
                     display: 'block',
                   }}>
                   {category}
-                </XDSText>
+                </Text>
                 {tokenNames
                   .filter(t => {
                     if (seen.has(t)) {
@@ -284,7 +284,7 @@ export function RawTokensPanel({
                       mode={mode}
                     />
                   ))}
-              </XDSVStack>
+              </VStack>
             );
           })}
 
@@ -312,14 +312,14 @@ export function RawTokensPanel({
           Object.entries(TYPOGRAPHY_CATEGORIES).map(([category, config]) => {
             const tokenNames = Array.isArray(config) ? config : config.tokens;
             return (
-              <XDSVStack key={category} gap={2}>
-                <XDSText
+              <VStack key={category} gap={2}>
+                <Text
                   type="label"
                   color="primary"
                   weight="semibold"
                   style={{padding: '8px 0 4px', display: 'block'}}>
                   {category}
-                </XDSText>
+                </Text>
                 {tokenNames.map(tokenName => (
                   <TypographyEditor
                     key={tokenName}
@@ -328,7 +328,7 @@ export function RawTokensPanel({
                     onChange={onTokenChange}
                   />
                 ))}
-              </XDSVStack>
+              </VStack>
             );
           })}
 
@@ -343,7 +343,7 @@ export function RawTokensPanel({
               onChange={onTokenChange}
             />
           ))}
-      </XDSVStack>
-    </XDSVStack>
+      </VStack>
+    </VStack>
   );
 }

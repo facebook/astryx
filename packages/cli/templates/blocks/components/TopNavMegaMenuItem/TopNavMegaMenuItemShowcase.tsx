@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSTopNavMegaMenuItem} from '@xds/core/TopNav';
-import {XDSGrid} from '@xds/core/Grid';
+import {TopNavMegaMenuItem} from '@xds/core/TopNav';
+import {Grid} from '@xds/core/Grid';
 
 function BoltIcon() {
   return (
@@ -39,31 +39,31 @@ function WrenchIcon() {
 
 export default function TopNavMegaMenuItemShowcase() {
   return (
-    <XDSGrid columns={2} gap={2}>
-      <XDSTopNavMegaMenuItem
+    <Grid columns={2} gap={2}>
+      <TopNavMegaMenuItem
         title="Edge Functions"
         description="Run serverless code at the network edge"
         icon={<BoltIcon />}
         href="#edge"
       />
-      <XDSTopNavMegaMenuItem
+      <TopNavMegaMenuItem
         title="Storage"
         description="Object and file storage for your application"
         icon={<CubeIcon />}
         href="#storage"
       />
-      <XDSTopNavMegaMenuItem
+      <TopNavMegaMenuItem
         title="CDN"
         description="Global content delivery with instant purging"
         icon={<GlobeIcon />}
         href="#cdn"
       />
-      <XDSTopNavMegaMenuItem
+      <TopNavMegaMenuItem
         title="Build Tools"
         description="Optimized bundling and compilation pipeline"
         icon={<WrenchIcon />}
         href="#build"
       />
-    </XDSGrid>
+    </Grid>
   );
 }

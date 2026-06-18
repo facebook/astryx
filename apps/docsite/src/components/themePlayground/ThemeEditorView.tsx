@@ -6,23 +6,23 @@ import * as React from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useRouter} from 'next/navigation';
 import {durationVars, easeVars} from '@xds/core/theme/tokens.stylex';
-import {XDSButton} from '@xds/core/Button';
-import {XDSCard} from '@xds/core/Card';
-import {XDSHStack, XDSVStack} from '@xds/core/Stack';
-import {XDSText} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Card} from '@xds/core/Card';
+import {HStack, VStack} from '@xds/core/Stack';
+import {Text} from '@xds/core/Text';
 import {CodeExampleBlock} from '../CodeExampleBlock';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
+import {DropdownMenu} from '@xds/core/DropdownMenu';
 import {
   ArrowLeftFilled16Icon as ArrowLeftIcon,
   LargeHalfCircle8RaysLargeOutline16Icon,
   CrescentOutline16Icon,
 } from './icons';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
-import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
-import {useXDSResizable} from '@xds/core/Resizable';
-import {XDSResizeHandle} from '@xds/core/Resizable';
+import {TabList, Tab} from '@xds/core/TabList';
+import {Dialog, DialogHeader} from '@xds/core/Dialog';
+import {useResizable} from '@xds/core/Resizable';
+import {ResizeHandle} from '@xds/core/Resizable';
 import {
-  XDSTheme,
+  Theme,
   defineTheme,
   expandTypeScale,
   expandRadiusScale,
@@ -39,7 +39,7 @@ import {
   durationDefaults,
   easeDefaults,
 } from '@xds/core/theme';
-import type {XDSDefinedTheme} from '@xds/core/theme';
+import type {DefinedTheme} from '@xds/core/theme';
 import {EditorSections} from './EditorSections';
 import {ComponentTokensPanel} from './ComponentTokensPanel';
 import type {CustomOverride} from './ComponentTokensPanel';
@@ -79,7 +79,7 @@ const ALL_DEFAULTS: Record<string, string> = {
 interface ThemeEditorViewProps {
   themeId: string;
   themeLabel: string;
-  initialTheme: XDSDefinedTheme;
+  initialTheme: DefinedTheme;
 }
 
 // First-paint entry animations. Each rule sits in its resting "to"
@@ -178,7 +178,7 @@ export function ThemeEditorView({
   // token state from this preset; edits that deviate flip the selector to
   // "Custom" (see isCustom below).
   const [selectedThemeId, setSelectedThemeId] = React.useState(themeId);
-  const editor = useXDSResizable({
+  const editor = useResizable({
     defaultSize: 400,
     minSizePx: 320,
     maxSizePx: 600,
@@ -206,7 +206,7 @@ export function ThemeEditorView({
       baseComponents,
       buildComponentOverrides(componentTokens),
       customMap,
-    ) as XDSDefinedTheme['components'];
+    ) as DefinedTheme['components'];
     return defineTheme({name: 'custom', tokens: coreTokens, components});
   }, [tokens, customOverrides, baseComponents]);
 
@@ -443,16 +443,16 @@ export function ThemeEditorView({
   );
 
   // Runnable usage snippet shown alongside the exported theme. Mirrors the
-  // theme package README's "wrap your app with XDSTheme" guidance, adapted
+  // theme package README's "wrap your app with Theme" guidance, adapted
   // for a locally-authored theme file.
   const usageSnippet = React.useMemo(
     () =>
       [
-        "import {XDSTheme} from '@xds/core/theme';",
+        "import {Theme} from '@xds/core/theme';",
         `import {${themeId}Theme} from './${themeId}-theme';`,
         '',
         'export function App() {',
-        `  return <XDSTheme theme={${themeId}Theme}>{/* your app */}</XDSTheme>;`,
+        `  return <Theme theme={${themeId}Theme}>{/* your app */}</Theme>;`,
         '}',
       ].join('\n'),
     [themeId],
@@ -482,8 +482,8 @@ export function ThemeEditorView({
         }}>
         {/* Panel Header: back button + tabs */}
         <div style={{flexShrink: 0}}>
-          <XDSHStack gap={2} vAlign="center" style={{padding: '8px 12px 0'}}>
-            <XDSButton
+          <HStack gap={2} vAlign="center" style={{padding: '8px 12px 0'}}>
+            <Button
               label="Back"
               tooltip="Back to all themes"
               variant="ghost"
@@ -492,17 +492,17 @@ export function ThemeEditorView({
               icon={<ArrowLeftIcon />}
               onClick={() => router.push('/themes')}
             />
-            <XDSTabList
+            <TabList
               value={panelTab}
               onChange={v =>
                 setPanelTab(v as 'theme' | 'components' | 'tokens')
               }
               style={{flex: 1}}>
-              <XDSTab value="theme" label="Theme" style={{flex: 1}} />
-              <XDSTab value="components" label="Components" style={{flex: 1}} />
-              <XDSTab value="tokens" label="Tokens" style={{flex: 1}} />
-            </XDSTabList>
-          </XDSHStack>
+              <Tab value="theme" label="Theme" style={{flex: 1}} />
+              <Tab value="components" label="Components" style={{flex: 1}} />
+              <Tab value="tokens" label="Tokens" style={{flex: 1}} />
+            </TabList>
+          </HStack>
         </div>
 
         {/* Scrollable editor content */}
@@ -551,7 +551,7 @@ export function ThemeEditorView({
       </div>
 
       {/* Resize Handle */}
-      <XDSResizeHandle resizable={editor.props} pillPlacement="center" />
+      <ResizeHandle resizable={editor.props} pillPlacement="center" />
 
       {/* Right Panel — Preview */}
       <div
@@ -573,11 +573,11 @@ export function ThemeEditorView({
             flexShrink: 0,
           }}>
           {/* Left: theme selector + dark mode toggle */}
-          <XDSHStack
+          <HStack
             gap={2}
             vAlign="center"
             style={{flex: 1, justifyContent: 'flex-start'}}>
-            <XDSDropdownMenu
+            <DropdownMenu
               hasAutoFocus={false}
               button={{
                 label: isCustom ? 'Custom' : selectedThemeLabel,
@@ -589,7 +589,7 @@ export function ThemeEditorView({
                 onClick: () => selectTheme(entry),
               }))}
             />
-            <XDSButton
+            <Button
               label={
                 mode === 'light'
                   ? 'Switch to dark mode'
@@ -608,10 +608,10 @@ export function ThemeEditorView({
               isIconOnly
               onClick={() => setMode(m => (m === 'light' ? 'dark' : 'light'))}
             />
-          </XDSHStack>
+          </HStack>
           {/* Center: component / token preview selector */}
-          <XDSHStack gap={2} vAlign="center" style={{justifyContent: 'center'}}>
-            <XDSDropdownMenu
+          <HStack gap={2} vAlign="center" style={{justifyContent: 'center'}}>
+            <DropdownMenu
               hasAutoFocus={false}
               button={{
                 label:
@@ -630,19 +630,19 @@ export function ThemeEditorView({
                 },
               ]}
             />
-          </XDSHStack>
+          </HStack>
           {/* Right: reset + export */}
-          <XDSHStack
+          <HStack
             gap={2}
             vAlign="center"
             style={{flex: 1, justifyContent: 'flex-end'}}>
-            <XDSButton
+            <Button
               label="Reset"
               variant="ghost"
               size="md"
               onClick={handleReset}
             />
-            <XDSButton
+            <Button
               label="Export Theme"
               variant="secondary"
               size="md"
@@ -651,7 +651,7 @@ export function ThemeEditorView({
                 setShowExportDialog(true);
               }}
             />
-          </XDSHStack>
+          </HStack>
         </div>
 
         {/* Preview content wrapped in theme */}
@@ -666,7 +666,7 @@ export function ThemeEditorView({
             paddingBlockEnd: 'var(--spacing-4)',
             paddingInline: 'var(--spacing-4)',
           }}>
-          <XDSCard
+          <Card
             padding={0}
             style={{
               flex: 1,
@@ -675,7 +675,7 @@ export function ThemeEditorView({
               scrollbarWidth: 'thin',
               colorScheme: mode,
             }}>
-            <XDSTheme theme={currentTheme} mode={mode}>
+            <Theme theme={currentTheme} mode={mode}>
               {activePreview === 'tokens' ? (
                 <div
                   style={{
@@ -712,55 +712,55 @@ export function ThemeEditorView({
                   </div>
                 </div>
               )}
-            </XDSTheme>
-          </XDSCard>
+            </Theme>
+          </Card>
         </div>
       </div>
 
       {/* Export Theme Dialog */}
-      <XDSDialog
+      <Dialog
         isOpen={showExportDialog}
         onOpenChange={setShowExportDialog}
         width={720}>
-        <XDSDialogHeader title="Exporting a theme" />
+        <DialogHeader title="Exporting a theme" />
         <div
           style={{
             padding: 'var(--spacing-4)',
             overflow: 'auto',
             maxHeight: '70vh',
           }}>
-          <XDSVStack gap={5}>
-            <XDSText type="body" color="secondary">
+          <VStack gap={5}>
+            <Text type="body" color="secondary">
               Your theme is a plain object — no build step or package install
               required. Save the code below to a file, then wrap your app with{' '}
-              <code>XDSTheme</code> to apply it.
-            </XDSText>
+              <code>Theme</code> to apply it.
+            </Text>
 
-            <XDSVStack gap={2}>
-              <XDSText type="label">
+            <VStack gap={2}>
+              <Text type="label">
                 1. Save as a theme file (e.g. {themeId}-theme.ts)
-              </XDSText>
+              </Text>
               <CodeExampleBlock
                 code={themeCode}
                 language="typescript"
                 size="sm"
               />
-            </XDSVStack>
+            </VStack>
 
-            <XDSVStack gap={2}>
-              <XDSText type="label">2. Wrap your app with the theme</XDSText>
+            <VStack gap={2}>
+              <Text type="label">2. Wrap your app with the theme</Text>
               <CodeExampleBlock code={usageSnippet} language="tsx" size="sm" />
-              <XDSText type="supporting" color="secondary">
+              <Text type="supporting" color="secondary">
                 Token and component overrides apply at runtime through{' '}
-                <code>XDSTheme</code>. To consume the theme as a stylesheet
+                <code>Theme</code>. To consume the theme as a stylesheet
                 instead, build a CSS file with{' '}
                 <code>xds theme build {themeId}-theme.ts -o theme.css</code> and{' '}
                 <code>@import</code> it.
-              </XDSText>
-            </XDSVStack>
-          </XDSVStack>
+              </Text>
+            </VStack>
+          </VStack>
         </div>
-      </XDSDialog>
+      </Dialog>
     </div>
   );
 }

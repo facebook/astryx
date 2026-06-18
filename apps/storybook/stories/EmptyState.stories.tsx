@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSEmptyState} from '@xds/core/EmptyState';
-import {XDSButton} from '@xds/core/Button';
+import {EmptyState} from '@xds/core/EmptyState';
+import {Button} from '@xds/core/Button';
 
-const meta: Meta<typeof XDSEmptyState> = {
+const meta: Meta<typeof EmptyState> = {
   title: 'Core/EmptyState',
-  component: XDSEmptyState,
+  component: EmptyState,
   tags: ['autodocs'],
   argTypes: {
     title: {
@@ -25,7 +25,7 @@ const meta: Meta<typeof XDSEmptyState> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSEmptyState>;
+type Story = StoryObj<typeof EmptyState>;
 
 export const Default: Story = {
   args: {
@@ -55,8 +55,8 @@ export const WithActions: Story = {
     description: 'Try adjusting your search or filters.',
     actions: (
       <>
-        <XDSButton label="Go back" variant="secondary" />
-        <XDSButton label="Clear filters" variant="primary" />
+        <Button label="Go back" variant="secondary" />
+        <Button label="Clear filters" variant="primary" />
       </>
     ),
   },
@@ -77,8 +77,8 @@ export const CompactWithActions: Story = {
     description: 'Add some data to get started.',
     actions: (
       <>
-        <XDSButton label="Import" variant="secondary" />
-        <XDSButton label="Add item" variant="primary" />
+        <Button label="Import" variant="secondary" />
+        <Button label="Add item" variant="primary" />
       </>
     ),
     isCompact: true,
@@ -93,14 +93,14 @@ export const FullExample: Story = {
         borderRadius: '12px',
         maxWidth: '480px',
       }}>
-      <XDSEmptyState
+      <EmptyState
         icon={<span style={{fontSize: '48px'}}>📬</span>}
         title="No notifications"
         description="When you receive notifications, they will appear here. Check back later!"
         actions={
           <>
-            <XDSButton label="Settings" variant="secondary" />
-            <XDSButton label="Refresh" variant="primary" />
+            <Button label="Settings" variant="secondary" />
+            <Button label="Refresh" variant="primary" />
           </>
         }
       />

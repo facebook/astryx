@@ -2,13 +2,13 @@
 
 'use client';
 
-import {XDSChatToolCalls} from '@xds/core/Chat';
-import {XDSStack} from '@xds/core/Layout';
+import {ChatToolCalls} from '@xds/core/Chat';
+import {Stack} from '@xds/core/Layout';
 
 export default function ChatToolCallsSimple() {
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSChatToolCalls
+    <Stack direction="vertical" gap={4}>
+      <ChatToolCalls
         calls={[
           {
             name: 'bash',
@@ -18,7 +18,7 @@ export default function ChatToolCallsSimple() {
           },
         ]}
       />
-      <XDSChatToolCalls
+      <ChatToolCalls
         defaultIsExpanded
         calls={[
           {
@@ -44,6 +44,6 @@ export default function ChatToolCallsSimple() {
           },
         ]}
       />
-    </XDSStack>
+    </Stack>
   );
 }

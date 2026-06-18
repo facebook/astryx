@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSDateInput} from '@xds/core/DateInput';
-import {XDSStack} from '@xds/core/Layout';
+import {DateInput} from '@xds/core/DateInput';
+import {Stack} from '@xds/core/Layout';
 
 type DateString =
   `${number}${number}${number}${number}-${number}${number}-${number}${number}`;
@@ -21,25 +21,25 @@ export default function DateInputWithValidation() {
   );
 
   return (
-    <XDSStack direction="vertical" gap={4} width="100%" style={{maxWidth: 400}}>
-      <XDSDateInput
+    <Stack direction="vertical" gap={4} width="100%" style={{maxWidth: 400}}>
+      <DateInput
         label="Event date"
         value={errorVal}
         onChange={setErrorVal}
         status={{type: 'error', message: 'This date is already booked'}}
       />
-      <XDSDateInput
+      <DateInput
         label="Preferred date"
         value={warningVal}
         onChange={setWarningVal}
         status={{type: 'warning', message: 'This date falls on a holiday'}}
       />
-      <XDSDateInput
+      <DateInput
         label="Start date"
         value={successVal}
         onChange={setSuccessVal}
         status={{type: 'success', message: 'Date confirmed'}}
       />
-    </XDSStack>
+    </Stack>
   );
 }

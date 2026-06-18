@@ -16,8 +16,8 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSCard} from '@xds/core/Card';
-import {XDSButton} from '@xds/core/Button';
+import {Card} from '@xds/core/Card';
+import {Button} from '@xds/core/Button';
 import {Minimize2} from 'lucide-react';
 
 export type Viewport = 'desktop' | 'phone';
@@ -131,8 +131,8 @@ export function PreviewStage({
         isFullscreen && s.fullscreen,
       )}>
       {isFullscreen && (
-        <XDSCard padding={0} xstyle={s.exitButtonCard}>
-          <XDSButton
+        <Card padding={0} xstyle={s.exitButtonCard}>
+          <Button
             label="Exit fullscreen"
             tooltip="Exit fullscreen"
             variant="ghost"
@@ -141,9 +141,9 @@ export function PreviewStage({
             icon={<Minimize2 size={16} />}
             onClick={onExitFullscreen}
           />
-        </XDSCard>
+        </Card>
       )}
-      <XDSCard
+      <Card
         padding={0}
         xstyle={[
           s.card,
@@ -158,7 +158,7 @@ export function PreviewStage({
           title="Preview"
           {...stylex.props(s.iframe, isInteractionDisabled && s.iframeInert)}
         />
-      </XDSCard>
+      </Card>
     </div>
   );
 }

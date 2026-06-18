@@ -4,8 +4,8 @@
 
 import {createContext, useContext, useEffect, useState} from 'react';
 import Link from 'next/link';
-import {XDSTheme} from '@xds/core/theme';
-import {XDSLinkProvider} from '@xds/core/Link';
+import {Theme} from '@xds/core/theme';
+import {LinkProvider} from '@xds/core/Link';
 import {astryxTheme} from '../themes/astryx';
 
 type ThemeMode = 'light' | 'dark';
@@ -48,9 +48,9 @@ export function Providers({children}: {children: React.ReactNode}) {
 
   return (
     <ThemeModeContext value={{mode, toggleMode}}>
-      <XDSTheme theme={astryxTheme} mode={mode}>
-        <XDSLinkProvider component={Link}>{children}</XDSLinkProvider>
-      </XDSTheme>
+      <Theme theme={astryxTheme} mode={mode}>
+        <LinkProvider component={Link}>{children}</LinkProvider>
+      </Theme>
     </ThemeModeContext>
   );
 }

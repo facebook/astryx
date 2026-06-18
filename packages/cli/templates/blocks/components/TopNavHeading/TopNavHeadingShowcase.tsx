@@ -2,9 +2,9 @@
 
 'use client';
 
-import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSNavIcon} from '@xds/core/NavIcon';
+import {TopNav, TopNavHeading} from '@xds/core/TopNav';
+import {VStack} from '@xds/core/Layout';
+import {NavIcon} from '@xds/core/NavIcon';
 
 function AppIcon() {
   return (
@@ -26,26 +26,26 @@ function AppIcon() {
 
 export default function TopNavHeadingShowcase() {
   return (
-    <XDSVStack gap={4}>
-      <XDSTopNav
+    <VStack gap={4}>
+      <TopNav
         label="Plain heading example"
         heading={
-          <XDSTopNavHeading
+          <TopNavHeading
             heading="Acme Platform"
-            logo={<XDSNavIcon icon={<AppIcon />} />}
+            logo={<NavIcon icon={<AppIcon />} />}
           />
         }
       />
-      <XDSTopNav
+      <TopNav
         label="Linked heading example"
         heading={
-          <XDSTopNavHeading
+          <TopNavHeading
             heading="Acme Platform"
             logo={<AppIcon />}
             href="/"
           />
         }
       />
-    </XDSVStack>
+    </VStack>
   );
 }

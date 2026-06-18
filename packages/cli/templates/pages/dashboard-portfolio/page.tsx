@@ -5,24 +5,24 @@
 import {useState} from 'react';
 
 import {
-  XDSVStack,
-  XDSHStack,
-  XDSLayout,
-  XDSLayoutContent,
+  VStack,
+  HStack,
+  Layout,
+  LayoutContent,
 } from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSCard} from '@xds/core/Card';
-import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSLink} from '@xds/core/Link';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSButton} from '@xds/core/Button';
-import {XDSTable, proportional} from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
-import {XDSDivider} from '@xds/core/Divider';
+import {Text, Heading} from '@xds/core/Text';
+import {Card} from '@xds/core/Card';
+import {Grid, GridSpan} from '@xds/core/Grid';
+import {Icon} from '@xds/core/Icon';
+import {Link} from '@xds/core/Link';
+import {Avatar} from '@xds/core/Avatar';
+import {List, ListItem} from '@xds/core/List';
+import {DropdownMenu} from '@xds/core/DropdownMenu';
+import {Badge} from '@xds/core/Badge';
+import {Button} from '@xds/core/Button';
+import {Table, proportional} from '@xds/core/Table';
+import type {TableColumn} from '@xds/core/Table';
+import {Divider} from '@xds/core/Divider';
 import {
   AreaChart,
   Area,
@@ -353,15 +353,15 @@ function ChartTooltip({
     return null;
   }
   return (
-    <XDSCard padding={3}>
-      <XDSText type="supporting">
+    <Card padding={3}>
+      <Text type="supporting">
         {payload[0].value.toLocaleString('en-US', {
           style: 'currency',
           currency: 'USD',
           maximumFractionDigits: 0,
         })}
-      </XDSText>
-    </XDSCard>
+      </Text>
+    </Card>
   );
 }
 
@@ -475,32 +475,32 @@ function MarketCard({
   spark: number[];
 }) {
   return (
-    <XDSCard>
-      <XDSVStack gap={4}>
-        <XDSVStack gap={0}>
-          <XDSHeading level={3}>{name}</XDSHeading>
-          <XDSText type="supporting" color="secondary">
+    <Card>
+      <VStack gap={4}>
+        <VStack gap={0}>
+          <Heading level={3}>{name}</Heading>
+          <Text type="supporting" color="secondary">
             {ticker}
-          </XDSText>
-        </XDSVStack>
+          </Text>
+        </VStack>
         <Sparkline data={spark} positive={positive} />
-        <XDSHStack gap={3} vAlign="center">
-          <XDSText type="display-3" weight="bold">
+        <HStack gap={3} vAlign="center">
+          <Text type="display-3" weight="bold">
             {price}
-          </XDSText>
-          <XDSHStack gap={1} vAlign="center">
-            <XDSIcon
+          </Text>
+          <HStack gap={1} vAlign="center">
+            <Icon
               icon={positive ? ArrowUpIcon : ArrowDownIcon}
               size="xsm"
               color={positive ? 'success' : 'error'}
             />
-            <XDSText type="body" color="secondary">
+            <Text type="body" color="secondary">
               {change}
-            </XDSText>
-          </XDSHStack>
-        </XDSHStack>
-      </XDSVStack>
-    </XDSCard>
+            </Text>
+          </HStack>
+        </HStack>
+      </VStack>
+    </Card>
   );
 }
 
@@ -535,18 +535,18 @@ function ColoredValue({
   value: string;
   isPositive: boolean;
 }) {
-  return <XDSBadge label={value} variant={isPositive ? 'green' : 'red'} />;
+  return <Badge label={value} variant={isPositive ? 'green' : 'red'} />;
 }
 
-const trendingColumns: XDSTableColumn<StockRow>[] = [
+const trendingColumns: TableColumn<StockRow>[] = [
   {
     key: 'ticker',
     header: 'Ticker',
     width: proportional(1),
     renderCell: (row: StockRow) => (
-      <XDSText type="body" weight="bold">
+      <Text type="body" weight="bold">
         {row.ticker}
-      </XDSText>
+      </Text>
     ),
   },
   {key: 'price', header: 'Price', width: proportional(1)},
@@ -601,28 +601,28 @@ function MetricCard({
 }) {
   const positive = !change.startsWith('-');
   return (
-    <XDSCard>
-      <XDSVStack gap={1}>
-        <XDSHStack gap={3} vAlign="center">
-          <XDSText type="display-3" weight="bold">
+    <Card>
+      <VStack gap={1}>
+        <HStack gap={3} vAlign="center">
+          <Text type="display-3" weight="bold">
             {value}
-          </XDSText>
-          <XDSHStack gap={1} vAlign="center">
-            <XDSIcon
+          </Text>
+          <HStack gap={1} vAlign="center">
+            <Icon
               icon={positive ? ArrowUpIcon : ArrowDownIcon}
               size="xsm"
               color={positive ? 'success' : 'error'}
             />
-            <XDSText type="body" color="secondary">
+            <Text type="body" color="secondary">
               {change}
-            </XDSText>
-          </XDSHStack>
-        </XDSHStack>
-        <XDSText type="body" color="secondary">
+            </Text>
+          </HStack>
+        </HStack>
+        <Text type="body" color="secondary">
           {label}
-        </XDSText>
-      </XDSVStack>
-    </XDSCard>
+        </Text>
+      </VStack>
+    </Card>
   );
 }
 
@@ -638,19 +638,19 @@ function AssetRow({
   change: string;
 }) {
   return (
-    <XDSListItem
-      label={<XDSText weight="bold">{ticker}</XDSText>}
+    <ListItem
+      label={<Text weight="bold">{ticker}</Text>}
       description={name}
       href="#"
-      startContent={<XDSAvatar name={ticker} size="small" />}
+      startContent={<Avatar name={ticker} size="small" />}
       endContent={
-        <XDSVStack gap={0} hAlign="end">
-          <XDSText type="body">{value}</XDSText>
-          <XDSBadge
+        <VStack gap={0} hAlign="end">
+          <Text type="body">{value}</Text>
+          <Badge
             label={change}
             variant={change.startsWith('-') ? 'red' : 'green'}
           />
-        </XDSVStack>
+        </VStack>
       }
     />
   );
@@ -664,15 +664,15 @@ export default function DashboardPortfolioTemplate() {
   const [timeRange, setTimeRange] = useState('1 year');
 
   return (
-    <XDSLayout
+    <Layout
       height="fill"
       content={
-        <XDSLayoutContent padding={6}>
-          <XDSVStack gap={6}>
+        <LayoutContent padding={6}>
+          <VStack gap={6}>
             {/* Page header */}
-            <XDSHStack hAlign="between" vAlign="center">
-              <XDSHeading level={1}>My Portfolio</XDSHeading>
-              <XDSDropdownMenu
+            <HStack hAlign="between" vAlign="center">
+              <Heading level={1}>My Portfolio</Heading>
+              <DropdownMenu
                 button={{
                   label: timeRange,
                   variant: 'secondary',
@@ -688,87 +688,87 @@ export default function DashboardPortfolioTemplate() {
                   {label: 'All time', onClick: () => setTimeRange('All time')},
                 ]}
               />
-            </XDSHStack>
+            </HStack>
 
             {/* KPI metric cards */}
-            <XDSGrid columns={{minWidth: 280, repeat: 'fit'}} gap={4}>
+            <Grid columns={{minWidth: 280, repeat: 'fit'}} gap={4}>
               {Array.from({length: Math.ceil(metrics.length / 2)}, (_, i) => (
-                <XDSGrid
+                <Grid
                   key={i}
                   columns={{minWidth: 280, repeat: 'fit'}}
                   gap={4}>
                   {metrics.slice(i * 2, i * 2 + 2).map(m => (
                     <MetricCard key={m.label} {...m} />
                   ))}
-                </XDSGrid>
+                </Grid>
               ))}
-            </XDSGrid>
+            </Grid>
 
             {/* Chart + Top assets */}
-            <XDSGrid columns={{minWidth: 280, max: 4}} gap={4}>
-              <XDSGridSpan columns={3}>
-                <XDSCard>
-                  <XDSVStack gap={4}>
-                    <XDSHStack hAlign="between" vAlign="center">
-                      <XDSHeading level={3}>Portfolio Value</XDSHeading>
-                      <XDSLink href="#">View details</XDSLink>
-                    </XDSHStack>
+            <Grid columns={{minWidth: 280, max: 4}} gap={4}>
+              <GridSpan columns={3}>
+                <Card>
+                  <VStack gap={4}>
+                    <HStack hAlign="between" vAlign="center">
+                      <Heading level={3}>Portfolio Value</Heading>
+                      <Link href="#">View details</Link>
+                    </HStack>
                     <PortfolioChart />
-                  </XDSVStack>
-                </XDSCard>
-              </XDSGridSpan>
-              <XDSGridSpan columns={1}>
-                <XDSCard>
-                  <XDSVStack gap={4}>
-                    <XDSHStack hAlign="between" vAlign="center">
-                      <XDSHeading level={3}>Top Assets</XDSHeading>
-                      <XDSLink href="#">View all</XDSLink>
-                    </XDSHStack>
-                    <XDSList density="spacious">
+                  </VStack>
+                </Card>
+              </GridSpan>
+              <GridSpan columns={1}>
+                <Card>
+                  <VStack gap={4}>
+                    <HStack hAlign="between" vAlign="center">
+                      <Heading level={3}>Top Assets</Heading>
+                      <Link href="#">View all</Link>
+                    </HStack>
+                    <List density="spacious">
                       {topAssets.map(asset => (
                         <AssetRow key={asset.ticker} {...asset} />
                       ))}
-                    </XDSList>
-                  </XDSVStack>
-                </XDSCard>
-              </XDSGridSpan>
-            </XDSGrid>
+                    </List>
+                  </VStack>
+                </Card>
+              </GridSpan>
+            </Grid>
 
-            <XDSDivider />
+            <Divider />
 
             {/* Market section */}
-            <XDSHStack hAlign="between" vAlign="start">
-              <XDSVStack gap={1}>
-                <XDSHeading level={1}>Market Today</XDSHeading>
-                <XDSText type="body" color="secondary">
+            <HStack hAlign="between" vAlign="start">
+              <VStack gap={1}>
+                <Heading level={1}>Market Today</Heading>
+                <Text type="body" color="secondary">
                   Past 24 hours
-                </XDSText>
-              </XDSVStack>
-              <XDSButton label="View more" variant="secondary" size="lg" />
-            </XDSHStack>
+                </Text>
+              </VStack>
+              <Button label="View more" variant="secondary" size="lg" />
+            </HStack>
 
             {/* Market index cards */}
-            <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
+            <Grid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
               {marketIndices.map(m => (
                 <MarketCard key={m.ticker} {...m} />
               ))}
-            </XDSGrid>
+            </Grid>
 
             {/* Trending stocks table */}
-            <XDSCard>
-              <XDSVStack gap={4}>
-                <XDSHeading level={3}>Trending Stocks</XDSHeading>
-                <XDSTable<StockRow>
+            <Card>
+              <VStack gap={4}>
+                <Heading level={3}>Trending Stocks</Heading>
+                <Table<StockRow>
                   data={trendingStocks}
                   columns={trendingColumns}
                   idKey="id"
                   hasHover
                   dividers="rows"
                 />
-              </XDSVStack>
-            </XDSCard>
-          </XDSVStack>
-        </XDSLayoutContent>
+              </VStack>
+            </Card>
+          </VStack>
+        </LayoutContent>
       }
     />
   );

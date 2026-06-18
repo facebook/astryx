@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSChartV2Legend} from '@xds/lab';
+import {ChartV2Legend} from '@xds/lab';
 
 const sampleItems = [
   {label: 'Revenue', color: '#3b82f6', type: 'bar'},
@@ -9,9 +9,9 @@ const sampleItems = [
   {label: 'Trend', color: '#f59e0b', type: 'line'},
 ];
 
-const meta: Meta<typeof XDSChartV2Legend> = {
+const meta: Meta<typeof ChartV2Legend> = {
   title: 'Lab/ChartV2Legend',
-  component: XDSChartV2Legend,
+  component: ChartV2Legend,
   argTypes: {
     position: {
       control: 'inline-radio',
@@ -27,7 +27,7 @@ const meta: Meta<typeof XDSChartV2Legend> = {
     items: sampleItems,
     alignment: 'start',
   },
-  render: args => <XDSChartV2Legend {...args} />,
+  render: args => <ChartV2Legend {...args} />,
 };
 export default meta;
 

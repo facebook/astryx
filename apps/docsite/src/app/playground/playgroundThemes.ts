@@ -11,7 +11,7 @@
  * playground theme selector (and resolves in the preview) with no code change.
  */
 
-import type {XDSDefinedTheme} from '@xds/core/theme';
+import type {DefinedTheme} from '@xds/core/theme';
 import {themeObjectsFull} from '../../generated/themeRegistry';
 import {packages} from '../../generated/packageRegistry';
 
@@ -20,8 +20,8 @@ export interface PlaygroundTheme {
   value: string;
   /** Human-readable label shown in the selector. */
   label: string;
-  /** The resolved theme object passed to <XDSTheme>. */
-  theme: XDSDefinedTheme;
+  /** The resolved theme object passed to <Theme>. */
+  theme: DefinedTheme;
 }
 
 const displayNameByPackage = new Map(
@@ -58,7 +58,7 @@ export const PLAYGROUND_THEME_OPTIONS = PLAYGROUND_THEMES.map(
   ({value, label}) => ({value, label}),
 );
 
-export const themeByValue: Record<string, XDSDefinedTheme> = Object.fromEntries(
+export const themeByValue: Record<string, DefinedTheme> = Object.fromEntries(
   PLAYGROUND_THEMES.map(t => [t.value, t.theme]),
 );
 

@@ -2,7 +2,7 @@
 
 'use client';
 
-import {XDSDropdownMenu, XDSDropdownMenuItem} from '@xds/core/DropdownMenu';
+import {DropdownMenu, DropdownMenuItem} from '@xds/core/DropdownMenu';
 
 const PencilIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -65,30 +65,30 @@ const TrashIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function DropdownMenuItemShowcase() {
   return (
-    <XDSDropdownMenu
+    <DropdownMenu
       button={{label: 'Actions'}}
       isMenuOpen
       hasAutoFocus={false}
       onOpenChange={() => {}}>
-      <XDSDropdownMenuItem
+      <DropdownMenuItem
         icon={PencilIcon}
         label="Edit"
         description="Modify this item"
         onClick={() => {}}
       />
-      <XDSDropdownMenuItem
+      <DropdownMenuItem
         icon={CopyIcon}
         label="Duplicate"
         description="Create a copy"
         onClick={() => {}}
       />
-      <XDSDropdownMenuItem icon={ShareIcon} label="Share" onClick={() => {}} />
-      <XDSDropdownMenuItem
+      <DropdownMenuItem icon={ShareIcon} label="Share" onClick={() => {}} />
+      <DropdownMenuItem
         icon={TrashIcon}
         label="Delete"
         description="This action cannot be undone"
         onClick={() => {}}
       />
-    </XDSDropdownMenu>
+    </DropdownMenu>
   );
 }

@@ -286,7 +286,7 @@ const handler = createMcpHandler(
         `(recommended for large topics like "theme" to avoid context overload).\n\n` +
         `Examples:\n` +
         `- get("Button") → full Button docs with all props and examples\n` +
-        `- get("useXDSToast") → hook docs with usage pattern\n` +
+        `- get("useToast") → hook docs with usage pattern\n` +
         `- get("theme", { section: "defineTheme" }) → just the defineTheme API\n` +
         `- get("settings") → template source code\n` +
         `- get("Table") → full Table docs including sorting/selection hooks`,
@@ -294,7 +294,7 @@ const handler = createMcpHandler(
         name: z
           .string()
           .describe(
-            'Component name (e.g. "Button", "useXDSToast"), doc topic (e.g. "theme", "spacing"), or template slug (e.g. "settings").',
+            'Component name (e.g. "Button", "useToast"), doc topic (e.g. "theme", "spacing"), or template slug (e.g. "settings").',
           ),
         section: z
           .string()

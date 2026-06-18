@@ -2,7 +2,7 @@
 
 'use client';
 
-import {XDSVStack} from '@xds/core/Layout';
+import {VStack} from '@xds/core/Layout';
 import {gothicTheme} from '@xds/theme-gothic/built';
 // `gothicPalettes` is only exported from the source entry, not /built.
 import {gothicPalettes} from '@xds/theme-gothic';
@@ -45,7 +45,7 @@ function DisplayTextSection() {
   return (
     <div>
       <h3 style={sectionTitle}>Display Text (Manufacturing Consent)</h3>
-      <XDSVStack gap={2}>
+      <VStack gap={2}>
         <span
           style={{
             fontFamily: GOTHIC,
@@ -84,7 +84,7 @@ function DisplayTextSection() {
           }}>
           Little joys, everywhere you go
         </span>
-      </XDSVStack>
+      </VStack>
     </div>
   );
 }

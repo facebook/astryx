@@ -2,26 +2,26 @@
 
 'use client';
 
-import {XDSChatComposer, XDSChatComposerDrawer} from '@xds/core/Chat';
-import {XDSToken} from '@xds/core/Token';
-import {XDSStack} from '@xds/core/Layout';
+import {ChatComposer, ChatComposerDrawer} from '@xds/core/Chat';
+import {Token} from '@xds/core/Token';
+import {Stack} from '@xds/core/Layout';
 
 export default function ChatComposerDrawerCollapsible() {
   return (
-    <XDSStack direction="vertical" gap={4} width={480}>
-      <XDSChatComposer
+    <Stack direction="vertical" gap={4} width={480}>
+      <ChatComposer
         onSubmit={() => {}}
         drawer={
-          <XDSChatComposerDrawer count={6} label="Files">
-            <XDSToken label="design-spec.pdf" onRemove={() => {}} />
-            <XDSToken label="api-schema.json" onRemove={() => {}} />
-            <XDSToken label="screenshot.png" onRemove={() => {}} />
-            <XDSToken label="meeting-notes.md" onRemove={() => {}} />
-            <XDSToken label="test-results.csv" onRemove={() => {}} />
-            <XDSToken label="deploy-log.txt" onRemove={() => {}} />
-          </XDSChatComposerDrawer>
+          <ChatComposerDrawer count={6} label="Files">
+            <Token label="design-spec.pdf" onRemove={() => {}} />
+            <Token label="api-schema.json" onRemove={() => {}} />
+            <Token label="screenshot.png" onRemove={() => {}} />
+            <Token label="meeting-notes.md" onRemove={() => {}} />
+            <Token label="test-results.csv" onRemove={() => {}} />
+            <Token label="deploy-log.txt" onRemove={() => {}} />
+          </ChatComposerDrawer>
         }
       />
-    </XDSStack>
+    </Stack>
   );
 }

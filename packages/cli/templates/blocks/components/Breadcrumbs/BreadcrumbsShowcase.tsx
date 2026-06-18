@@ -2,14 +2,14 @@
 
 'use client';
 
-import {XDSBreadcrumbs, XDSBreadcrumbItem} from '@xds/core/Breadcrumbs';
+import {Breadcrumbs, BreadcrumbItem} from '@xds/core/Breadcrumbs';
 
 export default function BreadcrumbsShowcase() {
   return (
-    <XDSBreadcrumbs>
-      <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
-      <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>
-      <XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>
-    </XDSBreadcrumbs>
+    <Breadcrumbs>
+      <BreadcrumbItem href="/">Home</BreadcrumbItem>
+      <BreadcrumbItem href="/projects">Projects</BreadcrumbItem>
+      <BreadcrumbItem isCurrent>My Project</BreadcrumbItem>
+    </Breadcrumbs>
   );
 }

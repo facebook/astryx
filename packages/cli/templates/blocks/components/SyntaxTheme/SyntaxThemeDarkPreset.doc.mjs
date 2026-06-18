@@ -7,7 +7,7 @@ export const doc = {
   name: 'SyntaxTheme — Dark Preset',
   displayName: 'SyntaxTheme — Dark Preset',
   description:
-    'Wrap a code block in XDSSyntaxTheme to apply a dark syntax preset such as Dracula.',
+    'Wrap a code block in SyntaxTheme to apply a dark syntax preset such as Dracula.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['SyntaxTheme', 'CodeBlock'],

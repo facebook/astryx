@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSPagination} from '@xds/core/Pagination';
-import {XDSStack} from '@xds/core/Layout';
+import {Pagination} from '@xds/core/Pagination';
+import {Stack} from '@xds/core/Layout';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
@@ -20,33 +20,33 @@ export default function PaginationVariants() {
   const [dotsPage, setDotsPage] = useState(3);
 
   return (
-    <XDSStack direction="vertical" gap={5} hAlign="center" xstyle={styles.root}>
-      <XDSPagination
+    <Stack direction="vertical" gap={5} hAlign="center" xstyle={styles.root}>
+      <Pagination
         page={dotsPage}
         onChange={setDotsPage}
         totalPages={8}
         variant="dots"
       />
-      <XDSPagination
+      <Pagination
         page={compactPage}
         onChange={setCompactPage}
         totalPages={10}
         variant="compact"
       />
-      <XDSPagination
+      <Pagination
         page={countPage}
         onChange={setCountPage}
         totalItems={200}
         pageSize={20}
         variant="count"
       />
-      <XDSPagination
+      <Pagination
         page={pagesPage}
         onChange={setPagesPage}
         totalItems={200}
         pageSize={10}
         variant="pages"
       />
-    </XDSStack>
+    </Stack>
   );
 }

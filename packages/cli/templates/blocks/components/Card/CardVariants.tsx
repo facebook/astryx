@@ -2,9 +2,9 @@
 
 'use client';
 
-import {XDSCard} from '@xds/core/Card';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Card} from '@xds/core/Card';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const VARIANTS = [
   {variant: 'default' as const, label: 'General', note: '4 tasks due today'},
@@ -21,19 +21,19 @@ const VARIANTS = [
 
 export default function CardVariants() {
   return (
-    <XDSStack direction="horizontal" gap={3} style={{flexWrap: 'wrap'}}>
+    <Stack direction="horizontal" gap={3} style={{flexWrap: 'wrap'}}>
       {VARIANTS.map(({variant, label, note}) => (
-        <XDSCard key={variant} variant={variant} width={160}>
-          <XDSStack direction="vertical" gap={1}>
-            <XDSText type="body" weight="bold">
+        <Card key={variant} variant={variant} width={160}>
+          <Stack direction="vertical" gap={1}>
+            <Text type="body" weight="bold">
               {label}
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
+            </Text>
+            <Text type="supporting" color="secondary">
               {note}
-            </XDSText>
-          </XDSStack>
-        </XDSCard>
+            </Text>
+          </Stack>
+        </Card>
       ))}
-    </XDSStack>
+    </Stack>
   );
 }

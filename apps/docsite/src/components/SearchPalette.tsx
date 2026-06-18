@@ -4,7 +4,7 @@
 
 import {useMemo, useCallback} from 'react';
 import {useRouter} from 'next/navigation';
-import {XDSCommandPalette} from '@xds/core/CommandPalette';
+import {CommandPalette} from '@xds/core/CommandPalette';
 import {createStaticSource} from '@xds/core/Typeahead';
 import type {ComponentEntry} from '../generated/componentRegistry';
 import type {PackageMeta} from '../generated/packageRegistry';
@@ -73,7 +73,7 @@ export function SearchPalette({
   );
 
   return (
-    <XDSCommandPalette
+    <CommandPalette
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       searchSource={searchSource}

@@ -3,12 +3,12 @@
 'use client';
 
 import {
-  XDSChatMessageList,
-  XDSChatMessage,
-  XDSChatMessageBubble,
+  ChatMessageList,
+  ChatMessage,
+  ChatMessageBubble,
 } from '@xds/core/Chat';
-import {XDSText} from '@xds/core/Text';
-import {XDSVStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {VStack} from '@xds/core/Layout';
 
 const DENSITIES = [
   {density: 'compact' as const, label: 'Compact'},
@@ -18,24 +18,24 @@ const DENSITIES = [
 
 export default function ChatMessageBubbleDensity() {
   return (
-    <XDSVStack gap={5} style={{width: '100%', maxWidth: 400}}>
+    <VStack gap={5} style={{width: '100%', maxWidth: 400}}>
       {DENSITIES.map(({density, label}) => (
-        <XDSVStack key={density} gap={1}>
-          <XDSText type="supporting" color="secondary">
+        <VStack key={density} gap={1}>
+          <Text type="supporting" color="secondary">
             {label}
-          </XDSText>
-          <XDSChatMessageList density={density}>
-            <XDSChatMessage sender="assistant">
-              <XDSChatMessageBubble>
+          </Text>
+          <ChatMessageList density={density}>
+            <ChatMessage sender="assistant">
+              <ChatMessageBubble>
                 The build completed in 4.2 seconds.
-              </XDSChatMessageBubble>
-            </XDSChatMessage>
-            <XDSChatMessage sender="user">
-              <XDSChatMessageBubble>Ship it to staging.</XDSChatMessageBubble>
-            </XDSChatMessage>
-          </XDSChatMessageList>
-        </XDSVStack>
+              </ChatMessageBubble>
+            </ChatMessage>
+            <ChatMessage sender="user">
+              <ChatMessageBubble>Ship it to staging.</ChatMessageBubble>
+            </ChatMessage>
+          </ChatMessageList>
+        </VStack>
       ))}
-    </XDSVStack>
+    </VStack>
   );
 }

@@ -2,15 +2,15 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSChart,
-  XDSChartAxis,
-  XDSChartGrid,
-  XDSChartDot,
-  XDSChartDotGL,
-  useXDSChartColors,
+  Chart,
+  ChartAxis,
+  ChartGrid,
+  ChartDot,
+  ChartDotGL,
+  useChartColors,
 } from '@xds/lab';
-import {XDSStack, XDSText} from '@xds/core';
-import {XDSHeading} from '@xds/core/Text';
+import {Stack, Text} from '@xds/core';
+import {Heading} from '@xds/core/Text';
 
 const meta: Meta = {title: 'Lab/ChartDotGL'};
 export default meta;
@@ -25,53 +25,53 @@ const largeData = Array.from({length: 5000}, () => ({
 }));
 
 function SVGvsWebGLDemo() {
-  const colors = useXDSChartColors();
+  const colors = useChartColors();
   const c = colors.categorical(2);
   return (
-    <XDSStack direction="vertical" gap={6}>
-      <XDSHeading level={3}>SVG vs WebGL</XDSHeading>
-      <XDSStack direction="horizontal" gap={6}>
-        <XDSStack direction="vertical" gap={1}>
-          <XDSText type="label">SVG (XDSChartDot)</XDSText>
-          <XDSChart data={smallData} xKey="x" yKeys={['y']} height={250}>
-            <XDSChartGrid horizontal />
-            <XDSChartAxis position="bottom" />
-            <XDSChartAxis position="left" />
-            <XDSChartDot dataKey="y" color={c[0]} radius={4} />
-          </XDSChart>
-        </XDSStack>
-        <XDSStack direction="vertical" gap={1}>
-          <XDSText type="label">WebGL (XDSChartDotGL)</XDSText>
-          <XDSChart data={smallData} xKey="x" yKeys={['y']} height={250}>
-            <XDSChartGrid horizontal />
-            <XDSChartAxis position="bottom" />
-            <XDSChartAxis position="left" />
-            <XDSChartDotGL dataKey="y" color={c[0]} size={8} />
-          </XDSChart>
-        </XDSStack>
-      </XDSStack>
-    </XDSStack>
+    <Stack direction="vertical" gap={6}>
+      <Heading level={3}>SVG vs WebGL</Heading>
+      <Stack direction="horizontal" gap={6}>
+        <Stack direction="vertical" gap={1}>
+          <Text type="label">SVG (ChartDot)</Text>
+          <Chart data={smallData} xKey="x" yKeys={['y']} height={250}>
+            <ChartGrid horizontal />
+            <ChartAxis position="bottom" />
+            <ChartAxis position="left" />
+            <ChartDot dataKey="y" color={c[0]} radius={4} />
+          </Chart>
+        </Stack>
+        <Stack direction="vertical" gap={1}>
+          <Text type="label">WebGL (ChartDotGL)</Text>
+          <Chart data={smallData} xKey="x" yKeys={['y']} height={250}>
+            <ChartGrid horizontal />
+            <ChartAxis position="bottom" />
+            <ChartAxis position="left" />
+            <ChartDotGL dataKey="y" color={c[0]} size={8} />
+          </Chart>
+        </Stack>
+      </Stack>
+    </Stack>
   );
 }
 export const SVGvsWebGL: StoryObj = {render: () => <SVGvsWebGLDemo />};
 
 function LargeDatasetDemo() {
-  const colors = useXDSChartColors();
+  const colors = useChartColors();
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>WebGL \u2014 5,000 points</XDSHeading>
-      <XDSChart data={largeData} xKey="x" yKeys={['y']} height={400}>
-        <XDSChartGrid horizontal vertical />
-        <XDSChartAxis position="bottom" />
-        <XDSChartAxis position="left" />
-        <XDSChartDotGL
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>WebGL \u2014 5,000 points</Heading>
+      <Chart data={largeData} xKey="x" yKeys={['y']} height={400}>
+        <ChartGrid horizontal vertical />
+        <ChartAxis position="bottom" />
+        <ChartAxis position="left" />
+        <ChartDotGL
           dataKey="y"
           color={colors.categorical(1)[0]}
           size={4}
           opacity={0.5}
         />
-      </XDSChart>
-    </XDSStack>
+      </Chart>
+    </Stack>
   );
 }
 export const LargeDataset: StoryObj = {render: () => <LargeDatasetDemo />};

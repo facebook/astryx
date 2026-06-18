@@ -4,16 +4,16 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {
-  XDSVStack,
-  XDSHStack,
-  XDSLayout,
-  XDSLayoutContent,
+  VStack,
+  HStack,
+  Layout,
+  LayoutContent,
 } from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSSection} from '@xds/core/Section';
+import {Text, Heading} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
+import {AspectRatio} from '@xds/core/AspectRatio';
+import {Section} from '@xds/core/Section';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
 const IMAGE_URL =
@@ -34,50 +34,50 @@ const styles = stylex.create({
 
 export default function CenteredHero() {
   return (
-    <XDSLayout
+    <Layout
       content={
-        <XDSLayoutContent padding={6}>
-          <XDSVStack gap={10}>
-            <XDSVStack gap={6} hAlign="center">
-              <XDSVStack gap={3} hAlign="center">
-                <XDSHeading
+        <LayoutContent padding={6}>
+          <VStack gap={10}>
+            <VStack gap={6} hAlign="center">
+              <VStack gap={3} hAlign="center">
+                <Heading
                   level={1}
                   type="display-2"
                   justify="center"
                   textWrap="balance">
                   Little joys, everywhere you go
-                </XDSHeading>
-                <XDSText
+                </Heading>
+                <Text
                   type="body"
                   color="secondary"
                   justify="center"
                   textWrap="balance">
                   Sometimes all it takes is one small thing to turn your whole
                   day around.
-                </XDSText>
-              </XDSVStack>
-              <XDSHStack gap={3}>
-                <XDSButton
+                </Text>
+              </VStack>
+              <HStack gap={3}>
+                <Button
                   label="Get started"
                   variant="primary"
                   endContent={
-                    <XDSIcon icon={ArrowRightIcon} size="sm" color="inherit" />
+                    <Icon icon={ArrowRightIcon} size="sm" color="inherit" />
                   }
                 />
-                <XDSButton label="Learn more" variant="secondary" />
-              </XDSHStack>
-            </XDSVStack>
-            <XDSSection variant="transparent" padding={0}>
-              <XDSAspectRatio ratio={16 / 9} xstyle={styles.heroFrame}>
+                <Button label="Learn more" variant="secondary" />
+              </HStack>
+            </VStack>
+            <Section variant="transparent" padding={0}>
+              <AspectRatio ratio={16 / 9} xstyle={styles.heroFrame}>
                 <img
                   {...stylex.props(styles.heroImage)}
                   src={IMAGE_URL}
                   alt="A bright, colorful lifestyle scene"
                 />
-              </XDSAspectRatio>
-            </XDSSection>
-          </XDSVStack>
-        </XDSLayoutContent>
+              </AspectRatio>
+            </Section>
+          </VStack>
+        </LayoutContent>
       }
     />
   );

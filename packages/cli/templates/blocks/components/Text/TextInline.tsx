@@ -2,14 +2,13 @@
 
 'use client';
 
-import {XDSText} from '@xds/core/Text';
+import {Text} from '@xds/core/Text';
 
 export default function TextInline() {
   return (
-    <XDSText type="body" display="block">
-      Design tokens are{' '}
-      <XDSText type="code">themeable</XDSText>
+    <Text type="body" display="block">Design tokens are{' '}
+      <Text type="code">themeable</Text>
       {' '}and shared across every surface.
-    </XDSText>
+          </Text>
   );
 }

@@ -6,7 +6,7 @@ export const doc = {
   exampleFor: 'TopNavMegaMenuItem',
   name: 'TopNavMegaMenuItem',
   displayName: 'Top Nav Mega Menu Item',
-  description: 'Demonstrates XDSTopNavMegaMenuItem with icons, titles, and descriptions inside a mega menu.',
+  description: 'Demonstrates TopNavMegaMenuItem with icons, titles, and descriptions inside a mega menu.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

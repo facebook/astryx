@@ -2,8 +2,8 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {XDSDropdownMenu, XDSDropdownMenuItem} from '@xds/core/DropdownMenu';
-import {XDSDivider} from '@xds/core/Divider';
+import {DropdownMenu, DropdownMenuItem} from '@xds/core/DropdownMenu';
+import {Divider} from '@xds/core/Divider';
 import {
   PencilIcon,
   TrashIcon,
@@ -18,9 +18,9 @@ import {
   Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSDropdownMenu> = {
+const meta: Meta<typeof DropdownMenu> = {
   title: 'Core/DropdownMenu',
-  component: XDSDropdownMenu,
+  component: DropdownMenu,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
@@ -53,12 +53,12 @@ const meta: Meta<typeof XDSDropdownMenu> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSDropdownMenu>;
+type Story = StoryObj<typeof DropdownMenu>;
 
 // Basic usage
 export const Default: Story = {
   render: () => (
-    <XDSDropdownMenu
+    <DropdownMenu
       button={{label: 'Actions'}}
       items={[
         {label: 'Edit', onClick: () => console.log('Edit clicked')},
@@ -72,7 +72,7 @@ export const Default: Story = {
 // With icons
 export const WithIcons: Story = {
   render: () => (
-    <XDSDropdownMenu
+    <DropdownMenu
       button={{label: 'Actions', variant: 'primary'}}
       items={[
         {label: 'Edit', icon: PencilIcon, onClick: () => console.log('Edit')},
@@ -99,7 +99,7 @@ export const WithIcons: Story = {
 // With sections
 export const WithSections: Story = {
   render: () => (
-    <XDSDropdownMenu
+    <DropdownMenu
       button={{label: 'File', variant: 'ghost'}}
       items={[
         {
@@ -142,7 +142,7 @@ export const WithSections: Story = {
 // With dividers
 export const WithDividers: Story = {
   render: () => (
-    <XDSDropdownMenu
+    <DropdownMenu
       button={{label: 'Actions'}}
       items={[
         {label: 'Edit', onClick: () => console.log('Edit')},
@@ -157,7 +157,7 @@ export const WithDividers: Story = {
 // With disabled items
 export const WithDisabledItems: Story = {
   render: () => (
-    <XDSDropdownMenu
+    <DropdownMenu
       button={{label: 'Actions'}}
       items={[
         {label: 'Edit', onClick: () => console.log('Edit')},
@@ -181,7 +181,7 @@ export const Controlled: Story = {
           alignItems: 'center',
         }}>
         <div>Menu is {isOpen ? 'open' : 'closed'}</div>
-        <XDSDropdownMenu
+        <DropdownMenu
           button={{label: 'Controlled Menu'}}
           isMenuOpen={isOpen}
           onOpenChange={setIsOpen}
@@ -199,7 +199,7 @@ export const Controlled: Story = {
 // Custom menu width
 export const CustomWidth: Story = {
   render: () => (
-    <XDSDropdownMenu
+    <DropdownMenu
       button={{label: 'Wide Menu'}}
       menuWidth={300}
       items={[
@@ -221,19 +221,19 @@ export const CustomWidth: Story = {
 export const ButtonVariants: Story = {
   render: () => (
     <div style={{display: 'flex', gap: 16, flexWrap: 'wrap'}}>
-      <XDSDropdownMenu
+      <DropdownMenu
         button={{label: 'Secondary', variant: 'secondary'}}
         items={[{label: 'Option 1'}, {label: 'Option 2'}]}
       />
-      <XDSDropdownMenu
+      <DropdownMenu
         button={{label: 'Primary', variant: 'primary'}}
         items={[{label: 'Option 1'}, {label: 'Option 2'}]}
       />
-      <XDSDropdownMenu
+      <DropdownMenu
         button={{label: 'Ghost', variant: 'ghost'}}
         items={[{label: 'Option 1'}, {label: 'Option 2'}]}
       />
-      <XDSDropdownMenu
+      <DropdownMenu
         button={{label: 'Destructive', variant: 'destructive'}}
         items={[{label: 'Option 1'}, {label: 'Option 2'}]}
       />
@@ -245,15 +245,15 @@ export const ButtonVariants: Story = {
 export const ButtonSizes: Story = {
   render: () => (
     <div style={{display: 'flex', gap: 16, alignItems: 'center'}}>
-      <XDSDropdownMenu
+      <DropdownMenu
         button={{label: 'Small', size: 'sm'}}
         items={[{label: 'Option 1'}, {label: 'Option 2'}]}
       />
-      <XDSDropdownMenu
+      <DropdownMenu
         button={{label: 'Medium', size: 'md'}}
         items={[{label: 'Option 1'}, {label: 'Option 2'}]}
       />
-      <XDSDropdownMenu
+      <DropdownMenu
         button={{label: 'Large', size: 'lg'}}
         items={[{label: 'Option 1'}, {label: 'Option 2'}]}
       />
@@ -274,7 +274,7 @@ export const WithOnClick: Story = {
           alignItems: 'center',
         }}>
         <div>Button clicked {clickCount} times</div>
-        <XDSDropdownMenu
+        <DropdownMenu
           button={{label: 'Click Me'}}
           onClick={() => setClickCount(c => c + 1)}
           items={[
@@ -289,26 +289,26 @@ export const WithOnClick: Story = {
 // Custom item rendering with compound mode
 export const CustomItemRender: Story = {
   render: () => (
-    <XDSDropdownMenu button={{label: 'Select User'}} menuWidth={280}>
-      <XDSDropdownMenuItem
+    <DropdownMenu button={{label: 'Select User'}} menuWidth={280}>
+      <DropdownMenuItem
         icon={UserIcon}
         label="Alice Johnson"
         description="alice.johnson@example.com"
         onClick={() => console.log('Alice')}
       />
-      <XDSDropdownMenuItem
+      <DropdownMenuItem
         icon={UserIcon}
         label="Bob Smith"
         description="bob.smith@example.com"
         onClick={() => console.log('Bob')}
       />
-      <XDSDropdownMenuItem
+      <DropdownMenuItem
         icon={UserIcon}
         label="Carol Williams"
         description="carol.williams@example.com"
         onClick={() => console.log('Carol')}
       />
-    </XDSDropdownMenu>
+    </DropdownMenu>
   ),
 };
 
@@ -316,7 +316,7 @@ export const CustomItemRender: Story = {
 export const IconOnly: Story = {
   render: () => (
     <div style={{display: 'flex', gap: 16, alignItems: 'center'}}>
-      <XDSDropdownMenu
+      <DropdownMenu
         button={{
           label: 'More options',
           icon: <EllipsisHorizontalIcon />,
@@ -332,7 +332,7 @@ export const IconOnly: Story = {
           },
         ]}
       />
-      <XDSDropdownMenu
+      <DropdownMenu
         button={{
           label: 'Settings',
           icon: <Cog6ToothIcon />,
@@ -351,7 +351,7 @@ export const IconOnly: Story = {
 // Icon + label together — pass children on button to get visible text with icon
 export const IconWithLabel: Story = {
   render: () => (
-    <XDSDropdownMenu
+    <DropdownMenu
       button={{
         label: 'Settings',
         icon: <Cog6ToothIcon />,
@@ -369,7 +369,7 @@ export const IconWithLabel: Story = {
 // No chevron — label-only trigger without dropdown indicator
 export const NoChevron: Story = {
   render: () => (
-    <XDSDropdownMenu
+    <DropdownMenu
       button={{label: 'Sort by: Name', variant: 'ghost'}}
       hasChevron={false}
       items={[
@@ -384,48 +384,48 @@ export const NoChevron: Story = {
 // Compound-component mode — JSX children with interactive items
 export const CompoundBasic: Story = {
   render: () => (
-    <XDSDropdownMenu button={{label: 'Actions'}}>
-      <XDSDropdownMenuItem
+    <DropdownMenu button={{label: 'Actions'}}>
+      <DropdownMenuItem
         icon={PencilIcon}
         label="Edit"
         onClick={() => console.log('Edit')}
       />
-      <XDSDropdownMenuItem
+      <DropdownMenuItem
         icon={DocumentDuplicateIcon}
         label="Duplicate"
         onClick={() => console.log('Duplicate')}
       />
-      <XDSDivider />
-      <XDSDropdownMenuItem
+      <Divider />
+      <DropdownMenuItem
         icon={TrashIcon}
         label="Delete"
         onClick={() => console.log('Delete')}
       />
-    </XDSDropdownMenu>
+    </DropdownMenu>
   ),
 };
 
 // Compound mode with disabled items
 export const CompoundWithDisabled: Story = {
   render: () => (
-    <XDSDropdownMenu button={{label: 'File Actions'}}>
-      <XDSDropdownMenuItem
+    <DropdownMenu button={{label: 'File Actions'}}>
+      <DropdownMenuItem
         icon={PencilIcon}
         label="Edit"
         onClick={() => console.log('Edit')}
       />
-      <XDSDropdownMenuItem
+      <DropdownMenuItem
         icon={DocumentDuplicateIcon}
         label="Duplicate"
         onClick={() => console.log('Duplicate')}
       />
-      <XDSDivider />
-      <XDSDropdownMenuItem
+      <Divider />
+      <DropdownMenuItem
         icon={TrashIcon}
         label="Delete (no permission)"
         isDisabled
       />
-    </XDSDropdownMenu>
+    </DropdownMenu>
   ),
 };
 
@@ -449,28 +449,28 @@ export const CompoundConditional: Story = {
           />
           Show delete option
         </label>
-        <XDSDropdownMenu button={{label: 'Actions'}}>
-          <XDSDropdownMenuItem
+        <DropdownMenu button={{label: 'Actions'}}>
+          <DropdownMenuItem
             icon={PencilIcon}
             label="Edit"
             onClick={() => console.log('Edit')}
           />
-          <XDSDropdownMenuItem
+          <DropdownMenuItem
             icon={ShareIcon}
             label="Share"
             onClick={() => console.log('Share')}
           />
           {canDelete && (
             <>
-              <XDSDivider />
-              <XDSDropdownMenuItem
+              <Divider />
+              <DropdownMenuItem
                 icon={TrashIcon}
                 label="Delete"
                 onClick={() => console.log('Delete')}
               />
             </>
           )}
-        </XDSDropdownMenu>
+        </DropdownMenu>
       </div>
     );
   },
@@ -479,32 +479,32 @@ export const CompoundConditional: Story = {
 // Compound mode with descriptions
 export const CompoundWithDescriptions: Story = {
   render: () => (
-    <XDSDropdownMenu button={{label: 'Select User'}} menuWidth={280}>
-      <XDSDropdownMenuItem
+    <DropdownMenu button={{label: 'Select User'}} menuWidth={280}>
+      <DropdownMenuItem
         icon={UserIcon}
         label="Alice Johnson"
         description="alice.johnson@example.com"
         onClick={() => console.log('Alice')}
       />
-      <XDSDropdownMenuItem
+      <DropdownMenuItem
         icon={UserIcon}
         label="Bob Smith"
         description="bob.smith@example.com"
         onClick={() => console.log('Bob')}
       />
-      <XDSDropdownMenuItem
+      <DropdownMenuItem
         icon={UserIcon}
         label="Carol Williams"
         description="carol.williams@example.com"
         onClick={() => console.log('Carol')}
       />
-    </XDSDropdownMenu>
+    </DropdownMenu>
   ),
 };
 
 export const PlacementAbove: Story = {
   render: () => (
-    <XDSDropdownMenu
+    <DropdownMenu
       button={{label: 'Bottom toolbar menu'}}
       placement="above"
       items={[

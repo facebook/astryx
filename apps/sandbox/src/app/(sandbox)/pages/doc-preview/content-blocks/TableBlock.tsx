@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSText} from '@xds/core/Text';
-import {XDSTable} from '@xds/core/Table';
+import {Text} from '@xds/core/Text';
+import {Table} from '@xds/core/Table';
 
 /**
  * Generic table renderer for ContentBlock type='table'.
@@ -28,12 +28,12 @@ export function TableBlock({
     key: h,
     header: h,
     renderCell: (item: Record<string, unknown>) => (
-      <XDSText>{item[h] as string}</XDSText>
+      <Text>{item[h] as string}</Text>
     ),
   }));
 
   return (
-    <XDSTable
+    <Table
       data={data}
       columns={columns}
       density="spacious"

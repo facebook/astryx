@@ -7,7 +7,7 @@ export const doc = {
   name: 'Table — Rich Cell Content',
   displayName: 'Table — Rich Cell Content',
   description:
-    'Table with rich cell content using XDSLink for emails and XDSBadge for role labels.',
+    'Table with rich cell content using Link for emails and Badge for role labels.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['Table', 'Badge', 'Link'],

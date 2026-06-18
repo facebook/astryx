@@ -2,8 +2,8 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSDateRangeInput} from '@xds/core/DateRangeInput';
-import type {XDSDateRange} from '@xds/core/DateRangeInput';
+import {DateRangeInput} from '@xds/core/DateRangeInput';
+import type {DateRange} from '@xds/core/DateRangeInput';
 import type {ISODateString} from '@xds/core/Calendar';
 
 function daysAgo(n: number): ISODateString {
@@ -40,9 +40,9 @@ const defaultPresets = [
   },
 ];
 
-const meta: Meta<typeof XDSDateRangeInput> = {
+const meta: Meta<typeof DateRangeInput> = {
   title: 'Core/DateRangeInput',
-  component: XDSDateRangeInput,
+  component: DateRangeInput,
   tags: ['autodocs'],
   argTypes: {
     label: {control: 'text', description: 'Label text (required)'},
@@ -69,12 +69,12 @@ const meta: Meta<typeof XDSDateRangeInput> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSDateRangeInput>;
+type Story = StoryObj<typeof DateRangeInput>;
 
 export const Default: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>(null);
-    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
+    const [value, setValue] = useState<DateRange | null>(null);
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Date range',
@@ -83,11 +83,11 @@ export const Default: Story = {
 
 export const WithValue: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>({
+    const [value, setValue] = useState<DateRange | null>({
       start: '2026-03-10' as ISODateString,
       end: '2026-03-20' as ISODateString,
     });
-    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Report period',
@@ -96,8 +96,8 @@ export const WithValue: Story = {
 
 export const WithPresets: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>(null);
-    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
+    const [value, setValue] = useState<DateRange | null>(null);
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Date range',
@@ -107,11 +107,11 @@ export const WithPresets: Story = {
 
 export const WithPresetsAndValue: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>({
+    const [value, setValue] = useState<DateRange | null>({
       start: daysAgo(7),
       end: today(),
     });
-    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Analytics period',
@@ -121,8 +121,8 @@ export const WithPresetsAndValue: Story = {
 
 export const WithDescription: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>(null);
-    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
+    const [value, setValue] = useState<DateRange | null>(null);
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Coverage period',
@@ -132,8 +132,8 @@ export const WithDescription: Story = {
 
 export const WithMinMax: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>(null);
-    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
+    const [value, setValue] = useState<DateRange | null>(null);
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Booking dates',
@@ -145,8 +145,8 @@ export const WithMinMax: Story = {
 
 export const Optional: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>(null);
-    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
+    const [value, setValue] = useState<DateRange | null>(null);
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Filter by date',
@@ -156,8 +156,8 @@ export const Optional: Story = {
 
 export const Required: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>(null);
-    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
+    const [value, setValue] = useState<DateRange | null>(null);
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Coverage period',
@@ -167,11 +167,11 @@ export const Required: Story = {
 
 export const Disabled: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>({
+    const [value, setValue] = useState<DateRange | null>({
       start: '2026-03-10' as ISODateString,
       end: '2026-03-20' as ISODateString,
     });
-    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Locked range',
@@ -181,9 +181,9 @@ export const Disabled: Story = {
 
 export const SizeVariants: Story = {
   render: () => {
-    const [sm, setSm] = useState<XDSDateRange | null>(null);
-    const [md, setMd] = useState<XDSDateRange | null>(null);
-    const [lg, setLg] = useState<XDSDateRange | null>(null);
+    const [sm, setSm] = useState<DateRange | null>(null);
+    const [md, setMd] = useState<DateRange | null>(null);
+    const [lg, setLg] = useState<DateRange | null>(null);
     return (
       <div
         style={{
@@ -192,19 +192,19 @@ export const SizeVariants: Story = {
           gap: '16px',
           maxWidth: '340px',
         }}>
-        <XDSDateRangeInput
+        <DateRangeInput
           label="Small (28px)"
           value={sm}
           onChange={setSm}
           size="sm"
         />
-        <XDSDateRangeInput
+        <DateRangeInput
           label="Medium (32px)"
           value={md}
           onChange={setMd}
           size="md"
         />
-        <XDSDateRangeInput
+        <DateRangeInput
           label="Large (36px)"
           value={lg}
           onChange={setLg}
@@ -217,8 +217,8 @@ export const SizeVariants: Story = {
 
 export const SingleMonth: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>(null);
-    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
+    const [value, setValue] = useState<DateRange | null>(null);
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Date range',
@@ -228,8 +228,8 @@ export const SingleMonth: Story = {
 
 export const WithErrorStatus: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>(null);
-    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
+    const [value, setValue] = useState<DateRange | null>(null);
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Date range',
@@ -239,11 +239,11 @@ export const WithErrorStatus: Story = {
 
 export const WithWarningStatus: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>({
+    const [value, setValue] = useState<DateRange | null>({
       start: '2026-03-01' as ISODateString,
       end: '2026-06-30' as ISODateString,
     });
-    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Date range',
@@ -253,11 +253,11 @@ export const WithWarningStatus: Story = {
 
 export const NoClear: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>({
+    const [value, setValue] = useState<DateRange | null>({
       start: '2026-03-10' as ISODateString,
       end: '2026-03-20' as ISODateString,
     });
-    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
+    return <DateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Required range',
@@ -267,17 +267,17 @@ export const NoClear: Story = {
 
 export const AllVariations: Story = {
   render: () => {
-    const [v1, setV1] = useState<XDSDateRange | null>(null);
-    const [v2, setV2] = useState<XDSDateRange | null>({
+    const [v1, setV1] = useState<DateRange | null>(null);
+    const [v2, setV2] = useState<DateRange | null>({
       start: '2026-03-10' as ISODateString,
       end: '2026-03-20' as ISODateString,
     });
-    const [v3, setV3] = useState<XDSDateRange | null>(null);
-    const [v4, setV4] = useState<XDSDateRange | null>({
+    const [v3, setV3] = useState<DateRange | null>(null);
+    const [v4, setV4] = useState<DateRange | null>({
       start: '2026-03-10' as ISODateString,
       end: '2026-03-20' as ISODateString,
     });
-    const [v5, setV5] = useState<XDSDateRange | null>(null);
+    const [v5, setV5] = useState<DateRange | null>(null);
 
     return (
       <div
@@ -287,21 +287,21 @@ export const AllVariations: Story = {
           gap: '16px',
           maxWidth: '340px',
         }}>
-        <XDSDateRangeInput label="Default" value={v1} onChange={setV1} />
-        <XDSDateRangeInput label="With value" value={v2} onChange={setV2} />
-        <XDSDateRangeInput
+        <DateRangeInput label="Default" value={v1} onChange={setV1} />
+        <DateRangeInput label="With value" value={v2} onChange={setV2} />
+        <DateRangeInput
           label="With presets"
           value={v3}
           onChange={setV3}
           presets={defaultPresets}
         />
-        <XDSDateRangeInput
+        <DateRangeInput
           label="Disabled"
           isDisabled
           value={v4}
           onChange={setV4}
         />
-        <XDSDateRangeInput
+        <DateRangeInput
           label="With error"
           value={v5}
           onChange={setV5}

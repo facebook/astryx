@@ -4,46 +4,46 @@
 
 import * as React from 'react';
 import {useState, useEffect, useRef} from 'react';
-import {XDSButton} from '@xds/core/Button';
-import {XDSCard} from '@xds/core/Card';
-import {XDSHStack, XDSVStack} from '@xds/core/Stack';
+import {Button} from '@xds/core/Button';
+import {Card} from '@xds/core/Card';
+import {HStack, VStack} from '@xds/core/Stack';
 import {
-  XDSLayout,
-  XDSLayoutHeader,
-  XDSLayoutContent,
-  XDSLayoutFooter,
+  Layout,
+  LayoutHeader,
+  LayoutContent,
+  LayoutFooter,
 } from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSSwitch} from '@xds/core/Switch';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSBanner} from '@xds/core/Banner';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSProgressBar} from '@xds/core/ProgressBar';
-import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSLink} from '@xds/core/Link';
-import {XDSTable} from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
-import {XDSSpinner} from '@xds/core/Spinner';
-import {XDSSkeleton} from '@xds/core/Skeleton';
+import {Text, Heading} from '@xds/core/Text';
+import {Switch} from '@xds/core/Switch';
+import {TextInput} from '@xds/core/TextInput';
+import {Badge} from '@xds/core/Badge';
+import {Banner} from '@xds/core/Banner';
+import {TabList, Tab} from '@xds/core/TabList';
+import {Selector} from '@xds/core/Selector';
+import {ProgressBar} from '@xds/core/ProgressBar';
+import {CheckboxInput} from '@xds/core/CheckboxInput';
+import {Divider} from '@xds/core/Divider';
+import {Avatar} from '@xds/core/Avatar';
+import {Link} from '@xds/core/Link';
+import {Table} from '@xds/core/Table';
+import type {TableColumn} from '@xds/core/Table';
+import {Spinner} from '@xds/core/Spinner';
+import {Skeleton} from '@xds/core/Skeleton';
 import {
-  XDSSegmentedControl,
-  XDSSegmentedControlItem,
+  SegmentedControl,
+  SegmentedControlItem,
 } from '@xds/core/SegmentedControl';
-import {XDSChatComposer, XDSChatComposerInput} from '@xds/core/Chat';
-import {XDSSlider} from '@xds/core/Slider';
-import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
-import {XDSToken} from '@xds/core/Token';
-import {XDSTooltip} from '@xds/core/Tooltip';
+import {ChatComposer, ChatComposerInput} from '@xds/core/Chat';
+import {Slider} from '@xds/core/Slider';
+import {RadioList, RadioListItem} from '@xds/core/RadioList';
+import {Token} from '@xds/core/Token';
+import {Tooltip} from '@xds/core/Tooltip';
 
 import {CodeExampleBlock} from '../CodeExampleBlock';
-import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
-import {XDSStatusDot} from '@xds/core/StatusDot';
-import {XDSTextArea} from '@xds/core/TextArea';
-import {XDSSection} from '@xds/core/Section';
+import {Collapsible, CollapsibleGroup} from '@xds/core/Collapsible';
+import {StatusDot} from '@xds/core/StatusDot';
+import {TextArea} from '@xds/core/TextArea';
+import {Section} from '@xds/core/Section';
 
 const ROW: React.CSSProperties = {
   display: 'flex',
@@ -84,7 +84,7 @@ interface TxRow extends Record<string, unknown> {
   amt: string;
 }
 
-const txColumns: XDSTableColumn<TxRow>[] = [
+const txColumns: TableColumn<TxRow>[] = [
   {key: 'name', header: 'Name'},
   {key: 'date', header: 'Date'},
   {key: 'amt', header: 'Amount'},
@@ -133,104 +133,104 @@ export function ComponentPreview() {
       }}>
       {/* Contribution History */}
       <div style={CARD_WRAP}>
-        <XDSCard>
-          <XDSLayout
+        <Card>
+          <Layout
             height="auto"
             header={
-              <XDSLayoutHeader>
-                <XDSVStack gap={1}>
+              <LayoutHeader>
+                <VStack gap={1}>
                   <div style={ROW}>
-                    <XDSHeading level={3}>Contribution History</XDSHeading>
-                    <XDSBadge label="+12% vs last month" variant="info" />
+                    <Heading level={3}>Contribution History</Heading>
+                    <Badge label="+12% vs last month" variant="info" />
                   </div>
-                  <XDSText type="supporting" color="secondary">
+                  <Text type="supporting" color="secondary">
                     Last 6 months of activity
-                  </XDSText>
-                </XDSVStack>
-              </XDSLayoutHeader>
+                  </Text>
+                </VStack>
+              </LayoutHeader>
             }
             content={
-              <XDSLayoutContent>
-                <XDSVStack gap={3}>
-                  <XDSSection>
-                    <XDSVStack gap={3}>
+              <LayoutContent>
+                <VStack gap={3}>
+                  <Section>
+                    <VStack gap={3}>
                       <div style={CHART}>
                         {[40, 55, 60, 70, 55, 65].map((h, i) => (
                           <div key={i} style={{...BAR_BASE, height: h}} />
                         ))}
                       </div>
-                      <XDSHStack gap={4} hAlign="between">
+                      <HStack gap={4} hAlign="between">
                         {['Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May'].map(m => (
-                          <XDSText key={m} type="supporting" color="secondary">
+                          <Text key={m} type="supporting" color="secondary">
                             {m}
-                          </XDSText>
+                          </Text>
                         ))}
-                      </XDSHStack>
-                    </XDSVStack>
-                  </XDSSection>
-                  <XDSHStack gap={3} wrap="wrap">
+                      </HStack>
+                    </VStack>
+                  </Section>
+                  <HStack gap={3} wrap="wrap">
                     <div style={{...SEC_BOX, flex: 1, minWidth: 140}}>
-                      <XDSVStack gap={1}>
-                        <XDSText type="supporting" color="secondary">
+                      <VStack gap={1}>
+                        <Text type="supporting" color="secondary">
                           UPCOMING
-                        </XDSText>
-                        <XDSText type="label">May 25, 2024</XDSText>
-                        <XDSText type="supporting" color="secondary">
+                        </Text>
+                        <Text type="label">May 25, 2024</Text>
+                        <Text type="supporting" color="secondary">
                           $1,000 scheduled
-                        </XDSText>
-                      </XDSVStack>
+                        </Text>
+                      </VStack>
                     </div>
                     <div style={{...SEC_BOX, flex: 1, minWidth: 140}}>
-                      <XDSVStack gap={1}>
-                        <XDSText type="supporting" color="secondary">
+                      <VStack gap={1}>
+                        <Text type="supporting" color="secondary">
                           AUTO-SAVE PLAN
-                        </XDSText>
-                        <XDSText type="label">Accelerated</XDSText>
-                        <XDSText type="supporting" color="secondary">
+                        </Text>
+                        <Text type="label">Accelerated</Text>
+                        <Text type="supporting" color="secondary">
                           Recurring weekly
-                        </XDSText>
-                      </XDSVStack>
+                        </Text>
+                      </VStack>
                     </div>
-                  </XDSHStack>
-                </XDSVStack>
-              </XDSLayoutContent>
+                  </HStack>
+                </VStack>
+              </LayoutContent>
             }
             footer={
-              <XDSLayoutFooter>
-                <XDSButton
+              <LayoutFooter>
+                <Button
                   label="View Full Report"
                   variant="primary"
                   style={FULL_W}
                 />
-              </XDSLayoutFooter>
+              </LayoutFooter>
             }
           />
-        </XDSCard>
+        </Card>
       </div>
 
       {/* Portfolio Performance — uses SegmentedControl */}
       <div style={CARD_WRAP}>
-        <XDSCard>
-          <XDSLayout
+        <Card>
+          <Layout
             height="auto"
             header={
-              <XDSLayoutHeader>
+              <LayoutHeader>
                 <div style={ROW}>
-                  <XDSHeading level={3}>Portfolio Performance</XDSHeading>
-                  <XDSBadge label="Live" variant="error" />
+                  <Heading level={3}>Portfolio Performance</Heading>
+                  <Badge label="Live" variant="error" />
                 </div>
-              </XDSLayoutHeader>
+              </LayoutHeader>
             }
             content={
-              <XDSLayoutContent>
-                <XDSVStack gap={4}>
-                  <XDSVStack gap={1}>
-                    <XDSText type="display-2">$48,231.04</XDSText>
-                    <XDSHStack gap={2} vAlign="center">
-                      <XDSText type="body" color="secondary">
+              <LayoutContent>
+                <VStack gap={4}>
+                  <VStack gap={1}>
+                    <Text type="display-2">$48,231.04</Text>
+                    <HStack gap={2} vAlign="center">
+                      <Text type="body" color="secondary">
                         +$3,412.50 (7.6%)
-                      </XDSText>
-                      <XDSText type="supporting" color="secondary">
+                      </Text>
+                      <Text type="supporting" color="secondary">
                         past{' '}
                         {timeRange === '1W'
                           ? 'week'
@@ -241,10 +241,10 @@ export function ComponentPreview() {
                               : timeRange === '1Y'
                                 ? 'year'
                                 : 'time'}
-                      </XDSText>
-                    </XDSHStack>
-                  </XDSVStack>
-                  <XDSSection>
+                      </Text>
+                    </HStack>
+                  </VStack>
+                  <Section>
                     <div style={{...CHART, height: 100}}>
                       {[30, 35, 28, 45, 42, 55, 60, 58, 65, 62, 70, 75].map(
                         (h, i) => (
@@ -252,223 +252,223 @@ export function ComponentPreview() {
                         ),
                       )}
                     </div>
-                  </XDSSection>
-                  <XDSHStack hAlign="between" vAlign="center">
+                  </Section>
+                  <HStack hAlign="between" vAlign="center">
                     <div style={{display: 'inline-flex'}}>
-                      <XDSSegmentedControl
+                      <SegmentedControl
                         value={timeRange}
                         onChange={setTimeRange}
                         label="Time range">
-                        <XDSSegmentedControlItem value="1W" label="1W" />
-                        <XDSSegmentedControlItem value="1M" label="1M" />
-                        <XDSSegmentedControlItem value="3M" label="3M" />
-                        <XDSSegmentedControlItem value="1Y" label="1Y" />
-                        <XDSSegmentedControlItem value="ALL" label="All" />
-                      </XDSSegmentedControl>
+                        <SegmentedControlItem value="1W" label="1W" />
+                        <SegmentedControlItem value="1M" label="1M" />
+                        <SegmentedControlItem value="3M" label="3M" />
+                        <SegmentedControlItem value="1Y" label="1Y" />
+                        <SegmentedControlItem value="ALL" label="All" />
+                      </SegmentedControl>
                     </div>
-                    <XDSText type="supporting" color="secondary">
+                    <Text type="supporting" color="secondary">
                       Updated just now
-                    </XDSText>
-                  </XDSHStack>
-                </XDSVStack>
-              </XDSLayoutContent>
+                    </Text>
+                  </HStack>
+                </VStack>
+              </LayoutContent>
             }
           />
-        </XDSCard>
+        </Card>
       </div>
 
       {/* Savings Targets */}
       <div style={CARD_WRAP}>
-        <XDSCard>
-          <XDSLayout
+        <Card>
+          <Layout
             height="auto"
             header={
-              <XDSLayoutHeader>
+              <LayoutHeader>
                 <div style={ROW}>
-                  <XDSHeading level={3}>Savings Targets</XDSHeading>
-                  <XDSButton label="New Goal" size="sm" />
+                  <Heading level={3}>Savings Targets</Heading>
+                  <Button label="New Goal" size="sm" />
                 </div>
-              </XDSLayoutHeader>
+              </LayoutHeader>
             }
             content={
-              <XDSLayoutContent>
-                <XDSVStack gap={4}>
-                  <XDSBanner
+              <LayoutContent>
+                <VStack gap={4}>
+                  <Banner
                     status="info"
                     title="On Track"
                     description="Your retirement savings are ahead of schedule by $12,000 this quarter."
                   />
-                  <XDSVStack gap={1}>
-                    <XDSText type="supporting" color="secondary">
+                  <VStack gap={1}>
+                    <Text type="supporting" color="secondary">
                       RETIREMENT
-                    </XDSText>
-                    <XDSHeading level={2}>$420,000</XDSHeading>
-                    <XDSProgressBar label="Retirement" value={65} />
+                    </Text>
+                    <Heading level={2}>$420,000</Heading>
+                    <ProgressBar label="Retirement" value={65} />
                     <div style={ROW}>
-                      <XDSText type="supporting" color="secondary">
+                      <Text type="supporting" color="secondary">
                         65% achieved
-                      </XDSText>
-                      <XDSText type="supporting" color="secondary">
+                      </Text>
+                      <Text type="supporting" color="secondary">
                         $273,000
-                      </XDSText>
+                      </Text>
                     </div>
-                  </XDSVStack>
-                  <XDSVStack gap={1}>
-                    <XDSText type="supporting" color="secondary">
+                  </VStack>
+                  <VStack gap={1}>
+                    <Text type="supporting" color="secondary">
                       REAL ESTATE
-                    </XDSText>
-                    <XDSHeading level={2}>$85,000</XDSHeading>
-                    <XDSProgressBar label="Real Estate" value={32} />
+                    </Text>
+                    <Heading level={2}>$85,000</Heading>
+                    <ProgressBar label="Real Estate" value={32} />
                     <div style={ROW}>
-                      <XDSText type="supporting" color="secondary">
+                      <Text type="supporting" color="secondary">
                         32% achieved
-                      </XDSText>
-                      <XDSText type="supporting" color="secondary">
+                      </Text>
+                      <Text type="supporting" color="secondary">
                         $27,200
-                      </XDSText>
+                      </Text>
                     </div>
-                  </XDSVStack>
-                </XDSVStack>
-              </XDSLayoutContent>
+                  </VStack>
+                </VStack>
+              </LayoutContent>
             }
           />
-        </XDSCard>
+        </Card>
       </div>
 
       {/* Buy Investment */}
       <div style={CARD_WRAP}>
-        <XDSCard>
-          <XDSLayout
+        <Card>
+          <Layout
             height="auto"
             header={
-              <XDSLayoutHeader>
-                <XDSHeading level={3}>Buy Investment</XDSHeading>
-              </XDSLayoutHeader>
+              <LayoutHeader>
+                <Heading level={3}>Buy Investment</Heading>
+              </LayoutHeader>
             }
             content={
-              <XDSLayoutContent>
-                <XDSVStack gap={4}>
-                  <XDSTextInput
+              <LayoutContent>
+                <VStack gap={4}>
+                  <TextInput
                     label="Amount to Invest"
                     value="1,000.00"
                     onChange={() => {}}
                   />
-                  <XDSSelector
+                  <Selector
                     label="Order Type"
                     options={['Market Order', 'Limit Order', 'Stop Order']}
                     value="Market Order"
                     onChange={() => {}}
                   />
-                  <XDSText type="supporting" color="secondary">
+                  <Text type="supporting" color="secondary">
                     Market orders execute at the current price.
-                  </XDSText>
-                  <XDSDivider variant="strong" />
+                  </Text>
+                  <Divider variant="strong" />
                   <div style={ROW}>
-                    <XDSText type="body">Estimated Shares</XDSText>
-                    <XDSText type="body" weight="bold">
+                    <Text type="body">Estimated Shares</Text>
+                    <Text type="body" weight="bold">
                       1.95
-                    </XDSText>
+                    </Text>
                   </div>
                   <div style={ROW}>
-                    <XDSText type="body">Buying Power</XDSText>
-                    <XDSText type="body" weight="bold">
+                    <Text type="body">Buying Power</Text>
+                    <Text type="body" weight="bold">
                       $12,450.00
-                    </XDSText>
+                    </Text>
                   </div>
-                </XDSVStack>
-              </XDSLayoutContent>
+                </VStack>
+              </LayoutContent>
             }
             footer={
-              <XDSLayoutFooter>
-                <XDSButton
+              <LayoutFooter>
+                <Button
                   label="Review Order"
                   variant="primary"
                   style={FULL_W}
                 />
-              </XDSLayoutFooter>
+              </LayoutFooter>
             }
           />
-        </XDSCard>
+        </Card>
       </div>
 
       {/* Advisor Chat — uses ChatComposer */}
       <div style={CARD_WRAP}>
-        <XDSCard>
-          <XDSLayout
+        <Card>
+          <Layout
             height="auto"
             header={
-              <XDSLayoutHeader>
+              <LayoutHeader>
                 <div style={ROW}>
-                  <XDSVStack gap={1}>
-                    <XDSHeading level={3}>Advisor Chat</XDSHeading>
-                    <XDSHStack gap={2} vAlign="center">
-                      <XDSStatusDot variant="success" label="Online" />
-                      <XDSText type="supporting" color="secondary">
+                  <VStack gap={1}>
+                    <Heading level={3}>Advisor Chat</Heading>
+                    <HStack gap={2} vAlign="center">
+                      <StatusDot variant="success" label="Online" />
+                      <Text type="supporting" color="secondary">
                         Sarah is available
-                      </XDSText>
-                    </XDSHStack>
-                  </XDSVStack>
-                  <XDSTooltip content="View chat history">
-                    <XDSButton label="History" variant="ghost" size="sm" />
-                  </XDSTooltip>
+                      </Text>
+                    </HStack>
+                  </VStack>
+                  <Tooltip content="View chat history">
+                    <Button label="History" variant="ghost" size="sm" />
+                  </Tooltip>
                 </div>
-              </XDSLayoutHeader>
+              </LayoutHeader>
             }
             content={
-              <XDSLayoutContent>
-                <XDSVStack gap={3}>
-                  <XDSSection>
-                    <XDSVStack gap={2}>
-                      <XDSText type="supporting" color="secondary">
+              <LayoutContent>
+                <VStack gap={3}>
+                  <Section>
+                    <VStack gap={2}>
+                      <Text type="supporting" color="secondary">
                         Sarah, Financial Advisor
-                      </XDSText>
-                      <XDSText type="body">
+                      </Text>
+                      <Text type="body">
                         Your portfolio is well-diversified. I'd recommend
                         increasing your bond allocation by 5% given the current
                         market conditions.
-                      </XDSText>
-                    </XDSVStack>
-                  </XDSSection>
-                  <XDSChatComposer
+                      </Text>
+                    </VStack>
+                  </Section>
+                  <ChatComposer
                     onSubmit={() => setComposerValue('')}
                     input={
-                      <XDSChatComposerInput
+                      <ChatComposerInput
                         placeholder="Ask your advisor..."
                         value={composerValue}
                         onChange={setComposerValue}
                       />
                     }
                   />
-                </XDSVStack>
-              </XDSLayoutContent>
+                </VStack>
+              </LayoutContent>
             }
           />
-        </XDSCard>
+        </Card>
       </div>
 
       {/* Account Activity — uses Skeleton for a loading row */}
       <div style={CARD_WRAP}>
-        <XDSCard>
-          <XDSLayout
+        <Card>
+          <Layout
             height="auto"
             header={
-              <XDSLayoutHeader>
+              <LayoutHeader>
                 <div style={ROW}>
-                  <XDSHeading level={3}>Account Activity</XDSHeading>
-                  <XDSHStack gap={2} vAlign="center">
-                    <XDSSpinner size="sm" />
-                    <XDSText type="supporting" color="secondary">
+                  <Heading level={3}>Account Activity</Heading>
+                  <HStack gap={2} vAlign="center">
+                    <Spinner size="sm" />
+                    <Text type="supporting" color="secondary">
                       Syncing...
-                    </XDSText>
-                  </XDSHStack>
+                    </Text>
+                  </HStack>
                 </div>
-              </XDSLayoutHeader>
+              </LayoutHeader>
             }
             content={
-              <XDSLayoutContent>
-                <XDSVStack gap={3}>
-                  <XDSSection>
-                    <XDSVStack gap={3}>
+              <LayoutContent>
+                <VStack gap={3}>
+                  <Section>
+                    <VStack gap={3}>
                       {[
                         {
                           name: 'Dividend — AAPL',
@@ -481,154 +481,154 @@ export function ComponentPreview() {
                           amount: '-$500.00',
                         },
                       ].map(item => (
-                        <XDSHStack
+                        <HStack
                           key={item.name}
                           gap={3}
                           vAlign="center"
                           hAlign="between">
-                          <XDSVStack gap={0}>
-                            <XDSText type="body">{item.name}</XDSText>
-                            <XDSText type="supporting" color="secondary">
+                          <VStack gap={0}>
+                            <Text type="body">{item.name}</Text>
+                            <Text type="supporting" color="secondary">
                               {item.time}
-                            </XDSText>
-                          </XDSVStack>
-                          <XDSText type="label" weight="bold">
+                            </Text>
+                          </VStack>
+                          <Text type="label" weight="bold">
                             {item.amount}
-                          </XDSText>
-                        </XDSHStack>
+                          </Text>
+                        </HStack>
                       ))}
-                    </XDSVStack>
-                  </XDSSection>
-                  <XDSHStack gap={3} vAlign="center">
-                    <XDSSkeleton width={40} height={40} radius="rounded" />
-                    <XDSVStack gap={1} style={{flex: 1}}>
-                      <XDSSkeleton width="70%" height={14} radius={2} />
-                      <XDSSkeleton width="40%" height={10} radius={2} />
-                    </XDSVStack>
-                    <XDSSkeleton width={60} height={14} radius={2} />
-                  </XDSHStack>
-                  <XDSHStack gap={3} vAlign="center">
-                    <XDSSkeleton width={40} height={40} radius="rounded" />
-                    <XDSVStack gap={1} style={{flex: 1}}>
-                      <XDSSkeleton width="55%" height={14} radius={2} />
-                      <XDSSkeleton width="30%" height={10} radius={2} />
-                    </XDSVStack>
-                    <XDSSkeleton width={60} height={14} radius={2} />
-                  </XDSHStack>
-                </XDSVStack>
-              </XDSLayoutContent>
+                    </VStack>
+                  </Section>
+                  <HStack gap={3} vAlign="center">
+                    <Skeleton width={40} height={40} radius="rounded" />
+                    <VStack gap={1} style={{flex: 1}}>
+                      <Skeleton width="70%" height={14} radius={2} />
+                      <Skeleton width="40%" height={10} radius={2} />
+                    </VStack>
+                    <Skeleton width={60} height={14} radius={2} />
+                  </HStack>
+                  <HStack gap={3} vAlign="center">
+                    <Skeleton width={40} height={40} radius="rounded" />
+                    <VStack gap={1} style={{flex: 1}}>
+                      <Skeleton width="55%" height={14} radius={2} />
+                      <Skeleton width="30%" height={10} radius={2} />
+                    </VStack>
+                    <Skeleton width={60} height={14} radius={2} />
+                  </HStack>
+                </VStack>
+              </LayoutContent>
             }
           />
-        </XDSCard>
+        </Card>
       </div>
 
       {/* Recent Transactions */}
       <div style={CARD_WRAP}>
-        <XDSCard padding={0}>
-          <XDSLayout
+        <Card padding={0}>
+          <Layout
             height="auto"
             header={
-              <XDSLayoutHeader padding={4}>
+              <LayoutHeader padding={4}>
                 <div style={ROW}>
-                  <XDSVStack gap={1}>
-                    <XDSHeading level={3}>Recent Transactions</XDSHeading>
-                    <XDSText type="supporting" color="secondary">
+                  <VStack gap={1}>
+                    <Heading level={3}>Recent Transactions</Heading>
+                    <Text type="supporting" color="secondary">
                       Your latest account activity.
-                    </XDSText>
-                  </XDSVStack>
-                  <XDSLink label="View All" href="#">
+                    </Text>
+                  </VStack>
+                  <Link label="View All" href="#">
                     View All
-                  </XDSLink>
+                  </Link>
                 </div>
-              </XDSLayoutHeader>
+              </LayoutHeader>
             }
             content={
-              <XDSLayoutContent padding={0}>
+              <LayoutContent padding={0}>
                 <div style={{overflowX: 'auto'}}>
-                  <XDSTable
+                  <Table
                     data={txData}
                     columns={txColumns}
                     textOverflow="truncate"
                   />
                 </div>
-              </XDSLayoutContent>
+              </LayoutContent>
             }
           />
-        </XDSCard>
+        </Card>
       </div>
 
       {/* Risk & Allocation — uses Slider, RadioList */}
       <div style={CARD_WRAP}>
-        <XDSCard>
-          <XDSLayout
+        <Card>
+          <Layout
             height="auto"
             header={
-              <XDSLayoutHeader>
-                <XDSHeading level={3}>Risk & Allocation</XDSHeading>
-              </XDSLayoutHeader>
+              <LayoutHeader>
+                <Heading level={3}>Risk & Allocation</Heading>
+              </LayoutHeader>
             }
             content={
-              <XDSLayoutContent>
-                <XDSVStack gap={4}>
-                  <XDSSection>
-                    <XDSVStack gap={1}>
+              <LayoutContent>
+                <VStack gap={4}>
+                  <Section>
+                    <VStack gap={1}>
                       <div style={ROW}>
-                        <XDSText type="label">Risk Tolerance</XDSText>
-                        <XDSText type="supporting" color="secondary">
+                        <Text type="label">Risk Tolerance</Text>
+                        <Text type="supporting" color="secondary">
                           {riskTolerance}%
-                        </XDSText>
+                        </Text>
                       </div>
-                      <XDSSlider
+                      <Slider
                         label="Risk tolerance"
                         value={riskTolerance}
                         onChange={setRiskTolerance}
                       />
-                      <XDSHStack gap={0} hAlign="between">
-                        <XDSText type="supporting" color="secondary">
+                      <HStack gap={0} hAlign="between">
+                        <Text type="supporting" color="secondary">
                           Conservative
-                        </XDSText>
-                        <XDSText type="supporting" color="secondary">
+                        </Text>
+                        <Text type="supporting" color="secondary">
                           Aggressive
-                        </XDSText>
-                      </XDSHStack>
-                    </XDSVStack>
-                  </XDSSection>
-                  <XDSRadioList
+                        </Text>
+                      </HStack>
+                    </VStack>
+                  </Section>
+                  <RadioList
                     label="Rebalance frequency"
                     value={rebalanceFreq}
                     onChange={setRebalanceFreq}>
-                    <XDSRadioListItem value="monthly" label="Monthly" />
-                    <XDSRadioListItem value="quarterly" label="Quarterly" />
-                    <XDSRadioListItem value="annually" label="Annually" />
-                  </XDSRadioList>
-                  <XDSBanner
+                    <RadioListItem value="monthly" label="Monthly" />
+                    <RadioListItem value="quarterly" label="Quarterly" />
+                    <RadioListItem value="annually" label="Annually" />
+                  </RadioList>
+                  <Banner
                     status="warning"
                     title="High allocation to tech"
                     description="Consider diversifying — 62% of your portfolio is in technology stocks."
                   />
-                </XDSVStack>
-              </XDSLayoutContent>
+                </VStack>
+              </LayoutContent>
             }
           />
-        </XDSCard>
+        </Card>
       </div>
 
       {/* Team Members — uses Avatar, StatusDot */}
       <div style={CARD_WRAP}>
-        <XDSCard>
-          <XDSLayout
+        <Card>
+          <Layout
             height="auto"
             header={
-              <XDSLayoutHeader>
+              <LayoutHeader>
                 <div style={ROW}>
-                  <XDSHeading level={3}>Team Members</XDSHeading>
-                  <XDSButton label="Invite" size="sm" variant="secondary" />
+                  <Heading level={3}>Team Members</Heading>
+                  <Button label="Invite" size="sm" variant="secondary" />
                 </div>
-              </XDSLayoutHeader>
+              </LayoutHeader>
             }
             content={
-              <XDSLayoutContent>
-                <XDSVStack gap={3}>
+              <LayoutContent>
+                <VStack gap={3}>
                   {[
                     {
                       name: 'Alice Chen',
@@ -646,185 +646,185 @@ export function ComponentPreview() {
                       status: 'error' as const,
                     },
                   ].map(member => (
-                    <XDSHStack
+                    <HStack
                       key={member.name}
                       gap={3}
                       vAlign="center"
                       hAlign="between">
-                      <XDSHStack gap={3} vAlign="center">
-                        <XDSAvatar name={member.name} size="small" />
-                        <XDSVStack gap={0}>
-                          <XDSText type="body">{member.name}</XDSText>
-                          <XDSText type="supporting" color="secondary">
+                      <HStack gap={3} vAlign="center">
+                        <Avatar name={member.name} size="small" />
+                        <VStack gap={0}>
+                          <Text type="body">{member.name}</Text>
+                          <Text type="supporting" color="secondary">
                             {member.role}
-                          </XDSText>
-                        </XDSVStack>
-                      </XDSHStack>
-                      <XDSStatusDot
+                          </Text>
+                        </VStack>
+                      </HStack>
+                      <StatusDot
                         variant={member.status}
                         label={member.name}
                       />
-                    </XDSHStack>
+                    </HStack>
                   ))}
-                </XDSVStack>
-              </XDSLayoutContent>
+                </VStack>
+              </LayoutContent>
             }
           />
-        </XDSCard>
+        </Card>
       </div>
 
       {/* Settings */}
       <div style={CARD_WRAP}>
-        <XDSCard>
-          <XDSLayout
+        <Card>
+          <Layout
             height="auto"
             header={
-              <XDSLayoutHeader>
-                <XDSVStack gap={0}>
-                  <XDSTabList
+              <LayoutHeader>
+                <VStack gap={0}>
+                  <TabList
                     value={settingsTab}
                     onChange={setSettingsTab}
                     size="sm">
-                    <XDSTab value="general" label="General" />
-                    <XDSTab value="notifications" label="Notifications" />
-                    <XDSTab value="security" label="Security" />
-                  </XDSTabList>
-                  <XDSDivider />
-                </XDSVStack>
-              </XDSLayoutHeader>
+                    <Tab value="general" label="General" />
+                    <Tab value="notifications" label="Notifications" />
+                    <Tab value="security" label="Security" />
+                  </TabList>
+                  <Divider />
+                </VStack>
+              </LayoutHeader>
             }
             content={
-              <XDSLayoutContent>
-                <XDSVStack gap={3}>
-                  <XDSSection>
-                    <XDSVStack gap={3}>
-                      <XDSHStack gap={3} vAlign="center" hAlign="between">
-                        <XDSVStack gap={0}>
-                          <XDSText type="body">Dark Mode</XDSText>
-                          <XDSText type="supporting" color="secondary">
+              <LayoutContent>
+                <VStack gap={3}>
+                  <Section>
+                    <VStack gap={3}>
+                      <HStack gap={3} vAlign="center" hAlign="between">
+                        <VStack gap={0}>
+                          <Text type="body">Dark Mode</Text>
+                          <Text type="supporting" color="secondary">
                             Enable dark theme
-                          </XDSText>
-                        </XDSVStack>
-                        <XDSSwitch
+                          </Text>
+                        </VStack>
+                        <Switch
                           label="Dark Mode"
                           isLabelHidden
                           value={switch1}
                           onChange={setSwitch1}
                         />
-                      </XDSHStack>
-                      <XDSHStack gap={3} vAlign="center" hAlign="between">
-                        <XDSVStack gap={0}>
-                          <XDSText type="body">Notifications</XDSText>
-                          <XDSText type="supporting" color="secondary">
+                      </HStack>
+                      <HStack gap={3} vAlign="center" hAlign="between">
+                        <VStack gap={0}>
+                          <Text type="body">Notifications</Text>
+                          <Text type="supporting" color="secondary">
                             Push notifications
-                          </XDSText>
-                        </XDSVStack>
-                        <XDSSwitch
+                          </Text>
+                        </VStack>
+                        <Switch
                           label="Notifications"
                           isLabelHidden
                           value={switch2}
                           onChange={setSwitch2}
                         />
-                      </XDSHStack>
-                    </XDSVStack>
-                  </XDSSection>
-                  <XDSCheckboxInput
+                      </HStack>
+                    </VStack>
+                  </Section>
+                  <CheckboxInput
                     label="Email updates"
                     value={check1}
                     onChange={setCheck1}
                   />
-                  <XDSCheckboxInput
+                  <CheckboxInput
                     label="Weekly digest"
                     value={check2}
                     onChange={setCheck2}
                   />
-                </XDSVStack>
-              </XDSLayoutContent>
+                </VStack>
+              </LayoutContent>
             }
           />
-        </XDSCard>
+        </Card>
       </div>
 
       {/* Tax Documents — uses Collapsible, Token, CodeBlock */}
       <div style={CARD_WRAP}>
-        <XDSCard>
-          <XDSLayout
+        <Card>
+          <Layout
             height="auto"
             header={
-              <XDSLayoutHeader>
+              <LayoutHeader>
                 <div style={ROW}>
-                  <XDSHeading level={3}>Tax Documents</XDSHeading>
-                  <XDSHStack gap={2} wrap="wrap">
-                    <XDSToken label="2024" />
-                    <XDSToken label="1099-B" />
-                  </XDSHStack>
+                  <Heading level={3}>Tax Documents</Heading>
+                  <HStack gap={2} wrap="wrap">
+                    <Token label="2024" />
+                    <Token label="1099-B" />
+                  </HStack>
                 </div>
-              </XDSLayoutHeader>
+              </LayoutHeader>
             }
             content={
-              <XDSLayoutContent>
-                <XDSVStack gap={3}>
-                  <XDSCollapsibleGroup type="single" defaultValue="summary">
-                    <XDSCollapsible
+              <LayoutContent>
+                <VStack gap={3}>
+                  <CollapsibleGroup type="single" defaultValue="summary">
+                    <Collapsible
                       trigger={
-                        <XDSText type="body" weight="bold">
+                        <Text type="body" weight="bold">
                           Capital Gains Summary
-                        </XDSText>
+                        </Text>
                       }
                       value="summary">
-                      <XDSVStack
+                      <VStack
                         gap={3}
                         style={{paddingBlock: 'var(--spacing-3)'}}>
                         <div style={ROW}>
-                          <XDSText type="body">Short-term gains</XDSText>
-                          <XDSText type="body" weight="bold">
+                          <Text type="body">Short-term gains</Text>
+                          <Text type="body" weight="bold">
                             $1,240.00
-                          </XDSText>
+                          </Text>
                         </div>
                         <div style={ROW}>
-                          <XDSText type="body">Long-term gains</XDSText>
-                          <XDSText type="body" weight="bold">
+                          <Text type="body">Long-term gains</Text>
+                          <Text type="body" weight="bold">
                             $8,920.00
-                          </XDSText>
+                          </Text>
                         </div>
-                        <XDSDivider />
+                        <Divider />
                         <div style={ROW}>
-                          <XDSText type="label">Total taxable</XDSText>
-                          <XDSText type="label" weight="bold">
+                          <Text type="label">Total taxable</Text>
+                          <Text type="label" weight="bold">
                             $10,160.00
-                          </XDSText>
+                          </Text>
                         </div>
-                      </XDSVStack>
-                    </XDSCollapsible>
-                    <XDSCollapsible
+                      </VStack>
+                    </Collapsible>
+                    <Collapsible
                       trigger={
-                        <XDSText type="body" weight="bold">
+                        <Text type="body" weight="bold">
                           Dividend Income
-                        </XDSText>
+                        </Text>
                       }
                       value="dividends">
-                      <XDSVStack
+                      <VStack
                         gap={3}
                         style={{paddingBlock: 'var(--spacing-3)'}}>
                         <div style={ROW}>
-                          <XDSText type="body">Qualified dividends</XDSText>
-                          <XDSText type="body" weight="bold">
+                          <Text type="body">Qualified dividends</Text>
+                          <Text type="body" weight="bold">
                             $2,450.00
-                          </XDSText>
+                          </Text>
                         </div>
                         <div style={ROW}>
-                          <XDSText type="body">Ordinary dividends</XDSText>
-                          <XDSText type="body" weight="bold">
+                          <Text type="body">Ordinary dividends</Text>
+                          <Text type="body" weight="bold">
                             $680.00
-                          </XDSText>
+                          </Text>
                         </div>
-                      </XDSVStack>
-                    </XDSCollapsible>
-                    <XDSCollapsible
+                      </VStack>
+                    </Collapsible>
+                    <Collapsible
                       trigger={
-                        <XDSText type="body" weight="bold">
+                        <Text type="body" weight="bold">
                           Export Format
-                        </XDSText>
+                        </Text>
                       }
                       value="export">
                       <div style={{paddingBlock: 'var(--spacing-3)'}}>
@@ -834,32 +834,32 @@ export function ComponentPreview() {
                           size="sm"
                         />
                       </div>
-                    </XDSCollapsible>
-                  </XDSCollapsibleGroup>
-                </XDSVStack>
-              </XDSLayoutContent>
+                    </Collapsible>
+                  </CollapsibleGroup>
+                </VStack>
+              </LayoutContent>
             }
           />
-        </XDSCard>
+        </Card>
       </div>
 
       {/* Support Ticket — uses TextArea, Section */}
       <div style={CARD_WRAP}>
-        <XDSCard>
-          <XDSLayout
+        <Card>
+          <Layout
             height="auto"
             header={
-              <XDSLayoutHeader>
+              <LayoutHeader>
                 <div style={ROW}>
-                  <XDSHeading level={3}>Submit a Request</XDSHeading>
-                  <XDSBadge label="Support" variant="info" />
+                  <Heading level={3}>Submit a Request</Heading>
+                  <Badge label="Support" variant="info" />
                 </div>
-              </XDSLayoutHeader>
+              </LayoutHeader>
             }
             content={
-              <XDSLayoutContent>
-                <XDSVStack gap={4}>
-                  <XDSSelector
+              <LayoutContent>
+                <VStack gap={4}>
+                  <Selector
                     label="Category"
                     options={[
                       'Account Access',
@@ -870,74 +870,74 @@ export function ComponentPreview() {
                     value="Account Access"
                     onChange={() => {}}
                   />
-                  <XDSTextInput
+                  <TextInput
                     label="Subject"
                     value=""
                     placeholder="Brief description"
                     onChange={() => {}}
                   />
-                  <XDSSection>
-                    <XDSTextArea
+                  <Section>
+                    <TextArea
                       label="Details"
                       placeholder="Describe your issue..."
                       value=""
                     />
-                  </XDSSection>
-                </XDSVStack>
-              </XDSLayoutContent>
+                  </Section>
+                </VStack>
+              </LayoutContent>
             }
             footer={
-              <XDSLayoutFooter>
-                <XDSHStack gap={2} hAlign="end">
-                  <XDSButton label="Cancel" variant="ghost" />
-                  <XDSButton label="Submit" variant="primary" />
-                </XDSHStack>
-              </XDSLayoutFooter>
+              <LayoutFooter>
+                <HStack gap={2} hAlign="end">
+                  <Button label="Cancel" variant="ghost" />
+                  <Button label="Submit" variant="primary" />
+                </HStack>
+              </LayoutFooter>
             }
           />
-        </XDSCard>
+        </Card>
       </div>
 
       {/* Buttons */}
       <div style={CARD_WRAP}>
-        <XDSCard>
-          <XDSLayout
+        <Card>
+          <Layout
             height="auto"
             header={
-              <XDSLayoutHeader>
-                <XDSHeading level={3}>Quick Actions</XDSHeading>
-              </XDSLayoutHeader>
+              <LayoutHeader>
+                <Heading level={3}>Quick Actions</Heading>
+              </LayoutHeader>
             }
             content={
-              <XDSLayoutContent>
-                <XDSVStack gap={3}>
-                  <XDSHStack gap={2} wrap="wrap">
-                    <XDSButton label="Transfer" variant="primary" size="md" />
-                    <XDSButton label="Deposit" variant="secondary" size="md" />
-                    <XDSButton label="Statements" variant="ghost" size="md" />
-                  </XDSHStack>
-                  <XDSHStack gap={2} wrap="wrap">
-                    <XDSButton label="Small" variant="primary" size="sm" />
-                    <XDSButton label="Medium" variant="primary" size="md" />
-                    <XDSButton label="Large" variant="primary" size="lg" />
-                  </XDSHStack>
-                  <XDSHStack gap={2} wrap="wrap">
-                    <XDSButton
+              <LayoutContent>
+                <VStack gap={3}>
+                  <HStack gap={2} wrap="wrap">
+                    <Button label="Transfer" variant="primary" size="md" />
+                    <Button label="Deposit" variant="secondary" size="md" />
+                    <Button label="Statements" variant="ghost" size="md" />
+                  </HStack>
+                  <HStack gap={2} wrap="wrap">
+                    <Button label="Small" variant="primary" size="sm" />
+                    <Button label="Medium" variant="primary" size="md" />
+                    <Button label="Large" variant="primary" size="lg" />
+                  </HStack>
+                  <HStack gap={2} wrap="wrap">
+                    <Button
                       label="Processing..."
                       variant="primary"
                       isDisabled
                     />
-                    <XDSButton
+                    <Button
                       label="Unavailable"
                       variant="secondary"
                       isDisabled
                     />
-                  </XDSHStack>
-                </XDSVStack>
-              </XDSLayoutContent>
+                  </HStack>
+                </VStack>
+              </LayoutContent>
             }
           />
-        </XDSCard>
+        </Card>
       </div>
     </div>
   );

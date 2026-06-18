@@ -17,7 +17,7 @@ const byModuleName: Map<string, ComponentEntry> = (() => {
   const map = new Map<string, ComponentEntry>();
   for (const entries of Object.values(components)) {
     for (const entry of entries) {
-      // moduleName is the JSX identifier authored in code, e.g. `XDSButton`.
+      // moduleName is the JSX identifier authored in code, e.g. `Button`.
       if (entry.moduleName && !map.has(entry.moduleName)) {
         map.set(entry.moduleName, entry);
       }
@@ -33,7 +33,7 @@ export function getComponentByModule(
 }
 
 export interface UsedComponent {
-  /** JSX identifier as written, e.g. `XDSButton`. */
+  /** JSX identifier as written, e.g. `Button`. */
   module: string;
   /** Friendly label, e.g. `Button` (falls back to the module name). */
   label: string;

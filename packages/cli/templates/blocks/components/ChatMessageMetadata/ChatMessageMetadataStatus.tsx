@@ -3,12 +3,12 @@
 'use client';
 
 import {
-  XDSChatMessageList,
-  XDSChatMessage,
-  XDSChatMessageBubble,
-  XDSChatMessageMetadata,
+  ChatMessageList,
+  ChatMessage,
+  ChatMessageBubble,
+  ChatMessageMetadata,
 } from '@xds/core/Chat';
-import {XDSTimestamp} from '@xds/core/Timestamp';
+import {Timestamp} from '@xds/core/Timestamp';
 
 const STATUSES = [
   {status: 'sending' as const, text: 'Deploying the update now…'},
@@ -20,22 +20,22 @@ const STATUSES = [
 
 export default function ChatMessageMetadataStatus() {
   return (
-    <XDSChatMessageList style={{maxWidth: 400}}>
+    <ChatMessageList style={{maxWidth: 400}}>
       {STATUSES.map(({status, text}) => (
-        <XDSChatMessage key={status} sender="user">
-          <XDSChatMessageBubble
+        <ChatMessage key={status} sender="user">
+          <ChatMessageBubble
             metadata={
-              <XDSChatMessageMetadata
+              <ChatMessageMetadata
                 timestamp={
-                  <XDSTimestamp value="2026-04-29T10:15:00" format="time" />
+                  <Timestamp value="2026-04-29T10:15:00" format="time" />
                 }
                 status={status}
               />
             }>
             {text}
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
+          </ChatMessageBubble>
+        </ChatMessage>
       ))}
-    </XDSChatMessageList>
+    </ChatMessageList>
   );
 }

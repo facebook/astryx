@@ -238,7 +238,7 @@ function formatBrief(docs) {
     .filter(p => p.type.includes('|') && !p.type.includes('ReactNode'))
     .map(p => `${p.name}: ${p.type.replace(/['"]/g, '').split('|').map(v => v.trim()).join('|')}`)
     .join(', ');
-  return sig ? `XDS${docs.name}(${sig})  ${short}` : `XDS${docs.name}  ${short}`;
+  return sig ? `${docs.name}(${sig})  ${short}` : `${docs.name}  ${short}`;
 }
 
 // ── Main ─────────────────────────────────────────────────────────────
@@ -356,7 +356,7 @@ function formatHookFull(docs) {
   }
 
   const refs = [];
-  if (docs.relatedComponents?.length) refs.push(`Components: ${docs.relatedComponents.map(c => `XDS${c}`).join(', ')}`);
+  if (docs.relatedComponents?.length) refs.push(`Components: ${docs.relatedComponents.map(c => c).join(', ')}`);
   if (docs.relatedHooks?.length) refs.push(`Hooks: ${docs.relatedHooks.join(', ')}`);
   if (docs.importPath) refs.push(`Import: ${docs.importPath}`);
   if (refs.length) {
@@ -427,7 +427,7 @@ if (isHooks) {
           const d = await loadDoc(docPath);
           console.log('  ' + formatBrief(d));
         } catch {
-          console.log(`  XDS${dir}  (error loading docs)`);
+          console.log(`  ${dir}  (error loading docs)`);
         }
       } else {
         console.log(`  ${dir}`);

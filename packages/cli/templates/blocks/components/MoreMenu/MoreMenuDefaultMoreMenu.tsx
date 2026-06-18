@@ -2,11 +2,11 @@
 
 'use client';
 
-import {XDSMoreMenu} from '@xds/core/MoreMenu';
+import {MoreMenu} from '@xds/core/MoreMenu';
 
 export default function MoreMenuDefaultMoreMenu() {
   return (
-    <XDSMoreMenu
+    <MoreMenu
       items={[
         {label: 'Edit', onClick: () => {}},
         {label: 'Duplicate', onClick: () => {}},

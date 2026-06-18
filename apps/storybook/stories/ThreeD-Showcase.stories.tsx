@@ -7,7 +7,7 @@ import {
   XDS3DScatter,
   XDS3DScatterGL,
 } from '@xds/lab';
-import {XDSMediaTheme} from '@xds/core/theme';
+import {MediaTheme} from '@xds/core/theme';
 
 const meta: Meta = {title: 'Lab/3DChart/PopArt'};
 export default meta;
@@ -183,7 +183,7 @@ function Cell({
   elevation = 20,
 }: CellProps) {
   return (
-    <XDSMediaTheme mode={mediaMode}>
+    <MediaTheme mode={mediaMode}>
       <div
         style={{
           background: bg,
@@ -223,7 +223,7 @@ function Cell({
           {label}
         </div>
       </div>
-    </XDSMediaTheme>
+    </MediaTheme>
   );
 }
 
@@ -350,7 +350,7 @@ export const SVGvsWebGL: StoryObj = {
         }}>
         <div
           style={{background: '#0064E0', borderRadius: 16, overflow: 'hidden'}}>
-          <XDSMediaTheme mode="dark">
+          <MediaTheme mode="dark">
             <div
               style={{
                 padding: '6px 12px',
@@ -375,11 +375,11 @@ export const SVGvsWebGL: StoryObj = {
               autoRotate={0.3}>
               <XDS3DScatter color="#DFE2E5" radius={1.5} opacity={0.85} />
             </XDS3DChart>
-          </XDSMediaTheme>
+          </MediaTheme>
         </div>
         <div
           style={{background: '#0064E0', borderRadius: 16, overflow: 'hidden'}}>
-          <XDSMediaTheme mode="dark">
+          <MediaTheme mode="dark">
             <div
               style={{
                 padding: '6px 12px',
@@ -404,7 +404,7 @@ export const SVGvsWebGL: StoryObj = {
               autoRotate={0.3}>
               <XDS3DScatterGL color="#DFE2E5" size={3} opacity={0.85} />
             </XDS3DChart>
-          </XDSMediaTheme>
+          </MediaTheme>
         </div>
       </div>
     );

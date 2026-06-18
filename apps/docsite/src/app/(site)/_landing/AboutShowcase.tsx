@@ -4,9 +4,9 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSLink} from '@xds/core/Link';
+import {VStack} from '@xds/core/Layout';
+import {Heading, Text} from '@xds/core/Text';
+import {Link} from '@xds/core/Link';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 
 // Editorial-style "about" section: a left-anchored heading block sits
@@ -101,7 +101,7 @@ const styles = stylex.create({
   //
   // Rendered as a raw <span> in the JSX because XDS has no
   // primitive for "fixed-size inline-block decorative SVG wrapper"
-  // (XDSIcon is glyph-only and bound to its registry; XDSThumbnail
+  // (Icon is glyph-only and bound to its registry; Thumbnail
   // is chat-attachment chrome). The wrapper exists purely to reserve
   // space and clip the shape — there is no semantic content here.
   shapeSlot: {
@@ -110,11 +110,11 @@ const styles = stylex.create({
     display: 'block',
     flexShrink: 0,
   },
-  // "→" arrow trail on the CTA link. Astryx's XDSLink renders inline
+  // "→" arrow trail on the CTA link. Astryx's Link renders inline
   // by default; the arrow lives inside the link label so it inherits
   // the link color + hover state automatically.
   cta: {
-    // Bump the CTA away from the body text. The XDSVStack gap holds
+    // Bump the CTA away from the body text. The VStack gap holds
     // title↔body at 8px; the CTA wants more breathing room (16px)
     // so the link reads as a separate action zone rather than part
     // of the paragraph.
@@ -236,48 +236,48 @@ const columns: AboutColumn[] = [
 
 function AboutHeading() {
   return (
-    <XDSVStack gap={4} xstyle={styles.headingBlock}>
-      <XDSHeading level={2} type="display-2" color="primary">
+    <VStack gap={4} xstyle={styles.headingBlock}>
+      <Heading level={2} type="display-2" color="primary">
         Astryx powers over 13,000 apps
-      </XDSHeading>
-      <XDSText type="large" weight="normal" color="secondary">
+      </Heading>
+      <Text type="large" weight="normal" color="secondary">
         Astryx has grown inside Meta over the last eight years, shaped by the
         engineers, designers, and product teams who depend on it every day.
-      </XDSText>
-    </XDSVStack>
+      </Text>
+    </VStack>
   );
 }
 
 function AboutColumn({column}: {column: AboutColumn}) {
   return (
-    <XDSVStack gap={3} xstyle={styles.column}>
+    <VStack gap={3} xstyle={styles.column}>
       <span {...stylex.props(styles.shapeSlot)}>{column.shape}</span>
-      <XDSVStack gap={2}>
-        <XDSHeading level={2} color="primary">
+      <VStack gap={2}>
+        <Heading level={2} color="primary">
           {column.title}
-        </XDSHeading>
-        <XDSText type="body" color="primary">
+        </Heading>
+        <Text type="body" color="primary">
           {column.description}
-        </XDSText>
-      </XDSVStack>
-      <XDSLink
+        </Text>
+      </VStack>
+      <Link
         type="body"
         color="primary"
         href={column.ctaHref}
         hasUnderline={false}
         xstyle={styles.cta}>
         {column.ctaLabel}
-      </XDSLink>
-    </XDSVStack>
+      </Link>
+    </VStack>
   );
 }
 
 export function AboutShowcase() {
   return (
-    <XDSVStack as="section" align="center" width="100%">
+    <VStack as="section" align="center" width="100%">
       {/* sectionLayout / grid / columnsGrid are kept as plain <div>s
           because each is a CSS-grid container with responsive
-          `grid-template-columns` (see styles below). XDSGrid hardcodes
+          `grid-template-columns` (see styles below). Grid hardcodes
           a single integer column count and a single gap, so it can't
           express the 1fr-stack → 1fr/2fr → repeat(3, 1fr) responsive
           patterns this section needs. */}
@@ -291,6 +291,6 @@ export function AboutShowcase() {
           </div>
         </div>
       </div>
-    </XDSVStack>
+    </VStack>
   );
 }

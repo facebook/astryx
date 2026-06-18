@@ -3,12 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSMediaTheme} from '@xds/core/theme';
-import {XDSDivider} from '@xds/core';
+import {Heading, Text} from '@xds/core/Text';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
+import {MediaTheme} from '@xds/core/theme';
+import {Divider} from '@xds/core';
 import {useImageModeTest, type Algorithm} from './useImageModeTest';
 
 // =============================================================================
@@ -114,8 +114,8 @@ const swatchStyle: React.CSSProperties = {
 
 function RemoveButton() {
   return (
-    <XDSButton
-      icon={<XDSIcon icon="close" size="xsm" />}
+    <Button
+      icon={<Icon icon="close" size="xsm" />}
       label="Remove"
       variant="secondary"
       size="sm"
@@ -129,13 +129,13 @@ function RemoveButton() {
 function Swatch({color, mode, value}: {color: typeof SOLID_COLORS[0]; mode: 'dark' | 'light'; value: number}) {
   return (
     <div style={swatchStyle}>
-      <XDSMediaTheme mode={mode}>
+      <MediaTheme mode={mode}>
         <div style={{...swatchBoxStyle, backgroundColor: `rgb(${color.rgb.join(',')})`}}>
           <div style={buttonPosStyle}>
             <RemoveButton />
           </div>
         </div>
-      </XDSMediaTheme>
+      </MediaTheme>
       <div style={{fontSize: 10, color: '#666', marginTop: 4, fontWeight: 600}}>{color.name}</div>
       <div style={{fontSize: 9, color: mode === 'dark' ? '#c44' : '#48a'}}>
         {value.toFixed(3)} → {mode}
@@ -149,7 +149,7 @@ function ImageSwatch({src, label, algorithm}: {src: string; label: string; algor
   return (
     <div style={swatchStyle}>
       {mode != null ? (
-        <XDSMediaTheme mode={mode}>
+        <MediaTheme mode={mode}>
           <div style={swatchBoxStyle}>
             <img
               src={src}
@@ -160,7 +160,7 @@ function ImageSwatch({src, label, algorithm}: {src: string; label: string; algor
               <RemoveButton />
             </div>
           </div>
-        </XDSMediaTheme>
+        </MediaTheme>
       ) : (
         <div style={swatchBoxStyle}>
           <img
@@ -191,18 +191,18 @@ export default function MediaModePage() {
   const config = ALGO_FN[algo];
 
   return (
-    <XDSVStack gap={6} style={{maxWidth: 800}}>
+    <VStack gap={6} style={{maxWidth: 800}}>
       <div>
-        <XDSHeading level={2}>Media Mode Comparison</XDSHeading>
-        <XDSText type="body" color="secondary">
+        <Heading level={2}>Media Mode Comparison</Heading>
+        <Text type="body" color="secondary">
           Compare luminance algorithms for detecting dark vs light surfaces.
-          Used by useImageMode + XDSMediaTheme to adapt overlaid controls.
-        </XDSText>
+          Used by useImageMode + MediaTheme to adapt overlaid controls.
+        </Text>
       </div>
 
-      <XDSHStack gap={2}>
+      <HStack gap={2}>
         {(Object.keys(ALGO_INFO) as Algorithm[]).map(id => (
-          <XDSButton
+          <Button
             key={id}
             label={ALGO_INFO[id].label}
             variant={algo === id ? 'primary' : 'secondary'}
@@ -210,13 +210,13 @@ export default function MediaModePage() {
             onClick={() => setAlgo(id)}
           />
         ))}
-      </XDSHStack>
+      </HStack>
 
       <div style={{fontSize: 12, color: '#888'}}>{info.description}</div>
 
-      <XDSDivider />
+      <Divider />
 
-      <XDSHeading level={4}>Solid Colors</XDSHeading>
+      <Heading level={4}>Solid Colors</Heading>
 
       <div style={gridStyle}>
         {SOLID_COLORS.map(c => {
@@ -226,9 +226,9 @@ export default function MediaModePage() {
         })}
       </div>
 
-      <XDSDivider />
+      <Divider />
 
-      <XDSHeading level={4}>Real Images</XDSHeading>
+      <Heading level={4}>Real Images</Heading>
       <div style={{fontSize: 12, color: '#888'}}>
         Samples the upper-right corner where a remove button would sit.
         Switch algorithms above — images re-detect with the selected algorithm.
@@ -239,6 +239,6 @@ export default function MediaModePage() {
           <ImageSwatch key={`${img.label}-${algo}`} src={img.src} label={img.label} algorithm={algo} />
         ))}
       </div>
-    </XDSVStack>
+    </VStack>
   );
 }

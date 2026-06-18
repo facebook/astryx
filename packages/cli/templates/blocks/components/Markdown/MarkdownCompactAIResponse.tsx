@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSCenter} from '@xds/core/Center';
-import {XDSMarkdown} from '@xds/core/Markdown';
+import {Center} from '@xds/core/Center';
+import {Markdown} from '@xds/core/Markdown';
 
 const content = [
   '## Design Tokens',
@@ -25,10 +25,10 @@ const content = [
 
 export default function MarkdownCompactAIResponse() {
   return (
-    <XDSCenter style={{maxWidth: 450}}>
-      <XDSMarkdown density="compact" headingLevelStart={3}>
+    <Center style={{maxWidth: 450}}>
+      <Markdown density="compact" headingLevelStart={3}>
         {content}
-      </XDSMarkdown>
-    </XDSCenter>
+      </Markdown>
+    </Center>
   );
 }

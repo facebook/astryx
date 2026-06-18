@@ -4,8 +4,8 @@
 
 import {useState} from 'react';
 import {
-  XDSSegmentedControl,
-  XDSSegmentedControlItem,
+  SegmentedControl,
+  SegmentedControlItem,
 } from '@xds/core/SegmentedControl';
 
 const GridIcon = () => (
@@ -40,14 +40,14 @@ const TableIcon = () => (
 export default function SegmentedControlWithIcons() {
   const [value, setValue] = useState('grid');
   return (
-    <XDSSegmentedControl value={value} onChange={setValue} label="View mode">
-      <XDSSegmentedControlItem value="grid" label="Grid" icon={<GridIcon />} />
-      <XDSSegmentedControlItem value="list" label="List" icon={<ListIcon />} />
-      <XDSSegmentedControlItem
+    <SegmentedControl value={value} onChange={setValue} label="View mode">
+      <SegmentedControlItem value="grid" label="Grid" icon={<GridIcon />} />
+      <SegmentedControlItem value="list" label="List" icon={<ListIcon />} />
+      <SegmentedControlItem
         value="table"
         label="Table"
         icon={<TableIcon />}
       />
-    </XDSSegmentedControl>
+    </SegmentedControl>
   );
 }

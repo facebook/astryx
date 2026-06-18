@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSText} from '@xds/core/Text';
+import {Text} from '@xds/core/Text';
 
-const meta: Meta<typeof XDSText> = {
+const meta: Meta<typeof Text> = {
   title: 'Core/Text',
-  component: XDSText,
+  component: Text,
   tags: ['autodocs'],
   argTypes: {
     type: {
@@ -87,7 +87,7 @@ const meta: Meta<typeof XDSText> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSText>;
+type Story = StoryObj<typeof Text>;
 
 // =============================================================================
 // Basic Types
@@ -136,13 +136,13 @@ export const Code: Story = {
 export const AllTypes: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
-      <XDSText type="body">Body: The bulk of content (14px)</XDSText>
-      <XDSText type="large">Large: Emphasized content (16px)</XDSText>
-      <XDSText type="label">Label: Form/chart labels (14px medium)</XDSText>
-      <XDSText type="supporting">
+      <Text type="body">Body: The bulk of content (14px)</Text>
+      <Text type="large">Large: Emphasized content (16px)</Text>
+      <Text type="label">Label: Form/chart labels (14px medium)</Text>
+      <Text type="supporting">
         Supporting: Helper text (12px secondary)
-      </XDSText>
-      <XDSText type="code">Code: const x = 1; (14px monospace)</XDSText>
+      </Text>
+      <Text type="code">Code: const x = 1; (14px monospace)</Text>
     </div>
   ),
 };
@@ -154,25 +154,25 @@ export const AllTypes: Story = {
 export const ColorVariants: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-      <XDSText type="body" color="primary">
+      <Text type="body" color="primary">
         Primary color (default for body)
-      </XDSText>
-      <XDSText type="body" color="secondary">
+      </Text>
+      <Text type="body" color="secondary">
         Secondary color
-      </XDSText>
-      <XDSText type="body" color="disabled">
+      </Text>
+      <Text type="body" color="disabled">
         Disabled color
-      </XDSText>
-      <XDSText type="body" color="placeholder">
+      </Text>
+      <Text type="body" color="placeholder">
         Placeholder color
-      </XDSText>
-      <XDSText type="body" color="active">
+      </Text>
+      <Text type="body" color="active">
         Active color (accent)
-      </XDSText>
+      </Text>
       <div style={{color: 'purple'}}>
-        <XDSText type="body" color="inherit">
+        <Text type="body" color="inherit">
           Inherit color (from parent)
-        </XDSText>
+        </Text>
       </div>
     </div>
   ),
@@ -185,18 +185,18 @@ export const ColorVariants: Story = {
 export const WeightVariants: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-      <XDSText type="body" weight="normal">
+      <Text type="body" weight="normal">
         Normal weight (400)
-      </XDSText>
-      <XDSText type="body" weight="medium">
+      </Text>
+      <Text type="body" weight="medium">
         Medium weight (500)
-      </XDSText>
-      <XDSText type="body" weight="semibold">
+      </Text>
+      <Text type="body" weight="semibold">
         Semibold weight (600)
-      </XDSText>
-      <XDSText type="body" weight="bold">
+      </Text>
+      <Text type="body" weight="bold">
         Bold weight (700)
-      </XDSText>
+      </Text>
     </div>
   ),
 };
@@ -209,23 +209,23 @@ export const DisplayModes: Story = {
   render: () => (
     <div>
       <div style={{marginBottom: '16px'}}>
-        <XDSText type="body" display="inline">
+        <Text type="body" display="inline">
           Inline text{' '}
-        </XDSText>
-        <XDSText type="body" display="inline">
+        </Text>
+        <Text type="body" display="inline">
           flows together{' '}
-        </XDSText>
-        <XDSText type="body" display="inline">
+        </Text>
+        <Text type="body" display="inline">
           on the same line.
-        </XDSText>
+        </Text>
       </div>
       <div>
-        <XDSText type="body" display="block">
+        <Text type="body" display="block">
           Block text takes its own line.
-        </XDSText>
-        <XDSText type="body" display="block">
+        </Text>
+        <Text type="body" display="block">
           Each block is on a separate line.
-        </XDSText>
+        </Text>
       </div>
     </div>
   ),
@@ -238,10 +238,10 @@ export const DisplayModes: Story = {
 export const SingleLineTruncation: Story = {
   render: () => (
     <div style={{width: '300px', border: '1px solid #ccc', padding: '12px'}}>
-      <XDSText type="body" maxLines={1}>
+      <Text type="body" maxLines={1}>
         This is a very long text that will be truncated to a single line. Hover
         over it to see the full content in a tooltip.
-      </XDSText>
+      </Text>
     </div>
   ),
 };
@@ -249,11 +249,11 @@ export const SingleLineTruncation: Story = {
 export const MultiLineTruncation: Story = {
   render: () => (
     <div style={{width: '300px', border: '1px solid #ccc', padding: '12px'}}>
-      <XDSText type="body" maxLines={2}>
+      <Text type="body" maxLines={2}>
         This is a very long text that will be truncated to exactly two lines.
         When you hover over it, a tooltip will appear showing the full text
         content. This is useful for displaying preview text in cards and lists.
-      </XDSText>
+      </Text>
     </div>
   ),
 };
@@ -261,10 +261,10 @@ export const MultiLineTruncation: Story = {
 export const TruncationWithoutTooltip: Story = {
   render: () => (
     <div style={{width: '300px', border: '1px solid #ccc', padding: '12px'}}>
-      <XDSText type="body" maxLines={1} hasTruncateTooltip={false}>
+      <Text type="body" maxLines={1} hasTruncateTooltip={false}>
         This text is truncated but has no tooltip on hover. Sometimes you don't
         want a tooltip.
-      </XDSText>
+      </Text>
     </div>
   ),
 };
@@ -279,37 +279,37 @@ export const TruncationVariants: Story = {
         maxWidth: '300px',
       }}>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           1 Line:
-        </XDSText>
+        </Text>
         <div style={{border: '1px solid #ccc', padding: '8px'}}>
-          <XDSText type="body" maxLines={1}>
+          <Text type="body" maxLines={1}>
             This is a very long text that will be truncated to one line with
             ellipsis.
-          </XDSText>
+          </Text>
         </div>
       </div>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           2 Lines:
-        </XDSText>
+        </Text>
         <div style={{border: '1px solid #ccc', padding: '8px'}}>
-          <XDSText type="body" maxLines={2}>
+          <Text type="body" maxLines={2}>
             This is a very long text that will be truncated to two lines. The
             second line will end with an ellipsis if the content is too long.
-          </XDSText>
+          </Text>
         </div>
       </div>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           3 Lines:
-        </XDSText>
+        </Text>
         <div style={{border: '1px solid #ccc', padding: '8px'}}>
-          <XDSText type="body" maxLines={3}>
+          <Text type="body" maxLines={3}>
             This is a very long text that will be truncated to three lines. It
             allows for more content to be shown but still limits the vertical
             space. The third line will end with an ellipsis.
-          </XDSText>
+          </Text>
         </div>
       </div>
     </div>
@@ -335,49 +335,49 @@ export const MultiLineTruncationTooltip: Story = {
         maxWidth: '280px',
       }}>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           maxLines=1 (always worked):
-        </XDSText>
+        </Text>
         <div style={{border: '1px solid #ccc', padding: '8px'}}>
-          <XDSText type="body" maxLines={1}>
+          <Text type="body" maxLines={1}>
             This single-line text is long enough to be truncated with an
             ellipsis. Hover to see the full content in a tooltip.
-          </XDSText>
+          </Text>
         </div>
       </div>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           maxLines=2 (was broken, now fixed):
-        </XDSText>
+        </Text>
         <div style={{border: '1px solid #ccc', padding: '8px'}}>
-          <XDSText type="body" maxLines={2}>
+          <Text type="body" maxLines={2}>
             This two-line text should show a tooltip on hover when it overflows
             past two lines. Previously the tooltip never appeared because
             truncation was not detected. Now it works correctly.
-          </XDSText>
+          </Text>
         </div>
       </div>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           maxLines=3 (was broken, now fixed):
-        </XDSText>
+        </Text>
         <div style={{border: '1px solid #ccc', padding: '8px'}}>
-          <XDSText type="body" maxLines={3}>
+          <Text type="body" maxLines={3}>
             This three-line text has even more content to demonstrate that the
             fix works for any maxLines value greater than one. The tooltip
             should appear on hover showing the full untruncated text. Previously
             this was broken because the browser reported clamped dimensions.
-          </XDSText>
+          </Text>
         </div>
       </div>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           maxLines=2, short text (no tooltip expected):
-        </XDSText>
+        </Text>
         <div style={{border: '1px solid #ccc', padding: '8px'}}>
-          <XDSText type="body" maxLines={2}>
+          <Text type="body" maxLines={2}>
             Short text. No tooltip.
-          </XDSText>
+          </Text>
         </div>
       </div>
     </div>
@@ -392,23 +392,23 @@ export const WordBreakVariants: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '16px', maxWidth: '600px'}}>
       <div style={{flex: 1}}>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           break-word (default for multi-line):
-        </XDSText>
+        </Text>
         <div style={{width: '150px', border: '1px solid #ccc', padding: '8px'}}>
-          <XDSText type="body" maxLines={2} wordBreak="break-word">
+          <Text type="body" maxLines={2} wordBreak="break-word">
             Thisisaverylongwordthatneedstobreakatwordlevel
-          </XDSText>
+          </Text>
         </div>
       </div>
       <div style={{flex: 1}}>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           break-all (default for single-line):
-        </XDSText>
+        </Text>
         <div style={{width: '150px', border: '1px solid #ccc', padding: '8px'}}>
-          <XDSText type="body" maxLines={2} wordBreak="break-all">
+          <Text type="body" maxLines={2} wordBreak="break-all">
             Thisisaverylongwordthatneedstobreakatanylevel
-          </XDSText>
+          </Text>
         </div>
       </div>
     </div>
@@ -429,20 +429,20 @@ export const TextWrapVariants: Story = {
         maxWidth: '400px',
       }}>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           wrap (default):
-        </XDSText>
+        </Text>
         <div style={{border: '1px solid #ccc', padding: '8px', width: '200px'}}>
-          <XDSText type="body" textWrap="wrap">
+          <Text type="body" textWrap="wrap">
             This text wraps normally at word boundaries when it reaches the
             edge.
-          </XDSText>
+          </Text>
         </div>
       </div>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           nowrap:
-        </XDSText>
+        </Text>
         <div
           style={{
             border: '1px solid #ccc',
@@ -450,30 +450,30 @@ export const TextWrapVariants: Story = {
             width: '200px',
             overflow: 'hidden',
           }}>
-          <XDSText type="body" textWrap="nowrap">
+          <Text type="body" textWrap="nowrap">
             This text does not wrap and will overflow its container.
-          </XDSText>
+          </Text>
         </div>
       </div>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           balance:
-        </XDSText>
+        </Text>
         <div style={{border: '1px solid #ccc', padding: '8px', width: '200px'}}>
-          <XDSText type="body" textWrap="balance">
+          <Text type="body" textWrap="balance">
             This text is balanced for better visual appearance across lines.
-          </XDSText>
+          </Text>
         </div>
       </div>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           pretty:
-        </XDSText>
+        </Text>
         <div style={{border: '1px solid #ccc', padding: '8px', width: '200px'}}>
-          <XDSText type="body" textWrap="pretty">
+          <Text type="body" textWrap="pretty">
             This text uses pretty wrap to avoid orphans at the end of
             paragraphs.
-          </XDSText>
+          </Text>
         </div>
       </div>
     </div>
@@ -496,29 +496,29 @@ export const TabularNumbers: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           Without tabular numbers:
-        </XDSText>
+        </Text>
         <div style={{display: 'flex', flexDirection: 'column'}}>
-          <XDSText type="body">1,234.56</XDSText>
-          <XDSText type="body">99,999.99</XDSText>
-          <XDSText type="body">111.11</XDSText>
+          <Text type="body">1,234.56</Text>
+          <Text type="body">99,999.99</Text>
+          <Text type="body">111.11</Text>
         </div>
       </div>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           With tabular numbers:
-        </XDSText>
+        </Text>
         <div style={{display: 'flex', flexDirection: 'column'}}>
-          <XDSText type="body" hasTabularNumbers>
+          <Text type="body" hasTabularNumbers>
             1,234.56
-          </XDSText>
-          <XDSText type="body" hasTabularNumbers>
+          </Text>
+          <Text type="body" hasTabularNumbers>
             99,999.99
-          </XDSText>
-          <XDSText type="body" hasTabularNumbers>
+          </Text>
+          <Text type="body" hasTabularNumbers>
             111.11
-          </XDSText>
+          </Text>
         </div>
       </div>
     </div>
@@ -533,21 +533,21 @@ export const Capsize: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           Without capsize (red border shows extra space):
-        </XDSText>
+        </Text>
         <div style={{border: '1px solid red', display: 'inline-block'}}>
-          <XDSText type="large">Regular text with line-height space</XDSText>
+          <Text type="large">Regular text with line-height space</Text>
         </div>
       </div>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           With capsize (optically aligned):
-        </XDSText>
+        </Text>
         <div style={{border: '1px solid red', display: 'inline-block'}}>
-          <XDSText type="large" hasCapsize>
+          <Text type="large" hasCapsize>
             Capsize removes extra space
-          </XDSText>
+          </Text>
         </div>
       </div>
     </div>
@@ -561,18 +561,18 @@ export const Capsize: Story = {
 export const AsElements: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-      <XDSText type="body" as="span">
+      <Text type="body" as="span">
         As span (default, inline)
-      </XDSText>
-      <XDSText type="body" as="p">
+      </Text>
+      <Text type="body" as="p">
         As paragraph element
-      </XDSText>
-      <XDSText type="body" as="div">
+      </Text>
+      <Text type="body" as="div">
         As div element
-      </XDSText>
-      <XDSText type="body" as="label">
+      </Text>
+      <Text type="body" as="label">
         As label element
-      </XDSText>
+      </Text>
     </div>
   ),
 };
@@ -591,16 +591,16 @@ export const CardExample: Story = {
         border: '1px solid #e0e0e0',
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
       }}>
-      <XDSText type="label" display="block">
+      <Text type="label" display="block">
         Product Name
-      </XDSText>
-      <XDSText type="body" maxLines={2} display="block">
+      </Text>
+      <Text type="body" maxLines={2} display="block">
         This is a product description that might be quite long and needs to be
         truncated after two lines to keep the card compact.
-      </XDSText>
-      <XDSText type="supporting" display="block">
+      </Text>
+      <Text type="supporting" display="block">
         Updated 5 minutes ago
-      </XDSText>
+      </Text>
     </div>
   ),
 };
@@ -609,28 +609,28 @@ export const MetricsExample: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '24px'}}>
       <div style={{textAlign: 'start'}}>
-        <XDSText type="body" color="secondary" display="block">
+        <Text type="body" color="secondary" display="block">
           Revenue
-        </XDSText>
-        <XDSText type="large" weight="bold" hasTabularNumbers>
+        </Text>
+        <Text type="large" weight="bold" hasTabularNumbers>
           $1,234,567.89
-        </XDSText>
+        </Text>
       </div>
       <div style={{textAlign: 'start'}}>
-        <XDSText type="body" color="secondary" display="block">
+        <Text type="body" color="secondary" display="block">
           Users
-        </XDSText>
-        <XDSText type="large" weight="bold" hasTabularNumbers>
+        </Text>
+        <Text type="large" weight="bold" hasTabularNumbers>
           12,345
-        </XDSText>
+        </Text>
       </div>
       <div style={{textAlign: 'start'}}>
-        <XDSText type="body" color="secondary" display="block">
+        <Text type="body" color="secondary" display="block">
           Conversion
-        </XDSText>
-        <XDSText type="large" weight="bold" color="active" hasTabularNumbers>
+        </Text>
+        <Text type="large" weight="bold" color="active" hasTabularNumbers>
           23.4%
-        </XDSText>
+        </Text>
       </div>
     </div>
   ),
@@ -638,7 +638,7 @@ export const MetricsExample: Story = {
 
 /**
  * Text types in a form-like context. Note: for actual forms, prefer
- * XDSTextInput or XDSTextArea which include built-in labels and
+ * TextInput or TextArea which include built-in labels and
  * descriptions. This example shows how Text types pair with content.
  */
 export const FormLikeContext: Story = {
@@ -651,27 +651,27 @@ export const FormLikeContext: Story = {
         gap: '16px',
       }}>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           Section title as label
-        </XDSText>
-        <XDSText type="body" display="block">
+        </Text>
+        <Text type="body" display="block">
           Body text provides the main content or instructions for this section.
-        </XDSText>
-        <XDSText type="supporting" display="block">
+        </Text>
+        <Text type="supporting" display="block">
           Supporting text adds extra context or constraints.
-        </XDSText>
+        </Text>
       </div>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           Another section
-        </XDSText>
-        <XDSText type="body" display="block">
+        </Text>
+        <Text type="body" display="block">
           These text types create a natural visual hierarchy without any
           additional styling.
-        </XDSText>
-        <XDSText type="supporting" color="active" display="block">
+        </Text>
+        <Text type="supporting" color="active" display="block">
           Active supporting text draws attention to important details.
-        </XDSText>
+        </Text>
       </div>
     </div>
   ),

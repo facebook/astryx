@@ -8,7 +8,7 @@
  * @output The decorative themed UI cards that flank the hero wordmark
  * @position Home hero — themed "mini storefront" surfaces that re-skin per theme.
  *
- * Cards are real @xds/core components, so wrapping the set in <XDSTheme> re-skins
+ * Cards are real @xds/core components, so wrapping the set in <Theme> re-skins
  * them per theme. The whole layer is decorative: aria-hidden + inert + no pointer
  * events. layout="overlap" is the desktop art composition; layout="stack" is the
  * narrow-screen grid collage.
@@ -16,16 +16,16 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {Plus, Sparkles} from 'lucide-react';
-import {XDSCard} from '@xds/core/Card';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSChatComposer, XDSChatSendButton} from '@xds/core/Chat';
-import {XDSProgressBar} from '@xds/core/ProgressBar';
-import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
+import {Card} from '@xds/core/Card';
+import {Badge} from '@xds/core/Badge';
+import {Button} from '@xds/core/Button';
+import {Text, Heading} from '@xds/core/Text';
+import {VStack, HStack} from '@xds/core/Layout';
+import {ChatComposer, ChatSendButton} from '@xds/core/Chat';
+import {ProgressBar} from '@xds/core/ProgressBar';
+import {RadioList, RadioListItem} from '@xds/core/RadioList';
+import {Avatar} from '@xds/core/Avatar';
+import {AspectRatio} from '@xds/core/AspectRatio';
 import type {HeroThemeContent} from './heroThemeContent';
 
 const styles = stylex.create({
@@ -316,7 +316,7 @@ export function HeroFloatingCards({
 
   // ── Card bodies (shared by both layouts) ──────────────────────────────
   const badgeEl = (
-    <XDSBadge
+    <Badge
       variant="green"
       label={content.pills.leading}
       icon={<Sparkles size={12} />}
@@ -324,27 +324,27 @@ export function HeroFloatingCards({
   );
 
   const radioEl = (
-    <XDSCard padding={2} xstyle={styles.radioPillCard}>
-      <XDSRadioList
+    <Card padding={2} xstyle={styles.radioPillCard}>
+      <RadioList
         label={content.pills.trailing}
         isLabelHidden
         value="selected"
         onChange={() => {}}
         size="sm">
-        <XDSRadioListItem label={content.pills.trailing} value="selected" />
-      </XDSRadioList>
-    </XDSCard>
+        <RadioListItem label={content.pills.trailing} value="selected" />
+      </RadioList>
+    </Card>
   );
 
   const composerEl = (
-    <XDSChatComposer
+    <ChatComposer
       value=""
       onChange={() => {}}
       onSubmit={() => {}}
       placeholder={content.chatPrompt}
       xstyle={styles.composerSurface}
       footerActions={
-        <XDSButton
+        <Button
           variant="secondary"
           size="md"
           isIconOnly
@@ -352,30 +352,30 @@ export function HeroFloatingCards({
           label="Add attachment"
         />
       }
-      sendButton={<XDSChatSendButton isDisabled={false} />}
+      sendButton={<ChatSendButton isDisabled={false} />}
     />
   );
 
   // Product card body. In overlap mode the composer breaks out over the image;
   // in collage mode the composer is a separate column item, so it's omitted.
   const productCardEl = (
-    <XDSCard
+    <Card
       padding={4}
       xstyle={
         stack
           ? [styles.stackCard]
           : [styles.floater, styles.productCard, styles.originTopLeft, pose]
       }>
-      <XDSVStack gap={4} xstyle={stack ? styles.collageProductBody : undefined}>
-        <XDSVStack gap={1}>
-          <XDSHeading level={2}>{content.product.title}</XDSHeading>
-          <XDSText
+      <VStack gap={4} xstyle={stack ? styles.collageProductBody : undefined}>
+        <VStack gap={1}>
+          <Heading level={2}>{content.product.title}</Heading>
+          <Text
             type="body"
             color="secondary"
             xstyle={styles.productDescription}>
             {content.product.description}
-          </XDSText>
-        </XDSVStack>
+          </Text>
+        </VStack>
         {stack ? (
           // Collage: image grows to fill the card's stretched height.
           <div {...stylex.props(styles.collageImageFill)}>
@@ -388,25 +388,25 @@ export function HeroFloatingCards({
         ) : (
           <div {...stylex.props(styles.productImageWrap)}>
             <div {...stylex.props(styles.imageFrame)}>
-              <XDSAspectRatio ratio={1}>
+              <AspectRatio ratio={1}>
                 <img
                   src={content.product.image}
                   alt=""
                   {...stylex.props(styles.image)}
                 />
-              </XDSAspectRatio>
+              </AspectRatio>
             </div>
             {/* Overlap-only: composer breaks out past the card edge over the
                 photo. In collage mode the composer is its own column item. */}
             <div {...stylex.props(styles.chatBubble)}>{composerEl}</div>
           </div>
         )}
-      </XDSVStack>
-    </XDSCard>
+      </VStack>
+    </Card>
   );
 
   const rewardCardEl = (
-    <XDSCard
+    <Card
       padding={0}
       xstyle={
         stack
@@ -423,52 +423,52 @@ export function HeroFloatingCards({
           />
         </div>
       ) : (
-        <XDSAspectRatio ratio={1}>
+        <AspectRatio ratio={1}>
           <img
             src={content.feature.image}
             alt=""
             {...stylex.props(styles.image)}
           />
-        </XDSAspectRatio>
+        </AspectRatio>
       )}
       <div {...stylex.props(styles.rewardFooter)}>
-        <XDSVStack gap={2}>
-          <XDSHStack gap={2} hAlign="between" vAlign="center">
-            <XDSText type="body" weight="semibold">
+        <VStack gap={2}>
+          <HStack gap={2} hAlign="between" vAlign="center">
+            <Text type="body" weight="semibold">
               {content.reward.label}
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
+            </Text>
+            <Text type="supporting" color="secondary">
               {content.reward.value}/{content.reward.total}
-            </XDSText>
-          </XDSHStack>
-          <XDSProgressBar
+            </Text>
+          </HStack>
+          <ProgressBar
             label={content.reward.label}
             isLabelHidden
             value={content.reward.value}
             max={content.reward.total}
             variant="accent"
           />
-          <XDSHStack gap={2} vAlign="center" xstyle={styles.profileRow}>
-            <XDSAvatar name={content.reward.member} size="xsmall" />
-            <XDSText type="supporting" color="secondary">
+          <HStack gap={2} vAlign="center" xstyle={styles.profileRow}>
+            <Avatar name={content.reward.member} size="xsmall" />
+            <Text type="supporting" color="secondary">
               {content.reward.member}
-            </XDSText>
-          </XDSHStack>
-        </XDSVStack>
+            </Text>
+          </HStack>
+        </VStack>
       </div>
-    </XDSCard>
+    </Card>
   );
 
   const buyCardEl = (
-    <XDSCard
+    <Card
       padding={3}
       xstyle={
         stack
           ? [styles.stackCard]
           : [styles.floater, styles.buyCard, styles.originTopLeft, pose]
       }>
-      <XDSVStack gap={3}>
-        <XDSHStack gap={3} vAlign="center">
+      <VStack gap={3}>
+        <HStack gap={3} vAlign="center">
           <div {...stylex.props(styles.buyThumbFrame)}>
             <img
               src={content.mini.image}
@@ -476,24 +476,24 @@ export function HeroFloatingCards({
               {...stylex.props(styles.image)}
             />
           </div>
-          <XDSVStack gap={1} xstyle={styles.fullWidth}>
-            <XDSHeading level={3}>{content.mini.title}</XDSHeading>
-            <XDSText
+          <VStack gap={1} xstyle={styles.fullWidth}>
+            <Heading level={3}>{content.mini.title}</Heading>
+            <Text
               type="supporting"
               color="secondary"
               xstyle={styles.buyDescription}>
               {content.mini.description}
-            </XDSText>
-          </XDSVStack>
-        </XDSHStack>
-        <XDSButton
+            </Text>
+          </VStack>
+        </HStack>
+        <Button
           variant="secondary"
           size="md"
           label="Add to cart"
           xstyle={styles.fullWidth}
         />
-      </XDSVStack>
-    </XDSCard>
+      </VStack>
+    </Card>
   );
 
   // ── Collage layout (narrow screens): CSS grid ─────────────────────────

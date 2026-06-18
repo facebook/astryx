@@ -12,8 +12,8 @@ import React, {
   type ErrorInfo,
   type ReactNode,
 } from 'react';
-import {XDSTheme, defineTheme} from '@xds/core/theme';
-import type {ThemeMode, XDSDefinedTheme} from '@xds/core/theme';
+import {Theme, defineTheme} from '@xds/core/theme';
+import type {ThemeMode, DefinedTheme} from '@xds/core/theme';
 import {
   themeByValue,
   DEFAULT_PLAYGROUND_THEME,
@@ -410,7 +410,7 @@ export default function PreviewPage() {
   const [themeName, setThemeName] = useState(DEFAULT_PLAYGROUND_THEME);
   // A custom theme authored in the playground theme editor. When set it takes
   // precedence over the registered theme resolved from themeName.
-  const [customTheme, setCustomTheme] = useState<XDSDefinedTheme | null>(null);
+  const [customTheme, setCustomTheme] = useState<DefinedTheme | null>(null);
   const [resetKey, setResetKey] = useState(0);
   const [tsReady, setTsReady] = useState(false);
   // Whether the rendered output should fill the stage (full-page templates) vs
@@ -497,7 +497,7 @@ export default function PreviewPage() {
           defineTheme({
             name: 'custom',
             tokens: msg.customTokens,
-            components: msg.customComponents as XDSDefinedTheme['components'],
+            components: msg.customComponents as DefinedTheme['components'],
           }),
         );
       } else {
@@ -561,7 +561,7 @@ export default function PreviewPage() {
 
   // After each successful render (measured in fill/block layout), decide
   // whether the content is a small example that should be centered. Full-page
-  // templates (e.g. XDSAppShell at 100dvh) fill a dimension and stay as-is.
+  // templates (e.g. AppShell at 100dvh) fill a dimension and stay as-is.
   useIsomorphicLayoutEffect(() => {
     const stage = stageRef.current;
     const root = contentRef.current?.firstElementChild as HTMLElement | null;
@@ -608,7 +608,7 @@ export default function PreviewPage() {
     : {};
 
   return (
-    <XDSTheme theme={theme} mode={themeMode}>
+    <Theme theme={theme} mode={themeMode}>
       <div ref={stageRef} style={stageStyle}>
         {error && <ErrorDisplay message={error} />}
         {Component && (
@@ -619,6 +619,6 @@ export default function PreviewPage() {
           </div>
         )}
       </div>
-    </XDSTheme>
+    </Theme>
   );
 }

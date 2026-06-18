@@ -2,13 +2,13 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSDateInput} from '@xds/core/DateInput';
+import {DateInput} from '@xds/core/DateInput';
 import type {ISODateString} from '@xds/core/Calendar';
-import {XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
+import {Layout, LayoutContent} from '@xds/core/Layout';
 
-const meta: Meta<typeof XDSDateInput> = {
+const meta: Meta<typeof DateInput> = {
   title: 'Core/DateInput',
-  component: XDSDateInput,
+  component: DateInput,
   tags: ['autodocs'],
   argTypes: {
     label: {
@@ -56,12 +56,12 @@ const meta: Meta<typeof XDSDateInput> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSDateInput>;
+type Story = StoryObj<typeof DateInput>;
 
 export const Default: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
-    return <XDSDateInput {...args} value={value} onChange={setValue} />;
+    return <DateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Date',
@@ -74,7 +74,7 @@ export const WithValue: Story = {
     const [value, setValue] = useState<ISODateString | undefined>(
       '2026-01-25' as ISODateString,
     );
-    return <XDSDateInput {...args} value={value} onChange={setValue} />;
+    return <DateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Event date',
@@ -84,7 +84,7 @@ export const WithValue: Story = {
 export const WithDescription: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
-    return <XDSDateInput {...args} value={value} onChange={setValue} />;
+    return <DateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Birthday',
@@ -96,7 +96,7 @@ export const WithDescription: Story = {
 export const WithHiddenLabel: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
-    return <XDSDateInput {...args} value={value} onChange={setValue} />;
+    return <DateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Date',
@@ -108,7 +108,7 @@ export const WithHiddenLabel: Story = {
 export const Optional: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
-    return <XDSDateInput {...args} value={value} onChange={setValue} />;
+    return <DateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Preferred date',
@@ -120,7 +120,7 @@ export const Optional: Story = {
 export const Required: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
-    return <XDSDateInput {...args} value={value} onChange={setValue} />;
+    return <DateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Start date',
@@ -134,7 +134,7 @@ export const Disabled: Story = {
     const [value, setValue] = useState<ISODateString | undefined>(
       '2026-01-25' as ISODateString,
     );
-    return <XDSDateInput {...args} value={value} onChange={setValue} />;
+    return <DateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Locked date',
@@ -145,7 +145,7 @@ export const Disabled: Story = {
 export const SmallSize: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
-    return <XDSDateInput {...args} value={value} onChange={setValue} />;
+    return <DateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Date',
@@ -157,7 +157,7 @@ export const SmallSize: Story = {
 export const WithMinMax: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
-    return <XDSDateInput {...args} value={value} onChange={setValue} />;
+    return <DateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Booking date',
@@ -172,12 +172,12 @@ export const WithMaxDateInLayout: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
     return (
-      <XDSLayout
+      <Layout
         height="auto"
         content={
-          <XDSLayoutContent>
-            <XDSDateInput {...args} value={value} onChange={setValue} />
-          </XDSLayoutContent>
+          <LayoutContent>
+            <DateInput {...args} value={value} onChange={setValue} />
+          </LayoutContent>
         }
       />
     );
@@ -194,7 +194,7 @@ export const WithMaxDateInLayout: Story = {
 export const TwoMonthCalendar: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
-    return <XDSDateInput {...args} value={value} onChange={setValue} />;
+    return <DateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Travel date',
@@ -208,7 +208,7 @@ export const WithErrorStatus: Story = {
     const [value, setValue] = useState<ISODateString | undefined>(
       '2026-01-25' as ISODateString,
     );
-    return <XDSDateInput {...args} value={value} onChange={setValue} />;
+    return <DateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Event date',
@@ -224,7 +224,7 @@ export const WithWarningStatus: Story = {
     const [value, setValue] = useState<ISODateString | undefined>(
       '2026-01-01' as ISODateString,
     );
-    return <XDSDateInput {...args} value={value} onChange={setValue} />;
+    return <DateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Meeting date',
@@ -240,7 +240,7 @@ export const WithSuccessStatus: Story = {
     const [value, setValue] = useState<ISODateString | undefined>(
       '2026-02-10' as ISODateString,
     );
-    return <XDSDateInput {...args} value={value} onChange={setValue} />;
+    return <DateInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Appointment date',
@@ -275,41 +275,41 @@ export const AllVariations: Story = {
           gap: '16px',
           maxWidth: '300px',
         }}>
-        <XDSDateInput
+        <DateInput
           label="Default"
           value={value1}
           onChange={setValue1}
           placeholder="Select a date"
         />
-        <XDSDateInput label="With value" value={value2} onChange={setValue2} />
-        <XDSDateInput
+        <DateInput label="With value" value={value2} onChange={setValue2} />
+        <DateInput
           label="With description"
           description="Pick your preferred date"
           value={value3}
           onChange={setValue3}
           placeholder="Select a date"
         />
-        <XDSDateInput
+        <DateInput
           label="Optional field"
           isOptional
           value={value4}
           onChange={setValue4}
           placeholder="Select a date (optional)"
         />
-        <XDSDateInput
+        <DateInput
           label="Required field"
           isRequired
           value={value5}
           onChange={setValue5}
           placeholder="Select a date"
         />
-        <XDSDateInput
+        <DateInput
           label="Disabled"
           isDisabled
           value={value6}
           onChange={setValue6}
         />
-        <XDSDateInput
+        <DateInput
           label="With error"
           value={value7}
           onChange={setValue7}
@@ -327,7 +327,7 @@ export const Clearable: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>('2026-04-06');
     return (
-      <XDSDateInput {...args} value={value} onChange={setValue} hasClear />
+      <DateInput {...args} value={value} onChange={setValue} hasClear />
     );
   },
   args: {
@@ -340,7 +340,7 @@ export const ClearableWithStatus: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>('2026-04-06');
     return (
-      <XDSDateInput {...args} value={value} onChange={setValue} hasClear />
+      <DateInput {...args} value={value} onChange={setValue} hasClear />
     );
   },
   args: {

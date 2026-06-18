@@ -7,37 +7,37 @@ import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 
 import {
-  XDSHStack,
-  XDSVStack,
-  XDSStackItem,
-  XDSLayout,
-  XDSLayoutContent,
+  HStack,
+  VStack,
+  StackItem,
+  Layout,
+  LayoutContent,
 } from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
+import {Text, Heading} from '@xds/core/Text';
 import {
-  XDSChatComposer,
-  XDSChatComposerInput,
-  XDSChatLayout,
-  XDSChatMessage,
-  XDSChatMessageBubble,
-  XDSChatMessageList,
-  XDSChatMessageMetadata,
-  XDSChatSystemMessage,
+  ChatComposer,
+  ChatComposerInput,
+  ChatLayout,
+  ChatMessage,
+  ChatMessageBubble,
+  ChatMessageList,
+  ChatMessageMetadata,
+  ChatSystemMessage,
 } from '@xds/core/Chat';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSCard} from '@xds/core/Card';
-import {XDSClickableCard} from '@xds/core/ClickableCard';
-import {XDSSection} from '@xds/core/Section';
-import {XDSMarkdown} from '@xds/core/Markdown';
-import {XDSTimestamp} from '@xds/core/Timestamp';
-import {XDSButton} from '@xds/core/Button';
-import {XDSToggleButton} from '@xds/core/ToggleButton';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
-import {XDSMoreMenu} from '@xds/core/MoreMenu';
-import {XDSToolbar} from '@xds/core/Toolbar';
-import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
+import {Avatar} from '@xds/core/Avatar';
+import {Card} from '@xds/core/Card';
+import {ClickableCard} from '@xds/core/ClickableCard';
+import {Section} from '@xds/core/Section';
+import {Markdown} from '@xds/core/Markdown';
+import {Timestamp} from '@xds/core/Timestamp';
+import {Button} from '@xds/core/Button';
+import {ToggleButton} from '@xds/core/ToggleButton';
+import {Icon} from '@xds/core/Icon';
+import {Dialog, DialogHeader} from '@xds/core/Dialog';
+import {DropdownMenu} from '@xds/core/DropdownMenu';
+import {MoreMenu} from '@xds/core/MoreMenu';
+import {Toolbar} from '@xds/core/Toolbar';
+import {useResizable, ResizeHandle} from '@xds/core/Resizable';
 
 import {
   DocumentTextIcon,
@@ -182,11 +182,11 @@ function MarkdownToggle({
   onToggleMarkdown: (next: boolean) => void;
 }) {
   return (
-    <XDSToggleButton
+    <ToggleButton
       label="Toggle markdown view"
       size="sm"
       isIconOnly
-      icon={<XDSIcon icon={CodeBracketIcon} size="sm" />}
+      icon={<Icon icon={CodeBracketIcon} size="sm" />}
       isPressed={showMarkdown}
       onPressedChange={onToggleMarkdown}
     />
@@ -210,7 +210,7 @@ function ArtifactActions({
 }) {
   return (
     <>
-      <XDSDropdownMenu
+      <DropdownMenu
         button={{
           label: 'v2',
           variant: 'ghost',
@@ -222,26 +222,26 @@ function ArtifactActions({
         showMarkdown={showMarkdown}
         onToggleMarkdown={onToggleMarkdown}
       />
-      <XDSButton
+      <Button
         label="Copy"
         variant="ghost"
         size="sm"
-        icon={<XDSIcon icon={ClipboardDocumentIcon} size="sm" />}
+        icon={<Icon icon={ClipboardDocumentIcon} size="sm" />}
         isIconOnly
       />
-      <XDSButton
+      <Button
         label="Share"
         variant="ghost"
         size="sm"
-        icon={<XDSIcon icon={ShareIcon} size="sm" />}
+        icon={<Icon icon={ShareIcon} size="sm" />}
         isIconOnly
       />
       {onClose != null && (
-        <XDSButton
+        <Button
           label="Close document"
           variant="ghost"
           size="sm"
-          icon={<XDSIcon icon={XMarkIcon} size="sm" />}
+          icon={<Icon icon={XMarkIcon} size="sm" />}
           isIconOnly
           onClick={onClose}
         />
@@ -262,12 +262,12 @@ function MobileArtifactActions({
   onToggleMarkdown: (next: boolean) => void;
 }) {
   return (
-    <XDSHStack gap={1} vAlign="center">
+    <HStack gap={1} vAlign="center">
       <MarkdownToggle
         showMarkdown={showMarkdown}
         onToggleMarkdown={onToggleMarkdown}
       />
-      <XDSMoreMenu
+      <MoreMenu
         label="Document actions"
         size="sm"
         items={[
@@ -284,55 +284,55 @@ function MobileArtifactActions({
           {label: 'Share', icon: ShareIcon},
         ]}
       />
-    </XDSHStack>
+    </HStack>
   );
 }
 
 /** Scrollable artifact body — formatted document or raw markdown source. */
 function ArtifactBody({showMarkdown}: {showMarkdown: boolean}) {
   return (
-    <XDSSection variant="transparent" xstyle={styles.artifactScroll}>
-      <XDSVStack gap={2} xstyle={styles.articleBody}>
+    <Section variant="transparent" xstyle={styles.artifactScroll}>
+      <VStack gap={2} xstyle={styles.articleBody}>
         {showMarkdown ? (
-          <XDSText type="code">
+          <Text type="code">
             {`# ${ARTIFACT_TITLE}\n${ARTIFACT_CONTENT}`}
-          </XDSText>
+          </Text>
         ) : (
           <>
-            <XDSHeading level={1}>{ARTIFACT_TITLE}</XDSHeading>
-            <XDSMarkdown>{ARTIFACT_CONTENT}</XDSMarkdown>
+            <Heading level={1}>{ARTIFACT_TITLE}</Heading>
+            <Markdown>{ARTIFACT_CONTENT}</Markdown>
           </>
         )}
-      </XDSVStack>
-    </XDSSection>
+      </VStack>
+    </Section>
   );
 }
 
 /** In-message clickable card that opens the artifact panel/dialog. */
 function ArtifactCard({onOpen}: {onOpen: () => void}) {
   return (
-    <XDSClickableCard
+    <ClickableCard
       label={`Open ${ARTIFACT_TITLE}`}
       onClick={onOpen}
       variant="muted"
       padding={3}
       maxWidth={360}
       xstyle={styles.artifactCard}>
-      <XDSHStack gap={3} vAlign="center" width="100%">
-        <XDSIcon icon={DocumentTextIcon} size="md" color="secondary" />
-        <XDSStackItem size="fill">
-          <XDSVStack gap={0}>
-            <XDSText type="label" weight="semibold">
+      <HStack gap={3} vAlign="center" width="100%">
+        <Icon icon={DocumentTextIcon} size="md" color="secondary" />
+        <StackItem size="fill">
+          <VStack gap={0}>
+            <Text type="label" weight="semibold">
               {ARTIFACT_TITLE}
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
+            </Text>
+            <Text type="supporting" color="secondary">
               Document
-            </XDSText>
-          </XDSVStack>
-        </XDSStackItem>
-        <XDSIcon icon={ChevronRightIcon} size="sm" color="secondary" />
-      </XDSHStack>
-    </XDSClickableCard>
+            </Text>
+          </VStack>
+        </StackItem>
+        <Icon icon={ChevronRightIcon} size="sm" color="secondary" />
+      </HStack>
+    </ClickableCard>
   );
 }
 
@@ -346,7 +346,7 @@ export default function AIChatArtifactTemplate() {
   // Desktop-only: whether the side panel is shown (closeable via its toolbar).
   const [isArtifactOpen, setIsArtifactOpen] = useState(true);
   const rootRef = useRef<HTMLElement>(null);
-  const chatResize = useXDSResizable({
+  const chatResize = useResizable({
     defaultSize: 420,
     minSizePx: 360,
     maxSizePx: 720,
@@ -366,51 +366,51 @@ export default function AIChatArtifactTemplate() {
   };
 
   return (
-    <XDSVStack ref={rootRef} xstyle={styles.root}>
-      <XDSLayout
+    <VStack ref={rootRef} xstyle={styles.root}>
+      <Layout
         height="fill"
         content={
-          <XDSLayoutContent padding={0}>
-            <XDSHStack height="100%">
+          <LayoutContent padding={0}>
+            <HStack height="100%">
               {/* Chat panel — resizable on desktop, full-width on mobile. */}
-              <XDSVStack
+              <VStack
                 height="100%"
                 xstyle={
                   isArtifactOpen
                     ? dynamicStyles.chatPanelWidth(chatResize.size)
                     : chatFullWidth.fill
                 }>
-                <XDSChatLayout
+                <ChatLayout
                   xstyle={styles.chatLayoutFill}
                   composer={
-                    <XDSChatComposer
+                    <ChatComposer
                       onSubmit={() => {}}
                       placeholder={
                         composerMode === 'ask'
                           ? 'Ask anything...'
                           : 'Describe your edit...'
                       }
-                      input={<XDSChatComposerInput />}
+                      input={<ChatComposerInput />}
                       headerActions={
                         <>
-                          <XDSButton
+                          <Button
                             label="Mention"
                             variant="ghost"
                             size="sm"
-                            icon={<XDSIcon icon={AtSymbolIcon} size="sm" />}
+                            icon={<Icon icon={AtSymbolIcon} size="sm" />}
                             isIconOnly
                           />
-                          <XDSButton
+                          <Button
                             label="Attach"
                             variant="ghost"
                             size="sm"
-                            icon={<XDSIcon icon={PaperClipIcon} size="sm" />}
+                            icon={<Icon icon={PaperClipIcon} size="sm" />}
                             isIconOnly
                           />
                         </>
                       }
                       footerActions={
-                        <XDSDropdownMenu
+                        <DropdownMenu
                           button={{
                             label: composerMode === 'ask' ? 'Ask' : 'Edit',
                             variant: 'ghost',
@@ -430,18 +430,18 @@ export default function AIChatArtifactTemplate() {
                       }
                     />
                   }>
-                  <XDSChatMessageList>
-                    <XDSChatSystemMessage variant="divider">
+                  <ChatMessageList>
+                    <ChatSystemMessage variant="divider">
                       Today
-                    </XDSChatSystemMessage>
+                    </ChatSystemMessage>
 
                     {/* User request */}
-                    <XDSChatMessage sender="user">
-                      <XDSChatMessageBubble
+                    <ChatMessage sender="user">
+                      <ChatMessageBubble
                         metadata={
-                          <XDSChatMessageMetadata
+                          <ChatMessageMetadata
                             timestamp={
-                              <XDSTimestamp
+                              <Timestamp
                                 value="2026-05-12T14:30:00"
                                 format="time"
                               />
@@ -451,36 +451,36 @@ export default function AIChatArtifactTemplate() {
                         Write me a guide about getting started with design
                         systems. Cover the core principles, component
                         architecture, and token systems.
-                      </XDSChatMessageBubble>
-                    </XDSChatMessage>
+                      </ChatMessageBubble>
+                    </ChatMessage>
 
                     {/* Assistant response */}
-                    <XDSChatMessage
+                    <ChatMessage
                       sender="assistant"
-                      avatar={<XDSAvatar name="AI" size="small" />}>
-                      <XDSChatMessageBubble variant="ghost">
-                        <XDSMarkdown density="compact">
+                      avatar={<Avatar name="AI" size="small" />}>
+                      <ChatMessageBubble variant="ghost">
+                        <Markdown density="compact">
                           {`I've created a comprehensive guide on design systems. It covers the core principles of consistency, composability, and accessibility, along with sections on component architecture and the token system.\n\nOpen the document below to review it. Want me to expand any section or adjust the tone?`}
-                        </XDSMarkdown>
-                      </XDSChatMessageBubble>
+                        </Markdown>
+                      </ChatMessageBubble>
                       <ArtifactCard onOpen={openArtifact} />
-                      <XDSChatMessageMetadata
+                      <ChatMessageMetadata
                         timestamp={
-                          <XDSTimestamp
+                          <Timestamp
                             value="2026-05-12T14:30:45"
                             format="time"
                           />
                         }
                       />
-                    </XDSChatMessage>
+                    </ChatMessage>
 
                     {/* User follow-up */}
-                    <XDSChatMessage sender="user">
-                      <XDSChatMessageBubble
+                    <ChatMessage sender="user">
+                      <ChatMessageBubble
                         metadata={
-                          <XDSChatMessageMetadata
+                          <ChatMessageMetadata
                             timestamp={
-                              <XDSTimestamp
+                              <Timestamp
                                 value="2026-05-12T14:32:00"
                                 format="time"
                               />
@@ -489,35 +489,35 @@ export default function AIChatArtifactTemplate() {
                         }>
                         This is great. Can you add a section about next steps at
                         the end?
-                      </XDSChatMessageBubble>
-                    </XDSChatMessage>
+                      </ChatMessageBubble>
+                    </ChatMessage>
 
                     {/* Assistant confirmation */}
-                    <XDSChatMessage
+                    <ChatMessage
                       sender="assistant"
-                      avatar={<XDSAvatar name="AI" size="small" />}>
-                      <XDSChatMessageBubble variant="ghost">
-                        <XDSMarkdown density="compact">
+                      avatar={<Avatar name="AI" size="small" />}>
+                      <ChatMessageBubble variant="ghost">
+                        <Markdown density="compact">
                           {`Done! I've added a "Next Steps" section with actionable items for getting started. The artifact has been updated \u2014 you can see the changes in the panel.`}
-                        </XDSMarkdown>
-                      </XDSChatMessageBubble>
-                      <XDSChatMessageMetadata
+                        </Markdown>
+                      </ChatMessageBubble>
+                      <ChatMessageMetadata
                         timestamp={
-                          <XDSTimestamp
+                          <Timestamp
                             value="2026-05-12T14:32:30"
                             format="time"
                           />
                         }
                       />
-                    </XDSChatMessage>
-                  </XDSChatMessageList>
-                </XDSChatLayout>
-              </XDSVStack>
+                    </ChatMessage>
+                  </ChatMessageList>
+                </ChatLayout>
+              </VStack>
 
               {/* Desktop split-pane: resize handle + artifact panel. */}
               {isArtifactOpen && (
                 <>
-                  <XDSResizeHandle
+                  <ResizeHandle
                     direction="horizontal"
                     resizable={chatResize.props}
                     hasDivider
@@ -527,29 +527,29 @@ export default function AIChatArtifactTemplate() {
 
                   {/* Toolbar-as-card-header: the card's padding context lets the
                     toolbar align with the section body below. */}
-                  <XDSCard
+                  <Card
                     variant="transparent"
                     height="100%"
                     xstyle={styles.artifactPanel}>
-                    <XDSToolbar
+                    <Toolbar
                       label="Artifact actions"
                       dividers={['bottom']}
                       startContent={
-                        <XDSHStack gap={3} vAlign="center">
-                          <XDSIcon
+                        <HStack gap={3} vAlign="center">
+                          <Icon
                             icon={DocumentTextIcon}
                             size="sm"
                             color="secondary"
                           />
-                          <XDSVStack gap={0}>
-                            <XDSText type="label" weight="semibold">
+                          <VStack gap={0}>
+                            <Text type="label" weight="semibold">
                               {ARTIFACT_TITLE}
-                            </XDSText>
-                            <XDSText type="supporting" color="secondary">
+                            </Text>
+                            <Text type="supporting" color="secondary">
                               {ARTIFACT_SUBTITLE}
-                            </XDSText>
-                          </XDSVStack>
-                        </XDSHStack>
+                            </Text>
+                          </VStack>
+                        </HStack>
                       }
                       endContent={
                         <ArtifactActions
@@ -561,24 +561,23 @@ export default function AIChatArtifactTemplate() {
                     />
 
                     <ArtifactBody showMarkdown={showMarkdown} />
-                  </XDSCard>
+                  </Card>
                 </>
               )}
-            </XDSHStack>
-          </XDSLayoutContent>
+            </HStack>
+          </LayoutContent>
         }
       />
-
-      {/* Mobile artifact view — full-screen takeover via XDSDialog's
+      {/* Mobile artifact view — full-screen takeover via Dialog's
           `fullscreen` variant. */}
-      <XDSDialog
+      <Dialog
         isOpen={isArtifactDialogOpen}
         onOpenChange={setIsArtifactDialogOpen}
         purpose="info"
         variant="fullscreen">
-        <XDSLayout
+        <Layout
           header={
-            <XDSDialogHeader
+            <DialogHeader
               title={ARTIFACT_TITLE}
               subtitle={ARTIFACT_SUBTITLE}
               hasDivider
@@ -592,14 +591,14 @@ export default function AIChatArtifactTemplate() {
             />
           }
           content={
-            // XDSLayoutContent establishes the bounded, scrollable region;
-            // padding={0} since ArtifactBody's XDSSection supplies the inset.
-            <XDSLayoutContent padding={0}>
+            // LayoutContent establishes the bounded, scrollable region;
+            // padding={0} since ArtifactBody's Section supplies the inset.
+            <LayoutContent padding={0}>
               <ArtifactBody showMarkdown={showMarkdown} />
-            </XDSLayoutContent>
+            </LayoutContent>
           }
         />
-      </XDSDialog>
-    </XDSVStack>
+      </Dialog>
+    </VStack>
   );
 }

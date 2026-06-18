@@ -4,26 +4,26 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
+import {SideNav, SideNavItem, SideNavSection} from '@xds/core/SideNav';
 
-import {XDSLayout, XDSLayoutContent, XDSLayoutPanel} from '@xds/core/Layout';
-import {XDSResizeHandle, useXDSResizable} from '@xds/core/Resizable';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {Layout, LayoutContent, LayoutPanel} from '@xds/core/Layout';
+import {ResizeHandle, useResizable} from '@xds/core/Resizable';
+import {Text, Heading} from '@xds/core/Text';
+import {CodeBlock} from '@xds/core/CodeBlock';
 import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {Stack} from '@xds/core/Layout';
+import {TabList, Tab} from '@xds/core/TabList';
 import {
-  XDSSegmentedControl,
-  XDSSegmentedControlItem,
+  SegmentedControl,
+  SegmentedControlItem,
 } from '@xds/core/SegmentedControl';
-import {XDSButton} from '@xds/core/Button';
-import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
-import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSTreeList} from '@xds/core/TreeList';
-import type {XDSTreeListItemData} from '@xds/core/TreeList';
+import {Button} from '@xds/core/Button';
+import {MetadataList, MetadataListItem} from '@xds/core/MetadataList';
+import {List, ListItem} from '@xds/core/List';
+import {Icon} from '@xds/core/Icon';
+import {TextInput} from '@xds/core/TextInput';
+import {TreeList} from '@xds/core/TreeList';
+import type {TreeListItemData} from '@xds/core/TreeList';
 import {
   FolderIcon,
   DocumentTextIcon,
@@ -95,8 +95,8 @@ const styles = stylex.create({
 
 const EDITOR_CODE = `import {useState, useCallback} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Text} from '@xds/core/Text';
 
 const styles = stylex.create({
   container: {
@@ -125,12 +125,12 @@ export default function Counter() {
 
   return (
     <div {...stylex.props(styles.container)}>
-      <XDSText type="label">Counter</XDSText>
+      <Text type="label">Counter</Text>
       <span {...stylex.props(styles.counter)}>
         {count}
       </span>
-      <XDSButton label="Increment" onClick={increment} />
-      <XDSButton label="Reset" variant="secondary" onClick={reset} />
+      <Button label="Increment" onClick={increment} />
+      <Button label="Reset" variant="secondary" onClick={reset} />
     </div>
   );
 }`;
@@ -150,24 +150,24 @@ $ `;
 
 function buildFileTree(
   onFileClick: (name: string) => void,
-): XDSTreeListItemData[] {
-  const file = (id: string): XDSTreeListItemData => ({
+): TreeListItemData[] {
+  const file = (id: string): TreeListItemData => ({
     id,
     label: id,
-    startContent: <XDSIcon icon={DocumentTextIcon} size="xsm" />,
+    startContent: <Icon icon={DocumentTextIcon} size="xsm" />,
     onClick: () => onFileClick(id),
   });
   return [
     {
       id: 'src',
       label: 'src',
-      startContent: <XDSIcon icon={FolderIcon} size="xsm" />,
+      startContent: <Icon icon={FolderIcon} size="xsm" />,
       isExpanded: true,
       children: [
         {
           id: 'components',
           label: 'components',
-          startContent: <XDSIcon icon={FolderIcon} size="xsm" />,
+          startContent: <Icon icon={FolderIcon} size="xsm" />,
           isExpanded: true,
           children: [
             file('Counter.tsx'),
@@ -178,14 +178,14 @@ function buildFileTree(
         {
           id: 'pages',
           label: 'pages',
-          startContent: <XDSIcon icon={FolderIcon} size="xsm" />,
+          startContent: <Icon icon={FolderIcon} size="xsm" />,
           isExpanded: true,
           children: [file('index.tsx'), file('about.tsx')],
         },
         {
           id: 'styles',
           label: 'styles',
-          startContent: <XDSIcon icon={FolderIcon} size="xsm" />,
+          startContent: <Icon icon={FolderIcon} size="xsm" />,
           isExpanded: true,
           children: [file('tokens.stylex.ts'), file('theme.ts')],
         },
@@ -221,7 +221,7 @@ export default function ResizableWorkspacePage() {
   const [activePropertiesTab, setActivePropertiesTab] = useState('properties');
   const fileTree = useMemo(() => buildFileTree(setActiveFile), []);
 
-  const startPanel = useXDSResizable({
+  const startPanel = useResizable({
     defaultSize: 256,
     minSizePx: 160,
     maxSizePx: 400,
@@ -229,7 +229,7 @@ export default function ResizableWorkspacePage() {
     collapsedSize: 50,
   });
 
-  const endPanel = useXDSResizable({
+  const endPanel = useResizable({
     defaultSize: 320,
     minSizePx: 180,
     maxSizePx: 500,
@@ -237,7 +237,7 @@ export default function ResizableWorkspacePage() {
     collapsedSize: 50,
   });
 
-  const bottomPanel = useXDSResizable({
+  const bottomPanel = useResizable({
     defaultSize: 300,
     minSizePx: 80,
     maxSizePx: Infinity,
@@ -246,69 +246,69 @@ export default function ResizableWorkspacePage() {
   });
 
   return (
-    <XDSLayout
+    <Layout
       height="fill"
       start={
-        <XDSLayoutPanel hasDivider={false} padding={0}>
-          <XDSSideNav
+        <LayoutPanel hasDivider={false} padding={0}>
+          <SideNav
             collapsible={{defaultIsCollapsed: true}}
             resizable
             xstyle={styles.hideSideNav}>
-            <XDSSideNavSection title="Navigation" isHeaderHidden>
-              <XDSSideNavItem
+            <SideNavSection title="Navigation" isHeaderHidden>
+              <SideNavItem
                 label="Home"
                 icon={HomeIcon}
                 selectedIcon={HomeIconSolid}
                 isSelected={activeNavItem === 'Home'}
                 onClick={() => setActiveNavItem('Home')}
               />
-              <XDSSideNavItem
+              <SideNavItem
                 label="Explorer"
                 icon={FolderOpenIcon}
                 selectedIcon={FolderOpenSolid}
                 isSelected={activeNavItem === 'Explorer'}
                 onClick={() => setActiveNavItem('Explorer')}
               />
-              <XDSSideNavItem
+              <SideNavItem
                 label="Search"
                 icon={MagnifyingGlassIcon}
                 selectedIcon={MagnifyingGlassSolid}
                 isSelected={activeNavItem === 'Search'}
                 onClick={() => setActiveNavItem('Search')}
               />
-              <XDSSideNavItem
+              <SideNavItem
                 label="Source Control"
                 icon={CodeBracketIcon}
                 isSelected={activeNavItem === 'Source Control'}
                 onClick={() => setActiveNavItem('Source Control')}
               />
-              <XDSSideNavItem
+              <SideNavItem
                 label="Extensions"
                 icon={PuzzlePieceIcon}
                 selectedIcon={PuzzlePieceSolid}
                 isSelected={activeNavItem === 'Extensions'}
                 onClick={() => setActiveNavItem('Extensions')}
               />
-            </XDSSideNavSection>
-          </XDSSideNav>
-        </XDSLayoutPanel>
+            </SideNavSection>
+          </SideNav>
+        </LayoutPanel>
       }
       content={
-        <XDSLayoutContent padding={0}>
-          <XDSLayout
+        <LayoutContent padding={0}>
+          <Layout
             height="fill"
             start={
               <div {...stylex.props(styles.hideOnMobile)}>
                 {!startPanel.isCollapsed && (
-                  <XDSLayoutPanel
+                  <LayoutPanel
                     width={startPanel.size}
                     hasDivider={false}
                     padding={0}>
-                    <XDSStack
+                    <Stack
                       direction="vertical"
                       xstyle={styles.fileExplorer}
                       gap={2}>
-                      <XDSTextInput
+                      <TextInput
                         label="Search files"
                         isLabelHidden
                         value=""
@@ -316,11 +316,11 @@ export default function ResizableWorkspacePage() {
                         size="md"
                         startIcon={MagnifyingGlassIcon}
                       />
-                      <XDSTreeList items={fileTree} density="compact" />
-                    </XDSStack>
-                  </XDSLayoutPanel>
+                      <TreeList items={fileTree} density="compact" />
+                    </Stack>
+                  </LayoutPanel>
                 )}
-                <XDSResizeHandle
+                <ResizeHandle
                   direction="horizontal"
                   hasDivider
                   isAlwaysVisible={false}
@@ -330,16 +330,16 @@ export default function ResizableWorkspacePage() {
               </div>
             }
             content={
-              <XDSLayoutContent padding={0}>
-                <XDSLayout
+              <LayoutContent padding={0}>
+                <Layout
                   height="fill"
                   content={
-                    <XDSLayoutContent padding={0}>
-                      <XDSStack
+                    <LayoutContent padding={0}>
+                      <Stack
                         direction="vertical"
                         xstyle={styles.contentFill}>
                         <div {...stylex.props(styles.editorArea)}>
-                          <XDSCodeBlock
+                          <CodeBlock
                             code={EDITOR_CODE}
                             language="typescript"
                             hasLineNumbers
@@ -354,7 +354,7 @@ export default function ResizableWorkspacePage() {
                             }}
                           />
                         </div>
-                        <XDSResizeHandle
+                        <ResizeHandle
                           direction="vertical"
                           hasDivider
                           isReversed
@@ -369,50 +369,50 @@ export default function ResizableWorkspacePage() {
                               flexShrink: 0,
                               overflow: 'hidden',
                             }}>
-                            <XDSStack
+                            <Stack
                               direction="vertical"
                               xstyle={styles.contentFill}>
-                              <XDSTabList
+                              <TabList
                                 value={activeTermTab}
                                 onChange={val => setActiveTermTab(val)}
                                 size="sm"
                                 hasDivider={false}
                                 xstyle={styles.tabListPadding}>
-                                <XDSTab
+                                <Tab
                                   label="Terminal"
                                   value="terminal"
                                   icon={
-                                    <XDSIcon icon={CommandLineIcon} size="sm" />
+                                    <Icon icon={CommandLineIcon} size="sm" />
                                   }
                                 />
-                                <XDSTab
+                                <Tab
                                   label="Problems"
                                   value="problems"
                                   icon={
-                                    <XDSIcon
+                                    <Icon
                                       icon={ExclamationTriangleIcon}
                                       size="sm"
                                     />
                                   }
                                 />
-                                <XDSTab
+                                <Tab
                                   label="Output"
                                   value="output"
                                   icon={
-                                    <XDSIcon
+                                    <Icon
                                       icon={InformationCircleIcon}
                                       size="sm"
                                     />
                                   }
                                 />
-                                <XDSTab
+                                <Tab
                                   label="Debug"
                                   value="debug"
-                                  icon={<XDSIcon icon={BugAntIcon} size="sm" />}
+                                  icon={<Icon icon={BugAntIcon} size="sm" />}
                                 />
-                              </XDSTabList>
+                              </TabList>
                               <div {...stylex.props(styles.terminalWrapper)}>
-                                <XDSCodeBlock
+                                <CodeBlock
                                   code={TERMINAL_OUTPUT}
                                   language="bash"
                                   hasCopyButton={false}
@@ -425,15 +425,15 @@ export default function ResizableWorkspacePage() {
                                   }}
                                 />
                               </div>
-                            </XDSStack>
+                            </Stack>
                           </div>
                         )}
-                      </XDSStack>
-                    </XDSLayoutContent>
+                      </Stack>
+                    </LayoutContent>
                   }
                   end={
                     <div {...stylex.props(styles.hideOnMobile)}>
-                      <XDSResizeHandle
+                      <ResizeHandle
                         direction="horizontal"
                         hasDivider
                         isReversed
@@ -442,79 +442,79 @@ export default function ResizableWorkspacePage() {
                         label="Resize properties panel"
                       />
                       {!endPanel.isCollapsed && (
-                        <XDSLayoutPanel
+                        <LayoutPanel
                           width={endPanel.size}
                           hasDivider={false}
                           padding={4}>
-                          <XDSStack direction="vertical" gap={3}>
-                            <XDSSegmentedControl
+                          <Stack direction="vertical" gap={3}>
+                            <SegmentedControl
                               label="Properties panel sections"
                               value={activePropertiesTab}
                               onChange={setActivePropertiesTab}
                               size="sm"
                               layout="fill">
-                              <XDSSegmentedControlItem
+                              <SegmentedControlItem
                                 label="Properties"
                                 value="properties"
                               />
-                              <XDSSegmentedControlItem
+                              <SegmentedControlItem
                                 label="History"
                                 value="history"
                               />
-                            </XDSSegmentedControl>
+                            </SegmentedControl>
                             {activePropertiesTab === 'properties' ? (
                               <>
-                                <XDSStack direction="vertical" gap={1}>
-                                  <XDSHeading level={3}>
+                                <Stack direction="vertical" gap={1}>
+                                  <Heading level={3}>
                                     {activeFile}
-                                  </XDSHeading>
-                                  <XDSText color="secondary" type="supporting">
+                                  </Heading>
+                                  <Text color="secondary" type="supporting">
                                     src/components/{activeFile}
-                                  </XDSText>
-                                </XDSStack>
-                                <XDSMetadataList
+                                  </Text>
+                                </Stack>
+                                <MetadataList
                                   xstyle={styles.metadataCompact}>
                                   {PROPERTIES.map(prop => (
-                                    <XDSMetadataListItem
+                                    <MetadataListItem
                                       key={prop.label}
                                       label={prop.label}>
                                       {prop.value}
-                                    </XDSMetadataListItem>
+                                    </MetadataListItem>
                                   ))}
-                                </XDSMetadataList>
-                                <XDSStack direction="vertical" gap={2}>
-                                  <XDSStack direction="vertical" gap={2}>
-                                    <XDSButton
+                                </MetadataList>
+                                <Stack direction="vertical" gap={2}>
+                                  <Stack direction="vertical" gap={2}>
+                                    <Button
                                       label="Format Document"
                                       size="md"
                                       variant="secondary"
                                     />
-                                    <XDSButton
+                                    <Button
                                       label="Go to Definition"
                                       size="md"
                                       variant="secondary"
                                     />
-                                    <XDSButton
+                                    <Button
                                       label="Find References"
                                       size="md"
                                       variant="secondary"
                                     />
-                                  </XDSStack>
-                                </XDSStack>
+                                  </Stack>
+                                </Stack>
                               </>
                             ) : (
-                              <XDSStack direction="vertical" gap={1}>
-                                <XDSList>
+                              <Stack direction="vertical" gap={1}>
+                                <List>
                                   {HISTORY_ITEMS.map(item => (
-                                    <XDSListItem
+                                    <ListItem
                                       key={item.label}
                                       label={item.label}
                                       endContent={
-                                        <XDSText
+                                        <Text
                                           type="supporting"
                                           color="secondary">
                                           {item.time}
-                                        </XDSText>
+                                        </Text>
                                       }
                                       startContent={
                                         <span
@@ -525,19 +525,19 @@ export default function ResizableWorkspacePage() {
                                       }
                                     />
                                   ))}
-                                </XDSList>
-                              </XDSStack>
+                                </List>
+                              </Stack>
                             )}
-                          </XDSStack>
-                        </XDSLayoutPanel>
+                          </Stack>
+                        </LayoutPanel>
                       )}
                     </div>
                   }
                 />
-              </XDSLayoutContent>
+              </LayoutContent>
             }
           />
-        </XDSLayoutContent>
+        </LayoutContent>
       }
     />
   );

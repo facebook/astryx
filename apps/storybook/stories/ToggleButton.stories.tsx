@@ -2,7 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
+import {ToggleButton, ToggleButtonGroup} from '@xds/core/ToggleButton';
 import {
   BoldIcon,
   ItalicIcon,
@@ -25,13 +25,13 @@ import {
   ItalicIcon as ItalicIconSolid,
   UnderlineIcon as UnderlineIconSolid,
 } from '@heroicons/react/24/solid';
-import {XDSIcon} from '@xds/core/Icon';
+import {Icon} from '@xds/core/Icon';
 
 const iconSize = {width: 16, height: 16} as const;
 
-const meta: Meta<typeof XDSToggleButton> = {
+const meta: Meta<typeof ToggleButton> = {
   title: 'Core/ToggleButton',
-  component: XDSToggleButton,
+  component: ToggleButton,
   tags: ['autodocs'],
   argTypes: {
     label: {control: 'text'},
@@ -43,7 +43,7 @@ const meta: Meta<typeof XDSToggleButton> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSToggleButton>;
+type Story = StoryObj<typeof ToggleButton>;
 
 // =============================================================================
 // Standalone
@@ -54,7 +54,7 @@ export const Standalone: Story = {
   render: function Render() {
     const [isPressed, setIsPressed] = useState(false);
     return (
-      <XDSToggleButton
+      <ToggleButton
         label="Bold"
         icon={<BoldIcon style={iconSize} />}
         isPressed={isPressed}
@@ -72,7 +72,7 @@ export const IconSwap: Story = {
     const [isBookmarked, setIsBookmarked] = useState(true);
     return (
       <div style={{display: 'flex', gap: 8}}>
-        <XDSToggleButton
+        <ToggleButton
           label="Favorite"
           icon={<StarIcon style={iconSize} />}
           pressedIcon={<StarIconSolid style={iconSize} />}
@@ -80,7 +80,7 @@ export const IconSwap: Story = {
           onPressedChange={setIsFavorited}
           isIconOnly
         />
-        <XDSToggleButton
+        <ToggleButton
           label="Bookmark"
           icon={<BookmarkIcon style={iconSize} />}
           pressedIcon={<BookmarkIconSolid style={iconSize} />}
@@ -98,12 +98,12 @@ export const WithLabel: Story = {
   render: function Render() {
     const [isActive, setIsActive] = useState(false);
     return (
-      <XDSToggleButton
+      <ToggleButton
         label="Active"
         isPressed={isActive}
         onPressedChange={setIsActive}>
         Active
-      </XDSToggleButton>
+      </ToggleButton>
     );
   },
 };
@@ -136,7 +136,7 @@ export const Sizes: Story = {
       setPressed(prev => ({...prev, [key]: !prev[key]}));
     return (
       <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
-        <XDSToggleButton
+        <ToggleButton
           label="Small"
           size="sm"
           icon={<BoldIcon style={iconSize} />}
@@ -144,7 +144,7 @@ export const Sizes: Story = {
           onPressedChange={() => toggle('sm')}
           isIconOnly
         />
-        <XDSToggleButton
+        <ToggleButton
           label="Medium"
           size="md"
           icon={<BoldIcon style={iconSize} />}
@@ -152,7 +152,7 @@ export const Sizes: Story = {
           onPressedChange={() => toggle('md')}
           isIconOnly
         />
-        <XDSToggleButton
+        <ToggleButton
           label="Large"
           size="lg"
           icon={<BoldIcon style={{width: 20, height: 20}} />}
@@ -174,20 +174,20 @@ export const GroupSingle: Story = {
   render: function Render() {
     const [view, setView] = useState<string | null>('list');
     return (
-      <XDSToggleButtonGroup value={view} onChange={setView} label="View mode">
-        <XDSToggleButton
+      <ToggleButtonGroup value={view} onChange={setView} label="View mode">
+        <ToggleButton
           value="list"
           label="List view"
           icon={<ListBulletIcon style={iconSize} />}
           isIconOnly
         />
-        <XDSToggleButton
+        <ToggleButton
           value="grid"
           label="Grid view"
           icon={<Squares2X2Icon style={iconSize} />}
           isIconOnly
         />
-      </XDSToggleButtonGroup>
+      </ToggleButtonGroup>
     );
   },
 };
@@ -197,30 +197,30 @@ export const GroupMultiple: Story = {
   render: function Render() {
     const [formats, setFormats] = useState<string[]>([]);
     return (
-      <XDSToggleButtonGroup
+      <ToggleButtonGroup
         type="multiple"
         value={formats}
         onChange={setFormats}
         label="Text formatting">
-        <XDSToggleButton
+        <ToggleButton
           value="bold"
           label="Bold"
           icon={<BoldIcon style={iconSize} />}
           isIconOnly
         />
-        <XDSToggleButton
+        <ToggleButton
           value="italic"
           label="Italic"
           icon={<ItalicIcon style={iconSize} />}
           isIconOnly
         />
-        <XDSToggleButton
+        <ToggleButton
           value="underline"
           label="Underline"
           icon={<UnderlineIcon style={iconSize} />}
           isIconOnly
         />
-      </XDSToggleButtonGroup>
+      </ToggleButtonGroup>
     );
   },
 };
@@ -230,7 +230,7 @@ export const NotificationToggle: Story = {
   render: function Render() {
     const [isMuted, setIsMuted] = useState(false);
     return (
-      <XDSToggleButton
+      <ToggleButton
         label={isMuted ? 'Unmute notifications' : 'Mute notifications'}
         icon={<BellIcon style={iconSize} />}
         pressedIcon={<BellSlashIcon style={iconSize} />}
@@ -248,7 +248,7 @@ export const NotificationToggle: Story = {
 
 /**
  * Formatting toolbar with colored icons — icon shifts to accent color when pressed.
- * Uses outline → solid icon swap + XDSIcon color prop to reinforce state.
+ * Uses outline → solid icon swap + Icon color prop to reinforce state.
  */
 export const ColoredIconToolbar: Story = {
   render: function Render() {
@@ -262,52 +262,52 @@ export const ColoredIconToolbar: Story = {
     const toggle = (key: string) => setPressed(p => ({...p, [key]: !p[key]}));
     return (
       <div style={{display: 'flex', gap: 4}}>
-        <XDSToggleButton
+        <ToggleButton
           label="Bold"
-          icon={<XDSIcon icon={BoldIcon} size="sm" color="secondary" />}
+          icon={<Icon icon={BoldIcon} size="sm" color="secondary" />}
           pressedIcon={
-            <XDSIcon icon={BoldIconSolid} size="sm" color="accent" />
+            <Icon icon={BoldIconSolid} size="sm" color="accent" />
           }
           isPressed={pressed.bold}
           onPressedChange={() => toggle('bold')}
           isIconOnly
         />
-        <XDSToggleButton
+        <ToggleButton
           label="Italic"
-          icon={<XDSIcon icon={ItalicIcon} size="sm" color="secondary" />}
+          icon={<Icon icon={ItalicIcon} size="sm" color="secondary" />}
           pressedIcon={
-            <XDSIcon icon={ItalicIconSolid} size="sm" color="accent" />
+            <Icon icon={ItalicIconSolid} size="sm" color="accent" />
           }
           isPressed={pressed.italic}
           onPressedChange={() => toggle('italic')}
           isIconOnly
         />
-        <XDSToggleButton
+        <ToggleButton
           label="Underline"
-          icon={<XDSIcon icon={UnderlineIcon} size="sm" color="secondary" />}
+          icon={<Icon icon={UnderlineIcon} size="sm" color="secondary" />}
           pressedIcon={
-            <XDSIcon icon={UnderlineIconSolid} size="sm" color="accent" />
+            <Icon icon={UnderlineIconSolid} size="sm" color="accent" />
           }
           isPressed={pressed.underline}
           onPressedChange={() => toggle('underline')}
           isIconOnly
         />
-        <XDSToggleButton
+        <ToggleButton
           label="Strikethrough"
           icon={
-            <XDSIcon icon={StrikethroughIcon} size="sm" color="secondary" />
+            <Icon icon={StrikethroughIcon} size="sm" color="secondary" />
           }
           pressedIcon={
-            <XDSIcon icon={StrikethroughIcon} size="sm" color="accent" />
+            <Icon icon={StrikethroughIcon} size="sm" color="accent" />
           }
           isPressed={pressed.strikethrough}
           onPressedChange={() => toggle('strikethrough')}
           isIconOnly
         />
-        <XDSToggleButton
+        <ToggleButton
           label="Link"
-          icon={<XDSIcon icon={LinkIcon} size="sm" color="secondary" />}
-          pressedIcon={<XDSIcon icon={LinkIcon} size="sm" color="success" />}
+          icon={<Icon icon={LinkIcon} size="sm" color="secondary" />}
+          pressedIcon={<Icon icon={LinkIcon} size="sm" color="success" />}
           isPressed={pressed.link}
           onPressedChange={() => toggle('link')}
           isIconOnly
@@ -332,38 +332,38 @@ export const ColoredIconReactions: Story = {
     const toggle = (key: string) => setPressed(p => ({...p, [key]: !p[key]}));
     return (
       <div style={{display: 'flex', gap: 8}}>
-        <XDSToggleButton
+        <ToggleButton
           label="Star"
-          icon={<XDSIcon icon={StarIcon} size="sm" color="secondary" />}
+          icon={<Icon icon={StarIcon} size="sm" color="secondary" />}
           pressedIcon={
-            <XDSIcon icon={StarIconSolid} size="sm" color="yellow" />
+            <Icon icon={StarIconSolid} size="sm" color="yellow" />
           }
           isPressed={pressed.star}
           onPressedChange={() => toggle('star')}
           isIconOnly
         />
-        <XDSToggleButton
+        <ToggleButton
           label="Like"
-          icon={<XDSIcon icon={HeartIcon} size="sm" color="secondary" />}
-          pressedIcon={<XDSIcon icon={HeartIconSolid} size="sm" color="red" />}
+          icon={<Icon icon={HeartIcon} size="sm" color="secondary" />}
+          pressedIcon={<Icon icon={HeartIconSolid} size="sm" color="red" />}
           isPressed={pressed.heart}
           onPressedChange={() => toggle('heart')}
           isIconOnly
         />
-        <XDSToggleButton
+        <ToggleButton
           label="Save"
-          icon={<XDSIcon icon={BookmarkIcon} size="sm" color="secondary" />}
+          icon={<Icon icon={BookmarkIcon} size="sm" color="secondary" />}
           pressedIcon={
-            <XDSIcon icon={BookmarkIconSolid} size="sm" color="blue" />
+            <Icon icon={BookmarkIconSolid} size="sm" color="blue" />
           }
           isPressed={pressed.bookmark}
           onPressedChange={() => toggle('bookmark')}
           isIconOnly
         />
-        <XDSToggleButton
+        <ToggleButton
           label="Follow"
-          icon={<XDSIcon icon={BellIcon} size="sm" color="secondary" />}
-          pressedIcon={<XDSIcon icon={BellIcon} size="sm" color="accent" />}
+          icon={<Icon icon={BellIcon} size="sm" color="secondary" />}
+          pressedIcon={<Icon icon={BellIcon} size="sm" color="accent" />}
           isPressed={pressed.bell}
           onPressedChange={() => toggle('bell')}
           isIconOnly

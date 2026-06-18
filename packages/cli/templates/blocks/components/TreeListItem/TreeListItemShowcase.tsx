@@ -2,15 +2,15 @@
 
 'use client';
 
-import {XDSTreeList} from '@xds/core/TreeList';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSIcon} from '@xds/core/Icon';
+import {TreeList} from '@xds/core/TreeList';
+import {Badge} from '@xds/core/Badge';
+import {Icon} from '@xds/core/Icon';
 
 const noop = () => {};
 
 export default function TreeListItemShowcase() {
   return (
-    <XDSTreeList
+    <TreeList
       style={{width: 400}}
       items={[
         {
@@ -18,20 +18,20 @@ export default function TreeListItemShowcase() {
           label: 'Inbox',
           description: '12 unread messages',
           isExpanded: true,
-          startContent: <XDSIcon icon="info" size="sm" />,
-          endContent: <XDSBadge label="12" variant="info" />,
+          startContent: <Icon icon="info" size="sm" />,
+          endContent: <Badge label="12" variant="info" />,
           children: [
             {
               id: 'primary',
               label: 'Primary',
               isSelected: true,
-              startContent: <XDSIcon icon="check" size="sm" />,
+              startContent: <Icon icon="check" size="sm" />,
               onClick: noop,
             },
             {
               id: 'updates',
               label: 'Updates',
-              endContent: <XDSBadge label="4" variant="info" />,
+              endContent: <Badge label="4" variant="info" />,
               onClick: noop,
             },
           ],
@@ -40,7 +40,7 @@ export default function TreeListItemShowcase() {
           id: 'drafts',
           label: 'Drafts',
           description: '3 draft messages',
-          startContent: <XDSIcon icon="clock" size="sm" />,
+          startContent: <Icon icon="clock" size="sm" />,
           onClick: noop,
         },
         {
@@ -52,7 +52,7 @@ export default function TreeListItemShowcase() {
           id: 'spam',
           label: 'Spam',
           isDisabled: true,
-          startContent: <XDSIcon icon="warning" size="sm" />,
+          startContent: <Icon icon="warning" size="sm" />,
         },
       ]}
     />

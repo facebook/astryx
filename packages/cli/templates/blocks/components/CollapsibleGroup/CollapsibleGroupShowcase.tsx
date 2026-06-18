@@ -2,42 +2,42 @@
 
 'use client';
 
-import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
-import {XDSCard} from '@xds/core/Card';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSText} from '@xds/core/Text';
+import {Collapsible, CollapsibleGroup} from '@xds/core/Collapsible';
+import {Card} from '@xds/core/Card';
+import {VStack} from '@xds/core/Layout';
+import {Center} from '@xds/core/Center';
+import {Text} from '@xds/core/Text';
 
 export default function CollapsibleGroupShowcase() {
   return (
-    <XDSCenter width={400}>
-      <XDSCollapsibleGroup type="single" defaultValue="shipping">
-        <XDSVStack gap={2} width="100%">
-          <XDSCard>
-            <XDSCollapsible trigger="Shipping Information" value="shipping">
-              <XDSText type="body" color="secondary">
+    <Center width={400}>
+      <CollapsibleGroup type="single" defaultValue="shipping">
+        <VStack gap={2} width="100%">
+          <Card>
+            <Collapsible trigger="Shipping Information" value="shipping">
+              <Text type="body" color="secondary">
                 Standard shipping takes 3–5 business days. Express shipping is
                 available for an additional fee.
-              </XDSText>
-            </XDSCollapsible>
-          </XDSCard>
-          <XDSCard>
-            <XDSCollapsible trigger="Return Policy" value="returns">
-              <XDSText type="body" color="secondary">
+              </Text>
+            </Collapsible>
+          </Card>
+          <Card>
+            <Collapsible trigger="Return Policy" value="returns">
+              <Text type="body" color="secondary">
                 Items can be returned within 30 days of purchase. Items must be
                 unused and in original packaging.
-              </XDSText>
-            </XDSCollapsible>
-          </XDSCard>
-          <XDSCard>
-            <XDSCollapsible trigger="Payment Methods" value="payment">
-              <XDSText type="body" color="secondary">
+              </Text>
+            </Collapsible>
+          </Card>
+          <Card>
+            <Collapsible trigger="Payment Methods" value="payment">
+              <Text type="body" color="secondary">
                 We accept all major credit cards, PayPal, and bank transfers.
-              </XDSText>
-            </XDSCollapsible>
-          </XDSCard>
-        </XDSVStack>
-      </XDSCollapsibleGroup>
-    </XDSCenter>
+              </Text>
+            </Collapsible>
+          </Card>
+        </VStack>
+      </CollapsibleGroup>
+    </Center>
   );
 }

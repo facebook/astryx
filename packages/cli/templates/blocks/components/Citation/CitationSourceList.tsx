@@ -2,9 +2,9 @@
 
 'use client';
 
-import {XDSCitation} from '@xds/core/Citation';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Citation} from '@xds/core/Citation';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const sources = [
   {
@@ -30,20 +30,20 @@ const sources = [
 
 export default function CitationSourceList() {
   return (
-    <XDSStack direction="vertical" gap={3}>
-      <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={3}>
+      <Text type="supporting" color="secondary">
         Sources
-      </XDSText>
-      <XDSStack direction="horizontal" gap={2} style={{flexWrap: 'wrap'}}>
+      </Text>
+      <Stack direction="horizontal" gap={2} style={{flexWrap: 'wrap'}}>
         {sources.map((source, i) => (
-          <XDSCitation
+          <Citation
             key={source.title}
             source={source}
             number={i + 1}
             variant="label"
           />
         ))}
-      </XDSStack>
-    </XDSStack>
+      </Stack>
+    </Stack>
   );
 }

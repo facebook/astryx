@@ -2,10 +2,10 @@
 
 'use client';
 
-import {XDSCarousel} from '@xds/core/Carousel';
-import {XDSCard} from '@xds/core/Card';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Carousel} from '@xds/core/Carousel';
+import {Card} from '@xds/core/Card';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const FEATURES = [
   {
@@ -32,24 +32,24 @@ const FEATURES = [
 
 export default function CarouselCards() {
   return (
-    <XDSStack direction="vertical" gap={3} style={{maxWidth: 520, padding: 8}}>
-      <XDSText type="body" weight="bold">
+    <Stack direction="vertical" gap={3} style={{maxWidth: 520, padding: 8}}>
+      <Text type="body" weight="bold">
         Browse features
-      </XDSText>
-      <XDSCarousel gap={2} hasSnap aria-label="Feature cards">
+      </Text>
+      <Carousel gap={2} hasSnap aria-label="Feature cards">
         {FEATURES.map(item => (
-          <XDSCard key={item.title} width={200} minHeight={100}>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSText type="body" weight="bold">
+          <Card key={item.title} width={200} minHeight={100}>
+            <Stack direction="vertical" gap={1}>
+              <Text type="body" weight="bold">
                 {item.title}
-              </XDSText>
-              <XDSText type="supporting" color="secondary">
+              </Text>
+              <Text type="supporting" color="secondary">
                 {item.desc}
-              </XDSText>
-            </XDSStack>
-          </XDSCard>
+              </Text>
+            </Stack>
+          </Card>
         ))}
-      </XDSCarousel>
-    </XDSStack>
+      </Carousel>
+    </Stack>
   );
 }

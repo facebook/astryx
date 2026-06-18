@@ -2,30 +2,30 @@
 
 'use client';
 
-import {XDSBanner} from '@xds/core/Banner';
-import {XDSStack} from '@xds/core/Layout';
+import {Banner} from '@xds/core/Banner';
+import {Stack} from '@xds/core/Layout';
 
 export default function BannerDismissable() {
   return (
-    <XDSStack direction="vertical" gap={3}>
-      <XDSBanner
+    <Stack direction="vertical" gap={3}>
+      <Banner
         status="success"
         title="Deployment complete"
         description="Version 3.2.0 is now live in production."
         isDismissable
       />
-      <XDSBanner
+      <Banner
         status="warning"
         title="Scheduled maintenance tonight"
         description="The system will be briefly unavailable from 2:00–3:00 AM."
         isDismissable
       />
-      <XDSBanner
+      <Banner
         status="info"
         title="New feature available"
         description="Try the new dashboard layout in Settings."
         isDismissable
       />
-    </XDSStack>
+    </Stack>
   );
 }

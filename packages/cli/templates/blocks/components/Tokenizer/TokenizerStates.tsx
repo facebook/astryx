@@ -4,15 +4,15 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSTokenizer} from '@xds/core/Tokenizer';
-import {XDSStack} from '@xds/core/Layout';
-import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
+import {Tokenizer} from '@xds/core/Tokenizer';
+import {Stack} from '@xds/core/Layout';
+import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
 
 const styles = stylex.create({
   fixed: {width: 400},
 });
 
-const users: XDSSearchableItem[] = [
+const users: SearchableItem[] = [
   {id: '1', label: 'Alice Johnson'},
   {id: '2', label: 'Bob Smith'},
   {id: '3', label: 'Charlie Brown'},
@@ -20,25 +20,25 @@ const users: XDSSearchableItem[] = [
   {id: '5', label: 'Eve Williams'},
 ];
 
-const userSource: XDSSearchSource = {
+const userSource: SearchSource = {
   search: (query: string) =>
     users.filter(u => u.label.toLowerCase().includes(query.toLowerCase())),
   bootstrap: () => users,
 };
 
 export default function TokenizerStates() {
-  const [errorValue, setErrorValue] = useState<XDSSearchableItem[]>([]);
-  const [warningValue, setWarningValue] = useState<XDSSearchableItem[]>([
+  const [errorValue, setErrorValue] = useState<SearchableItem[]>([]);
+  const [warningValue, setWarningValue] = useState<SearchableItem[]>([
     users[0],
   ]);
-  const [successValue, setSuccessValue] = useState<XDSSearchableItem[]>([
+  const [successValue, setSuccessValue] = useState<SearchableItem[]>([
     users[1],
     users[3],
   ]);
 
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSTokenizer
+    <Stack direction="vertical" gap={4}>
+      <Tokenizer
         label="Disabled field"
         searchSource={userSource}
         value={[users[0], users[2]]}
@@ -46,7 +46,7 @@ export default function TokenizerStates() {
         isDisabled
         xstyle={styles.fixed}
       />
-      <XDSTokenizer
+      <Tokenizer
         label="Error message"
         placeholder="Search people..."
         searchSource={userSource}
@@ -56,7 +56,7 @@ export default function TokenizerStates() {
         status={{type: 'error', message: 'At least one reviewer is required'}}
         xstyle={styles.fixed}
       />
-      <XDSTokenizer
+      <Tokenizer
         label="Warning message"
         placeholder="Search people..."
         searchSource={userSource}
@@ -68,7 +68,7 @@ export default function TokenizerStates() {
         }}
         xstyle={styles.fixed}
       />
-      <XDSTokenizer
+      <Tokenizer
         label="Success message"
         placeholder="Search people..."
         searchSource={userSource}
@@ -77,6 +77,6 @@ export default function TokenizerStates() {
         status={{type: 'success', message: 'All required reviewers added'}}
         xstyle={styles.fixed}
       />
-    </XDSStack>
+    </Stack>
   );
 }

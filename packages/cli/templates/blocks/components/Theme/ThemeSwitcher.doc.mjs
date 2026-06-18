@@ -7,7 +7,7 @@ export const doc = {
   name: 'Theme — Switch Themes',
   displayName: 'Theme — Switch Themes',
   description:
-    'Use state to switch the theme object passed to XDSTheme and preview a different visual treatment.',
+    'Use state to switch the theme object passed to Theme and preview a different visual treatment.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: [
