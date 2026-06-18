@@ -17,6 +17,10 @@ const styles = stylex.create({
 
 const links = [
   {
+    label: 'Blog',
+    href: '/blog',
+  },
+  {
     label: 'Terms of use',
     href: 'https://opensource.fb.com/legal/terms',
   },
