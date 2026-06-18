@@ -40,9 +40,9 @@ export const docs = {
   playground: {
     defaults: {
       children: [
-        {__element: 'XDSCard', props: {padding: 4}, children: 'Slide 1'},
-        {__element: 'XDSCard', props: {padding: 4}, children: 'Slide 2'},
-        {__element: 'XDSCard', props: {padding: 4}, children: 'Slide 3'},
+        {__element: 'Card', props: {padding: 4}, children: 'Slide 1'},
+        {__element: 'Card', props: {padding: 4}, children: 'Slide 2'},
+        {__element: 'Card', props: {padding: 4}, children: 'Slide 3'},
       ],
     },
   },

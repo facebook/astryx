@@ -30,13 +30,13 @@ export const docs = {
   },
   components: [
     {
-      name: 'XDSTreeList',
+      name: 'TreeList',
       displayName: 'Tree List',
       description:
         'Tree list container. Accepts items data and rendering configuration. Expansion state is managed internally.',      props: [
         {
           name: 'items',
-          type: 'XDSTreeListItemData[]',
+          type: 'TreeListItemData[]',
           description:
             'Recursive tree item data. Each item has id, label, optional children array, and optional isExpanded boolean for initial state.',
           required: true,
@@ -52,7 +52,7 @@ export const docs = {
           type: 'ReactNode',
           description:
             'Header content, associated with the tree via aria-labelledby.',
-          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Header'}],
+          slotElements: [{__element: 'Text', props: {type: 'body'}, children: 'Header'}],
         },
         {
           name: 'xstyle',
@@ -94,14 +94,14 @@ export const docsZh = {
   },
   components: [
     {
-      name: 'XDSTreeList',
+      name: 'TreeList',
       displayName: 'Tree List',
       description:
         '树列表容器。接受 items 数据和渲染配置。展开状态在内部管理。',
       props: [
         {
           name: 'items',
-          type: 'XDSTreeListItemData[]',
+          type: 'TreeListItemData[]',
           description:
             '递归树项数据。每项有 id、label、可选 children 数组和可选 isExpanded 布尔值用于设置初始状态。',
           required: true,
@@ -161,7 +161,7 @@ export const docsDense = {
   },
   components: [
     {
-      name: 'XDSTreeList',
+      name: 'TreeList',
       displayName: 'Tree List',
       description: 'Tree list container. Accepts items data + rendering config. Expansion managed internally.',
       propDescriptions: {

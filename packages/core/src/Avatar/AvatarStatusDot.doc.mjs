@@ -26,7 +26,7 @@ export const docs = {
       description: 'Icon centered inside the dot (hidden at tiny sizes).',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',

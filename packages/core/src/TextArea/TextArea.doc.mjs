@@ -108,7 +108,7 @@ export const docs = {
     },
     {
       name: 'startIcon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description:
         'Icon component rendered inside the leading edge of the textarea wrapper. See `npx xds docs icons` for valid semantic names.',
     },
@@ -273,7 +273,7 @@ export const docsZh = {
     },
     {
       name: 'startIcon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: '在文本域包装器前端内部渲染的图标组件。',
     },
     {

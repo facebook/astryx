@@ -11,7 +11,7 @@ export const docs = {
   props: [
     {
       name: 'token',
-      type: 'XDSChatComposerToken',
+      type: 'ChatComposerToken',
       description: 'The token to render. Pass a badge config ({ value, label, variant?, icon? }) for the common case, or a custom render ({ value, render }) for full control.',
       required: true,
     },

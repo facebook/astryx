@@ -14,24 +14,24 @@ export const docs = {
       theme: '@xds/theme-matcha',
       mode: 'light',
       children: {
-        __element: 'XDSCard',
+        __element: 'Card',
         props: {padding: 4, style: {maxWidth: 360}},
         children: {
-          __element: 'XDSVStack',
+          __element: 'VStack',
           props: {gap: 3},
           children: [
             {
-              __element: 'XDSHeading',
+              __element: 'Heading',
               props: {level: 4},
               children: 'Theme preview',
             },
             {
-              __element: 'XDSText',
+              __element: 'Text',
               props: {type: 'body', color: 'secondary'},
               children:
                 'Cards, text, and buttons inherit tokens from the selected theme.',
             },
-            {__element: 'XDSButton', props: {label: 'Primary action'}},
+            {__element: 'Button', props: {label: 'Primary action'}},
           ],
         },
       },
@@ -66,7 +66,7 @@ export const docs = {
   props: [
     {
       name: 'theme',
-      type: 'XDSDefinedTheme',
+      type: 'DefinedTheme',
       required: true,
       description:
         'Theme object to apply. Prefer built theme objects for static production themes; use runtime `defineTheme()` for dynamic themes.',

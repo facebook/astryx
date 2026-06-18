@@ -2,8 +2,8 @@
 
 /** @type {import('../docs-types').HookDoc} */
 export const docs = {
-  name: 'useXDSTooltip',
-  displayName: 'useXDSTooltip',
+  name: 'useTooltip',
+  displayName: 'useTooltip',
   group: 'Tooltip',
   keywords: ['tooltip', 'hint', 'label', 'hover', 'info', 'title', 'floating'],
   params: [
@@ -27,22 +27,22 @@ export const docs = {
     {name: 'renderTooltip', type: '(children: ReactNode, props?: ContextRenderProps) => ReactNode', description: 'Render function for the anchor-positioned tooltip content.'},
   ],
   usage: {
-    description: 'Headless hook for hover/focus-triggered tooltips. Builds on useXDSLayer with hover intent, keyboard focus handling, and accessible aria-describedby linking. Use for custom trigger elements that need tooltip behavior without the wrapper component.',
+    description: 'Headless hook for hover/focus-triggered tooltips. Builds on useLayer with hover intent, keyboard focus handling, and accessible aria-describedby linking. Use for custom trigger elements that need tooltip behavior without the wrapper component.',
     bestPractices: [
       {guidance: true, description: 'Use for brief text labels that describe icon buttons, truncated text, abbreviations, or compact controls.'},
-      {guidance: true, description: 'Prefer the XDSTooltip component for standard wrapping; use the hook when the trigger is not a simple child.'},
+      {guidance: true, description: 'Prefer the Tooltip component for standard wrapping; use the hook when the trigger is not a simple child.'},
       {guidance: false, description: 'Put interactive content inside tooltips: use Popover or HoverCard instead.'},
     ],
   },
   relatedComponents: ['Tooltip', 'HoverCard', 'Popover'],
-  relatedHooks: ['useXDSLayer', 'useXDSHoverCard', 'useXDSPopover'],
+  relatedHooks: ['useLayer', 'useHoverCard', 'usePopover'],
   importPath: '@xds/core/Tooltip',
   category: 'interaction',
 };
 
 /** @type {import('../docs-types').HookTranslationDoc} */
 export const docsDense = {
-  description: 'Headless hover/focus tooltip hook. Builds on useXDSLayer w/ hover intent, keyboard focus handling, aria-describedby. Use for custom triggers without wrapper component.',
+  description: 'Headless hover/focus tooltip hook. Builds on useLayer w/ hover intent, keyboard focus handling, aria-describedby. Use for custom triggers without wrapper component.',
   paramDescriptions: {
     placement: 'position relative to trigger.',
     alignment: 'alignment along placement axis.',
@@ -64,10 +64,10 @@ export const docsDense = {
     renderTooltip: 'renders anchor-positioned tooltip content.',
   },
   usage: {
-    description: 'Headless hover/focus tooltip hook. Builds on useXDSLayer w/ hover intent, keyboard focus handling, aria-describedby. Use for custom triggers without wrapper component.',
+    description: 'Headless hover/focus tooltip hook. Builds on useLayer w/ hover intent, keyboard focus handling, aria-describedby. Use for custom triggers without wrapper component.',
     bestPractices: [
       {guidance: true, description: 'Use for brief text labels describing icon buttons, truncated text, abbreviations, compact controls.'},
-      {guidance: true, description: 'Prefer XDSTooltip for standard wrapping; use hook when trigger is not simple child.'},
+      {guidance: true, description: 'Prefer Tooltip for standard wrapping; use hook when trigger is not simple child.'},
       {guidance: false, description: 'Put interactive content in tooltips: use Popover / HoverCard instead.'},
     ],
   },

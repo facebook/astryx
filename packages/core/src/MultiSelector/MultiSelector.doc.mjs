@@ -25,7 +25,7 @@ export const docs = {
   },
   components: [
     {
-      name: 'XDSMultiSelector',
+      name: 'MultiSelector',
       displayName: 'Multi Selector',
       description:
         'Multi-select dropdown with checkboxes for choosing multiple items.',
@@ -38,7 +38,7 @@ export const docs = {
         },
         {
           name: 'options',
-          type: 'XDSMultiSelectorOptionType[]',
+          type: 'MultiSelectorOptionType[]',
           description:
             'Array of items: strings, objects with value/label/icon/disabled, dividers, or sections.',
           required: true,
@@ -144,7 +144,7 @@ export const docs = {
         },
         {
           name: 'renderOption',
-          type: '(option: XDSMultiSelectorOptionData) => ReactNode',
+          type: '(option: MultiSelectorOptionData) => ReactNode',
           description:
             'Custom render function for each selectable option in the dropdown. Not called for dividers, sections, or the select-all row.',
         },
@@ -174,7 +174,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use renderOption for custom option rows; the checkbox affordance remains owned by XDSMultiSelector.',
+          'Use renderOption for custom option rows; the checkbox affordance remains owned by MultiSelector.',
       },
       {
         guidance: true,
@@ -197,7 +197,7 @@ export const docs = {
 export const docsZh = {
   components: [
     {
-      name: 'XDSMultiSelector',
+      name: 'MultiSelector',
       displayName: 'Multi Selector',
       description: '带复选框的多选下拉框，用于从列表中选择多项。',
       propDescriptions: {
@@ -246,7 +246,7 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          'Use renderOption for custom option rows; the checkbox affordance remains owned by XDSMultiSelector.',
+          'Use renderOption for custom option rows; the checkbox affordance remains owned by MultiSelector.',
       },
       {
         guidance: true,
@@ -286,7 +286,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'renderOption for custom rows; checkbox affordance stays owned by XDSMultiSelector.',
+          'renderOption for custom rows; checkbox affordance stays owned by MultiSelector.',
       },
       {
         guidance: true,
@@ -305,7 +305,7 @@ export const docsDense = {
   },
   components: [
     {
-      name: 'XDSMultiSelector',
+      name: 'MultiSelector',
       displayName: 'Multi Selector',
       description: 'checkbox multi-select dropdown',
       propDescriptions: {

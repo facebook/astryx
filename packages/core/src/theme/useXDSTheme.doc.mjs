@@ -2,8 +2,8 @@
 
 /** @type {import('../docs-types').HookDoc} */
 export const docs = {
-  name: 'useXDSTheme',
-  displayName: 'useXDSTheme',
+  name: 'useTheme',
+  displayName: 'useTheme',
   group: 'Utilities',
   category: 'Utility',
   keywords: [
@@ -78,7 +78,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Assume the hook reflects every CSS cascade override. It resolves tokens for the current XDSTheme mode; local media-surface overrides and arbitrary external CSS may not be represented.',
+          'Assume the hook reflects every CSS cascade override. It resolves tokens for the current Theme mode; local media-surface overrides and arbitrary external CSS may not be represented.',
       },
     ],
   },

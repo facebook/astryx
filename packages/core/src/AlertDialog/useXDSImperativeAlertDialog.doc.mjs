@@ -3,15 +3,15 @@
 /** @type {import('../docs-types').ComponentDoc} */
 
 export const docs = {
-  name: 'useXDSImperativeAlertDialog',
+  name: 'useImperativeAlertDialog',
   subComponentOf: 'AlertDialog',
-  displayName: 'useXDSImperativeAlertDialog',
+  displayName: 'useImperativeAlertDialog',
   description: 'Hook for showing an alert dialog without managing open state. Call alert.show(options) to open and alert.hide() to close. Render alert.element in your JSX tree.',
   props: [
     {
       name: 'show',
       type: '(options: AlertDialogOptions) => void',
-      description: 'Show the alert dialog with the given options. Options are the same as XDSAlertDialog props minus isOpen/onOpenChange.',
+      description: 'Show the alert dialog with the given options. Options are the same as AlertDialog props minus isOpen/onOpenChange.',
     },
     {
       name: 'hide',
@@ -32,10 +32,10 @@ export const docs = {
 };
 
 export const docsDense = {
-  name: 'useXDSImperativeAlertDialog',
+  name: 'useImperativeAlertDialog',
   description: 'Hook to show alert dialog w/o managing open state. Call alert.show(options) to open, alert.hide() to close; render alert.element in JSX tree.',
   propDescriptions: {
-    show: 'show dialog w/ options; same as XDSAlertDialog props minus isOpen/onOpenChange',
+    show: 'show dialog w/ options; same as AlertDialog props minus isOpen/onOpenChange',
     hide: 'hide dialog',
     isOpen: 'dialog currently open?',
     element: 'dialog element: render in JSX tree',

@@ -2,8 +2,8 @@
 
 /** @type {import('../docs-types').HookDoc} */
 export const docs = {
-  name: 'useXDSLayer',
-  displayName: 'useXDSLayer',
+  name: 'useLayer',
+  displayName: 'useLayer',
   group: 'Utilities',
   keywords: [
     'layer',
@@ -103,7 +103,7 @@ export const docs = {
     ],
   },
   relatedComponents: ['LayerProvider', 'Popover', 'HoverCard', 'Tooltip'],
-  relatedHooks: ['useXDSPopover', 'useXDSHoverCard', 'useXDSTooltip'],
+  relatedHooks: ['usePopover', 'useHoverCard', 'useTooltip'],
   importPath: '@xds/core/Layer',
   category: 'interaction',
 };

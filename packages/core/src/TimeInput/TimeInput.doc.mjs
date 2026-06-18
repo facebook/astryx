@@ -146,7 +146,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'XDSInputStatus',
+      type: 'InputStatus',
       description:
         'Status indicator that colors the border and displays an icon. When a message is provided it is rendered below the input.',
     },
@@ -194,7 +194,7 @@ export const docsZh = {
     {name: 'increment', type: 'number', description: '用户按上或下方向键时增加或减少的分钟数。', default: '1'},
     {name: 'placeholder', type: 'string', description: '未选择时间时显示的占位符文本。当输入框聚焦且为空时，格式提示会覆盖此文本。', default: "'Select a time'"},
     {name: 'size', type: "'sm' | 'md' | 'lg'", description: '控制输入框元素的高度。', default: "'md'"},
-    {name: 'status', type: 'XDSInputStatus', description: '为边框着色并显示图标的状态指示器。当提供消息时，消息渲染在输入框下方。'},
+    {name: 'status', type: 'InputStatus', description: '为边框着色并显示图标的状态指示器。当提供消息时，消息渲染在输入框下方。'},
     {name: 'labelTooltip', type: 'string', description: '在标签行末尾以信息图标形式渲染的工具提示文本。'},
     {name: 'xstyle', type: 'StyleXStyles', description: 'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。'},
   ],

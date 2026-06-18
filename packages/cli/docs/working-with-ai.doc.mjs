@@ -105,9 +105,9 @@ npx xds agent-docs --agent-docs-path ~/.cursor/rules/xds.mdc`,
           label: 'Paste this into your AI',
           code: `Before writing any XDS code, check your knowledge:
 
-1. What is the correct import path for XDSButton?
-2. How do you make an XDSDialog non-dismissible?
-3. What prop does XDSSelector use for its items?
+1. What is the correct import path for Button?
+2. How do you make an Dialog non-dismissible?
+3. What prop does Selector use for its items?
 
 If you don't know all three, run \`npx xds init --features agents\` to generate agent docs, then read the generated file.`,
         },
