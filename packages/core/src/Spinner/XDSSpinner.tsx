@@ -82,7 +82,7 @@ const styles = stylex.create({
 
 export type XDSSpinnerSize = keyof typeof SIZES;
 
-export type XDSSpinnerShade = 'default' | 'onMedia' | 'subtle';
+export type XDSSpinnerShade = 'default' | 'onMedia' | 'subtle' | 'inherit';
 
 export interface XDSSpinnerProps extends XDSBaseProps<HTMLSpanElement> {
   /** Ref forwarded to the root element */
@@ -101,6 +101,9 @@ export interface XDSSpinnerProps extends XDSBaseProps<HTMLSpanElement> {
    * - 'default': accent color on light backgrounds
    * - 'onMedia': white on dark/accent backgrounds
    * - 'subtle': secondary text color, less prominent — for inline use in lists
+   * - 'inherit': inherits the parent's `currentColor` (with a translucent
+   *   track) — use inside colored elements like buttons so the ring matches
+   *   the resolved foreground regardless of theme/variant
    * @default 'default'
    */
   shade?: XDSSpinnerShade;
@@ -173,19 +176,29 @@ export function XDSSpinner({
     // - default → accent ring on a track tuned to body luminance
     // - subtle  → secondary text color, less prominent
     // - onMedia → on-dark color, with a translucent track for photos/video
+    // - inherit → the inherited currentColor, so the ring matches the parent's
+    //   resolved foreground (e.g. a button's variant text color)
+    const inheritedColor =
+      shade === 'inherit' ? getComputedStyle(canvas).color : null;
     const activeColor =
-      shade === 'onMedia'
-        ? themeTokens['--color-on-dark']
-        : shade === 'subtle'
-          ? themeTokens['--color-text-secondary']
-          : themeTokens['--color-accent'];
+      shade === 'inherit'
+        ? (inheritedColor as string)
+        : shade === 'onMedia'
+          ? themeTokens['--color-on-dark']
+          : shade === 'subtle'
+            ? themeTokens['--color-text-secondary']
+            : themeTokens['--color-accent'];
     // Track derives from --color-on-dark for onMedia (with a 30% alpha so the
     // ring reads against arbitrary backgrounds) and from --color-track for the
-    // body-luminance shades. Both branches are fully theme-driven.
+    // body-luminance shades. For inherit, the track is the same currentColor
+    // drawn at reduced alpha via globalAlpha (see below). All branches are
+    // fully theme-driven.
     const backgroundColor =
-      shade === 'onMedia'
-        ? `${themeTokens['--color-on-dark']}4D`
-        : themeTokens['--color-track'];
+      shade === 'inherit'
+        ? (inheritedColor as string)
+        : shade === 'onMedia'
+          ? `${themeTokens['--color-on-dark']}4D`
+          : themeTokens['--color-track'];
 
     const radius = (diameter / 2) * pixelRatio;
     const lineWidth = border * pixelRatio;
@@ -202,11 +215,17 @@ export function XDSSpinner({
 
     const center = frameSize / 2;
 
-    // Background circle (full ring, faded)
+    // Background circle (full ring, faded). For the inherit shade the track is
+    // the same currentColor as the arc, so fade it via globalAlpha (the
+    // computed color is an opaque rgb() string with no alpha channel to tweak).
     context.beginPath();
     context.arc(center, center, radius, 0, 2 * Math.PI);
     context.strokeStyle = backgroundColor;
+    if (shade === 'inherit') {
+      context.globalAlpha = 0.3;
+    }
     context.stroke();
+    context.globalAlpha = 1;
 
     // Active arc (partial ring, colored)
     context.beginPath();
