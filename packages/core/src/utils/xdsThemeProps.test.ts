@@ -60,7 +60,7 @@ describe('xdsThemeProps', () => {
 
   it('returns class and data attributes together', () => {
     expect(xdsThemeProps('button', {variant: 'primary', size: 'sm'})).toEqual({
-      className: 'xds-button primary sm',
+      className: 'astryx-button xds-button primary sm',
       'data-variant': 'primary',
       'data-size': 'sm',
     });
