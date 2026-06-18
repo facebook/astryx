@@ -2,8 +2,8 @@
 
 /** @type {import('../docs-types').HookDoc} */
 export const docs = {
-  name: 'useXDSHoverCard',
-  displayName: 'useXDSHoverCard',
+  name: 'useHoverCard',
+  displayName: 'useHoverCard',
   group: 'HoverCard',
   keywords: ['hovercard', 'hover', 'preview', 'card', 'tooltip', 'popup', 'floating', 'anchor'],
   params: [
@@ -29,22 +29,22 @@ export const docs = {
     {name: 'hide', type: '() => void', description: 'Imperatively hide the hover card immediately.'},
   ],
   usage: {
-    description: 'Headless hook for hover-triggered floating cards. Builds on useXDSLayer with hover/focus intent detection, configurable delays, safe hover behavior, and accessible aria-describedby linking. Use for rich previews on hover when you need full control over the trigger or rendered content.',
+    description: 'Headless hook for hover-triggered floating cards. Builds on useLayer with hover/focus intent detection, configurable delays, safe hover behavior, and accessible aria-describedby linking. Use for rich previews on hover when you need full control over the trigger or rendered content.',
     bestPractices: [
       {guidance: true, description: 'Use for rich content previews such as user profiles, entity summaries, and link previews.'},
-      {guidance: true, description: 'Prefer the XDSHoverCard component for standard trigger-content pairs; use the hook for custom trigger patterns.'},
-      {guidance: false, description: 'Use for simple text hints — use XDSTooltip or useXDSTooltip instead.'},
+      {guidance: true, description: 'Prefer the HoverCard component for standard trigger-content pairs; use the hook for custom trigger patterns.'},
+      {guidance: false, description: 'Use for simple text hints — use Tooltip or useTooltip instead.'},
     ],
   },
   relatedComponents: ['HoverCard', 'Tooltip', 'Popover'],
-  relatedHooks: ['useXDSLayer', 'useXDSTooltip', 'useXDSPopover'],
+  relatedHooks: ['useLayer', 'useTooltip', 'usePopover'],
   importPath: '@xds/core/HoverCard',
   category: 'interaction',
 };
 
 /** @type {import('../docs-types').HookTranslationDoc} */
 export const docsDense = {
-  description: 'Headless hover-triggered floating cards. Builds on useXDSLayer w/ hover/focus intent, delays, safe hover behavior, aria-describedby. Use for rich previews when trigger/content rendering needs full control.',
+  description: 'Headless hover-triggered floating cards. Builds on useLayer w/ hover/focus intent, delays, safe hover behavior, aria-describedby. Use for rich previews when trigger/content rendering needs full control.',
   paramDescriptions: {
     placement: 'position relative to trigger.',
     alignment: 'alignment along placement axis.',
@@ -68,11 +68,11 @@ export const docsDense = {
     hide: 'hide immediately.',
   },
   usage: {
-    description: 'Headless hover-triggered floating cards. Builds on useXDSLayer w/ hover/focus intent, delays, safe hover behavior, aria-describedby. Use for rich previews when trigger/content rendering needs full control.',
+    description: 'Headless hover-triggered floating cards. Builds on useLayer w/ hover/focus intent, delays, safe hover behavior, aria-describedby. Use for rich previews when trigger/content rendering needs full control.',
     bestPractices: [
       {guidance: true, description: 'Use for rich previews: profiles, entity summaries, link previews.'},
-      {guidance: true, description: 'Prefer XDSHoverCard for standard trigger-content pairs; use hook for custom trigger patterns.'},
-      {guidance: false, description: 'Use for simple text hints — use XDSTooltip / useXDSTooltip instead.'},
+      {guidance: true, description: 'Prefer HoverCard for standard trigger-content pairs; use hook for custom trigger patterns.'},
+      {guidance: false, description: 'Use for simple text hints — use Tooltip / useTooltip instead.'},
     ],
   },
 };

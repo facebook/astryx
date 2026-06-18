@@ -11,26 +11,26 @@ export const docs = {
   keywords: ["mobilenav","drawer","sidebar","navigation","hamburger","menu","offcanvas","slideout","navdrawer","toggle"],
   components: [
     {
-      name: 'XDSMobileNav',
+      name: 'MobileNav',
       displayName: 'Mobile Nav',
       description: 'A slide-out drawer for mobile navigation. Accepts SideNav children.',
       props: [
         {
           name: 'isOpen',
           type: 'boolean',
-          description: 'Whether the drawer is open. Inside XDSAppShell, this is managed automatically via context. Outside XDSAppShell, provide this prop to control the drawer yourself.',
+          description: 'Whether the drawer is open. Inside AppShell, this is managed automatically via context. Outside AppShell, provide this prop to control the drawer yourself.',
         },
         {
           name: 'onOpenChange',
           type: '(isOpen: boolean) => void',
           description:
-            'Called when the drawer visibility changes (backdrop click, Escape key, or close button). Inside XDSAppShell, this is managed automatically via context.',
+            'Called when the drawer visibility changes (backdrop click, Escape key, or close button). Inside AppShell, this is managed automatically via context.',
         },
         {
           name: 'children',
           type: 'ReactNode',
           description:
-            'Drawer content — typically XDSSideNavSection/XDSSideNavItem, or any ReactNode.',
+            'Drawer content — typically SideNavSection/SideNavItem, or any ReactNode.',
           required: true,
         },
         {
@@ -55,9 +55,9 @@ export const docs = {
       ],
     },
     {
-      name: 'XDSMobileNavToggle',
+      name: 'MobileNavToggle',
       displayName: 'Mobile Nav Toggle',
-      description: 'Hamburger button that opens/closes the mobile nav drawer. Reads open state from XDSAppShell context automatically — does NOT accept isOpen or onOpenChange props. Renders nothing above the mobile breakpoint.',
+      description: 'Hamburger button that opens/closes the mobile nav drawer. Reads open state from AppShell context automatically — does NOT accept isOpen or onOpenChange props. Renders nothing above the mobile breakpoint.',
       props: [
         {
           name: 'children',
@@ -80,11 +80,11 @@ export const docs = {
   },
   usage: {
     description:
-      'A slide-out drawer for mobile navigation. MobileNav is the mobile counterpart to SideNav and accepts the same children. Use it on narrow viewports where a persistent sidebar is not practical. Inside XDSAppShell, use XDSMobileNavToggle as the trigger — it reads state from context automatically.',
+      'A slide-out drawer for mobile navigation. MobileNav is the mobile counterpart to SideNav and accepts the same children. Use it on narrow viewports where a persistent sidebar is not practical. Inside AppShell, use MobileNavToggle as the trigger — it reads state from context automatically.',
     bestPractices: [
       { guidance: true, description: 'Share the same nav items between MobileNav and SideNav by extracting them into a variable.' },
       { guidance: true, description: 'Provide a header when the drawer\'s purpose is not obvious from its content.' },
-      { guidance: true, description: 'Inside XDSAppShell, use XDSMobileNavToggle to open the drawer — it reads state from context. Do not pass isOpen/onOpenChange to the toggle.' },
+      { guidance: true, description: 'Inside AppShell, use MobileNavToggle to open the drawer — it reads state from context. Do not pass isOpen/onOpenChange to the toggle.' },
       { guidance: false, description: 'Use MobileNav on desktop — use a persistent SideNav instead.' },
     ],
   },
@@ -111,7 +111,7 @@ export const docsZh = {
       name: 'children',
       type: 'ReactNode',
       description:
-        '抽屉内容，通常是 XDSSideNavSection/XDSSideNavItem 或任何 ReactNode。',
+        '抽屉内容，通常是 SideNavSection/SideNavItem 或任何 ReactNode。',
       required: true,
     },
     {
@@ -145,7 +145,7 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Share the same nav items between MobileNav and SideNav by extracting them into a variable.' },
       { guidance: true, description: 'Provide a header when the drawer\'s purpose is not obvious from its content.' },
-      { guidance: true, description: 'Inside XDSAppShell, use XDSMobileNavToggle to open the drawer — it reads state from context. Do not pass isOpen/onOpenChange to the toggle.' },
+      { guidance: true, description: 'Inside AppShell, use MobileNavToggle to open the drawer — it reads state from context. Do not pass isOpen/onOpenChange to the toggle.' },
       { guidance: false, description: 'Use MobileNav on desktop — use a persistent SideNav instead.' },
     ],
   },
@@ -154,25 +154,25 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'Slide-out drawer overlay for mobile navigation. Mobile counterpart to XDSSideNav; accepts same children (XDSSideNavSection, XDSSideNavItem, or any ReactNode).',
+    'Slide-out drawer overlay for mobile navigation. Mobile counterpart to SideNav; accepts same children (SideNavSection, SideNavItem, or any ReactNode).',
   usage: {
     description:
       'A slide-out drawer for mobile navigation. MobileNav is the mobile counterpart to SideNav and accepts the same children. Use it on narrow viewports where a persistent sidebar is not practical.',
     bestPractices: [
       { guidance: true, description: 'Share nav items between MobileNav and SideNav by extracting into a variable.' },
       { guidance: true, description: 'Provide a header when the drawer purpose is not obvious from content.' },
-      { guidance: true, description: 'Inside XDSAppShell, use XDSMobileNavToggle to open the drawer; it reads state from context. Do not pass isOpen/onOpenChange to the toggle.' },
+      { guidance: true, description: 'Inside AppShell, use MobileNavToggle to open the drawer; it reads state from context. Do not pass isOpen/onOpenChange to the toggle.' },
       { guidance: false, description: 'Use MobileNav on desktop; use a persistent SideNav instead.' },
     ],
   },
   components: [
     {
-      name: 'XDSMobileNav',
+      name: 'MobileNav',
       description: 'Slide-out drawer for mobile navigation. Accepts SideNav children.',
     },
     {
-      name: 'XDSMobileNavToggle',
-      description: 'Hamburger button that opens/closes mobile nav drawer. Reads open state from XDSAppShell context automatically. Renders nothing above mobile breakpoint.',
+      name: 'MobileNavToggle',
+      description: 'Hamburger button that opens/closes mobile nav drawer. Reads open state from AppShell context automatically. Renders nothing above mobile breakpoint.',
     },
   ],
   propDescriptions: {
@@ -180,7 +180,7 @@ export const docsDense = {
     onOpenChange:
       'called when drawer visibility changes (backdrop click, Escape, close button)',
     children:
-      'drawer content; typically XDSSideNavSection/XDSSideNavItem or any ReactNode',
+      'drawer content; typically SideNavSection/SideNavItem or any ReactNode',
     header: 'header content (string or ReactNode), rendered next to close button',
     width: 'drawer width px; capped at 85vw to prevent overflow on small screens',
     side: 'slide direction; start=left LTR, right RTL',

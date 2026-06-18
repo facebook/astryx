@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'CheckboxList',
   displayName: 'Checkbox List Item',
   isHiddenFromOverview: true,
-  description: 'Individual checkbox item with label, description, and end content slot. Works in collection mode (inside XDSCheckboxList) or standalone mode (inside XDSList).',
+  description: 'Individual checkbox item with label, description, and end content slot. Works in collection mode (inside CheckboxList) or standalone mode (inside List).',
   props: [
     {
       name: 'label',
@@ -18,7 +18,7 @@ export const docs = {
     {
       name: 'value',
       type: 'string',
-      description: 'Identity key (required inside XDSCheckboxList).',
+      description: 'Identity key (required inside CheckboxList).',
     },
     {
       name: 'description',
@@ -31,14 +31,14 @@ export const docs = {
       description: 'Content rendered after the label area.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'chevronDown',
             size: 'sm',
           },
         },
         {
-          __element: 'XDSBadge',
+          __element: 'Badge',
           props: {
             label: '3',
           },
@@ -79,7 +79,7 @@ export const docsZh = {
     {
       name: 'value',
       type: 'string',
-      description: '标识键（在 XDSCheckboxList 内为必填）。',
+      description: '标识键（在 CheckboxList 内为必填）。',
     },
     {
       name: 'description',
@@ -117,7 +117,7 @@ export const docsDense = {
   description: 'Individual checkbox item w/ label, description, end content slot.',
   propDescriptions: {
     label: 'Primary text label for item.',
-    value: 'Identity key (required inside XDSCheckboxList).',
+    value: 'Identity key (required inside CheckboxList).',
     description: 'Secondary text below label.',
     endContent: 'Content rendered after label area.',
     isDisabled: 'Whether this individual item disabled.',

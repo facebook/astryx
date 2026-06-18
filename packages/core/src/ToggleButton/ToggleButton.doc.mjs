@@ -19,7 +19,7 @@ export const docs = {
       {className: 'xds-toggle-button-group'},
     ],
   },
-  description: 'A button that toggles between pressed and unpressed states. Thin wrapper over XDSButton with controlled toggle pattern, icon swap, and font weight emphasis.',
+  description: 'A button that toggles between pressed and unpressed states. Thin wrapper over Button with controlled toggle pattern, icon swap, and font weight emphasis.',
   props: [
     {
       name: 'label',
@@ -66,7 +66,7 @@ export const docs = {
       description: 'Icon element. When provided without children, button becomes icon-only with tooltip from label.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',
@@ -80,7 +80,7 @@ export const docs = {
       description: 'Icon shown when pressed. Falls back to icon if not provided.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',
@@ -101,7 +101,7 @@ export const docs = {
     {
       name: 'value',
       type: 'string',
-      description: 'Value identifier when used inside XDSToggleButtonGroup. Required in groups.',
+      description: 'Value identifier when used inside ToggleButtonGroup. Required in groups.',
     },
     {
       name: 'data-testid',
@@ -110,7 +110,7 @@ export const docs = {
     },
   ],
   components: [
-    {name: 'XDSToggleButtonGroup'},
+    {name: 'ToggleButtonGroup'},
   ],
   usage: {
     description:

@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'TopNav',
   displayName: 'Top Nav Item',
   isHiddenFromOverview: true,
-  description: 'Navigation link item for use in XDSTopNav startContent — renders as an anchor with hover and selected states.',
+  description: 'Navigation link item for use in TopNav startContent — renders as an anchor with hover and selected states.',
   props: [
     {
       name: 'label',
@@ -44,7 +44,7 @@ export const docs = {
       description: 'Optional icon to display before the label.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',
@@ -59,8 +59,8 @@ export const docs = {
     },
     {
       name: 'as',
-      type: 'XDSLinkComponentType',
-      description: 'Custom component to render instead of <a>. Overrides the provider-level default set by XDSLinkProvider. Must accept href, className, style, and children props.',
+      type: 'LinkComponentType',
+      description: 'Custom component to render instead of <a>. Overrides the provider-level default set by LinkProvider. Must accept href, className, style, and children props.',
     },
   ],
 };
@@ -69,7 +69,7 @@ export const docsZh = {
   name: 'TopNavItem',
   isHiddenFromOverview: true,
   displayName: 'Top Nav Item',
-  description: '用于 XDSTopNav startContent 的导航链接项 — 渲染为具有悬停和选中状态的锚点。',
+  description: '用于 TopNav startContent 的导航链接项 — 渲染为具有悬停和选中状态的锚点。',
   props: [
     {
       name: 'label',
@@ -106,8 +106,8 @@ export const docsZh = {
     },
     {
       name: 'as',
-      type: 'XDSLinkComponentType',
-      description: '替代 <a> 渲染的自定义组件。覆盖 XDSLinkProvider 设置的提供者级别默认值。必须接受 href、className、style 和 children 属性。',
+      type: 'LinkComponentType',
+      description: '替代 <a> 渲染的自定义组件。覆盖 LinkProvider 设置的提供者级别默认值。必须接受 href、className、style 和 children 属性。',
     },
   ],
 };
@@ -116,7 +116,7 @@ export const docsDense = {
   name: 'TopNavItem',
   isHiddenFromOverview: true,
   displayName: 'Top Nav Item',
-  description: 'Nav link for XDSTopNav startContent; renders as anchor w/ hover+selected states.',
+  description: 'Nav link for TopNav startContent; renders as anchor w/ hover+selected states.',
   propDescriptions: {
     label: 'Visible text or aria-label when isIconOnly is true.',
     href: 'Navigation URL.',
@@ -124,6 +124,6 @@ export const docsDense = {
     isDisabled: 'Sets aria-disabled, prevents interaction.',
     icon: 'Icon before label.',
     children: 'Custom content instead of label text.',
-    as: 'Custom link component. Overrides XDSLinkProvider default. Must accept href, className, style, children.',
+    as: 'Custom link component. Overrides LinkProvider default. Must accept href, className, style, children.',
   },
 };

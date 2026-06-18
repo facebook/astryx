@@ -116,7 +116,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'XDSInputStatus',
+      type: 'InputStatus',
       description:
         'Status indicator object (`{ type, message }`) for validation feedback.',
     },
@@ -258,7 +258,7 @@ export const docsZh = {
     },
     {
       name: 'status',
-      type: 'XDSInputStatus',
+      type: 'InputStatus',
       description:
         '验证反馈的状态指示器对象（`{ type, message }`）。',
     },

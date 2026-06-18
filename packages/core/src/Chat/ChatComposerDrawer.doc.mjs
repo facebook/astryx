@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Chat',
   displayName: 'Chat Composer Drawer',
   isHiddenFromOverview: true,
-  description: "Collapsible drawer panel that sits above the chat input inside XDSChatComposer. Pass it to the composer's `drawer` slot to show attachments, context chips, or any supplementary content. When `count` is provided the drawer gains a collapse toggle — collapsed state shows a badge and label, expanded state shows all children.",
+  description: "Collapsible drawer panel that sits above the chat input inside ChatComposer. Pass it to the composer's `drawer` slot to show attachments, context chips, or any supplementary content. When `count` is provided the drawer gains a collapse toggle — collapsed state shows a badge and label, expanded state shows all children.",
   props: [
     {
       name: 'children',
@@ -49,7 +49,7 @@ export const docsZh = {
   name: 'ChatComposerDrawer',
   isHiddenFromOverview: true,
   displayName: 'Chat Composer Drawer',
-  description: '位于聊天输入上方的可折叠抽屉面板。传入 XDSChatComposer 的 `drawer` 插槽，用于显示附件、上下文标签或预览内容。提供 `count` 时启用折叠切换。',
+  description: '位于聊天输入上方的可折叠抽屉面板。传入 ChatComposer 的 `drawer` 插槽，用于显示附件、上下文标签或预览内容。提供 `count` 时启用折叠切换。',
   propDescriptions: {
     children: '抽屉内渲染的内容——标记、标签、预览或任何 React 元素。',
     count: '折叠徽章中显示的总数。提供时，抽屉获得折叠/展开切换。',

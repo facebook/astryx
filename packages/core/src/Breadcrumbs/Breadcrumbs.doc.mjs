@@ -38,10 +38,10 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'XDSBreadcrumbItem elements to render inside the breadcrumb trail.',
+      description: 'BreadcrumbItem elements to render inside the breadcrumb trail.',
       slotElements: [
         {
-          __element: 'XDSBreadcrumbItem',
+          __element: 'BreadcrumbItem',
           props: {
             href: '#',
           },
@@ -57,7 +57,7 @@ export const docs = {
       default: "'/'",
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'chevronRight',
             size: 'sm',
@@ -84,7 +84,7 @@ export const docs = {
     },
   ],
   components: [
-    {name: 'XDSBreadcrumbItem'},
+    {name: 'BreadcrumbItem'},
   ],
 };
 

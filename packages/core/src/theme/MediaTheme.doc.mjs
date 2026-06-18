@@ -23,7 +23,7 @@ export const docs = {
     defaults: {
       mode: 'dark',
       children: {
-        __element: 'XDSSection',
+        __element: 'Section',
         props: {
           variant: 'transparent',
           padding: 4,
@@ -34,21 +34,21 @@ export const docs = {
           },
         },
         children: {
-          __element: 'XDSVStack',
+          __element: 'VStack',
           props: {gap: 2},
           children: [
             {
-              __element: 'XDSText',
+              __element: 'Text',
               props: {type: 'body', weight: 'bold'},
               children: 'Media overlay',
             },
             {
-              __element: 'XDSText',
+              __element: 'Text',
               props: {type: 'supporting', color: 'secondary'},
               children: 'Text and actions adapt to the dark media surface.',
             },
             {
-              __element: 'XDSButton',
+              __element: 'Button',
               props: {label: 'Watch now', variant: 'secondary', size: 'sm'},
             },
           ],
@@ -78,7 +78,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Use MediaTheme for app-level dark mode — use XDSTheme with mode="dark" or mode="system" instead. MediaTheme is for local surface inversions, not page-wide color scheme.',
+          'Use MediaTheme for app-level dark mode — use Theme with mode="dark" or mode="system" instead. MediaTheme is for local surface inversions, not page-wide color scheme.',
       },
     ],
   },
@@ -124,7 +124,7 @@ export const docsDense = {
       {
         guidance: false,
         description:
-          'Use MediaTheme for app-level dark mode — use XDSTheme w/ mode="dark"/mode="system" instead. MediaTheme is for local surface inversions, not page-wide color scheme.',
+          'Use MediaTheme for app-level dark mode — use Theme w/ mode="dark"/mode="system" instead. MediaTheme is for local surface inversions, not page-wide color scheme.',
       },
     ],
   },

@@ -2,8 +2,8 @@
 
 /** @type {import('../docs-types').HookDoc} */
 export const docs = {
-  name: 'useXDSPopover',
-  displayName: 'useXDSPopover',
+  name: 'usePopover',
+  displayName: 'usePopover',
   group: 'Popover',
   keywords: ['popover', 'popup', 'dropdown', 'floating', 'anchor', 'dialog', 'overlay', 'flyout'],
   params: [
@@ -30,15 +30,15 @@ export const docs = {
     {name: 'triggerProps', type: '{aria-haspopup: "dialog"; aria-expanded: boolean; aria-controls: string}', description: 'ARIA attributes to spread onto the trigger element.'},
   ],
   usage: {
-    description: 'Headless hook for click-triggered popovers with focus trapping. Combines useXDSLayer with useFocusTrap, auto-focus, light dismiss, Escape handling, and an optional hidden close button for accessible dialog-like popover behavior. Use for custom interactive floating content that needs keyboard navigation.',
+    description: 'Headless hook for click-triggered popovers with focus trapping. Combines useLayer with useFocusTrap, auto-focus, light dismiss, Escape handling, and an optional hidden close button for accessible dialog-like popover behavior. Use for custom interactive floating content that needs keyboard navigation.',
     bestPractices: [
       {guidance: true, description: 'Use for interactive content such as menus, pickers, forms, and command panels that need focus management.'},
-      {guidance: true, description: 'Prefer the XDSPopover component for standard trigger-content pairs; use the hook for custom trigger patterns.'},
-      {guidance: false, description: 'Use for non-interactive hover previews — use useXDSHoverCard or useXDSTooltip instead.'},
+      {guidance: true, description: 'Prefer the Popover component for standard trigger-content pairs; use the hook for custom trigger patterns.'},
+      {guidance: false, description: 'Use for non-interactive hover previews — use useHoverCard or useTooltip instead.'},
     ],
   },
   relatedComponents: ['Popover', 'DropdownMenu', 'HoverCard'],
-  relatedHooks: ['useXDSLayer', 'useFocusTrap', 'useXDSHoverCard', 'useXDSTooltip'],
+  relatedHooks: ['useLayer', 'useFocusTrap', 'useHoverCard', 'useTooltip'],
   importPath: '@xds/core/Popover',
   category: 'interaction',
 };
@@ -73,8 +73,8 @@ export const docsDense = {
     description: 'Headless click-triggered popovers w/ focus trap, auto-focus, light dismiss, Escape, optional hidden close button. Use for custom interactive floating content needing keyboard nav.',
     bestPractices: [
       {guidance: true, description: 'Use for menus, pickers, forms, command panels needing focus management.'},
-      {guidance: true, description: 'Prefer XDSPopover for standard trigger-content pairs; use hook for custom trigger patterns.'},
-      {guidance: false, description: 'Use for non-interactive hover previews — use useXDSHoverCard / useXDSTooltip instead.'},
+      {guidance: true, description: 'Prefer Popover for standard trigger-content pairs; use hook for custom trigger patterns.'},
+      {guidance: false, description: 'Use for non-interactive hover previews — use useHoverCard / useTooltip instead.'},
     ],
   },
 };

@@ -7,15 +7,15 @@ export const docs = {
   subComponentOf: 'TopNav',
   displayName: 'Top Nav Heading',
   isHiddenFromOverview: true,
-  description: 'Product/suite/account heading for the XDSTopNav heading slot. Supports smart interaction boundary logic: logo, heading text, superheading/subheading with independent links, and an optional menu popover with automatic chevron indicator.',
+  description: 'Product/suite/account heading for the TopNav heading slot. Supports smart interaction boundary logic: logo, heading text, superheading/subheading with independent links, and an optional menu popover with automatic chevron indicator.',
   props: [
     {
       name: 'logo',
       type: 'ReactNode',
-      description: 'Logo element to display before the heading text. Can be an image, XDSNavIcon, or any ReactNode.',
+      description: 'Logo element to display before the heading text. Can be an image, NavIcon, or any ReactNode.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',
@@ -64,7 +64,7 @@ export const docs = {
       description: 'Content rendered at the trailing edge of the heading row (e.g. a badge or status indicator).',
       slotElements: [
         {
-          __element: 'XDSButton',
+          __element: 'Button',
           props: {
             label: 'Action',
             variant: 'ghost',
@@ -79,7 +79,7 @@ export const docs = {
       description: 'Menu content shown in a popover dropdown. When provided, a chevron indicator appears automatically. Interaction boundary is determined by the presence of hrefs: no hrefs means the whole header is the trigger; with hrefs, links are independent and the chevron area is the trigger.',
       slotElements: [
         {
-          __element: 'XDSButton',
+          __element: 'Button',
           props: {
             label: 'Action',
             variant: 'ghost',
@@ -90,8 +90,8 @@ export const docs = {
     },
     {
       name: 'as',
-      type: 'XDSLinkComponentType',
-      description: 'Custom component to render instead of <a>. Overrides the provider-level default set by XDSLinkProvider. Must accept href, className, style, and children props.',
+      type: 'LinkComponentType',
+      description: 'Custom component to render instead of <a>. Overrides the provider-level default set by LinkProvider. Must accept href, className, style, and children props.',
     },
     {
       name: 'xstyle',
@@ -105,12 +105,12 @@ export const docsZh = {
   name: 'TopNavHeading',
   isHiddenFromOverview: true,
   displayName: 'Top Nav Heading',
-  description: 'XDSTopNav 标题插槽的产品/套件/账户标题组件。支持智能交互边界逻辑：标志、标题文本、独立链接的上标题/下标题，以及带自动箭头指示器的可选菜单弹出层。',
+  description: 'TopNav 标题插槽的产品/套件/账户标题组件。支持智能交互边界逻辑：标志、标题文本、独立链接的上标题/下标题，以及带自动箭头指示器的可选菜单弹出层。',
   props: [
     {
       name: 'logo',
       type: 'ReactNode',
-      description: '在标题文本前显示的标志元素。可以是图片、XDSNavIcon 或任何 ReactNode。',
+      description: '在标题文本前显示的标志元素。可以是图片、NavIcon 或任何 ReactNode。',
     },
     {
       name: 'heading',
@@ -159,8 +159,8 @@ export const docsZh = {
     },
     {
       name: 'as',
-      type: 'XDSLinkComponentType',
-      description: '用于替代 <a> 的自定义链接组件。覆盖 XDSLinkProvider 设置的默认组件。必须接受 href、className、style 和 children 属性。',
+      type: 'LinkComponentType',
+      description: '用于替代 <a> 的自定义链接组件。覆盖 LinkProvider 设置的默认组件。必须接受 href、className、style 和 children 属性。',
     },
     {
       name: 'xstyle',
@@ -174,9 +174,9 @@ export const docsDense = {
   name: 'TopNavHeading',
   isHiddenFromOverview: true,
   displayName: 'Top Nav Heading',
-  description: 'Product/suite heading for XDSTopNav; logo+heading text w/ smart interaction boundaries, optional menu popover, superheading/subheading w/ independent links.',
+  description: 'Product/suite heading for TopNav; logo+heading text w/ smart interaction boundaries, optional menu popover, superheading/subheading w/ independent links.',
   propDescriptions: {
-    logo: 'Logo before heading text. Image, XDSNavIcon, or ReactNode.',
+    logo: 'Logo before heading text. Image, NavIcon, or ReactNode.',
     heading: 'Product/app name.',
     headingHref: 'Link for heading (product home). Only href + no menu → whole heading is link.',
     href: 'Deprecated — use headingHref.',
@@ -186,7 +186,7 @@ export const docsDense = {
     subheadingHref: 'Link for subheading. Independent inline link when menu present.',
     headerEndContent: 'Trailing edge content (badge, status indicator).',
     menu: 'Popover dropdown content. Shows chevron auto. No hrefs → whole header triggers; with hrefs → chevron area triggers.',
-    as: 'Custom link component. Overrides XDSLinkProvider default. Must accept href, className, style, children.',
+    as: 'Custom link component. Overrides LinkProvider default. Must accept href, className, style, children.',
     xstyle: 'StyleX layout styles. Must be stylex.create() value.',
   },
 };

@@ -27,7 +27,7 @@ export const docs = {
     },
     {
       name: 'overflowRenderer',
-      type: '(overflowItems: XDSOverflowItem[]) => ReactNode',
+      type: '(overflowItems: OverflowItem[]) => ReactNode',
       description:
         'Render function for the overflow indicator. Receives the list of hidden items (each with child and index). Only called when items are overflowing.',
     },
@@ -93,7 +93,7 @@ export const docsZh = {
     },
     {
       name: 'overflowRenderer',
-      type: '(overflowItems: XDSOverflowItem[]) => ReactNode',
+      type: '(overflowItems: OverflowItem[]) => ReactNode',
       description:
         '溢出指示器的渲染函数。接收隐藏项目列表（每项包含 child 和 index）。仅在有溢出项时调用。',
     },

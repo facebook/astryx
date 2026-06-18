@@ -48,7 +48,7 @@ export const docs = {
     description:
       'Makes an input container wrapper clickable, delegating focus to the inner input/textarea when the user clicks non-interactive areas (icons, padding, status indicators). Built on top of useClickableContainer, so nested interactive elements (clear buttons, calendar toggles, links) are handled safely; clicking them does NOT steal focus from the input. Automatically detects input type: text-like inputs receive .focus(), while other types (checkbox, radio, file) receive .click().',
     bestPractices: [
-      { guidance: true, description: 'Use inside input wrapper components (XDSTextInput, XDSNumberInput, XDSTimeInput, XDSTextArea) to make the full container area clickable.' },
+      { guidance: true, description: 'Use inside input wrapper components (TextInput, NumberInput, TimeInput, TextArea) to make the full container area clickable.' },
       { guidance: true, description: 'Attach both onClick and onMouseUp to the wrapper div for full interaction handling.' },
       { guidance: false, description: 'Use on bare inputs without a wrapper; there is no benefit if the input already fills the full clickable area.' },
     ],
@@ -77,7 +77,7 @@ export const docsDense = {
     description:
       'Makes input container wrapper clickable, delegating focus to inner input/textarea when user clicks non-interactive areas (icons, padding, status indicators). Built on useClickableContainer, so nested interactive elements (clear buttons, calendar toggles, links) handled safely; clicking them does NOT steal focus from input. Automatically detects input type: text-like inputs receive .focus(), other types (checkbox, radio, file) receive .click().',
     bestPractices: [
-      { guidance: true, description: 'Use inside input wrapper components (XDSTextInput, XDSNumberInput, XDSTimeInput, XDSTextArea) to make full container area clickable.' },
+      { guidance: true, description: 'Use inside input wrapper components (TextInput, NumberInput, TimeInput, TextArea) to make full container area clickable.' },
       { guidance: true, description: 'Attach both onClick + onMouseUp to wrapper div for full interaction handling.' },
       { guidance: false, description: 'Use on bare inputs w/o wrapper; no benefit if input already fills full clickable area.' },
     ],

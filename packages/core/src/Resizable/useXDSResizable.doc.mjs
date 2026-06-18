@@ -2,8 +2,8 @@
 
 /** @type {import('../docs-types').HookDoc} */
 export const docs = {
-  name: 'useXDSResizable',
-  displayName: 'useXDSResizable',
+  name: 'useResizable',
+  displayName: 'useResizable',
   group: 'Resizable',
   keywords: ['resize', 'resizable', 'drag', 'split', 'panel', 'sidebar', 'divider', 'splitter'],
   params: [
@@ -70,19 +70,19 @@ export const docs = {
     {
       name: 'props',
       type: 'ResizableProps',
-      description: 'Props to spread on the resizable component or pass to XDSResizeHandle.',
+      description: 'Props to spread on the resizable component or pass to ResizeHandle.',
     },
   ],
   usage: {
     description: 'Hook for adding drag-to-resize behavior to layout regions. Supports single-region and multi-region configurations with snap points, collapsible panels, localStorage persistence, and cascade resize ordering.',
     bestPractices: [
-      {guidance: true, description: 'Use with XDSLayout or XDSAppShell sidebar for resizable navigation panels.'},
+      {guidance: true, description: 'Use with Layout or AppShell sidebar for resizable navigation panels.'},
       {guidance: true, description: 'Set autoSaveId to persist user-chosen sizes across page reloads.'},
       {guidance: false, description: 'Set minSizePx too small; content becomes unreadable. Prefer collapsible for panels that can hide entirely.'},
     ],
   },
   relatedComponents: ['Resizable', 'AppShell', 'Layout', 'SideNav'],
-  relatedHooks: ['useXDSCollapsible'],
+  relatedHooks: ['useCollapsible'],
   importPath: '@xds/core/Resizable',
   category: 'layout',
 };
@@ -104,12 +104,12 @@ export const docsDense = {
     collapse: 'programmatically collapse region.',
     expand: 'expand from collapsed state.',
     resize: 'resize to specific px value.',
-    props: 'props to spread on resizable component / pass to XDSResizeHandle.',
+    props: 'props to spread on resizable component / pass to ResizeHandle.',
   },
   usage: {
     description: 'Adds drag-to-resize behavior to layout regions. Supports single-/multi-region configs w/ snap points, collapsible panels, localStorage persistence, cascade resize ordering.',
     bestPractices: [
-      {guidance: true, description: 'Use w/ XDSLayout / XDSAppShell sidebar for resizable navigation panels.'},
+      {guidance: true, description: 'Use w/ Layout / AppShell sidebar for resizable navigation panels.'},
       {guidance: true, description: 'Set autoSaveId to persist user-chosen sizes across page reloads.'},
       {guidance: false, description: 'Set minSizePx too small; content becomes unreadable. Prefer collapsible for panels that can hide entirely.'},
     ],

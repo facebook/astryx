@@ -16,7 +16,7 @@ export const docs = {
       { guidance: true, description: 'Cap the column count with `max` to prevent rows from getting too wide on large screens.' },
       { guidance: true, description: 'Use `repeat: \'fill\'` (the default) for consistent item widths. Use `\'fit\'` when items should stretch to fill leftover space.' },
       { guidance: false, description: 'Write manual CSS grid; Grid handles spacing and responsive behavior for you.' },
-      { guidance: false, description: 'Use `XDSHStack` with wrapping for grids; use Grid instead.' },
+      { guidance: false, description: 'Use `HStack` with wrapping for grids; use Grid instead.' },
     ],
   },
   theming: {
@@ -86,7 +86,7 @@ export const docs = {
     },
   ],
   components: [
-    {name: 'XDSGridSpan'},
+    {name: 'GridSpan'},
   ],
 };
 
@@ -100,7 +100,7 @@ export const docsZh = {
       { guidance: true, description: 'Cap the column count with `max` to prevent rows from getting too wide on large screens.' },
       { guidance: true, description: 'Use `repeat: \'fill\'` (the default) for consistent item widths. Use `\'fit\'` when items should stretch to fill leftover space.' },
       { guidance: false, description: 'Write manual CSS grid; Grid handles spacing and responsive behavior for you.' },
-      { guidance: false, description: 'Use `XDSHStack` with wrapping for grids; use Grid instead.' },
+      { guidance: false, description: 'Use `HStack` with wrapping for grids; use Grid instead.' },
     ],
   },
 };
@@ -115,7 +115,7 @@ export const docsDense = {
       { guidance: true, description: 'Cap the column count with max to prevent rows from getting too wide on large screens.' },
       { guidance: true, description: 'Use repeat: \'fill\' (the default) for consistent item widths. Use \'fit\' when items should stretch to fill leftover space.' },
       { guidance: false, description: 'Write manual CSS grid; Grid handles spacing and responsive behavior for you.' },
-      { guidance: false, description: 'Use XDSHStack with wrapping for grids; use Grid instead.' },
+      { guidance: false, description: 'Use HStack with wrapping for grids; use Grid instead.' },
     ],
   },
 };

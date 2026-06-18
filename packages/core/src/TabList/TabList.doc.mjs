@@ -23,7 +23,7 @@ export const docs = {
       {className: 'xds-tab-menu-item'},
     ],
   },
-  description: 'Nav wrapper that provides XDSTabListContext (value, onChange, size) to XDSTab and XDSTabMenu children.',
+  description: 'Nav wrapper that provides TabListContext (value, onChange, size) to Tab and TabMenu children.',
   props: [
     {
       name: 'value',
@@ -52,10 +52,10 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'XDSTab and XDSTabMenu items to render inside the nav.',
+      description: 'Tab and TabMenu items to render inside the nav.',
       slotElements: [
         {
-          __element: 'XDSTab',
+          __element: 'Tab',
           props: {
             label: 'Tab',
             value: 'tab',
@@ -71,19 +71,19 @@ export const docs = {
     },
   ],
   components: [
-    {name: 'XDSTab'},
-    {name: 'XDSTabMenu'},
+    {name: 'Tab'},
+    {name: 'TabMenu'},
   ],
   usage: {
     description:
       'TabList provides tab-style navigation for organizing content into categorized sections. Use it to let users switch between related views without leaving the page, with overflow items handled by a built-in "more" menu.',
     bestPractices: [
       { guidance: true, description: 'Keep tab labels short and descriptive so users can quickly scan available sections.' },
-      { guidance: true, description: 'Use XDSTabMenu to group overflow items when horizontal space is limited rather than scrolling tabs off-screen.' },
+      { guidance: true, description: 'Use TabMenu to group overflow items when horizontal space is limited rather than scrolling tabs off-screen.' },
       { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, use a smaller button size (sm) so the actions don\u2019t overpower the tab row.' },
       { guidance: false, description: 'Use tabs for sequential steps or workflows; use a stepper or wizard pattern instead.' },
       { guidance: false, description: 'Place more than 6–8 visible tabs before the overflow menu; prioritize the most important categories.' },
-      { guidance: false, description: 'Confuse TabList with XDSSegmentedControl or XDSToggleButton. TabList is for navigation between views. SegmentedControl and ToggleButton are input controls: SegmentedControl always has exactly one selected option, while ToggleButton can be toggled on or off.' },
+      { guidance: false, description: 'Confuse TabList with SegmentedControl or ToggleButton. TabList is for navigation between views. SegmentedControl and ToggleButton are input controls: SegmentedControl always has exactly one selected option, while ToggleButton can be toggled on or off.' },
     ],
     anatomy: [
       {name: 'Left Content', required: false, description: 'Most important area; hugs content width.'},
@@ -100,11 +100,11 @@ export const docsZh = {
       'TabList provides tab-style navigation for organizing content into categorized sections. Use it to let users switch between related views without leaving the page, with overflow items handled by a built-in "more" menu.',
     bestPractices: [
       { guidance: true, description: 'Keep tab labels short and descriptive so users can quickly scan available sections.' },
-      { guidance: true, description: 'Use XDSTabMenu to group overflow items when horizontal space is limited rather than scrolling tabs off-screen.' },
+      { guidance: true, description: 'Use TabMenu to group overflow items when horizontal space is limited rather than scrolling tabs off-screen.' },
       { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, use a smaller button size (sm) so the actions don\u2019t overpower the tab row.' },
       { guidance: false, description: 'Use tabs for sequential steps or workflows; use a stepper or wizard pattern instead.' },
       { guidance: false, description: 'Place more than 6–8 visible tabs before the overflow menu; prioritize the most important categories.' },
-      { guidance: false, description: 'Confuse TabList with XDSSegmentedControl or XDSToggleButton. TabList is for navigation between views. SegmentedControl and ToggleButton are input controls: SegmentedControl always has exactly one selected option, while ToggleButton can be toggled on or off.' },
+      { guidance: false, description: 'Confuse TabList with SegmentedControl or ToggleButton. TabList is for navigation between views. SegmentedControl and ToggleButton are input controls: SegmentedControl always has exactly one selected option, while ToggleButton can be toggled on or off.' },
     ],
     anatomy: [
       {name: 'Left Content', required: false, description: 'Most important area; hugs content width.'},
@@ -122,11 +122,11 @@ export const docsDense = {
       'TabList provides tab-style navigation for organizing content into categorized sections. Use it to let users switch between related views without leaving the page, with overflow items handled by a built-in "more" menu.',
     bestPractices: [
       { guidance: true, description: 'Keep tab labels short and descriptive so users can quickly scan available sections.' },
-      { guidance: true, description: 'Use XDSTabMenu to group overflow items when horizontal space is limited rather than scrolling tabs off-screen.' },
+      { guidance: true, description: 'Use TabMenu to group overflow items when horizontal space is limited rather than scrolling tabs off-screen.' },
       { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, use a smaller button size (sm) so the actions don\u2019t overpower the tab row.' },
       { guidance: false, description: 'Use tabs for sequential steps or workflows; use a stepper or wizard pattern instead.' },
       { guidance: false, description: 'Place more than 6–8 visible tabs before the overflow menu; prioritize the most important categories.' },
-      { guidance: false, description: 'Confuse TabList with XDSSegmentedControl or XDSToggleButton. TabList is for navigation between views. SegmentedControl and ToggleButton are input controls: SegmentedControl always has exactly one selected option, while ToggleButton can be toggled on or off.' },
+      { guidance: false, description: 'Confuse TabList with SegmentedControl or ToggleButton. TabList is for navigation between views. SegmentedControl and ToggleButton are input controls: SegmentedControl always has exactly one selected option, while ToggleButton can be toggled on or off.' },
     ],
     anatomy: [
       {name: 'Left Content', required: false, description: 'Most important area; hugs content width.'},

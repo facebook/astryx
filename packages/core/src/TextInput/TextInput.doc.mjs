@@ -98,7 +98,7 @@ export const docs = {
     },
     {
       name: 'startIcon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description:
         'SVG icon component displayed at the start of the input. See `npx xds docs icons` for valid semantic names.',
     },
@@ -251,7 +251,7 @@ export const docsZh = {
     },
     {
       name: 'startIcon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description:
         '显示在输入框起始位置的 SVG 图标组件（例如来自 heroicons 或 lucide）。',
     },

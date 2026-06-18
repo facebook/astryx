@@ -12,7 +12,7 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'Message elements — typically XDSChatMessage or XDSChatSystemMessage.',
+      description: 'Message elements — typically ChatMessage or ChatSystemMessage.',
       required: true,
     },
     {
@@ -21,7 +21,7 @@ export const docs = {
       description: 'Content shown when the list has no messages.',
       slotElements: [
         {
-          __element: 'XDSEmptyState',
+          __element: 'EmptyState',
           props: {
             title: 'No items',
             description: 'Nothing to show.',
@@ -52,9 +52,9 @@ export const docsZh = {
   name: 'ChatMessageList',
   isHiddenFromOverview: true,
   displayName: 'Chat Message List',
-  description: '消息展示容器，支持密度上下文和无限滚动。自动滚动由 XDSChatLayout 管理。',
+  description: '消息展示容器，支持密度上下文和无限滚动。自动滚动由 ChatLayout 管理。',
   propDescriptions: {
-    children: '消息元素，通常是 XDSChatMessage 或 XDSChatSystemMessage。',
+    children: '消息元素，通常是 ChatMessage 或 ChatSystemMessage。',
     emptyState: '列表无消息时显示的内容。',
     scrollToTopAction: '用户滚动到顶部时触发的异步操作。用于加载更早的消息。',
     density: '视觉密度，通过上下文传递给子消息。',
@@ -66,9 +66,9 @@ export const docsDense = {
   name: 'ChatMessageList',
   isHiddenFromOverview: true,
   displayName: 'Chat Message List',
-  description: 'presentational msg container w/ density context + infinite scroll; auto-scroll owned by XDSChatLayout',
+  description: 'presentational msg container w/ density context + infinite scroll; auto-scroll owned by ChatLayout',
   propDescriptions: {
-    children: 'msg elements (XDSChatMessage or XDSChatSystemMessage)',
+    children: 'msg elements (ChatMessage or ChatSystemMessage)',
     emptyState: 'content when no msgs',
     scrollToTopAction: 'async action at scroll top; load older msgs',
     density: 'visual density; flows to children via context',

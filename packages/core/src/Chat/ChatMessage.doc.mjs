@@ -23,10 +23,10 @@ export const docs = {
     {
       name: 'avatar',
       type: 'ReactNode',
-      description: 'Avatar element rendered beside the message. Typically XDSAvatar.',
+      description: 'Avatar element rendered beside the message. Typically Avatar.',
       slotElements: [
         {
-          __element: 'XDSAvatar',
+          __element: 'Avatar',
           props: {
             name: 'User',
             size: 'sm',
@@ -45,7 +45,7 @@ export const docs = {
       description: "Metadata rendered below the message body. Use when the last child is raw content (not a bubble). If the last child is a bubble, put metadata on the bubble's `metadata` prop instead.",
       slotElements: [
         {
-          __element: 'XDSText',
+          __element: 'Text',
           props: {
             type: 'body',
           },
@@ -68,7 +68,7 @@ export const docsZh = {
   propDescriptions: {
     sender: '消息发送者，控制对齐和布局。',
     children: '自由内容：气泡、资源列表、工具调用、图片。',
-    avatar: '消息旁边渲染的头像元素。通常是 XDSAvatar。',
+    avatar: '消息旁边渲染的头像元素。通常是 Avatar。',
     name: '消息正文上方渲染的发送者名称。当第一个子元素不是气泡时使用。',
     metadata: '消息正文下方渲染的元数据。当最后一个子元素不是气泡时使用。',
     density: '视觉密度。未设置时从列表上下文继承。',
@@ -82,7 +82,7 @@ export const docsDense = {
   propDescriptions: {
     sender: 'who sent; controls alignment+layout',
     children: 'free-form: bubbles, assets, tool calls, images',
-    avatar: 'avatar element beside msg; typically XDSAvatar',
+    avatar: 'avatar element beside msg; typically Avatar',
     name: 'sender name above body; use when first child is raw (not bubble)',
     displayName: 'sender name above body; use when first child is raw (not bubble)',
     metadata: 'metadata below body; use when last child is raw (not bubble)',

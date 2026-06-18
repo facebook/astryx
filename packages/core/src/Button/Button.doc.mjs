@@ -88,7 +88,7 @@ export const docs = {
       type: 'ReactNode',
       description:
         'Icon element rendered before the label text.',
-      slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
+      slotElements: [{__element: 'Icon', props: {icon: 'check', size: 'sm'}}],
     },
     {
       name: 'isIconOnly',
@@ -105,12 +105,12 @@ export const docs = {
     },
     {
       name: 'endContent',
-      type: 'ReactElement<XDSIconProps> | ReactElement<XDSBadgeProps>',
+      type: 'ReactElement<IconProps> | ReactElement<BadgeProps>',
       description:
         'Trailing icon or badge rendered after the label. Ignored when isIconOnly is true. Color is inherited from the button variant.',
       slotElements: [
-        {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
-        {__element: 'XDSBadge', props: {label: '3'}},
+        {__element: 'Icon', props: {icon: 'chevronDown', size: 'sm'}},
+        {__element: 'Badge', props: {label: '3'}},
       ],
     },
     {
@@ -201,9 +201,9 @@ export const docsZh = {
     {name: 'children', type: 'ReactNode', description: '按钮内容。与 icon 同时提供时，文本渲染在图标旁边。'},
     {
       name: 'endContent',
-      type: 'ReactElement<XDSIconProps> | ReactElement<XDSBadgeProps>',
+      type: 'ReactElement<IconProps> | ReactElement<BadgeProps>',
       description:
-        '标签后方渲染的尾部图标或徽章。仅接受 <XDSIcon> 或 <XDSBadge>。纯图标按钮时忽略。颜色继承自按钮变体。',
+        '标签后方渲染的尾部图标或徽章。仅接受 <Icon> 或 <Badge>。纯图标按钮时忽略。颜色继承自按钮变体。',
     },
     {name: 'tooltip', type: 'string', description: '悬停时显示的提示文本。'},
     {name: 'onClick', type: '(e: MouseEvent) => void', description: '标准点击处理函数（从 ButtonHTMLAttributes 透传）。'},

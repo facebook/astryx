@@ -20,10 +20,10 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'XDSCheckboxListItem elements.',
+      description: 'CheckboxListItem elements.',
       slotElements: [
         {
-          __element: 'XDSCheckboxListItem',
+          __element: 'CheckboxListItem',
           props: {
             label: 'Option',
             value: 'option',
@@ -84,7 +84,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'XDSInputStatus',
+      type: 'InputStatus',
       description: 'Status indicator ({ type, message }).',
     },
     {
@@ -94,7 +94,7 @@ export const docs = {
     },
   ],
   components: [
-    {name: 'XDSCheckboxListItem'},
+    {name: 'CheckboxListItem'},
   ],
   usage: {
     description: 'CheckboxList shows a small group of checkboxes so users can turn several options on or off at once. Place it in settings pages, filter panels, or forms where every choice should be visible without scrolling. For a single standalone checkbox (like "I agree to the terms"), use CheckboxInput instead. If only one option can be picked, use RadioList. If the list is long enough to need searching or scrolling, use MultiSelector instead.',

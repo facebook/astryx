@@ -40,7 +40,7 @@ export const docs = {
   playground: {
     defaults: {
       ratio: 16 / 9,
-      children: {__element: 'XDSCenter', props: {height: '100%'}, children: {__element: 'XDSText', props: {color: 'secondary'}, children: '16:9'}},
+      children: {__element: 'Center', props: {height: '100%'}, children: {__element: 'Text', props: {color: 'secondary'}, children: '16:9'}},
     },
   },
   theming: {

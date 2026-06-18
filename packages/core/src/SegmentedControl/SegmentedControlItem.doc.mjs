@@ -33,7 +33,7 @@ export const docs = {
       description: 'Icon element displayed before the label.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',

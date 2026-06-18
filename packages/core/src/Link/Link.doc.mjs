@@ -20,14 +20,14 @@ export const docs = {
   },
   components: [
     {
-      name: 'XDSLink',
+      name: 'Link',
       displayName: 'Link',
       description:
         'Styled anchor link with variants, external link support, and polymorphic rendering.',
       props: [
         {
           name: 'as',
-          type: 'XDSLinkComponentType',
+          type: 'LinkComponentType',
           description: 'Custom component to render instead of <a>',
         },
         {
@@ -95,7 +95,7 @@ export const docs = {
         },
       ],    },
     {
-      name: 'XDSLinkProvider',
+      name: 'LinkProvider',
       isHiddenFromOverview: true,
       displayName: 'Link Provider',
       description:
@@ -104,7 +104,7 @@ export const docs = {
       props: [
         {
           name: 'component',
-          type: 'XDSLinkComponentType',
+          type: 'LinkComponentType',
           description: 'Component to use for all link elements',
           required: true,
         },
@@ -147,14 +147,14 @@ export const docsZh = {
   },
   components: [
     {
-      name: 'XDSLink',
+      name: 'Link',
       displayName: 'Link',
       description:
         '带有变体、外部链接支持和多态渲染的样式化锚点链接。',
       props: [
         {
           name: 'as',
-          type: 'XDSLinkComponentType',
+          type: 'LinkComponentType',
           description: '用于替代 <a> 渲染的自定义组件',
         },
         {
@@ -222,7 +222,7 @@ export const docsZh = {
       ],
     },
     {
-      name: 'XDSLinkProvider',
+      name: 'LinkProvider',
       isHiddenFromOverview: true,
       displayName: 'Link Provider',
       description:
@@ -230,7 +230,7 @@ export const docsZh = {
       props: [
         {
           name: 'component',
-          type: 'XDSLinkComponentType',
+          type: 'LinkComponentType',
           description: '用于所有链接元素的组件',
           required: true,
         },
@@ -285,7 +285,7 @@ export const docsDense = {
   },
   components: [
     {
-      name: 'XDSLink',
+      name: 'Link',
       displayName: 'Link',
       description:
         'Styled anchor link w/ variants, external link support, polymorphic rendering.',
@@ -306,7 +306,7 @@ export const docsDense = {
       },
     },
     {
-      name: 'XDSLinkProvider',
+      name: 'LinkProvider',
       isHiddenFromOverview: true,
       displayName: 'Link Provider',
       description:

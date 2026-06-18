@@ -15,7 +15,7 @@ export const docs = {
   },
   components: [
     {
-      name: 'XDSMultiSelector',
+      name: 'MultiSelector',
       displayName: 'Multi Selector',
       description:
         'Multi-select dropdown with checkboxes for choosing multiple items.',
@@ -28,7 +28,7 @@ export const docs = {
         },
         {
           name: 'options',
-          type: 'XDSMultiSelectorOptionType[]',
+          type: 'MultiSelectorOptionType[]',
           description:
             'Array of items: strings, objects with value/label/icon/disabled, dividers, or sections.',
           required: true,
@@ -134,7 +134,7 @@ export const docs = {
         },
         {
           name: 'children',
-          type: '(option: XDSMultiSelectorOptionData) => ReactNode',
+          type: '(option: MultiSelectorOptionData) => ReactNode',
           description: 'Custom render function for each option in the dropdown.',
         },
         {
@@ -162,7 +162,7 @@ export const docs = {
 export const docsZh = {
   components: [
     {
-      name: 'XDSMultiSelector',
+      name: 'MultiSelector',
       displayName: 'Multi Selector',
       description: '带复选框的多选下拉框，用于从列表中选择多项。',
       propDescriptions: {
@@ -220,7 +220,7 @@ export const docsDense = {
   },
   components: [
     {
-      name: 'XDSMultiSelector',
+      name: 'MultiSelector',
       displayName: 'Multi Selector',
       description: 'checkbox multi-select dropdown',
       propDescriptions: {

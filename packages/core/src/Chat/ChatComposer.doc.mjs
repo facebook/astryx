@@ -56,10 +56,10 @@ export const docs = {
     {
       name: 'drawer',
       type: 'ReactNode',
-      description: 'Slot: collapsible drawer above the input — attachments, context chips, etc. Use XDSChatComposerDrawer.',
+      description: 'Slot: collapsible drawer above the input — attachments, context chips, etc. Use ChatComposerDrawer.',
       slotElements: [
         {
-          __element: 'XDSText',
+          __element: 'Text',
           props: {
             type: 'body',
           },
@@ -73,7 +73,7 @@ export const docs = {
       description: 'Slot: left-aligned header actions (attach, mention buttons). Use icon-only size="sm" buttons.',
       slotElements: [
         {
-          __element: 'XDSButton',
+          __element: 'Button',
           props: {
             label: 'Action',
             variant: 'ghost',
@@ -85,10 +85,10 @@ export const docs = {
     {
       name: 'headerContext',
       type: 'ReactNode',
-      description: 'Slot: right-aligned contextual info in the header (context window usage, XDSProgressBar, supporting text).',
+      description: 'Slot: right-aligned contextual info in the header (context window usage, ProgressBar, supporting text).',
       slotElements: [
         {
-          __element: 'XDSText',
+          __element: 'Text',
           props: {
             type: 'body',
           },
@@ -99,10 +99,10 @@ export const docs = {
     {
       name: 'input',
       type: 'ReactNode',
-      description: 'Slot: custom input element. Replaces the default textarea. Use XDSChatComposerInput for trigger menus.',
+      description: 'Slot: custom input element. Replaces the default textarea. Use ChatComposerInput for trigger menus.',
       slotElements: [
         {
-          __element: 'XDSTextInput',
+          __element: 'TextInput',
           props: {
             label: 'Input',
             placeholder: 'Type here...',
@@ -116,7 +116,7 @@ export const docs = {
       description: 'Slot: left-aligned footer actions (model selector, etc).',
       slotElements: [
         {
-          __element: 'XDSButton',
+          __element: 'Button',
           props: {
             label: 'Action',
             variant: 'ghost',
@@ -131,7 +131,7 @@ export const docs = {
       description: 'Slot: actions to the left of the send button.',
       slotElements: [
         {
-          __element: 'XDSButton',
+          __element: 'Button',
           props: {
             label: 'Action',
             variant: 'ghost',
@@ -146,7 +146,7 @@ export const docs = {
       description: 'Slot: custom send button. Replaces the default send/stop button.',
       slotElements: [
         {
-          __element: 'XDSButton',
+          __element: 'Button',
           props: {
             label: 'Action',
             variant: 'ghost',
@@ -182,10 +182,10 @@ export const docsZh = {
     placeholder: '输入为空时显示的占位文本。',
     isDisabled: '禁用编写器。',
     density: '视觉密度。',
-    drawer: '插槽：输入上方的可折叠抽屉——附件、上下文标签等。使用 XDSChatComposerDrawer。',
+    drawer: '插槽：输入上方的可折叠抽屉——附件、上下文标签等。使用 ChatComposerDrawer。',
     headerActions: '插槽：标题左侧操作按钮（附件、提及按钮）。使用仅图标 size="sm" 按钮。',
-    headerContext: '插槽：标题右侧上下文信息（上下文窗口使用情况、XDSProgressBar、辅助文本）。',
-    input: '插槽：自定义输入元素。替换默认文本区域。使用 XDSChatComposerInput 实现触发菜单。',
+    headerContext: '插槽：标题右侧上下文信息（上下文窗口使用情况、ProgressBar、辅助文本）。',
+    input: '插槽：自定义输入元素。替换默认文本区域。使用 ChatComposerInput 实现触发菜单。',
     footerActions: '插槽：左对齐的页脚操作（模型选择器等）。',
     sendActions: '插槽：发送按钮左侧的操作。',
     sendButton: '插槽：自定义发送按钮。替换默认的发送/停止按钮。',
@@ -207,10 +207,10 @@ export const docsDense = {
     placeholder: 'placeholder when empty',
     isDisabled: 'disabled; use during streaming or unmet prereqs',
     density: 'visual density',
-    drawer: 'slot: collapsible drawer above input — attachments, context chips, etc.; use XDSChatComposerDrawer',
+    drawer: 'slot: collapsible drawer above input — attachments, context chips, etc.; use ChatComposerDrawer',
     headerActions: 'slot: left header actions (attach, mention); icon-only sm buttons',
-    headerContext: 'slot: right header context info (window usage, XDSProgressBar, text)',
-    input: 'slot: custom input; replaces default textarea; use XDSChatComposerInput for triggers',
+    headerContext: 'slot: right header context info (window usage, ProgressBar, text)',
+    input: 'slot: custom input; replaces default textarea; use ChatComposerInput for triggers',
     footerActions: 'slot: left footer actions (model selector etc)',
     sendActions: 'slot: actions left of send btn',
     sendButton: 'slot: custom send btn; replaces default',

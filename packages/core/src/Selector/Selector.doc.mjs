@@ -24,7 +24,7 @@ export const docs = {
     },
     {
       name: 'options',
-      type: 'XDSSelectorOption[]',
+      type: 'SelectorOption[]',
       description: 'Array of items — strings, objects with value/label/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
       required: true,
     },
@@ -100,7 +100,7 @@ export const docs = {
     },
     {
       name: 'children',
-      type: '(item: XDSSelectorOptionData) => ReactNode',
+      type: '(item: SelectorOptionData) => ReactNode',
       description: 'Custom render function for each item in the dropdown.',
     },
     {
@@ -110,7 +110,7 @@ export const docs = {
     },
   ],
   components: [
-    {name: 'XDSSelectorOption'},
+    {name: 'SelectorOption'},
   ],
   usage: {
     description:

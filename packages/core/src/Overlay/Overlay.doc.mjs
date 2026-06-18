@@ -52,12 +52,12 @@ export const docs = {
   playground: {
     defaults: {
       content: {
-        __element: 'XDSButton',
+        __element: 'Button',
         props: {label: 'Quick view', variant: 'secondary', size: 'sm'},
       },
       children: [
         {
-          __element: 'XDSAspectRatio',
+          __element: 'AspectRatio',
           props: {
             ratio: 1.7777777777777777,
             style: {
@@ -96,11 +96,11 @@ export const docs = {
       required: true,
       slotElements: [
         {
-          __element: 'XDSButton',
+          __element: 'Button',
           props: {label: 'Quick view', variant: 'secondary', size: 'sm'},
         },
         {
-          __element: 'XDSText',
+          __element: 'Text',
           props: {type: 'body', weight: 'bold'},
           children: 'Overlay content',
         },
@@ -112,7 +112,7 @@ export const docs = {
       description: 'Base content such as an image, video, card, or media surface that the overlay sits on top of.',
       slotElements: [
         {
-          __element: 'XDSAspectRatio',
+          __element: 'AspectRatio',
           props: {ratio: 1.7777777777777777, style: {width: 320}},
           children: {
             __element: 'div',
