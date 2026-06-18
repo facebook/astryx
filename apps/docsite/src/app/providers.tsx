@@ -23,11 +23,21 @@ export function useThemeMode() {
 }
 
 export function Providers({children}: {children: React.ReactNode}) {
-  // Default to the OS color scheme. SSR/first paint use a deterministic 'light'
-  // default (so hydration matches); the effect syncs to the real system
-  // preference on mount and tracks live changes — until the user manually
-  // toggles, after which their choice sticks for the rest of the session.
-  const [mode, setMode] = useState<ThemeMode>('light');
+  // Default to the OS color scheme. The blocking <head> script in layout.tsx
+  // already set <html data-theme> from the OS preference before first paint, so
+  // we seed the initial client state from that attribute — this keeps the root
+  // <XDSTheme> sync from briefly flipping the pre-painted dark theme back to
+  // light during hydration. The effect below then tracks live OS changes until
+  // the user manually toggles, after which their choice sticks for the session.
+  const [mode, setMode] = useState<ThemeMode>(() => {
+    if (typeof document !== 'undefined') {
+      const attr = document.documentElement.getAttribute('data-theme');
+      if (attr === 'dark' || attr === 'light') {
+        return attr;
+      }
+    }
+    return 'light';
+  });
   const [isManual, setIsManual] = useState(false);
 
   useEffect(() => {

@@ -11,7 +11,11 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
 import {XDSTheme} from '@xds/core/theme';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
-import {astryxTheme} from '../../themes/astryxTheme';
+// Built theme (`xds theme build`): __built:true so <XDSTheme> skips runtime
+// style injection (CSS ships via globals.css → ../../themes/astryx.css).
+// Importing the source astryxTheme.ts here would trigger the
+// "[XDS] Theme \"astryx\" is using runtime style injection" warning + FOUC.
+import {astryxTheme} from '../../themes/astryx';
 import {
   HeroReelProvider,
   HeroReelCards,

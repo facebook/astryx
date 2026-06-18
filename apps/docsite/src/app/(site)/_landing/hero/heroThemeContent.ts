@@ -13,7 +13,12 @@
 import type {XDSDefinedTheme} from '@xds/core/theme';
 import {packages} from '../../../../generated/packageRegistry';
 import {themeObjects} from '../../../../generated/themeRegistry';
-import {astryxTheme, BRAND_BLUE} from '../../../../themes/astryxTheme';
+// Built theme object (`xds theme build` → astryx.js, __built:true) so the hero
+// reel's <XDSTheme theme={astryxTheme}> slide skips runtime style injection.
+// BRAND_BLUE is a plain string constant (logo-only, not a theme token), so it
+// still comes from the source module — importing a constant doesn't inject.
+import {astryxTheme} from '../../../../themes/astryx';
+import {BRAND_BLUE} from '../../../../themes/astryxTheme';
 
 // Sentinel for the docsite's local brand theme (not an @xds/theme-* package).
 const ASTRYX = 'astryx';
