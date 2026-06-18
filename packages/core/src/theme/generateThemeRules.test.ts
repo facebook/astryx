@@ -166,8 +166,10 @@ describe('generateThemeRules', () => {
   it('generateThemeCSS returns prose and component blocks with @scope', () => {
     const {prose, component} = generateThemeCSS(theme);
     const combined = prose + component;
-    expect(combined).toContain('@scope ([data-xds-theme="default"])');
-    expect(combined).toContain('to ([data-xds-theme])');
+    expect(combined).toContain(
+      '@scope ([data-astryx-theme="default"], [data-xds-theme="default"])',
+    );
+    expect(combined).toContain('to ([data-astryx-theme], [data-xds-theme])');
     // Every rule from generateThemeRules should appear in one of the blocks
     for (const rule of rules) {
       expect(combined).toContain(rule);
