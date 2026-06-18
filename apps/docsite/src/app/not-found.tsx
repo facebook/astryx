@@ -9,12 +9,6 @@ import {SharedTopNav} from '../components/SharedTopNav';
 import {SiteFooter} from '../components/SiteFooter';
 import styles from './not-found.module.css';
 
-// Global App Router not-found boundary. It is rendered inside the root layout
-// (app/layout.tsx) only — the (site) route-group layout that provides
-// <SharedTopNav /> and <SiteFooter /> does NOT wrap it. So we reconstruct the
-// same shell here. height="fill" makes the shell exactly one viewport tall:
-// the header pins to the top, the footer to the bottom, and the centered 404
-// message fills the space between them.
 export default async function NotFound() {
   const headersList = await headers();
   const ua = headersList.get('user-agent') ?? '';

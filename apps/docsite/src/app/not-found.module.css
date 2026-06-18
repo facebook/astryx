@@ -1,9 +1,5 @@
 /* Copyright (c) Meta Platforms, Inc. and affiliates. */
 
-/* The AppShell (height="fill") gives the main content area a definite height
-   equal to the viewport minus the sticky header. Make this shell a full-height
-   flex column so the centered content fills the available space and the
-   <SiteFooter /> pins to the bottom. */
 .shell {
   display: flex;
   flex-direction: column;
@@ -12,10 +8,6 @@
   width: 100%;
 }
 
-/* Grow to fill the leftover height between the top of the content area and the
-   footer. XDSCenter already centers its children on both axes via flexbox;
-   flex: 1 makes the centering region expand so the 404 message sits in the
-   true vertical middle of the space. */
 .content {
   flex: 1 1 auto;
   width: 100%;
