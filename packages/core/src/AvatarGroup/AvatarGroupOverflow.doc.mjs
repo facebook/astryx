@@ -8,7 +8,7 @@ export const docs = {
   displayName: 'Avatar Group Overflow',
   isHiddenFromOverview: true,
   description:
-    'Overflow indicator for XDSAvatarGroup. Shows a compact count for hidden avatars and can render custom count text or act as a button.',
+    'Overflow indicator for AvatarGroup. Shows a compact count for hidden avatars and can render custom count text or act as a button.',
   props: [
     {
       name: 'count',
@@ -48,7 +48,7 @@ export const docs = {
   },
   usage: {
     description:
-      'AvatarGroupOverflow appears at the end of an XDSAvatarGroup to summarize people who are not shown individually. Use it when a group is sliced to a small number of visible avatars but the hidden count still matters.',
+      'AvatarGroupOverflow appears at the end of an AvatarGroup to summarize people who are not shown individually. Use it when a group is sliced to a small number of visible avatars but the hidden count still matters.',
     bestPractices: [
       {guidance: true, description: 'Pass the real hidden count to `count` so the accessible label matches the visible indicator.'},
       {guidance: true, description: 'Use short custom text such as `+12` or `99+`; the indicator is sized like an avatar.'},
@@ -64,23 +64,23 @@ export const docs = {
     {
       label: 'Default overflow count',
       code: `
-<XDSAvatarGroup size="medium">
+<AvatarGroup size="medium">
   {users.slice(0, 3).map(user => (
-    <XDSAvatar key={user.id} src={user.src} name={user.name} />
+    <Avatar key={user.id} src={user.src} name={user.name} />
   ))}
-  <XDSAvatarGroupOverflow count={users.length - 3} />
-</XDSAvatarGroup>
+  <AvatarGroupOverflow count={users.length - 3} />
+</AvatarGroup>
 `,
     },
     {
       label: 'Custom count text',
       code: `
-<XDSAvatarGroup size="medium">
+<AvatarGroup size="medium">
   {users.slice(0, 3).map(user => (
-    <XDSAvatar key={user.id} src={user.src} name={user.name} />
+    <Avatar key={user.id} src={user.src} name={user.name} />
   ))}
-  <XDSAvatarGroupOverflow count={12}>12+</XDSAvatarGroupOverflow>
-</XDSAvatarGroup>
+  <AvatarGroupOverflow count={12}>12+</AvatarGroupOverflow>
+</AvatarGroup>
 `,
     },
   ],
@@ -91,7 +91,7 @@ export const docsZh = {
   isHiddenFromOverview: true,
   displayName: 'Avatar Group Overflow',
   description:
-    'XDSAvatarGroup 的溢出指示器。用于显示隐藏头像数量，可自定义计数字符串或作为按钮使用。',
+    'AvatarGroup 的溢出指示器。用于显示隐藏头像数量，可自定义计数字符串或作为按钮使用。',
   propDescriptions: {
     count: '隐藏头像数量，用于默认 `+N` 标签和无障碍标签。',
     children: '可选的自定义计数字符串。省略时使用默认 `+N` 标签。',
@@ -101,7 +101,7 @@ export const docsZh = {
   },
   usage: {
     description:
-      'AvatarGroupOverflow 显示在 XDSAvatarGroup 末尾，用来汇总未单独展示的成员。适用于只展示少量头像但仍需要显示隐藏数量的场景。',
+      'AvatarGroupOverflow 显示在 AvatarGroup 末尾，用来汇总未单独展示的成员。适用于只展示少量头像但仍需要显示隐藏数量的场景。',
     bestPractices: [
       {guidance: true, description: '向 `count` 传入真实隐藏数量，确保无障碍标签与可见指示器一致。'},
       {guidance: true, description: '使用 `+12` 或 `99+` 等短文本；指示器尺寸与头像相同。'},
@@ -115,7 +115,7 @@ export const docsDense = {
   name: 'AvatarGroupOverflow',
   isHiddenFromOverview: true,
   displayName: 'Avatar Group Overflow',
-  description: 'overflow indicator for XDSAvatarGroup; default +N or custom short count text',
+  description: 'overflow indicator for AvatarGroup; default +N or custom short count text',
   propDescriptions: {
     count: 'hidden avatar count; drives default +N + aria label',
     children: 'optional custom short count text, e.g. +12 or 99+',
@@ -125,7 +125,7 @@ export const docsDense = {
   },
   usage: {
     description:
-      'Use at end of XDSAvatarGroup to summarize hidden people after slicing visible avatars.',
+      'Use at end of AvatarGroup to summarize hidden people after slicing visible avatars.',
     bestPractices: [
       {guidance: true, description: 'Pass real hidden count to `count` for a11y.'},
       {guidance: true, description: 'Keep custom text short: `+12`, `99+`.'},

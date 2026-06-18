@@ -3,10 +3,10 @@
 /** @type {import('../docs-types').ComponentDoc} */
 
 export const docs = {
-  name: 'useXDSTablePagination',
+  name: 'useTablePagination',
   subComponentOf: 'Table',
-  displayName: 'useXDSTablePagination',
-  description: 'Headless pagination plugin for XDSTable. Supports client-side slicing, server-side pagination, and cursor-based pagination. Renders XDSPagination controls automatically above, below, or both.',
+  displayName: 'useTablePagination',
+  description: 'Headless pagination plugin for Table. Supports client-side slicing, server-side pagination, and cursor-based pagination. Renders Pagination controls automatically above, below, or both.',
   props: [
     {
       name: 'page',
@@ -73,9 +73,9 @@ export const docs = {
 };
 
 export const docsZh = {
-  name: 'useXDSTablePagination',
-  displayName: 'useXDSTablePagination',
-  description: '无头分页插件。支持客户端切片、服务器端分页和游标分页。自动渲染 XDSPagination 控件。',
+  name: 'useTablePagination',
+  displayName: 'useTablePagination',
+  description: '无头分页插件。支持客户端切片、服务器端分页和游标分页。自动渲染 Pagination 控件。',
   props: [
     {
       name: 'page',
@@ -116,9 +116,9 @@ export const docsZh = {
 };
 
 export const docsDense = {
-  name: 'useXDSTablePagination',
-  displayName: 'useXDSTablePagination',
-  description: 'Headless pagination plugin. Client-side slicing, server-side, or cursor-based. Auto-renders XDSPagination above/below/both.',
+  name: 'useTablePagination',
+  displayName: 'useTablePagination',
+  description: 'Headless pagination plugin. Client-side slicing, server-side, or cursor-based. Auto-renders Pagination above/below/both.',
   propDescriptions: {
     page: 'Current page (1-based).',
     onPageChange: 'Called on page change.',

@@ -39,10 +39,10 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'XDSRadioListItem elements.',
+      description: 'RadioListItem elements.',
       slotElements: [
         {
-          __element: 'XDSRadioListItem',
+          __element: 'RadioListItem',
           props: {
             label: 'Option',
             value: 'option',
@@ -88,7 +88,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'XDSInputStatus',
+      type: 'InputStatus',
       description: 'Status indicator ({ type, message }).',
     },
     {
@@ -109,7 +109,7 @@ export const docs = {
     },
   ],
   components: [
-    {name: 'XDSRadioListItem'},
+    {name: 'RadioListItem'},
   ],
   usage: {
     description:

@@ -2,8 +2,8 @@
 
 /** @type {import('../docs-types').HookDoc} */
 export const docs = {
-  name: 'useXDSAppShellMobile',
-  displayName: 'useXDSAppShellMobile',
+  name: 'useAppShellMobile',
+  displayName: 'useAppShellMobile',
   group: 'AppShell',
   category: 'layout',
   keywords: [
@@ -16,7 +16,7 @@ export const docs = {
     'drawer state',
   ],
   params: [
-    // useXDSAppShellMobile takes no arguments — it reads AppShell context.
+    // useAppShellMobile takes no arguments — it reads AppShell context.
   ],
   returns: [
     {
@@ -63,17 +63,17 @@ export const docs = {
   ],
   usage: {
     description:
-      'Hook for reading and controlling XDSAppShell mobile navigation state from descendants of AppShell. Use it for custom mobile nav triggers, closing the drawer after route changes, or coordinating AppShell-adjacent mobile experiences with the same breakpoint used by mobile nav.',
+      'Hook for reading and controlling AppShell mobile navigation state from descendants of AppShell. Use it for custom mobile nav triggers, closing the drawer after route changes, or coordinating AppShell-adjacent mobile experiences with the same breakpoint used by mobile nav.',
     bestPractices: [
       {
         guidance: true,
         description:
-          'Use inside the XDSAppShell tree when building custom mobile navigation controls, route-aware nav items, or UI that should update at the same breakpoint as AppShell mobile nav.',
+          'Use inside the AppShell tree when building custom mobile navigation controls, route-aware nav items, or UI that should update at the same breakpoint as AppShell mobile nav.',
       },
       {
         guidance: true,
         description:
-          'Prefer XDSMobileNavToggle for the standard hamburger trigger: use this hook when you need custom placement, styling, or extra behavior.',
+          'Prefer MobileNavToggle for the standard hamburger trigger: use this hook when you need custom placement, styling, or extra behavior.',
       },
       {
         guidance: true,
@@ -106,7 +106,7 @@ export const docs = {
 /** @type {import('../docs-types').HookTranslationDoc} */
 export const docsDense = {
   description:
-    'Reads/controls XDSAppShell mobile nav context. Use for custom triggers, closing drawer after route changes, or syncing AppShell-adjacent mobile UI to the same breakpoint as mobile nav.',
+    'Reads/controls AppShell mobile nav context. Use for custom triggers, closing drawer after route changes, or syncing AppShell-adjacent mobile UI to the same breakpoint as mobile nav.',
   returnDescriptions: {
     isMobile:
       'viewport below AppShell mobile nav breakpoint? Use to sync AppShell-adjacent mobile UI',
@@ -121,17 +121,17 @@ export const docsDense = {
   },
   usage: {
     description:
-      'Reads/controls XDSAppShell mobile nav context. Use for custom triggers, closing drawer after route changes, or syncing AppShell-adjacent mobile UI to the same breakpoint as mobile nav.',
+      'Reads/controls AppShell mobile nav context. Use for custom triggers, closing drawer after route changes, or syncing AppShell-adjacent mobile UI to the same breakpoint as mobile nav.',
     bestPractices: [
       {
         guidance: true,
         description:
-          'Use inside XDSAppShell tree for custom nav controls, route-aware nav items, or UI that should update at AppShell mobile nav breakpoint.',
+          'Use inside AppShell tree for custom nav controls, route-aware nav items, or UI that should update at AppShell mobile nav breakpoint.',
       },
       {
         guidance: true,
         description:
-          'Prefer XDSMobileNavToggle for standard hamburger; use hook for custom placement, styling, or extra behavior.',
+          'Prefer MobileNavToggle for standard hamburger; use hook for custom placement, styling, or extra behavior.',
       },
       {
         guidance: true,

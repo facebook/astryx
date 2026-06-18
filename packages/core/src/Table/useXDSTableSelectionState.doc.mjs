@@ -3,10 +3,10 @@
 /** @type {import('../docs-types').ComponentDoc} */
 
 export const docs = {
-  name: 'useXDSTableSelectionState',
+  name: 'useTableSelectionState',
   subComponentOf: 'Table',
-  displayName: 'useXDSTableSelectionState',
-  description: 'State management companion for useXDSTableSelection. Handles disabled/selectable row filtering for select-all automatically: disabled rows are frozen (preserved across select-all/deselect-all), non-selectable rows are excluded.',
+  displayName: 'useTableSelectionState',
+  description: 'State management companion for useTableSelection. Handles disabled/selectable row filtering for select-all automatically: disabled rows are frozen (preserved across select-all/deselect-all), non-selectable rows are excluded.',
   props: [
     {
       name: 'data',
@@ -48,9 +48,9 @@ export const docs = {
 };
 
 export const docsDense = {
-  name: 'useXDSTableSelectionState',
-  displayName: 'useXDSTableSelectionState',
-  description: 'State companion for useXDSTableSelection. Handles disabled/selectable row filtering for select-all automatically: disabled rows frozen (state preserved across select-all/deselect-all), non-selectable rows excluded.',
+  name: 'useTableSelectionState',
+  displayName: 'useTableSelectionState',
+  description: 'State companion for useTableSelection. Handles disabled/selectable row filtering for select-all automatically: disabled rows frozen (state preserved across select-all/deselect-all), non-selectable rows excluded.',
   propDescriptions: {
     data: 'Full data array rendered in table. **(required)**',
     idKey: 'Key extractor: property name or fn returning unique string ID. **(required)**',

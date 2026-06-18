@@ -78,7 +78,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'XDSInputStatus',
+      type: 'InputStatus',
       description:
         'Status indicator with type and message. Displays a colored message box below the switch and sets aria-invalid when type is "error".',
     },
@@ -94,7 +94,7 @@ export const docs = {
     },
     {
       name: 'labelIcon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: 'Icon displayed before the label text. See `npx xds docs icons` for valid semantic names.',
     },
     {
@@ -212,7 +212,7 @@ export const docsZh = {
     },
     {
       name: 'status',
-      type: 'XDSInputStatus',
+      type: 'InputStatus',
       description:
         '带类型和消息的状态指示器。在开关下方显示彩色消息框，当类型为 "error" 时设置 aria-invalid。',
     },
@@ -228,7 +228,7 @@ export const docsZh = {
     },
     {
       name: 'labelIcon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: '显示在标签文本前面的图标。',
     },
     {

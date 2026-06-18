@@ -3,9 +3,9 @@
 /** @type {import('../docs-types').ComponentDoc} */
 
 export const docs = {
-  name: 'useXDSTableSelection',
+  name: 'useTableSelection',
   subComponentOf: 'Table',
-  displayName: 'useXDSTableSelection',
+  displayName: 'useTableSelection',
   description: 'Hook that returns a TablePlugin implementing row selection with checkboxes, select-all, and aria-selected. Uses React Context for independent checkbox re-renders.',
   props: [
     {
@@ -53,8 +53,8 @@ export const docs = {
 };
 
 export const docsZh = {
-  name: 'useXDSTableSelection',
-  displayName: 'useXDSTableSelection',
+  name: 'useTableSelection',
+  displayName: 'useTableSelection',
   description: '返回 TablePlugin 的 Hook，实现带复选框、全选和 aria-selected 的行选择功能。使用 React Context 实现独立的复选框重新渲染。',
   props: [
     {
@@ -102,8 +102,8 @@ export const docsZh = {
 };
 
 export const docsDense = {
-  name: 'useXDSTableSelection',
-  displayName: 'useXDSTableSelection',
+  name: 'useTableSelection',
+  displayName: 'useTableSelection',
   description: 'Hook returning TablePlugin for row selection w/ checkboxes, select-all, aria-selected. Uses React Context for independent checkbox re-renders.',
   propDescriptions: {
     getIsItemSelected: 'Returns whether item is selected.',

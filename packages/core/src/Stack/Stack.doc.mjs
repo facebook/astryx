@@ -16,7 +16,7 @@ export const docs = {
   },
   components: [
     {
-      name: 'XDSHStack',
+      name: 'HStack',
       isHiddenFromOverview: true,
       displayName: 'H Stack',
       description:
@@ -84,7 +84,7 @@ export const docs = {
         },
       ],    },
     {
-      name: 'XDSVStack',
+      name: 'VStack',
       isHiddenFromOverview: true,
       displayName: 'V Stack',
       description:
@@ -147,7 +147,7 @@ export const docs = {
       ],
     },
     {
-      name: 'XDSStackItem',
+      name: 'StackItem',
       isHiddenFromOverview: true,
       displayName: 'Stack Item',
       description:
@@ -185,7 +185,7 @@ export const docs = {
       'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [
       { guidance: true, description: 'Use the gap prop for spacing between items; don\'t add margins manually.' },
-      { guidance: true, description: 'Use XDSStackItem with size="fill" to make one item stretch and fill the leftover space.' },
+      { guidance: true, description: 'Use StackItem with size="fill" to make one item stretch and fill the leftover space.' },
       { guidance: false, description: 'Nest stacks inside stacks; try wrap="wrap" first to let items flow to the next line.' },
     ],
   },
@@ -204,7 +204,7 @@ export const docsZh = {
   },
   components: [
     {
-      name: 'XDSHStack',
+      name: 'HStack',
       isHiddenFromOverview: true,
       displayName: 'H Stack',
       description:
@@ -273,7 +273,7 @@ export const docsZh = {
       ],
     },
     {
-      name: 'XDSVStack',
+      name: 'VStack',
       isHiddenFromOverview: true,
       displayName: 'V Stack',
       description:
@@ -336,7 +336,7 @@ export const docsZh = {
       ],
     },
     {
-      name: 'XDSStackItem',
+      name: 'StackItem',
       isHiddenFromOverview: true,
       displayName: 'Stack Item',
       description:
@@ -374,7 +374,7 @@ export const docsZh = {
       'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [
       { guidance: true, description: 'Use the gap prop for spacing between items; don\'t add margins manually.' },
-      { guidance: true, description: 'Use XDSStackItem with size="fill" to make one item stretch and fill the leftover space.' },
+      { guidance: true, description: 'Use StackItem with size="fill" to make one item stretch and fill the leftover space.' },
       { guidance: false, description: 'Nest stacks inside stacks; try wrap="wrap" first to let items flow to the next line.' },
     ],
   },
@@ -388,13 +388,13 @@ export const docsDense = {
       'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [
       { guidance: true, description: 'Use the gap prop for spacing between items; don\'t add margins manually.' },
-      { guidance: true, description: 'Use XDSStackItem with size="fill" to make one item stretch and fill the leftover space.' },
+      { guidance: true, description: 'Use StackItem with size="fill" to make one item stretch and fill the leftover space.' },
       { guidance: false, description: 'Nest stacks inside stacks; try wrap="wrap" first to let items flow to the next line.' },
     ],
   },
   components: [
     {
-      name: 'XDSHStack',
+      name: 'HStack',
       isHiddenFromOverview: true,
       displayName: 'H Stack',
       description: 'Horizontal stack; left-to-right, polymorphic rendering.',
@@ -413,7 +413,7 @@ export const docsDense = {
       },
     },
     {
-      name: 'XDSVStack',
+      name: 'VStack',
       isHiddenFromOverview: true,
       displayName: 'V Stack',
       description: 'Vertical stack; top-to-bottom, polymorphic rendering.',
@@ -431,7 +431,7 @@ export const docsDense = {
       },
     },
     {
-      name: 'XDSStackItem',
+      name: 'StackItem',
       isHiddenFromOverview: true,
       displayName: 'Stack Item',
       description: 'Controls individual item behavior in stack; polymorphic rendering.',

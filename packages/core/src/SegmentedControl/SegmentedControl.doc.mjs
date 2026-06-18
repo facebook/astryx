@@ -27,7 +27,7 @@ export const docs = {
       {property: 'padding', vars: ['--_segmented-control-padding']},
     ],
   },
-  description: 'Container wrapper providing context (value, onChange, size, isDisabled) to XDSSegmentedControlItem children.',
+  description: 'Container wrapper providing context (value, onChange, size, isDisabled) to SegmentedControlItem children.',
   props: [
     {
       name: 'value',
@@ -68,10 +68,10 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'XDSSegmentedControlItem children.',
+      description: 'SegmentedControlItem children.',
       slotElements: [
         {
-          __element: 'XDSSegmentedControlItem',
+          __element: 'SegmentedControlItem',
           props: {
             label: 'Option',
             value: 'option',
@@ -87,7 +87,7 @@ export const docs = {
     },
   ],
   components: [
-    {name: 'XDSSegmentedControlItem'},
+    {name: 'SegmentedControlItem'},
   ],
   usage: {
     description:
@@ -95,8 +95,8 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Use for switching between 2–5 mutually exclusive views or modes where all options should be visible.'},
       {guidance: true, description: 'Provide a descriptive label for the control to ensure the group is accessible to screen readers.'},
-      {guidance: false, description: 'Use for page-level navigation; use XDSTabList instead. TabList is a navigation component, while SegmentedControl is an input that always has exactly one selected option.'},
-      {guidance: false, description: 'Use for simple on/off states; use XDSToggleButton instead. ToggleButton can be toggled on or off independently, while SegmentedControl enforces a single selection from a group.'},
+      {guidance: false, description: 'Use for page-level navigation; use TabList instead. TabList is a navigation component, while SegmentedControl is an input that always has exactly one selected option.'},
+      {guidance: false, description: 'Use for simple on/off states; use ToggleButton instead. ToggleButton can be toggled on or off independently, while SegmentedControl enforces a single selection from a group.'},
     ],
   },
 };
@@ -109,8 +109,8 @@ export const docsZh = {
     bestPractices: [
       {guidance: true, description: 'Use for switching between 2–5 mutually exclusive views or modes where all options should be visible.'},
       {guidance: true, description: 'Provide a descriptive label for the control to ensure the group is accessible to screen readers.'},
-      {guidance: false, description: 'Use for page-level navigation; use XDSTabList instead. TabList is a navigation component, while SegmentedControl is an input that always has exactly one selected option.'},
-      {guidance: false, description: 'Use for simple on/off states; use XDSToggleButton instead. ToggleButton can be toggled on or off independently, while SegmentedControl enforces a single selection from a group.'},
+      {guidance: false, description: 'Use for page-level navigation; use TabList instead. TabList is a navigation component, while SegmentedControl is an input that always has exactly one selected option.'},
+      {guidance: false, description: 'Use for simple on/off states; use ToggleButton instead. ToggleButton can be toggled on or off independently, while SegmentedControl enforces a single selection from a group.'},
     ],
   },
 };
@@ -123,8 +123,8 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Use for switching between 2–5 mutually exclusive views or modes where all options should be visible.'},
       {guidance: true, description: 'Provide a descriptive label for the control to ensure the group is accessible to screen readers.'},
-      {guidance: false, description: 'Use for page-level navigation; use XDSTabList instead. TabList is a navigation component, while SegmentedControl is an input that always has exactly one selected option.'},
-      {guidance: false, description: 'Use for simple on/off states; use XDSToggleButton instead. ToggleButton can be toggled on or off independently, while SegmentedControl enforces a single selection from a group.'},
+      {guidance: false, description: 'Use for page-level navigation; use TabList instead. TabList is a navigation component, while SegmentedControl is an input that always has exactly one selected option.'},
+      {guidance: false, description: 'Use for simple on/off states; use ToggleButton instead. ToggleButton can be toggled on or off independently, while SegmentedControl enforces a single selection from a group.'},
     ],
   },
   propDescriptions: {
@@ -134,7 +134,7 @@ export const docsDense = {
     size: 'size variant',
     layout: 'hug (default) sizes to content; fill stretches equally',
     isDisabled: 'disables entire control',
-    children: 'XDSSegmentedControlItem children',
+    children: 'SegmentedControlItem children',
     xstyle: 'additional StyleX styles for container',
   },
 };

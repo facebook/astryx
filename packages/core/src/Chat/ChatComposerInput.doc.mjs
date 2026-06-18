@@ -7,11 +7,11 @@ export const docs = {
   subComponentOf: 'Chat',
   displayName: 'Chat Composer Input',
   isHiddenFromOverview: true,
-  description: "Rich text input for the chat composer. Supports trigger menus (type @ or / to open a typeahead), inline tokens rendered as badges, message history recall with ArrowUp/Down, paste/drop file handling, and a 16px touch-device font-size floor to prevent iOS input zoom. Pass it to XDSChatComposer's input slot when you need more than a plain textarea.",
+  description: "Rich text input for the chat composer. Supports trigger menus (type @ or / to open a typeahead), inline tokens rendered as badges, message history recall with ArrowUp/Down, paste/drop file handling, and a 16px touch-device font-size floor to prevent iOS input zoom. Pass it to ChatComposer's input slot when you need more than a plain textarea.",
   props: [
     {
       name: 'handleRef',
-      type: 'React.Ref<XDSChatComposerInputHandle>',
+      type: 'React.Ref<ChatComposerInputHandle>',
       description: 'Imperative handle for programmatic control: insertToken, insertText, focus, and getValue.',
     },
     {
@@ -38,7 +38,7 @@ export const docs = {
     },
     {
       name: 'triggers',
-      type: 'XDSChatComposerTrigger[]',
+      type: 'ChatComposerTrigger[]',
       description: 'Trigger definitions for typeahead menus. Each trigger specifies a character (@ or /), a search source, and an onSelect handler that returns the token to insert.',
     },
     {
@@ -87,7 +87,7 @@ export const docsZh = {
   name: 'ChatComposerInput',
   isHiddenFromOverview: true,
   displayName: 'Chat Composer Input',
-  description: '聊天编写器的富文本输入。支持触发菜单（输入 @ 或 / 打开 typeahead）、内联标记徽章、ArrowUp/Down 消息历史回溯、粘贴/拖放文件处理，并在触控设备上将字体大小保持至少 16px 以避免 iOS 输入缩放。当需要普通文本区域以外的功能时，传入 XDSChatComposer 的 input 插槽。',
+  description: '聊天编写器的富文本输入。支持触发菜单（输入 @ 或 / 打开 typeahead）、内联标记徽章、ArrowUp/Down 消息历史回溯、粘贴/拖放文件处理，并在触控设备上将字体大小保持至少 16px 以避免 iOS 输入缩放。当需要普通文本区域以外的功能时，传入 ChatComposer 的 input 插槽。',
   propDescriptions: {
     handleRef: '命令式句柄，用于编程式控制 — insertToken、insertText、focus 和 getValue。',
     value: '受控输入值。与 onChange 配对实现双向绑定。',
@@ -109,7 +109,7 @@ export const docsDense = {
   name: 'ChatComposerInput',
   isHiddenFromOverview: true,
   displayName: 'Chat Composer Input',
-  description: 'rich input for composer; trigger menus (@/commands), inline tokens, msg history, paste/drop files, 16px touch font-size floor to prevent iOS zoom. Use in XDSChatComposer input slot when you need more than plain textarea.',
+  description: 'rich input for composer; trigger menus (@/commands), inline tokens, msg history, paste/drop files, 16px touch font-size floor to prevent iOS zoom. Use in ChatComposer input slot when you need more than plain textarea.',
   propDescriptions: {
     handleRef: 'imperative handle (insertToken/insertText/focus/getValue)',
     value: 'controlled value; pair w/ onChange for two-way binding',

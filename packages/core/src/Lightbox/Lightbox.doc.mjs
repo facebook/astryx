@@ -22,7 +22,7 @@ export const docs = {
     },
     {
       name: 'media',
-      type: 'XDSLightboxMedia | XDSLightboxMedia[]',
+      type: 'LightboxMedia | LightboxMedia[]',
       description: 'Media to display. Pass a single object for one item, or an array for gallery mode with prev/next navigation. Each item has src, alt, optional caption and type.',
       required: true,
     },
@@ -86,7 +86,7 @@ export const docsZh = {
     },
     {
       name: 'media',
-      type: 'XDSLightboxMedia | XDSLightboxMedia[]',
+      type: 'LightboxMedia | LightboxMedia[]',
       description: '要显示的媒体。传入单个对象或数组（用于画廊模式的上一张/下一张导航）。',
       required: true,
     },

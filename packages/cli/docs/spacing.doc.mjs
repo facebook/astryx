@@ -45,7 +45,7 @@ export const docs = {
           lang: 'tsx',
           label: 'Spacing via component props vs StyleX',
           code: `// Via component props (preferred)
-<XDSStack gap={4}>{/* 16px gap */}</XDSStack>
+<Stack gap={4}>{/* 16px gap */}</Stack>
 
 // Via StyleX tokens (custom layouts)
 import {spacingVars} from '@xds/core';

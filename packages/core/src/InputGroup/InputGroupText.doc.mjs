@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'InputGroup',
   displayName: 'Input Group Text',
   isHiddenFromOverview: true,
-  description: 'A prefix or suffix text element rendered inside XDSInputGroup. Displays text or icons.',
+  description: 'A prefix or suffix text element rendered inside InputGroup. Displays text or icons.',
   props: [
     {
       name: 'children',

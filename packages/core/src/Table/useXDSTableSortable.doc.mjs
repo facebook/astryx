@@ -3,20 +3,20 @@
 /** @type {import('../docs-types').ComponentDoc} */
 
 export const docs = {
-  name: 'useXDSTableSortable',
+  name: 'useTableSortable',
   subComponentOf: 'Table',
-  displayName: 'useXDSTableSortable',
-  description: 'Headless multi-sort plugin for XDSTable. The consumer owns sort state and provides a callback. Shift+click enables secondary sort columns. Sort indicators render in header cells automatically.',
+  displayName: 'useTableSortable',
+  description: 'Headless multi-sort plugin for Table. The consumer owns sort state and provides a callback. Shift+click enables secondary sort columns. Sort indicators render in header cells automatically.',
   props: [
     {
       name: 'sort',
-      type: 'XDSTableSortState<TSortKey>',
+      type: 'TableSortState<TSortKey>',
       description: 'Current sort state. Ordered array of {sortKey, direction} entries. First entry is the primary sort.',
       required: true,
     },
     {
       name: 'onSortChange',
-      type: '(sort: XDSTableSortState<TSortKey>) => void',
+      type: '(sort: TableSortState<TSortKey>) => void',
       description: 'Called when the user clicks a header cell to change sort.',
       required: true,
     },
@@ -36,19 +36,19 @@ export const docs = {
 };
 
 export const docsZh = {
-  name: 'useXDSTableSortable',
-  displayName: 'useXDSTableSortable',
+  name: 'useTableSortable',
+  displayName: 'useTableSortable',
   description: '无头多列排序插件。用户拥有排序状态并提供回调。Shift+点击启用二级排序列。排序指示器自动渲染在表头单元格中。',
   props: [
     {
       name: 'sort',
-      type: 'XDSTableSortState<TSortKey>',
+      type: 'TableSortState<TSortKey>',
       description: '当前排序状态。{sortKey, direction} 条目的有序数组。第一个条目是主排序。',
       required: true,
     },
     {
       name: 'onSortChange',
-      type: '(sort: XDSTableSortState<TSortKey>) => void',
+      type: '(sort: TableSortState<TSortKey>) => void',
       description: '用户点击表头单元格更改排序时调用。',
       required: true,
     },
@@ -68,8 +68,8 @@ export const docsZh = {
 };
 
 export const docsDense = {
-  name: 'useXDSTableSortable',
-  displayName: 'useXDSTableSortable',
+  name: 'useTableSortable',
+  displayName: 'useTableSortable',
   description: 'Headless multi-sort plugin. Consumer owns sort state + callback. Shift+click for secondary sort. Sort indicators auto-render in header cells.',
   propDescriptions: {
     sort: 'Current sort state; ordered array of {sortKey, direction} entries.',

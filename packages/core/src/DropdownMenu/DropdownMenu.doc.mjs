@@ -26,13 +26,13 @@ export const docs = {
   props: [
     {
       name: 'button',
-      type: 'XDSDropdownMenuButtonProps',
-      description: 'Props for the trigger button (XDSButton props except onClick).',
+      type: 'DropdownMenuButtonProps',
+      description: 'Props for the trigger button (Button props except onClick).',
       default: "{ label: 'Menu' }",
     },
     {
       name: 'items',
-      type: 'XDSDropdownMenuOption[]',
+      type: 'DropdownMenuOption[]',
       description: 'Array of menu entries. Each entry is one of: an action item `{label, onClick?, icon?, isDisabled?}`, a divider `{type: "divider"}`, or a section `{type: "section", title?, items: [...action items]}`.',
       required: true,
     },
@@ -70,12 +70,12 @@ export const docs = {
     },
     {
       name: 'children',
-      type: '(item: XDSDropdownMenuItemData) => ReactNode',
+      type: '(item: DropdownMenuItemData) => ReactNode',
       description: 'Custom render function for each item in the list.',
     },
   ],
   components: [
-    {name: 'XDSDropdownMenuItem'},
+    {name: 'DropdownMenuItem'},
   ],
   usage: {
     description: 'A dropdown menu that displays a list of actionable items in a popup triggered by a button. Use to present action options as a next step in a process, or to offer contextual actions without cluttering the interface.',
