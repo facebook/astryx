@@ -35,7 +35,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Add nested LayerProvider instances — nested providers are ignored and add unnecessary tree depth.',
+          'Add nested LayerProvider instances: nested providers are ignored and add unnecessary tree depth.',
       },
     ],
   },

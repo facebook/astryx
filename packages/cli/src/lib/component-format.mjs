@@ -128,7 +128,11 @@ export function formatFull(docs, options = {}) {
   sections.push(desc + '\n');
 
   if (options.importHint) {
-    const displayName = docs.components?.[0]?.name || docs.name;
+    // Use the primary export (docs.name) for the import hint, not the first
+    // sub-component (docs.components[0].name). Showing a sub-component caused
+    // agents to conflate the primary with a sub-component and hallucinate props
+    // (origin/main #2860). Bare name per the un-prefix migration (P5a).
+    const displayName = docs.name;
     sections.push(`**Import:** \`import {${displayName}} from '${options.importHint}';\`\n`);
   }
 

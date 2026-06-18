@@ -31,7 +31,7 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {getKey, mergeProps} from '../utils';
 import {XDSBadge} from '../Badge';
 import {XDSIcon, type XDSIconName} from '../Icon';
 import {XDSSpinner} from '../Spinner';
@@ -66,7 +66,7 @@ export interface XDSChatToolCallItem {
   stats?: ReactNode;
   /** Error message when status is 'error'. Shown in a tooltip on the status icon. */
   errorMessage?: string;
-  /** Unique key for React list rendering. Falls back to index. */
+  /** Unique key for React list rendering. Derived from stable metadata if omitted. */
   key?: string;
   /** Arbitrary data passed through to renderDetail. Store tool args, result, etc. */
   data?: unknown;
@@ -332,6 +332,21 @@ const STATUS_STYLES: Record<
   complete: styles.colorComplete,
   error: styles.colorError,
 };
+
+function getToolCallKey(call: XDSChatToolCallItem): string {
+  return getKey(call.key, () =>
+    [
+      call.name,
+      call.status ?? 'complete',
+      call.target ?? '',
+      call.node ?? '',
+      call.duration ?? '',
+      call.additions?.toString() ?? '',
+      call.deletions?.toString() ?? '',
+      call.errorMessage ?? '',
+    ].join('\u001F'),
+  );
+}
 
 // =============================================================================
 // Internal: single call row
@@ -604,8 +619,8 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
         )}>
         <div {...stylex.props(styles.groupContentInner)}>
           <div {...stylex.props(styles.list)}>
-            {calls.map((call, i) => (
-              <CallRow key={call.key ?? i} call={call} />
+            {calls.map(call => (
+              <CallRow key={getToolCallKey(call)} call={call} />
             ))}
           </div>
         </div>

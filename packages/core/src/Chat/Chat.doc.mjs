@@ -57,7 +57,7 @@ export const docs = {
     {name: 'ChatLayoutScrollButton'},
   ],
   usage: {
-    description: 'ChatMessageList is the scrollable container for chat messages. It renders children in a flex column with role="log" for accessibility, provides density context to child messages, and supports infinite scroll for loading older messages. Use it inside ChatLayout for full-page chat with auto-scroll and composer docking, or standalone for embedded message panels.',
+    description: 'Chat is a family of composable primitives for building AI and human chat experiences. Combine ChatLayout, ChatMessageList, ChatMessage, bubbles, system messages, tool calls, tokenized text, and ChatComposer to assemble complete conversations without reimplementing sender-aware layout, density, scrolling, or composer behavior.',
     bestPractices: [
       { guidance: true, description: 'Compose messages using MessageList > Message > Bubble for consistent sender-aware styling and density.' },
       { guidance: true, description: 'Set the density prop to control spacing globally: compact for sidebars, balanced for most views, spacious for long-form reading. Individual messages can override.' },
@@ -91,7 +91,7 @@ export const docs = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
   usage: {
-    description: 'ChatMessageList 是聊天消息的可滚动容器。它以 flex 列的形式渲染子元素，使用 role="log" 确保无障碍性，通过上下文向子消息提供密度设置，并支持无限滚动以加载更早的消息。在 ChatLayout 内使用它可获得全页聊天体验（自动滚动和编辑器停靠），也可独立用于嵌入式消息面板。',
+    description: 'Chat 是一组用于构建 AI 和人工聊天体验的可组合基础组件。组合 ChatLayout、ChatMessageList、ChatMessage、气泡、系统消息、工具调用、标记文本和 ChatComposer，可构建完整对话，而无需重新实现发送者感知布局、密度、滚动或编写器行为。',
     bestPractices: [
       { guidance: true, description: '使用 MessageList > Message > Bubble 组合来获得一致的发送者感知样式和密度。' },
       { guidance: true, description: '设置 density 属性来全局控制间距：compact 用于侧边栏，balanced 用于大多数视图，spacious 用于长篇阅读。' },
@@ -121,7 +121,7 @@ export const docsZh = {
 export const docsDense = {
   description: 'AI chat components. Layout (MessageList>Message>Bubble+SystemMessage) + Composer (shell w/ slots, ContentEditable input w/ trigger menus, tokens, msg history, attachments)',
   usage: {
-    description: 'ChatMessageList: scrollable msg container w/ role="log", density context, infinite scroll. Use inside ChatLayout for full-page chat or standalone for embedded panels.',
+    description: 'Chat family: layout + message list + sender messages + bubbles + system messages + tool calls + tokenized text + composer for complete conversation UIs.',
     bestPractices: [
       { guidance: true, description: 'MessageList > Message > Bubble for sender-aware styling.' },
       { guidance: true, description: 'Density prop controls global spacing: compact for sidebars, balanced default, spacious for reading.' },

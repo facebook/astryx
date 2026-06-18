@@ -48,7 +48,9 @@ export function XDSChartGrid({
   // Skip the y=0 line when emphasizing it via the axis. Without this we'd
   // double-draw on top of the axis line.
   const hLines = useMemo(() => {
-    if (!horizontal) return [];
+    if (!horizontal) {
+      return [];
+    }
     return yScale
       .ticks(5)
       .filter(tick => tick !== 0)
@@ -56,7 +58,9 @@ export function XDSChartGrid({
   }, [horizontal, yScale]);
 
   const vLines = useMemo(() => {
-    if (!vertical) return [];
+    if (!vertical) {
+      return [];
+    }
     if (isBandScale(xScale)) {
       return xScale
         .domain()

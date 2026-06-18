@@ -89,7 +89,7 @@ export const docs = {
     {
       name: 'height',
       type: "'fill' | 'auto'",
-      description: 'Height behavior — fill the container or grow with content.',
+      description: 'Height behavior: fill the container or grow with content.',
       default: "'fill'",
     },
   ],

@@ -3,7 +3,6 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {XDSLightbox} from './XDSLightbox';
-import type {XDSLightboxMedia} from './XDSLightbox';
 
 // Mock showModal/close for jsdom
 beforeEach(() => {
@@ -271,11 +270,7 @@ describe('XDSLightbox', () => {
 
   it('does not crash with an empty media array', () => {
     const {container} = render(
-      <XDSLightbox
-        isOpen={true}
-        onOpenChange={() => {}}
-        media={[]}
-      />,
+      <XDSLightbox isOpen={true} onOpenChange={() => {}} media={[]} />,
     );
     expect(container.querySelector('dialog')).not.toBeInTheDocument();
   });

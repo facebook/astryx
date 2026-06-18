@@ -321,11 +321,11 @@ const meta: Meta = {
         component:
           '`Theme` applies a theme to its children via CSS custom properties and ' +
           'provides programmatic token access through `useTheme()`.\n\n' +
-          '`useTheme()` returns resolved token values for the current color mode — ' +
+          '`useTheme()` returns resolved token values for the current color mode, ' +
           'designed for non-CSS consumers like data visualization libraries, canvas rendering, ' +
           'and SVG charts that need concrete values (hex colors, px values) rather than ' +
           'CSS custom property references.\n\n' +
-          '**No double render.** Values are available on first paint \u2014 no `getComputedStyle` ' +
+          '**No double render.** Values are available on first paint; no `getComputedStyle` ' +
           'or `useEffect` needed.',
       },
     },

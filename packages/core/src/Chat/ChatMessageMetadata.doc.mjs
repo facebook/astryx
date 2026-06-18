@@ -11,7 +11,7 @@ export const docs = {
     {
       name: 'timestamp',
       type: 'ReactNode',
-      description: 'Timestamp content — a string or Timestamp component.',
+      description: 'Timestamp content: a string or Timestamp component.',
       slotElements: [
         {
           __element: 'Text',
@@ -25,7 +25,7 @@ export const docs = {
     {
       name: 'footer',
       type: 'ReactNode',
-      description: 'Footer content — model info, reaction buttons, copy button.',
+      description: 'Footer content: model info, reaction buttons, copy button.',
       slotElements: [
         {
           __element: 'Text',

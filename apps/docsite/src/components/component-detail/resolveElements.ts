@@ -19,10 +19,18 @@ import type {ElementDescriptor} from '../../generated/componentRegistry';
 type AnyComponent = ComponentType<any>;
 
 export function getComponent(name: string): AnyComponent | null {
-  // Try both with and without XDS prefix
-  const withPrefix = `XDS${name}` as keyof typeof Core;
-  const direct = name as keyof typeof Core;
-  const value = Core[withPrefix] ?? Core[direct];
+  // Resolve by bare name first (canonical post un-prefix migration
+  // P2380608025), falling back to the legacy XDS-prefixed export.
+  // Reads are wrapped because a strict module mock throws on undefined keys
+  // rather than returning undefined.
+  const readExport = (key: string): unknown => {
+    try {
+      return Core[key as keyof typeof Core];
+    } catch {
+      return undefined;
+    }
+  };
+  const value = readExport(name) ?? readExport(`XDS${name}`);
   return typeof value === 'function' ? (value as AnyComponent) : null;
 }
 

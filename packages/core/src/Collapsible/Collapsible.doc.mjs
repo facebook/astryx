@@ -19,7 +19,7 @@ export const docs = {
       {className: 'xds-collapsible'},
     ],
   },
-  description: 'A primitive that makes any content collapsible — a trigger button toggles visibility of the content area, managing its own state or deferring to a parent CollapsibleGroup.',
+  description: 'A primitive that makes any content collapsible: a trigger button toggles visibility of the content area, managing its own state or deferring to a parent CollapsibleGroup.',
   props: [
     {
       name: 'trigger',

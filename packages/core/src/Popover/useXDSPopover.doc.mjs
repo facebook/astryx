@@ -34,7 +34,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Use for interactive content such as menus, pickers, forms, and command panels that need focus management.'},
       {guidance: true, description: 'Prefer the Popover component for standard trigger-content pairs; use the hook for custom trigger patterns.'},
-      {guidance: false, description: 'Use for non-interactive hover previews — use useHoverCard or useTooltip instead.'},
+      {guidance: false, description: 'Use for non-interactive hover previews: use useHoverCard or useTooltip instead.'},
     ],
   },
   relatedComponents: ['Popover', 'DropdownMenu', 'HoverCard'],
@@ -74,7 +74,7 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Use for menus, pickers, forms, command panels needing focus management.'},
       {guidance: true, description: 'Prefer Popover for standard trigger-content pairs; use hook for custom trigger patterns.'},
-      {guidance: false, description: 'Use for non-interactive hover previews — use useHoverCard / useTooltip instead.'},
+      {guidance: false, description: 'Use for non-interactive hover previews: use useHoverCard / useTooltip instead.'},
     ],
   },
 };

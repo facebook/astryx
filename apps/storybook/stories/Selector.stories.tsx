@@ -68,10 +68,10 @@ const meta: Meta<typeof Selector> = {
       control: 'boolean',
       description: 'Whether the field is required',
     },
-    children: {
+    renderOption: {
       description: 'Optional render function for custom option rendering',
       table: {
-        type: {summary: '(item: SelectorOptionData) => ReactNode'},
+        type: {summary: '(option: SelectorOptionData) => ReactNode'},
       },
     },
     'data-testid': {
@@ -292,15 +292,15 @@ export const CustomRender: Story = {
         options={users}
         value={value}
         onChange={v => setValue(v)}
-        placeholder="Select a user...">
-        {user => (
+        placeholder="Select a user..."
+        renderOption={user => (
           <SelectorOption
             icon={UserIcon}
             label={user.label}
             description={(user as (typeof users)[number]).email}
           />
         )}
-      </Selector>
+      />
     );
   },
 };

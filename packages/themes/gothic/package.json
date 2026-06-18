@@ -49,7 +49,7 @@
     "build": "xds theme build src/gothicTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
   },
   "dependencies": {
-    "lucide-react": "^1.17.0"
+    "lucide-react": "^1.18.0"
   },
   "peerDependencies": {
     "@xds/core": "0.0.14",

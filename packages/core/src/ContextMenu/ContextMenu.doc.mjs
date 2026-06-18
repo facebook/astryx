@@ -26,7 +26,7 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'The trigger area — right-click on this content to open the menu.',
+      description: 'The trigger area: right-click on this content to open the menu.',
       required: true,
     },
     {
@@ -49,7 +49,7 @@ export const docs = {
     {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
-      description: 'Size of menu items — controls padding density.',
+      description: 'Size of menu items: controls padding density.',
       default: "'md'",
     },
     {

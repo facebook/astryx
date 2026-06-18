@@ -6,12 +6,12 @@ export const docs = {
   name: 'ChatMessage',
   subComponentOf: 'Chat',
   displayName: 'Chat Message',
-  description: 'Sender context wrapper — handles avatar, name, metadata, and alignment based on sender role.',
+  description: 'Sender context wrapper: handles avatar, name, metadata, and alignment based on sender role.',
   props: [
     {
       name: 'sender',
       type: "'user' | 'assistant' | 'system'",
-      description: 'Who sent this message — controls alignment and layout.',
+      description: 'Who sent this message: controls alignment and layout.',
       required: true,
     },
     {
