@@ -31,7 +31,7 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {getKey, mergeProps} from '../utils';
 import {XDSBadge} from '../Badge';
 import {XDSIcon, type XDSIconName} from '../Icon';
 import {XDSSpinner} from '../Spinner';
@@ -334,20 +334,18 @@ const STATUS_STYLES: Record<
 };
 
 function getToolCallKey(call: XDSChatToolCallItem): string {
-  if (call.key != null) {
-    return call.key;
-  }
-
-  return [
-    call.name,
-    call.status ?? 'complete',
-    call.target ?? '',
-    call.node ?? '',
-    call.duration ?? '',
-    call.additions?.toString() ?? '',
-    call.deletions?.toString() ?? '',
-    call.errorMessage ?? '',
-  ].join('\u001F');
+  return getKey(call.key, () =>
+    [
+      call.name,
+      call.status ?? 'complete',
+      call.target ?? '',
+      call.node ?? '',
+      call.duration ?? '',
+      call.additions?.toString() ?? '',
+      call.deletions?.toString() ?? '',
+      call.errorMessage ?? '',
+    ].join('\u001F'),
+  );
 }
 
 // =============================================================================
