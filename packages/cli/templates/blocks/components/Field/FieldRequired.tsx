@@ -3,32 +3,32 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
+import {TextInput} from '@xds/core/TextInput';
+import {VStack} from '@xds/core/Layout';
+import {Center} from '@xds/core/Center';
 
 export default function FieldRequired() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
 
   return (
-    <XDSCenter>
-      <XDSVStack gap={4}>
-        <XDSTextInput
+    <Center>
+      <VStack gap={4}>
+        <TextInput
           label="Username"
           isRequired
           value={username}
           onChange={setUsername}
           placeholder="Enter your username"
         />
-        <XDSTextInput
+        <TextInput
           label="Backup email"
           isOptional
           value={email}
           onChange={setEmail}
           placeholder="you@example.com"
         />
-      </XDSVStack>
-    </XDSCenter>
+      </VStack>
+    </Center>
   );
 }

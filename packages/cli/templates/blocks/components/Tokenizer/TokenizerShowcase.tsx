@@ -3,21 +3,21 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSTokenizer} from '@xds/core/Tokenizer';
-import type {XDSSearchSource} from '@xds/core/Typeahead';
+import {Tokenizer} from '@xds/core/Tokenizer';
+import type {SearchSource} from '@xds/core/Typeahead';
 
 const styles = stylex.create({
   fixed: {width: 400},
 });
 
-const source: XDSSearchSource = {
+const source: SearchSource = {
   search: () => [],
   bootstrap: () => [],
 };
 
 export default function TokenizerShowcase() {
   return (
-    <XDSTokenizer
+    <Tokenizer
       label="Tags"
       placeholder="Search..."
       searchSource={source}

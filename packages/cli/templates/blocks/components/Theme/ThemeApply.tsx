@@ -2,12 +2,12 @@
 
 'use client';
 
-import {XDSTheme, defineTheme} from '@xds/core/theme';
-import {XDSCard} from '@xds/core/Card';
-import {XDSButton} from '@xds/core/Button';
-import {XDSSection} from '@xds/core/Section';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSHeading, XDSText} from '@xds/core/Text';
+import {Theme, defineTheme} from '@xds/core/theme';
+import {Card} from '@xds/core/Card';
+import {Button} from '@xds/core/Button';
+import {Section} from '@xds/core/Section';
+import {Stack} from '@xds/core/Layout';
+import {Heading, Text} from '@xds/core/Text';
 
 const forestTheme = defineTheme({
   name: 'forest-docs',
@@ -22,18 +22,18 @@ const forestTheme = defineTheme({
 
 export default function ThemeApply() {
   return (
-    <XDSSection variant="muted" padding={4} maxWidth={420}>
-      <XDSTheme theme={forestTheme}>
-        <XDSCard padding={4} width="100%">
-          <XDSStack direction="vertical" gap={3}>
-            <XDSHeading level={4}>Forest workspace</XDSHeading>
-            <XDSText type="body" color="secondary">
+    <Section variant="muted" padding={4} maxWidth={420}>
+      <Theme theme={forestTheme}>
+        <Card padding={4} width="100%">
+          <Stack direction="vertical" gap={3}>
+            <Heading level={4}>Forest workspace</Heading>
+            <Text type="body" color="secondary">
               Wrap any subtree to apply a theme locally.
-            </XDSText>
-            <XDSButton label="Create project" />
-          </XDSStack>
-        </XDSCard>
-      </XDSTheme>
-    </XDSSection>
+            </Text>
+            <Button label="Create project" />
+          </Stack>
+        </Card>
+      </Theme>
+    </Section>
   );
 }

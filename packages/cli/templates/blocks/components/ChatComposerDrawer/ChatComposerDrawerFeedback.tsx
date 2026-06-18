@@ -3,11 +3,11 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSChatComposer, XDSChatComposerDrawer} from '@xds/core/Chat';
-import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSText} from '@xds/core/Text';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSStack} from '@xds/core/Layout';
+import {ChatComposer, ChatComposerDrawer} from '@xds/core/Chat';
+import {List, ListItem} from '@xds/core/List';
+import {Text} from '@xds/core/Text';
+import {Badge} from '@xds/core/Badge';
+import {Stack} from '@xds/core/Layout';
 
 const options = [
   {key: 'A', label: 'Yes'},
@@ -19,26 +19,26 @@ export default function ChatComposerDrawerFeedback() {
   const [selected, setSelected] = useState<string | null>(null);
 
   return (
-    <XDSStack direction="vertical" style={{width: '100%', maxWidth: 450}}>
-      <XDSChatComposer
+    <Stack direction="vertical" style={{width: '100%', maxWidth: 450}}>
+      <ChatComposer
         onSubmit={value => {
           console.log('Submit:', value, '| Answer:', selected);
         }}
         drawer={
-          <XDSChatComposerDrawer count={1} label="User feedback requested">
-            <XDSStack direction="vertical" gap={1} width="100%">
-              <XDSList>
-                <XDSListItem
+          <ChatComposerDrawer count={1} label="User feedback requested">
+            <Stack direction="vertical" gap={1} width="100%">
+              <List>
+                <ListItem
                   label={
-                    <XDSText weight="bold">Do you want to proceed?</XDSText>
+                    <Text weight="bold">Do you want to proceed?</Text>
                   }
                 />
                 {options.map(opt => (
-                  <XDSListItem
+                  <ListItem
                     key={opt.key}
                     label={opt.label}
                     startContent={
-                      <XDSBadge
+                      <Badge
                         variant={selected === opt.key ? 'info' : 'neutral'}
                         label={opt.key}
                       />
@@ -47,11 +47,11 @@ export default function ChatComposerDrawerFeedback() {
                     onClick={() => setSelected(opt.key)}
                   />
                 ))}
-              </XDSList>
-            </XDSStack>
-          </XDSChatComposerDrawer>
+              </List>
+            </Stack>
+          </ChatComposerDrawer>
         }
       />
-    </XDSStack>
+    </Stack>
   );
 }

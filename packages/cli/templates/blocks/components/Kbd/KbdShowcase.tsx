@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSKbd} from '@xds/core/Kbd';
+import {Kbd} from '@xds/core/Kbd';
 
 export default function KbdShowcase() {
-  return <XDSKbd keys="mod+k" />;
+  return <Kbd keys="mod+k" />;
 }

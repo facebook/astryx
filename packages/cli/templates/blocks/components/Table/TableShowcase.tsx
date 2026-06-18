@@ -2,9 +2,9 @@
 
 'use client';
 
-import {XDSTable, proportional, pixel} from '@xds/core/Table';
-import {XDSCard} from '@xds/core/Card';
-import type {XDSTableColumn} from '@xds/core/Table';
+import {Table, proportional, pixel} from '@xds/core/Table';
+import {Card} from '@xds/core/Card';
+import type {TableColumn} from '@xds/core/Table';
 
 interface User extends Record<string, unknown> {
   id: string;
@@ -38,7 +38,7 @@ const users: User[] = [
   },
 ];
 
-const columns: XDSTableColumn<User>[] = [
+const columns: TableColumn<User>[] = [
   {key: 'name', header: 'Name', width: proportional(1)},
   {key: 'email', header: 'Email', width: proportional(2)},
   {key: 'role', header: 'Role', width: proportional(1)},
@@ -47,8 +47,8 @@ const columns: XDSTableColumn<User>[] = [
 
 export default function TableShowcase() {
   return (
-    <XDSCard width={600}>
-      <XDSTable data={users} columns={columns} idKey="id" hasHover />
-    </XDSCard>
+    <Card width={600}>
+      <Table data={users} columns={columns} idKey="id" hasHover />
+    </Card>
   );
 }

@@ -2,13 +2,13 @@
 
 'use client';
 
-import {XDSMediaTheme} from '@xds/core/theme';
-import {XDSSection} from '@xds/core/Section';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSIcon} from '@xds/core/Icon';
+import {MediaTheme} from '@xds/core/theme';
+import {Section} from '@xds/core/Section';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Badge} from '@xds/core/Badge';
+import {Icon} from '@xds/core/Icon';
 
 // light-scene-horizontal-1 from xds_oss asset set
 const SHOWCASE_IMAGE_URL =
@@ -16,7 +16,7 @@ const SHOWCASE_IMAGE_URL =
 
 export default function MediaThemeShowcase() {
   return (
-    <XDSSection
+    <Section
       variant="transparent"
       padding={4}
       style={{
@@ -31,26 +31,26 @@ export default function MediaThemeShowcase() {
         borderRadius: 'var(--radius-container)',
         boxShadow: 'var(--shadow-med)',
       }}>
-      <XDSMediaTheme mode="dark">
-        <XDSStack direction="vertical" gap={3}>
-          <XDSStack direction="horizontal" gap={2} vAlign="center">
-            <XDSIcon icon="info" size="md" />
-            <XDSText type="body" weight="bold">
+      <MediaTheme mode="dark">
+        <Stack direction="vertical" gap={3}>
+          <Stack direction="horizontal" gap={2} vAlign="center">
+            <Icon icon="info" size="md" />
+            <Text type="body" weight="bold">
               Media overlay
-            </XDSText>
-            <XDSBadge label="Live" />
-          </XDSStack>
-          <XDSText type="supporting" color="secondary">
+            </Text>
+            <Badge label="Live" />
+          </Stack>
+          <Text type="supporting" color="secondary">
             Text, icons, badges, and button variants inherit legible colors on
             top of the dark image treatment.
-          </XDSText>
-          <XDSStack direction="horizontal" gap={2} wrap="wrap">
-            <XDSButton label="Primary" variant="primary" size="sm" />
-            <XDSButton label="Secondary" variant="secondary" size="sm" />
-            <XDSButton label="Ghost" variant="ghost" size="sm" />
-          </XDSStack>
-        </XDSStack>
-      </XDSMediaTheme>
-    </XDSSection>
+          </Text>
+          <Stack direction="horizontal" gap={2} wrap="wrap">
+            <Button label="Primary" variant="primary" size="sm" />
+            <Button label="Secondary" variant="secondary" size="sm" />
+            <Button label="Ghost" variant="ghost" size="sm" />
+          </Stack>
+        </Stack>
+      </MediaTheme>
+    </Section>
   );
 }

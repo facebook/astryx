@@ -11,13 +11,13 @@ import {
   Component,
   type ReactNode,
 } from 'react';
-import {getXDSComponent, resolveValue} from './resolveElements';
-import {XDSButton} from '@xds/core/Button';
-import {XDSCard} from '@xds/core/Card';
-import {XDSCenter} from '@xds/core/Center';
+import {getComponent, resolveValue} from './resolveElements';
+import {Button} from '@xds/core/Button';
+import {Card} from '@xds/core/Card';
+import {Center} from '@xds/core/Center';
 import {CodeExampleBlock} from '../CodeExampleBlock';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 import {Code} from 'lucide-react';
 import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {
@@ -53,9 +53,9 @@ class PreviewErrorBoundary extends Component<
   render() {
     if (this.state.error) {
       return (
-        <XDSText type="supporting" color="secondary">
+        <Text type="supporting" color="secondary">
           Render error: {this.state.error.message}
-        </XDSText>
+        </Text>
       );
     }
     return this.props.children;
@@ -203,7 +203,7 @@ export function InteractivePreviewStage({
   canControlOpenState?: boolean;
 }) {
   const [showCode, setShowCode] = useState(false);
-  const Component = getXDSComponent(name);
+  const Component = getComponent(name);
   const runtimeState = useMemo(
     () =>
       resolveValue(
@@ -218,7 +218,7 @@ export function InteractivePreviewStage({
   // Sub-components that need a parent context provider declare it via
   // `playground.wrapper`; wrap the previewed component in that parent.
   const wrapper = playground?.wrapper ?? null;
-  const WrapperComponent = wrapper ? getXDSComponent(wrapper.component) : null;
+  const WrapperComponent = wrapper ? getComponent(wrapper.component) : null;
   const wrapperProps = useMemo(() => {
     const resolved = wrapper?.props
       ? (resolveValue(wrapper.props) as Record<string, unknown>)
@@ -242,25 +242,25 @@ export function InteractivePreviewStage({
   if (missingRequiredProps.length > 0) {
     return (
       <ComponentPreviewTheme>
-        <XDSCard variant="muted" padding={0}>
-          <XDSCenter style={{minHeight: 200, width: '100%'}}>
-            <XDSVStack
+        <Card variant="muted" padding={0}>
+          <Center style={{minHeight: 200, width: '100%'}}>
+            <VStack
               gap={1}
               style={{
                 paddingBlock: 24,
                 paddingInline: 16,
                 textAlign: 'center',
               }}>
-              <XDSText type="supporting" color="secondary">
+              <Text type="supporting" color="secondary">
                 Interactive preview needs required props that cannot be
                 generated automatically.
-              </XDSText>
-              <XDSText type="supporting" color="secondary">
+              </Text>
+              <Text type="supporting" color="secondary">
                 Missing: {missingRequiredProps.join(', ')}
-              </XDSText>
-            </XDSVStack>
-          </XDSCenter>
-        </XDSCard>
+              </Text>
+            </VStack>
+          </Center>
+        </Card>
       </ComponentPreviewTheme>
     );
   }
@@ -268,24 +268,24 @@ export function InteractivePreviewStage({
   if (!Component) {
     return (
       <ComponentPreviewTheme>
-        <XDSCard variant="muted" padding={0}>
-          <XDSCenter style={{minHeight: 200, width: '100%'}}>
-            <XDSVStack
+        <Card variant="muted" padding={0}>
+          <Center style={{minHeight: 200, width: '100%'}}>
+            <VStack
               gap={1}
               style={{
                 paddingBlock: 24,
                 paddingInline: 16,
                 textAlign: 'center',
               }}>
-              <XDSText type="supporting" color="secondary">
+              <Text type="supporting" color="secondary">
                 Interactive preview not available for {name}.
-              </XDSText>
-              <XDSText type="supporting" color="secondary">
+              </Text>
+              <Text type="supporting" color="secondary">
                 This component is not part of @xds/core.
-              </XDSText>
-            </XDSVStack>
-          </XDSCenter>
-        </XDSCard>
+              </Text>
+            </VStack>
+          </Center>
+        </Card>
       </ComponentPreviewTheme>
     );
   }
@@ -294,7 +294,7 @@ export function InteractivePreviewStage({
 
   return (
     <ComponentPreviewTheme>
-      <XDSCard
+      <Card
         variant="muted"
         padding={0}
         style={{width: '100%', position: 'relative'}}>
@@ -305,7 +305,7 @@ export function InteractivePreviewStage({
             right: 'var(--spacing-2)',
             zIndex: 2,
           }}>
-          <XDSButton
+          <Button
             label="Show code"
             tooltip="Show code"
             icon={<Code size={16} />}
@@ -331,7 +331,7 @@ export function InteractivePreviewStage({
             />
           </div>
         ) : (
-          <XDSCenter
+          <Center
             style={{
               minHeight: 200,
               width: '100%',
@@ -341,9 +341,9 @@ export function InteractivePreviewStage({
               resetKeys={[Component, runtimeState, WrapperComponent]}>
               {renderPreview(createElement(Component, runtimeState))}
             </PreviewErrorBoundary>
-          </XDSCenter>
+          </Center>
         )}
-      </XDSCard>
+      </Card>
     </ComponentPreviewTheme>
   );
 }

@@ -3,8 +3,8 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSField} from '@xds/core/Field';
-import {XDSTextInput} from '@xds/core/TextInput';
+import {Field} from '@xds/core/Field';
+import {TextInput} from '@xds/core/TextInput';
 import {EnvelopeIcon} from '@heroicons/react/24/outline';
 import {
   colorVars,
@@ -14,7 +14,7 @@ import {
 } from '@xds/core/theme/tokens.stylex';
 
 // A minimal native input styled to match XDS aesthetics —
-// demonstrating that XDSField wraps any custom or native input.
+// demonstrating that Field wraps any custom or native input.
 const inputStyles = stylex.create({
   root: {
     width: '100%',
@@ -59,9 +59,9 @@ const NativeInput = ({
   />
 );
 
-const meta: Meta<typeof XDSField> = {
+const meta: Meta<typeof Field> = {
   title: 'Core/Field',
-  component: XDSField,
+  component: Field,
   tags: ['autodocs'],
   argTypes: {
     label: {control: 'text'},
@@ -74,21 +74,21 @@ const meta: Meta<typeof XDSField> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSField>;
+type Story = StoryObj<typeof Field>;
 
 export const Default: Story = {
   args: {label: 'Email'},
   render: args => {
     const [value, setValue] = useState('');
     return (
-      <XDSField {...args} inputID="email-input">
+      <Field {...args} inputID="email-input">
         <NativeInput
           id="email-input"
           placeholder="you@example.com"
           value={value}
           onChange={setValue}
         />
-      </XDSField>
+      </Field>
     );
   },
 };
@@ -98,7 +98,7 @@ export const WithDescription: Story = {
   render: args => {
     const [value, setValue] = useState('');
     return (
-      <XDSField {...args} inputID="email-desc-input" descriptionID="email-desc">
+      <Field {...args} inputID="email-desc-input" descriptionID="email-desc">
         <NativeInput
           id="email-desc-input"
           describedBy="email-desc"
@@ -106,7 +106,7 @@ export const WithDescription: Story = {
           value={value}
           onChange={setValue}
         />
-      </XDSField>
+      </Field>
     );
   },
 };
@@ -116,14 +116,14 @@ export const WithHiddenLabel: Story = {
   render: args => {
     const [value, setValue] = useState('');
     return (
-      <XDSField {...args} inputID="search-input">
+      <Field {...args} inputID="search-input">
         <NativeInput
           id="search-input"
           placeholder="Search..."
           value={value}
           onChange={setValue}
         />
-      </XDSField>
+      </Field>
     );
   },
 };
@@ -133,14 +133,14 @@ export const OptionalField: Story = {
   render: args => {
     const [value, setValue] = useState('');
     return (
-      <XDSField {...args} inputID="nickname-input">
+      <Field {...args} inputID="nickname-input">
         <NativeInput
           id="nickname-input"
           placeholder="Enter your nickname"
           value={value}
           onChange={setValue}
         />
-      </XDSField>
+      </Field>
     );
   },
 };
@@ -150,14 +150,14 @@ export const RequiredField: Story = {
   render: args => {
     const [value, setValue] = useState('');
     return (
-      <XDSField {...args} inputID="username-input">
+      <Field {...args} inputID="username-input">
         <NativeInput
           id="username-input"
           placeholder="Enter your username"
           value={value}
           onChange={setValue}
         />
-      </XDSField>
+      </Field>
     );
   },
 };
@@ -170,14 +170,14 @@ export const WithTooltip: Story = {
   render: args => {
     const [value, setValue] = useState('');
     return (
-      <XDSField {...args} inputID="api-key-input">
+      <Field {...args} inputID="api-key-input">
         <NativeInput
           id="api-key-input"
           placeholder="sk-..."
           value={value}
           onChange={setValue}
         />
-      </XDSField>
+      </Field>
     );
   },
 };
@@ -187,14 +187,14 @@ export const WithLabelIcon: Story = {
   render: args => {
     const [value, setValue] = useState('');
     return (
-      <XDSField {...args} inputID="email-icon-input">
+      <Field {...args} inputID="email-icon-input">
         <NativeInput
           id="email-icon-input"
           placeholder="you@example.com"
           value={value}
           onChange={setValue}
         />
-      </XDSField>
+      </Field>
     );
   },
 };
@@ -212,10 +212,10 @@ export const AllVariations: Story = {
           gap: 24,
           maxWidth: 320,
         }}>
-        <XDSField label="Default" inputID="v-a">
+        <Field label="Default" inputID="v-a">
           <NativeInput id="v-a" value={vals.a} onChange={set('a')} />
-        </XDSField>
-        <XDSField
+        </Field>
+        <Field
           label="With description"
           description="Some helpful info"
           inputID="v-b"
@@ -226,19 +226,19 @@ export const AllVariations: Story = {
             value={vals.b}
             onChange={set('b')}
           />
-        </XDSField>
-        <XDSField label="Optional" isOptional inputID="v-c">
+        </Field>
+        <Field label="Optional" isOptional inputID="v-c">
           <NativeInput id="v-c" value={vals.c} onChange={set('c')} />
-        </XDSField>
-        <XDSField label="Required" isRequired inputID="v-d">
+        </Field>
+        <Field label="Required" isRequired inputID="v-d">
           <NativeInput id="v-d" value={vals.d} onChange={set('d')} />
-        </XDSField>
-        <XDSField
+        </Field>
+        <Field
           label="With tooltip"
           labelTooltip="Extra info here"
           inputID="v-e">
           <NativeInput id="v-e" value={vals.e} onChange={set('e')} />
-        </XDSField>
+        </Field>
       </div>
     );
   },
@@ -261,7 +261,7 @@ export const StatusVariants: Story = {
           gap: 24,
           maxWidth: 400,
         }}>
-        <XDSTextInput
+        <TextInput
           label="Email"
           description="Enter your work email"
           value={vals.error}
@@ -271,7 +271,7 @@ export const StatusVariants: Story = {
             message: 'Please enter a valid email address',
           }}
         />
-        <XDSTextInput
+        <TextInput
           label="Username"
           description="Choose a unique username"
           value={vals.warning}
@@ -281,7 +281,7 @@ export const StatusVariants: Story = {
             message: 'This username is reserved for administrators',
           }}
         />
-        <XDSTextInput
+        <TextInput
           label="API Key"
           description="Paste your API key"
           value={vals.success}

@@ -2,13 +2,13 @@
 
 'use client';
 
-import {XDSTooltip} from '@xds/core/Tooltip';
-import {XDSButton} from '@xds/core/Button';
+import {Tooltip} from '@xds/core/Tooltip';
+import {Button} from '@xds/core/Button';
 
 export default function TooltipShowcase() {
   return (
-    <XDSTooltip content="This is a helpful tooltip" placement="above">
-      <XDSButton label="Hover me" />
-    </XDSTooltip>
+    <Tooltip content="This is a helpful tooltip" placement="above">
+      <Button label="Hover me" />
+    </Tooltip>
   );
 }

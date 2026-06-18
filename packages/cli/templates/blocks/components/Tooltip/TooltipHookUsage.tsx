@@ -2,24 +2,24 @@
 
 'use client';
 
-import {useXDSTooltip} from '@xds/core/Tooltip';
-import {XDSButton} from '@xds/core/Button';
-import {XDSCenter} from '@xds/core/Center';
+import {useTooltip} from '@xds/core/Tooltip';
+import {Button} from '@xds/core/Button';
+import {Center} from '@xds/core/Center';
 
 export default function TooltipHookUsage() {
-  const tooltip = useXDSTooltip({
+  const tooltip = useTooltip({
     placement: 'above',
     delay: 100,
   });
 
   return (
-    <XDSCenter>
-      <XDSButton
+    <Center>
+      <Button
         label="Using hook directly"
         ref={tooltip.ref}
         aria-describedby={tooltip.describedBy}
       />
       {tooltip.renderTooltip('Tooltip via hook')}
-    </XDSCenter>
+    </Center>
   );
 }

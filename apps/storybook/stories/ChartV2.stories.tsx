@@ -1,16 +1,16 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSChartV2 as XDSChart, bar, line, area} from '@xds/lab';
+import {ChartV2 as Chart, bar, line, area} from '@xds/lab';
 import {
-  XDSChartV2Grid as XDSChartGrid,
-  XDSChartV2Axis as XDSChartAxis,
+  ChartV2Grid as ChartGrid,
+  ChartV2Axis as ChartAxis,
   currency,
 } from '@xds/lab';
 
-const meta: Meta<typeof XDSChart> = {
+const meta: Meta<typeof Chart> = {
   title: 'Lab/ChartV2',
-  component: XDSChart,
+  component: Chart,
 };
 export default meta;
 
@@ -35,17 +35,17 @@ const groupedStackData = [
 /** Simple bar chart */
 export const SimpleBar: StoryObj = {
   render: () => (
-    <XDSChart
+    <Chart
       data={monthlyData}
       xKey="month"
       title="Monthly Revenue"
       series={[bar('revenue', {color: '#3b82f6'})]}
       tooltip={true}
-      grid={<XDSChartGrid />}
+      grid={<ChartGrid />}
       axes={
         <>
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" tickFormat={currency()} />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" tickFormat={currency()} />
         </>
       }
       height={300}
@@ -56,16 +56,16 @@ export const SimpleBar: StoryObj = {
 /** Simple line chart */
 export const SimpleLine: StoryObj = {
   render: () => (
-    <XDSChart
+    <Chart
       data={monthlyData}
       xKey="month"
       series={[line('trend', {color: '#3b82f6'})]}
       tooltip={true}
-      grid={<XDSChartGrid />}
+      grid={<ChartGrid />}
       axes={
         <>
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
         </>
       }
       height={300}
@@ -76,7 +76,7 @@ export const SimpleLine: StoryObj = {
 /** Stacked bars */
 export const StackedBars: StoryObj = {
   render: () => (
-    <XDSChart
+    <Chart
       data={monthlyData}
       xKey="month"
       title="Revenue & Costs"
@@ -86,11 +86,11 @@ export const StackedBars: StoryObj = {
         bar('costs', {color: '#ef4444', stack: 'totals', label: 'Costs'}),
       ]}
       legend={{position: 'bottom', alignment: 'center'}}
-      grid={<XDSChartGrid />}
+      grid={<ChartGrid />}
       axes={
         <>
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
         </>
       }
       height={300}
@@ -101,7 +101,7 @@ export const StackedBars: StoryObj = {
 /** Grouped bars */
 export const GroupedBars: StoryObj = {
   render: () => (
-    <XDSChart
+    <Chart
       data={monthlyData}
       xKey="month"
       title="Revenue vs Costs"
@@ -110,11 +110,11 @@ export const GroupedBars: StoryObj = {
         bar('costs', {color: '#ef4444', group: 'compare', label: 'Costs'}),
       ]}
       legend={{position: 'top', alignment: 'end'}}
-      grid={<XDSChartGrid />}
+      grid={<ChartGrid />}
       axes={
         <>
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
         </>
       }
       height={300}
@@ -125,7 +125,7 @@ export const GroupedBars: StoryObj = {
 /** Grouped stacked bars — two stacks side by side per x value */
 export const GroupedStackedBars: StoryObj = {
   render: () => (
-    <XDSChart
+    <Chart
       data={groupedStackData}
       xKey="month"
       series={[
@@ -144,11 +144,11 @@ export const GroupedStackedBars: StoryObj = {
         }),
         bar('costsB', {color: '#fca5a5', stack: 'stackB', group: 'comparison'}),
       ]}
-      grid={<XDSChartGrid />}
+      grid={<ChartGrid />}
       axes={
         <>
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
         </>
       }
       height={300}
@@ -159,7 +159,7 @@ export const GroupedStackedBars: StoryObj = {
 /** Mixed: bars + line */
 export const MixedMarks: StoryObj = {
   render: () => (
-    <XDSChart
+    <Chart
       data={monthlyData}
       xKey="month"
       title="Revenue vs Trend"
@@ -170,11 +170,11 @@ export const MixedMarks: StoryObj = {
       ]}
       tooltip={true}
       legend={{position: 'end', alignment: 'start'}}
-      grid={<XDSChartGrid />}
+      grid={<ChartGrid />}
       axes={
         <>
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
         </>
       }
       height={300}
@@ -185,7 +185,7 @@ export const MixedMarks: StoryObj = {
 /** Area with gradient */
 export const AreaGradient: StoryObj = {
   render: () => (
-    <XDSChart
+    <Chart
       data={monthlyData}
       xKey="month"
       title="Revenue Over Time"
@@ -193,11 +193,11 @@ export const AreaGradient: StoryObj = {
         area('revenue', {color: '#3b82f6', gradient: true}),
         line('revenue', {color: '#3b82f6'}),
       ]}
-      grid={<XDSChartGrid />}
+      grid={<ChartGrid />}
       axes={
         <>
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
         </>
       }
       height={300}
@@ -208,7 +208,7 @@ export const AreaGradient: StoryObj = {
 /** Stacked areas */
 export const StackedAreas: StoryObj = {
   render: () => (
-    <XDSChart
+    <Chart
       data={monthlyData}
       xKey="month"
       title="Revenue & Costs Over Time"
@@ -217,11 +217,11 @@ export const StackedAreas: StoryObj = {
         area('costs', {color: '#ef4444', stack: 'total', label: 'Costs'}),
       ]}
       legend={true}
-      grid={<XDSChartGrid />}
+      grid={<ChartGrid />}
       axes={
         <>
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
         </>
       }
       height={300}
@@ -241,18 +241,18 @@ const profitLossData = [
 /** Mixed marks with negative values */
 export const NegativeValues: StoryObj = {
   render: () => (
-    <XDSChart
+    <Chart
       data={profitLossData}
       xKey="month"
       series={[
         bar('profit', {color: '#3b82f6'}),
         line('trend', {color: '#f59e0b', dots: true, strokeWidth: 2}),
       ]}
-      grid={<XDSChartGrid />}
+      grid={<ChartGrid />}
       axes={
         <>
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
         </>
       }
       height={300}

@@ -2,7 +2,7 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSContextMenu} from '@xds/core/ContextMenu';
+import {ContextMenu} from '@xds/core/ContextMenu';
 
 const styles = stylex.create({
   area: {
@@ -19,13 +19,13 @@ const styles = stylex.create({
 
 export default function ContextMenuShowcase() {
   return (
-    <XDSContextMenu
+    <ContextMenu
       items={[
         {label: 'Cut', onClick: () => {}},
         {label: 'Copy', onClick: () => {}},
         {label: 'Paste', onClick: () => {}},
       ]}>
       <div {...stylex.props(styles.area)}>Right-click this area</div>
-    </XDSContextMenu>
+    </ContextMenu>
   );
 }

@@ -2,13 +2,13 @@
 
 'use client';
 
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSCenter} from '@xds/core/Center';
+import {AspectRatio} from '@xds/core/AspectRatio';
+import {Center} from '@xds/core/Center';
 
 export default function AspectRatioWidescreen() {
   return (
-    <XDSCenter width={600}>
-      <XDSAspectRatio ratio={16 / 9}>
+    <Center width={600}>
+      <AspectRatio ratio={16 / 9}>
         <img
           src="https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png"
           alt="16:9 widescreen"
@@ -18,7 +18,7 @@ export default function AspectRatioWidescreen() {
             objectFit: 'cover',
           }}
         />
-      </XDSAspectRatio>
-    </XDSCenter>
+      </AspectRatio>
+    </Center>
   );
 }

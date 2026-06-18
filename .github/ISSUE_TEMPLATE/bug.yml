@@ -20,7 +20,7 @@ body:
       description: |
         Steps to reproduce, a minimal code example, or a link to a sandbox/Storybook story that demonstrates the issue.
       placeholder: |
-        1. Render `<XDSButton variant="primary" />`
+        1. Render `<Button variant="primary" />`
         2. Click the button while in loading state
         3. Focus is lost
     validations:

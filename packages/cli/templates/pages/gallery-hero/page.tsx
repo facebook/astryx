@@ -4,16 +4,16 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {
-  XDSVStack,
-  XDSHStack,
-  XDSLayout,
-  XDSLayoutContent,
+  VStack,
+  HStack,
+  Layout,
+  LayoutContent,
 } from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
+import {Text, Heading} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
+import {Grid} from '@xds/core/Grid';
+import {AspectRatio} from '@xds/core/AspectRatio';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
 const IMAGES = [
@@ -32,17 +32,17 @@ const IMAGES = [
 ];
 
 // NOTE: The only custom styling here is image fill + corner radius. It exists
-// because XDS has no image primitive — XDSAspectRatio exposes no objectFit or
-// radius props and there's no XDSImage. Tracked in issue #2582; replace these
+// because XDS has no image primitive — AspectRatio exposes no objectFit or
+// radius props and there's no Image. Tracked in issue #2582; replace these
 // with component props once it lands.
 const styles = stylex.create({
-  // Fills the XDSAspectRatio box. No objectFit prop on XDSAspectRatio (#2582).
+  // Fills the AspectRatio box. No objectFit prop on AspectRatio (#2582).
   galleryImage: {
     width: '100%',
     height: '100%',
     objectFit: 'cover',
   },
-  // Rounds the image corners. No radius prop on XDSAspectRatio (#2582).
+  // Rounds the image corners. No radius prop on AspectRatio (#2582).
   galleryImageClip: {
     borderRadius: 'var(--radius-container)',
   },
@@ -50,42 +50,42 @@ const styles = stylex.create({
 
 export default function GalleryHero() {
   return (
-    <XDSLayout
+    <Layout
       content={
-        <XDSLayoutContent padding={6}>
-          <XDSVStack gap={10}>
-            <XDSVStack gap={6} hAlign="center">
-              <XDSVStack gap={3} hAlign="center">
-                <XDSHeading
+        <LayoutContent padding={6}>
+          <VStack gap={10}>
+            <VStack gap={6} hAlign="center">
+              <VStack gap={3} hAlign="center">
+                <Heading
                   level={1}
                   type="display-2"
                   justify="center"
                   textWrap="balance">
                   Little joys, everywhere you go
-                </XDSHeading>
-                <XDSText
+                </Heading>
+                <Text
                   type="body"
                   color="secondary"
                   justify="center"
                   textWrap="balance">
                   Sometimes all it takes is one small thing to turn your whole
                   day around.
-                </XDSText>
-              </XDSVStack>
-              <XDSHStack gap={3}>
-                <XDSButton
+                </Text>
+              </VStack>
+              <HStack gap={3}>
+                <Button
                   label="Get started"
                   variant="primary"
                   endContent={
-                    <XDSIcon icon={ArrowRightIcon} size="sm" color="inherit" />
+                    <Icon icon={ArrowRightIcon} size="sm" color="inherit" />
                   }
                 />
-                <XDSButton label="Learn more" variant="secondary" />
-              </XDSHStack>
-            </XDSVStack>
-            <XDSGrid columns={{minWidth: 200, repeat: 'fit'}} gap={4}>
+                <Button label="Learn more" variant="secondary" />
+              </HStack>
+            </VStack>
+            <Grid columns={{minWidth: 200, repeat: 'fit'}} gap={4}>
               {IMAGES.map(image => (
-                <XDSAspectRatio
+                <AspectRatio
                   key={image.src}
                   ratio={4 / 5}
                   xstyle={styles.galleryImageClip}>
@@ -94,11 +94,11 @@ export default function GalleryHero() {
                     src={image.src}
                     alt={image.alt}
                   />
-                </XDSAspectRatio>
+                </AspectRatio>
               ))}
-            </XDSGrid>
-          </XDSVStack>
-        </XDSLayoutContent>
+            </Grid>
+          </VStack>
+        </LayoutContent>
       }
     />
   );

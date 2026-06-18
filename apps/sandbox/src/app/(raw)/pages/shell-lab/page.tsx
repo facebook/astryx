@@ -6,35 +6,35 @@ import {Suspense, useState, useCallback, useEffect, useMemo} from 'react';
 import {useSearchParams} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
 
-import {XDSAppShell} from '@xds/core/AppShell';
-import type {XDSMobileNavConfig} from '@xds/core/AppShell';
+import {AppShell} from '@xds/core/AppShell';
+import type {MobileNavConfig} from '@xds/core/AppShell';
 import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
+  SideNav,
+  SideNavHeading,
+  SideNavItem,
+  SideNavSection,
 } from '@xds/core/SideNav';
 import {
-  XDSTopNav,
-  XDSTopNavHeading,
-  XDSTopNavItem,
-  XDSTopNavMenu,
-  XDSTopNavMegaMenu,
-  XDSTopNavMegaMenuItem,
-  XDSTopNavMegaMenuFeaturedCard,
+  TopNav,
+  TopNavHeading,
+  TopNavItem,
+  TopNavMenu,
+  TopNavMegaMenu,
+  TopNavMegaMenuItem,
+  TopNavMegaMenuFeaturedCard,
 } from '@xds/core/TopNav';
-import {XDSMobileNav, XDSMobileNavToggle} from '@xds/core/MobileNav';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSSwitch} from '@xds/core/Switch';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSCard} from '@xds/core/Card';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSButton} from '@xds/core/Button';
-import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSBanner} from '@xds/core/Banner';
-import {XDSNavMenuItem} from '@xds/core/NavMenu';
+import {MobileNav, MobileNavToggle} from '@xds/core/MobileNav';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Text, Heading} from '@xds/core/Text';
+import {Switch} from '@xds/core/Switch';
+import {Selector} from '@xds/core/Selector';
+import {Card} from '@xds/core/Card';
+import {Divider} from '@xds/core/Divider';
+import {Badge} from '@xds/core/Badge';
+import {Button} from '@xds/core/Button';
+import {NavIcon} from '@xds/core/NavIcon';
+import {Banner} from '@xds/core/Banner';
+import {NavMenuItem} from '@xds/core/NavMenu';
 
 // =============================================================================
 // Configuration types
@@ -185,15 +185,15 @@ function ConfigPanel({
   onChange: (update: Partial<ShellConfig>) => void;
 }) {
   return (
-    <XDSCard>
-      <XDSVStack gap={5} xstyle={styles.padding4}>
-        <XDSHeading level={3}>Shell Configuration</XDSHeading>
+    <Card>
+      <VStack gap={5} xstyle={styles.padding4}>
+        <Heading level={3}>Shell Configuration</Heading>
 
         {/* AppShell */}
-        <XDSVStack gap={3}>
-          <XDSText type="label" weight="bold">
+        <VStack gap={3}>
+          <Text type="label" weight="bold">
             AppShell
-          </XDSText>
+          </Text>
           <SelectorRow
             label="Variant"
             value={config.variant}
@@ -219,15 +219,15 @@ function ConfigPanel({
             value={config.showBanner}
             onChange={v => onChange({showBanner: v})}
           />
-        </XDSVStack>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
         {/* SideNav */}
-        <XDSVStack gap={3}>
-          <XDSText type="label" weight="bold">
+        <VStack gap={3}>
+          <Text type="label" weight="bold">
             SideNav
-          </XDSText>
+          </Text>
           <SelectorRow
             label="Mode"
             value={config.sideNavMode}
@@ -330,15 +330,15 @@ function ConfigPanel({
             value={config.isResizable}
             onChange={v => onChange({isResizable: v})}
           />
-        </XDSVStack>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
         {/* TopNav */}
-        <XDSVStack gap={3}>
-          <XDSText type="label" weight="bold">
+        <VStack gap={3}>
+          <Text type="label" weight="bold">
             TopNav
-          </XDSText>
+          </Text>
           <SelectorRow
             label="Mode"
             value={config.topNavMode}
@@ -428,15 +428,15 @@ function ConfigPanel({
               {value: 'mega', label: 'Mega'},
             ]}
           />
-        </XDSVStack>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
         {/* Mobile Nav */}
-        <XDSVStack gap={3}>
-          <XDSText type="label" weight="bold">
+        <VStack gap={3}>
+          <Text type="label" weight="bold">
             Mobile Nav
-          </XDSText>
+          </Text>
           <SelectorRow
             label="Mode"
             value={config.mobileNavMode}
@@ -481,9 +481,9 @@ function ConfigPanel({
               ]}
             />
           )}
-        </XDSVStack>
-      </XDSVStack>
-    </XDSCard>
+        </VStack>
+      </VStack>
+    </Card>
   );
 }
 
@@ -497,10 +497,10 @@ function ToggleRow({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <XDSHStack gap={4} vAlign="center" hAlign="between">
-      <XDSText type="body">{label}</XDSText>
-      <XDSSwitch value={value} onChange={onChange} label={label} />
-    </XDSHStack>
+    <HStack gap={4} vAlign="center" hAlign="between">
+      <Text type="body">{label}</Text>
+      <Switch value={value} onChange={onChange} label={label} />
+    </HStack>
   );
 }
 
@@ -516,18 +516,18 @@ function SelectorRow({
   options: {value: string; label: string}[];
 }) {
   return (
-    <XDSHStack gap={4} vAlign="center">
-      <XDSText type="body" style={{width: 140, flexShrink: 0}}>
+    <HStack gap={4} vAlign="center">
+      <Text type="body" style={{width: 140, flexShrink: 0}}>
         {label}
-      </XDSText>
-      <XDSSelector
+      </Text>
+      <Selector
         label={label}
         isLabelHidden
         value={value}
         onChange={onChange}
         options={options.map(o => o.value)}
       />
-    </XDSHStack>
+    </HStack>
   );
 }
 
@@ -545,7 +545,7 @@ function SampleSideNav({
   setExternalCollapsed?: (v: boolean) => void;
 }) {
   const appNavIcon = (
-    <XDSNavIcon
+    <NavIcon
       icon={
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -579,15 +579,15 @@ function SampleSideNav({
 
   const headingMenu = (
     <>
-      <XDSNavMenuItem label="Sibling Product 1" onClick={() => {}} />
-      <XDSNavMenuItem label="Sibling Product 2" onClick={() => {}} />
-      <XDSNavMenuItem label="Sibling Product 3" onClick={() => {}} />
+      <NavMenuItem label="Sibling Product 1" onClick={() => {}} />
+      <NavMenuItem label="Sibling Product 2" onClick={() => {}} />
+      <NavMenuItem label="Sibling Product 3" onClick={() => {}} />
     </>
   );
 
   const heading =
     config.sideNavHeadingStyle === 'none' ? undefined : (
-      <XDSSideNavHeading
+      <SideNavHeading
         icon={appIcon}
         heading="Shell Lab"
         headingHref={
@@ -607,7 +607,7 @@ function SampleSideNav({
         }
         headerEndContent={
           config.showHeaderEndContent ? (
-            <XDSBadge label="Pro" variant="info" />
+            <Badge label="Pro" variant="info" />
           ) : undefined
         }
       />
@@ -615,7 +615,7 @@ function SampleSideNav({
 
   return (
     <>
-      <XDSSideNav
+      <SideNav
         collapsible={
           config.isCollapsible
             ? config.collapseToggleLocation === 'topnav'
@@ -631,21 +631,21 @@ function SampleSideNav({
         header={heading}
         topContent={
           config.showTopContent ? (
-            <XDSSideNavItem label="Create New" />
+            <SideNavItem label="Create New" />
           ) : undefined
         }
         footer={
           config.showFooter ? (
-            <XDSSideNavSection title="Account">
-              <XDSSideNavItem label="Jane Smith" />
-              <XDSSideNavItem label="Upgrade to Pro" />
-            </XDSSideNavSection>
+            <SideNavSection title="Account">
+              <SideNavItem label="Jane Smith" />
+              <SideNavItem label="Upgrade to Pro" />
+            </SideNavSection>
           ) : undefined
         }
         footerIcons={
           config.showFooterIcons ? (
             <>
-              <XDSButton
+              <Button
                 label="Help"
                 icon={
                   <svg
@@ -664,7 +664,7 @@ function SampleSideNav({
                 variant="ghost"
                 isIconOnly
               />
-              <XDSButton
+              <Button
                 label="Settings"
                 icon={
                   <svg
@@ -685,34 +685,34 @@ function SampleSideNav({
             </>
           ) : undefined
         }>
-        <XDSSideNavSection title="Navigation">
-          <XDSSideNavItem
+        <SideNavSection title="Navigation">
+          <SideNavItem
             label="Dashboard"
             isSelected
             href="#"
             icon={DashboardIcon}
           />
-          <XDSSideNavItem
+          <SideNavItem
             label="Projects"
             href="#"
             icon={ProjectsIcon}
-            endContent={<XDSBadge label={3} />}
+            endContent={<Badge label={3} />}
           />
-          <XDSSideNavItem label="Messages" href="#" icon={MessagesIcon} />
+          <SideNavItem label="Messages" href="#" icon={MessagesIcon} />
           {config.showNestedItems && (
-            <XDSSideNavItem label="Settings" href="#" icon={SettingsIcon}>
-              <XDSSideNavItem label="General" href="#" />
-              <XDSSideNavItem label="Security" href="#" />
-              <XDSSideNavItem label="Notifications" href="#" />
-            </XDSSideNavItem>
+            <SideNavItem label="Settings" href="#" icon={SettingsIcon}>
+              <SideNavItem label="General" href="#" />
+              <SideNavItem label="Security" href="#" />
+              <SideNavItem label="Notifications" href="#" />
+            </SideNavItem>
           )}
-        </XDSSideNavSection>
-        <XDSSideNavSection title="Resources">
-          <XDSSideNavItem label="Documentation" href="#" icon={DocsIcon} />
-          <XDSSideNavItem label="API Reference" href="#" />
-          <XDSSideNavItem label="Support" href="#" />
-        </XDSSideNavSection>
-      </XDSSideNav>
+        </SideNavSection>
+        <SideNavSection title="Resources">
+          <SideNavItem label="Documentation" href="#" icon={DocsIcon} />
+          <SideNavItem label="API Reference" href="#" />
+          <SideNavItem label="Support" href="#" />
+        </SideNavSection>
+      </SideNav>
     </>
   );
 }
@@ -726,17 +726,17 @@ function SampleTopNav({
 }) {
   const plainItems = (
     <>
-      <XDSTopNavItem label="Home" href="#" isSelected />
-      <XDSTopNavItem label="Products" href="#" />
-      <XDSTopNavItem label="Team" href="#" />
-      <XDSTopNavItem label="Reports" href="#" />
+      <TopNavItem label="Home" href="#" isSelected />
+      <TopNavItem label="Products" href="#" />
+      <TopNavItem label="Team" href="#" />
+      <TopNavItem label="Reports" href="#" />
     </>
   );
 
   const menuItems = (
     <>
-      <XDSTopNavItem label="Home" href="#" isSelected />
-      <XDSTopNavMenu
+      <TopNavItem label="Home" href="#" isSelected />
+      <TopNavMenu
         label="Products"
         items={[
           {
@@ -756,33 +756,33 @@ function SampleTopNav({
           },
         ]}
       />
-      <XDSTopNavItem label="Team" href="#" />
+      <TopNavItem label="Team" href="#" />
     </>
   );
 
   const megaItems = (
     <>
-      <XDSTopNavItem label="Home" href="#" isSelected />
-      <XDSTopNavMegaMenu
+      <TopNavItem label="Home" href="#" isSelected />
+      <TopNavMegaMenu
         label="Products"
         items={
           <>
-            <XDSTopNavMegaMenuItem
+            <TopNavMegaMenuItem
               title="Analytics"
               description="View metrics and dashboards"
               href="#"
             />
-            <XDSTopNavMegaMenuItem
+            <TopNavMegaMenuItem
               title="Reports"
               description="Generate and export reports"
               href="#"
             />
-            <XDSTopNavMegaMenuItem
+            <TopNavMegaMenuItem
               title="Pipelines"
               description="Data processing workflows"
               href="#"
             />
-            <XDSTopNavMegaMenuItem
+            <TopNavMegaMenuItem
               title="Integrations"
               description="Connect your tools"
               href="#"
@@ -790,7 +790,7 @@ function SampleTopNav({
           </>
         }
         featured={
-          <XDSTopNavMegaMenuFeaturedCard
+          <TopNavMegaMenuFeaturedCard
             title="New: AI Features"
             description="Explore our latest AI-powered analytics tools for faster insights."
             linkLabel="Learn more"
@@ -798,7 +798,7 @@ function SampleTopNav({
           />
         }
       />
-      <XDSTopNavItem label="Team" href="#" />
+      <TopNavItem label="Team" href="#" />
     </>
   );
 
@@ -810,7 +810,7 @@ function SampleTopNav({
         : plainItems;
 
   const topNavNavIcon = (
-    <XDSNavIcon
+    <NavIcon
       icon={
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -844,15 +844,15 @@ function SampleTopNav({
 
   const topNavHeadingMenu = (
     <>
-      <XDSNavMenuItem label="Sibling Product 1" onClick={() => {}} />
-      <XDSNavMenuItem label="Sibling Product 2" onClick={() => {}} />
-      <XDSNavMenuItem label="Sibling Product 3" onClick={() => {}} />
+      <NavMenuItem label="Sibling Product 1" onClick={() => {}} />
+      <NavMenuItem label="Sibling Product 2" onClick={() => {}} />
+      <NavMenuItem label="Sibling Product 3" onClick={() => {}} />
     </>
   );
 
   const topNavHeading =
     config.showTopNavHeading && config.topNavHeadingStyle !== 'none' ? (
-      <XDSTopNavHeading
+      <TopNavHeading
         logo={topNavLogo}
         heading="Shell Lab"
         headingHref={
@@ -874,11 +874,11 @@ function SampleTopNav({
         }
       />
     ) : config.showTopNavHeading ? (
-      <XDSTopNavHeading logo={topNavLogo} />
+      <TopNavHeading logo={topNavLogo} />
     ) : undefined;
 
   return (
-    <XDSTopNav
+    <TopNav
       label="Shell Lab Navigation"
       heading={topNavHeading}
       startContent={config.topNavAlignment === 'start' ? navItems : undefined}
@@ -887,7 +887,7 @@ function SampleTopNav({
         <>
           {config.topNavAlignment === 'end' && navItems}
           {onToggleCollapse && (
-            <XDSButton
+            <Button
               label="Toggle sidebar"
               variant="ghost"
               icon={
@@ -1009,15 +1009,15 @@ function ShellLabContent() {
   }, []);
 
   // Build the mobileNav prop based on config
-  const mobileNav: false | XDSMobileNavConfig | React.ReactNode | undefined =
+  const mobileNav: false | MobileNavConfig | React.ReactNode | undefined =
     config.mobileNavMode === 'disabled'
       ? false
       : config.mobileNavMode === 'customContent'
         ? {
             breakpoint: config.sideNavBreakpoint,
             content: (
-              <XDSMobileNav header="Custom Nav" side={config.mobileNavSide}>
-                <XDSVStack gap={2} xstyle={styles.customSearchBar}>
+              <MobileNav header="Custom Nav" side={config.mobileNavSide}>
+                <VStack gap={2} xstyle={styles.customSearchBar}>
                   <input
                     type="search"
                     placeholder="Search navigation..."
@@ -1031,30 +1031,30 @@ function ShellLabContent() {
                       outline: 'none',
                     }}
                   />
-                </XDSVStack>
-                <XDSSideNavSection title="Quick Links">
-                  <XDSSideNavItem label="Docs" href="#" />
-                  <XDSSideNavItem label="Help Center" href="#" />
-                </XDSSideNavSection>
-                <XDSSideNavSection title="Navigation">
-                  <XDSSideNavItem
+                </VStack>
+                <SideNavSection title="Quick Links">
+                  <SideNavItem label="Docs" href="#" />
+                  <SideNavItem label="Help Center" href="#" />
+                </SideNavSection>
+                <SideNavSection title="Navigation">
+                  <SideNavItem
                     label="Dashboard"
                     isSelected
                     href="#"
                     icon={DashboardIcon}
                   />
-                  <XDSSideNavItem
+                  <SideNavItem
                     label="Projects"
                     href="#"
                     icon={ProjectsIcon}
                   />
-                  <XDSSideNavItem
+                  <SideNavItem
                     label="Messages"
                     href="#"
                     icon={MessagesIcon}
                   />
-                </XDSSideNavSection>
-              </XDSMobileNav>
+                </SideNavSection>
+              </MobileNav>
             ),
           }
         : config.mobileNavMode === 'customToggle'
@@ -1063,7 +1063,7 @@ function ShellLabContent() {
 
   return (
     <>
-      <XDSAppShell
+      <AppShell
         variant={config.variant}
         height={config.height}
         contentPadding={6}
@@ -1096,7 +1096,7 @@ function ShellLabContent() {
         mobileNav={mobileNav}
         banner={
           config.showBanner ? (
-            <XDSBanner
+            <Banner
               status="info"
               title="Shell Lab — System announcement banner"
               container="section"
@@ -1104,24 +1104,24 @@ function ShellLabContent() {
             />
           ) : undefined
         }>
-        <XDSVStack gap={6} xstyle={styles.content}>
-          <XDSVStack gap={2}>
-            <XDSHStack gap={3} vAlign="center">
+        <VStack gap={6} xstyle={styles.content}>
+          <VStack gap={2}>
+            <HStack gap={3} vAlign="center">
               {config.mobileNavMode === 'customToggle' && (
-                <XDSMobileNavToggle label="Open navigation" />
+                <MobileNavToggle label="Open navigation" />
               )}
-              <XDSHeading level={1}>Shell Lab</XDSHeading>
-            </XDSHStack>
-            <XDSText type="body" color="secondary">
+              <Heading level={1}>Shell Lab</Heading>
+            </HStack>
+            <Text type="body" color="secondary">
               Use the configuration panel to experiment with different shell and
               navigation setups. Resize the browser to test responsive behavior
               and collapse breakpoints.
-            </XDSText>
-          </XDSVStack>
+            </Text>
+          </VStack>
 
-          <XDSCard>
-            <XDSVStack gap={3} xstyle={styles.padding4}>
-              <XDSHeading level={3}>Active Config</XDSHeading>
+          <Card>
+            <VStack gap={3} xstyle={styles.padding4}>
+              <Heading level={3}>Active Config</Heading>
               <pre
                 style={{
                   fontSize: 12,
@@ -1132,23 +1132,23 @@ function ShellLabContent() {
                 }}>
                 {JSON.stringify(config, null, 2)}
               </pre>
-            </XDSVStack>
-          </XDSCard>
+            </VStack>
+          </Card>
 
           {Array.from({length: 10}, (_, i) => (
-            <XDSCard key={i}>
-              <XDSVStack gap={2} xstyle={styles.padding4}>
-                <XDSHeading level={4}>Content Block {i + 1}</XDSHeading>
-                <XDSText type="body" color="secondary">
+            <Card key={i}>
+              <VStack gap={2} xstyle={styles.padding4}>
+                <Heading level={4}>Content Block {i + 1}</Heading>
+                <Text type="body" color="secondary">
                   Sample content to test scroll behavior in fill vs auto height
                   mode. The shell should handle overflow correctly regardless of
                   content length.
-                </XDSText>
-              </XDSVStack>
-            </XDSCard>
+                </Text>
+              </VStack>
+            </Card>
           ))}
-        </XDSVStack>
-      </XDSAppShell>
+        </VStack>
+      </AppShell>
 
       {/* Floating config panel */}
       {showConfig && (

@@ -2,7 +2,7 @@
 
 'use client';
 
-import {XDSVStack} from '@xds/core/Layout';
+import {VStack} from '@xds/core/Layout';
 import {butterTheme} from '@xds/theme-butter/built';
 import {butterPalettes} from '@xds/theme-butter';
 import {ThemePalettePreview} from '@/components/ThemePalettePreview';
@@ -65,7 +65,7 @@ function DisplayTextSection() {
   return (
     <div>
       <h3 style={sectionTitle}>Display Text (Sarina)</h3>
-      <XDSVStack gap={2}>
+      <VStack gap={2}>
         <span
           style={{
             fontFamily: SARINA,
@@ -96,7 +96,7 @@ function DisplayTextSection() {
           }}>
           Display 3
         </span>
-      </XDSVStack>
+      </VStack>
     </div>
   );
 }

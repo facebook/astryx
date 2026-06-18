@@ -15,8 +15,8 @@
 
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
-import {XDSVStack, XDSStackItem} from '@xds/core/Stack';
+import {TabList, Tab} from '@xds/core/TabList';
+import {VStack, StackItem} from '@xds/core/Stack';
 import {
   defineTheme,
   expandTypeScale,
@@ -34,7 +34,7 @@ import {
   durationDefaults,
   easeDefaults,
 } from '@xds/core/theme';
-import type {XDSDefinedTheme} from '@xds/core/theme';
+import type {DefinedTheme} from '@xds/core/theme';
 import {BaseStylesPanel} from './BaseStylesPanel';
 import {ComponentTokensPanel} from './ComponentTokensPanel';
 import type {CustomOverride} from './ComponentTokensPanel';
@@ -81,9 +81,9 @@ interface ThemeEditorProps {
   /** Light/dark mode, owned by the playground so editor + preview stay in sync. */
   mode: 'light' | 'dark';
   /** Optional theme to seed the editor's token + component state from. */
-  initialTheme?: XDSDefinedTheme;
+  initialTheme?: DefinedTheme;
   /** Called whenever the composed theme changes so the parent can apply it. */
-  onThemeChange: (theme: XDSDefinedTheme) => void;
+  onThemeChange: (theme: DefinedTheme) => void;
 }
 
 export function ThemeEditor({
@@ -135,7 +135,7 @@ export function ThemeEditor({
       baseComponents,
       buildComponentOverrides(componentTokens),
       customMap,
-    ) as XDSDefinedTheme['components'];
+    ) as DefinedTheme['components'];
     return defineTheme({name: 'custom', tokens: coreTokens, components});
   }, [tokens, customOverrides, baseComponents]);
 
@@ -246,20 +246,20 @@ export function ThemeEditor({
   }, []);
 
   return (
-    <XDSVStack xstyle={s.root}>
+    <VStack xstyle={s.root}>
       {/* Self-load theme fonts so the editor's controls render in the loaded
           theme's typeface even when used standalone. */}
       <style>{`@import url("${GOOGLE_FONTS_URL}");`}</style>
-      <XDSTabList
+      <TabList
         hasDivider
         value={panelTab}
         onChange={v => setPanelTab(v as 'theme' | 'components' | 'tokens')}>
-        <XDSTab value="theme" label="Base Styles" />
-        <XDSTab value="components" label="Components" />
-        <XDSTab value="tokens" label="Advanced" />
-      </XDSTabList>
+        <Tab value="theme" label="Base Styles" />
+        <Tab value="components" label="Components" />
+        <Tab value="tokens" label="Advanced" />
+      </TabList>
 
-      <XDSStackItem size="fill" xstyle={s.body}>
+      <StackItem size="fill" xstyle={s.body}>
         {panelTab === 'theme' && (
           <BaseStylesPanel
             tokens={tokens}
@@ -299,7 +299,7 @@ export function ThemeEditor({
             onTokenChange={handleTokenChange}
           />
         )}
-      </XDSStackItem>
-    </XDSVStack>
+      </StackItem>
+    </VStack>
   );
 }

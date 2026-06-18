@@ -112,7 +112,7 @@ apps/docsite/
 │   ├── app/
 │   │   ├── globals.css       # CSS imports (reset, xds base, theme stylesheets)
 │   │   ├── layout.tsx        # Root layout
-│   │   ├── providers.tsx     # XDSTheme + client providers
+│   │   ├── providers.tsx     # Theme + client providers
 │   │   ├── (docs)/           # Main docs routes (components, packages, docs)
 │   │   ├── blog/             # Blog index + post detail (no sidebar)
 │   │   └── craft/            # Craft landing (templates, themes, showcases)

@@ -4,11 +4,11 @@
 
 import {useEffect, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSCard} from '@xds/core/Card';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
+import {VStack} from '@xds/core/Layout';
+import {Grid} from '@xds/core/Grid';
+import {Card} from '@xds/core/Card';
+import {Heading, Text} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {AstryxLogo} from '../../../components/logos';
 import {components} from '../../../generated/componentRegistry';
@@ -169,7 +169,7 @@ const styles = stylex.create({
   },
   // Reading-measure cap for the supporting text paragraph. Kept as
   // a stylex rule (instead of inline style) so it composes cleanly
-  // with XDSText's xstyle pipeline. 480 is a body-copy reading
+  // with Text's xstyle pipeline. 480 is a body-copy reading
   // measure, not a spacing-scale value.
   supportingText: {
     maxWidth: 480,
@@ -202,19 +202,19 @@ export function DiscoverShowcase() {
   }, []);
 
   return (
-    <XDSVStack as="section" gap={10} align="center" xstyle={styles.section}>
+    <VStack as="section" gap={10} align="center" xstyle={styles.section}>
       {/* "stage" is kept as a raw <div> because its sole job is to
           act as the position:relative anchor for four
           absolutely-positioned floating preview <img>s + the
-          centered XDSCard. XDSVStack / XDSHStack would impose flex
+          centered Card. VStack / HStack would impose flex
           semantics that fight the absolute positioning model and
           would also stack the floating images instead of layering
           them. */}
       <div ref={stageRef} {...stylex.props(styles.stage)}>
         {/* Floating decorative preview images. Kept as raw <img>s
             because @xds/core does not export a general-purpose
-            image component (XDSThumbnail is chat-attachment chrome
-            with built-in remove buttons; XDSIcon is a glyph
+            image component (Thumbnail is chat-attachment chrome
+            with built-in remove buttons; Icon is a glyph
             registry). aria-hidden + empty alt keep them out of the
             accessibility tree — they're pure decoration that
             animates from a clumped pose to a spread pose when the
@@ -255,10 +255,10 @@ export function DiscoverShowcase() {
             spread ? styles.floatBottomRightEnd : styles.floatBottomRightStart,
           )}
         />
-        <XDSCard variant="gray" padding={0} xstyle={styles.card}>
-          <XDSVStack gap={6} align="center" xstyle={styles.cardContent}>
-            <XDSVStack gap={6} align="center">
-              <XDSHeading level={2} type="display-1" color="primary">
+        <Card variant="gray" padding={0} xstyle={styles.card}>
+          <VStack gap={6} align="center" xstyle={styles.cardContent}>
+            <VStack gap={6} align="center">
+              <Heading level={2} type="display-1" color="primary">
                 Discover the full
                 <AstryxLogo
                   role="img"
@@ -266,36 +266,36 @@ export function DiscoverShowcase() {
                   {...stylex.props(styles.inlineWordmark)}
                 />
                 design system
-              </XDSHeading>
-              <XDSText
+              </Heading>
+              <Text
                 type="body"
                 color="secondary"
                 xstyle={styles.supportingText}>
                 Browse {CORE_COMPONENT_COUNT_ROUNDED}+ components, explore
                 production-ready templates, and tune themes to match your brand;
                 pick a starting point and go.
-              </XDSText>
-            </XDSVStack>
-            <XDSGrid
+              </Text>
+            </VStack>
+            <Grid
               columns={{minWidth: 160, repeat: 'fit'}}
               gap={3}
               xstyle={styles.buttonGrid}>
-              <XDSButton
+              <Button
                 variant="primary"
                 size="lg"
                 label="Get started"
                 href="/docs/getting-started"
               />
-              <XDSButton
+              <Button
                 variant="secondary"
                 size="lg"
                 label="Browse components"
                 href="/components"
               />
-            </XDSGrid>
-          </XDSVStack>
-        </XDSCard>
+            </Grid>
+          </VStack>
+        </Card>
       </div>
-    </XDSVStack>
+    </VStack>
   );
 }

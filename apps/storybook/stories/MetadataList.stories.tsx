@@ -1,18 +1,18 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSToken} from '@xds/core/Token';
+import {MetadataList, MetadataListItem} from '@xds/core/MetadataList';
+import {Icon} from '@xds/core/Icon';
+import {Token} from '@xds/core/Token';
 import {
   InformationCircleIcon,
   CalendarIcon,
   TagIcon,
 } from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSMetadataList> = {
+const meta: Meta<typeof MetadataList> = {
   title: 'Core/MetadataList',
-  component: XDSMetadataList,
+  component: MetadataList,
   tags: ['autodocs'],
   argTypes: {
     columns: {
@@ -29,145 +29,145 @@ const meta: Meta<typeof XDSMetadataList> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSMetadataList>;
+type Story = StoryObj<typeof MetadataList>;
 
 export const Basic: Story = {
   render: args => (
-    <XDSMetadataList {...args}>
-      <XDSMetadataListItem label="Name">XDSMetadataList</XDSMetadataListItem>
-      <XDSMetadataListItem label="Status">Active</XDSMetadataListItem>
-      <XDSMetadataListItem label="Owner">Joey</XDSMetadataListItem>
-    </XDSMetadataList>
+    <MetadataList {...args}>
+      <MetadataListItem label="Name">MetadataList</MetadataListItem>
+      <MetadataListItem label="Status">Active</MetadataListItem>
+      <MetadataListItem label="Owner">Joey</MetadataListItem>
+    </MetadataList>
   ),
 };
 
 export const MultiColumn: Story = {
   render: args => (
-    <XDSMetadataList columns="multi" {...args}>
-      <XDSMetadataListItem label="Name">XDSMetadataList</XDSMetadataListItem>
-      <XDSMetadataListItem label="Status">Active</XDSMetadataListItem>
-      <XDSMetadataListItem label="Owner">Joey</XDSMetadataListItem>
-      <XDSMetadataListItem label="Created">Jan 15, 2026</XDSMetadataListItem>
-      <XDSMetadataListItem label="Tags">
+    <MetadataList columns="multi" {...args}>
+      <MetadataListItem label="Name">MetadataList</MetadataListItem>
+      <MetadataListItem label="Status">Active</MetadataListItem>
+      <MetadataListItem label="Owner">Joey</MetadataListItem>
+      <MetadataListItem label="Created">Jan 15, 2026</MetadataListItem>
+      <MetadataListItem label="Tags">
         <span style={{display: 'flex', gap: 4}}>
-          <XDSToken label="component" />
-          <XDSToken label="xds" />
+          <Token label="component" />
+          <Token label="xds" />
         </span>
-      </XDSMetadataListItem>
-      <XDSMetadataListItem label="Priority">Tier 1</XDSMetadataListItem>
-    </XDSMetadataList>
+      </MetadataListItem>
+      <MetadataListItem label="Priority">Tier 1</MetadataListItem>
+    </MetadataList>
   ),
 };
 
 export const WithTitle: Story = {
   render: args => (
-    <XDSMetadataList
+    <MetadataList
       title={<strong>Component Details</strong>}
       columns="multi"
       {...args}>
-      <XDSMetadataListItem label="Name">XDSMetadataList</XDSMetadataListItem>
-      <XDSMetadataListItem label="Status">Active</XDSMetadataListItem>
-      <XDSMetadataListItem label="Owner">Joey</XDSMetadataListItem>
-      <XDSMetadataListItem label="Created">Jan 15, 2026</XDSMetadataListItem>
-    </XDSMetadataList>
+      <MetadataListItem label="Name">MetadataList</MetadataListItem>
+      <MetadataListItem label="Status">Active</MetadataListItem>
+      <MetadataListItem label="Owner">Joey</MetadataListItem>
+      <MetadataListItem label="Created">Jan 15, 2026</MetadataListItem>
+    </MetadataList>
   ),
 };
 
 export const Horizontal: Story = {
   render: args => (
-    <XDSMetadataList orientation="horizontal" {...args}>
-      <XDSMetadataListItem label="Status">Active</XDSMetadataListItem>
-      <XDSMetadataListItem label="Type">Premium</XDSMetadataListItem>
-      <XDSMetadataListItem label="Owner">Joey</XDSMetadataListItem>
-      <XDSMetadataListItem label="Created">Jan 15, 2026</XDSMetadataListItem>
-    </XDSMetadataList>
+    <MetadataList orientation="horizontal" {...args}>
+      <MetadataListItem label="Status">Active</MetadataListItem>
+      <MetadataListItem label="Type">Premium</MetadataListItem>
+      <MetadataListItem label="Owner">Joey</MetadataListItem>
+      <MetadataListItem label="Created">Jan 15, 2026</MetadataListItem>
+    </MetadataList>
   ),
 };
 
 export const StackedLabelsSingleColumn: Story = {
   render: args => (
-    <XDSMetadataList label={{position: 'top'}} {...args}>
-      <XDSMetadataListItem label="Name">XDSMetadataList</XDSMetadataListItem>
-      <XDSMetadataListItem label="Status">Active</XDSMetadataListItem>
-      <XDSMetadataListItem label="Owner">Joey</XDSMetadataListItem>
-      <XDSMetadataListItem label="Tags">
+    <MetadataList label={{position: 'top'}} {...args}>
+      <MetadataListItem label="Name">MetadataList</MetadataListItem>
+      <MetadataListItem label="Status">Active</MetadataListItem>
+      <MetadataListItem label="Owner">Joey</MetadataListItem>
+      <MetadataListItem label="Tags">
         <span style={{display: 'flex', gap: 4}}>
-          <XDSToken label="component" />
-          <XDSToken label="xds" />
+          <Token label="component" />
+          <Token label="xds" />
         </span>
-      </XDSMetadataListItem>
-    </XDSMetadataList>
+      </MetadataListItem>
+    </MetadataList>
   ),
 };
 
 export const ShowMore: Story = {
   render: args => (
-    <XDSMetadataList maxNumOfItems={3} {...args}>
-      <XDSMetadataListItem label="Name">XDSMetadataList</XDSMetadataListItem>
-      <XDSMetadataListItem label="Status">Active</XDSMetadataListItem>
-      <XDSMetadataListItem label="Owner">Joey</XDSMetadataListItem>
-      <XDSMetadataListItem label="Created">Jan 15, 2026</XDSMetadataListItem>
-      <XDSMetadataListItem label="Updated">Mar 26, 2026</XDSMetadataListItem>
-      <XDSMetadataListItem label="Priority">Tier 1</XDSMetadataListItem>
-    </XDSMetadataList>
+    <MetadataList maxNumOfItems={3} {...args}>
+      <MetadataListItem label="Name">MetadataList</MetadataListItem>
+      <MetadataListItem label="Status">Active</MetadataListItem>
+      <MetadataListItem label="Owner">Joey</MetadataListItem>
+      <MetadataListItem label="Created">Jan 15, 2026</MetadataListItem>
+      <MetadataListItem label="Updated">Mar 26, 2026</MetadataListItem>
+      <MetadataListItem label="Priority">Tier 1</MetadataListItem>
+    </MetadataList>
   ),
 };
 
 export const TwoColumns: Story = {
   render: args => (
-    <XDSMetadataList columns={2} {...args}>
-      <XDSMetadataListItem label="Name">XDSMetadataList</XDSMetadataListItem>
-      <XDSMetadataListItem label="Status">Active</XDSMetadataListItem>
-      <XDSMetadataListItem label="Owner">Joey</XDSMetadataListItem>
-      <XDSMetadataListItem label="Priority">Tier 1</XDSMetadataListItem>
-    </XDSMetadataList>
+    <MetadataList columns={2} {...args}>
+      <MetadataListItem label="Name">MetadataList</MetadataListItem>
+      <MetadataListItem label="Status">Active</MetadataListItem>
+      <MetadataListItem label="Owner">Joey</MetadataListItem>
+      <MetadataListItem label="Priority">Tier 1</MetadataListItem>
+    </MetadataList>
   ),
 };
 
 export const CustomLabelWidth: Story = {
   render: args => (
-    <XDSMetadataList label={{position: 'start', width: 200}} {...args}>
-      <XDSMetadataListItem label="Full Name">
-        XDSMetadataList Component
-      </XDSMetadataListItem>
-      <XDSMetadataListItem label="Current Status">Active</XDSMetadataListItem>
-      <XDSMetadataListItem label="Primary Owner">Joey</XDSMetadataListItem>
-    </XDSMetadataList>
+    <MetadataList label={{position: 'start', width: 200}} {...args}>
+      <MetadataListItem label="Full Name">
+        MetadataList Component
+      </MetadataListItem>
+      <MetadataListItem label="Current Status">Active</MetadataListItem>
+      <MetadataListItem label="Primary Owner">Joey</MetadataListItem>
+    </MetadataList>
   ),
 };
 
 export const MultiColumnSideLabels: Story = {
   render: args => (
-    <XDSMetadataList columns="multi" label={{position: 'start'}} {...args}>
-      <XDSMetadataListItem label="Name">XDSMetadataList</XDSMetadataListItem>
-      <XDSMetadataListItem label="Status">Active</XDSMetadataListItem>
-      <XDSMetadataListItem label="Owner">Joey</XDSMetadataListItem>
-      <XDSMetadataListItem label="Created">Jan 15, 2026</XDSMetadataListItem>
-    </XDSMetadataList>
+    <MetadataList columns="multi" label={{position: 'start'}} {...args}>
+      <MetadataListItem label="Name">MetadataList</MetadataListItem>
+      <MetadataListItem label="Status">Active</MetadataListItem>
+      <MetadataListItem label="Owner">Joey</MetadataListItem>
+      <MetadataListItem label="Created">Jan 15, 2026</MetadataListItem>
+    </MetadataList>
   ),
 };
 
 export const WithIcons: Story = {
   render: args => (
-    <XDSMetadataList columns="multi" {...args}>
-      <XDSMetadataListItem
+    <MetadataList columns="multi" {...args}>
+      <MetadataListItem
         label="Information"
-        icon={<XDSIcon icon={InformationCircleIcon} size="sm" />}>
+        icon={<Icon icon={InformationCircleIcon} size="sm" />}>
         Important details about this component
-      </XDSMetadataListItem>
-      <XDSMetadataListItem
+      </MetadataListItem>
+      <MetadataListItem
         label="Created"
-        icon={<XDSIcon icon={CalendarIcon} size="sm" />}>
+        icon={<Icon icon={CalendarIcon} size="sm" />}>
         January 1, 2023
-      </XDSMetadataListItem>
-      <XDSMetadataListItem
+      </MetadataListItem>
+      <MetadataListItem
         label="Tags"
-        icon={<XDSIcon icon={TagIcon} size="sm" />}>
+        icon={<Icon icon={TagIcon} size="sm" />}>
         <span style={{display: 'flex', gap: 4}}>
-          <XDSToken label="component" />
-          <XDSToken label="xds" />
+          <Token label="component" />
+          <Token label="xds" />
         </span>
-      </XDSMetadataListItem>
-    </XDSMetadataList>
+      </MetadataListItem>
+    </MetadataList>
   ),
 };

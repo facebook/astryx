@@ -2,14 +2,14 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSTheme} from '@xds/core/theme';
+import {Theme} from '@xds/core/theme';
 import {defaultTheme} from '@xds/theme-default/built';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSDivider} from '@xds/core/Divider';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Button} from '@xds/core/Button';
+import {Text, Heading} from '@xds/core/Text';
+import {TextInput} from '@xds/core/TextInput';
+import {Badge} from '@xds/core/Badge';
+import {Divider} from '@xds/core/Divider';
 
 const styles = stylex.create({
   main: {
@@ -50,159 +50,159 @@ export default function App() {
   const [email, setEmail] = useState('');
 
   return (
-    <XDSTheme theme={defaultTheme}>
+    <Theme theme={defaultTheme}>
       <main {...stylex.props(styles.main)}>
         <div {...stylex.props(styles.container)}>
-          <XDSVStack gap={6}>
-            <XDSVStack gap={2}>
-              <XDSHeading level={1}>XDS Example — Vite (Source)</XDSHeading>
-              <XDSText type="body" color="secondary">
+          <VStack gap={6}>
+            <VStack gap={2}>
+              <Heading level={1}>XDS Example — Vite (Source)</Heading>
+              <Text type="body" color="secondary">
                 This example compiles{' '}
-                <XDSText type="body" weight="bold">
+                <Text type="body" weight="bold">
                   @xds/core
-                </XDSText>{' '}
+                </Text>{' '}
                 from source with split CSS layers via a Vite middleware that
                 intercepts StyleX output.
-              </XDSText>
-            </XDSVStack>
+              </Text>
+            </VStack>
 
-            <XDSDivider />
+            <Divider />
 
             {/* Layer Demo */}
-            <XDSVStack gap={3}>
-              <XDSHeading level={2}>Layer Demo</XDSHeading>
-              <XDSText type="body" color="secondary">
+            <VStack gap={3}>
+              <Heading level={2}>Layer Demo</Heading>
+              <Text type="body" color="secondary">
                 Product StyleX styles override XDS component defaults via CSS
                 layer ordering. No <code>!important</code> needed.
-              </XDSText>
+              </Text>
 
               <div {...stylex.props(styles.layerDemo)}>
-                <XDSVStack gap={3}>
-                  <XDSVStack gap={1}>
-                    <XDSText type="supporting" weight="bold">
+                <VStack gap={3}>
+                  <VStack gap={1}>
+                    <Text type="supporting" weight="bold">
                       Default XDS buttons (xds-base layer)
-                    </XDSText>
-                    <XDSHStack gap={3} vAlign="center">
-                      <XDSButton label="Default" variant="primary" />
-                      <XDSButton label="Default" variant="secondary" />
-                    </XDSHStack>
-                  </XDSVStack>
+                    </Text>
+                    <HStack gap={3} vAlign="center">
+                      <Button label="Default" variant="primary" />
+                      <Button label="Default" variant="secondary" />
+                    </HStack>
+                  </VStack>
 
-                  <XDSVStack gap={1}>
-                    <XDSText type="supporting" weight="bold">
+                  <VStack gap={1}>
+                    <Text type="supporting" weight="bold">
                       Product-styled buttons (product layer overrides)
-                    </XDSText>
-                    <XDSHStack gap={3} vAlign="center">
-                      <XDSButton
+                    </Text>
+                    <HStack gap={3} vAlign="center">
+                      <Button
                         label="Pill shape"
                         variant="primary"
                         xstyle={styles.customButton}
                       />
-                      <XDSButton
+                      <Button
                         label="Pill shape"
                         variant="secondary"
                         xstyle={styles.customButton}
                       />
-                    </XDSHStack>
-                  </XDSVStack>
+                    </HStack>
+                  </VStack>
 
-                  <XDSVStack gap={1}>
-                    <XDSText type="supporting" weight="bold">
+                  <VStack gap={1}>
+                    <Text type="supporting" weight="bold">
                       Three-layer cascade: base → theme → product
-                    </XDSText>
-                    <XDSText type="supporting" color="secondary">
+                    </Text>
+                    <Text type="supporting" color="secondary">
                       Secondary button background: XDS base → theme override →
                       green product override.
-                    </XDSText>
-                    <XDSHStack gap={3} vAlign="center">
-                      <XDSButton label="Theme color" variant="secondary" />
-                      <XDSButton
+                    </Text>
+                    <HStack gap={3} vAlign="center">
+                      <Button label="Theme color" variant="secondary" />
+                      <Button
                         label="Product override"
                         variant="secondary"
                         xstyle={styles.brandSecondary}
                       />
-                    </XDSHStack>
-                  </XDSVStack>
+                    </HStack>
+                  </VStack>
 
-                  <XDSVStack gap={1}>
-                    <XDSText type="supporting" weight="bold">
+                  <VStack gap={1}>
+                    <Text type="supporting" weight="bold">
                       Full-width product override
-                    </XDSText>
-                    <XDSButton
+                    </Text>
+                    <Button
                       label="Full width button"
                       variant="primary"
                       xstyle={styles.wideButton}
                     />
-                  </XDSVStack>
-                </XDSVStack>
+                  </VStack>
+                </VStack>
               </div>
-            </XDSVStack>
+            </VStack>
 
-            <XDSDivider />
+            <Divider />
 
-            <XDSVStack gap={3}>
-              <XDSHeading level={2}>Components</XDSHeading>
-              <XDSHStack gap={3} vAlign="center">
-                <XDSButton label="Primary" variant="primary" />
-                <XDSButton label="Secondary" variant="secondary" />
-                <XDSButton label="Ghost" variant="ghost" />
-              </XDSHStack>
-            </XDSVStack>
+            <VStack gap={3}>
+              <Heading level={2}>Components</Heading>
+              <HStack gap={3} vAlign="center">
+                <Button label="Primary" variant="primary" />
+                <Button label="Secondary" variant="secondary" />
+                <Button label="Ghost" variant="ghost" />
+              </HStack>
+            </VStack>
 
-            <XDSDivider />
+            <Divider />
 
-            <XDSVStack gap={3}>
-              <XDSHeading level={2}>Badges</XDSHeading>
-              <XDSHStack gap={3} vAlign="center">
-                <XDSBadge variant="info" label="Info" />
-                <XDSBadge variant="success" label="Success" />
-                <XDSBadge variant="warning" label="Warning" />
-                <XDSBadge variant="error" label="Error" />
-              </XDSHStack>
-            </XDSVStack>
+            <VStack gap={3}>
+              <Heading level={2}>Badges</Heading>
+              <HStack gap={3} vAlign="center">
+                <Badge variant="info" label="Info" />
+                <Badge variant="success" label="Success" />
+                <Badge variant="warning" label="Warning" />
+                <Badge variant="error" label="Error" />
+              </HStack>
+            </VStack>
 
-            <XDSDivider />
+            <Divider />
 
-            <XDSVStack gap={3}>
-              <XDSHeading level={2}>Text Input</XDSHeading>
-              <XDSTextInput
+            <VStack gap={3}>
+              <Heading level={2}>Text Input</Heading>
+              <TextInput
                 label="Email address"
                 placeholder="you@example.com"
                 value={email}
                 onChange={setEmail}
               />
-            </XDSVStack>
+            </VStack>
 
-            <XDSDivider />
+            <Divider />
 
-            <XDSVStack gap={3}>
-              <XDSHeading level={2}>Source Build</XDSHeading>
+            <VStack gap={3}>
+              <Heading level={2}>Source Build</Heading>
               <div {...stylex.props(styles.card)}>
-                <XDSText type="body">
+                <Text type="body">
                   Open devtools → inspect the CSS layers panel. You'll see{' '}
                   <code>@layer xds-base</code> and <code>@layer product</code>.
                   The layer order{' '}
                   <code>reset &lt; xds-base &lt; xds-theme &lt; product</code>{' '}
                   ensures product styles always win.
-                </XDSText>
+                </Text>
               </div>
-            </XDSVStack>
+            </VStack>
 
-            <XDSDivider />
+            <Divider />
 
-            <XDSVStack gap={3}>
-              <XDSHeading level={2}>Typography</XDSHeading>
-              <XDSText type="large" weight="bold">
+            <VStack gap={3}>
+              <Heading level={2}>Typography</Heading>
+              <Text type="large" weight="bold">
                 Large bold text
-              </XDSText>
-              <XDSText type="body">Default body text</XDSText>
-              <XDSText type="supporting" color="secondary">
+              </Text>
+              <Text type="body">Default body text</Text>
+              <Text type="supporting" color="secondary">
                 Supporting text in secondary color
-              </XDSText>
-            </XDSVStack>
-          </XDSVStack>
+              </Text>
+            </VStack>
+          </VStack>
         </div>
       </main>
-    </XDSTheme>
+    </Theme>
   );
 }

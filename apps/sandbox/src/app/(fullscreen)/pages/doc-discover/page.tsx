@@ -3,18 +3,18 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSCard} from '@xds/core/Card';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Heading, Text} from '@xds/core/Text';
+import {Badge} from '@xds/core/Badge';
+import {TextInput} from '@xds/core/TextInput';
+import {Avatar} from '@xds/core/Avatar';
+import {Card} from '@xds/core/Card';
 import {
-  XDSSegmentedControl,
-  XDSSegmentedControlItem,
+  SegmentedControl,
+  SegmentedControlItem,
 } from '@xds/core/SegmentedControl';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSEmptyState} from '@xds/core/EmptyState';
+import {Divider} from '@xds/core/Divider';
+import {EmptyState} from '@xds/core/EmptyState';
 import DocTopNav from '../doc-nav/DocTopNav';
 
 type Category = 'All' | 'Components' | 'Patterns' | 'Templates' | 'Tools';
@@ -204,16 +204,16 @@ export default function DocDiscoverPage() {
             paddingBottom: 24,
             gap: 32,
           }}>
-          <XDSVStack gap={1}>
-            <XDSHeading level={1}>Discover</XDSHeading>
-            <XDSText type="body" color="secondary">
+          <VStack gap={1}>
+            <Heading level={1}>Discover</Heading>
+            <Text type="body" color="secondary">
               Find components, patterns, templates, and tools for your next
               project.
-            </XDSText>
-          </XDSVStack>
+            </Text>
+          </VStack>
 
           <div style={{width: 320, flexShrink: 0}}>
-            <XDSTextInput
+            <TextInput
               label="Search"
               isLabelHidden
               placeholder="Search..."
@@ -226,27 +226,27 @@ export default function DocDiscoverPage() {
 
         {/* Category filter */}
         <div style={{paddingBottom: 24}}>
-          <XDSSegmentedControl
+          <SegmentedControl
             value={activeCategory}
             onChange={v => setActiveCategory(v as Category)}
             label="Filter by category">
             {CATEGORIES.map(cat => (
-              <XDSSegmentedControlItem key={cat} value={cat} label={cat} />
+              <SegmentedControlItem key={cat} value={cat} label={cat} />
             ))}
-          </XDSSegmentedControl>
+          </SegmentedControl>
         </div>
 
         {/* Results count */}
         <div style={{paddingBottom: 16}}>
-          <XDSText type="supporting" color="secondary">
+          <Text type="supporting" color="secondary">
             {filtered.length} result{filtered.length !== 1 ? 's' : ''}
-          </XDSText>
+          </Text>
         </div>
 
         {/* Cards grid or empty state */}
         {filtered.length === 0 ? (
           <div style={{paddingTop: 40, paddingBottom: 80}}>
-            <XDSEmptyState
+            <EmptyState
               title="No results found"
               description="Try adjusting your search or filters."
             />
@@ -260,8 +260,8 @@ export default function DocDiscoverPage() {
               paddingBottom: 64,
             }}>
             {filtered.map(item => (
-              <XDSCard key={item.name} padding={0}>
-                <XDSVStack gap={0}>
+              <Card key={item.name} padding={0}>
+                <VStack gap={0}>
                   {/* Placeholder image area */}
                   <div
                     style={{
@@ -276,24 +276,24 @@ export default function DocDiscoverPage() {
 
                   {/* Card body */}
                   <div style={{padding: 16}}>
-                    <XDSVStack gap={3}>
+                    <VStack gap={3}>
                       {/* Name + category badge */}
-                      <XDSHStack gap={2} vAlign="center">
-                        <XDSText type="body" weight="bold">
+                      <HStack gap={2} vAlign="center">
+                        <Text type="body" weight="bold">
                           {item.name}
-                        </XDSText>
-                        <XDSBadge
+                        </Text>
+                        <Badge
                           label={item.category}
                           variant={
                             CATEGORY_BADGE_VARIANT[item.category] ?? 'neutral'
                           }
                         />
-                      </XDSHStack>
+                      </HStack>
 
                       {/* Description */}
-                      <XDSText type="supporting" color="secondary">
+                      <Text type="supporting" color="secondary">
                         {item.description}
-                      </XDSText>
+                      </Text>
 
                       {/* Tags */}
                       <div
@@ -303,29 +303,29 @@ export default function DocDiscoverPage() {
                           gap: 6,
                         }}>
                         {item.tags.map(tag => (
-                          <XDSBadge key={tag} label={tag} variant="neutral" />
+                          <Badge key={tag} label={tag} variant="neutral" />
                         ))}
                       </div>
 
                       {/* Divider */}
-                      <XDSDivider />
+                      <Divider />
 
                       {/* Footer: author + installs */}
-                      <XDSHStack gap={2} vAlign="center" hAlign="between">
-                        <XDSHStack gap={2} vAlign="center">
-                          <XDSAvatar name={item.author} size="xsmall" />
-                          <XDSText type="supporting" color="secondary">
+                      <HStack gap={2} vAlign="center" hAlign="between">
+                        <HStack gap={2} vAlign="center">
+                          <Avatar name={item.author} size="xsmall" />
+                          <Text type="supporting" color="secondary">
                             {item.author}
-                          </XDSText>
-                        </XDSHStack>
-                        <XDSText type="supporting" color="secondary">
+                          </Text>
+                        </HStack>
+                        <Text type="supporting" color="secondary">
                           {item.downloads} installs
-                        </XDSText>
-                      </XDSHStack>
-                    </XDSVStack>
+                        </Text>
+                      </HStack>
+                    </VStack>
                   </div>
-                </XDSVStack>
-              </XDSCard>
+                </VStack>
+              </Card>
             ))}
           </div>
         )}

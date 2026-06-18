@@ -3,13 +3,13 @@
 'use client';
 
 import {
-  XDSTopNav,
-  XDSTopNavHeading,
-  XDSTopNavItem,
-  XDSTopNavMenu,
+  TopNav,
+  TopNavHeading,
+  TopNavItem,
+  TopNavMenu,
 } from '@xds/core/TopNav';
-import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSIcon} from '@xds/core/Icon';
+import {NavIcon} from '@xds/core/NavIcon';
+import {Icon} from '@xds/core/Icon';
 import {
   CubeIcon,
   ChartBarIcon,
@@ -18,18 +18,18 @@ import {
 
 export default function TopNavMultipleDropdowns() {
   return (
-    <XDSTopNav
+    <TopNav
       label="Main navigation"
       heading={
-        <XDSTopNavHeading
+        <TopNavHeading
           heading="My App"
-          logo={<XDSNavIcon icon={<XDSIcon icon={CubeIcon} size="sm" />} />}
+          logo={<NavIcon icon={<Icon icon={CubeIcon} size="sm" />} />}
           href="#"
         />
       }
       startContent={
         <>
-          <XDSTopNavMenu
+          <TopNavMenu
             label="Products"
             items={[
               {
@@ -46,7 +46,7 @@ export default function TopNavMultipleDropdowns() {
               },
             ]}
           />
-          <XDSTopNavMenu
+          <TopNavMenu
             label="Resources"
             items={[
               {title: 'Documentation', href: '#'},
@@ -54,7 +54,7 @@ export default function TopNavMultipleDropdowns() {
               {title: 'Community Forum', href: '#'},
             ]}
           />
-          <XDSTopNavItem label="Pricing" href="#" />
+          <TopNavItem label="Pricing" href="#" />
         </>
       }
     />

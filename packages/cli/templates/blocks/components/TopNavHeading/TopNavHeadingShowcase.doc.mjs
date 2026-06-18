@@ -6,7 +6,7 @@ export const doc = {
   exampleFor: 'TopNavHeading',
   name: 'TopNavHeading',
   displayName: 'Top Nav Heading',
-  description: 'Demonstrates XDSTopNavHeading with a logo and text, both as a plain display and as a clickable link.',
+  description: 'Demonstrates TopNavHeading with a logo and text, both as a plain display and as a clickable link.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 3,

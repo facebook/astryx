@@ -2,10 +2,10 @@
 
 'use client';
 
-import {XDSCard} from '@xds/core/Card';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSHeading} from '@xds/core/Text';
-import {useXDSTheme} from '@xds/core/theme';
+import {Card} from '@xds/core/Card';
+import {VStack} from '@xds/core/Layout';
+import {Heading} from '@xds/core/Text';
+import {useTheme} from '@xds/core/theme';
 import {
   ColorTokenTable,
   SpacingTokenTable,
@@ -89,17 +89,17 @@ function TokenSection({
 }) {
   const prose = section.content.filter(block => block.type !== 'table');
   return (
-    <XDSVStack gap={4}>
-      <XDSHeading level={3} type="display-3">
+    <VStack gap={4}>
+      <Heading level={3} type="display-3">
         {section.title}
-      </XDSHeading>
+      </Heading>
       {prose.map((block, i) => (
         <ContentBlockRenderer key={i} block={block} />
       ))}
-      <XDSCard>
+      <Card>
         <Table theme={theme} />
-      </XDSCard>
-    </XDSVStack>
+      </Card>
+    </VStack>
   );
 }
 
@@ -118,7 +118,7 @@ export function TokensDocView({
   sections: DocSection[];
   topic: string;
 }) {
-  const theme = useXDSTheme();
+  const theme = useTheme();
   const overrideMap = TOPIC_SECTION_OVERRIDES[topic] ?? {};
 
   const sectionOverrides: Record<

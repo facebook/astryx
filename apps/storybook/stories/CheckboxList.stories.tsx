@@ -2,13 +2,13 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSCheckboxList, XDSCheckboxListItem} from '@xds/core/CheckboxList';
-import {XDSList} from '@xds/core/List';
-import {XDSCard} from '@xds/core/Card';
+import {CheckboxList, CheckboxListItem} from '@xds/core/CheckboxList';
+import {List} from '@xds/core/List';
+import {Card} from '@xds/core/Card';
 
-const meta: Meta<typeof XDSCheckboxList> = {
+const meta: Meta<typeof CheckboxList> = {
   title: 'Core/CheckboxList',
-  component: XDSCheckboxList,
+  component: CheckboxList,
   tags: ['autodocs'],
   argTypes: {
     label: {
@@ -41,18 +41,18 @@ const meta: Meta<typeof XDSCheckboxList> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSCheckboxList>;
+type Story = StoryObj<typeof CheckboxList>;
 
 export const Default: Story = {
   render: args => {
     const [value, setValue] = useState<string[]>(args.value ?? []);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSCheckboxList {...restArgs} value={value} onChange={setValue}>
-        <XDSCheckboxListItem label="Email" value="email" />
-        <XDSCheckboxListItem label="SMS" value="sms" />
-        <XDSCheckboxListItem label="Push notification" value="push" />
-      </XDSCheckboxList>
+      <CheckboxList {...restArgs} value={value} onChange={setValue}>
+        <CheckboxListItem label="Email" value="email" />
+        <CheckboxListItem label="SMS" value="sms" />
+        <CheckboxListItem label="Push notification" value="push" />
+      </CheckboxList>
     );
   },
   args: {
@@ -65,23 +65,23 @@ export const WithDescriptions: Story = {
     const [value, setValue] = useState<string[]>(args.value ?? []);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSCheckboxList {...restArgs} value={value} onChange={setValue}>
-        <XDSCheckboxListItem
+      <CheckboxList {...restArgs} value={value} onChange={setValue}>
+        <CheckboxListItem
           label="Email"
           value="email"
           description="Receive notifications via email"
         />
-        <XDSCheckboxListItem
+        <CheckboxListItem
           label="SMS"
           value="sms"
           description="Standard messaging rates apply"
         />
-        <XDSCheckboxListItem
+        <CheckboxListItem
           label="Push notification"
           value="push"
           description="Instant alerts on your device"
         />
-      </XDSCheckboxList>
+      </CheckboxList>
     );
   },
   args: {
@@ -102,15 +102,15 @@ export const DynamicItems: Story = {
     const [value, setValue] = useState<string[]>(['react']);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSCheckboxList {...restArgs} value={value} onChange={setValue}>
+      <CheckboxList {...restArgs} value={value} onChange={setValue}>
         {items.map(item => (
-          <XDSCheckboxListItem
+          <CheckboxListItem
             key={item.id}
             label={item.label}
             value={item.id}
           />
         ))}
-      </XDSCheckboxList>
+      </CheckboxList>
     );
   },
   args: {
@@ -124,35 +124,35 @@ export const StandaloneMode: Story = {
     const [subscribed, setSubscribed] = useState(true);
     const [marketing, setMarketing] = useState(false);
     return (
-      <XDSList>
-        <XDSCheckboxListItem
+      <List>
+        <CheckboxListItem
           label="Accept terms and conditions"
           isChecked={accepted}
           onCheck={setAccepted}
         />
-        <XDSCheckboxListItem
+        <CheckboxListItem
           label="Subscribe to newsletter"
           description="Weekly updates about new features"
           isChecked={subscribed}
           onCheck={setSubscribed}
         />
-        <XDSCheckboxListItem
+        <CheckboxListItem
           label="Receive marketing emails"
           isChecked={marketing}
           onCheck={setMarketing}
         />
-      </XDSList>
+      </List>
     );
   },
 };
 
 export const ReadOnly: Story = {
   render: () => (
-    <XDSList>
-      <XDSCheckboxListItem label="Completed task" isChecked={true} />
-      <XDSCheckboxListItem label="Pending task" isChecked={false} />
-      <XDSCheckboxListItem label="In progress" isChecked="indeterminate" />
-    </XDSList>
+    <List>
+      <CheckboxListItem label="Completed task" isChecked={true} />
+      <CheckboxListItem label="Pending task" isChecked={false} />
+      <CheckboxListItem label="In progress" isChecked="indeterminate" />
+    </List>
   ),
 };
 
@@ -178,14 +178,14 @@ export const SelectAllWithIndeterminate: Story = {
     };
 
     return (
-      <XDSCheckboxList label="Notifications" hasDividers>
-        <XDSCheckboxListItem
+      <CheckboxList label="Notifications" hasDividers>
+        <CheckboxListItem
           label="Select all"
           isChecked={selectAllState}
           onCheck={handleSelectAll}
         />
         {allItems.map(item => (
-          <XDSCheckboxListItem
+          <CheckboxListItem
             key={item}
             label={item.charAt(0).toUpperCase() + item.slice(1)}
             isChecked={selected.includes(item)}
@@ -196,7 +196,7 @@ export const SelectAllWithIndeterminate: Story = {
             }}
           />
         ))}
-      </XDSCheckboxList>
+      </CheckboxList>
     );
   },
 };
@@ -206,11 +206,11 @@ export const Disabled: Story = {
     const [value, setValue] = useState<string[]>(['email']);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSCheckboxList {...restArgs} value={value} onChange={setValue}>
-        <XDSCheckboxListItem label="Email" value="email" />
-        <XDSCheckboxListItem label="SMS" value="sms" />
-        <XDSCheckboxListItem label="Push notification" value="push" />
-      </XDSCheckboxList>
+      <CheckboxList {...restArgs} value={value} onChange={setValue}>
+        <CheckboxListItem label="Email" value="email" />
+        <CheckboxListItem label="SMS" value="sms" />
+        <CheckboxListItem label="Push notification" value="push" />
+      </CheckboxList>
     );
   },
   args: {
@@ -268,11 +268,11 @@ export const DisabledItem: Story = {
     const [value, setValue] = useState<string[]>([]);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSCheckboxList {...restArgs} value={value} onChange={setValue}>
-        <XDSCheckboxListItem label="Email" value="email" />
-        <XDSCheckboxListItem label="SMS" value="sms" isDisabled />
-        <XDSCheckboxListItem label="Push notification" value="push" />
-      </XDSCheckboxList>
+      <CheckboxList {...restArgs} value={value} onChange={setValue}>
+        <CheckboxListItem label="Email" value="email" />
+        <CheckboxListItem label="SMS" value="sms" isDisabled />
+        <CheckboxListItem label="Push notification" value="push" />
+      </CheckboxList>
     );
   },
   args: {
@@ -285,11 +285,11 @@ export const WithErrorStatus: Story = {
     const [value, setValue] = useState<string[]>([]);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSCheckboxList {...restArgs} value={value} onChange={setValue}>
-        <XDSCheckboxListItem label="Email" value="email" />
-        <XDSCheckboxListItem label="SMS" value="sms" />
-        <XDSCheckboxListItem label="Push notification" value="push" />
-      </XDSCheckboxList>
+      <CheckboxList {...restArgs} value={value} onChange={setValue}>
+        <CheckboxListItem label="Email" value="email" />
+        <CheckboxListItem label="SMS" value="sms" />
+        <CheckboxListItem label="Push notification" value="push" />
+      </CheckboxList>
     );
   },
   args: {
@@ -306,26 +306,26 @@ export const WithEndContent: Story = {
     const [value, setValue] = useState<string[]>(['free']);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSCheckboxList {...restArgs} value={value} onChange={setValue}>
-        <XDSCheckboxListItem
+      <CheckboxList {...restArgs} value={value} onChange={setValue}>
+        <CheckboxListItem
           label="Free tier"
           value="free"
           description="Basic features included"
           endContent={<span style={{color: '#0D8626'}}>$0/mo</span>}
         />
-        <XDSCheckboxListItem
+        <CheckboxListItem
           label="Pro tier"
           value="pro"
           description="Advanced features"
           endContent={<span style={{color: '#0064E0'}}>$9/mo</span>}
         />
-        <XDSCheckboxListItem
+        <CheckboxListItem
           label="Enterprise"
           value="enterprise"
           description="Custom solutions"
           endContent={<span style={{color: '#5B08D8'}}>Custom</span>}
         />
-      </XDSCheckboxList>
+      </CheckboxList>
     );
   },
   args: {
@@ -348,42 +348,42 @@ export const AllVariations: Story = {
           gap: '24px',
           maxWidth: '400px',
         }}>
-        <XDSCheckboxList label="Unselected" value={value1} onChange={setValue1}>
-          <XDSCheckboxListItem label="Option A" value="a" />
-          <XDSCheckboxListItem label="Option B" value="b" />
-        </XDSCheckboxList>
-        <XDSCheckboxList
+        <CheckboxList label="Unselected" value={value1} onChange={setValue1}>
+          <CheckboxListItem label="Option A" value="a" />
+          <CheckboxListItem label="Option B" value="b" />
+        </CheckboxList>
+        <CheckboxList
           label="Pre-selected"
           value={value2}
           onChange={setValue2}>
-          <XDSCheckboxListItem label="Email" value="email" />
-          <XDSCheckboxListItem label="SMS" value="sms" />
-        </XDSCheckboxList>
-        <XDSCheckboxList
+          <CheckboxListItem label="Email" value="email" />
+          <CheckboxListItem label="SMS" value="sms" />
+        </CheckboxList>
+        <CheckboxList
           label="Disabled group"
           value={['a']}
           onChange={() => {}}
           isDisabled>
-          <XDSCheckboxListItem label="Option A" value="a" />
-          <XDSCheckboxListItem label="Option B" value="b" />
-        </XDSCheckboxList>
-        <XDSCheckboxList
+          <CheckboxListItem label="Option A" value="a" />
+          <CheckboxListItem label="Option B" value="b" />
+        </CheckboxList>
+        <CheckboxList
           label="With descriptions"
           value={value1}
           onChange={setValue1}
           hasDividers>
-          <XDSCheckboxListItem
+          <CheckboxListItem
             label="Email"
             value="email"
             description="Delivered to your inbox"
           />
-          <XDSCheckboxListItem
+          <CheckboxListItem
             label="SMS"
             value="sms"
             description="Standard rates apply"
           />
-        </XDSCheckboxList>
-        <XDSCheckboxList
+        </CheckboxList>
+        <CheckboxList
           label="With error"
           value={[]}
           onChange={() => {}}
@@ -391,23 +391,23 @@ export const AllVariations: Story = {
             type: 'error',
             message: 'Please select at least one option',
           }}>
-          <XDSCheckboxListItem label="Option A" value="a" />
-          <XDSCheckboxListItem label="Option B" value="b" />
-        </XDSCheckboxList>
+          <CheckboxListItem label="Option A" value="a" />
+          <CheckboxListItem label="Option B" value="b" />
+        </CheckboxList>
         <div>
           <h4 style={{margin: '0 0 8px'}}>Standalone mode</h4>
-          <XDSList>
-            <XDSCheckboxListItem
+          <List>
+            <CheckboxListItem
               label="Accept terms"
               isChecked={standalone1}
               onCheck={setStandalone1}
             />
-            <XDSCheckboxListItem
+            <CheckboxListItem
               label="Subscribe"
               isChecked={standalone2}
               onCheck={setStandalone2}
             />
-          </XDSList>
+          </List>
         </div>
       </div>
     );
@@ -419,21 +419,21 @@ export const InsideCard: Story = {
     const [selected, setSelected] = useState<string[]>(['email']);
     return (
       <div style={{maxWidth: 400}}>
-        <XDSCard>
-          <XDSCheckboxList
+        <Card>
+          <CheckboxList
             label="Notifications"
             description="Choose how to be notified"
             value={selected}
             onChange={setSelected}>
-            <XDSCheckboxListItem
+            <CheckboxListItem
               value="email"
               label="Email"
               description="Weekly digest"
             />
-            <XDSCheckboxListItem value="push" label="Push notifications" />
-            <XDSCheckboxListItem value="sms" label="SMS" isDisabled />
-          </XDSCheckboxList>
-        </XDSCard>
+            <CheckboxListItem value="push" label="Push notifications" />
+            <CheckboxListItem value="sms" label="SMS" isDisabled />
+          </CheckboxList>
+        </Card>
       </div>
     );
   },
@@ -444,18 +444,18 @@ export const InsideCardWithDividers: Story = {
     const [selected, setSelected] = useState<string[]>(['admin']);
     return (
       <div style={{maxWidth: 400}}>
-        <XDSCard>
-          <XDSCheckboxList
+        <Card>
+          <CheckboxList
             label="Assign Roles"
             value={selected}
             onChange={setSelected}
             hasDividers>
-            <XDSCheckboxListItem value="admin" label="Admin" />
-            <XDSCheckboxListItem value="editor" label="Editor" />
-            <XDSCheckboxListItem value="viewer" label="Viewer" />
-            <XDSCheckboxListItem value="guest" label="Guest" />
-          </XDSCheckboxList>
-        </XDSCard>
+            <CheckboxListItem value="admin" label="Admin" />
+            <CheckboxListItem value="editor" label="Editor" />
+            <CheckboxListItem value="viewer" label="Viewer" />
+            <CheckboxListItem value="guest" label="Guest" />
+          </CheckboxList>
+        </Card>
       </div>
     );
   },

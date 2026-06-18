@@ -5,9 +5,9 @@
 import {useState, useMemo} from 'react';
 import {usePathname} from 'next/navigation';
 import {Search} from 'lucide-react';
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
-import {XDSTextInput} from '@xds/core/TextInput';
+import {AppShell} from '@xds/core/AppShell';
+import {SideNav, SideNavItem, SideNavSection} from '@xds/core/SideNav';
+import {TextInput} from '@xds/core/TextInput';
 import {SharedTopNav} from './SharedTopNav';
 import type {ComponentEntry} from '../generated/componentRegistry';
 import type {PackageMeta} from '../generated/packageRegistry';
@@ -103,68 +103,68 @@ export function DocsShell({
   const isOnComponentsRoute = pathname.startsWith('/components');
 
   return (
-    <XDSAppShell
+    <AppShell
       variant="surface"
       height="auto"
       mobileNav={{defaultIsMobile}}
       topNav={<SharedTopNav />}
       sideNav={
-        <XDSSideNav>
+        <SideNav>
           {!isOnComponentsRoute && (
             <>
               {/* Getting Started */}
-              <XDSSideNavSection title="Documentation" isHeaderHidden>
-                <XDSSideNavItem
+              <SideNavSection title="Documentation" isHeaderHidden>
+                <SideNavItem
                   label="Getting Started"
                   href="/docs/getting-started"
                   isSelected={pathname === '/docs/getting-started'}
                 />
-                <XDSSideNavItem
+                <SideNavItem
                   label="What's New"
                   href="/changelog"
                   isSelected={pathname === '/changelog'}
                 />
-              </XDSSideNavSection>
+              </SideNavSection>
 
               {/* Guide */}
-              <XDSSideNavSection title="Guide" isHeaderHidden>
-                <XDSSideNavItem
+              <SideNavSection title="Guide" isHeaderHidden>
+                <SideNavItem
                   label="Guide"
                   collapsible={{defaultIsCollapsed: false}}>
                   {guideTopics.map(d => (
-                    <XDSSideNavItem
+                    <SideNavItem
                       key={d.topic}
                       label={d.title}
                       href={`/docs/${d.topic}`}
                       isSelected={pathname === `/docs/${d.topic}`}
                     />
                   ))}
-                </XDSSideNavItem>
-              </XDSSideNavSection>
+                </SideNavItem>
+              </SideNavSection>
 
               {/* Foundations */}
-              <XDSSideNavSection title="Foundations" isHeaderHidden>
-                <XDSSideNavItem
+              <SideNavSection title="Foundations" isHeaderHidden>
+                <SideNavItem
                   label="Foundations"
                   collapsible={{defaultIsCollapsed: false}}>
                   {foundationTopics.map(d => (
-                    <XDSSideNavItem
+                    <SideNavItem
                       key={d.topic}
                       label={d.title}
                       href={`/docs/${d.topic}`}
                       isSelected={pathname === `/docs/${d.topic}`}
                     />
                   ))}
-                </XDSSideNavItem>
-              </XDSSideNavSection>
+                </SideNavItem>
+              </SideNavSection>
 
               {/* Libraries */}
-              <XDSSideNavSection title="Libraries" isHeaderHidden>
-                <XDSSideNavItem
+              <SideNavSection title="Libraries" isHeaderHidden>
+                <SideNavItem
                   label="Libraries"
                   collapsible={{defaultIsCollapsed: false}}>
                   {libraryPackages.map(p => (
-                    <XDSSideNavItem
+                    <SideNavItem
                       key={p.name}
                       label={p.name}
                       href={`/docs/${p.name.replace('@xds/', '')}`}
@@ -173,16 +173,16 @@ export function DocsShell({
                       }
                     />
                   ))}
-                </XDSSideNavItem>
-              </XDSSideNavSection>
+                </SideNavItem>
+              </SideNavSection>
             </>
           )}
 
           {/* Components — only shown on /components routes */}
           {isOnComponentsRoute && (
             <>
-              <XDSSideNavSection title="Components" isHeaderHidden>
-                <XDSTextInput
+              <SideNavSection title="Components" isHeaderHidden>
+                <TextInput
                   label="Search components"
                   isLabelHidden
                   value={componentQuery}
@@ -193,7 +193,7 @@ export function DocsShell({
                   style={{marginBottom: 'var(--spacing-3)'}}
                 />
                 {!q && (
-                  <XDSSideNavItem
+                  <SideNavItem
                     label="Overview"
                     href="/components"
                     isSelected={pathname === '/components'}
@@ -201,7 +201,7 @@ export function DocsShell({
                 )}
                 {q
                   ? flatSearchResults.map(item => (
-                      <XDSSideNavItem
+                      <SideNavItem
                         key={item.name}
                         label={item.displayName}
                         href={item.href}
@@ -210,14 +210,14 @@ export function DocsShell({
                     ))
                   : componentItems.map(item =>
                       item.type === 'entry' ? (
-                        <XDSSideNavItem
+                        <SideNavItem
                           key={item.name}
                           label={item.displayName}
                           href={item.href}
                           isSelected={pathname === item.href}
                         />
                       ) : (
-                        <XDSSideNavItem
+                        <SideNavItem
                           key={item.label}
                           label={item.displayName}
                           collapsible={{
@@ -226,14 +226,14 @@ export function DocsShell({
                             ),
                           }}>
                           {item.entries.map(entry => (
-                            <XDSSideNavItem
+                            <SideNavItem
                               key={entry.name}
                               label={entry.displayName}
                               href={entry.href}
                               isSelected={pathname === entry.href}
                             />
                           ))}
-                        </XDSSideNavItem>
+                        </SideNavItem>
                       ),
                     )}
                 {/* Utilities — secondary list rendered below the main Components
@@ -241,7 +241,7 @@ export function DocsShell({
                 {filteredUtilities.length > 0 &&
                   (q ? (
                     filteredUtilities.map(comp => (
-                      <XDSSideNavItem
+                      <SideNavItem
                         key={comp.name}
                         label={comp.displayName}
                         href={comp.href}
@@ -249,25 +249,25 @@ export function DocsShell({
                       />
                     ))
                   ) : (
-                    <XDSSideNavItem
+                    <SideNavItem
                       label="Utilities"
                       collapsible={{defaultIsCollapsed: true}}>
                       {utilities.map(comp => (
-                        <XDSSideNavItem
+                        <SideNavItem
                           key={comp.name}
                           label={comp.displayName}
                           href={comp.href}
                           isSelected={pathname === comp.href}
                         />
                       ))}
-                    </XDSSideNavItem>
+                    </SideNavItem>
                   ))}
-              </XDSSideNavSection>
+              </SideNavSection>
             </>
           )}
-        </XDSSideNav>
+        </SideNav>
       }>
       {children}
-    </XDSAppShell>
+    </AppShell>
   );
 }

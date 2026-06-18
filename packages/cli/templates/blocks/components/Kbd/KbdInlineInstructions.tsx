@@ -2,26 +2,26 @@
 
 'use client';
 
-import {XDSKbd} from '@xds/core/Kbd';
-import {XDSVStack} from '@xds/core/Stack';
-import {XDSText} from '@xds/core/Text';
+import {Kbd} from '@xds/core/Kbd';
+import {VStack} from '@xds/core/Stack';
+import {Text} from '@xds/core/Text';
 
 export default function KbdInlineInstructions() {
   return (
-    <XDSVStack gap={3}>
-      <XDSText type="body">
-        Press <XDSKbd keys="mod+k" /> to open the command palette.
-      </XDSText>
-      <XDSText type="body">
-        Use <XDSKbd keys="mod+shift+p" /> to access all commands.
-      </XDSText>
-      <XDSText type="body">
-        Press <XDSKbd keys="escape" /> to close the dialog.
-      </XDSText>
-      <XDSText type="body">
-        Navigate with <XDSKbd keys="up" /> and <XDSKbd keys="down" /> arrow
-        keys, then press <XDSKbd keys="enter" /> to select.
-      </XDSText>
-    </XDSVStack>
+    <VStack gap={3}>
+      <Text type="body">
+        Press <Kbd keys="mod+k" /> to open the command palette.
+      </Text>
+      <Text type="body">
+        Use <Kbd keys="mod+shift+p" /> to access all commands.
+      </Text>
+      <Text type="body">
+        Press <Kbd keys="escape" /> to close the dialog.
+      </Text>
+      <Text type="body">
+        Navigate with <Kbd keys="up" /> and <Kbd keys="down" /> arrow
+        keys, then press <Kbd keys="enter" /> to select.
+      </Text>
+    </VStack>
   );
 }

@@ -2,38 +2,38 @@
 
 'use client';
 
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Divider} from '@xds/core/Divider';
+import {Card} from '@xds/core/Card';
+import {Section} from '@xds/core/Section';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function DividerFullBleed() {
   return (
-    <XDSSection variant="transparent" width="100%">
-      <XDSCard width={400}>
-        <XDSVStack gap={3}>
-          <XDSText type="label">Order Summary</XDSText>
-          <XDSHStack hAlign="between">
-            <XDSText type="body">3 items</XDSText>
-            <XDSText type="body">$127.00</XDSText>
-          </XDSHStack>
-          <XDSDivider isFullBleed />
-          <XDSHStack hAlign="between">
-            <XDSText type="body">Shipping</XDSText>
-            <XDSText type="body">$7.99</XDSText>
-          </XDSHStack>
-          <XDSHStack hAlign="between">
-            <XDSText type="body">Tax</XDSText>
-            <XDSText type="body">$10.16</XDSText>
-          </XDSHStack>
-          <XDSDivider isFullBleed />
-          <XDSHStack hAlign="between">
-            <XDSText type="label">Total</XDSText>
-            <XDSText type="label">$145.15</XDSText>
-          </XDSHStack>
-        </XDSVStack>
-      </XDSCard>
-    </XDSSection>
+    <Section variant="transparent" width="100%">
+      <Card width={400}>
+        <VStack gap={3}>
+          <Text type="label">Order Summary</Text>
+          <HStack hAlign="between">
+            <Text type="body">3 items</Text>
+            <Text type="body">$127.00</Text>
+          </HStack>
+          <Divider isFullBleed />
+          <HStack hAlign="between">
+            <Text type="body">Shipping</Text>
+            <Text type="body">$7.99</Text>
+          </HStack>
+          <HStack hAlign="between">
+            <Text type="body">Tax</Text>
+            <Text type="body">$10.16</Text>
+          </HStack>
+          <Divider isFullBleed />
+          <HStack hAlign="between">
+            <Text type="label">Total</Text>
+            <Text type="label">$145.15</Text>
+          </HStack>
+        </VStack>
+      </Card>
+    </Section>
   );
 }

@@ -2,16 +2,16 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSSankeyChart,
-  XDSSankeyLink,
-  XDSSankeyNode,
-  XDSSankeyLabel,
-  XDSSankeyGrid,
+  SankeyChart,
+  SankeyLink,
+  SankeyNode,
+  SankeyLabel,
+  SankeyGrid,
   type SankeyNode,
   type SankeyLink,
 } from '@xds/lab';
-import {XDSStack, XDSText} from '@xds/core';
-import {XDSHeading} from '@xds/core/Text';
+import {Stack, Text} from '@xds/core';
+import {Heading} from '@xds/core/Text';
 
 const meta: Meta = {
   title: 'Lab/SankeyChart',
@@ -57,22 +57,22 @@ const funnelColumns = [
 /** Classic diverging funnel with grid lines */
 export const ConversionFunnel: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Conversion Funnel</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Conversion Funnel</Heading>
+      <Text type="body" color="secondary">
         User journey · Last 30 days
-      </XDSText>
-      <XDSSankeyChart
+      </Text>
+      <SankeyChart
         nodes={funnelNodes}
         links={funnelLinks}
         columns={funnelColumns}
         height={360}>
-        <XDSSankeyGrid />
-        <XDSSankeyLink />
-        <XDSSankeyNode />
-        <XDSSankeyLabel />
-      </XDSSankeyChart>
-    </XDSStack>
+        <SankeyGrid />
+        <SankeyLink />
+        <SankeyNode />
+        <SankeyLabel />
+      </SankeyChart>
+    </Stack>
   ),
 };
 
@@ -126,22 +126,22 @@ const revenueColumns = [
 /** Converging Sankey — multiple sources flowing to fewer destinations */
 export const RevenueFlow: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Revenue Sources</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Revenue Sources</Heading>
+      <Text type="body" color="secondary">
         Channel attribution · March 2026
-      </XDSText>
-      <XDSSankeyChart
+      </Text>
+      <SankeyChart
         nodes={revenueNodes}
         links={revenueLinks}
         columns={revenueColumns}
         height={420}>
-        <XDSSankeyGrid />
-        <XDSSankeyLink opacity={0.65} tension={0.55} />
-        <XDSSankeyNode />
-        <XDSSankeyLabel />
-      </XDSSankeyChart>
-    </XDSStack>
+        <SankeyGrid />
+        <SankeyLink opacity={0.65} tension={0.55} />
+        <SankeyNode />
+        <SankeyLabel />
+      </SankeyChart>
+    </Stack>
   ),
 };
 
@@ -163,17 +163,17 @@ export const AutoColumns: Story = {
     ];
 
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Auto Column Detection</XDSHeading>
-        <XDSText type="body" color="secondary">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Auto Column Detection</Heading>
+        <Text type="body" color="secondary">
           No explicit columns — topologically sorted
-        </XDSText>
-        <XDSSankeyChart nodes={nodes} links={links} height={280}>
-          <XDSSankeyLink tension={0.6} />
-          <XDSSankeyNode />
-          <XDSSankeyLabel showPercent={false} />
-        </XDSSankeyChart>
-      </XDSStack>
+        </Text>
+        <SankeyChart nodes={nodes} links={links} height={280}>
+          <SankeyLink tension={0.6} />
+          <SankeyNode />
+          <SankeyLabel showPercent={false} />
+        </SankeyChart>
+      </Stack>
     );
   },
 };
@@ -231,11 +231,11 @@ export const ManyColumns: Story = {
     ];
 
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Deep Funnel (6 stages)</XDSHeading>
-        <XDSText type="body" color="secondary">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Deep Funnel (6 stages)</Heading>
+        <Text type="body" color="secondary">
           Scrolls horizontally when columns exceed container width
-        </XDSText>
+        </Text>
         <div
           style={{
             maxWidth: 600,
@@ -243,19 +243,19 @@ export const ManyColumns: Story = {
             borderRadius: 12,
             overflow: 'hidden',
           }}>
-          <XDSSankeyChart
+          <SankeyChart
             nodes={nodes}
             links={links}
             columns={columns}
             height={360}
             minColumnWidth={160}>
-            <XDSSankeyGrid />
-            <XDSSankeyLink />
-            <XDSSankeyNode />
-            <XDSSankeyLabel />
-          </XDSSankeyChart>
+            <SankeyGrid />
+            <SankeyLink />
+            <SankeyNode />
+            <SankeyLabel />
+          </SankeyChart>
         </div>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -305,22 +305,22 @@ const bizColumns = [
  */
 export const BusinessFunnel: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Acquisition Funnel</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Acquisition Funnel</Heading>
+      <Text type="body" color="secondary">
         Blue = progression · Gray = drop-off
-      </XDSText>
-      <XDSSankeyChart
+      </Text>
+      <SankeyChart
         nodes={bizNodes}
         links={bizLinks}
         columns={bizColumns}
         height={380}>
-        <XDSSankeyGrid />
-        <XDSSankeyLink opacity={0.6} />
-        <XDSSankeyNode />
-        <XDSSankeyLabel />
-      </XDSSankeyChart>
-    </XDSStack>
+        <SankeyGrid />
+        <SankeyLink opacity={0.6} />
+        <SankeyNode />
+        <SankeyLabel />
+      </SankeyChart>
+    </Stack>
   ),
 };
 
@@ -358,23 +358,23 @@ const demoColumns = [
 /** Wide bars with rotated labels and column headers — art deco style */
 export const WideBarStyle: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Survey Flow</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Survey Flow</Heading>
+      <Text type="body" color="secondary">
         Wider node bars with rotated text labels
-      </XDSText>
-      <XDSSankeyChart
+      </Text>
+      <SankeyChart
         nodes={demoNodes}
         links={demoLinks}
         columns={demoColumns}
         height={380}
         nodeGap={8}>
-        <XDSSankeyGrid />
-        <XDSSankeyLink opacity={0.5} tension={0.5} />
-        <XDSSankeyNode />
-        <XDSSankeyLabel />
-      </XDSSankeyChart>
-    </XDSStack>
+        <SankeyGrid />
+        <SankeyLink opacity={0.5} tension={0.5} />
+        <SankeyNode />
+        <SankeyLabel />
+      </SankeyChart>
+    </Stack>
   ),
 };
 
@@ -537,22 +537,22 @@ function formatBudget(value: number): string {
  */
 export const USFederalBudget: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>US Federal Budget FY2020</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>US Federal Budget FY2020</Heading>
+      <Text type="body" color="secondary">
         Revenue sources → receiving agencies (vega-datasets/budget.json)
-      </XDSText>
-      <XDSSankeyChart
+      </Text>
+      <SankeyChart
         nodes={budgetNodes}
         links={budgetLinks}
         columns={budgetColumns}
         height={480}>
-        <XDSSankeyGrid />
-        <XDSSankeyLink opacity={0.6} tension={0.5} />
-        <XDSSankeyNode />
-        <XDSSankeyLabel formatValue={formatBudget} />
-      </XDSSankeyChart>
-    </XDSStack>
+        <SankeyGrid />
+        <SankeyLink opacity={0.6} tension={0.5} />
+        <SankeyNode />
+        <SankeyLabel formatValue={formatBudget} />
+      </SankeyChart>
+    </Stack>
   ),
 };
 
@@ -561,109 +561,109 @@ export const USFederalBudget: Story = {
 /** Monochrome — flat black ribbons on white, editorial style */
 export const Monochrome: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Petroleum Flow</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Petroleum Flow</Heading>
+      <Text type="body" color="secondary">
         Monochrome — flat color, no gradients
-      </XDSText>
-      <XDSSankeyChart
+      </Text>
+      <SankeyChart
         nodes={funnelNodes}
         links={funnelLinks}
         columns={funnelColumns}
         height={340}
         nodeColor="#1a1a1e">
-        <XDSSankeyLink color="#1a1a1e" opacity={0.75} />
-        <XDSSankeyNode glow={false} />
-        <XDSSankeyLabel />
-      </XDSSankeyChart>
-    </XDSStack>
+        <SankeyLink color="#1a1a1e" opacity={0.75} />
+        <SankeyNode glow={false} />
+        <SankeyLabel />
+      </SankeyChart>
+    </Stack>
   ),
 };
 
 /** Source-colored — each link takes its source node's color */
 export const SourceColored: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Source-Colored Links</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Source-Colored Links</Heading>
+      <Text type="body" color="secondary">
         Each ribbon matches its source node
-      </XDSText>
-      <XDSSankeyChart
+      </Text>
+      <SankeyChart
         nodes={funnelNodes}
         links={funnelLinks}
         columns={funnelColumns}
         height={340}>
-        <XDSSankeyGrid />
-        <XDSSankeyLink color="source" />
-        <XDSSankeyNode />
-        <XDSSankeyLabel />
-      </XDSSankeyChart>
-    </XDSStack>
+        <SankeyGrid />
+        <SankeyLink color="source" />
+        <SankeyNode />
+        <SankeyLabel />
+      </SankeyChart>
+    </Stack>
   ),
 };
 
 /** Target-colored — each link takes its target node's color */
 export const TargetColored: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Target-Colored Links</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Target-Colored Links</Heading>
+      <Text type="body" color="secondary">
         Each ribbon matches its destination node
-      </XDSText>
-      <XDSSankeyChart
+      </Text>
+      <SankeyChart
         nodes={funnelNodes}
         links={funnelLinks}
         columns={funnelColumns}
         height={340}>
-        <XDSSankeyGrid />
-        <XDSSankeyLink color="target" />
-        <XDSSankeyNode />
-        <XDSSankeyLabel />
-      </XDSSankeyChart>
-    </XDSStack>
+        <SankeyGrid />
+        <SankeyLink color="target" />
+        <SankeyNode />
+        <SankeyLabel />
+      </SankeyChart>
+    </Stack>
   ),
 };
 
 /** Leaned gradient — source-biased, transitions late */
 export const LeanedSourceGradient: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Source-Leaned Gradient</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Source-Leaned Gradient</Heading>
+      <Text type="body" color="secondary">
         bias=0.2 — holds source color, transitions near target
-      </XDSText>
-      <XDSSankeyChart
+      </Text>
+      <SankeyChart
         nodes={funnelNodes}
         links={funnelLinks}
         columns={funnelColumns}
         height={340}>
-        <XDSSankeyGrid />
-        <XDSSankeyLink color={{gradient: 0.2}} />
-        <XDSSankeyNode />
-        <XDSSankeyLabel />
-      </XDSSankeyChart>
-    </XDSStack>
+        <SankeyGrid />
+        <SankeyLink color={{gradient: 0.2}} />
+        <SankeyNode />
+        <SankeyLabel />
+      </SankeyChart>
+    </Stack>
   ),
 };
 
 /** Leaned gradient — target-biased, transitions early */
 export const LeanedTargetGradient: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Target-Leaned Gradient</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Target-Leaned Gradient</Heading>
+      <Text type="body" color="secondary">
         bias=0.8 — transitions early, holds target color
-      </XDSText>
-      <XDSSankeyChart
+      </Text>
+      <SankeyChart
         nodes={funnelNodes}
         links={funnelLinks}
         columns={funnelColumns}
         height={340}>
-        <XDSSankeyGrid />
-        <XDSSankeyLink color={{gradient: 0.8}} />
-        <XDSSankeyNode />
-        <XDSSankeyLabel />
-      </XDSSankeyChart>
-    </XDSStack>
+        <SankeyGrid />
+        <SankeyLink color={{gradient: 0.8}} />
+        <SankeyNode />
+        <SankeyLabel />
+      </SankeyChart>
+    </Stack>
   ),
 };

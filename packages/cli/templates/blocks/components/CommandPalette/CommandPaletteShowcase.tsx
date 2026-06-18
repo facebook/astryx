@@ -3,7 +3,7 @@
 'use client';
 
 import {useMemo} from 'react';
-import {XDSCommandPalette} from '@xds/core/CommandPalette';
+import {CommandPalette} from '@xds/core/CommandPalette';
 import {createStaticSource} from '@xds/core/Typeahead';
 
 // Remove isInline for production — command palettes should be modal.
@@ -21,7 +21,7 @@ export default function CommandPaletteShowcase() {
   );
 
   return (
-    <XDSCommandPalette
+    <CommandPalette
       isOpen
       isInline
       onOpenChange={() => {}}

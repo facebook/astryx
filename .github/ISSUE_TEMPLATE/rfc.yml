@@ -44,7 +44,7 @@ body:
       label: Why Existing Components Don't Cover This
       description: |
         What have you tried with current XDS components? Show the composition attempt and where it breaks down. "I tried X but it requires Y lines of boilerplate / breaks accessibility / doesn't theme correctly."
-      placeholder: "I attempted to compose this using XDSCard + XDSVStack + ... but ..."
+      placeholder: "I attempted to compose this using Card + VStack + ... but ..."
     validations:
       required: true
 
@@ -55,14 +55,14 @@ body:
       description: |
         One or more ideas for how this could work — not as implementation proposals, but to show you've thought through the design space. Include consumer code examples if possible.
       placeholder: |
-        Option A: A new XDSFoo component that...
+        Option A: A new Foo component that...
         ```tsx
-        <XDSFoo prop={value}>...</XDSFoo>
+        <Foo prop={value}>...</Foo>
         ```
 
         Option B: A hook that...
         ```tsx
-        const fooProps = useXDSFoo({...});
+        const fooProps = useFoo({...});
         <div {...fooProps}>...</div>
         ```
     validations:

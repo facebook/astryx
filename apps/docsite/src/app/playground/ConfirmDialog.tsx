@@ -5,22 +5,22 @@
 /**
  * @file ConfirmDialog.tsx
  * @input isOpen flag, title, message, confirm/cancel handlers + labels
- * @output A small confirmation dialog (XDSDialog) with Cancel/Continue actions
+ * @output A small confirmation dialog (Dialog) with Cancel/Continue actions
  * @position Playground — shared confirm prompt for destructive playground
  *   actions (loading templates, applying example themes) that overwrite the
  *   user's current code or theme.
  */
 
 import type {ReactNode} from 'react';
-import {XDSButton} from '@xds/core/Button';
+import {Button} from '@xds/core/Button';
 import {
-  XDSHStack,
-  XDSLayout,
-  XDSLayoutContent,
-  XDSLayoutFooter,
+  HStack,
+  Layout,
+  LayoutContent,
+  LayoutFooter,
 } from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
+import {Text} from '@xds/core/Text';
+import {Dialog, DialogHeader} from '@xds/core/Dialog';
 
 interface ConfirmDialogProps {
   /** Whether the dialog is open. */
@@ -49,7 +49,7 @@ export function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   return (
-    <XDSDialog
+    <Dialog
       isOpen={isOpen}
       onOpenChange={open => {
         if (!open) {
@@ -58,32 +58,32 @@ export function ConfirmDialog({
       }}
       purpose="form"
       width={440}>
-      <XDSLayout
-        header={<XDSDialogHeader title={title} onOpenChange={onCancel} />}
+      <Layout
+        header={<DialogHeader title={title} onOpenChange={onCancel} />}
         content={
-          <XDSLayoutContent>
-            <XDSText type="body" color="secondary">
+          <LayoutContent>
+            <Text type="body" color="secondary">
               {message}
-            </XDSText>
-          </XDSLayoutContent>
+            </Text>
+          </LayoutContent>
         }
         footer={
-          <XDSLayoutFooter>
-            <XDSHStack gap={2} justify="end" width="100%">
-              <XDSButton
+          <LayoutFooter>
+            <HStack gap={2} justify="end" width="100%">
+              <Button
                 variant="secondary"
                 label={cancelLabel}
                 onClick={onCancel}
               />
-              <XDSButton
+              <Button
                 variant="primary"
                 label={confirmLabel}
                 onClick={onConfirm}
               />
-            </XDSHStack>
-          </XDSLayoutFooter>
+            </HStack>
+          </LayoutFooter>
         }
       />
-    </XDSDialog>
+    </Dialog>
   );
 }

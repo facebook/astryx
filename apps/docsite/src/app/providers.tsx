@@ -4,8 +4,8 @@
 
 import {createContext, useContext, useEffect, useState} from 'react';
 import Link from 'next/link';
-import {XDSTheme} from '@xds/core/theme';
-import {XDSLinkProvider} from '@xds/core/Link';
+import {Theme} from '@xds/core/theme';
+import {LinkProvider} from '@xds/core/Link';
 import {astryxTheme} from '../themes/astryx';
 
 type ThemeMode = 'light' | 'dark';
@@ -15,7 +15,7 @@ const ThemeModeContext = createContext<{
   mode: ThemeMode;
   /**
    * Raw, system-aware mode for theme rendering. Stays 'system' on the first
-   * paint so nested <XDSTheme> scopes keep `color-scheme: light dark` and their
+   * paint so nested <Theme> scopes keep `color-scheme: light dark` and their
    * light-dark() tokens follow the OS preference — no flash before the OS mode
    * resolves (#2713).
    */
@@ -63,9 +63,9 @@ export function Providers({children}: {children: React.ReactNode}) {
 
   return (
     <ThemeModeContext value={{mode: resolvedMode, themeMode: mode, toggleMode}}>
-      <XDSTheme theme={astryxTheme} mode={mode}>
-        <XDSLinkProvider component={Link}>{children}</XDSLinkProvider>
-      </XDSTheme>
+      <Theme theme={astryxTheme} mode={mode}>
+        <LinkProvider component={Link}>{children}</LinkProvider>
+      </Theme>
     </ThemeModeContext>
   );
 }

@@ -2,10 +2,10 @@
 
 'use client';
 
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 import {
   ArrowDownTrayIcon,
   PencilSquareIcon,
@@ -15,32 +15,32 @@ import {
 
 export default function ButtonWithIcon() {
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Text type="supporting" color="secondary">
         Icons reinforce the action
-      </XDSText>
-      <XDSStack direction="horizontal" gap={3} vAlign="center">
-        <XDSButton
+      </Text>
+      <Stack direction="horizontal" gap={3} vAlign="center">
+        <Button
           label="New item"
           variant="primary"
-          icon={<XDSIcon icon={PlusIcon} />}
+          icon={<Icon icon={PlusIcon} />}
         />
-        <XDSButton
+        <Button
           label="Edit"
           variant="secondary"
-          icon={<XDSIcon icon={PencilSquareIcon} />}
+          icon={<Icon icon={PencilSquareIcon} />}
         />
-        <XDSButton
+        <Button
           label="Download"
           variant="ghost"
-          icon={<XDSIcon icon={ArrowDownTrayIcon} />}
+          icon={<Icon icon={ArrowDownTrayIcon} />}
         />
-        <XDSButton
+        <Button
           label="Delete"
           variant="destructive"
-          icon={<XDSIcon icon={TrashIcon} />}
+          icon={<Icon icon={TrashIcon} />}
         />
-      </XDSStack>
-    </XDSStack>
+      </Stack>
+    </Stack>
   );
 }

@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSText} from '@xds/core/Text';
-import {XDSStack} from '@xds/core/Stack';
+import {Text} from '@xds/core/Text';
+import {Stack} from '@xds/core/Stack';
 
 const COLORS = [
   {color: 'primary' as const, description: 'Primary — Default for headings and body text'},
@@ -15,12 +15,12 @@ const COLORS = [
 
 export default function TextColors() {
   return (
-    <XDSStack direction="vertical" gap={3}>
+    <Stack direction="vertical" gap={3}>
       {COLORS.map(({color, description}) => (
-        <XDSText key={color} type="body" color={color}>
+        <Text key={color} type="body" color={color}>
           {description}
-        </XDSText>
+        </Text>
       ))}
-    </XDSStack>
+    </Stack>
   );
 }

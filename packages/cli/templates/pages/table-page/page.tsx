@@ -4,22 +4,22 @@
 
 import {useState, useMemo} from 'react';
 import {
-  XDSVStack,
-  XDSHStack,
-  XDSStackItem,
-  XDSLayout,
-  XDSLayoutContent,
-  XDSLayoutHeader,
+  VStack,
+  HStack,
+  StackItem,
+  Layout,
+  LayoutContent,
+  LayoutHeader,
 } from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIconButton} from '@xds/core/IconButton';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSPowerSearch, usePowerSearchConfig} from '@xds/core/PowerSearch';
+import {Text, Heading} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {IconButton} from '@xds/core/IconButton';
+import {Icon} from '@xds/core/Icon';
+import {Avatar} from '@xds/core/Avatar';
+import {PowerSearch, usePowerSearchConfig} from '@xds/core/PowerSearch';
 import type {PowerSearchFilter} from '@xds/core/PowerSearch';
-import {XDSTable, proportional, pixel} from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
+import {Table, proportional, pixel} from '@xds/core/Table';
+import type {TableColumn} from '@xds/core/Table';
 import {
   FunnelIcon,
   ArrowDownTrayIcon,
@@ -346,21 +346,21 @@ const fieldDefs = [
   {key: 'biography', type: 'string', label: 'Biography'},
 ] as const;
 
-const columns: XDSTableColumn<DogRow>[] = [
+const columns: TableColumn<DogRow>[] = [
   {
     key: 'name',
     header: 'Name',
     width: proportional(2),
     renderCell: (item: DogRow) => (
-      <XDSHStack gap={3} vAlign="center">
-        <XDSAvatar name={item.name} size="small" />
-        <XDSVStack gap={0}>
-          <XDSText type="body">{item.name}</XDSText>
-          <XDSText type="supporting" color="secondary">
+      <HStack gap={3} vAlign="center">
+        <Avatar name={item.name} size="small" />
+        <VStack gap={0}>
+          <Text type="body">{item.name}</Text>
+          <Text type="supporting" color="secondary">
             {item.breed}
-          </XDSText>
-        </XDSVStack>
-      </XDSHStack>
+          </Text>
+        </VStack>
+      </HStack>
     ),
   },
   {
@@ -368,14 +368,14 @@ const columns: XDSTableColumn<DogRow>[] = [
     header: 'Biography',
     width: proportional(5),
     renderCell: (item: DogRow) => (
-      <XDSText type="body">{item.biography}</XDSText>
+      <Text type="body">{item.biography}</Text>
     ),
   },
   {
     key: 'age',
     header: 'Age',
     width: pixel(80),
-    renderCell: (item: DogRow) => <XDSText type="body">{item.age}</XDSText>,
+    renderCell: (item: DogRow) => <Text type="body">{item.age}</Text>,
   },
 ];
 
@@ -388,35 +388,35 @@ export default function TablePageTemplate() {
   }, [filters, applyFilters]);
 
   return (
-    <XDSLayout
+    <Layout
       height="auto"
       header={
-        <XDSLayoutHeader hasDivider>
-          <XDSHStack gap={2} vAlign="center">
-            <XDSStackItem size="fill">
-              <XDSHeading level={1}>Dogs</XDSHeading>
-            </XDSStackItem>
-            <XDSIconButton
+        <LayoutHeader hasDivider>
+          <HStack gap={2} vAlign="center">
+            <StackItem size="fill">
+              <Heading level={1}>Dogs</Heading>
+            </StackItem>
+            <IconButton
               label="Filter"
-              icon={<XDSIcon icon={FunnelIcon} size="sm" />}
+              icon={<Icon icon={FunnelIcon} size="sm" />}
               variant="ghost"
             />
-            <XDSIconButton
+            <IconButton
               label="Download"
-              icon={<XDSIcon icon={ArrowDownTrayIcon} size="sm" />}
+              icon={<Icon icon={ArrowDownTrayIcon} size="sm" />}
               variant="ghost"
             />
-            <XDSButton
+            <Button
               label="Add"
-              icon={<XDSIcon icon={PlusIcon} size="sm" />}
+              icon={<Icon icon={PlusIcon} size="sm" />}
             />
-          </XDSHStack>
-        </XDSLayoutHeader>
+          </HStack>
+        </LayoutHeader>
       }
       content={
-        <XDSLayoutContent padding={3}>
-          <XDSVStack gap={4}>
-            <XDSPowerSearch
+        <LayoutContent padding={3}>
+          <VStack gap={4}>
+            <PowerSearch
               config={config}
               filters={filters}
               onChange={newFilters => {
@@ -425,7 +425,7 @@ export default function TablePageTemplate() {
               placeholder="Search dogs..."
               resultCount={filtered.length}
             />
-            <XDSTable<DogRow>
+            <Table<DogRow>
               data={filtered}
               columns={columns}
               idKey="id"
@@ -433,8 +433,8 @@ export default function TablePageTemplate() {
               dividers="rows"
               hasHover
             />
-          </XDSVStack>
-        </XDSLayoutContent>
+          </VStack>
+        </LayoutContent>
       }
     />
   );

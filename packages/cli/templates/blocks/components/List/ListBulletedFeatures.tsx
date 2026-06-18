@@ -2,14 +2,14 @@
 
 'use client';
 
-import {XDSList, XDSListItem} from '@xds/core/List';
+import {List, ListItem} from '@xds/core/List';
 
 export default function ListBulletedFeatures() {
   return (
-    <XDSList listStyle="disc">
-      <XDSListItem label="Accessible by default" />
-      <XDSListItem label="Themeable with StyleX" />
-      <XDSListItem label="Composable and extensible" />
-    </XDSList>
+    <List listStyle="disc">
+      <ListItem label="Accessible by default" />
+      <ListItem label="Themeable with StyleX" />
+      <ListItem label="Composable and extensible" />
+    </List>
   );
 }

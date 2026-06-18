@@ -3,41 +3,41 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
-import {XDSText} from '@xds/core/Text';
+import {RadioList, RadioListItem} from '@xds/core/RadioList';
+import {Text} from '@xds/core/Text';
 
 export default function RadioListPricingTier() {
   const [value, setValue] = useState('');
 
   return (
-    <XDSRadioList label="Plan" value={value} onChange={setValue}>
-      <XDSRadioListItem
+    <RadioList label="Plan" value={value} onChange={setValue}>
+      <RadioListItem
         label="Free"
         value="free"
         endContent={
-          <XDSText type="body" color="secondary">
+          <Text type="body" color="secondary">
             $0/mo
-          </XDSText>
+          </Text>
         }
       />
-      <XDSRadioListItem
+      <RadioListItem
         label="Pro"
         value="pro"
         endContent={
-          <XDSText type="body" color="secondary">
+          <Text type="body" color="secondary">
             $9/mo
-          </XDSText>
+          </Text>
         }
       />
-      <XDSRadioListItem
+      <RadioListItem
         label="Enterprise"
         value="enterprise"
         endContent={
-          <XDSText type="body" color="secondary">
+          <Text type="body" color="secondary">
             Custom
-          </XDSText>
+          </Text>
         }
       />
-    </XDSRadioList>
+    </RadioList>
   );
 }

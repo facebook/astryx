@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
-import {XDSButton} from '@xds/core/Button';
+import {TabList, Tab} from '@xds/core/TabList';
+import {Button} from '@xds/core/Button';
 
 const FilterIcon = (
   <svg
@@ -41,10 +41,10 @@ const PlusIcon = (
 export default function TabListTabsWithActions() {
   const [value, setValue] = useState('all');
   return (
-    <XDSTabList value={value} onChange={setValue} size="lg" hasDivider>
-      <XDSTab value="all" label="All items" />
-      <XDSTab value="active" label="Active" />
-      <XDSTab value="archived" label="Archived" />
+    <TabList value={value} onChange={setValue} size="lg" hasDivider>
+      <Tab value="all" label="All items" />
+      <Tab value="active" label="Active" />
+      <Tab value="archived" label="Archived" />
       <div
         style={{
           marginInlineStart: 'auto',
@@ -52,20 +52,20 @@ export default function TabListTabsWithActions() {
           alignItems: 'center',
           gap: 4,
         }}>
-        <XDSButton
+        <Button
           label="Filter"
           variant="ghost"
           size="sm"
           icon={FilterIcon}
           isIconOnly
         />
-        <XDSButton
+        <Button
           label="New item"
           variant="primary"
           size="sm"
           icon={PlusIcon}
         />
       </div>
-    </XDSTabList>
+    </TabList>
   );
 }

@@ -2,11 +2,11 @@
 
 'use client';
 
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSCard} from '@xds/core/Card';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSText} from '@xds/core/Text';
-import {XDSVStack} from '@xds/core/Layout';
+import {AspectRatio} from '@xds/core/AspectRatio';
+import {Card} from '@xds/core/Card';
+import {Center} from '@xds/core/Center';
+import {Text} from '@xds/core/Text';
+import {VStack} from '@xds/core/Layout';
 
 export interface BlockDocMeta {
   aspectRatio: number;
@@ -15,15 +15,15 @@ export interface BlockDocMeta {
 
 export function ShowcasePreview({children}: {children: React.ReactNode}) {
   return (
-    <XDSCenter width="100%" height="100vh">
-      <XDSCard
+    <Center width="100%" height="100vh">
+      <Card
         variant="muted"
         style={{width: '100%', maxWidth: 968, height: 360}}>
-        <XDSCenter width="100%" height="100%">
+        <Center width="100%" height="100%">
           {children}
-        </XDSCenter>
-      </XDSCard>
-    </XDSCenter>
+        </Center>
+      </Card>
+    </Center>
   );
 }
 
@@ -38,8 +38,8 @@ export function BlockPreview({
   const scale = meta.scale;
 
   return (
-    <XDSCenter style={{flex: 1, overflow: 'auto', padding: 24}}>
-      <XDSVStack gap={2} style={{width: '100%', maxWidth: 600}}>
+    <Center style={{flex: 1, overflow: 'auto', padding: 24}}>
+      <VStack gap={2} style={{width: '100%', maxWidth: 600}}>
         <div
           style={{
             border: '1px solid var(--color-border-emphasized)',
@@ -47,8 +47,8 @@ export function BlockPreview({
             overflow: 'clip',
             padding: 0,
           }}>
-          <XDSAspectRatio ratio={ar}>
-            <XDSCenter
+          <AspectRatio ratio={ar}>
+            <Center
               width="100%"
               height="100%"
               style={{
@@ -56,11 +56,11 @@ export function BlockPreview({
                 transformOrigin: 'center center',
               }}>
               {children}
-            </XDSCenter>
-          </XDSAspectRatio>
+            </Center>
+          </AspectRatio>
         </div>
-        <XDSVStack gap={0} style={{textAlign: 'center'}}>
-          <XDSText type="supporting" color="secondary">
+        <VStack gap={0} style={{textAlign: 'center'}}>
+          <Text type="supporting" color="secondary">
             aspect-ratio:{' '}
             {ar === 1
               ? '1'
@@ -70,13 +70,13 @@ export function BlockPreview({
                   ? '16/9'
                   : String(Math.round(ar * 1000) / 1000)}
             {' · '}scale: {scale}
-          </XDSText>
-          <XDSText type="supporting" color="secondary" size="xsm">
+          </Text>
+          <Text type="supporting" color="secondary" size="xsm">
             Tweak aspectRatio and scale in the .doc.mjs file so the component
             fits nicely in this box.
-          </XDSText>
-        </XDSVStack>
-      </XDSVStack>
-    </XDSCenter>
+          </Text>
+        </VStack>
+      </VStack>
+    </Center>
   );
 }

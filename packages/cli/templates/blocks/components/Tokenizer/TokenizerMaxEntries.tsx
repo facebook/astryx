@@ -4,16 +4,16 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSTokenizer} from '@xds/core/Tokenizer';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
+import {Tokenizer} from '@xds/core/Tokenizer';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
 
 const styles = stylex.create({
   fixed: {width: 400},
 });
 
-const skills: XDSSearchableItem[] = [
+const skills: SearchableItem[] = [
   {id: '1', label: 'React'},
   {id: '2', label: 'TypeScript'},
   {id: '3', label: 'GraphQL'},
@@ -24,7 +24,7 @@ const skills: XDSSearchableItem[] = [
   {id: '8', label: 'Swift'},
 ];
 
-const skillSource: XDSSearchSource = {
+const skillSource: SearchSource = {
   search: (query: string) =>
     skills.filter(s => s.label.toLowerCase().includes(query.toLowerCase())),
   bootstrap: () => skills,
@@ -33,18 +33,18 @@ const skillSource: XDSSearchSource = {
 const MAX_SKILLS = 3;
 
 export default function TokenizerMaxEntries() {
-  const [value, setValue] = useState<XDSSearchableItem[]>([
+  const [value, setValue] = useState<SearchableItem[]>([
     skills[0],
     skills[1],
   ]);
 
   return (
-    <XDSStack direction="vertical" gap={2}>
-      <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={2}>
+      <Text type="supporting" color="secondary">
         Limited to {MAX_SKILLS} selections — {MAX_SKILLS - value.length}{' '}
         remaining
-      </XDSText>
-      <XDSTokenizer
+      </Text>
+      <Tokenizer
         label="Top Skills"
         placeholder="Search skills..."
         description={`Choose up to ${MAX_SKILLS} skills`}
@@ -54,6 +54,6 @@ export default function TokenizerMaxEntries() {
         maxEntries={MAX_SKILLS}
         xstyle={styles.fixed}
       />
-    </XDSStack>
+    </Stack>
   );
 }

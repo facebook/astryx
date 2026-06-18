@@ -2,19 +2,19 @@
 
 'use client';
 
-import {XDSChatComposer, XDSChatComposerInput} from '@xds/core/Chat';
-import {XDSStack} from '@xds/core/Layout';
+import {ChatComposer, ChatComposerInput} from '@xds/core/Chat';
+import {Stack} from '@xds/core/Layout';
 
 export default function ChatComposerInputDisabled() {
   return (
-    <XDSStack direction="vertical" style={{width: '100%', maxWidth: 450}}>
-      <XDSChatComposer
+    <Stack direction="vertical" style={{width: '100%', maxWidth: 450}}>
+      <ChatComposer
         onSubmit={() => {}}
         isDisabled
         input={
-          <XDSChatComposerInput isDisabled placeholder="Input is disabled" />
+          <ChatComposerInput isDisabled placeholder="Input is disabled" />
         }
       />
-    </XDSStack>
+    </Stack>
   );
 }

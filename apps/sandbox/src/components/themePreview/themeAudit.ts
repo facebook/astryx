@@ -17,7 +17,7 @@
  *        section renders) and bucket the ΔE as exact / snapped / near / off.
  */
 
-import type {XDSDefinedTheme} from '@xds/core/theme';
+import type {DefinedTheme} from '@xds/core/theme';
 import {xdsTokenDefaults} from '@xds/core/theme';
 import {
   findClosestRampStep,
@@ -158,7 +158,7 @@ export interface TokenDiff {
  * the result so the UI can offer a "show unchanged" toggle for the
  * exhaustive case where a theme author wants to confirm a default landed.
  */
-export function diffThemeTokens(theme: XDSDefinedTheme): TokenDiff {
+export function diffThemeTokens(theme: DefinedTheme): TokenDiff {
   const themeTokens = theme.tokens;
   const allKeys = new Set<string>([
     ...Object.keys(xdsTokenDefaults),
@@ -426,7 +426,7 @@ export interface SnapAuditEntry {
  * out so the audit table stays focused on actionable rows.
  */
 export function auditSnapToRamps(
-  theme: XDSDefinedTheme,
+  theme: DefinedTheme,
   rampSeeds: RampSeed[],
 ): SnapAuditEntry[] {
   const out: SnapAuditEntry[] = [];

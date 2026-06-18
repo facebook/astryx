@@ -4,12 +4,12 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSDivider} from '@xds/core';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Button} from '@xds/core/Button';
+import {Text, Heading} from '@xds/core/Text';
+import {TextInput} from '@xds/core/TextInput';
+import {Badge} from '@xds/core/Badge';
+import {Divider} from '@xds/core';
 
 const styles = stylex.create({
   main: {
@@ -37,87 +37,87 @@ export default function Home() {
   return (
     <main {...stylex.props(styles.main)}>
       <div {...stylex.props(styles.container)}>
-        <XDSVStack gap={6}>
-          <XDSVStack gap={2}>
-            <XDSHeading level={1}>XDS + StyleX (Dist Build)</XDSHeading>
-            <XDSText type="body" color="secondary">
+        <VStack gap={6}>
+          <VStack gap={2}>
+            <Heading level={1}>XDS + StyleX (Dist Build)</Heading>
+            <Text type="body" color="secondary">
               This example consumes{' '}
-              <XDSText type="body" weight="bold">
+              <Text type="body" weight="bold">
                 @xds/core
-              </XDSText>{' '}
+              </Text>{' '}
               
               as a pre-built dist package. StyleX is only used for
               product-level layout styles, not to compile XDS itself. XDS
               handles components, theming, and design tokens.
-            </XDSText>
-          </XDSVStack>
+            </Text>
+          </VStack>
 
-          <XDSDivider />
+          <Divider />
 
           {/* Buttons */}
-          <XDSVStack gap={3}>
-            <XDSHeading level={2}>Buttons</XDSHeading>
-            <XDSHStack gap={3} vAlign="center">
-              <XDSButton label="Primary" variant="primary" />
-              <XDSButton label="Secondary" variant="secondary" />
-              <XDSButton label="Ghost" variant="ghost" />
-            </XDSHStack>
-          </XDSVStack>
+          <VStack gap={3}>
+            <Heading level={2}>Buttons</Heading>
+            <HStack gap={3} vAlign="center">
+              <Button label="Primary" variant="primary" />
+              <Button label="Secondary" variant="secondary" />
+              <Button label="Ghost" variant="ghost" />
+            </HStack>
+          </VStack>
 
-          <XDSDivider />
+          <Divider />
 
           {/* Badges */}
-          <XDSVStack gap={3}>
-            <XDSHeading level={2}>Badges</XDSHeading>
-            <XDSHStack gap={3} vAlign="center">
-              <XDSBadge variant="info" label="Info" />
-              <XDSBadge variant="success" label="Success" />
-              <XDSBadge variant="warning" label="Warning" />
-              <XDSBadge variant="error" label="Error" />
-            </XDSHStack>
-          </XDSVStack>
+          <VStack gap={3}>
+            <Heading level={2}>Badges</Heading>
+            <HStack gap={3} vAlign="center">
+              <Badge variant="info" label="Info" />
+              <Badge variant="success" label="Success" />
+              <Badge variant="warning" label="Warning" />
+              <Badge variant="error" label="Error" />
+            </HStack>
+          </VStack>
 
-          <XDSDivider />
+          <Divider />
 
           {/* Text Input */}
-          <XDSVStack gap={3}>
-            <XDSHeading level={2}>Text Input</XDSHeading>
-            <XDSTextInput
+          <VStack gap={3}>
+            <Heading level={2}>Text Input</Heading>
+            <TextInput
               label="Email address"
               placeholder="you@example.com"
               value={email}
               onChange={setEmail}
             />
-          </XDSVStack>
+          </VStack>
 
-          <XDSDivider />
+          <Divider />
 
           {/* StyleX custom styling */}
-          <XDSVStack gap={3}>
-            <XDSHeading level={2}>StyleX Integration</XDSHeading>
+          <VStack gap={3}>
+            <Heading level={2}>StyleX Integration</Heading>
             <div {...stylex.props(styles.card)}>
-              <XDSText type="body">
+              <Text type="body">
                 This card uses StyleX for layout with XDS design tokens via CSS
                 custom properties. StyleX compiles your app styles at build time
                 while XDS component CSS comes pre-built from the dist package.
-              </XDSText>
+              </Text>
             </div>
-          </XDSVStack>
+          </VStack>
 
-          <XDSDivider />
+          <Divider />
 
           {/* Typography */}
-          <XDSVStack gap={3}>
-            <XDSHeading level={2}>Typography</XDSHeading>
-            <XDSText type="large" weight="bold">
+          <VStack gap={3}>
+            <Heading level={2}>Typography</Heading>
+            <Text type="large" weight="bold">
               Large bold text
-            </XDSText>
-            <XDSText type="body">Default body text</XDSText>
-            <XDSText type="supporting" color="secondary">
+            </Text>
+            <Text type="body">Default body text</Text>
+            <Text type="supporting" color="secondary">
               Supporting text in secondary color
-            </XDSText>
-          </XDSVStack>
-        </XDSVStack>
+            </Text>
+          </VStack>
+        </VStack>
       </div>
     </main>
   );

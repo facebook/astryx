@@ -2,23 +2,23 @@
 
 'use client';
 
-import {useXDSTheme} from '@xds/core/theme';
-import {XDSCard} from '@xds/core/Card';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {useTheme} from '@xds/core/theme';
+import {Card} from '@xds/core/Card';
+import {HStack, VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
-export default function UseXDSThemeHookUsage() {
-  const {name, mode, token} = useXDSTheme();
+export default function UseThemeHookUsage() {
+  const {name, mode, token} = useTheme();
   const accent = token('--color-accent');
   const muted = token('--color-accent-muted');
   const text = token('--color-text-primary');
 
   return (
-    <XDSCard width={360} padding={4}>
-      <XDSVStack gap={3}>
-        <XDSText type="body" weight="bold">
+    <Card width={360} padding={4}>
+      <VStack gap={3}>
+        <Text type="body" weight="bold">
           {name} · {mode}
-        </XDSText>
+        </Text>
         <svg width="300" height="120" role="img" aria-label="Themed bar chart">
           <rect x="24" y="20" width="64" height="80" rx="8" fill={accent} />
           <rect x="118" y="48" width="64" height="52" rx="8" fill={muted} />
@@ -35,13 +35,13 @@ export default function UseXDSThemeHookUsage() {
             Resolved token values
           </text>
         </svg>
-        <XDSHStack gap={2}>
-          <XDSText type="code">--color-accent</XDSText>
-          <XDSText type="code" color="secondary">
+        <HStack gap={2}>
+          <Text type="code">--color-accent</Text>
+          <Text type="code" color="secondary">
             {accent}
-          </XDSText>
-        </XDSHStack>
-      </XDSVStack>
-    </XDSCard>
+          </Text>
+        </HStack>
+      </VStack>
+    </Card>
   );
 }

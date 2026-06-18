@@ -3,20 +3,20 @@
 'use client';
 
 import {useState, useCallback, useRef} from 'react';
-import {XDSVStack, XDSHStack} from '@xds/core/Stack';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSCard} from '@xds/core/Card';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSBadge} from '@xds/core/Badge';
+import {VStack, HStack} from '@xds/core/Stack';
+import {Text, Heading} from '@xds/core/Text';
+import {Card} from '@xds/core/Card';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
+import {Divider} from '@xds/core/Divider';
+import {Badge} from '@xds/core/Badge';
 import {
-  XDSChatComposer,
-  XDSChatDictationButton,
-  useXDSChatDictation,
-  XDSChatComposerInput,
+  ChatComposer,
+  ChatDictationButton,
+  useChatDictation,
+  ChatComposerInput,
 } from '@xds/core/Chat';
-import type {XDSChatComposerInputHandle} from '@xds/core/Chat';
+import type {ChatComposerInputHandle} from '@xds/core/Chat';
 
 // =============================================================================
 // Shared AudioContext — Safari fix
@@ -345,7 +345,7 @@ function SoundBarsButton({
   dictation,
   size = 'md',
 }: {
-  dictation: ReturnType<typeof useXDSChatDictation>;
+  dictation: ReturnType<typeof useChatDictation>;
   size?: 'sm' | 'md';
 }) {
   const {isListening, bands, volume} = dictation;
@@ -404,13 +404,13 @@ function SoundBarsButton({
           })}
         </span>
       )}
-      <XDSButton
+      <Button
         label={isListening ? 'Stop dictation' : 'Start dictation'}
         aria-label={isListening ? 'Stop dictation' : 'Start dictation'}
         variant="ghost"
         size={size}
         icon={
-          isListening ? undefined : <XDSIcon icon="microphone" size={size} />
+          isListening ? undefined : <Icon icon="microphone" size={size} />
         }
         isIconOnly
         onClick={dictation.toggle}
@@ -432,9 +432,9 @@ export default function DictationLabPage() {
   const [messages, setMessages] = useState<string[]>([]);
   const [selectedAttack, setSelectedAttack] = useState('drip');
   const [selectedPattern, setSelectedPattern] = useState('v-i');
-  const inputRef = useRef<XDSChatComposerInputHandle>(null);
+  const inputRef = useRef<ChatComposerInputHandle>(null);
 
-  const dictation = useXDSChatDictation({
+  const dictation = useChatDictation({
     inputRef,
     hasSounds: true,
     onResult: text => {
@@ -450,47 +450,47 @@ export default function DictationLabPage() {
 
   return (
     <div style={{maxWidth: 800, margin: '0 auto', padding: 32}}>
-      <XDSVStack gap={6}>
-        <XDSVStack gap={2}>
-          <XDSHeading level={2}>Dictation Lab</XDSHeading>
-          <XDSText type="body" color="secondary">
+      <VStack gap={6}>
+        <VStack gap={2}>
+          <Heading level={2}>Dictation Lab</Heading>
+          <Text type="body" color="secondary">
             Test voice dictation, tune sound effects, and explore animation
             variants.
-          </XDSText>
-        </XDSVStack>
+          </Text>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
         {/* ---- Live Demo ---- */}
-        <XDSVStack gap={3}>
-          <XDSHeading level={3}>Live Demo</XDSHeading>
-          <XDSText type="supporting" color="secondary">
+        <VStack gap={3}>
+          <Heading level={3}>Live Demo</Heading>
+          <Text type="supporting" color="secondary">
             
             Click the mic button to start dictating. Speak naturally; the
             volume ring reacts to your voice.
-          </XDSText>
+          </Text>
 
           {messages.length > 0 && (
-            <XDSCard>
-              <XDSVStack gap={2} style={{padding: 12}}>
+            <Card>
+              <VStack gap={2} style={{padding: 12}}>
                 {messages.map((msg, i) => (
-                  <XDSText type="body" key={i}>
+                  <Text type="body" key={i}>
                     {msg}
-                  </XDSText>
+                  </Text>
                 ))}
-              </XDSVStack>
-            </XDSCard>
+              </VStack>
+            </Card>
           )}
 
-          <XDSChatComposer
+          <ChatComposer
             onSubmit={handleSubmit}
-            input={<XDSChatComposerInput handleRef={inputRef} />}
-            sendActions={<XDSChatDictationButton dictation={dictation} />}
+            input={<ChatComposerInput handleRef={inputRef} />}
+            sendActions={<ChatDictationButton dictation={dictation} />}
           />
 
           {dictation.isListening && (
-            <XDSHStack gap={3} vAlign="center">
-              <XDSBadge label="Listening" variant="red" />
+            <HStack gap={3} vAlign="center">
+              <Badge label="Listening" variant="red" />
               <div
                 style={{
                   flex: 1,
@@ -512,20 +512,20 @@ export default function DictationLabPage() {
                   }}
                 />
               </div>
-              <XDSText
+              <Text
                 type="supporting"
                 style={{fontFamily: 'monospace', minWidth: 40}}>
                 {dictation.volume.toFixed(2)}
-              </XDSText>
-            </XDSHStack>
+              </Text>
+            </HStack>
           )}
 
           {/* Debug: Raw vs Calibrated bands */}
           {dictation.isListening && (
-            <XDSVStack gap={1}>
-              <XDSText type="supporting" weight="semibold">
+            <VStack gap={1}>
+              <Text type="supporting" weight="semibold">
                 Band Debug (raw vs calibrated)
-              </XDSText>
+              </Text>
               <div
                 style={{
                   display: 'flex',
@@ -586,40 +586,40 @@ export default function DictationLabPage() {
                   },
                 )}
               </div>
-              <XDSText type="supporting" color="disabled">
+              <Text type="supporting" color="disabled">
                 Gray = raw mic input, Blue = after noise floor subtraction
-              </XDSText>
-            </XDSVStack>
+              </Text>
+            </VStack>
           )}
 
-          <XDSHStack gap={2} vAlign="center">
-            <XDSText type="supporting" color="secondary">
+          <HStack gap={2} vAlign="center">
+            <Text type="supporting" color="secondary">
               Sound bars variant:
-            </XDSText>
+            </Text>
             <SoundBarsButton dictation={dictation} />
-          </XDSHStack>
+          </HStack>
 
           {!dictation.isSupported && (
-            <XDSBadge
+            <Badge
               label="SpeechRecognition not supported in this browser"
               variant="yellow"
             />
           )}
-        </XDSVStack>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
         {/* ---- Sound Mixer ---- */}
-        <XDSVStack gap={3}>
-          <XDSHeading level={3}>Sound Mixer</XDSHeading>
-          <XDSText type="supporting" color="secondary">
+        <VStack gap={3}>
+          <Heading level={3}>Sound Mixer</Heading>
+          <Text type="supporting" color="secondary">
             
             Combine any attack style with any note pattern. All synthesized: no
             audio files.
-          </XDSText>
+          </Text>
 
-          <XDSHStack gap={3} vAlign="center">
-            <XDSText type="supporting">Volume</XDSText>
+          <HStack gap={3} vAlign="center">
+            <Text type="supporting">Volume</Text>
             <input
               type="range"
               min={0.05}
@@ -629,18 +629,18 @@ export default function DictationLabPage() {
               onChange={e => setVolume(parseFloat(e.target.value))}
               style={{flex: 1, maxWidth: 200}}
             />
-            <XDSText
+            <Text
               type="supporting"
               style={{fontFamily: 'monospace', minWidth: 40}}>
               {volume.toFixed(2)}
-            </XDSText>
-          </XDSHStack>
+            </Text>
+          </HStack>
 
-          <XDSVStack gap={1}>
-            <XDSText type="label">Attack Style</XDSText>
-            <XDSHStack gap={1} wrap="wrap">
+          <VStack gap={1}>
+            <Text type="label">Attack Style</Text>
+            <HStack gap={1} wrap="wrap">
               {attackStyles.map(s => (
-                <XDSButton
+                <Button
                   key={s.id}
                   label={s.label}
                   variant={selectedAttack === s.id ? 'primary' : 'ghost'}
@@ -648,14 +648,14 @@ export default function DictationLabPage() {
                   onClick={() => setSelectedAttack(s.id)}
                 />
               ))}
-            </XDSHStack>
-          </XDSVStack>
+            </HStack>
+          </VStack>
 
-          <XDSVStack gap={1}>
-            <XDSText type="label">Note Pattern</XDSText>
-            <XDSHStack gap={1} wrap="wrap">
+          <VStack gap={1}>
+            <Text type="label">Note Pattern</Text>
+            <HStack gap={1} wrap="wrap">
               {notePatterns.map(p => (
-                <XDSButton
+                <Button
                   key={p.id}
                   label={p.label}
                   variant={selectedPattern === p.id ? 'primary' : 'ghost'}
@@ -663,16 +663,16 @@ export default function DictationLabPage() {
                   onClick={() => setSelectedPattern(p.id)}
                 />
               ))}
-            </XDSHStack>
-          </XDSVStack>
+            </HStack>
+          </VStack>
 
-          <XDSHStack gap={3} vAlign="center">
-            <XDSText type="body" weight="medium">
+          <HStack gap={3} vAlign="center">
+            <Text type="body" weight="medium">
               {attackStyles.find(s => s.id === selectedAttack)?.label}
               {' \u00d7 '}
               {notePatterns.find(p => p.id === selectedPattern)?.label}
-            </XDSText>
-            <XDSButton
+            </Text>
+            <Button
               label="Preview Start"
               variant="secondary"
               size="sm"
@@ -686,7 +686,7 @@ export default function DictationLabPage() {
                 }
               }}
             />
-            <XDSButton
+            <Button
               label="Preview Stop"
               variant="ghost"
               size="sm"
@@ -700,13 +700,13 @@ export default function DictationLabPage() {
                 }
               }}
             />
-          </XDSHStack>
+          </HStack>
 
-          <XDSText type="supporting" color="secondary">
+          <Text type="supporting" color="secondary">
             {notePatterns.find(p => p.id === selectedPattern)?.desc}
-          </XDSText>
-        </XDSVStack>
-      </XDSVStack>
+          </Text>
+        </VStack>
+      </VStack>
     </div>
   );
 }

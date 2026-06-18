@@ -4,8 +4,8 @@
 
 import {useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSHeading} from '@xds/core/Text';
+import {VStack} from '@xds/core/Layout';
+import {Heading} from '@xds/core/Text';
 import type {ReferenceSection, ContentBlock} from '@xds/core';
 import {ContentBlockRenderer} from './content-blocks';
 
@@ -59,16 +59,16 @@ export function SectionRenderer({section}: {section: ReferenceSection}) {
   );
 
   return (
-    <XDSVStack gap={4}>
-      <XDSHeading
+    <VStack gap={4}>
+      <Heading
         level={2}
         id={section.title.toLowerCase().replace(/\s+/g, '-')}
         xstyle={styles.sectionTitle}>
         {section.title}
-      </XDSHeading>
+      </Heading>
       {mergedContent.map((block, i) => (
         <ContentBlockRenderer key={i} block={block} />
       ))}
-    </XDSVStack>
+    </VStack>
   );
 }

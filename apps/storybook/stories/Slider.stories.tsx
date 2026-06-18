@@ -3,11 +3,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSSlider} from '@xds/core/Slider';
+import {Slider} from '@xds/core/Slider';
 
-const meta: Meta<typeof XDSSlider> = {
+const meta: Meta<typeof Slider> = {
   title: 'Core/Slider',
-  component: XDSSlider,
+  component: Slider,
   tags: ['autodocs'],
   argTypes: {
     label: {
@@ -49,12 +49,12 @@ const meta: Meta<typeof XDSSlider> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSSlider>;
+type Story = StoryObj<typeof Slider>;
 
 export const Default: Story = {
   render: args => {
     const [value, setValue] = useState(50);
-    return <XDSSlider {...(args as any)} value={value} onChange={setValue} />;
+    return <Slider {...(args as any)} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Volume',
@@ -64,7 +64,7 @@ export const Default: Story = {
 export const Range: Story = {
   render: args => {
     const [value, setValue] = useState<[number, number]>([20, 80]);
-    return <XDSSlider {...(args as any)} value={value} onChange={setValue} />;
+    return <Slider {...(args as any)} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Price range',
@@ -74,7 +74,7 @@ export const Range: Story = {
 export const WithMarks: Story = {
   render: args => {
     const [value, setValue] = useState(50);
-    return <XDSSlider {...(args as any)} value={value} onChange={setValue} />;
+    return <Slider {...(args as any)} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Volume',
@@ -92,7 +92,7 @@ export const CustomStep: Story = {
   render: args => {
     const [value, setValue] = useState(50);
     return (
-      <XDSSlider
+      <Slider
         {...(args as any)}
         value={value}
         onChange={setValue}
@@ -112,7 +112,7 @@ export const WithFormatValue: Story = {
   render: args => {
     const [value, setValue] = useState(72);
     return (
-      <XDSSlider
+      <Slider
         {...(args as any)}
         value={value}
         onChange={setValue}
@@ -131,7 +131,7 @@ export const WithFormatValue: Story = {
 
 export const Disabled: Story = {
   render: args => {
-    return <XDSSlider {...(args as any)} />;
+    return <Slider {...(args as any)} />;
   },
   args: {
     label: 'Volume',
@@ -145,7 +145,7 @@ export const VerticalOrientation: Story = {
     const [value, setValue] = useState(50);
     return (
       <div style={{height: 200}}>
-        <XDSSlider {...(args as any)} value={value} onChange={setValue} />
+        <Slider {...(args as any)} value={value} onChange={setValue} />
       </div>
     );
   },
@@ -168,19 +168,19 @@ export const WithStatus: Story = {
           gap: '24px',
           maxWidth: '400px',
         }}>
-        <XDSSlider
+        <Slider
           label="CPU Usage"
           value={value1}
           onChange={setValue1}
           status={{type: 'error', message: 'CPU usage is critically high'}}
         />
-        <XDSSlider
+        <Slider
           label="Memory"
           value={value2}
           onChange={setValue2}
           status={{type: 'warning', message: 'Memory usage is moderate'}}
         />
-        <XDSSlider
+        <Slider
           label="Disk"
           value={value3}
           onChange={setValue3}
@@ -205,9 +205,9 @@ export const AllVariations: Story = {
           gap: '32px',
           maxWidth: '400px',
         }}>
-        <XDSSlider label="Default slider" value={v1} onChange={setV1} />
-        <XDSSlider label="Range slider" value={v2} onChange={setV2} />
-        <XDSSlider
+        <Slider label="Default slider" value={v1} onChange={setV1} />
+        <Slider label="Range slider" value={v2} onChange={setV2} />
+        <Slider
           label="With marks"
           value={v3}
           onChange={setV3}
@@ -217,7 +217,7 @@ export const AllVariations: Story = {
             {value: 100, label: '100%'},
           ]}
         />
-        <XDSSlider
+        <Slider
           label="With text display"
           value={v4}
           onChange={setV4}
@@ -226,8 +226,8 @@ export const AllVariations: Story = {
           min={60}
           max={90}
         />
-        <XDSSlider label="Disabled" value={50} isDisabled />
-        <XDSSlider
+        <Slider label="Disabled" value={50} isDisabled />
+        <Slider
           label="No value display"
           value={v1}
           onChange={setV1}

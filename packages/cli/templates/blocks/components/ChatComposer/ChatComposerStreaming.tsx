@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSChatComposer} from '@xds/core/Chat';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {ChatComposer} from '@xds/core/Chat';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function ChatComposerStreaming() {
   const [isStreaming, setIsStreaming] = useState(false);
@@ -14,17 +14,17 @@ export default function ChatComposerStreaming() {
   );
 
   return (
-    <XDSStack
+    <Stack
       direction="vertical"
       gap={4}
       style={{width: '100%', maxWidth: 450}}>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           {isStreaming
             ? 'Streaming — click stop to cancel'
             : 'Send a message to start streaming'}
-        </XDSText>
-        <XDSChatComposer
+        </Text>
+        <ChatComposer
           value={value}
           onChange={setValue}
           onSubmit={value => {
@@ -40,7 +40,7 @@ export default function ChatComposerStreaming() {
           }}
           placeholder="Send a message to start streaming..."
         />
-      </XDSStack>
-    </XDSStack>
+      </Stack>
+    </Stack>
   );
 }

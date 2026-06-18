@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSStack} from '@xds/core/Layout';
+import {TextInput} from '@xds/core/TextInput';
+import {Stack} from '@xds/core/Layout';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
 export default function TextInputSearch() {
@@ -13,8 +13,8 @@ export default function TextInputSearch() {
 
   return (
     <div style={{width: 300}}>
-      <XDSStack direction="vertical" gap={3}>
-        <XDSTextInput
+      <Stack direction="vertical" gap={3}>
+        <TextInput
           label="Search field"
           value={query}
           onChange={setQuery}
@@ -22,7 +22,7 @@ export default function TextInputSearch() {
           startIcon={MagnifyingGlassIcon}
           hasClear
         />
-        <XDSTextInput
+        <TextInput
           label="Search field with value"
           value={filter}
           onChange={setFilter}
@@ -30,7 +30,7 @@ export default function TextInputSearch() {
           startIcon={MagnifyingGlassIcon}
           hasClear
         />
-      </XDSStack>
+      </Stack>
     </div>
   );
 }

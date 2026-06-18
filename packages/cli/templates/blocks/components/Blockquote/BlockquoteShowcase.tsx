@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSBlockquote} from '@xds/core/Blockquote';
-import {XDSStack} from '@xds/core/Layout';
+import {Blockquote} from '@xds/core/Blockquote';
+import {Stack} from '@xds/core/Layout';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
@@ -14,15 +14,15 @@ const styles = stylex.create({
 
 export default function BlockquoteShowcase() {
   return (
-    <XDSStack direction="vertical" gap={4} xstyle={styles.root}>
-      <XDSBlockquote>
+    <Stack direction="vertical" gap={4} xstyle={styles.root}>
+      <Blockquote>
         Design is not just what it looks like and feels like. Design is how it
         works.
-      </XDSBlockquote>
-      <XDSBlockquote cite="Steve Jobs">
+      </Blockquote>
+      <Blockquote cite="Steve Jobs">
         The people who are crazy enough to think they can change the world are
         the ones who do.
-      </XDSBlockquote>
-    </XDSStack>
+      </Blockquote>
+    </Stack>
   );
 }

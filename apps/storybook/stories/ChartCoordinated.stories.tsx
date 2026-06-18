@@ -3,17 +3,17 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState, useMemo} from 'react';
 import {
-  XDSChart,
-  XDSChartAxis,
-  XDSChartGrid,
-  XDSChartDot,
-  XDSChartBar,
-  XDSChartBrush,
-  XDSChartReferenceLine,
-  useXDSChartColors,
+  Chart,
+  ChartAxis,
+  ChartGrid,
+  ChartDot,
+  ChartBar,
+  ChartBrush,
+  ChartReferenceLine,
+  useChartColors,
 } from '@xds/lab';
-import {XDSStack, XDSText} from '@xds/core';
-import {XDSHeading} from '@xds/core/Text';
+import {Stack, Text} from '@xds/core';
+import {Heading} from '@xds/core/Text';
 import {useDataset} from './useDataset';
 
 const meta: Meta = {title: 'Lab/Chart Interactions/Coordinated Views'};
@@ -31,7 +31,7 @@ type Car = {
 /** Brush on scatter filters bar chart + table — coordinated views */
 export const CoordinatedViews: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
+    const colors = useChartColors();
     const [raw] = useDataset<Car>('cars.json');
     const [brushRange, setBrushRange] = useState<[number, number] | null>(null);
 
@@ -91,73 +91,73 @@ export const CoordinatedViews: StoryObj = {
     );
 
     if (!allData.length) {
-      return <XDSText type="supporting">Loading\u2026</XDSText>;
+      return <Text type="supporting">Loading\u2026</Text>;
     }
 
     const c = colors.categorical(3);
 
     return (
-      <XDSStack direction="vertical" gap={6}>
-        <XDSHeading level={3}>Coordinated Views</XDSHeading>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={6}>
+        <Heading level={3}>Coordinated Views</Heading>
+        <Text type="supporting" color="secondary">
           Brush on the scatter to filter the bar chart and table below.
           {brushRange
             ? ` Showing ${filteredData.length} cars with ${Math.round(brushRange[0])}\u2013${Math.round(brushRange[1])} HP.`
             : ` Showing all ${allData.length} cars.`}
-        </XDSText>
+        </Text>
 
         {/* Scatter with brush */}
-        <XDSStack direction="vertical" gap={1}>
-          <XDSText type="label">Horsepower vs MPG</XDSText>
-          <XDSChart
+        <Stack direction="vertical" gap={1}>
+          <Text type="label">Horsepower vs MPG</Text>
+          <Chart
             data={scatterData}
             xKey="hp"
             yKeys={['mpg']}
             yBaseline="data"
             height={280}>
-            <XDSChartGrid horizontal vertical />
-            <XDSChartAxis position="bottom" />
-            <XDSChartAxis position="left" />
-            <XDSChartDot dataKey="mpg" color={c[0]} radius={3} />
-            <XDSChartBrush
+            <ChartGrid horizontal vertical />
+            <ChartAxis position="bottom" />
+            <ChartAxis position="left" />
+            <ChartDot dataKey="mpg" color={c[0]} radius={3} />
+            <ChartBrush
               onBrush={range => setBrushRange(range.x)}
               onClear={() => setBrushRange(null)}
             />
             {brushRange && (
               <>
-                <XDSChartReferenceLine
+                <ChartReferenceLine
                   x={brushRange[0]}
                   color={c[0]}
                   strokeDasharray="none"
                 />
-                <XDSChartReferenceLine
+                <ChartReferenceLine
                   x={brushRange[1]}
                   color={c[0]}
                   strokeDasharray="none"
                 />
               </>
             )}
-          </XDSChart>
-        </XDSStack>
+          </Chart>
+        </Stack>
 
         {/* Bar chart — reacts to brush */}
-        <XDSStack direction="vertical" gap={1}>
-          <XDSText type="label">Average MPG by Origin (filtered)</XDSText>
-          <XDSChart
+        <Stack direction="vertical" gap={1}>
+          <Text type="label">Average MPG by Origin (filtered)</Text>
+          <Chart
             data={barData}
             xKey="origin"
             yKeys={['avgMpg']}
             height={200}>
-            <XDSChartGrid horizontal />
-            <XDSChartAxis position="bottom" />
-            <XDSChartAxis position="left" />
-            <XDSChartBar dataKey="avgMpg" color={c[1]} />
-          </XDSChart>
-        </XDSStack>
+            <ChartGrid horizontal />
+            <ChartAxis position="bottom" />
+            <ChartAxis position="left" />
+            <ChartBar dataKey="avgMpg" color={c[1]} />
+          </Chart>
+        </Stack>
 
         {/* Table — reacts to brush */}
-        <XDSStack direction="vertical" gap={1}>
-          <XDSText type="label">Top 10 cars (filtered)</XDSText>
+        <Stack direction="vertical" gap={1}>
+          <Text type="label">Top 10 cars (filtered)</Text>
           <div style={{fontSize: 12, overflow: 'auto'}}>
             <table style={{width: '100%', borderCollapse: 'collapse'}}>
               <thead>
@@ -186,8 +186,8 @@ export const CoordinatedViews: StoryObj = {
               </tbody>
             </table>
           </div>
-        </XDSStack>
-      </XDSStack>
+        </Stack>
+      </Stack>
     );
   },
 };

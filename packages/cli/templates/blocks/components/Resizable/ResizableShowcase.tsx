@@ -2,38 +2,38 @@
 
 'use client';
 
-import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
+import {useResizable, ResizeHandle} from '@xds/core/Resizable';
 import {
-  XDSCard,
-  XDSLayout,
-  XDSLayoutContent,
-  XDSLayoutPanel,
-  XDSVStack,
+  Card,
+  Layout,
+  LayoutContent,
+  LayoutPanel,
+  VStack,
 } from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
+import {Text, Heading} from '@xds/core/Text';
 
 export default function ResizableShowcase() {
-  const sidebar = useXDSResizable({
+  const sidebar = useResizable({
     defaultSize: 200,
     minSizePx: 120,
     maxSizePx: 400,
   });
 
   return (
-    <XDSCard variant="muted" height={280} width={600}>
-      <XDSLayout
+    <Card variant="muted" height={280} width={600}>
+      <Layout
         height="fill"
         start={
           <>
-            <XDSLayoutPanel width={sidebar.size} hasDivider={false}>
-              <XDSVStack gap={2}>
-                <XDSHeading level={4}>Sidebar</XDSHeading>
-                <XDSText color="secondary">
+            <LayoutPanel width={sidebar.size} hasDivider={false}>
+              <VStack gap={2}>
+                <Heading level={4}>Sidebar</Heading>
+                <Text color="secondary">
                   {Math.round(sidebar.size)}px wide
-                </XDSText>
-              </XDSVStack>
-            </XDSLayoutPanel>
-            <XDSResizeHandle
+                </Text>
+              </VStack>
+            </LayoutPanel>
+            <ResizeHandle
               direction="horizontal"
               hasDivider
               resizable={sidebar.props}
@@ -42,16 +42,16 @@ export default function ResizableShowcase() {
           </>
         }
         content={
-          <XDSLayoutContent>
-            <XDSVStack gap={2}>
-              <XDSHeading level={4}>Content</XDSHeading>
-              <XDSText color="secondary">
+          <LayoutContent>
+            <VStack gap={2}>
+              <Heading level={4}>Content</Heading>
+              <Text color="secondary">
                 Drag the handle to resize the sidebar.
-              </XDSText>
-            </XDSVStack>
-          </XDSLayoutContent>
+              </Text>
+            </VStack>
+          </LayoutContent>
         }
       />
-    </XDSCard>
+    </Card>
   );
 }

@@ -2,36 +2,36 @@
 
 'use client';
 
-import {useXDSPopover} from '@xds/core/Popover';
-import {XDSButton} from '@xds/core/Button';
-import {XDSCard} from '@xds/core/Card';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {usePopover} from '@xds/core/Popover';
+import {Button} from '@xds/core/Button';
+import {Card} from '@xds/core/Card';
+import {Center} from '@xds/core/Center';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function PopoverHookUsage() {
-  const popover = useXDSPopover({dialogLabel: 'Quick actions'});
+  const popover = usePopover({dialogLabel: 'Quick actions'});
 
   return (
-    <XDSCenter height={240}>
-      <XDSButton
+    <Center height={240}>
+      <Button
         label="Open actions"
         ref={popover.triggerRef}
         onClick={popover.toggle}
         {...popover.triggerProps}
       />
       {popover.render(
-        <XDSCard width={220} padding={3} variant="transparent">
-          <XDSVStack gap={2}>
-            <XDSText type="body" weight="bold">
+        <Card width={220} padding={3} variant="transparent">
+          <VStack gap={2}>
+            <Text type="body" weight="bold">
               Quick actions
-            </XDSText>
-            <XDSButton label="Create task" size="sm" />
-            <XDSButton label="Share report" variant="secondary" size="sm" />
-          </XDSVStack>
-        </XDSCard>,
+            </Text>
+            <Button label="Create task" size="sm" />
+            <Button label="Share report" variant="secondary" size="sm" />
+          </VStack>
+        </Card>,
         {placement: 'below', alignment: 'center'},
       )}
-    </XDSCenter>
+    </Center>
   );
 }

@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSCheckboxList, XDSCheckboxListItem} from '@xds/core/CheckboxList';
-import {XDSDivider} from '@xds/core/Divider';
+import {CheckboxList, CheckboxListItem} from '@xds/core/CheckboxList';
+import {Divider} from '@xds/core/Divider';
 
 const DOCUMENTS = [
   {id: 'transactions', label: 'Transaction history'},
@@ -27,17 +27,17 @@ export default function CheckboxListSelectAllPattern() {
       : ('indeterminate' as const);
 
   return (
-    <XDSCheckboxList label="Include in export">
-      <XDSCheckboxListItem
+    <CheckboxList label="Include in export">
+      <CheckboxListItem
         label="Select all"
         isChecked={selectAllState}
         onCheck={checked => {
           setSelected(checked ? [...ALL_IDS] : []);
         }}
       />
-      <XDSDivider />
+      <Divider />
       {DOCUMENTS.map(doc => (
-        <XDSCheckboxListItem
+        <CheckboxListItem
           key={doc.id}
           label={doc.label}
           isChecked={selected.includes(doc.id)}
@@ -48,6 +48,6 @@ export default function CheckboxListSelectAllPattern() {
           }}
         />
       ))}
-    </XDSCheckboxList>
+    </CheckboxList>
   );
 }

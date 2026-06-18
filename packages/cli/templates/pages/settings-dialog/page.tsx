@@ -5,27 +5,27 @@
 import React, {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
-  XDSVStack,
-  XDSHStack,
-  XDSStackItem,
-  XDSLayout,
-  XDSLayoutPanel,
-  XDSLayoutContent,
+  VStack,
+  HStack,
+  StackItem,
+  Layout,
+  LayoutPanel,
+  LayoutContent,
 } from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
-import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSCard} from '@xds/core/Card';
-import {XDSSwitch} from '@xds/core/Switch';
-import {XDSLink} from '@xds/core/Link';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSCenter} from '@xds/core/Center';
+import {Text, Heading} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Dialog, DialogHeader} from '@xds/core/Dialog';
+import {List, ListItem} from '@xds/core/List';
+import {Divider} from '@xds/core/Divider';
+import {Selector} from '@xds/core/Selector';
+import {TextInput} from '@xds/core/TextInput';
+import {Card} from '@xds/core/Card';
+import {Switch} from '@xds/core/Switch';
+import {Link} from '@xds/core/Link';
+import {TabList, Tab} from '@xds/core/TabList';
+import {Badge} from '@xds/core/Badge';
+import {Icon} from '@xds/core/Icon';
+import {Center} from '@xds/core/Center';
 import {
   colorVars,
   radiusVars,
@@ -53,15 +53,15 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   // Sticky dialog header bar — no XDS prop for sticky/background/z-index.
-  // Inline + block padding comes from the parent XDSLayoutContent `padding`.
+  // Inline + block padding comes from the parent LayoutContent `padding`.
   headerSticky: {
     position: 'sticky',
     top: 0,
     backgroundColor: colorVars['--color-background-surface'],
     zIndex: 1,
   },
-  // No `maxWidth` prop on XDSVStack — width only. Inline padding comes from
-  // the parent XDSLayoutContent `padding`.
+  // No `maxWidth` prop on VStack — width only. Inline padding comes from
+  // the parent LayoutContent `padding`.
   contentMaxWidth: {
     maxWidth: 680,
   },
@@ -160,37 +160,37 @@ function ExpandableRow({
   return (
     <>
       {isExpanded ? (
-        <XDSVStack gap={4}>
-          <XDSText type="body" weight="semibold" display="block">
+        <VStack gap={4}>
+          <Text type="body" weight="semibold" display="block">
             {label}
-          </XDSText>
+          </Text>
           {children}
-          <XDSHStack gap={2}>
-            <XDSButton label="Save" variant="primary" onClick={onSave} />
-            <XDSButton label="Cancel" variant="ghost" onClick={onCancel} />
-          </XDSHStack>
-        </XDSVStack>
+          <HStack gap={2}>
+            <Button label="Save" variant="primary" onClick={onSave} />
+            <Button label="Cancel" variant="ghost" onClick={onCancel} />
+          </HStack>
+        </VStack>
       ) : (
-        <XDSHStack hAlign="between" vAlign="start">
-          <XDSVStack gap={0}>
-            <XDSText type="body" weight="semibold" display="block">
+        <HStack hAlign="between" vAlign="start">
+          <VStack gap={0}>
+            <Text type="body" weight="semibold" display="block">
               {label}
-            </XDSText>
-            <XDSText type="supporting" color="secondary" display="block">
+            </Text>
+            <Text type="supporting" color="secondary" display="block">
               {value}
-            </XDSText>
-          </XDSVStack>
-          <XDSLink
+            </Text>
+          </VStack>
+          <Link
             href="#"
             onClick={(e: React.MouseEvent) => {
               e.preventDefault();
               onEdit();
             }}>
             Edit
-          </XDSLink>
-        </XDSHStack>
+          </Link>
+        </HStack>
       )}
-      <XDSDivider />
+      <Divider />
     </>
   );
 }
@@ -206,18 +206,18 @@ function InfoRowItem({
 }) {
   return (
     <>
-      <XDSHStack hAlign="between" vAlign="start">
-        <XDSVStack gap={0}>
-          <XDSText type="body" weight="semibold" display="block">
+      <HStack hAlign="between" vAlign="start">
+        <VStack gap={0}>
+          <Text type="body" weight="semibold" display="block">
             {label}
-          </XDSText>
-          <XDSText type="supporting" color="secondary" display="block">
+          </Text>
+          <Text type="supporting" color="secondary" display="block">
             {value}
-          </XDSText>
-        </XDSVStack>
-        {action && <XDSLink href="#">{action}</XDSLink>}
-      </XDSHStack>
-      <XDSDivider />
+          </Text>
+        </VStack>
+        {action && <Link href="#">{action}</Link>}
+      </HStack>
+      <Divider />
     </>
   );
 }
@@ -253,21 +253,20 @@ export default function SettingsDialogTemplate() {
 
   return (
     <>
-      <XDSLayout
+      <Layout
         content={
-          <XDSLayoutContent padding={0}>
-            <XDSCenter height="80vh">
-              <XDSButton
+          <LayoutContent padding={0}>
+            <Center height="80vh">
+              <Button
                 label="Open settings"
                 variant="primary"
                 onClick={() => setIsOpen(true)}
               />
-            </XDSCenter>
-          </XDSLayoutContent>
+            </Center>
+          </LayoutContent>
         }
       />
-
-      <XDSDialog
+      <Dialog
         isOpen={isOpen}
         onOpenChange={open => setIsOpen(open)}
         width={900}
@@ -275,24 +274,24 @@ export default function SettingsDialogTemplate() {
         padding={0}
         purpose="form"
         xstyle={styles.dialogHeight}>
-        <XDSLayout
+        <Layout
           height="fill"
           start={
-            <XDSLayoutPanel
+            <LayoutPanel
               width={280}
               hasDivider
               role="navigation"
               padding={3}>
-              <XDSVStack gap={4}>
-                <XDSHeading level={2} xstyle={styles.sideNavHeading}>
+              <VStack gap={4}>
+                <Heading level={2} xstyle={styles.sideNavHeading}>
                   Account settings
-                </XDSHeading>
-                <XDSList density="spacious">
+                </Heading>
+                <List density="spacious">
                   {NAV_ITEMS.map(item => (
-                    <XDSListItem
+                    <ListItem
                       key={item.label}
                       label={item.label}
-                      startContent={<XDSIcon icon={item.icon} />}
+                      startContent={<Icon icon={item.icon} />}
                       isSelected={activeNav === item.label}
                       onClick={() => {
                         setActiveNav(item.label);
@@ -300,23 +299,23 @@ export default function SettingsDialogTemplate() {
                       }}
                     />
                   ))}
-                </XDSList>
-                <XDSDivider />
-                <XDSList density="spacious">
-                  <XDSListItem
+                </List>
+                <Divider />
+                <List density="spacious">
+                  <ListItem
                     label="Professional hosting tools"
-                    startContent={<XDSIcon icon={WrenchScrewdriverIcon} />}
+                    startContent={<Icon icon={WrenchScrewdriverIcon} />}
                     onClick={() => {}}
                   />
-                </XDSList>
-              </XDSVStack>
-            </XDSLayoutPanel>
+                </List>
+              </VStack>
+            </LayoutPanel>
           }
           content={
-            <XDSLayoutContent isScrollable padding={6}>
-              <XDSVStack gap={6}>
-                <XDSVStack xstyle={styles.headerSticky}>
-                  <XDSDialogHeader
+            <LayoutContent isScrollable padding={6}>
+              <VStack gap={6}>
+                <VStack xstyle={styles.headerSticky}>
+                  <DialogHeader
                     title={
                       activeNav === 'Personal information'
                         ? 'Personal info'
@@ -325,11 +324,11 @@ export default function SettingsDialogTemplate() {
                     onOpenChange={open => setIsOpen(open)}
                     hasDivider={false}
                   />
-                </XDSVStack>
-                <XDSVStack gap={0} xstyle={styles.contentMaxWidth}>
+                </VStack>
+                <VStack gap={0} xstyle={styles.contentMaxWidth}>
                   {activeNav === 'Personal information' && (
-                    <XDSVStack gap={6}>
-                      <XDSVStack gap={4}>
+                    <VStack gap={6}>
+                      <VStack gap={4}>
                         <ExpandableRow
                           label="Legal name"
                           value={legalName}
@@ -337,7 +336,7 @@ export default function SettingsDialogTemplate() {
                           onEdit={() => handleEdit('legalName')}
                           onCancel={handleCancel}
                           onSave={handleSave}>
-                          <XDSTextInput
+                          <TextInput
                             label="Legal name"
                             isLabelHidden
                             value={legalName}
@@ -351,7 +350,7 @@ export default function SettingsDialogTemplate() {
                           onEdit={() => handleEdit('preferredName')}
                           onCancel={handleCancel}
                           onSave={handleSave}>
-                          <XDSTextInput
+                          <TextInput
                             label="Preferred first name"
                             isLabelHidden
                             value={preferredName}
@@ -365,7 +364,7 @@ export default function SettingsDialogTemplate() {
                           onEdit={() => handleEdit('email')}
                           onCancel={handleCancel}
                           onSave={handleSave}>
-                          <XDSTextInput
+                          <TextInput
                             label="Email address"
                             isLabelHidden
                             value={email}
@@ -379,7 +378,7 @@ export default function SettingsDialogTemplate() {
                           onEdit={() => handleEdit('phone')}
                           onCancel={handleCancel}
                           onSave={handleSave}>
-                          <XDSTextInput
+                          <TextInput
                             label="Phone number"
                             isLabelHidden
                             value={phone}
@@ -398,7 +397,7 @@ export default function SettingsDialogTemplate() {
                           onEdit={() => handleEdit('address')}
                           onCancel={handleCancel}
                           onSave={handleSave}>
-                          <XDSTextInput
+                          <TextInput
                             label="Residential address"
                             isLabelHidden
                             value={address}
@@ -412,7 +411,7 @@ export default function SettingsDialogTemplate() {
                           onEdit={() => handleEdit('mailingAddress')}
                           onCancel={handleCancel}
                           onSave={handleSave}>
-                          <XDSTextInput
+                          <TextInput
                             label="Mailing address"
                             isLabelHidden
                             value={mailingAddress}
@@ -426,56 +425,56 @@ export default function SettingsDialogTemplate() {
                           onEdit={() => handleEdit('emergencyContact')}
                           onCancel={handleCancel}
                           onSave={handleSave}>
-                          <XDSTextInput
+                          <TextInput
                             label="Emergency contact"
                             isLabelHidden
                             value={emergencyContact}
                             onChange={setEmergencyContact}
                           />
                         </ExpandableRow>
-                      </XDSVStack>
+                      </VStack>
 
-                      <XDSCard padding={4}>
-                        <XDSVStack gap={4}>
-                          <XDSHStack gap={3} vAlign="start">
-                            <XDSCenter
+                      <Card padding={4}>
+                        <VStack gap={4}>
+                          <HStack gap={3} vAlign="start">
+                            <Center
                               width={48}
                               height={48}
                               xstyle={styles.iconBox}>
-                              <XDSIcon icon={LockClosedIcon} />
-                            </XDSCenter>
-                            <XDSVStack gap={0}>
-                              <XDSText
+                              <Icon icon={LockClosedIcon} />
+                            </Center>
+                            <VStack gap={0}>
+                              <Text
                                 type="body"
                                 weight="semibold"
                                 display="block">
                                 Why isn&apos;t my info shown here?
-                              </XDSText>
-                              <XDSText
+                              </Text>
+                              <Text
                                 type="supporting"
                                 color="secondary"
                                 display="block">
                                 We&apos;re hiding some account details to
                                 protect your identity.
-                              </XDSText>
-                            </XDSVStack>
-                          </XDSHStack>
-                          <XDSDivider />
-                          <XDSHStack gap={3} vAlign="start">
-                            <XDSCenter
+                              </Text>
+                            </VStack>
+                          </HStack>
+                          <Divider />
+                          <HStack gap={3} vAlign="start">
+                            <Center
                               width={48}
                               height={48}
                               xstyle={styles.iconBox}>
-                              <XDSIcon icon={PencilSquareIcon} />
-                            </XDSCenter>
-                            <XDSVStack gap={0}>
-                              <XDSText
+                              <Icon icon={PencilSquareIcon} />
+                            </Center>
+                            <VStack gap={0}>
+                              <Text
                                 type="body"
                                 weight="semibold"
                                 display="block">
                                 Which details can be edited?
-                              </XDSText>
-                              <XDSText
+                              </Text>
+                              <Text
                                 type="supporting"
                                 color="secondary"
                                 display="block">
@@ -483,167 +482,167 @@ export default function SettingsDialogTemplate() {
                                 If this info was used to verify your identity,
                                 you&apos;ll need to get verified again the next
                                 time you book—or to continue hosting.
-                              </XDSText>
-                            </XDSVStack>
-                          </XDSHStack>
-                          <XDSDivider />
-                          <XDSHStack gap={3} vAlign="start">
-                            <XDSCenter
+                              </Text>
+                            </VStack>
+                          </HStack>
+                          <Divider />
+                          <HStack gap={3} vAlign="start">
+                            <Center
                               width={48}
                               height={48}
                               xstyle={styles.iconBox}>
-                              <XDSIcon icon={ShareIcon} />
-                            </XDSCenter>
-                            <XDSVStack gap={0}>
-                              <XDSText
+                              <Icon icon={ShareIcon} />
+                            </Center>
+                            <VStack gap={0}>
+                              <Text
                                 type="body"
                                 weight="semibold"
                                 display="block">
                                 What info is shared with others?
-                              </XDSText>
-                              <XDSText
+                              </Text>
+                              <Text
                                 type="supporting"
                                 color="secondary"
                                 display="block">
                                 We only release contact information after a
                                 reservation is confirmed.
-                              </XDSText>
-                            </XDSVStack>
-                          </XDSHStack>
-                        </XDSVStack>
-                      </XDSCard>
-                    </XDSVStack>
+                              </Text>
+                            </VStack>
+                          </HStack>
+                        </VStack>
+                      </Card>
+                    </VStack>
                   )}
 
                   {activeNav === 'Login & security' && (
-                    <XDSVStack gap={6}>
-                      <XDSTabList
+                    <VStack gap={6}>
+                      <TabList
                         value={activeTab}
                         onChange={setActiveTab}
                         hasDivider>
-                        <XDSTab value="login" label="Login" />
-                        <XDSTab value="shared" label="Shared access" />
-                      </XDSTabList>
+                        <Tab value="login" label="Login" />
+                        <Tab value="shared" label="Shared access" />
+                      </TabList>
 
                       {activeTab === 'login' && (
-                        <XDSVStack gap={8}>
-                          <XDSVStack gap={4}>
-                            <XDSHeading level={3}>Login</XDSHeading>
-                            <XDSDivider />
+                        <VStack gap={8}>
+                          <VStack gap={4}>
+                            <Heading level={3}>Login</Heading>
+                            <Divider />
                             {LOGIN_ROWS.map(row => (
                               <InfoRowItem key={row.label} {...row} />
                             ))}
-                          </XDSVStack>
+                          </VStack>
 
-                          <XDSVStack gap={4}>
-                            <XDSHeading level={3}>Social accounts</XDSHeading>
-                            <XDSDivider />
+                          <VStack gap={4}>
+                            <Heading level={3}>Social accounts</Heading>
+                            <Divider />
                             {SOCIAL_ROWS.map(row => (
                               <InfoRowItem key={row.label} {...row} />
                             ))}
-                          </XDSVStack>
+                          </VStack>
 
-                          <XDSVStack gap={4}>
-                            <XDSHeading level={3}>Device history</XDSHeading>
-                            <XDSDivider />
+                          <VStack gap={4}>
+                            <Heading level={3}>Device history</Heading>
+                            <Divider />
                             {DEVICE_ROWS.map((device, i) => (
                               <React.Fragment key={i}>
-                                <XDSHStack gap={3} vAlign="start">
-                                  <XDSIcon icon={ComputerDesktopIcon} />
-                                  <XDSStackItem size="fill">
-                                    <XDSVStack gap={0}>
-                                      <XDSHStack gap={2} vAlign="center">
-                                        <XDSText type="body" weight="semibold">
+                                <HStack gap={3} vAlign="start">
+                                  <Icon icon={ComputerDesktopIcon} />
+                                  <StackItem size="fill">
+                                    <VStack gap={0}>
+                                      <HStack gap={2} vAlign="center">
+                                        <Text type="body" weight="semibold">
                                           {device.label}
-                                        </XDSText>
+                                        </Text>
                                         {device.badge && (
-                                          <XDSBadge label={device.badge} />
+                                          <Badge label={device.badge} />
                                         )}
-                                      </XDSHStack>
-                                      <XDSText
+                                      </HStack>
+                                      <Text
                                         type="supporting"
                                         color="secondary"
                                         display="block">
                                         {device.location}
-                                      </XDSText>
-                                    </XDSVStack>
-                                  </XDSStackItem>
+                                      </Text>
+                                    </VStack>
+                                  </StackItem>
                                   {device.action && (
-                                    <XDSLink href="#">{device.action}</XDSLink>
+                                    <Link href="#">{device.action}</Link>
                                   )}
-                                </XDSHStack>
-                                <XDSDivider />
+                                </HStack>
+                                <Divider />
                               </React.Fragment>
                             ))}
-                          </XDSVStack>
+                          </VStack>
 
-                          <XDSVStack gap={4}>
-                            <XDSHeading level={3}>Account</XDSHeading>
-                            <XDSDivider />
-                            <XDSHStack hAlign="between" vAlign="start">
-                              <XDSVStack gap={0}>
-                                <XDSText
+                          <VStack gap={4}>
+                            <Heading level={3}>Account</Heading>
+                            <Divider />
+                            <HStack hAlign="between" vAlign="start">
+                              <VStack gap={0}>
+                                <Text
                                   type="body"
                                   weight="semibold"
                                   display="block">
                                   Deactivate your account
-                                </XDSText>
-                                <XDSText
+                                </Text>
+                                <Text
                                   type="supporting"
                                   color="secondary"
                                   display="block">
                                   This action cannot be undone
-                                </XDSText>
-                              </XDSVStack>
-                              <XDSLink href="#">Deactivate</XDSLink>
-                            </XDSHStack>
-                            <XDSDivider />
-                          </XDSVStack>
-                        </XDSVStack>
+                                </Text>
+                              </VStack>
+                              <Link href="#">Deactivate</Link>
+                            </HStack>
+                            <Divider />
+                          </VStack>
+                        </VStack>
                       )}
 
                       {activeTab === 'shared' && (
-                        <XDSVStack gap={8}>
-                          <XDSVStack gap={2}>
-                            <XDSHeading level={3}>Shared access</XDSHeading>
-                            <XDSDivider />
-                            <XDSText type="body" color="secondary">
+                        <VStack gap={8}>
+                          <VStack gap={2}>
+                            <Heading level={3}>Shared access</Heading>
+                            <Divider />
+                            <Text type="body" color="secondary">
                               Review each request carefully before approving
                               access. We&apos;ll email your employee or
                               co-worker a 4-digit code that lets them log into
                               your account with their trusted device.
-                            </XDSText>
-                          </XDSVStack>
+                            </Text>
+                          </VStack>
 
-                          <XDSCard variant="muted">
-                            <XDSHStack gap={4} vAlign="start">
-                              <XDSCenter
+                          <Card variant="muted">
+                            <HStack gap={4} vAlign="start">
+                              <Center
                                 width={48}
                                 height={48}
                                 xstyle={styles.iconBox}>
-                                <XDSIcon icon={LockClosedIcon} />
-                              </XDSCenter>
-                              <XDSVStack gap={1}>
-                                <XDSText type="body" weight="bold">
+                                <Icon icon={LockClosedIcon} />
+                              </Center>
+                              <VStack gap={1}>
+                                <Text type="body" weight="bold">
                                   Adding devices from people you trust
-                                </XDSText>
-                                <XDSText type="body" color="secondary">
+                                </Text>
+                                <Text type="body" color="secondary">
                                   When you approve a request, you grant someone
                                   full access to your account. They&apos;ll be
                                   able to change reservations and send messages
                                   on your behalf.
-                                </XDSText>
-                              </XDSVStack>
-                            </XDSHStack>
-                          </XDSCard>
-                        </XDSVStack>
+                                </Text>
+                              </VStack>
+                            </HStack>
+                          </Card>
+                        </VStack>
                       )}
-                    </XDSVStack>
+                    </VStack>
                   )}
 
                   {activeNav === 'Languages & currency' && (
-                    <XDSVStack gap={6}>
-                      <XDSVStack gap={4}>
+                    <VStack gap={6}>
+                      <VStack gap={4}>
                         <ExpandableRow
                           label="Preferred language"
                           value={
@@ -654,7 +653,7 @@ export default function SettingsDialogTemplate() {
                           onEdit={() => handleEdit('language')}
                           onCancel={handleCancel}
                           onSave={handleSave}>
-                          <XDSSelector
+                          <Selector
                             label="Language"
                             isLabelHidden
                             size="lg"
@@ -673,7 +672,7 @@ export default function SettingsDialogTemplate() {
                           onEdit={() => handleEdit('currency')}
                           onCancel={handleCancel}
                           onSave={handleSave}>
-                          <XDSSelector
+                          <Selector
                             label="Currency"
                             isLabelHidden
                             size="lg"
@@ -692,7 +691,7 @@ export default function SettingsDialogTemplate() {
                           onEdit={() => handleEdit('timezone')}
                           onCancel={handleCancel}
                           onSave={handleSave}>
-                          <XDSSelector
+                          <Selector
                             label="Time zone"
                             isLabelHidden
                             size="lg"
@@ -701,34 +700,34 @@ export default function SettingsDialogTemplate() {
                             options={TIMEZONES}
                           />
                         </ExpandableRow>
-                      </XDSVStack>
-                    </XDSVStack>
+                      </VStack>
+                    </VStack>
                   )}
 
                   {activeNav === 'Privacy' && (
-                    <XDSVStack gap={6}>
-                      <XDSVStack gap={8}>
-                        <XDSVStack gap={4}>
-                          <XDSHeading level={3}>Messages</XDSHeading>
-                          <XDSSwitch
+                    <VStack gap={6}>
+                      <VStack gap={8}>
+                        <VStack gap={4}>
+                          <Heading level={3}>Messages</Heading>
+                          <Switch
                             label="Show people when I've read their messages."
                             value={readReceipts}
                             onChange={setReadReceipts}
                             labelPosition="start"
                             labelSpacing="spread"
                           />
-                          <XDSHStack hAlign="between" vAlign="center">
-                            <XDSText type="body" weight="semibold">
+                          <HStack hAlign="between" vAlign="center">
+                            <Text type="body" weight="semibold">
                               Blocked people
-                            </XDSText>
-                            <XDSLink href="#">View</XDSLink>
-                          </XDSHStack>
-                          <XDSDivider />
-                        </XDSVStack>
+                            </Text>
+                            <Link href="#">View</Link>
+                          </HStack>
+                          <Divider />
+                        </VStack>
 
-                        <XDSVStack gap={4}>
-                          <XDSHeading level={3}>Listings</XDSHeading>
-                          <XDSSwitch
+                        <VStack gap={4}>
+                          <Heading level={3}>Listings</Heading>
+                          <Switch
                             label="Include my listing(s) in search engines"
                             description="Turning this on means search engines, like Google, will display your listing page(s) in search results."
                             value={searchEngines}
@@ -736,19 +735,19 @@ export default function SettingsDialogTemplate() {
                             labelPosition="start"
                             labelSpacing="spread"
                           />
-                          <XDSDivider />
-                        </XDSVStack>
+                          <Divider />
+                        </VStack>
 
-                        <XDSVStack gap={4}>
-                          <XDSHeading level={3}>Reviews</XDSHeading>
-                          <XDSText type="supporting" color="secondary">
+                        <VStack gap={4}>
+                          <Heading level={3}>Reviews</Heading>
+                          <Text type="supporting" color="secondary">
                             Choose what&apos;s shared when you write a review.{' '}
-                            <XDSLink href="#" type="supporting">
+                            <Link href="#" type="supporting">
                               Learn more
-                            </XDSLink>
-                          </XDSText>
-                          <XDSVStack gap={4}>
-                            <XDSSwitch
+                            </Link>
+                          </Text>
+                          <VStack gap={4}>
+                            <Switch
                               label="Show my home city and country"
                               description="Ex: City and country"
                               value={showCity}
@@ -756,7 +755,7 @@ export default function SettingsDialogTemplate() {
                               labelPosition="start"
                               labelSpacing="spread"
                             />
-                            <XDSSwitch
+                            <Switch
                               label="Show my trip type"
                               description="Ex: Stayed with kids or pets"
                               value={showTripType}
@@ -764,7 +763,7 @@ export default function SettingsDialogTemplate() {
                               labelPosition="start"
                               labelSpacing="spread"
                             />
-                            <XDSSwitch
+                            <Switch
                               label="Show my length of stay"
                               description="Ex: A few nights, about a week, etc."
                               value={showStayLength}
@@ -772,7 +771,7 @@ export default function SettingsDialogTemplate() {
                               labelPosition="start"
                               labelSpacing="spread"
                             />
-                            <XDSSwitch
+                            <Switch
                               label="Show my booked services"
                               description="Ex: Gourmet brunch or tasting menu"
                               value={showServices}
@@ -780,21 +779,21 @@ export default function SettingsDialogTemplate() {
                               labelPosition="start"
                               labelSpacing="spread"
                             />
-                          </XDSVStack>
-                          <XDSDivider />
-                        </XDSVStack>
+                          </VStack>
+                          <Divider />
+                        </VStack>
 
-                        <XDSVStack gap={4}>
-                          <XDSHeading level={3}>Data privacy</XDSHeading>
-                          <XDSCard>
-                            <XDSHStack hAlign="between" vAlign="center">
-                              <XDSText type="body">
+                        <VStack gap={4}>
+                          <Heading level={3}>Data privacy</Heading>
+                          <Card>
+                            <HStack hAlign="between" vAlign="center">
+                              <Text type="body">
                                 Request my personal data
-                              </XDSText>
-                              <XDSLink href="#">Request</XDSLink>
-                            </XDSHStack>
-                          </XDSCard>
-                          <XDSSwitch
+                              </Text>
+                              <Link href="#">Request</Link>
+                            </HStack>
+                          </Card>
+                          <Switch
                             label="Help improve AI-powered features"
                             description="When this is on, we use your data to develop and improve AI models."
                             value={aiFeatures}
@@ -802,45 +801,45 @@ export default function SettingsDialogTemplate() {
                             labelPosition="start"
                             labelSpacing="spread"
                           />
-                          <XDSCard>
-                            <XDSHStack hAlign="between" vAlign="center">
-                              <XDSText type="body">Delete my account</XDSText>
-                              <XDSLink href="#">Delete</XDSLink>
-                            </XDSHStack>
-                          </XDSCard>
-                          <XDSCard variant="muted">
-                            <XDSHStack gap={4} vAlign="start">
-                              <XDSCenter
+                          <Card>
+                            <HStack hAlign="between" vAlign="center">
+                              <Text type="body">Delete my account</Text>
+                              <Link href="#">Delete</Link>
+                            </HStack>
+                          </Card>
+                          <Card variant="muted">
+                            <HStack gap={4} vAlign="start">
+                              <Center
                                 width={48}
                                 height={48}
                                 xstyle={styles.iconBox}>
-                                <XDSIcon icon={ShieldCheckIcon} />
-                              </XDSCenter>
-                              <XDSVStack gap={1}>
-                                <XDSText type="body" weight="bold">
+                                <Icon icon={ShieldCheckIcon} />
+                              </Center>
+                              <VStack gap={1}>
+                                <Text type="body" weight="bold">
                                   Committed to privacy
-                                </XDSText>
-                                <XDSText type="supporting" color="secondary">
+                                </Text>
+                                <Text type="supporting" color="secondary">
                                   We&apos;re committed to keeping your data
                                   protected. See details in our{' '}
-                                  <XDSLink href="#" type="supporting">
+                                  <Link href="#" type="supporting">
                                     Privacy Policy
-                                  </XDSLink>
+                                  </Link>
                                   .
-                                </XDSText>
-                              </XDSVStack>
-                            </XDSHStack>
-                          </XDSCard>
-                        </XDSVStack>
-                      </XDSVStack>
-                    </XDSVStack>
+                                </Text>
+                              </VStack>
+                            </HStack>
+                          </Card>
+                        </VStack>
+                      </VStack>
+                    </VStack>
                   )}
-                </XDSVStack>
-              </XDSVStack>
-            </XDSLayoutContent>
+                </VStack>
+              </VStack>
+            </LayoutContent>
           }
         />
-      </XDSDialog>
+      </Dialog>
     </>
   );
 }

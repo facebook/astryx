@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSTextArea} from '@xds/core/TextArea';
-import {XDSStack} from '@xds/core/Layout';
+import {TextArea} from '@xds/core/TextArea';
+import {Stack} from '@xds/core/Layout';
 
 export default function TextAreaValidation() {
   const [errorValue, setErrorValue] = useState('Fix the');
@@ -15,8 +15,8 @@ export default function TextAreaValidation() {
   const [errorNoMsgValue, setErrorNoMsgValue] = useState('Invalid content');
 
   return (
-    <XDSStack direction="vertical" gap={4} style={{width: 400}}>
-      <XDSTextArea
+    <Stack direction="vertical" gap={4} style={{width: 400}}>
+      <TextArea
         label="Error message"
         value={errorValue}
         onChange={setErrorValue}
@@ -25,7 +25,7 @@ export default function TextAreaValidation() {
           message: 'Description must be at least 20 characters.',
         }}
       />
-      <XDSTextArea
+      <TextArea
         label="Warning message"
         value={warningValue}
         onChange={setWarningValue}
@@ -34,7 +34,7 @@ export default function TextAreaValidation() {
           message: 'Consider adding more detail for clarity.',
         }}
       />
-      <XDSTextArea
+      <TextArea
         label="Success message"
         value={successValue}
         onChange={setSuccessValue}
@@ -43,12 +43,12 @@ export default function TextAreaValidation() {
           message: 'Looks good — clear and actionable.',
         }}
       />
-      <XDSTextArea
+      <TextArea
         label="Error without message"
         value={errorNoMsgValue}
         onChange={setErrorNoMsgValue}
         status={{type: 'error'}}
       />
-    </XDSStack>
+    </Stack>
   );
 }

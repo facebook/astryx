@@ -40,7 +40,7 @@ function formatPropsTable(props) {
  * Render a sub-component block (the `### Name` sections under "## Components").
  *
  * Sub-components are sometimes declared as a bare reference, e.g.
- * `{name: 'XDSRadioListItem'}`, with their description/props documented in
+ * `{name: 'RadioListItem'}`, with their description/props documented in
  * their own `.doc.mjs`. Without guarding, `comp.description` is `undefined`
  * and was being printed literally as the string "undefined". Emit the
  * description only when present, and when there are no inline props point the
@@ -152,7 +152,7 @@ export function formatFull(docs, options = {}) {
   sections.push(desc + '\n');
 
   if (options.importHint) {
-    const displayName = `XDS${docs.name}`;
+    const displayName = docs.components?.[0]?.name || docs.name;
     sections.push(`**Import:** \`import {${displayName}} from '${options.importHint}';\`\n`);
   }
 
@@ -300,9 +300,9 @@ export function formatFull(docs, options = {}) {
  * Includes: import, best practices, props, theming.
  */
 export function formatCompact(docs, componentName, importHint) {
-  const displayName = componentName.startsWith('XDS')
-    ? componentName
-    : `XDS${componentName}`;
+  // Use the bare component name directly (no XDS prefix). The .doc.mjs files
+  // already store bare names ('Button', 'Card'). P1 bare aliases resolve.
+  const displayName = componentName;
 
   const sections = [];
 
@@ -379,9 +379,8 @@ export function formatCompact(docs, componentName, importHint) {
  * For multi-component docs, extracts the entry matching componentName.
  */
 export function formatBrief(docs, componentName, importHint, options = {}) {
-  const displayName = componentName.startsWith('XDS')
-    ? componentName
-    : `XDS${componentName}`;
+  // Use the bare component name directly (no XDS prefix).
+  const displayName = componentName;
 
   // Find the right props and examples for this component
   let props = [];

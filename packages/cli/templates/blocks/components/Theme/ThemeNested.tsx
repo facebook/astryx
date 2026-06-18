@@ -2,12 +2,12 @@
 
 'use client';
 
-import {XDSTheme, defineTheme} from '@xds/core/theme';
-import {XDSCard} from '@xds/core/Card';
-import {XDSButton} from '@xds/core/Button';
-import {XDSSection} from '@xds/core/Section';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSHeading, XDSText} from '@xds/core/Text';
+import {Theme, defineTheme} from '@xds/core/theme';
+import {Card} from '@xds/core/Card';
+import {Button} from '@xds/core/Button';
+import {Section} from '@xds/core/Section';
+import {Stack} from '@xds/core/Layout';
+import {Heading, Text} from '@xds/core/Text';
 
 const warmTheme = defineTheme({
   name: 'warm-docs',
@@ -36,29 +36,29 @@ const forestTheme = defineTheme({
 });
 export default function ThemeNested() {
   return (
-    <XDSSection variant="muted" padding={4} maxWidth={460}>
-      <XDSTheme theme={warmTheme}>
-        <XDSCard padding={4} width="100%">
-          <XDSStack direction="vertical" gap={4}>
-            <XDSStack direction="vertical" gap={2}>
-              <XDSHeading level={4}>Outer Warm theme</XDSHeading>
-              <XDSText type="body" color="secondary">
+    <Section variant="muted" padding={4} maxWidth={460}>
+      <Theme theme={warmTheme}>
+        <Card padding={4} width="100%">
+          <Stack direction="vertical" gap={4}>
+            <Stack direction="vertical" gap={2}>
+              <Heading level={4}>Outer Warm theme</Heading>
+              <Text type="body" color="secondary">
                 The parent section uses Warm.
-              </XDSText>
-            </XDSStack>
-            <XDSTheme theme={forestTheme}>
-              <XDSCard padding={3} width="100%">
-                <XDSStack direction="vertical" gap={2}>
-                  <XDSText type="body" weight="bold">
+              </Text>
+            </Stack>
+            <Theme theme={forestTheme}>
+              <Card padding={3} width="100%">
+                <Stack direction="vertical" gap={2}>
+                  <Text type="body" weight="bold">
                     Nested Forest section
-                  </XDSText>
-                  <XDSButton label="Nested action" size="sm" />
-                </XDSStack>
-              </XDSCard>
-            </XDSTheme>
-          </XDSStack>
-        </XDSCard>
-      </XDSTheme>
-    </XDSSection>
+                  </Text>
+                  <Button label="Nested action" size="sm" />
+                </Stack>
+              </Card>
+            </Theme>
+          </Stack>
+        </Card>
+      </Theme>
+    </Section>
   );
 }

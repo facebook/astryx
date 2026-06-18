@@ -4,12 +4,12 @@
 
 import {useCallback, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Stack';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSButton} from '@xds/core/Button';
-import {XDSDivider} from '@xds/core/Divider';
+import {Text, Heading} from '@xds/core/Text';
+import {VStack, HStack, StackItem} from '@xds/core/Stack';
+import {Selector} from '@xds/core/Selector';
+import {TextInput} from '@xds/core/TextInput';
+import {Button} from '@xds/core/Button';
+import {Divider} from '@xds/core/Divider';
 import {
   COMPONENT_VARS,
   ALL_COMPONENT_NAMES,
@@ -136,11 +136,11 @@ export function ComponentTokensPanel({
   );
 
   return (
-    <XDSVStack gap={4}>
+    <VStack gap={4}>
       {Object.entries(COMPONENT_VARS).map(([key, comp]) => (
-        <XDSVStack key={key} gap={2}>
-          <XDSHeading level={4}>{comp.label}</XDSHeading>
-          <XDSVStack gap={1}>
+        <VStack key={key} gap={2}>
+          <Heading level={4}>{comp.label}</Heading>
+          <VStack gap={1}>
             {comp.vars.map(v => {
               // Prefer an explicit token edit; otherwise fall back to the
               // value the seeded theme set for this control (if any).
@@ -153,19 +153,19 @@ export function ComponentTokensPanel({
                   v.options.some(o => o.value === currentValue));
 
               return (
-                <XDSHStack
+                <HStack
                   key={v.name}
                   vAlign="center"
                   justify="between"
                   xstyle={styles.row}>
-                  <XDSStackItem size="fill" xstyle={styles.rowLabel}>
-                    <XDSText type="label" color="secondary" maxLines={1}>
+                  <StackItem size="fill" xstyle={styles.rowLabel}>
+                    <Text type="label" color="secondary" maxLines={1}>
                       {v.description}
-                    </XDSText>
-                  </XDSStackItem>
-                  <XDSStackItem xstyle={styles.rowControl}>
+                    </Text>
+                  </StackItem>
+                  <StackItem xstyle={styles.rowControl}>
                     {!isPresetValue ? (
-                      <XDSTextInput
+                      <TextInput
                         label={v.name}
                         isLabelHidden
                         size="sm"
@@ -185,7 +185,7 @@ export function ComponentTokensPanel({
                         }}
                       />
                     ) : (
-                      <XDSSelector
+                      <Selector
                         label={v.name}
                         isLabelHidden
                         size="sm"
@@ -207,78 +207,78 @@ export function ComponentTokensPanel({
                         }}
                       />
                     )}
-                  </XDSStackItem>
-                </XDSHStack>
+                  </StackItem>
+                </HStack>
               );
             })}
-          </XDSVStack>
-        </XDSVStack>
+          </VStack>
+        </VStack>
       ))}
 
-      <XDSDivider />
+      <Divider />
 
-      <XDSVStack gap={3}>
-        <XDSHeading level={4}>Custom Overrides</XDSHeading>
-        <XDSText type="supporting" color="secondary">
+      <VStack gap={3}>
+        <Heading level={4}>Custom Overrides</Heading>
+        <Text type="supporting" color="secondary">
           Override any CSS property on any component.
-        </XDSText>
+        </Text>
 
         {customOverrides.map((override, i) => (
-          <XDSVStack key={override.id} gap={1}>
-            <XDSHStack gap={2} vAlign="end">
-              <XDSStackItem size="fill" xstyle={styles.rowLabel}>
-                <XDSText type="supporting" color="secondary" maxLines={1}>
+          <VStack key={override.id} gap={1}>
+            <HStack gap={2} vAlign="end">
+              <StackItem size="fill" xstyle={styles.rowLabel}>
+                <Text type="supporting" color="secondary" maxLines={1}>
                   .xds-{override.component} → {override.property}
-                </XDSText>
-              </XDSStackItem>
-              <XDSButton
+                </Text>
+              </StackItem>
+              <Button
                 label="Remove"
                 variant="ghost"
                 size="sm"
                 onClick={() => handleRemoveCustom(i)}
               />
-            </XDSHStack>
-            <XDSTextInput
+            </HStack>
+            <TextInput
               label={`${override.component} ${override.property}`}
               isLabelHidden
               size="sm"
               value={override.value}
               onChange={(val: string) => handleUpdateCustomValue(i, val)}
             />
-          </XDSVStack>
+          </VStack>
         ))}
 
-        <XDSVStack gap={2}>
-          <XDSSelector
+        <VStack gap={2}>
+          <Selector
             label="Component"
             size="sm"
             value={newComponent}
             onChange={setNewComponent}
             options={ALL_COMPONENT_NAMES.map(n => ({value: n, label: n}))}
           />
-          <XDSTextInput
+          <TextInput
             label="CSS property (camelCase)"
             size="sm"
             value={newProperty}
             placeholder="e.g. borderRadius"
             onChange={setNewProperty}
           />
-          <XDSTextInput
+          <TextInput
             label="CSS value"
             size="sm"
             value={newValue}
             placeholder="e.g. 9999px"
             onChange={setNewValue}
           />
-          <XDSButton
+          <Button
             label="Add Override"
             variant="secondary"
             size="sm"
             onClick={handleAddCustom}
             isDisabled={!newProperty || !newValue}
           />
-        </XDSVStack>
-      </XDSVStack>
-    </XDSVStack>
+        </VStack>
+      </VStack>
+    </VStack>
   );
 }

@@ -2,15 +2,15 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {XDSOverflowList} from '@xds/core/OverflowList';
-import {XDSButton} from '@xds/core/Button';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
-import {XDSTextInput} from '@xds/core/TextInput';
+import {OverflowList} from '@xds/core/OverflowList';
+import {Button} from '@xds/core/Button';
+import {Badge} from '@xds/core/Badge';
+import {DropdownMenu} from '@xds/core/DropdownMenu';
+import {TextInput} from '@xds/core/TextInput';
 
-const meta: Meta<typeof XDSOverflowList> = {
+const meta: Meta<typeof OverflowList> = {
   title: 'Core/OverflowList',
-  component: XDSOverflowList,
+  component: OverflowList,
   tags: ['autodocs'],
   argTypes: {
     gap: {
@@ -31,27 +31,27 @@ const meta: Meta<typeof XDSOverflowList> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSOverflowList>;
+type Story = StoryObj<typeof OverflowList>;
 
 // Basic usage - resize the container to see overflow behavior
 export const Default: Story = {
   render: () => (
     <div style={{maxWidth: 400, border: '1px dashed #ccc', padding: 8}}>
-      <XDSOverflowList
+      <OverflowList
         gap={2}
         overflowRenderer={overflowItems => (
-          <XDSButton
+          <Button
             label={`+${overflowItems.length} more`}
             variant="ghost"
             size="sm"
           />
         )}>
-        <XDSButton label="Edit" size="sm" />
-        <XDSButton label="Duplicate" size="sm" />
-        <XDSButton label="Share" size="sm" />
-        <XDSButton label="Archive" size="sm" />
-        <XDSButton label="Delete" size="sm" />
-      </XDSOverflowList>
+        <Button label="Edit" size="sm" />
+        <Button label="Duplicate" size="sm" />
+        <Button label="Share" size="sm" />
+        <Button label="Archive" size="sm" />
+        <Button label="Delete" size="sm" />
+      </OverflowList>
     </div>
   ),
 };
@@ -69,23 +69,23 @@ export const Resizable: Story = {
         minWidth: 100,
         maxWidth: '100%',
       }}>
-      <XDSOverflowList
+      <OverflowList
         gap={2}
         overflowRenderer={overflowItems => (
-          <XDSButton
+          <Button
             label={`+${overflowItems.length} more`}
             variant="ghost"
             size="sm"
           />
         )}>
-        <XDSButton label="Dashboard" size="sm" />
-        <XDSButton label="Analytics" size="sm" />
-        <XDSButton label="Reports" size="sm" />
-        <XDSButton label="Settings" size="sm" />
-        <XDSButton label="Users" size="sm" />
-        <XDSButton label="Billing" size="sm" />
-        <XDSButton label="Integrations" size="sm" />
-      </XDSOverflowList>
+        <Button label="Dashboard" size="sm" />
+        <Button label="Analytics" size="sm" />
+        <Button label="Reports" size="sm" />
+        <Button label="Settings" size="sm" />
+        <Button label="Users" size="sm" />
+        <Button label="Billing" size="sm" />
+        <Button label="Integrations" size="sm" />
+      </OverflowList>
     </div>
   ),
 };
@@ -94,18 +94,18 @@ export const Resizable: Story = {
 export const NoOverflow: Story = {
   render: () => (
     <div style={{maxWidth: 600, border: '1px dashed #ccc', padding: 8}}>
-      <XDSOverflowList
+      <OverflowList
         gap={2}
         overflowRenderer={overflowItems => (
-          <XDSButton
+          <Button
             label={`+${overflowItems.length} more`}
             variant="ghost"
             size="sm"
           />
         )}>
-        <XDSButton label="Edit" size="sm" />
-        <XDSButton label="Save" size="sm" />
-      </XDSOverflowList>
+        <Button label="Edit" size="sm" />
+        <Button label="Save" size="sm" />
+      </OverflowList>
     </div>
   ),
 };
@@ -122,17 +122,17 @@ export const WithBadges: Story = {
         width: 300,
         minWidth: 80,
       }}>
-      <XDSOverflowList
+      <OverflowList
         gap={1}
         overflowRenderer={overflowItems => (
-          <XDSBadge variant="neutral" label={`+${overflowItems.length}`} />
+          <Badge variant="neutral" label={`+${overflowItems.length}`} />
         )}>
-        <XDSBadge variant="info" label="React" />
-        <XDSBadge variant="success" label="TypeScript" />
-        <XDSBadge variant="warning" label="StyleX" />
-        <XDSBadge variant="neutral" label="Storybook" />
-        <XDSBadge variant="error" label="Vitest" />
-      </XDSOverflowList>
+        <Badge variant="info" label="React" />
+        <Badge variant="success" label="TypeScript" />
+        <Badge variant="warning" label="StyleX" />
+        <Badge variant="neutral" label="Storybook" />
+        <Badge variant="error" label="Vitest" />
+      </OverflowList>
     </div>
   ),
 };
@@ -141,22 +141,22 @@ export const WithBadges: Story = {
 export const CollapseFromStart: Story = {
   render: () => (
     <div style={{maxWidth: 300, border: '1px dashed #ccc', padding: 8}}>
-      <XDSOverflowList
+      <OverflowList
         gap={2}
         collapseFrom="start"
         overflowRenderer={overflowItems => (
-          <XDSButton
+          <Button
             label={`+${overflowItems.length} more`}
             variant="ghost"
             size="sm"
           />
         )}>
-        <XDSButton label="Step 1" size="sm" />
-        <XDSButton label="Step 2" size="sm" />
-        <XDSButton label="Step 3" size="sm" />
-        <XDSButton label="Step 4" size="sm" />
-        <XDSButton label="Step 5" size="sm" />
-      </XDSOverflowList>
+        <Button label="Step 1" size="sm" />
+        <Button label="Step 2" size="sm" />
+        <Button label="Step 3" size="sm" />
+        <Button label="Step 4" size="sm" />
+        <Button label="Step 5" size="sm" />
+      </OverflowList>
     </div>
   ),
 };
@@ -176,10 +176,10 @@ export const WithDropdownOverflow: Story = {
           minWidth: 100,
           maxWidth: '100%',
         }}>
-        <XDSOverflowList
+        <OverflowList
           gap={2}
           overflowRenderer={overflowItems => (
-            <XDSDropdownMenu
+            <DropdownMenu
               button={{
                 label: `+${overflowItems.length}`,
                 variant: 'ghost',
@@ -191,13 +191,13 @@ export const WithDropdownOverflow: Story = {
               }))}
             />
           )}>
-          <XDSButton label="Save" size="sm" variant="primary" />
-          <XDSButton label="Edit" size="sm" />
-          <XDSButton label="Duplicate" size="sm" />
-          <XDSButton label="Share" size="sm" />
-          <XDSButton label="Archive" size="sm" />
-          <XDSButton label="Delete" size="sm" variant="destructive" />
-        </XDSOverflowList>
+          <Button label="Save" size="sm" variant="primary" />
+          <Button label="Edit" size="sm" />
+          <Button label="Duplicate" size="sm" />
+          <Button label="Share" size="sm" />
+          <Button label="Archive" size="sm" />
+          <Button label="Delete" size="sm" variant="destructive" />
+        </OverflowList>
       </div>
     );
   },
@@ -225,25 +225,25 @@ export const WithSiblingElement: Story = {
             padding: 8,
             height: 44,
           }}>
-          <XDSOverflowList
+          <OverflowList
             gap={2}
             behavior="observeParent"
             overflowRenderer={overflowItems => (
-              <XDSButton
+              <Button
                 label={`+${overflowItems.length} more`}
                 variant="ghost"
                 size="sm"
               />
             )}>
-            <XDSButton label="Dashboard" size="sm" />
-            <XDSButton label="Analytics" size="sm" />
-            <XDSButton label="Reports" size="sm" />
-            <XDSButton label="Settings" size="sm" />
-            <XDSButton label="Users" size="sm" />
-            <XDSButton label="Billing" size="sm" />
-          </XDSOverflowList>
+            <Button label="Dashboard" size="sm" />
+            <Button label="Analytics" size="sm" />
+            <Button label="Reports" size="sm" />
+            <Button label="Settings" size="sm" />
+            <Button label="Users" size="sm" />
+            <Button label="Billing" size="sm" />
+          </OverflowList>
           <div style={{width: 70, flexShrink: 0}}>
-            <XDSTextInput
+            <TextInput
               label="Search"
               isLabelHidden
               placeholder="Search..."
@@ -265,12 +265,12 @@ export const DynamicItems: Story = {
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
         <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
-          <XDSButton
+          <Button
             label="Remove"
             size="sm"
             onClick={() => setCount(c => Math.max(1, c - 1))}
           />
-          <XDSButton
+          <Button
             label="Add"
             size="sm"
             onClick={() => setCount(c => c + 1)}
@@ -287,19 +287,19 @@ export const DynamicItems: Story = {
             minWidth: 100,
             maxWidth: '100%',
           }}>
-          <XDSOverflowList
+          <OverflowList
             gap={2}
             overflowRenderer={items => (
-              <XDSButton
+              <Button
                 label={`+${items.length} more`}
                 variant="ghost"
                 size="sm"
               />
             )}>
             {Array.from({length: count}, (_, i) => (
-              <XDSButton key={i} label={`Item ${i + 1}`} size="sm" />
+              <Button key={i} label={`Item ${i + 1}`} size="sm" />
             ))}
-          </XDSOverflowList>
+          </OverflowList>
         </div>
       </div>
     );

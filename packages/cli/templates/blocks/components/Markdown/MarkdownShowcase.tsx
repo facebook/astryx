@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSMarkdown} from '@xds/core/Markdown';
-import {XDSCenter} from '@xds/core/Center';
+import {Markdown} from '@xds/core/Markdown';
+import {Center} from '@xds/core/Center';
 
 const content = [
   '# Markdown Demo',
@@ -21,8 +21,8 @@ const content = [
 
 export default function MarkdownShowcase() {
   return (
-    <XDSCenter width={400}>
-      <XDSMarkdown>{content}</XDSMarkdown>
-    </XDSCenter>
+    <Center width={400}>
+      <Markdown>{content}</Markdown>
+    </Center>
   );
 }

@@ -3,16 +3,16 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSTopNav,
-  XDSTopNavHeading,
-  XDSTopNavItem,
-  XDSTopNavMenu,
-  XDSTopNavMegaMenu,
-  XDSTopNavMegaMenuItem,
-  XDSTopNavMegaMenuFeaturedCard,
+  TopNav,
+  TopNavHeading,
+  TopNavItem,
+  TopNavMenu,
+  TopNavMegaMenu,
+  TopNavMegaMenuItem,
+  TopNavMegaMenuFeaturedCard,
 } from '@xds/core/TopNav';
-import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSButton} from '@xds/core/Button';
+import {NavIcon} from '@xds/core/NavIcon';
+import {Button} from '@xds/core/Button';
 import {
   CubeIcon,
   ChartBarIcon,
@@ -27,9 +27,9 @@ import {
 // TopNavMenu Stories
 // =============================================================================
 
-const menuMeta: Meta<typeof XDSTopNavMenu> = {
+const menuMeta: Meta<typeof TopNavMenu> = {
   title: 'Core/TopNavMenu',
-  component: XDSTopNavMenu,
+  component: TopNavMenu,
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
@@ -37,7 +37,7 @@ const menuMeta: Meta<typeof XDSTopNavMenu> = {
 };
 
 export default menuMeta;
-type Story = StoryObj<typeof XDSTopNavMenu>;
+type Story = StoryObj<typeof TopNavMenu>;
 
 /**
  * Basic hover-triggered nav menu with 4 items, each with icon, title,
@@ -45,21 +45,21 @@ type Story = StoryObj<typeof XDSTopNavMenu>;
  */
 export const Default: Story = {
   render: () => (
-    <XDSTopNav
+    <TopNav
       label="Main navigation"
       heading={
-        <XDSTopNavHeading
+        <TopNavHeading
           heading="My App"
           logo={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
           href="#"
         />
       }
       startContent={
         <>
-          <XDSTopNavItem label="Home" href="#" isSelected />
-          <XDSTopNavMenu
+          <TopNavItem label="Home" href="#" isSelected />
+          <TopNavMenu
             label="Products"
             items={[
               {
@@ -88,11 +88,11 @@ export const Default: Story = {
               },
             ]}
           />
-          <XDSTopNavItem label="Pricing" href="#" />
+          <TopNavItem label="Pricing" href="#" />
         </>
       }
       endContent={
-        <XDSButton
+        <Button
           label="Profile"
           variant="ghost"
           icon={<UserCircleIcon style={{width: 16, height: 16}} />}
@@ -110,12 +110,12 @@ export const Default: Story = {
 export const MultipleMenus: Story = {
   name: 'Multiple Menus',
   render: () => (
-    <XDSTopNav
+    <TopNav
       label="Main navigation"
-      heading={<XDSTopNavHeading heading="Platform" href="#" />}
+      heading={<TopNavHeading heading="Platform" href="#" />}
       startContent={
         <>
-          <XDSTopNavMenu
+          <TopNavMenu
             label="Products"
             items={[
               {
@@ -132,7 +132,7 @@ export const MultipleMenus: Story = {
               },
             ]}
           />
-          <XDSTopNavMenu
+          <TopNavMenu
             label="Resources"
             items={[
               {title: 'Documentation', href: '#'},
@@ -140,7 +140,7 @@ export const MultipleMenus: Story = {
               {title: 'Community Forum', href: '#'},
             ]}
           />
-          <XDSTopNavItem label="Pricing" href="#" />
+          <TopNavItem label="Pricing" href="#" />
         </>
       }
     />
@@ -161,13 +161,13 @@ export const MegaMenu: Story = {
 
     return (
       <div style={{position: 'relative'}}>
-        <XDSTopNav
+        <TopNav
           label="Marketing navigation"
           heading={
-            <XDSTopNavHeading
+            <TopNavHeading
               heading="Acme"
               logo={
-                <XDSNavIcon
+                <NavIcon
                   icon={<CubeIcon style={{width: 16, height: 16}} />}
                 />
               }
@@ -176,36 +176,36 @@ export const MegaMenu: Story = {
           }
           startContent={
             <>
-              <XDSTopNavMegaMenu
+              <TopNavMegaMenu
                 label="Products"
                 onOpenChange={setMenuOpen}
                 items={
                   <>
-                    <XDSTopNavMegaMenuItem
+                    <TopNavMegaMenuItem
                       title="Analytics"
                       description="Track and analyze user behavior across your apps"
                       icon={<ChartBarIcon style={{width: 20, height: 20}} />}
                       href="#analytics"
                     />
-                    <XDSTopNavMegaMenuItem
+                    <TopNavMegaMenuItem
                       title="Security"
                       description="Enterprise-grade protection for your data"
                       icon={<ShieldCheckIcon style={{width: 20, height: 20}} />}
                       href="#security"
                     />
-                    <XDSTopNavMegaMenuItem
+                    <TopNavMegaMenuItem
                       title="Automation"
                       description="Streamline workflows with intelligent tools"
                       icon={<BoltIcon style={{width: 20, height: 20}} />}
                       href="#automation"
                     />
-                    <XDSTopNavMegaMenuItem
+                    <TopNavMegaMenuItem
                       title="Developer Tools"
                       description="APIs, SDKs, and CLI for integration"
                       icon={<CodeBracketIcon style={{width: 20, height: 20}} />}
                       href="#dev-tools"
                     />
-                    <XDSTopNavMegaMenuItem
+                    <TopNavMegaMenuItem
                       title="Global Network"
                       description="Low-latency edge infra in 40+ regions"
                       icon={<GlobeAltIcon style={{width: 20, height: 20}} />}
@@ -214,7 +214,7 @@ export const MegaMenu: Story = {
                   </>
                 }
                 featured={
-                  <XDSTopNavMegaMenuFeaturedCard
+                  <TopNavMegaMenuFeaturedCard
                     title="What's new in v4.0"
                     description="AI-powered analytics and real-time collaboration."
                     image="https://images.unsplash.com/photo-1551434678-e076c223a692?w=560&h=280&fit=crop"
@@ -224,14 +224,14 @@ export const MegaMenu: Story = {
                   />
                 }
               />
-              <XDSTopNavItem label="Pricing" href="#" />
-              <XDSTopNavItem label="Docs" href="#" />
+              <TopNavItem label="Pricing" href="#" />
+              <TopNavItem label="Docs" href="#" />
             </>
           }
           endContent={
             <>
-              <XDSButton label="Sign in" variant="ghost" />
-              <XDSButton label="Get started" variant="primary" />
+              <Button label="Sign in" variant="ghost" />
+              <Button label="Get started" variant="primary" />
             </>
           }
         />
@@ -247,29 +247,29 @@ export const MegaMenuSimple: Story = {
   name: 'Mega Menu (Simple)',
   render: () => (
     <div style={{position: 'relative'}}>
-      <XDSTopNav
+      <TopNav
         label="Simple navigation"
-        heading={<XDSTopNavHeading heading="App" href="#" />}
+        heading={<TopNavHeading heading="App" href="#" />}
         startContent={
           <>
-            <XDSTopNavItem label="Home" href="#" isSelected />
-            <XDSTopNavMegaMenu
+            <TopNavItem label="Home" href="#" isSelected />
+            <TopNavMegaMenu
               label="Features"
               items={
                 <>
-                  <XDSTopNavMegaMenuItem
+                  <TopNavMegaMenuItem
                     title="Dashboard"
                     description="Overview of your key metrics"
                     icon={<ChartBarIcon style={{width: 20, height: 20}} />}
                     href="#"
                   />
-                  <XDSTopNavMegaMenuItem
+                  <TopNavMegaMenuItem
                     title="Integrations"
                     description="Connect with your favorite tools"
                     icon={<CodeBracketIcon style={{width: 20, height: 20}} />}
                     href="#"
                   />
-                  <XDSTopNavMegaMenuItem
+                  <TopNavMegaMenuItem
                     title="API Access"
                     description="Programmatic access to all features"
                     icon={<GlobeAltIcon style={{width: 20, height: 20}} />}
@@ -280,7 +280,7 @@ export const MegaMenuSimple: Story = {
             />
           </>
         }
-        endContent={<XDSButton label="Sign in" variant="primary" />}
+        endContent={<Button label="Sign in" variant="primary" />}
       />
     </div>
   ),

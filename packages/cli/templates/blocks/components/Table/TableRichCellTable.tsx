@@ -2,10 +2,10 @@
 
 'use client';
 
-import {XDSTable, proportional, pixel} from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSLink} from '@xds/core/Link';
+import {Table, proportional, pixel} from '@xds/core/Table';
+import type {TableColumn} from '@xds/core/Table';
+import {Badge} from '@xds/core/Badge';
+import {Link} from '@xds/core/Link';
 
 interface User extends Record<string, unknown> {
   id: string;
@@ -59,21 +59,21 @@ const roleVariant: Record<string, 'blue' | 'purple' | 'green'> = {
   PM: 'green',
 };
 
-const columns: XDSTableColumn<User>[] = [
+const columns: TableColumn<User>[] = [
   {key: 'name', header: 'Name'},
   {
     key: 'email',
     header: 'Email',
     width: proportional(2),
     renderCell: item => (
-      <XDSLink href={`mailto:${item.email}`}>{item.email}</XDSLink>
+      <Link href={`mailto:${item.email}`}>{item.email}</Link>
     ),
   },
   {
     key: 'role',
     header: 'Role',
     renderCell: item => (
-      <XDSBadge
+      <Badge
         label={item.role}
         variant={roleVariant[item.role] ?? 'neutral'}
       />
@@ -83,5 +83,5 @@ const columns: XDSTableColumn<User>[] = [
 ];
 
 export default function TableRichCellTable() {
-  return <XDSTable data={users} columns={columns} idKey="id" hasHover />;
+  return <Table data={users} columns={columns} idKey="id" hasHover />;
 }

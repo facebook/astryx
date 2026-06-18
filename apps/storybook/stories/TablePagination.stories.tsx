@@ -3,13 +3,13 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSTable,
-  useXDSTablePagination,
+  Table,
+  useTablePagination,
   paginateData,
-  useXDSTableSelection,
-  useXDSTableSelectionState,
+  useTableSelection,
+  useTableSelectionState,
 } from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
+import type {TableColumn} from '@xds/core/Table';
 
 // =============================================================================
 // Sample Data
@@ -29,7 +29,7 @@ const users: User[] = Array.from({length: 50}, (_, i) => ({
   role: ['Engineer', 'Designer', 'Manager', 'Admin', 'Analyst'][i % 5],
 }));
 
-const columns: XDSTableColumn<User>[] = [
+const columns: TableColumn<User>[] = [
   {key: 'name', header: 'Name'},
   {key: 'email', header: 'Email'},
   {key: 'role', header: 'Role'},
@@ -59,7 +59,7 @@ function PaginatedDemo({
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
-  const plugin = useXDSTablePagination<User>({
+  const plugin = useTablePagination<User>({
     page,
     onPageChange: setPage,
     totalItems: users.length,
@@ -70,7 +70,7 @@ function PaginatedDemo({
   });
 
   return (
-    <XDSTable
+    <Table
       data={paginateData(users, page, pageSize)}
       columns={columns}
       idKey="id"
@@ -96,7 +96,7 @@ export const Default: Story = {
     const [page, setPage] = useState(1);
     const pageSize = 10;
 
-    const plugin = useXDSTablePagination<User>({
+    const plugin = useTablePagination<User>({
       page,
       onPageChange: setPage,
       totalItems: users.length,
@@ -105,7 +105,7 @@ export const Default: Story = {
 
     return (
       <div style={{maxWidth: 600}}>
-        <XDSTable
+        <Table
           data={paginateData(users, page, pageSize)}
           columns={columns}
           idKey="id"
@@ -123,7 +123,7 @@ export const ServerSide: Story = {
 
     const serverData = users.slice((page - 1) * pageSize, page * pageSize);
 
-    const plugin = useXDSTablePagination<User>({
+    const plugin = useTablePagination<User>({
       page,
       onPageChange: setPage,
       totalItems: users.length,
@@ -135,7 +135,7 @@ export const ServerSide: Story = {
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
           Server-side: data is pre-sliced, no paginatedData() needed.
         </p>
-        <XDSTable
+        <Table
           data={serverData}
           columns={columns}
           idKey="id"
@@ -151,7 +151,7 @@ export const PageSizeSelector: Story = {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
 
-    const plugin = useXDSTablePagination<User>({
+    const plugin = useTablePagination<User>({
       page,
       onPageChange: setPage,
       totalItems: users.length,
@@ -162,7 +162,7 @@ export const PageSizeSelector: Story = {
 
     return (
       <div style={{maxWidth: 600}}>
-        <XDSTable
+        <Table
           data={paginateData(users, page, pageSize)}
           columns={columns}
           idKey="id"
@@ -180,7 +180,7 @@ export const CursorBased: Story = {
 
     const hasMore = page * pageSize < users.length;
 
-    const plugin = useXDSTablePagination<User>({
+    const plugin = useTablePagination<User>({
       page,
       onPageChange: setPage,
       hasMore,
@@ -192,7 +192,7 @@ export const CursorBased: Story = {
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
           Cursor-based: total unknown, only hasMore={String(hasMore)}.
         </p>
-        <XDSTable
+        <Table
           data={paginateData(users, page, pageSize)}
           columns={columns}
           idKey="id"
@@ -208,7 +208,7 @@ export const PositionAbove: Story = {
     const [page, setPage] = useState(1);
     const pageSize = 10;
 
-    const plugin = useXDSTablePagination<User>({
+    const plugin = useTablePagination<User>({
       page,
       onPageChange: setPage,
       totalItems: users.length,
@@ -218,7 +218,7 @@ export const PositionAbove: Story = {
 
     return (
       <div style={{maxWidth: 600}}>
-        <XDSTable
+        <Table
           data={paginateData(users, page, pageSize)}
           columns={columns}
           idKey="id"
@@ -234,7 +234,7 @@ export const PositionBoth: Story = {
     const [page, setPage] = useState(1);
     const pageSize = 10;
 
-    const plugin = useXDSTablePagination<User>({
+    const plugin = useTablePagination<User>({
       page,
       onPageChange: setPage,
       totalItems: users.length,
@@ -244,7 +244,7 @@ export const PositionBoth: Story = {
 
     return (
       <div style={{maxWidth: 600}}>
-        <XDSTable
+        <Table
           data={paginateData(users, page, pageSize)}
           columns={columns}
           idKey="id"
@@ -261,7 +261,7 @@ export const WithSelection: Story = {
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
     const pageSize = 10;
 
-    const plugin = useXDSTablePagination<User>({
+    const plugin = useTablePagination<User>({
       page,
       onPageChange: setPage,
       totalItems: users.length,
@@ -270,20 +270,20 @@ export const WithSelection: Story = {
 
     const pageData = paginateData(users, page, pageSize);
 
-    const {selectionConfig} = useXDSTableSelectionState<User>({
+    const {selectionConfig} = useTableSelectionState<User>({
       data: pageData,
       idKey: 'id',
       selectedKeys,
       setSelectedKeys,
     });
-    const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
+    const selectionPlugin = useTableSelection<User>(selectionConfig);
 
     return (
       <div style={{maxWidth: 600}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
           Pagination + Selection composed. Selected: {selectedKeys.size}
         </p>
-        <XDSTable
+        <Table
           data={pageData}
           columns={columns}
           idKey="id"

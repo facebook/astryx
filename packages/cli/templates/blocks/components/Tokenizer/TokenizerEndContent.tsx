@@ -4,17 +4,17 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSTokenizer} from '@xds/core/Tokenizer';
-import {XDSButton} from '@xds/core/Button';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
+import {Tokenizer} from '@xds/core/Tokenizer';
+import {Button} from '@xds/core/Button';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
 
 const styles = stylex.create({
   fixed: {width: 400},
 });
 
-const users: XDSSearchableItem[] = [
+const users: SearchableItem[] = [
   {id: '1', label: 'Alice Johnson'},
   {id: '2', label: 'Bob Smith'},
   {id: '3', label: 'Charlie Brown'},
@@ -23,29 +23,29 @@ const users: XDSSearchableItem[] = [
   {id: '6', label: 'Frank Miller'},
 ];
 
-const userSource: XDSSearchSource = {
+const userSource: SearchSource = {
   search: (query: string) =>
     users.filter(u => u.label.toLowerCase().includes(query.toLowerCase())),
   bootstrap: () => users,
 };
 
 export default function TokenizerEndContent() {
-  const [value, setValue] = useState<XDSSearchableItem[]>([users[0], users[2]]);
+  const [value, setValue] = useState<SearchableItem[]>([users[0], users[2]]);
 
   return (
-    <XDSStack direction="vertical" gap={2}>
-      <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={2}>
+      <Text type="supporting" color="secondary">
         Action button in the end slot
-      </XDSText>
-      <XDSTokenizer
+      </Text>
+      <Tokenizer
         label="Team Members"
         placeholder="Search people..."
         searchSource={userSource}
         value={value}
         onChange={items => setValue(items)}
-        endContent={<XDSButton label="Apply" variant="primary" size="sm" />}
+        endContent={<Button label="Apply" variant="primary" size="sm" />}
         xstyle={styles.fixed}
       />
-    </XDSStack>
+    </Stack>
   );
 }

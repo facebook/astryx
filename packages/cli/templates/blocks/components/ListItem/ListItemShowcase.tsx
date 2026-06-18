@@ -2,39 +2,39 @@
 
 'use client';
 
-import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSIcon} from '@xds/core/Icon';
+import {List, ListItem} from '@xds/core/List';
+import {Badge} from '@xds/core/Badge';
+import {Icon} from '@xds/core/Icon';
 
 export default function ListItemShowcase() {
   return (
-    <XDSList header="Settings" hasDividers>
-      <XDSListItem
+    <List header="Settings" hasDividers>
+      <ListItem
         label="Notifications"
         description="Push, email, and SMS alerts"
-        startContent={<XDSIcon icon="info" />}
-        endContent={<XDSBadge label="3 new" variant="blue" />}
+        startContent={<Icon icon="info" />}
+        endContent={<Badge label="3 new" variant="blue" />}
         onClick={() => {}}
       />
-      <XDSListItem
+      <ListItem
         label="Privacy"
         description="Manage data sharing preferences"
-        startContent={<XDSIcon icon="eyeSlash" />}
+        startContent={<Icon icon="eyeSlash" />}
         onClick={() => {}}
       />
-      <XDSListItem
+      <ListItem
         label="Appearance"
         description="Theme, font size, and display"
-        startContent={<XDSIcon icon="wrench" />}
+        startContent={<Icon icon="wrench" />}
         onClick={() => {}}
       />
-      <XDSListItem
+      <ListItem
         label="Billing"
         description="Plans and payment methods"
-        startContent={<XDSIcon icon="copy" />}
-        endContent={<XDSBadge label="Pro" variant="purple" />}
+        startContent={<Icon icon="copy" />}
+        endContent={<Badge label="Pro" variant="purple" />}
         onClick={() => {}}
       />
-    </XDSList>
+    </List>
   );
 }

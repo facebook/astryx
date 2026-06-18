@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSCitation} from '@xds/core/Citation';
+import {Citation} from '@xds/core/Citation';
 
-const meta: Meta<typeof XDSCitation> = {
+const meta: Meta<typeof Citation> = {
   title: 'Core/Citation',
-  component: XDSCitation,
+  component: Citation,
   tags: ['autodocs'],
   argTypes: {
     variant: {
@@ -21,7 +21,7 @@ const meta: Meta<typeof XDSCitation> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSCitation>;
+type Story = StoryObj<typeof Citation>;
 
 export const Label: Story = {
   args: {
@@ -62,17 +62,17 @@ export const NoLink: Story = {
 export const Variants: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap'}}>
-      <XDSCitation
+      <Citation
         source={{title: 'React Docs', url: 'https://react.dev'}}
         number={1}
         variant="label"
       />
-      <XDSCitation
+      <Citation
         source={{title: 'TypeScript', url: 'https://typescriptlang.org'}}
         number={2}
         variant="number"
       />
-      <XDSCitation
+      <Citation
         source={{
           title: 'GitHub',
           url: 'https://github.com',
@@ -81,7 +81,7 @@ export const Variants: Story = {
         number={3}
         variant="label"
       />
-      <XDSCitation
+      <Citation
         source={{title: 'A very long source title that should be truncated with ellipsis'}}
         number={4}
         variant="label"

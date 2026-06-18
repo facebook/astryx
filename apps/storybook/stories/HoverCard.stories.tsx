@@ -1,13 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSHoverCard, useXDSHoverCard} from '@xds/core/HoverCard';
-import {XDSButton} from '@xds/core/Button';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {HoverCard, useHoverCard} from '@xds/core/HoverCard';
+import {Button} from '@xds/core/Button';
+import {VStack, HStack} from '@xds/core/Layout';
 
-const meta: Meta<typeof XDSHoverCard> = {
+const meta: Meta<typeof HoverCard> = {
   title: 'Core/HoverCard',
-  component: XDSHoverCard,
+  component: HoverCard,
   tags: ['autodocs'],
   argTypes: {
     placement: {
@@ -36,19 +36,19 @@ const meta: Meta<typeof XDSHoverCard> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSHoverCard>;
+type Story = StoryObj<typeof HoverCard>;
 
 // Sample content for hover cards
 function ProfileCard() {
   return (
     <div style={{width: 200}}>
-      <XDSVStack gap={2}>
+      <VStack gap={2}>
         <div style={{fontWeight: 600}}>Jane Doe</div>
         <div style={{fontSize: 14, opacity: 0.7}}>Software Engineer</div>
         <div style={{fontSize: 13}}>
           Building great products with great people.
         </div>
-      </XDSVStack>
+      </VStack>
     </div>
   );
 }
@@ -57,7 +57,7 @@ export const Default: Story = {
   args: {
     placement: 'above',
     content: <ProfileCard />,
-    children: <XDSButton label="Hover me">Hover me</XDSButton>,
+    children: <Button label="Hover me">Hover me</Button>,
   },
 };
 
@@ -65,7 +65,7 @@ export const Below: Story = {
   args: {
     placement: 'below',
     content: <ProfileCard />,
-    children: <XDSButton label="Hover me">Hover me</XDSButton>,
+    children: <Button label="Hover me">Hover me</Button>,
   },
 };
 
@@ -73,7 +73,7 @@ export const Start: Story = {
   args: {
     placement: 'start',
     content: <ProfileCard />,
-    children: <XDSButton label="Hover me">Hover me</XDSButton>,
+    children: <Button label="Hover me">Hover me</Button>,
   },
 };
 
@@ -81,7 +81,7 @@ export const End: Story = {
   args: {
     placement: 'end',
     content: <ProfileCard />,
-    children: <XDSButton label="Hover me">Hover me</XDSButton>,
+    children: <Button label="Hover me">Hover me</Button>,
   },
 };
 
@@ -92,7 +92,7 @@ export const CustomDelay: Story = {
     hideDelay: 300,
     content: <ProfileCard />,
     children: (
-      <XDSButton label="Slow hover (500ms)">Slow hover (500ms)</XDSButton>
+      <Button label="Slow hover (500ms)">Slow hover (500ms)</Button>
     ),
   },
 };
@@ -102,44 +102,44 @@ export const Disabled: Story = {
     placement: 'above',
     isEnabled: false,
     content: <ProfileCard />,
-    children: <XDSButton label="Hover disabled">Hover disabled</XDSButton>,
+    children: <Button label="Hover disabled">Hover disabled</Button>,
   },
 };
 
 export const AllPlacements: Story = {
   render: () => (
     <div style={{padding: 100, display: 'flex', gap: 24, flexWrap: 'wrap'}}>
-      <XDSHoverCard content={<ProfileCard />} placement="above">
-        <XDSButton label="Above">Above</XDSButton>
-      </XDSHoverCard>
-      <XDSHoverCard content={<ProfileCard />} placement="below">
-        <XDSButton label="Below">Below</XDSButton>
-      </XDSHoverCard>
-      <XDSHoverCard content={<ProfileCard />} placement="start">
-        <XDSButton label="Start">Start</XDSButton>
-      </XDSHoverCard>
-      <XDSHoverCard content={<ProfileCard />} placement="end">
-        <XDSButton label="End">End</XDSButton>
-      </XDSHoverCard>
+      <HoverCard content={<ProfileCard />} placement="above">
+        <Button label="Above">Above</Button>
+      </HoverCard>
+      <HoverCard content={<ProfileCard />} placement="below">
+        <Button label="Below">Below</Button>
+      </HoverCard>
+      <HoverCard content={<ProfileCard />} placement="start">
+        <Button label="Start">Start</Button>
+      </HoverCard>
+      <HoverCard content={<ProfileCard />} placement="end">
+        <Button label="End">End</Button>
+      </HoverCard>
     </div>
   ),
 };
 
 export const WithHook: Story = {
   render: function HookExample() {
-    const hoverCard = useXDSHoverCard({
+    const hoverCard = useHoverCard({
       placement: 'above',
       delay: 200,
     });
 
     return (
       <div style={{padding: 100}}>
-        <XDSButton
+        <Button
           label="Using hook directly"
           ref={hoverCard.ref}
           aria-describedby={hoverCard.describedBy}>
           Using hook directly
-        </XDSButton>
+        </Button>
         {hoverCard.renderHoverCard(<ProfileCard />)}
       </div>
     );
@@ -149,23 +149,23 @@ export const WithHook: Story = {
 export const InteractiveContent: Story = {
   render: () => (
     <div style={{padding: 100}}>
-      <XDSHoverCard
+      <HoverCard
         placement="below"
         content={
-          <XDSVStack gap={2}>
+          <VStack gap={2}>
             <div>Interactive hover card content</div>
-            <XDSHStack gap={2}>
-              <XDSButton label="Follow" variant="primary">
+            <HStack gap={2}>
+              <Button label="Follow" variant="primary">
                 Follow
-              </XDSButton>
-              <XDSButton label="Message">Message</XDSButton>
-            </XDSHStack>
-          </XDSVStack>
+              </Button>
+              <Button label="Message">Message</Button>
+            </HStack>
+          </VStack>
         }>
-        <XDSButton label="Hover for interactive content">
+        <Button label="Hover for interactive content">
           Hover for interactive content
-        </XDSButton>
-      </XDSHoverCard>
+        </Button>
+      </HoverCard>
     </div>
   ),
 };
@@ -175,9 +175,9 @@ export const TextNode: Story = {
     <div style={{padding: 100}}>
       <p>
         This feature was created by{' '}
-        <XDSHoverCard content={<ProfileCard />} placement="above">
+        <HoverCard content={<ProfileCard />} placement="above">
           Jane Doe
-        </XDSHoverCard>{' '}
+        </HoverCard>{' '}
         and shipped last week.
       </p>
     </div>
@@ -189,22 +189,22 @@ export const TextNodeMultiple: Story = {
     <div style={{padding: 100}}>
       <p>
         The project is maintained by{' '}
-        <XDSHoverCard content={<ProfileCard />} placement="above">
+        <HoverCard content={<ProfileCard />} placement="above">
           Jane Doe
-        </XDSHoverCard>
+        </HoverCard>
         ,{' '}
-        <XDSHoverCard
+        <HoverCard
           content={
             <div style={{width: 200}}>
-              <XDSVStack gap={2}>
+              <VStack gap={2}>
                 <div style={{fontWeight: 600}}>John Smith</div>
                 <div style={{fontSize: 14, opacity: 0.7}}>Product Manager</div>
-              </XDSVStack>
+              </VStack>
             </div>
           }
           placement="above">
           John Smith
-        </XDSHoverCard>
+        </HoverCard>
         , and others.
       </p>
     </div>

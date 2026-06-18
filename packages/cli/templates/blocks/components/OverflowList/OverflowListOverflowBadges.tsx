@@ -3,9 +3,9 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSOverflowList} from '@xds/core/OverflowList';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSCard} from '@xds/core/Card';
+import {OverflowList} from '@xds/core/OverflowList';
+import {Badge} from '@xds/core/Badge';
+import {Card} from '@xds/core/Card';
 
 const styles = stylex.create({
   resizable: {
@@ -18,18 +18,18 @@ const styles = stylex.create({
 
 export default function OverflowListOverflowBadges() {
   return (
-    <XDSCard padding={2} xstyle={styles.resizable}>
-      <XDSOverflowList
+    <Card padding={2} xstyle={styles.resizable}>
+      <OverflowList
         gap={1}
         overflowRenderer={overflowItems => (
-          <XDSBadge variant="neutral" label={`+${overflowItems.length}`} />
+          <Badge variant="neutral" label={`+${overflowItems.length}`} />
         )}>
-        <XDSBadge variant="info" label="React" />
-        <XDSBadge variant="success" label="TypeScript" />
-        <XDSBadge variant="warning" label="StyleX" />
-        <XDSBadge variant="neutral" label="Storybook" />
-        <XDSBadge variant="error" label="Vitest" />
-      </XDSOverflowList>
-    </XDSCard>
+        <Badge variant="info" label="React" />
+        <Badge variant="success" label="TypeScript" />
+        <Badge variant="warning" label="StyleX" />
+        <Badge variant="neutral" label="Storybook" />
+        <Badge variant="error" label="Vitest" />
+      </OverflowList>
+    </Card>
   );
 }

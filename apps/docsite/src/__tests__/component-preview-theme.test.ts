@@ -17,25 +17,25 @@ function readComponentDetailFile(name: string): string {
 describe('component detail preview theming', () => {
   it('applies the neutral preview theme around preview containers', () => {
     expect(readComponentDetailFile('ComponentDetailClient.tsx')).toMatch(
-      /<ComponentPreviewTheme>\s*<XDSCard variant="muted" padding=\{0\}>/,
+      /<ComponentPreviewTheme>\s*<Card variant="muted" padding=\{0\}>/,
     );
     expect(readComponentDetailFile('InteractivePreview.tsx')).toMatch(
-      /<ComponentPreviewTheme>\s*<XDSCard[\s>]/,
+      /<ComponentPreviewTheme>\s*<Card[\s>]/,
     );
     expect(readComponentDetailFile('ExampleBlock.tsx')).toMatch(
-      /<ComponentPreviewTheme>\s*<XDSCard padding=\{3\}>/,
+      /<ComponentPreviewTheme>\s*<Card padding=\{3\}>/,
     );
   });
 
   it('keeps the theme boundary at the container instead of inside content', () => {
     expect(readComponentDetailFile('ShowcasePreview.tsx')).not.toContain(
-      'XDSTheme theme={neutralTheme}',
+      'Theme theme={neutralTheme}',
     );
     expect(readComponentDetailFile('InteractivePreview.tsx')).not.toContain(
-      'XDSTheme theme={neutralTheme}',
+      'Theme theme={neutralTheme}',
     );
     expect(readComponentDetailFile('ExampleBlock.tsx')).not.toContain(
-      'XDSTheme theme={neutralTheme}',
+      'Theme theme={neutralTheme}',
     );
   });
 });

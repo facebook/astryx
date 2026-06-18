@@ -2,15 +2,15 @@
 
 'use client';
 
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSVStack} from '@xds/core/Stack';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSNavIcon} from '@xds/core/NavIcon';
+import {AppShell} from '@xds/core/AppShell';
+import {VStack} from '@xds/core/Stack';
+import {Heading, Text} from '@xds/core/Text';
+import {NavIcon} from '@xds/core/NavIcon';
 import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
+  SideNav,
+  SideNavHeading,
+  SideNavItem,
+  SideNavSection,
 } from '@xds/core/SideNav';
 import {
   ChartBarIcon,
@@ -31,15 +31,15 @@ const styles = stylex.create({
 
 export default function AppShellShowcase() {
   return (
-    <XDSAppShell
+    <AppShell
       contentPadding={6}
       xstyle={styles.fit}
       sideNav={
-        <XDSSideNav
+        <SideNav
           header={
-            <XDSSideNavHeading
+            <SideNavHeading
               icon={
-                <XDSNavIcon
+                <NavIcon
                   icon={<CubeIcon style={{width: 16, height: 16}} />}
                 />
               }
@@ -47,26 +47,26 @@ export default function AppShellShowcase() {
               headingHref="#"
             />
           }>
-          <XDSSideNavSection title="Main" isHeaderHidden>
-            <XDSSideNavItem label="Home" icon={HomeIcon} isSelected href="#" />
-            <XDSSideNavItem label="Reports" icon={ChartBarIcon} href="#" />
-            <XDSSideNavItem
+          <SideNavSection title="Main" isHeaderHidden>
+            <SideNavItem label="Home" icon={HomeIcon} isSelected href="#" />
+            <SideNavItem label="Reports" icon={ChartBarIcon} href="#" />
+            <SideNavItem
               label="Documents"
               icon={DocumentTextIcon}
               href="#"
             />
-            <XDSSideNavItem label="Team" icon={UsersIcon} href="#" />
-          </XDSSideNavSection>
-        </XDSSideNav>
+            <SideNavItem label="Team" icon={UsersIcon} href="#" />
+          </SideNavSection>
+        </SideNav>
       }>
-      <XDSVStack gap={4}>
-        <XDSHeading level={3}>Page Content</XDSHeading>
-        <XDSText type="body">
+      <VStack gap={4}>
+        <Heading level={3}>Page Content</Heading>
+        <Text type="body">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
           eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
           minim veniam, quis nostrud exercitation ullamco laboris.
-        </XDSText>
-      </XDSVStack>
-    </XDSAppShell>
+        </Text>
+      </VStack>
+    </AppShell>
   );
 }

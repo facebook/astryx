@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSText} from '@xds/core/Text';
-import {XDSStack} from '@xds/core/Stack';
+import {Text} from '@xds/core/Text';
+import {Stack} from '@xds/core/Stack';
 
 const TYPES = [
   {type: 'body' as const, label: 'Body text', sample: 'Body text for paragraphs and general content'},
@@ -17,21 +17,21 @@ const TYPES = [
 
 export default function TextTypes() {
   return (
-    <XDSStack direction="vertical" gap={3}>
+    <Stack direction="vertical" gap={3}>
       {TYPES.map(({type, label, sample, hasStrikethrough, hasTabularNumbers}) => (
-        <XDSStack key={label} direction="vertical" gap={0}>
-          <XDSText type="supporting" color="secondary">
+        <Stack key={label} direction="vertical" gap={0}>
+          <Text type="supporting" color="secondary">
             {label}
-          </XDSText>
-          <XDSText
+          </Text>
+          <Text
             type={type}
             display="block"
             hasStrikethrough={hasStrikethrough}
             hasTabularNumbers={hasTabularNumbers}>
             {sample}
-          </XDSText>
-        </XDSStack>
+          </Text>
+        </Stack>
       ))}
-    </XDSStack>
+    </Stack>
   );
 }

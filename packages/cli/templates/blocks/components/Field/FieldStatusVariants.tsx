@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
+import {TextInput} from '@xds/core/TextInput';
+import {VStack} from '@xds/core/Layout';
+import {Center} from '@xds/core/Center';
 
 export default function FieldStatusVariants() {
   const [email, setEmail] = useState('bad-email');
@@ -13,9 +13,9 @@ export default function FieldStatusVariants() {
   const [apiKey, setApiKey] = useState('sk-live-abc123');
 
   return (
-    <XDSCenter>
-      <XDSVStack gap={4}>
-        <XDSTextInput
+    <Center>
+      <VStack gap={4}>
+        <TextInput
           label="Email"
           description="Enter your work email"
           value={email}
@@ -25,7 +25,7 @@ export default function FieldStatusVariants() {
             message: 'Please enter a valid email address',
           }}
         />
-        <XDSTextInput
+        <TextInput
           label="Username"
           description="Choose a unique username"
           value={username}
@@ -35,14 +35,14 @@ export default function FieldStatusVariants() {
             message: 'This username is reserved for administrators',
           }}
         />
-        <XDSTextInput
+        <TextInput
           label="API Key"
           description="Paste your API key"
           value={apiKey}
           onChange={setApiKey}
           status={{type: 'success', message: 'API key is valid and active'}}
         />
-      </XDSVStack>
-    </XDSCenter>
+      </VStack>
+    </Center>
   );
 }

@@ -2,33 +2,33 @@
 
 'use client';
 
-import {XDSBreadcrumbs, XDSBreadcrumbItem} from '@xds/core/Breadcrumbs';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Breadcrumbs, BreadcrumbItem} from '@xds/core/Breadcrumbs';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function BreadcrumbsSupportingVariant() {
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Default
-        </XDSText>
-        <XDSBreadcrumbs>
-          <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
-          <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>
-          <XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>
-        </XDSBreadcrumbs>
-      </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+        </Text>
+        <Breadcrumbs>
+          <BreadcrumbItem href="/">Home</BreadcrumbItem>
+          <BreadcrumbItem href="/projects">Projects</BreadcrumbItem>
+          <BreadcrumbItem isCurrent>My Project</BreadcrumbItem>
+        </Breadcrumbs>
+      </Stack>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Supporting
-        </XDSText>
-        <XDSBreadcrumbs variant="supporting">
-          <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
-          <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>
-          <XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>
-        </XDSBreadcrumbs>
-      </XDSStack>
-    </XDSStack>
+        </Text>
+        <Breadcrumbs variant="supporting">
+          <BreadcrumbItem href="/">Home</BreadcrumbItem>
+          <BreadcrumbItem href="/projects">Projects</BreadcrumbItem>
+          <BreadcrumbItem isCurrent>My Project</BreadcrumbItem>
+        </Breadcrumbs>
+      </Stack>
+    </Stack>
   );
 }

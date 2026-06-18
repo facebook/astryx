@@ -2,10 +2,10 @@
 
 'use client';
 
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSCard} from '@xds/core/Card';
-import {XDSVStack} from '@xds/core/Stack';
-import {XDSText} from '@xds/core/Text';
+import {Grid} from '@xds/core/Grid';
+import {Card} from '@xds/core/Card';
+import {VStack} from '@xds/core/Stack';
+import {Text} from '@xds/core/Text';
 
 const cards = [
   {title: 'Getting Started', description: 'Learn the basics of the platform.'},
@@ -18,23 +18,23 @@ const cards = [
 
 export default function GridGalleryExample() {
   return (
-    <XDSGrid
+    <Grid
       columns={{minWidth: 180}}
       gap={5}
       width="100%"
       style={{maxWidth: 400}}>
       {cards.map(card => (
-        <XDSCard key={card.title}>
-          <XDSVStack gap={1}>
-            <XDSText type="label" display="block">
+        <Card key={card.title}>
+          <VStack gap={1}>
+            <Text type="label" display="block">
               {card.title}
-            </XDSText>
-            <XDSText type="supporting" display="block">
+            </Text>
+            <Text type="supporting" display="block">
               {card.description}
-            </XDSText>
-          </XDSVStack>
-        </XDSCard>
+            </Text>
+          </VStack>
+        </Card>
       ))}
-    </XDSGrid>
+    </Grid>
   );
 }

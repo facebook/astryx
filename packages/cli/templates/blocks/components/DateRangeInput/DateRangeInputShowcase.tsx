@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSDateRangeInput} from '@xds/core/DateRangeInput';
+import {DateRangeInput} from '@xds/core/DateRangeInput';
 import type {DateRange} from '@xds/core/DateRangeInput';
 import type {ISODateString} from '@xds/core/Calendar';
-import {XDSStack} from '@xds/core/Layout';
+import {Stack} from '@xds/core/Layout';
 
 function daysAgo(n: number): ISODateString {
   const d = new Date();
@@ -27,13 +27,13 @@ export default function DateRangeInputShowcase() {
   const [range, setRange] = useState<DateRange | null>(null);
 
   return (
-    <XDSStack direction="vertical" width="100%" style={{maxWidth: 400}}>
-      <XDSDateRangeInput
+    <Stack direction="vertical" width="100%" style={{maxWidth: 400}}>
+      <DateRangeInput
         label="Date range"
         value={range}
         onChange={setRange}
         presets={presets}
       />
-    </XDSStack>
+    </Stack>
   );
 }

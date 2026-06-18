@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSDivider} from '@xds/core/Divider';
+import {CheckboxInput} from '@xds/core/CheckboxInput';
+import {Stack} from '@xds/core/Layout';
+import {Divider} from '@xds/core/Divider';
 
 export default function CheckboxInputIndeterminateState() {
   const [items, setItems] = useState({
@@ -29,36 +29,36 @@ export default function CheckboxInputIndeterminateState() {
   };
 
   return (
-    <XDSStack direction="vertical" gap={3}>
-      <XDSCheckboxInput
+    <Stack direction="vertical" gap={3}>
+      <CheckboxInput
         label="Select all notifications"
         description={`${checkedCount} of ${totalCount} enabled`}
         value={selectAllValue}
         onChange={handleSelectAll}
       />
-      <XDSDivider />
-      <XDSStack direction="vertical" gap={3}>
-        <XDSCheckboxInput
+      <Divider />
+      <Stack direction="vertical" gap={3}>
+        <CheckboxInput
           label="Email notifications"
           value={items.email}
           onChange={v => setItems(prev => ({...prev, email: v}))}
         />
-        <XDSCheckboxInput
+        <CheckboxInput
           label="Push notifications"
           value={items.push}
           onChange={v => setItems(prev => ({...prev, push: v}))}
         />
-        <XDSCheckboxInput
+        <CheckboxInput
           label="SMS alerts"
           value={items.sms}
           onChange={v => setItems(prev => ({...prev, sms: v}))}
         />
-        <XDSCheckboxInput
+        <CheckboxInput
           label="Slack messages"
           value={items.slack}
           onChange={v => setItems(prev => ({...prev, slack: v}))}
         />
-      </XDSStack>
-    </XDSStack>
+      </Stack>
+    </Stack>
   );
 }

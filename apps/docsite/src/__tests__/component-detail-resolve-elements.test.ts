@@ -5,17 +5,17 @@ import {describe, expect, it, vi} from 'vitest';
 import {resolveValue} from '../components/component-detail/resolveElements';
 
 vi.mock('@xds/core', () => ({
-  XDSBadge: () => null,
-  XDSIcon: () => null,
-  XDSSideNavItem: () => null,
-  XDSText: () => null,
+  Badge: () => null,
+  Icon: () => null,
+  SideNavItem: () => null,
+  Text: () => null,
 }));
 
 describe('component detail element resolution', () => {
   it('resolves descriptor arrays from playground defaults into React elements', () => {
     const resolved = resolveValue([
-      {__element: 'XDSSideNavItem', props: {label: 'Dashboard'}},
-      {__element: 'XDSSideNavItem', props: {label: 'Projects'}},
+      {__element: 'SideNavItem', props: {label: 'Dashboard'}},
+      {__element: 'SideNavItem', props: {label: 'Projects'}},
     ]);
 
     expect(Array.isArray(resolved)).toBe(true);
@@ -27,8 +27,8 @@ describe('component detail element resolution', () => {
 
   it('resolves descriptors nested inside plain object props', () => {
     const resolved = resolveValue({
-      before: {__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}},
-      children: [{__element: 'XDSBadge', props: {label: '3'}}],
+      before: {__element: 'Icon', props: {icon: 'check', size: 'sm'}},
+      children: [{__element: 'Badge', props: {label: '3'}}],
     }) as {
       before: ReactElement<Record<string, unknown>>;
       children: ReactElement<Record<string, unknown>>[];
@@ -45,7 +45,7 @@ describe('component detail element resolution', () => {
       status: {
         type: 'error',
         message: {
-          __element: 'XDSText',
+          __element: 'Text',
           props: {type: 'body'},
           children: 'Bad date',
         },

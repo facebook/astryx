@@ -3,9 +3,9 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSStatusDot} from '@xds/core/StatusDot';
+import {Heading, Text} from '@xds/core/Text';
+import {Badge} from '@xds/core/Badge';
+import {StatusDot} from '@xds/core/StatusDot';
 
 const styles = stylex.create({
   container: {
@@ -54,27 +54,27 @@ export default function ShowcaseHeaderPage() {
     <div {...stylex.props(styles.container)}>
       <div {...stylex.props(styles.content)}>
         <div {...stylex.props(styles.badgeRow)}>
-          <XDSBadge label="Open Source" variant="info" />
-          <XDSBadge label="Nest" variant="success" />
+          <Badge label="Open Source" variant="info" />
+          <Badge label="Nest" variant="success" />
         </div>
 
         <div {...stylex.props(styles.titleRow)}>
-          <XDSHeading level={1}>XDS</XDSHeading>
+          <Heading level={1}>XDS</Heading>
           <div {...stylex.props(styles.connector)} />
-          <XDSHeading level={1}>Nest</XDSHeading>
+          <Heading level={1}>Nest</Heading>
         </div>
 
         <div {...stylex.props(styles.subtitle)}>
-          <XDSText type="large" color="secondary">
+          <Text type="large" color="secondary">
             A ground-up rebuild for modern React, AI tools, and beyond
-          </XDSText>
+          </Text>
         </div>
 
         <div {...stylex.props(styles.availableRow)}>
-          <XDSStatusDot variant="success" label="Available" isPulsing />
-          <XDSText type="body" color="secondary">
+          <StatusDot variant="success" label="Available" isPulsing />
+          <Text type="body" color="secondary">
             Available now
-          </XDSText>
+          </Text>
         </div>
       </div>
     </div>

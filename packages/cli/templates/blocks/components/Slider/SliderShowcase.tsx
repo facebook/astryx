@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSSlider} from '@xds/core/Slider';
+import {Slider} from '@xds/core/Slider';
 
 export default function SliderShowcase() {
-  return <XDSSlider label="Volume" value={50} style={{width: 300}} />;
+  return <Slider label="Volume" value={50} style={{width: 300}} />;
 }

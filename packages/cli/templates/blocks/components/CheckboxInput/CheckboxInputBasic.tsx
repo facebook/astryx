@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
-import {XDSStack} from '@xds/core/Layout';
+import {CheckboxInput} from '@xds/core/CheckboxInput';
+import {Stack} from '@xds/core/Layout';
 
 export default function CheckboxInputBasic() {
   const [checked, setChecked] = useState<boolean | 'indeterminate'>(true);
@@ -15,32 +15,32 @@ export default function CheckboxInputBasic() {
   );
 
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSCheckboxInput
+    <Stack direction="vertical" gap={4}>
+      <CheckboxInput
         label="Checked"
         description="This checkbox is currently on."
         value={checked}
         onChange={setChecked}
       />
-      <XDSCheckboxInput
+      <CheckboxInput
         label="Unchecked"
         description="This checkbox is currently off."
         value={unchecked}
         onChange={setUnchecked}
       />
-      <XDSCheckboxInput
+      <CheckboxInput
         label="Disabled"
         description="This checkbox cannot be changed."
         value={disabled}
         onChange={setDisabled}
         isDisabled
       />
-      <XDSCheckboxInput
+      <CheckboxInput
         label="Indeterminate"
         description="This checkbox represents a partial selection."
         value={indeterminate}
         onChange={setIndeterminate}
       />
-    </XDSStack>
+    </Stack>
   );
 }

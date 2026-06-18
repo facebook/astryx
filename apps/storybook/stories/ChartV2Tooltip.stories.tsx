@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSChartV2 as XDSChart, bar, line} from '@xds/lab';
+import {ChartV2 as Chart, bar, line} from '@xds/lab';
 import {
-  XDSChartV2Grid as XDSChartGrid,
-  XDSChartV2Axis as XDSChartAxis,
+  ChartV2Grid as ChartGrid,
+  ChartV2Axis as ChartAxis,
   currency,
 } from '@xds/lab';
 
@@ -31,16 +31,16 @@ const series = [
 /** Hover over the chart to see the grouped tooltip with all series values at the hovered x-position. */
 export const Tooltip: StoryObj = {
   render: () => (
-    <XDSChart
+    <Chart
       data={monthlyData}
       xKey="month"
       series={series}
       tooltip
-      grid={<XDSChartGrid />}
+      grid={<ChartGrid />}
       axes={
         <>
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" tickFormat={currency()} />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" tickFormat={currency()} />
         </>
       }
       height={300}

@@ -5,17 +5,17 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {ShieldCheckIcon} from '@heroicons/react/24/outline';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSText} from '@xds/core/Text';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSButton} from '@xds/core/Button';
-import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
-import {XDSLink} from '@xds/core/Link';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSAvatar} from '@xds/core/Avatar';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Center} from '@xds/core/Center';
+import {Text} from '@xds/core/Text';
+import {TextInput} from '@xds/core/TextInput';
+import {Button} from '@xds/core/Button';
+import {Card} from '@xds/core/Card';
+import {Section} from '@xds/core/Section';
+import {Link} from '@xds/core/Link';
+import {Divider} from '@xds/core/Divider';
+import {Icon} from '@xds/core/Icon';
+import {Avatar} from '@xds/core/Avatar';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 
 // ---------------------------------------------------------------------------
@@ -102,23 +102,23 @@ export default function LoginSSO() {
   };
 
   return (
-    <XDSCenter axis="both" xstyle={styles.page}>
-      <XDSCard padding={8} width="100%" maxWidth={400}>
-        <XDSVStack gap={4} hAlign="stretch">
+    <Center axis="both" xstyle={styles.page}>
+      <Card padding={8} width="100%" maxWidth={400}>
+        <VStack gap={4} hAlign="stretch">
           {/* ── Step 1: Email entry ── */}
           {step === 'email' && (
             <>
-              <XDSVStack gap={1} hAlign="center">
-                <XDSText type="display-1" as="h2">
+              <VStack gap={1} hAlign="center">
+                <Text type="display-1" as="h2">
                   Welcome back
-                </XDSText>
-                <XDSText type="body" color="secondary" size="sm">
+                </Text>
+                <Text type="body" color="secondary" size="sm">
                   Enter your details to sign in to your account
-                </XDSText>
-              </XDSVStack>
+                </Text>
+              </VStack>
 
-              <XDSVStack gap={2}>
-                <XDSTextInput
+              <VStack gap={2}>
+                <TextInput
                   label="Work email"
                   isLabelHidden
                   type="email"
@@ -132,7 +132,7 @@ export default function LoginSSO() {
                     }
                   }}
                 />
-                <XDSTextInput
+                <TextInput
                   label="Password"
                   isLabelHidden
                   type="password"
@@ -141,13 +141,13 @@ export default function LoginSSO() {
                   onChange={setPassword}
                   size="lg"
                 />
-              </XDSVStack>
+              </VStack>
 
-              <XDSLink href="#" size="sm" color="secondary" type="supporting">
+              <Link href="#" size="sm" color="secondary" type="supporting">
                 Having trouble signing in?
-              </XDSLink>
+              </Link>
 
-              <XDSButton
+              <Button
                 label="Sign in"
                 variant="primary"
                 size="lg"
@@ -155,9 +155,9 @@ export default function LoginSSO() {
                 isDisabled={!emailValid}
               />
 
-              <XDSDivider label="Or sign in with" />
+              <Divider label="Or sign in with" />
 
-              <XDSButton
+              <Button
                 label="Continue with SSO"
                 variant="secondary"
                 size="lg"
@@ -165,77 +165,77 @@ export default function LoginSSO() {
                 isDisabled={!emailValid}
               />
 
-              <XDSVStack hAlign="center">
-                <XDSText type="supporting" color="secondary">
+              <VStack hAlign="center">
+                <Text type="supporting" color="secondary">
                   Don&apos;t have an account?{' '}
-                  <XDSLink href="#" type="supporting">
+                  <Link href="#" type="supporting">
                     Request access
-                  </XDSLink>
-                </XDSText>
-              </XDSVStack>
+                  </Link>
+                </Text>
+              </VStack>
             </>
           )}
 
           {/* ── Step 2a: SSO provider detected ── */}
           {step === 'sso-confirm' && provider && (
             <>
-              <XDSVStack gap={2} hAlign="center">
-                <XDSAvatar name={provider.name} size={48} />
-                <XDSText type="display-3" as="h2">
+              <VStack gap={2} hAlign="center">
+                <Avatar name={provider.name} size={48} />
+                <Text type="display-3" as="h2">
                   Sign in with {provider.name}
-                </XDSText>
-                <XDSText type="body" color="secondary" size="sm">
+                </Text>
+                <Text type="body" color="secondary" size="sm">
                   You will be redirected back after signing in.
-                </XDSText>
-              </XDSVStack>
+                </Text>
+              </VStack>
 
-              <XDSCard padding={0}>
-                <XDSSection variant="muted" padding={4}>
-                  <XDSHStack gap={2} vAlign="center">
-                    <XDSIcon icon={ShieldCheckIcon} color="secondary" />
-                    <XDSVStack gap={0}>
-                      <XDSText type="label">{provider.name}</XDSText>
-                      <XDSText type="supporting" color="secondary">
+              <Card padding={0}>
+                <Section variant="muted" padding={4}>
+                  <HStack gap={2} vAlign="center">
+                    <Icon icon={ShieldCheckIcon} color="secondary" />
+                    <VStack gap={0}>
+                      <Text type="label">{provider.name}</Text>
+                      <Text type="supporting" color="secondary">
                         {email}
-                      </XDSText>
-                    </XDSVStack>
-                  </XDSHStack>
-                </XDSSection>
-              </XDSCard>
+                      </Text>
+                    </VStack>
+                  </HStack>
+                </Section>
+              </Card>
 
-              <XDSVStack gap={3}>
-                <XDSButton
+              <VStack gap={3}>
+                <Button
                   label={`Continue with ${provider.name}`}
                   variant="primary"
                   size="lg"
                   isLoading={isLoading}
                   onClick={() => setIsLoading(true)}
                 />
-                <XDSButton
+                <Button
                   label="Use a different email"
                   variant="ghost"
                   size="lg"
                   onClick={handleBack}
                 />
-              </XDSVStack>
+              </VStack>
             </>
           )}
 
           {/* ── Step 2b: No SSO — password fallback ── */}
           {step === 'password-fallback' && (
             <>
-              <XDSVStack gap={1} hAlign="center">
-                <XDSText type="display-1" as="h2">
+              <VStack gap={1} hAlign="center">
+                <Text type="display-1" as="h2">
                   Welcome back
-                </XDSText>
-                <XDSText type="body" color="secondary" size="sm">
+                </Text>
+                <Text type="body" color="secondary" size="sm">
                   {email}
-                </XDSText>
-              </XDSVStack>
+                </Text>
+              </VStack>
 
-              <XDSVStack gap={4}>
-                <XDSVStack gap={1}>
-                  <XDSTextInput
+              <VStack gap={4}>
+                <VStack gap={1}>
+                  <TextInput
                     label="Password"
                     type="password"
                     value={password}
@@ -254,36 +254,36 @@ export default function LoginSSO() {
                     }
                   />
                   {loginFailed && (
-                    <XDSVStack hAlign="end">
-                      <XDSLink
+                    <VStack hAlign="end">
+                      <Link
                         href="#"
                         size="sm"
                         color="secondary"
                         type="supporting">
                         Forgot password?
-                      </XDSLink>
-                    </XDSVStack>
+                      </Link>
+                    </VStack>
                   )}
-                </XDSVStack>
+                </VStack>
 
-                <XDSButton
+                <Button
                   label="Sign in"
                   variant="primary"
                   size="lg"
                   isLoading={isLoading}
                   onClick={handleSignIn}
                 />
-                <XDSButton
+                <Button
                   label="Use a different email"
                   variant="ghost"
                   size="lg"
                   onClick={handleBack}
                 />
-              </XDSVStack>
+              </VStack>
             </>
           )}
-        </XDSVStack>
-      </XDSCard>
-    </XDSCenter>
+        </VStack>
+      </Card>
+    </Center>
   );
 }

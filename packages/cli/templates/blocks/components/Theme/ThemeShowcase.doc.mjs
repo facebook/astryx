@@ -7,7 +7,7 @@ export const doc = {
   name: 'Theme — Distinct Themes',
   displayName: 'Theme — Distinct Themes',
   description:
-    'Two visually distinct theme providers wrapping identical content to show how XDSTheme changes the visual treatment of child components.',
+    'Two visually distinct theme providers wrapping identical content to show how Theme changes the visual treatment of child components.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

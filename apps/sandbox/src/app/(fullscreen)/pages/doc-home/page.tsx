@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSCard} from '@xds/core/Card';
-import {XDSTextArea} from '@xds/core/TextArea';
+import {Heading, Text} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Card} from '@xds/core/Card';
+import {TextArea} from '@xds/core/TextArea';
 import {categories} from '../../../sandboxPages';
 import DocTopNav from '../doc-nav/DocTopNav';
 
@@ -52,21 +52,21 @@ export default function DocHomePage() {
             padding: '48px 32px 32px',
           }}>
           <div style={{display: 'flex', flexDirection: 'column', gap: 20}}>
-            <XDSHeading level={1}>Endless templates for your ideas</XDSHeading>
-            <XDSText type="large" color="secondary">
+            <Heading level={1}>Endless templates for your ideas</Heading>
+            <Text type="large" color="secondary">
               Explore production-ready templates, patterns, and components built
               with XDS.
-            </XDSText>
+            </Text>
           </div>
 
           <div style={{display: 'flex', gap: 10, marginTop: 28}}>
-            <XDSButton label="Get started" variant="secondary" size="lg" />
-            <XDSButton label="Browse all" variant="ghost" size="lg" />
+            <Button label="Get started" variant="secondary" size="lg" />
+            <Button label="Browse all" variant="ghost" size="lg" />
           </div>
 
           {/* Search at bottom */}
           <div style={{marginTop: 'auto', maxWidth: 360}}>
-            <XDSTextArea
+            <TextArea
               label="Search"
               isLabelHidden
               placeholder="See endless designs for..."
@@ -103,7 +103,7 @@ export default function DocHomePage() {
                   textDecoration: 'none',
                   display: 'flex',
                 }}>
-                <XDSCard width="100%">
+                <Card width="100%">
                   <div
                     style={{
                       display: 'flex',
@@ -143,12 +143,12 @@ export default function DocHomePage() {
                     </div>
                     {/* Label */}
                     <div style={{paddingTop: 10}}>
-                      <XDSText type="supporting" color="secondary">
+                      <Text type="supporting" color="secondary">
                         {page.name}
-                      </XDSText>
+                      </Text>
                     </div>
                   </div>
-                </XDSCard>
+                </Card>
               </a>
             ))}
           </div>

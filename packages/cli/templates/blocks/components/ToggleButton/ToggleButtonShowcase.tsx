@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSToggleButton} from '@xds/core/ToggleButton';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSIcon} from '@xds/core/Icon';
+import {ToggleButton} from '@xds/core/ToggleButton';
+import {Stack} from '@xds/core/Layout';
+import {Icon} from '@xds/core/Icon';
 import {StarIcon as StarOutline, BookmarkIcon as BookmarkOutline, BellIcon, BellSlashIcon} from '@heroicons/react/24/outline';
 import {StarIcon as StarSolid, BookmarkIcon as BookmarkSolid} from '@heroicons/react/24/solid';
 
@@ -15,31 +15,31 @@ export default function ToggleButtonShowcase() {
   const [isMuted, setIsMuted] = useState(false);
 
   return (
-    <XDSStack direction="horizontal" gap={3} vAlign="center">
-      <XDSToggleButton
+    <Stack direction="horizontal" gap={3} vAlign="center">
+      <ToggleButton
         label="Favorite"
-        icon={<XDSIcon icon={StarOutline} />}
-        pressedIcon={<XDSIcon icon={StarSolid} />}
+        icon={<Icon icon={StarOutline} />}
+        pressedIcon={<Icon icon={StarSolid} />}
         isPressed={isFavorited}
         onPressedChange={setIsFavorited}
         isIconOnly
       />
-      <XDSToggleButton
+      <ToggleButton
         label="Bookmark"
-        icon={<XDSIcon icon={BookmarkOutline} />}
-        pressedIcon={<XDSIcon icon={BookmarkSolid} />}
+        icon={<Icon icon={BookmarkOutline} />}
+        pressedIcon={<Icon icon={BookmarkSolid} />}
         isPressed={isBookmarked}
         onPressedChange={setIsBookmarked}
         isIconOnly
       />
-      <XDSToggleButton
+      <ToggleButton
         label="Notifications"
-        icon={<XDSIcon icon={BellIcon} />}
-        pressedIcon={<XDSIcon icon={BellSlashIcon} />}
+        icon={<Icon icon={BellIcon} />}
+        pressedIcon={<Icon icon={BellSlashIcon} />}
         isPressed={isMuted}
         onPressedChange={setIsMuted}>
         Notifications
-      </XDSToggleButton>
-    </XDSStack>
+      </ToggleButton>
+    </Stack>
   );
 }

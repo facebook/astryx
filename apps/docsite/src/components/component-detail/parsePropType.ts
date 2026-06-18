@@ -177,20 +177,20 @@ export function parsePropType(
   if (t === 'SizeValue') {
     return {kind: 'number'};
   }
-  if (t === 'XDSDefinedTheme') {
+  if (t === 'DefinedTheme') {
     return {kind: 'theme'};
   }
   if (t === 'SyntaxTheme') {
     return {kind: 'syntax-theme'};
   }
-  if (t === 'XDSIconType' || t === 'XDSIconName') {
+  if (t === 'IconType' || t === 'IconName') {
     return {
       kind: 'enum',
       options: Object.keys(getIconRegistry()),
       allowEmpty: true,
     };
   }
-  if (t === 'XDSAppShellBreakpoint') {
+  if (t === 'AppShellBreakpoint') {
     return {
       kind: 'enum',
       options: ['sm', 'md', 'lg', 'none'],
@@ -219,7 +219,7 @@ export function parsePropType(
     if (isIconProp) {
       return {
         kind: 'element',
-        options: [{label: 'Icon', componentName: 'XDSIcon'}],
+        options: [{label: 'Icon', componentName: 'Icon'}],
       };
     }
     return {kind: 'string'};
