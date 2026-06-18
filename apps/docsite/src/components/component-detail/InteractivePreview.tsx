@@ -25,6 +25,7 @@ import {
   buildRuntimePreviewState,
   getMissingRequiredProps,
   pickPrimaryProps,
+  type KnobProp,
 } from './interactiveState';
 import type {
   PropDoc,
@@ -187,12 +188,14 @@ export function useInteractiveState(
 export function InteractivePreviewStage({
   name,
   state,
+  knobs,
   missingRequiredProps = [],
   onPropChange,
   canControlOpenState = false,
 }: {
   name: string;
   state: Record<string, unknown>;
+  knobs?: KnobProp[];
   missingRequiredProps?: string[];
   onPropChange?: (propName: string, value: unknown) => void;
   canControlOpenState?: boolean;
@@ -202,9 +205,12 @@ export function InteractivePreviewStage({
   const runtimeState = useMemo(
     () =>
       resolveValue(
-        buildRuntimePreviewState(state, onPropChange, {canControlOpenState}),
+        buildRuntimePreviewState(state, onPropChange, {
+          canControlOpenState,
+          knobs,
+        }),
       ) as Record<string, unknown>,
-    [state, onPropChange, canControlOpenState],
+    [state, onPropChange, canControlOpenState, knobs],
   );
 
   if (missingRequiredProps.length > 0) {
