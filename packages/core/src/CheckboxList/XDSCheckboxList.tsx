@@ -72,11 +72,14 @@ export interface XDSCheckboxListProps extends Omit<
   onChange?: (values: string[]) => void;
   /**
    * Async action on change. Fires after onChange.
-   * While pending, items show reduced opacity and aria-busy.
+   * While the returned promise is pending, items are dimmed (reduced
+   * opacity) and marked `aria-busy`, and interaction is blocked.
    */
   changeAction?: (values: string[]) => void | Promise<void>;
   /**
    * Whether the checkbox group is in an external loading state.
+   * While loading, items are dimmed (reduced opacity) and marked
+   * `aria-busy`, and interaction is blocked.
    * @default false
    */
   isLoading?: boolean;

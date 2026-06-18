@@ -34,6 +34,14 @@ const styles = stylex.create({
   selected: {
     backgroundColor: colorVars['--color-accent-muted'],
   },
+  // Visual feedback while the parent group is in a loading/pending state.
+  // Mirrors the disabled-content dimming (opacity 0.5) used across XDS
+  // (e.g. XDSItem `disabledContent`) so loading reads as "temporarily
+  // inactive" without permanently disabling the control.
+  busy: {
+    opacity: 0.5,
+    cursor: 'progress',
+  },
 });
 
 // =============================================================================
@@ -190,6 +198,10 @@ export function XDSCheckboxListItem({
             !effectiveDisabled &&
             !effectiveReadOnly &&
             styles.selected,
+          // Dim the item while the group is busy (loading / pending async
+          // change) to give visual feedback that interaction is blocked.
+          // Skipped when already disabled, which provides its own dimming.
+          isBusy && !effectiveDisabled && styles.busy,
           xstyle,
         ] as StyleXStyles
       }

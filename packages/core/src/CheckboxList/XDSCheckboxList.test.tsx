@@ -419,6 +419,54 @@ describe('XDSCheckboxListItem ARIA props', () => {
     expect(item).not.toHaveAttribute('aria-busy');
   });
 
+  it('marks items aria-busy when isLoading is set', () => {
+    render(
+      <XDSCheckboxList
+        label="Prefs"
+        value={['a']}
+        onChange={() => {}}
+        isLoading>
+        <XDSCheckboxListItem label="Option A" value="a" />
+      </XDSCheckboxList>,
+    );
+    const item = screen.getByRole('listitem');
+    expect(item).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('dims items visually when isLoading is set', () => {
+    const {rerender} = render(
+      <XDSCheckboxList label="Prefs" value={['a']} onChange={() => {}}>
+        <XDSCheckboxListItem label="Option A" value="a" />
+      </XDSCheckboxList>,
+    );
+    const idleClass = screen.getByRole('listitem').getAttribute('class');
+
+    rerender(
+      <XDSCheckboxList
+        label="Prefs"
+        value={['a']}
+        onChange={() => {}}
+        isLoading>
+        <XDSCheckboxListItem label="Option A" value="a" />
+      </XDSCheckboxList>,
+    );
+    const busyClass = screen.getByRole('listitem').getAttribute('class');
+
+    // Loading applies an additional style class for the dimmed appearance.
+    expect(busyClass).not.toBe(idleClass);
+  });
+
+  it('does not toggle when isLoading is set', async () => {
+    const onChange = vi.fn();
+    render(
+      <XDSCheckboxList label="Prefs" value={[]} onChange={onChange} isLoading>
+        <XDSCheckboxListItem label="Option A" value="a" />
+      </XDSCheckboxList>,
+    );
+    fireEvent.click(screen.getByRole('checkbox'));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('forwards arbitrary aria attributes to the list item DOM element', () => {
     render(
       <XDSList>
