@@ -89,7 +89,7 @@ export function ensureHighlightStyles(): void {
   }
 
   const style = document.createElement('style');
-  style.setAttribute('data-xds-highlight-styles', '');
+  style.setAttribute('data-astryx-highlight-styles', '');
   style.textContent = HIGHLIGHT_STYLES;
   document.head.appendChild(style);
   inserted = true;

@@ -327,7 +327,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
     const target = e.target as HTMLElement;
     if (
       target.closest(
-        'button, a, [role="button"], [contenteditable="true"], [data-xds-token]',
+        'button, a, [role="button"], [contenteditable="true"], [data-astryx-token]',
       )
     ) {
       return;

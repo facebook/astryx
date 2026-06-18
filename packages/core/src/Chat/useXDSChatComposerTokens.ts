@@ -13,7 +13,7 @@
  * - Backspace handling near tokens (removes token + trailing NBSP)
  * - Paste handling near tokens (prevents broken state)
  * - Portal tracking for React rendering inside DOM-created spans
- * - Serialization awareness (data-xds-token attributes)
+ * - Serialization awareness (data-astryx-token attributes)
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
@@ -76,7 +76,7 @@ function isInsideToken(node: Node): HTMLElement | null {
   while (current) {
     if (
       current instanceof HTMLElement &&
-      current.hasAttribute('data-xds-token')
+      current.hasAttribute('data-astryx-token')
     ) {
       return current;
     }
@@ -115,9 +115,9 @@ export function useXDSChatComposerTokens({
       // Create a non-editable container — React will portal the Badge into it
       const span = document.createElement('span');
       const id = `token-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-      span.setAttribute('data-xds-token', '');
-      span.setAttribute('data-xds-token-value', token.value);
-      span.setAttribute('data-xds-token-id', id);
+      span.setAttribute('data-astryx-token', '');
+      span.setAttribute('data-astryx-token-value', token.value);
+      span.setAttribute('data-astryx-token-id', id);
       span.contentEditable = 'false';
       span.style.display = 'inline-flex';
       span.style.verticalAlign = 'baseline';
@@ -163,7 +163,7 @@ export function useXDSChatComposerTokens({
         startContainer.nodeType === Node.TEXT_NODE &&
         startOffset === 0 &&
         startContainer.previousSibling instanceof HTMLElement &&
-        startContainer.previousSibling.hasAttribute('data-xds-token')
+        startContainer.previousSibling.hasAttribute('data-astryx-token')
       ) {
         return false;
       }
@@ -175,7 +175,7 @@ export function useXDSChatComposerTokens({
         startContainer.textContent === '\u00A0' &&
         startOffset <= 1 &&
         startContainer.previousSibling instanceof HTMLElement &&
-        startContainer.previousSibling.hasAttribute('data-xds-token')
+        startContainer.previousSibling.hasAttribute('data-astryx-token')
       ) {
         e.preventDefault();
         const tokenSpan = startContainer.previousSibling;
@@ -251,7 +251,7 @@ export function useXDSChatComposerTokens({
       }
 
       const {span} = portal;
-      const value = span.getAttribute('data-xds-token-value') ?? '';
+      const value = span.getAttribute('data-astryx-token-value') ?? '';
       const textNode = document.createTextNode(value);
 
       // Remove the trailing NBSP if present

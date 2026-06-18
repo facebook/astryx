@@ -118,7 +118,7 @@ const styles = stylex.create({
     // to prevent flash. Restored when animation settles.
     scrollbarWidth: {
       default: null,
-      ':is([data-xds-scrolling])': 'none',
+      ':is([data-astryx-scrolling])': 'none',
     },
   },
 
