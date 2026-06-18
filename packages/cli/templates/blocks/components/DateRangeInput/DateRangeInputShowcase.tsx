@@ -4,7 +4,7 @@
 
 import {useState} from 'react';
 import {XDSDateRangeInput} from '@xds/core/DateRangeInput';
-import type {XDSDateRange} from '@xds/core/DateRangeInput';
+import type {DateRange} from '@xds/core/DateRangeInput';
 import type {ISODateString} from '@xds/core/Calendar';
 import {XDSStack} from '@xds/core/Layout';
 
@@ -24,7 +24,7 @@ const presets = [
 ];
 
 export default function DateRangeInputShowcase() {
-  const [range, setRange] = useState<XDSDateRange | null>(null);
+  const [range, setRange] = useState<DateRange | null>(null);
 
   return (
     <XDSStack direction="vertical" width="100%" style={{maxWidth: 400}}>

@@ -12,7 +12,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {XDSDateRangeInput} from './XDSDateRangeInput';
-import type {XDSDateRange} from './XDSDateRangeInput';
+import type {DateRange} from './XDSDateRangeInput';
 
 describe('XDSDateRangeInput', () => {
   it('renders with label', () => {
@@ -42,7 +42,7 @@ describe('XDSDateRangeInput', () => {
   });
 
   it('displays formatted range when value is set', () => {
-    const range: XDSDateRange = {
+    const range: DateRange = {
       start: '2026-03-15',
       end: '2026-03-22',
     };
@@ -235,7 +235,7 @@ describe('XDSDateRangeInput', () => {
 
   describe('hasClear', () => {
     it('shows clear button when hasClear is true and value exists', () => {
-      const range: XDSDateRange = {
+      const range: DateRange = {
         start: '2026-03-15',
         end: '2026-03-22',
       };
@@ -267,7 +267,7 @@ describe('XDSDateRangeInput', () => {
     });
 
     it('does not show clear button when hasClear is false', () => {
-      const range: XDSDateRange = {
+      const range: DateRange = {
         start: '2026-03-15',
         end: '2026-03-22',
       };
@@ -285,7 +285,7 @@ describe('XDSDateRangeInput', () => {
     });
 
     it('does not show clear button when disabled', () => {
-      const range: XDSDateRange = {
+      const range: DateRange = {
         start: '2026-03-15',
         end: '2026-03-22',
       };
@@ -305,7 +305,7 @@ describe('XDSDateRangeInput', () => {
 
     it('calls onChange with null when clear is clicked', () => {
       const onChange = vi.fn();
-      const range: XDSDateRange = {
+      const range: DateRange = {
         start: '2026-03-15',
         end: '2026-03-22',
       };
