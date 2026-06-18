@@ -185,7 +185,9 @@ export function XDSChartTooltip({
     (e: ChartPointerEvent) => {
       const card = cardRef.current;
       const svg = svgRef.current;
-      if (!card) return;
+      if (!card) {
+        return;
+      }
       if (!svg || !e.nearest) {
         card.style.display = 'none';
         return;
@@ -253,13 +255,19 @@ export function XDSChartTooltip({
 
   // Hover dots — read from the resolved map at the hovered index.
   const dots = useMemo(() => {
-    if (!showHoverDots || hoveredIndex == null) return null;
+    if (!showHoverDots || hoveredIndex == null) {
+      return null;
+    }
     const elements: ReactNode[] = [];
     for (const s of series) {
-      if (!shouldRenderHoverDot(s.type)) continue;
+      if (!shouldRenderHoverDot(s.type)) {
+        continue;
+      }
       const points = resolved.get(s.key);
       const point = points?.find(p => p.dataIndex === hoveredIndex);
-      if (!point) continue;
+      if (!point) {
+        continue;
+      }
       elements.push(
         <circle
           key={s.key}
@@ -280,9 +288,13 @@ export function XDSChartTooltip({
   // line for line/area charts. Same source-of-truth (hoveredIndex), distinct
   // visual idioms picked automatically based on the series mix.
   const hoverIndicatorElement = useMemo(() => {
-    if (!hoverIndicator || hoveredIndex == null) return null;
+    if (!hoverIndicator || hoveredIndex == null) {
+      return null;
+    }
     const xv = data[hoveredIndex]?.[xKey];
-    if (xv == null) return null;
+    if (xv == null) {
+      return null;
+    }
     const isBandScale = 'bandwidth' in xScale;
     const hasBars = series.some(s => s.type === 'bar');
 

@@ -36,7 +36,8 @@ export const matchaTheme = defineTheme({
   name: 'matcha',
 
   typography: {
-    scale: {base: 18, ratio: 1.414},
+    // base 16 / ratio 1.25 — aligned with the other themes' geometric scale.
+    scale: {base: 16, ratio: 1.25},
     body: {
       family: 'DM Sans',
       fallbacks:
@@ -44,8 +45,7 @@ export const matchaTheme = defineTheme({
     },
     heading: {
       family: 'Playwrite US Trad',
-      fallbacks:
-        'Georgia, "Times New Roman", Times, serif',
+      fallbacks: 'Georgia, "Times New Roman", Times, serif',
     },
     code: {
       family: 'JetBrains Mono',
@@ -106,8 +106,9 @@ export const matchaTheme = defineTheme({
     '--color-warning-muted': ['#FFB60020', '#ffc94020'],
 
     // Border
-    '--color-border': ['#C0CBA9', '#C0CBA91A'],
-    '--color-border-emphasized': ['#707E46', '#5a6440'],
+    // Softer sage borders (default + emphasized/card) in light mode.
+    '--color-border': ['#DCE3CE', '#C0CBA91A'],
+    '--color-border-emphasized': ['#B7C29E', '#5a6440'],
 
     // Effects
     '--color-skeleton': ['#C0CBA9', '#5a6440'],
@@ -200,21 +201,8 @@ export const matchaTheme = defineTheme({
     '--radius-container': '18px',
     '--radius-page': '42px',
 
-    // =========================================================================
-    // Font sizes (base 18, ratio 1.414)
-    // =========================================================================
-    '--font-size-4xs': '0.1875rem',
-    '--font-size-3xs': '0.3125rem',
-    '--font-size-2xs': '0.375rem',
-    '--font-size-xs': '0.5625rem',
-    '--font-size-sm': '0.8125rem',
-    '--font-size-base': '1.125rem',
-    '--font-size-lg': '1.5625rem',
-    '--font-size-xl': '2.25rem',
-    '--font-size-2xl': '3.1875rem',
-    '--font-size-3xl': '4.5rem',
-    '--font-size-4xl': '6.375rem',
-    '--font-size-5xl': '9rem',
+    // No explicit --font-size-* overrides — font sizes come from
+    // typography.scale above, keeping the scale the single source of truth.
 
     // =========================================================================
     // Element sizes
@@ -226,12 +214,9 @@ export const matchaTheme = defineTheme({
     // =========================================================================
     // Shadows
     // =========================================================================
-    '--shadow-low':
-      '0 2px 4px #3E481D0D, 0 4px 8px #3E481D1A',
-    '--shadow-med':
-      '0 2px 4px #3E481D0D, 0 4px 12px #3E481D1A',
-    '--shadow-high':
-      '0 4px 6px #3E481D1A, 0 12px 24px #3E481D26',
+    '--shadow-low': '0 2px 4px #3E481D0D, 0 4px 8px #3E481D1A',
+    '--shadow-med': '0 2px 4px #3E481D0D, 0 4px 12px #3E481D1A',
+    '--shadow-high': '0 4px 6px #3E481D1A, 0 12px 24px #3E481D26',
     '--shadow-inset-hover': 'inset 0px 0px 0px 2px #3E481D30',
     '--shadow-inset-selected': 'inset 0px 0px 0px 2px #3E481D50',
     '--shadow-inset-success': 'inset 0px 0px 0px 2px #4D990050',

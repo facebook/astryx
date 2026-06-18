@@ -30,6 +30,10 @@ import migrateThemeSelectorsToDataAttrs, {
   meta as migrateThemeSelectorsToDataAttrsMeta,
 } from './migrate-theme-selectors-to-data-attrs.mjs';
 
+import migrateSelectorChildrenToRenderOption, {
+  meta as migrateSelectorChildrenToRenderOptionMeta,
+} from './migrate-selector-children-to-render-option.mjs';
+
 import dropXdsPrefixImports, {
   meta as dropXdsPrefixImportsMeta,
 } from './drop-xds-prefix-imports.mjs';
@@ -65,6 +69,11 @@ export default [
     transform: migrateThemeSelectorsToDataAttrs,
     meta: migrateThemeSelectorsToDataAttrsMeta,
     optional: true,
+  },
+  {
+    name: 'migrate-selector-children-to-render-option',
+    transform: migrateSelectorChildrenToRenderOption,
+    meta: migrateSelectorChildrenToRenderOptionMeta,
   },
   {
     // XDS-prefix migration (P2380608025). Optional + not tied to a version

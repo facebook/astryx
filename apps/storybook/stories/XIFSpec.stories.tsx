@@ -270,8 +270,8 @@ export const PersonalityAxes: StoryObj = {
         <Heading level={3}>Personality Axes (Conceptual)</Heading>
         <Text type="supporting">
           Shape personality parameters adjust the <em>feel</em> of icons without
-          changing their structure. All adjustments are relative — preserving
-          the artist&apos;s hierarchy of sharp vs soft. These icons show the
+          changing their structure. All adjustments are relative, preserving the
+          artist&apos;s hierarchy of sharp vs soft. These icons show the
           concept; path manipulation is not yet implemented.
         </Text>
 
@@ -325,8 +325,8 @@ export const PersonalityAxes: StoryObj = {
 
         <Text type="supporting">
           Note: opacity/stroke-width are used as visual placeholders here. The
-          real implementation will modify path geometry — rounding corners,
-          bowing segments, adjusting curve tension — all at build time via the
+          real implementation will modify path geometry, rounding corners,
+          bowing segments, adjusting curve tension, all at build time via the
           theme pipeline.
         </Text>
       </Stack>
@@ -487,7 +487,7 @@ export const PathTransformPlayground: StoryObj = {
         <Heading level={3}>Path Transform Playground</Heading>
         <Text type="supporting">
           Live path manipulation with sagitta-corrected corner rounding. Sharp
-          corners (like star tips) round less aggressively than gentle corners —
+          corners (like star tips) round less aggressively than gentle corners,
           achieving equal <em>perceived</em> roundness at all angles.
         </Text>
 
@@ -495,7 +495,7 @@ export const PathTransformPlayground: StoryObj = {
         <Heading level={4}>Corner Rounding (sagitta-corrected)</Heading>
         <Text type="supporting">
           Same cornerRounding value across all shapes. Sharp corners get less
-          radius, gentle corners get more — visually balanced.
+          radius, gentle corners get more, visually balanced.
         </Text>
         <div
           style={{

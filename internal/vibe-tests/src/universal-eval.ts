@@ -140,7 +140,7 @@ function analyzePhantomProps(code: string): UniversalFinding[] {
         rule: 'phantom-prop',
         severity: 'critical',
         detail:
-          'onPress is React Native — use onClick for React DOM. Handler will never fire.',
+          'onPress is React Native; use onClick for React DOM. Handler will never fire.',
         line: lineNum,
       });
     }
@@ -151,7 +151,7 @@ function analyzePhantomProps(code: string): UniversalFinding[] {
         rule: 'phantom-prop',
         severity: 'critical',
         detail:
-          'onLongPress is React Native — no DOM equivalent. Handler will never fire.',
+          'onLongPress is React Native, no DOM equivalent. Handler will never fire.',
         line: lineNum,
       });
     }
@@ -166,7 +166,7 @@ function analyzePhantomProps(code: string): UniversalFinding[] {
         findings.push({
           rule: 'phantom-prop',
           severity: 'moderate',
-          detail: 'onChange on button — buttons do not fire change events',
+          detail: 'onChange on button, buttons do not fire change events',
           line: lineNum,
         });
       }
@@ -185,7 +185,7 @@ function analyzePhantomProps(code: string): UniversalFinding[] {
           rule: 'phantom-prop',
           severity: 'moderate',
           detail:
-            'onSubmit on non-form element — only <form> fires submit events',
+            'onSubmit on non-form element, only <form> fires submit events',
           line: lineNum,
         });
       }

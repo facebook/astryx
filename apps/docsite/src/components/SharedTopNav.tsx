@@ -7,7 +7,7 @@ import {usePathname} from 'next/navigation';
 import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
 import {Button} from '@xds/core/Button';
 import {HStack} from '@xds/core/Layout';
-import {Search, HandHeart, Sun, Moon} from 'lucide-react';
+import {Search, HeartHandshake, Sun, Moon} from 'lucide-react';
 import {GITHUB_REPO} from '../constants';
 import {BRAND_ICON} from './Wordmark';
 import {SearchPalette} from './SearchPalette';
@@ -133,7 +133,7 @@ export function SharedTopNav() {
                 tooltip="Community"
                 variant="ghost"
                 isIconOnly
-                icon={<HandHeart size={20} />}
+                icon={<HeartHandshake size={20} />}
                 href="/community"
               />
               <Button

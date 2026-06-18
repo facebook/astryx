@@ -115,9 +115,9 @@ export const butterTheme = defineTheme({
     '--color-success': ['#004700', '#99d94b'],
     '--color-success-muted': ['#00470033', '#99d94b40'],
 
-    // Border
+    // Border — softer taupe card outline (emphasized) in light mode.
     '--color-border': ['#e5e3d4', '#f3f2e21A'],
-    '--color-border-emphasized': ['#79786a', '#939184'],
+    '--color-border-emphasized': ['#C7C4B2', '#939184'],
 
     // Effects
     '--color-skeleton': ['#e5e3d4', '#49473b'],
@@ -224,10 +224,40 @@ export const butterTheme = defineTheme({
   },
 
   components: {
-    button: {
-      // 8px radius, generous padding around the label.
+    // TopNav uses Butter's blue accent: the heading and the selected item are
+    // the full brand blue; unselected items (default + hover) use a lighter
+    // blue. Dark mode keeps the theme's butter-yellow accent.
+    'top-nav-heading': {
+      // The heading text is an inner span that reads --color-text-primary, so
+      // redirect that token (not just `color`) to the brand blue so the text
+      // itself turns blue, not only the container.
       base: {
-        borderRadius: 'var(--radius-element)',
+        color: 'light-dark(#225BFF, #FDEE8C)',
+        '--color-text-primary': 'light-dark(#225BFF, #FDEE8C)',
+      },
+    },
+    'top-nav-item': {
+      base: {
+        color: 'light-dark(#6E92FF, #FDEE8CCC)',
+      },
+      // Selected item: full brand blue, no pill background — rely on weight +
+      // color for emphasis. Hover/active keep the neutral overlay.
+      selected: {
+        color: 'light-dark(#225BFF, #FDEE8C)',
+        backgroundColor: 'transparent',
+        ':hover': {
+          backgroundColor: 'var(--color-overlay-hover)',
+        },
+        ':active': {
+          backgroundColor: 'var(--color-overlay-pressed)',
+        },
+      },
+    },
+    button: {
+      // Radius intentionally not pinned, so buttons keep core's
+      // `var(--_button-radius, --radius-element)`: standalone buttons stay 8px,
+      // while the chat composer (which sets --_button-radius) rounds them fully.
+      base: {
         paddingBlock: 'var(--spacing-3)',
         paddingInline: 'var(--spacing-4)',
       },

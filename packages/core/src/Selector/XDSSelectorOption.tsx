@@ -71,7 +71,7 @@ export interface XDSSelectorOptionProps {
 /**
  * A helper component for rendering custom selector options with consistent styling.
  *
- * Use this inside the `children` render prop of XDSSelector to create
+ * Use this inside the `renderOption` prop of XDSSelector to create
  * custom option layouts while maintaining design system consistency.
  *
  * @example
@@ -80,15 +80,15 @@ export interface XDSSelectorOptionProps {
  *   label="User"
  *   options={users}
  *   value={value}
- *   onChange={setValue}>
- *   {option => (
+ *   onChange={setValue}
+ *   renderOption={option => (
  *     <XDSSelectorOption
  *       icon={UserIcon}
  *       label={option.label}
  *       description={option.email}
  *     />
  *   )}
- * </XDSSelector>
+ * />
  * ```
  */
 export function XDSSelectorOption({

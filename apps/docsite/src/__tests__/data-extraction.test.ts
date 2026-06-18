@@ -235,6 +235,22 @@ describe('componentRegistry', () => {
     expect(dialogHeader!.description.toLowerCase()).toContain('header');
   });
 
+  it('extracted sub-components do not inherit parent usage prose', () => {
+    const core = components['@xds/core'];
+    const chatComposer = core.find(c => c.name === 'ChatComposer');
+    expect(chatComposer).toBeDefined();
+    expect(chatComposer!.parentDoc).toBe('Chat');
+    expect(chatComposer!.usage?.description).toContain(
+      'Layout shell for a chat composer',
+    );
+    expect(chatComposer!.usage?.description).not.toContain(
+      'XDSChatMessageList',
+    );
+    expect(chatComposer!.usage?.description).not.toContain(
+      'scrollable container for chat messages',
+    );
+  });
+
   it('sub-components can override inherited playground defaults', () => {
     const core = components['@xds/core'];
     const avatarGroupOverflow = core.find(

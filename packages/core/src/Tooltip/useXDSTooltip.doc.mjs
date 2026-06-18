@@ -31,7 +31,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Use for brief text labels that describe icon buttons, truncated text, abbreviations, or compact controls.'},
       {guidance: true, description: 'Prefer the XDSTooltip component for standard wrapping; use the hook when the trigger is not a simple child.'},
-      {guidance: false, description: 'Put interactive content inside tooltips — use Popover or HoverCard instead.'},
+      {guidance: false, description: 'Put interactive content inside tooltips: use Popover or HoverCard instead.'},
     ],
   },
   relatedComponents: ['Tooltip', 'HoverCard', 'Popover'],
@@ -68,7 +68,7 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Use for brief text labels describing icon buttons, truncated text, abbreviations, compact controls.'},
       {guidance: true, description: 'Prefer XDSTooltip for standard wrapping; use hook when trigger is not simple child.'},
-      {guidance: false, description: 'Put interactive content in tooltips — use Popover / HoverCard instead.'},
+      {guidance: false, description: 'Put interactive content in tooltips: use Popover / HoverCard instead.'},
     ],
   },
 };

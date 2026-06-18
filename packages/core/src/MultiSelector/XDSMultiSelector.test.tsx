@@ -59,6 +59,23 @@ describe('XDSMultiSelector', () => {
     expect(screen.getByLabelText('Fruit')).toBeInTheDocument();
   });
 
+  it('renders custom option content with renderOption', async () => {
+    const user = userEvent.setup();
+    render(
+      <XDSMultiSelector
+        label="Fruit"
+        options={[{value: 'apple', label: 'Apple'}]}
+        value={[]}
+        onChange={() => {}}
+        renderOption={option => (
+          <span data-testid="custom-option">{option.label}</span>
+        )}
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox'));
+    expect(screen.getByTestId('custom-option')).toHaveTextContent('Apple');
+  });
   it('renders placeholder when no value selected', () => {
     render(
       <XDSMultiSelector

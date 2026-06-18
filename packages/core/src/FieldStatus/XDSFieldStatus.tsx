@@ -132,6 +132,10 @@ export function XDSFieldStatus({
   message,
   id,
   variant = 'attached',
+  xstyle,
+  className,
+  style,
+  ...rest
 }: XDSFieldStatusProps) {
   const entryStyle = useEntryAnimation('slideDown');
 
@@ -141,6 +145,7 @@ export function XDSFieldStatus({
       id={id}
       role={type === 'error' ? 'alert' : 'status'}
       aria-live={type === 'error' ? 'assertive' : 'polite'}
+      {...rest}
       {...mergeProps(
         xdsThemeProps('field-status', {type, variant}),
         stylex.props(
@@ -148,7 +153,10 @@ export function XDSFieldStatus({
           entryStyle,
           variant === 'attached' ? styles.attached : styles.detached,
           colorStyles[type],
+          xstyle,
         ),
+        className,
+        style,
       )}>
       {message}
     </div>

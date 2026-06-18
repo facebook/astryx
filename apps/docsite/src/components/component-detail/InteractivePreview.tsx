@@ -11,7 +11,7 @@ import {
   Component,
   type ReactNode,
 } from 'react';
-import {getComponent} from './resolveElements';
+import {getXDSComponent, resolveValue} from './resolveElements';
 import {Button} from '@xds/core/Button';
 import {Card} from '@xds/core/Card';
 import {Center} from '@xds/core/Center';
@@ -198,7 +198,14 @@ export function InteractivePreviewStage({
   canControlOpenState?: boolean;
 }) {
   const [showCode, setShowCode] = useState(false);
-  const Component = getComponent(name);
+  const Component = getXDSComponent(name);
+  const runtimeState = useMemo(
+    () =>
+      resolveValue(
+        buildRuntimePreviewState(state, onPropChange, {canControlOpenState}),
+      ) as Record<string, unknown>,
+    [state, onPropChange, canControlOpenState],
+  );
 
   if (missingRequiredProps.length > 0) {
     return (
@@ -251,10 +258,6 @@ export function InteractivePreviewStage({
     );
   }
 
-  const runtimeState = useMemo(
-    () => buildRuntimePreviewState(state, onPropChange, {canControlOpenState}),
-    [state, onPropChange, canControlOpenState],
-  );
   const code = generateCode(name, state);
 
   return (

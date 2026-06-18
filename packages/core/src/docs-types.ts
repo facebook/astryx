@@ -561,9 +561,9 @@ export interface SubComponentDoc extends Omit<BaseDoc, 'usage'> {
   description: string;
   /** All public props for this sub-component. */
   props: PropDoc[];
-  /** Usage is optional for sub-components — when omitted, the registry entry
-   *  carries the sub-component's own props/description with no usage prose
-   *  (it is NOT inherited from the parent, which was the #2602 bug). */
+  /** Usage is optional for sub-components — when omitted, generated surfaces
+   *  should use the sub-component's own description as the concise usage
+   *  summary (not inherited from the parent, which was the #2602 bug). */
   usage?: UsageDoc;
 }
 

@@ -277,7 +277,7 @@ export const MaskGaps: Story = {
       <Heading level={3}>Mask Gaps on Different Backgrounds</Heading>
       <Text type="supporting" color="secondary">
         Bold mode uses mask-based knockout gaps. Because the gap is transparent
-        (not white), it works on any background — solid colors, surfaces, and
+        (not white), it works on any background: solid colors, surfaces, and
         gradients alike.
       </Text>
 
@@ -392,9 +392,9 @@ export const StructuralDiversity: Story = {
     <Stack direction="vertical" gap={3}>
       <Heading level={3}>Structural Diversity</Heading>
       <Text type="supporting" color="secondary">
-        New icons with diverse structures — organic curves, complex single
-        paths, nested overlapping fills, and mixed fill+stroke roles — across
-        all five variations.
+        New icons with diverse structures: organic curves, complex single paths,
+        nested overlapping fills, and mixed fill+stroke roles, across all five
+        variations.
       </Text>
       <div
         style={{
