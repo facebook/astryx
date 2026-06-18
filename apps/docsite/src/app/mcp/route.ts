@@ -588,10 +588,3 @@ const handler = createMcpHandler(
 );
 
 export {handler as GET, handler as POST, handler as DELETE};
-
-// Constrain the MCP catch-all to its real transports so other single-segment
-// paths fall through to the not-found page instead of mcp-handler's bare 404.
-export const dynamicParams = false;
-export function generateStaticParams() {
-  return [{transport: 'mcp'}, {transport: 'sse'}, {transport: 'message'}];
-}
