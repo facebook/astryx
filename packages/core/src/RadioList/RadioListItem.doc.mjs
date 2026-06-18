@@ -8,6 +8,14 @@ export const docs = {
   displayName: 'Radio List Item',
   isHiddenFromOverview: true,
   description: 'Individual radio item with label, description, and content slots.',
+  // XDSRadioListItem requires XDSRadioList context; wrap it so the preview doesn't throw.
+  playground: {
+    defaults: {value: 'option-1', label: 'Option'},
+    wrapper: {
+      component: 'XDSRadioList',
+      props: {value: 'option-1', label: 'Radio list'},
+    },
+  },
   props: [
     {
       name: 'label',

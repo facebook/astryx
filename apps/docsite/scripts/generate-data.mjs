@@ -766,7 +766,11 @@ export interface ElementDescriptor {
 }
 
 export interface PlaygroundConfig {
-  defaults: Record<string, unknown>;
+  defaults?: Record<string, unknown>;
+  wrapper?: {
+    component: string;
+    props?: Record<string, unknown>;
+  };
 }
 
 export const components: Record<string, ComponentEntry[]> = ${JSON.stringify(allComponents, null, 2)};
