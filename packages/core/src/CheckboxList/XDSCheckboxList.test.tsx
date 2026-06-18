@@ -456,7 +456,7 @@ describe('XDSCheckboxListItem ARIA props', () => {
     expect(busyClass).not.toBe(idleClass);
   });
 
-  it('does not toggle when isLoading is set', async () => {
+  it('does not toggle when isLoading is set', () => {
     const onChange = vi.fn();
     render(
       <XDSCheckboxList label="Prefs" value={[]} onChange={onChange} isLoading>
