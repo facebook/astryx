@@ -62,7 +62,8 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
   },
   spinner: {
-    display: 'inline-block',
+    display: 'inline-grid',
+    placeItems: 'center',
     overflow: 'hidden',
     verticalAlign: 'middle',
   },
@@ -200,12 +201,16 @@ export function XDSSpinner({
           ? `${themeTokens['--color-on-dark']}4D`
           : themeTokens['--color-track'];
 
-    const radius = (diameter / 2) * pixelRatio;
-    const lineWidth = border * pixelRatio;
-    // Ensure even frame size so center is always on a whole pixel (prevents rotation jitter)
-    const rawFrameSize = Math.ceil((radius + lineWidth) * 2);
+    const cssSize = diameter + border * 2;
+
+    // Round to an even number of device pixels so the center stays on a whole
+    // pixel (avoids rotation jitter); keep CSS size pinned to cssSize (#2732).
+    const rawFrameSize = Math.round(cssSize * pixelRatio);
     const frameSize = rawFrameSize + (rawFrameSize % 2);
-    const cssSize = frameSize / pixelRatio;
+
+    const scale = frameSize / cssSize;
+    const radius = (diameter / 2) * scale;
+    const lineWidth = border * scale;
 
     canvas.height = canvas.width = frameSize;
     canvas.style.width = canvas.style.height = cssSize + 'px';
