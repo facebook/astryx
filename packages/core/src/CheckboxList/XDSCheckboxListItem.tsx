@@ -34,6 +34,11 @@ const styles = stylex.create({
   selected: {
     backgroundColor: colorVars['--color-accent-muted'],
   },
+  // Loading/pending state: dim like disabled content (opacity 0.5).
+  busy: {
+    opacity: 0.5,
+    cursor: 'progress',
+  },
 });
 
 // =============================================================================
@@ -190,6 +195,8 @@ export function XDSCheckboxListItem({
             !effectiveDisabled &&
             !effectiveReadOnly &&
             styles.selected,
+          // Dim while busy; disabled items already dim themselves.
+          isBusy && !effectiveDisabled && styles.busy,
           xstyle,
         ] as StyleXStyles
       }
