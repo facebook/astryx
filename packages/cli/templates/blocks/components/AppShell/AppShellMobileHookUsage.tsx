@@ -35,7 +35,8 @@ export default function AppShellMobileHookUsage() {
         <Button label="Open navigation" variant="secondary" isDisabled />
         <Text type="body" color="secondary">
           AppShell mobile navigation context is available. Narrow the viewport
-          below the AppShell mobile breakpoint to make the custom trigger active.
+          below the AppShell mobile breakpoint to make the custom trigger
+          active.
         </Text>
       </VStack>
     );
@@ -54,7 +55,7 @@ export default function AppShellMobileHookUsage() {
         </Text>
       </HStack>
       <Text type="body" color="secondary">
-        This button controls the nearest AppShell mobile nav from context — in
+        This button controls the nearest AppShell mobile nav from context; in
         the docsite it opens and closes the surrounding page navigation.
       </Text>
     </VStack>

@@ -30,14 +30,14 @@ export default function SelectorOptionShowcase() {
       options={roles}
       value={value}
       onChange={setValue}
-      placeholder="Assign a role...">
-      {option => (
+      placeholder="Assign a role..."
+      renderOption={option => (
         <SelectorOption
           icon={UserIcon}
           label={option.label}
           description={descriptions[option.value]}
         />
       )}
-    </Selector>
+    />
   );
 }

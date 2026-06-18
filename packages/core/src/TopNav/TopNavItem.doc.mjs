@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'TopNav',
   displayName: 'Top Nav Item',
   isHiddenFromOverview: true,
-  description: 'Navigation link item for use in XDSTopNav startContent — renders as an anchor with hover and selected states.',
+  description: 'Navigation link item for use in XDSTopNav startContent: renders as an anchor with hover and selected states.',
   props: [
     {
       name: 'label',

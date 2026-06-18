@@ -125,7 +125,7 @@ export const WithAction: StoryObj = {
     docs: {
       description: {
         story:
-          'Use `endContent` for trailing actions — buttons, links, or any content.',
+          'Use `endContent` for trailing actions: buttons, links, or any content.',
       },
     },
   },
@@ -155,7 +155,7 @@ export const ErrorPersists: StoryObj = {
     docs: {
       description: {
         story:
-          'Error toasts default to `isAutoHide: false` — they persist until the user dismisses them.',
+          'Error toasts default to `isAutoHide: false`; they persist until the user dismisses them.',
       },
     },
   },
@@ -289,7 +289,7 @@ export const NoProvider: StoryObj = {
       <Card padding={4}>
         <Stack gap={2}>
           <p style={{margin: 0, fontSize: 14}}>
-            No LayerProvider — the hook creates a fallback viewport on
+            No LayerProvider: the hook creates a fallback viewport on
             document.body automatically.
           </p>
           <Button
@@ -336,7 +336,7 @@ export const ToastOverDialog: StoryObj = {
     docs: {
       description: {
         story:
-          "Dialog with its own `ToastViewport` — toasts render inside the dialog's top layer context and appear above the dialog overlay.",
+          "Dialog with its own `ToastViewport`: toasts render inside the dialog's top layer context and appear above the dialog overlay.",
       },
     },
   },
@@ -348,7 +348,7 @@ function DialogToastContent({onClose}: {onClose: () => void}) {
     <Stack gap={3}>
       <p>
         This dialog has its own toast viewport. Toasts fired here render inside
-        the dialog — above its overlay.
+        the dialog, above its overlay.
       </p>
       <Stack direction="horizontal" gap={2} wrap="wrap">
         <Button label="Close" variant="secondary" onClick={onClose} />

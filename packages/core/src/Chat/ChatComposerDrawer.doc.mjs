@@ -7,12 +7,12 @@ export const docs = {
   subComponentOf: 'Chat',
   displayName: 'Chat Composer Drawer',
   isHiddenFromOverview: true,
-  description: "Collapsible drawer panel that sits above the chat input inside XDSChatComposer. Pass it to the composer's `drawer` slot to show attachments, context chips, or any supplementary content. When `count` is provided the drawer gains a collapse toggle — collapsed state shows a badge and label, expanded state shows all children.",
+  description: "Collapsible drawer panel that sits above the chat input inside XDSChatComposer. Pass it to the composer's `drawer` slot to show attachments, context chips, or any supplementary content. When `count` is provided the drawer gains a collapse toggle: collapsed state shows a badge and label, expanded state shows all children.",
   props: [
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'Content to render inside the drawer — tokens, chips, previews, or any React elements.',
+      description: 'Content to render inside the drawer: tokens, chips, previews, or any React elements.',
       required: true,
     },
     {
@@ -66,7 +66,7 @@ export const docsDense = {
   displayName: 'Chat Composer Drawer',
   description: 'collapsible drawer above chat input; pass to composer `drawer` slot for attachments, context chips, previews. `count` enables collapse toggle',
   propDescriptions: {
-    children: 'drawer content — tokens, chips, previews, any React elements',
+    children: 'drawer content: tokens, chips, previews, any React elements',
     count: 'total count for collapsed badge; enables collapse/expand toggle',
     label: 'collapsed label next to count badge',
     isCollapsed: 'controlled collapsed state',

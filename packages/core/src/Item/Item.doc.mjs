@@ -29,7 +29,7 @@ export const docs = {
         {name: 'label', type: 'ReactNode', description: 'Primary text identifying this item. Accepts string (auto-truncated) or ReactNode (for rich content).', required: true},
         {name: 'marker', type: 'ReactNode', description: 'Marker rendered before startContent as a direct flex child. Use for list bullets/counters that need custom baseline alignment.'},
         {name: 'startContent', type: 'ReactNode', description: 'Content rendered before the label/description area, such as an icon, avatar, or checkbox.', slotElements: [{__element: 'XDSAvatar', props: {name: 'Ada Lovelace', size: 'xsmall'}}, {__element: 'XDSIcon', props: {icon: 'info', size: 'sm', color: 'secondary'}}]},
-        {name: 'description', type: 'ReactNode', description: 'Secondary text — subtitle, description, or supporting info.'},
+        {name: 'description', type: 'ReactNode', description: 'Secondary text: subtitle, description, or supporting info.'},
         {name: 'endContent', type: 'ReactNode', description: 'Content rendered after the label/description area, such as badges, metadata, timestamps, or action buttons.', slotElements: [{__element: 'XDSBadge', props: {label: 3}}, {__element: 'XDSText', props: {color: 'secondary'}, children: '2h ago'}]},
         {name: 'as', type: "'div' | 'li' | 'span'", description: 'HTML element to render as the root.', default: "'div'"},
         {name: 'align', type: "'center' | 'start'", description: 'Vertical alignment of start/end content slots.', default: "'center'"},

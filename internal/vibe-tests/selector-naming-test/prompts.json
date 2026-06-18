@@ -1,10 +1,7 @@
 {
   "name": "selector-naming",
   "description": "Vibe test comparing 'items' vs 'options' naming for XDSSelector child elements",
-  "variants": [
-    "items",
-    "options"
-  ],
+  "variants": ["items", "options"],
   "prompts": [
     {
       "id": "sel-1",
@@ -18,7 +15,7 @@
       "category": "form-select",
       "prompt": "Create a shipping method selector for a checkout page. Show three options: Standard (free, 5-7 days), Express ($9.99, 2-3 days), and Overnight ($24.99, next day). Each should show the name, price, and delivery time.",
       "tests": "Rich items/options with descriptions, custom rendering",
-      "notes": "Tests custom render pattern \u2014 does the LLM use the children render prop correctly?"
+      "notes": "Tests custom render pattern \u2014 does the LLM use the renderOption prop correctly?"
     },
     {
       "id": "sel-3",
@@ -60,7 +57,7 @@
       "category": "form-select",
       "prompt": "Create a font picker dropdown that shows font names rendered in their actual font. Group fonts into categories: Sans-serif (Inter, Roboto, Open Sans), Serif (Georgia, Merriweather, Playfair Display), and Monospace (Fira Code, JetBrains Mono, Source Code Pro).",
       "tests": "Custom rendering with sections, rich visual content",
-      "notes": "Tests custom children render prop with sections \u2014 complex composition"
+      "notes": "Tests custom renderOption prop with sections \u2014 complex composition"
     }
   ]
 }

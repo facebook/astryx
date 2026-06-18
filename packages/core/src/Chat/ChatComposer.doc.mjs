@@ -56,7 +56,7 @@ export const docs = {
     {
       name: 'drawer',
       type: 'ReactNode',
-      description: 'Slot: collapsible drawer above the input — attachments, context chips, etc. Use XDSChatComposerDrawer.',
+      description: 'Slot: collapsible drawer above the input: attachments, context chips, etc. Use XDSChatComposerDrawer.',
       slotElements: [
         {
           __element: 'XDSText',
@@ -207,7 +207,7 @@ export const docsDense = {
     placeholder: 'placeholder when empty',
     isDisabled: 'disabled; use during streaming or unmet prereqs',
     density: 'visual density',
-    drawer: 'slot: collapsible drawer above input — attachments, context chips, etc.; use XDSChatComposerDrawer',
+    drawer: 'slot: collapsible drawer above input: attachments, context chips, etc.; use XDSChatComposerDrawer',
     headerActions: 'slot: left header actions (attach, mention); icon-only sm buttons',
     headerContext: 'slot: right header context info (window usage, XDSProgressBar, text)',
     input: 'slot: custom input; replaces default textarea; use XDSChatComposerInput for triggers',

@@ -39,7 +39,7 @@ import {
   fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {mergeProps, mergeRefs} from '../utils';
+import {getKey, mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import type {XDSSearchableItem, XDSSearchSource} from './types';
 import {xdsThemeProps} from '../utils/xdsThemeProps';
@@ -615,6 +615,9 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
     [listboxId],
   );
 
+  const selectedKey =
+    value == null ? null : getKey(value.id, () => results.indexOf(value));
+
   // Cleanup timeout and cancel in-flight searches on unmount
   useEffect(() => {
     return () => {
@@ -689,33 +692,37 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
               {emptySearchResultsText}
             </div>
           ) : (
-            results.map((item, index) => (
-              <div
-                key={item.id}
-                id={getItemId(index)}
-                role="option"
-                aria-selected={value?.id === item.id}
-                tabIndex={-1}
-                onClick={() => handleSelect(item)}
-                onMouseEnter={() => setHighlightedIndex(index)}
-                {...stylex.props(
-                  styles.item,
-                  itemSizeStyles[size],
-                  index === highlightedIndex && styles.itemHighlighted,
-                  value?.id === item.id && styles.itemSelected,
-                )}>
-                <span {...stylex.props(styles.itemContent)}>
-                  {renderItem ? (
-                    renderItem(item)
-                  ) : (
-                    <XDSTypeaheadItem item={item} />
+            results.map((item, index) => {
+              const itemKey = getKey(item.id, index);
+              const isSelected = itemKey === selectedKey;
+              return (
+                <div
+                  key={itemKey}
+                  id={getItemId(index)}
+                  role="option"
+                  aria-selected={isSelected}
+                  tabIndex={-1}
+                  onClick={() => handleSelect(item)}
+                  onMouseEnter={() => setHighlightedIndex(index)}
+                  {...stylex.props(
+                    styles.item,
+                    itemSizeStyles[size],
+                    index === highlightedIndex && styles.itemHighlighted,
+                    isSelected && styles.itemSelected,
+                  )}>
+                  <span {...stylex.props(styles.itemContent)}>
+                    {renderItem ? (
+                      renderItem(item)
+                    ) : (
+                      <XDSTypeaheadItem item={item} />
+                    )}
+                  </span>
+                  {isSelected && (
+                    <XDSIcon icon="check" size="sm" color="primary" />
                   )}
-                </span>
-                {value?.id === item.id && (
-                  <XDSIcon icon="check" size="sm" color="primary" />
-                )}
-              </div>
-            ))
+                </div>
+              );
+            })
           )}
         </div>,
         {

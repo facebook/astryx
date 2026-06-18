@@ -6,12 +6,12 @@ export const docs = {
   name: 'Heading',
   subComponentOf: 'Text',
   displayName: 'Heading',
-  description: 'Semantic heading component that renders h1–h6 elements with themed styling, themed sizing via type scale tokens, and line-clamp truncation.',
+  description: 'Semantic heading component that renders h1-h6 elements with themed styling, themed sizing via type scale tokens, and line-clamp truncation.',
   props: [
     {
       name: 'level',
       type: '1 | 2 | 3 | 4 | 5 | 6',
-      description: 'Heading level. Determines the semantic HTML element (h1–h6) and the visual styling from the theme (unless `type` is set).',
+      description: 'Heading level. Determines the semantic HTML element (h1-h6) and the visual styling from the theme (unless `type` is set).',
       required: true,
     },
     {

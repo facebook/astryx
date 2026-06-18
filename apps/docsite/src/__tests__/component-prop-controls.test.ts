@@ -56,6 +56,21 @@ describe('component detail prop controls', () => {
     });
   });
 
+  it('keeps input status props as status controls even if slot elements are present', () => {
+    expect(
+      parsePropType('XDSInputStatus', 'status', [
+        {
+          __element: 'XDSFieldStatus',
+          props: {type: 'error', message: 'Error'},
+        },
+      ]),
+    ).toEqual({
+      kind: 'input-status',
+      options: ['error', 'warning', 'success'],
+      allowEmpty: true,
+    });
+  });
+
   it('expands mixed string-literal and boolean unions into enum options', () => {
     const control = parsePropType("'auto' | boolean", 'hasHoverIndication');
 
