@@ -332,13 +332,21 @@ describe('componentRegistry', () => {
     const core = components['@xds/core'];
     const hooks = core.filter(c => c.name.startsWith('useXDS'));
     expect(hooks.length).toBeGreaterThan(15);
-    expect(hooks.map(h => h.name)).toContain('useTheme');
+    expect(hooks.map(h => h.name)).toContain('useXDSTheme');
 
     for (const hook of hooks) {
       expect(hook.params).not.toBeNull();
       expect(hook.returns).not.toBeNull();
       expect(hook.props).toHaveLength(0);
-      expect(exampleRegistry[hook.name]?.length ?? 0).toBeGreaterThan(0);
+      // Component registry keys hooks by their canonical (prefixed) name, while
+      // the example registry keys by the bare name (un-prefix migration
+      // P2380608025). Look up by either form.
+      const bareName = hook.name.replace(/^useXDS/, 'use');
+      const exampleCount =
+        exampleRegistry[hook.name]?.length ??
+        exampleRegistry[bareName]?.length ??
+        0;
+      expect(exampleCount).toBeGreaterThan(0);
     }
   });
 

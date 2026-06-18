@@ -72,7 +72,9 @@ function isInputStatusType(typeStr: string, propName?: string): boolean {
     return false;
   }
 
-  if (/\bXDS(?:InputStatus|FieldStatus)\b/.test(typeStr)) {
+  // Prefix-agnostic (XDS-prefix migration P2380608025): match both the legacy
+  // prefixed names (XDSInputStatus/XDSFieldStatus) and the bare forms.
+  if (/\b(?:XDS)?(?:InputStatus|FieldStatus)\b/.test(typeStr)) {
     return true;
   }
 
