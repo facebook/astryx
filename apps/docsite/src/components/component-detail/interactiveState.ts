@@ -207,21 +207,83 @@ export function getMissingRequiredProps(
     .map(({row}) => row.name);
 }
 
+/**
+ * Extracts the name of a controlled callback's first parameter from a
+ * stringified callback type, e.g. `(page: number) => void` → `page`,
+ * `(value: string, e: ChangeEvent) => void` → `value`. Returns `null` when the
+ * signature has no named leading parameter (event-only handlers like
+ * `(e: MouseEvent) => void` are intentionally matched by name too — the bridge
+ * only fires when a state prop of that name exists).
+ */
+function getCallbackTargetProp(type: string): string | null {
+  // Grab the first parameter group of the arrow signature.
+  const match = /^\s*\(\s*([^):,]+)/.exec(type);
+  if (!match) {
+    return null;
+  }
+  const name = match[1].trim().replace(/\?$/, '');
+  return /^[A-Za-z_$][\w$]*$/.test(name) ? name : null;
+}
+
+/**
+ * Bridges controlled-component callbacks back into playground state so the
+ * preview reflects user interaction (e.g. clicking a Pagination page, toggling
+ * a Switch). For every callback prop whose first parameter name matches an
+ * existing value prop in `state` (page/onChange, value/onChange,
+ * pageSize/onPageSizeChange, isOpen/onOpenChange, …), the noop callback is
+ * replaced with one that updates that value prop.
+ *
+ * `knobs` provides the parsed control descriptors and original prop types used
+ * to identify callback props and their controlled target. `canControlOpenState`
+ * preserves the prior, explicit isOpen/onOpenChange behavior for overlay
+ * components whose preview opts into controlling open state.
+ */
 export function buildRuntimePreviewState(
   state: Record<string, unknown>,
   onPropChange?: (propName: string, value: unknown) => void,
-  options?: {canControlOpenState?: boolean},
+  options?: {canControlOpenState?: boolean; knobs?: KnobProp[]},
 ): Record<string, unknown> {
-  if (
-    onPropChange == null ||
-    options?.canControlOpenState !== true ||
-    typeof state.isOpen !== 'boolean'
-  ) {
+  if (onPropChange == null) {
     return state;
   }
 
-  return {
-    ...state,
-    onOpenChange: (isOpen: boolean) => onPropChange('isOpen', isOpen),
-  };
+  const next: Record<string, unknown> = {...state};
+  let changed = false;
+
+  for (const {row, control} of options?.knobs ?? []) {
+    if (control.kind !== 'callback') {
+      continue;
+    }
+    // Only bridge change handlers (onChange, onPageSizeChange, onOpenChange, …)
+    // — not side-effect callbacks like `changeAction` or one-off events like
+    // `onClick`/`onSubmit`. These are the handlers paired with a controlled
+    // value prop.
+    if (!/^on[A-Z].*Change$/.test(row.name) && row.name !== 'onChange') {
+      continue;
+    }
+    const target = getCallbackTargetProp(row.type);
+    if (target == null || !(target in state)) {
+      continue;
+    }
+    // isOpen/onOpenChange stays gated behind the explicit opt-in so overlay
+    // previews that should not auto-close keep their prior behavior.
+    if (target === 'isOpen' && options?.canControlOpenState !== true) {
+      continue;
+    }
+    next[row.name] = (value: unknown) => onPropChange(target, value);
+    changed = true;
+  }
+
+  // Preserve legacy behavior when knobs aren't supplied: still bridge a
+  // controllable isOpen/onOpenChange pair.
+  if (
+    !changed &&
+    options?.canControlOpenState === true &&
+    typeof state.isOpen === 'boolean'
+  ) {
+    next.onOpenChange = (isOpen: boolean) => onPropChange('isOpen', isOpen);
+    return next;
+  }
+
+  return changed ? next : state;
 }
