@@ -16,5 +16,5 @@ export type {
   XDSDateRangeInputStatus,
   XDSDateRangeInputStatusType,
   XDSDateRange,
-  XDSDateRangePreset,
+  DateRangePreset,
 } from './XDSDateRangeInput';
