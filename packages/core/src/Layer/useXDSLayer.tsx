@@ -25,14 +25,6 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {typographyVars} from '../theme/tokens.stylex';
 
-// Extend React's HTMLAttributes to include popover API attributes
-declare module 'react' {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  interface HTMLAttributes<T> {
-    popover?: 'auto' | 'manual' | 'hint' | '';
-  }
-}
-
 const styles = stylex.create({
   // Base reset for all layers
   base: {
