@@ -42,12 +42,14 @@ export {ensureHighlightStyles, TOKEN_TYPES} from './highlightStyles';
 // augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
+  Code as XDSCode,
   CodeBlock as XDSCodeBlock,
   SYNC_TOKENIZE_THRESHOLD as XDSSYNC_TOKENIZE_THRESHOLD,
   TOKEN_TYPES as XDSTOKEN_TYPES,
 } from '.';
 export type {
   CodeBlockProps as XDSCodeBlockProps,
+  CodeProps as XDSCodeProps,
   SyntaxToken as XDSSyntaxToken,
   TokenLine as XDSTokenLine,
 } from '.';
