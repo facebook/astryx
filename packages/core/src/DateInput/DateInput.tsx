@@ -134,6 +134,7 @@ export type {
 } from '../Field';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
+import type {SizeValue} from '../utils/types';
 import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export interface DateInputProps extends Omit<
@@ -235,6 +236,12 @@ export interface DateInputProps extends Omit<
   status?: InputStatus;
 
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
@@ -285,6 +292,7 @@ export function DateInput({
   labelTooltip,
   hasClear = false,
   numberOfMonths = 1,
+  width,
   xstyle,
   className,
   style,
@@ -502,7 +510,8 @@ export function DateInput({
             }
           : undefined
       }
-      labelTooltip={labelTooltip}>
+      labelTooltip={labelTooltip}
+      width={width}>
       <div
         ref={popover.triggerRef}
         {...rest}

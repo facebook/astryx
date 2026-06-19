@@ -113,7 +113,7 @@ export const docsDense = {
   description:
     'Core positioning hook for overlay content via CSS Anchor Positioning + Popover API. Foundation for custom popovers, hover cards, tooltips, fixed-position layers.',
   paramDescriptions: {
-    mode: 'positioning strategy: context = CSS anchor relative to trigger; fixed = explicit x/y coords. **(required)**',
+    mode: 'positioning strategy: context = CSS anchor relative to trigger; fixed = explicit x/y coords',
     onShow: 'fires when layer becomes visible.',
     onHide: 'fires when layer hides.',
     lightDismiss: 'whether native outside-click light-dismiss is enabled.',

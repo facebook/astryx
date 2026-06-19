@@ -3,7 +3,7 @@
 Project-specific guidance for AI coding agents.
 
 <!-- XDS:START -->
-Astryx v0.0.14 — 165 components
+Astryx v0.0.14 — 148 components
 
 Before writing any UI code:
 1. `pnpm exec xds template --list` — find a related page pattern
@@ -20,7 +20,7 @@ If a component prop does what you need, use it — never replicate with CSS/styl
 No magic values — run `pnpm exec xds docs tokens` for spacing/color/radius.
 To change accent/brand colors: `pnpm exec xds theme` — never override --astryx-color-* in :root.
 
-pnpm exec xds component --list         165 components by category
+pnpm exec xds component --list         148 components by category
 pnpm exec xds component <Name>         props, types, examples
 pnpm exec xds docs color                Semantic color tokens for surfaces, text, icons...
 pnpm exec xds docs elevation            Shadow tokens for visual elevation and inset st...

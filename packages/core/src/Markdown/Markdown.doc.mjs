@@ -318,7 +318,7 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    children: 'Markdown string. **(required)**',
+    children: 'markdown string',
     density: "Block spacing. 'default'|'compact'. Default: 'default'.",
     headingLevelStart: 'Maps # to this heading level (1-6). Clamped to h6. Default: 1.',
     isStreaming: 'Incremental parse + fade-in for streamed chunks. Default: false.',

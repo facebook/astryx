@@ -84,7 +84,45 @@ export const docs = {
     },
   ],
   components: [
-    {name: 'BreadcrumbItem'},
+    {
+      name: 'BreadcrumbItem',
+      displayName: 'Breadcrumb Item',
+      description: 'Individual breadcrumb item. Renders as a link when href is provided, or as plain text for the current page.',
+      props: [
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: 'Label content for the breadcrumb item.',
+          required: true,
+        },
+        {
+          name: 'href',
+          type: 'string',
+          description: 'URL the breadcrumb links to; omit for non-navigable items.',
+        },
+        {
+          name: 'onClick',
+          type: '(e: MouseEvent) => void',
+          description: 'Click handler for the breadcrumb item.',
+        },
+        {
+          name: 'isCurrent',
+          type: 'boolean',
+          description: 'Marks this item as the current page, applying aria-current="page".',
+          default: 'false',
+        },
+        {
+          name: 'startIcon',
+          type: 'ReactNode',
+          description: 'Icon rendered before the item label.',
+        },
+        {
+          name: 'as',
+          type: 'LinkComponentType',
+          description: 'Custom link component to render instead of <a>. Overrides the provider-level default from LinkProvider. Only applies to non-current items.',
+        },
+      ],
+    },
   ],
 };
 

@@ -11,7 +11,7 @@ export const docs = {
     {
       name: 'label',
       type: 'string',
-      description: 'Accessible label (required).',
+      description: 'accessible label',
       required: true,
     },
     {
@@ -192,7 +192,7 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    label: 'Accessible label (required).',
+    label: 'accessible label',
     value: 'Current value (ignored when indeterminate).',
     max: 'Maximum value.',
     isLabelHidden: 'Visually hide label (remains accessible).',

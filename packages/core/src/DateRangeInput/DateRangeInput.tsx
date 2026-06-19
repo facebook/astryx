@@ -50,6 +50,7 @@ import {Calendar, type ISODateString, type DateRange} from '../Calendar';
 import {usePopover} from '../Popover';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
+import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {xdsThemeProps} from '../utils/xdsThemeProps';
 
@@ -306,6 +307,12 @@ export interface DateRangeInputProps extends Omit<
   status?: InputStatus;
 
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
@@ -354,6 +361,7 @@ export function DateRangeInput({
   status,
   labelTooltip,
   numberOfMonths = 2,
+  width,
   xstyle,
   className,
   style,
@@ -476,7 +484,8 @@ export function DateRangeInput({
             }
           : undefined
       }
-      labelTooltip={labelTooltip}>
+      labelTooltip={labelTooltip}
+      width={width}>
       <div
         ref={popover.triggerRef}
         {...rest}

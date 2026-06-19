@@ -264,6 +264,65 @@ describe('Field', () => {
     warnSpy.mockRestore();
   });
 
+  // ─── width prop (#2755) ───────────────────────────────────────────────
+
+  describe('width prop', () => {
+    it('applies a string width to the outer field root', () => {
+      render(
+        <Field
+          label="Name"
+          inputID="name-input"
+          width="100%"
+          data-testid="field">
+          <input id="name-input" data-testid="control" />
+        </Field>,
+      );
+      const field = screen.getByTestId('field');
+      // StyleX compiles the dynamic width to an inline CSS custom property.
+      expect(field.getAttribute('style')).toContain('100%');
+      expect(field.className).toContain('dynamicStyles.width');
+    });
+
+    it('applies a numeric width (treated as pixels)', () => {
+      render(
+        <Field
+          label="Name"
+          inputID="name-input"
+          width={240}
+          data-testid="field">
+          <input id="name-input" />
+        </Field>,
+      );
+      const field = screen.getByTestId('field');
+      expect(field.getAttribute('style')).toContain('240');
+    });
+
+    it('does not size the inner control element', () => {
+      render(
+        <Field
+          label="Name"
+          inputID="name-input"
+          width="100%"
+          data-testid="field">
+          <input id="name-input" data-testid="control" />
+        </Field>,
+      );
+      const control = screen.getByTestId('control');
+      // The width var lives on the field root, not the control itself.
+      expect(control.getAttribute('style') ?? '').not.toContain('100%');
+    });
+
+    it('omits width styling when the prop is not provided', () => {
+      render(
+        <Field label="Name" inputID="name-input" data-testid="field">
+          <input id="name-input" />
+        </Field>,
+      );
+      const field = screen.getByTestId('field');
+      expect(field.className).not.toContain('dynamicStyles.width');
+    });
+  });
+
   // ─── Horizontal-labels context ────────────────────────────────────────
 
   describe('horizontal-labels layout', () => {

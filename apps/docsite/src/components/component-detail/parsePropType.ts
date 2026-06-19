@@ -185,13 +185,6 @@ export function parsePropType(
   if (t === 'SyntaxTheme') {
     return {kind: 'syntax-theme'};
   }
-  if (isInputStatusType(t, propName)) {
-    return {
-      kind: 'input-status',
-      options: parseStatusOptions(t),
-      allowEmpty: true,
-    };
-  }
   if (t === 'IconType' || t === 'IconName') {
     return {
       kind: 'enum',

@@ -55,3 +55,5 @@ export function LinkProvider({component, children}: LinkProviderProps) {
   const value = useMemo(() => ({component}), [component]);
   return <LinkContext value={value}>{children}</LinkContext>;
 }
+
+LinkProvider.displayName = 'LinkProvider';
