@@ -55,7 +55,7 @@ import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export type {DateRange} from '../Calendar';
 
-export interface XDSDateRangePreset {
+export interface DateRangePreset {
   label: string;
   getRange: () => DateRange;
 }
@@ -280,7 +280,7 @@ export interface XDSDateRangeInputProps extends Omit<
   /**
    * Preset date ranges shown as quick-select options beside the calendar.
    */
-  presets?: ReadonlyArray<XDSDateRangePreset>;
+  presets?: ReadonlyArray<DateRangePreset>;
 
   /**
    * Whether to show a clear button when a range is selected.
@@ -438,7 +438,7 @@ export function XDSDateRangeInput({
   );
 
   const handlePresetClick = useCallback(
-    (preset: XDSDateRangePreset) => {
+    (preset: DateRangePreset) => {
       fireChange(preset.getRange());
       popover.hide();
     },
