@@ -15,6 +15,8 @@
  * @position lib/xle — shared by parse/validate/expand; no CLI concerns here
  */
 
+import fs from 'node:fs';
+import path from 'node:path';
 import {findCoreDir} from '../../utils/paths.mjs';
 import {
   discoverComponents,
@@ -43,6 +45,49 @@ function findDirFor(grouped, member) {
     if (members.includes(member)) return dir;
   }
   return null;
+}
+
+// Match bare `export {Name}` / `export {Name, Other}` named re-exports in a
+// component directory's index.ts. PascalCase only — hooks (useX), lowercase
+// helpers, and `type` exports are skipped via the caller's filters.
+const NAMED_EXPORT_RE = /export\s*\{([^}]*)\}/g;
+
+/**
+ * Read the PascalCase component names re-exported from a component directory's
+ * `index.ts`. Used to recover structural sub-components that ship without their
+ * own `.doc.mjs` (e.g. TableHeader, TableBody, TableFooter) — the doc-driven
+ * discoverComponents() intentionally skips those, but the layout language still
+ * needs to name and emit them.
+ *
+ * @param {string} coreDir
+ * @param {string} dirName
+ * @returns {string[]} bare PascalCase export names
+ */
+function readDirExportedComponents(coreDir, dirName) {
+  const indexPath = path.join(coreDir, 'src', dirName, 'index.ts');
+  let content;
+  try {
+    content = fs.readFileSync(indexPath, 'utf-8');
+  } catch {
+    return [];
+  }
+  const names = new Set();
+  for (const match of content.matchAll(NAMED_EXPORT_RE)) {
+    for (const raw of match[1].split(',')) {
+      // `Name`, `Name as Alias`, ` type Name ` — keep the exported (left) name,
+      // drop `type` and aliases.
+      const token = raw.trim();
+      if (!token || token.startsWith('type ')) continue;
+      const name = token.split(/\s+as\s+/)[0].trim().replace(/^XDS/, '');
+      // PascalCase components only — skip hooks (useX), lowercase utils, and
+      // non-rendering exports (Context/Provider) that discoverComponents()
+      // also excludes.
+      if (!/^[A-Z][A-Za-z0-9]*$/.test(name)) continue;
+      if (/(?:Context|Provider)$/.test(name)) continue;
+      names.add(name);
+    }
+  }
+  return [...names];
 }
 
 let cachedRegistry = null;
@@ -98,13 +143,36 @@ export async function buildRegistry({cwd = process.cwd()} = {}) {
   // Exported components without their own doc entry (e.g. TableHeader,
   // TableBody) still get minimal registry entries so they can be named in
   // expressions — the validator warns rather than validates their props.
+  //
+  // Two sources:
+  //  1. Members discovered alongside a documented sibling (legacy path).
+  //  2. Bare PascalCase re-exports in each component dir's index.ts. The
+  //     doc-driven discoverComponents() skips doc-less structural pieces
+  //     (TableHeader/Body/Footer became bare files with no own .doc.mjs after
+  //     the un-prefix migration), so we recover them from the real export
+  //     surface here.
+  const registerUndocumented = (name, dirName) => {
+    if (components.has(name)) return;
+    const entry = toComponentEntry(name, [], dirName, resolveImportPath(coreDir, name));
+    entry.undocumented = true;
+    components.set(name, entry);
+  };
+
   for (const [, members] of Object.entries(grouped)) {
     for (const member of members) {
-      const name = normalizeName(member);
-      if (components.has(name)) continue;
-      const entry = toComponentEntry(name, [], findDirFor(grouped, member) || name, resolveImportPath(coreDir, member));
-      entry.undocumented = true;
-      components.set(name, entry);
+      registerUndocumented(normalizeName(member), findDirFor(grouped, member) || member);
+    }
+  }
+
+  // Walk every component directory (those that contributed at least one
+  // documented component) and backfill its index.ts exports.
+  const docDirs = new Set();
+  for (const c of components.values()) {
+    if (c.dirName) docDirs.add(c.dirName);
+  }
+  for (const dirName of docDirs) {
+    for (const name of readDirExportedComponents(coreDir, dirName)) {
+      registerUndocumented(name, dirName);
     }
   }
 
