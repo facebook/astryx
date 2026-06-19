@@ -3,9 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {
+  XDSVStack,
+  XDSHStack,
+  XDSLayout,
+  XDSLayoutContent,
+} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSText, XDSHeading} from '@xds/core/Text';
@@ -19,49 +22,40 @@ import {
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
-import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
+import {XDSSelectableCard} from '@xds/core/SelectableCard';
 import * as stylex from '@stylexjs/stylex';
 
+// Custom CSS here is limited to what XDS components can't express today:
+// - image fill + corner radius (no XDSImage primitive — #2582)
+// - the sticky info column (no sticky prop on XDS layout primitives — #2613)
 const pageStyles = stylex.create({
-  pageWrapper: {
-    maxWidth: 1200,
-    width: '100%',
-    padding: '32px 24px',
-  },
+  // Keeps the info column in view while the gallery scrolls. No sticky prop on
+  // XDS layout primitives.
   stickyInfo: {
     position: 'sticky',
-    top: 64,
+    top: 'var(--spacing-8)',
     alignSelf: 'start',
   },
+  // Fills the XDSAspectRatio box + rounds corners. No objectFit/radius props on
+  // XDSAspectRatio (#2582).
   heroImage: {
     width: '100%',
     height: '100%',
     objectFit: 'cover',
-    borderRadius: 'var(--radius-container, 12px)',
+    borderRadius: 'var(--radius-container)',
   },
+  // Fills the thumbnail card. Corner radius + selection ring come from
+  // XDSSelectableCard; the image only needs to fill and cover (#2582).
   thumbImage: {
     width: '100%',
     height: '100%',
     objectFit: 'cover',
-    borderRadius: 'var(--radius-element, 8px)',
-    cursor: 'pointer',
-  },
-  thumbSelected: {
-    outline: '2px solid var(--color-accent, #0866ff)',
-    outlineOffset: 2,
+    display: 'block',
   },
 });
 
-import {
-  ShoppingBagIcon,
-  UserIcon,
-  MagnifyingGlassIcon,
-  HeartIcon,
-  MinusIcon,
-  PlusIcon,
-  StarIcon,
-} from '@heroicons/react/24/outline';
+import {MinusIcon, PlusIcon, StarIcon} from '@heroicons/react/24/outline';
 import {StarIcon as StarIconSolid} from '@heroicons/react/24/solid';
 
 // ─── Star Rating ─────────────────────────────────────────────────────────────
@@ -90,9 +84,9 @@ function StarRating({rating, count}: {rating: number; count: number}) {
 // IMAGES[0] = fallback hero; IMAGES[1..6] = thumbnails (first is selected by default)
 const IMAGES = [
   // light-product-1 (fallback hero)
-  'https://lookaside.facebook.com/assets/xds_oss/light-home-horizontal-1.png',
+  'https://lookaside.facebook.com/assets/xds_oss/light-product-1.png',
   // light-product-1 (thumbnail 1)
-  'https://lookaside.facebook.com/assets/xds_oss/light-home-horizontal-1.png',
+  'https://lookaside.facebook.com/assets/xds_oss/light-product-1.png',
   // light-product-2
   'https://lookaside.facebook.com/assets/xds_oss/light-product-2.png',
   // light-product-3
@@ -101,8 +95,8 @@ const IMAGES = [
   'https://lookaside.facebook.com/assets/xds_oss/light-product-4.png',
   // light-product-5
   'https://lookaside.facebook.com/assets/xds_oss/light-product-5.png',
-  // light-product-1 (gallery variety)
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-1.png',
+  // light-product-3 (gallery variety)
+  'https://lookaside.facebook.com/assets/xds_oss/light-product-3.png',
 ];
 
 // ─── Product Data ───────────────────────────────────────────────────────────
@@ -134,65 +128,6 @@ const FINISHES = [
 
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
-// ─── TopNav ─────────────────────────────────────────────────────────────────
-function StoreTopNav() {
-  return (
-    <XDSTopNav
-      label="Store navigation"
-      heading={
-        <XDSTopNavHeading
-          heading="Kiln & Table"
-          logo={
-            <XDSNavIcon
-              icon={
-                <XDSIcon icon={ShoppingBagIcon} size="sm" color="inherit" />
-              }
-            />
-          }
-          href="#"
-        />
-      }
-      centerContent={
-        <>
-          <XDSTopNavItem label="New Arrivals" href="#" />
-          <XDSTopNavItem label="Mugs" href="#" isSelected />
-          <XDSTopNavItem label="Plates & Bowls" href="#" />
-          <XDSTopNavItem label="Serveware" href="#" />
-          <XDSTopNavItem label="About" href="#" />
-        </>
-      }
-      endContent={
-        <XDSHStack gap={2}>
-          <XDSButton
-            label="Search"
-            variant="ghost"
-            icon={<XDSIcon icon={MagnifyingGlassIcon} size="sm" />}
-            isIconOnly
-          />
-          <XDSButton
-            label="Wishlist"
-            variant="ghost"
-            icon={<XDSIcon icon={HeartIcon} size="sm" />}
-            isIconOnly
-          />
-          <XDSButton
-            label="Account"
-            variant="ghost"
-            icon={<XDSIcon icon={UserIcon} size="sm" />}
-            isIconOnly
-          />
-          <XDSButton
-            label="Cart"
-            variant="ghost"
-            icon={<XDSIcon icon={ShoppingBagIcon} size="sm" />}
-            isIconOnly
-          />
-        </XDSHStack>
-      }
-    />
-  );
-}
-
 // ─── Image Gallery ──────────────────────────────────────────────────────────
 function ImageGallery({
   selected,
@@ -216,23 +151,20 @@ function ImageGallery({
       <XDSGrid columns={3} gap={2}>
         {thumbnails.map((src, i) => (
           <XDSAspectRatio key={i} ratio={1}>
-            <img
-              {...stylex.props(
-                pageStyles.thumbImage,
-                selected === i && pageStyles.thumbSelected,
-              )}
-              src={src}
-              alt={`Product image ${i + 1}`}
-              onClick={() => onSelect(i)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={e => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  onSelect(i);
-                }
-              }}
-            />
+            <XDSSelectableCard
+              label={`Product image ${i + 1}`}
+              isSelected={selected === i}
+              onChange={() => onSelect(i)}
+              variant="transparent"
+              padding={0}
+              width="100%"
+              height="100%">
+              <img
+                {...stylex.props(pageStyles.thumbImage)}
+                src={src}
+                alt={`Product image ${i + 1}`}
+              />
+            </XDSSelectableCard>
           </XDSAspectRatio>
         ))}
       </XDSGrid>
@@ -374,14 +306,12 @@ export default function ProductDetailTemplate() {
   const [selectedThumb, setSelectedThumb] = useState(0);
 
   return (
-    <XDSAppShell
-      topNav={<StoreTopNav />}
+    <XDSLayout
       height="auto"
-      contentPadding={0}
-      variant="surface">
-      <XDSCenter axis="horizontal">
-        <XDSVStack gap={0} xstyle={pageStyles.pageWrapper}>
-          <XDSGrid columns={{minWidth: 400}} gap={5}>
+      contentWidth={1200}
+      content={
+        <XDSLayoutContent padding={6}>
+          <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={5}>
             <ImageGallery
               selected={selectedThumb}
               onSelect={setSelectedThumb}
@@ -390,8 +320,8 @@ export default function ProductDetailTemplate() {
               <ProductInfo />
             </XDSVStack>
           </XDSGrid>
-        </XDSVStack>
-      </XDSCenter>
-    </XDSAppShell>
+        </XDSLayoutContent>
+      }
+    />
   );
 }

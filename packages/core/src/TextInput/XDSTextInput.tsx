@@ -113,11 +113,13 @@ export type {
   XDSInputStatus as XDSTextInputStatus,
   XDSInputStatusType as XDSTextInputStatusType,
 } from '../Field';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useXDSInputGroup} from '../InputGroup/XDSInputGroupContext';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export type XDSTextInputType = 'text' | 'password' | 'email';
 
@@ -198,6 +200,12 @@ export interface XDSTextInputProps extends Omit<
    */
   placeholder?: string;
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
@@ -258,6 +266,7 @@ export function XDSTextInput({
   htmlName,
   onEnter,
   onKeyDown,
+  width,
   xstyle,
   className,
   style,
@@ -331,7 +340,7 @@ export function XDSTextInput({
       onClick={handleWrapperClick}
       onMouseUp={handleWrapperMouseUp}
       {...mergeProps(
-        xdsClassName('text-input', {size, status: status?.type ?? null}),
+        xdsThemeProps('text-input', {size, status: status?.type ?? null}),
         stylex.props(
           inputWrapperStyles.base,
           sizeStyles[size],
@@ -418,7 +427,8 @@ export function XDSTextInput({
             }
           : undefined
       }
-      labelTooltip={labelTooltip}>
+      labelTooltip={labelTooltip}
+      width={width}>
       {inputWrapper}
     </XDSField>
   );

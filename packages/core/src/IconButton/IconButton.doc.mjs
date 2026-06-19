@@ -6,6 +6,7 @@ export const docs = {
   name: 'IconButton',
   displayName: 'Icon Button',
   group: 'Button',
+  category: 'Action',
   keywords: ['icon-button', 'icon', 'button', 'toolbar', 'action', 'compact'],
 
   props: [
@@ -67,11 +68,37 @@ export const docs = {
   usage: {
     description: 'A button that shows only an icon with no visible text. Use IconButton in toolbars, table rows, and compact UI where space is tight and the icon is universally understood.',
     bestPractices: [
-      { guidance: true, description: 'Make the aria-label specific — a trash icon labeled "Delete conversation" is clearer than just "Delete" for screen readers.' },
-      { guidance: true, description: 'Add a tooltip — even a gear icon can mean Settings, Preferences, or Configure.' },
+      { guidance: true, description: 'Make the aria-label specific: a trash icon labeled "Delete conversation" is clearer than just "Delete" for screen readers.' },
+      { guidance: true, description: 'Add a tooltip: even a gear icon can mean Settings, Preferences, or Configure.' },
       { guidance: true, description: 'Use ghost in toolbars and dense areas to reduce visual clutter.' },
-      { guidance: false, description: 'Use IconButton if the action isn\'t obvious from the icon alone — use Button with text.' },
-      { guidance: false, description: 'Skip the tooltip — label only reaches screen readers, sighted users need the hover hint.' },
+      { guidance: false, description: 'Use IconButton if the action isn\'t obvious from the icon alone; use Button with text.' },
+      { guidance: false, description: 'Skip the tooltip; label only reaches screen readers, sighted users need the hover hint.' },
     ],
+  },
+};
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Button showing only an icon, no visible text. Use in toolbars, table rows, compact UI where space is tight + icon universally understood.',
+  usage: {
+    description: 'Button showing only an icon, no visible text. Use in toolbars, table rows, compact UI where space is tight + icon universally understood.',
+    bestPractices: [
+      { guidance: true, description: 'Make aria-label specific: trash icon labeled "Delete conversation" > just "Delete" for screen readers.' },
+      { guidance: true, description: 'Add tooltip: even gear icon can mean Settings/Preferences/Configure.' },
+      { guidance: true, description: 'Use ghost in toolbars + dense areas to reduce visual clutter.' },
+      { guidance: false, description: "Use IconButton if action isn't obvious from icon alone; use Button w/ text instead." },
+      { guidance: false, description: 'Skip tooltip: label only reaches screen readers; sighted users need hover hint.' },
+    ],
+  },
+  propDescriptions: {
+    label: 'accessible label; used as aria-label, not rendered as visible text',
+    icon: 'icon element rendered inside button',
+    variant: 'visual style variant',
+    size: 'size variant',
+    isLoading: 'shows loading spinner + disables interaction',
+    isDisabled: 'disables button',
+    tooltip: 'tooltip text shown on hover',
+    onClick: 'standard click handler',
+    clickAction: 'async click handler w/ automatic loading state',
   },
 };

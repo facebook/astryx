@@ -5,6 +5,7 @@ export const docs = {
   name: 'Resizable',
   displayName: 'Resizable',
   group: 'Resizable',
+  category: 'Layout',
   keywords: [
     'resize',
     'resizable',
@@ -39,7 +40,7 @@ export const docs = {
         guidance: false,
         description:
           'Wrap panels in extra container components for resize. The hook-first ' +
-          'architecture avoids extra DOM — use it directly on existing components.',
+          'architecture avoids extra DOM; use it directly on existing components.',
       },
     ],
   },
@@ -98,7 +99,7 @@ export const docs = {
           name: 'shrinkOrder',
           type: 'number',
           description:
-            'Cascade priority — lower number shrinks first.',
+            'Cascade priority: lower number shrinks first.',
         },
         {
           name: 'autoSaveId',
@@ -118,7 +119,7 @@ export const docs = {
           name: 'direction',
           type: "'horizontal' | 'vertical'",
           description:
-            'Layout direction — determines cursor and indicator orientation.',
+            'Layout direction: determines cursor and indicator orientation.',
           default: "'horizontal'",
         },
         {
@@ -167,7 +168,7 @@ export const docs = {
           name: 'resizable',
           type: 'ResizableProps',
           description:
-            'Resize props from useXDSResizable — connects handle to panel.',
+            'Resize props from useXDSResizable: connects handle to panel.',
           required: true,
         },
         {
@@ -180,9 +181,53 @@ export const docs = {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
-            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
         },
       ],
+    },
+  ],
+};
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'Hook-based resizable panel system. useXDSResizable() manages size state; XDSResizeHandle provides interactive pill-grip separator.',
+  usage: {
+    description:
+      'Hook-based resizable panel system. useXDSResizable() manages size state; XDSResizeHandle provides interactive pill-grip separator. Pass resize props to existing layout components via their resizable prop.',
+    bestPractices: [
+      {guidance: true, description: 'Use useXDSResizable() w/ existing XDS layout components. Pass returned props to resizable prop on XDSLayoutPanel or XDSSideNav.'},
+      {guidance: true, description: 'Provide accessible label on each XDSResizeHandle when multiple handles exist (e.g. "Resize sidebar", "Resize terminal").'},
+      {guidance: false, description: 'Wrap panels in extra container components for resize. Hook-first architecture avoids extra DOM; use it directly on existing components.'},
+    ],
+  },
+  components: [
+    {
+      name: 'useXDSResizable',
+      description: 'Hook managing resize state for one or more panel regions. Returns size, isCollapsed, collapse/expand/resize methods, + props to pass to handles.',
+      propDescriptions: {
+        defaultSize: 'initial size in px or % string (e.g. "20%")',
+        minSizePx: 'minimum size in px',
+        maxSizePx: 'maximum size in px',
+        collapsible: 'region can collapse to size 0?',
+        collapsedSize: 'px threshold triggering collapse during drag',
+        snaps: 'px values to snap to during resize',
+        shrinkOrder: 'cascade priority: lower number shrinks first',
+        autoSaveId: 'key for persisting sizes to localStorage',
+      },
+    },
+    {
+      name: 'XDSResizeHandle',
+      description: 'Draggable separator between panels. Pill-grip: invisible at rest, visible on hover (0.6 opacity), fully opaque during drag (1.0). Keyboard-accessible.',
+      propDescriptions: {
+        direction: 'layout direction: determines cursor + indicator orientation',
+        isReversed: 'reverse drag direction. Use when handle controls panel on end/right/bottom side',
+        isDisabled: 'handle interactive?',
+        hasDivider: 'show full-length 1px divider line through handle. Use when adjacent panels share same background',
+        isAlwaysVisible: 'show pill grip at rest instead of only on hover. Use when discoverability important',
+        pillPlacement: 'which side of divider pill sits on. auto = content side (derived from isReversed), flips when collapsed; start = left/top, end = right/bottom, center = centered on divider',
+        label: 'accessible label for separator',
+        resizable: 'resize props from useXDSResizable: connects handle to panel **(required)**',
+      },
     },
   ],
 };

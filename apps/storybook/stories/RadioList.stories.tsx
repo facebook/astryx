@@ -5,7 +5,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 
 const meta: Meta<typeof XDSRadioList> = {
-  title: 'Core/Inputs/RadioList',
+  title: 'Core/RadioList',
   component: XDSRadioList,
   tags: ['autodocs'],
   argTypes: {

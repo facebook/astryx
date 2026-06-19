@@ -53,7 +53,7 @@ export default function Y2kPalettePage() {
     <ThemePalettePreview
       theme={y2kTheme}
       title="Y2K Theme Palette"
-      subtitle="A bubbly, playful pop theme — hot pink body, lime green accents, Crimson Text headings + Poppins body."
+      subtitle="A bubbly, playful pop theme: hot pink body, lime green accents, Crimson Text headings + Poppins body."
       tonalColors={TONAL_COLORS}
       leadingExtras={<DisplayTextSection />}
     />

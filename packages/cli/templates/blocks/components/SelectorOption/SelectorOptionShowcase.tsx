@@ -30,14 +30,14 @@ export default function SelectorOptionShowcase() {
       options={roles}
       value={value}
       onChange={setValue}
-      placeholder="Assign a role...">
-      {option => (
+      placeholder="Assign a role..."
+      renderOption={option => (
         <XDSSelectorOption
           icon={UserIcon}
           label={option.label}
           description={descriptions[option.value]}
         />
       )}
-    </XDSSelector>
+    />
   );
 }

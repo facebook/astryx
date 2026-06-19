@@ -6,6 +6,8 @@ export const docs = {
   name: 'Center',
   displayName: 'Center',
   group: 'Layout',
+  category: 'Layout',
+  isHiddenFromOverview: true,
   keywords: ["center","centered","centering","align","alignment","justify","flexbox","middle"],
   props: [
     {
@@ -39,7 +41,7 @@ export const docs = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
   ],
   theming: {
@@ -51,11 +53,11 @@ export const docs = {
     description:
       'Center aligns content to the middle of its container. Use it for empty states, loading screens, login forms, or any content that should sit in the center of the available space.',
     bestPractices: [
-      {guidance: true, description: 'Use axis="horizontal" or axis="vertical" when you only need one direction — both axes is the default but not always needed.'},
-      {guidance: true, description: 'Set a height when centering vertically — Center needs a defined height to know what space to center within.'},
+      {guidance: true, description: 'Use axis="horizontal" or axis="vertical" when you only need one direction. Both axes is the default but not always needed.'},
+      {guidance: true, description: 'Set a height when centering vertically. Center needs a defined height to know what space to center within.'},
       {guidance: true, description: 'Use isInline to center small elements like icons or badges within a line of text without breaking the text flow.'},
-      {guidance: false, description: 'Wrap large page sections in Center — use XDSLayout or XDSAppShell for page-level structure.'},
-      {guidance: false, description: 'Use Center for horizontal lists of items — use XDSStack with hAlign="center" instead.'},
+      {guidance: false, description: 'Wrap large page sections in Center. Use XDSLayout or XDSAppShell for page-level structure.'},
+      {guidance: false, description: 'Use Center for horizontal lists of items. Use XDSStack with hAlign="center" instead.'},
     ],
     anatomy: [
       {name: 'Container', required: true, description: 'A flexbox wrapper that aligns its children to the center along the chosen axis.'},
@@ -72,11 +74,11 @@ export const docsZh = {
     description:
       'Center aligns content to the middle of its container. Use it for empty states, loading screens, login forms, or any content that should sit in the center of the available space.',
     bestPractices: [
-      {guidance: true, description: 'Use axis="horizontal" or axis="vertical" when you only need one direction — both axes is the default but not always needed.'},
-      {guidance: true, description: 'Set a height when centering vertically — Center needs a defined height to know what space to center within.'},
+      {guidance: true, description: 'Use axis="horizontal" or axis="vertical" when you only need one direction. Both axes is the default but not always needed.'},
+      {guidance: true, description: 'Set a height when centering vertically. Center needs a defined height to know what space to center within.'},
       {guidance: true, description: 'Use isInline to center small elements like icons or badges within a line of text without breaking the text flow.'},
-      {guidance: false, description: 'Wrap large page sections in Center — use XDSLayout or XDSAppShell for page-level structure.'},
-      {guidance: false, description: 'Use Center for horizontal lists of items — use XDSStack with hAlign="center" instead.'},
+      {guidance: false, description: 'Wrap large page sections in Center. Use XDSLayout or XDSAppShell for page-level structure.'},
+      {guidance: false, description: 'Use Center for horizontal lists of items. Use XDSStack with hAlign="center" instead.'},
     ],
   },
   props: [
@@ -89,7 +91,7 @@ export const docsZh = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值——不能是 style={{}} 这样的内联样式对象。',
+        '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值，不能是 style={{}} 这样的内联样式对象。',
     },
   ],
   theming: {
@@ -111,8 +113,11 @@ export const docsDense = {
     description:
       'Center aligns content to the middle of its container. Use for empty states, loading screens, login forms.',
     bestPractices: [
-      {guidance: true, description: 'Set axis when you only need one direction. Set height for vertical centering. Use isInline for icons in text.'},
-      {guidance: false, description: 'Wrap page sections — use XDSLayout. Use for horizontal lists — use XDSStack with hAlign="center".'},
+      {guidance: true, description: 'Use axis="horizontal" or axis="vertical" when you only need one direction. Both axes is the default but not always needed.'},
+      {guidance: true, description: 'Set a height when centering vertically. Center needs a defined height to know what space to center within.'},
+      {guidance: true, description: 'Use isInline to center small elements (icons, badges) within a line of text without breaking text flow.'},
+      {guidance: false, description: 'Wrap large page sections in Center. Use XDSLayout or XDSAppShell for page-level structure.'},
+      {guidance: false, description: 'Use Center for horizontal lists of items. Use XDSStack with hAlign="center" instead.'},
     ],
   },
   propDescriptions: {

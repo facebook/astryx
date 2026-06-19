@@ -65,7 +65,6 @@ import {
   formatISOTime,
   isTimeInRange,
   adjustTime,
-  xdsClassName,
   mergeProps,
   mergeRefs,
 } from '../utils';
@@ -77,7 +76,9 @@ import {
 } from '../utils/plainDate';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export type ISODateTimeString = string & {
   readonly __brand: 'ISODateTimeString';
@@ -294,6 +295,12 @@ export interface XDSDateTimeInputProps extends Omit<
   status?: XDSInputStatus;
 
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
@@ -382,6 +389,7 @@ export function XDSDateTimeInput({
   status,
   labelTooltip,
   numberOfMonths = 1,
+  width,
   xstyle,
   className,
   style,
@@ -777,11 +785,12 @@ export function XDSDateTimeInput({
           : undefined
       }
       labelTooltip={labelTooltip}
-      statusVariant="detached">
+      statusVariant="detached"
+      width={width}>
       <div
         {...rest}
         {...mergeProps(
-          xdsClassName('date-time-input', {
+          xdsThemeProps('date-time-input', {
             size,
             status: status?.type ?? null,
           }),
@@ -887,6 +896,8 @@ export function XDSDateTimeInput({
             placeholder={timePlaceholder}
             disabled={isEffectivelyDisabled}
             aria-label="Time"
+            aria-required={isRequired === true ? 'true' : undefined}
+            aria-invalid={status?.type === 'error' ? 'true' : undefined}
             {...stylex.props(
               styles.input,
               isEffectivelyDisabled && styles.inputDisabled,

@@ -7,7 +7,7 @@ import {XDSList} from '@xds/core/List';
 import {XDSCard} from '@xds/core/Card';
 
 const meta: Meta<typeof XDSCheckboxList> = {
-  title: 'Core/Inputs/CheckboxList',
+  title: 'Core/CheckboxList',
   component: XDSCheckboxList,
   tags: ['autodocs'],
   argTypes: {
@@ -216,6 +216,50 @@ export const Disabled: Story = {
   args: {
     label: 'Notification preferences',
     isDisabled: true,
+  },
+};
+
+export const Loading: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>(['email']);
+    return (
+      <XDSCheckboxList
+        label="Notification preferences"
+        value={value}
+        onChange={setValue}>
+        <XDSCheckboxListItem label="Email" value="email" />
+        <XDSCheckboxListItem label="SMS" value="sms" isLoading />
+        <XDSCheckboxListItem label="Push notification" value="push" />
+      </XDSCheckboxList>
+    );
+  },
+};
+
+export const ChangeAction: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>(['email']);
+    // Simulates persisting the new selection to a server. While the promise
+    // is pending, the toggled item shows a spinner inside its checkbox and
+    // blocks re-toggling; the other items stay interactive.
+    const persist = (next: string[]) =>
+      new Promise<void>(resolve => {
+        setTimeout(() => {
+          setValue(next);
+          resolve();
+        }, 1500);
+      });
+    return (
+      <XDSCheckboxList
+        label="Notification preferences"
+        description="Toggle an option — it spins while saving"
+        value={value}
+        changeAction={persist}
+        hasDividers>
+        <XDSCheckboxListItem label="Email" value="email" />
+        <XDSCheckboxListItem label="SMS" value="sms" />
+        <XDSCheckboxListItem label="Push notification" value="push" />
+      </XDSCheckboxList>
+    );
   },
 };
 

@@ -1,20 +1,21 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {XDSAppShell} from '@xds/core/AppShell';
-import {SharedTopNav} from '../../components/SharedTopNav';
+/**
+ * Page type: playground (full-bleed tool)
+ * The PlaygroundClient owns its XDSAppShell so its stateful side navigation
+ * can drive Code / Properties / Theme tabs and still get AppShell mobile nav.
+ * Theme context is provided by the root <Providers> (app/providers.tsx), so
+ * this route layout intentionally adds no extra chrome or scroll container.
+ *
+ * @input children — the PlaygroundClient tree
+ * @output Children unchanged; PlaygroundClient provides the full-height shell
+ * @position app/playground route layout
+ */
 
 export default function PlaygroundLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <XDSAppShell
-      variant="surface"
-      height="fill"
-      contentPadding={0}
-      topNav={<SharedTopNav />}>
-      {children}
-    </XDSAppShell>
-  );
+  return children;
 }

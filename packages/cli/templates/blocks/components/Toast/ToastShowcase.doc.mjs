@@ -4,8 +4,12 @@
 export const doc = {
   type: 'block',
   exampleFor: 'Toast',
+  alsoExampleFor: ['useXDSToast'],
+  alsoShowcaseFor: ['useXDSToast'],
   name: 'Toast',
   displayName: 'Toast',
+  description:
+    'Imperative toast notifications triggered with useXDSToast and rendered in the toast viewport.',
   isReady: true,
   aspectRatio: 16 / 9,
   isShowcase: true,

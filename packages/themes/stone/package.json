@@ -3,7 +3,7 @@
   "version": "0.0.14",
   "displayName": "Stone Theme",
   "private": false,
-  "description": "Warm stone and slate theme for XDS \u2014 earthy neutral palette with Montserrat headings, Figtree body, and Lucide icons",
+  "description": "Warm stone and slate, earthy and understated, with just enough character to feel handcrafted.",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebookexperimental/xds#readme",
@@ -49,7 +49,7 @@
     "build": "xds theme build src/stoneTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
   },
   "dependencies": {
-    "lucide-react": "^1.16.0"
+    "lucide-react": "^1.18.0"
   },
   "peerDependencies": {
     "@xds/core": "0.0.14",

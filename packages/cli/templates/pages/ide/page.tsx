@@ -4,8 +4,6 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSTopNav, XDSTopNavItem} from '@xds/core/TopNav';
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
 
 import {XDSLayout, XDSLayoutContent, XDSLayoutPanel} from '@xds/core/Layout';
@@ -14,7 +12,6 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 import {XDSStack} from '@xds/core/Layout';
-import {XDSOverflowList} from '@xds/core/OverflowList';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {
   XDSSegmentedControl,
@@ -32,8 +29,6 @@ import {
   DocumentTextIcon,
   CodeBracketIcon,
   MagnifyingGlassIcon,
-  PlayIcon,
-  StopIcon,
   CommandLineIcon,
   ExclamationTriangleIcon,
   InformationCircleIcon,
@@ -251,318 +246,299 @@ export default function ResizableWorkspacePage() {
   });
 
   return (
-    <XDSAppShell
-      variant="elevated"
+    <XDSLayout
       height="fill"
-      topNav={
-        <XDSTopNav
-          heading="Acme"
-          startContent={
-            <>
-              <XDSTopNavItem label="File" href="#" />
-              <XDSTopNavItem label="Edit" href="#" />
-              <XDSTopNavItem label="View" href="#" />
-              <XDSTopNavItem label="Run" href="#" />
-              <XDSTopNavItem label="Help" href="#" />
-            </>
-          }
-          endContent={
-            <XDSOverflowList gap={2}>
-              <XDSButton
-                label="Run"
-                icon={<XDSIcon icon={PlayIcon} size="sm" />}
-                size="sm"
+      start={
+        <XDSLayoutPanel hasDivider={false} padding={0}>
+          <XDSSideNav
+            collapsible={{defaultIsCollapsed: true}}
+            resizable
+            xstyle={styles.hideSideNav}>
+            <XDSSideNavSection title="Navigation" isHeaderHidden>
+              <XDSSideNavItem
+                label="Home"
+                icon={HomeIcon}
+                selectedIcon={HomeIconSolid}
+                isSelected={activeNavItem === 'Home'}
+                onClick={() => setActiveNavItem('Home')}
               />
-              <XDSButton
-                label="Stop"
-                icon={<XDSIcon icon={StopIcon} size="sm" />}
-                size="sm"
-                variant="secondary"
+              <XDSSideNavItem
+                label="Explorer"
+                icon={FolderOpenIcon}
+                selectedIcon={FolderOpenSolid}
+                isSelected={activeNavItem === 'Explorer'}
+                onClick={() => setActiveNavItem('Explorer')}
               />
-            </XDSOverflowList>
-          }
-        />
+              <XDSSideNavItem
+                label="Search"
+                icon={MagnifyingGlassIcon}
+                selectedIcon={MagnifyingGlassSolid}
+                isSelected={activeNavItem === 'Search'}
+                onClick={() => setActiveNavItem('Search')}
+              />
+              <XDSSideNavItem
+                label="Source Control"
+                icon={CodeBracketIcon}
+                isSelected={activeNavItem === 'Source Control'}
+                onClick={() => setActiveNavItem('Source Control')}
+              />
+              <XDSSideNavItem
+                label="Extensions"
+                icon={PuzzlePieceIcon}
+                selectedIcon={PuzzlePieceSolid}
+                isSelected={activeNavItem === 'Extensions'}
+                onClick={() => setActiveNavItem('Extensions')}
+              />
+            </XDSSideNavSection>
+          </XDSSideNav>
+        </XDSLayoutPanel>
       }
-      sideNav={
-        <XDSSideNav
-          collapsible={{defaultIsCollapsed: true}}
-          resizable
-          xstyle={styles.hideSideNav}>
-          <XDSSideNavSection title="Navigation" isHeaderHidden>
-            <XDSSideNavItem
-              label="Home"
-              icon={HomeIcon}
-              selectedIcon={HomeIconSolid}
-              isSelected={activeNavItem === 'Home'}
-              onClick={() => setActiveNavItem('Home')}
-            />
-            <XDSSideNavItem
-              label="Explorer"
-              icon={FolderOpenIcon}
-              selectedIcon={FolderOpenSolid}
-              isSelected={activeNavItem === 'Explorer'}
-              onClick={() => setActiveNavItem('Explorer')}
-            />
-            <XDSSideNavItem
-              label="Search"
-              icon={MagnifyingGlassIcon}
-              selectedIcon={MagnifyingGlassSolid}
-              isSelected={activeNavItem === 'Search'}
-              onClick={() => setActiveNavItem('Search')}
-            />
-            <XDSSideNavItem
-              label="Source Control"
-              icon={CodeBracketIcon}
-              isSelected={activeNavItem === 'Source Control'}
-              onClick={() => setActiveNavItem('Source Control')}
-            />
-            <XDSSideNavItem
-              label="Extensions"
-              icon={PuzzlePieceIcon}
-              selectedIcon={PuzzlePieceSolid}
-              isSelected={activeNavItem === 'Extensions'}
-              onClick={() => setActiveNavItem('Extensions')}
-            />
-          </XDSSideNavSection>
-        </XDSSideNav>
-      }>
-      <XDSLayout
-        height="fill"
-        start={
-          <div {...stylex.props(styles.hideOnMobile)}>
-            {!startPanel.isCollapsed && (
-              <XDSLayoutPanel
-                width={startPanel.size}
-                hasDivider={false}
-                padding={0}>
-                <XDSStack
-                  direction="vertical"
-                  xstyle={styles.fileExplorer}
-                  gap={2}>
-                  <XDSTextInput
-                    label="Search files"
-                    isLabelHidden
-                    value=""
-                    placeholder="Search"
-                    size="md"
-                    startIcon={MagnifyingGlassIcon}
-                  />
-                  <XDSTreeList items={fileTree} density="compact" />
-                </XDSStack>
-              </XDSLayoutPanel>
-            )}
-            <XDSResizeHandle
-              direction="horizontal"
-              hasDivider
-              isAlwaysVisible={false}
-              resizable={startPanel.props}
-              label="Resize file explorer"
-            />
-          </div>
-        }
-        content={
-          <XDSLayoutContent padding={0}>
-            <XDSLayout
-              height="fill"
-              content={
-                <XDSLayoutContent padding={0}>
-                  <XDSStack direction="vertical" xstyle={styles.contentFill}>
-                    <div {...stylex.props(styles.editorArea)}>
-                      <XDSCodeBlock
-                        code={EDITOR_CODE}
-                        language="typescript"
-                        hasLineNumbers
-                        highlightLines={[21]}
-                        hasCopyButton={false}
-                        size="sm"
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          borderWidth: 0,
-                          borderRadius: 0,
-                        }}
-                      />
-                    </div>
-                    <XDSResizeHandle
+      content={
+        <XDSLayoutContent padding={0}>
+          <XDSLayout
+            height="fill"
+            start={
+              <div {...stylex.props(styles.hideOnMobile)}>
+                {!startPanel.isCollapsed && (
+                  <XDSLayoutPanel
+                    width={startPanel.size}
+                    hasDivider={false}
+                    padding={0}>
+                    <XDSStack
                       direction="vertical"
-                      hasDivider
-                      isReversed
-                      isAlwaysVisible={false}
-                      resizable={bottomPanel.props}
-                      label="Resize terminal"
-                    />
-                    {!bottomPanel.isCollapsed && (
-                      <div
-                        style={{
-                          height: bottomPanel.size,
-                          flexShrink: 0,
-                          overflow: 'hidden',
-                        }}>
-                        <XDSStack
-                          direction="vertical"
-                          xstyle={styles.contentFill}>
-                          <XDSTabList
-                            value={activeTermTab}
-                            onChange={val => setActiveTermTab(val)}
+                      xstyle={styles.fileExplorer}
+                      gap={2}>
+                      <XDSTextInput
+                        label="Search files"
+                        isLabelHidden
+                        value=""
+                        placeholder="Search"
+                        size="md"
+                        startIcon={MagnifyingGlassIcon}
+                      />
+                      <XDSTreeList items={fileTree} density="compact" />
+                    </XDSStack>
+                  </XDSLayoutPanel>
+                )}
+                <XDSResizeHandle
+                  direction="horizontal"
+                  hasDivider
+                  isAlwaysVisible={false}
+                  resizable={startPanel.props}
+                  label="Resize file explorer"
+                />
+              </div>
+            }
+            content={
+              <XDSLayoutContent padding={0}>
+                <XDSLayout
+                  height="fill"
+                  content={
+                    <XDSLayoutContent padding={0}>
+                      <XDSStack
+                        direction="vertical"
+                        xstyle={styles.contentFill}>
+                        <div {...stylex.props(styles.editorArea)}>
+                          <XDSCodeBlock
+                            code={EDITOR_CODE}
+                            language="typescript"
+                            hasLineNumbers
+                            highlightLines={[21]}
+                            hasCopyButton={false}
                             size="sm"
-                            hasDivider={false}
-                            xstyle={styles.tabListPadding}>
-                            <XDSTab
-                              label="Terminal"
-                              value="terminal"
-                              icon={
-                                <XDSIcon icon={CommandLineIcon} size="sm" />
-                              }
-                            />
-                            <XDSTab
-                              label="Problems"
-                              value="problems"
-                              icon={
-                                <XDSIcon
-                                  icon={ExclamationTriangleIcon}
-                                  size="sm"
-                                />
-                              }
-                            />
-                            <XDSTab
-                              label="Output"
-                              value="output"
-                              icon={
-                                <XDSIcon
-                                  icon={InformationCircleIcon}
-                                  size="sm"
-                                />
-                              }
-                            />
-                            <XDSTab
-                              label="Debug"
-                              value="debug"
-                              icon={<XDSIcon icon={BugAntIcon} size="sm" />}
-                            />
-                          </XDSTabList>
-                          <div {...stylex.props(styles.terminalWrapper)}>
-                            <XDSCodeBlock
-                              code={TERMINAL_OUTPUT}
-                              language="bash"
-                              hasCopyButton={false}
-                              size="sm"
-                              style={{
-                                width: '100%',
-                                height: '100%',
-                                borderWidth: 0,
-                                borderRadius: 0,
-                              }}
-                            />
-                          </div>
-                        </XDSStack>
-                      </div>
-                    )}
-                  </XDSStack>
-                </XDSLayoutContent>
-              }
-              end={
-                <div {...stylex.props(styles.hideOnMobile)}>
-                  <XDSResizeHandle
-                    direction="horizontal"
-                    hasDivider
-                    isReversed
-                    isAlwaysVisible={false}
-                    resizable={endPanel.props}
-                    label="Resize properties panel"
-                  />
-                  {!endPanel.isCollapsed && (
-                    <XDSLayoutPanel
-                      width={endPanel.size}
-                      hasDivider={false}
-                      padding={4}>
-                      <XDSStack direction="vertical" gap={3}>
-                        <XDSSegmentedControl
-                          label="Properties panel sections"
-                          value={activePropertiesTab}
-                          onChange={setActivePropertiesTab}
-                          size="sm"
-                          layout="fill">
-                          <XDSSegmentedControlItem
-                            label="Properties"
-                            value="properties"
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              borderWidth: 0,
+                              borderRadius: 0,
+                            }}
                           />
-                          <XDSSegmentedControlItem
-                            label="History"
-                            value="history"
-                          />
-                        </XDSSegmentedControl>
-                        {activePropertiesTab === 'properties' ? (
-                          <>
-                            <XDSStack direction="vertical" gap={1}>
-                              <XDSHeading level={3}>{activeFile}</XDSHeading>
-                              <XDSText color="secondary" type="supporting">
-                                src/components/{activeFile}
-                              </XDSText>
-                            </XDSStack>
-                            <XDSMetadataList xstyle={styles.metadataCompact}>
-                              {PROPERTIES.map(prop => (
-                                <XDSMetadataListItem
-                                  key={prop.label}
-                                  label={prop.label}>
-                                  {prop.value}
-                                </XDSMetadataListItem>
-                              ))}
-                            </XDSMetadataList>
-                            <XDSStack direction="vertical" gap={2}>
-                              <XDSStack direction="vertical" gap={2}>
-                                <XDSButton
-                                  label="Format Document"
-                                  size="md"
-                                  variant="secondary"
-                                />
-                                <XDSButton
-                                  label="Go to Definition"
-                                  size="md"
-                                  variant="secondary"
-                                />
-                                <XDSButton
-                                  label="Find References"
-                                  size="md"
-                                  variant="secondary"
-                                />
-                              </XDSStack>
-                            </XDSStack>
-                          </>
-                        ) : (
-                          <XDSStack direction="vertical" gap={1}>
-                            <XDSList>
-                              {HISTORY_ITEMS.map(item => (
-                                <XDSListItem
-                                  key={item.label}
-                                  label={item.label}
-                                  endContent={
-                                    <XDSText
-                                      type="supporting"
-                                      color="secondary">
-                                      {item.time}
-                                    </XDSText>
+                        </div>
+                        <XDSResizeHandle
+                          direction="vertical"
+                          hasDivider
+                          isReversed
+                          isAlwaysVisible={false}
+                          resizable={bottomPanel.props}
+                          label="Resize terminal"
+                        />
+                        {!bottomPanel.isCollapsed && (
+                          <div
+                            style={{
+                              height: bottomPanel.size,
+                              flexShrink: 0,
+                              overflow: 'hidden',
+                            }}>
+                            <XDSStack
+                              direction="vertical"
+                              xstyle={styles.contentFill}>
+                              <XDSTabList
+                                value={activeTermTab}
+                                onChange={val => setActiveTermTab(val)}
+                                size="sm"
+                                hasDivider={false}
+                                xstyle={styles.tabListPadding}>
+                                <XDSTab
+                                  label="Terminal"
+                                  value="terminal"
+                                  icon={
+                                    <XDSIcon icon={CommandLineIcon} size="sm" />
                                   }
-                                  startContent={
-                                    <span
-                                      {...stylex.props(
-                                        styles.historyTimelineDot,
-                                      )}
+                                />
+                                <XDSTab
+                                  label="Problems"
+                                  value="problems"
+                                  icon={
+                                    <XDSIcon
+                                      icon={ExclamationTriangleIcon}
+                                      size="sm"
                                     />
                                   }
                                 />
-                              ))}
-                            </XDSList>
-                          </XDSStack>
+                                <XDSTab
+                                  label="Output"
+                                  value="output"
+                                  icon={
+                                    <XDSIcon
+                                      icon={InformationCircleIcon}
+                                      size="sm"
+                                    />
+                                  }
+                                />
+                                <XDSTab
+                                  label="Debug"
+                                  value="debug"
+                                  icon={<XDSIcon icon={BugAntIcon} size="sm" />}
+                                />
+                              </XDSTabList>
+                              <div {...stylex.props(styles.terminalWrapper)}>
+                                <XDSCodeBlock
+                                  code={TERMINAL_OUTPUT}
+                                  language="bash"
+                                  hasCopyButton={false}
+                                  size="sm"
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    borderWidth: 0,
+                                    borderRadius: 0,
+                                  }}
+                                />
+                              </div>
+                            </XDSStack>
+                          </div>
                         )}
                       </XDSStack>
-                    </XDSLayoutPanel>
-                  )}
-                </div>
-              }
-            />
-          </XDSLayoutContent>
-        }
-      />
-    </XDSAppShell>
+                    </XDSLayoutContent>
+                  }
+                  end={
+                    <div {...stylex.props(styles.hideOnMobile)}>
+                      <XDSResizeHandle
+                        direction="horizontal"
+                        hasDivider
+                        isReversed
+                        isAlwaysVisible={false}
+                        resizable={endPanel.props}
+                        label="Resize properties panel"
+                      />
+                      {!endPanel.isCollapsed && (
+                        <XDSLayoutPanel
+                          width={endPanel.size}
+                          hasDivider={false}
+                          padding={4}>
+                          <XDSStack direction="vertical" gap={3}>
+                            <XDSSegmentedControl
+                              label="Properties panel sections"
+                              value={activePropertiesTab}
+                              onChange={setActivePropertiesTab}
+                              size="sm"
+                              layout="fill">
+                              <XDSSegmentedControlItem
+                                label="Properties"
+                                value="properties"
+                              />
+                              <XDSSegmentedControlItem
+                                label="History"
+                                value="history"
+                              />
+                            </XDSSegmentedControl>
+                            {activePropertiesTab === 'properties' ? (
+                              <>
+                                <XDSStack direction="vertical" gap={1}>
+                                  <XDSHeading level={3}>
+                                    {activeFile}
+                                  </XDSHeading>
+                                  <XDSText color="secondary" type="supporting">
+                                    src/components/{activeFile}
+                                  </XDSText>
+                                </XDSStack>
+                                <XDSMetadataList
+                                  xstyle={styles.metadataCompact}>
+                                  {PROPERTIES.map(prop => (
+                                    <XDSMetadataListItem
+                                      key={prop.label}
+                                      label={prop.label}>
+                                      {prop.value}
+                                    </XDSMetadataListItem>
+                                  ))}
+                                </XDSMetadataList>
+                                <XDSStack direction="vertical" gap={2}>
+                                  <XDSStack direction="vertical" gap={2}>
+                                    <XDSButton
+                                      label="Format Document"
+                                      size="md"
+                                      variant="secondary"
+                                    />
+                                    <XDSButton
+                                      label="Go to Definition"
+                                      size="md"
+                                      variant="secondary"
+                                    />
+                                    <XDSButton
+                                      label="Find References"
+                                      size="md"
+                                      variant="secondary"
+                                    />
+                                  </XDSStack>
+                                </XDSStack>
+                              </>
+                            ) : (
+                              <XDSStack direction="vertical" gap={1}>
+                                <XDSList>
+                                  {HISTORY_ITEMS.map(item => (
+                                    <XDSListItem
+                                      key={item.label}
+                                      label={item.label}
+                                      endContent={
+                                        <XDSText
+                                          type="supporting"
+                                          color="secondary">
+                                          {item.time}
+                                        </XDSText>
+                                      }
+                                      startContent={
+                                        <span
+                                          {...stylex.props(
+                                            styles.historyTimelineDot,
+                                          )}
+                                        />
+                                      }
+                                    />
+                                  ))}
+                                </XDSList>
+                              </XDSStack>
+                            )}
+                          </XDSStack>
+                        </XDSLayoutPanel>
+                      )}
+                    </div>
+                  }
+                />
+              </XDSLayoutContent>
+            }
+          />
+        </XDSLayoutContent>
+      }
+    />
   );
 }

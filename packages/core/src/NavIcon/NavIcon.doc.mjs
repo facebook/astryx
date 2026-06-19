@@ -5,6 +5,9 @@
 export const docs = {
   name: 'NavIcon',
   displayName: 'Nav Icon',
+  group: 'Navigation',
+  category: 'Navigation',
+  isHiddenFromOverview: true,
   hidden: false,
   keywords: ["navicon","iconbutton","toolbar icon","appbar icon","nav button"],
   props: [
@@ -28,7 +31,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Use in navigation headers to provide a recognizable visual anchor for the section.' },
       { guidance: true, description: 'Pass an XDSIcon or similarly sized icon component to ensure proper proportions.' },
-      { guidance: false, description: 'Use NavIcon for interactive purposes — it is a display-only container, not a button.' },
+      { guidance: false, description: 'Use NavIcon for interactive purposes; it is a display-only container, not a button.' },
     ],
   },
 };
@@ -57,7 +60,7 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Use in navigation headers to provide a recognizable visual anchor for the section.' },
       { guidance: true, description: 'Pass an XDSIcon or similarly sized icon component to ensure proper proportions.' },
-      { guidance: false, description: 'Use NavIcon for interactive purposes — it is a display-only container, not a button.' },
+      { guidance: false, description: 'Use NavIcon for interactive purposes; it is a display-only container, not a button.' },
     ],
   },
 };
@@ -72,7 +75,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Use in navigation headers to provide a recognizable visual anchor for the section.' },
       { guidance: true, description: 'Pass an XDSIcon or similarly sized icon component to ensure proper proportions.' },
-      { guidance: false, description: 'Use NavIcon for interactive purposes — it is a display-only container, not a button.' },
+      { guidance: false, description: 'Use NavIcon for interactive purposes; it is a display-only container, not a button.' },
     ],
   },
   propDescriptions: {

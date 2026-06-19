@@ -4,10 +4,12 @@
 
 import {useState} from 'react';
 
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSSideNav, XDSSideNavHeading, XDSSideNavItem} from '@xds/core/SideNav';
-import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {
+  XDSVStack,
+  XDSHStack,
+  XDSLayout,
+  XDSLayoutContent,
+} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
 import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
@@ -33,17 +35,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-import {
-  DocumentTextIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
-  ArrowTrendingUpIcon,
-  Squares2X2Icon,
-} from '@heroicons/react/24/outline';
-import {
-  CurrencyDollarIcon,
-  Squares2X2Icon as Squares2X2IconSolid,
-} from '@heroicons/react/24/solid';
+import {ArrowUpIcon, ArrowDownIcon} from '@heroicons/react/24/outline';
 
 // ============= DATA =============
 
@@ -666,151 +658,118 @@ function AssetRow({
 
 // ============= SIDENAV =============
 
-function DashboardSideNav() {
-  const [active, setActive] = useState('dashboard');
-  return (
-    <XDSSideNav
-      header={
-        <XDSSideNavHeading
-          icon={
-            <XDSNavIcon
-              icon={<XDSIcon icon={CurrencyDollarIcon} size="sm" />}
-            />
-          }
-          heading="Financials"
-          headingHref="/"
-        />
-      }>
-      <XDSSideNavItem
-        label="Dashboard"
-        icon={active === 'dashboard' ? Squares2X2IconSolid : Squares2X2Icon}
-        isSelected={active === 'dashboard'}
-        onClick={() => setActive('dashboard')}
-      />
-      <XDSSideNavItem
-        label="Market"
-        icon={ArrowTrendingUpIcon}
-        isSelected={active === 'data'}
-        onClick={() => setActive('data')}
-      />
-      <XDSSideNavItem
-        label="Reports"
-        icon={DocumentTextIcon}
-        isSelected={active === 'reports'}
-        onClick={() => setActive('reports')}
-      />
-    </XDSSideNav>
-  );
-}
-
 // ============= MAIN COMPONENT =============
 
 export default function DashboardPortfolioTemplate() {
   const [timeRange, setTimeRange] = useState('1 year');
 
   return (
-    <XDSAppShell
-      sideNav={<DashboardSideNav />}
-      variant="elevated"
+    <XDSLayout
       height="fill"
-      contentPadding={6}>
-      <XDSVStack gap={6}>
-        {/* Page header */}
-        <XDSHStack hAlign="between" vAlign="center">
-          <XDSHeading level={1}>My Portfolio</XDSHeading>
-          <XDSDropdownMenu
-            button={{
-              label: timeRange,
-              variant: 'secondary',
-              size: 'lg',
-            }}
-            hasChevron
-            items={[
-              {label: '1 month', onClick: () => setTimeRange('1 month')},
-              {label: '3 months', onClick: () => setTimeRange('3 months')},
-              {label: '6 months', onClick: () => setTimeRange('6 months')},
-              {label: '1 year', onClick: () => setTimeRange('1 year')},
-              {label: '5 years', onClick: () => setTimeRange('5 years')},
-              {label: 'All time', onClick: () => setTimeRange('All time')},
-            ]}
-          />
-        </XDSHStack>
+      content={
+        <XDSLayoutContent padding={6}>
+          <XDSVStack gap={6}>
+            {/* Page header */}
+            <XDSHStack hAlign="between" vAlign="center">
+              <XDSHeading level={1}>My Portfolio</XDSHeading>
+              <XDSDropdownMenu
+                button={{
+                  label: timeRange,
+                  variant: 'secondary',
+                  size: 'lg',
+                }}
+                hasChevron
+                items={[
+                  {label: '1 month', onClick: () => setTimeRange('1 month')},
+                  {label: '3 months', onClick: () => setTimeRange('3 months')},
+                  {label: '6 months', onClick: () => setTimeRange('6 months')},
+                  {label: '1 year', onClick: () => setTimeRange('1 year')},
+                  {label: '5 years', onClick: () => setTimeRange('5 years')},
+                  {label: 'All time', onClick: () => setTimeRange('All time')},
+                ]}
+              />
+            </XDSHStack>
 
-        {/* KPI metric cards */}
-        <XDSGrid columns={{minWidth: 280, repeat: 'fit'}} gap={4}>
-          {Array.from({length: Math.ceil(metrics.length / 2)}, (_, i) => (
-            <XDSGrid key={i} columns={{minWidth: 280, repeat: 'fit'}} gap={4}>
-              {metrics.slice(i * 2, i * 2 + 2).map(m => (
-                <MetricCard key={m.label} {...m} />
+            {/* KPI metric cards */}
+            <XDSGrid columns={{minWidth: 280, repeat: 'fit'}} gap={4}>
+              {Array.from({length: Math.ceil(metrics.length / 2)}, (_, i) => (
+                <XDSGrid
+                  key={i}
+                  columns={{minWidth: 280, repeat: 'fit'}}
+                  gap={4}>
+                  {metrics.slice(i * 2, i * 2 + 2).map(m => (
+                    <MetricCard key={m.label} {...m} />
+                  ))}
+                </XDSGrid>
               ))}
             </XDSGrid>
-          ))}
-        </XDSGrid>
 
-        {/* Chart + Top assets */}
-        <XDSGrid columns={{minWidth: 280, max: 4}} gap={4}>
-          <XDSGridSpan columns={3}>
+            {/* Chart + Top assets */}
+            <XDSGrid columns={{minWidth: 280, max: 4}} gap={4}>
+              <XDSGridSpan columns={3}>
+                <XDSCard>
+                  <XDSVStack gap={4}>
+                    <XDSHStack hAlign="between" vAlign="center">
+                      <XDSHeading level={3}>Portfolio Value</XDSHeading>
+                      <XDSLink href="#">View details</XDSLink>
+                    </XDSHStack>
+                    <PortfolioChart />
+                  </XDSVStack>
+                </XDSCard>
+              </XDSGridSpan>
+              <XDSGridSpan columns={1}>
+                <XDSCard>
+                  <XDSVStack gap={4}>
+                    <XDSHStack hAlign="between" vAlign="center">
+                      <XDSHeading level={3}>Top Assets</XDSHeading>
+                      <XDSLink href="#">View all</XDSLink>
+                    </XDSHStack>
+                    <XDSList density="spacious">
+                      {topAssets.map(asset => (
+                        <AssetRow key={asset.ticker} {...asset} />
+                      ))}
+                    </XDSList>
+                  </XDSVStack>
+                </XDSCard>
+              </XDSGridSpan>
+            </XDSGrid>
+
+            <XDSDivider />
+
+            {/* Market section */}
+            <XDSHStack hAlign="between" vAlign="start">
+              <XDSVStack gap={1}>
+                <XDSHeading level={1}>Market Today</XDSHeading>
+                <XDSText type="body" color="secondary">
+                  Past 24 hours
+                </XDSText>
+              </XDSVStack>
+              <XDSButton label="View more" variant="secondary" size="lg" />
+            </XDSHStack>
+
+            {/* Market index cards */}
+            <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
+              {marketIndices.map(m => (
+                <MarketCard key={m.ticker} {...m} />
+              ))}
+            </XDSGrid>
+
+            {/* Trending stocks table */}
             <XDSCard>
               <XDSVStack gap={4}>
-                <XDSHStack hAlign="between" vAlign="center">
-                  <XDSHeading level={3}>Portfolio Value</XDSHeading>
-                  <XDSLink href="#">View details</XDSLink>
-                </XDSHStack>
-                <PortfolioChart />
+                <XDSHeading level={3}>Trending Stocks</XDSHeading>
+                <XDSTable<StockRow>
+                  data={trendingStocks}
+                  columns={trendingColumns}
+                  idKey="id"
+                  hasHover
+                  dividers="rows"
+                />
               </XDSVStack>
             </XDSCard>
-          </XDSGridSpan>
-          <XDSGridSpan columns={1}>
-            <XDSCard>
-              <XDSVStack gap={4}>
-                <XDSHStack hAlign="between" vAlign="center">
-                  <XDSHeading level={3}>Top Assets</XDSHeading>
-                  <XDSLink href="#">View all</XDSLink>
-                </XDSHStack>
-                <XDSList density="spacious">
-                  {topAssets.map(asset => (
-                    <AssetRow key={asset.ticker} {...asset} />
-                  ))}
-                </XDSList>
-              </XDSVStack>
-            </XDSCard>
-          </XDSGridSpan>
-        </XDSGrid>
-
-        <XDSDivider />
-
-        {/* Market section */}
-        <XDSHStack hAlign="between" vAlign="start">
-          <XDSVStack gap={1}>
-            <XDSHeading level={1}>Market Today</XDSHeading>
-            <XDSText type="body" color="secondary">
-              Past 24 hours
-            </XDSText>
           </XDSVStack>
-          <XDSButton label="View more" variant="secondary" size="lg" />
-        </XDSHStack>
-
-        {/* Market index cards */}
-        <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
-          {marketIndices.map(m => (
-            <MarketCard key={m.ticker} {...m} />
-          ))}
-        </XDSGrid>
-
-        {/* Trending stocks table */}
-        <XDSCard>
-          <XDSVStack gap={4}>
-            <XDSHeading level={3}>Trending Stocks</XDSHeading>
-            <XDSTable<StockRow>
-              data={trendingStocks}
-              columns={trendingColumns}
-              idKey="id"
-              hasHover
-              dividers="rows"
-            />
-          </XDSVStack>
-        </XDSCard>
-      </XDSVStack>
-    </XDSAppShell>
+        </XDSLayoutContent>
+      }
+    />
   );
 }

@@ -2,20 +2,19 @@
 
 'use client';
 
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
+import {XDSVStack, XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSCard} from '@xds/core/Card';
 import {XDSIcon} from '@xds/core/Icon';
-import {XDSSection} from '@xds/core/Section';
 import {ArrowRightIcon} from '@heroicons/react/24/outline';
 import * as stylex from '@stylexjs/stylex';
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
+// The only custom CSS is the image fill — there is no XDSImage primitive to
+// fill the XDSAspectRatio box with `object-fit` (#2582).
 
 const styles = stylex.create({
   image: {
@@ -42,7 +41,6 @@ const PRODUCTS: Product[] = [
     description:
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 75.0,
-    // illustrative-horizontal-1 from xds_oss asset set
     image:
       'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg',
   },
@@ -52,7 +50,6 @@ const PRODUCTS: Product[] = [
     description:
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 80.0,
-    // illustrative-vertical-1 from xds_oss asset set
     image:
       'https://lookaside.facebook.com/assets/xds_oss/illustrative-vertical-1.jpg',
   },
@@ -62,7 +59,6 @@ const PRODUCTS: Product[] = [
     description:
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 75.0,
-    // illustrative-horizontal-3 from xds_oss asset set
     image:
       'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-3.jpg',
   },
@@ -72,7 +68,6 @@ const PRODUCTS: Product[] = [
     description:
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 75.0,
-    // illustrative-horizontal-4 from xds_oss asset set
     image:
       'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-4.jpg',
   },
@@ -82,7 +77,6 @@ const PRODUCTS: Product[] = [
     description:
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 60.0,
-    // illustrative-horizontal-5 from xds_oss asset set
     image:
       'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-5.jpg',
   },
@@ -92,7 +86,6 @@ const PRODUCTS: Product[] = [
     description:
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 80.0,
-    // illustrative-horizontal-2 from xds_oss asset set
     image:
       'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-2.jpg',
   },
@@ -120,7 +113,9 @@ function ProductCard({product}: {product: Product}) {
         <XDSText type="body" color="secondary" maxLines={2}>
           {product.description}
         </XDSText>
-        <XDSHeading level={2}>{fmt(product.price)}</XDSHeading>
+        <XDSText type="large" weight="bold">
+          {fmt(product.price)}
+        </XDSText>
       </XDSVStack>
     </XDSVStack>
   );
@@ -130,9 +125,11 @@ function ProductCard({product}: {product: Product}) {
 
 export default function ProductGalleryTemplate() {
   return (
-    <XDSAppShell height="auto" contentPadding={0} variant="surface">
-      <XDSCenter axis="horizontal">
-        <XDSSection variant="transparent" maxWidth={1200} padding={6}>
+    <XDSLayout
+      height="auto"
+      contentWidth={1200}
+      content={
+        <XDSLayoutContent padding={6}>
           <XDSVStack gap={6}>
             {/* Header — XDSGrid handles responsive stacking */}
             <XDSGrid columns={{minWidth: 280}} gap={4} align="start">
@@ -155,15 +152,15 @@ export default function ProductGalleryTemplate() {
               </XDSVStack>
             </XDSGrid>
 
-            {/* Product Grid — 3 cols desktop, wraps to 2→1 on smaller screens */}
+            {/* Product Grid — reflows 3 → 2 → 1 columns as width narrows */}
             <XDSGrid columns={{minWidth: 300}} gap={6}>
               {PRODUCTS.map(product => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </XDSGrid>
           </XDSVStack>
-        </XDSSection>
-      </XDSCenter>
-    </XDSAppShell>
+        </XDSLayoutContent>
+      }
+    />
   );
 }

@@ -295,7 +295,7 @@ const fullConfig: PowerSearchConfig = {
 // =============================================================================
 
 const meta: Meta<typeof XDSPowerSearch> = {
-  title: 'Core/Inputs/PowerSearch',
+  title: 'Core/PowerSearch',
   component: XDSPowerSearch,
   tags: ['autodocs'],
   decorators: [

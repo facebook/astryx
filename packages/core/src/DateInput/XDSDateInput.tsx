@@ -132,8 +132,10 @@ export type {
   XDSInputStatus as XDSDateInputStatus,
   XDSInputStatusType as XDSDateInputStatusType,
 } from '../Field';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export interface XDSDateInputProps extends Omit<
   XDSBaseProps,
@@ -234,6 +236,12 @@ export interface XDSDateInputProps extends Omit<
   status?: XDSInputStatus;
 
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
@@ -284,6 +292,7 @@ export function XDSDateInput({
   labelTooltip,
   hasClear = false,
   numberOfMonths = 1,
+  width,
   xstyle,
   className,
   style,
@@ -501,12 +510,13 @@ export function XDSDateInput({
             }
           : undefined
       }
-      labelTooltip={labelTooltip}>
+      labelTooltip={labelTooltip}
+      width={width}>
       <div
         ref={popover.triggerRef}
         {...rest}
         {...mergeProps(
-          xdsClassName('date-input', {size, status: status?.type ?? null}),
+          xdsThemeProps('date-input', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             sizeStyles[size],

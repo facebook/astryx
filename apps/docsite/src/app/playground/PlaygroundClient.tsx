@@ -1,94 +1,111 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file PlaygroundClient.tsx
+ * @input URL hash (shared code), user edits, knob edits
+ * @output Full-page two-panel playground (editor + live preview)
+ * @position app/playground — the interactive XDS code playground.
+ *
+ * AppShell: side-nav-only shell; desktop nav is controlled collapsed to
+ * an icon rail while AppShell owns the mobile top bar and drawer.
+ * Left panel: Monaco editor (Code) or knobs (Properties).
+ *   - Code: Monaco editor (controlled) with real XDS .d.ts typedefs.
+ *   - Property: component selector + instance picker + knobs that edit the code.
+ * Right panel: toolbar (dark mode · target element · viewport
+ *   segmented control · share · expand) over a responsive
+ *   /playground/preview iframe.
+ *
+ * The preview iframe is driven via postMessage (preview-code / preview-theme);
+ * code lives in React state and is the single source of truth shared by Monaco,
+ * the Property knobs, the URL hash, and the preview.
+ */
+
 'use client';
 
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useSearchParams} from 'next/navigation';
 import dynamic from 'next/dynamic';
 import * as stylex from '@stylexjs/stylex';
-import {
-  compressToEncodedURIComponent,
-  decompressFromEncodedURIComponent,
-} from 'lz-string';
+import {XDSAppShell} from '@xds/core/AppShell';
+import {compressCode, decompressCode} from '../../lib/compress';
 import {XDSButton} from '@xds/core/Button';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {XDSLink} from '@xds/core/Link';
+import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {XDSCenter} from '@xds/core/Center';
+import {XDSSpinner} from '@xds/core/Spinner';
+import {XDSPopover} from '@xds/core/Popover';
+import {XDSTextInput} from '@xds/core/TextInput';
+import {
+  XDSSideNav,
+  XDSSideNavHeading,
+  XDSSideNavItem,
+  XDSSideNavSection,
+} from '@xds/core/SideNav';
+import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSStatusDot} from '@xds/core/StatusDot';
-import {XDSDivider} from '@xds/core/Divider';
+import {XDSToolbar} from '@xds/core/Toolbar';
+import {
+  XDSSegmentedControl,
+  XDSSegmentedControlItem,
+} from '@xds/core/SegmentedControl';
+import {XDSTab, XDSTabList} from '@xds/core/TabList';
+import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
+import {useMediaQuery} from '@xds/core/hooks';
 import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
-import githubLight from './themes/github-light.json';
-import githubDark from './themes/github-dark.json';
+import {XDSToggleButton} from '@xds/core/ToggleButton';
+import {
+  Check,
+  Code2,
+  Copy,
+  Download,
+  ExternalLink,
+  Moon,
+  Palette,
+  Sun,
+  Monitor,
+  Smartphone,
+  Maximize2,
+  RotateCw,
+  Crosshair,
+} from 'lucide-react';
+import githubLight from './codeEditorThemes/github-light.json';
+import githubDark from './codeEditorThemes/github-dark.json';
+import {useThemeMode} from '../providers';
+import {
+  DEFAULT_PLAYGROUND_THEME,
+  PLAYGROUND_THEME_OPTIONS,
+  themeByValue,
+} from './previewThemes';
+import {templates} from '../../generated/templateRegistry';
+import {PreviewStage, type Viewport} from './PreviewStage';
+import {ConfirmDialog} from './ConfirmDialog';
+import {AstryxIcon} from '../../components/logos';
+import {annotateInstanceIds} from './propertyEditor/componentInstances';
+import {trackCopy} from '../../lib/analytics';
+import {ThemeEditor} from './themeEditor/ThemeEditor';
+import {generateThemeCode} from './themeEditor/helpers';
+import {DEFAULT_CODE} from './defaultCode';
+import {stripCodeExampleCopyrightHeader} from '../../lib/codeExamples';
+import {configureMonaco, type MonacoInstance} from './monacoSetup';
 
 import type * as MonacoTypes from 'monaco-editor';
+import type {XDSDefinedTheme} from '@xds/core/theme';
+import {xdsTokenDefaults} from '@xds/core/theme';
 
-/** Monaco instance type — the full runtime object passed to onMount */
-type MonacoInstance = typeof MonacoTypes & {
-  languages: typeof MonacoTypes.languages & {
-    typescript: {
-      typescriptDefaults: {
-        setCompilerOptions: (options: Record<string, unknown>) => void;
-        setDiagnosticsOptions: (options: Record<string, unknown>) => void;
-        addExtraLib: (content: string, filePath: string) => void;
-      };
-      ScriptTarget: Record<string, number>;
-      ModuleKind: Record<string, number>;
-      JsxEmit: Record<string, number>;
-      ModuleResolutionKind: Record<string, number>;
-    };
-  };
-  editor: typeof MonacoTypes.editor & {
-    defineTheme: (name: string, data: Record<string, unknown>) => void;
-  };
-};
+// Hidden from the generated registry (isHiddenFromOverview), so it's added
+// explicitly as the first entry in the Templates dropdown.
+const THEME_SHOWCASE_SOURCE =
+  templates.find(t => t.slug === 'theme-showcase')?.source ?? '';
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
   loading: () => (
-    <div
-      style={{
-        flex: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-      <XDSText color="secondary">Loading editor…</XDSText>
-    </div>
+    <XDSCenter height="100%">
+      <XDSSpinner label="Loading editor…" />
+    </XDSCenter>
   ),
 });
-
-const DEFAULT_CODE = `import {
-  XDSButton,
-  XDSText,
-  XDSHeading,
-  XDSVStack,
-  XDSHStack,
-  XDSCard,
-  XDSBadge,
-} from '@xds/core';
-
-export default function Demo() {
-  const [count, setCount] = useState(0);
-
-  return (
-    <XDSCard padding={5} maxWidth={400}>
-      <XDSVStack gap={12}>
-        <XDSHeading level={3}>
-          XDS Playground
-        </XDSHeading>
-        <XDSText color="secondary">
-          Edit the code and see live changes.
-        </XDSText>
-        <XDSHStack gap={8} align="center">
-          <XDSButton
-            label={\`Count: \${count}\`}
-            onClick={() => setCount(c => c + 1)}
-          />
-          <XDSBadge variant="info" label={\`\${count} clicks\`} />
-        </XDSHStack>
-      </XDSVStack>
-    </XDSCard>
-  );
-}`;
 
 function getInitialCode(): string {
   if (typeof window === 'undefined') {
@@ -104,219 +121,185 @@ function getInitialCode(): string {
     return DEFAULT_CODE;
   }
   try {
-    return decompressFromEncodedURIComponent(compressed) || DEFAULT_CODE;
+    return decompressCode(compressed) || DEFAULT_CODE;
   } catch {
     return DEFAULT_CODE;
   }
 }
 
 function updateURL(code: string) {
-  const compressed = compressToEncodedURIComponent(code);
+  const compressed = compressCode(code);
   window.history.replaceState(null, '', `#code=${compressed}`);
 }
 
-const THEME_OPTIONS = [
-  {value: 'default', label: 'Default'},
-  {value: 'neutral', label: 'Neutral'},
-  {value: 'matcha', label: 'Matcha'},
-];
+type LeftView = 'code' | 'theme';
+type MobileTopTab = 'preview' | 'code' | 'theme';
+type BuildStatus = 'idle' | 'building' | 'finished' | 'error';
+const MOBILE_BREAKPOINT_QUERY = '(max-width: 768px)';
 
-/**
- * Configure Monaco's TypeScript service with real XDS type definitions.
- * Loads .d.ts files from a pre-built JSON bundle (generated at build time).
- */
-function configureMonaco(monaco: MonacoInstance) {
-  const ts = monaco.languages.typescript.typescriptDefaults;
-
-  ts.setCompilerOptions({
-    target: monaco.languages.typescript.ScriptTarget.ESNext,
-    module: monaco.languages.typescript.ModuleKind.ESNext,
-    jsx: monaco.languages.typescript.JsxEmit.ReactJSX,
-    esModuleInterop: true,
-    allowSyntheticDefaultImports: true,
-    moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-    allowJs: true,
-    strict: false,
-  });
-
-  ts.setDiagnosticsOptions({
-    noSemanticValidation: true,
-    noSyntaxValidation: false,
-  });
-
-  // Global declarations for React hooks (available without import in playground)
-  ts.addExtraLib(
-    `declare function useState<T>(init: T | (() => T)): [T, (v: T | ((prev: T) => T)) => void];
-    declare function useEffect(fn: () => void | (() => void), deps?: readonly unknown[]): void;
-    declare function useCallback<T extends Function>(fn: T, deps: readonly unknown[]): T;
-    declare function useMemo<T>(fn: () => T, deps: readonly unknown[]): T;
-    declare function useRef<T>(init: T): { current: T };
-    declare function useReducer<S, A>(reducer: (state: S, action: A) => S, init: S): [S, (action: A) => void];
-    declare function useContext<T>(ctx: unknown): T;`,
-    'file:///globals.d.ts',
-  );
-
-  // Heroicons wildcard stub
-  ts.addExtraLib(
-    `declare module '@heroicons/react/16/solid' { const icons: Record<string, React.ComponentType<{width?: number; height?: number; className?: string}>>; export = icons; }
-    declare module '@heroicons/react/20/solid' { const icons: Record<string, React.ComponentType<{width?: number; height?: number; className?: string}>>; export = icons; }
-    declare module '@heroicons/react/24/outline' { const icons: Record<string, React.ComponentType<{width?: number; height?: number; className?: string}>>; export = icons; }
-    declare module '@heroicons/react/24/solid' { const icons: Record<string, React.ComponentType<{width?: number; height?: number; className?: string}>>; export = icons; }`,
-    'file:///node_modules/@heroicons/react/index.d.ts',
-  );
-
-  // Load real type definitions from the pre-built JSON bundle
-  fetch('/playground-types.json')
-    .then(r => r.json())
-    .then((packages: Record<string, Record<string, string>>) => {
-      // React types
-      const reactFiles = packages['react'] ?? {};
-      for (const [fileName, content] of Object.entries(reactFiles)) {
-        ts.addExtraLib(
-          content,
-          `file:///node_modules/@types/react/${fileName}`,
-        );
-      }
-
-      // StyleX types
-      const stylexFiles = packages['@stylexjs/stylex'] ?? {};
-      for (const [fileName, content] of Object.entries(stylexFiles)) {
-        ts.addExtraLib(
-          content,
-          `file:///node_modules/@stylexjs/stylex/${fileName}`,
-        );
-      }
-
-      // XDS core types — register each .d.ts under its dist path AND subpath
-      const xdsFiles = packages['@xds/core'] ?? {};
-      const submoduleReexports: string[] = [];
-
-      for (const [relPath, content] of Object.entries(xdsFiles)) {
-        ts.addExtraLib(
-          content,
-          `file:///node_modules/@xds/core/dist/${relPath}`,
-        );
-
-        // Also register as @xds/core/<SubModule>/index.d.ts
-        if (relPath.endsWith('/index.d.ts')) {
-          const moduleName = relPath.replace('/index.d.ts', '');
-          ts.addExtraLib(
-            content,
-            `file:///node_modules/@xds/core/${moduleName}/index.d.ts`,
-          );
-          submoduleReexports.push(moduleName);
-        }
-      }
-
-      // Build @xds/core barrel from submodule re-exports
-      const barrelContent = submoduleReexports
-        .map(m => `export * from '@xds/core/${m}';`)
-        .join('\n');
-      ts.addExtraLib(
-        `declare module '@xds/core' {\n${barrelContent}\n}`,
-        'file:///node_modules/@xds/core/index.d.ts',
-      );
-
-      // Types loaded — enable semantic validation
-      ts.setDiagnosticsOptions({
-        noSemanticValidation: false,
-        noSyntaxValidation: false,
-      });
-    })
-    .catch(() => {
-      // Types unavailable — keep semantic validation disabled
-    });
-}
+const BUILD_STATUS_META: Record<
+  Exclude<BuildStatus, 'idle'>,
+  {variant: 'warning' | 'success' | 'error'; label: string}
+> = {
+  building: {variant: 'warning', label: 'Building…'},
+  finished: {variant: 'success', label: 'Build finished'},
+  error: {variant: 'error', label: 'Build error'},
+};
 
 const s = stylex.create({
+  hidden: {
+    display: 'none',
+  },
+  shareInput: {
+    width: 300,
+  },
+  popoverPadding: {
+    padding: 'var(--spacing-4)',
+  },
   root: {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100%',
+    flex: 1,
+    minWidth: 0,
+    width: '100%',
+    maxWidth: '100%',
     overflow: 'hidden',
+    backgroundColor: 'var(--color-background-surface)',
   },
-  toolbar: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingInline: 16,
-    paddingBlock: 6,
+  leftPanel: {
+    flexShrink: {
+      default: 0,
+      '@media (max-width: 768px)': 1,
+    },
+    overflow: 'hidden',
+    minWidth: 0,
+    maxWidth: '100%',
+  },
+  leftPanelHeader: {
     flexShrink: 0,
+    paddingBlock: 'var(--spacing-2)',
+    paddingInline: 'var(--spacing-3)',
+    minHeight: 48,
   },
-  main: {
-    display: 'flex',
+  tabBody: {
     flex: 1,
     minHeight: 0,
-    flexDirection: {
-      default: 'row',
-      '@media (max-width: 768px)': 'column',
-    },
+    overflow: 'hidden',
   },
-  editorPane: {
-    display: 'flex',
-    flexDirection: 'column',
-    flexShrink: 0,
-    minWidth: 0,
-    minHeight: {
-      default: 0,
-      '@media (max-width: 768px)': 300,
-    },
-  },
-  previewPane: {
+  pane: {
     flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
+    minHeight: 0,
     minWidth: 0,
-    minHeight: {
-      default: 0,
-      '@media (max-width: 768px)': 300,
-    },
   },
-  iframe: {
+  rightPanel: {
     flex: 1,
-    border: 'none',
+    minWidth: 0,
     width: '100%',
-    height: '100%',
+    maxWidth: '100%',
+    overflow: 'hidden',
+    backgroundColor: 'var(--color-background-muted)',
   },
-  previewBar: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingInline: 12,
-    paddingBlock: 6,
-    flexShrink: 0,
+  buildStatus: {
+    transitionProperty: 'opacity',
+    transitionDuration: '0.5s',
+    transitionTimingFunction: 'ease',
+  },
+  buildStatusFaded: {
+    opacity: 0,
+  },
+  sideNavHeading: {
+    paddingInline: {
+      default: null,
+      '@media (min-width: 769px)': 'var(--spacing-1)',
+    },
+  },
+  desktopCollapsedSideNav: {
+    width: {
+      default: null,
+      '@media (min-width: 769px)': 'calc(var(--spacing-12) + var(--spacing-2))',
+    },
   },
 });
 
-export function PlaygroundClient() {
+interface PlaygroundClientProps {
+  defaultIsMobile?: boolean;
+}
+
+export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
+  const isMobile = useMediaQuery(MOBILE_BREAKPOINT_QUERY, defaultIsMobile);
+  // The editor chrome follows the docsite's own light/dark mode, not the OS
+  // (operator) color-scheme preference.
+  const {mode: siteMode} = useThemeMode();
+  const editorTheme = siteMode === 'dark' ? 'github-dark' : 'github-light';
   const [code, setCode] = useState(getInitialCode);
-  const [theme, setTheme] = useState('default');
+  const [mode, setMode] = useState<'light' | 'dark'>('light');
+  // A ?theme=<value> query param (e.g. from the themes gallery's "Open in
+  // Playground") seeds the Theme view and preview. useSearchParams reads it
+  // reliably across soft navigation; validated against registered themes.
+  const searchParams = useSearchParams();
+  const rawThemeParam = searchParams.get('theme');
+  const themeParam =
+    rawThemeParam && rawThemeParam in themeByValue ? rawThemeParam : null;
+  const theme = themeParam ?? DEFAULT_PLAYGROUND_THEME;
+  // The theme that seeds the Theme editor: the ?theme= theme on first load, then
+  // whichever theme the user picks from "Themes". Changing it remounts the
+  // editor (via key) so it re-populates.
+  const [selectedTheme, setSelectedTheme] = useState(theme);
+  const editorInitialTheme =
+    themeByValue[selectedTheme] ?? themeByValue[DEFAULT_PLAYGROUND_THEME];
+  const [activeView, setActiveView] = useState<LeftView>('code');
+  const [mobileTab, setMobileTab] = useState<MobileTopTab>('code');
+  const [viewport, setViewport] = useState<Viewport>('desktop');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [buildStatus, setBuildStatus] = useState<BuildStatus>('idle');
+  const [statusFading, setStatusFading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
+  const [themeName, setThemeName] = useState('');
+  // Snapshot of the theme to export, captured when the Export popover opens, so
+  // the download link can be built declaratively from reactive state (the live
+  // theme lives in customThemeRef and changes without re-rendering).
+  const [exportTheme, setExportTheme] = useState<XDSDefinedTheme | null>(null);
   const [previewReady, setPreviewReady] = useState(false);
-  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [isTargeting, setIsTargeting] = useState(false);
+  // Pending confirmations: applying an example theme / loading a template both
+  // discard the user's current work, so the choice is held until they confirm.
+  // The matching dialog is open whenever the value is non-null.
+  const [pendingExampleTheme, setPendingExampleTheme] = useState<string | null>(
+    null,
+  );
+  const [pendingTemplateSource, setPendingTemplateSource] = useState<
+    string | null
+  >(null);
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const readyRef = useRef(false);
   const pendingRef = useRef<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const editorRef = useRef<MonacoTypes.editor.IStandaloneCodeEditor | null>(
+    null,
+  );
+  // Points at the hidden theme-export download link (below); the Download button
+  // clicks it for native download behavior from a real <a>.
+  const downloadLinkRef = useRef<HTMLAnchorElement>(null);
+  // Mirror activeView in a ref so the stable onMount callback can read it.
+  const activeViewRef = useRef(activeView);
+  activeViewRef.current = activeView;
+  // Latest theme authored in the Theme view, retained so a mode toggle can
+  // re-post it (the iframe clears the custom theme on any string-only push).
+  const customThemeRef = useRef<XDSDefinedTheme | null>(null);
 
   const editorPanel = useXDSResizable({
-    defaultSize: '50%',
-    minSizePx: 200,
-    collapsible: true,
-    snaps: [400, 600],
-    autoSaveId: 'xds-playground-editor-width',
+    defaultSize: 440,
+    minSizePx: 340,
+    maxSizePx: 760,
+    autoSaveId: 'xds-playground-left-width',
   });
 
-  const [editorTheme, setEditorTheme] = useState('github-dark');
-
-  // Sync editor theme with system preference
+  // Seed the preview mode once from the docsite's mode; afterward the toolbar
+  // toggle owns it, so siteMode is intentionally read only on mount.
+  const initialSiteModeRef = useRef(siteMode);
   useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const update = () =>
-      setEditorTheme(mq.matches ? 'github-dark' : 'github-light');
-    update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
+    setMode(initialSiteModeRef.current);
   }, []);
 
   // Re-read code from hash on hashchange (e.g. SPA navigation with new code)
@@ -331,16 +314,79 @@ export function PlaygroundClient() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  const send = useCallback((c: string) => {
-    const win = iframeRef.current?.contentWindow;
-    if (!win) {
-      return;
+  // Re-read the hash once on mount. On soft navigation (e.g. the Themes page's
+  // "Open in Playground" <Link>) the App Router commits the URL after first
+  // render, so the synchronous seed above can miss the fragment, and no
+  // hashchange fires. Adopt the committed hash's code here if present.
+  useEffect(() => {
+    const seeded = getInitialCode();
+    if (seeded !== DEFAULT_CODE) {
+      setCode(prev => (prev === seeded ? prev : seeded));
     }
-    win.postMessage(
-      c ? {type: 'preview-code', code: c} : {type: 'preview-clear'},
+    // Runs once on mount; the hashchange listener above covers later changes.
+  }, []);
+
+  // When a ?theme= param seeds the playground, open the Theme view so the
+  // populated theme editor is visible (and drives the preview) on arrival.
+  // Done in an effect (not the initial activeView state) to avoid an
+  // SSR/client hydration mismatch on the panel that renders.
+  useEffect(() => {
+    if (themeParam) {
+      setActiveView('theme');
+    }
+  }, [themeParam]);
+
+  // Single channel to the preview iframe; no-ops until the iframe exists.
+  const postToPreview = useCallback((message: unknown) => {
+    iframeRef.current?.contentWindow?.postMessage(
+      message,
       window.location.origin,
     );
   }, []);
+
+  const send = useCallback(
+    (c: string, source?: string) => {
+      postToPreview(
+        c ? {type: 'preview-code', code: c, source} : {type: 'preview-clear'},
+      );
+    },
+    [postToPreview],
+  );
+
+  // Send the preview an instance-annotated copy of the code (markers let the
+  // preview map a selected component to its DOM node for the focus-ring flash),
+  // plus the clean source so the in-preview Properties popover can parse + edit
+  // against un-annotated offsets.
+  const postCode = useCallback(
+    (c: string) => send(annotateInstanceIds(c), c),
+    [send],
+  );
+
+  // Push a theme authored in the Theme view to the preview. Sent as raw tokens
+  // + components (see the preview-theme protocol) so it survives postMessage.
+  const postCustomTheme = useCallback(
+    (customTheme: XDSDefinedTheme) => {
+      customThemeRef.current = customTheme;
+      postToPreview({
+        type: 'preview-theme',
+        customTokens: customTheme.tokens,
+        customComponents: customTheme.components,
+        mode,
+      });
+    },
+    [mode, postToPreview],
+  );
+
+  const toggleTargeting = useCallback(
+    (pressed?: boolean) => {
+      setIsTargeting(prev => {
+        const next = pressed ?? !prev;
+        postToPreview({type: next ? 'targeting-enable' : 'targeting-disable'});
+        return next;
+      });
+    },
+    [postToPreview],
+  );
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
@@ -351,20 +397,36 @@ export function PlaygroundClient() {
         readyRef.current = true;
         setPreviewReady(true);
         if (pendingRef.current != null) {
-          send(pendingRef.current);
+          postCode(pendingRef.current);
           pendingRef.current = null;
         }
       }
       if (e.data?.type === 'preview-rendered') {
-        setPreviewError(null);
+        setBuildStatus('finished');
+      }
+      // A prop knob edited in the in-preview Properties popover sends back the
+      // new clean code; adopt it as the source of truth (drives Monaco, the
+      // URL hash, and the debounced re-render of the preview).
+      if (e.data?.type === 'preview-edit-code') {
+        setCode(e.data.code);
       }
       if (e.data?.type === 'preview-error') {
-        setPreviewError(e.data.message ?? 'Unknown error');
+        setBuildStatus('error');
+      }
+      if (e.data?.type === 'targeting-select') {
+        // The preview draws the selection badge itself; just exit targeting
+        // mode. Properties are edited via the badge's popover now, so the left
+        // panel stays on whatever view is currently open.
+        setIsTargeting(false);
+        postToPreview({type: 'targeting-disable'});
+      }
+      if (e.data?.type === 'targeting-exit') {
+        setIsTargeting(false);
       }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [send]);
+  }, [postCode, postToPreview]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -372,23 +434,24 @@ export function PlaygroundClient() {
         clearInterval(interval);
         return;
       }
-      iframeRef.current?.contentWindow?.postMessage(
-        {type: 'preview-ping'},
-        window.location.origin,
-      );
+      postToPreview({type: 'preview-ping'});
     }, 300);
     return () => clearInterval(interval);
-  }, []);
+  }, [postToPreview]);
 
+  // Debounced push of code → preview + URL hash
   useEffect(() => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
     debounceRef.current = setTimeout(() => {
+      if (code) {
+        setBuildStatus('building');
+      }
       if (!readyRef.current) {
         pendingRef.current = code;
       } else {
-        send(code);
+        postCode(code);
       }
       updateURL(code);
     }, 400);
@@ -397,41 +460,175 @@ export function PlaygroundClient() {
         clearTimeout(debounceRef.current);
       }
     };
-  }, [code, send]);
+  }, [code, postCode]);
+
+  // Theme + mode → preview. Re-sent on previewReady so a non-default initial
+  // theme still applies if this first ran before the iframe was listening. A
+  // theme authored in the Theme editor takes precedence and stays the source of
+  // truth across all views.
+  useEffect(() => {
+    if (customThemeRef.current) {
+      postCustomTheme(customThemeRef.current);
+    } else {
+      postToPreview({type: 'preview-theme', theme, mode});
+    }
+  }, [mode, previewReady, activeView, theme, postCustomTheme, postToPreview]);
+
+  // While the resize handle is dragged, the cursor can pass over the preview
+  // iframe — a separate document that swallows pointer events and stalls the
+  // drag (the handle listens on window pointermove without pointer capture).
+  // Detect the drag (capture phase, since the handle stops propagation) and
+  // disable iframe pointer events so events keep reaching window during resize.
+  const handleResizeProbe = useCallback((e: React.PointerEvent) => {
+    const el = e.target as HTMLElement | null;
+    if (el?.closest('[role="separator"]')) {
+      setIsResizing(true);
+    }
+  }, []);
 
   useEffect(() => {
-    iframeRef.current?.contentWindow?.postMessage(
-      {type: 'preview-theme', theme},
-      window.location.origin,
-    );
-  }, [theme]);
+    if (!isResizing) {
+      return;
+    }
+    const stop = () => setIsResizing(false);
+    window.addEventListener('pointerup', stop);
+    window.addEventListener('pointercancel', stop);
+    return () => {
+      window.removeEventListener('pointerup', stop);
+      window.removeEventListener('pointercancel', stop);
+    };
+  }, [isResizing]);
+
+  // "Build finished" lingers for 5s, then fades out (0.5s) and disappears.
+  useEffect(() => {
+    if (buildStatus !== 'finished') {
+      setStatusFading(false);
+      return;
+    }
+    const fade = setTimeout(() => setStatusFading(true), 5000);
+    const hide = setTimeout(() => {
+      setBuildStatus('idle');
+      setStatusFading(false);
+    }, 5500);
+    return () => {
+      clearTimeout(fade);
+      clearTimeout(hide);
+    };
+  }, [buildStatus]);
+
+  const handleRebuild = useCallback(() => {
+    setBuildStatus('building');
+    if (readyRef.current) {
+      postCode(code);
+    } else {
+      pendingRef.current = code;
+    }
+  }, [postCode, code]);
 
   const handleShare = useCallback(() => {
     navigator.clipboard.writeText(window.location.href).then(() => {
+      trackCopy({page: 'playground', target: 'share_url'});
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
   }, []);
 
+  // Derive the export href (filename + data: URL of the generated defineTheme
+  // source) from reactive state, so the download is a real <a> (downloadLinkRef)
+  // rather than a fabricated element. Null until a theme name is entered.
+  const themeExport = useMemo(() => {
+    const name = themeName.trim();
+    if (!name) {
+      return null;
+    }
+    const activeTheme = exportTheme ?? editorInitialTheme;
+    const source = generateThemeCode(
+      name,
+      activeTheme.tokens,
+      xdsTokenDefaults,
+      14,
+      1.2,
+      [],
+      activeTheme.components ?? {},
+    );
+    return {
+      filename: `${name}-theme.ts`,
+      href: `data:text/typescript;charset=utf-8,${encodeURIComponent(source)}`,
+    };
+  }, [themeName, exportTheme, editorInitialTheme]);
+
   const handleMonacoBeforeMount = useCallback((monaco: MonacoInstance) => {
-    // Register themes before editor renders so initial theme applies
     monaco.editor.defineTheme('github-light', githubLight);
     monaco.editor.defineTheme('github-dark', githubDark);
   }, []);
 
   const handleMonacoMount = useCallback(
-    (_editor: unknown, monaco: MonacoInstance) => {
+    (
+      editor: MonacoTypes.editor.IStandaloneCodeEditor,
+      monaco: MonacoInstance,
+    ) => {
+      editorRef.current = editor;
       configureMonaco(monaco);
+      // Focus on initial mount if the Code view is the active one.
+      if (activeViewRef.current === 'code') {
+        editor.focus();
+      }
     },
     [],
   );
 
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+  // Focus the editor (blinking cursor) whenever the Code view becomes active.
+  useEffect(() => {
+    if (activeView !== 'code') {
+      return;
+    }
+    const id = requestAnimationFrame(() => editorRef.current?.focus());
+    return () => cancelAnimationFrame(id);
+  }, [activeView]);
+
+  // "Themes" dropdown — every registered playground theme. Selecting one prompts
+  // for confirmation before re-seeding the Theme editor (and preview).
+  const themeMenuItems = useMemo(
+    () =>
+      PLAYGROUND_THEME_OPTIONS.map(option => ({
+        label: option.label,
+        onClick: () => setPendingExampleTheme(option.value),
+      })),
+    [],
+  );
+
+  // "Templates" dropdown — the published, ready templates from the generated
+  // registry. Selecting one prompts for confirmation before loading its source.
+  const templateMenuItems = useMemo(
+    () => [
+      {
+        label: 'Theme Showcase',
+        onClick: () => setPendingTemplateSource(THEME_SHOWCASE_SOURCE),
+      },
+      ...templates
+        .filter(t => !t.isHiddenFromOverview && t.isReady && t.source)
+        .map(t => {
+          const dash = t.category.indexOf(' - ');
+          const group = dash === -1 ? t.category : t.category.slice(0, dash);
+          const label =
+            t.name.toLowerCase() === group.toLowerCase()
+              ? t.name
+              : `${group} · ${t.name}`;
+          return {label, source: t.source};
+        })
+        .sort((a, b) => a.label.localeCompare(b.label))
+        .map(({label, source}) => ({
+          label,
+          onClick: () => setPendingTemplateSource(source),
+        })),
+    ],
+    [],
+  );
 
   const editorOptions = useMemo(
     () => ({
       minimap: {enabled: false},
-      fontSize: isMobile ? 16 : 13,
+      fontSize: 13,
       lineNumbers: 'on' as const,
       scrollBeyondLastLine: false,
       automaticLayout: true,
@@ -439,107 +636,448 @@ export function PlaygroundClient() {
       wordWrap: 'on' as const,
       padding: {top: 12},
       accessibilitySupport: 'off' as const,
+      // Hide scrollbars and the overview ruler for a cleaner panel.
+      scrollbar: {
+        vertical: 'hidden' as const,
+        horizontal: 'hidden' as const,
+        verticalScrollbarSize: 0,
+        horizontalScrollbarSize: 0,
+        useShadows: false,
+      },
+      overviewRulerLanes: 0,
+      overviewRulerBorder: false,
+      hideCursorInOverviewRuler: true,
     }),
-    [isMobile],
+    [],
   );
 
-  return (
-    <div {...stylex.props(s.root)}>
-      <div {...stylex.props(s.toolbar)}>
-        <XDSHStack gap={8} align="center">
-          <XDSStatusDot
-            variant={
-              previewError ? 'error' : previewReady ? 'success' : 'warning'
-            }
-            label={previewError ? 'Error' : previewReady ? 'Ready' : 'Loading'}
-          />
-          <XDSText color="secondary" type="supporting">
-            {previewError ? 'Error' : previewReady ? 'Ready' : 'Loading…'}
-          </XDSText>
-        </XDSHStack>
-        <XDSHStack gap={4} align="center">
-          <XDSSelector
-            label="Theme"
-            isLabelHidden
-            options={THEME_OPTIONS}
-            value={theme}
-            onChange={setTheme}
-            size="sm"
-          />
-          <XDSButton
-            label="Reset"
-            variant="ghost"
-            size="sm"
-            onClick={() => setCode(DEFAULT_CODE)}
-          />
-          <XDSButton
-            label={copied ? '✓ Copied!' : 'Copy Link'}
-            variant={copied ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={handleShare}
-          />
-        </XDSHStack>
-      </div>
-      <XDSDivider />
-      <div {...stylex.props(s.main)}>
-        <div
-          {...stylex.props(s.editorPane)}
-          style={
-            isMobile ? {height: editorPanel.size} : {width: editorPanel.size}
-          }>
-          <MonacoEditor
-            defaultLanguage="typescript"
-            defaultValue={code}
-            path="playground.tsx"
-            theme={editorTheme}
-            onChange={v => setCode(v ?? '')}
-            beforeMount={handleMonacoBeforeMount}
-            onMount={handleMonacoMount}
-            options={editorOptions}
-          />
-        </div>
-        <XDSResizeHandle
-          label="Resize editor panel"
-          direction={isMobile ? 'vertical' : 'horizontal'}
-          hasDivider
-          pillPlacement={isMobile ? 'end' : 'auto'}
-          resizable={editorPanel.props}
+  const handleMobileTabChange = useCallback((tab: MobileTopTab) => {
+    setMobileTab(tab);
+    if (tab === 'code' || tab === 'theme') {
+      setActiveView(tab);
+    }
+  }, []);
+
+  const togglePreviewMode = useCallback(() => {
+    setMode(m => (m === 'light' ? 'dark' : 'light'));
+  }, []);
+
+  const expandPreview = useCallback(() => {
+    setIsFullscreen(true);
+  }, []);
+
+  const mobileTopNav = isMobile ? (
+    <XDSTopNav
+      label="Playground navigation"
+      heading={
+        <XDSTopNavHeading
+          logo={
+            <AstryxIcon
+              width={24}
+              height={24}
+              role="img"
+              aria-label="Astryx"
+              style={{display: 'block', color: 'var(--color-brand)'}}
+            />
+          }
+          headingHref="/"
         />
-        <div {...stylex.props(s.previewPane)}>
-          <div {...stylex.props(s.previewBar)}>
-            <XDSText color="secondary" type="supporting">
-              Preview
-            </XDSText>
-            <XDSText color="disabled" type="supporting">
-              {theme.charAt(0).toUpperCase() + theme.slice(1)}
-            </XDSText>
-          </div>
-          <XDSDivider />
-          <iframe
-            ref={iframeRef}
-            src="/playground-preview"
-            sandbox="allow-scripts allow-same-origin"
-            title="Preview"
-            {...stylex.props(s.iframe)}
+      }
+      centerContent={
+        <XDSTabList
+          value={mobileTab}
+          onChange={value => handleMobileTabChange(value as MobileTopTab)}
+          size="sm">
+          <XDSTab
+            value="preview"
+            label="Preview"
+            icon={<Monitor size={14} />}
+            isLabelHidden
           />
-        </div>
-      </div>
-      {previewError && (
-        <>
-          <XDSDivider />
-          <div style={{padding: '8px 16px', maxHeight: 120, overflow: 'auto'}}>
-            <XDSText type="code" color="inherit">
-              <span
-                style={{
-                  color: 'var(--color-text-error, #ef4444)',
-                  whiteSpace: 'pre-wrap',
-                }}>
-                {previewError}
-              </span>
-            </XDSText>
-          </div>
-        </>
-      )}
-    </div>
+          <XDSTab
+            value="code"
+            label="Code"
+            icon={<Code2 size={14} />}
+            isLabelHidden
+          />
+          <XDSTab
+            value="theme"
+            label="Theme"
+            icon={<Palette size={14} />}
+            isLabelHidden
+          />
+        </XDSTabList>
+      }
+      endContent={
+        <XDSButton
+          label={copied ? '✓ Copied' : 'Share'}
+          variant="primary"
+          size="md"
+          onClick={handleShare}
+        />
+      }
+    />
+  ) : undefined;
+
+  const playgroundSideNav = (
+    <XDSSideNav
+      header={
+        <XDSSideNavHeading
+          icon={
+            <AstryxIcon
+              width={24}
+              height={24}
+              role="img"
+              aria-label="Astryx"
+              style={{display: 'block', color: 'var(--color-brand)'}}
+            />
+          }
+          heading="Playground"
+          headingHref="/"
+          xstyle={s.sideNavHeading}
+        />
+      }
+      collapsible={{isCollapsed: true, hasButton: false}}
+      xstyle={s.desktopCollapsedSideNav}>
+      <XDSSideNavSection title="Playground views" isHeaderHidden>
+        <XDSSideNavItem
+          label="Code"
+          icon={Code2}
+          isSelected={activeView === 'code'}
+          onClick={() => {
+            setActiveView('code');
+            setMobileTab('code');
+          }}
+        />
+        <XDSSideNavItem
+          label="Theme"
+          icon={Palette}
+          isSelected={activeView === 'theme'}
+          onClick={() => {
+            setActiveView('theme');
+            setMobileTab('theme');
+          }}
+        />
+      </XDSSideNavSection>
+    </XDSSideNav>
+  );
+
+  const showEditorPanel = !isMobile || mobileTab !== 'preview';
+  const showPreviewPanel = !isMobile || mobileTab === 'preview';
+
+  return (
+    <XDSAppShell
+      variant="section"
+      height="fill"
+      contentPadding={0}
+      mobileNav={isMobile ? false : {defaultIsMobile}}
+      topNav={mobileTopNav}
+      sideNav={playgroundSideNav}>
+      {/* Playground content */}
+      <XDSHStack
+        data-playground-page="true"
+        align="stretch"
+        height="100%"
+        width="100%"
+        xstyle={s.root}
+        onPointerDownCapture={handleResizeProbe}>
+        {/* Left panel — editor */}
+        <XDSVStack
+          xstyle={[s.leftPanel, !showEditorPanel && s.hidden]}
+          width={isMobile ? '100%' : editorPanel.size || 440}>
+          {!isMobile && (
+            <XDSHStack
+              justify="between"
+              align="center"
+              xstyle={s.leftPanelHeader}>
+              <XDSHeading level={3}>Playground</XDSHeading>
+              <XDSHStack gap={2} align="center">
+                <XDSDropdownMenu
+                  button={{
+                    label: 'Themes',
+                    variant: 'secondary',
+                    size: 'md',
+                  }}
+                  hasChevron
+                  items={themeMenuItems}
+                />
+                <XDSDropdownMenu
+                  button={{
+                    label: 'Templates',
+                    variant: 'secondary',
+                    size: 'md',
+                  }}
+                  hasChevron
+                  items={templateMenuItems}
+                />
+              </XDSHStack>
+            </XDSHStack>
+          )}
+          {/* Both panes stay mounted (hidden when inactive) so Monaco's
+              typedefs and the theme editor's state survive tab switches. */}
+          <XDSVStack xstyle={s.tabBody}>
+            <XDSVStack xstyle={[s.pane, activeView !== 'code' && s.hidden]}>
+              <MonacoEditor
+                defaultLanguage="typescript"
+                value={code}
+                path="playground.tsx"
+                theme={editorTheme}
+                onChange={v => setCode(v ?? '')}
+                beforeMount={handleMonacoBeforeMount}
+                onMount={handleMonacoMount}
+                options={editorOptions}
+              />
+            </XDSVStack>
+            <XDSVStack xstyle={[s.pane, activeView !== 'theme' && s.hidden]}>
+              <ThemeEditor
+                key={selectedTheme}
+                mode={mode}
+                initialTheme={editorInitialTheme}
+                onThemeChange={postCustomTheme}
+              />
+            </XDSVStack>
+          </XDSVStack>
+        </XDSVStack>
+
+        {!isMobile && (
+          <XDSResizeHandle
+            label="Resize editor panel"
+            resizable={editorPanel.props}
+            pillPlacement="center"
+            hasDivider
+          />
+        )}
+
+        {/* Right panel — preview */}
+        <XDSVStack xstyle={[s.rightPanel, !showPreviewPanel && s.hidden]}>
+          {!isMobile && (
+            <XDSToolbar
+              label="Preview controls"
+              startContent={
+                <XDSToggleButton
+                  label="Target element"
+                  tooltip={
+                    isTargeting
+                      ? 'Exit targeting (Esc)'
+                      : 'Click to select an element'
+                  }
+                  isPressed={isTargeting}
+                  onPressedChange={toggleTargeting}
+                  size="md"
+                  isIconOnly
+                  icon={<Crosshair size={20} />}
+                />
+              }
+              centerContent={
+                <XDSHStack gap={2} vAlign="center">
+                  <XDSButton
+                    label={
+                      mode === 'light' ? 'Switch to dark' : 'Switch to light'
+                    }
+                    tooltip={mode === 'light' ? 'Dark mode' : 'Light mode'}
+                    variant="ghost"
+                    size="md"
+                    isIconOnly
+                    icon={
+                      mode === 'light' ? <Moon size={20} /> : <Sun size={20} />
+                    }
+                    onClick={togglePreviewMode}
+                  />
+                  <XDSSegmentedControl
+                    label="Viewport size"
+                    size="md"
+                    value={viewport}
+                    onChange={v => setViewport(v as Viewport)}>
+                    <XDSSegmentedControlItem
+                      value="desktop"
+                      label="Desktop"
+                      isLabelHidden
+                      icon={<Monitor size={20} />}
+                    />
+                    <XDSSegmentedControlItem
+                      value="phone"
+                      label="Phone"
+                      isLabelHidden
+                      icon={<Smartphone size={20} />}
+                    />
+                  </XDSSegmentedControl>
+                  <XDSButton
+                    label="Expand"
+                    tooltip="Fullscreen preview"
+                    variant="ghost"
+                    size="md"
+                    isIconOnly
+                    icon={<Maximize2 size={20} />}
+                    onClick={expandPreview}
+                  />
+                </XDSHStack>
+              }
+              endContent={
+                <XDSHStack gap={4} vAlign="center">
+                  {buildStatus !== 'idle' && (
+                    <XDSHStack
+                      gap={2}
+                      vAlign="center"
+                      xstyle={[
+                        s.buildStatus,
+                        statusFading && s.buildStatusFaded,
+                      ]}>
+                      <XDSStatusDot
+                        variant={BUILD_STATUS_META[buildStatus].variant}
+                        label={BUILD_STATUS_META[buildStatus].label}
+                        isPulsing={buildStatus === 'building'}
+                      />
+                      <XDSText type="supporting" color="secondary">
+                        {BUILD_STATUS_META[buildStatus].label}
+                      </XDSText>
+                      {buildStatus === 'error' && (
+                        <XDSButton
+                          label="Rebuild"
+                          tooltip="Rebuild"
+                          variant="ghost"
+                          size="sm"
+                          isIconOnly
+                          icon={<RotateCw size={16} />}
+                          onClick={handleRebuild}
+                        />
+                      )}
+                    </XDSHStack>
+                  )}
+                  <XDSPopover
+                    label="Share template"
+                    placement="below"
+                    alignment="end"
+                    xstyle={s.popoverPadding}
+                    onOpenChange={open => {
+                      if (open) {
+                        setShareUrl(window.location.href);
+                        setExportTheme(
+                          customThemeRef.current ?? editorInitialTheme,
+                        );
+                      }
+                    }}
+                    content={
+                      <XDSVStack gap={6}>
+                        <XDSVStack gap={2}>
+                          <XDSText type="label" weight="semibold">
+                            Share Playground
+                          </XDSText>
+                          <XDSHStack gap={2} vAlign="center" width="100%">
+                            <XDSTextInput
+                              label="Share URL"
+                              isLabelHidden
+                              isDisabled
+                              value={shareUrl}
+                              onChange={() => {}}
+                              xstyle={s.shareInput}
+                            />
+                            <XDSButton
+                              label={copied ? 'Copied' : 'Copy URL'}
+                              tooltip={copied ? 'Copied' : 'Copy URL'}
+                              variant="secondary"
+                              size="md"
+                              isIconOnly
+                              icon={
+                                copied ? (
+                                  <Check size={16} />
+                                ) : (
+                                  <Copy size={16} />
+                                )
+                              }
+                              onClick={handleShare}
+                            />
+                          </XDSHStack>
+                        </XDSVStack>
+                        <XDSVStack gap={2}>
+                          <XDSText type="label" weight="semibold">
+                            Export Theme File
+                          </XDSText>
+                          <XDSHStack gap={2} vAlign="center" width="100%">
+                            <XDSTextInput
+                              label="Theme name"
+                              isLabelHidden
+                              placeholder="Enter theme name"
+                              value={themeName}
+                              onChange={v =>
+                                setThemeName(v.replace(/[\s-]/g, ''))
+                              }
+                              xstyle={s.shareInput}
+                            />
+                            <XDSButton
+                              label="Download theme"
+                              tooltip="Download theme"
+                              variant="secondary"
+                              size="md"
+                              isIconOnly
+                              isDisabled={themeExport == null}
+                              icon={<Download size={16} />}
+                              onClick={() => downloadLinkRef.current?.click()}
+                            />
+                            {themeExport && (
+                              <a
+                                ref={downloadLinkRef}
+                                href={themeExport.href}
+                                download={themeExport.filename}
+                                {...stylex.props(s.hidden)}
+                                aria-hidden="true"
+                                tabIndex={-1}>
+                                Download theme file
+                              </a>
+                            )}
+                          </XDSHStack>
+                          <XDSLink href="/docs/theme" hasUnderline>
+                            Learn about using themes
+                          </XDSLink>
+                        </XDSVStack>
+                      </XDSVStack>
+                    }>
+                    <XDSButton
+                      label="Export"
+                      variant="primary"
+                      size="md"
+                      endContent={<ExternalLink size={16} />}
+                    />
+                  </XDSPopover>
+                </XDSHStack>
+              }
+            />
+          )}
+          <PreviewStage
+            viewport={isMobile ? 'phone' : viewport}
+            isFullscreen={isFullscreen}
+            onExitFullscreen={() => setIsFullscreen(false)}
+            iframeRef={iframeRef}
+            isInteractionDisabled={isResizing}
+            isFullBleed={isMobile}
+          />
+        </XDSVStack>
+      </XDSHStack>
+
+      <ConfirmDialog
+        isOpen={pendingExampleTheme != null}
+        title="Apply example theme"
+        message="Applying an example theme will overwrite your current theme. Any changes you've made in the Theme editor will be lost. Do you want to continue?"
+        onCancel={() => setPendingExampleTheme(null)}
+        onConfirm={() => {
+          if (pendingExampleTheme != null) {
+            setSelectedTheme(pendingExampleTheme);
+          }
+          setPendingExampleTheme(null);
+        }}
+      />
+      <ConfirmDialog
+        isOpen={pendingTemplateSource != null}
+        title="Load template"
+        message="Loading this template will replace the current contents of the code editor. Any changes you've made there will be lost. Do you want to continue?"
+        onCancel={() => setPendingTemplateSource(null)}
+        onConfirm={() => {
+          if (pendingTemplateSource != null) {
+            setCode(stripCodeExampleCopyrightHeader(pendingTemplateSource));
+            requestAnimationFrame(() => editorRef.current?.focus());
+          }
+          setPendingTemplateSource(null);
+        }}
+      />
+    </XDSAppShell>
   );
 }

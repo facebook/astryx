@@ -6,7 +6,8 @@
  * @file XDSTabMenu.tsx
  * @input Uses React, StyleX, useXDSPopover, XDSTabListContext
  * @output Exports XDSTabMenu component, XDSTabMenuProps type, XDSTabMenuOption type
- * @position Menu trigger button; opens dropdown of overflow menu items
+ * @position Menu trigger button; opens dropdown of overflow menu items and
+ *   mirrors selected tab indicator positioning
  *
  * SYNC: When modified, update:
  * - /packages/core/src/TabList/TabList.doc.mjs
@@ -34,8 +35,9 @@ import {useListFocus} from '../hooks/useListFocus';
 import {useXDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
 import {tabScope} from './tab.markers.stylex';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export interface XDSTabMenuOption {
   value: string;
@@ -120,7 +122,7 @@ const styles = stylex.create({
   },
   indicator: {
     position: 'absolute',
-    bottom: '-2px',
+    bottom: '-1px',
     left: spacingVars['--spacing-3'],
     right: spacingVars['--spacing-3'],
     height: '2px',
@@ -306,7 +308,7 @@ export function XDSTabMenu({
         aria-controls={menuId}
         onClick={handleToggle}
         {...mergeProps(
-          xdsClassName('tab-menu'),
+          xdsThemeProps('tab-menu'),
           stylex.props(
             styles.trigger,
             sizeStyles[size],
@@ -338,7 +340,7 @@ export function XDSTabMenu({
         {hasSelectedOption && (
           <span
             {...mergeProps(
-              xdsClassName('tab-indicator', {selected: 'selected'}),
+              xdsThemeProps('tab-indicator', {selected: 'selected'}),
               stylex.props(styles.indicator, styles.indicatorSelected),
             )}
           />
@@ -352,7 +354,7 @@ export function XDSTabMenu({
           aria-label={label}
           onKeyDown={handleListKeyDown}
           {...mergeProps(
-            xdsClassName('tab-menu-dropdown'),
+            xdsThemeProps('tab-menu-dropdown'),
             stylex.props(styles.dropdown),
           )}>
           <span role="presentation" {...stylex.props(styles.menuHeading)}>
@@ -374,7 +376,7 @@ export function XDSTabMenu({
                   }
                 }}
                 {...mergeProps(
-                  xdsClassName('tab-menu-item'),
+                  xdsThemeProps('tab-menu-item'),
                   stylex.props(
                     styles.menuItem,
                     isSelected && styles.menuItemSelected,

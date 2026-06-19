@@ -16,6 +16,7 @@
  *   --radius-element   → base × 2 × multiplier (buttons, inputs)
  *   --radius-container → base × 3 × multiplier (cards, panels)
  *   --radius-page      → base × 7 × multiplier (page-level containers)
+ *   --radius-chat      → base × 7 × multiplier (chat surfaces; tracks page)
  *   --radius-full      → 9999px (fixed, pill shapes)
  *
  * SYNC: When modified, update:
@@ -73,6 +74,7 @@ export type RadiusScaleTokens = Record<string, string>;
  * // tokens['--radius-element'] === '8px'     (4 × 2 × 1)
  * // tokens['--radius-container'] === '12px'  (4 × 3 × 1)
  * // tokens['--radius-page'] === '28px'       (4 × 7 × 1)
+ * // tokens['--radius-chat'] === '28px'       (4 × 7 × 1)
  * // tokens['--radius-full'] === '9999px'
  *
  * const sharp = expandRadiusScale({ base: 4, multiplier: 0 });
@@ -89,6 +91,9 @@ export function expandRadiusScale(
     '--radius-element': `${Math.round(base * 2 * multiplier)}px`,
     '--radius-container': `${Math.round(base * 3 * multiplier)}px`,
     '--radius-page': `${Math.round(base * 7 * multiplier)}px`,
+    // Chat surfaces track the page step (× 7) so they scale with the theme
+    // multiplier, but remain a distinct token for independent theming. #2072
+    '--radius-chat': `${Math.round(base * 7 * multiplier)}px`,
     '--radius-full': '9999px',
   };
 }

@@ -25,6 +25,7 @@ import type {
   XDSTextColor,
   XDSTextWeight,
   XDSTextDisplay,
+  XDSTextJustify,
   XDSWordBreak,
   XDSTextWrap,
 } from '../theme/types';
@@ -34,6 +35,7 @@ import {
   sizeByTypeStyles,
   weightStyles,
   displayStyles,
+  justifyStyles,
   truncationStyles,
   wordBreakStyles,
   textWrapStyles,
@@ -44,8 +46,9 @@ import {
 } from './text.stylex';
 import {useTruncation} from './useTruncation';
 import type {LayerPlacement} from '../Layer';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const LazyXDSTooltip = lazy(async () =>
   import('../Tooltip/XDSTooltip').then(mod => ({default: mod.XDSTooltip})),
@@ -116,6 +119,13 @@ export interface XDSTextProps extends Omit<XDSBaseProps, 'children'> {
    * Text wrapping behavior.
    */
   textWrap?: XDSTextWrap;
+
+  /**
+   * Text alignment (justification). Uses logical values (start/end)
+   * for i18n/RTL compatibility.
+   * @default 'start'
+   */
+  justify?: XDSTextJustify;
 
   /**
    * Enable optical alignment (text-box-trim).
@@ -199,6 +209,7 @@ export function XDSText({
   hasTruncateTooltip = true,
   wordBreak,
   textWrap,
+  justify = 'start',
   hasCapsize = false,
   hasStrikethrough = false,
   hasTabularNumbers = false,
@@ -243,7 +254,7 @@ export function XDSText({
       <Component
         ref={mergeRefs(ref, truncation.ref, textRef)}
         {...mergeProps(
-          xdsClassName('text', {type, color: resolvedColor}),
+          xdsThemeProps('text', {type, color: resolvedColor}),
           stylex.props(
             colorStyles[resolvedColor],
             sizeByTypeStyles[styleType],
@@ -259,6 +270,8 @@ export function XDSText({
             maxLines > 0 && wordBreakStyles[resolvedWordBreak],
             // Text wrap
             textWrap && textWrapStyles[textWrap],
+            // Justify (text alignment)
+            justify !== 'start' && justifyStyles[justify],
             // Capsize
             hasCapsize && capsizeStyles.enabled,
             // Decorations

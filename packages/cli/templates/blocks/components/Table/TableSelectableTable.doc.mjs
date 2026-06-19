@@ -4,6 +4,8 @@
 export const doc = {
   type: 'block',
   exampleFor: 'Table',
+  alsoExampleFor: ['useXDSTableSelection', 'useXDSTableSelectionState'],
+  alsoShowcaseFor: ['useXDSTableSelection', 'useXDSTableSelectionState'],
   name: 'Table — Row Selection',
   displayName: 'Table — Row Selection',
   description:

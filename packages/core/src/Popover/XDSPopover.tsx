@@ -25,12 +25,14 @@ import React, {
 } from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
-import {xdsClassName, mergeProps} from '../utils';
-import type {StyleXStyles} from '@stylexjs/stylex';
+import {mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSPopover} from './useXDSPopover';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useXDSLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {spacingVars} from '../theme/tokens.stylex';
+import {XDSInteractiveRoleContext} from '../InteractiveRoleContext/XDSInteractiveRoleContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Helpers
@@ -54,11 +56,39 @@ function findTriggerButton(el: HTMLElement): HTMLElement | null {
 // Types
 // =============================================================================
 
-export interface XDSPopoverProps {
+/**
+ * Props passed to render-prop children for explicit trigger wiring.
+ */
+export interface PopoverTriggerRenderProps {
+  /** Ref callback — attach to the trigger element for anchor positioning. */
+  ref: (el: HTMLElement | null) => void;
+  /** Toggle the popover open/closed. */
+  onClick: () => void;
+  /** ARIA attribute: indicates the element triggers a dialog. */
+  'aria-haspopup': 'dialog';
+  /** ARIA attribute: whether the popover is currently open. */
+  'aria-expanded': boolean;
+  /** ARIA attribute: ID of the controlled popover element. */
+  'aria-controls': string;
+}
+
+export interface XDSPopoverProps extends Pick<
+  XDSBaseProps,
+  'xstyle' | 'className' | 'style'
+> {
   /**
-   * The trigger element. Must contain a `<button>` or `[role="button"]`
-   * element — the popover locates it and applies click/keydown handlers
-   * and ARIA attributes (`aria-haspopup`, `aria-expanded`, `aria-controls`).
+   * The trigger element. Accepts either:
+   *
+   * **ReactNode (automatic mode):** Must contain a `<button>` or
+   * `[role="button"]` element — the popover locates it and applies
+   * click/keydown handlers and ARIA attributes automatically.
+   * Components that consume `XDSInteractiveRoleContext` (e.g., XDSToken)
+   * will render as a button automatically when placed here.
+   *
+   * **Render function (explicit mode):** Receives `PopoverTriggerRenderProps`
+   * with ref, onClick, and ARIA attributes. The consumer is responsible
+   * for attaching these to their trigger element. Use this for custom
+   * triggers or third-party components.
    *
    * The trigger is rendered inside an anchor wrapper used for CSS anchor
    * positioning. The wrapper is stable (no pressed-state transforms),
@@ -66,8 +96,17 @@ export interface XDSPopoverProps {
    *
    * When `anchorRef` is provided, children can be omitted and the popover
    * attaches to the external ref element as a sibling.
+   *
+   * @example
+   * ```
+   * <XDSPopover content={...}><XDSButton label="Open" /></XDSPopover>
+   * <XDSPopover content={...}><XDSToken label="Filter" /></XDSPopover>
+   * <XDSPopover content={...}>
+   *   {(triggerProps) => <MyCustomTrigger {...triggerProps} />}
+   * </XDSPopover>
+   * ```
    */
-  children?: ReactNode;
+  children?: ReactNode | ((props: PopoverTriggerRenderProps) => ReactNode);
 
   /**
    * External ref to use as the popover anchor.
@@ -126,28 +165,6 @@ export interface XDSPopoverProps {
    * Recommended for accessibility (used as aria-label on the dialog).
    */
   label?: string;
-
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
 
   /**
    * Whether to include a hidden close button for accessibility.
@@ -399,6 +416,9 @@ export function XDSPopover({
     if (anchorRef) {
       return;
     } // Skip if using anchorRef mode
+    if (typeof children === 'function') {
+      return;
+    } // Skip if using render prop mode
 
     const wrapper = wrapperRef.current;
     if (!wrapper) {
@@ -452,7 +472,7 @@ export function XDSPopover({
           <div
             data-testid={testId}
             {...mergeProps(
-              xdsClassName('popover'),
+              xdsThemeProps('popover'),
               stylex.props(styles.contentPadding, xstyle),
               className,
               style,
@@ -469,16 +489,55 @@ export function XDSPopover({
     );
   }
 
+  // Render prop mode: children is a function — pass trigger props directly
+  const isRenderProp = typeof children === 'function';
+
+  if (isRenderProp) {
+    const triggerProps: PopoverTriggerRenderProps = {
+      ref: popover.triggerRef,
+      onClick: handleTriggerClick,
+      'aria-haspopup': 'dialog',
+      'aria-expanded': popover.isOpen,
+      'aria-controls': popover.id,
+    };
+
+    return (
+      <>
+        {children(triggerProps)}
+        {popover.render(
+          <div
+            data-testid={testId}
+            {...mergeProps(
+              xdsThemeProps('popover'),
+              stylex.props(styles.contentPadding, xstyle),
+              className,
+              style,
+            )}>
+            {content}
+          </div>,
+          {
+            placement,
+            alignment,
+            xstyle: [popoverXstyle, styles.gap, layerAnimations[placement]],
+          },
+        )}
+      </>
+    );
+  }
+
+  // Automatic mode: wrap children in context + anchor wrapper
   return (
     <>
-      <div ref={wrapperRef} {...stylex.props(styles.anchorWrapper)}>
-        {children}
-      </div>
+      <XDSInteractiveRoleContext value="button">
+        <div ref={wrapperRef} {...stylex.props(styles.anchorWrapper)}>
+          {children}
+        </div>
+      </XDSInteractiveRoleContext>
       {popover.render(
         <div
           data-testid={testId}
           {...mergeProps(
-            xdsClassName('popover'),
+            xdsThemeProps('popover'),
             stylex.props(styles.contentPadding, xstyle),
             className,
             style,

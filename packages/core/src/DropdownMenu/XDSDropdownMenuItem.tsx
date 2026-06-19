@@ -10,12 +10,13 @@
  * Interactive menu item with role="menuitem". Keyboard navigation
  * is handled by useListFocus on the parent menu container.
  *
- * Composes XDSItem for the shared media + label + description + trailing layout.
+ * Composes XDSItem for the shared start content + label + description + end content layout.
  * Passes role="menuitem" so XDSItem puts onClick on the root div instead of
  * creating an invisible button (keyboard access is provided by the parent menu).
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DropdownMenu/DropdownMenu.doc.mjs
+ * - /packages/core/src/DropdownMenu/DropdownMenuItem.doc.mjs
  * - /packages/core/src/DropdownMenu/XDSDropdownMenu.test.tsx
  * - /packages/core/src/DropdownMenu/index.ts
  * - /apps/storybook/stories/DropdownMenu.stories.tsx
@@ -33,8 +34,9 @@ import {
   typographyVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName} from '../utils';
+import {mergeProps} from '../utils';
 import {useXDSDropdownMenuContext} from './XDSDropdownMenuContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const menuItemStyles = stylex.create({
   root: {
@@ -85,7 +87,7 @@ export interface XDSDropdownMenuItemProps {
   /** Whether the item is disabled. @default false */
   isDisabled?: boolean;
   /** Additional content to render after the label/description. */
-  children?: ReactNode;
+  endContent?: ReactNode;
   /**
    * StyleX styles for layout customization (margins, positioning, sizing).
    * Must be a `stylex.create()` value — not an inline style object.
@@ -113,7 +115,7 @@ export interface XDSDropdownMenuItemProps {
  * ```
  * <XDSDropdownMenu button={{ label: 'Actions' }}>
  *   <XDSDropdownMenuItem icon={PencilIcon} label="Edit" onClick={handleEdit} />
- *   <XDSDropdownMenuItem label="Delete" onClick={handleDelete} isDisabled />
+ *   <XDSDropdownMenuItem label="Delete" endContent={<XDSBadge label="⌘D" />} onClick={handleDelete} />
  * </XDSDropdownMenu>
  * ```
  */
@@ -123,7 +125,7 @@ export function XDSDropdownMenuItem({
   description,
   onClick,
   isDisabled = false,
-  children,
+  endContent,
   xstyle,
   className,
   style,
@@ -143,14 +145,14 @@ export function XDSDropdownMenuItem({
     <XDSItem
       role="menuitem"
       tabIndex={isDisabled ? undefined : -1}
-      media={
+      startContent={
         icon
           ? renderIconSlot(icon, {size: 'sm', color: 'secondary'})
           : undefined
       }
       label={label}
       description={description}
-      trailing={children}
+      endContent={endContent}
       onClick={handleClick}
       isDisabled={isDisabled}
       xstyle={[
@@ -159,13 +161,10 @@ export function XDSDropdownMenuItem({
         isDisabled && menuItemStyles.disabled,
         xstyle,
       ]}
-      className={[
-        xdsClassName('dropdown-menu-item', {size: menuSize}),
+      {...mergeProps(xdsThemeProps('dropdown-menu-item', {size: menuSize}), {
         className,
-      ]
-        .filter(Boolean)
-        .join(' ')}
-      style={style}
+        style,
+      })}
     />
   );
 }

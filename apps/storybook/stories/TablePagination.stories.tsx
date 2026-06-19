@@ -84,7 +84,7 @@ function PaginatedDemo({
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Core/Table/Pagination',
+  title: 'Core/TablePagination',
   tags: ['autodocs'],
 };
 

@@ -40,9 +40,11 @@ import {
 import {XDSToken} from '../Token';
 import {renderIconSlot, type XDSIconType} from '../Icon';
 import {spacingVars, sizeVars} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
 import type {XDSSearchableItem, XDSSearchSource} from './types';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export type {
   XDSInputStatus as XDSTypeaheadStatus,
@@ -73,6 +75,12 @@ export interface XDSTypeaheadProps<T extends XDSSearchableItem> extends Omit<
    * Accepts a ReactNode (e.g. `<XDSIcon icon={SearchIcon} />`) or an SVG icon component directly.
    */
   startIcon?: ReactNode | XDSIconType;
+  /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
   /** Label tooltip. */
   labelTooltip?: string;
   /** Search source providing items. */
@@ -207,6 +215,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
   debounceMs,
   onChangeQuery,
   onOpenChange,
+  width,
   xstyle,
   className,
   style,
@@ -357,6 +366,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
           : undefined
       }
       labelTooltip={labelTooltip}
+      width={width}
       xstyle={xstyle}
       className={className}
       style={style}>
@@ -366,7 +376,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
         onClick={handleWrapperClick}
         onBlur={handleBlur}
         {...mergeProps(
-          xdsClassName('typeahead', {size, status: status?.type}),
+          xdsThemeProps('typeahead', {size, status: status?.type}),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,

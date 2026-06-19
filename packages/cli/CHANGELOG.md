@@ -1,5 +1,18 @@
 # @xds/cli
 
+# Unreleased
+
+#### Fixes
+
+- **`--json` contract enforcement** — Commands that don't support `--json` now reject the flag in a `preAction` hook _before_ running any side effects. Previously `xds init --json` would create files (e.g. `.claude/CLAUDE.md`) and _then_ emit the unsupported-output error, leaving partial state behind.
+- **`--json` envelope shape documented** — Success responses are `{ type, data }`. Error responses are `{ error, suggestions? }`. The `--json` help text now describes both.
+- **`xds --version --json`** — Now emits `{ type: 'version', data: { version } }` instead of plain text.
+- **`xds --json` (no subcommand)** — Now emits `{ type: 'help', data: { commands, jsonSupported, ... } }` instead of human help text.
+- **`xds upgrade --json`** — The "already up to date" path now emits `{ type: 'upgrade.status', data: { status: 'up_to_date', ... } }`. The "no codemods in version range" path emits `{ type: 'upgrade.status', data: { status: 'no_codemods', ... } }`. The codemod runner is now silent under `--json` so prompts and progress lines no longer corrupt stdout.
+- **`xds discover --json`** — When no packages are configured, the response now includes `meta: { configured: false }` so consumers can distinguish "configured but empty" from "not configured".
+- **`xds gap-report --json`** — Without `--component`/`--category`/`--reason`, returns a structured error instead of starting an interactive prompt. The "gh CLI missing" path also emits a JSON error.
+- **`xds theme --json`** — The `theme` parent command (without a subcommand) now rejects `--json` cleanly. `theme build --json` continues to work.
+
 # 0.0.14
 
 #### Codemods
@@ -24,7 +37,6 @@
 - **Group useXDSToast and useXDSCollapsible** with their parent components in docs (#2049)
 - **DropdownMenu inline data types** — Inline into items prop docs (#2027)
 - **Parent hook docs** to their component in docsite (#2022)
-
 
 ---
 
@@ -188,6 +200,7 @@ npx xds upgrade --apply --to 0.0.6
 #### Codemods
 
 12 codemods for the v0.0.2 breaking changes:
+
 - `rename-selector-items-to-options` — Selector `items` → `options`
 - `unify-visibility-to-onOpenChange` — Visibility callbacks → `onOpenChange`
 - `unify-uncontrolled-to-defaultX` — Uncontrolled state → defaultX pattern

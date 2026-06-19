@@ -6,7 +6,7 @@ import {XDSSelector, XDSSelectorOption} from '@xds/core/Selector';
 import {UserIcon, CogIcon, BellIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSSelector> = {
-  title: 'Core/Inputs/Selector',
+  title: 'Core/Selector',
   component: XDSSelector,
   tags: ['autodocs'],
   parameters: {
@@ -50,6 +50,12 @@ const meta: Meta<typeof XDSSelector> = {
       options: ['sm', 'md', 'lg'],
       description: 'Size variant of the selector',
     },
+    placement: {
+      control: 'select',
+      options: ['above', 'below', 'start', 'end'],
+      description:
+        'Explicit menu placement. Leave unset for selected-item overlay behavior.',
+    },
     isDisabled: {
       control: 'boolean',
       description: 'Whether the selector is disabled',
@@ -62,10 +68,10 @@ const meta: Meta<typeof XDSSelector> = {
       control: 'boolean',
       description: 'Whether the field is required',
     },
-    children: {
+    renderOption: {
       description: 'Optional render function for custom option rendering',
       table: {
-        type: {summary: '(item: XDSSelectorOptionData) => ReactNode'},
+        type: {summary: '(option: XDSSelectorOptionData) => ReactNode'},
       },
     },
     'data-testid': {
@@ -286,15 +292,15 @@ export const CustomRender: Story = {
         options={users}
         value={value}
         onChange={v => setValue(v)}
-        placeholder="Select a user...">
-        {user => (
+        placeholder="Select a user..."
+        renderOption={user => (
           <XDSSelectorOption
             icon={UserIcon}
             label={user.label}
             description={(user as (typeof users)[number]).email}
           />
         )}
-      </XDSSelector>
+      />
     );
   },
 };
@@ -552,5 +558,28 @@ export const ClearableWithStatus: Story = {
   args: {
     label: 'Required fruit',
     status: {type: 'warning', message: 'Selection is recommended'},
+  },
+};
+
+export const PlacementAbove: Story = {
+  render: args => {
+    const {
+      value: argsValue,
+      onChange: _onChange,
+      changeAction: _changeAction,
+      hasClear: _hc,
+      ...rest
+    } = args;
+    const [value, setValue] = useState(argsValue ?? 'Banana');
+    return (
+      <XDSSelector
+        {...rest}
+        label="Bottom toolbar selector"
+        options={['Apple', 'Banana', 'Cherry', 'Date']}
+        value={value}
+        onChange={v => setValue(v)}
+        placement="above"
+      />
+    );
   },
 };

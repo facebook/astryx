@@ -167,7 +167,7 @@ const columns: XDSTableColumn<Book>[] = [
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Patterns/PowerSearch + Table',
+  title: 'Core/PowerSearchWithTable',
   tags: ['autodocs'],
   decorators: [
     Story => (

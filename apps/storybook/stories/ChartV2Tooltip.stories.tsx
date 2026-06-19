@@ -2,10 +2,14 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSChartV2 as XDSChart, bar, line} from '@xds/lab';
-import {XDSChartGrid, XDSChartAxis, currency} from '@xds/lab';
+import {
+  XDSChartV2Grid as XDSChartGrid,
+  XDSChartV2Axis as XDSChartAxis,
+  currency,
+} from '@xds/lab';
 
 const meta: Meta = {
-  title: 'Lab/XDSChart v2/Primitives/Tooltip',
+  title: 'Lab/ChartV2Tooltip',
 };
 export default meta;
 
@@ -32,7 +36,7 @@ export const Tooltip: StoryObj = {
       xKey="month"
       series={series}
       tooltip
-      grid={<XDSChartGrid horizontal />}
+      grid={<XDSChartGrid />}
       axes={
         <>
           <XDSChartAxis position="bottom" />

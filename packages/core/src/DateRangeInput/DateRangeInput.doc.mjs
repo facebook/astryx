@@ -6,6 +6,7 @@ export const docs = {
   name: 'DateRangeInput',
   displayName: 'Date Range Input',
   group: 'DateInput',
+  category: 'Data Input',
   keywords: ["daterangepicker","daterange","range","calendar","filter","analytics","period","schedule"],
   props: [
     { name: 'label', type: 'string', description: 'Label text.', required: true },
@@ -21,7 +22,7 @@ export const docs = {
     { name: 'min', type: 'ISODateString', description: 'Minimum selectable date.' },
     { name: 'max', type: 'ISODateString', description: 'Maximum selectable date.' },
     { name: 'dateConstraints', type: 'Array<(date: Date) => boolean>', description: 'Custom constraint functions to disable specific dates.' },
-    { name: 'presets', type: 'Array<XDSDateRangePreset>', description: 'Preset ranges shown as quick-select options beside the calendar.' },
+    { name: 'presets', type: 'Array<DateRangePreset>', description: 'Preset ranges shown as quick-select options beside the calendar.' },
     { name: 'hasClear', type: 'boolean', description: 'Shows a clear button when a range is selected.', default: 'true' },
     { name: 'placeholder', type: 'string', description: 'Placeholder text when no range is selected.', default: "'Select date range'" },
     { name: 'size', type: "'sm' | 'md' | 'lg'", description: 'Size of the trigger.', default: "'md'" },
@@ -42,7 +43,7 @@ export const docs = {
       { guidance: true, description: 'Use min/max to constrain selectable dates to valid ranges.' },
       { guidance: true, description: 'Keep hasClear enabled (default) so users can reset the filter.' },
       { guidance: true, description: 'Provide clear labels and descriptions so users understand what the range controls.' },
-      { guidance: false, description: 'Use DateRangeInput when only a single date is needed — use DateInput instead.' },
+      { guidance: false, description: 'Use DateRangeInput when only a single date is needed; use DateInput instead.' },
       { guidance: false, description: 'Hide the label without surrounding context that makes the purpose obvious.' },
     ],
     anatomy: [
@@ -63,9 +64,12 @@ export const docsDense = {
   usage: {
     description: 'DateRangeInput lets users select start+end dates from a dual-month calendar. Use for filtering, reports, analytics, and booking.',
     bestPractices: [
-      { guidance: true, description: 'Use presets for common ranges. Use min/max for constraints.' },
-      { guidance: true, description: 'Keep hasClear enabled. Provide clear labels.' },
-      { guidance: false, description: 'Use for single dates (use DateInput). Hide label without context.' },
+      { guidance: true, description: 'Use presets for common ranges like "Last 7 days" to speed up selection.' },
+      { guidance: true, description: 'Use min/max to constrain selectable dates to valid ranges.' },
+      { guidance: true, description: 'Keep hasClear enabled (default) so users can reset the filter.' },
+      { guidance: true, description: 'Provide clear labels + descriptions so users understand what the range controls.' },
+      { guidance: false, description: 'Use DateRangeInput when only a single date is needed; use DateInput instead.' },
+      { guidance: false, description: 'Hide the label without surrounding context that makes the purpose obvious.' },
     ],
   },
   propDescriptions: {
@@ -87,6 +91,8 @@ export const docsDense = {
     status: 'error/warning/success status',
     labelTooltip: 'tooltip via info icon at label end',
     numberOfMonths: 'months in calendar (default 2)',
+    changeAction: 'async action fired after onChange; drives optimistic UI updates via useTransition',
+    isLoading: 'loading state; disables interaction + shows a spinner',
     xstyle: 'StyleX styles for layout',
   },
 };

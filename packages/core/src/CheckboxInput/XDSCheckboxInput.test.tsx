@@ -218,6 +218,20 @@ describe('XDSCheckboxInput', () => {
     );
   });
 
+  it('renders semantic labelIcon names as icons', () => {
+    const {container} = render(
+      <XDSCheckboxInput
+        label="Accept terms"
+        value={false}
+        onChange={() => {}}
+        labelIcon="info"
+      />,
+    );
+
+    expect(container.textContent).toBe('Accept terms');
+    expect(container.querySelector('.xds-icon')).toBeInTheDocument();
+  });
+
   it('renders status message and sets aria-invalid for error', () => {
     render(
       <XDSCheckboxInput

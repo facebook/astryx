@@ -6,18 +6,15 @@ import {useEffect, useState, type ComponentType} from 'react';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText} from '@xds/core/Text';
 import {XDSSpinner} from '@xds/core/Spinner';
-import {XDSTheme} from '@xds/core/theme';
 import {useMediaQuery} from '@xds/core/hooks';
-import {neutralTheme} from '@xds/theme-neutral/built';
 import {showcaseRegistry} from '../../generated/showcaseRegistry';
-import {useThemeMode} from '../../app/providers';
+import {preventPreviewNavigation} from './previewNavigation';
 
 interface ShowcasePreviewProps {
   name: string;
 }
 
 export function ShowcasePreview({name}: ShowcasePreviewProps) {
-  const {mode} = useThemeMode();
   const [Component, setComponent] = useState<ComponentType | null>(null);
   const [error, setError] = useState(false);
   const isSmall = useMediaQuery('(max-width: 768px)');
@@ -32,6 +29,9 @@ export function ShowcasePreview({name}: ShowcasePreviewProps) {
       .then(mod => setComponent(() => mod.default))
       .catch(() => setError(true));
   }, [name]);
+
+  const previewNavigationProps =
+    name === 'SideNav' ? {onClickCapture: preventPreviewNavigation} : {};
 
   const placeholderStyle = isSmall
     ? {minHeight: 160, width: '100%'}
@@ -57,37 +57,35 @@ export function ShowcasePreview({name}: ShowcasePreviewProps) {
 
   if (isSmall) {
     return (
-      <XDSTheme theme={neutralTheme} mode={mode}>
-        <div
-          style={{
-            width: '100%',
-            overflow: 'auto',
-            minHeight: 160,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-          <div style={{minWidth: 'fit-content'}}>
-            <Component />
-          </div>
+      <div
+        style={{
+          width: '100%',
+          overflow: 'auto',
+          minHeight: 160,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+        {...previewNavigationProps}>
+        <div style={{minWidth: 'fit-content'}}>
+          <Component />
         </div>
-      </XDSTheme>
+      </div>
     );
   }
 
   return (
-    <XDSTheme theme={neutralTheme} mode={mode}>
-      <div
-        style={{
-          width: '100%',
-          aspectRatio: '16 / 9',
-          overflow: 'auto',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-        <Component />
-      </div>
-    </XDSTheme>
+    <div
+      style={{
+        width: '100%',
+        aspectRatio: '16 / 9',
+        overflow: 'auto',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      {...previewNavigationProps}>
+      <Component />
+    </div>
   );
 }

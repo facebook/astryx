@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": [
+    "src/types/**/*.d.ts",
+    "src/types/api.contract.assert.ts",
+    "../core/src/docs-types.ts"
+  ]
+}

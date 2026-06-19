@@ -65,9 +65,9 @@ describe('XDSStack', () => {
     expect(screen.getByTestId('stack')).toBeInTheDocument();
   });
 
-  it('renders with polymorphic element prop', () => {
+  it('renders with polymorphic as prop', () => {
     render(
-      <XDSStack direction="vertical" element="nav" data-testid="stack">
+      <XDSStack direction="vertical" as="nav" data-testid="stack">
         Content
       </XDSStack>,
     );
@@ -75,9 +75,9 @@ describe('XDSStack', () => {
     expect(element.tagName).toBe('NAV');
   });
 
-  it('renders with polymorphic element as section', () => {
+  it('renders with polymorphic as section', () => {
     render(
-      <XDSStack direction="vertical" element="section" data-testid="stack">
+      <XDSStack direction="vertical" as="section" data-testid="stack">
         Content
       </XDSStack>,
     );
@@ -155,10 +155,10 @@ describe('XDSStack', () => {
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLElement));
   });
 
-  it('forwards ref with polymorphic element', () => {
+  it('forwards ref with polymorphic as', () => {
     const ref = vi.fn();
     render(
-      <XDSStack direction="vertical" element="section" ref={ref}>
+      <XDSStack direction="vertical" as="section" ref={ref}>
         <div>Test</div>
       </XDSStack>,
     );

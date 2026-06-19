@@ -7,6 +7,7 @@
 export const docs = {
   name: 'Divider',
   displayName: 'Divider',
+  category: 'Layout',
   keywords: ["divider","separator","hr","rule","line","border","spacer","horizontal rule"],
   props: [
     {
@@ -37,7 +38,7 @@ export const docs = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
   ],
   theming: {
@@ -50,7 +51,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Use subtle dividers between related content sections and strong dividers for high-contrast boundaries.' },
       { guidance: true, description: 'Add a label to the divider when sections need a visible category heading.' },
-      { guidance: false, description: 'Overuse dividers — rely on spacing and layout to separate content when possible.' },
+      { guidance: false, description: 'Overuse dividers; rely on spacing and layout to separate content when possible.' },
     ],
   },
 };
@@ -87,7 +88,7 @@ export const docsZh = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值 — 不能是 style={{}} 这样的内联样式对象。',
+        '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值，不能是 style={{}} 这样的内联样式对象。',
     },
   ],
   theming: {
@@ -100,7 +101,7 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Use subtle dividers between related content sections and strong dividers for high-contrast boundaries.' },
       { guidance: true, description: 'Add a label to the divider when sections need a visible category heading.' },
-      { guidance: false, description: 'Overuse dividers — rely on spacing and layout to separate content when possible.' },
+      { guidance: false, description: 'Overuse dividers; rely on spacing and layout to separate content when possible.' },
     ],
   },
 };
@@ -113,7 +114,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Use subtle dividers between related content sections and strong dividers for high-contrast boundaries.' },
       { guidance: true, description: 'Add a label to the divider when sections need a visible category heading.' },
-      { guidance: false, description: 'Overuse dividers — rely on spacing and layout to separate content when possible.' },
+      { guidance: false, description: 'Overuse dividers; rely on spacing and layout to separate content when possible.' },
     ],
   },
   propDescriptions: {

@@ -9,9 +9,9 @@
  * @position Core container component; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Stepper/Stepper.doc.mjs (props table, features, implementation notes)
- * - /packages/core/src/Stepper/XDSStepper.test.tsx (tests for new/changed behavior)
- * - /packages/core/src/Stepper/index.ts (exports if types change)
+ * - /packages/lab/src/Stepper/Stepper.doc.mjs (props table, features, implementation notes)
+ * - /packages/lab/src/Stepper/XDSStepper.test.tsx (tests for new/changed behavior)
+ * - /packages/lab/src/Stepper/index.ts (exports if types change)
  * - /apps/storybook/stories/Stepper.stories.tsx (storybook stories)
  * - /packages/cli/templates/blocks/components/Stepper/ (showcase blocks)
  */
@@ -19,17 +19,18 @@
 import {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
-import {xdsClassName, mergeProps} from '@xds/core/utils';
+import {mergeProps} from '@xds/core/utils';
 import type {XDSBaseProps} from '@xds/core';
+import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
 import {
   XDSStepperContext,
   type XDSStepperOrientation,
   type XDSStepperContextValue,
 } from './XDSStepperContext';
 
-export interface XDSStepperProps extends XDSBaseProps<HTMLDivElement> {
+export interface XDSStepperProps extends XDSBaseProps<HTMLOListElement> {
   /** Ref forwarded to the root element */
-  ref?: React.Ref<HTMLDivElement>;
+  ref?: React.Ref<HTMLOListElement>;
   /**
    * Zero-based index of the active step.
    */
@@ -49,11 +50,18 @@ export interface XDSStepperProps extends XDSBaseProps<HTMLDivElement> {
    */
   onStepClick?: (index: number) => void;
   /**
-   * Accessible label for the stepper navigation landmark.
+   * Accessible label describing the set of steps.
    * @default 'Progress'
    */
   label?: string;
+  /**
+   * Controls density (padding) of all steps.
+   * @default 'balanced'
+   */
+  density?: 'compact' | 'balanced' | 'spacious';
 }
+
+const STEP_GAP = '2px';
 
 const styles = stylex.create({
   root: {
@@ -66,9 +74,11 @@ const styles = stylex.create({
   horizontal: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    gap: STEP_GAP,
   },
   vertical: {
     flexDirection: 'column',
+    gap: STEP_GAP,
   },
 });
 
@@ -79,6 +89,13 @@ const styles = stylex.create({
  * Each XDSStep child must provide a `step` prop (zero-based index) so it
  * can derive its state from the parent's activeStep. CSS :last-child
  * handles connector hiding — no child introspection needed.
+ *
+ * Rendered as an ordered list (`<ol>`/`<li>`) rather than a `nav`
+ * landmark: a stepper communicates *progress through a sequence*, not a
+ * set of site navigation links. The active step is marked with
+ * `aria-current="step"` (handled per-step) and the list carries an
+ * accessible `label`. This follows the WAI-ARIA pattern for steppers /
+ * progress sequences and avoids polluting the page's landmark map.
  *
  * @example
  * ```
@@ -95,6 +112,7 @@ export function XDSStepper({
   orientation = 'horizontal',
   onStepClick,
   label = 'Progress',
+  density = 'balanced',
   xstyle,
   className,
   style,
@@ -107,29 +125,31 @@ export function XDSStepper({
       orientation,
       isNonLinear: onStepClick != null,
       onStepClick: onStepClick ?? null,
+      density,
     }),
-    [activeStep, orientation, onStepClick],
+    [activeStep, orientation, onStepClick, density],
   );
 
   return (
     <XDSStepperContext value={ctxValue}>
-      <nav ref={ref} aria-label={label} {...rest}>
-        <ol
-          {...mergeProps(
-            xdsClassName('stepper', {orientation}),
-            stylex.props(
-              styles.root,
-              orientation === 'horizontal'
-                ? styles.horizontal
-                : styles.vertical,
-              xstyle,
-            ),
-            className,
-            style,
-          )}>
-          {children}
-        </ol>
-      </nav>
+      <ol
+        ref={ref}
+        aria-label={label}
+        {...rest}
+        {...mergeProps(
+          xdsThemeProps('stepper', {orientation}),
+          stylex.props(
+            styles.root,
+            orientation === 'horizontal' ? styles.horizontal : styles.vertical,
+            xstyle,
+          ),
+          className,
+          style,
+        )}>
+        {/* Each step renders its own progress bar segment; no child
+            introspection needed — steps derive state from context. */}
+        {children}
+      </ol>
     </XDSStepperContext>
   );
 }

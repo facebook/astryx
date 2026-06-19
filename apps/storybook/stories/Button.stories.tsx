@@ -13,7 +13,7 @@ const buttonStoryStyles = stylex.create({
 });
 
 const meta: Meta<typeof XDSButton> = {
-  title: 'Core/Buttons/Button',
+  title: 'Core/Button',
   component: XDSButton,
   tags: ['autodocs'],
   argTypes: {

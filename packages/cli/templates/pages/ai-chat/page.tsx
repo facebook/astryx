@@ -2,18 +2,7 @@
 
 'use client';
 
-import {useState} from 'react';
-
-import {XDSAppShell} from '@xds/core/AppShell';
-import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
-} from '@xds/core/SideNav';
-import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSHStack} from '@xds/core/Layout';
+import {XDSHStack, XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {
   XDSChatComposer,
@@ -35,18 +24,7 @@ import {XDSToken} from '@xds/core/Token';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 
-import {
-  ChatBubbleOvalLeftIcon,
-  FolderIcon,
-  DocumentTextIcon,
-  CubeIcon,
-  AtSymbolIcon,
-  PaperClipIcon,
-} from '@heroicons/react/24/outline';
-import {
-  ChatBubbleOvalLeftIcon as ChatBubbleOvalLeftIconSolid,
-  FolderIcon as FolderIconSolid,
-} from '@heroicons/react/24/solid';
+import {AtSymbolIcon, PaperClipIcon} from '@heroicons/react/24/outline';
 
 // ============= TOKENS =============
 
@@ -56,140 +34,108 @@ const MENTION_TOKENS = [
 
 // ============= SIDENAV =============
 
-function AIChatSideNav() {
-  const [active, setActive] = useState('ai-chat');
-  return (
-    <XDSSideNav
-      header={
-        <XDSSideNavHeading
-          icon={<XDSNavIcon icon={<XDSIcon icon={CubeIcon} size="sm" />} />}
-          heading="My App"
-          headingHref="/"
-        />
-      }>
-      <XDSSideNavSection title="Main">
-        <XDSSideNavItem
-          label="AI Chat"
-          icon={ChatBubbleOvalLeftIcon}
-          selectedIcon={ChatBubbleOvalLeftIconSolid}
-          isSelected={active === 'ai-chat'}
-          onClick={() => setActive('ai-chat')}
-        />
-        <XDSSideNavItem
-          label="Projects"
-          icon={FolderIcon}
-          selectedIcon={FolderIconSolid}
-          isSelected={active === 'projects'}
-          onClick={() => setActive('projects')}
-          endContent={<XDSBadge label="3" />}
-        />
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Documents">
-        <XDSSideNavItem
-          label="All Documents"
-          icon={DocumentTextIcon}
-          isSelected={active === 'documents'}
-          onClick={() => setActive('documents')}
-        />
-      </XDSSideNavSection>
-    </XDSSideNav>
-  );
-}
-
 // ============= MAIN COMPONENT =============
 
 export default function AIChatConversationTemplate() {
   return (
-    <XDSAppShell sideNav={<AIChatSideNav />} variant="elevated">
-      <XDSChatLayout
-        style={{height: '100%'}}
-        composer={
-          <XDSChatComposer
-            onSubmit={() => {}}
-            placeholder="Ask anything"
-            input={<XDSChatComposerInput />}
-            headerActions={
-              <>
-                <XDSButton
-                  label="Mention"
-                  variant="ghost"
-                  size="sm"
-                  icon={<XDSIcon icon={AtSymbolIcon} size="sm" />}
-                  isIconOnly
-                />
-                <XDSButton
-                  label="Attach"
-                  variant="ghost"
-                  size="sm"
-                  icon={<XDSIcon icon={PaperClipIcon} size="sm" />}
-                  isIconOnly
-                />
-              </>
-            }
-          />
-        }>
-        <XDSChatMessageList>
-          {/* ── System message: date divider ── */}
-          <XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>
+    <XDSLayout
+      height="fill"
+      content={
+        <XDSLayoutContent padding={0}>
+          <XDSChatLayout
+            style={{height: '100%'}}
+            composer={
+              <XDSChatComposer
+                onSubmit={() => {}}
+                placeholder="Ask anything"
+                input={<XDSChatComposerInput />}
+                headerActions={
+                  <>
+                    <XDSButton
+                      label="Mention"
+                      variant="ghost"
+                      size="sm"
+                      icon={<XDSIcon icon={AtSymbolIcon} size="sm" />}
+                      isIconOnly
+                    />
+                    <XDSButton
+                      label="Attach"
+                      variant="ghost"
+                      size="sm"
+                      icon={<XDSIcon icon={PaperClipIcon} size="sm" />}
+                      isIconOnly
+                    />
+                  </>
+                }
+              />
+            }>
+            <XDSChatMessageList>
+              {/* ── System message: date divider ── */}
+              <XDSChatSystemMessage variant="divider">
+                Today
+              </XDSChatSystemMessage>
 
-          {/* ── User message with tokenized mention and file attachments ── */}
-          <XDSChatMessage sender="user">
-            <XDSHStack gap={1} wrap="wrap">
-              <XDSToken label="auth-service.ts" />
-              <XDSToken label="middleware.ts" />
-            </XDSHStack>
-            <XDSChatMessageBubble
-              metadata={
-                <XDSChatMessageMetadata
-                  timestamp={
-                    <XDSTimestamp value="2026-04-29T10:15:00" format="time" />
-                  }
+              {/* ── User message with tokenized mention and file attachments ── */}
+              <XDSChatMessage sender="user">
+                <XDSHStack gap={1} wrap="wrap">
+                  <XDSToken label="auth-service.ts" />
+                  <XDSToken label="middleware.ts" />
+                </XDSHStack>
+                <XDSChatMessageBubble
+                  metadata={
+                    <XDSChatMessageMetadata
+                      timestamp={
+                        <XDSTimestamp
+                          value="2026-04-29T10:15:00"
+                          format="time"
+                        />
+                      }
+                    />
+                  }>
+                  <XDSChatTokenizedText tokens={MENTION_TOKENS}>
+                    @agent Can you review these auth files? The JWT refresh
+                    logic seems broken — tokens expire but the middleware
+                    doesn't catch it.
+                  </XDSChatTokenizedText>
+                </XDSChatMessageBubble>
+              </XDSChatMessage>
+
+              {/* ── Assistant message with tool calls ── */}
+              <XDSChatMessage
+                sender="assistant"
+                avatar={<XDSAvatar name="Agent" size="small" />}>
+                <XDSChatMessageBubble variant="ghost" name="Agent">
+                  Looking into the auth files now. Let me read through the code
+                  and trace the token refresh flow.
+                </XDSChatMessageBubble>
+                <XDSChatToolCalls
+                  defaultIsExpanded
+                  calls={[
+                    {
+                      name: 'read',
+                      target: 'auth-service.ts',
+                      status: 'complete',
+                      duration: '45ms',
+                    },
+                    {
+                      name: 'read',
+                      target: 'middleware.ts',
+                      status: 'complete',
+                      duration: '38ms',
+                    },
+                    {
+                      name: 'bash',
+                      target: 'grep -rn "refreshToken" src/',
+                      status: 'complete',
+                      duration: '120ms',
+                      node: 'cli:remote-server',
+                    },
+                  ]}
                 />
-              }>
-              <XDSChatTokenizedText tokens={MENTION_TOKENS}>
-                @agent Can you review these auth files? The JWT refresh logic
-                seems broken — tokens expire but the middleware doesn't catch
-                it.
-              </XDSChatTokenizedText>
-            </XDSChatMessageBubble>
-          </XDSChatMessage>
 
-          {/* ── Assistant message with tool calls ── */}
-          <XDSChatMessage
-            sender="assistant"
-            avatar={<XDSAvatar name="Agent" size="small" />}>
-            <XDSChatMessageBubble variant="ghost" name="Agent">
-              Looking into the auth files now. Let me read through the code and
-              trace the token refresh flow.
-            </XDSChatMessageBubble>
-            <XDSChatToolCalls
-              defaultIsExpanded
-              calls={[
-                {
-                  name: 'read',
-                  target: 'auth-service.ts',
-                  status: 'complete',
-                  duration: '45ms',
-                },
-                {
-                  name: 'read',
-                  target: 'middleware.ts',
-                  status: 'complete',
-                  duration: '38ms',
-                },
-                {
-                  name: 'bash',
-                  target: 'grep -rn "refreshToken" src/',
-                  status: 'complete',
-                  duration: '120ms',
-                  node: 'cli:remote-server',
-                },
-              ]}
-            />
-
-            {/* Markdown response with analysis */}
-            <XDSChatMessageBubble variant="ghost">
-              <XDSMarkdown density="compact">{`Found the issue. In \`middleware.ts\`, the token validation runs **before** the refresh check. When a token expires, the middleware rejects the request immediately instead of attempting a refresh.
+                {/* Markdown response with analysis */}
+                <XDSChatMessageBubble variant="ghost">
+                  <XDSMarkdown density="compact">{`Found the issue. In \`middleware.ts\`, the token validation runs **before** the refresh check. When a token expires, the middleware rejects the request immediately instead of attempting a refresh.
 
 Here's the problematic sequence:
 
@@ -198,14 +144,14 @@ Here's the problematic sequence:
 3. The catch block returns \`401\` — never reaching \`refreshToken()\`
 
 The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh before rejecting:`}</XDSMarkdown>
-            </XDSChatMessageBubble>
+                </XDSChatMessageBubble>
 
-            {/* Code block with the fix */}
-            <XDSChatMessageBubble variant="ghost">
-              <XDSCodeBlock
-                title="middleware.ts"
-                language="typescript"
-                code={`async function authMiddleware(req: Request) {
+                {/* Code block with the fix */}
+                <XDSChatMessageBubble variant="ghost">
+                  <XDSCodeBlock
+                    title="middleware.ts"
+                    language="typescript"
+                    code={`async function authMiddleware(req: Request) {
   try {
     const decoded = validateToken(req.headers.authorization);
     req.user = decoded;
@@ -223,85 +169,88 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
   }
   return next(req);
 }`}
-              />
-            </XDSChatMessageBubble>
+                  />
+                </XDSChatMessageBubble>
 
-            <XDSChatToolCalls
-              calls={[
-                {
-                  name: 'edit',
-                  target: 'middleware.ts',
-                  status: 'complete',
-                  duration: '85ms',
-                  additions: 8,
-                  deletions: 2,
-                },
-              ]}
-            />
+                <XDSChatToolCalls
+                  calls={[
+                    {
+                      name: 'edit',
+                      target: 'middleware.ts',
+                      status: 'complete',
+                      duration: '85ms',
+                      additions: 8,
+                      deletions: 2,
+                    },
+                  ]}
+                />
 
-            <XDSChatMessageMetadata
-              timestamp={
-                <XDSTimestamp value="2026-04-29T10:15:30" format="time" />
-              }
-              footer={
-                <XDSText type="supporting" color="secondary">
-                  Agent
-                </XDSText>
-              }
-            />
-          </XDSChatMessage>
-
-          {/* ── User multi-bubble follow-up ── */}
-          <XDSChatMessage sender="user">
-            <XDSChatMessageBubble group="first">
-              Nice catch, that makes sense
-            </XDSChatMessageBubble>
-            <XDSChatMessageBubble
-              group="last"
-              metadata={
                 <XDSChatMessageMetadata
                   timestamp={
-                    <XDSTimestamp value="2026-04-29T10:16:00" format="time" />
+                    <XDSTimestamp value="2026-04-29T10:15:30" format="time" />
                   }
-                  status="delivered"
+                  footer={
+                    <XDSText type="supporting" color="secondary">
+                      Agent
+                    </XDSText>
+                  }
                 />
-              }>
-              Can you also add a test for the refresh path?
-            </XDSChatMessageBubble>
-          </XDSChatMessage>
+              </XDSChatMessage>
 
-          {/* ── Assistant response with test code ── */}
-          <XDSChatMessage
-            sender="assistant"
-            avatar={<XDSAvatar name="Agent" size="small" />}>
-            <XDSChatToolCalls
-              defaultIsExpanded
-              calls={[
-                {
-                  name: 'read',
-                  target: 'middleware.test.ts',
-                  status: 'complete',
-                  duration: '32ms',
-                },
-                {
-                  name: 'edit',
-                  target: 'middleware.test.ts',
-                  status: 'complete',
-                  duration: '110ms',
-                  additions: 24,
-                  deletions: 0,
-                },
-                {
-                  name: 'bash',
-                  target: 'yarn test middleware',
-                  status: 'complete',
-                  duration: '3.2s',
-                  node: 'cli:remote-server',
-                },
-              ]}
-            />
-            <XDSChatMessageBubble variant="ghost">
-              <XDSMarkdown density="compact">{`Added a test for the refresh flow. All **4 tests** pass:
+              {/* ── User multi-bubble follow-up ── */}
+              <XDSChatMessage sender="user">
+                <XDSChatMessageBubble group="first">
+                  Nice catch, that makes sense
+                </XDSChatMessageBubble>
+                <XDSChatMessageBubble
+                  group="last"
+                  metadata={
+                    <XDSChatMessageMetadata
+                      timestamp={
+                        <XDSTimestamp
+                          value="2026-04-29T10:16:00"
+                          format="time"
+                        />
+                      }
+                      status="delivered"
+                    />
+                  }>
+                  Can you also add a test for the refresh path?
+                </XDSChatMessageBubble>
+              </XDSChatMessage>
+
+              {/* ── Assistant response with test code ── */}
+              <XDSChatMessage
+                sender="assistant"
+                avatar={<XDSAvatar name="Agent" size="small" />}>
+                <XDSChatToolCalls
+                  defaultIsExpanded
+                  calls={[
+                    {
+                      name: 'read',
+                      target: 'middleware.test.ts',
+                      status: 'complete',
+                      duration: '32ms',
+                    },
+                    {
+                      name: 'edit',
+                      target: 'middleware.test.ts',
+                      status: 'complete',
+                      duration: '110ms',
+                      additions: 24,
+                      deletions: 0,
+                    },
+                    {
+                      name: 'bash',
+                      target: 'yarn test middleware',
+                      status: 'complete',
+                      duration: '3.2s',
+                      node: 'cli:remote-server',
+                    },
+                  ]}
+                />
+                <XDSChatMessageBubble variant="ghost">
+                  <XDSMarkdown density="compact">{`Added a test for the refresh flow. All **4 tests** pass:
 
 | Test | Status |
 |------|--------|
@@ -309,13 +258,13 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
 | Expired token triggers refresh | ✅ |
 | Expired token with invalid refresh returns 401 | ✅ |
 | Malformed token returns 401 immediately | ✅ |`}</XDSMarkdown>
-            </XDSChatMessageBubble>
+                </XDSChatMessageBubble>
 
-            <XDSChatMessageBubble variant="ghost">
-              <XDSCodeBlock
-                title="middleware.test.ts"
-                language="typescript"
-                code={`describe('authMiddleware', () => {
+                <XDSChatMessageBubble variant="ghost">
+                  <XDSCodeBlock
+                    title="middleware.test.ts"
+                    language="typescript"
+                    code={`describe('authMiddleware', () => {
   it('refreshes an expired token silently', async () => {
     const expiredToken = createExpiredJWT(mockUser);
     const validRefresh = createRefreshToken(mockUser);
@@ -332,61 +281,66 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
     expect(req.newAccessToken).toBeDefined();
   });
 });`}
-              />
-            </XDSChatMessageBubble>
-            <XDSChatMessageMetadata
-              timestamp={
-                <XDSTimestamp value="2026-04-29T10:16:45" format="time" />
-              }
-            />
-          </XDSChatMessage>
-
-          {/* ── System message: status ── */}
-          <XDSChatSystemMessage>
-            Changes saved to workspace
-          </XDSChatSystemMessage>
-
-          {/* ── User follow-up ── */}
-          <XDSChatMessage sender="user">
-            <XDSChatMessageBubble
-              metadata={
+                  />
+                </XDSChatMessageBubble>
                 <XDSChatMessageMetadata
                   timestamp={
-                    <XDSTimestamp value="2026-04-29T10:17:00" format="time" />
+                    <XDSTimestamp value="2026-04-29T10:16:45" format="time" />
                   }
                 />
-              }>
-              Perfect. Ship it — create a PR with these changes.
-            </XDSChatMessageBubble>
-          </XDSChatMessage>
+              </XDSChatMessage>
 
-          {/* ── Assistant with running tool call ── */}
-          <XDSChatMessage
-            sender="assistant"
-            avatar={<XDSAvatar name="Agent" size="small" />}>
-            <XDSChatMessageBubble variant="ghost">
-              On it — pushing the branch and opening a PR now.
-            </XDSChatMessageBubble>
-            <XDSChatToolCalls
-              calls={[
-                {
-                  name: 'bash',
-                  target: 'git push -u origin fix/jwt-refresh',
-                  status: 'complete',
-                  duration: '1.8s',
-                  node: 'cli:remote-server',
-                },
-                {
-                  name: 'bash',
-                  target: 'gh pr create --title "fix: handle expired JWT…"',
-                  status: 'running',
-                  node: 'cli:remote-server',
-                },
-              ]}
-            />
-          </XDSChatMessage>
-        </XDSChatMessageList>
-      </XDSChatLayout>
-    </XDSAppShell>
+              {/* ── System message: status ── */}
+              <XDSChatSystemMessage>
+                Changes saved to workspace
+              </XDSChatSystemMessage>
+
+              {/* ── User follow-up ── */}
+              <XDSChatMessage sender="user">
+                <XDSChatMessageBubble
+                  metadata={
+                    <XDSChatMessageMetadata
+                      timestamp={
+                        <XDSTimestamp
+                          value="2026-04-29T10:17:00"
+                          format="time"
+                        />
+                      }
+                    />
+                  }>
+                  Perfect. Ship it — create a PR with these changes.
+                </XDSChatMessageBubble>
+              </XDSChatMessage>
+
+              {/* ── Assistant with running tool call ── */}
+              <XDSChatMessage
+                sender="assistant"
+                avatar={<XDSAvatar name="Agent" size="small" />}>
+                <XDSChatMessageBubble variant="ghost">
+                  On it — pushing the branch and opening a PR now.
+                </XDSChatMessageBubble>
+                <XDSChatToolCalls
+                  calls={[
+                    {
+                      name: 'bash',
+                      target: 'git push -u origin fix/jwt-refresh',
+                      status: 'complete',
+                      duration: '1.8s',
+                      node: 'cli:remote-server',
+                    },
+                    {
+                      name: 'bash',
+                      target: 'gh pr create --title "fix: handle expired JWT…"',
+                      status: 'running',
+                      node: 'cli:remote-server',
+                    },
+                  ]}
+                />
+              </XDSChatMessage>
+            </XDSChatMessageList>
+          </XDSChatLayout>
+        </XDSLayoutContent>
+      }
+    />
   );
 }

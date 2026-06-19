@@ -7,5 +7,6 @@ export const doc = {
   displayName: 'Gallery Hero',
   description:
     'Centered headline, description, and CTA buttons above a three-image gallery grid.',
-  isReady: false,
+  isReady: true,
+  category: 'Gallery - Hero',
 };

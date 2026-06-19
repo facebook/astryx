@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Carousel',
   displayName: 'Carousel',
+  category: 'Container',
   keywords: ['carousel', 'slider', 'scroll', 'gallery', 'filmstrip', 'swiper', 'horizontal', 'overflow', 'snap'],
   usage: {
     description:
@@ -13,9 +14,9 @@ export const docs = {
       {guidance: true, description: 'Enable scroll-snap when each item should land precisely at the start edge, like a gallery or product list.'},
       {guidance: true, description: 'Always provide an aria-label that describes what the carousel contains, like "Featured products" or "Team members".'},
       {guidance: true, description: 'Use a consistent gap and item width so the carousel looks intentional, not like content overflowing by accident.'},
-      {guidance: false, description: 'Use a carousel for content every user must see — not everyone scrolls horizontally. Put critical content above the fold.'},
-      {guidance: false, description: 'Auto-advance items — let the user scroll at their own pace.'},
-      {guidance: false, description: 'Nest carousels — a carousel inside a carousel is confusing and breaks keyboard navigation.'},
+      {guidance: false, description: 'Use a carousel for content every user must see. Not everyone scrolls horizontally, so put critical content above the fold.'},
+      {guidance: false, description: 'Auto-advance items. Let the user scroll at their own pace.'},
+      {guidance: false, description: 'Nest carousels. A carousel inside a carousel is confusing and breaks keyboard navigation.'},
     ],
     anatomy: [
       {name: 'Scroll container', required: true, description: 'The horizontal overflow area that holds all items.'},
@@ -61,9 +62,9 @@ export const docsZh = {
       {guidance: true, description: 'Enable scroll-snap when each item should land precisely at the start edge, like a gallery or product list.'},
       {guidance: true, description: 'Always provide an aria-label that describes what the carousel contains, like "Featured products" or "Team members".'},
       {guidance: true, description: 'Use a consistent gap and item width so the carousel looks intentional, not like content overflowing by accident.'},
-      {guidance: false, description: 'Use a carousel for content every user must see — not everyone scrolls horizontally. Put critical content above the fold.'},
-      {guidance: false, description: 'Auto-advance items — let the user scroll at their own pace.'},
-      {guidance: false, description: 'Nest carousels — a carousel inside a carousel is confusing and breaks keyboard navigation.'},
+      {guidance: false, description: 'Use a carousel for content every user must see. Not everyone scrolls horizontally, so put critical content above the fold.'},
+      {guidance: false, description: 'Auto-advance items. Let the user scroll at their own pace.'},
+      {guidance: false, description: 'Nest carousels. A carousel inside a carousel is confusing and breaks keyboard navigation.'},
     ],
   },
   propDescriptions: {
@@ -82,8 +83,12 @@ export const docsDense = {
     description:
       'Carousel scrolls items horizontally when they overflow. Use for card grids, galleries, product lists.',
     bestPractices: [
-      {guidance: true, description: 'Scroll-snap for precise alignment. Always set aria-label. Consistent gap and item width.'},
-      {guidance: false, description: 'Critical content in carousels. Auto-advance. Nested carousels.'},
+      {guidance: true, description: 'Enable scroll-snap when each item should land precisely at the start edge: gallery, product list.'},
+      {guidance: true, description: 'Always provide an aria-label describing what the carousel contains: "Featured products", "Team members".'},
+      {guidance: true, description: 'Use consistent gap + item width so the carousel looks intentional, not like content overflowing by accident.'},
+      {guidance: false, description: 'Use a carousel for content every user must see. Not everyone scrolls horizontally, so put critical content above the fold.'},
+      {guidance: false, description: 'Auto-advance items. Let the user scroll at their own pace.'},
+      {guidance: false, description: 'Nest carousels. A carousel inside a carousel is confusing and breaks keyboard navigation.'},
     ],
   },
   propDescriptions: {
@@ -92,5 +97,6 @@ export const docsDense = {
     hasButtons: 'prev/next buttons on hover (desktop)',
     hasSnap: 'scroll-snap; children snap to start edge',
     'aria-label': 'accessible label for carousel region',
+    'data-testid': 'test selector for automated testing frameworks',
   },
 };

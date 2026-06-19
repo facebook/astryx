@@ -6,6 +6,7 @@ export const docs = {
   name: 'HoverCard',
   displayName: 'Hover Card',
   group: 'HoverCard',
+  category: 'Overlay',
   keywords: ["hovercard","hover card","popover","tooltip","preview card","flyout","overlay","hover popup"],
   playground: {
     defaults: {
@@ -29,7 +30,7 @@ export const docs = {
       name: 'XDSHoverCard',
       displayName: 'Hover Card',
       description:
-        'Component wrapper for hover card display — a richer, larger overlay triggered on hover or focus.',      props: [
+        'Component wrapper for hover card display: a richer, larger overlay triggered on hover or focus.',      props: [
         {
           name: 'children',
           type: 'ReactNode',
@@ -44,13 +45,13 @@ export const docs = {
         },
         {
           name: 'placement',
-          type: 'LayerPlacement',
+          type: "'above' | 'below' | 'start' | 'end'",
           description: 'Position relative to the anchor element.',
           default: "'above'",
         },
         {
           name: 'alignment',
-          type: 'LayerAlignment',
+          type: "'start' | 'center' | 'end'",
           description: 'Alignment along the placement axis.',
           default: "'center'",
         },
@@ -101,17 +102,17 @@ export const docs = {
   usage: {
     description: 'HoverCard shows additional information when the user hovers or focuses a trigger element. Use it for profile cards, link summaries, or inline definitions where the user needs more context without navigating away.',
     bestPractices: [
-      { guidance: true, description: 'Keep content supplementary — hover cards should enhance understanding without blocking the primary workflow.' },
+      { guidance: true, description: 'Keep content supplementary; hover cards should enhance understanding without blocking the primary workflow.' },
       { guidance: true, description: 'Provide a dashed underline on text triggers so users know the element is hoverable.' },
       { guidance: true, description: 'Use the hook API (useXDSHoverCard) when you need more control over timing or placement.' },
-      { guidance: false, description: 'Place critical actions or required information inside a hover card — users may miss content that only appears on hover.' },
+      { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
       { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
-      { guidance: false, description: 'Use a HoverCard for content the user must interact with — it disappears when the cursor leaves.' },
+      { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
     ],
     anatomy: [
-      {name: 'Trigger', required: true, description: 'The element that opens the hover card on hover or focus — a button, link, or inline text.'},
+      {name: 'Trigger', required: true, description: 'The element that opens the hover card on hover or focus: a button, link, or inline text.'},
       {name: 'Card', required: true, description: 'The floating overlay with the preview content, anchored to the trigger.'},
-      {name: 'Body', required: true, description: 'The main content area — profile info, link summary, or any rich content.'},
+      {name: 'Body', required: true, description: 'The main content area: profile info, link summary, or any rich content.'},
       {name: 'Actions', required: false, description: 'Optional buttons inside the card for follow-up actions like Follow or Message.'},
     ],
   },
@@ -152,13 +153,13 @@ export const docsZh = {
         },
         {
           name: 'placement',
-          type: 'LayerPlacement',
+          type: "'above' | 'below' | 'start' | 'end'",
           description: '相对于锚点元素的位置。',
           default: "'above'",
         },
         {
           name: 'alignment',
-          type: 'LayerAlignment',
+          type: "'start' | 'center' | 'end'",
           description: '沿放置轴的对齐方式。',
           default: "'center'",
         },
@@ -209,12 +210,12 @@ export const docsZh = {
   usage: {
     description: 'HoverCard shows additional information when the user hovers or focuses a trigger element. Use it for profile cards, link summaries, or inline definitions where the user needs more context without navigating away.',
     bestPractices: [
-      { guidance: true, description: 'Keep content supplementary — hover cards should enhance understanding without blocking the primary workflow.' },
+      { guidance: true, description: 'Keep content supplementary; hover cards should enhance understanding without blocking the primary workflow.' },
       { guidance: true, description: 'Provide a dashed underline on text triggers so users know the element is hoverable.' },
       { guidance: true, description: 'Use the hook API (useXDSHoverCard) when you need more control over timing or placement.' },
-      { guidance: false, description: 'Place critical actions or required information inside a hover card — users may miss content that only appears on hover.' },
+      { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
       { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
-      { guidance: false, description: 'Use a HoverCard for content the user must interact with — it disappears when the cursor leaves.' },
+      { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
     ],
   },
 };
@@ -226,8 +227,12 @@ export const docsDense = {
   usage: {
     description: 'HoverCard shows additional info on hover/focus. Use for profile cards, link summaries, inline definitions.',
     bestPractices: [
-      { guidance: true, description: 'Supplementary content only. Dashed underline on text triggers. Hook API for custom control.' },
-      { guidance: false, description: 'No critical actions — content disappears on cursor leave. Use Tooltip/Popover when simpler.' },
+      { guidance: true, description: 'Keep content supplementary; hover cards should enhance understanding without blocking the primary workflow.' },
+      { guidance: true, description: 'Provide a dashed underline on text triggers so users know the element is hoverable.' },
+      { guidance: true, description: 'Use the hook API (useXDSHoverCard) when you need more control over timing or placement.' },
+      { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
+      { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
+      { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
     ],
   },
   components: [

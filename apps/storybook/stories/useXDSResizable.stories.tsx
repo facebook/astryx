@@ -36,7 +36,7 @@ function HookDemo({children}: {children: React.ReactNode}) {
 }
 
 const meta: Meta<typeof HookDemo> = {
-  title: 'Core/Hooks/useXDSResizable',
+  title: 'Core/useXDSResizable',
   component: HookDemo,
   tags: ['autodocs'],
   parameters: {

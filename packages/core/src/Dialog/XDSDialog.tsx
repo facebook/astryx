@@ -4,7 +4,7 @@
 
 /**
  * @file XDSDialog.tsx
- * @input Uses React, DialogHTMLAttributes, ReactNode, container (Layout)
+ * @input Uses React, DialogHTMLAttributes, ReactNode, container (Layout), DialogContext
  * @output Exports XDSDialog component, XDSDialogProps, XDSDialogVariant, XDSDialogPurpose types
  * @position Core implementation; consumed by index.ts, tested by XDSDialog.test.tsx
  *
@@ -16,7 +16,7 @@
  * - /packages/cli/templates/blocks/components/Dialog/ (showcase blocks)
  */
 
-import {useEffect, useRef, type ReactNode} from 'react';
+import {useEffect, useMemo, useRef, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {useScrollLock} from '../hooks/useScrollLock';
@@ -37,7 +37,9 @@ import {
   spacingStepToToken,
 } from '../Layout/padding.stylex';
 import type {SpacingStep} from '../utils/types';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
+import {DialogContext} from './DialogContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 /**
  * Calculate a directional translate offset for dialog entry animation.
@@ -231,9 +233,10 @@ export interface XDSDialogProps extends XDSBaseProps<HTMLDialogElement> {
   isOpen: boolean;
 
   /**
-   * Renders dialog content inline without the <dialog> element, backdrop, or
-   * modal behavior. Intended for documentation previews and showcases only —
-   * not for production UIs. The dialog will not trap focus or respond to Escape.
+   * Renders dialog content inline without the <dialog> element, backdrop,
+   * modal behavior, or dialog-managed autofocus. Intended for documentation
+   * previews and showcases only — not for production UIs. The dialog will not
+   * trap focus or respond to Escape.
    * @default false
    */
   isInline?: boolean;
@@ -344,6 +347,7 @@ export function XDSDialog({
   const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
 
   const isFullscreen = variant === 'fullscreen';
+  const dialogContextValue = useMemo(() => ({isInline}), [isInline]);
 
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -488,7 +492,7 @@ export function XDSDialog({
           effectivePadding !== 4 &&
           containerPaddingBlockEndVarStyles[effectivePadding],
       )}>
-      {children}
+      <DialogContext value={dialogContextValue}>{children}</DialogContext>
     </div>
   );
 
@@ -501,7 +505,7 @@ export function XDSDialog({
     return (
       <div
         {...mergeProps(
-          xdsClassName('dialog', {variant}),
+          xdsThemeProps('dialog', {variant}),
           stylex.props(
             styles.inlineWrapper,
             !isFullscreen && dynamicStyles.sizing(width, maxHeight),
@@ -535,7 +539,7 @@ export function XDSDialog({
       aria-modal="true"
       role={purpose === 'required' ? 'alertdialog' : undefined}
       {...mergeProps(
-        xdsClassName('dialog', {variant}),
+        xdsThemeProps('dialog', {variant}),
         stylex.props(
           styles.dialog,
           isOpen && styles.open,

@@ -7,12 +7,48 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {CLI_ROOT, discoverExternalPackages} from '../utils/paths.mjs';
+import {assertWithin, isFilePathArg, PathSafetyError} from '../utils/path-safety.mjs';
 import {XDSError} from './error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {loadConfig} from '../lib/config.mjs';
 
 const TEMPLATES_DIR = path.join(CLI_ROOT, 'templates');
 const PAGES_DIR = path.join(TEMPLATES_DIR, 'pages');
 const BLOCKS_DIR = path.join(TEMPLATES_DIR, 'blocks');
+
+/**
+ * Inline placeholder swapped in for demo imagery when scaffolding a template,
+ * so scaffolded pages render with zero setup (see stripTemplateAssetRefs).
+ * Neutral hex colors (not design tokens) so it renders in any project, themed
+ * or not. Mirrors apps/docsite/public/template-assets/placeholder.svg.
+ */
+const PLACEHOLDER_IMAGE =
+  "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E";
+
+/**
+ * Demo-image sources to strip from scaffolded projects — Meta's lookaside CDN
+ * (a Meta-only network dependency). Genuine third-party URLs (e.g. brand logos
+ * from paypalobjects.com) are intentionally left untouched.
+ *
+ * @type {RegExp[]}
+ */
+const DEMO_IMAGE_PATTERNS = [
+  /https?:\/\/(?:[\w-]+\.)*lookaside\.facebook\.com\/[^\s'"`)]+/g,
+];
+
+/**
+ * Replace demo image references with a self-contained placeholder data URI so
+ * scaffolded pages render with zero setup. Builders drop in their own images.
+ *
+ * @param {string} source - Template source code.
+ * @returns {string} Source with demo image references replaced.
+ */
+export function stripTemplateAssetRefs(source) {
+  return DEMO_IMAGE_PATTERNS.reduce(
+    (out, pattern) => out.replace(pattern, PLACEHOLDER_IMAGE),
+    source,
+  );
+}
 async function loadDocModule(docPath) {
   if (!fs.existsSync(docPath)) return null;
   const docModule = await import(`file://${docPath}`);
@@ -346,6 +382,8 @@ export async function getTemplateById(id, options = {}) {
         "      get: async (id) => { /* return template source string */ },\n" +
         '    },\n' +
         '  };',
+      undefined,
+      ERROR_CODES.ERR_TEMPLATE_CONFIG,
     );
   }
 
@@ -354,24 +392,30 @@ export async function getTemplateById(id, options = {}) {
     source = await getter(id);
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
-    throw new XDSError(`template.get("${id}") threw an error: ${detail}`);
+    throw new XDSError(`template.get("${id}") threw an error: ${detail}`, undefined, ERROR_CODES.ERR_TEMPLATE_GET);
   }
 
   if (source == null) {
     throw new XDSError(
       `template.get("${id}") returned ${source} — no template found for that ID`,
+      undefined,
+      ERROR_CODES.ERR_TEMPLATE_GET,
     );
   }
 
   if (typeof source !== 'string') {
     throw new XDSError(
       `template.get("${id}") must return a string, got ${typeof source}`,
+      undefined,
+      ERROR_CODES.ERR_TEMPLATE_GET,
     );
   }
 
   if (source.trim() === '') {
     throw new XDSError(
       `template.get("${id}") returned an empty string`,
+      undefined,
+      ERROR_CODES.ERR_TEMPLATE_GET,
     );
   }
 
@@ -385,6 +429,7 @@ export async function getTemplateById(id, options = {}) {
  * @param {boolean} [options.list]
  * @param {boolean} [options.skeleton]
  * @param {boolean} [options.show]
+ * @param {'page'|'block'} [options.type] - Filter list views by template kind.
  * @param {string} [options.cwd]
  * @returns {Promise<{type: string, data: unknown}>}
  */
@@ -413,6 +458,7 @@ export async function template(name, options = {}) {
     throw new XDSError(
       `Unknown template "${name}"`,
       templates.map(t => ({name: t.dirName, reason: `${t.type} template`})),
+      ERROR_CODES.ERR_UNKNOWN_TEMPLATE,
     );
   }
 
@@ -421,10 +467,11 @@ export async function template(name, options = {}) {
       throw new XDSError(
         'Specify a template name for --skeleton',
         templates.map(t => ({name: t.dirName, reason: `${t.type} template`})),
+        ERROR_CODES.ERR_UNKNOWN_TEMPLATE,
       );
     }
     if (!fs.existsSync(match.filePath)) {
-      throw new XDSError(`No source file found for template "${name}"`);
+      throw new XDSError(`No source file found for template "${name}"`, undefined, ERROR_CODES.ERR_NO_SOURCE);
     }
     const src = fs.readFileSync(match.filePath, 'utf-8');
     return {
@@ -439,7 +486,7 @@ export async function template(name, options = {}) {
   }
 
   if (!fs.existsSync(match.filePath)) {
-    throw new XDSError(`No source file found for template "${name}"`);
+    throw new XDSError(`No source file found for template "${name}"`, undefined, ERROR_CODES.ERR_NO_SOURCE);
   }
 
   if (show || !targetPath) {
@@ -455,14 +502,49 @@ export async function template(name, options = {}) {
     };
   }
 
-  const outputDir = path.resolve(cwd, targetPath);
-  const outputFileName = match.type === 'block'
-    ? path.basename(match.filePath)
-    : 'page.tsx';
-  fs.mkdirSync(outputDir, {recursive: true});
-  fs.copyFileSync(match.filePath, path.join(outputDir, outputFileName));
+  // Path-safety: resolve the user-supplied targetPath relative to cwd,
+  // rejecting absolute paths and any traversal that escapes the project
+  // root. This guard runs BEFORE any mkdir/copyFile so we never create
+  // directories outside the root just to fail on the file write.
+  let resolvedTarget;
+  try {
+    resolvedTarget = assertWithin(targetPath, cwd, {
+      label: 'template target path',
+    });
+  } catch (err) {
+    if (err instanceof PathSafetyError) {
+      throw new XDSError(err.message, undefined, ERROR_CODES.ERR_PATH_TRAVERSAL);
+    }
+    throw err;
+  }
 
-  const relOutput = path.relative(cwd, outputDir);
+  // If targetPath looks like a file (e.g. `./foo.tsx`), write directly to
+  // it. Previously this path was treated as a directory and the file was
+  // written as `./foo.tsx/page.tsx`, which is wrong and surprising.
+  let outputDir;
+  let outputFileName;
+  let outputFilePath;
+  if (isFilePathArg(targetPath)) {
+    outputDir = path.dirname(resolvedTarget);
+    outputFileName = path.basename(resolvedTarget);
+    outputFilePath = resolvedTarget;
+  } else {
+    outputDir = resolvedTarget;
+    outputFileName = match.type === 'block'
+      ? path.basename(match.filePath)
+      : 'page.tsx';
+    outputFilePath = path.join(outputDir, outputFileName);
+  }
+
+  fs.mkdirSync(outputDir, {recursive: true});
+
+  // Strip demo image references so the scaffolded file renders without a
+  // Meta-only network dependency.
+  const source = fs.readFileSync(match.filePath, 'utf-8');
+  const outputSource = stripTemplateAssetRefs(source);
+  fs.writeFileSync(outputFilePath, outputSource);
+
+  const relOutput = path.relative(cwd, outputDir) || '.';
   return {
     type: 'template.copy',
     data: {template: name, outputDir: relOutput, fileName: outputFileName, filesCopied: 1},

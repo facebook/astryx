@@ -27,7 +27,8 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {getIcon} from './globalIconRegistry';
 import type {XDSIconName} from './globalIconRegistry';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Styles
@@ -223,7 +224,14 @@ export function XDSIcon({
 }: XDSIconProps) {
   // String mode: resolve from icon registry, wrap in styled span
   if (typeof icon === 'string') {
-    return <IconFromRegistry name={icon} color={color} size={size} />;
+    return (
+      <IconFromRegistry
+        name={icon}
+        color={color}
+        size={size}
+        spanProps={props}
+      />
+    );
   }
 
   // Component mode: render SVG component directly with ref forwarding
@@ -233,7 +241,7 @@ export function XDSIcon({
       ref={ref}
       aria-hidden="true"
       {...mergeProps(
-        xdsClassName('icon', {size, color}),
+        xdsThemeProps('icon', {size, color}),
         stylex.props(styles.root, colorStyles[color], sizeStyles[size]),
       )}
       {...props}
@@ -258,10 +266,12 @@ function IconFromRegistry({
   name,
   color,
   size,
+  spanProps,
 }: {
   name: XDSIconName;
   color: XDSIconColor;
   size: XDSIconSize;
+  spanProps?: Omit<SVGProps<SVGSVGElement>, 'ref' | 'color'>;
 }) {
   const resolvedIcon = getIcon(name);
 
@@ -271,8 +281,9 @@ function IconFromRegistry({
 
   return (
     <span
+      {...(spanProps as React.HTMLAttributes<HTMLSpanElement>)}
       {...mergeProps(
-        xdsClassName('icon', {size, color}),
+        xdsThemeProps('icon', {size, color}),
         stylex.props(styles.span, colorStyles[color], spanSizeStyles[size]),
       )}
       aria-hidden="true">
@@ -282,7 +293,9 @@ function IconFromRegistry({
 }
 
 /**
- * Renders an icon slot value. Handles both ReactNode and component types:
+ * Renders an icon slot value. Handles semantic names, ReactNode values, and
+ * component types:
+ * - If the value is a semantic icon name string, wraps it in XDSIcon.
  * - If the value is a component (function or forwardRef object), wraps it in XDSIcon.
  * - Otherwise, renders the ReactNode directly.
  */
@@ -290,6 +303,10 @@ export function renderIconSlot(
   icon: React.ReactNode | XDSIconType,
   props?: {size?: XDSIconSize; color?: XDSIconColor},
 ): React.ReactNode {
+  if (typeof icon === 'string') {
+    return <XDSIcon icon={icon as XDSIconName} {...props} />;
+  }
+
   if (
     typeof icon === 'function' ||
     (typeof icon === 'object' && icon !== null && 'render' in icon)

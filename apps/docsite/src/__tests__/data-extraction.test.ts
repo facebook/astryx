@@ -8,14 +8,86 @@
  */
 
 import * as fs from 'node:fs';
+import * as path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {describe, it, expect} from 'vitest';
 import {packages} from '../generated/packageRegistry';
-import {components, componentCount} from '../generated/componentRegistry';
+import {
+  components,
+  componentCount,
+  type ComponentEntry,
+} from '../generated/componentRegistry';
 import {blocks, blockCount, showcaseCount} from '../generated/blockRegistry';
 import {templates, templateCount} from '../generated/templateRegistry';
 import {docTopics, docsCount} from '../generated/docsRegistry';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
 import {exampleRegistry} from '../generated/exampleRegistry';
+
+const REPO_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../../..',
+);
+const CORE_SRC_DIR = path.join(REPO_ROOT, 'packages/core/src');
+
+function findFiles(dir: string, predicate: (filePath: string) => boolean) {
+  const files: string[] = [];
+  for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...findFiles(fullPath, predicate));
+    } else if (predicate(fullPath)) {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
+
+function getCoreComponentsWithPublicProps() {
+  const names = new Set<string>();
+  for (const filePath of findFiles(CORE_SRC_DIR, file =>
+    file.endsWith('.tsx'),
+  )) {
+    const source = fs.readFileSync(filePath, 'utf-8');
+    for (const match of source.matchAll(
+      /export\s+(?:interface|type)\s+XDS([A-Z]\w*)Props\b/g,
+    )) {
+      names.add(match[1]);
+    }
+  }
+  return names;
+}
+
+function getComponentDocCompletenessIssues(
+  comp: ComponentEntry,
+  componentsWithPublicProps: Set<string>,
+) {
+  const issues: string[] = [];
+  if (comp.params != null || comp.hidden) {
+    return issues;
+  }
+  if (comp.description.trim() === '') {
+    issues.push('missing description');
+  }
+  const usageDescription = comp.usage?.description?.trim() ?? '';
+  if (usageDescription === '') {
+    issues.push('missing usage description');
+  }
+  if (componentsWithPublicProps.has(comp.name) && comp.props.length === 0) {
+    issues.push('missing props');
+  }
+  const incompleteProps = comp.props
+    .filter(
+      prop =>
+        prop.name.trim() === '' ||
+        prop.type.trim() === '' ||
+        prop.description.trim() === '',
+    )
+    .map(prop => prop.name || '<unnamed>');
+  if (incompleteProps.length > 0) {
+    issues.push(`incomplete props: ${incompleteProps.join(', ')}`);
+  }
+  return issues;
+}
 
 // ── Package Registry ───────────────────────────────────────────────────
 
@@ -163,10 +235,39 @@ describe('componentRegistry', () => {
     expect(dialogHeader!.description.toLowerCase()).toContain('header');
   });
 
+  it('extracted sub-components do not inherit parent usage prose', () => {
+    const core = components['@xds/core'];
+    const chatComposer = core.find(c => c.name === 'ChatComposer');
+    expect(chatComposer).toBeDefined();
+    expect(chatComposer!.parentDoc).toBe('Chat');
+    expect(chatComposer!.usage?.description).toContain(
+      'Layout shell for a chat composer',
+    );
+    expect(chatComposer!.usage?.description).not.toContain(
+      'XDSChatMessageList',
+    );
+    expect(chatComposer!.usage?.description).not.toContain(
+      'scrollable container for chat messages',
+    );
+  });
+
+  it('sub-components can override inherited playground defaults', () => {
+    const core = components['@xds/core'];
+    const avatarGroupOverflow = core.find(
+      c => c.name === 'AvatarGroupOverflow',
+    );
+    expect(avatarGroupOverflow).toBeDefined();
+    expect(avatarGroupOverflow!.playground?.defaults).toMatchObject({
+      count: 2,
+      children: '+2',
+    });
+  });
+
   it('Chat has many sub-components (standalone docs take priority over compound entries)', () => {
     const core = components['@xds/core'];
-    // Chat compound doc has 14 sub-components, but ChatToolCalls has its own
-    // standalone doc so it appears with parentDoc: null instead of parentDoc: 'Chat'
+    // Chat compound doc has 14 sub-components, but ChatToolCalls and
+    // ChatDictationButton have their own standalone docs so they appear
+    // with parentDoc: null instead of parentDoc: 'Chat'
     const chatSubs = core.filter(c => c.parentDoc === 'Chat');
     expect(chatSubs.length).toBeGreaterThanOrEqual(12);
     const chatNames = chatSubs.map(c => c.name);
@@ -186,6 +287,19 @@ describe('componentRegistry', () => {
     const button = core.find(c => c.name === 'Button');
     expect(button).toBeDefined();
     expect(button!.parentDoc).toBeNull();
+  });
+
+  it('keeps core component docs complete for generated component pages', () => {
+    const componentsWithPublicProps = getCoreComponentsWithPublicProps();
+    const incompleteDocs = components['@xds/core'].flatMap(comp => {
+      const issues = getComponentDocCompletenessIssues(
+        comp,
+        componentsWithPublicProps,
+      );
+      return issues.length > 0 ? [`${comp.name}: ${issues.join(', ')}`] : [];
+    });
+
+    expect(incompleteDocs).toEqual([]);
   });
 
   it('moduleName has XDS prefix for components, not for hooks', () => {
@@ -211,6 +325,20 @@ describe('componentRegistry', () => {
     expect(hooks.length).toBeGreaterThan(8);
     for (const hook of hooks) {
       expect(hook.name).toMatch(/^use[A-Z]/);
+    }
+  });
+
+  it('renders useXDS hook pages as hook docs with examples', () => {
+    const core = components['@xds/core'];
+    const hooks = core.filter(c => c.name.startsWith('useXDS'));
+    expect(hooks.length).toBeGreaterThan(15);
+    expect(hooks.map(h => h.name)).toContain('useXDSTheme');
+
+    for (const hook of hooks) {
+      expect(hook.params).not.toBeNull();
+      expect(hook.returns).not.toBeNull();
+      expect(hook.props).toHaveLength(0);
+      expect(exampleRegistry[hook.name]?.length ?? 0).toBeGreaterThan(0);
     }
   });
 
@@ -405,6 +533,14 @@ describe('blockRegistry', () => {
       expect(typeof block.source).toBe('string');
       expect(block.source.length).toBeGreaterThan(0);
     }
+  });
+
+  it('decodes unicode escapes in block titles', () => {
+    const block = blocks.find(b => b.dirName === 'TabListTabsWithBadge');
+    expect(block).toBeDefined();
+    expect(block!.name).toBe('TabList — With Badge');
+    expect(block!.displayName).toBe('TabList — With Badge');
+    expect(block!.name).not.toContain('\\u2014');
   });
 
   it('showcase sources contain valid JSX', () => {
@@ -609,15 +745,58 @@ describe('exampleRegistry', () => {
     expect(files.every(f => f.endsWith('.tsx'))).toBe(true);
   });
 
-  it('does not include showcases', () => {
-    // Every example in the registry should NOT be a showcase
-    // (showcases have their own registry)
-    // Showcase names typically don't have a dash separator
-    // but more importantly, the generator filters isShowcase: true
-    // Just verify count makes sense: examples + showcases ≈ total blocks
+  it('does not include showcases as primary component examples', () => {
+    // Hook pages can reuse authored component examples/showcases through
+    // explicit block metadata. Count unique authored example sources so those
+    // hook aliases don't make the registry look larger than the block set.
     const showcaseCount = Object.keys(showcaseRegistry).length;
-    const exampleCount = Object.values(exampleRegistry).flat().length;
-    expect(exampleCount + showcaseCount).toBeLessThanOrEqual(blockCount);
-    expect(exampleCount).toBeGreaterThan(showcaseCount);
+    const examples = Object.values(exampleRegistry).flat();
+    const uniqueExampleSourceCount = new Set(examples.map(e => e.source)).size;
+    expect(uniqueExampleSourceCount).toBeLessThanOrEqual(blockCount);
+    expect(examples.length).toBeGreaterThan(showcaseCount);
+  });
+
+  // Regression: the description extractor used to truncate at the first
+  // interior quote (e.g. 'Swap the default "/"...') and drop any
+  // description longer than 200 characters entirely — surfacing as
+  // "No description available." in the docsite. Every authored doc has a
+  // description, so the registry should never carry an empty one.
+  it('every example has a non-empty description', () => {
+    const missing: string[] = [];
+    for (const examples of Object.values(exampleRegistry)) {
+      for (const ex of examples) {
+        if (!ex.description || ex.description.trim().length === 0) {
+          missing.push(ex.name);
+        }
+      }
+    }
+    expect(missing).toEqual([]);
+  });
+
+  // Regression: descriptions containing interior double quotes must be
+  // preserved in full rather than cut off at the first quote.
+  it('preserves descriptions with interior quotes', () => {
+    const breadcrumbs = exampleRegistry['Breadcrumbs'] ?? [];
+    const separators = breadcrumbs.find(e => /Separator/i.test(e.name));
+    expect(separators).toBeDefined();
+    expect(separators!.description).toContain('"/"');
+    // Full sentence survives past the interior quote.
+    expect(separators!.description).toMatch(/separator\.?$/i);
+  });
+
+  it('decodes unicode escapes in example titles', () => {
+    const tabList = exampleRegistry['TabList'] ?? [];
+    const withBadge = tabList.find(e => /With Badge/i.test(e.name));
+    expect(withBadge).toBeDefined();
+    expect(withBadge!.name).toBe('TabList — With Badge');
+    expect(withBadge!.name).not.toContain('\\u2014');
+  });
+
+  // Regression: long descriptions (>200 chars) must not be dropped.
+  it('keeps long descriptions intact', () => {
+    const longest = Object.values(exampleRegistry)
+      .flat()
+      .reduce((max, e) => Math.max(max, e.description.length), 0);
+    expect(longest).toBeGreaterThan(200);
   });
 });

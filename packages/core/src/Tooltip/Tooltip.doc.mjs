@@ -6,6 +6,7 @@ export const docs = {
   name: 'Tooltip',
   displayName: 'Tooltip',
   group: 'Tooltip',
+  category: 'Overlay',
   playground: {
     defaults: {
       content: 'Helpful tooltip text',
@@ -37,13 +38,13 @@ export const docs = {
         },
         {
           name: 'placement',
-          type: 'LayerPlacement',
+          type: "'above' | 'below' | 'start' | 'end'",
           description: 'Position relative to the anchor element.',
           default: "'above'",
         },
         {
           name: 'alignment',
-          type: 'LayerAlignment',
+          type: "'start' | 'center' | 'end'",
           description: 'Alignment along the placement axis.',
           default: "'center'",
         },
@@ -100,9 +101,9 @@ export const docs = {
     description:
       'A short text hint that appears on hover or focus, anchored to a trigger element. Use it to describe icon-only buttons, show the full text of truncated labels, or provide supplementary context without cluttering the UI.',
     bestPractices: [
-      {guidance: true, description: 'Keep tooltip content concise — aim for under 140 characters of plain text.'},
+      {guidance: true, description: 'Keep tooltip content concise: aim for under 140 characters of plain text.'},
       {guidance: true, description: 'Add a tooltip to icon-only buttons and controls that lack a visible label.'},
-      {guidance: false, description: 'Place interactive elements like links or buttons inside a tooltip — use HoverCard or Popover instead.'},
+      {guidance: false, description: 'Place interactive elements like links or buttons inside a tooltip; use HoverCard or Popover instead.'},
       {guidance: false, description: 'Use tooltips for essential information that users must see to complete a task.'},
     ],
   },
@@ -136,13 +137,13 @@ export const docsZh = {
         },
         {
           name: 'placement',
-          type: 'LayerPlacement',
+          type: "'above' | 'below' | 'start' | 'end'",
           description: '相对于锚点元素的位置。',
           default: "'above'",
         },
         {
           name: 'alignment',
-          type: 'LayerAlignment',
+          type: "'start' | 'center' | 'end'",
           description: '沿放置轴的对齐方式。',
           default: "'center'",
         },
@@ -199,9 +200,9 @@ export const docsZh = {
     description:
       'A short text hint that appears on hover or focus, anchored to a trigger element. Use it to describe icon-only buttons, show the full text of truncated labels, or provide supplementary context without cluttering the UI.',
     bestPractices: [
-      {guidance: true, description: 'Keep tooltip content concise — aim for under 140 characters of plain text.'},
+      {guidance: true, description: 'Keep tooltip content concise: aim for under 140 characters of plain text.'},
       {guidance: true, description: 'Add a tooltip to icon-only buttons and controls that lack a visible label.'},
-      {guidance: false, description: 'Place interactive elements like links or buttons inside a tooltip — use HoverCard or Popover instead.'},
+      {guidance: false, description: 'Place interactive elements like links or buttons inside a tooltip; use HoverCard or Popover instead.'},
       {guidance: false, description: 'Use tooltips for essential information that users must see to complete a task.'},
     ],
   },
@@ -214,9 +215,9 @@ export const docsDense = {
     description:
       'A short text hint that appears on hover or focus, anchored to a trigger element. Use it to describe icon-only buttons, show the full text of truncated labels, or provide supplementary context without cluttering the UI.',
     bestPractices: [
-      {guidance: true, description: 'Keep tooltip content concise — aim for under 140 characters of plain text.'},
+      {guidance: true, description: 'Keep tooltip content concise: aim for under 140 characters of plain text.'},
       {guidance: true, description: 'Add a tooltip to icon-only buttons and controls that lack a visible label.'},
-      {guidance: false, description: 'Place interactive elements like links or buttons inside a tooltip — use HoverCard or Popover instead.'},
+      {guidance: false, description: 'Place interactive elements like links or buttons inside a tooltip; use HoverCard or Popover instead.'},
       {guidance: false, description: 'Use tooltips for essential information that users must see to complete a task.'},
     ],
   },

@@ -3,7 +3,7 @@
 'use client';
 /**
  * @file XDSCommandPaletteInput.tsx
- * @input Uses React, StyleX, XDSIcon, CommandPaletteContext
+ * @input Uses React, StyleX, XDSIcon, CommandPaletteContext, DialogContext
  * @output Exports XDSCommandPaletteInput component and props
  * @position Search input for the command palette
  *
@@ -16,7 +16,7 @@ import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSIcon} from '../Icon';
 import {XDSSpinner} from '../Spinner';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import {
   colorVars,
   typeScaleVars,
@@ -24,7 +24,9 @@ import {
   typographyVars,
 } from '../theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
+import {useDialogContext} from '../Dialog/DialogContext';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const styles = stylex.create({
   wrapper: {
@@ -155,15 +157,16 @@ export function XDSCommandPaletteInput({
   ...props
 }: XDSCommandPaletteInputProps) {
   const ctx = useCommandPaletteContext();
+  const dialogContext = useDialogContext();
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Use context values as fallback
   const value = controlledValue ?? ctx?.search;
   const handleValueChange = onValueChange ?? ctx?.setSearch;
 
-  // When inside an inline CommandPalette, disable auto-focus by default
+  // When rendered inside an inline dialog, disable auto-focus by default
   // to avoid stealing focus from the surrounding page.
-  const effectiveAutoFocus = hasAutoFocus && !(ctx?.isInline ?? false);
+  const effectiveAutoFocus = hasAutoFocus && dialogContext?.isInline !== true;
 
   // Auto-focus on mount
   useEffect(() => {
@@ -190,7 +193,7 @@ export function XDSCommandPaletteInput({
   return (
     <div
       {...mergeProps(
-        xdsClassName('command-palette-input'),
+        xdsThemeProps('command-palette-input'),
         stylex.props(styles.wrapper, xstyle),
       )}>
       <span {...stylex.props(styles.icon)}>

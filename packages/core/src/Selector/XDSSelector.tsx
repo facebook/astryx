@@ -37,6 +37,7 @@ import {
 } from '../Field';
 import {XDSDivider} from '../Divider';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
+import type {LayerPlacement} from '../Layer/useXDSLayer';
 import {XDSSpinner} from '../Spinner';
 import {
   colorVars,
@@ -60,9 +61,11 @@ import {
 } from './utils';
 import {useCombobox, useSelectedItemOffset} from './hooks';
 import {XDSSelectorOption} from './XDSSelectorOption';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const styles = stylex.create({
   // Trigger container — the enhanced click target wrapping the combobox button and clear button as siblings
@@ -175,9 +178,6 @@ const styles = stylex.create({
     opacity: 0,
     transition: 'none',
   },
-  dropdownOffset: (offset: number) => ({
-    marginTop: offset,
-  }),
 
   // Popover container (for anchor positioning)
   popover: {
@@ -406,6 +406,12 @@ interface XDSSelectorPropsBase<
   status?: XDSSelectorStatus;
 
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
@@ -419,7 +425,7 @@ interface XDSSelectorPropsBase<
    * Custom render function for options.
    * Only called for selectable options (not dividers/sections).
    */
-  children?: (option: XDSSelectorOptionData) => ReactNode;
+  renderOption?: (option: XDSSelectorOptionData) => ReactNode;
 
   /**
    * Whether to show a search input for filtering options.
@@ -432,6 +438,16 @@ interface XDSSelectorPropsBase<
    * @default 'Search...'
    */
   searchPlaceholder?: string;
+
+  /**
+   * Position placement relative to the trigger.
+   *
+   * Omit to use the selector's default selected-item overlay behavior: the
+   * selected item is positioned over the trigger and clamped to the viewport.
+   * Set a placement to opt into explicit layer positioning (for example,
+   * `placement="above"` for bottom-fixed toolbars).
+   */
+  placement?: LayerPlacement;
 
   /**
    * Whether the dropdown starts open on mount.
@@ -524,11 +540,13 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     status,
     labelTooltip,
     startIcon,
-    children,
+    renderOption,
     hasSearch = false,
     searchPlaceholder = 'Search...',
+    placement,
     isDefaultOpen = false,
     'data-testid': testId,
+    width,
     xstyle,
     className,
     style,
@@ -615,19 +633,26 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     // eslint-disable-next-line @eslint-react/exhaustive-deps -- mount-only: isDefaultOpen is not reactive
   }, []);
 
-  // Calculate offset to position selected item over trigger
+  // Calculate offset to position selected item over trigger. Explicit
+  // placement opts out of the selector-specific overlay behavior and uses the
+  // standard layer positioning API instead.
+  const shouldOverlaySelectedItem = placement == null && !hasSearch;
   const {offset: rawOffset, isPositioned: rawIsPositioned} =
     useSelectedItemOffset({
-      isOpen: popover.isOpen,
+      isOpen: popover.isOpen && shouldOverlaySelectedItem,
       selectedItemIndex,
       listboxId,
       listboxRef,
       triggerRef,
     });
 
-  // Disable macOS overlay positioning when search is active
-  const selectedItemOffset = hasSearch ? 0 : rawOffset;
-  const isPositioned = hasSearch ? true : rawIsPositioned;
+  const selectedItemOffset = shouldOverlaySelectedItem ? rawOffset : 0;
+  const isPositioned = shouldOverlaySelectedItem ? rawIsPositioned : true;
+  const popoverPlacement = placement ?? 'below';
+  const popoverOffsetStyle: React.CSSProperties | undefined =
+    selectedItemOffset > 0
+      ? {marginBlockStart: `-${selectedItemOffset}px`}
+      : undefined;
 
   // Selector behavior (keyboard nav, typeahead, selection)
   const {
@@ -746,14 +771,18 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
             item.disabled && styles.itemDisabled,
           )}>
           <span {...stylex.props(styles.itemContent)}>
-            {children ? children(item) : <DefaultOption option={item} />}
+            {renderOption ? (
+              renderOption(item)
+            ) : (
+              <DefaultOption option={item} />
+            )}
           </span>
           {isSelected && <XDSIcon icon="check" size="sm" color="accent" />}
         </div>
       );
     },
     [
-      children,
+      renderOption,
       highlightedIndex,
       size,
       normalizedValue,
@@ -835,7 +864,8 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
             }
           : undefined
       }
-      labelTooltip={labelTooltip}>
+      labelTooltip={labelTooltip}
+      width={width}>
       <div
         ref={el => {
           popover.triggerRef(el);
@@ -843,7 +873,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
         onClick={onTriggerClick}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('selector', {size, status: status?.type ?? null}),
+          xdsThemeProps('selector', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             styles.triggerContainer,
@@ -936,15 +966,15 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
             {...stylex.props(
               styles.dropdown,
               !isPositioned && styles.dropdownHidden,
-              styles.dropdownOffset(-selectedItemOffset),
             )}>
             {renderOptions()}
           </div>
         ),
         {
-          placement: 'below',
+          placement: popoverPlacement,
           alignment: 'start',
-          xstyle: [styles.popover, layerAnimations.below],
+          xstyle: [styles.popover, layerAnimations[popoverPlacement]],
+          style: popoverOffsetStyle,
         },
       )}
     </XDSField>

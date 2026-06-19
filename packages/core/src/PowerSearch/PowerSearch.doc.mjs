@@ -5,6 +5,7 @@
 export const docs = {
   name: 'PowerSearch',
   displayName: 'Power Search',
+  category: 'Data Input',
   keywords: ["powersearch","search","searchbar","filter","filterbar","faceted","querybuilder","structured","omnibar"],
   props: [
     {
@@ -134,7 +135,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Define clear, descriptive field names and aliases so users can quickly find the filter they need.' },
       { guidance: true, description: 'Provide a result count to give users feedback on how their filters affect the data set.' },
-      { guidance: false, description: 'Use PowerSearch for simple keyword searches — a standard text input is more appropriate for single-field lookups.' },
+      { guidance: false, description: 'Use PowerSearch for simple keyword searches; a standard text input is more appropriate for single-field lookups.' },
     ],
   },
 };
@@ -267,7 +268,7 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Define clear, descriptive field names and aliases so users can quickly find the filter they need.' },
       { guidance: true, description: 'Provide a result count to give users feedback on how their filters affect the data set.' },
-      { guidance: false, description: 'Use PowerSearch for simple keyword searches — a standard text input is more appropriate for single-field lookups.' },
+      { guidance: false, description: 'Use PowerSearch for simple keyword searches; a standard text input is more appropriate for single-field lookups.' },
     ],
   },
 };
@@ -282,7 +283,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Define clear, descriptive field names and aliases so users can quickly find the filter they need.' },
       { guidance: true, description: 'Provide a result count to give users feedback on how their filters affect the data set.' },
-      { guidance: false, description: 'Use PowerSearch for simple keyword searches — a standard text input is more appropriate for single-field lookups.' },
+      { guidance: false, description: 'Use PowerSearch for simple keyword searches; a standard text input is more appropriate for single-field lookups.' },
     ],
   },
   propDescriptions: {

@@ -4,15 +4,6 @@
 
 import {useCallback, useRef, useState} from 'react';
 
-import {XDSAppShell} from '@xds/core/AppShell';
-import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
-} from '@xds/core/SideNav';
-import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSBadge} from '@xds/core/Badge';
 import {
   XDSLayout,
   XDSLayoutContent,
@@ -51,10 +42,6 @@ import {XDSIcon} from '@xds/core/Icon';
 
 import {XDSDropdownMenu, XDSDropdownMenuItem} from '@xds/core/DropdownMenu';
 import {
-  ChatBubbleOvalLeftIcon,
-  FolderIcon,
-  DocumentTextIcon,
-  CubeIcon,
   Cog6ToothIcon,
   AtSymbolIcon,
   SparklesIcon,
@@ -66,10 +53,6 @@ import {
   PaperClipIcon,
   LightBulbIcon,
 } from '@heroicons/react/24/outline';
-import {
-  ChatBubbleOvalLeftIcon as ChatBubbleOvalLeftIconSolid,
-  FolderIcon as FolderIconSolid,
-} from '@heroicons/react/24/solid';
 
 const TOKEN_MODES: Record<string, string> = {
   sensitive: '/sensitive',
@@ -284,46 +267,6 @@ const SIMULATED_RESPONSE =
   'Thanks for your message! I’m looking into this now.\n\nHere’s what I found so far:\n\n1. **First**, I reviewed the relevant context from the attached files\n2. **Next**, I cross-referenced with the latest documentation\n3. **Finally**, I have a few recommendations\n\nLet me know if you’d like me to dive deeper into any of these areas, or if you have follow-up questions.';
 
 // ============= SIDENAV =============
-
-function AIChatSideNav() {
-  const [active, setActive] = useState('ai-chat');
-  return (
-    <XDSSideNav
-      header={
-        <XDSSideNavHeading
-          icon={<XDSNavIcon icon={<XDSIcon icon={CubeIcon} size="sm" />} />}
-          heading="My App"
-          headingHref="/"
-        />
-      }>
-      <XDSSideNavSection title="Main">
-        <XDSSideNavItem
-          label="AI Chat"
-          icon={ChatBubbleOvalLeftIcon}
-          selectedIcon={ChatBubbleOvalLeftIconSolid}
-          isSelected={active === 'ai-chat'}
-          onClick={() => setActive('ai-chat')}
-        />
-        <XDSSideNavItem
-          label="Projects"
-          icon={FolderIcon}
-          selectedIcon={FolderIconSolid}
-          isSelected={active === 'projects'}
-          onClick={() => setActive('projects')}
-          endContent={<XDSBadge label="3" />}
-        />
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Documents">
-        <XDSSideNavItem
-          label="All Documents"
-          icon={DocumentTextIcon}
-          isSelected={active === 'documents'}
-          onClick={() => setActive('documents')}
-        />
-      </XDSSideNavSection>
-    </XDSSideNav>
-  );
-}
 
 // ============= MAIN COMPONENT =============
 
@@ -608,64 +551,71 @@ export default function AIChatTemplate() {
 
   if (view === 'chat') {
     return (
-      <XDSAppShell sideNav={<AIChatSideNav />} variant="elevated">
-        <XDSChatLayout
-          style={{height: '100%'}}
-          composer={
-            <>
-              {fileInput}
-              {renderComposer({inputMinHeight: '44px'})}
-            </>
-          }>
-          <XDSChatMessageList>
-            {messages.map(msg => {
-              if (msg.role === 'system') {
-                return (
-                  <XDSChatSystemMessage key={msg.id} variant="divider">
-                    {msg.text}
-                  </XDSChatSystemMessage>
-                );
-              }
-              if (msg.role === 'user') {
-                return (
-                  <XDSChatMessage key={msg.id} sender="user">
-                    {msg.attachments && msg.attachments.length > 0 && (
-                      <XDSHStack gap={1} style={{flexWrap: 'wrap'}}>
-                        {msg.attachments.map(f => (
-                          <XDSToken key={f} label={f} />
-                        ))}
-                      </XDSHStack>
-                    )}
-                    <XDSChatMessageBubble
-                      metadata={
+      <XDSLayout
+        height="fill"
+        content={
+          <XDSLayoutContent padding={0}>
+            <XDSChatLayout
+              style={{height: '100%'}}
+              composer={
+                <>
+                  {fileInput}
+                  {renderComposer({inputMinHeight: '44px'})}
+                </>
+              }>
+              <XDSChatMessageList>
+                {messages.map(msg => {
+                  if (msg.role === 'system') {
+                    return (
+                      <XDSChatSystemMessage key={msg.id} variant="divider">
+                        {msg.text}
+                      </XDSChatSystemMessage>
+                    );
+                  }
+                  if (msg.role === 'user') {
+                    return (
+                      <XDSChatMessage key={msg.id} sender="user">
+                        {msg.attachments && msg.attachments.length > 0 && (
+                          <XDSHStack gap={1} style={{flexWrap: 'wrap'}}>
+                            {msg.attachments.map(f => (
+                              <XDSToken key={f} label={f} />
+                            ))}
+                          </XDSHStack>
+                        )}
+                        <XDSChatMessageBubble
+                          metadata={
+                            <XDSChatMessageMetadata
+                              timestamp={
+                                <XDSTimestamp
+                                  value={msg.sentAt.getTime()}
+                                  format="time"
+                                />
+                              }
+                            />
+                          }>
+                          {msg.text}
+                        </XDSChatMessageBubble>
+                      </XDSChatMessage>
+                    );
+                  }
+                  return (
+                    <XDSChatMessage key={msg.id} sender="assistant">
+                      <XDSMarkdown density="compact">{msg.text}</XDSMarkdown>
+                      {!msg.isStreaming && msg.text && (
                         <XDSChatMessageMetadata
                           timestamp={
-                            <XDSTimestamp
-                              value={msg.sentAt.getTime()}
-                              format="time"
-                            />
+                            <XDSTimestamp value={msg.id} format="time" />
                           }
                         />
-                      }>
-                      {msg.text}
-                    </XDSChatMessageBubble>
-                  </XDSChatMessage>
-                );
-              }
-              return (
-                <XDSChatMessage key={msg.id} sender="assistant">
-                  <XDSMarkdown density="compact">{msg.text}</XDSMarkdown>
-                  {!msg.isStreaming && msg.text && (
-                    <XDSChatMessageMetadata
-                      timestamp={<XDSTimestamp value={msg.id} format="time" />}
-                    />
-                  )}
-                </XDSChatMessage>
-              );
-            })}
-          </XDSChatMessageList>
-        </XDSChatLayout>
-      </XDSAppShell>
+                      )}
+                    </XDSChatMessage>
+                  );
+                })}
+              </XDSChatMessageList>
+            </XDSChatLayout>
+          </XDSLayoutContent>
+        }
+      />
     );
   }
 
@@ -674,105 +624,102 @@ export default function AIChatTemplate() {
   // ---------------------------------------------------------------------------
 
   return (
-    <XDSAppShell sideNav={<AIChatSideNav />} variant="elevated">
-      <XDSLayout
-        contentWidth={720}
-        padding={6}
-        content={
-          <XDSLayoutContent>
-            <XDSVStack gap={8} vAlign="center" style={{minHeight: '100%'}}>
-              {/* Greeting */}
-              <XDSVStack gap={1}>
-                <XDSHStack gap={2} vAlign="center">
-                  <XDSIcon icon={SparklesIcon} size="md" color="accent" />
-                  <XDSText type="large" as="h2">
-                    Hi, Andrew
-                  </XDSText>
-                </XDSHStack>
-                <XDSText type="display-2" as="h1">
-                  Where should we start?
+    <XDSLayout
+      height="fill"
+      contentWidth={720}
+      padding={6}
+      content={
+        <XDSLayoutContent>
+          <XDSVStack gap={8} vAlign="center" style={{minHeight: '100%'}}>
+            {/* Greeting */}
+            <XDSVStack gap={1}>
+              <XDSHStack gap={2} vAlign="center">
+                <XDSIcon icon={SparklesIcon} size="md" color="accent" />
+                <XDSText type="large" as="h2">
+                  Hi, Andrew
                 </XDSText>
-              </XDSVStack>
+              </XDSHStack>
+              <XDSText type="display-2" as="h1">
+                Where should we start?
+              </XDSText>
+            </XDSVStack>
 
-              {/* Composer */}
-              {fileInput}
-              {renderComposer({
-                inputMinHeight: '84px',
-                extraFooterActions: (
-                  <XDSDropdownMenu
-                    button={{
-                      label: 'Settings',
-                      variant: 'ghost',
-                      size: 'md',
-                      icon: <XDSIcon icon={Cog6ToothIcon} size="sm" />,
-                      children: 'Settings',
-                    }}
-                    menuWidth={200}
-                    items={[
-                      {label: 'Preferences', onClick: () => {}},
-                      {label: 'Keyboard shortcuts', onClick: () => {}},
-                      {label: 'About', onClick: () => {}},
-                    ]}
+            {/* Composer */}
+            {fileInput}
+            {renderComposer({
+              inputMinHeight: '84px',
+              extraFooterActions: (
+                <XDSDropdownMenu
+                  button={{
+                    label: 'Settings',
+                    variant: 'ghost',
+                    size: 'md',
+                    icon: <XDSIcon icon={Cog6ToothIcon} size="sm" />,
+                    children: 'Settings',
+                  }}
+                  menuWidth={200}
+                  items={[
+                    {label: 'Preferences', onClick: () => {}},
+                    {label: 'Keyboard shortcuts', onClick: () => {}},
+                    {label: 'About', onClick: () => {}},
+                  ]}
+                />
+              ),
+            })}
+
+            {/* Category toggle buttons */}
+            <XDSVStack gap={6} style={{paddingInline: 'var(--spacing-3)'}}>
+              <XDSToggleButtonGroup
+                label="Category"
+                value={category}
+                onChange={setCategory}
+                size="lg">
+                {CATEGORIES.map(cat => (
+                  <XDSToggleButton
+                    key={cat.key}
+                    value={cat.key}
+                    label={cat.label}
+                    icon={<XDSIcon icon={cat.icon} size="sm" />}
                   />
-                ),
-              })}
+                ))}
+              </XDSToggleButtonGroup>
 
-              {/* Category toggle buttons */}
-              <XDSVStack gap={6} style={{paddingInline: 'var(--spacing-3)'}}>
-                <XDSToggleButtonGroup
-                  label="Category"
-                  value={category}
-                  onChange={setCategory}
-                  size="lg">
-                  {CATEGORIES.map(cat => (
-                    <XDSToggleButton
-                      key={cat.key}
-                      value={cat.key}
-                      label={cat.label}
-                      icon={<XDSIcon icon={cat.icon} size="sm" />}
-                    />
-                  ))}
-                </XDSToggleButtonGroup>
-
-                {/* Suggestion cards */}
-                {suggestions && (
-                  <XDSGrid columns={{minWidth: 280}} gap={3}>
-                    {suggestions.map(suggestion => (
-                      <XDSCard
-                        variant="muted"
-                        key={suggestion.heading}
-                        padding={3}
-                        style={{cursor: 'pointer'}}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => {
+              {/* Suggestion cards */}
+              {suggestions && (
+                <XDSGrid columns={{minWidth: 280}} gap={3}>
+                  {suggestions.map(suggestion => (
+                    <XDSCard
+                      variant="muted"
+                      key={suggestion.heading}
+                      padding={3}
+                      style={{cursor: 'pointer'}}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        replaceWithSuggestion(suggestion.prompt);
+                        setMode(category);
+                      }}
+                      onKeyDown={(e: React.KeyboardEvent) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
                           replaceWithSuggestion(suggestion.prompt);
                           setMode(category);
-                        }}
-                        onKeyDown={(e: React.KeyboardEvent) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            replaceWithSuggestion(suggestion.prompt);
-                            setMode(category);
-                          }
-                        }}>
-                        <XDSVStack gap={0.5}>
-                          <XDSHeading level={4}>
-                            {suggestion.heading}
-                          </XDSHeading>
-                          <XDSText type="body" color="secondary" size="xsm">
-                            {suggestion.body}
-                          </XDSText>
-                        </XDSVStack>
-                      </XDSCard>
-                    ))}
-                  </XDSGrid>
-                )}
-              </XDSVStack>
+                        }
+                      }}>
+                      <XDSVStack gap={0.5}>
+                        <XDSHeading level={4}>{suggestion.heading}</XDSHeading>
+                        <XDSText type="body" color="secondary" size="xsm">
+                          {suggestion.body}
+                        </XDSText>
+                      </XDSVStack>
+                    </XDSCard>
+                  ))}
+                </XDSGrid>
+              )}
             </XDSVStack>
-          </XDSLayoutContent>
-        }
-      />
-    </XDSAppShell>
+          </XDSVStack>
+        </XDSLayoutContent>
+      }
+    />
   );
 }

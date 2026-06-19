@@ -102,7 +102,7 @@ const defaultActiveKeys: UserColumnKey[] = [
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Core/Table/ColumnSettings',
+  title: 'Core/TableColumnSettings',
   tags: ['autodocs'],
 };
 

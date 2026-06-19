@@ -22,11 +22,12 @@ import {XDSLayout} from '../Layout/XDSLayout';
 import {XDSLayoutContent} from '../Layout/XDSLayoutContent';
 import {XDSLayoutFooter} from '../Layout/XDSLayoutFooter';
 import {XDSHStack} from '../Stack';
-import {XDSHeading} from '../Text/XDSHeading';
+import {XDSHeading} from '../Heading/XDSHeading';
 import {XDSText} from '../Text/XDSText';
 import {XDSButton, type XDSButtonVariant} from '../Button';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export interface XDSAlertDialogProps extends XDSBaseProps<HTMLDialogElement> {
   ref?: React.Ref<HTMLDialogElement>;
@@ -150,11 +151,8 @@ export function XDSAlertDialog({
       role="alertdialog"
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
-      className={
-        xdsClassName('alert-dialog') + (className ? ` ${className}` : '')
-      }
+      {...mergeProps(xdsThemeProps('alert-dialog'), {className, style})}
       xstyle={xstyle}
-      style={style}
       data-testid={testId}>
       <XDSLayout
         content={

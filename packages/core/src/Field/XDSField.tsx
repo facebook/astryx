@@ -19,13 +19,15 @@
 import {type ReactNode, use} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
 import {XDSFieldLabel} from './XDSFieldLabel';
-import {XDSFieldStatus as XDSFieldStatusComponent} from './XDSFieldStatus';
+import {XDSFieldStatus} from '../FieldStatus/XDSFieldStatus';
 import {spacingVars, borderVars} from '../theme/tokens.stylex';
 import type {XDSIconType} from '../Icon';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {XDSFormLayoutContext} from '../FormLayout/XDSFormLayoutContext';
 import {XDSText} from '../Text';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const styles = stylex.create({
   container: {
@@ -51,9 +53,17 @@ const styles = stylex.create({
   },
 });
 
+// Dynamic style for the consumer-controlled field width. Numbers are treated
+// as pixels by StyleX; strings (e.g. '100%') are used as-is.
+const dynamicStyles = stylex.create({
+  width: (width: SizeValue | null) => ({width}),
+});
+
+export type {SizeValue} from '../utils/types';
+
 export type XDSFieldStatusType = 'warning' | 'error' | 'success';
 
-export interface XDSFieldStatus {
+export interface XDSFieldStatusInput {
   /**
    * The type of status to display.
    */
@@ -119,7 +129,7 @@ export interface XDSFieldProps extends Omit<
    * Status indicator for the field.
    * When set with a message, displays a colored message box below the input.
    */
-  status?: XDSFieldStatus;
+  status?: XDSFieldStatusInput;
   /**
    * Tooltip text to display in an info icon at the end of the label.
    */
@@ -131,6 +141,14 @@ export interface XDSFieldProps extends Omit<
    * @default 'attached'
    */
   statusVariant?: 'attached' | 'detached';
+  /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field — label, control, and status — so
+   * the control and its surrounding chrome stay aligned. Prefer this over
+   * setting `width` via `xstyle`/`className`/`style`, which only size the inner
+   * control box and leave the label and status at their natural width.
+   */
+  width?: SizeValue;
   /**
    * The input or control to render inside the field.
    */
@@ -162,6 +180,7 @@ export function XDSField({
   status,
   labelTooltip,
   statusVariant = 'attached',
+  width,
   xstyle,
   children,
   className,
@@ -199,7 +218,7 @@ export function XDSField({
   );
 
   const statusNode = status?.message ? (
-    <XDSFieldStatusComponent
+    <XDSFieldStatus
       type={status.type}
       message={status.message}
       id={resolvedMessageID}
@@ -217,7 +236,7 @@ export function XDSField({
       <div
         ref={ref}
         {...mergeProps(
-          xdsClassName('field', {layout: 'horizontal-labels'}),
+          xdsThemeProps('field', {layout: 'horizontal-labels'}),
           stylex.props(styles.horizontalLabels, xstyle),
           className,
           style,
@@ -245,10 +264,11 @@ export function XDSField({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('field'),
+        xdsThemeProps('field'),
         stylex.props(
           styles.container,
           !isLabelHidden && styles.containerGap,
+          width != null && dynamicStyles.width(width),
           xstyle,
         ),
         className,

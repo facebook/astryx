@@ -100,7 +100,8 @@ export const defaultWeightByTypeStyles = stylex.create({
 // Baseline Size/Leading by Type (from type-scale tokens)
 //
 // These ensure XDSText renders with correct sizing even without a theme.
-// Theme component overrides (.xds-text.body { ... }) win when present
+// Theme component overrides (.xds-text.body { ... } today, plus data-type
+// reflection on rendered text elements) win when present
 // because they have higher specificity via @scope.
 // =============================================================================
 
@@ -280,6 +281,22 @@ export const decorationStyles = stylex.create({
 export const tabularNumbersStyle = stylex.create({
   enabled: {
     fontVariantNumeric: 'tabular-nums',
+  },
+});
+
+// =============================================================================
+// Justify (Text Alignment) Styles
+// =============================================================================
+
+export const justifyStyles = stylex.create({
+  start: {
+    textAlign: 'start',
+  },
+  center: {
+    textAlign: 'center',
+  },
+  end: {
+    textAlign: 'end',
   },
 });
 

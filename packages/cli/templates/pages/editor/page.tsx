@@ -4,13 +4,22 @@
 
 import {useState, useCallback} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, radiusVars, shadowVars} from '@xds/core/theme/tokens.stylex';
+import {colorVars} from '@xds/core/theme/tokens.stylex';
+import {useMediaQuery} from '@xds/core/hooks';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSCenter} from '@xds/core/Center';
+import {XDSDialog} from '@xds/core/Dialog';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSEmptyState} from '@xds/core/EmptyState';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {
+  XDSHStack,
+  XDSVStack,
+  XDSLayout,
+  XDSLayoutContent,
+  XDSLayoutHeader,
+  XDSLayoutPanel,
+} from '@xds/core/Layout';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSTable} from '@xds/core/Table';
@@ -41,6 +50,8 @@ import {
   DeviceTabletIcon,
   DevicePhoneMobileIcon,
   EyeIcon,
+  AdjustmentsHorizontalIcon,
+  XMarkIcon,
   PlusCircleIcon,
   ShoppingBagIcon,
   ShoppingCartIcon,
@@ -289,88 +300,47 @@ function defaultProps(type: BlockType): Record<string, unknown> {
 }
 
 // ---------------------------------------------------------------------------
-// Styles — floating sidebar requires custom positioning
+// Styles
 // ---------------------------------------------------------------------------
+// The layout (sidebar + scrollable canvas, full height) is all XDSLayout +
+// XDSLayoutPanel now. The few remaining styles are things XDS has no prop for:
+// the responsive canvas max-width, a selection ring on the active block card,
+// and the circular icon chip's surface.
 
 const editorStyles = stylex.create({
-  shell: {
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    backgroundColor: colorVars['--color-background-body'],
+  // Fill the window. XDSLayout height="fill" is height:100%, which only resolves
+  // against a definite height — and the host's <html>/<body> don't set one, so
+  // the layout anchors a definite viewport height itself. No background; the
+  // host owns the page surface.
+  page: {height: '100dvh'},
+  // Pin the panel to a fixed 320px on desktop (so it doesn't resize to its
+  // content when switching tabs) and full width on mobile, where it moves into
+  // the header slot. XDSLayoutPanel width is a single fixed value with no
+  // responsive form, and this xstyle wins over the width prop.
+  panelWidth: {
+    width: {default: 320, '@media (max-width: 768px)': '100%'},
+    flexShrink: 0,
   },
-  bodyRow: {
-    display: 'flex',
-    flex: 1,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  floatingPanel: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
-    bottom: 16,
-    width: 320,
-    zIndex: 10,
-    backgroundColor: colorVars['--color-background-card'],
-    borderRadius: radiusVars['--radius-container'],
-    boxShadow: shadowVars['--shadow-low'],
-    overflow: 'hidden',
-  },
-  floatingPanelCollapsed: {
-    bottom: 'auto',
-    paddingBlockEnd: 16,
-  },
-  panelScroll: {
-    flex: 1,
-    overflowY: 'auto',
-  },
-  previewArea: {
-    flex: 1,
-    overflowY: 'auto',
-    padding: 32,
-    paddingLeft: 368,
-  },
+  // Canvas reflows to the chosen viewport width; XDSVStack has no maxWidth prop.
   canvas: (maxWidth: number) => ({
     maxWidth,
     width: '100%',
     marginInline: 'auto',
-    transition: 'max-width 0.3s ease',
   }),
   clickable: {
     cursor: 'pointer',
   },
+  // Selection ring on the active block — XDSCard has no `isSelected` state.
   selectedCard: {
     outline: '2px solid',
     outlineColor: colorVars['--color-border-blue'],
     outlineOffset: -2,
   },
-  flex1: {
-    flex: 1,
-  },
-  sectionHeadingInline: {
-    paddingInline: 0,
-  },
+  // Circular muted chip behind the CTA icon — XDSCenter handles the centering
+  // and sizing; only the surface (radius + fill) needs custom CSS.
   iconCircle: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 40,
-    height: 40,
     borderRadius: '50%',
     backgroundColor: colorVars['--color-background-muted'],
-    flexShrink: 0,
-  },
-  tabListWrapper: {
-    paddingInline: 4,
-  },
-  panelContentPadding: {
-    paddingInline: 16,
-    paddingBlockEnd: 16,
-  },
-  tabFill: {
-    flex: 1,
-    textAlign: 'center',
   },
 });
 
@@ -591,8 +561,8 @@ function BlockPreview({
       return (
         <XDSCard padding={6} xstyle={cardXstyle} onClick={onSelect}>
           <XDSVStack gap={4}>
-            <XDSHStack gap={3} vAlign="start">
-              <XDSVStack gap={1} xstyle={editorStyles.flex1}>
+            <XDSHStack gap={3} vAlign="start" hAlign="between">
+              <XDSVStack gap={1}>
                 <XDSHeading level={3}>
                   {(props.heading as string) || 'Features'}
                 </XDSHeading>
@@ -641,9 +611,9 @@ function BlockPreview({
       return (
         <XDSCard padding={6} xstyle={cardXstyle} onClick={onSelect}>
           <XDSHStack gap={4} vAlign="start">
-            <div {...stylex.props(editorStyles.iconCircle)}>
+            <XDSCenter width={40} height={40} xstyle={editorStyles.iconCircle}>
               <XDSIcon icon={LockClosedIcon} color="secondary" />
-            </div>
+            </XDSCenter>
             <XDSVStack gap={1}>
               <XDSText type="label" weight="semibold">
                 {(props.heading as string) || 'Notice'}
@@ -671,8 +641,15 @@ export default function EditorPage() {
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('blocks');
   const [pageTitle, setPageTitle] = useState('Page Editor');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
   const [viewport, setViewport] = useState<ViewportSize>('desktop');
+  // Mobile only: the customizations (tabs + Add Block/Layers) open in a
+  // fullscreen dialog over the preview, since there's no room to dock them.
+  const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
+
+  // On phones the editor stacks: the panel sits in the header slot (full width,
+  // above the canvas) showing just its toolbar, so the canvas isn't crushed
+  // beside a 320px sidebar. On desktop the full panel (tabs + lists) shows.
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const selectedBlock = blocks.find(b => b.id === selectedId) ?? null;
 
@@ -726,22 +703,24 @@ export default function EditorPage() {
     setSidebarTab('properties');
   }, []);
 
-  const selectBlock = useCallback((id: string) => {
-    setSelectedId(prev => (prev === id ? null : id));
-    setSidebarTab('properties');
-  }, []);
+  const selectBlock = useCallback(
+    (id: string) => {
+      setSelectedId(prev => (prev === id ? null : id));
+      setSidebarTab('properties');
+      // On mobile, tapping a block on the canvas opens its properties dialog.
+      if (isMobile) {
+        setIsCustomizeOpen(true);
+      }
+    },
+    [isMobile],
+  );
 
   // --- sidebar content ---
 
   const blocksTabContent = (
     <XDSVStack gap={2}>
       <XDSVStack gap={1}>
-        <XDSSection
-          variant="transparent"
-          padding={2}
-          xstyle={editorStyles.sectionHeadingInline}>
-          <XDSHeading level={4}>Add Block</XDSHeading>
-        </XDSSection>
+        <XDSHeading level={4}>Add Block</XDSHeading>
         <XDSList density="balanced" hasDividers={false}>
           {(Object.keys(BLOCK_META) as BlockType[]).map(type => (
             <XDSListItem
@@ -757,12 +736,7 @@ export default function EditorPage() {
       </XDSVStack>
 
       <XDSVStack gap={1}>
-        <XDSSection
-          variant="transparent"
-          padding={2}
-          xstyle={editorStyles.sectionHeadingInline}>
-          <XDSHeading level={4}>Layers</XDSHeading>
-        </XDSSection>
+        <XDSHeading level={4}>Layers</XDSHeading>
         <XDSList density="balanced" hasDividers={false}>
           {blocks.map(block => (
             <XDSListItem
@@ -830,57 +804,69 @@ export default function EditorPage() {
     />
   );
 
-  return (
-    <XDSVStack xstyle={editorStyles.shell}>
-      <XDSHStack xstyle={editorStyles.bodyRow}>
-        {/* Floating Sidebar */}
-        <XDSVStack
-          gap={4}
-          xstyle={[
-            editorStyles.floatingPanel,
-            isPanelCollapsed && editorStyles.floatingPanelCollapsed,
-          ]}>
-          {/* Panel Header */}
-          <XDSSection variant="transparent" padding={4}>
-            <XDSVStack gap={4}>
-              <XDSHStack gap={3} vAlign="center">
-                <XDSVStack gap={0} xstyle={editorStyles.flex1}>
-                  {isEditingTitle ? (
-                    <XDSTextInput
-                      label="Page title"
-                      isLabelHidden
-                      value={pageTitle}
-                      onChange={setPageTitle}
-                      onKeyDown={(e: React.KeyboardEvent) => {
-                        if (e.key === 'Enter') {
-                          setIsEditingTitle(false);
-                        }
-                      }}
-                      hasAutoFocus
-                      onBlur={() => setIsEditingTitle(false)}
-                    />
-                  ) : (
-                    <XDSHeading level={2}>{pageTitle}</XDSHeading>
-                  )}
-                </XDSVStack>
-                <XDSHStack gap={1}>
-                  <XDSButton
-                    label={isPanelCollapsed ? 'Expand panel' : 'Collapse panel'}
-                    icon={
-                      <XDSIcon
-                        icon={
-                          isPanelCollapsed ? ChevronDownIcon : ChevronUpIcon
-                        }
-                        size="sm"
-                      />
-                    }
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsPanelCollapsed(v => !v)}
-                    isIconOnly
-                  />
-                </XDSHStack>
+  // Tabs + the active tab's content. Shown inline in the sidebar on desktop,
+  // and inside a fullscreen dialog on mobile.
+  const editingContent = (
+    <XDSVStack gap={4}>
+      <XDSVStack gap={0}>
+        <XDSTabList
+          layout="fill"
+          value={sidebarTab}
+          onChange={(v: string) => setSidebarTab(v as SidebarTab)}>
+          <XDSTab value="blocks" label="Blocks" />
+          <XDSTab value="properties" label="Properties" />
+        </XDSTabList>
+        <XDSDivider />
+      </XDSVStack>
+      <XDSSection variant="transparent" padding={4}>
+        {sidebarTab === 'blocks' ? blocksTabContent : propertiesTabContent}
+      </XDSSection>
+    </XDSVStack>
+  );
+
+  const sidebar = (
+    <XDSLayoutPanel
+      hasDivider={!isMobile}
+      padding={0}
+      xstyle={editorStyles.panelWidth}>
+      <XDSVStack gap={4}>
+        {/* Panel Header */}
+        <XDSSection variant="transparent" padding={4}>
+          {isMobile ? (
+            // Mobile: the title, an Edit button that opens the customizations
+            // dialog, and the primary action.
+            <XDSHStack gap={3} vAlign="center" hAlign="between">
+              <XDSHeading level={2}>{pageTitle}</XDSHeading>
+              <XDSHStack gap={2} vAlign="center">
+                <XDSButton
+                  label="Edit"
+                  icon={<XDSIcon icon={AdjustmentsHorizontalIcon} size="sm" />}
+                  variant="ghost"
+                  isIconOnly
+                  onClick={() => setIsCustomizeOpen(true)}
+                />
+                <XDSButton label="Publish" variant="primary" />
               </XDSHStack>
+            </XDSHStack>
+          ) : (
+            <XDSVStack gap={4}>
+              {isEditingTitle ? (
+                <XDSTextInput
+                  label="Page title"
+                  isLabelHidden
+                  value={pageTitle}
+                  onChange={setPageTitle}
+                  onKeyDown={(e: React.KeyboardEvent) => {
+                    if (e.key === 'Enter') {
+                      setIsEditingTitle(false);
+                    }
+                  }}
+                  hasAutoFocus
+                  onBlur={() => setIsEditingTitle(false)}
+                />
+              ) : (
+                <XDSHeading level={2}>{pageTitle}</XDSHeading>
+              )}
 
               <XDSToolbar
                 label="Viewport and actions"
@@ -922,66 +908,75 @@ export default function EditorPage() {
                 }
               />
             </XDSVStack>
-          </XDSSection>
-
-          {!isPanelCollapsed && (
-            <>
-              <XDSVStack gap={0} xstyle={editorStyles.tabListWrapper}>
-                <XDSTabList
-                  value={sidebarTab}
-                  onChange={(v: string) => setSidebarTab(v as SidebarTab)}>
-                  <XDSTab
-                    value="blocks"
-                    label="Blocks"
-                    xstyle={editorStyles.tabFill}
-                  />
-                  <XDSTab
-                    value="properties"
-                    label="Properties"
-                    xstyle={editorStyles.tabFill}
-                  />
-                </XDSTabList>
-                <XDSDivider />
-              </XDSVStack>
-              <XDSSection
-                variant="transparent"
-                padding={0}
-                xstyle={[
-                  editorStyles.panelScroll,
-                  editorStyles.panelContentPadding,
-                ]}>
-                {sidebarTab === 'blocks'
-                  ? blocksTabContent
-                  : propertiesTabContent}
-              </XDSSection>
-            </>
           )}
-        </XDSVStack>
+        </XDSSection>
 
-        {/* Preview Canvas */}
-        <XDSVStack xstyle={editorStyles.previewArea}>
-          <XDSVStack
-            gap={4}
-            xstyle={editorStyles.canvas(VIEWPORT_MAX[viewport])}>
-            {blocks.length > 0 ? (
-              blocks.map(block => (
-                <BlockPreview
-                  key={block.id}
-                  block={block}
-                  isSelected={block.id === selectedId}
-                  onSelect={() => selectBlock(block.id)}
+        {!isMobile && editingContent}
+      </XDSVStack>
+    </XDSLayoutPanel>
+  );
+
+  return (
+    <>
+      <XDSLayout
+        xstyle={editorStyles.page}
+        height="fill"
+        header={isMobile ? sidebar : undefined}
+        start={isMobile ? undefined : sidebar}
+        content={
+          <XDSLayoutContent padding={8}>
+            <XDSVStack
+              gap={4}
+              xstyle={editorStyles.canvas(VIEWPORT_MAX[viewport])}>
+              {blocks.length > 0 ? (
+                blocks.map(block => (
+                  <BlockPreview
+                    key={block.id}
+                    block={block}
+                    isSelected={block.id === selectedId}
+                    onSelect={() => selectBlock(block.id)}
+                  />
+                ))
+              ) : (
+                <XDSEmptyState
+                  title="No blocks yet"
+                  description="Add blocks from the sidebar to start building your page"
+                  icon={<XDSIcon icon={PlusCircleIcon} />}
                 />
-              ))
-            ) : (
-              <XDSEmptyState
-                title="No blocks yet"
-                description="Add blocks from the sidebar to start building your page"
-                icon={<XDSIcon icon={PlusCircleIcon} />}
-              />
-            )}
-          </XDSVStack>
-        </XDSVStack>
-      </XDSHStack>
-    </XDSVStack>
+              )}
+            </XDSVStack>
+          </XDSLayoutContent>
+        }
+      />
+
+      {/* Mobile: customizations open in a fullscreen dialog over the preview. */}
+      <XDSDialog
+        isOpen={isMobile && isCustomizeOpen}
+        onOpenChange={setIsCustomizeOpen}
+        variant="fullscreen"
+        purpose="info"
+        padding={0}>
+        <XDSLayout
+          height="fill"
+          header={
+            <XDSLayoutHeader hasDivider>
+              <XDSHStack gap={3} vAlign="center" hAlign="between">
+                <XDSHeading level={3}>Customize</XDSHeading>
+                <XDSButton
+                  label="Close"
+                  icon={<XDSIcon icon={XMarkIcon} size="sm" />}
+                  variant="ghost"
+                  isIconOnly
+                  onClick={() => setIsCustomizeOpen(false)}
+                />
+              </XDSHStack>
+            </XDSLayoutHeader>
+          }
+          content={
+            <XDSLayoutContent padding={0}>{editingContent}</XDSLayoutContent>
+          }
+        />
+      </XDSDialog>
+    </>
   );
 }

@@ -11,6 +11,8 @@
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
+import {renderToString} from 'react-dom/server';
+import {createElement} from 'react';
 import {useMediaQuery} from './useMediaQuery';
 
 // Mock matchMedia
@@ -114,5 +116,50 @@ describe('useMediaQuery', () => {
     rerender({query: '(max-width: 1024px)'});
     expect(result.current).toBe(true);
     expect(matchMediaFn).toHaveBeenCalledWith('(max-width: 1024px)');
+  });
+
+  it('returns serverDefault during SSR (no matchMedia)', () => {
+    // renderToString uses getServerSnapshot — simulate by calling the hook
+    // in an environment where matchMedia doesn't exist. Since JSDOM always
+    // provides matchMedia, we test the contract: the serverDefault param
+    // is accepted and does not break when the client snapshot differs.
+    mockMql = createMockMatchMedia(false);
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+
+    // serverDefault=true but client says false → client wins on hydration
+    const {result} = renderHook(() =>
+      useMediaQuery('(max-width: 768px)', true),
+    );
+    expect(result.current).toBe(false);
+  });
+
+  it('uses serverDefault=false by default', () => {
+    mockMql = createMockMatchMedia(false);
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+
+    // No serverDefault → same as false
+    const {result} = renderHook(() => useMediaQuery('(max-width: 768px)'));
+    expect(result.current).toBe(false);
+  });
+
+  it('SSR: returns serverDefault=true in server render', () => {
+    // renderToString uses getServerSnapshot — this is the actual SSR path
+    function TestComponent() {
+      const isMobile = useMediaQuery('(max-width: 768px)', true);
+      return createElement('div', {'data-mobile': String(isMobile)});
+    }
+
+    const html = renderToString(createElement(TestComponent));
+    expect(html).toContain('data-mobile="true"');
+  });
+
+  it('SSR: returns false when no serverDefault provided', () => {
+    function TestComponent() {
+      const isMobile = useMediaQuery('(max-width: 768px)');
+      return createElement('div', {'data-mobile': String(isMobile)});
+    }
+
+    const html = renderToString(createElement(TestComponent));
+    expect(html).toContain('data-mobile="false"');
   });
 });

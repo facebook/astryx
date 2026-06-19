@@ -26,6 +26,7 @@ import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import {useXDSHoverCard, type HoverCardFocusTrigger} from './useXDSHoverCard';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useXDSLayer';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 
 export type {HoverCardFocusTrigger} from './useXDSHoverCard';
@@ -45,7 +46,10 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSHoverCardProps {
+export interface XDSHoverCardProps extends Pick<
+  XDSBaseProps,
+  'xstyle' | 'className' | 'style'
+> {
   /**
    * The trigger element(s). Children refs are preserved.
    */
@@ -172,6 +176,9 @@ export function XDSHoverCard({
   hasHoverIndication = 'auto',
   isOpen,
   isDefaultOpen,
+  xstyle,
+  className,
+  style,
 }: XDSHoverCardProps): ReactElement {
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const textOnly = isTextOnly(children);
@@ -240,7 +247,10 @@ export function XDSHoverCard({
 
   const renderedHoverCard =
     typeof document !== 'undefined'
-      ? createPortal(hoverCard.renderHoverCard(content), document.body)
+      ? createPortal(
+          hoverCard.renderHoverCard(content, {xstyle, className, style}),
+          document.body,
+        )
       : null;
 
   // For text-only children: use inline span with ref on wrapper

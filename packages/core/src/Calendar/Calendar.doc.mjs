@@ -5,17 +5,18 @@
 export const docs = {
   name: 'Calendar',
   displayName: 'Calendar',
+  category: 'Data Input',
   keywords: ["calendar","datepicker","date picker","rangepicker","date range","monthview","daypicker"],
   usage: {
     description:
       'Calendar lets the user pick a date or date range from a month grid. Use it in booking flows, scheduling UIs, date filters, or anywhere the user needs to see surrounding dates for context.',
     bestPractices: [
-      {guidance: true, description: 'Set min and max dates to limit selection to a valid window — like only future dates for a booking or the current quarter for a report.'},
+      {guidance: true, description: 'Set min and max dates to limit selection to a valid window, like only future dates for a booking or the current quarter for a report.'},
       {guidance: true, description: 'Use range mode when the user needs to pick a start and end date, like a trip or a time-off request.'},
       {guidance: true, description: 'Use dateConstraints to disable specific dates like weekends or holidays, and explain why they are unavailable.'},
       {guidance: true, description: 'Show two months side by side when the user frequently selects dates that span a month boundary.'},
-      {guidance: false, description: 'Use a calendar for dates far in the past or future like a birth date — a text input is faster for open-ended entry.'},
-      {guidance: false, description: 'Disable large blocks of dates without context — the user should understand why dates are unavailable.'},
+      {guidance: false, description: 'Use a calendar for dates far in the past or future like a birth date. A text input is faster for open-ended entry.'},
+      {guidance: false, description: 'Disable large blocks of dates without context. The user should understand why dates are unavailable.'},
     ],
     anatomy: [
       {name: 'Month header', required: true, description: 'The month name and year with navigation arrows to move between months.'},
@@ -123,12 +124,12 @@ export const docsZh = {
     description:
       'Calendar lets the user pick a date or date range from a month grid. Use it in booking flows, scheduling UIs, date filters, or anywhere the user needs to see surrounding dates for context.',
     bestPractices: [
-      {guidance: true, description: 'Set min and max dates to limit selection to a valid window — like only future dates for a booking or the current quarter for a report.'},
+      {guidance: true, description: 'Set min and max dates to limit selection to a valid window, like only future dates for a booking or the current quarter for a report.'},
       {guidance: true, description: 'Use range mode when the user needs to pick a start and end date, like a trip or a time-off request.'},
       {guidance: true, description: 'Use dateConstraints to disable specific dates like weekends or holidays, and explain why they are unavailable.'},
       {guidance: true, description: 'Show two months side by side when the user frequently selects dates that span a month boundary.'},
-      {guidance: false, description: 'Use a calendar for dates far in the past or future like a birth date — a text input is faster for open-ended entry.'},
-      {guidance: false, description: 'Disable large blocks of dates without context — the user should understand why dates are unavailable.'},
+      {guidance: false, description: 'Use a calendar for dates far in the past or future like a birth date. A text input is faster for open-ended entry.'},
+      {guidance: false, description: 'Disable large blocks of dates without context. The user should understand why dates are unavailable.'},
     ],
   },
   props: [
@@ -176,9 +177,11 @@ export const docsDense = {
     description:
       'Calendar lets the user pick a date or date range from a month grid. Use in booking, scheduling, date filters.',
     bestPractices: [
-      {guidance: true, description: 'Set min/max to limit selection. Use range mode for start + end dates.'},
-      {guidance: true, description: 'Use dateConstraints to disable weekends/holidays. Show two months for cross-month selections.'},
-      {guidance: false, description: 'Use for dates far in the past/future — text input is faster.'},
+      {guidance: true, description: 'Set min/max to limit selection to a valid window: only future dates for booking, current quarter for a report.'},
+      {guidance: true, description: 'Use range mode when user picks start + end dates: trip, time-off request.'},
+      {guidance: true, description: 'Use dateConstraints to disable specific dates (weekends/holidays); explain why unavailable.'},
+      {guidance: true, description: 'Show two months side by side when user frequently selects dates spanning a month boundary.'},
+      {guidance: false, description: 'Use for dates far in the past/future; text input is faster.'},
       {guidance: false, description: 'Disable dates without explaining why.'},
     ],
   },

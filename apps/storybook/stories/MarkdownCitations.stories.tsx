@@ -7,7 +7,7 @@ import type {XDSMarkdownSource} from '@xds/core/Markdown';
 import {XDSButton} from '@xds/core/Button';
 
 const meta: Meta<typeof XDSMarkdown> = {
-  title: 'Core/Markdown/Citations',
+  title: 'Core/MarkdownCitations',
   component: XDSMarkdown,
   tags: ['autodocs'],
 };

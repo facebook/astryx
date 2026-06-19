@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file PlaygroundPropsTable.tsx
+ * @input Prop docs, control descriptors, current playground values
+ * @output Props table rows with inline controls that write typed prop values
+ * @position Component detail page — props table and interactive preview knobs.
+ */
+
 'use client';
 
 import {createElement, useState} from 'react';
@@ -13,15 +20,18 @@ import {XDSSelector} from '@xds/core/Selector';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSIconButton} from '@xds/core/IconButton';
-import {MinusIcon, PlusIcon} from '@heroicons/react/24/outline';
+import {Minus, Plus} from 'lucide-react';
 import {useMediaQuery} from '@xds/core/hooks';
-import type {PropControlDescriptor} from './parsePropType';
+import {allSyntaxPresets} from '@xds/core/theme/syntax';
+import {themeObjectsFull} from '../../generated/themeRegistry';
+import {coerceEnumOption, type PropControlDescriptor} from './parsePropType';
 import type {KnobProp} from './InteractivePreview';
 import {resolveElementDescriptor} from './resolveElements';
 import type {
   ElementDescriptor,
   PropDoc,
 } from '../../generated/componentRegistry';
+import {MarkdownText} from '../MarkdownText';
 
 function formatType(type: string, defaultValue?: string): React.ReactNode {
   const parts = type.split(/\s*\|\s*/);
@@ -79,6 +89,136 @@ function resolveSlotElement(
   }
 }
 
+type InputStatusOption = 'error' | 'warning' | 'success';
+
+const STATUS_OPTION_LABELS: Record<InputStatusOption, string> = {
+  error: 'Error',
+  warning: 'Warning',
+  success: 'Success',
+};
+
+function createStatusValue(type: InputStatusOption) {
+  return {
+    type,
+    message: `${STATUS_OPTION_LABELS[type]} status message`,
+  };
+}
+
+function getStatusValue(value: unknown): InputStatusOption | 'None' {
+  if (
+    value != null &&
+    typeof value === 'object' &&
+    'type' in value &&
+    typeof value.type === 'string' &&
+    value.type in STATUS_OPTION_LABELS
+  ) {
+    return value.type as InputStatusOption;
+  }
+
+  return 'None';
+}
+
+function humanizePackageName(pkgName: string): string {
+  return pkgName
+    .replace('@xds/theme-', '')
+    .split('-')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+const themeOptions = Object.entries(themeObjectsFull).map(
+  ([pkgName, theme]) => ({
+    value: pkgName,
+    label: humanizePackageName(pkgName),
+    theme,
+  }),
+);
+
+const syntaxThemeOptions = allSyntaxPresets.map(theme => ({
+  value: theme.name,
+  label: theme.name
+    .split('-')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' '),
+  theme,
+}));
+
+function ThemeControl({
+  value,
+  onChange,
+}: {
+  value: unknown;
+  onChange: (next: unknown) => void;
+}) {
+  if (themeOptions.length === 0) {
+    return null;
+  }
+
+  const selected =
+    themeOptions.find(
+      option =>
+        option.theme === value ||
+        (value != null &&
+          typeof value === 'object' &&
+          'name' in value &&
+          option.theme.name === value.name),
+    )?.value ?? themeOptions[0].value;
+
+  return (
+    <XDSSelector
+      label="Theme"
+      isLabelHidden
+      value={selected}
+      options={themeOptions.map(({value: optionValue, label}) => ({
+        value: optionValue,
+        label,
+      }))}
+      onChange={next => {
+        const match = themeOptions.find(option => option.value === next);
+        if (match) {
+          onChange(match.theme);
+        }
+      }}
+    />
+  );
+}
+
+function SyntaxThemeControl({
+  value,
+  onChange,
+}: {
+  value: unknown;
+  onChange: (next: unknown) => void;
+}) {
+  const selected =
+    syntaxThemeOptions.find(
+      option =>
+        option.theme === value ||
+        (value != null &&
+          typeof value === 'object' &&
+          'name' in value &&
+          option.theme.name === value.name),
+    )?.value ?? syntaxThemeOptions[0].value;
+
+  return (
+    <XDSSelector
+      label="Syntax theme"
+      isLabelHidden
+      value={selected}
+      options={syntaxThemeOptions.map(({value: optionValue, label}) => ({
+        value: optionValue,
+        label,
+      }))}
+      onChange={next => {
+        const match = syntaxThemeOptions.find(option => option.value === next);
+        if (match) {
+          onChange(match.theme);
+        }
+      }}
+    />
+  );
+}
+
 function ElementControl({
   control,
   value,
@@ -111,7 +251,8 @@ function ElementControl({
 
   return (
     <XDSSelector
-      label=""
+      label={prop.name}
+      isLabelHidden
       placeholder="None"
       value={value != null ? selected : 'None'}
       options={['None', ...control.options.map(o => o.label)]}
@@ -186,7 +327,8 @@ function SlotListControl({
       <XDSHStack gap={1}>
         <XDSIconButton
           label="Remove item"
-          icon={<MinusIcon width={16} height={16} />}
+          tooltip="Remove item"
+          icon={<Minus size={16} />}
           variant="ghost"
           size="sm"
           isDisabled={count === 0}
@@ -194,7 +336,8 @@ function SlotListControl({
         />
         <XDSIconButton
           label="Add item"
-          icon={<PlusIcon width={16} height={16} />}
+          tooltip="Add item"
+          icon={<Plus size={16} />}
           variant="ghost"
           size="sm"
           onClick={addItem}
@@ -226,15 +369,56 @@ function InlineControl({
       );
     case 'enum': {
       const isNumeric = control.options.every(o => /^-?\d+(\.\d+)?$/.test(o));
+      const options = control.allowEmpty
+        ? ['None', ...control.options]
+        : control.options;
+      const selected =
+        value == null && control.allowEmpty
+          ? 'None'
+          : String(value ?? control.options[0]);
       return (
         <XDSSelector
-          label=""
-          value={String(value ?? control.options[0])}
-          options={control.options}
-          onChange={next => onChange(isNumeric ? Number(next) : next)}
+          label={prop.name}
+          isLabelHidden
+          value={selected}
+          options={options}
+          onChange={next => {
+            if (control.allowEmpty && (next === 'None' || next === '')) {
+              onChange(undefined);
+              return;
+            }
+            onChange(
+              isNumeric ? Number(next) : coerceEnumOption(control, next),
+            );
+          }}
         />
       );
     }
+    case 'input-status': {
+      const selected = getStatusValue(value);
+      const options = control.allowEmpty
+        ? ['None', ...control.options]
+        : control.options;
+      return (
+        <XDSSelector
+          label={prop.name}
+          isLabelHidden
+          value={selected}
+          options={options}
+          onChange={next =>
+            onChange(
+              next === 'None' || next === ''
+                ? undefined
+                : createStatusValue(next as InputStatusOption),
+            )
+          }
+        />
+      );
+    }
+    case 'theme':
+      return <ThemeControl value={value} onChange={onChange} />;
+    case 'syntax-theme':
+      return <SyntaxThemeControl value={value} onChange={onChange} />;
     case 'string':
       return (
         <XDSTextInput
@@ -298,9 +482,9 @@ function PropRow({
           {formatType(prop.type, prop.default)}
         </XDSText>
         {prop.description != null && prop.description !== '' && (
-          <XDSText type="body" color="secondary">
+          <MarkdownText type="body" color="secondary">
             {prop.description}
-          </XDSText>
+          </MarkdownText>
         )}
         {knob && onChange && (
           <InlineControl
@@ -326,9 +510,9 @@ function PropRow({
           {formatType(prop.type, prop.default)}
         </XDSText>
         {prop.description != null && prop.description !== '' && (
-          <XDSText type="body" color="secondary" style={{marginTop: 6}}>
+          <MarkdownText type="body" color="secondary" style={{marginTop: 6}}>
             {prop.description}
-          </XDSText>
+          </MarkdownText>
         )}
       </div>
       {knob && onChange && (

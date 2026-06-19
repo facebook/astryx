@@ -29,9 +29,11 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
+import {useXDSInteractiveRole} from '../hooks/useXDSInteractiveRole';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Types
@@ -323,6 +325,12 @@ export function XDSToken({
   ref,
 }: XDSTokenProps) {
   const LinkComponent = useXDSLinkComponent();
+  const role = useXDSInteractiveRole({href, onClick, isDisabled});
+
+  // When role is 'button' via context (no explicit onClick), treat as
+  // if onClick was provided — the popover attaches its own handler.
+  const effectiveOnClick = onClick ?? (role === 'button' ? () => {} : null);
+
   const content = (
     <>
       {icon}
@@ -353,15 +361,15 @@ export function XDSToken({
     'aria-description': description,
   };
 
-  if (href != null) {
+  if (role === 'link') {
     return (
       <LinkComponent
         ref={ref as React.Ref<HTMLAnchorElement>}
-        href={href}
+        href={href as string}
         aria-disabled={isDisabled || undefined}
         {...sharedProps}
         {...mergeProps(
-          xdsClassName('token', {color, size}),
+          xdsThemeProps('token', {color, size}),
           stylex.props(
             styles.base,
             sizeStyles[size],
@@ -378,13 +386,13 @@ export function XDSToken({
     );
   }
 
-  if (onClick != null) {
+  if (effectiveOnClick != null) {
     const handleContainerClick = (e: React.MouseEvent) => {
       const target = e.target as HTMLElement;
       if (target.closest('button, a')) {
         return;
       }
-      onClick(e);
+      effectiveOnClick(e);
     };
 
     return (
@@ -393,7 +401,7 @@ export function XDSToken({
         onClick={isDisabled ? undefined : handleContainerClick}
         {...sharedProps}
         {...mergeProps(
-          xdsClassName('token', {color, size}),
+          xdsThemeProps('token', {color, size}),
           stylex.props(
             styles.base,
             sizeStyles[size],
@@ -409,7 +417,7 @@ export function XDSToken({
         {icon}
         <button
           type="button"
-          onClick={onClick}
+          onClick={effectiveOnClick}
           disabled={isDisabled}
           {...stylex.props(styles.invisibleButton)}>
           <span
@@ -443,7 +451,7 @@ export function XDSToken({
       ref={ref}
       {...sharedProps}
       {...mergeProps(
-        xdsClassName('token', {color, size}),
+        xdsThemeProps('token', {color, size}),
         stylex.props(
           styles.base,
           sizeStyles[size],

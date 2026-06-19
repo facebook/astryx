@@ -17,7 +17,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'XDS colors are semantic — tokens describe purpose, not appearance. Every color adapts automatically between light and dark modes via CSS light-dark(). Themes override the resolved values, so your code never references raw hex colors.',
+          text: 'Colors are semantic: tokens describe purpose, not appearance. Every color adapts automatically between light and dark modes via CSS light-dark(). Themes override the resolved values, so your code never references raw hex colors.',
         },
       ],
     },
@@ -77,7 +77,7 @@ const styles = stylex.create({
           type: 'list',
           style: 'dont',
           items: [
-            "Hardcode hex values — they won't adapt to dark mode or custom themes.",
+            "Hardcode hex values, since they won't adapt to dark mode or custom themes.",
             'Mix accent colors with status colors in the same context.',
             'Use --color-on-accent on non-accent backgrounds.',
           ],

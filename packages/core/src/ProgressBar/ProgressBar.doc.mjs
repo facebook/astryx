@@ -5,12 +5,13 @@
 export const docs = {
   name: 'ProgressBar',
   displayName: 'Progress Bar',
+  category: 'Feedback & Status',
   keywords: ["progressbar","progress","loader","loading","linear","determinate","indeterminate","meter"],
   props: [
     {
       name: 'label',
       type: 'string',
-      description: 'Accessible label (required).',
+      description: 'accessible label',
       required: true,
     },
     {
@@ -58,14 +59,14 @@ export const docs = {
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: 'Visually disabled state — grays out the fill and text. Use for canceled or inactive operations.',
+      description: 'Visually disabled state: grays out the fill and text. Use for canceled or inactive operations.',
       default: 'false',
     },
     {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
   ],
   theming: {
@@ -79,11 +80,11 @@ export const docs = {
       'A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can\'t be calculated. Supports semantic color variants, value labels, and custom formatting.',
     bestPractices: [
       { guidance: true, description: "Use a determinate bar when the total amount of work is known, and indeterminate when it's not." },
-      { guidance: true, description: 'Choose a color variant that matches the context — accent for general progress, success for completion, warning or error for alerts.' },
-      { guidance: true, description: "Always provide a label, even if hidden — screen readers need it to announce what's loading." },
-      { guidance: false, description: 'Place icons or labels inside the bar — compose them alongside it using layout components.' },
-      { guidance: false, description: "Use a progress bar for instant actions — it's meant for operations that take noticeable time." },
-      { guidance: false, description: 'Use multiple progress bars stacked together for the same operation — use one bar with a value label instead.' },
+      { guidance: true, description: 'Choose a color variant that matches the context: accent for general progress, success for completion, warning or error for alerts.' },
+      { guidance: true, description: "Always provide a label, even if hidden; screen readers need it to announce what's loading." },
+      { guidance: false, description: 'Place icons or labels inside the bar; compose them alongside it using layout components.' },
+      { guidance: false, description: "Use a progress bar for instant actions; it's meant for operations that take noticeable time." },
+      { guidance: false, description: 'Use multiple progress bars stacked together for the same operation; use one bar with a value label instead.' },
     ],
   },
 };
@@ -165,11 +166,11 @@ export const docsZh = {
       'A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can\'t be calculated. Supports semantic color variants, value labels, and custom formatting.',
     bestPractices: [
       { guidance: true, description: "Use a determinate bar when the total amount of work is known, and indeterminate when it's not." },
-      { guidance: true, description: 'Choose a color variant that matches the context — accent for general progress, success for completion, warning or error for alerts.' },
-      { guidance: true, description: "Always provide a label, even if hidden — screen readers need it to announce what's loading." },
-      { guidance: false, description: 'Place icons or labels inside the bar — compose them alongside it using layout components.' },
-      { guidance: false, description: "Use a progress bar for instant actions — it's meant for operations that take noticeable time." },
-      { guidance: false, description: 'Use multiple progress bars stacked together for the same operation — use one bar with a value label instead.' },
+      { guidance: true, description: 'Choose a color variant that matches the context: accent for general progress, success for completion, warning or error for alerts.' },
+      { guidance: true, description: "Always provide a label, even if hidden; screen readers need it to announce what's loading." },
+      { guidance: false, description: 'Place icons or labels inside the bar; compose them alongside it using layout components.' },
+      { guidance: false, description: "Use a progress bar for instant actions; it's meant for operations that take noticeable time." },
+      { guidance: false, description: 'Use multiple progress bars stacked together for the same operation; use one bar with a value label instead.' },
     ],
   },
 };
@@ -183,15 +184,15 @@ export const docsDense = {
       'A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can\'t be calculated. Supports semantic color variants, value labels, and custom formatting.',
     bestPractices: [
       { guidance: true, description: "Use a determinate bar when the total amount of work is known, and indeterminate when it's not." },
-      { guidance: true, description: 'Choose a color variant that matches the context — accent for general progress, success for completion, warning or error for alerts.' },
-      { guidance: true, description: "Always provide a label, even if hidden — screen readers need it to announce what's loading." },
-      { guidance: false, description: 'Place icons or labels inside the bar — compose them alongside it using layout components.' },
-      { guidance: false, description: "Use a progress bar for instant actions — it's meant for operations that take noticeable time." },
-      { guidance: false, description: 'Use multiple progress bars stacked together for the same operation — use one bar with a value label instead.' },
+      { guidance: true, description: 'Choose a color variant that matches the context: accent for general progress, success for completion, warning or error for alerts.' },
+      { guidance: true, description: "Always provide a label, even if hidden; screen readers need it to announce what's loading." },
+      { guidance: false, description: 'Place icons or labels inside the bar; compose them alongside it using layout components.' },
+      { guidance: false, description: "Use a progress bar for instant actions; it's meant for operations that take noticeable time." },
+      { guidance: false, description: 'Use multiple progress bars stacked together for the same operation; use one bar with a value label instead.' },
     ],
   },
   propDescriptions: {
-    label: 'Accessible label (required).',
+    label: 'accessible label',
     value: 'Current value (ignored when indeterminate).',
     max: 'Maximum value.',
     isLabelHidden: 'Visually hide label (remains accessible).',
@@ -199,7 +200,7 @@ export const docsDense = {
     formatValueLabel: 'Custom value label formatter; defaults to percentage string.',
     variant: 'Semantic color variant.',
     isIndeterminate: 'Animated loading indicator for unknown progress.',
-    isDisabled: 'Visually disabled — grays out fill and text.',
+    isDisabled: 'Visually disabled: grays out fill and text.',
     xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
   },
 };

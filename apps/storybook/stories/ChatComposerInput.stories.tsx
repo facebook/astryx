@@ -13,7 +13,7 @@ import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 import {useState} from 'react';
 
 const meta: Meta = {
-  title: 'Core/Chat/ComposerInput',
+  title: 'Core/ChatComposerInput',
   component: XDSChatComposerInput,
   tags: ['autodocs'],
   parameters: {
@@ -45,11 +45,31 @@ const USERS: XDSSearchableItem<{role: string}>[] = [
 ];
 
 const COMMANDS: XDSSearchableItem<{description: string}>[] = [
-  {id: 'summarize', label: 'summarize', auxiliaryData: {description: 'Summarize the conversation'}},
-  {id: 'translate', label: 'translate', auxiliaryData: {description: 'Translate text to another language'}},
-  {id: 'search', label: 'search', auxiliaryData: {description: 'Search the web or documents'}},
-  {id: 'code', label: 'code', auxiliaryData: {description: 'Generate or explain code'}},
-  {id: 'help', label: 'help', auxiliaryData: {description: 'Show available commands'}},
+  {
+    id: 'summarize',
+    label: 'summarize',
+    auxiliaryData: {description: 'Summarize the conversation'},
+  },
+  {
+    id: 'translate',
+    label: 'translate',
+    auxiliaryData: {description: 'Translate text to another language'},
+  },
+  {
+    id: 'search',
+    label: 'search',
+    auxiliaryData: {description: 'Search the web or documents'},
+  },
+  {
+    id: 'code',
+    label: 'code',
+    auxiliaryData: {description: 'Generate or explain code'},
+  },
+  {
+    id: 'help',
+    label: 'help',
+    auxiliaryData: {description: 'Show available commands'},
+  },
 ];
 
 const userSource = createStaticSource(USERS);
@@ -151,9 +171,7 @@ export const MessageHistory: Story = {
         <XDSChatComposer
           onSubmit={v => setLog(prev => [...prev, v])}
           input={
-            <XDSChatComposerInput
-              placeholder="Submit messages, then ArrowUp to recall..."
-            />
+            <XDSChatComposerInput placeholder="Submit messages, then ArrowUp to recall..." />
           }
         />
         {log.length > 0 && (
@@ -258,7 +276,9 @@ export const SlashCommands: Story = {
       renderItem: item => (
         <XDSTypeaheadItem
           item={item}
-          description={(item.auxiliaryData as {description: string})?.description}
+          description={
+            (item.auxiliaryData as {description: string})?.description
+          }
         />
       ),
       onSelect: item => ({
@@ -461,7 +481,6 @@ export const TokenVariants: Story = {
   },
 };
 
-
 /** Custom render — full control via render() for rich token content */
 export const CustomRender: Story = {
   render: () => {
@@ -537,12 +556,36 @@ export const CustomRender: Story = {
 export const GroupedItems: Story = {
   render: () => {
     const groupedUsers = createStaticSource([
-      {id: 'cindy', label: 'Cindy Zhang', auxiliaryData: {group: 'Design', role: 'Design Systems'}},
-      {id: 'taylor', label: 'Taylor Kim', auxiliaryData: {group: 'Design', role: 'Product Design'}},
-      {id: 'alex', label: 'Alex Johnson', auxiliaryData: {group: 'Engineering', role: 'Frontend'}},
-      {id: 'sam', label: 'Sam Rivera', auxiliaryData: {group: 'Engineering', role: 'Backend'}},
-      {id: 'morgan', label: 'Morgan Chen', auxiliaryData: {group: 'Engineering', role: 'Infrastructure'}},
-      {id: 'jordan', label: 'Jordan Lee', auxiliaryData: {group: 'Product', role: 'Product Manager'}},
+      {
+        id: 'cindy',
+        label: 'Cindy Zhang',
+        auxiliaryData: {group: 'Design', role: 'Design Systems'},
+      },
+      {
+        id: 'taylor',
+        label: 'Taylor Kim',
+        auxiliaryData: {group: 'Design', role: 'Product Design'},
+      },
+      {
+        id: 'alex',
+        label: 'Alex Johnson',
+        auxiliaryData: {group: 'Engineering', role: 'Frontend'},
+      },
+      {
+        id: 'sam',
+        label: 'Sam Rivera',
+        auxiliaryData: {group: 'Engineering', role: 'Backend'},
+      },
+      {
+        id: 'morgan',
+        label: 'Morgan Chen',
+        auxiliaryData: {group: 'Engineering', role: 'Infrastructure'},
+      },
+      {
+        id: 'jordan',
+        label: 'Jordan Lee',
+        auxiliaryData: {group: 'Product', role: 'Product Manager'},
+      },
     ] as XDSSearchableItem[]);
 
     const mentionTrigger: XDSChatComposerTrigger = {

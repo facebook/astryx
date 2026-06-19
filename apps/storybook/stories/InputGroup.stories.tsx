@@ -9,7 +9,7 @@ import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSIcon} from '@xds/core/Icon';
 
 const meta: Meta<typeof XDSInputGroup> = {
-  title: 'Core/Inputs/InputGroup',
+  title: 'Core/InputGroup',
   component: XDSInputGroup,
   tags: ['autodocs'],
   argTypes: {

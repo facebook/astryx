@@ -4,6 +4,8 @@
 
 import {XDSText} from '@xds/core/Text';
 import {XDSTable} from '@xds/core/Table';
+import {XDSCard} from '@xds/core/Card';
+import {renderInlineCode} from './renderInlineCode';
 
 export function TableBlock({
   headers,
@@ -24,17 +26,19 @@ export function TableBlock({
     key: h,
     header: h,
     renderCell: (item: Record<string, unknown>) => (
-      <XDSText>{item[h] as string}</XDSText>
+      <XDSText>{renderInlineCode(item[h] as string)}</XDSText>
     ),
   }));
 
   return (
-    <XDSTable
-      data={data}
-      columns={columns}
-      density="spacious"
-      dividers="rows"
-      hasHover
-    />
+    <XDSCard>
+      <XDSTable
+        data={data}
+        columns={columns}
+        density="spacious"
+        dividers="rows"
+        hasHover
+      />
+    </XDSCard>
   );
 }

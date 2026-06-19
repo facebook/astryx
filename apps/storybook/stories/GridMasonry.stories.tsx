@@ -14,7 +14,7 @@ import {
 } from '@xds/core/theme/tokens.stylex';
 
 const meta: Meta = {
-  title: 'Core/Grid/Masonry Gallery',
+  title: 'Core/GridMasonry',
   tags: ['autodocs'],
 };
 

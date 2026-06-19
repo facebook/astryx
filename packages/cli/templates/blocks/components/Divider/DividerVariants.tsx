@@ -10,8 +10,8 @@ import {XDSText} from '@xds/core/Text';
 
 export default function DividerVariants() {
   return (
-    <XDSSection width="100%">
-      <XDSCard>
+    <XDSSection variant="transparent" width="100%">
+      <XDSCard width={400}>
         <XDSVStack gap={3}>
           <XDSVStack gap={1}>
             <XDSText type="label">Sign in with email</XDSText>

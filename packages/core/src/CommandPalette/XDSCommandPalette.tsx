@@ -51,6 +51,7 @@ export interface XDSCommandPaletteProps<
 
   /**
    * Renders command palette content inline without modal behavior.
+   * Suppresses input auto-focus and initial highlighted-item auto-scroll.
    * For documentation previews and showcases only.
    * @default false
    */
@@ -466,7 +467,6 @@ export function XDSCommandPalette<
       onClose: handleClose,
       isOpen,
       isBusy,
-      isInline: isInline ?? false,
     }),
     [
       optimisticSearch,
@@ -485,7 +485,6 @@ export function XDSCommandPalette<
       handleClose,
       isOpen,
       isBusy,
-      isInline,
     ],
   );
 

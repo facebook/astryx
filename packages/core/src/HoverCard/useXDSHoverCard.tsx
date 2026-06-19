@@ -34,7 +34,8 @@ import {
   radiusVars,
   spacingVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const styles = stylex.create({
   // Base container styles passed to useXDSLayer
@@ -458,7 +459,7 @@ export function useXDSHoverCard(
       return layer.render(
         <div
           {...mergeProps(
-            xdsClassName('hovercard'),
+            xdsThemeProps('hovercard'),
             stylex.props(styles.content),
           )}
           onMouseEnter={() => {

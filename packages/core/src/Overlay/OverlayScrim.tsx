@@ -21,8 +21,9 @@ import {
   spacingVars,
 } from '../theme/tokens.stylex';
 import {XDSMediaTheme} from '../theme/XDSMediaTheme';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {overlayScope} from './overlay.markers.stylex';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Types (re-exported from index.ts for consumers)
@@ -195,6 +196,57 @@ const positionMap = {
 } as const;
 
 // =============================================================================
+// Visibility style helpers — extract branching logic from render
+// =============================================================================
+
+/**
+ * Returns visibility/animation styles for JS-controlled overlays (isOpen defined).
+ * Uses position to determine slide direction for strips.
+ */
+function getControlledVisibility(isOpen: boolean, position: OverlayPosition) {
+  if (isOpen) {
+    return {
+      base: styles.visible,
+      bottom: position === 'bottom' && styles.visibleFromBottom,
+      top: position === 'top' && styles.visibleFromTop,
+    };
+  }
+  return {
+    base: styles.hidden,
+    bottom: position === 'bottom' && styles.hiddenBottom,
+    top: position === 'top' && styles.hiddenTop,
+  };
+}
+
+/**
+ * Returns visibility/animation styles for CSS-driven overlays (showOn mode).
+ * Each mode has a base reveal style + optional position-based slide.
+ */
+function getShowOnVisibility(showOn: OverlayShowOn, position: OverlayPosition) {
+  switch (showOn) {
+    case 'always':
+      return {
+        base: styles.visible,
+        bottom: position === 'bottom' && styles.visibleFromBottom,
+        top: position === 'top' && styles.visibleFromTop,
+      };
+    case 'hover':
+    case 'hover-or-focus':
+      return {
+        base: styles.hoverReveal,
+        bottom: position === 'bottom' && styles.hoverRevealBottom,
+        top: position === 'top' && styles.hoverRevealTop,
+      };
+    case 'focus':
+      return {
+        base: styles.focusReveal,
+        bottom: position === 'bottom' && styles.focusRevealBottom,
+        top: position === 'top' && styles.focusRevealTop,
+      };
+  }
+}
+
+// =============================================================================
 // Component (internal)
 // =============================================================================
 
@@ -206,7 +258,6 @@ export function OverlayScrim({
   isOpen,
   children,
 }: OverlayScrimProps) {
-  const isHoverMode = showOn === 'hover' || showOn === 'hover-or-focus';
   const isControlled = isOpen !== undefined;
 
   const themeMode =
@@ -218,63 +269,23 @@ export function OverlayScrim({
     children
   );
 
+  const visibility = isControlled
+    ? getControlledVisibility(isOpen, position)
+    : getShowOnVisibility(showOn, position);
+
   return (
     <div
       {...mergeProps(
-        xdsClassName('overlay-scrim', {position}),
+        xdsThemeProps('overlay-scrim', {position}),
         stylex.props(
           styles.base,
           positionMap[position],
           alignMap[align],
           scrim === 'dark' && styles.scrimDark,
           scrim === 'light' && styles.scrimLight,
-
-          // JS-controlled visibility
-          isControlled && isOpen && styles.visible,
-          isControlled &&
-            isOpen &&
-            position === 'bottom' &&
-            styles.visibleFromBottom,
-          isControlled && isOpen && position === 'top' && styles.visibleFromTop,
-          isControlled && !isOpen && styles.hidden,
-          isControlled &&
-            !isOpen &&
-            position === 'bottom' &&
-            styles.hiddenBottom,
-          isControlled && !isOpen && position === 'top' && styles.hiddenTop,
-
-          // showOn="always"
-          !isControlled && showOn === 'always' && styles.visible,
-          !isControlled &&
-            showOn === 'always' &&
-            position === 'bottom' &&
-            styles.visibleFromBottom,
-          !isControlled &&
-            showOn === 'always' &&
-            position === 'top' &&
-            styles.visibleFromTop,
-
-          // showOn="hover" / "hover-or-focus"
-          !isControlled && isHoverMode && styles.hoverReveal,
-          !isControlled &&
-            isHoverMode &&
-            position === 'bottom' &&
-            styles.hoverRevealBottom,
-          !isControlled &&
-            isHoverMode &&
-            position === 'top' &&
-            styles.hoverRevealTop,
-
-          // showOn="focus"
-          !isControlled && showOn === 'focus' && styles.focusReveal,
-          !isControlled &&
-            showOn === 'focus' &&
-            position === 'bottom' &&
-            styles.focusRevealBottom,
-          !isControlled &&
-            showOn === 'focus' &&
-            position === 'top' &&
-            styles.focusRevealTop,
+          visibility.base,
+          visibility.bottom,
+          visibility.top,
         ),
       )}
       inert={isControlled && !isOpen ? true : undefined}>

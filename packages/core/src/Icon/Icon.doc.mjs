@@ -5,12 +5,13 @@
 export const docs = {
   name: 'Icon',
   displayName: 'Icon',
+  category: 'Content',
   keywords: ["icon","svg","glyph","symbol","pictogram","graphic","vector"],
   props: [
     {
       name: 'icon',
       type: 'XDSIconName | ComponentType<SVGProps>',
-      description: 'Semantic icon name or SVG component. Run `npx xds docs icons` for valid names.',
+      description: 'Semantic icon name or SVG component. Run `npx xds docs icons` for valid names. Note: this prop is called `icon`, not `name`.',
       required: true,
     },
     {
@@ -34,14 +35,15 @@ export const docs = {
   usage: {
     description: 'Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text. Supports both direct SVG components and semantic icon names that adapt to the active theme.',
     bestPractices: [
-      { guidance: true, description: 'Use semantic icon names when available — they adapt to theme changes automatically.' },
-      { guidance: true, description: 'Pair icons with text labels for accessibility — icon-only elements need an accessible label.' },
+      { guidance: true, description: 'Use semantic icon names when available; they adapt to theme changes automatically.' },
+      { guidance: true, description: 'Pair icons with text labels for accessibility; icon-only elements need an accessible label.' },
       { guidance: true, description: 'Use color tokens for icon colors, not hardcoded hex values.' },
-      { guidance: true, description: 'Be mindful of context — decorative icons in compact components can distract rather than help.' },
-      { guidance: false, description: 'Use icons as the sole means of conveying meaning — always provide a text alternative.' },
-      { guidance: false, description: 'Resize icons with arbitrary pixel values — use the provided size props.' },
+      { guidance: true, description: 'Be mindful of context; decorative icons in compact components can distract rather than help.' },
+      { guidance: false, description: 'Use icons as the sole means of conveying meaning; always provide a text alternative.' },
+      { guidance: false, description: 'Resize icons with arbitrary pixel values; use the provided size props.' },
       { guidance: false, description: 'Mix icon styles (e.g. outline and filled) within the same context.' },
-      { guidance: false, description: 'Render raw SVG elements — always wrap in Icon for consistent sizing and color.' },
+      { guidance: false, description: 'Render raw SVG elements; always wrap in Icon for consistent sizing and color.' },
+      { guidance: false, description: 'Pass a `name` prop \u2014 XDSIcon uses `icon` (not `name`) to specify which icon to render.' },
     ],
   },
 };
@@ -78,14 +80,15 @@ export const docsZh = {
   usage: {
     description: 'Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text. Supports both direct SVG components and semantic icon names that adapt to the active theme.',
     bestPractices: [
-      { guidance: true, description: 'Use semantic icon names when available — they adapt to theme changes automatically.' },
-      { guidance: true, description: 'Pair icons with text labels for accessibility — icon-only elements need an accessible label.' },
+      { guidance: true, description: 'Use semantic icon names when available; they adapt to theme changes automatically.' },
+      { guidance: true, description: 'Pair icons with text labels for accessibility; icon-only elements need an accessible label.' },
       { guidance: true, description: 'Use color tokens for icon colors, not hardcoded hex values.' },
-      { guidance: true, description: 'Be mindful of context — decorative icons in compact components can distract rather than help.' },
-      { guidance: false, description: 'Use icons as the sole means of conveying meaning — always provide a text alternative.' },
-      { guidance: false, description: 'Resize icons with arbitrary pixel values — use the provided size props.' },
+      { guidance: true, description: 'Be mindful of context; decorative icons in compact components can distract rather than help.' },
+      { guidance: false, description: 'Use icons as the sole means of conveying meaning; always provide a text alternative.' },
+      { guidance: false, description: 'Resize icons with arbitrary pixel values; use the provided size props.' },
       { guidance: false, description: 'Mix icon styles (e.g. outline and filled) within the same context.' },
-      { guidance: false, description: 'Render raw SVG elements — always wrap in Icon for consistent sizing and color.' },
+      { guidance: false, description: 'Render raw SVG elements; always wrap in Icon for consistent sizing and color.' },
+      { guidance: false, description: 'Pass a `name` prop \u2014 XDSIcon uses `icon` (not `name`) to specify which icon to render.' },
     ],
   },
 };
@@ -97,14 +100,15 @@ export const docsDense = {
   usage: {
     description: 'Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text. Supports both direct SVG components and semantic icon names that adapt to the active theme.',
     bestPractices: [
-      { guidance: true, description: 'Use semantic icon names when available — they adapt to theme changes automatically.' },
-      { guidance: true, description: 'Pair icons with text labels for accessibility — icon-only elements need an accessible label.' },
+      { guidance: true, description: 'Use semantic icon names when available; they adapt to theme changes automatically.' },
+      { guidance: true, description: 'Pair icons with text labels for accessibility; icon-only elements need an accessible label.' },
       { guidance: true, description: 'Use color tokens for icon colors, not hardcoded hex values.' },
-      { guidance: true, description: 'Be mindful of context — decorative icons in compact components can distract rather than help.' },
-      { guidance: false, description: 'Use icons as the sole means of conveying meaning — always provide a text alternative.' },
-      { guidance: false, description: 'Resize icons with arbitrary pixel values — use the provided size props.' },
+      { guidance: true, description: 'Be mindful of context; decorative icons in compact components can distract rather than help.' },
+      { guidance: false, description: 'Use icons as the sole means of conveying meaning; always provide a text alternative.' },
+      { guidance: false, description: 'Resize icons with arbitrary pixel values; use the provided size props.' },
       { guidance: false, description: 'Mix icon styles (e.g. outline and filled) within the same context.' },
-      { guidance: false, description: 'Render raw SVG elements — always wrap in Icon for consistent sizing and color.' },
+      { guidance: false, description: 'Render raw SVG elements; always wrap in Icon for consistent sizing and color.' },
+      { guidance: false, description: '`name` prop \u2014 does not exist. Use `icon` to specify which icon to render.' },
     ],
   },
   propDescriptions: {

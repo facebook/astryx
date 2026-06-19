@@ -4,12 +4,20 @@
 export const doc = {
   type: 'block',
   exampleFor: 'MediaTheme',
-  name: 'MediaTheme — Inverted Surfaces',
-  displayName: 'MediaTheme — Inverted Surfaces',
+  name: 'MediaTheme — Media Overlay',
+  displayName: 'MediaTheme — Media Overlay',
   description:
-    'Content rendered over inverted surfaces — dark backgrounds (media, overlays, toasts) and light scrims. XDSMediaTheme provides the correct token overrides so text and controls remain legible.',
+    'A compact media overlay showing XDSMediaTheme adapting text, icons, badges, and button variants over an image-backed dark surface.',
   isReady: true,
   isShowcase: true,
-  aspectRatio: 16 / 9,
-  componentsUsed: ['MediaTheme', 'Section', 'Layout', 'Text', 'Button'],
+  aspectRatio: 4 / 3,
+  componentsUsed: [
+    'MediaTheme',
+    'Section',
+    'Layout',
+    'Text',
+    'Button',
+    'Badge',
+    'Icon',
+  ],
 };

@@ -4,7 +4,9 @@
 export const doc = {
   name: 'Classic Gallery',
   displayName: 'Classic Gallery',
-  description: 'Clean 2×2 image grid with uniform sizing',
+  description:
+    'Responsive image gallery with a centered intro header and category filter tabs.',
   type: 'page',
   isReady: true,
+  category: 'Gallery - Basic',
 };

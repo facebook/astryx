@@ -93,7 +93,7 @@ const fieldDefs = [
 ] as const;
 
 const meta: Meta = {
-  title: 'Core/Table/Filtering',
+  title: 'Core/TableFiltering',
   tags: ['autodocs'],
 };
 
@@ -536,7 +536,7 @@ export const EmptyState: Story = {
     return (
       <div style={{maxWidth: 800}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
-          Try filtering to get zero results — empty state appears.
+          Try filtering to get zero results; empty state appears.
         </p>
         <XDSTable
           data={data}

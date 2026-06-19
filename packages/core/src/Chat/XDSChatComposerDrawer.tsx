@@ -27,8 +27,9 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSBadge} from '../Badge';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export interface XDSChatComposerDrawerProps extends XDSBaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
@@ -86,20 +87,22 @@ const styles = stylex.create({
     overflow: 'hidden',
     paddingInline: spacingVars['--spacing-4'],
     paddingBlockStart: spacingVars['--spacing-3'],
-    paddingBlockEnd: `calc(${spacingVars['--spacing-3']} + ${radiusVars['--radius-page']})`,
-    marginBlockEnd: `calc(-1 * ${radiusVars['--radius-page']})`,
+    // The drawer tucks behind the composer (negative marginBlockEnd) and its
+    // top corners align with the composer's outer radius. Tracks the chat
+    // radius to stay matched to the composer, decoupled from --radius-page. #2072
+    paddingBlockEnd: `calc(${spacingVars['--spacing-3']} + ${radiusVars['--radius-chat']})`,
+    marginBlockEnd: `calc(-1 * ${radiusVars['--radius-chat']})`,
+    // Surface base with a muted tint layered on top, both in the element's
+    // own background layer. The muted backgroundImage composites over the
+    // surface backgroundColor and — by CSS rule — paints behind all in-flow
+    // content (tokens, labels, collapse handle) automatically. This restores
+    // the original "surface bg + muted tint" intent (#1182) without a
+    // positioned ::before, so it needs no z-index and works whether muted is
+    // opaque or translucent.
     backgroundColor: colorVars['--color-background-surface'],
-    '::before': {
-      content: '""',
-      position: 'absolute',
-      inset: 0,
-      borderTopLeftRadius: 'inherit',
-      borderTopRightRadius: 'inherit',
-      backgroundColor: colorVars['--color-background-muted'],
-      pointerEvents: 'none',
-    },
-    borderTopLeftRadius: radiusVars['--radius-page'],
-    borderTopRightRadius: radiusVars['--radius-page'],
+    backgroundImage: `linear-gradient(${colorVars['--color-background-muted']}, ${colorVars['--color-background-muted']})`,
+    borderTopLeftRadius: radiusVars['--radius-chat'],
+    borderTopRightRadius: radiusVars['--radius-chat'],
   },
 
   // Toggle row — both the bar handle and badge+label live in the
@@ -247,7 +250,7 @@ export function XDSChatComposerDrawer({
       ref={ref}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('chat-composer-drawer', {
+        xdsThemeProps('chat-composer-drawer', {
           collapsed: isCollapsed ? 'collapsed' : null,
         }),
         stylex.props(styles.root, xstyle),

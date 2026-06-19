@@ -6,134 +6,306 @@
 
 'use client';
 
-import {useMemo} from 'react';
+import {useCallback, useMemo, useState} from 'react';
+import type {CSSProperties} from 'react';
+import {useSearchParams, useRouter, usePathname} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
-import {XDSText} from '@xds/core/Text';
+import {useXDSAppShellMobile} from '@xds/core/AppShell';
+import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
+import {XDSClickableCard} from '@xds/core/ClickableCard';
 import {XDSGrid} from '@xds/core/Grid';
-import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
 import {XDSOverlay} from '@xds/core/Overlay';
-import {XDSBadge} from '@xds/core/Badge';
+import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
 import {templates} from '../../../generated/templateRegistry';
 import {TemplateThumbnail} from '../../../components/TemplateThumbnail';
 import {buildPlaygroundHref} from '../../../components/playgroundLink';
+import {TemplatePreviewDialog} from '../../../components/TemplatePreviewDialog';
+import type {TemplatePreviewItem} from '../../../components/TemplatePreviewDialog';
+import {trackOpenPlayground, trackView} from '../../../lib/analytics';
+
+const CARD_STYLE: CSSProperties & {'--color-overlay': string} = {
+  '--color-overlay':
+    'color-mix(in srgb, var(--color-on-light) 78%, transparent)',
+};
+
+const OVERLAY_CLICK_LAYER_STYLE: CSSProperties = {
+  height: '100%',
+  width: '100%',
+  cursor: 'pointer',
+};
 
 const styles = stylex.create({
-  heroTitle: {
-    textAlign: 'center' as const,
-  },
-  cardImage: {
-    display: 'block',
-    width: '100%',
-    aspectRatio: '16/10',
-    backgroundColor: 'var(--color-background-muted)',
-    borderRadius: 'var(--radius-container)',
-  },
-  comingSoon: {
-    height: '100%',
-    display: 'flex',
-    alignItems: 'center',
+  categoryFilter: {
+    flexWrap: 'wrap',
     justifyContent: 'center',
   },
-  overlayInner: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    justifyContent: 'flex-end',
-    alignItems: 'flex-start',
-    height: '100%',
+  galleryGrid: {
     width: '100%',
-    padding: 8,
   },
 });
 
+/** Display order for the top-level category groups. Groups not listed here
+ *  are appended alphabetically; untagged templates fall under 'Other'. */
+const GROUP_ORDER = [
+  'Dashboard',
+  'Table',
+  'Form',
+  'Settings',
+  'Login',
+  'Tools',
+  'Content',
+  'AI Chat',
+  'Gallery',
+  'Shell',
+];
+
+const OTHER_GROUP = 'Other';
+
+/** Derive the group heading from a category string. The group is the text
+ *  before the first ' - ' separator (e.g. 'Dashboard - Analytics' → 'Dashboard').
+ *  Standalone categories without a separator (e.g. 'Settings') are their own
+ *  group. Untagged templates fall under 'Other'. */
+function groupOf(category: string): string {
+  if (!category) {
+    return OTHER_GROUP;
+  }
+  const idx = category.indexOf(' - ');
+  return idx === -1 ? category : category.slice(0, idx);
+}
+
+/** Sort rank for a category group: GROUP_ORDER first, then 'Other' last. */
+function groupRank(group: string): number {
+  const i = GROUP_ORDER.indexOf(group);
+  if (i !== -1) {
+    return i;
+  }
+  return group === OTHER_GROUP ? Number.MAX_SAFE_INTEGER : GROUP_ORDER.length;
+}
+
+interface TemplateItem {
+  name: string;
+  description: string;
+  slug: string;
+  href: string;
+  category: string;
+  source: string;
+}
+
 export default function TemplatesPage() {
-  const items = useMemo(
-    () =>
-      templates.map(t => ({
+  const {isMobile} = useXDSAppShellMobile();
+
+  // Flat, display-ordered list of available templates. Ordered by category
+  // group (per GROUP_ORDER) then name, so the single grid stays stable.
+  const items = useMemo<TemplateItem[]>(() => {
+    const visible = templates.filter(t => t.isReady && !t.isHiddenFromOverview);
+
+    return visible
+      .map(t => ({
         name: t.name,
         description: t.description,
         slug: t.slug,
         href: `/templates/${t.slug}`,
-        isReady: t.isReady,
+        category: t.category,
         source: t.source,
+      }))
+      .sort((a, b) => {
+        const ga = groupOf(a.category);
+        const gb = groupOf(b.category);
+        return (
+          groupRank(ga) - groupRank(gb) ||
+          ga.localeCompare(gb) ||
+          a.name.localeCompare(b.name)
+        );
+      });
+  }, []);
+
+  const [activeCategory, setActiveCategory] = useState('All');
+
+  // Filter options: 'All' plus each category group present, in display order.
+  const categories = useMemo(() => {
+    const present = [...new Set(items.map(i => groupOf(i.category)))].sort(
+      (a, b) => groupRank(a) - groupRank(b) || a.localeCompare(b),
+    );
+    return ['All', ...present];
+  }, [items]);
+
+  const filteredItems = useMemo(
+    () =>
+      activeCategory === 'All'
+        ? items
+        : items.filter(i => groupOf(i.category) === activeCategory),
+    [items, activeCategory],
+  );
+
+  // Flattened display-order list backing the preview dialog's prev/next
+  // navigation, plus a slug -> index lookup for opening at a given card.
+  const flatItems = useMemo<TemplatePreviewItem[]>(
+    () =>
+      filteredItems.map(i => ({
+        slug: i.slug,
+        name: i.name,
+        description: i.description,
+        source: i.source,
+        category: groupOf(i.category),
       })),
-    [],
+    [filteredItems],
+  );
+  const indexBySlug = useMemo(() => {
+    const m = new Map<string, number>();
+    flatItems.forEach((it, i) => m.set(it.slug, i));
+    return m;
+  }, [flatItems]);
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const previewSlug = searchParams.get('preview');
+  const openIndex =
+    previewSlug != null ? (indexBySlug.get(previewSlug) ?? null) : null;
+
+  const setOpenIndex = useCallback(
+    (index: number | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (index !== null && flatItems[index]) {
+        params.set('preview', flatItems[index].slug);
+      } else {
+        params.delete('preview');
+      }
+      const qs = params.toString();
+      router.replace(`${pathname}${qs ? `?${qs}` : ''}`, {scroll: false});
+    },
+    [searchParams, flatItems, router, pathname],
+  );
+
+  const openPreview = useCallback(
+    (slug: string) => {
+      const i = indexBySlug.get(slug);
+      if (i !== undefined) {
+        const item = flatItems[i];
+        trackView({
+          page: 'templates',
+          item: item.slug,
+          category: item.category,
+        });
+        setOpenIndex(i);
+      }
+    },
+    [indexBySlug, setOpenIndex, flatItems],
   );
 
   return (
-    <XDSSection maxWidth="xl" padding={6}>
-      <XDSVStack gap={6}>
-        <XDSVStack gap={2} style={{alignItems: 'center'}}>
-          <XDSText type="display-2" xstyle={styles.heroTitle}>
-            Templates
-          </XDSText>
-          <XDSText type="body" color="secondary" xstyle={styles.heroTitle}>
-            Ready-to-use page templates to kickstart your project.
-          </XDSText>
+    <XDSSection maxWidth={1200} padding={6} style={{marginInline: 'auto'}}>
+      <XDSVStack gap={10}>
+        {/* Header */}
+        <XDSVStack gap={6} align="stretch">
+          <XDSVStack gap={2}>
+            <XDSHeading level={1} type="display-2" justify="center">
+              Templates
+            </XDSHeading>
+            <XDSText type="body" color="secondary" justify="center">
+              Ready-to-use page templates to kickstart your project.
+            </XDSText>
+          </XDSVStack>
+          <XDSToggleButtonGroup
+            label="Filter templates by category"
+            value={activeCategory}
+            onChange={value => setActiveCategory(value ?? 'All')}
+            xstyle={styles.categoryFilter}>
+            {categories.map(category => (
+              <XDSToggleButton
+                key={category}
+                label={category}
+                value={category}
+              />
+            ))}
+          </XDSToggleButtonGroup>
         </XDSVStack>
 
-        <XDSGrid columns={{minWidth: 300, repeat: 'fill'}} gap={4} rowGap={6}>
-          {items.map(item => (
-            <XDSCard key={item.slug} padding={0}>
-              <XDSOverlay
-                showOn="hover"
-                scrim="dark"
-                content={
-                  <div {...stylex.props(styles.overlayInner)}>
-                    <XDSVStack gap={2}>
-                      <XDSVStack gap={0.5}>
-                        <XDSText
-                          type="body"
-                          weight="bold"
-                          style={{color: '#fff'}}>
-                          {item.name}
-                        </XDSText>
-                        <XDSText
-                          type="supporting"
-                          style={{color: 'rgba(255,255,255,0.7)'}}>
-                          {item.description.slice(0, 80)}
-                          {item.description.length > 80 ? '\u2026' : ''}
-                        </XDSText>
-                      </XDSVStack>
-                      <XDSHStack gap={2}>
-                        <XDSButton
-                          label="Preview"
-                          variant="secondary"
-                          size="sm"
-                          href={item.href}
-                        />
-                        {item.source && (
-                          <XDSButton
-                            label="Open in Playground"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => {
-                              window.location.href = buildPlaygroundHref(
-                                item.source,
-                              );
-                            }}
-                          />
-                        )}
-                      </XDSHStack>
-                    </XDSVStack>
-                  </div>
-                }>
-                {item.isReady ? (
-                  <TemplateThumbnail slug={item.slug} />
+        {/* Body */}
+        <XDSGrid
+          columns={{minWidth: isMobile ? 280 : 420}}
+          gap={4}
+          width="100%">
+          {filteredItems.map(item => {
+            const templateContent = <TemplateThumbnail slug={item.slug} />;
+
+            return (
+              <XDSClickableCard
+                key={item.slug}
+                padding={0}
+                maxWidth="100%"
+                label={`Preview ${item.name}`}
+                onClick={() => openPreview(item.slug)}
+                style={CARD_STYLE}>
+                {isMobile ? (
+                  templateContent
                 ) : (
-                  <div {...stylex.props(styles.cardImage)}>
-                    <div {...stylex.props(styles.comingSoon)}>
-                      <XDSBadge label="Coming Soon" variant="info" />
-                    </div>
-                  </div>
+                  <XDSOverlay
+                    showOn="hover"
+                    scrim="dark"
+                    content={
+                      <XDSVStack
+                        role="presentation"
+                        onClick={() => openPreview(item.slug)}
+                        justify="end"
+                        align="start"
+                        height="100%"
+                        width="100%"
+                        gap={4}
+                        style={{...OVERLAY_CLICK_LAYER_STYLE, padding: 8}}>
+                        <XDSVStack gap={0.5}>
+                          <XDSHeading level={3}>{item.name}</XDSHeading>
+                          <XDSText maxLines={2}>{item.description}</XDSText>
+                        </XDSVStack>
+                        <XDSHStack gap={2}>
+                          <XDSButton
+                            label="Preview"
+                            variant="secondary"
+                            onClick={() => openPreview(item.slug)}
+                          />
+                          {item.source && (
+                            <XDSButton
+                              label="Open in Playground"
+                              variant="secondary"
+                              href={buildPlaygroundHref(item.source)}
+                              onClick={e => {
+                                e.stopPropagation();
+                                trackOpenPlayground({
+                                  page: 'templates',
+                                  item: item.slug,
+                                  category: groupOf(item.category),
+                                });
+                              }}
+                            />
+                          )}
+                        </XDSHStack>
+                      </XDSVStack>
+                    }>
+                    {templateContent}
+                  </XDSOverlay>
                 )}
-              </XDSOverlay>
-            </XDSCard>
-          ))}
+              </XDSClickableCard>
+            );
+          })}
         </XDSGrid>
       </XDSVStack>
+
+      <TemplatePreviewDialog
+        items={flatItems}
+        index={openIndex ?? 0}
+        isOpen={openIndex !== null}
+        onOpenChange={open => {
+          if (!open) {
+            setOpenIndex(null);
+          }
+        }}
+        onIndexChange={setOpenIndex}
+        variant={isMobile ? 'fullscreen' : undefined}
+      />
     </XDSSection>
   );
 }

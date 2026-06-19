@@ -31,10 +31,11 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {getKey, mergeProps} from '../utils';
 import {XDSBadge} from '../Badge';
 import {XDSIcon, type XDSIconName} from '../Icon';
 import {XDSSpinner} from '../Spinner';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Types
@@ -65,7 +66,7 @@ export interface XDSChatToolCallItem {
   stats?: ReactNode;
   /** Error message when status is 'error'. Shown in a tooltip on the status icon. */
   errorMessage?: string;
-  /** Unique key for React list rendering. Falls back to index. */
+  /** Unique key for React list rendering. Derived from stable metadata if omitted. */
   key?: string;
   /** Arbitrary data passed through to renderDetail. Store tool args, result, etc. */
   data?: unknown;
@@ -171,8 +172,10 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     paddingInline: spacingVars['--spacing-1'],
     marginInline: `calc(-1 * ${spacingVars['--spacing-1']})`,
-    ':hover': {
-      backgroundColor: colorVars['--color-overlay-hover'],
+    '@media (hover: hover)': {
+      ':hover': {
+        backgroundColor: colorVars['--color-overlay-hover'],
+      },
     },
   },
   callRowToggle: {
@@ -208,7 +211,8 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    minWidth: 0,
+    flexShrink: 1,
+    minWidth: '4ch',
   },
   callLabel: {
     fontSize: typeScaleVars['--text-supporting-size'],
@@ -218,6 +222,7 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
+    flexShrink: 10,
     minWidth: 0,
   },
   callDuration: {
@@ -327,6 +332,21 @@ const STATUS_STYLES: Record<
   complete: styles.colorComplete,
   error: styles.colorError,
 };
+
+function getToolCallKey(call: XDSChatToolCallItem): string {
+  return getKey(call.key, () =>
+    [
+      call.name,
+      call.status ?? 'complete',
+      call.target ?? '',
+      call.node ?? '',
+      call.duration ?? '',
+      call.additions?.toString() ?? '',
+      call.deletions?.toString() ?? '',
+      call.errorMessage ?? '',
+    ].join('\u001F'),
+  );
+}
 
 // =============================================================================
 // Internal: single call row
@@ -498,7 +518,7 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
       <div
         ref={ref}
         {...mergeProps(
-          xdsClassName('chat-tool-calls'),
+          xdsThemeProps('chat-tool-calls'),
           stylex.props(styles.root, xstyle),
           className,
           style,
@@ -517,7 +537,7 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('chat-tool-calls'),
+        xdsThemeProps('chat-tool-calls'),
         stylex.props(styles.root, xstyle),
         className,
         style,
@@ -599,8 +619,8 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
         )}>
         <div {...stylex.props(styles.groupContentInner)}>
           <div {...stylex.props(styles.list)}>
-            {calls.map((call, i) => (
-              <CallRow key={call.key ?? i} call={call} />
+            {calls.map(call => (
+              <CallRow key={getToolCallKey(call)} call={call} />
             ))}
           </div>
         </div>

@@ -56,4 +56,26 @@ describe('XDSCarousel', () => {
     const el = screen.getByTestId('cls-test');
     expect(el.className).toContain('xds-carousel');
   });
+
+  it('does not render button layer when hasButtons={false}', () => {
+    render(
+      <XDSCarousel hasButtons={false} aria-label="No buttons">
+        <div>Item 1</div>
+        <div>Item 2</div>
+      </XDSCarousel>,
+    );
+    expect(screen.queryByLabelText('Scroll left')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Scroll right')).not.toBeInTheDocument();
+  });
+
+  it('renders buttons by default', () => {
+    render(
+      <XDSCarousel aria-label="With buttons">
+        <div>Item 1</div>
+        <div>Item 2</div>
+      </XDSCarousel>,
+    );
+    expect(screen.getByLabelText('Scroll left')).toBeInTheDocument();
+    expect(screen.getByLabelText('Scroll right')).toBeInTheDocument();
+  });
 });

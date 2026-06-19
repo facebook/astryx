@@ -64,11 +64,11 @@ export {
 export type {ISOTimeString, ParsedTime} from './timeParser';
 
 export {parseStyleKey} from './parseStyleKey';
-
-export {xdsClassName} from './xdsClassName';
+export {getKey, type XDSKey, type XDSKeyFallback} from './getKey';
 
 export {mergeProps} from './mergeProps';
 export {mergeRefs} from './mergeRefs';
 export {groupItems, getItemGroup} from './groupItems';
 export type {ItemGroup} from './groupItems';
 export {observeResize, unobserveResize} from './sharedResizeObserver';
+export {isRenderable} from './isRenderable';

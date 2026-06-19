@@ -6,6 +6,8 @@ export const docs = {
   name: 'ChatDictationButton',
   displayName: 'Chat Dictation Button',
   group: 'Chat',
+  category: 'Chat',
+  isHiddenFromOverview: true,
   hidden: false,
 
   keywords: ['dictation', 'microphone', 'voice', 'speech', 'recording', 'stt', 'speech-to-text', 'voice-input', 'mic'],
@@ -16,9 +18,9 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Place the dictation button in the sendActions slot of XDSChatComposer so it sits next to the send button where users expect voice input controls.'},
       {guidance: true, description: 'Pass an inputRef to useXDSChatDictation so interim transcripts appear as ghost text in the composer input while the user speaks.'},
-      {guidance: true, description: "Enable hasSounds on useXDSChatDictation to give users audio feedback when dictation starts and stops \u2014 especially helpful when the button's visual change is subtle."},
-      {guidance: false, description: "Don't use the dictation button outside a chat composer context \u2014 it's designed for the composer's send-action layout, not as a standalone recording control."},
-      {guidance: false, description: "Don't forget to handle the unsupported case \u2014 the button hides itself by default when the browser lacks SpeechRecognition, but you should still design the composer to work without it."},
+      {guidance: true, description: "Enable hasSounds on useXDSChatDictation to give users audio feedback when dictation starts and stops. This is especially helpful when the button's visual change is subtle."},
+      {guidance: false, description: "Don't use the dictation button outside a chat composer context. It's designed for the composer's send-action layout, not as a standalone recording control."},
+      {guidance: false, description: "Don't forget to handle the unsupported case. The button hides itself by default when the browser lacks SpeechRecognition, but you should still design the composer to work without it."},
     ],
     anatomy: [
       {name: 'Microphone icon', required: true, description: 'Shown in the idle state. Indicates that tapping will start voice input.'},
@@ -57,7 +59,7 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
   ],
 
@@ -71,9 +73,9 @@ export const docsZh = {
     bestPractices: [
       {guidance: true, description: 'Place the dictation button in the sendActions slot of XDSChatComposer so it sits next to the send button where users expect voice input controls.'},
       {guidance: true, description: 'Pass an inputRef to useXDSChatDictation so interim transcripts appear as ghost text in the composer input while the user speaks.'},
-      {guidance: true, description: "Enable hasSounds on useXDSChatDictation to give users audio feedback when dictation starts and stops \u2014 especially helpful when the button's visual change is subtle."},
-      {guidance: false, description: "Don't use the dictation button outside a chat composer context \u2014 it's designed for the composer's send-action layout, not as a standalone recording control."},
-      {guidance: false, description: "Don't forget to handle the unsupported case \u2014 the button hides itself by default when the browser lacks SpeechRecognition, but you should still design the composer to work without it."},
+      {guidance: true, description: "Enable hasSounds on useXDSChatDictation to give users audio feedback when dictation starts and stops. This is especially helpful when the button's visual change is subtle."},
+      {guidance: false, description: "Don't use the dictation button outside a chat composer context. It's designed for the composer's send-action layout, not as a standalone recording control."},
+      {guidance: false, description: "Don't forget to handle the unsupported case. The button hides itself by default when the browser lacks SpeechRecognition, but you should still design the composer to work without it."},
     ],
   },
   propDescriptions: {
@@ -95,8 +97,8 @@ export const docsDense = {
       {guidance: true, description: 'Place in sendActions slot of XDSChatComposer next to send button.'},
       {guidance: true, description: 'Pass inputRef to useXDSChatDictation for interim ghost text in input.'},
       {guidance: true, description: 'Enable hasSounds for audio feedback on start/stop.'},
-      {guidance: false, description: "Don't use outside chat composer context \u2014 designed for composer send-action layout only."},
-      {guidance: false, description: "Don't forget unsupported case \u2014 button auto-hides but composer should work without it."},
+      {guidance: false, description: "Don't use outside chat composer context. Designed for composer send-action layout only."},
+      {guidance: false, description: "Don't forget unsupported case. Button auto-hides but composer should work without it."},
     ],
   },
   propDescriptions: {

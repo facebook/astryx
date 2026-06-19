@@ -31,7 +31,7 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {XDSIcon} from '../Icon';
 import {
   tokenize,
@@ -42,6 +42,7 @@ import {
 import type {Token, TokenLine} from './tokenizer';
 import {ensureHighlightStyles} from './highlightStyles';
 import {applyHighlightRangesChunked} from './highlightRanges';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -59,6 +60,12 @@ const containerStyles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     borderColor: 'transparent',
+    // Transparent background so the block blends into the surface it's
+    // embedded in (a card or panel) instead of painting its own muted layer,
+    // which would compound with a muted parent into a darker grey. Override
+    // the syntax-background var so both the root and the sticky header inherit
+    // it. Consumers can still set an explicit background via xstyle.
+    '--color-syntax-background': 'transparent',
   },
 });
 
@@ -349,8 +356,11 @@ export interface XDSCodeBlockProps extends XDSBaseProps<HTMLPreElement> {
   width?: string;
   /**
    * Container presentation style.
-   * - `'card'` (default): border-radius and border — standalone card look.
-   * - `'section'`: no border-radius, no border — for embedding inside cards or panels.
+   * - `'card'` (default): border-radius and border with the muted syntax
+   *   background — standalone card look.
+   * - `'section'`: no border-radius, no border, and a transparent background
+   *   so the block blends into the card or panel it's embedded in. Set an
+   *   explicit background via `xstyle` if you need one.
    * @default 'card'
    */
   container?: 'card' | 'section';
@@ -660,31 +670,8 @@ export function XDSCodeBlock({
     ? {maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight}
     : undefined;
 
-  const copyIcon = copied ? (
-    <svg
-      width="1em"
-      height="1em"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round">
-      <path d="M5 13l4 4L19 7" />
-    </svg>
-  ) : (
-    <svg
-      width="1em"
-      height="1em"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round">
-      <path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.602-1.43L16.083 2.57A2 2 0 0014.685 2H10a2 2 0 00-2 2z" />
-      <path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2" />
-    </svg>
+  const copyIcon = (
+    <XDSIcon icon={copied ? 'check' : 'copy'} size="sm" color="inherit" />
   );
 
   const copyButtonEl = hasCopyButton ? (
@@ -789,7 +776,7 @@ export function XDSCodeBlock({
     <pre
       ref={ref}
       {...mergeProps(
-        xdsClassName('codeblock', {size, language, container}),
+        xdsThemeProps('codeblock', {size, language, container}),
         stylex.props(
           styles.root,
           dynamicStyles.width(widthProp),

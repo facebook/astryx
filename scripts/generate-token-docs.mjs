@@ -122,7 +122,7 @@ const groups = [
     exportName: 'shadowDefaults',
     title: 'Shadow Tokens',
     description:
-      'Elevation shadows (low → med → high) and inset shadows for input state rings.',
+      'Elevation shadows (low to med to high) and inset shadows for input state rings.',
     headers: ['Token', 'Value'],
     formatRow: (name, value) => [name, value],
   },

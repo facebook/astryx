@@ -133,8 +133,8 @@ export const WithDocument: Story = {
           </p>
           <h3 id="component-overrides">Component overrides</h3>
           <p>
-            Component overrides target stable xds-* class names emitted by each
-            component.
+            Component overrides target the stable XDS selector surface emitted
+            by each component: xds-* classes plus data-* prop reflections.
           </p>
         </section>
         <section>

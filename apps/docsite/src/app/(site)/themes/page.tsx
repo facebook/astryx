@@ -1,121 +1,79 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Themes gallery — extracted from craft.
+ * Themes page — /themes
+ *
+ * Single canonical surface for browsing every XDS theme. Renders the
+ * full live ThemePackagePage (sidebar picker + themed preview
+ * mockup + card showcase), seeded with the Neutral theme as the
+ * default selection.
+ *
+ * The legacy per-theme route at /themes/<name> still resolves —
+ * it now redirects here with ?theme=<slug>, which this page reads
+ * to preselect the right theme in the sidebar so deep links from
+ * docs, search, and shared URLs land on the requested theme rather
+ * than the default seed.
  */
 
-'use client';
-
-import * as stylex from '@stylexjs/stylex';
-import {XDSText} from '@xds/core/Text';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {notFound} from 'next/navigation';
 import {XDSSection} from '@xds/core/Section';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSCard} from '@xds/core/Card';
-import {XDSButton} from '@xds/core/Button';
-import {XDSOverlay} from '@xds/core/Overlay';
-import {XDSTheme} from '@xds/core/theme';
-import {useThemeMode} from '../../providers';
 import {packages} from '../../../generated/packageRegistry';
 import {themeObjects} from '../../../generated/themeRegistry';
-import {ThemeShowcaseTile} from '../../../components/ThemeShowcaseTile';
+import {ThemePackagePage} from '../../../components/ThemePackagePage';
 
-const themePackages = packages.filter(p => p.name.includes('theme-'));
+// Default seed for the page — the picker opens with this theme
+// selected on first visit. Neutral is the most restrained / brand-
+// neutral theme in the gallery, so it sets a calm baseline before
+// users browse into the more expressive themes (Y2K, Butter, etc.).
+const DEFAULT_THEME_PACKAGE = '@xds/theme-neutral';
 
-const styles = stylex.create({
-  heroTitle: {
-    textAlign: 'center' as const,
-  },
-  cardImage: {
-    display: 'block',
-    width: '100%',
-    aspectRatio: '16/10',
-    backgroundColor: 'var(--color-background-muted)',
-    borderRadius: 'var(--radius-container)',
-  },
-  overlayInner: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    justifyContent: 'flex-end',
-    alignItems: 'flex-start',
-    height: '100%',
-    width: '100%',
-    padding: 8,
-  },
-});
+function slugToPackageName(slug: string): string {
+  return `@xds/theme-${slug}`;
+}
 
-export default function ThemesPage() {
-  const {mode} = useThemeMode();
+export default async function ThemesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{theme?: string | string[]}>;
+}) {
+  // ?theme=<slug> preselects the picker. Falls back to the Neutral
+  // seed if the param is missing, malformed, or names a theme that
+  // isn't in the registry (so a stale link doesn't 404 on us — the
+  // user still lands on the explorer with a sensible default).
+  const params = await searchParams;
+  const rawSlug = params.theme;
+  const slug = Array.isArray(rawSlug) ? rawSlug[0] : rawSlug;
+
+  const requestedPkgName = slug ? slugToPackageName(slug) : null;
+  const requestedPkg = requestedPkgName
+    ? packages.find(p => p.name === requestedPkgName)
+    : undefined;
+  const requestedTheme = requestedPkgName
+    ? themeObjects[requestedPkgName]
+    : undefined;
+
+  // Use the requested theme if it resolved to a real package + theme
+  // object; otherwise fall back to the default seed so stale links
+  // still land on a usable page rather than a 404.
+  const seedPkg =
+    requestedPkg && requestedTheme
+      ? requestedPkg
+      : packages.find(p => p.name === DEFAULT_THEME_PACKAGE);
+  const seedTheme =
+    requestedPkg && requestedTheme
+      ? requestedTheme
+      : themeObjects[DEFAULT_THEME_PACKAGE];
+
+  if (!seedPkg || !seedTheme) {
+    // Defensive: only fires if the @xds/theme-neutral package is
+    // ever removed from the workspace, which would break the entire
+    // themes section anyway.
+    notFound();
+  }
+
   return (
-    <XDSSection maxWidth="xl" padding={6}>
-      <XDSVStack gap={6}>
-        <XDSVStack gap={2} style={{alignItems: 'center'}}>
-          <XDSText type="display-2" xstyle={styles.heroTitle}>
-            Themes
-          </XDSText>
-          <XDSText type="body" color="secondary" xstyle={styles.heroTitle}>
-            Swap the visual identity of your app with a single theme package.
-          </XDSText>
-        </XDSVStack>
-
-        <XDSGrid columns={{minWidth: 300, repeat: 'fill'}} gap={4} rowGap={6}>
-          {themePackages.map(pkg => {
-            const theme = themeObjects[pkg.name];
-            const label = pkg.displayName.replace('Theme: ', '');
-            return (
-              <XDSCard key={pkg.name} padding={0}>
-                <XDSOverlay
-                  showOn="hover"
-                  scrim="dark"
-                  content={
-                    <div {...stylex.props(styles.overlayInner)}>
-                      <XDSVStack gap={2}>
-                        <XDSVStack gap={0.5}>
-                          <XDSText
-                            type="body"
-                            weight="bold"
-                            style={{color: '#fff'}}>
-                            {pkg.displayName}
-                          </XDSText>
-                          <XDSText
-                            type="supporting"
-                            style={{color: 'rgba(255,255,255,0.7)'}}>
-                            {pkg.description.slice(0, 80)}
-                            {pkg.description.length > 80 ? '\u2026' : ''}
-                          </XDSText>
-                        </XDSVStack>
-                        <XDSHStack gap={2}>
-                          <XDSButton
-                            label="View theme"
-                            variant="secondary"
-                            size="sm"
-                            href={`/packages/${pkg.name.replace('@xds/', '')}`}
-                          />
-                          <XDSButton
-                            label="Customize"
-                            variant="secondary"
-                            size="sm"
-                            href="/themes/editor"
-                          />
-                        </XDSHStack>
-                      </XDSVStack>
-                    </div>
-                  }>
-                  <div style={{aspectRatio: '16/10'}} inert>
-                    {theme ? (
-                      <XDSTheme theme={theme} mode={mode}>
-                        <ThemeShowcaseTile label={label} />
-                      </XDSTheme>
-                    ) : (
-                      <div {...stylex.props(styles.cardImage)} />
-                    )}
-                  </div>
-                </XDSOverlay>
-              </XDSCard>
-            );
-          })}
-        </XDSGrid>
-      </XDSVStack>
+    <XDSSection maxWidth="lg" padding={6}>
+      <ThemePackagePage packageName={seedPkg.name} theme={seedTheme} />
     </XDSSection>
   );
 }

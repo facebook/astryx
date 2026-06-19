@@ -82,6 +82,42 @@ describe('XDSAspectRatio', () => {
     expect(element.style.aspectRatio).toBe(String(ratio));
   });
 
+  it('renders an ellipse that respects the ratio (circle at 1:1)', () => {
+    render(
+      <XDSAspectRatio ratio={1} shape="ellipse" data-testid="aspect-ratio">
+        <div>Circle</div>
+      </XDSAspectRatio>,
+    );
+    const element = screen.getByTestId('aspect-ratio');
+    expect(element.style.aspectRatio).toBe('1');
+    expect(element.className).toContain('ellipse');
+  });
+
+  it('ellipse respects a non-square ratio (oval)', () => {
+    render(
+      <XDSAspectRatio ratio={16 / 9} shape="ellipse" data-testid="aspect-ratio">
+        <div>Oval</div>
+      </XDSAspectRatio>,
+    );
+    const element = screen.getByTestId('aspect-ratio');
+    // Ratio is preserved — the ellipse does not force 1:1.
+    expect(element.style.aspectRatio).toBe(String(16 / 9));
+    expect(element.className).toContain('ellipse');
+  });
+
+  it('defaults to the rectangle shape', () => {
+    render(
+      <XDSAspectRatio ratio={1} data-testid="aspect-ratio">
+        <div>Rectangle by default</div>
+      </XDSAspectRatio>,
+    );
+    const element = screen.getByTestId('aspect-ratio');
+    expect(element.style.aspectRatio).toBe('1');
+    expect(element.className).toContain('rectangle');
+    // No ellipse border-radius when shape is the default rectangle
+    expect(element.style.borderRadius).toBe('');
+  });
+
   it('forwards ref correctly', () => {
     const ref = vi.fn();
     render(

@@ -105,10 +105,7 @@ export function sortEvents(
   });
 }
 
-function getEventSortStart(
-  event: CalendarEvent,
-  timezoneID: string,
-): Instant {
+function getEventSortStart(event: CalendarEvent, timezoneID: string): Instant {
   return isDayEvent(event)
     ? (plainDateToInstant(event.start, timezoneID) as Instant)
     : event.start;

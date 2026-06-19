@@ -1,0 +1,19 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--appshell-header-height, 64px));
+  width: 100%;
+}
+
+.main {
+  flex: 1 0 auto;
+  width: 100%;
+}
+
+.footer {
+  position: relative;
+  z-index: 1;
+  background-color: var(--color-background-surface);
+}

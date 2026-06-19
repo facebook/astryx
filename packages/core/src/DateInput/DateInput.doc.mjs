@@ -6,6 +6,7 @@ export const docs = {
   name: 'DateInput',
   displayName: 'Date Input',
   group: 'DateInput',
+  category: 'Data Input',
   keywords: ["dateinput","datepicker","datefield","calendar","dateselect","dateentry","datechooser"],
   props: [
     {
@@ -121,7 +122,7 @@ export const docs = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
   ],
   theming: {
@@ -134,11 +135,11 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Provide clear labels and descriptions so users understand what date is expected.' },
       { guidance: true, description: 'Use min, max, and dateConstraints to restrict selectable dates to valid ranges.' },
-      { guidance: true, description: 'Use hasClear when the date is optional so the user can easily reset it.' },
+      { guidance: true, description: 'Use hasClear when the date is optional so the user can reset it.' },
       { guidance: true, description: 'Show a loading state with changeAction when the date triggers a server-side save.' },
       { guidance: false, description: 'Use a DateInput for free-form text that does not represent a calendar date.' },
       { guidance: false, description: 'Hide the label without surrounding context that makes the field purpose obvious.' },
-      { guidance: false, description: 'Rely on the calendar alone — the text input lets users type dates directly, which is faster for known dates.' },
+      { guidance: false, description: 'Rely on the calendar alone; the text input lets users type dates directly, which is faster for known dates.' },
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text above the input describing what date is expected.'},
@@ -160,11 +161,11 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Provide clear labels and descriptions so users understand what date is expected.' },
       { guidance: true, description: 'Use min, max, and dateConstraints to restrict selectable dates to valid ranges.' },
-      { guidance: true, description: 'Use hasClear when the date is optional so the user can easily reset it.' },
+      { guidance: true, description: 'Use hasClear when the date is optional so the user can reset it.' },
       { guidance: true, description: 'Show a loading state with changeAction when the date triggers a server-side save.' },
       { guidance: false, description: 'Use a DateInput for free-form text that does not represent a calendar date.' },
       { guidance: false, description: 'Hide the label without surrounding context that makes the field purpose obvious.' },
-      { guidance: false, description: 'Rely on the calendar alone — the text input lets users type dates directly, which is faster for known dates.' },
+      { guidance: false, description: 'Rely on the calendar alone; the text input lets users type dates directly, which is faster for known dates.' },
     ],
   },
   props: [
@@ -216,10 +217,13 @@ export const docsDense = {
   usage: {
     description: 'DateInput lets the user type or pick a date from a calendar popover. Use for scheduling, deadlines, booking dates, or any form field needing a calendar date.',
     bestPractices: [
-      { guidance: true, description: 'Clear labels + descriptions. Use min/max/dateConstraints for valid ranges.' },
-      { guidance: true, description: 'Use hasClear for optional dates. Use changeAction for server-side saves.' },
-      { guidance: false, description: 'Use for free-form text that is not a calendar date.' },
-      { guidance: false, description: 'Hide the label without surrounding context. Don\'t ignore the text input — users can type dates directly.' },
+      { guidance: true, description: 'Provide clear labels + descriptions so users understand what date is expected.' },
+      { guidance: true, description: 'Use min, max, and dateConstraints to restrict selectable dates to valid ranges.' },
+      { guidance: true, description: 'Use hasClear when the date is optional so the user can reset it.' },
+      { guidance: true, description: 'Show a loading state with changeAction when the date triggers a server-side save.' },
+      { guidance: false, description: 'Use a DateInput for free-form text that does not represent a calendar date.' },
+      { guidance: false, description: 'Hide the label without surrounding context that makes the field purpose obvious.' },
+      { guidance: false, description: 'Rely on the calendar alone; the text input lets users type dates directly, which is faster for known dates.' },
     ],
   },
   propDescriptions: {

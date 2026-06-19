@@ -3,53 +3,46 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {
+  XDSVStack,
+  XDSHStack,
+  XDSLayout,
+  XDSLayoutContent,
+} from '@xds/core/Layout';
+import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSSection} from '@xds/core/Section';
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
 const IMAGES = [
   {
-    // colorful-home-horizontal-1 from xds_oss asset set
     src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-home-horizontal-1.png',
     alt: 'Colorful home interior with vibrant decor',
   },
   {
-    // colorful-lifestyle-horizontal-1 from xds_oss asset set
     src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-horizontal-1.png',
     alt: 'Colorful lifestyle portrait with natural lighting',
   },
   {
-    // colorful-lifestyle-horizontal-2 from xds_oss asset set
     src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-horizontal-2.png',
     alt: 'Colorful lifestyle scene with warm tones',
   },
 ];
 
+// NOTE: The only custom styling here is image fill + corner radius. It exists
+// because XDS has no image primitive — XDSAspectRatio exposes no objectFit or
+// radius props and there's no XDSImage. Tracked in issue #2582; replace these
+// with component props once it lands.
 const styles = stylex.create({
-  textCenter: {
-    textAlign: 'center',
-  },
-  titleResponsive: {
-    fontSize: {
-      default: 'var(--text-display-2-size)',
-      '@media (max-width: 640px)': 'var(--text-display-3-size)',
-    },
-  },
-  topSpacing: {
-    paddingTop: 'var(--spacing-12)',
-  },
+  // Fills the XDSAspectRatio box. No objectFit prop on XDSAspectRatio (#2582).
   galleryImage: {
     width: '100%',
     height: '100%',
     objectFit: 'cover',
   },
+  // Rounds the image corners. No radius prop on XDSAspectRatio (#2582).
   galleryImageClip: {
     borderRadius: 'var(--radius-container)',
   },
@@ -57,71 +50,56 @@ const styles = stylex.create({
 
 export default function GalleryHero() {
   return (
-    <XDSAppShell
-      variant="surface"
-      topNav={
-        <XDSTopNav
-          label="Main navigation"
-          heading={<XDSTopNavHeading heading="GALLERY" />}
-          endContent={
-            <>
-              <XDSTopNavItem label="Products" href="#" />
-              <XDSTopNavItem label="Solutions" href="#" />
-              <XDSTopNavItem label="Pricing" href="#" />
-              <XDSTopNavItem label="About" href="#" />
-            </>
-          }
-        />
-      }
-      contentPadding={0}>
-      <XDSVStack gap={10}>
-        <XDSVStack gap={6} hAlign="center" xstyle={styles.topSpacing}>
-          <XDSVStack gap={3} hAlign="center">
-            <XDSText
-              type="display-2"
-              as="h1"
-              weight="bold"
-              textWrap="balance"
-              xstyle={[styles.textCenter, styles.titleResponsive]}>
-              Little joys, everywhere you go
-            </XDSText>
-            <XDSText
-              type="body"
-              color="secondary"
-              textWrap="balance"
-              xstyle={styles.textCenter}>
-              Sometimes all it takes is one small thing to turn your whole day
-              around.
-            </XDSText>
-          </XDSVStack>
-          <XDSHStack gap={3}>
-            <XDSButton
-              label="Get started"
-              variant="secondary"
-              endContent={
-                <XDSIcon icon={ArrowRightIcon} size="sm" color="inherit" />
-              }
-            />
-            <XDSButton label="Learn more" variant="ghost" />
-          </XDSHStack>
-        </XDSVStack>
-        <XDSSection variant="transparent" padding={6}>
-          <XDSGrid columns={3} gap={4}>
-            {IMAGES.map((image, i) => (
-              <XDSAspectRatio
-                key={i}
-                ratio={4 / 5}
-                xstyle={styles.galleryImageClip}>
-                <img
-                  {...stylex.props(styles.galleryImage)}
-                  src={image.src}
-                  alt={image.alt}
+    <XDSLayout
+      content={
+        <XDSLayoutContent padding={6}>
+          <XDSVStack gap={10}>
+            <XDSVStack gap={6} hAlign="center">
+              <XDSVStack gap={3} hAlign="center">
+                <XDSHeading
+                  level={1}
+                  type="display-2"
+                  justify="center"
+                  textWrap="balance">
+                  Little joys, everywhere you go
+                </XDSHeading>
+                <XDSText
+                  type="body"
+                  color="secondary"
+                  justify="center"
+                  textWrap="balance">
+                  Sometimes all it takes is one small thing to turn your whole
+                  day around.
+                </XDSText>
+              </XDSVStack>
+              <XDSHStack gap={3}>
+                <XDSButton
+                  label="Get started"
+                  variant="primary"
+                  endContent={
+                    <XDSIcon icon={ArrowRightIcon} size="sm" color="inherit" />
+                  }
                 />
-              </XDSAspectRatio>
-            ))}
-          </XDSGrid>
-        </XDSSection>
-      </XDSVStack>
-    </XDSAppShell>
+                <XDSButton label="Learn more" variant="secondary" />
+              </XDSHStack>
+            </XDSVStack>
+            <XDSGrid columns={{minWidth: 200, repeat: 'fit'}} gap={4}>
+              {IMAGES.map(image => (
+                <XDSAspectRatio
+                  key={image.src}
+                  ratio={4 / 5}
+                  xstyle={styles.galleryImageClip}>
+                  <img
+                    {...stylex.props(styles.galleryImage)}
+                    src={image.src}
+                    alt={image.alt}
+                  />
+                </XDSAspectRatio>
+              ))}
+            </XDSGrid>
+          </XDSVStack>
+        </XDSLayoutContent>
+      }
+    />
   );
 }

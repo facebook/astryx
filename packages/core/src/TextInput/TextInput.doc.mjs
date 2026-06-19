@@ -5,6 +5,7 @@
 export const docs = {
   name: 'TextInput',
   displayName: 'Text Input',
+  category: 'Data Input',
   keywords: ["textinput","textfield","input","search","clearable","prefix","suffix","adornment","validation"],
   props: [
     {
@@ -18,7 +19,7 @@ export const docs = {
       name: 'label',
       type: 'string',
       description:
-        'Label text for the input — always rendered for accessibility.',
+        'Label text for the input: always rendered for accessibility.',
       required: true,
     },
     {
@@ -105,7 +106,7 @@ export const docs = {
       name: 'status',
       type: "{type: 'error' | 'warning' | 'success', message?: string}",
       description:
-        'Validation status — applies a colored border and status icon. If message is provided, displays a floating message below the input. Error type also sets aria-invalid.',
+        'Validation status: applies a colored border and status icon. If message is provided, displays a floating message below the input. Error type also sets aria-invalid.',
     },
     {
       name: 'hasClear',
@@ -137,12 +138,12 @@ export const docs = {
       'TextInput collects short-form text like names, emails, or search queries. Use it for single-line values where the expected input is brief. Pair it with validation status to guide users through required or formatted fields.',
     bestPractices: [
       {guidance: true, description: 'Always provide a visible label so users know what the field is for. Only hide the label when surrounding context makes it obvious, like a search bar with a magnifying-glass icon.'},
-      {guidance: true, description: 'Use validation status with a message to explain what went wrong — "Email must include @" is better than just turning the border red.'},
-      {guidance: true, description: 'Size the input to match the expected content length so users can gauge how much to type — small for zip codes, medium for names, large for URLs.'},
+      {guidance: true, description: 'Use validation status with a message to explain what went wrong: "Email must include @" is better than just turning the border red.'},
+      {guidance: true, description: 'Size the input to match the expected content length so users can gauge how much to type: small for zip codes, medium for names, large for URLs.'},
       {guidance: true, description: 'Add a clear button for search and filter inputs so users can quickly reset without selecting all text.'},
-      {guidance: false, description: "Don't use placeholder text as a replacement for a label — placeholders disappear on focus and are not reliably read by screen readers."},
-      {guidance: false, description: "Don't use TextInput for multi-line content like comments or descriptions — use TextArea instead."},
-      {guidance: false, description: "Don't mark every field as required — only flag truly mandatory fields so users are not overwhelmed by validation errors."},
+      {guidance: false, description: "Don't use placeholder text as a replacement for a label; placeholders disappear on focus and are not reliably read by screen readers."},
+      {guidance: false, description: "Don't use TextInput for multi-line content like comments or descriptions; use TextArea instead."},
+      {guidance: false, description: "Don't mark every field as required; only flag mandatory fields so users are not overwhelmed by validation errors."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text that identifies the field. Always rendered for accessibility even when visually hidden.'},
@@ -171,7 +172,7 @@ export const docsZh = {
       name: 'label',
       type: 'string',
       description:
-        '输入框的标签文本 — 始终渲染以确保无障碍性。',
+        '输入框的标签文本：始终渲染以确保无障碍性。',
       required: true,
     },
     {
@@ -258,7 +259,7 @@ export const docsZh = {
       name: 'status',
       type: "{type: 'error' | 'warning' | 'success', message?: string}",
       description:
-        '验证状态 — 应用彩色边框和状态图标。如果提供了 message，在输入框下方显示浮动消息。错误类型还会设置 aria-invalid。',
+        '验证状态：应用彩色边框和状态图标。如果提供了 message，在输入框下方显示浮动消息。错误类型还会设置 aria-invalid。',
     },
     {
       name: 'hasClear',
@@ -289,12 +290,12 @@ export const docsZh = {
       'TextInput collects short-form text like names, emails, or search queries. Use it for single-line values where the expected input is brief. Pair it with validation status to guide users through required or formatted fields.',
     bestPractices: [
       {guidance: true, description: 'Always provide a visible label so users know what the field is for. Only hide the label when surrounding context makes it obvious, like a search bar with a magnifying-glass icon.'},
-      {guidance: true, description: 'Use validation status with a message to explain what went wrong — "Email must include @" is better than just turning the border red.'},
-      {guidance: true, description: 'Size the input to match the expected content length so users can gauge how much to type — small for zip codes, medium for names, large for URLs.'},
+      {guidance: true, description: 'Use validation status with a message to explain what went wrong: "Email must include @" is better than just turning the border red.'},
+      {guidance: true, description: 'Size the input to match the expected content length so users can gauge how much to type: small for zip codes, medium for names, large for URLs.'},
       {guidance: true, description: 'Add a clear button for search and filter inputs so users can quickly reset without selecting all text.'},
-      {guidance: false, description: "Don't use placeholder text as a replacement for a label — placeholders disappear on focus and are not reliably read by screen readers."},
-      {guidance: false, description: "Don't use TextInput for multi-line content like comments or descriptions — use TextArea instead."},
-      {guidance: false, description: "Don't mark every field as required — only flag truly mandatory fields so users are not overwhelmed by validation errors."},
+      {guidance: false, description: "Don't use placeholder text as a replacement for a label; placeholders disappear on focus and are not reliably read by screen readers."},
+      {guidance: false, description: "Don't use TextInput for multi-line content like comments or descriptions; use TextArea instead."},
+      {guidance: false, description: "Don't mark every field as required; only flag mandatory fields so users are not overwhelmed by validation errors."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text that identifies the field. Always rendered for accessibility even when visually hidden.'},
@@ -316,12 +317,12 @@ export const docsDense = {
       'TextInput collects short-form text like names, emails, or search queries. Use it for single-line values where the expected input is brief. Pair it with validation status to guide users through required or formatted fields.',
     bestPractices: [
       {guidance: true, description: 'Always provide a visible label so users know what the field is for. Only hide the label when surrounding context makes it obvious, like a search bar with a magnifying-glass icon.'},
-      {guidance: true, description: 'Use validation status with a message to explain what went wrong — "Email must include @" is better than just turning the border red.'},
-      {guidance: true, description: 'Size the input to match the expected content length so users can gauge how much to type — small for zip codes, medium for names, large for URLs.'},
+      {guidance: true, description: 'Use validation status with a message to explain what went wrong: "Email must include @" is better than just turning the border red.'},
+      {guidance: true, description: 'Size the input to match the expected content length so users can gauge how much to type: small for zip codes, medium for names, large for URLs.'},
       {guidance: true, description: 'Add a clear button for search and filter inputs so users can quickly reset without selecting all text.'},
-      {guidance: false, description: "Don't use placeholder text as a replacement for a label — placeholders disappear on focus and are not reliably read by screen readers."},
-      {guidance: false, description: "Don't use TextInput for multi-line content like comments or descriptions — use TextArea instead."},
-      {guidance: false, description: "Don't mark every field as required — only flag truly mandatory fields so users are not overwhelmed by validation errors."},
+      {guidance: false, description: "Don't use placeholder text as a replacement for a label; placeholders disappear on focus and are not reliably read by screen readers."},
+      {guidance: false, description: "Don't use TextInput for multi-line content like comments or descriptions; use TextArea instead."},
+      {guidance: false, description: "Don't mark every field as required; only flag mandatory fields so users are not overwhelmed by validation errors."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text that identifies the field. Always rendered for accessibility even when visually hidden.'},

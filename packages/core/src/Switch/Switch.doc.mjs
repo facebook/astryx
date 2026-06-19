@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Switch',
   displayName: 'Switch',
+  category: 'Data Input',
   keywords: ["switch","toggle","onoff","flipswitch","boolean","toggleswitch"],
   props: [
     {
@@ -128,10 +129,10 @@ export const docs = {
     description:
       'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead.',
     bestPractices: [
-      { guidance: true, description: 'Use for settings that apply immediately — the toggle should take effect without a separate save action.' },
+      { guidance: true, description: 'Use for settings that apply immediately; the toggle should take effect without a separate save action.' },
       { guidance: true, description: 'Pair with a clear, concise label that describes the setting being controlled.' },
-      { guidance: false, description: 'Use for options that require a form submission to take effect — use a checkbox instead.' },
-      { guidance: false, description: 'Use a switch for multi-state values — it\'s strictly on/off.' },
+      { guidance: false, description: 'Use for options that require a form submission to take effect; use a checkbox instead.' },
+      { guidance: false, description: 'Use a switch for multi-state values; it\'s strictly on/off.' },
     ],
   },
 };
@@ -262,10 +263,10 @@ export const docsZh = {
     description:
       'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead.',
     bestPractices: [
-      { guidance: true, description: 'Use for settings that apply immediately — the toggle should take effect without a separate save action.' },
+      { guidance: true, description: 'Use for settings that apply immediately; the toggle should take effect without a separate save action.' },
       { guidance: true, description: 'Pair with a clear, concise label that describes the setting being controlled.' },
-      { guidance: false, description: 'Use for options that require a form submission to take effect — use a checkbox instead.' },
-      { guidance: false, description: 'Use a switch for multi-state values — it\'s strictly on/off.' },
+      { guidance: false, description: 'Use for options that require a form submission to take effect; use a checkbox instead.' },
+      { guidance: false, description: 'Use a switch for multi-state values; it\'s strictly on/off.' },
     ],
   },
 };
@@ -277,10 +278,10 @@ export const docsDense = {
     description:
       'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead.',
     bestPractices: [
-      { guidance: true, description: 'Use for settings that apply immediately — the toggle should take effect without a separate save action.' },
+      { guidance: true, description: 'Use for settings that apply immediately; the toggle should take effect without a separate save action.' },
       { guidance: true, description: 'Pair with a clear, concise label that describes the setting being controlled.' },
-      { guidance: false, description: 'Use for options that require a form submission to take effect — use a checkbox instead.' },
-      { guidance: false, description: 'Use a switch for multi-state values — it\'s strictly on/off.' },
+      { guidance: false, description: 'Use for options that require a form submission to take effect; use a checkbox instead.' },
+      { guidance: false, description: 'Use a switch for multi-state values; it\'s strictly on/off.' },
     ],
   },
   propDescriptions: {

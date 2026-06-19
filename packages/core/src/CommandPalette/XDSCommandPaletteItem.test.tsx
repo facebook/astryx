@@ -6,9 +6,37 @@
  * @output Unit tests for XDSCommandPaletteItem
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {afterEach, describe, it, expect, vi} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {XDSDialog} from '../Dialog/XDSDialog';
 import {XDSCommandPaletteItem} from './XDSCommandPaletteItem';
+
+const scrollIntoViewDescriptor = Object.getOwnPropertyDescriptor(
+  HTMLElement.prototype,
+  'scrollIntoView',
+);
+
+function mockScrollIntoView() {
+  const scrollIntoView = vi.fn();
+  Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+    configurable: true,
+    value: scrollIntoView,
+  });
+  return scrollIntoView;
+}
+
+afterEach(() => {
+  if (scrollIntoViewDescriptor) {
+    Object.defineProperty(
+      HTMLElement.prototype,
+      'scrollIntoView',
+      scrollIntoViewDescriptor,
+    );
+  } else {
+    delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
+      .scrollIntoView;
+  }
+});
 
 describe('XDSCommandPaletteItem', () => {
   it('renders children', () => {
@@ -75,6 +103,58 @@ describe('XDSCommandPaletteItem', () => {
       'aria-selected',
       'false',
     );
+  });
+
+  it('scrolls highlighted items into view by default', async () => {
+    const scrollIntoView = mockScrollIntoView();
+
+    render(
+      <XDSCommandPaletteItem value="test" isHighlighted>
+        Item
+      </XDSCommandPaletteItem>,
+    );
+
+    await waitFor(() => {
+      expect(scrollIntoView).toHaveBeenCalledWith({block: 'nearest'});
+    });
+  });
+
+  it('does not scroll initially highlighted items in inline dialogs', () => {
+    const scrollIntoView = mockScrollIntoView();
+
+    render(
+      <XDSDialog isOpen isInline onOpenChange={() => {}}>
+        <XDSCommandPaletteItem value="test" isHighlighted>
+          Item
+        </XDSCommandPaletteItem>
+      </XDSDialog>,
+    );
+
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('scrolls inline dialog items after highlight changes', async () => {
+    const scrollIntoView = mockScrollIntoView();
+
+    const {rerender} = render(
+      <XDSDialog isOpen isInline onOpenChange={() => {}}>
+        <XDSCommandPaletteItem value="test" isHighlighted={false}>
+          Item
+        </XDSCommandPaletteItem>
+      </XDSDialog>,
+    );
+
+    rerender(
+      <XDSDialog isOpen isInline onOpenChange={() => {}}>
+        <XDSCommandPaletteItem value="test" isHighlighted>
+          Item
+        </XDSCommandPaletteItem>
+      </XDSDialog>,
+    );
+
+    await waitFor(() => {
+      expect(scrollIntoView).toHaveBeenCalledWith({block: 'nearest'});
+    });
   });
 
   it('sets data-value attribute', () => {

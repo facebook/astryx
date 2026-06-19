@@ -40,9 +40,10 @@ import {XDSTableCell} from './XDSTableCell';
 import {XDSTableHeaderCell} from './XDSTableHeaderCell';
 import {XDSTableHeader} from './XDSTableHeader';
 import {XDSTableBody} from './XDSTableBody';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {XDSEmptyState} from '../EmptyState';
 import {XDSText} from '../Text';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const styles = stylex.create({
   table: {
@@ -451,11 +452,9 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
       ref={ref}
       {...tableRenderProps.htmlProps}
       {...mergeProps(
-        xdsClassName('base-table') +
-          (tableRenderProps.htmlProps.className
-            ? ` ${tableRenderProps.htmlProps.className}`
-            : ''),
+        xdsThemeProps('base-table'),
         stylex.props(...tableRenderProps.styles),
+        tableRenderProps.htmlProps.className,
       )}
       style={tableStyle}>
       {children ? (

@@ -49,3 +49,9 @@ export type {
 
 export {useInputContainer} from './useInputContainer';
 export type {UseInputContainerOptions} from './useInputContainer';
+
+export {useXDSInteractiveRole} from './useXDSInteractiveRole';
+export type {
+  XDSInteractiveRole,
+  UseXDSInteractiveRoleOptions,
+} from './useXDSInteractiveRole';

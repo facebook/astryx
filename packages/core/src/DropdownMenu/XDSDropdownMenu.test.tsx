@@ -63,6 +63,37 @@ describe('XDSDropdownMenu', () => {
     expect(screen.getByRole('menu', {hidden: true})).toBeInTheDocument();
   });
 
+  it('defaults menu placement below', () => {
+    render(
+      <XDSDropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Item 1'}]}
+      />,
+    );
+    const popover = screen
+      .getByRole('menu', {hidden: true})
+      .closest('[popover]');
+    expect(popover?.getAttribute('style')).toContain(
+      'position-area: bottom span-right',
+    );
+  });
+
+  it('supports explicit menu placement', () => {
+    render(
+      <XDSDropdownMenu
+        button={{label: 'Actions'}}
+        placement="above"
+        items={[{label: 'Item 1'}]}
+      />,
+    );
+    const popover = screen
+      .getByRole('menu', {hidden: true})
+      .closest('[popover]');
+    expect(popover?.getAttribute('style')).toContain(
+      'position-area: top span-right',
+    );
+  });
+
   it('has aria-haspopup and aria-expanded attributes', () => {
     render(
       <XDSDropdownMenu
@@ -453,6 +484,19 @@ describe('XDSDropdownMenu compound mode', () => {
     expect(
       screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
     ).toBeInTheDocument();
+  });
+
+  it('renders endContent after the item label', () => {
+    render(
+      <XDSDropdownMenu button={{label: 'Actions'}}>
+        <XDSDropdownMenuItem
+          label="Notifications"
+          endContent={<span data-testid="badge">3</span>}
+        />
+      </XDSDropdownMenu>,
+    );
+
+    expect(screen.getByTestId('badge')).toHaveTextContent('3');
   });
 
   it('calls onClick when compound item is clicked', async () => {

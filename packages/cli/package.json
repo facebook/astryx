@@ -49,10 +49,10 @@
   "scripts": {
     "xds": "node bin/xds.mjs",
     "typecheck:template-docs": "tsc --project tsconfig.template-docs.json",
-    "typecheck:json-api": "tsc --project tsconfig.json-api.json"
+    "typecheck:json-api": "tsc --project tsconfig.json-api.json && tsc --project tsconfig.api-contract.json"
   },
   "dependencies": {
-    "@clack/prompts": "^1.4.0",
+    "@clack/prompts": "^1.5.1",
     "commander": "^12.1.0",
     "jiti": "^2.7.0"
   },

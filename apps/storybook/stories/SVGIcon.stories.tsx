@@ -277,7 +277,7 @@ export const MaskGaps: Story = {
       <XDSHeading level={3}>Mask Gaps on Different Backgrounds</XDSHeading>
       <XDSText type="supporting" color="secondary">
         Bold mode uses mask-based knockout gaps. Because the gap is transparent
-        (not white), it works on any background — solid colors, surfaces, and
+        (not white), it works on any background: solid colors, surfaces, and
         gradients alike.
       </XDSText>
 
@@ -392,9 +392,9 @@ export const StructuralDiversity: Story = {
     <XDSStack direction="vertical" gap={3}>
       <XDSHeading level={3}>Structural Diversity</XDSHeading>
       <XDSText type="supporting" color="secondary">
-        New icons with diverse structures — organic curves, complex single
-        paths, nested overlapping fills, and mixed fill+stroke roles — across
-        all five variations.
+        New icons with diverse structures: organic curves, complex single paths,
+        nested overlapping fills, and mixed fill+stroke roles, across all five
+        variations.
       </XDSText>
       <div
         style={{

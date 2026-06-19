@@ -4,7 +4,7 @@ Core UI components, theme system, and utilities for the XDS design system. For p
 
 ## Component Docs
 
-Look up any component's full API — props, types, best practices, and theming:
+Look up any component's full API (props, types, best practices, and theming):
 
 ```bash
 node node_modules/@xds/core/docs.mjs Button        # full docs for a component
@@ -15,8 +15,10 @@ node node_modules/@xds/core/docs.mjs --list --brief  # brief summaries
 ## Page Layouts
 
 Building a full page? Start with a template rather than composing from scratch.
-Templates show how to combine `XDSAppShell`, `XDSLayout`, `XDSTopNav`, and `XDSSideNav`
-into common page patterns (dashboards, settings, forms, detail pages).
+Templates are content-only; they compose `XDSLayout` with header, content, and
+panel slots into common page patterns (dashboards, settings, forms, detail pages).
+Wrap them in your own app chrome (`XDSAppShell`, `XDSTopNav`, `XDSSideNav`) to add
+global navigation.
 
 Requires `@xds/cli` (`npm install -D @xds/cli`):
 
@@ -46,12 +48,12 @@ npx xds gap-report                   # report a missing capability
 
 ## Related Packages
 
-| Package | Description |
-|---------|-------------|
-| [`@xds/cli`](https://github.com/facebookexperimental/xds/tree/main/packages/cli) | CLI tooling — component docs, templates, scaffolding, codemods |
-| [`@xds/theme-default`](https://github.com/facebookexperimental/xds/tree/main/packages/themes/default) | Default theme (Heroicons) |
-| [`@xds/theme-neutral`](https://github.com/facebookexperimental/xds/tree/main/packages/themes/neutral) | Muted, minimal theme (Lucide icons) |
-| [`@xds/theme-daily`](https://github.com/facebookexperimental/xds/tree/main/packages/themes/daily) | Warm, productivity-focused theme (Lucide icons) |
+| Package                                                                                               | Description                                                   |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| [`@xds/cli`](https://github.com/facebookexperimental/xds/tree/main/packages/cli)                      | CLI tooling: component docs, templates, scaffolding, codemods |
+| [`@xds/theme-default`](https://github.com/facebookexperimental/xds/tree/main/packages/themes/default) | Default theme (Heroicons)                                     |
+| [`@xds/theme-neutral`](https://github.com/facebookexperimental/xds/tree/main/packages/themes/neutral) | Muted, minimal theme (Lucide icons)                           |
+| [`@xds/theme-daily`](https://github.com/facebookexperimental/xds/tree/main/packages/themes/daily)     | Warm, productivity-focused theme (Lucide icons)               |
 
 ## Resources
 
@@ -72,23 +74,23 @@ Then pick your setup below based on your framework and styling approach.
 
 ### Next.js + Tailwind (simplest)
 
-No build plugins needed — XDS ships pre-built CSS that works alongside Tailwind.
+No build plugins needed; XDS ships pre-built CSS that works alongside Tailwind.
 
 **`src/app/globals.css`**
 
 ```css
 @layer reset, theme, base, xds-base, xds-theme, components, utilities;
 
-@import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/preflight.css" layer(base);
-@import "@xds/core/reset.css";
-@import "@xds/core/xds.css";
-@import "@xds/theme-default/theme.css";
-@import "@xds/core/tailwind-theme.css";
-@import "tailwindcss/utilities.css" layer(utilities);
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import '@xds/core/reset.css';
+@import '@xds/core/xds.css';
+@import '@xds/theme-default/theme.css';
+@import '@xds/core/tailwind-theme.css';
+@import 'tailwindcss/utilities.css' layer(utilities);
 ```
 
-The `tailwind-theme.css` import maps XDS tokens to Tailwind utilities via `@theme inline`:
+The `tailwind-theme.css` import maps system tokens to Tailwind utilities via `@theme inline`:
 
 ```tsx
 // Without the bridge — verbose:
@@ -100,15 +102,15 @@ The `tailwind-theme.css` import maps XDS tokens to Tailwind utilities via `@them
 
 Some useful mappings:
 
-| Tailwind class | XDS token |
-|---|---|
-| `text-primary` / `text-secondary` | `--color-text-primary` / `--color-text-secondary` |
-| `bg-surface` / `bg-card` / `bg-body` | `--color-background-surface` / `card` / `body` |
-| `border-border` / `border-strong` | `--color-border` / `--color-border-emphasized` |
-| `bg-success` / `text-error` / `text-warning` | Status tokens |
-| `bg-blue-subtle` / `border-blue-ring` / `text-blue-vivid` | Hue palette (×10 hues) |
-| `rounded-sm` / `rounded-md` / `rounded-lg` | `--radius-inner` / `element` / `container` |
-| `shadow-sm` / `shadow-md` / `shadow-lg` | `--shadow-low` / `med` / `high` |
+| Tailwind class                                            | XDS token                                         |
+| --------------------------------------------------------- | ------------------------------------------------- |
+| `text-primary` / `text-secondary`                         | `--color-text-primary` / `--color-text-secondary` |
+| `bg-surface` / `bg-card` / `bg-body`                      | `--color-background-surface` / `card` / `body`    |
+| `border-border` / `border-strong`                         | `--color-border` / `--color-border-emphasized`    |
+| `bg-success` / `text-error` / `text-warning`              | Status tokens                                     |
+| `bg-blue-subtle` / `border-blue-ring` / `text-blue-vivid` | Hue palette (×10 hues)                            |
+| `rounded-sm` / `rounded-md` / `rounded-lg`                | `--radius-inner` / `element` / `container`        |
+| `shadow-sm` / `shadow-md` / `shadow-lg`                   | `--shadow-low` / `med` / `high`                   |
 
 Spacing references `var(--spacing-1)` as the base unit, so `p-4` = 16px, matching XDS's `--spacing-4`. Arbitrary values still work as an escape hatch: `bg-[var(--color-background-surface)]`.
 
@@ -148,7 +150,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
 }
 ```
 
-That's it — start using components:
+That's it. Start using components:
 
 ```tsx
 import {XDSButton} from '@xds/core/Button';
@@ -169,9 +171,9 @@ npm install @xds/core @xds/theme-default
 **`src/app/globals.css`**
 
 ```css
-@import "@xds/core/reset.css";
-@import "@xds/core/xds.css";
-@import "@xds/theme-default/theme.css";
+@import '@xds/core/reset.css';
+@import '@xds/core/xds.css';
+@import '@xds/theme-default/theme.css';
 ```
 
 Providers and layout are the same as the Tailwind example (use `@xds/theme-default/built`).
@@ -182,4 +184,4 @@ Providers and layout are the same as the Tailwind example (use `@xds/theme-defau
 npm install @xds/core @xds/theme-default
 ```
 
-Same CSS imports and providers as above. No build plugins needed — XDS ships pre-built.
+Same CSS imports and providers as above. No build plugins needed; XDS ships pre-built.

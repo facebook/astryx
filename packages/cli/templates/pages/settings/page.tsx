@@ -3,32 +3,36 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Layout';
+import {useMediaQuery} from '@xds/core/hooks';
+import {
+  XDSVStack,
+  XDSHStack,
+  XDSStackItem,
+  XDSLayout,
+  XDSLayoutContent,
+  XDSLayoutHeader,
+  XDSLayoutPanel,
+} from '@xds/core/Layout';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
-import {XDSSection} from '@xds/core/Section';
 import {XDSTypeahead} from '@xds/core/Typeahead';
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 
+// Caps + centers the whole layout shell (header + sidebar + content). XDSLayout
+// has no max-width prop for the outer shell — contentWidth only caps slot
+// content, not the sidebar/header. Tracked in #2625.
 const styles = stylex.create({
   constrainedShell: {
     maxWidth: 1440,
     marginInline: 'auto',
-  },
-  headerPadding: {
-    padding: spacingVars['--spacing-4'],
-  },
-  sideNavWidth: {
-    minWidth: 260,
   },
 });
 
@@ -61,6 +65,7 @@ const settingsSearchSource: XDSSearchSource<XDSSearchableItem> = {
 };
 
 export default function SettingsTemplate() {
+  const isNarrow = useMediaQuery('(max-width: 768px)');
   const [activeNav, setActiveNav] = useState('Profile');
   const [username, setUsername] = useState('nicol43');
   const [firstName, setFirstName] = useState('Stephanie');
@@ -77,145 +82,162 @@ export default function SettingsTemplate() {
   );
 
   return (
-    <XDSAppShell
+    <XDSLayout
       height="auto"
-      variant="section"
-      contentPadding={4}
       xstyle={styles.constrainedShell}
-      topNav={
-        <XDSHStack vAlign="center" xstyle={styles.headerPadding}>
-          <XDSStackItem size="fill">
-            <XDSHeading level={1}>Settings</XDSHeading>
-          </XDSStackItem>
-          <XDSTypeahead
-            label="Search"
-            isLabelHidden
-            placeholder="Search settings..."
-            searchSource={settingsSearchSource}
-            value={searchValue}
-            onChange={setSearchValue}
-            hasEntriesOnFocus
-            startIcon={MagnifyingGlassIcon}
-          />
-        </XDSHStack>
+      header={
+        <XDSLayoutHeader hasDivider>
+          <XDSHStack vAlign="center">
+            <XDSStackItem size="fill">
+              <XDSHeading level={1}>Settings</XDSHeading>
+            </XDSStackItem>
+            <XDSTypeahead
+              label="Search"
+              isLabelHidden
+              placeholder="Search settings..."
+              searchSource={settingsSearchSource}
+              value={searchValue}
+              onChange={setSearchValue}
+              hasEntriesOnFocus
+              startIcon={MagnifyingGlassIcon}
+            />
+          </XDSHStack>
+        </XDSLayoutHeader>
       }
-      sideNav={
-        <XDSSection padding={2} variant="transparent" xstyle={styles.sideNavWidth}>
-          <XDSList density="balanced">
-            {NAV_ITEMS.map(item => (
-              <XDSListItem
-                key={item}
-                label={item}
-                isSelected={activeNav === item}
-                onClick={() => setActiveNav(item)}
-              />
-            ))}
-          </XDSList>
-        </XDSSection>
-      }>
-      <XDSVStack gap={4}>
-        <XDSGrid columns={{minWidth: 320}} gap={10}>
-          <XDSVStack gap={1}>
-            <XDSHeading level={3}>Basic information</XDSHeading>
-            <XDSText type="supporting" color="secondary">
-              View and update your personal details and account information.
-            </XDSText>
-          </XDSVStack>
+      start={
+        isNarrow ? undefined : (
+          <XDSLayoutPanel hasDivider={false} width={260} padding={2}>
+            <XDSList density="balanced">
+              {NAV_ITEMS.map(item => (
+                <XDSListItem
+                  key={item}
+                  label={item}
+                  isSelected={activeNav === item}
+                  onClick={() => setActiveNav(item)}
+                />
+              ))}
+            </XDSList>
+          </XDSLayoutPanel>
+        )
+      }
+      content={
+        <XDSLayoutContent padding={4}>
           <XDSVStack gap={4}>
-            <XDSTextInput
-              label="Username"
-              value={username}
-              onChange={setUsername}
-            />
-            <XDSTextInput
-              label="First name"
-              value={firstName}
-              onChange={setFirstName}
-            />
-            <XDSTextInput
-              label="Last name"
-              value={lastName}
-              onChange={setLastName}
-            />
-            <XDSTextInput
-              label="Email address"
-              value={email}
-              onChange={setEmail}
-            />
-            <XDSHStack>
-              <XDSButton label="Save" variant="primary" />
-            </XDSHStack>
-          </XDSVStack>
-        </XDSGrid>
+            {/* Mobile: the sidebar nav collapses to a horizontal, centered
+                tab bar above the content. */}
+            {isNarrow && (
+              <XDSVStack hAlign="center">
+                <XDSTabList value={activeNav} onChange={setActiveNav}>
+                  {NAV_ITEMS.map(item => (
+                    <XDSTab key={item} value={item} label={item} />
+                  ))}
+                </XDSTabList>
+              </XDSVStack>
+            )}
+            <XDSGrid columns={{minWidth: 320}} gap={10}>
+              <XDSVStack gap={1}>
+                <XDSHeading level={3}>Basic information</XDSHeading>
+                <XDSText type="supporting" color="secondary">
+                  View and update your personal details and account information.
+                </XDSText>
+              </XDSVStack>
+              <XDSVStack gap={4}>
+                <XDSTextInput
+                  label="Username"
+                  value={username}
+                  onChange={setUsername}
+                />
+                <XDSTextInput
+                  label="First name"
+                  value={firstName}
+                  onChange={setFirstName}
+                />
+                <XDSTextInput
+                  label="Last name"
+                  value={lastName}
+                  onChange={setLastName}
+                />
+                <XDSTextInput
+                  label="Email address"
+                  value={email}
+                  onChange={setEmail}
+                />
+                <XDSHStack>
+                  <XDSButton label="Save" variant="primary" />
+                </XDSHStack>
+              </XDSVStack>
+            </XDSGrid>
 
-        <XDSDivider />
+            <XDSDivider />
 
-        <XDSGrid columns={{minWidth: 320}} gap={10}>
-          <XDSVStack gap={1}>
-            <XDSHeading level={3}>Change password</XDSHeading>
-            <XDSText type="supporting" color="secondary">
-              Update your password to keep your account secure.
-            </XDSText>
-          </XDSVStack>
-          <XDSVStack gap={4}>
-            <XDSTextInput
-              label="Verify current password"
-              type="password"
-              value={currentPw}
-              onChange={setCurrentPw}
-            />
-            <XDSTextInput
-              label="New password"
-              type="password"
-              value={newPw}
-              onChange={setNewPw}
-            />
-            <XDSTextInput
-              label="Confirm password"
-              type="password"
-              value={confirmPw}
-              onChange={setConfirmPw}
-            />
-            <XDSHStack>
-              <XDSButton label="Save" variant="primary" />
-            </XDSHStack>
-          </XDSVStack>
-        </XDSGrid>
+            <XDSGrid columns={{minWidth: 320}} gap={10}>
+              <XDSVStack gap={1}>
+                <XDSHeading level={3}>Change password</XDSHeading>
+                <XDSText type="supporting" color="secondary">
+                  Update your password to keep your account secure.
+                </XDSText>
+              </XDSVStack>
+              <XDSVStack gap={4}>
+                <XDSTextInput
+                  label="Verify current password"
+                  type="password"
+                  value={currentPw}
+                  onChange={setCurrentPw}
+                />
+                <XDSTextInput
+                  label="New password"
+                  type="password"
+                  value={newPw}
+                  onChange={setNewPw}
+                />
+                <XDSTextInput
+                  label="Confirm password"
+                  type="password"
+                  value={confirmPw}
+                  onChange={setConfirmPw}
+                />
+                <XDSHStack>
+                  <XDSButton label="Save" variant="primary" />
+                </XDSHStack>
+              </XDSVStack>
+            </XDSGrid>
 
-        <XDSDivider />
+            <XDSDivider />
 
-        <XDSGrid columns={{minWidth: 320}} gap={10}>
-          <XDSVStack gap={1}>
-            <XDSHeading level={3}>Advanced settings</XDSHeading>
-            <XDSText type="supporting" color="secondary">
-              Configure detailed account preferences and security options.
-            </XDSText>
+            <XDSGrid columns={{minWidth: 320}} gap={10}>
+              <XDSVStack gap={1}>
+                <XDSHeading level={3}>Advanced settings</XDSHeading>
+                <XDSText type="supporting" color="secondary">
+                  Configure detailed account preferences and security options.
+                </XDSText>
+              </XDSVStack>
+              <XDSVStack gap={5}>
+                <XDSCheckboxInput
+                  label="Data Export Access"
+                  description="Allow export of personal data and backups."
+                  value={dataExport}
+                  onChange={setDataExport}
+                />
+                <XDSCheckboxInput
+                  label="Allow Admin to Add Members"
+                  description="Admins can invite and manage members."
+                  value={adminMembers}
+                  onChange={setAdminMembers}
+                />
+                <XDSCheckboxInput
+                  label="Enable Two-Factor Authentication"
+                  description="Require 2FA for added account security."
+                  value={twoFactor}
+                  onChange={setTwoFactor}
+                />
+                <XDSHStack>
+                  <XDSButton label="Save" variant="primary" />
+                </XDSHStack>
+              </XDSVStack>
+            </XDSGrid>
           </XDSVStack>
-          <XDSVStack gap={5}>
-            <XDSCheckboxInput
-              label="Data Export Access"
-              description="Allow export of personal data and backups."
-              value={dataExport}
-              onChange={setDataExport}
-            />
-            <XDSCheckboxInput
-              label="Allow Admin to Add Members"
-              description="Admins can invite and manage members."
-              value={adminMembers}
-              onChange={setAdminMembers}
-            />
-            <XDSCheckboxInput
-              label="Enable Two-Factor Authentication"
-              description="Require 2FA for added account security."
-              value={twoFactor}
-              onChange={setTwoFactor}
-            />
-            <XDSHStack>
-              <XDSButton label="Save" variant="primary" />
-            </XDSHStack>
-          </XDSVStack>
-        </XDSGrid>
-      </XDSVStack>
-    </XDSAppShell>
+        </XDSLayoutContent>
+      }
+    />
   );
 }

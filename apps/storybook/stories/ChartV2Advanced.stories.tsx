@@ -15,10 +15,13 @@ import {
   streamGL,
   type StreamGLHandle,
 } from '@xds/lab';
-import {XDSChartGrid, XDSChartAxis} from '@xds/lab';
+import {
+  XDSChartV2Grid as XDSChartGrid,
+  XDSChartV2Axis as XDSChartAxis,
+} from '@xds/lab';
 
 const meta: Meta<typeof XDSChart> = {
-  title: 'Lab/XDSChart v2/Advanced',
+  title: 'Lab/ChartV2Advanced',
   component: XDSChart,
 };
 export default meta;
@@ -102,7 +105,7 @@ export const Candlestick: StoryObj = {
           downColor: '#ef4444',
         }),
       ]}
-      grid={<XDSChartGrid horizontal />}
+      grid={<XDSChartGrid />}
       axes={
         <>
           <XDSChartAxis position="bottom" />
@@ -154,7 +157,7 @@ export const FinancialComposite: StoryObj = {
           line('ma5', {color: '#f59e0b', strokeWidth: 1.5}),
           bar('volume', {color: '#94a3b8', opacity: 0.3}),
         ]}
-        grid={<XDSChartGrid horizontal />}
+        grid={<XDSChartGrid />}
         axes={
           <>
             <XDSChartAxis position="bottom" />
@@ -188,7 +191,7 @@ export const ConfidenceBands: StoryObj = {
         }),
         line('mean', {color: '#3b82f6', strokeWidth: 2}),
       ]}
-      grid={<XDSChartGrid horizontal />}
+      grid={<XDSChartGrid />}
       axes={
         <>
           <XDSChartAxis position="bottom" />
@@ -219,7 +222,7 @@ export const ErrorBarsWithTarget: StoryObj = {
           bandOpacity: 0.1,
         }),
       ]}
-      grid={<XDSChartGrid horizontal />}
+      grid={<XDSChartGrid />}
       axes={
         <>
           <XDSChartAxis position="bottom" />
@@ -301,7 +304,7 @@ export const StreamingLine: StoryObj = {
         data={[]}
         xKey="x"
         series={[streamGL({handleRef, color: '#3b82f6'})]}
-        grid={<XDSChartGrid horizontal />}
+        grid={<XDSChartGrid />}
         axes={
           <>
             <XDSChartAxis position="bottom" />
@@ -352,7 +355,7 @@ export const KitchenSink: StoryObj = {
           errorBar({high: 'errorHigh', low: 'errorLow', color: '#1e3a5f'}),
           line('runAvg', {color: '#f59e0b', strokeWidth: 2}),
         ]}
-        grid={<XDSChartGrid horizontal />}
+        grid={<XDSChartGrid />}
         axes={
           <>
             <XDSChartAxis position="bottom" />

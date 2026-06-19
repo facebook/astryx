@@ -7,4 +7,5 @@ export const doc = {
   displayName: 'Product Detail',
   description: 'Product page with image gallery and collapsible sections',
   isReady: true,
+  category: 'Content - Product Detail',
 };

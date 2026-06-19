@@ -15,13 +15,19 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as p from '@clack/prompts';
 import {findCoreDir, listComponents} from '../utils/paths.mjs';
-import {jsonOut, jsonError} from '../lib/json.mjs';
+import {assertWithin, PathSafetyError, isNonInteractive} from '../utils/path-safety.mjs';
+import {isInteractive} from '../utils/interactive.mjs';
+import {jsonOut, humanLog} from '../lib/json.mjs';
+import {cliError} from '../lib/cli-error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {
+  buildGapReportPreview,
   checkGhCli,
   createGapReport,
   loadGapReportConfig,
   GAP_CATEGORIES,
 } from '../utils/github.mjs';
+import {shouldActuallyFile, formatPreview} from './gap-report.mjs';
 
 /**
  * Rewrite relative imports that point outside the component directory
@@ -63,31 +69,42 @@ export function registerSwizzle(program) {
     .option('--list', 'List available components')
     .option('--gap <reason>', 'File a gap report explaining why you swizzled')
     .option('--gap-category <category>', 'Gap category (for --gap mode)')
-    .option('--no-report', 'Suppress the interactive gap report prompt')
+    .option(
+      '--no-report',
+      'Suppress all gap reporting (interactive prompt AND --gap auto-filing)',
+    )
+    .option(
+      '--dry-run',
+      'For --gap: print the issue that would be filed without contacting GitHub. Default in non-TTY / --json mode.',
+    )
+    .option(
+      '--commit',
+      'For --gap: actually file the issue. Required in non-interactive mode.',
+    )
+    .option('-f, --overwrite', 'Overwrite existing files without prompting')
     .action(async (component, options) => {
       const coreDir = findCoreDir(process.cwd());
       const json = program.opts().json || false;
 
       if (!coreDir) {
-        if (json) return jsonError('Could not find @xds/core package');
-        console.error(
-          'Error: Could not find @xds/core package.\n' +
-            'Make sure you are inside the XDS monorepo or have @xds/core installed.',
+        cliError(
+          'Could not find @xds/core package. Make sure you are inside the design system monorepo or have @xds/core installed.',
+          {code: ERROR_CODES.ERR_CORE_NOT_FOUND},
         );
-        process.exit(1);
+        return;
       }
 
       const components = listComponents(coreDir);
 
       if (options.list || !component) {
         if (json) return jsonOut('swizzle.list', components);
-        console.log('\nAvailable components:\n');
+        humanLog('\nAvailable components:\n');
         for (const name of components) {
-          console.log(`  ${name}`);
+          humanLog(`  ${name}`);
         }
-        console.log(`\nUsage: xds swizzle <component>\n`);
-        console.log('Example: xds swizzle Button');
-        console.log('         xds swizzle XDSButton  (XDS prefix also works)\n');
+        humanLog(`\nUsage: xds swizzle <component>\n`);
+        humanLog('Example: xds swizzle Button');
+        humanLog('         xds swizzle XDSButton  (XDS prefix also works)\n');
         return;
       }
 
@@ -95,13 +112,64 @@ export function registerSwizzle(program) {
       const componentDir = path.join(coreDir, 'src', dirName);
 
       if (!fs.existsSync(componentDir)) {
-        if (json) return jsonError(`Component "${component}" not found`, components.slice(0, 5).map(n => ({name: n, reason: 'available component'})));
-        console.error(`Error: Component "${component}" not found.`);
-        console.error(`Available: ${components.join(', ')}`);
-        process.exit(1);
+        cliError(
+          `Component "${component}" not found.`,
+          {suggestions: components.slice(0, 10).map((n) => ({name: n})), code: ERROR_CODES.ERR_UNKNOWN_COMPONENT},
+        );
+        return;
       }
 
-      const outputDir = path.resolve(process.cwd(), options.output, dirName);
+      // Path-safety: --output must resolve inside cwd. Reject absolute
+      // paths and `..` traversal up front, before any directory is created.
+      let outputBase;
+      try {
+        outputBase = assertWithin(options.output, process.cwd(), {
+          label: 'output directory',
+        });
+      } catch (err) {
+        if (err instanceof PathSafetyError) {
+          cliError(err.message, {code: ERROR_CODES.ERR_PATH_TRAVERSAL});
+          return;
+        }
+        throw err;
+      }
+      const outputDir = path.join(outputBase, dirName);
+
+      // Pre-flight overwrite check: collect files we'd write and detect
+      // collisions before mkdir/writeFile so we never half-clobber.
+      const sourceFiles = fs.readdirSync(componentDir).filter(file => {
+        if (file.includes('.test.') || file === 'README.md') return false;
+        const stat = fs.statSync(path.join(componentDir, file));
+        return stat.isFile();
+      });
+
+      const existingFiles = sourceFiles.filter(f =>
+        fs.existsSync(path.join(outputDir, f)),
+      );
+
+      if (existingFiles.length > 0 && !options.overwrite) {
+        const relOutputForMsg = path.relative(process.cwd(), outputDir) || '.';
+        if (json || isNonInteractive({json})) {
+          const msg =
+            `Refusing to overwrite ${existingFiles.length} existing file(s) in ${relOutputForMsg}/. ` +
+            `Re-run with --overwrite (or -f) to replace them.`;
+          cliError(msg, {code: ERROR_CODES.ERR_FILE_EXISTS});
+          return;
+        }
+        const confirmed = isCancel(
+          await p.confirm({
+            message:
+              `Overwrite ${existingFiles.length} existing file(s) in ${relOutputForMsg}/? ` +
+              `(${existingFiles.slice(0, 3).join(', ')}${existingFiles.length > 3 ? ', …' : ''})`,
+            initialValue: false,
+          }),
+        );
+        if (!confirmed) {
+          humanLog('Aborted. Re-run with --overwrite to replace files.');
+          return;
+        }
+      }
+
       fs.mkdirSync(outputDir, {recursive: true});
 
       // Copy all non-test, non-README files
@@ -134,43 +202,107 @@ export function registerSwizzle(program) {
 
       const gapConfig = loadGapReportConfig();
       let gapReportUrl = null;
+      let gapDryRunPreview = null;
 
-      if (options.gap) {
-        if (gapConfig.enabled && (gapConfig.command || checkGhCli())) {
-          const category = options.gapCategory || 'other';
+      // CRITICAL: --no-report must suppress BOTH the interactive prompt AND
+      // the --gap auto-file path. Previously --gap bypassed --no-report.
+      // commander sets options.report to false for `--no-report`.
+      const reportingSuppressed = options.report === false;
+
+      if (options.gap && !reportingSuppressed && gapConfig.enabled) {
+        const category = options.gapCategory || 'other';
+        const previewArgs = {
+          component: dirName,
+          category,
+          intention: options.gap,
+          source: 'llm-auto',
+        };
+
+        const willFile = shouldActuallyFile({
+          commit: options.commit,
+          dryRun: options.dryRun,
+          json,
+        });
+
+        const preview = buildGapReportPreview(previewArgs);
+
+        if (!willFile) {
+          // Dry-run: do NOT call gh. Surface what would have been filed.
+          gapDryRunPreview = {
+            dryRun: true,
+            wouldFile: preview.mode !== 'disabled',
+            mode: preview.mode,
+            title: preview.title,
+            body: preview.body,
+            repo: preview.repo,
+            command: preview.command || null,
+          };
+        } else if (gapConfig.command || checkGhCli()) {
           try {
-            gapReportUrl = createGapReport({
-              component: dirName,
-              category,
-              intention: options.gap,
-              source: 'llm-auto',
-            });
+            gapReportUrl = createGapReport(previewArgs);
           } catch (err) {
-            if (!json) console.error(`Warning: Could not file gap report: ${err.message}`);
+            if (!json)
+              console.error(`Warning: Could not file gap report: ${err.message}`);
           }
         }
+      }
 
-        if (json) return jsonOut('swizzle.copy', {component: dirName, outputDir: relOutput, filesCopied: copied, files: copiedFiles.map(f => f), gapReport: gapReportUrl});
-        console.log(`\n✓ Copied ${copied} files to ${relOutput}/\n`);
-        console.log('Relative imports have been rewritten to use @xds/core.');
-        console.log('You can now customize the component source freely.\n');
-        if (gapReportUrl) console.log(`✓ Gap report filed: ${gapReportUrl}\n`);
-        else if (!gapConfig.enabled) console.log('Gap reporting is disabled via configuration.');
-        else if (!gapConfig.command && !checkGhCli()) console.log('Skipping gap report: gh CLI not available.');
+      if (options.gap) {
+        if (json)
+          return jsonOut('swizzle.copy', {
+            component: dirName,
+            outputDir: relOutput,
+            filesCopied: copied,
+            files: copiedFiles.map(f => f),
+            gapReport: gapReportUrl,
+            gapReportDryRun: gapDryRunPreview,
+            gapReportSuppressed: reportingSuppressed || !gapConfig.enabled,
+          });
+        humanLog(`\n✓ Copied ${copied} files to ${relOutput}/\n`);
+        humanLog('Relative imports have been rewritten to use @xds/core.');
+        humanLog('You can now customize the component source freely.\n');
+        if (gapReportUrl) {
+          humanLog(`✓ Gap report filed: ${gapReportUrl}\n`);
+        } else if (gapDryRunPreview) {
+          humanLog(formatPreview(buildGapReportPreview({
+            component: dirName,
+            category: options.gapCategory || 'other',
+            intention: options.gap,
+            source: 'llm-auto',
+          })));
+          humanLog(
+            '\n[dry-run] No gap report was filed. Re-run with --commit to file.',
+          );
+        } else if (reportingSuppressed) {
+          humanLog('Gap reporting suppressed by --no-report.');
+        } else if (!gapConfig.enabled) {
+          humanLog('Gap reporting is disabled via configuration.');
+        } else if (!gapConfig.command && !checkGhCli()) {
+          humanLog('Skipping gap report: gh CLI not available.');
+        }
         return;
       }
 
       if (json) return jsonOut('swizzle.copy', {component: dirName, outputDir: relOutput, filesCopied: copied, files: copiedFiles.map(f => f)});
 
-      console.log(`\n✓ Copied ${copied} files to ${relOutput}/\n`);
-      console.log('Relative imports have been rewritten to use @xds/core.');
-      console.log('You can now customize the component source freely.\n');
+      humanLog(`\n✓ Copied ${copied} files to ${relOutput}/\n`);
+      humanLog('Relative imports have been rewritten to use @xds/core.');
+      humanLog('You can now customize the component source freely.\n');
 
-      if (!options.report || !gapConfig.enabled) {
+      if (reportingSuppressed || !gapConfig.enabled) {
         return;
       }
 
       // Interactive gap report prompt
+      //
+      // This prompt is OPTIONAL — the swizzle copy already succeeded above.
+      // In a non-interactive context (CI, piped I/O, no TTY) we must not
+      // block on it; skip gracefully rather than hang. Use --gap with
+      // explicit flags for non-interactive gap reporting.
+      if (!isInteractive()) {
+        return;
+      }
+
       if (!gapConfig.command && !checkGhCli()) {
         // Silently skip if gh isn't available and no custom command configured
         return;
@@ -210,19 +342,45 @@ export function registerSwizzle(program) {
         }),
       );
 
+      const previewArgs = {
+        component: dirName,
+        category,
+        intention: intention.trim(),
+        detail: detail?.trim() || undefined,
+        source: 'interactive',
+      };
+
+      const preview = buildGapReportPreview(previewArgs);
+
+      p.note(
+        `${preview.mode === 'github' ? `Repo: ${preview.repo}` : `Custom command: ${preview.command}`}\n\n` +
+          `Title:\n  ${preview.title}\n\n` +
+          `Body:\n${preview.body
+            .split('\n')
+            .map(l => `  ${l}`)
+            .join('\n')}`,
+        'Preview — this is exactly what will be filed',
+      );
+
+      const confirmFile = isCancel(
+        await p.confirm({
+          message: 'File this gap report now?',
+          initialValue: false,
+        }),
+      );
+
+      if (!confirmFile) {
+        humanLog('Cancelled — nothing was filed.');
+        return;
+      }
+
       const s = p.spinner();
       s.start('Filing gap report');
 
       try {
-        const url = createGapReport({
-          component: dirName,
-          category,
-          intention: intention.trim(),
-          detail: detail?.trim() || undefined,
-          source: 'interactive',
-        });
+        const url = createGapReport(previewArgs);
         s.stop('Gap report filed');
-        console.log(`✓ ${url}\n`);
+        humanLog(`✓ ${url}\n`);
       } catch (err) {
         s.stop('Failed to file gap report');
         console.error(`Warning: Could not file gap report: ${err.message}`);

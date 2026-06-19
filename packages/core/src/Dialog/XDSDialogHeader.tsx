@@ -4,7 +4,7 @@
 
 /**
  * @file XDSDialogHeader.tsx
- * @input Uses React, useEffect, useRef, XDSLayoutHeader, XDSButton, XDSIcon, XDSHeading, XDSText
+ * @input Uses React, useEffect, useRef, XDSLayoutHeader, XDSButton, XDSIcon, XDSHeading, XDSText, DialogContext
  * @output Exports XDSDialogHeader component and XDSDialogHeaderProps
  * @position Dialog header component; used with XDSDialog and XDSLayout
  *
@@ -22,9 +22,10 @@ import {spacingVars, sizeVars, typeScaleVars} from '../theme/tokens.stylex';
 import {XDSLayoutHeader} from '../Layout/XDSLayoutHeader';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
-import {XDSHeading} from '../Text/XDSHeading';
+import {XDSHeading} from '../Heading/XDSHeading';
 import {XDSText} from '../Text/XDSText';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {useDialogContext} from './DialogContext';
 
 const styles = stylex.create({
   container: {
@@ -100,9 +101,10 @@ export interface XDSDialogHeaderProps extends XDSBaseProps<HTMLDivElement> {
 /**
  * Header component designed specifically for XDSDialog.
  *
- * Renders a title that receives focus when the dialog opens (for screen reader accessibility)
- * and an optional close button. The title is an h2 element with tabIndex={-1} so it can be
- * programmatically focused but doesn't appear in the tab order.
+ * Renders a title that receives focus when a modal dialog opens (for screen reader accessibility)
+ * and an optional close button. Inline documentation previews suppress this autofocus.
+ * The title is an h2 element with tabIndex={-1} so it can be programmatically focused but
+ * doesn't appear in the tab order.
  *
  * Uses XDSLayoutHeader internally for consistent styling with other layout headers.
  *
@@ -124,26 +126,41 @@ export function XDSDialogHeader({
   startContent,
   endContent,
   hasDivider,
+  xstyle,
+  className,
+  style,
   ref,
 }: XDSDialogHeaderProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const dialogContext = useDialogContext();
+  const shouldAutoFocus = dialogContext?.isInline !== true;
 
-  // Auto-focus the title when mounted for screen reader accessibility
+  // Auto-focus the title when mounted for screen reader accessibility.
+  // Inline dialogs are documentation/showcase previews, so suppress focus to
+  // avoid stealing scroll position from the surrounding page.
   useEffect(() => {
-    if (titleRef.current) {
-      titleRef.current.tabIndex = -1;
+    if (shouldAutoFocus && titleRef.current) {
       titleRef.current.focus();
     }
-  }, []);
+  }, [shouldAutoFocus]);
 
   return (
-    <XDSLayoutHeader ref={ref} hasDivider={hasDivider}>
+    <XDSLayoutHeader
+      ref={ref}
+      hasDivider={hasDivider}
+      xstyle={xstyle}
+      className={className}
+      style={style}>
       <div {...stylex.props(styles.container)}>
         {startContent && (
           <div {...stylex.props(styles.actions)}>{startContent}</div>
         )}
         <div {...stylex.props(styles.titleWrapper)}>
-          <XDSHeading ref={titleRef} level={2} xstyle={styles.titleFocusable}>
+          <XDSHeading
+            ref={titleRef}
+            level={2}
+            tabIndex={-1}
+            xstyle={styles.titleFocusable}>
             {title}
           </XDSHeading>
           {subtitle && (

@@ -8,7 +8,7 @@ import {XDSButton} from '@xds/core/Button';
 import {PlusIcon, FunnelIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSTabList> = {
-  title: 'Core/Navigation/TabList',
+  title: 'Core/TabList',
   component: XDSTabList,
   tags: ['autodocs'],
   argTypes: {
@@ -141,6 +141,51 @@ export const WithIcons: Story = {
       <XDSTabList value={value} onChange={setValue} size={args.size}>
         <XDSTab value="home" label="Home" icon={HomeIcon} />
         <XDSTab value="settings" label="Settings" icon={CogIcon} />
+      </XDSTabList>
+    );
+  },
+};
+
+export const IconOnly: Story = {
+  args: {
+    size: 'md',
+  },
+  render: args => {
+    const [value, setValue] = useState('desktop');
+
+    const DesktopIcon = (
+      <svg viewBox="0 0 16 16" fill="currentColor" width="100%" height="100%">
+        <path d="M2.5 3A1.5 1.5 0 0 0 1 4.5v5A1.5 1.5 0 0 0 2.5 11h4.75v1.5H5a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5H8.75V11h4.75A1.5 1.5 0 0 0 15 9.5v-5A1.5 1.5 0 0 0 13.5 3h-11Zm0 1.5h11v5h-11v-5Z" />
+      </svg>
+    );
+
+    const PhoneIcon = (
+      <svg viewBox="0 0 16 16" fill="currentColor" width="100%" height="100%">
+        <path d="M5 1.5A1.5 1.5 0 0 0 3.5 3v10A1.5 1.5 0 0 0 5 14.5h6a1.5 1.5 0 0 0 1.5-1.5V3A1.5 1.5 0 0 0 11 1.5H5Zm0 1.5h6v10H5V3Zm2.25 8.5a.75.75 0 0 1 .75-.75h.01a.75.75 0 0 1 0 1.5H8a.75.75 0 0 1-.75-.75Z" />
+      </svg>
+    );
+
+    const ThemeIcon = (
+      <svg viewBox="0 0 16 16" fill="currentColor" width="100%" height="100%">
+        <path d="M8 1.5a6.5 6.5 0 0 0 0 13h.25a1.75 1.75 0 0 0 1.2-3.02.35.35 0 0 1 .23-.6h.97A3.85 3.85 0 0 0 14.5 7.03 5.53 5.53 0 0 0 8.97 1.5H8Zm-3 5a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm2-1.75a1 1 0 1 1 2 0 1 1 0 0 1-2 0ZM4.5 9a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm6-1.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" />
+      </svg>
+    );
+
+    return (
+      <XDSTabList value={value} onChange={setValue} size={args.size}>
+        <XDSTab
+          value="desktop"
+          label="Desktop preview"
+          icon={DesktopIcon}
+          isLabelHidden
+        />
+        <XDSTab
+          value="phone"
+          label="Phone preview"
+          icon={PhoneIcon}
+          isLabelHidden
+        />
+        <XDSTab value="theme" label="Theme" icon={ThemeIcon} isLabelHidden />
       </XDSTabList>
     );
   },

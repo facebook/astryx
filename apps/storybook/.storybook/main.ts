@@ -14,6 +14,8 @@ const lightningcssTargets = {
   safari: (17 << 16) | (5 << 8),
 };
 
+const viteBuildTargets = ['chrome123', 'firefox120', 'safari17.5'];
+
 const config: StorybookConfig = {
   stories: [
     '../stories/**/*.mdx',
@@ -40,6 +42,13 @@ const config: StorybookConfig = {
 
     return {
       ...config,
+      build: {
+        ...config.build,
+        // Storybook's generated story chunks use hook tuple destructuring.
+        // esbuild 0.28 cannot downlevel those chunks for Vite's default
+        // Safari 14 baseline, so match the modern preview CSS targets.
+        target: viteBuildTargets,
+      },
       optimizeDeps: {
         ...config.optimizeDeps,
         // Vite waits for all module transforms to finish before committing

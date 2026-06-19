@@ -5,6 +5,7 @@
 export const docs = {
   name: 'FileInput',
   displayName: 'File Input',
+  category: 'Data Input',
   keywords: ["fileinput","file","upload","drag","drop","dropzone","attachment","browse"],
   props: [
     {
@@ -110,7 +111,7 @@ export const docs = {
       name: 'status',
       type: "{type: 'error' | 'warning' | 'success', message?: string}",
       description:
-        'Validation status — applies a colored border. If message is provided, displays a floating message below the input. Error type also sets aria-invalid.',
+        'Validation status: applies a colored border. If message is provided, displays a floating message below the input. Error type also sets aria-invalid.',
     },
     {
       name: 'labelTooltip',
@@ -129,11 +130,11 @@ export const docs = {
       'FileInput provides file upload with optional drag-and-drop support. Use it for single or multiple file selection with built-in validation for file type, size, and count. Pair with validation status for upload feedback.',
     bestPractices: [
       {guidance: true, description: 'Always specify an accept prop to guide users toward valid file types.'},
-      {guidance: true, description: 'Use maxSize and maxFiles to prevent oversized uploads — the component handles validation and error display automatically.'},
+      {guidance: true, description: 'Use maxSize and maxFiles to prevent oversized uploads; the component handles validation and error display automatically.'},
       {guidance: true, description: 'Add a description to communicate constraints like file size limits or accepted formats.'},
       {guidance: true, description: 'Use changeAction for immediate upload workflows that benefit from optimistic UI.'},
-      {guidance: false, description: "Don't use FileInput for directory or folder uploads — that is not supported in v1."},
-      {guidance: false, description: "Don't avoid dropzone mode unless space is very constrained — drag-and-drop is the expected interaction for file uploads."},
+      {guidance: false, description: "Don't use FileInput for directory or folder uploads; that is not supported in v1."},
+      {guidance: false, description: "Don't avoid dropzone mode unless space is constrained; drag-and-drop is the expected interaction for file uploads."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text that identifies the field. Always rendered for accessibility even when visually hidden.'},
@@ -246,7 +247,7 @@ export const docsZh = {
       {guidance: true, description: 'Use maxSize and maxFiles to prevent oversized uploads.'},
       {guidance: true, description: 'Add a description to communicate constraints.'},
       {guidance: false, description: "Don't use FileInput for directory uploads."},
-      {guidance: false, description: "Don't use mode='input' unless space is very constrained — dropzone mode provides a better experience."},
+      {guidance: false, description: "Don't use mode='input' unless space is constrained; dropzone mode provides a better experience."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text identifying the field.'},
@@ -268,8 +269,9 @@ export const docsDense = {
       {guidance: true, description: 'Always specify an accept prop to guide users toward valid file types.'},
       {guidance: true, description: 'Use maxSize and maxFiles to prevent oversized uploads.'},
       {guidance: true, description: 'Add a description to communicate constraints.'},
+      {guidance: true, description: 'Use changeAction for immediate upload workflows that benefit from optimistic UI.'},
       {guidance: false, description: "Don't use FileInput for directory uploads."},
-      {guidance: false, description: "Don't use mode='input' unless space is very constrained — dropzone mode provides a better experience."},
+      {guidance: false, description: "Don't use mode='input' unless space is constrained; dropzone mode provides a better experience."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text identifying the field.'},

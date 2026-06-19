@@ -43,10 +43,12 @@ import {
 } from '../Field';
 import {XDSIcon, renderIconSlot, type XDSIconType} from '../Icon';
 import {XDSSpinner} from '../Spinner';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const COUNTER_WARNING_THRESHOLD = 0.8;
 
@@ -204,6 +206,12 @@ export interface XDSTextAreaProps extends Omit<
    */
   status?: XDSTextAreaStatus;
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
@@ -287,6 +295,7 @@ export function XDSTextArea({
   htmlName,
   onFocus,
   onBlur,
+  width,
   xstyle,
   className,
   style,
@@ -369,13 +378,14 @@ export function XDSTextArea({
             }
           : undefined
       }
-      labelTooltip={labelTooltip}>
+      labelTooltip={labelTooltip}
+      width={width}>
       <div
         ref={containerRef}
         onClick={handleWrapperClick}
         onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
-          xdsClassName('textarea', {size, status: status?.type ?? null}),
+          xdsThemeProps('textarea', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,

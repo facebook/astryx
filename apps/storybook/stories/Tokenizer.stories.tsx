@@ -26,7 +26,7 @@ const userSource: XDSSearchSource = {
 };
 
 const meta: Meta<typeof XDSTokenizer> = {
-  title: 'Core/Inputs/Tokenizer',
+  title: 'Core/Tokenizer',
   component: XDSTokenizer,
   tags: ['autodocs'],
   argTypes: {

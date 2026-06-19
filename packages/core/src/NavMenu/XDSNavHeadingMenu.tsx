@@ -5,9 +5,10 @@
 import React, {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useListFocus} from '../hooks/useListFocus';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 import {
   XDSNavHeadingMenuContext,
   useXDSNavHeadingCloseContext,
@@ -109,7 +110,7 @@ export function XDSNavHeadingMenu({
         onKeyDown={handleKeyDown}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('nav-heading-menu', {size}),
+          xdsThemeProps('nav-heading-menu', {size}),
           stylex.props(styles.root, sizeStyles[size], xstyle),
           className,
           inlineStyle,

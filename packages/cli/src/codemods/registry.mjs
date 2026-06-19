@@ -19,24 +19,9 @@ const registry = new Map([
   ['0.0.15', () => import('./transforms/v0.0.15/index.mjs')],
 ]);
 
-/**
- * Compare two semver strings numerically.
- * Returns negative if a < b, positive if a > b, 0 if equal.
- *
- * @param {string} a
- * @param {string} b
- * @returns {number}
- */
-function semverCompare(a, b) {
-  const pa = a.split('-')[0].split('.').map(Number);
-  const pb = b.split('-')[0].split('.').map(Number);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const na = pa[i] ?? 0;
-    const nb = pb[i] ?? 0;
-    if (na !== nb) return na - nb;
-  }
-  return 0;
-}
+// Re-export from the shared utility so registry callers and other consumers
+// (upgrade gate, update-check) all use the same comparator.
+import {semverCompare} from '../utils/semver.mjs';
 
 /**
  * All registered versions, sorted ascending.
@@ -58,7 +43,7 @@ export const latestVersion = versions[versions.length - 1];
  */
 export async function getTransformsBetween(from, to) {
   const applicable = versions.filter(
-    (v) => semverCompare(v, from) > 0 && semverCompare(v, to) <= 0,
+    v => semverCompare(v, from) > 0 && semverCompare(v, to) <= 0,
   );
   const results = [];
 

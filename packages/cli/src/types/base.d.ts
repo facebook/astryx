@@ -34,6 +34,13 @@ import type {
   TemplateCopyResponse,
   TemplateGetResponse,
 } from './template';
+import type {
+  HookListResponse,
+  HookBriefResponse,
+  HookFullResponse,
+  HookDetailResponse,
+  HookDetailParamsResponse,
+} from './hook';
 import type {SwizzleListResponse, SwizzleCopyResponse} from './swizzle';
 import type {ThemeBuildResponse} from './theme';
 import type {UpgradeListResponse, UpgradeRunResponse} from './upgrade';
@@ -41,16 +48,27 @@ import type {
   GapReportCategoriesResponse,
   GapReportFileResponse,
 } from './gap-report';
+import type {SearchResponse} from './search';
+import type {ErrorCode} from './error-codes';
+import type {ManifestResponse} from './manifest';
+import type {DoctorResponse} from './doctor';
 
-/** Structured error. Check `'error' in result` to discriminate. */
+/**
+ * Structured error. Check `'error' in result` to discriminate.
+ *
+ * Branch on `code` (a stable machine-readable identifier), never on the
+ * human-readable `error` string, which changes freely.
+ */
 export interface CLIError {
   error: string;
+  code: ErrorCode;
   suggestions?: Array<{name: string; reason: string}>;
 }
 
 /** Returned by the fallback hook for commands without --json support. */
 export interface CLIUnsupportedError {
   error: `JSON output is not supported for the '${string}' command`;
+  code: ErrorCode;
 }
 
 /** Wrap any response type to include possible error shapes. */
@@ -76,13 +94,21 @@ export type CLIAnyResponse =
   | TemplateSkeletonResponse
   | TemplateCopyResponse
   | TemplateGetResponse
+  | HookListResponse
+  | HookBriefResponse
+  | HookFullResponse
+  | HookDetailResponse
+  | HookDetailParamsResponse
   | SwizzleListResponse
   | SwizzleCopyResponse
   | ThemeBuildResponse
   | UpgradeListResponse
   | UpgradeRunResponse
   | GapReportCategoriesResponse
-  | GapReportFileResponse;
+  | GapReportFileResponse
+  | SearchResponse
+  | ManifestResponse
+  | DoctorResponse;
 
 /** Union of all type discriminator string literals. */
 export type CLIResponseType = CLIAnyResponse['type'];
@@ -110,6 +136,7 @@ export function jsonOut<T extends CLIResponseType>(
 export function jsonError(
   message: string,
   suggestions?: Array<{name: string; reason: string}>,
+  code?: ErrorCode,
 ): never;
 
 /** Parse raw CLI output (string or object) into typed result. */

@@ -35,8 +35,9 @@ import {
   typographyVars,
 } from '../theme/tokens.stylex';
 import {useXDSChatMessageContext} from './XDSChatContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export type XDSChatMessageBubbleVariant = 'filled' | 'ghost';
 
@@ -93,7 +94,9 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     maxWidth: 'max(80%, 280px)',
-    borderRadius: radiusVars['--radius-page'],
+    // Bubbles are intentionally rounder than cards in the same view, so they
+    // use the dedicated chat radius rather than coupling to --radius-page. #2072
+    borderRadius: radiusVars['--radius-chat'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
@@ -143,7 +146,8 @@ const styles = stylex.create({
     textAlign: 'end',
   },
   // Sender backgrounds — same default, but separate styles for theme overrides.
-  // Themes can target .xds-chat-message-bubble.user vs .assistant via @scope.
+  // Themes can target sender via legacy classes (.user/.assistant) or the
+  // reflected data-sender attribute under @scope.
   assistant: {
     backgroundColor: colorVars['--color-neutral'],
     color: colorVars['--color-text-primary'],
@@ -273,7 +277,7 @@ export function XDSChatMessageBubble({
         ref={ref}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('chat-message-bubble', {sender, variant, density}),
+          xdsThemeProps('chat-message-bubble', {sender, variant, density}),
           stylex.props(
             styles.content,
             density === 'compact' && styles.radiusCompact,

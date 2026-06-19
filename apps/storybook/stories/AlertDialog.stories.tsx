@@ -9,7 +9,7 @@ import {
 import {XDSButton} from '@xds/core/Button';
 
 const meta: Meta<typeof XDSAlertDialog> = {
-  title: 'Core/Dialogs/AlertDialog',
+  title: 'Core/AlertDialog',
   component: XDSAlertDialog,
   tags: ['autodocs'],
   argTypes: {

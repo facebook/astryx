@@ -17,9 +17,14 @@ import * as p from '@clack/prompts';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import {CLI_ROOT} from '../utils/paths.mjs';
+import {PathSafetyError} from '../utils/path-safety.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {installAgentDocs, removeAgentDocs} from './agent-docs.mjs';
 import {listTemplates} from './template.mjs';
+import {humanLog} from '../lib/json.mjs';
+import {cliError} from '../lib/cli-error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
+import {requireInteractive} from '../utils/interactive.mjs';
 
 const VALID_FEATURES = ['agents', 'theme', 'template'];
 const run = getRunPrefix();
@@ -46,9 +51,22 @@ function runAgents(targetDir, {interactive = true, agent, agentDocsPath} = {}) {
     if (interactive) {
       p.log.success(`AI agent docs installed → ${summary}`);
     } else {
-      console.log(`✓ AI agent docs installed → ${summary}`);
+      humanLog(`✓ AI agent docs installed → ${summary}`);
     }
-  } catch {
+  } catch (err) {
+    // PathSafetyError carries a precise, user-actionable message —
+    // surface it instead of the generic "could not install" warning so
+    // misconfigured --agent-docs-path values aren't silently swallowed.
+    if (err instanceof PathSafetyError) {
+      const msg = `Error: ${err.message}`;
+      if (interactive) {
+        p.log.error(msg);
+      } else {
+        console.error(msg);
+      }
+      process.exitCode = 1;
+      return;
+    }
     const msg = `Could not install agent docs. Try again with \`${run} xds init --features agents\`.`;
     if (interactive) {
       p.log.warning(msg);
@@ -62,7 +80,7 @@ function runAgents(targetDir, {interactive = true, agent, agentDocsPath} = {}) {
 
 async function runTheme({interactive = true} = {}) {
   if (!interactive) {
-    console.log(`✓ Theme scaffolding requires interactive mode. Run \`${run} xds theme\` instead.`);
+    humanLog(`✓ Theme scaffolding requires interactive mode. Run \`${run} xds theme\` instead.`);
     return;
   }
 
@@ -82,12 +100,12 @@ async function runTemplate(targetDir, {interactive = true, templateName} = {}) {
 
   if (!interactive) {
     if (!templateName) {
-      console.log(`✓ Available templates: ${templates.join(', ')}. Use ${run} xds template <name> [path].`);
+      humanLog(`✓ Available templates: ${templates.join(', ')}. Use ${run} xds template <name> [path].`);
       return;
     }
 
     if (!templates.includes(templateName)) {
-      console.error(`Error: Unknown template "${templateName}". Available: ${templates.join(', ')}`);
+      cliError(`Unknown template "${templateName}". Available: ${templates.join(', ')}`, {code: ERROR_CODES.ERR_UNKNOWN_TEMPLATE});
       return;
     }
 
@@ -95,7 +113,7 @@ async function runTemplate(targetDir, {interactive = true, templateName} = {}) {
     const srcPath = path.join(CLI_ROOT, 'templates', 'pages', templateName, 'page.tsx');
     fs.mkdirSync(outputDir, {recursive: true});
     fs.copyFileSync(srcPath, path.join(outputDir, 'page.tsx'));
-    console.log(`✓ Template created at ${path.relative(targetDir, outputDir)}/page.tsx`);
+    humanLog(`✓ Template created at ${path.relative(targetDir, outputDir)}/page.tsx`);
     return;
   }
 
@@ -137,7 +155,7 @@ async function runTemplate(targetDir, {interactive = true, templateName} = {}) {
 export function registerInit(program) {
   program
     .command('init')
-    .description('Initialize XDS in your project')
+    .description('Initialize the design system in your project')
     .option('--features <list>', 'Comma-separated features to install (agents, theme, template)')
     .option('--all', 'Install all features, no prompts')
     .option('--remove-agents', 'Remove AI agent docs from all agent doc files')
@@ -149,7 +167,7 @@ export function registerInit(program) {
       // Remove mode
       if (options.removeAgents) {
         removeAgentDocs(targetDir);
-        console.log('✓ AI agent docs removed.');
+        humanLog('✓ AI agent docs removed.');
         return;
       }
 
@@ -161,9 +179,8 @@ export function registerInit(program) {
 
         const invalid = features.filter(f => !VALID_FEATURES.includes(f));
         if (invalid.length > 0) {
-          console.error(`Error: Unknown features: ${invalid.join(', ')}`);
-          console.error(`Valid features: ${VALID_FEATURES.join(', ')}`);
-          process.exit(1);
+          cliError(`Unknown features: ${invalid.join(', ')}. Valid features: ${VALID_FEATURES.join(', ')}`, {code: ERROR_CODES.ERR_UNKNOWN_FEATURE});
+          return;
         }
 
         for (const feature of features) {
@@ -179,17 +196,26 @@ export function registerInit(program) {
       }
 
       // Interactive wizard
-      p.intro('Welcome to XDS');
+      //
+      // Guard: this wizard blocks on prompts. In a non-interactive context
+      // (CI, piped stdin/stdout, no TTY) it would hang forever. Fail fast
+      // with actionable guidance via the shared interactivity contract.
+      requireInteractive({
+        command: 'init',
+        hint: `\`${run} xds init --all\` or \`--features agents,theme,template\``,
+      });
+
+      p.intro('Welcome to the design system');
 
       p.note(
-        'XDS is a design system for building internal tools\nwith 300+ React components.',
+        'A design system for building internal tools\nwith 300+ React components.',
         'About',
       );
 
       // Feature: agents
       const shouldInstallAgents = isCancel(
         await p.confirm({
-          message: 'Install AI agent support? (adds XDS cheat sheet to AGENTS.md)',
+          message: 'Install AI agent support? (adds a design system cheat sheet to AGENTS.md)',
           initialValue: true,
         }),
       );
@@ -214,15 +240,15 @@ export function registerInit(program) {
       await runTheme();
 
       // Outro
-      p.outro('XDS initialized!');
+      p.outro('Design system initialized!');
 
-      console.log('');
-      console.log('  Next steps:');
-      console.log("    1. Import components: import { XDSButton } from '@xds/core'");
-      console.log('    2. Optionally add a theme:');
-      console.log("       import { defaultTheme } from '@xds/theme/default'");
-      console.log('       <XDSTheme theme={defaultTheme}>...</XDSTheme>');
-      console.log(`    3. ${run} xds --help for all commands`);
-      console.log('');
+      humanLog('');
+      humanLog('  Next steps:');
+      humanLog("    1. Import components: import { XDSButton } from '@xds/core'");
+      humanLog('    2. Optionally add a theme:');
+      humanLog("       import { defaultTheme } from '@xds/theme-default'");
+      humanLog('       <XDSTheme theme={defaultTheme}>...</XDSTheme>');
+      humanLog(`    3. ${run} xds --help for all commands`);
+      humanLog('');
     });
 }

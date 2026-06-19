@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Skeleton',
   displayName: 'Skeleton',
+  category: 'Feedback & Status',
   keywords: ["skeleton","placeholder","loading","shimmer","pulse","loader","bone","ghost","preloader"],
   props: [
     {
@@ -43,9 +44,9 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Match the size and shape of the content being loaded to create a realistic placeholder.'},
       {guidance: true, description: 'Stagger multiple skeletons with the `index` prop for a natural wave animation.'},
-      {guidance: false, description: 'Use when the content dimensions are unknown — use Spinner instead.'},
-      {guidance: false, description: 'Combine with a Spinner on the same content area — pick one loading pattern.'},
-      {guidance: false, description: 'Show skeletons indefinitely — if loading takes too long, show an error or empty state instead.'},
+      {guidance: false, description: 'Use when the content dimensions are unknown; use Spinner instead.'},
+      {guidance: false, description: 'Combine with a Spinner on the same content area; pick one loading pattern.'},
+      {guidance: false, description: 'Show skeletons indefinitely; if loading takes too long, show an error or empty state instead.'},
     ],
   },
 };
@@ -92,9 +93,9 @@ export const docsZh = {
     bestPractices: [
       {guidance: true, description: 'Match the size and shape of the content being loaded to create a realistic placeholder.'},
       {guidance: true, description: 'Stagger multiple skeletons with the `index` prop for a natural wave animation.'},
-      {guidance: false, description: 'Use when the content dimensions are unknown — use Spinner instead.'},
-      {guidance: false, description: 'Combine with a Spinner on the same content area — pick one loading pattern.'},
-      {guidance: false, description: 'Show skeletons indefinitely — if loading takes too long, show an error or empty state instead.'},
+      {guidance: false, description: 'Use when the content dimensions are unknown; use Spinner instead.'},
+      {guidance: false, description: 'Combine with a Spinner on the same content area; pick one loading pattern.'},
+      {guidance: false, description: 'Show skeletons indefinitely; if loading takes too long, show an error or empty state instead.'},
     ],
   },
 };
@@ -107,9 +108,9 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Match the size and shape of the content being loaded to create a realistic placeholder.'},
       {guidance: true, description: 'Stagger multiple skeletons with the `index` prop for a natural wave animation.'},
-      {guidance: false, description: 'Use when the content dimensions are unknown — use Spinner instead.'},
-      {guidance: false, description: 'Combine with a Spinner on the same content area — pick one loading pattern.'},
-      {guidance: false, description: 'Show skeletons indefinitely — if loading takes too long, show an error or empty state instead.'},
+      {guidance: false, description: 'Use when the content dimensions are unknown; use Spinner instead.'},
+      {guidance: false, description: 'Combine with a Spinner on the same content area; pick one loading pattern.'},
+      {guidance: false, description: 'Show skeletons indefinitely; if loading takes too long, show an error or empty state instead.'},
     ],
   },
   propDescriptions: {

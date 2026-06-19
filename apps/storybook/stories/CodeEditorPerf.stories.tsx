@@ -5,7 +5,7 @@ import {useState, useRef, useEffect, useCallback} from 'react';
 import {XDSCodeEditor} from '@xds/lab';
 
 const meta: Meta<typeof XDSCodeEditor> = {
-  title: 'Lab/CodeEditor/Performance',
+  title: 'Lab/CodeEditorPerf',
   component: XDSCodeEditor,
   parameters: {layout: 'fullscreen'},
 };

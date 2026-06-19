@@ -1,6 +1,6 @@
 # @xds/lab
 
-Experimental XDS components. This package is **not published** — it exists as a staging area for components being developed before graduating to `@xds/core`.
+Experimental XDS components. This package is **not published**; it exists as a staging area for components being developed before graduating to `@xds/core`.
 
 ## Purpose
 

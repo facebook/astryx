@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Icons reference doc — semantic icon names available in XDS
+ * @file Icons reference doc: semantic icon names available in XDS
  */
 
 /** @type {import('../../core/src/docs-types').ReferenceDoc} */
@@ -10,7 +10,7 @@ export const docs = {
   title: 'Icons',
   category: 'foundations',
   description:
-    "Semantic icon names available in XDS. These adapt to the active theme's icon registry.",
+    "Semantic icon names available in the design system. These adapt to the active theme's icon registry.",
 
   sections: [
     {
@@ -19,7 +19,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Components that accept an icon prop use XDSIconType \u2014 either a semantic name string or a direct SVG component. The semantic names below are resolved through the global icon registry.',
+          text: 'Components that accept an icon prop use XDSIconType: either a semantic name string or a direct SVG component. The semantic names below are resolved through the global icon registry.',
         },
         {
           type: 'table',
@@ -61,7 +61,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'For icons not in the semantic list, pass an SVG component directly. Any ComponentType<SVGProps<SVGSVGElement>> works \u2014 XDSIcon applies size and color styling automatically.',
+          text: 'For icons not in the semantic list, pass an SVG component directly. Any ComponentType<SVGProps<SVGSVGElement>> works; XDSIcon applies size and color styling automatically.',
         },
         {
           type: 'code',
@@ -104,7 +104,7 @@ registerIcons({
       content: [
         {
           type: 'prose',
-          text: 'To add a new semantic icon name to XDS:',
+          text: 'To add a new semantic icon name to the design system:',
         },
         {
           type: 'list',

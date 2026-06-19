@@ -6,7 +6,7 @@ import {XDSTimeInput} from '@xds/core/TimeInput';
 import type {ISOTimeString} from '@xds/core';
 
 const meta: Meta<typeof XDSTimeInput> = {
-  title: 'Core/Inputs/TimeInput',
+  title: 'Core/TimeInput',
   component: XDSTimeInput,
   tags: ['autodocs'],
   argTypes: {

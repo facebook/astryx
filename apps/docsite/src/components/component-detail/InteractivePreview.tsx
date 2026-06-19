@@ -15,27 +15,24 @@ import {getXDSComponent, resolveValue} from './resolveElements';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSCenter} from '@xds/core/Center';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {CodeExampleBlock} from '../CodeExampleBlock';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
-import {XDSTheme} from '@xds/core/theme';
-import {neutralTheme} from '@xds/theme-neutral/built';
-import {useThemeMode} from '../../app/providers';
-import {CodeBracketIcon} from '@heroicons/react/24/outline';
+import {Code} from 'lucide-react';
+import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {
-  coerceDefault,
-  parsePropType,
-  type PropControlDescriptor,
-} from './parsePropType';
+  buildInitialState,
+  buildRuntimePreviewState,
+  getMissingRequiredProps,
+  pickPrimaryProps,
+  type KnobProp,
+} from './interactiveState';
 import type {
   PropDoc,
   PlaygroundConfig,
 } from '../../generated/componentRegistry';
 
-export interface KnobProp {
-  row: PropDoc;
-  control: PropControlDescriptor;
-}
+export type {KnobProp} from './interactiveState';
 
 class PreviewErrorBoundary extends Component<
   {children: ReactNode; resetKeys: unknown[]},
@@ -65,83 +62,40 @@ class PreviewErrorBoundary extends Component<
   }
 }
 
-function pickPrimaryProps(name: string, props: PropDoc[]): KnobProp[] {
-  if (props.length === 0) {
-    return [];
-  }
-  return props.map(row => ({
-    row,
-    control: parsePropType(row.type, row.name, row.slotElements),
-  }));
+function toIdentifierName(name: string): string {
+  return name
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean)
+    .map((part, index) => {
+      const lower = part.charAt(0).toLowerCase() + part.slice(1);
+      if (index === 0) {
+        return lower;
+      }
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join('');
 }
 
-function buildInitialState(
-  knobs: KnobProp[],
-  playground?: PlaygroundConfig | null,
-): Record<string, unknown> {
-  const state: Record<string, unknown> = {};
-
-  // Apply playground defaults first (resolved from ElementDescriptor if needed)
-  if (playground?.defaults) {
-    for (const [key, value] of Object.entries(playground.defaults)) {
-      state[key] = resolveValue(value);
-    }
-  }
-
-  // Fill in remaining props from doc defaults / auto-generation
-  for (const {row, control} of knobs) {
-    if (state[row.name] !== undefined) {
-      continue;
-    }
-    const def = coerceDefault(row.default, control);
-    if (def !== undefined) {
-      state[row.name] = def;
-    } else if (control.kind === 'slot-list') {
-      // Always generate initial items for slot-lists (empty list isn't useful)
-      const slotEl = row.slotElements?.[0];
-      if (slotEl) {
-        state[row.name] = [1, 2, 3].map(n => {
-          const tweaked = {...slotEl};
-          const props = {...(tweaked.props ?? {})};
-          if (typeof props.label === 'string') {
-            props.label = `${props.label} ${n}`;
-          }
-          if (typeof props.value === 'string') {
-            props.value = `${props.value}-${n}`;
-          }
-          tweaked.props = props;
-          if (typeof tweaked.children === 'string') {
-            tweaked.children = `${tweaked.children} ${n}`;
-          }
-          return resolveValue(tweaked);
-        });
-      }
-    } else if (row.required) {
-      switch (control.kind) {
-        case 'enum':
-          state[row.name] = control.options[0];
-          break;
-        case 'boolean':
-          state[row.name] = false;
-          break;
-        case 'string':
-          state[row.name] = row.name;
-          break;
-        case 'number':
-          state[row.name] = 0;
-          break;
-      }
-    }
-  }
-  return state;
-}
-
-function formatValue(value: unknown): string {
+function formatValue(
+  value: unknown,
+  propName?: string,
+  componentName?: string,
+): string {
   if (value === undefined) {
     return 'undefined';
   }
   if (value === null) {
     return 'null';
+  }
+  if (
+    value != null &&
+    typeof value === 'object' &&
+    'name' in value &&
+    typeof value.name === 'string' &&
+    propName === 'theme'
+  ) {
+    const identifier = toIdentifierName(value.name);
+    return componentName === 'Theme' ? `${identifier}Theme` : identifier;
   }
   if (typeof value === 'string') {
     return `"${value}"`;
@@ -193,7 +147,7 @@ function generateCode(name: string, state: Record<string, unknown>): string {
     if (typeof value === 'string') {
       return `  ${key}="${value}"`;
     }
-    return `  ${key}={${formatValue(value)}}`;
+    return `  ${key}={${formatValue(value, key, name)}}`;
   });
 
   return `<${componentName}\n${propLines.join('\n')}\n/>`;
@@ -210,6 +164,10 @@ export function useInteractiveState(
     [knobs, playground],
   );
   const [state, setState] = useState<Record<string, unknown>>(initialState);
+  const missingRequiredProps = useMemo(
+    () => getMissingRequiredProps(knobs, initialState),
+    [knobs, initialState],
+  );
 
   const setProp = useCallback(
     (propName: string, value: unknown) =>
@@ -224,90 +182,168 @@ export function useInteractiveState(
     [state, initialState],
   );
 
-  return {knobs, state, setProp, reset, isDirty};
+  return {knobs, state, setProp, reset, isDirty, missingRequiredProps};
 }
 
 export function InteractivePreviewStage({
   name,
   state,
+  knobs,
+  playground,
+  missingRequiredProps = [],
+  onPropChange,
+  canControlOpenState = false,
 }: {
   name: string;
   state: Record<string, unknown>;
+  knobs?: KnobProp[];
+  playground?: PlaygroundConfig | null;
+  missingRequiredProps?: string[];
+  onPropChange?: (propName: string, value: unknown) => void;
+  canControlOpenState?: boolean;
 }) {
-  const {mode} = useThemeMode();
   const [showCode, setShowCode] = useState(false);
   const Component = getXDSComponent(name);
+  const runtimeState = useMemo(
+    () =>
+      resolveValue(
+        buildRuntimePreviewState(state, onPropChange, {
+          canControlOpenState,
+          knobs,
+        }),
+      ) as Record<string, unknown>,
+    [state, onPropChange, canControlOpenState, knobs],
+  );
+
+  // Sub-components that need a parent context provider declare it via
+  // `playground.wrapper`; wrap the previewed component in that parent.
+  const wrapper = playground?.wrapper ?? null;
+  const WrapperComponent = wrapper ? getXDSComponent(wrapper.component) : null;
+  const wrapperProps = useMemo(() => {
+    const resolved = wrapper?.props
+      ? (resolveValue(wrapper.props) as Record<string, unknown>)
+      : {};
+    // Wrapper parents require an onChange that can't be serialized; no-op it.
+    if (!('onChange' in resolved)) {
+      resolved.onChange = () => {};
+    }
+    return resolved;
+  }, [wrapper]);
+  const renderPreview = useCallback(
+    (rendered: ReactNode): ReactNode => {
+      if (wrapper && WrapperComponent) {
+        return createElement(WrapperComponent, wrapperProps, rendered);
+      }
+      return rendered;
+    },
+    [wrapper, WrapperComponent, wrapperProps],
+  );
+
+  if (missingRequiredProps.length > 0) {
+    return (
+      <ComponentPreviewTheme>
+        <XDSCard variant="muted" padding={0}>
+          <XDSCenter style={{minHeight: 200, width: '100%'}}>
+            <XDSVStack
+              gap={1}
+              style={{
+                paddingBlock: 24,
+                paddingInline: 16,
+                textAlign: 'center',
+              }}>
+              <XDSText type="supporting" color="secondary">
+                Interactive preview needs required props that cannot be
+                generated automatically.
+              </XDSText>
+              <XDSText type="supporting" color="secondary">
+                Missing: {missingRequiredProps.join(', ')}
+              </XDSText>
+            </XDSVStack>
+          </XDSCenter>
+        </XDSCard>
+      </ComponentPreviewTheme>
+    );
+  }
 
   if (!Component) {
     return (
-      <XDSCard variant="muted" padding={0}>
-        <XDSCenter style={{minHeight: 200, width: '100%'}}>
-          <XDSVStack
-            gap={1}
-            style={{
-              paddingBlock: 24,
-              paddingInline: 16,
-              textAlign: 'center',
-            }}>
-            <XDSText type="supporting" color="secondary">
-              Interactive preview not available for {name}.
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
-              This component is not part of @xds/core.
-            </XDSText>
-          </XDSVStack>
-        </XDSCenter>
-      </XDSCard>
+      <ComponentPreviewTheme>
+        <XDSCard variant="muted" padding={0}>
+          <XDSCenter style={{minHeight: 200, width: '100%'}}>
+            <XDSVStack
+              gap={1}
+              style={{
+                paddingBlock: 24,
+                paddingInline: 16,
+                textAlign: 'center',
+              }}>
+              <XDSText type="supporting" color="secondary">
+                Interactive preview not available for {name}.
+              </XDSText>
+              <XDSText type="supporting" color="secondary">
+                This component is not part of @xds/core.
+              </XDSText>
+            </XDSVStack>
+          </XDSCenter>
+        </XDSCard>
+      </ComponentPreviewTheme>
     );
   }
 
   const code = generateCode(name, state);
 
   return (
-    <XDSCard
-      variant="muted"
-      padding={0}
-      style={{width: '100%', position: 'relative'}}>
-      <div
-        style={{
-          position: 'absolute',
-          top: 'var(--spacing-2)',
-          right: 'var(--spacing-2)',
-          zIndex: 2,
-        }}>
-        <XDSButton
-          label="Show code"
-          tooltip="Show code"
-          icon={<CodeBracketIcon width={16} height={16} />}
-          isIconOnly
-          variant={showCode ? 'secondary' : 'ghost'}
-          size="sm"
-          onClick={() => setShowCode(v => !v)}
-        />
-      </div>
-      {showCode ? (
+    <ComponentPreviewTheme>
+      <XDSCard
+        variant="muted"
+        padding={0}
+        style={{width: '100%', position: 'relative'}}>
         <div
           style={{
-            minHeight: 200,
-            overflow: 'auto',
-            padding: 'var(--spacing-4)',
+            position: 'absolute',
+            top: 'var(--spacing-2)',
+            right: 'var(--spacing-2)',
+            zIndex: 2,
           }}>
-          <XDSCodeBlock code={code} language="tsx" hasCopyButton />
+          <XDSButton
+            label="Show code"
+            tooltip="Show code"
+            icon={<Code size={16} />}
+            isIconOnly
+            variant={showCode ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setShowCode(v => !v)}
+          />
         </div>
-      ) : (
-        <XDSTheme theme={neutralTheme} mode={mode}>
+        {showCode ? (
+          <div
+            style={{
+              minHeight: 200,
+              overflow: 'auto',
+              paddingRight: 'var(--spacing-8)',
+            }}>
+            <CodeExampleBlock
+              code={code}
+              language="tsx"
+              hasCopyButton
+              container="section"
+              width="100%"
+            />
+          </div>
+        ) : (
           <XDSCenter
             style={{
               minHeight: 200,
               width: '100%',
               padding: 'var(--spacing-4)',
             }}>
-            <PreviewErrorBoundary resetKeys={[Component, state]}>
-              {createElement(Component, state)}
+            <PreviewErrorBoundary
+              resetKeys={[Component, runtimeState, WrapperComponent]}>
+              {renderPreview(createElement(Component, runtimeState))}
             </PreviewErrorBoundary>
           </XDSCenter>
-        </XDSTheme>
-      )}
-    </XDSCard>
+        )}
+      </XDSCard>
+    </ComponentPreviewTheme>
   );
 }

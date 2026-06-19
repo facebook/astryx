@@ -1,10 +1,10 @@
 # XDS Translation Protocol
 
-Apply this protocol to create a dense (compressed) translation for an XDS component `.doc.mjs` file.
+Apply this protocol to create a dense translation for an XDS component `.doc.mjs` file. The dense translation lives in the same file as a `docsDense` export and is the source the CLI reads when called with `--lang dense`.
 
-## Task
+## Purpose
 
-Read the `docs` export. Produce a `TranslationDoc` object that contains only the compressed prose fields. The CLI merges this onto `docs` at read time, so you only need to provide the fields that change.
+Produce a `docsDense` `TranslationDoc` that compresses the prose of a component's `docs` export while preserving every piece of guidance an agent needs to call the API correctly. Dense is a translation, not a different document — same information, fewer tokens.
 
 ## TranslationDoc Shape
 
@@ -16,51 +16,123 @@ export const docsDense = {
   notes: ['compressed note 1', 'compressed note 2'],
   accessibility: ['compressed a11y item 1'],
   keyboard: 'compressed keyboard string',
+  // 1:1 with docs.usage.bestPractices — same length, same order
+  usage: {
+    bestPractices: [
+      { guidance: true,  description: 'compressed Do bullet 1' },
+      { guidance: true,  description: 'compressed Do bullet 2' },
+      { guidance: false, description: 'compressed Don\'t bullet 1' },
+    ],
+  },
   propDescriptions: {
     label: 'compressed desc',
     variant: 'compressed desc',
   },
-  // Only for multi-component docs (docs.components)
   components: [
     {
       name: 'XDSDialogHeader',
       description: 'compressed sub-component desc',
-      propDescriptions: {
-        title: 'compressed desc',
-      },
+      propDescriptions: { title: 'compressed desc' },
     },
   ],
 };
 ```
 
-## What to Compress
+## Compression Rules
 
-Every string value in the TranslationDoc gets compressed:
+Drop:
+- Articles (`a`, `the`, `an`)
+- Filler verbs (`is used for`, `provides`, `supports`, `displays`, `whether`)
+- Subject when context is obvious
 
-- Drop articles: a, the, an
-- Drop filler: is used for, provides, supports, displays, whether, when set to
-- Fragments only: "Shows a loading spinner and disables interaction" -> "shows spinner+disables"
-- Shorthand: w/ w/o + -> ;
+Use fragments, not full sentences. Shorthand: `w/`, `w/o`, `+` for "and", `;` for clause break, `/` for tight lists.
 
-## What to Include
+## Hard Rules — What MUST Be Preserved
 
-- `description` always
-- `features` if docs.features exists (same count, same order)
-- `notes` if docs.notes exists (same count, same order)
-- `accessibility` if docs.accessibility exists (same count, same order)
-- `keyboard` if docs.keyboard exists
-- `propDescriptions` one entry per prop that has a description in docs.props
-- `components` if docs.components exists, one entry per sub-component
+### 1. Counts must match
+
+- `bestPractices` length = `docs.usage.bestPractices` length (1:1, never pack two bullets into one)
+- `features` length = `docs.features` length
+- `notes` length = `docs.notes` length
+- `accessibility` length = `docs.accessibility` length
+- `components` length = `docs.components` length
+- `propDescriptions` has an entry for every prop in `docs.props` that has a description (except universal: `children`, `ref`, `key`, `style`, `className`, `xstyle`)
+
+### 2. Signal words — keep these even when compressing
+
+These words change *behavior*. They must survive compression.
+
+| Category | Words |
+|---|---|
+| Conditionals | `if`, `when`, `unless`, `only` |
+| Constraints | `must`, `cannot`, `never`, `always`, `required` |
+| Cross-references | `instead`, `instead of`, plus full component+prop refs like `XDSChatMessage's name prop` |
+| Defaults & inheritance | `defaults to`, `override`, `inherit`, `context`, `automatically` |
+| Accessibility | `keyboard`, `accessibility`, `aria-*`, `role=` |
+
+❌ Bad: "use on first bubble in message"  
+✅ Good: "use on first bubble; **if** first child is raw, use XDSChatMessage's `name` **instead**"
+
+### 3. Cross-component references survive
+
+If full prose says "use XDSFoo's `bar` prop instead", dense MUST keep both the component name (`XDSFoo`) and the prop name (`bar`) and the relationship word (`instead`).
+
+### 4. (required) markers preserved
+
+Required props must say so in dense propDescriptions, e.g. `'<desc> **(required)*'` or include `required: true` in the prop entry. Required guidance is load-bearing.
+
+### 5. Sub-components are not optional
+
+If `docs.components` includes hooks like `useXDSImperativeDialog` or `useXDSTableSelectionState`, `docsDense.components` must include them too. Hooks are part of the API.
 
 ## What NEVER Changes
 
-Prop names, types, defaults live in `docs`, not in the translation.
-Example code and labels live in `docs`, not in the translation.
-Sub-component names copied exactly from docs.components[n].name.
+- Prop names, types, defaults — these stay in `docs`, not in the translation
+- Example code — stays in `docs`
+- Sub-component names — copy exactly from `docs.components[n].name`
 
-## Counts Must Match
+## Coverage Rule
 
-- features array length must equal docs.features length
-- notes array length must equal docs.notes length
-- accessibility array length must equal docs.accessibility length
-- components array length must equal docs.components length (if present)
+**Every component in `packages/core/src/` MUST have a `docsDense` export.** The CLI silently falls back to English when missing — the user has no way to know dense mode isn't actually compressed. There is no "optional" tier.
+
+## Common Mistakes to Avoid
+
+These patterns score as fidelity loss in vibe tests against the protocol. Do not do them.
+
+### ❌ Synonym swaps that lose meaning
+
+| Wrong (loses meaning) | Right (keeps signal) |
+|---|---|
+| `instead of X` → `not X` | `instead of X` → keep `instead` |
+| `when X` → implicit (drop it) | `when X` → `if X` or keep `when` |
+| `must` → drop word entirely | keep `must` or use `req'd` |
+| `always provide X` → `provide X` | keep `always` |
+| `never` → `don't` (when prose already starts with Don't:) | keep both: "Don't: never X" reads fine; or use `no` |
+
+The signal words list isn't suggestion — every word in it changes behavior. `instead` says "use this alternative." Replacing it with `not` or `,` removes the recommendation pointer.
+
+### ❌ Truncating XDS component names
+
+| Wrong | Right |
+|---|---|
+| `XDSChatSystemMessage` → `SystemMessage` | keep full name |
+| `XDSChatMessageBubble` → `MessageBubble` or `bubble` | keep full name |
+| `XDSChatMessage's name prop` → `bubble's name` | keep full ref |
+
+Cross-refs to other XDS components MUST keep the `XDS` prefix and the full PascalCase component name. The name is how an agent reaches the docs for it. `MessageBubble` is unsearchable; `XDSChatMessageBubble` is.
+
+The only acceptable shortening: in the second mention within the SAME bullet, you may drop the prefix. First mention always full.
+
+❌ Bad: "Don't use SystemMessage for sender content. Use XDSChatMessage instead."  
+✅ Good: "Don't use XDSChatSystemMessage for sender content. Use XDSChatMessage instead."  
+✅ Also fine: "Don't use XDSChatSystemMessage for sender content. Use XDSChatMessage instead — SystemMessage is for status only."
+
+### ✅ Acceptable compressions
+
+These don't lose meaning:
+
+- "tightens the corner radius" → "tightens corner radius" (drop article)
+- "the sender's name" → "sender name"
+- "and provides X" → "+ X"
+- "with X and Y" → "w/ X + Y"
+- "or" → "/" (in tight lists like "first/middle/last")

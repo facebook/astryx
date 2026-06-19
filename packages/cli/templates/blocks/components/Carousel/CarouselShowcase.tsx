@@ -30,6 +30,7 @@ export default function CarouselShowcase() {
     <XDSCarousel
       gap={2}
       hasSnap
+      hasButtons={false}
       aria-label="Workflow steps"
       xstyle={styles.root}>
       {ITEMS.map(item => (

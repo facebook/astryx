@@ -6,13 +6,6 @@ import React, {useState, useMemo} from 'react';
 import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
 import type {ResizableProps} from '@xds/core/Resizable';
 import * as stylex from '@stylexjs/stylex';
-import {XDSAppShell} from '@xds/core/AppShell';
-import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
-} from '@xds/core/SideNav';
 import {
   XDSLayout,
   XDSLayoutContent,
@@ -37,7 +30,6 @@ import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSIcon} from '@xds/core/Icon';
-import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSStatusDot} from '@xds/core/StatusDot';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
@@ -51,12 +43,6 @@ import {
 } from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {
-  ClockIcon,
-  InboxIcon,
-  Squares2X2Icon,
-  EyeIcon,
-  UserGroupIcon,
-  ArrowPathIcon,
   ChevronRightIcon,
   ChevronDownIcon,
   PencilIcon,
@@ -68,34 +54,15 @@ import {
   EllipsisHorizontalIcon,
 } from '@heroicons/react/24/outline';
 import {XMarkIcon} from '@heroicons/react/24/outline';
-import {
-  ChartBarIcon,
-  CommandLineIcon,
-  ClockIcon as ClockIconSolid,
-  InboxIcon as InboxIconSolid,
-  Squares2X2Icon as Squares2X2IconSolid,
-  EyeIcon as EyeIconSolid,
-  UserGroupIcon as UserGroupIconSolid,
-  ArrowPathIcon as ArrowPathIconSolid,
-} from '@heroicons/react/24/solid';
+import {ChartBarIcon} from '@heroicons/react/24/solid';
 
 const pageStyles = stylex.create({
   groupHeaderRow: {
     cursor: 'pointer',
     backgroundColor: 'var(--color-background-muted)',
-    borderBottomWidth: 1,
-    borderBottomStyle: 'solid',
-    borderBottomColor: 'var(--color-border)',
-  },
-  headerRow: {
-    paddingBottom: 'var(--spacing-4)',
   },
   groupHeaderCell: {
     padding: 'var(--spacing-3) var(--spacing-4)',
-  },
-  flexFill: {
-    flexGrow: 1,
-    minWidth: 0,
   },
 });
 
@@ -754,107 +721,6 @@ const powerSearchConfig: PowerSearchConfig = {
   ],
 };
 
-function TaskTrackerSideNav() {
-  const [active, setActive] = useState('issues');
-  return (
-    <XDSSideNav
-      header={
-        <XDSSideNavHeading
-          heading="Acme"
-          icon={
-            <XDSNavIcon
-              icon={
-                <XDSIcon icon={CommandLineIcon} size="sm" color="inherit" />
-              }
-            />
-          }
-        />
-      }
-      collapsible>
-      <XDSSideNavSection title="Workspace" isHeaderHidden>
-        <XDSSideNavItem
-          label="Inbox"
-          icon={InboxIcon}
-          selectedIcon={InboxIconSolid}
-          isSelected={active === 'inbox'}
-          onClick={() => setActive('inbox')}
-        />
-        <XDSSideNavItem
-          label="My issues"
-          icon={ClockIcon}
-          selectedIcon={ClockIconSolid}
-          isSelected={active === 'my-issues'}
-          onClick={() => setActive('my-issues')}
-        />
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Workspace">
-        <XDSSideNavItem
-          label="Projects"
-          icon={Squares2X2Icon}
-          selectedIcon={Squares2X2IconSolid}
-          isSelected={active === 'projects'}
-          onClick={() => setActive('projects')}
-        />
-        <XDSSideNavItem
-          label="Views"
-          icon={EyeIcon}
-          selectedIcon={EyeIconSolid}
-          isSelected={active === 'views'}
-          onClick={() => setActive('views')}
-        />
-        <XDSSideNavItem
-          label="Teams"
-          icon={UserGroupIcon}
-          selectedIcon={UserGroupIconSolid}
-          isSelected={active === 'teams'}
-          onClick={() => setActive('teams')}
-        />
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Your teams">
-        <XDSSideNavItem
-          label="Issues"
-          icon={ClockIcon}
-          selectedIcon={ClockIconSolid}
-          isSelected={active === 'issues'}
-          onClick={() => setActive('issues')}
-          collapsible>
-          <XDSSideNavItem
-            label="Active"
-            isSelected={active === 'active'}
-            onClick={() => setActive('active')}
-          />
-          <XDSSideNavItem
-            label="Backlog"
-            isSelected={active === 'backlog'}
-            onClick={() => setActive('backlog')}
-          />
-        </XDSSideNavItem>
-        <XDSSideNavItem
-          label="Projects"
-          icon={Squares2X2Icon}
-          selectedIcon={Squares2X2IconSolid}
-          isSelected={active === 'team-projects'}
-          onClick={() => setActive('team-projects')}
-        />
-        <XDSSideNavItem
-          label="Views"
-          icon={EyeIcon}
-          selectedIcon={EyeIconSolid}
-          isSelected={active === 'team-views'}
-          onClick={() => setActive('team-views')}
-        />
-        <XDSSideNavItem
-          label="Cycles"
-          icon={ArrowPathIcon}
-          selectedIcon={ArrowPathIconSolid}
-          isSelected={active === 'cycles'}
-          onClick={() => setActive('cycles')}
-        />
-      </XDSSideNavSection>
-    </XDSSideNav>
-  );
-}
-
 const PRIORITY_LABEL: Record<TaskPriority, string> = {
   urgent: 'Urgent',
   high: 'High',
@@ -876,6 +742,9 @@ function TaskDetailPanel({
     return null;
   }
   return (
+    // Panel owns the separator (its full-height left border). The adjacent
+    // XDSResizeHandle is kept divider-less + isAlwaysVisible={false} so its
+    // always-on pill doesn't float above the panel as a stray stub.
     <XDSLayoutPanel
       hasDivider
       resizable={resizable}
@@ -1026,10 +895,7 @@ export default function DataTableTemplate() {
   const resolvedWidths = resolveColumnWidths(columns);
 
   return (
-    <XDSAppShell
-      sideNav={<TaskTrackerSideNav />}
-      variant="elevated"
-      contentPadding={0}>
+    <>
       <XDSLayout
         height="fill"
         header={
@@ -1124,9 +990,9 @@ export default function DataTableTemplate() {
                           }
                         }}
                         xstyle={[pageStyles.groupHeaderRow]}>
-                        <td
+                        <XDSTableCell
                           colSpan={COL_COUNT}
-                          {...stylex.props(pageStyles.groupHeaderCell)}>
+                          xstyle={pageStyles.groupHeaderCell}>
                           <XDSHStack gap={2} vAlign="center">
                             <XDSIcon
                               icon={
@@ -1143,7 +1009,7 @@ export default function DataTableTemplate() {
                               label={String(tasks.length)}
                             />
                           </XDSHStack>
-                        </td>
+                        </XDSTableCell>
                       </XDSTableRow>
                     )}
 
@@ -1268,7 +1134,11 @@ export default function DataTableTemplate() {
         end={
           selectedTask && (
             <>
-              <XDSResizeHandle resizable={detailPanel.props} isReversed />
+              <XDSResizeHandle
+                resizable={detailPanel.props}
+                isReversed
+                isAlwaysVisible={false}
+              />
               <TaskDetailPanel
                 task={selectedTask}
                 onClose={() => setSelectedTask(null)}
@@ -1347,6 +1217,6 @@ export default function DataTableTemplate() {
           }
         />
       </XDSDialog>
-    </XDSAppShell>
+    </>
   );
 }

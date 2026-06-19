@@ -684,7 +684,8 @@ export default function DocDocsPage() {
             </li>
             <li>Toggling a UI element or performing an inline action</li>
             <li>
-              Performing destructive actions such as deleting items — use the
+              
+              Performing destructive actions such as deleting items; use the
               danger variant for these
             </li>
           </ul>

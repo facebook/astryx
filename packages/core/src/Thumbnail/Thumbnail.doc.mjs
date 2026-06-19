@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Thumbnail',
   displayName: 'Thumbnail',
+  category: 'Content',
   keywords: ["thumbnail","attachment","preview","image","upload","dismiss","remove","loading"],
   props: [
     {
@@ -47,17 +48,17 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
     {
       name: 'className',
       type: 'string',
-      description: 'CSS class name for the root element. Prefer xstyle for styling — className is provided for integration with non-StyleX systems.',
+      description: 'CSS class name for the root element. Prefer xstyle for styling; className is provided for integration with non-StyleX systems.',
     },
     {
       name: 'style',
       type: 'CSSProperties',
-      description: 'Inline styles for the root element. Prefer xstyle for styling — inline styles bypass StyleX optimization.',
+      description: 'Inline styles for the root element. Prefer xstyle for styling; inline styles bypass StyleX optimization.',
     },
     {
       name: 'data-testid',
@@ -76,9 +77,9 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Always provide a label prop with the file name so the thumbnail and its remove button are accessible to screen readers and show a tooltip on hover.'},
       {guidance: true, description: 'Use isLoading without a src to show a skeleton during initial upload, and isLoading with a src to show a spinner overlay once a preview URL is available.'},
-      {guidance: true, description: 'Pair onClick with a lightbox or detail view so users can inspect the full image — the thumbnail adds button semantics and a hover shadow automatically.'},
-      {guidance: false, description: "Don't use Thumbnail for non-image file types like PDFs or spreadsheets — use a file attachment component with an appropriate icon instead."},
-      {guidance: false, description: "Don't omit alt text when a src is provided — screen readers need a description of the image content, not just the file name from label."},
+      {guidance: true, description: 'Pair onClick with a lightbox or detail view so users can inspect the full image; the thumbnail adds button semantics and a hover shadow automatically.'},
+      {guidance: false, description: "Don't use Thumbnail for non-image file types like PDFs or spreadsheets; use a file attachment component with an appropriate icon instead."},
+      {guidance: false, description: "Don't omit alt text when a src is provided; screen readers need a description of the image content, not just the file name from label."},
     ],
     anatomy: [
       {name: 'Image', required: false, description: 'The preview image, displayed as a square with cover fit.'},
@@ -119,9 +120,8 @@ export const docsZh = {
 };
 
 export const docsDense = {
-  n: 'Thumbnail',
-  d: 'Square preview card for image attachments. Skeleton shimmer on upload, image on success, placeholder when no src.',
-  kw: ['thumbnail', 'attachment', 'preview', 'image', 'upload', 'dismiss', 'remove', 'loading'],
+  description:
+    'Square preview card for image attachments. Skeleton shimmer on upload, image on success, placeholder when no src.',
   usage: {
     description:
       'Compact square image preview. Shimmer while uploading, image on success, placeholder when empty. Use in chat composers, file lists, or small media previews.',
@@ -133,7 +133,7 @@ export const docsDense = {
       {guidance: false, description: "Don't omit alt when src present \u2014 screen readers need image content description, not just label."},
     ],
   },
-  p: {
+  propDescriptions: {
     src: 'Image source URL.',
     alt: 'Alt text for image.',
     label: 'Accessible label (file name). Tooltip on hover, aria-label.',
@@ -146,8 +146,4 @@ export const docsDense = {
     style: 'Inline styles. Prefer xstyle.',
     'data-testid': 'Test selector.',
   },
-  ex: [
-    '<XDSThumbnail src="/photo.jpg" alt="Vacation" label="vacation.jpg" onRemove={() => {}} />',
-    '<XDSThumbnail src="/preview.png" alt="Preview" onClick={openLightbox} />',
-  ],
 };

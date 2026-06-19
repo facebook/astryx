@@ -5,6 +5,7 @@
 export const docs = {
   name: 'NumberInput',
   displayName: 'Number Input',
+  category: 'Data Input',
   keywords: ["numberinput","numberfield","stepper","spinner","counter","increment","decrement","quantity","numberpicker"],
   props: [
     {
@@ -163,7 +164,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Set min, max, and step to guide users toward valid values.' },
       { guidance: true, description: 'Show units (e.g. "%" or "GB") so users know what the number represents.' },
-      { guidance: false, description: 'Use NumberInput for free-form text that happens to contain numbers — use TextInput instead.' },
+      { guidance: false, description: 'Use NumberInput for free-form text that happens to contain numbers; use TextInput instead.' },
       { guidance: false, description: 'Set both isOptional and isRequired on the same field.' },
     ],
     anatomy: [
@@ -336,7 +337,7 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Set min, max, and step to guide users toward valid values.' },
       { guidance: true, description: 'Show units (e.g. "%" or "GB") so users know what the number represents.' },
-      { guidance: false, description: 'Use NumberInput for free-form text that happens to contain numbers — use TextInput instead.' },
+      { guidance: false, description: 'Use NumberInput for free-form text that happens to contain numbers; use TextInput instead.' },
       { guidance: false, description: 'Set both isOptional and isRequired on the same field.' },
     ],
     anatomy: [
@@ -358,7 +359,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Set min, max, and step to guide users toward valid values.' },
       { guidance: true, description: 'Show units (e.g. "%" or "GB") so users know what the number represents.' },
-      { guidance: false, description: 'Use NumberInput for free-form text that happens to contain numbers — use TextInput instead.' },
+      { guidance: false, description: 'Use NumberInput for free-form text that happens to contain numbers; use TextInput instead.' },
       { guidance: false, description: 'Set both isOptional and isRequired on the same field.' },
     ],
     anatomy: [

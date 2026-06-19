@@ -10,6 +10,7 @@
   "include": [
     "src/types/**/*.d.ts",
     "src/lib/json.mjs",
+    "src/lib/manifest.mjs",
     "src/lib/parse.mjs",
     "../core/src/docs-types.ts"
   ]

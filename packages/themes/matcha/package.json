@@ -2,7 +2,7 @@
   "name": "@xds/theme-matcha",
   "version": "0.0.14",
   "private": false,
-  "description": "Matcha theme for XDS — earthy green palette with Figtree typography and Lucide icons",
+  "description": "Earthy greens with a calm, organic feel. Naturalistic and grounded, great for wellness or content-first apps.",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebookexperimental/xds#readme",
@@ -48,7 +48,7 @@
     "build": "xds theme build src/matchaTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
   },
   "dependencies": {
-    "lucide-react": "^1.16.0"
+    "lucide-react": "^1.18.0"
   },
   "peerDependencies": {
     "@xds/core": "0.0.14",

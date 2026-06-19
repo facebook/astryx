@@ -2,6 +2,7 @@
 
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import {Suspense} from 'react';
 import {useSearchParams, useRouter, usePathname} from 'next/navigation';
 import {XDSHeading, XDSText} from '@xds/core/Text';
@@ -9,13 +10,15 @@ import {XDSVStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
 import {XDSCard} from '@xds/core/Card';
 import {XDSDivider} from '@xds/core';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {CodeExampleBlock} from '../CodeExampleBlock';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {useMediaQuery} from '@xds/core/hooks';
 import {ShowcasePreview} from './ShowcasePreview';
+import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {BestPractices} from './BestPractices';
 import {HookSignature} from './HookSignature';
 import {ExampleBlock} from './ExampleBlock';
+import {MarkdownText} from '../MarkdownText';
 import {
   InteractivePreviewStage,
   useInteractiveState,
@@ -25,6 +28,15 @@ import type {ComponentEntry} from '../../generated/componentRegistry';
 import type {BlockEntry} from '../../generated/blockRegistry';
 import {showcaseRegistry} from '../../generated/showcaseRegistry';
 import {exampleRegistry} from '../../generated/exampleRegistry';
+import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import {trackNavigate} from '../../lib/analytics';
+
+const styles = stylex.create({
+  section: {
+    marginInline: 'auto',
+    paddingBottom: `calc(${spacingVars['--spacing-12']} * 2)`,
+  },
+});
 
 interface ComponentDetailClientProps {
   comp: ComponentEntry;
@@ -40,24 +52,34 @@ function OverviewContent({
   hasShowcase,
 }: ComponentDetailClientProps & {hasShowcase: boolean}) {
   const isHook = comp.params != null;
-  const importPath = `import {${comp.moduleName}} from '${pkg}/${comp.directory}'`;
+  const importFrom = comp.importPath ?? `${pkg}/${comp.directory}`;
+  const importPath = `import {${comp.moduleName}} from '${importFrom}'`;
 
   return (
     <XDSVStack gap={8}>
       {hasShowcase && (
-        <XDSCard variant="muted" padding={0}>
-          <ShowcasePreview name={comp.name} />
-        </XDSCard>
+        <ComponentPreviewTheme>
+          <XDSCard variant="muted" padding={0}>
+            <ShowcasePreview name={comp.name} />
+          </XDSCard>
+        </ComponentPreviewTheme>
       )}
 
       {comp.usage && (
-        <XDSVStack gap={6}>
-          <XDSHeading level={2}>Usage</XDSHeading>
-          <XDSText type="large" weight="normal">
+        <XDSVStack gap={4}>
+          <XDSHeading level={2} type="display-3">
+            Usage
+          </XDSHeading>
+          <MarkdownText type="large" weight="normal">
             {comp.usage.description}
-          </XDSText>
+          </MarkdownText>
 
-          <XDSCodeBlock code={importPath} language="ts" hasCopyButton />
+          <CodeExampleBlock
+            code={importPath}
+            language="ts"
+            width="100%"
+            hasCopyButton
+          />
 
           {comp.usage.bestPractices && comp.usage.bestPractices.length > 0 && (
             <BestPractices practices={comp.usage.bestPractices} />
@@ -72,15 +94,17 @@ function OverviewContent({
       {(exampleRegistry[comp.name] || []).length > 0 && (
         <>
           <XDSDivider />
-          <XDSVStack gap={6}>
-            <XDSHeading level={2}>Examples</XDSHeading>
+          <XDSVStack gap={4}>
+            <XDSHeading level={2} type="display-3">
+              Examples
+            </XDSHeading>
             <XDSText type="large" weight="normal">
               Common configurations, variations, and states.
             </XDSText>
           </XDSVStack>
-          <XDSVStack gap={8}>
+          <XDSVStack gap={10}>
             {(exampleRegistry[comp.name] || []).map((entry, i) => (
-              <ExampleBlock key={i} entry={entry} />
+              <ExampleBlock key={i} entry={entry} componentName={comp.name} />
             ))}
           </XDSVStack>
         </>
@@ -106,6 +130,12 @@ function ComponentDetailInner({
 
   const tab = searchParams.get('tab') ?? 'overview';
   const setTab = (value: string) => {
+    trackNavigate({
+      page: 'components',
+      target: 'tab',
+      tab: value,
+      item: comp.name,
+    });
     const params = new URLSearchParams(searchParams.toString());
     if (value === 'overview') {
       params.delete('tab');
@@ -116,7 +146,7 @@ function ComponentDetailInner({
     router.replace(`${pathname}${qs ? `?${qs}` : ''}`, {scroll: false});
   };
 
-  const {knobs, state, setProp} = useInteractiveState(
+  const {knobs, state, setProp, missingRequiredProps} = useInteractiveState(
     comp.name,
     comp.props,
     comp.playground,
@@ -125,12 +155,12 @@ function ComponentDetailInner({
   return (
     <XDSSection
       maxWidth={960}
-      padding={4}
+      padding={6}
       variant="transparent"
-      style={{marginInline: 'auto'}}>
+      xstyle={styles.section}>
       <XDSVStack gap={4}>
         <XDSVStack gap={2}>
-          <XDSText type="display-1">{comp.name}</XDSText>
+          <XDSText type="display-1">{comp.displayName}</XDSText>
           <XDSText type="supporting" color="secondary">
             {pkg}
             {pkgVersion ? ` v${pkgVersion}` : ''} · {comp.moduleName}
@@ -166,7 +196,18 @@ function ComponentDetailInner({
                     maxHeight: isMobile ? 250 : 400,
                     overflow: 'auto',
                   }}>
-                  <InteractivePreviewStage name={comp.name} state={state} />
+                  <InteractivePreviewStage
+                    name={comp.name}
+                    state={state}
+                    knobs={knobs}
+                    playground={comp.playground}
+                    missingRequiredProps={missingRequiredProps}
+                    onPropChange={setProp}
+                    canControlOpenState={
+                      comp.props.some(prop => prop.name === 'isOpen') &&
+                      comp.props.some(prop => prop.name === 'onOpenChange')
+                    }
+                  />
                 </div>
 
                 {comp.props.length > 0 && (

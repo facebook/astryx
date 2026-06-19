@@ -3,7 +3,7 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSDateRangeInput} from '@xds/core/DateRangeInput';
-import type {XDSDateRange} from '@xds/core/DateRangeInput';
+import type {DateRange} from '@xds/core/DateRangeInput';
 import type {ISODateString} from '@xds/core/Calendar';
 
 function daysAgo(n: number): ISODateString {
@@ -41,7 +41,7 @@ const defaultPresets = [
 ];
 
 const meta: Meta<typeof XDSDateRangeInput> = {
-  title: 'Core/Inputs/DateRangeInput',
+  title: 'Core/DateRangeInput',
   component: XDSDateRangeInput,
   tags: ['autodocs'],
   argTypes: {
@@ -73,7 +73,7 @@ type Story = StoryObj<typeof XDSDateRangeInput>;
 
 export const Default: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>(null);
+    const [value, setValue] = useState<DateRange | null>(null);
     return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
@@ -83,7 +83,7 @@ export const Default: Story = {
 
 export const WithValue: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>({
+    const [value, setValue] = useState<DateRange | null>({
       start: '2026-03-10' as ISODateString,
       end: '2026-03-20' as ISODateString,
     });
@@ -96,7 +96,7 @@ export const WithValue: Story = {
 
 export const WithPresets: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>(null);
+    const [value, setValue] = useState<DateRange | null>(null);
     return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
@@ -107,7 +107,7 @@ export const WithPresets: Story = {
 
 export const WithPresetsAndValue: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>({
+    const [value, setValue] = useState<DateRange | null>({
       start: daysAgo(7),
       end: today(),
     });
@@ -121,7 +121,7 @@ export const WithPresetsAndValue: Story = {
 
 export const WithDescription: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>(null);
+    const [value, setValue] = useState<DateRange | null>(null);
     return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
@@ -132,7 +132,7 @@ export const WithDescription: Story = {
 
 export const WithMinMax: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>(null);
+    const [value, setValue] = useState<DateRange | null>(null);
     return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
@@ -145,7 +145,7 @@ export const WithMinMax: Story = {
 
 export const Optional: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>(null);
+    const [value, setValue] = useState<DateRange | null>(null);
     return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
@@ -156,7 +156,7 @@ export const Optional: Story = {
 
 export const Required: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>(null);
+    const [value, setValue] = useState<DateRange | null>(null);
     return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
@@ -167,7 +167,7 @@ export const Required: Story = {
 
 export const Disabled: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>({
+    const [value, setValue] = useState<DateRange | null>({
       start: '2026-03-10' as ISODateString,
       end: '2026-03-20' as ISODateString,
     });
@@ -181,9 +181,9 @@ export const Disabled: Story = {
 
 export const SizeVariants: Story = {
   render: () => {
-    const [sm, setSm] = useState<XDSDateRange | null>(null);
-    const [md, setMd] = useState<XDSDateRange | null>(null);
-    const [lg, setLg] = useState<XDSDateRange | null>(null);
+    const [sm, setSm] = useState<DateRange | null>(null);
+    const [md, setMd] = useState<DateRange | null>(null);
+    const [lg, setLg] = useState<DateRange | null>(null);
     return (
       <div
         style={{
@@ -217,7 +217,7 @@ export const SizeVariants: Story = {
 
 export const SingleMonth: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>(null);
+    const [value, setValue] = useState<DateRange | null>(null);
     return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
@@ -228,7 +228,7 @@ export const SingleMonth: Story = {
 
 export const WithErrorStatus: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>(null);
+    const [value, setValue] = useState<DateRange | null>(null);
     return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
@@ -239,7 +239,7 @@ export const WithErrorStatus: Story = {
 
 export const WithWarningStatus: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>({
+    const [value, setValue] = useState<DateRange | null>({
       start: '2026-03-01' as ISODateString,
       end: '2026-06-30' as ISODateString,
     });
@@ -253,7 +253,7 @@ export const WithWarningStatus: Story = {
 
 export const NoClear: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>({
+    const [value, setValue] = useState<DateRange | null>({
       start: '2026-03-10' as ISODateString,
       end: '2026-03-20' as ISODateString,
     });
@@ -267,17 +267,17 @@ export const NoClear: Story = {
 
 export const AllVariations: Story = {
   render: () => {
-    const [v1, setV1] = useState<XDSDateRange | null>(null);
-    const [v2, setV2] = useState<XDSDateRange | null>({
+    const [v1, setV1] = useState<DateRange | null>(null);
+    const [v2, setV2] = useState<DateRange | null>({
       start: '2026-03-10' as ISODateString,
       end: '2026-03-20' as ISODateString,
     });
-    const [v3, setV3] = useState<XDSDateRange | null>(null);
-    const [v4, setV4] = useState<XDSDateRange | null>({
+    const [v3, setV3] = useState<DateRange | null>(null);
+    const [v4, setV4] = useState<DateRange | null>({
       start: '2026-03-10' as ISODateString,
       end: '2026-03-20' as ISODateString,
     });
-    const [v5, setV5] = useState<XDSDateRange | null>(null);
+    const [v5, setV5] = useState<DateRange | null>(null);
 
     return (
       <div

@@ -33,12 +33,13 @@ import {ensureJscodeshift} from '../codemods/ensure-jscodeshift.mjs';
 import {
   getTransformsBetween,
   latestVersion,
-  versions,
 } from '../codemods/registry.mjs';
 import {runCodemods} from '../codemods/runner.mjs';
 import {installAgentDocs, discoverAgentDocs} from './agent-docs.mjs';
 import {detectPackageManager, getRunPrefix} from '../utils/package-manager.mjs';
+import {isValidSemver, semverGte} from '../utils/semver.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 /**
  * Detect the installed @xds/core version from the consumer's package.json.
@@ -122,23 +123,12 @@ function getInstallCommand(force = false) {
 }
 
 /**
- * List all available codemods across all versions.
+ * Register the `upgrade` command (codemod-driven version migration).
  */
-async function listCodemods() {
-  for (const version of versions) {
-    const manifests = await getTransformsBetween('0.0.0', version);
-    for (const {transforms} of manifests) {
-      for (const {name, meta} of transforms) {
-        p.log.info(`  ${name} — ${meta.title} (${meta.pr})`);
-      }
-    }
-  }
-}
-
 export function registerUpgrade(program) {
   program
     .command('upgrade')
-    .description('Run codemods to migrate between XDS versions')
+    .description('Run codemods to migrate between versions')
     .option('--apply', 'Write changes to disk (default: dry-run)', false)
     .option('--from <version>', 'Previous version (overrides package.json detection)')
     .option('--to <version>', 'Target version', latestVersion)
@@ -152,16 +142,37 @@ export function registerUpgrade(program) {
     .option('--list', 'List available codemods', false)
     .action(async (options) => {
       const json = program.opts().json || false;
-      if (!json) p.intro('XDS Upgrade');
+      if (!json) p.intro('Upgrade');
 
+      // Validate --to / --from upfront so callers don't silently accept
+      // typos like `--to bogus` (which used to flow through getTransformsBetween
+      // and just emit "no codemods available").
+      if (options.to !== undefined && !isValidSemver(options.to)) {
+        const msg = `Invalid --to value: "${options.to}". Expected a semver string like 0.0.10.`;
+        if (json) return jsonError(msg, undefined, ERROR_CODES.ERR_INVALID_VERSION);
+        p.log.error(msg);
+        p.outro('Aborted');
+        process.exitCode = 1;
+        return;
+      }
+      if (options.from !== undefined && !isValidSemver(options.from)) {
+        const msg = `Invalid --from value: "${options.from}". Expected a semver string like 0.0.5.`;
+        if (json) return jsonError(msg, undefined, ERROR_CODES.ERR_INVALID_VERSION);
+        p.log.error(msg);
+        p.outro('Aborted');
+        process.exitCode = 1;
+        return;
+      }
       if (options.list) {
         const codemods = [];
-        for (const version of versions) {
-          const manifests = await getTransformsBetween('0.0.0', version);
-          for (const {transforms} of manifests) {
-            for (const {name, meta, optional} of transforms) {
-              codemods.push({name, title: meta.title, version, pr: meta.pr, optional: !!optional});
-            }
+        // Walk the registry once from 0.0.0 → latest. Earlier this looped
+        // over every version and re-walked getTransformsBetween('0.0.0', v),
+        // so each codemod was printed once per release that included it
+        // (31 unique × 9 ≈ 201 lines on the current registry).
+        const manifests = await getTransformsBetween('0.0.0', latestVersion);
+        for (const {version, transforms} of manifests) {
+          for (const {name, meta, optional} of transforms) {
+            codemods.push({name, title: meta.title, version, pr: meta.pr, optional: !!optional});
           }
         }
         if (json) return jsonOut('upgrade.list', codemods.map(({name, title, version, optional}) => ({name, title, version, optional})));
@@ -186,7 +197,7 @@ export function registerUpgrade(program) {
       const currentVersion = options.from ?? detectCurrentVersion();
       if (!currentVersion && !skipVersionCheck) {
         const msg = 'Could not detect @xds/core version. Make sure package.json is in the current directory, or use --from <version>.';
-        if (json) return jsonError(msg);
+        if (json) return jsonError(msg, undefined, ERROR_CODES.ERR_VERSION_DETECT);
         p.log.error(msg);
         p.outro('Aborted');
         process.exitCode = 1;
@@ -201,12 +212,17 @@ export function registerUpgrade(program) {
           p.log.info(`Target version:  ${targetVersion}`);
         }
 
-        if (!options.force && currentVersion >= targetVersion) {
-          if (!json) {
-            p.log.success('Already up to date — no codemods to run.');
-            p.log.info('Use --force to run codemods anyway, or --from <version> to specify the previous version.');
-            p.outro('Done');
+        if (!options.force && semverGte(currentVersion, targetVersion)) {
+          if (json) {
+            return jsonOut('upgrade.status', {
+              status: 'up_to_date',
+              from: currentVersion,
+              to: targetVersion,
+            });
           }
+          p.log.success('Already up to date — no codemods to run.');
+          p.log.info('Use --force to run codemods anyway, or --from <version> to specify the previous version.');
+          p.outro('Done');
           return;
         }
       }
@@ -218,10 +234,15 @@ export function registerUpgrade(program) {
       );
 
       if (versionManifests.length === 0) {
-        if (!json) {
-          p.log.success('No codemods available for this version range.');
-          p.outro('Done');
+        if (json) {
+          return jsonOut('upgrade.status', {
+            status: 'no_codemods',
+            from: skipVersionCheck ? null : currentVersion,
+            to: targetVersion,
+          });
         }
+        p.log.success('No codemods available for this version range.');
+        p.outro('Done');
         return;
       }
 
@@ -241,7 +262,7 @@ export function registerUpgrade(program) {
 
       if (totalTransforms === 0 && totalOptional === 0) {
         const msg = `Codemod "${options.codemod}" not found. Use --list to see available codemods.`;
-        if (json) return jsonError(msg);
+        if (json) return jsonError(msg, undefined, ERROR_CODES.ERR_UNKNOWN_CODEMOD);
         p.log.error(msg);
         p.outro('Aborted');
         process.exitCode = 1;
@@ -283,19 +304,20 @@ export function registerUpgrade(program) {
       }
 
       // Ensure jscodeshift is available
-      const ready = await ensureJscodeshift({installDeps: options.installDeps});
+      const ready = await ensureJscodeshift({installDeps: options.installDeps, silent: json});
       if (!ready) {
-        if (json) return jsonError('jscodeshift is required but could not be installed.');
+        if (json) return jsonError('jscodeshift is required but could not be installed.', undefined, ERROR_CODES.ERR_DEP_MISSING);
         p.outro('Aborted');
         process.exitCode = 1;
         return;
       }
 
       // Run codemods
-      await runCodemods(versionManifests, {
+      const codemodResult = await runCodemods(versionManifests, {
         apply: options.apply,
         path: options.path,
         codemod: options.codemod,
+        silent: json,
       });
 
       // Refresh agent docs if any exist (AGENTS.md, CLAUDE.md, .claude/CLAUDE.md, etc.)
@@ -318,7 +340,14 @@ export function registerUpgrade(program) {
         }
       }
 
-      if (json) return jsonOut('upgrade.run', receipt);
+      if (json) {
+        if (codemodResult && typeof codemodResult === 'object') {
+          receipt.filesChanged = codemodResult.totalFilesChanged ?? 0;
+          receipt.transformsApplied = codemodResult.totalTransformsApplied ?? 0;
+          receipt.errors = codemodResult.errors ?? [];
+        }
+        return jsonOut('upgrade.run', receipt);
+      }
       p.outro(options.apply ? 'Upgrade complete' : 'Dry run complete');
     });
 }

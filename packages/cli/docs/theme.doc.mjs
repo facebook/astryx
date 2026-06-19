@@ -47,7 +47,7 @@ function App() {
         },
         {
           type: 'prose',
-          text: 'The default import uses runtime style injection — works everywhere, no build step. The `/built` import skips injection and relies on the pre-compiled CSS file for better performance and SSR support.',
+          text: 'The default import uses runtime style injection, which works everywhere with no build step. The `/built` import skips injection and relies on the pre-compiled CSS file for better performance and SSR support.',
         },
       ],
     },
@@ -78,7 +78,7 @@ function App() {
         },
         {
           type: 'prose',
-          text: 'All theme packages export from two subpaths:\n- `@xds/theme-{name}` — source theme (runtime injection)\n- `@xds/theme-{name}/built` — pre-built theme (pair with `theme.css`)',
+          text: 'All theme packages export from two subpaths:\n- `@xds/theme-{name}`: source theme (runtime injection)\n- `@xds/theme-{name}/built`: pre-built theme (pair with `theme.css`)',
         },
       ],
     },
@@ -108,7 +108,7 @@ function App() {
       content: [
         {
           type: 'prose',
-          text: 'Use the CLI wizard (recommended) or create manually with defineTheme. Only override tokens that differ from defaults — omitted tokens use the XDS defaults.',
+          text: 'Use the CLI wizard (recommended) or create manually with defineTheme. Only override tokens that differ from defaults; omitted tokens use the design system defaults.',
         },
         {
           type: 'code',
@@ -171,7 +171,7 @@ const myTheme = defineTheme({
             ],
             [
               'radius',
-              '--radius-1 through --radius-4, --radius-container, --radius-page',
+              '--radius-inner, --radius-element, --radius-container, --radius-page, --radius-chat',
               'base (px), multiplier (0–2)',
             ],
             [
@@ -189,7 +189,7 @@ const myTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: '`extends` lets you derive a new theme from an existing one — inheriting its tokens, component overrides, icons, and fonts. Only specify what you want to change; everything else carries over from the base theme.',
+          text: '`extends` lets you derive a new theme from an existing one, inheriting its tokens, component overrides, icons, and fonts. Only specify what you want to change; everything else carries over from the base theme.',
         },
         {
           type: 'code',
@@ -213,8 +213,8 @@ const brandTheme = defineTheme({
           headers: ['Field', 'Merge behavior'],
           rows: [
             ['tokens', 'Base tokens are copied first, then child tokens override on top.'],
-            ['components', 'Deep-merged — child component rules override matching keys from the base.'],
-            ['icons', 'Shallow-merged — child icons override matching names from the base.'],
+            ['components', 'Deep-merged: child component rules override matching keys from the base.'],
+            ['icons', 'Shallow-merged: child icons override matching names from the base.'],
             ['fonts', 'Base fonts included first, then child fonts appended.'],
             ['typography, motion, radius, color', 'Child config replaces base entirely (these are scale inputs, not additive).'],
           ],
@@ -227,7 +227,7 @@ const brandTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: 'The `components` field in defineTheme targets stable `.xds-*` CSS class names. Use `base` for all instances, `variant:value` or `stateName` for specific states.',
+          text: 'The `components` field in defineTheme uses semantic component keys and style keys — not raw CSS selectors. Use `base` for all instances, `variant:value` or `stateName` for specific props/states, and let the theme pipeline choose the underlying selector. For raw external CSS escape hatches, prefer the data-attribute selector surface documented in `xds docs styling`.',
         },
         {
           type: 'code',
@@ -253,13 +253,13 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'Run `npx xds component <Name>` to see a component’s theming targets, public CSS variables, and which standard CSS properties are supported.',
+          text: 'Run `npx xds component <Name>` to see a component\'s theming targets, public CSS variables, and which standard CSS properties are supported.',
         },
         {
           type: 'list',
           style: 'do',
           items: [
-            'Write standard CSS properties (borderRadius, padding) — the pipeline expands them into internal vars.',
+            'Write standard CSS properties (borderRadius, padding); the pipeline expands them into internal vars.',
             'Set public CSS vars directly when no standard property equivalent exists.',
           ],
         },
@@ -267,7 +267,7 @@ const brandTheme = defineTheme({
           type: 'list',
           style: 'dont',
           items: [
-            'Set private CSS vars (prefixed --_) directly — use standard CSS properties instead. `xds theme build` will error.',
+            'Set private CSS vars (prefixed --_) directly. Use standard CSS properties instead. `xds theme build` will error.',
           ],
         },
       ],
@@ -278,7 +278,7 @@ const brandTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: 'Themes can add new prop values to any component. Any `prop:value` key where the value isn’t a built-in gets treated as a new variant. Use `xds theme build` to generate TypeScript augmentations for type safety.',
+          text: 'Themes can add new prop values to any component. Any `prop:value` key where the value isn\'t a built-in gets treated as a new variant. Use `xds theme build` to generate TypeScript augmentations for type safety.',
         },
         {
           type: 'code',
@@ -317,7 +317,7 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'Custom variants only work when the theme that defines them is active. The component’s variant map is extended via module augmentation — no changes to the component source needed.',
+          text: 'Custom variants only work when the theme that defines them is active. The component\'s variant map is extended via module augmentation, with no changes to the component source needed.',
         },
       ],
     },
@@ -357,13 +357,13 @@ const brandTheme = defineTheme({
             ],
             [
               'ocean.variants.d.ts',
-              '(Optional) Module augmentations for custom component prop values found in the theme’s component overrides',
+              '(Optional) Module augmentations for custom component prop values found in the theme\'s component overrides',
             ],
           ],
         },
         {
           type: 'prose',
-          text: 'The `__built: true` flag tells XDSTheme to skip runtime `<style>` injection — the CSS file handles it.',
+          text: 'The `__built: true` flag tells XDSTheme to skip runtime `<style>` injection; the CSS file handles it.',
         },
         {
           type: 'code',
@@ -384,7 +384,7 @@ import './themes/ocean.css';
       content: [
         {
           type: 'prose',
-          text: 'XDS themes work in two modes:',
+          text: 'Themes work in two modes:',
         },
         {
           type: 'table',
@@ -408,12 +408,12 @@ import './themes/ocean.css';
             [
               'Component overrides',
               'Injected client-only',
-              'In static CSS — present during SSR',
+              'In static CSS: present during SSR',
             ],
             [
               'SSR safe',
               'Tokens yes, component overrides flash on hydration',
-              'Fully SSR safe — no flash',
+              'Fully SSR safe: no flash',
             ],
             [
               'Best for',
@@ -435,8 +435,8 @@ import './themes/ocean.css';
           type: 'list',
           style: 'dont',
           items: [
-            'Use runtime themes in production SSR apps — component overrides will flash on hydration.',
-            'Import /built without the CSS file — component overrides won’t apply.',
+            'Use runtime themes in production SSR apps; component overrides will flash on hydration.',
+            'Import /built without the CSS file; component overrides won\'t apply.',
           ],
         },
       ],
@@ -497,29 +497,86 @@ import './themes/ocean.css';
       ],
     },
     {
+      title: 'Token Utilities',
+  category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'Use `xdsTokenVar()` when a non-StyleX styling library wants a CSS variable reference, and `resolveXDSThemeTokens()` when JavaScript needs token values for a specific theme and mode without React context.',
+        },
+        {
+          type: 'code',
+          lang: 'ts',
+          label: 'CSS var references for styling-library configs',
+          code: `import {xdsTokenVar, xdsTokenVars} from '@xds/core/theme/tokens';
+
+const pandaOrEmotionTheme = {
+  colors: {
+    text: xdsTokenVar('--color-text-primary'),
+    surface: xdsTokenVars['--color-background-surface'],
+  },
+  spacing: {
+    4: xdsTokenVars['--spacing-4'],
+  },
+};`,
+        },
+        {
+          type: 'code',
+          lang: 'ts',
+          label: 'Resolve token values without a hook',
+          code: `import {resolveXDSThemeTokens} from '@xds/core/theme/tokens';
+import {defaultTheme} from '@xds/theme-default';
+
+const lightTokens = resolveXDSThemeTokens(defaultTheme, {mode: 'light'});
+const chartTheme = {
+  textColor: lightTokens['--color-text-primary'],
+  seriesColor: lightTokens['--color-data-categorical-blue'],
+};`,
+        },
+        {
+          type: 'prose',
+          text: 'The `@xds/core/theme/tokens` subpath is server-safe and does not require React. The main `@xds/core/theme` barrel also re-exports these helpers for client code that already imports theme APIs.',
+        },
+      ],
+    },
+    {
       title: 'useXDSTheme Hook',
   category: 'guide',
       content: [
         {
+          type: 'prose',
+          text: '`useXDSTheme()` uses the same token resolution as `resolveXDSThemeTokens()`, but reads the nearest XDSTheme and effective color mode from React context and media query state. Use it inside client components for SVG, canvas, charts, maps, and third-party configuration objects that need token values in JavaScript instead of `var(...)` references.',
+        },
+        {
           type: 'code',
           lang: 'tsx',
-          label: 'Access current theme',
-          code: `import {useXDSTheme} from '@xds/core';
+          label: 'Access resolved token values in React',
+          code: `import {useMemo} from 'react';
+import {useXDSTheme} from '@xds/core/theme';
 
-function MyComponent() {
-  const ctx = useXDSTheme();
-  // ctx.theme — the XDSDefinedTheme object
-  // ctx.mode — 'system' | 'light' | 'dark'
-  return null;
+function ChartConfig() {
+  const {mode, tokens} = useXDSTheme();
+
+  const options = useMemo(
+    () => ({
+      mode,
+      textColor: tokens['--color-text-primary'],
+      gridColor: tokens['--color-border'],
+      seriesColor: tokens['--color-data-categorical-blue'],
+    }),
+    [mode, tokens],
+  );
+
+  return <Chart options={options} />;
 }`,
         },
         {
           type: 'prose',
-          text: 'This is read-only. To change the theme/mode, manage state at the app level and pass it to <XDSTheme>.',
+          text: 'Prefer CSS variables, StyleX token imports, xstyle, or className for ordinary styling. To change the theme or mode, manage state at the app level and pass it to <XDSTheme>.',
         },
         {
           type: 'prose',
-          text: 'See `npx xds docs styling` for component-level customization (xstyle, className, rest props). See `npx xds docs tokens` for the full token reference.',
+          text: 'See `npx xds docs styling-libraries` for styling-library interop and `npx xds docs tokens` for the full token reference.',
         },
       ],
     },

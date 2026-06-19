@@ -17,4 +17,4 @@ export type {UseXDSPopoverOptions, UseXDSPopoverReturn} from './useXDSPopover';
 
 // Popover component
 export {XDSPopover} from './XDSPopover';
-export type {XDSPopoverProps} from './XDSPopover';
+export type {XDSPopoverProps, PopoverTriggerRenderProps} from './XDSPopover';

@@ -7,7 +7,12 @@ const babelConfig = require('./babel.config');
 module.exports = {
   plugins: {
     '@stylexjs/postcss-plugin': {
-      include: ['src/**/*.{js,jsx,ts,tsx}'],
+      // The docsite renders CLI page templates directly, so extract their
+      // StyleX too — otherwise template-only classes ship without CSS.
+      include: [
+        'src/**/*.{js,jsx,ts,tsx}',
+        '../../packages/cli/templates/**/*.{js,jsx,ts,tsx}',
+      ],
       babelConfig: {
         babelrc: false,
         parserOpts: {

@@ -24,6 +24,7 @@ import noHardcodedAnchorRule from './no-hardcoded-anchor.js';
 import noBorderShorthandRule from './no-border-shorthand.js';
 import noReactNamespaceHooksRule from './no-react-namespace-hooks.js';
 import copyrightHeaderRule from './copyright-header.js';
+import noRawConsoleCliRule from './no-raw-console-cli.js';
 import requireBasePropsRule from './require-base-props.js';
 import requireRefPropRule from './require-ref-prop.js';
 
@@ -238,6 +239,7 @@ const plugin = {
     'require-base-props': requireBasePropsRule,
     'require-ref-prop': requireRefPropRule,
     'copyright-header': copyrightHeaderRule,
+    'no-raw-console-cli': noRawConsoleCliRule,
   },
   configs: {},
 };

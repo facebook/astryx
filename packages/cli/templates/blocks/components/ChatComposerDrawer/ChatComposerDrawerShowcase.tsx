@@ -14,7 +14,7 @@ import {colorVars, borderVars, radiusVars} from '@xds/core/theme/tokens.stylex';
 const styles = stylex.create({
   drawerBorder: {
     border: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
-    borderRadius: radiusVars['--radius-page'],
+    borderRadius: radiusVars['--radius-chat'],
   },
 });
 
@@ -24,7 +24,10 @@ export default function ChatComposerDrawerShowcase() {
       <XDSChatComposer
         onSubmit={() => {}}
         drawer={
-          <XDSChatComposerDrawer count={4} label="Attachments" xstyle={styles.drawerBorder}>
+          <XDSChatComposerDrawer
+            count={4}
+            label="Attachments"
+            xstyle={styles.drawerBorder}>
             <XDSToken label="design-spec.pdf" onRemove={() => {}} />
             <XDSToken label="api-schema.json" onRemove={() => {}} />
             <XDSToken label="screenshot.png" onRemove={() => {}} />

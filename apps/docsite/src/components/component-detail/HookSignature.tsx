@@ -13,6 +13,7 @@ import type {
   HookParamDoc,
   HookReturnDoc,
 } from '../../generated/componentRegistry';
+import {MarkdownText} from '../MarkdownText';
 
 interface HookSignatureProps {
   params: HookParamDoc[];
@@ -39,9 +40,9 @@ function ParamRowMobile({param}: {param: HookParamDoc}) {
         {formatParamType(param.type, param.default)}
       </XDSText>
       {param.description && (
-        <XDSText type="body" color="secondary">
+        <MarkdownText type="body" color="secondary">
           {param.description}
-        </XDSText>
+        </MarkdownText>
       )}
     </XDSVStack>
   );
@@ -57,9 +58,9 @@ function ReturnRowMobile({ret}: {ret: HookReturnDoc}) {
         {ret.type}
       </XDSText>
       {ret.description && (
-        <XDSText type="body" color="secondary">
+        <MarkdownText type="body" color="secondary">
           {ret.description}
-        </XDSText>
+        </MarkdownText>
       )}
     </XDSVStack>
   );
@@ -101,9 +102,12 @@ export function HookSignature({params, returns}: HookSignatureProps) {
                   {
                     key: 'name',
                     header: 'Param',
-                    width: pixel(160),
+                    width: pixel(240),
                     renderCell: (item: Record<string, unknown>) => (
-                      <XDSHStack gap={1} vAlign="center">
+                      <XDSHStack
+                        gap={1}
+                        vAlign="center"
+                        style={{whiteSpace: 'nowrap'}}>
                         <XDSText type="code" weight="bold">
                           {item.name as string}
                         </XDSText>
@@ -123,7 +127,15 @@ export function HookSignature({params, returns}: HookSignatureProps) {
                       </XDSText>
                     ),
                   },
-                  {key: 'description', header: 'Description'},
+                  {
+                    key: 'description',
+                    header: 'Description',
+                    renderCell: (item: Record<string, unknown>) => (
+                      <MarkdownText type="body">
+                        {item.description as string}
+                      </MarkdownText>
+                    ),
+                  },
                 ]}
                 density="spacious"
                 dividers="rows"
@@ -150,9 +162,12 @@ export function HookSignature({params, returns}: HookSignatureProps) {
                   {
                     key: 'name',
                     header: 'Field',
-                    width: pixel(160),
+                    width: pixel(220),
                     renderCell: (item: Record<string, unknown>) => (
-                      <XDSText type="code" weight="bold">
+                      <XDSText
+                        type="code"
+                        weight="bold"
+                        style={{whiteSpace: 'nowrap'}}>
                         {item.name as string}
                       </XDSText>
                     ),
@@ -167,7 +182,15 @@ export function HookSignature({params, returns}: HookSignatureProps) {
                       </XDSText>
                     ),
                   },
-                  {key: 'description', header: 'Description'},
+                  {
+                    key: 'description',
+                    header: 'Description',
+                    renderCell: (item: Record<string, unknown>) => (
+                      <MarkdownText type="body">
+                        {item.description as string}
+                      </MarkdownText>
+                    ),
+                  },
                 ]}
                 density="spacious"
                 dividers="rows"

@@ -10,8 +10,8 @@
  *
  * Visual structure:
  * - Root container: layout-only wrapper (flex column), no visual styling, no theme target
- * - Header area (xdsClassName 'banner'): colored status background with icon, title, description, actions, dismiss
- * - Content area (xdsClassName 'banner-content'): collapsible card background for additional content (children)
+ * - Header area (xdsThemeProps 'banner'): colored status background with icon, title, description, actions, dismiss
+ * - Content area (xdsThemeProps 'banner-content'): collapsible card background for additional content (children)
  * - No left border accent — color is expressed through the full header background
  * - Each visual area owns its own border-radius (no overflow:clip on the container)
  * - When children are provided, a collapse/expand toggle button appears in the end area
@@ -37,9 +37,12 @@ import {
   fontWeightVars,
   typeScaleVars,
   borderVars,
+  durationVars,
+  easeVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Types
@@ -285,7 +288,9 @@ const styles = stylex.create({
   },
   chevron: {
     display: 'inline-flex',
-    transition: 'transform 150ms ease',
+    transitionProperty: 'transform',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
   chevronExpanded: {
     transform: 'rotate(180deg)',
@@ -412,7 +417,7 @@ export function XDSBanner({
       {/* Header: colored status background — primary theme target ('banner') */}
       <div
         {...mergeProps(
-          xdsClassName('banner', {container, status}),
+          xdsThemeProps('banner', {container, status}),
           stylex.props(
             styles.header,
             isSingleLine && styles.headerCentered,
@@ -425,7 +430,7 @@ export function XDSBanner({
         )}>
         <div
           {...mergeProps(
-            xdsClassName('banner-icon', {status}),
+            xdsThemeProps('banner-icon', {status}),
             stylex.props(styles.iconWrapper),
           )}
           aria-hidden="true">
@@ -486,7 +491,7 @@ export function XDSBanner({
       {showContent && (
         <div
           {...mergeProps(
-            xdsClassName('banner-content', {container, status}),
+            xdsThemeProps('banner-content', {container, status}),
             stylex.props(styles.contentArea, isCard && styles.contentAreaCard),
           )}>
           {children}

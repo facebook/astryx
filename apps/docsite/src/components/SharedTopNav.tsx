@@ -7,20 +7,16 @@ import {usePathname} from 'next/navigation';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {XDSButton} from '@xds/core/Button';
 import {XDSHStack} from '@xds/core/Layout';
-import {
-  MagnifyingGlassIcon,
-  HeartIcon,
-  SunIcon,
-  MoonIcon,
-} from '@heroicons/react/24/outline';
+import {Search, HeartHandshake, Sun, Moon} from 'lucide-react';
 import {GITHUB_REPO} from '../constants';
-import {XDS_BRAND_ICON} from './XDSWordmark';
+import {AstryxIcon} from './logos';
 import {SearchPalette} from './SearchPalette';
 import {components} from '../generated/componentRegistry';
 import {packages} from '../generated/packageRegistry';
 import {docTopics} from '../generated/docsRegistry';
 import {templates} from '../generated/templateRegistry';
 import {useThemeMode} from '../app/providers';
+import {trackSearch, trackClickCta} from '../lib/analytics';
 
 const GitHubIcon = ({
   width = 20,
@@ -49,7 +45,6 @@ export function SharedTopNav() {
     if (
       pathname === '/docs' ||
       pathname.startsWith('/docs/') ||
-      pathname.startsWith('/packages/') ||
       pathname.startsWith('/changelog')
     ) {
       return 'docs';
@@ -72,8 +67,21 @@ export function SharedTopNav() {
   return (
     <>
       <XDSTopNav
-        label="XDS navigation"
-        heading={<XDSTopNavHeading logo={XDS_BRAND_ICON} headingHref="/" />}
+        label="Astryx navigation"
+        heading={
+          <XDSTopNavHeading
+            logo={
+              <AstryxIcon
+                width={24}
+                height={24}
+                role="img"
+                aria-label="Astryx"
+                style={{display: 'block', color: 'var(--color-brand)'}}
+              />
+            }
+            headingHref="/"
+          />
+        }
         centerContent={
           <>
             <XDSTopNavItem
@@ -108,10 +116,14 @@ export function SharedTopNav() {
             <XDSHStack gap={0.5}>
               <XDSButton
                 label="Search"
+                tooltip="Search"
                 variant="ghost"
                 isIconOnly
-                icon={<MagnifyingGlassIcon width={20} height={20} />}
-                onClick={() => setIsSearchOpen(true)}
+                icon={<Search size={20} />}
+                onClick={() => {
+                  trackSearch({target: 'open'});
+                  setIsSearchOpen(true);
+                }}
               />
               <XDSButton
                 label={
@@ -119,36 +131,41 @@ export function SharedTopNav() {
                     ? 'Switch to dark mode'
                     : 'Switch to light mode'
                 }
+                tooltip={
+                  mode === 'light'
+                    ? 'Switch to dark mode'
+                    : 'Switch to light mode'
+                }
                 variant="ghost"
                 isIconOnly
-                icon={
-                  mode === 'light' ? (
-                    <MoonIcon width={20} height={20} />
-                  ) : (
-                    <SunIcon width={20} height={20} />
-                  )
-                }
+                icon={mode === 'light' ? <Moon size={20} /> : <Sun size={20} />}
                 onClick={toggleMode}
               />
               <XDSButton
                 label="Community"
+                tooltip="Community"
                 variant="ghost"
                 isIconOnly
-                icon={<HeartIcon width={20} height={20} />}
+                icon={<HeartHandshake size={20} />}
                 href="/community"
               />
               <XDSButton
                 label="GitHub"
+                tooltip="GitHub"
                 variant="ghost"
                 isIconOnly
                 icon={<GitHubIcon />}
                 href={GITHUB_REPO}
+                onClick={() => trackClickCta({target: 'github'})}
               />
             </XDSHStack>
             <XDSButton
               label="Get started"
               variant="primary"
               href="/docs/getting-started"
+              onClick={() =>
+                trackClickCta({page: 'landing', target: 'get_started'})
+              }
             />
           </XDSHStack>
         }

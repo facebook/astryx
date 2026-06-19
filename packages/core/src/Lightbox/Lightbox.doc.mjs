@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Lightbox',
   displayName: 'Lightbox',
+  category: 'Overlay',
   keywords: ["lightbox","image","video","viewer","gallery","zoom","fullscreen","media","photo","preview"],
   props: [
     {
@@ -60,8 +61,8 @@ export const docs = {
       { guidance: true, description: 'Always provide alt text for every image for screen reader accessibility.' },
       { guidance: true, description: 'Use gallery mode with onIndexChange for multi-image sets.' },
       { guidance: true, description: 'Enable hasZoom only when viewing high-resolution images that benefit from close inspection.' },
-      { guidance: false, description: 'Use the lightbox for non-image content — it is specialized for images.' },
-      { guidance: false, description: 'Nest interactive content inside captions — keep them plain text.' },
+      { guidance: false, description: 'Use the lightbox for non-image content; it is specialized for images.' },
+      { guidance: false, description: 'Nest interactive content inside captions; keep them plain text.' },
     ],
   },
 };
@@ -124,8 +125,8 @@ export const docsZh = {
       { guidance: true, description: 'Always provide alt text for every image for screen reader accessibility.' },
       { guidance: true, description: 'Use gallery mode with onIndexChange for multi-image sets.' },
       { guidance: true, description: 'Enable hasZoom only when viewing high-resolution images that benefit from close inspection.' },
-      { guidance: false, description: 'Use the lightbox for non-image content — it is specialized for images.' },
-      { guidance: false, description: 'Nest interactive content inside captions — keep them plain text.' },
+      { guidance: false, description: 'Use the lightbox for non-image content; it is specialized for images.' },
+      { guidance: false, description: 'Nest interactive content inside captions; keep them plain text.' },
     ],
   },
 };
@@ -139,7 +140,9 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Always provide alt text for every image.' },
       { guidance: true, description: 'Use gallery mode with onIndexChange for multi-image sets.' },
-      { guidance: false, description: 'Use for non-image content — specialized for images.' },
+      { guidance: true, description: 'Enable hasZoom only when viewing high-resolution images that benefit from close inspection.' },
+      { guidance: false, description: 'Use for non-image content; specialized for images.' },
+      { guidance: false, description: 'Nest interactive content inside captions; keep them plain text.' },
     ],
   },
   propDescriptions: {

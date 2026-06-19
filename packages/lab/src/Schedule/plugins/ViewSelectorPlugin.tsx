@@ -57,11 +57,13 @@ function XDSScheduleViewSelectorControl<View extends XDSScheduleViewBase>({
         <XDSDropdownMenuItem
           key={option.label}
           label={option.label}
-          onClick={() => onChangeView?.(option.view)}>
-          {index === selectedIndex ? (
-            <XDSIcon icon="check" size="sm" color="primary" />
-          ) : null}
-        </XDSDropdownMenuItem>
+          onClick={() => onChangeView?.(option.view)}
+          endContent={
+            index === selectedIndex ? (
+              <XDSIcon icon="check" size="sm" color="primary" />
+            ) : null
+          }
+        />
       ))}
     </XDSDropdownMenu>
   );

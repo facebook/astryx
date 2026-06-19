@@ -3,7 +3,6 @@
 'use client';
 
 import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSSection} from '@xds/core/Section';
@@ -11,6 +10,7 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
+import {XDSIcon} from '@xds/core/Icon';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
@@ -20,16 +20,11 @@ import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSBanner} from '@xds/core/Banner';
-import {colorVars} from '@xds/core/theme/tokens.stylex';
-
-const WHY_US_IMAGES = [
-  // illustration-horizontal-3 from xds_oss asset set
-  'https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-3.png',
-  // illustration-horizontal-4 from xds_oss asset set
-  'https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-4.png',
-  // illustration-horizontal-5 from xds_oss asset set
-  'https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-5.png',
-];
+import {
+  RocketLaunchIcon,
+  AdjustmentsHorizontalIcon,
+  HandRaisedIcon,
+} from '@heroicons/react/24/outline';
 
 const CAMPAIGN_GOALS = [
   'Brand Awareness',
@@ -62,31 +57,21 @@ const BUDGET_OPTIONS = [
 
 const WHY_US = [
   {
-    image: WHY_US_IMAGES[0],
+    icon: RocketLaunchIcon,
     title: 'We move fast for you',
     description: 'We cut through the noise and get straight to the work.',
   },
   {
-    image: WHY_US_IMAGES[1],
+    icon: AdjustmentsHorizontalIcon,
     title: 'We build around you',
     description: "We tailor everything to what you're trying to achieve.",
   },
   {
-    image: WHY_US_IMAGES[2],
+    icon: HandRaisedIcon,
     title: 'We show up for you',
     description: 'A dedicated team that knows your brand and wants to win.',
   },
 ];
-
-const styles = stylex.create({
-  page: {
-    minHeight: '100dvh',
-    backgroundColor: colorVars['--color-background-surface'],
-  },
-  imgFull: {
-    width: '100%',
-  },
-});
 
 /**
  * Contact Form — lead capture form template
@@ -122,189 +107,191 @@ export default function FormSimplePage() {
     );
 
   return (
-    <XDSCenter axis="horizontal" xstyle={styles.page}>
+    <XDSCenter axis="horizontal">
       <XDSVStack hAlign="center" width="100%">
-        <XDSSection maxWidth={800} padding={6} paddingBlock={10} variant="section">
+        <XDSSection
+          maxWidth={800}
+          padding={6}
+          paddingBlock={10}
+          variant="section">
           <XDSVStack gap={6}>
-          {/* Header */}
-          <XDSVStack gap={2} hAlign="center">
-            <XDSText type="display-1" weight="bold">
-              Let's work together
-            </XDSText>
-            <XDSText type="body" color="secondary">
-              Tell us a bit about what you're working on — we'd love to help.
-            </XDSText>
-          </XDSVStack>
-
-          {/* Why work with us */}
-          <XDSVStack gap={5}>
-            <XDSGrid columns={{minWidth: 200}} gap={4}>
-              {WHY_US.map(item => (
-                <XDSCard key={item.title}>
-                  <XDSVStack gap={3}>
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      {...stylex.props(styles.imgFull)}
-                    />
-                    <XDSVStack gap={1}>
-                      <XDSText type="body" weight="bold">
-                        {item.title}
-                      </XDSText>
-                      <XDSText type="supporting" color="secondary">
-                        {item.description}
-                      </XDSText>
-                    </XDSVStack>
-                  </XDSVStack>
-                </XDSCard>
-              ))}
-            </XDSGrid>
-          </XDSVStack>
-
-          {/* Your details */}
-          <XDSVStack gap={5}>
-            <XDSGrid columns={{minWidth: 260}} gap={4}>
-              <XDSTextInput
-                label="Full Name"
-                placeholder="Full Name"
-                value={fullName}
-                onChange={setFullName}
-                status={
-                  errors.fullName
-                    ? {type: 'error', message: errors.fullName}
-                    : undefined
-                }
-              />
-              <XDSTextInput
-                label="Email"
-                placeholder="you@company.com"
-                value={email}
-                onChange={setEmail}
-                status={
-                  errors.email
-                    ? {type: 'error', message: errors.email}
-                    : undefined
-                }
-              />
-            </XDSGrid>
-            <XDSGrid columns={{minWidth: 260}} gap={4}>
-              <XDSTextInput
-                label="Company"
-                placeholder="Company"
-                value={company}
-                onChange={setCompany}
-                status={
-                  errors.company
-                    ? {type: 'error', message: errors.company}
-                    : undefined
-                }
-              />
-              <XDSTextInput
-                label="Phone"
-                placeholder="Phone number"
-                value={phone}
-                onChange={setPhone}
-                status={
-                  errors.phone
-                    ? {type: 'error', message: errors.phone}
-                    : undefined
-                }
-              />
-            </XDSGrid>
-          </XDSVStack>
-
-          <XDSDivider />
-
-          {/* Your project */}
-          <XDSVStack gap={5}>
-            <XDSVStack gap={2}>
-              <XDSText type="label">What are you going for?</XDSText>
-              <XDSHStack gap={2} wrap="wrap">
-                {CAMPAIGN_GOALS.map(goal => (
-                  <XDSToken
-                    key={goal}
-                    label={goal}
-                    color={goals.includes(goal) ? 'blue' : 'default'}
-                    onClick={() => toggleGoal(goal)}
-                  />
-                ))}
-              </XDSHStack>
-              {errors.goals && (
-                <XDSBanner status="error" title={errors.goals} />
-              )}
+            {/* Header */}
+            <XDSVStack gap={2} hAlign="center">
+              <XDSText type="display-1" weight="bold">
+                Let's work together
+              </XDSText>
+              <XDSText type="body" color="secondary">
+                Tell us a bit about what you're working on — we'd love to help.
+              </XDSText>
             </XDSVStack>
 
-            <XDSSelector
-              label="When are you thinking?"
-              placeholder="When are you thinking of launching?"
-              options={LAUNCH_OPTIONS}
-              value={timeline}
-              onChange={setTimeline}
-              status={
-                errors.timeline
-                  ? {type: 'error', message: errors.timeline}
-                  : undefined
-              }
-            />
+            {/* Why work with us */}
+            <XDSVStack gap={5}>
+              <XDSGrid columns={{minWidth: 200}} gap={4}>
+                {WHY_US.map(item => (
+                  <XDSCard key={item.title}>
+                    <XDSVStack gap={3}>
+                      <XDSIcon icon={item.icon} size="lg" color="accent" />
+                      <XDSVStack gap={1}>
+                        <XDSText type="body" weight="bold">
+                          {item.title}
+                        </XDSText>
+                        <XDSText type="supporting" color="secondary">
+                          {item.description}
+                        </XDSText>
+                      </XDSVStack>
+                    </XDSVStack>
+                  </XDSCard>
+                ))}
+              </XDSGrid>
+            </XDSVStack>
 
-            <XDSSelector
-              label="Ballpark budget?"
-              placeholder="What's your rough monthly budget?"
-              options={BUDGET_OPTIONS}
-              value={budget}
-              onChange={setBudget}
-              status={
-                errors.budget
-                  ? {type: 'error', message: errors.budget}
-                  : undefined
-              }
-            />
+            {/* Your details */}
+            <XDSVStack gap={5}>
+              <XDSGrid columns={{minWidth: 260}} gap={4}>
+                <XDSTextInput
+                  label="Full Name"
+                  placeholder="Full Name"
+                  value={fullName}
+                  onChange={setFullName}
+                  status={
+                    errors.fullName
+                      ? {type: 'error', message: errors.fullName}
+                      : undefined
+                  }
+                />
+                <XDSTextInput
+                  label="Email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={setEmail}
+                  status={
+                    errors.email
+                      ? {type: 'error', message: errors.email}
+                      : undefined
+                  }
+                />
+              </XDSGrid>
+              <XDSGrid columns={{minWidth: 260}} gap={4}>
+                <XDSTextInput
+                  label="Company"
+                  placeholder="Company"
+                  value={company}
+                  onChange={setCompany}
+                  status={
+                    errors.company
+                      ? {type: 'error', message: errors.company}
+                      : undefined
+                  }
+                />
+                <XDSTextInput
+                  label="Phone"
+                  placeholder="Phone number"
+                  value={phone}
+                  onChange={setPhone}
+                  status={
+                    errors.phone
+                      ? {type: 'error', message: errors.phone}
+                      : undefined
+                  }
+                />
+              </XDSGrid>
+            </XDSVStack>
 
-            <XDSRadioList
-              label="How did you hear about us?"
-              value={hearAboutUs}
-              onChange={setHearAboutUs}>
-              <XDSRadioListItem label="Social media" value="social" />
-              <XDSRadioListItem label="Word of mouth" value="word-of-mouth" />
-              <XDSRadioListItem label="Search engine" value="search" />
-              <XDSRadioListItem label="Event or conference" value="event" />
-              <XDSRadioListItem label="Other" value="other" />
-            </XDSRadioList>
+            <XDSDivider />
 
-            <XDSTextArea
-              label="Anything else?"
-              placeholder="Tell us whatever else is on your mind..."
-              value={message}
-              onChange={setMessage}
-            />
+            {/* Your project */}
+            <XDSVStack gap={5}>
+              <XDSVStack gap={2}>
+                <XDSText type="label" color="secondary">
+                  What are you going for?
+                </XDSText>
+                <XDSHStack gap={2} wrap="wrap">
+                  {CAMPAIGN_GOALS.map(goal => (
+                    <XDSToken
+                      key={goal}
+                      label={goal}
+                      color={goals.includes(goal) ? 'blue' : 'default'}
+                      onClick={() => toggleGoal(goal)}
+                    />
+                  ))}
+                </XDSHStack>
+                {errors.goals && (
+                  <XDSBanner status="error" title={errors.goals} />
+                )}
+              </XDSVStack>
 
-            <XDSCheckboxInput
-              label="I'm a budget decision-maker"
-              value={isDecider}
-              onChange={setIsDecider}
-            />
+              <XDSSelector
+                label="When are you thinking?"
+                placeholder="When are you thinking of launching?"
+                options={LAUNCH_OPTIONS}
+                value={timeline}
+                onChange={setTimeline}
+                status={
+                  errors.timeline
+                    ? {type: 'error', message: errors.timeline}
+                    : undefined
+                }
+              />
+
+              <XDSSelector
+                label="Ballpark budget?"
+                placeholder="What's your rough monthly budget?"
+                options={BUDGET_OPTIONS}
+                value={budget}
+                onChange={setBudget}
+                status={
+                  errors.budget
+                    ? {type: 'error', message: errors.budget}
+                    : undefined
+                }
+              />
+
+              <XDSRadioList
+                label="How did you hear about us?"
+                value={hearAboutUs}
+                onChange={setHearAboutUs}>
+                <XDSRadioListItem label="Social media" value="social" />
+                <XDSRadioListItem label="Word of mouth" value="word-of-mouth" />
+                <XDSRadioListItem label="Search engine" value="search" />
+                <XDSRadioListItem label="Event or conference" value="event" />
+                <XDSRadioListItem label="Other" value="other" />
+              </XDSRadioList>
+
+              <XDSTextArea
+                label="Anything else?"
+                placeholder="Tell us whatever else is on your mind..."
+                value={message}
+                onChange={setMessage}
+              />
+
+              <XDSCheckboxInput
+                label="I'm a budget decision-maker"
+                value={isDecider}
+                onChange={setIsDecider}
+              />
+            </XDSVStack>
+
+            {/* Submit */}
+            <XDSVStack gap={3}>
+              <XDSButton
+                label="Submit"
+                variant="primary"
+                size="lg"
+                onClick={() => setSubmitted(true)}
+              />
+              <XDSHStack gap={1} hAlign="center">
+                <XDSText type="supporting" color="secondary">
+                  By submitting you agree to our{' '}
+                  <XDSLink href="#" type="supporting">
+                    Privacy Policy
+                  </XDSLink>
+                  .
+                </XDSText>
+              </XDSHStack>
+            </XDSVStack>
           </XDSVStack>
-
-          {/* Submit */}
-          <XDSVStack gap={3}>
-            <XDSButton
-              label="Submit"
-              variant="primary"
-              size="lg"
-              onClick={() => setSubmitted(true)}
-            />
-            <XDSHStack gap={1} hAlign="center">
-              <XDSText type="supporting" color="secondary">
-                By submitting you agree to our{' '}
-                <XDSLink href="#" type="supporting">
-                  Privacy Policy
-                </XDSLink>
-                .
-              </XDSText>
-            </XDSHStack>
-          </XDSVStack>
-        </XDSVStack>
-      </XDSSection>
+        </XDSSection>
       </XDSVStack>
     </XDSCenter>
   );

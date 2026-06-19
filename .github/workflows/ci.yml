@@ -59,13 +59,19 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: 'pnpm'
 
       - run: pnpm install --frozen-lockfile
+
+      # docsite `generate` runs `xds theme build`, which imports the compiled
+      # @xds/core/theme entry (dist/theme/index.js). Build core first so that
+      # entry exists — otherwise generate fails with "Cannot find module".
+      - name: Build core package
+        run: pnpm -F @xds/core build
 
       - name: Generate and test docsite data
         run: pnpm -F @xds/docsite generate && pnpm -F @xds/docsite test
@@ -107,7 +113,7 @@ jobs:
       - uses: actions/checkout@v6
         if: needs.check-scope.outputs.docsite_only != 'true'
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         if: needs.check-scope.outputs.docsite_only != 'true'
       - uses: actions/setup-node@v6
         if: needs.check-scope.outputs.docsite_only != 'true'
@@ -160,7 +166,7 @@ jobs:
 
       - name: Setup pnpm
         if: needs.check-scope.outputs.docsite_only != 'true'
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
         if: needs.check-scope.outputs.docsite_only != 'true'
@@ -422,7 +428,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v6

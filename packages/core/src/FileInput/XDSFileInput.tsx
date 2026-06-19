@@ -36,7 +36,12 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
-import {XDSField, type XDSInputStatus, type XDSInputStatusType} from '../Field';
+import {
+  XDSField,
+  XDSInputClearButton,
+  type XDSInputStatus,
+  type XDSInputStatusType,
+} from '../Field';
 import {XDSIcon, type XDSIconName} from '../Icon';
 import {XDSSpinner} from '../Spinner';
 
@@ -44,8 +49,10 @@ export type {
   XDSInputStatus as XDSFileInputStatus,
   XDSInputStatusType as XDSFileInputStatusType,
 } from '../Field';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) {
@@ -137,7 +144,7 @@ const styles = stylex.create({
     boxShadow: {
       default: null,
       ':hover': {
-        '@media (hover: hover)': `inset 0 0 0 2px ${String(colorVars['--color-accent'])}33`,
+        '@media (hover: hover)': `inset 0 0 0 2px color-mix(in srgb, ${colorVars['--color-accent']} 20%, transparent)`,
       },
     },
   },
@@ -176,7 +183,7 @@ const styles = stylex.create({
     boxShadow: {
       default: 'none',
       ':hover:not(:focus-within)': {
-        '@media (hover: hover)': `inset 0 0 0 2px ${String(colorVars['--color-accent'])}33`,
+        '@media (hover: hover)': `inset 0 0 0 2px color-mix(in srgb, ${colorVars['--color-accent']} 20%, transparent)`,
       },
     },
     cursor: 'pointer',
@@ -223,24 +230,6 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     flex: 1,
     minWidth: 0,
-  },
-  clearButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-    margin: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
-    flexShrink: 0,
   },
   fileNameDropzone: {
     textAlign: 'center',
@@ -367,6 +356,12 @@ export interface XDSFileInputProps extends Omit<
    */
   isOptional?: boolean;
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
@@ -399,6 +394,7 @@ export function XDSFileInput({
   mode = 'input',
   isOptional = false,
   labelTooltip,
+  width,
   xstyle,
   className,
   style,
@@ -667,7 +663,8 @@ export function XDSFileInput({
             }
           : undefined
       }
-      labelTooltip={labelTooltip}>
+      labelTooltip={labelTooltip}
+      width={width}>
       <div
         role="button"
         tabIndex={isDisabled ? -1 : 0}
@@ -677,7 +674,7 @@ export function XDSFileInput({
         aria-busy={isLoading || undefined}
         {...dragDropProps}
         {...mergeProps(
-          xdsClassName('file-input', {mode, status: status?.type ?? null}),
+          xdsThemeProps('file-input', {mode, status: status?.type ?? null}),
           stylex.props(
             isDropzone ? styles.dropzone : styles.compact,
             isDropzone && !isDisabled && styles.dropzoneHover,
@@ -707,13 +704,7 @@ export function XDSFileInput({
         />
         {isDropzone ? renderDropzoneContent() : renderCompactContent()}
         {hasFiles && !isDisabled && !isLoading && (
-          <button
-            type="button"
-            onClick={handleClear}
-            aria-label={`Clear ${label}`}
-            {...stylex.props(styles.clearButton)}>
-            <XDSIcon icon="close" size="sm" color="secondary" />
-          </button>
+          <XDSInputClearButton label={`Clear ${label}`} onClick={handleClear} />
         )}
       </div>
       <div

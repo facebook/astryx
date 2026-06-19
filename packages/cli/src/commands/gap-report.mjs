@@ -13,13 +13,64 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as p from '@clack/prompts';
 import {
+  buildGapReportPreview,
   checkGhCli,
   createGapReport,
   loadGapReportConfig,
   GAP_CATEGORIES,
 } from '../utils/github.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
-import {jsonOut, jsonError} from '../lib/json.mjs';
+import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
+import {cliError} from '../lib/cli-error.mjs';
+import {ERROR_CODES} from '../lib/error-codes.mjs';
+
+/**
+ * Decide whether we're in a context safe to actually file a report.
+ *
+ * Returns true ONLY when the user has explicitly opted in via --commit, OR
+ * we're in an interactive TTY session AND --dry-run was not requested.
+ *
+ * Defaults are intentionally conservative: in CI, when piped, when --json is
+ * set, or when neither --commit nor a TTY is present, we dry-run.
+ */
+export function shouldActuallyFile({
+  commit = false,
+  dryRun = false,
+  json = false,
+  isTTY = process.stdout.isTTY,
+} = {}) {
+  if (dryRun) return false;
+  if (commit) return true;
+  if (json) return false;
+  if (!isTTY) return false;
+  // Interactive TTY without --commit: caller must show a confirmation prompt.
+  return true;
+}
+
+/**
+ * Render a human-readable preview of the gap report that would be filed.
+ */
+export function formatPreview(preview) {
+  const lines = [];
+  if (preview.mode === 'github') {
+    lines.push(`Would file GitHub issue on ${preview.repo}:`);
+  } else if (preview.mode === 'custom') {
+    lines.push(`Would invoke custom command: ${preview.command}`);
+  } else {
+    lines.push('Gap reporting is disabled (no action would be taken).');
+    return lines.join('\n');
+  }
+  lines.push('');
+  lines.push(`  Title: ${preview.title}`);
+  lines.push('');
+  lines.push('  Body:');
+  for (const ln of preview.body.split('\n')) {
+    lines.push(`    ${ln}`);
+  }
+  lines.push('');
+  lines.push('  Labels: gap-report');
+  return lines.join('\n');
+}
 
 function isCancel(value) {
   if (p.isCancel(value)) {
@@ -72,7 +123,7 @@ export default {
 export function registerGapReport(program) {
   const gapCmd = program
     .command('gap-report')
-    .description('Report a gap in the XDS design system');
+    .description('Report a gap in the design system');
 
   // --- setup subcommand ---
   gapCmd
@@ -174,33 +225,58 @@ export function registerGapReport(program) {
     .option('--category <category>', 'Gap category')
     .option('--reason <reason>', 'What capability was missing')
     .option('--list-categories', 'List valid gap categories')
+    .option(
+      '--dry-run',
+      'Print the issue that would be filed without contacting GitHub. Default in CI / non-TTY / --json mode.',
+    )
+    .option(
+      '--commit',
+      'Actually file the issue. Required in non-interactive mode (CI, piped, --json).',
+    )
+    .addHelpText(
+      'after',
+      '\nSafety:\n' +
+        '  Set XDS_GAP_REPORT=off to disable gap reporting entirely.\n' +
+        '  In non-interactive mode (CI, piped stdout, --json), gap-report is\n' +
+        '  dry-run by default. Pass --commit to actually file an issue.\n' +
+        '  In interactive mode, you will always be shown a confirmation prompt.\n',
+    )
     .action(async options => {
       const json = program.opts().json || false;
 
       if (options.listCategories) {
         if (json) return jsonOut('gap-report.categories', GAP_CATEGORIES);
         for (const cat of GAP_CATEGORIES) {
-          console.log(`  ${cat.value.padEnd(20)} ${cat.label}`);
+          humanLog(`  ${cat.value.padEnd(20)} ${cat.label}`);
         }
         return;
       }
 
       const config = loadGapReportConfig();
       if (!config.enabled) {
-        if (json) return jsonError('Gap reporting is disabled');
-        console.log(
-          `Gap reporting is disabled. Run \`${getRunPrefix()} xds gap-report setup\` to configure.`,
+        if (json) return jsonError('Gap reporting is disabled', undefined, ERROR_CODES.ERR_GAP_REPORT_FAILED);
+        humanLog(
+          `Gap reporting is disabled (XDS_GAP_REPORT=off or xds.config.mjs).\n` +
+            `Run \`${getRunPrefix()} xds gap-report setup\` to configure.`,
         );
         return;
       }
 
-      if (!config.command && !checkGhCli()) {
-        console.error(
-          'Error: GitHub CLI (gh) is not installed or not authenticated.\n' +
-            'Install it from https://cli.github.com and run `gh auth login`.\n\n' +
-            `Or run \`${getRunPrefix()} xds gap-report setup\` to configure a custom command.`,
-        );
-        process.exit(1);
+      // We only need gh available when we'd actually file. For dry-run, skip
+      // the gh check so users can preview output in CI without `gh` installed.
+      const willFile = shouldActuallyFile({
+        commit: options.commit,
+        dryRun: options.dryRun,
+        json,
+      });
+
+      if (willFile && !config.command && !checkGhCli()) {
+        const msg =
+          'GitHub CLI (gh) is not installed or not authenticated. ' +
+          'Install it from https://cli.github.com and run `gh auth login`. ' +
+          `Or run \`${getRunPrefix()} xds gap-report setup\` to configure a custom command.`;
+        cliError(msg, {code: ERROR_CODES.ERR_GH_CLI});
+        return;
       }
 
       const isNonInteractive =
@@ -212,15 +288,41 @@ export function registerGapReport(program) {
           c => c.value === options.category,
         );
         if (!validCategory) {
-          if (json)
-            return jsonError(
-              `Invalid category "${options.category}". Valid: ${GAP_CATEGORIES.map(c => c.value).join(', ')}`,
-            );
-          console.error(
-            `Error: Invalid category "${options.category}".\n` +
-              `Valid categories: ${GAP_CATEGORIES.map(c => c.value).join(', ')}`,
+          cliError(
+            `Invalid category "${options.category}". Valid: ${GAP_CATEGORIES.map(c => c.value).join(', ')}`,
+            {code: ERROR_CODES.ERR_UNKNOWN_CATEGORY},
           );
-          process.exit(1);
+          return;
+        }
+
+        const preview = buildGapReportPreview({
+          component: options.component,
+          category: options.category,
+          intention: options.reason,
+          source: 'cli',
+        });
+
+        if (!willFile) {
+          // DRY-RUN: print what would be filed and exit cleanly.
+          if (json) {
+            return jsonOut('gap-report.dryRun', {
+              dryRun: true,
+              wouldFile: preview.mode !== 'disabled',
+              mode: preview.mode,
+              title: preview.title,
+              body: preview.body,
+              repo: preview.repo,
+              command: preview.command || null,
+              hint:
+                'Re-run with --commit to actually file. ' +
+                'Default is dry-run in non-interactive contexts.',
+            });
+          }
+          humanLog(formatPreview(preview));
+          humanLog(
+            '\n[dry-run] Nothing was filed. Re-run with --commit to file this report.',
+          );
+          return;
         }
 
         try {
@@ -236,20 +338,30 @@ export function registerGapReport(program) {
               url: url || null,
             });
           if (url) {
-            console.log(`\n✓ Gap report filed: ${url}\n`);
+            humanLog(`\n✓ Gap report filed: ${url}\n`);
           } else {
-            console.log('\nGap reporting is disabled via configuration.\n');
+            humanLog('\nGap reporting is disabled via configuration.\n');
           }
         } catch (err) {
-          if (json) return jsonError(err.message);
-          console.error(`Error filing gap report: ${err.message}`);
-          process.exit(1);
+          cliError(`Filing gap report failed: ${err.message}`, {code: ERROR_CODES.ERR_GAP_REPORT_FAILED});
+          return;
         }
         return;
       }
 
+      // --json without --component/--category/--reason can't go interactive —
+      // emit a structured error explaining the required flags.
+      if (json) {
+        return jsonError(
+          'gap-report --json requires --component, --category, and --reason. ' +
+            'Run with --list-categories to see valid categories.',
+          undefined,
+          ERROR_CODES.ERR_INVALID_ARGUMENT,
+        );
+      }
+
       // Interactive mode
-      p.intro('Report an XDS gap');
+      p.intro('Report a gap');
 
       const component = isCancel(
         await p.text({
@@ -286,17 +398,49 @@ export function registerGapReport(program) {
         }),
       );
 
+      const previewArgs = {
+        component: component.trim(),
+        category,
+        intention: intention.trim(),
+        detail: detail?.trim() || undefined,
+        source: 'interactive',
+      };
+
+      const preview = buildGapReportPreview(previewArgs);
+
+      // Always show the user exactly what would be filed before sending.
+      p.note(
+        `${preview.mode === 'github' ? `Repo: ${preview.repo}` : `Custom command: ${preview.command}`}\n\n` +
+          `Title:\n  ${preview.title}\n\n` +
+          `Body:\n${preview.body
+            .split('\n')
+            .map(l => `  ${l}`)
+            .join('\n')}`,
+        'Preview — this is exactly what will be filed',
+      );
+
+      if (options.dryRun) {
+        p.outro('[dry-run] Nothing filed.');
+        return;
+      }
+
+      const confirm = isCancel(
+        await p.confirm({
+          message: 'File this gap report now?',
+          initialValue: false,
+        }),
+      );
+
+      if (!confirm) {
+        p.outro('Cancelled — nothing was filed.');
+        return;
+      }
+
       const s = p.spinner();
       s.start('Filing gap report');
 
       try {
-        const url = createGapReport({
-          component: component.trim(),
-          category,
-          intention: intention.trim(),
-          detail: detail?.trim() || undefined,
-          source: 'interactive',
-        });
+        const url = createGapReport(previewArgs);
         s.stop(url ? 'Gap report filed' : 'Gap reporting is disabled');
         if (url) {
           p.log.success(url);

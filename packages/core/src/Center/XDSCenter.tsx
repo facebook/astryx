@@ -18,9 +18,9 @@
 import type {ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import type {SizeValue} from '../utils/types';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const styles = stylex.create({
   base: {
@@ -84,28 +84,6 @@ export interface XDSCenterProps extends XDSBaseProps<HTMLDivElement> {
    * Content to render inside the center container.
    */
   children: ReactNode;
-
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
 }
 
 /**
@@ -134,7 +112,7 @@ export function XDSCenter({
   ...props
 }: XDSCenterProps) {
   const stylexProps = mergeProps(
-    xdsClassName('center', {axis}),
+    xdsThemeProps('center', {axis}),
     stylex.props(
       isInline ? styles.inline : styles.base,
       (axis === 'both' || axis === 'vertical') && styles.alignItemsCenter,

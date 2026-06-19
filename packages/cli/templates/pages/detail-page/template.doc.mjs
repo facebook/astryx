@@ -3,8 +3,9 @@
 /** @type {import('../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'page',
-  name: 'Detail Page',
-  displayName: 'Detail Page',
+  name: 'Order Detail',
+  displayName: 'Order Detail',
   description: 'Order detail page with timeline and line items',
   isReady: true,
+  category: 'Content - Order Detail',
 };

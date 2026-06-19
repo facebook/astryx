@@ -56,6 +56,7 @@ export interface UseXDSLightboxReturn {
   triggerProps: {
     role: 'button';
     tabIndex: 0;
+    'aria-haspopup': 'dialog';
     onClick: () => void;
     onKeyDown: (e: React.KeyboardEvent) => void;
   };
@@ -63,6 +64,7 @@ export interface UseXDSLightboxReturn {
   getTriggerProps: (index: number) => {
     role: 'button';
     tabIndex: 0;
+    'aria-haspopup': 'dialog';
     onClick: () => void;
     onKeyDown: (e: React.KeyboardEvent) => void;
   };
@@ -106,6 +108,7 @@ export function useXDSLightbox(
     () => ({
       role: 'button' as const,
       tabIndex: 0 as const,
+      'aria-haspopup': 'dialog' as const,
       onClick: () => open(),
       onKeyDown: (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -121,6 +124,7 @@ export function useXDSLightbox(
     (i: number) => ({
       role: 'button' as const,
       tabIndex: 0 as const,
+      'aria-haspopup': 'dialog' as const,
       onClick: () => open(i),
       onKeyDown: (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' || e.key === ' ') {

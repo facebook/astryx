@@ -9,19 +9,21 @@
  * @position Context for XDSStepper <-> XDSStep communication
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Stepper/Stepper.doc.mjs
- * - /packages/core/src/Stepper/index.ts
+ * - /packages/lab/src/Stepper/Stepper.doc.mjs
+ * - /packages/lab/src/Stepper/index.ts
  */
 
 import {createContext, use} from 'react';
 
 export type XDSStepperOrientation = 'horizontal' | 'vertical';
+export type XDSStepperDensity = 'compact' | 'balanced' | 'spacious';
 
 export interface XDSStepperContextValue {
   activeStep: number;
   orientation: XDSStepperOrientation;
   isNonLinear: boolean;
   onStepClick: ((index: number) => void) | null;
+  density: XDSStepperDensity;
 }
 
 export const XDSStepperContext = createContext<XDSStepperContextValue | null>(

@@ -4,6 +4,8 @@
 export const doc = {
   type: 'block',
   exampleFor: 'Table',
+  alsoExampleFor: ['useXDSTablePagination'],
+  alsoShowcaseFor: ['useXDSTablePagination'],
   name: 'Table — Paginated Data',
   displayName: 'Table — Paginated Data',
   description:

@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Toolbar',
   displayName: 'Toolbar',
+  category: 'Action',
   keywords: ['toolbar', 'nav', 'bar', 'actions', 'buttonbar', 'header', 'footer', 'action-bar', 'control-bar'],
   theming: {
     targets: [
@@ -81,15 +82,15 @@ export const docs = {
   ],
   usage: {
     description:
-      'Toolbar is a horizontal bar with left, center, and right areas. Use it for contextual actions within a content area — above a table, inside a card, or in a panel — not as a page-level header. Set the size once on the toolbar and all buttons, inputs, and tabs inside it match automatically.',
+      'Toolbar is a horizontal bar with left, center, and right areas. Use it for contextual actions within a content area (above a table, inside a card, or in a panel), not as a page-level header. Set the size once on the toolbar and all buttons, inputs, and tabs inside it match automatically.',
     bestPractices: [
       {guidance: true, description: 'Put secondary actions like "Back" on the left, and primary actions like "Save" on the right.'},
-      {guidance: true, description: 'Make temporary toolbars like bulk selection visually distinct so users can tell they\'re contextual — for example, with a background color or border.'},
-      {guidance: true, description: 'Visually separate the toolbar from the content below it — with a divider, a background variant, or both.'},
-      {guidance: true, description: 'Use Toolbar as a card header when the header has interactive actions like filter or add — it gives you slot layout, keyboard navigation, and size cascading. If the header is just a title with no actions, a LayoutHeader or Section is enough.'},
-      {guidance: false, description: 'Put too many actions in one toolbar — move less common items into a MoreMenu.'},
-      {guidance: false, description: 'Set size on individual child buttons — set it once on the toolbar and it cascades automatically.'},
-      {guidance: false, description: 'Use Toolbar for app-wide navigation like main menu links or sign out — use TopNav or LayoutHeader for that.'},
+      {guidance: true, description: 'Make temporary toolbars like bulk selection visually distinct so users can tell they\'re contextual, for example with a background color or border.'},
+      {guidance: true, description: 'Visually separate the toolbar from the content below it, with a divider, a background variant, or both.'},
+      {guidance: true, description: 'Use Toolbar as a card header when the header has interactive actions like filter or add; it gives you slot layout, keyboard navigation, and size cascading. If the header is just a title with no actions, a LayoutHeader or Section is enough.'},
+      {guidance: false, description: 'Put too many actions in one toolbar; move less common items into a MoreMenu.'},
+      {guidance: false, description: 'Set size on individual child buttons; set it once on the toolbar and it cascades automatically.'},
+      {guidance: false, description: 'Use Toolbar for app-wide navigation like main menu links or sign out; use TopNav or LayoutHeader for that.'},
     ],
   },
 };
@@ -116,15 +117,15 @@ export const docsZh = {
   ],
   usage: {
     description:
-      'Toolbar is a horizontal bar with left, center, and right areas. Use it for contextual actions within a content area — above a table, inside a card, or in a panel — not as a page-level header. Set the size once on the toolbar and all buttons, inputs, and tabs inside it match automatically.',
+      'Toolbar is a horizontal bar with left, center, and right areas. Use it for contextual actions within a content area (above a table, inside a card, or in a panel), not as a page-level header. Set the size once on the toolbar and all buttons, inputs, and tabs inside it match automatically.',
     bestPractices: [
       {guidance: true, description: 'Put secondary actions like "Back" on the left, and primary actions like "Save" on the right.'},
-      {guidance: true, description: 'Make temporary toolbars like bulk selection visually distinct so users can tell they\'re contextual — for example, with a background color or border.'},
-      {guidance: true, description: 'Visually separate the toolbar from the content below it — with a divider, a background variant, or both.'},
-      {guidance: true, description: 'Use Toolbar as a card header when the header has interactive actions like filter or add — it gives you slot layout, keyboard navigation, and size cascading. If the header is just a title with no actions, a LayoutHeader or Section is enough.'},
-      {guidance: false, description: 'Put too many actions in one toolbar — move less common items into a MoreMenu.'},
-      {guidance: false, description: 'Set size on individual child buttons — set it once on the toolbar and it cascades automatically.'},
-      {guidance: false, description: 'Use Toolbar for app-wide navigation like main menu links or sign out — use TopNav or LayoutHeader for that.'},
+      {guidance: true, description: 'Make temporary toolbars like bulk selection visually distinct so users can tell they\'re contextual, for example with a background color or border.'},
+      {guidance: true, description: 'Visually separate the toolbar from the content below it, with a divider, a background variant, or both.'},
+      {guidance: true, description: 'Use Toolbar as a card header when the header has interactive actions like filter or add; it gives you slot layout, keyboard navigation, and size cascading. If the header is just a title with no actions, a LayoutHeader or Section is enough.'},
+      {guidance: false, description: 'Put too many actions in one toolbar; move less common items into a MoreMenu.'},
+      {guidance: false, description: 'Set size on individual child buttons; set it once on the toolbar and it cascades automatically.'},
+      {guidance: false, description: 'Use Toolbar for app-wide navigation like main menu links or sign out; use TopNav or LayoutHeader for that.'},
     ],
   },
 };
@@ -134,15 +135,15 @@ export const docsDense = {
   description: 'Horizontal bar w/ left, center, right areas. For contextual actions in content, not page headers. Size cascades to children.',
   usage: {
     description:
-      'Horizontal bar w/ left, optional center, right. For contextual actions within content (tables, cards, panels) — not page-level headers. Size cascades to children.',
+      'Horizontal bar w/ left, optional center, right. For contextual actions within content (tables, cards, panels), not page-level headers. Size cascades to children.',
     bestPractices: [
       {guidance: true, description: 'Secondary actions (Back) left, primary actions (Save) right.'},
-      {guidance: true, description: 'Make temporary toolbars (bulk selection) visually distinct — e.g. background color or border.'},
-      {guidance: true, description: 'Separate toolbar from content — divider, background variant, or both.'},
+      {guidance: true, description: 'Make temporary toolbars (bulk selection) visually distinct, e.g. background color or border.'},
+      {guidance: true, description: 'Separate toolbar from content: divider, background variant, or both.'},
       {guidance: true, description: 'Use Toolbar as card header when it has actions (filter, add). Just a title? Use LayoutHeader/Section.'},
-      {guidance: false, description: 'Overload with actions — use MoreMenu for overflow.'},
-      {guidance: false, description: 'Set size on child buttons — set once on toolbar, it cascades.'},
-      {guidance: false, description: 'Use for app-wide nav (menu links, sign out) — use TopNav/LayoutHeader.'},
+      {guidance: false, description: 'Overload with actions; use MoreMenu for overflow.'},
+      {guidance: false, description: 'Set size on child buttons; set once on toolbar, it cascades.'},
+      {guidance: false, description: 'Use for app-wide nav (menu links, sign out); use TopNav/LayoutHeader.'},
     ],
   },
   components: [

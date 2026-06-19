@@ -5,6 +5,7 @@
 export const docs = {
   name: 'AspectRatio',
   displayName: 'Aspect Ratio',
+  category: 'Layout',
   keywords: ["aspect-ratio","ratio","proportion","responsive","embed","container","widescreen","thumbnail","letterbox","crop"],
   usage: {
     description:
@@ -12,8 +13,8 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Express the ratio as a fraction like `16/9` or `4/3` for readability.'},
       {guidance: true, description: 'Use for media that needs consistent proportions across screen sizes.'},
-      {guidance: false, description: 'Use for general layout containers — use standard layout components instead.'},
-      {guidance: false, description: 'Nest AspectRatio containers — one level is sufficient.'},
+      {guidance: false, description: 'Use for general layout containers; use standard layout components instead.'},
+      {guidance: false, description: 'Nest AspectRatio containers; one level is sufficient.'},
     ],
   },
   props: [
@@ -33,7 +34,7 @@ export const docs = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
   ],
   playground: {
@@ -59,8 +60,8 @@ export const docsZh = {
     bestPractices: [
       {guidance: true, description: 'Express the ratio as a fraction like `16/9` or `4/3` for readability.'},
       {guidance: true, description: 'Use for media that needs consistent proportions across screen sizes.'},
-      {guidance: false, description: 'Use for general layout containers — use standard layout components instead.'},
-      {guidance: false, description: 'Nest AspectRatio containers — one level is sufficient.'},
+      {guidance: false, description: 'Use for general layout containers; use standard layout components instead.'},
+      {guidance: false, description: 'Nest AspectRatio containers; one level is sufficient.'},
     ],
   },
   props: [
@@ -89,8 +90,8 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Express the ratio as a fraction like `16/9` or `4/3` for readability.'},
       {guidance: true, description: 'Use for media that needs consistent proportions across screen sizes.'},
-      {guidance: false, description: 'Use for general layout containers — use standard layout components instead.'},
-      {guidance: false, description: 'Nest AspectRatio containers — one level is sufficient.'},
+      {guidance: false, description: 'Use for general layout containers; use standard layout components instead.'},
+      {guidance: false, description: 'Nest AspectRatio containers; one level is sufficient.'},
     ],
   },
   propDescriptions: {

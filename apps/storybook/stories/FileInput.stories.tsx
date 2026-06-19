@@ -5,7 +5,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {XDSFileInput} from '@xds/core/FileInput';
 
 const meta: Meta<typeof XDSFileInput> = {
-  title: 'Core/Inputs/FileInput',
+  title: 'Core/FileInput',
   component: XDSFileInput,
   tags: ['autodocs'],
   argTypes: {

@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSCheckboxList} from './XDSCheckboxList';
 import {XDSCheckboxListItem} from './XDSCheckboxListItem';
@@ -199,6 +199,19 @@ describe('XDSCheckboxList', () => {
       </XDSCheckboxList>,
     );
     expect(screen.getByTestId('my-checkbox-list')).toBeInTheDocument();
+  });
+
+  it('passes spacious density through to checkbox list items', () => {
+    render(
+      <XDSCheckboxList
+        label="Preferences"
+        density="spacious"
+        value={[]}
+        onChange={() => {}}>
+        <XDSCheckboxListItem label="Option A" value="a" />
+      </XDSCheckboxList>,
+    );
+    expect(screen.getByRole('listitem').className).toContain('spacious');
   });
 
   it('supports data-testid on CheckboxListItem', () => {
@@ -393,17 +406,84 @@ describe('XDSCheckboxListItem ARIA props', () => {
     expect(item).toHaveAttribute('aria-checked', 'mixed');
   });
 
-  it('sets aria-busy during async actions', () => {
-    // Render with a pending async action by providing changeAction
-    // that returns a promise that never resolves
+  it('does not mark items aria-busy when idle', () => {
     render(
       <XDSCheckboxList label="Prefs" value={['a']} onChange={() => {}}>
         <XDSCheckboxListItem label="Option A" value="a" />
       </XDSCheckboxList>,
     );
-    // By default isBusy is false, so aria-busy should not be present
     const item = screen.getByRole('listitem');
     expect(item).not.toHaveAttribute('aria-busy');
+  });
+
+  it('marks the item aria-busy when item-level isLoading is set', () => {
+    render(
+      <XDSCheckboxList label="Prefs" value={['a']} onChange={() => {}}>
+        <XDSCheckboxListItem label="Option A" value="a" isLoading />
+        <XDSCheckboxListItem label="Option B" value="b" />
+      </XDSCheckboxList>,
+    );
+    const [itemA, itemB] = screen.getAllByRole('listitem');
+    expect(itemA).toHaveAttribute('aria-busy', 'true');
+    // Loading is per-item — sibling items are unaffected.
+    expect(itemB).not.toHaveAttribute('aria-busy');
+  });
+
+  it('renders a spinner inside the checkbox when item isLoading is set', () => {
+    render(
+      <XDSCheckboxList label="Prefs" value={['a']} onChange={() => {}}>
+        <XDSCheckboxListItem label="Option A" value="a" isLoading />
+      </XDSCheckboxList>,
+    );
+    // The spinner is decorative — it lives inside the checkbox's
+    // aria-hidden visual box, so query with hidden:true. The accessible
+    // loading signal is `aria-busy` on the item (asserted above).
+    expect(screen.getByRole('status', {hidden: true})).toBeInTheDocument();
+  });
+
+  it('does not toggle when item-level isLoading is set', () => {
+    const onChange = vi.fn();
+    render(
+      <XDSCheckboxList label="Prefs" value={[]} onChange={onChange}>
+        <XDSCheckboxListItem label="Option A" value="a" isLoading />
+      </XDSCheckboxList>,
+    );
+    fireEvent.click(screen.getByRole('checkbox'));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('shows a spinner only on the toggled item while changeAction is pending', async () => {
+    // changeAction returns a promise that never resolves, so the pending
+    // (loading) state persists for assertions.
+    const changeAction = vi.fn(async () => {
+      await new Promise<void>(() => {});
+    });
+    render(
+      <XDSCheckboxList
+        label="Prefs"
+        value={[]}
+        onChange={() => {}}
+        changeAction={changeAction}>
+        <XDSCheckboxListItem label="Option A" value="a" />
+        <XDSCheckboxListItem label="Option B" value="b" />
+      </XDSCheckboxList>,
+    );
+
+    const [itemA, itemB] = screen.getAllByRole('listitem');
+    // Toggle Option A.
+    fireEvent.click(within(itemA).getByRole('checkbox'));
+
+    // The toggled item becomes busy and shows a spinner; the sibling stays idle.
+    // The spinner is decorative (inside the aria-hidden box), so query hidden.
+    expect(
+      await within(itemA).findByRole('status', {hidden: true}),
+    ).toBeInTheDocument();
+    expect(itemA).toHaveAttribute('aria-busy', 'true');
+    expect(itemB).not.toHaveAttribute('aria-busy');
+    expect(
+      within(itemB).queryByRole('status', {hidden: true}),
+    ).not.toBeInTheDocument();
+    expect(changeAction).toHaveBeenCalledWith(['a']);
   });
 
   it('forwards arbitrary aria attributes to the list item DOM element', () => {

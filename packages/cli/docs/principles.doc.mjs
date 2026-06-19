@@ -7,7 +7,7 @@ export const docs = {
   title: 'Principles',
   category: 'guide',
   description:
-    'Core design principles and rules for building with XDS.',
+    'Core design principles and rules for building with the design system.',
 
   sections: [
     {
@@ -16,16 +16,16 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'XDS is a design system that prioritizes consistency, adaptability, and developer experience. Every decision flows from a few core ideas:',
+          text: 'A design system that prioritizes consistency, adaptability, and developer experience. Every decision flows from a few core ideas:',
         },
         {
           type: 'list',
           style: 'unordered',
           items: [
-            'Components over primitives — use XDS components for everything they cover before reaching for raw HTML',
-            'Semantic tokens over hardcoded values — colors, spacing, and radii are named by purpose, not appearance',
-            'Theme-agnostic code — your app code never references specific colors or measurements, so themes and dark mode work automatically',
-            'Open internals — every primitive is exported and composable, so you can build on top of XDS without fighting it',
+            'Components over primitives: use components for everything they cover before reaching for raw HTML',
+            'Semantic tokens over hardcoded values: colors, spacing, and radii are named by purpose, not appearance',
+            'Theme-agnostic code: your app code never references specific colors or measurements, so themes and dark mode work automatically',
+            'Open internals: every primitive is exported and composable, so you can build on top of it without fighting it',
           ],
         },
       ],
@@ -38,8 +38,8 @@ export const docs = {
           type: 'list',
           style: 'ordered',
           items: [
-            'Use XDS components for everything they cover',
-            'StyleX or Tailwind for custom styling — both are first-class (see \`npx xds docs styling\`)',
+            'Use components for everything they cover',
+            'StyleX or Tailwind for custom styling; both are first-class (see \`npx xds docs styling\`)',
             'Semantic tokens, not hardcoded values (see \`npx xds docs tokens\`)',
             'CSS custom properties for colors, not hex values',
             'Form inputs are controlled (value + onChange)',
@@ -54,7 +54,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'XDS supports multiple styling approaches. Every component accepts an \`xstyle\` prop for StyleX style overrides via \`stylex.create()\`. For layout and wrapper styling outside of components, use StyleX or Tailwind utilities — both resolve to the same XDS design tokens.',
+          text: 'The design system supports multiple styling approaches. Every component accepts an \`xstyle\` prop for StyleX style overrides via \`stylex.create()\`. For layout and wrapper styling outside of components, use StyleX or Tailwind utilities; both resolve to the same design tokens.',
         },
         {
           type: 'prose',
@@ -70,7 +70,7 @@ export const docs = {
           type: 'list',
           style: 'dont',
           items: [
-            'Inline styles on raw elements. Use xstyle on XDS components',
+            'Inline styles on raw elements. Use xstyle on components',
             'Hardcoded colors (#fff). Use var(--color-*) or Tailwind semantic classes (text-primary, bg-surface)',
             'Hardcoded spacing (16px). Use spacing tokens or Tailwind spacing utilities',
             'Hardcoded <a> elements. Use useXDSLinkComponent() so consumers can swap in their framework router via XDSLinkProvider',
@@ -85,7 +85,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'XDS provides semantic design tokens for spacing, color, radius, shadow, typography, and size. Tokens adapt to the active theme and color mode. Run \`npx xds docs tokens\` for the full reference with all values.',
+          text: 'The design system provides semantic design tokens for spacing, color, radius, shadow, typography, and size. Tokens adapt to the active theme and color mode. Run \`npx xds docs tokens\` for the full reference with all values.',
         },
       ],
     },

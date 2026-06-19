@@ -3,7 +3,7 @@
   "version": "0.0.14",
   "displayName": "Y2K Theme",
   "private": false,
-  "description": "Bubbly Y2K pop theme for XDS — hot pink body, lime green accents, Poppins body, and playful categorical colors",
+  "description": "Hot pinks, lime greens, and Poppins. Bubbly, playful, and unmistakably retro.",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebookexperimental/xds#readme",
@@ -49,7 +49,7 @@
     "build": "xds theme build src/y2kTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
   },
   "dependencies": {
-    "lucide-react": "^1.16.0"
+    "lucide-react": "^1.18.0"
   },
   "peerDependencies": {
     "@xds/core": "0.0.14",

@@ -25,7 +25,8 @@ import {
   type SpacingStep,
 } from './stack.stylex';
 import type {SizeValue} from '../utils/types';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 /**
  * Alignment values accepted by XDSStack.
@@ -120,7 +121,7 @@ export interface XDSStackProps extends XDSBaseProps<HTMLElement> {
    * The element type to render.
    * @default 'div'
    */
-  element?: ElementType;
+  as?: ElementType;
 
   /**
    * StyleX styles created via `stylex.create()`. Merged with the component's
@@ -184,7 +185,7 @@ export function XDSStack({
   width,
   height,
   wrap,
-  element = 'div',
+  as: element = 'div',
   xstyle,
   className,
   style,
@@ -234,7 +235,7 @@ export function XDSStack({
     {
       ref: ref as Ref<Element>,
       ...mergeProps(
-        xdsClassName('stack', {direction, gap, wrap}),
+        xdsThemeProps('stack', {direction, gap, wrap}),
         stylexProps,
         className,
         {...style, ...sizingStyle},

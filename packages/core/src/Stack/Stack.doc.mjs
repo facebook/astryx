@@ -6,6 +6,7 @@ export const docs = {
   name: 'Stack',
   displayName: 'Stack',
   group: 'Layout',
+  category: 'Layout',
   keywords: ["stack","hstack","vstack","flexbox","flex","spacing","gap","horizontal","vertical","row","column"],
   theming: {
     targets: [
@@ -16,7 +17,8 @@ export const docs = {
   components: [
     {
       name: 'XDSHStack',
-      displayName: 'XDSH Stack',
+      isHiddenFromOverview: true,
+      displayName: 'H Stack',
       description:
         'Horizontal stack for arranging items left-to-right. Supports polymorphic rendering.',
       props: [
@@ -64,7 +66,7 @@ export const docs = {
           default: "'nowrap'",
         },
         {
-          name: 'element',
+          name: 'as',
           type: 'ElementType',
           description: 'HTML element to render as the stack container.',
           default: "'div'",
@@ -78,12 +80,13 @@ export const docs = {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
-            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
         },
       ],    },
     {
       name: 'XDSVStack',
-      displayName: 'XDSV Stack',
+      isHiddenFromOverview: true,
+      displayName: 'V Stack',
       description:
         'Vertical stack for arranging items top-to-bottom. Supports polymorphic rendering.',
       props: [
@@ -131,7 +134,7 @@ export const docs = {
           default: "'nowrap'",
         },
         {
-          name: 'element',
+          name: 'as',
           type: 'ElementType',
           description: 'HTML element to render as the stack container.',
           default: "'div'",
@@ -145,6 +148,7 @@ export const docs = {
     },
     {
       name: 'XDSStackItem',
+      isHiddenFromOverview: true,
       displayName: 'Stack Item',
       description:
         'Stack item for controlling individual item behavior within a stack. Supports polymorphic rendering.',
@@ -163,7 +167,7 @@ export const docs = {
             'Override the cross-axis alignment for this individual item, ignoring the parent stack alignment.',
         },
         {
-          name: 'element',
+          name: 'as',
           type: 'ElementType',
           description: 'HTML element to render as the item wrapper.',
           default: "'div'",
@@ -180,9 +184,9 @@ export const docs = {
     description:
       'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [
-      { guidance: true, description: 'Use the gap prop for spacing between items — don\'t add margins manually.' },
+      { guidance: true, description: 'Use the gap prop for spacing between items; don\'t add margins manually.' },
       { guidance: true, description: 'Use XDSStackItem with size="fill" to make one item stretch and fill the leftover space.' },
-      { guidance: false, description: 'Nest stacks inside stacks — try wrap="wrap" first to let items flow to the next line.' },
+      { guidance: false, description: 'Nest stacks inside stacks; try wrap="wrap" first to let items flow to the next line.' },
     ],
   },
 };
@@ -201,7 +205,8 @@ export const docsZh = {
   components: [
     {
       name: 'XDSHStack',
-      displayName: 'XDSH Stack',
+      isHiddenFromOverview: true,
+      displayName: 'H Stack',
       description:
         '水平堆叠组件，将元素从左到右排列。支持多态渲染。',
       props: [
@@ -249,7 +254,7 @@ export const docsZh = {
           default: "'nowrap'",
         },
         {
-          name: 'element',
+          name: 'as',
           type: 'ElementType',
           description: '作为堆叠容器渲染的 HTML 元素。',
           default: "'div'",
@@ -269,7 +274,8 @@ export const docsZh = {
     },
     {
       name: 'XDSVStack',
-      displayName: 'XDSV Stack',
+      isHiddenFromOverview: true,
+      displayName: 'V Stack',
       description:
         '垂直堆叠组件，将元素从上到下排列。支持多态渲染。',
       props: [
@@ -317,7 +323,7 @@ export const docsZh = {
           default: "'nowrap'",
         },
         {
-          name: 'element',
+          name: 'as',
           type: 'ElementType',
           description: '作为堆叠容器渲染的 HTML 元素。',
           default: "'div'",
@@ -331,6 +337,7 @@ export const docsZh = {
     },
     {
       name: 'XDSStackItem',
+      isHiddenFromOverview: true,
       displayName: 'Stack Item',
       description:
         '堆叠子元素，用于控制堆叠中单个元素的行为。支持多态渲染。',
@@ -349,7 +356,7 @@ export const docsZh = {
             '覆盖此元素的交叉轴对齐方式，忽略父堆叠的对齐设置。',
         },
         {
-          name: 'element',
+          name: 'as',
           type: 'ElementType',
           description: '作为子元素包装器渲染的 HTML 元素。',
           default: "'div'",
@@ -366,9 +373,9 @@ export const docsZh = {
     description:
       'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [
-      { guidance: true, description: 'Use the gap prop for spacing between items — don\'t add margins manually.' },
+      { guidance: true, description: 'Use the gap prop for spacing between items; don\'t add margins manually.' },
       { guidance: true, description: 'Use XDSStackItem with size="fill" to make one item stretch and fill the leftover space.' },
-      { guidance: false, description: 'Nest stacks inside stacks — try wrap="wrap" first to let items flow to the next line.' },
+      { guidance: false, description: 'Nest stacks inside stacks; try wrap="wrap" first to let items flow to the next line.' },
     ],
   },
 };
@@ -380,15 +387,16 @@ export const docsDense = {
     description:
       'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [
-      { guidance: true, description: 'Use the gap prop for spacing between items — don\'t add margins manually.' },
+      { guidance: true, description: 'Use the gap prop for spacing between items; don\'t add margins manually.' },
       { guidance: true, description: 'Use XDSStackItem with size="fill" to make one item stretch and fill the leftover space.' },
-      { guidance: false, description: 'Nest stacks inside stacks — try wrap="wrap" first to let items flow to the next line.' },
+      { guidance: false, description: 'Nest stacks inside stacks; try wrap="wrap" first to let items flow to the next line.' },
     ],
   },
   components: [
     {
       name: 'XDSHStack',
-      displayName: 'XDSH Stack',
+      isHiddenFromOverview: true,
+      displayName: 'H Stack',
       description: 'Horizontal stack; left-to-right, polymorphic rendering.',
       propDescriptions: {
         gap: 'Numeric spacing step for gap: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
@@ -399,14 +407,15 @@ export const docsDense = {
         justify: 'Main-axis alignment alias for hAlign. Mirrors CSS justify-content.',
         align: 'Cross-axis alignment alias for vAlign. Mirrors CSS align-items.',
         wrap: 'Flex wrap behavior.',
-        element: 'HTML element to render as container.',
+        as: 'HTML element to render as container.',
         children: 'Stack content.',
         xstyle: 'StyleX layout styles; must be stylex.create() value.',
       },
     },
     {
       name: 'XDSVStack',
-      displayName: 'XDSV Stack',
+      isHiddenFromOverview: true,
+      displayName: 'V Stack',
       description: 'Vertical stack; top-to-bottom, polymorphic rendering.',
       propDescriptions: {
         gap: 'Numeric spacing step for gap: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
@@ -417,18 +426,19 @@ export const docsDense = {
         justify: 'Main-axis alignment alias for vAlign. Mirrors CSS justify-content.',
         align: 'Cross-axis alignment alias for hAlign. Mirrors CSS align-items.',
         wrap: 'Flex wrap behavior.',
-        element: 'HTML element to render as container.',
+        as: 'HTML element to render as container.',
         children: 'Stack content.',
       },
     },
     {
       name: 'XDSStackItem',
+      isHiddenFromOverview: true,
       displayName: 'Stack Item',
       description: 'Controls individual item behavior in stack; polymorphic rendering.',
       propDescriptions: {
         size: 'Flex grow: static=natural size, fill=expand to remaining space.',
         crossAlignSelf: 'Override cross-axis alignment for this item, ignoring parent.',
-        element: 'HTML element to render as wrapper.',
+        as: 'HTML element to render as wrapper.',
         children: 'Item content.',
       },
     },
