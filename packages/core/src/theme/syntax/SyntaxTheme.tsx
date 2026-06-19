@@ -16,7 +16,7 @@ import {
   syntaxThemeStyle,
   resolveSyntaxTokenForMode,
   ALL_SYNTAX_KEYS,
-  type SyntaxTheme,
+  type SyntaxThemeDefinition,
   type SyntaxThemeTokenKey,
 } from './defineSyntaxTheme';
 import {useMediaQuery} from '../../hooks/useMediaQuery';
@@ -27,7 +27,7 @@ import {useMediaQuery} from '../../hooks/useMediaQuery';
 
 /** @internal */
 interface SyntaxThemeContextValue {
-  theme: SyntaxTheme;
+  theme: SyntaxThemeDefinition;
 }
 
 const SyntaxThemeContext = createContext<SyntaxThemeContextValue | null>(null);
@@ -37,7 +37,7 @@ SyntaxThemeContext.displayName = 'SyntaxThemeContext';
 // Return type
 // =============================================================================
 
-export interface UseXDSSyntaxThemeReturn {
+export interface UseSyntaxThemeReturn {
   /** Syntax theme name */
   name: string;
   /** Resolved effective mode ('light' | 'dark') */
@@ -72,7 +72,7 @@ export interface UseXDSSyntaxThemeReturn {
  *   ctx.fillStyle = syntax.token('keyword');
  * }
  */
-export function useSyntaxTheme(): UseXDSSyntaxThemeReturn | null {
+export function useSyntaxTheme(): UseSyntaxThemeReturn | null {
   const ctx = use(SyntaxThemeContext);
   const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
   const effectiveMode: 'light' | 'dark' = prefersDark ? 'dark' : 'light';
@@ -108,7 +108,7 @@ export function useSyntaxTheme(): UseXDSSyntaxThemeReturn | null {
 // =============================================================================
 
 interface SyntaxThemeProps {
-  theme: SyntaxTheme;
+  theme: SyntaxThemeDefinition;
   children: React.ReactNode;
 }
 

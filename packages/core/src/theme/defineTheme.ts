@@ -68,7 +68,7 @@ import {expandColorScale, type ColorScaleConfig} from './expandColorScale';
 
 import type {DomainTokenName} from './domainTokens';
 import {domainTokenDefaults} from './domainTokens';
-import type {SyntaxTheme} from './syntax';
+import type {SyntaxThemeDefinition} from './syntax';
 
 // =============================================================================
 // Types
@@ -295,7 +295,7 @@ export interface DefineThemeInput {
    * defineTheme({ name: 'my-theme', syntax: dracula, ... })
    * ```
    */
-  syntax?: SyntaxTheme;
+  syntax?: SyntaxThemeDefinition;
   /**
    * Overrides for content on a dark surface (e.g. inverted toast,
    * dark tooltip). Accepts token and component overrides — same shape

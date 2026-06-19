@@ -22,7 +22,7 @@ export {useLinkComponent} from './useLinkComponent';
 export type {LinkComponentType} from './types';
 
 export {useLinkify} from './useLinkify';
-export type {LinkifyPattern, UseXDSLinkifyOptions} from './useLinkify';
+export type {LinkifyPattern, UseLinkifyOptions} from './useLinkify';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
@@ -42,6 +42,6 @@ export type {
   LinkProps as XDSLinkProps,
   LinkProviderProps as XDSLinkProviderProps,
   LinkifyPattern as XDSLinkifyPattern,
-  UseXDSLinkifyOptions as XDSUseXDSLinkifyOptions,
+  UseLinkifyOptions as XDSUseLinkifyOptions,
 } from '.';
 // <compat-aliases:end>

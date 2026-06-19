@@ -47,26 +47,14 @@ export {
 // augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  Heading as XDSHeading,
   Text as XDSText,
   useTruncation as useXDSTruncation,
 } from '.';
 export type {
-  HeadingLevel as XDSHeadingLevel,
-  HeadingProps as XDSHeadingProps,
-  HeadingType as XDSHeadingType,
-  ProseElement as XDSProseElement,
-  TextColor as XDSTextColor,
-  TextDisplay as XDSTextDisplay,
-  TextJustify as XDSTextJustify,
   TextProps as XDSTextProps,
   TextSize as XDSTextSize,
   TextType as XDSTextType,
-  TextWeight as XDSTextWeight,
-  TextWrap as XDSTextWrap,
-  TextXStyleAllowed as XDSTextXStyleAllowed,
   UseTruncationOptions as XDSUseTruncationOptions,
   UseTruncationReturn as XDSUseTruncationReturn,
-  WordBreak as XDSWordBreak,
 } from '.';
 // <compat-aliases:end>

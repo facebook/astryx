@@ -52,7 +52,7 @@ export interface LinkifyPattern {
   isExternal?: boolean;
 }
 
-export interface UseXDSLinkifyOptions {
+export interface UseLinkifyOptions {
   /**
    * Custom patterns to detect, in addition to (or replacing) built-in patterns.
    * Patterns are matched in order; first match wins for overlapping ranges.
@@ -158,7 +158,7 @@ function findMatches(
  */
 export function useLinkify(
   text: string,
-  options?: UseXDSLinkifyOptions,
+  options?: UseLinkifyOptions,
 ): ReactNode[] {
   const {patterns: customPatterns, hasBuiltins = true} = options ?? {};
 

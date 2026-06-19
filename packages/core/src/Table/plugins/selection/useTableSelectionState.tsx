@@ -4,7 +4,7 @@
 
 /**
  * @file useTableSelectionState.tsx
- * @input React, UseXDSTableSelectionConfig type
+ * @input React, UseTableSelectionConfig type
  * @output Exports useTableSelectionState hook and config types
  * @position Selection state helper; manages selection set with correct
  *   disabled/selectable filtering. Pairs with useTableSelection.
@@ -19,13 +19,13 @@
  */
 
 import {useCallback, useMemo, useRef} from 'react';
-import type {UseXDSTableSelectionConfig} from './useTableSelection';
+import type {UseTableSelectionConfig} from './useTableSelection';
 
 // =============================================================================
 // Config Type
 // =============================================================================
 
-export interface UseXDSTableSelectionStateConfig<
+export interface UseTableSelectionStateConfig<
   T extends Record<string, unknown>,
 > {
   /**
@@ -63,11 +63,11 @@ export interface UseXDSTableSelectionStateConfig<
   setSelectedKeys: React.Dispatch<React.SetStateAction<Set<string>>>;
 }
 
-export interface UseXDSTableSelectionStateResult<
+export interface UseTableSelectionStateResult<
   T extends Record<string, unknown>,
 > {
   /** Ready-to-use config for useTableSelection. */
-  selectionConfig: UseXDSTableSelectionConfig<T>;
+  selectionConfig: UseTableSelectionConfig<T>;
 }
 
 // =============================================================================
@@ -77,8 +77,8 @@ export interface UseXDSTableSelectionStateResult<
 const stableTrue = () => true;
 
 export function useTableSelectionState<T extends Record<string, unknown>>(
-  config: UseXDSTableSelectionStateConfig<T>,
-): UseXDSTableSelectionStateResult<T> {
+  config: UseTableSelectionStateConfig<T>,
+): UseTableSelectionStateResult<T> {
   const {
     data,
     idKey,
@@ -180,7 +180,7 @@ export function useTableSelectionState<T extends Record<string, unknown>>(
   }, [data, getIsItemSelectableAndEnabled, selectedKeys, getId, selectableIDs]);
 
   const selectionConfig = useMemo(
-    (): UseXDSTableSelectionConfig<T> => ({
+    (): UseTableSelectionConfig<T> => ({
       getIsItemSelected: item => selectedKeys.has(getId(item)),
       onSelectItem,
       onSelectAll,

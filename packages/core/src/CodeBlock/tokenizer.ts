@@ -17,13 +17,13 @@
  */
 declare const scheduler: {yield?: () => Promise<void>} | undefined;
 
-export type Token = {type: string; start: number; end: number};
+export type SyntaxToken = {type: string; start: number; end: number};
 
 /**
  * Per-line token structure. Each line stores its own tokens with
  * line-relative start/end offsets (0 = start of line).
  */
-export type TokenLine = Token[];
+export type TokenLine = SyntaxToken[];
 
 // ---------------------------------------------------------------------------
 // Language definitions
@@ -31,7 +31,7 @@ export type TokenLine = Token[];
 
 type LangDef = {
   patterns: {type: string; regex: RegExp; anchored: RegExp}[];
-  /** Token type that matches the element's default text color (skipped in output). */
+  /** SyntaxToken type that matches the element's default text color (skipped in output). */
   defaultType: string;
 };
 
@@ -347,8 +347,8 @@ function tokenizeLine(
   langDef: LangDef,
   lineStart: number,
   lineEnd: number,
-): Token[] {
-  const tokens: Token[] = [];
+): SyntaxToken[] {
+  const tokens: SyntaxToken[] = [];
   let pos = lineStart;
   const limit = Math.min(lineEnd, code.length);
 

@@ -2,9 +2,9 @@
 
 export {useTableFiltering, toSearchFilters} from './useTableFiltering';
 export {useTableFilterState} from './useTableFilterState';
-export type {UseXDSTableFilterStateResult} from './useTableFilterState';
+export type {UseTableFilterStateResult} from './useTableFilterState';
 export type {
-  UseXDSTableFilteringConfig,
+  UseTableFilteringConfig,
   TableFilterState,
   TableFilterVariant,
   TableFilterValue,

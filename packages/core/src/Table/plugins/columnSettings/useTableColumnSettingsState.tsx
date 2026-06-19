@@ -51,7 +51,7 @@ import type {ColumnSettingsOption} from './useTableColumnSettings';
  * <Table data={data} columns={allColumns} plugins={{ columnSettings: plugin }} />
  * ```
  */
-export interface UseXDSTableColumnSettingsStateConfig<
+export interface UseTableColumnSettingsStateConfig<
   TColumnKey extends string = string,
 > {
   /**
@@ -87,7 +87,7 @@ export interface UseXDSTableColumnSettingsStateConfig<
 /**
  * Return value of useTableColumnSettingsState.
  */
-export interface UseXDSTableColumnSettingsStateReturn<
+export interface UseTableColumnSettingsStateReturn<
   TColumnKey extends string = string,
 > {
   /**
@@ -100,7 +100,7 @@ export interface UseXDSTableColumnSettingsStateReturn<
    * const plugin = useTableColumnSettings(state.columnSettingsConfig);
    * ```
    */
-  columnSettingsConfig: UseXDSTableColumnSettingsStateConfig<TColumnKey>;
+  columnSettingsConfig: UseTableColumnSettingsStateConfig<TColumnKey>;
 
   /** Currently active column keys (pass-through from config). */
   activeColumnKeys: ReadonlyArray<TColumnKey>;
@@ -172,8 +172,8 @@ export interface UseXDSTableColumnSettingsStateReturn<
 export function useTableColumnSettingsState<
   TColumnKey extends string = string,
 >(
-  config: UseXDSTableColumnSettingsStateConfig<TColumnKey>,
-): UseXDSTableColumnSettingsStateReturn<TColumnKey> {
+  config: UseTableColumnSettingsStateConfig<TColumnKey>,
+): UseTableColumnSettingsStateReturn<TColumnKey> {
   const {columns, activeColumnKeys} = config;
 
   // Keep config in a ref so callbacks always read the latest version.

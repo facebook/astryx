@@ -88,9 +88,10 @@ export type StyleXStyles = any;
 export type ThemeMode = 'system' | 'light' | 'dark';
 
 /**
- * Heading levels (1-6)
+ * Heading element tags (h1–h6). Distinct from the Heading component's numeric
+ * `HeadingLevel` (1–6) — this is the HTML tag form used by prose theming.
  */
-export type HeadingLevel = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+export type HeadingTag = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 
 /**
  * Built-in semantic text types for Text.

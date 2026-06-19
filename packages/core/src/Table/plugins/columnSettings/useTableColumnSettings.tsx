@@ -21,7 +21,7 @@
 
 import {useMemo, useRef} from 'react';
 import type {TablePlugin, TableColumn} from '../../types';
-import type {UseXDSTableColumnSettingsStateConfig} from './useTableColumnSettingsState';
+import type {UseTableColumnSettingsStateConfig} from './useTableColumnSettingsState';
 
 // =============================================================================
 // Config Types
@@ -55,15 +55,15 @@ export interface ColumnSettingsOption<TColumnKey extends string = string> {
 /**
  * Configuration for useTableColumnSettings.
  *
- * This is the same shape as UseXDSTableColumnSettingsStateConfig —
+ * This is the same shape as UseTableColumnSettingsStateConfig —
  * you can pass `state.columnSettingsConfig` directly, or construct
  * it manually if you don't need the state hook.
  *
  * @template TColumnKey - String literal union of column keys
  */
-export type UseXDSTableColumnSettingsConfig<
+export type UseTableColumnSettingsConfig<
   TColumnKey extends string = string,
-> = UseXDSTableColumnSettingsStateConfig<TColumnKey>;
+> = UseTableColumnSettingsStateConfig<TColumnKey>;
 
 // =============================================================================
 // Plugin Hook
@@ -86,7 +86,7 @@ export type UseXDSTableColumnSettingsConfig<
 export function useTableColumnSettings<
   T extends Record<string, unknown>,
   TColumnKey extends string = string,
->(config: UseXDSTableColumnSettingsConfig<TColumnKey>): TablePlugin<T> {
+>(config: UseTableColumnSettingsConfig<TColumnKey>): TablePlugin<T> {
   // Keep config in a ref so the plugin reads the latest values
   // without changing plugin identity.
   const configRef = useRef(config);

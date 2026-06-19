@@ -65,7 +65,7 @@ function getServerSnapshot(): boolean {
 // Types
 // =============================================================================
 
-export interface UseXDSOverlayOptions {
+export interface UseOverlayOptions {
   /** Content rendered inside the scrim overlay. */
   content?: ReactNode;
 
@@ -114,7 +114,7 @@ export interface OverlayContainerProps {
   onMouseUp: ((e: MouseEvent<HTMLElement>) => void) | undefined;
 }
 
-export interface UseXDSOverlayResult {
+export interface UseOverlayResult {
   /** Ref — attach to the container element. */
   containerRef: React.RefObject<HTMLElement | null>;
 
@@ -174,7 +174,7 @@ export function useOverlay({
   scrim = 'dark',
   position = 'fill',
   align = 'end',
-}: UseXDSOverlayOptions = {}): UseXDSOverlayResult {
+}: UseOverlayOptions = {}): UseOverlayResult {
   const containerRef = useRef<HTMLElement | null>(null);
 
   const isTouchDevice = useSyncExternalStore(

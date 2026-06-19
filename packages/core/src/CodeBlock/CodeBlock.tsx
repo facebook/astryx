@@ -39,7 +39,7 @@ import {
   flatTokensToLines,
   SYNC_TOKENIZE_THRESHOLD,
 } from './tokenizer';
-import type {Token, TokenLine} from './tokenizer';
+import type {SyntaxToken, TokenLine} from './tokenizer';
 import {ensureHighlightStyles} from './highlightStyles';
 import {applyHighlightRangesChunked} from './highlightRanges';
 import {xdsThemeProps} from '../utils/xdsThemeProps';
@@ -469,7 +469,7 @@ function useTokenLines(
 // Span-mode code element
 // ---------------------------------------------------------------------------
 
-function buildSpanLine(lineText: string, tokens: Token[]): React.ReactNode {
+function buildSpanLine(lineText: string, tokens: SyntaxToken[]): React.ReactNode {
   if (tokens.length === 0) {
     return lineText || '\u200b';
   }

@@ -11,7 +11,7 @@
  * binary search, no TreeWalker.
  */
 
-import type {Token, TokenLine} from './tokenizer';
+import type {SyntaxToken, TokenLine} from './tokenizer';
 import {ensureHighlightStyles, TOKEN_TYPES} from './highlightStyles';
 
 /**
@@ -117,7 +117,7 @@ interface RangeEntry {
  */
 function applyLineRanges(
   lineDiv: Element,
-  tokens: Token[],
+  tokens: SyntaxToken[],
   results: RangeEntry[],
   resolve: (tokenType: string) => Highlight,
 ): void {

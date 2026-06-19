@@ -13,7 +13,7 @@
 
 // Popover hook
 export {usePopover} from './usePopover';
-export type {UseXDSPopoverOptions, UseXDSPopoverReturn} from './usePopover';
+export type {UsePopoverOptions, UsePopoverReturn} from './usePopover';
 
 // Popover component
 export {Popover} from './Popover';
@@ -33,7 +33,7 @@ export {
 export type {
   PopoverProps as XDSPopoverProps,
   PopoverTriggerRenderProps as XDSPopoverTriggerRenderProps,
-  UseXDSPopoverOptions as XDSUseXDSPopoverOptions,
-  UseXDSPopoverReturn as XDSUseXDSPopoverReturn,
+  UsePopoverOptions as XDSUsePopoverOptions,
+  UsePopoverReturn as XDSUsePopoverReturn,
 } from '.';
 // <compat-aliases:end>

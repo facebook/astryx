@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 export {useTableSelection} from './useTableSelection';
-export type {UseXDSTableSelectionConfig} from './useTableSelection';
+export type {UseTableSelectionConfig} from './useTableSelection';
 export {useTableSelectionState} from './useTableSelectionState';
 export type {
-  UseXDSTableSelectionStateConfig,
-  UseXDSTableSelectionStateResult,
+  UseTableSelectionStateConfig,
+  UseTableSelectionStateResult,
 } from './useTableSelectionState';

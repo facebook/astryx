@@ -70,7 +70,7 @@ const styles = stylex.create({
  * <Table data={pageData} columns={columns} plugins={{ pagination: plugin }} />
  * ```
  */
-export interface UseXDSTablePaginationConfig {
+export interface UseTablePaginationConfig {
   // --- Core (required) ---
 
   /** Current page number (1-based). */
@@ -191,7 +191,7 @@ export interface UseXDSTablePaginationConfig {
  * ```
  */
 export function useTablePagination<T extends Record<string, unknown>>(
-  config: UseXDSTablePaginationConfig,
+  config: UseTablePaginationConfig,
 ): TablePlugin<T> {
   const {
     page,

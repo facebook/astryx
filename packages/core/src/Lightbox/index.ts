@@ -18,8 +18,8 @@ export type {
 
 export {useLightbox} from './useLightbox';
 export type {
-  UseXDSLightboxOptions,
-  UseXDSLightboxReturn,
+  UseLightboxOptions,
+  UseLightboxReturn,
 } from './useLightbox';
 
 
@@ -37,7 +37,7 @@ export type {
   LightboxMedia as XDSLightboxMedia,
   LightboxMediaType as XDSLightboxMediaType,
   LightboxProps as XDSLightboxProps,
-  UseXDSLightboxOptions as XDSUseXDSLightboxOptions,
-  UseXDSLightboxReturn as XDSUseXDSLightboxReturn,
+  UseLightboxOptions as XDSUseLightboxOptions,
+  UseLightboxReturn as XDSUseLightboxReturn,
 } from '.';
 // <compat-aliases:end>

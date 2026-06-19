@@ -79,7 +79,7 @@ const styles = stylex.create({
 /**
  * Options for usePopover
  */
-export interface UseXDSPopoverOptions {
+export interface UsePopoverOptions {
   /**
    * Callback fired when popover is shown.
    * Wrap in useCallback for stable identity.
@@ -150,7 +150,7 @@ export interface UseXDSPopoverOptions {
 /**
  * Return type for usePopover
  */
-export interface UseXDSPopoverReturn {
+export interface UsePopoverReturn {
   /**
    * Ref callback to attach to the trigger element.
    * Sets up CSS anchor positioning.
@@ -262,8 +262,8 @@ export interface UseXDSPopoverReturn {
  * ```
  */
 export function usePopover(
-  options: UseXDSPopoverOptions = {},
-): UseXDSPopoverReturn {
+  options: UsePopoverOptions = {},
+): UsePopoverReturn {
   const {
     onShow,
     onHide,

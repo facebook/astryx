@@ -20,7 +20,7 @@ import type {
   TableFilterValue,
 } from './useTableFiltering';
 
-export interface UseXDSTableFilterStateResult {
+export interface UseTableFilterStateResult {
   /** Current filter state — pass to useTableFiltering. */
   filters: TableFilterState;
   /** Filter change handler — pass to useTableFiltering. */
@@ -52,7 +52,7 @@ export interface UseXDSTableFilterStateResult {
  */
 export function useTableFilterState(
   initialState?: TableFilterState,
-): UseXDSTableFilterStateResult {
+): UseTableFilterStateResult {
   const [filters, setFilters] = useState<TableFilterState>(
     initialState ?? {},
   );

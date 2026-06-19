@@ -35,7 +35,7 @@ import {useInteractiveRoleContext} from '../InteractiveRoleContext/InteractiveRo
  */
 export type InteractiveRole = 'link' | 'button' | 'inert';
 
-export interface UseXDSInteractiveRoleOptions {
+export interface UseInteractiveRoleOptions {
   /**
    * URL for link navigation. When provided, the component renders as a link.
    * Takes highest priority — a link always navigates.
@@ -80,7 +80,7 @@ export function useInteractiveRole({
   href,
   onClick,
   isDisabled = false,
-}: UseXDSInteractiveRoleOptions): InteractiveRole {
+}: UseInteractiveRoleOptions): InteractiveRole {
   const contextRole = useInteractiveRoleContext();
 
   // 1. href → link (unless disabled — disabled links fall through to button)

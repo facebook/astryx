@@ -50,7 +50,7 @@ export interface ResizableConfig {
   onWidthChange?: (width: number) => void;
 }
 
-export interface UseXDSResizableSingleConfig extends ResizableRegionConfig {
+export interface UseResizableSingleConfig extends ResizableRegionConfig {
   /** Unique key for localStorage persistence. */
   autoSaveId?: string;
   /** Called when size changes during drag. */
@@ -59,7 +59,7 @@ export interface UseXDSResizableSingleConfig extends ResizableRegionConfig {
   onCollapseChange?: (isCollapsed: boolean) => void;
 }
 
-export interface UseXDSResizableMultiConfig {
+export interface UseResizableMultiConfig {
   /** Layout direction. @default 'horizontal' */
   direction?: 'horizontal' | 'vertical';
   /** Named region configurations. */
@@ -189,7 +189,7 @@ function resolveDefaultSize(defaultSize: number | string | undefined): number {
 // =============================================================================
 
 function useSingleResizable(
-  config: UseXDSResizableSingleConfig,
+  config: UseResizableSingleConfig,
 ): ResizableRegion {
   const {
     defaultSize,
@@ -336,7 +336,7 @@ function useSingleResizable(
  */
 // eslint-disable-next-line @eslint-react/no-unnecessary-use-prefix -- calls useSingleResizable in .map()
 function useMultiResizable(
-  config: UseXDSResizableMultiConfig,
+  config: UseResizableMultiConfig,
 ): Record<string, ResizableRegion> {
   const {regions, autoSaveId} = config;
 
@@ -366,13 +366,13 @@ function useMultiResizable(
 // =============================================================================
 
 export function useResizable(
-  config: UseXDSResizableSingleConfig,
+  config: UseResizableSingleConfig,
 ): ResizableRegion;
 export function useResizable(
-  config: UseXDSResizableMultiConfig,
+  config: UseResizableMultiConfig,
 ): Record<string, ResizableRegion>;
 export function useResizable(
-  config: UseXDSResizableSingleConfig | UseXDSResizableMultiConfig,
+  config: UseResizableSingleConfig | UseResizableMultiConfig,
 ): ResizableRegion | Record<string, ResizableRegion> {
   if ('regions' in config) {
     // eslint-disable-next-line @eslint-react/rules-of-hooks, react-compiler/react-compiler -- branch is determined by call-site type (stable per call site)

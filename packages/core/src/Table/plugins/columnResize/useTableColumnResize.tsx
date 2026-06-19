@@ -5,7 +5,7 @@
 /**
  * @file useTableColumnResize.tsx
  * @input React, types, StyleX, theme tokens
- * @output Exports useTableColumnResize hook and UseXDSTableColumnResizeConfig type
+ * @output Exports useTableColumnResize hook and UseTableColumnResizeConfig type
  * @position Column resize plugin; consumed by Table via plugins prop
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -32,7 +32,7 @@ import {
 // Config Type
 // =============================================================================
 
-export interface UseXDSTableColumnResizeConfig {
+export interface UseTableColumnResizeConfig {
   /**
    * Column width overrides from resize operations.
    * Keys are column `key` strings. Values are pixel widths.
@@ -290,7 +290,7 @@ interface ResizeHandleProps {
   maxWidth: number;
   /** For proportional-preserving: the neighbor column to resize instead */
   neighborKey: string | null;
-  configRef: React.RefObject<UseXDSTableColumnResizeConfig>;
+  configRef: React.RefObject<UseTableColumnResizeConfig>;
   dragStateRef: React.RefObject<DragState | null>;
   isDraggingRef: React.RefObject<boolean>;
   tableRef: React.RefObject<HTMLTableElement | null>;
@@ -693,7 +693,7 @@ function ResizeHandle({
 // =============================================================================
 
 export function useTableColumnResize<T extends Record<string, unknown>>(
-  config: UseXDSTableColumnResizeConfig,
+  config: UseTableColumnResizeConfig,
 ): TablePlugin<T> {
   const configRef = useRef(config);
   configRef.current = config;

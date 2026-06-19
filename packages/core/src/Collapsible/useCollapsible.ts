@@ -5,7 +5,7 @@
 /**
  * @file useCollapsible.ts
  * @input Uses React useState/use, CollapsibleGroupContext
- * @output Exports useCollapsible hook, CollapsibleConfig (formerly CollapsibleConfig), UseXDSCollapsibleOptions, UseXDSCollapsibleReturn types
+ * @output Exports useCollapsible hook, CollapsibleConfig (formerly CollapsibleConfig), UseCollapsibleOptions, UseCollapsibleReturn types
  * @position Reusable hook for collapsible behavior — used by Card, Section, etc.
  *
  * Encapsulates the full collapsible state machine:
@@ -36,7 +36,7 @@ export type CollapsibleConfig = {
   onOpenChange?: (isOpen: boolean) => void;
 };
 
-export interface UseXDSCollapsibleOptions {
+export interface UseCollapsibleOptions {
   /**
    * Whether the component is collapsible.
    * - `true` — self-managed, starts open
@@ -51,7 +51,7 @@ export interface UseXDSCollapsibleOptions {
   value?: string;
 }
 
-export interface UseXDSCollapsibleReturn {
+export interface UseCollapsibleReturn {
   /** Whether collapsible behavior is enabled. */
   isEnabled: boolean;
   /** Whether the content is currently open/expanded. */
@@ -77,8 +77,8 @@ export interface UseXDSCollapsibleReturn {
  * ```
  */
 export function useCollapsible(
-  options: UseXDSCollapsibleOptions,
-): UseXDSCollapsibleReturn {
+  options: UseCollapsibleOptions,
+): UseCollapsibleReturn {
   const {isCollapsible, value} = options;
 
   // Check for CollapsibleGroup context

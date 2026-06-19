@@ -37,14 +37,14 @@ export interface TokenPortal {
   token: ChatComposerToken;
 }
 
-export interface UseXDSChatComposerTokensOptions {
+export interface UseChatComposerTokensOptions {
   /** Ref to the contentEditable element. */
   editableRef: React.RefObject<HTMLDivElement | null>;
   /** Called after token insertion/removal to sync state. */
   onEmitChange: () => void;
 }
 
-export interface UseXDSChatComposerTokensReturn {
+export interface UseChatComposerTokensReturn {
   /** Active token portals — render via createPortal in the component. */
   tokenPortals: TokenPortal[];
   /** Expand a token — replace the token span with its text value. */
@@ -92,7 +92,7 @@ function isInsideToken(node: Node): HTMLElement | null {
 export function useChatComposerTokens({
   editableRef,
   onEmitChange,
-}: UseXDSChatComposerTokensOptions): UseXDSChatComposerTokensReturn {
+}: UseChatComposerTokensOptions): UseChatComposerTokensReturn {
   const [tokenPortals, setTokenPortals] = useState<TokenPortal[]>([]);
 
   // --- Insert token at cursor ---

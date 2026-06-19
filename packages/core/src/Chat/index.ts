@@ -62,24 +62,24 @@ export type {
 
 export {useChatStreamScroll} from './useChatStreamScroll';
 export type {
-  UseXDSChatStreamScrollOptions,
-  UseXDSChatStreamScrollReturn,
+  UseChatStreamScrollOptions,
+  UseChatStreamScrollReturn,
 } from './useChatStreamScroll';
 export {useChatNewMessages} from './useChatNewMessages';
 export type {
-  UseXDSChatNewMessagesOptions,
-  UseXDSChatNewMessagesReturn,
+  UseChatNewMessagesOptions,
+  UseChatNewMessagesReturn,
 } from './useChatNewMessages';
 
 export {useChatPasteAsToken} from './useChatPasteAsToken';
 export type {
-  UseXDSChatPasteAsTokenOptions,
-  UseXDSChatPasteAsTokenReturn,
+  UseChatPasteAsTokenOptions,
+  UseChatPasteAsTokenReturn,
 } from './useChatPasteAsToken';
 export {useChatComposerTokens} from './useChatComposerTokens';
 export type {
-  UseXDSChatComposerTokensOptions,
-  UseXDSChatComposerTokensReturn,
+  UseChatComposerTokensOptions,
+  UseChatComposerTokensReturn,
   TokenPortal,
 } from './useChatComposerTokens';
 export type {ChatMessageSender, ChatDensity} from './ChatContext';
@@ -105,8 +105,8 @@ export type {
 
 export {useChatDictation} from './useChatDictation';
 export type {
-  UseXDSChatDictationOptions,
-  UseXDSChatDictationReturn,
+  UseChatDictationOptions,
+  UseChatDictationReturn,
 } from './useChatDictation';
 
 export {ChatDictationButton} from './ChatDictationButton';
@@ -172,17 +172,17 @@ export type {
   ChatToolCallStatus as XDSChatToolCallStatus,
   ChatToolCallsProps as XDSChatToolCallsProps,
   TokenPortal as XDSTokenPortal,
+  UseChatComposerTokensOptions as XDSUseChatComposerTokensOptions,
+  UseChatComposerTokensReturn as XDSUseChatComposerTokensReturn,
+  UseChatDictationOptions as XDSUseChatDictationOptions,
+  UseChatDictationReturn as XDSUseChatDictationReturn,
+  UseChatNewMessagesOptions as XDSUseChatNewMessagesOptions,
+  UseChatNewMessagesReturn as XDSUseChatNewMessagesReturn,
+  UseChatPasteAsTokenOptions as XDSUseChatPasteAsTokenOptions,
+  UseChatPasteAsTokenReturn as XDSUseChatPasteAsTokenReturn,
+  UseChatStreamScrollOptions as XDSUseChatStreamScrollOptions,
+  UseChatStreamScrollReturn as XDSUseChatStreamScrollReturn,
   UseSpeechRecognitionOptions as XDSUseSpeechRecognitionOptions,
   UseSpeechRecognitionReturn as XDSUseSpeechRecognitionReturn,
-  UseXDSChatComposerTokensOptions as XDSUseXDSChatComposerTokensOptions,
-  UseXDSChatComposerTokensReturn as XDSUseXDSChatComposerTokensReturn,
-  UseXDSChatDictationOptions as XDSUseXDSChatDictationOptions,
-  UseXDSChatDictationReturn as XDSUseXDSChatDictationReturn,
-  UseXDSChatNewMessagesOptions as XDSUseXDSChatNewMessagesOptions,
-  UseXDSChatNewMessagesReturn as XDSUseXDSChatNewMessagesReturn,
-  UseXDSChatPasteAsTokenOptions as XDSUseXDSChatPasteAsTokenOptions,
-  UseXDSChatPasteAsTokenReturn as XDSUseXDSChatPasteAsTokenReturn,
-  UseXDSChatStreamScrollOptions as XDSUseXDSChatStreamScrollOptions,
-  UseXDSChatStreamScrollReturn as XDSUseXDSChatStreamScrollReturn,
 } from '.';
 // <compat-aliases:end>

@@ -24,7 +24,7 @@ export {
   flatTokensToLines,
   SYNC_TOKENIZE_THRESHOLD,
 } from './tokenizer';
-export type {Token, TokenLine} from './tokenizer';
+export type {SyntaxToken, TokenLine} from './tokenizer';
 
 export {
   applyHighlightRangesChunked,
@@ -42,15 +42,13 @@ export {ensureHighlightStyles, TOKEN_TYPES} from './highlightStyles';
 // augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  Code as XDSCode,
   CodeBlock as XDSCodeBlock,
   SYNC_TOKENIZE_THRESHOLD as XDSSYNC_TOKENIZE_THRESHOLD,
   TOKEN_TYPES as XDSTOKEN_TYPES,
 } from '.';
 export type {
   CodeBlockProps as XDSCodeBlockProps,
-  CodeProps as XDSCodeProps,
-  Token as XDSToken,
+  SyntaxToken as XDSSyntaxToken,
   TokenLine as XDSTokenLine,
 } from '.';
 // <compat-aliases:end>

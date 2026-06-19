@@ -11,7 +11,7 @@ import {describe, it, expect, vi} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
 import {
   useTableColumnSettingsState,
-  type UseXDSTableColumnSettingsStateConfig,
+  type UseTableColumnSettingsStateConfig,
 } from './useTableColumnSettingsState';
 import type {ColumnSettingsOption} from './useTableColumnSettings';
 
@@ -32,9 +32,9 @@ const columnOptions: ColumnSettingsOption[] = [
 // =============================================================================
 
 function renderStateHook(
-  overrides: Partial<UseXDSTableColumnSettingsStateConfig> = {},
+  overrides: Partial<UseTableColumnSettingsStateConfig> = {},
 ) {
-  const defaultConfig: UseXDSTableColumnSettingsStateConfig = {
+  const defaultConfig: UseTableColumnSettingsStateConfig = {
     columns: columnOptions,
     activeColumnKeys: ['name', 'email', 'role'],
     onChangeActiveColumnKeys: vi.fn(),
@@ -55,7 +55,7 @@ describe('useTableColumnSettingsState', () => {
 
   describe('return value', () => {
     it('returns columnSettingsConfig that matches input config', () => {
-      const config: UseXDSTableColumnSettingsStateConfig = {
+      const config: UseTableColumnSettingsStateConfig = {
         columns: columnOptions,
         activeColumnKeys: ['name', 'email'],
         onChangeActiveColumnKeys: vi.fn(),

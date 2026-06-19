@@ -20,8 +20,8 @@ export type {CollapsibleGroupProps} from './CollapsibleGroup';
 export {useCollapsible} from './useCollapsible';
 export type {
   CollapsibleConfig,
-  UseXDSCollapsibleOptions,
-  UseXDSCollapsibleReturn,
+  UseCollapsibleOptions,
+  UseCollapsibleReturn,
 } from './useCollapsible';
 
 
@@ -40,7 +40,7 @@ export type {
   CollapsibleConfig as XDSCollapsibleConfig,
   CollapsibleGroupProps as XDSCollapsibleGroupProps,
   CollapsibleProps as XDSCollapsibleProps,
-  UseXDSCollapsibleOptions as XDSUseXDSCollapsibleOptions,
-  UseXDSCollapsibleReturn as XDSUseXDSCollapsibleReturn,
+  UseCollapsibleOptions as XDSUseCollapsibleOptions,
+  UseCollapsibleReturn as XDSUseCollapsibleReturn,
 } from '.';
 // <compat-aliases:end>

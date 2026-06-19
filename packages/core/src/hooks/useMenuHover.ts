@@ -26,7 +26,7 @@ import {useCallback, useEffect, useRef} from 'react';
 import {useListFocus} from './useListFocus';
 import {useMediaQuery} from './useMediaQuery';
 
-interface UseXDSMenuHoverOptions {
+interface UseMenuHoverOptions {
   show: (options?: {skipAutoFocus?: boolean}) => void;
   hide: () => void;
   isOpen: boolean;
@@ -35,7 +35,7 @@ interface UseXDSMenuHoverOptions {
   hideDelay?: number;
 }
 
-interface UseXDSMenuHoverReturn<T extends HTMLElement = HTMLElement> {
+interface UseMenuHoverReturn<T extends HTMLElement = HTMLElement> {
   triggerProps: {
     onClick: () => void;
     onMouseEnter: () => void;
@@ -52,8 +52,8 @@ interface UseXDSMenuHoverReturn<T extends HTMLElement = HTMLElement> {
 }
 
 export function useMenuHover<T extends HTMLElement = HTMLElement>(
-  options: UseXDSMenuHoverOptions,
-): UseXDSMenuHoverReturn<T> {
+  options: UseMenuHoverOptions,
+): UseMenuHoverReturn<T> {
   const {
     show,
     hide,

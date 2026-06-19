@@ -32,7 +32,6 @@ export {
   TimeInput as XDSTimeInput,
 } from '.';
 export type {
-  ISOTimeString as XDSISOTimeString,
   TimeInputHourFormat as XDSTimeInputHourFormat,
   TimeInputProps as XDSTimeInputProps,
   TimeInputSize as XDSTimeInputSize,

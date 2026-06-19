@@ -9,7 +9,7 @@ export {Overlay} from './Overlay';
 export type {OverlayProps} from './Overlay';
 
 export {useOverlay} from './useOverlay';
-export type {UseXDSOverlayOptions, UseXDSOverlayResult} from './useOverlay';
+export type {UseOverlayOptions, UseOverlayResult} from './useOverlay';
 
 export type {
   OverlayScrimMode,
@@ -35,7 +35,7 @@ export type {
   OverlayProps as XDSOverlayProps,
   OverlayScrimMode as XDSOverlayScrimMode,
   OverlayShowOn as XDSOverlayShowOn,
-  UseXDSOverlayOptions as XDSUseXDSOverlayOptions,
-  UseXDSOverlayResult as XDSUseXDSOverlayResult,
+  UseOverlayOptions as XDSUseOverlayOptions,
+  UseOverlayResult as XDSUseOverlayResult,
 } from '.';
 // <compat-aliases:end>

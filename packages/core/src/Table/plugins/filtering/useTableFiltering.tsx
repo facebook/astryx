@@ -295,7 +295,7 @@ export type TableFilterVariant = 'popover' | 'inline' | 'inline-compact';
  * <Table plugins={{ filter: filterPlugin }} columns={columns} data={data} />
  * ```
  */
-export interface UseXDSTableFilteringConfig {
+export interface UseTableFilteringConfig {
   /** Current filter state — map from column key to filter value. */
   filters: TableFilterState;
   /** Called when the user changes a filter value. `null` clears the filter. */
@@ -326,7 +326,7 @@ export interface UseXDSTableFilteringConfig {
 // =============================================================================
 
 interface FilterStore {
-  getConfig: () => UseXDSTableFilteringConfig;
+  getConfig: () => UseTableFilteringConfig;
 }
 
 const FilterStoreContext = createContext<FilterStore | null>(null);
@@ -1044,7 +1044,7 @@ function InlineFilterSlot({
  * ```
  */
 export function useTableFiltering<T extends Record<string, unknown>>(
-  config: UseXDSTableFilteringConfig,
+  config: UseTableFilteringConfig,
 ): TablePlugin<T> {
   const configRef = useRef(config);
   configRef.current = config;

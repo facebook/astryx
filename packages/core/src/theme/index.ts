@@ -55,7 +55,7 @@ export {
 // Syntax theme API
 export {defineSyntaxTheme} from './syntax';
 export type {
-  SyntaxTheme,
+  SyntaxThemeDefinition,
   SyntaxThemeInput,
   SyntaxThemeTokenKey,
   SyntaxThemeTokenMap,
@@ -65,7 +65,7 @@ export type {
 
 // SyntaxTheme provider
 export {SyntaxTheme, useSyntaxTheme} from './syntax';
-export type {UseXDSSyntaxThemeReturn} from './syntax';
+export type {UseSyntaxThemeReturn} from './syntax';
 
 export {expandTypeScale, generateTypeScaleComponents} from './expandTypeScale';
 export type {TypeScaleConfig, TypeScaleTokens} from './expandTypeScale';
@@ -133,7 +133,7 @@ export type {
 } from './tokens.stylex';
 
 export {useTheme, ThemeContext} from './useTheme';
-export type {UseXDSThemeReturn, ThemeContextValue} from './useTheme';
+export type {UseThemeReturn, ThemeContextValue} from './useTheme';
 export {
   resolveXDSThemeToken,
   resolveXDSThemeTokens,
@@ -148,7 +148,7 @@ export type {
 
 export type {
   ThemeMode,
-  HeadingLevel,
+  HeadingTag,
   TextType,
   BuiltinTextType,
   CustomTextTypes,
@@ -192,7 +192,7 @@ export type {
   EaseVarName as XDSEaseVarName,
   FontWeight as XDSFontWeight,
   FontWeightVarName as XDSFontWeightVarName,
-  HeadingLevel as XDSHeadingLevel,
+  HeadingTag as XDSHeadingTag,
   MediaThemeProps as XDSMediaThemeProps,
   MotionScaleConfig as XDSMotionScaleConfig,
   MotionScaleTokens as XDSMotionScaleTokens,
@@ -206,7 +206,7 @@ export type {
   SizeVarName as XDSSizeVarName,
   SpacingVarName as XDSSpacingVarName,
   StyleOverrides as XDSStyleOverrides,
-  SyntaxTheme as XDSSyntaxTheme,
+  SyntaxThemeDefinition as XDSSyntaxThemeDefinition,
   SyntaxThemeInput as XDSSyntaxThemeInput,
   SyntaxThemeTokenInput as XDSSyntaxThemeTokenInput,
   SyntaxThemeTokenKey as XDSSyntaxThemeTokenKey,
@@ -231,7 +231,7 @@ export type {
   TypographyConfig as XDSTypographyConfig,
   TypographyRole as XDSTypographyRole,
   TypographyVarName as XDSTypographyVarName,
-  UseXDSSyntaxThemeReturn as XDSUseXDSSyntaxThemeReturn,
-  UseXDSThemeReturn as XDSUseXDSThemeReturn,
+  UseSyntaxThemeReturn as XDSUseSyntaxThemeReturn,
+  UseThemeReturn as XDSUseThemeReturn,
 } from '.';
 // <compat-aliases:end>

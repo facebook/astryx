@@ -27,7 +27,7 @@ import type {
 // Types
 // =============================================================================
 
-export interface UseXDSChatPasteAsTokenOptions {
+export interface UseChatPasteAsTokenOptions {
   /** Ref to the composer input handle for inserting tokens. */
   inputRef: React.RefObject<ChatComposerInputHandle | null>;
 
@@ -44,7 +44,7 @@ export interface UseXDSChatPasteAsTokenOptions {
   toToken?: (text: string) => ChatComposerToken;
 }
 
-export interface UseXDSChatPasteAsTokenReturn {
+export interface UseChatPasteAsTokenReturn {
   /**
    * Pass as the onPaste prop on ChatComposerInput.
    * Returns true when the paste was converted to a token.
@@ -75,7 +75,7 @@ export function useChatPasteAsToken({
   inputRef,
   threshold = 200,
   toToken = defaultToToken,
-}: UseXDSChatPasteAsTokenOptions): UseXDSChatPasteAsTokenReturn {
+}: UseChatPasteAsTokenOptions): UseChatPasteAsTokenReturn {
   const onPaste = useCallback(
     (_event: ClipboardEvent<HTMLDivElement>, text: string): boolean => {
       if (text.length <= threshold) {

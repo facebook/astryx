@@ -5,7 +5,7 @@
 /**
  * @file useTableSelection.tsx
  * @input React, types, CheckboxInput, theme tokens
- * @output Exports useTableSelection hook and UseXDSTableSelectionConfig type
+ * @output Exports useTableSelection hook and UseTableSelectionConfig type
  * @position Selection plugin; consumed by Table via plugins prop
  *
  * ## Architecture (v2 — transformColumns + ref-based row styling)
@@ -56,7 +56,7 @@ import {pixel} from '../../columnUtils';
 // Config Type
 // =============================================================================
 
-export interface UseXDSTableSelectionConfig<T extends Record<string, unknown>> {
+export interface UseTableSelectionConfig<T extends Record<string, unknown>> {
   /** Is this item currently selected? */
   getIsItemSelected: (item: T) => boolean;
   /** Called when a row checkbox is toggled. isSelected = new desired state. */
@@ -85,11 +85,11 @@ export interface UseXDSTableSelectionConfig<T extends Record<string, unknown>> {
 interface SelectionStore<T extends Record<string, unknown>> {
   subscribe: (listener: () => void) => () => void;
   notify: () => void;
-  getConfig: () => UseXDSTableSelectionConfig<T>;
+  getConfig: () => UseTableSelectionConfig<T>;
 }
 
 function createSelectionStore<T extends Record<string, unknown>>(
-  configRef: React.RefObject<UseXDSTableSelectionConfig<T>>,
+  configRef: React.RefObject<UseTableSelectionConfig<T>>,
 ): SelectionStore<T> {
   const listeners = new Set<() => void>();
 
@@ -280,7 +280,7 @@ const SELECTION_COLUMN_WIDTH = pixel(36);
 // =============================================================================
 
 export function useTableSelection<T extends Record<string, unknown>>(
-  config: UseXDSTableSelectionConfig<T>,
+  config: UseTableSelectionConfig<T>,
 ): TablePlugin<T> {
   const configRef = useRef(config);
   configRef.current = config;

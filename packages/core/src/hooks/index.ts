@@ -53,7 +53,7 @@ export type {UseInputContainerOptions} from './useInputContainer';
 export {useInteractiveRole} from './useInteractiveRole';
 export type {
   InteractiveRole,
-  UseXDSInteractiveRoleOptions,
+  UseInteractiveRoleOptions,
 } from './useInteractiveRole';
 
 
@@ -92,11 +92,11 @@ export type {
   UseGridFocusReturn as XDSUseGridFocusReturn,
   UseImageModeOptions as XDSUseImageModeOptions,
   UseInputContainerOptions as XDSUseInputContainerOptions,
+  UseInteractiveRoleOptions as XDSUseInteractiveRoleOptions,
   UseListFocusOptions as XDSUseListFocusOptions,
   UseListFocusReturn as XDSUseListFocusReturn,
   UseOverflowOptions as XDSUseOverflowOptions,
   UseOverflowReturn as XDSUseOverflowReturn,
   UseStreamingTextOptions as XDSUseStreamingTextOptions,
-  UseXDSInteractiveRoleOptions as XDSUseXDSInteractiveRoleOptions,
 } from '.';
 // <compat-aliases:end>

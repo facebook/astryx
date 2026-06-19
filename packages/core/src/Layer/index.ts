@@ -41,8 +41,8 @@ export {layerAnimations} from './layerAnimations.stylex';
 // Re-export Popover from new location (backward compat)
 export {usePopover, Popover} from '../Popover';
 export type {
-  UseXDSPopoverOptions,
-  UseXDSPopoverReturn,
+  UsePopoverOptions,
+  UsePopoverReturn,
   PopoverProps,
 } from '../Popover';
 
@@ -72,16 +72,10 @@ export type {
 // augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  HoverCard as XDSHoverCard,
   LayerContext as XDSLayerContext,
   LayerProvider as XDSLayerProvider,
-  Popover as XDSPopover,
-  Tooltip as XDSTooltip,
-  useHoverCard as useXDSHoverCard,
   useLayer as useXDSLayer,
   useLayerContext as useXDSLayerContext,
-  usePopover as useXDSPopover,
-  useTooltip as useXDSTooltip,
 } from '.';
 export type {
   ContextLayerOptions as XDSContextLayerOptions,
@@ -90,21 +84,10 @@ export type {
   FixedLayerOptions as XDSFixedLayerOptions,
   FixedLayerReturn as XDSFixedLayerReturn,
   FixedRenderProps as XDSFixedRenderProps,
-  HoverCardFocusTrigger as XDSHoverCardFocusTrigger,
-  HoverCardOptions as XDSHoverCardOptions,
-  HoverCardProps as XDSHoverCardProps,
-  HoverCardReturn as XDSHoverCardReturn,
   LayerAlignment as XDSLayerAlignment,
   LayerContextValue as XDSLayerContextValue,
   LayerPlacement as XDSLayerPlacement,
   LayerProviderProps as XDSLayerProviderProps,
   LayerToastConfig as XDSLayerToastConfig,
-  PopoverProps as XDSPopoverProps,
-  TooltipFocusTrigger as XDSTooltipFocusTrigger,
-  TooltipOptions as XDSTooltipOptions,
-  TooltipProps as XDSTooltipProps,
-  TooltipReturn as XDSTooltipReturn,
-  UseXDSPopoverOptions as XDSUseXDSPopoverOptions,
-  UseXDSPopoverReturn as XDSUseXDSPopoverReturn,
 } from '.';
 // <compat-aliases:end>

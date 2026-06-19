@@ -53,7 +53,7 @@ export interface SyntaxThemeInput {
 }
 
 /** A defined syntax theme — tokens are resolved to CSS strings. */
-export interface SyntaxTheme {
+export interface SyntaxThemeDefinition {
   /** Theme name */
   name: string;
   /** Resolved token values (light-dark() CSS strings) */
@@ -130,7 +130,7 @@ export function resolveSyntaxTokenForMode(
  *   },
  * });
  */
-export function defineSyntaxTheme(input: SyntaxThemeInput): SyntaxTheme {
+export function defineSyntaxTheme(input: SyntaxThemeInput): SyntaxThemeDefinition {
   const missing = ALL_SYNTAX_KEYS.filter(key => !(key in input.tokens));
   if (missing.length > 0) {
     console.warn(
@@ -158,7 +158,7 @@ export function defineSyntaxTheme(input: SyntaxThemeInput): SyntaxTheme {
 
 /** Generate a CSS custom property style object for React's style prop. */
 export function syntaxThemeStyle(
-  theme: SyntaxTheme,
+  theme: SyntaxThemeDefinition,
 ): Record<string, string> {
   const vars: Record<string, string> = {};
   for (const key of ALL_SYNTAX_KEYS) {
@@ -168,7 +168,7 @@ export function syntaxThemeStyle(
 }
 
 /** Convert a syntax theme to CSS declarations (no selector wrapper). */
-export function syntaxThemeToCSS(theme: SyntaxTheme): string {
+export function syntaxThemeToCSS(theme: SyntaxThemeDefinition): string {
   return ALL_SYNTAX_KEYS
     .map(key => toCSSProperty(key) + ': ' + theme.tokens[key] + ';')
     .join('\n  ');

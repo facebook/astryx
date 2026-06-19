@@ -45,7 +45,6 @@ export {Stack, HStack, VStack, StackItem} from '../Stack';
 export type {
   StackProps,
   StackAlignment,
-  StackAlignment,
   HStackProps,
   VStackProps,
   StackItemProps,
@@ -90,9 +89,7 @@ export type {LayoutDividerContextValue} from './LayoutDividerContext';
 // augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  Card as XDSCard,
   EDGE_COMP_ATTR as XDSEDGE_COMP_ATTR,
-  HStack as XDSHStack,
   Layout as XDSLayout,
   LayoutAreaContext as XDSLayoutAreaContext,
   LayoutContent as XDSLayoutContent,
@@ -100,16 +97,10 @@ export {
   LayoutFooter as XDSLayoutFooter,
   LayoutHeader as XDSLayoutHeader,
   LayoutPanel as XDSLayoutPanel,
-  Section as XDSSection,
-  Stack as XDSStack,
-  StackItem as XDSStackItem,
-  VStack as XDSVStack,
 } from '.';
 export type {
-  CardProps as XDSCardProps,
   ContainerComponent as XDSContainerComponent,
   ContainerOptions as XDSContainerOptions,
-  HStackProps as XDSHStackProps,
   LayoutArea as XDSLayoutArea,
   LayoutContentProps as XDSLayoutContentProps,
   LayoutDividerContextValue as XDSLayoutDividerContextValue,
@@ -118,22 +109,6 @@ export type {
   LayoutHeight as XDSLayoutHeight,
   LayoutPanelProps as XDSLayoutPanelProps,
   LayoutProps as XDSLayoutProps,
-  SectionProps as XDSSectionProps,
-  SectionVariant as XDSSectionVariant,
-  SizeValue as XDSSizeValue,
-  SpacingStep as XDSSpacingStep,
   SpacingToken as XDSSpacingToken,
-  StackAlignment as XDSStackAlignment,
-  StackCrossAlignment as XDSStackCrossAlignment,
-  StackDirection as XDSStackDirection,
-  StackItemCrossAlignSelf as XDSStackItemCrossAlignSelf,
-  StackItemOptions as XDSStackItemOptions,
-  StackItemProps as XDSStackItemProps,
-  StackItemSize as XDSStackItemSize,
-  StackMainAlignment as XDSStackMainAlignment,
-  StackOptions as XDSStackOptions,
-  StackProps as XDSStackProps,
-  StackWrap as XDSStackWrap,
-  VStackProps as XDSVStackProps,
 } from '.';
 // <compat-aliases:end>

@@ -36,12 +36,12 @@ type LightboxOptions = Omit<
   | 'onIndexChange'
 >;
 
-export interface UseXDSLightboxOptions extends LightboxOptions {
+export interface UseLightboxOptions extends LightboxOptions {
   /** Media to display in the lightbox. */
   media: LightboxMedia | LightboxMedia[];
 }
 
-export interface UseXDSLightboxReturn {
+export interface UseLightboxReturn {
   /** Open the lightbox, optionally at a specific gallery index. */
   open: (index?: number) => void;
   /** Close the lightbox. */
@@ -89,8 +89,8 @@ export interface UseXDSLightboxReturn {
  * ```
  */
 export function useLightbox(
-  options: UseXDSLightboxOptions,
-): UseXDSLightboxReturn {
+  options: UseLightboxOptions,
+): UseLightboxReturn {
   const {media, ...lightboxProps} = options;
   const [isOpen, setIsOpen] = useState(false);
   const [index, setIndex] = useState(0);

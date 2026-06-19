@@ -79,7 +79,7 @@ export type TableSortState<TSortKey extends string = string> =
  * <Table plugins={{ sort: sortPlugin }} columns={columns} data={data} />
  * ```
  */
-export interface UseXDSTableSortableConfig<TSortKey extends string = string> {
+export interface UseTableSortableConfig<TSortKey extends string = string> {
   /** Current sort state — ordered array of active sort entries. */
   sort: TableSortState<TSortKey>;
 
@@ -222,7 +222,7 @@ function SortHeaderButton<T extends Record<string, unknown>>({
 }: {
   column: TableColumn<T>;
   children: ReactNode;
-  configRef: React.RefObject<UseXDSTableSortableConfig>;
+  configRef: React.RefObject<UseTableSortableConfig>;
 }) {
   const config = configRef.current;
   const sortKey = resolveSortKey(column) ?? '';
@@ -341,7 +341,7 @@ function SortHeaderButton<T extends Record<string, unknown>>({
 export function useTableSortable<
   T extends Record<string, unknown>,
   TSortKey extends string = string,
->(config: UseXDSTableSortableConfig<TSortKey>): TablePlugin<T> {
+>(config: UseTableSortableConfig<TSortKey>): TablePlugin<T> {
   const configRef = useRef(config);
   configRef.current = config;
 
@@ -370,7 +370,7 @@ export function useTableSortable<
             <SortHeaderButton
               column={column}
               configRef={
-                configRef as unknown as React.RefObject<UseXDSTableSortableConfig>
+                configRef as unknown as React.RefObject<UseTableSortableConfig>
               }>
               {props.content}
             </SortHeaderButton>

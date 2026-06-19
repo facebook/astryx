@@ -51,7 +51,7 @@ import {ensureCaretInside, insertTextAtCursor} from './chatComposerSelection';
 import {ChatPastedTextToken} from './ChatPastedTextToken';
 import {
   useChatPasteAsToken,
-  type UseXDSChatPasteAsTokenReturn,
+  type UseChatPasteAsTokenReturn,
 } from './useChatPasteAsToken';
 import {Badge, type BadgeProps} from '../Badge';
 import {useChatComposerContext} from './ChatContext';
@@ -186,7 +186,7 @@ export interface ChatComposerInputProps extends Omit<
    * into token chips. Pass a custom useChatPasteAsToken result to override,
    * or false to disable.
    */
-  pasteAsToken?: UseXDSChatPasteAsTokenReturn | false;
+  pasteAsToken?: UseChatPasteAsTokenReturn | false;
   /** File drop/paste handler */
   onFiles?: (files: File[]) => void;
   /** Submit handler (Enter without Shift) */
@@ -419,7 +419,7 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
 
   // --- Paste-as-token (internal default) ---
   const defaultPasteAsToken = useChatPasteAsToken({inputRef: selfRef});
-  const pasteAsToken: UseXDSChatPasteAsTokenReturn | null =
+  const pasteAsToken: UseChatPasteAsTokenReturn | null =
     pasteAsTokenProp === false
       ? null
       : (pasteAsTokenProp ?? defaultPasteAsToken);

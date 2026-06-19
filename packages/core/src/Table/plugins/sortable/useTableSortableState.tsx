@@ -20,7 +20,7 @@
 import {useState, useMemo, useCallback, useRef} from 'react';
 import type {
   TableSortState,
-  UseXDSTableSortableConfig,
+  UseTableSortableConfig,
 } from './useTableSortable';
 
 // =============================================================================
@@ -70,7 +70,7 @@ function toSortableString(value: unknown): string {
  * <Table data={sortedData} plugins={{ sort: sortPlugin }} />
  * ```
  */
-export interface UseXDSTableSortableStateConfig<
+export interface UseTableSortableStateConfig<
   T extends Record<string, unknown>,
   TSortKey extends string = string,
 > {
@@ -136,7 +136,7 @@ export interface UseXDSTableSortableStateConfig<
 // Hook Result
 // =============================================================================
 
-export interface UseXDSTableSortableStateResult<
+export interface UseTableSortableStateResult<
   T extends Record<string, unknown>,
   TSortKey extends string = string,
 > {
@@ -147,7 +147,7 @@ export interface UseXDSTableSortableStateResult<
   sort: TableSortState<TSortKey>;
 
   /** Ready-to-use config for useTableSortable. */
-  sortConfig: UseXDSTableSortableConfig<TSortKey>;
+  sortConfig: UseTableSortableConfig<TSortKey>;
 
   /**
    * Apply the current sort state to arbitrary data.
@@ -250,8 +250,8 @@ export function useTableSortableState<
   T extends Record<string, unknown>,
   TSortKey extends string = string,
 >(
-  config: UseXDSTableSortableStateConfig<T, TSortKey>,
-): UseXDSTableSortableStateResult<T, TSortKey> {
+  config: UseTableSortableStateConfig<T, TSortKey>,
+): UseTableSortableStateResult<T, TSortKey> {
   const {
     data,
     defaultSort = [],
@@ -295,7 +295,7 @@ export function useTableSortableState<
 
   // Config ready for useTableSortable
   const sortConfig = useMemo(
-    (): UseXDSTableSortableConfig<TSortKey> => ({
+    (): UseTableSortableConfig<TSortKey> => ({
       sort,
       onSortChange: onSortChangeRef.current,
       allowUnsortedState,

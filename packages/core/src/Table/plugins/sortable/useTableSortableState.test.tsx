@@ -16,7 +16,7 @@ import type {TableColumn} from '../../types';
 import {useTableSortable} from './useTableSortable';
 import type {TableSortState} from './useTableSortable';
 import {useTableSortableState} from './useTableSortableState';
-import type {UseXDSTableSortableStateConfig} from './useTableSortableState';
+import type {UseTableSortableStateConfig} from './useTableSortableState';
 
 // =============================================================================
 // Test Data
@@ -73,7 +73,7 @@ function SortableStateTable({
   comparators,
   allowUnsortedState,
   isMultiSortEnabled,
-}: Partial<UseXDSTableSortableStateConfig<Employee>> & {
+}: Partial<UseTableSortableStateConfig<Employee>> & {
   columns?: TableColumn<Employee>[];
 }) {
   const {sortedData, sortConfig} = useTableSortableState<Employee>({

@@ -12,7 +12,7 @@
  */
 
 export {Center} from './Center';
-export type {CenterProps, CenterAxis, CenterAxis} from './Center';
+export type {CenterProps, CenterAxis} from './Center';
 
 
 // <compat-aliases:start> — generated, do not edit by hand

@@ -30,7 +30,7 @@ import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 // Types
 // =============================================================================
 
-export interface UseXDSChatNewMessagesOptions {
+export interface UseChatNewMessagesOptions {
   /**
    * Whether the scroll is currently locked (following content).
    * When locked, new messages don't flag — the user is already at the bottom.
@@ -44,7 +44,7 @@ export interface UseXDSChatNewMessagesOptions {
   onResize?: () => void;
 }
 
-export interface UseXDSChatNewMessagesReturn {
+export interface UseChatNewMessagesReturn {
   /** Whether new messages arrived while the scroll was unlocked. */
   hasNewMessages: boolean;
 
@@ -65,7 +65,7 @@ export interface UseXDSChatNewMessagesReturn {
 export function useChatNewMessages({
   isLocked,
   onResize,
-}: UseXDSChatNewMessagesOptions): UseXDSChatNewMessagesReturn {
+}: UseChatNewMessagesOptions): UseChatNewMessagesReturn {
   const [hasNewMessages, setHasNewMessages] = useState(false);
   const lastMessageRef = useRef<Element | null>(null);
   const isLockedRef = useRef(isLocked);

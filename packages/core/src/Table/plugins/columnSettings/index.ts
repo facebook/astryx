@@ -2,11 +2,11 @@
 
 export {useTableColumnSettings} from './useTableColumnSettings';
 export type {
-  UseXDSTableColumnSettingsConfig,
+  UseTableColumnSettingsConfig,
   ColumnSettingsOption,
 } from './useTableColumnSettings';
 export {useTableColumnSettingsState} from './useTableColumnSettingsState';
 export type {
-  UseXDSTableColumnSettingsStateConfig,
-  UseXDSTableColumnSettingsStateReturn,
+  UseTableColumnSettingsStateConfig,
+  UseTableColumnSettingsStateReturn,
 } from './useTableColumnSettingsState';

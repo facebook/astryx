@@ -52,7 +52,7 @@ ThemeContext.displayName = 'ThemeContext';
 /**
  * Resolved theme data returned by useTheme.
  */
-export interface UseXDSThemeReturn {
+export interface UseThemeReturn {
   /** Theme name */
   name: string;
   /** Resolved effective mode ('light' | 'dark') — never 'system' */
@@ -111,7 +111,7 @@ export interface UseXDSThemeReturn {
  * }
  * ```
  */
-export function useTheme(): UseXDSThemeReturn {
+export function useTheme(): UseThemeReturn {
   const ctx = use(ThemeContext);
 
   // Resolve 'system' to 'light' | 'dark' using the OS preference

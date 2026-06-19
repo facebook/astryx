@@ -68,33 +68,33 @@ export type {TableHeaderProps} from './TableHeader';
 export type {TableBodyProps} from './TableBody';
 export type {TableFooterProps} from './TableFooter';
 export type {TableContextValue} from './TableContext';
-export type {UseXDSTableSelectionConfig} from './plugins/selection';
+export type {UseTableSelectionConfig} from './plugins/selection';
 export type {
-  UseXDSTableSelectionStateConfig,
-  UseXDSTableSelectionStateResult,
+  UseTableSelectionStateConfig,
+  UseTableSelectionStateResult,
 } from './plugins/selection';
 export type {
-  UseXDSTableSortableConfig,
-  UseXDSTableSortableStateConfig,
-  UseXDSTableSortableStateResult,
+  UseTableSortableConfig,
+  UseTableSortableStateConfig,
+  UseTableSortableStateResult,
   TableSortComparator,
   TableSortDirection,
   TableSortEntry,
   TableSortState,
 } from './plugins/sortable';
 export type {TableSortableColumnConfig} from './types';
-export type {UseXDSTablePaginationConfig} from './plugins/pagination';
+export type {UseTablePaginationConfig} from './plugins/pagination';
 export type {
-  UseXDSTableColumnSettingsConfig,
+  UseTableColumnSettingsConfig,
   ColumnSettingsOption,
 } from './plugins/columnSettings';
 export type {
-  UseXDSTableColumnSettingsStateConfig,
-  UseXDSTableColumnSettingsStateReturn,
+  UseTableColumnSettingsStateConfig,
+  UseTableColumnSettingsStateReturn,
 } from './plugins/columnSettings';
-export type {UseXDSTableColumnResizeConfig} from './plugins/columnResize';
+export type {UseTableColumnResizeConfig} from './plugins/columnResize';
 export type {
-  UseXDSTableFilteringConfig,
+  UseTableFilteringConfig,
   TableFilterState,
   TableFilterVariant,
   TableFilterValue,
@@ -165,17 +165,17 @@ export type {
   TableSortableColumnConfig as XDSTableSortableColumnConfig,
   TableTextOverflow as XDSTableTextOverflow,
   TableVerticalAlign as XDSTableVerticalAlign,
-  UseXDSTableColumnResizeConfig as XDSUseXDSTableColumnResizeConfig,
-  UseXDSTableColumnSettingsConfig as XDSUseXDSTableColumnSettingsConfig,
-  UseXDSTableColumnSettingsStateConfig as XDSUseXDSTableColumnSettingsStateConfig,
-  UseXDSTableColumnSettingsStateReturn as XDSUseXDSTableColumnSettingsStateReturn,
-  UseXDSTableFilteringConfig as XDSUseXDSTableFilteringConfig,
-  UseXDSTablePaginationConfig as XDSUseXDSTablePaginationConfig,
-  UseXDSTableSelectionConfig as XDSUseXDSTableSelectionConfig,
-  UseXDSTableSelectionStateConfig as XDSUseXDSTableSelectionStateConfig,
-  UseXDSTableSelectionStateResult as XDSUseXDSTableSelectionStateResult,
-  UseXDSTableSortableConfig as XDSUseXDSTableSortableConfig,
-  UseXDSTableSortableStateConfig as XDSUseXDSTableSortableStateConfig,
-  UseXDSTableSortableStateResult as XDSUseXDSTableSortableStateResult,
+  UseTableColumnResizeConfig as XDSUseTableColumnResizeConfig,
+  UseTableColumnSettingsConfig as XDSUseTableColumnSettingsConfig,
+  UseTableColumnSettingsStateConfig as XDSUseTableColumnSettingsStateConfig,
+  UseTableColumnSettingsStateReturn as XDSUseTableColumnSettingsStateReturn,
+  UseTableFilteringConfig as XDSUseTableFilteringConfig,
+  UseTablePaginationConfig as XDSUseTablePaginationConfig,
+  UseTableSelectionConfig as XDSUseTableSelectionConfig,
+  UseTableSelectionStateConfig as XDSUseTableSelectionStateConfig,
+  UseTableSelectionStateResult as XDSUseTableSelectionStateResult,
+  UseTableSortableConfig as XDSUseTableSortableConfig,
+  UseTableSortableStateConfig as XDSUseTableSortableStateConfig,
+  UseTableSortableStateResult as XDSUseTableSortableStateResult,
 } from '.';
 // <compat-aliases:end>

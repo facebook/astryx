@@ -2,14 +2,14 @@
 
 export {useTableSortable} from './useTableSortable';
 export type {
-  UseXDSTableSortableConfig,
+  UseTableSortableConfig,
   TableSortDirection,
   TableSortEntry,
   TableSortState,
 } from './useTableSortable';
 export {useTableSortableState} from './useTableSortableState';
 export type {
-  UseXDSTableSortableStateConfig,
-  UseXDSTableSortableStateResult,
+  UseTableSortableStateConfig,
+  UseTableSortableStateResult,
   TableSortComparator,
 } from './useTableSortableState';

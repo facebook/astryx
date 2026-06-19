@@ -15,8 +15,8 @@ export type {
   ResizableRegionConfig,
   ResizableProps,
   ResizableConfig,
-  UseXDSResizableSingleConfig,
-  UseXDSResizableMultiConfig,
+  UseResizableSingleConfig,
+  UseResizableMultiConfig,
 } from './useResizable';
 
 export {ResizeHandle} from './ResizeHandle';
@@ -39,7 +39,7 @@ export type {
   ResizableRegion as XDSResizableRegion,
   ResizableRegionConfig as XDSResizableRegionConfig,
   ResizeHandleProps as XDSResizeHandleProps,
-  UseXDSResizableMultiConfig as XDSUseXDSResizableMultiConfig,
-  UseXDSResizableSingleConfig as XDSUseXDSResizableSingleConfig,
+  UseResizableMultiConfig as XDSUseResizableMultiConfig,
+  UseResizableSingleConfig as XDSUseResizableSingleConfig,
 } from '.';
 // <compat-aliases:end>

@@ -14,7 +14,7 @@ import {renderHook} from '@testing-library/react';
 import {Table} from '../../Table';
 import {
   useTableColumnSettings,
-  type UseXDSTableColumnSettingsConfig,
+  type UseTableColumnSettingsConfig,
   type ColumnSettingsOption,
 } from './useTableColumnSettings';
 import {useTableColumnSettingsState} from './useTableColumnSettingsState';
@@ -74,9 +74,9 @@ const columnOptions: ColumnSettingsOption[] = [
 
 describe('useTableColumnSettings', () => {
   function renderPluginHook(
-    overrides: Partial<UseXDSTableColumnSettingsConfig> = {},
+    overrides: Partial<UseTableColumnSettingsConfig> = {},
   ) {
-    const defaultConfig: UseXDSTableColumnSettingsConfig = {
+    const defaultConfig: UseTableColumnSettingsConfig = {
       columns: columnOptions,
       activeColumnKeys: ['name', 'email', 'role'],
       onChangeActiveColumnKeys: vi.fn(),

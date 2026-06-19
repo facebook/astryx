@@ -21,7 +21,7 @@ import {useSpeechRecognition} from './useSpeechRecognition';
 // Types
 // =============================================================================
 
-export interface UseXDSChatDictationOptions {
+export interface UseChatDictationOptions {
   /** BCP-47 language tag. @default navigator.language */
   lang?: string;
   /** Whether recognition continues until explicitly stopped. @default true */
@@ -48,7 +48,7 @@ export interface UseXDSChatDictationOptions {
   inputRef?: React.RefObject<ChatComposerInputHandle | null>;
 }
 
-export interface UseXDSChatDictationReturn {
+export interface UseChatDictationReturn {
   /** Whether the browser supports SpeechRecognition. */
   isSupported: boolean;
   /** Whether recognition is currently active. */
@@ -264,8 +264,8 @@ function playStopSound(getCtx: () => AudioContext) {
 // =============================================================================
 
 export function useChatDictation(
-  options: UseXDSChatDictationOptions = {},
-): UseXDSChatDictationReturn {
+  options: UseChatDictationOptions = {},
+): UseChatDictationReturn {
   const {
     lang,
     continuous,

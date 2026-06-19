@@ -28,7 +28,7 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 // Types
 // =============================================================================
 
-export interface UseXDSChatStreamScrollOptions {
+export interface UseChatStreamScrollOptions {
   /**
    * Ref to the scrollable container element.
    */
@@ -73,7 +73,7 @@ export interface UseXDSChatStreamScrollOptions {
   mass?: number;
 }
 
-export interface UseXDSChatStreamScrollReturn {
+export interface UseChatStreamScrollReturn {
   /** Whether the user has scrolled up past buttonThreshold. */
   isScrolledUp: boolean;
 
@@ -113,7 +113,7 @@ export function useChatStreamScroll({
   damping = 0.7,
   stiffness = 0.05,
   mass = 1.25,
-}: UseXDSChatStreamScrollOptions): UseXDSChatStreamScrollReturn {
+}: UseChatStreamScrollOptions): UseChatStreamScrollReturn {
   const [isScrolledUp, setIsScrolledUp] = useState(false);
   const [isLocked, setIsLocked] = useState(true);
 

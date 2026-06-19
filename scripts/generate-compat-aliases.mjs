@@ -128,6 +128,12 @@ function generateBlock(filePath) {
     const exported = entry.alias;
     const prefixed = prefixedName(exported);
     if (!prefixed) continue;
+    // Skip re-exports from a SIBLING module (e.g. Text re-exporting
+    // '../Heading'): the owning barrel (Heading) already emits that alias, so
+    // emitting it here too would duplicate it at the root `export *` barrel
+    // (TS2308). Only emit aliases for names this barrel canonically owns
+    // (sources like './X' or with no path), not '../X'.
+    if (entry.source.startsWith('../')) continue;
     if (existingNames.has(prefixed)) continue; // skip if prefixed already exported in THIS barrel
     if (EXISTING_PREFIXED.has(prefixed)) continue; // skip if prefixed already exported by ANY barrel (root export * ambiguity)
     const spec = `${exported} as ${prefixed}`;
