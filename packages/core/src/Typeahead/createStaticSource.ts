@@ -3,17 +3,17 @@
 /**
  * @file createStaticSource.ts
  * @input Array of searchable items, optional config
- * @output XDSSearchSource that filters items by label and keywords
+ * @output SearchSource that filters items by label and keywords
  * @position Utility; convenience factory for static search sources
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Typeahead/index.ts
  */
 
-import type {XDSSearchableItem, XDSSearchSource} from './types';
+import type {SearchableItem, SearchSource} from './types';
 
 export interface CreateStaticSourceOptions<
-  T extends XDSSearchableItem = XDSSearchableItem,
+  T extends SearchableItem = SearchableItem,
 > {
   /**
    * Extract additional search terms from an item.
@@ -34,10 +34,10 @@ export interface CreateStaticSourceOptions<
  *
  * Filters by substring match on `label` and optional keywords.
  * For anything beyond substring matching (fuzzy, ranked, server-side),
- * implement `XDSSearchSource` directly.
+ * implement `SearchSource` directly.
  *
- * @compositionHint Pass the result to `searchSource` on XDSTypeahead,
- *   XDSTokenizer, or XDSCommandPalette.
+ * @compositionHint Pass the result to `searchSource` on Typeahead,
+ *   Tokenizer, or CommandPalette.
  *
  * @example
  * ```tsx
@@ -53,10 +53,10 @@ export interface CreateStaticSourceOptions<
  * });
  * ```
  */
-export function createStaticSource<T extends XDSSearchableItem>(
+export function createStaticSource<T extends SearchableItem>(
   items: T[],
   options?: CreateStaticSourceOptions<T>,
-): XDSSearchSource<T> {
+): SearchSource<T> {
   const getKeywords = options?.keywords;
 
   return {

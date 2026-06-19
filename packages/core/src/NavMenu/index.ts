@@ -1,47 +1,48 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 'use client';
-export {XDSNavHeadingMenu} from './XDSNavHeadingMenu';
-export type {XDSNavHeadingMenuProps} from './XDSNavHeadingMenu';
-export {XDSNavHeadingMenuItem} from './XDSNavHeadingMenuItem';
-export type {XDSNavHeadingMenuItemProps} from './XDSNavHeadingMenuItem';
+export {NavHeadingMenu} from './NavHeadingMenu';
+export type {NavHeadingMenuProps} from './NavHeadingMenu';
+export {NavHeadingMenuItem} from './NavHeadingMenuItem';
+export type {NavHeadingMenuItemProps} from './NavHeadingMenuItem';
 export {
-  XDSNavHeadingMenuContext,
-  useXDSNavHeadingMenuContext,
-  XDSNavHeadingCloseContext,
-  useXDSNavHeadingCloseContext,
-} from './XDSNavMenuContext';
+  NavHeadingMenuContext,
+  useNavHeadingMenuContext,
+  NavHeadingCloseContext,
+  useNavHeadingCloseContext,
+} from './NavMenuContext';
 export type {
-  XDSNavHeadingMenuContextValue,
-  XDSNavHeadingCloseContextValue,
-  XDSNavHeadingMenuSize,
-} from './XDSNavMenuContext';
+  NavHeadingMenuContextValue,
+  NavHeadingCloseContextValue,
+  NavHeadingMenuSize,
+} from './NavMenuContext';
 
-// Backward compat — use XDSNavHeadingMenuItem instead.
-export {XDSNavMenuItem} from './XDSNavMenuItem';
-export type {XDSNavMenuItemProps} from './XDSNavMenuItem';
+// Backward compat — use NavHeadingMenuItem instead.
+export {NavMenuItem} from './NavMenuItem';
+export type {NavMenuItemProps} from './NavMenuItem';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSNavHeadingCloseContext as NavHeadingCloseContext,
-  XDSNavHeadingMenu as NavHeadingMenu,
-  XDSNavHeadingMenuContext as NavHeadingMenuContext,
-  XDSNavHeadingMenuItem as NavHeadingMenuItem,
-  XDSNavMenuItem as NavMenuItem,
-  useXDSNavHeadingCloseContext as useNavHeadingCloseContext,
-  useXDSNavHeadingMenuContext as useNavHeadingMenuContext,
+  NavHeadingCloseContext as XDSNavHeadingCloseContext,
+  NavHeadingMenu as XDSNavHeadingMenu,
+  NavHeadingMenuContext as XDSNavHeadingMenuContext,
+  NavHeadingMenuItem as XDSNavHeadingMenuItem,
+  NavMenuItem as XDSNavMenuItem,
+  useNavHeadingCloseContext as useXDSNavHeadingCloseContext,
+  useNavHeadingMenuContext as useXDSNavHeadingMenuContext,
 } from '.';
 export type {
-  XDSNavHeadingCloseContextValue as NavHeadingCloseContextValue,
-  XDSNavHeadingMenuContextValue as NavHeadingMenuContextValue,
-  XDSNavHeadingMenuItemProps as NavHeadingMenuItemProps,
-  XDSNavHeadingMenuProps as NavHeadingMenuProps,
-  XDSNavHeadingMenuSize as NavHeadingMenuSize,
-  XDSNavMenuItemProps as NavMenuItemProps,
+  NavHeadingCloseContextValue as XDSNavHeadingCloseContextValue,
+  NavHeadingMenuContextValue as XDSNavHeadingMenuContextValue,
+  NavHeadingMenuItemProps as XDSNavHeadingMenuItemProps,
+  NavHeadingMenuProps as XDSNavHeadingMenuProps,
+  NavHeadingMenuSize as XDSNavHeadingMenuSize,
+  NavMenuItemProps as XDSNavMenuItemProps,
 } from '.';
 // <compat-aliases:end>

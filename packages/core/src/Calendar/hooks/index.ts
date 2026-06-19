@@ -4,7 +4,7 @@
  * @file index.ts
  * @input Imports calendar-specific hooks
  * @output Exports all calendar hooks
- * @position Calendar hooks entry point; used by XDSCalendar
+ * @position Calendar hooks entry point; used by Calendar
  *
  * SYNC: When modified, update this header
  */

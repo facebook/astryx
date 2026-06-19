@@ -4,22 +4,23 @@
 
 /**
  * @file index.ts
- * @output Exports XDSMoreMenu and related types
+ * @output Exports MoreMenu and related types
  * @position Public API entry point
  */
 
-export {XDSMoreMenu, type XDSMoreMenuProps} from './XDSMoreMenu';
+export {MoreMenu, type MoreMenuProps} from './MoreMenu';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSMoreMenu as MoreMenu,
+  MoreMenu as XDSMoreMenu,
 } from '.';
 export type {
-  XDSMoreMenuProps as MoreMenuProps,
+  MoreMenuProps as XDSMoreMenuProps,
 } from '.';
 // <compat-aliases:end>

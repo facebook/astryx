@@ -4,27 +4,29 @@
 
 /**
  * @file index.ts
- * @input Imports XDSCard component
- * @output Exports XDSCard component and types
+ * @input Imports Card component
+ * @output Exports Card component and types
  * @position Entry point for @xds/core/Card module
  *
  * SYNC: When modified, update /packages/core/src/Card/Card.doc.mjs
  */
 
-export {XDSCard} from './XDSCard';
-export type {XDSCardProps, XDSCardVariant, SizeValue} from './XDSCard';
+export {Card} from './Card';
+export type {CardProps, CardVariant, SizeValue} from './Card';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSCard as Card,
+  Card as XDSCard,
 } from '.';
 export type {
-  XDSCardProps as CardProps,
-  XDSCardVariant as CardVariant,
+  CardProps as XDSCardProps,
+  CardVariant as XDSCardVariant,
+  SizeValue as XDSSizeValue,
 } from '.';
 // <compat-aliases:end>

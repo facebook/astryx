@@ -4,7 +4,7 @@
  * @file highlightStyles.ts
  * @input Syntax token defaults from domainTokens
  * @output Injects ::highlight() CSS rules + fallback token values into the document head
- * @position Shared utility; consumed by XDSCodeBlock and XDSCodeEditor
+ * @position Shared utility; consumed by CodeBlock and CodeEditor
  *
  * SYNC: When modified, update:
  * - /packages/core/src/theme/domainTokens/syntaxTokens.ts (syntax color token names/defaults)

@@ -6,7 +6,7 @@
  * @file useInternalConfig.ts
  * @input PowerSearchConfig
  * @output InternalConfig with O(1) lookups
- * @position Hook; consumed by XDSPowerSearch and sub-components
+ * @position Hook; consumed by PowerSearch and sub-components
  *
  * SYNC: When modified, update:
  * - /packages/core/src/PowerSearch/index.ts

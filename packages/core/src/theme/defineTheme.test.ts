@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
-import type {XDSIconRegistry} from '../Icon/globalIconRegistry';
+import type {IconRegistry} from '../Icon/globalIconRegistry';
 import {
   defineTheme,
   generateThemeCSS,
@@ -80,7 +80,7 @@ describe('defineTheme', () => {
   });
 
   it('includes icons in the theme', () => {
-    const icons = {close: 'X'} as Partial<XDSIconRegistry>;
+    const icons = {close: 'X'} as Partial<IconRegistry>;
     const theme = defineTheme({name: 'icons', icons});
     expect(theme.icons).toBe(icons);
   });
@@ -1072,8 +1072,8 @@ describe('defineTheme extends', () => {
   });
 
   it('merges icons — child overrides base', () => {
-    const baseIcons = {close: 'X', menu: 'M'} as Partial<XDSIconRegistry>;
-    const childIcons = {close: 'Y'} as Partial<XDSIconRegistry>;
+    const baseIcons = {close: 'X', menu: 'M'} as Partial<IconRegistry>;
+    const childIcons = {close: 'Y'} as Partial<IconRegistry>;
     const base = defineTheme({name: 'base', icons: baseIcons});
     const child = defineTheme({
       name: 'child',
@@ -1085,7 +1085,7 @@ describe('defineTheme extends', () => {
   });
 
   it('inherits icons when child has none', () => {
-    const baseIcons = {close: 'X'} as Partial<XDSIconRegistry>;
+    const baseIcons = {close: 'X'} as Partial<IconRegistry>;
     const base = defineTheme({name: 'base', icons: baseIcons});
     const child = defineTheme({name: 'child', extends: base});
     expect(child.icons?.close).toBe('X');

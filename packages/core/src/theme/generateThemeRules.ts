@@ -4,18 +4,18 @@
  * @file Theme CSS generation utilities
  *
  * Shared logic for generating CSS rules from a resolved theme definition.
- * Used by both the runtime path (XDSTheme injects <style>) and the build
+ * Used by both the runtime path (Theme injects <style>) and the build
  * path (`xds theme build` pre-compiles to CSS files).
  *
  * Extracted from defineTheme.ts to reduce cyclomatic complexity and provide
  * a clear single-responsibility module for CSS generation.
  *
- * @input XDSDefinedTheme (resolved theme object from defineTheme)
+ * @input DefinedTheme (resolved theme object from defineTheme)
  * @output CSS rule strings, split by layer (component vs prose)
  * @position packages/core/src/theme/generateThemeRules.ts
  */
 
-import type {XDSDefinedTheme} from './defineTheme';
+import type {DefinedTheme} from './defineTheme';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {getDerivedVars} from './derivedVarRegistry';
 import {cssVar, classPrefix, legacyClassPrefix, dataAttrNamespace, legacyDataAttrNamespace} from '../naming';
@@ -23,8 +23,8 @@ import {cssVar, classPrefix, legacyClassPrefix, dataAttrNamespace, legacyDataAtt
 /**
  * Dual-prefix theme @scope selectors (XDS-prefix migration P2380608025).
  *
- * Theme CSS is @scope'd to the theme-name data attribute that XDSTheme writes.
- * During the compat window XDSTheme dual-emits BOTH data-astryx-theme and
+ * Theme CSS is @scope'd to the theme-name data attribute that Theme writes.
+ * During the compat window Theme dual-emits BOTH data-astryx-theme and
  * data-xds-theme, so the generated CSS must match either form. These helpers
  * build selector-lists covering both prefixes so existing (xds) and new
  * (astryx) attribute writers both resolve.
@@ -248,7 +248,7 @@ function expandContainerPadding(
  * Returns an array of CSS rule strings — the shared format used by both
  * the runtime path (useInsertionEffect) and the build path (xds theme build).
  */
-export function generateThemeRules(theme: XDSDefinedTheme): string[] {
+export function generateThemeRules(theme: DefinedTheme): string[] {
   const parts: string[] = [];
   const tokens = theme.tokens;
 
@@ -479,7 +479,7 @@ function generateColorOverrides(
  * that need to beat StyleX — they stay in xds-theme (above StyleX layers).
  */
 export function generateThemeRulesSplit(
-  theme: XDSDefinedTheme,
+  theme: DefinedTheme,
 ): ThemeRulesSplit {
   const allRules = generateThemeRules(theme);
 
@@ -505,7 +505,7 @@ export function generateThemeRulesSplit(
  * to media contexts — only tokens change. Themes can further customize
  * via onDark.components / onLight.components.
  */
-export function generateOnMediaCSS(theme: XDSDefinedTheme): string {
+export function generateOnMediaCSS(theme: DefinedTheme): string {
   const parts: string[] = [];
   const scopeSelector = themeScopeStart(theme.name);
 
@@ -592,7 +592,7 @@ export function generateOnMediaCSS(theme: XDSDefinedTheme): string {
  * sit at reset-layer priority where any class-based style wins, while component
  * overrides sit above StyleX so themes can restyle components intentionally.
  */
-export function generateThemeCSS(theme: XDSDefinedTheme): ThemeCSSOutput {
+export function generateThemeCSS(theme: DefinedTheme): ThemeCSSOutput {
   const {component, prose} = generateThemeRulesSplit(theme);
   const scopeSelector = themeScopeStart(theme.name);
   const scopeTo = THEME_SCOPE_TO;
@@ -626,7 +626,7 @@ export function generateThemeCSS(theme: XDSDefinedTheme): ThemeCSSOutput {
  * @deprecated Use generateThemeCSS() which returns { prose, component } for proper layering.
  * This flat version is kept for backwards compatibility with tests and simple cases.
  */
-export function generateThemeCSSFlat(theme: XDSDefinedTheme): string {
+export function generateThemeCSSFlat(theme: DefinedTheme): string {
   const rules = generateThemeRules(theme);
   if (rules.length === 0) {
     return '';

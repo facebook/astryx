@@ -4,36 +4,37 @@
 
 /**
  * @file index.ts
- * @input Imports XDSTextInput component and types from TextInput.tsx
- * @output Exports XDSTextInput, XDSTextInputProps, XDSTextInputSize, XDSTextInputStatus, XDSTextInputStatusType
+ * @input Imports TextInput component and types from TextInput.tsx
+ * @output Exports TextInput, TextInputProps, TextInputSize, TextInputStatus, TextInputStatusType
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
  * SYNC: When modified, update this header and /packages/core/src/TextInput/TextInput.doc.mjs
  */
 
-export {XDSTextInput} from './XDSTextInput';
+export {TextInput} from './TextInput';
 export type {
-  XDSTextInputProps,
-  XDSTextInputType,
-  XDSTextInputSize,
-  XDSTextInputStatus,
-  XDSTextInputStatusType,
-} from './XDSTextInput';
+  TextInputProps,
+  TextInputType,
+  TextInputSize,
+  TextInputStatus,
+  TextInputStatusType,
+} from './TextInput';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSTextInput as TextInput,
+  TextInput as XDSTextInput,
 } from '.';
 export type {
-  XDSTextInputProps as TextInputProps,
-  XDSTextInputSize as TextInputSize,
-  XDSTextInputStatus as TextInputStatus,
-  XDSTextInputStatusType as TextInputStatusType,
-  XDSTextInputType as TextInputType,
+  TextInputProps as XDSTextInputProps,
+  TextInputSize as XDSTextInputSize,
+  TextInputStatus as XDSTextInputStatus,
+  TextInputStatusType as XDSTextInputStatusType,
+  TextInputType as XDSTextInputType,
 } from '.';
 // <compat-aliases:end>

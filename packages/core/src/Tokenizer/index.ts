@@ -11,33 +11,34 @@
  * SYNC: When adding new Tokenizer files, update exports here
  */
 
-export {XDSTokenizer} from './XDSTokenizer';
+export {Tokenizer} from './Tokenizer';
 export type {
-  XDSTokenizerProps,
-  XDSTokenizerSize,
-  XDSTokenizerOverflowBehavior,
-  XDSTokenizerChange,
-  XDSTokenizerHandle,
-  XDSTokenizerStatus,
-  XDSTokenizerStatusType,
-} from './XDSTokenizer';
+  TokenizerProps,
+  TokenizerSize,
+  TokenizerOverflowBehavior,
+  TokenizerChange,
+  TokenizerHandle,
+  TokenizerStatus,
+  TokenizerStatusType,
+} from './Tokenizer';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSTokenizer as Tokenizer,
+  Tokenizer as XDSTokenizer,
 } from '.';
 export type {
-  XDSTokenizerChange as TokenizerChange,
-  XDSTokenizerHandle as TokenizerHandle,
-  XDSTokenizerOverflowBehavior as TokenizerOverflowBehavior,
-  XDSTokenizerProps as TokenizerProps,
-  XDSTokenizerSize as TokenizerSize,
-  XDSTokenizerStatus as TokenizerStatus,
-  XDSTokenizerStatusType as TokenizerStatusType,
+  TokenizerChange as XDSTokenizerChange,
+  TokenizerHandle as XDSTokenizerHandle,
+  TokenizerOverflowBehavior as XDSTokenizerOverflowBehavior,
+  TokenizerProps as XDSTokenizerProps,
+  TokenizerSize as XDSTokenizerSize,
+  TokenizerStatus as XDSTokenizerStatus,
+  TokenizerStatusType as XDSTokenizerStatusType,
 } from '.';
 // <compat-aliases:end>

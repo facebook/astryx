@@ -2,23 +2,24 @@
 
 /**
  * @file index.ts
- * @input XDSHStack component source
- * @output Exports XDSHStack and its props type
+ * @input HStack component source
+ * @output Exports HStack and its props type
  * @position Entry point for @xds/core/HStack subpath export
  */
 
-export {XDSHStack, type XDSHStackProps} from './XDSHStack';
+export {HStack, type HStackProps} from './HStack';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSHStack as HStack,
+  HStack as XDSHStack,
 } from '.';
 export type {
-  XDSHStackProps as HStackProps,
+  HStackProps as XDSHStackProps,
 } from '.';
 // <compat-aliases:end>

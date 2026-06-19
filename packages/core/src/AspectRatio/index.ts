@@ -4,27 +4,28 @@
 
 /**
  * @file index.ts
- * @input Imports from XDSAspectRatio.tsx
- * @output Exports XDSAspectRatio component and props type
+ * @input Imports from AspectRatio.tsx
+ * @output Exports AspectRatio component and props type
  * @position Package entry point for AspectRatio
  *
  * SYNC: When modified, update /packages/core/src/AspectRatio/AspectRatio.doc.mjs
  */
 
-export {XDSAspectRatio} from './XDSAspectRatio';
-export type {XDSAspectRatioProps, XDSAspectRatioShape} from './XDSAspectRatio';
+export {AspectRatio} from './AspectRatio';
+export type {AspectRatioProps, AspectRatioShape} from './AspectRatio';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSAspectRatio as AspectRatio,
+  AspectRatio as XDSAspectRatio,
 } from '.';
 export type {
-  XDSAspectRatioProps as AspectRatioProps,
-  XDSAspectRatioShape as AspectRatioShape,
+  AspectRatioProps as XDSAspectRatioProps,
+  AspectRatioShape as XDSAspectRatioShape,
 } from '.';
 // <compat-aliases:end>

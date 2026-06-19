@@ -4,7 +4,7 @@
  * @file container.stylex.ts
  * @input Uses @stylexjs/stylex, spacing from theme
  * @output StyleX utility for layout container styling
- * @position Layout utility; used by XDSCard, XDSSection components
+ * @position Layout utility; used by Card, Section components
  *
  * ## Public API for themes
  *
@@ -441,7 +441,7 @@ export interface ContainerOptions {
 
   /**
    * Maximum height constraint for the container.
-   * Sets --container-max-height CSS variable that XDSLayout reads
+   * Sets --container-max-height CSS variable that Layout reads
    * to enable scroll containment in fill mode.
    * Accepts CSS length values (e.g., '75vh', '500px').
    */
@@ -468,12 +468,12 @@ export interface ContainerOptions {
  *
  * // Card container with default padding (theme-overridable via padding shorthand)
  * <div {...stylex.props(...container({ useThemeDefault: 'card' }))}>
- *   <XDSLayout ... />
+ *   <Layout ... />
  * </div>
  *
  * // Uniform padding
  * <div {...stylex.props(...container({ padding: 'spacing3' }))}>
- *   <XDSLayout ... />
+ *   <Layout ... />
  * </div>
  *
  * // Asymmetric — padding as base, paddingOuterY overrides vertical
@@ -481,7 +481,7 @@ export interface ContainerOptions {
  *   ...container({ padding: 'spacing3', paddingOuterY: 'spacing2' }),
  *   customStyles.card
  * )}>
- *   <XDSLayout ... />
+ *   <Layout ... />
  * </div>
  * ```
  */

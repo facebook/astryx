@@ -9,4 +9,4 @@
 export {createStaticSource} from './createStaticSource';
 
 export type {CreateStaticSourceOptions} from './createStaticSource';
-export type {XDSSearchableItem, XDSSearchSource} from './types';
+export type {SearchableItem, SearchSource} from './types';

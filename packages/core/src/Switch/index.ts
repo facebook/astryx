@@ -4,32 +4,33 @@
 
 /**
  * @file index.ts
- * @input Imports from XDSSwitch component
- * @output Exports XDSSwitch component and related types
+ * @input Imports from Switch component
+ * @output Exports Switch component and related types
  * @position Entry point for Switch; re-exported by /packages/core/src/index.ts
  *
  * SYNC: When modified, update this header and /packages/core/src/Switch/Switch.doc.mjs
  */
 
-export {XDSSwitch} from './XDSSwitch';
+export {Switch} from './Switch';
 export type {
-  XDSSwitchProps,
-  XDSSwitchLabelPosition,
-  XDSSwitchLabelSpacing,
-} from './XDSSwitch';
+  SwitchProps,
+  SwitchLabelPosition,
+  SwitchLabelSpacing,
+} from './Switch';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSSwitch as Switch,
+  Switch as XDSSwitch,
 } from '.';
 export type {
-  XDSSwitchLabelPosition as SwitchLabelPosition,
-  XDSSwitchLabelSpacing as SwitchLabelSpacing,
-  XDSSwitchProps as SwitchProps,
+  SwitchLabelPosition as XDSSwitchLabelPosition,
+  SwitchLabelSpacing as XDSSwitchLabelSpacing,
+  SwitchProps as XDSSwitchProps,
 } from '.';
 // <compat-aliases:end>

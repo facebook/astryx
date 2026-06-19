@@ -4,7 +4,7 @@
  * @file parser.ts
  * @input Markdown string
  * @output Array of MarkdownNode AST nodes
- * @position Core parser; consumed by XDSMarkdown.tsx
+ * @position Core parser; consumed by Markdown.tsx
  */
 
 // ---------------------------------------------------------------------------

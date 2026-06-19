@@ -202,7 +202,7 @@ describe('generateOnMediaCSS', () => {
 describe('reset.css baseline media rules', () => {
   /**
    * Validates that reset.css provides the minimum baseline for
-   * XDSMediaTheme: a color-scheme flip on [data-xds-media].
+   * MediaTheme: a color-scheme flip on [data-xds-media].
    *
    * Token overrides (text-primary, icon-primary, accent) are a
    * theme-level concern — themes handle those via generateOnMediaCSS.

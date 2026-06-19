@@ -12,24 +12,28 @@
  */
 
 // Popover hook
-export {useXDSPopover} from './useXDSPopover';
-export type {UseXDSPopoverOptions, UseXDSPopoverReturn} from './useXDSPopover';
+export {usePopover} from './usePopover';
+export type {UsePopoverOptions, UsePopoverReturn} from './usePopover';
 
 // Popover component
-export {XDSPopover} from './XDSPopover';
-export type {XDSPopoverProps, PopoverTriggerRenderProps} from './XDSPopover';
+export {Popover} from './Popover';
+export type {PopoverProps, PopoverTriggerRenderProps} from './Popover';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSPopover as Popover,
-  useXDSPopover as usePopover,
+  Popover as XDSPopover,
+  usePopover as useXDSPopover,
 } from '.';
 export type {
-  XDSPopoverProps as PopoverProps,
+  PopoverProps as XDSPopoverProps,
+  PopoverTriggerRenderProps as XDSPopoverTriggerRenderProps,
+  UsePopoverOptions as XDSUsePopoverOptions,
+  UsePopoverReturn as XDSUsePopoverReturn,
 } from '.';
 // <compat-aliases:end>

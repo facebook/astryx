@@ -4,26 +4,27 @@
 
 /**
  * @file index.ts
- * @input Imports from XDSBlockquote.tsx
- * @output Exports XDSBlockquote component and props type
+ * @input Imports from Blockquote.tsx
+ * @output Exports Blockquote component and props type
  * @position Package entry point for Blockquote
  *
  * SYNC: When modified, update /packages/core/src/Blockquote/Blockquote.doc.mjs
  */
 
-export {XDSBlockquote} from './XDSBlockquote';
-export type {XDSBlockquoteProps} from './XDSBlockquote';
+export {Blockquote} from './Blockquote';
+export type {BlockquoteProps} from './Blockquote';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSBlockquote as Blockquote,
+  Blockquote as XDSBlockquote,
 } from '.';
 export type {
-  XDSBlockquoteProps as BlockquoteProps,
+  BlockquoteProps as XDSBlockquoteProps,
 } from '.';
 // <compat-aliases:end>

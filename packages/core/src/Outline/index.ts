@@ -4,15 +4,15 @@
 
 /**
  * @file index.ts
- * @input Imports XDSOutline, outline hooks, parser utility, and types
- * @output Exports XDSOutline component, OutlineItem type, and outline helpers
+ * @input Imports Outline, outline hooks, parser utility, and types
+ * @output Exports Outline component, OutlineItem type, and outline helpers
  * @position Component entry point for Outline
  *
  * SYNC: When modified, update /packages/core/src/Outline/Outline.doc.mjs
  */
 
-export {XDSOutline} from './XDSOutline';
-export type {XDSOutlineProps} from './XDSOutline';
+export {Outline} from './Outline';
+export type {OutlineProps} from './Outline';
 export type {OutlineItem} from './types';
 export {parseOutlineFromMarkdown} from './parseOutlineFromMarkdown';
 export {useOutlineFromMarkdown} from './useOutlineFromMarkdown';
@@ -20,14 +20,18 @@ export {useOutlineFromDOM} from './useOutlineFromDOM';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSOutline as Outline,
+  Outline as XDSOutline,
+  useOutlineFromDOM as useXDSOutlineFromDOM,
+  useOutlineFromMarkdown as useXDSOutlineFromMarkdown,
 } from '.';
 export type {
-  XDSOutlineProps as OutlineProps,
+  OutlineItem as XDSOutlineItem,
+  OutlineProps as XDSOutlineProps,
 } from '.';
 // <compat-aliases:end>

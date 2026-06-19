@@ -12,7 +12,7 @@ import {render, screen, fireEvent, act} from '@testing-library/react';
 import {PowerSearchValueEditor} from './PowerSearchValueEditor';
 import type {FilterValueEntityList, PowerSearchEntity} from './types';
 import type {InternalConfig} from './useInternalConfig';
-import type {XDSSearchableItem, XDSSearchSource} from '../Typeahead/types';
+import type {SearchableItem, SearchSource} from '../Typeahead/types';
 
 // =============================================================================
 // Test infrastructure
@@ -67,8 +67,8 @@ const stubConfig: InternalConfig = {
 // =============================================================================
 
 function createSearchSource(
-  items: XDSSearchableItem[],
-): XDSSearchSource<XDSSearchableItem> {
+  items: SearchableItem[],
+): SearchSource<SearchableItem> {
   return {
     search: (query: string) =>
       items.filter(i => i.label.toLowerCase().includes(query.toLowerCase())),
@@ -113,7 +113,7 @@ describe('StringEditor (#1103)', () => {
       />,
     );
 
-    // Should render a textbox (XDSTextInput), not a combobox
+    // Should render a textbox (TextInput), not a combobox
     const textbox = screen.queryByRole('textbox');
     expect(textbox).toBeInTheDocument();
   });
@@ -252,7 +252,7 @@ describe('EntityListEditor (#1106)', () => {
     expect(screen.getByText('Alice')).toBeInTheDocument();
   });
 
-  it('passes renderItem from operatorValue to XDSTokenizer', () => {
+  it('passes renderItem from operatorValue to Tokenizer', () => {
     const customRenderItem = vi.fn((item: {id: string; label: string}) => (
       <span data-testid="custom-render">{item.label}</span>
     ));

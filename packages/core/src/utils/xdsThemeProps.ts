@@ -2,13 +2,13 @@
 
 import {stableClassName, legacyStableClassName} from '../naming';
 
-export type XDSClassValue = string | number | undefined | null;
-export type XDSClassProps = Record<string, XDSClassValue>;
-export type XDSThemeDataAttributes = Record<
+export type ClassValue = string | number | undefined | null;
+export type ClassProps = Record<string, ClassValue>;
+export type ThemeDataAttributes = Record<
   `data-${string}`,
   string | undefined
 >;
-export type XDSThemeProps = {className: string} & XDSThemeDataAttributes;
+export type ThemeProps = {className: string} & ThemeDataAttributes;
 
 function toDataAttributeName(prop: string): `data-${string}` {
   return `data-${prop.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()}`;
@@ -55,7 +55,7 @@ function classTokenForPropValue(prop: string, value: string): string {
  * // → "astryx-card xds-card"
  * ```
  */
-function dualClassName(component: string, props?: XDSClassProps): string {
+function dualClassName(component: string, props?: ClassProps): string {
   // Dual-emit both the new (astryx-*) and legacy (xds-*) base class so existing
   // consumer CSS selectors keep matching during the compat window. The new
   // prefix is listed first; legacy stays until the final cutover (P10).
@@ -81,9 +81,9 @@ function dualClassName(component: string, props?: XDSClassProps): string {
  * Nullish values are omitted.
  */
 export function xdsThemeDataAttributes(
-  props?: XDSClassProps,
-): XDSThemeDataAttributes {
-  const attrs: XDSThemeDataAttributes = {};
+  props?: ClassProps,
+): ThemeDataAttributes {
+  const attrs: ThemeDataAttributes = {};
 
   if (props) {
     for (const [prop, value] of Object.entries(props)) {
@@ -111,8 +111,8 @@ export function xdsThemeDataAttributes(
  */
 export function xdsThemeProps(
   component: string,
-  props?: XDSClassProps,
-): XDSThemeProps {
+  props?: ClassProps,
+): ThemeProps {
   return {
     className: dualClassName(component, props),
     ...xdsThemeDataAttributes(props),

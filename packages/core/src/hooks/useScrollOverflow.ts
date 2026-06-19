@@ -6,7 +6,7 @@
  * @file useScrollOverflow.ts
  * @input Uses React useRef, useState, useCallback, useEffect
  * @output Exports useScrollOverflow hook for tracking scroll position edges
- * @position Core hook; used by XDSCarousel for fade-edge and button state
+ * @position Core hook; used by Carousel for fade-edge and button state
  *
  * Observes a scroll container and reports whether content overflows at the
  * start, end, or both edges. Updates on scroll and resize.

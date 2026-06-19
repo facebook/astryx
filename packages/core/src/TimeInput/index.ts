@@ -5,36 +5,37 @@
 /**
  * @file index.ts
  * @input Imports TimeInput components and types
- * @output Exports XDSTimeInput and related types
+ * @output Exports TimeInput and related types
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
  * SYNC: When modified, update this header and /packages/core/src/TimeInput/TimeInput.doc.mjs
  */
 
-export {XDSTimeInput} from './XDSTimeInput';
+export {TimeInput} from './TimeInput';
 export type {
-  XDSTimeInputProps,
-  XDSTimeInputSize,
-  XDSTimeInputHourFormat,
-  XDSTimeInputStatus,
-  XDSTimeInputStatusType,
-} from './XDSTimeInput';
+  TimeInputProps,
+  TimeInputSize,
+  TimeInputHourFormat,
+  TimeInputStatus,
+  TimeInputStatusType,
+} from './TimeInput';
 export type {ISOTimeString} from '../utils';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSTimeInput as TimeInput,
+  TimeInput as XDSTimeInput,
 } from '.';
 export type {
-  XDSTimeInputHourFormat as TimeInputHourFormat,
-  XDSTimeInputProps as TimeInputProps,
-  XDSTimeInputSize as TimeInputSize,
-  XDSTimeInputStatus as TimeInputStatus,
-  XDSTimeInputStatusType as TimeInputStatusType,
+  TimeInputHourFormat as XDSTimeInputHourFormat,
+  TimeInputProps as XDSTimeInputProps,
+  TimeInputSize as XDSTimeInputSize,
+  TimeInputStatus as XDSTimeInputStatus,
+  TimeInputStatusType as XDSTimeInputStatusType,
 } from '.';
 // <compat-aliases:end>

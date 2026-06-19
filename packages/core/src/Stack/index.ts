@@ -3,44 +3,41 @@
 /**
  * @file index.ts
  * @input Imports stack components
- * @output Exports XDSStack, XDSHStack, XDSVStack, XDSStackItem components
+ * @output Exports Stack, HStack, VStack, StackItem components
  * @position Entry point for Layout/Stack
  *
  * SYNC: When modified, update /packages/core/src/Stack/Stack.doc.mjs
  */
 
 // Unified stack component
-export {XDSStack} from './XDSStack';
+export {Stack} from './Stack';
 export type {
-  XDSStackProps,
-  XDSStackAlignment,
+  StackProps,
   StackAlignment,
-} from './XDSStack';
+} from './Stack';
 
 // Convenience wrappers (re-exported from their own directories)
-export {XDSHStack, type XDSHStackProps} from '../HStack';
+export {HStack, type HStackProps} from '../HStack';
 
-export {XDSVStack, type XDSVStackProps} from '../VStack';
+export {VStack, type VStackProps} from '../VStack';
 
-export {XDSStackItem} from './XDSStackItem';
-export type {XDSStackItemProps} from './XDSStackItem';
+export {StackItem} from './StackItem';
+export type {StackItemProps} from './StackItem';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSHStack as HStack,
-  XDSStack as Stack,
-  XDSStackItem as StackItem,
-  XDSVStack as VStack,
+  Stack as XDSStack,
+  StackItem as XDSStackItem,
 } from '.';
 export type {
-  XDSHStackProps as HStackProps,
-  XDSStackItemProps as StackItemProps,
-  XDSStackProps as StackProps,
-  XDSVStackProps as VStackProps,
+  StackAlignment as XDSStackAlignment,
+  StackItemProps as XDSStackItemProps,
+  StackProps as XDSStackProps,
 } from '.';
 // <compat-aliases:end>

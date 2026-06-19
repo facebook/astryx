@@ -41,81 +41,74 @@ export type {
 } from '../Stack/stackItem.stylex';
 
 // Stack components (re-exported from Stack module)
-export {XDSStack, XDSHStack, XDSVStack, XDSStackItem} from '../Stack';
+export {Stack, HStack, VStack, StackItem} from '../Stack';
 export type {
-  XDSStackProps,
-  XDSStackAlignment,
+  StackProps,
   StackAlignment,
-  XDSHStackProps,
-  XDSVStackProps,
-  XDSStackItemProps,
+  HStackProps,
+  VStackProps,
+  StackItemProps,
 } from '../Stack';
 
 // Container components (re-exported from their own modules)
-export {XDSCard} from '../Card';
-export type {XDSCardProps} from '../Card';
+export {Card} from '../Card';
+export type {CardProps} from '../Card';
 
-export {XDSSection} from '../Section';
-export type {XDSSectionProps, XDSSectionVariant} from '../Section';
+export {Section} from '../Section';
+export type {SectionProps, SectionVariant} from '../Section';
 
 export type {SizeValue} from '../utils/types';
 
 // Layout structure components
-export {XDSLayout} from './XDSLayout';
-export type {XDSLayoutProps, XDSLayoutHeight} from './XDSLayout';
+export {Layout} from './Layout';
+export type {LayoutProps, LayoutHeight} from './Layout';
 
-export {XDSLayoutHeader} from './XDSLayoutHeader';
-export type {XDSLayoutHeaderProps} from './XDSLayoutHeader';
+export {LayoutHeader} from './LayoutHeader';
+export type {LayoutHeaderProps} from './LayoutHeader';
 
-export {XDSLayoutFooter} from './XDSLayoutFooter';
-export type {XDSLayoutFooterProps} from './XDSLayoutFooter';
+export {LayoutFooter} from './LayoutFooter';
+export type {LayoutFooterProps} from './LayoutFooter';
 
-export {XDSLayoutContent} from './XDSLayoutContent';
-export type {XDSLayoutContentProps} from './XDSLayoutContent';
+export {LayoutContent} from './LayoutContent';
+export type {LayoutContentProps} from './LayoutContent';
 
-export {XDSLayoutPanel} from './XDSLayoutPanel';
-export type {XDSLayoutPanelProps} from './XDSLayoutPanel';
+export {LayoutPanel} from './LayoutPanel';
+export type {LayoutPanelProps} from './LayoutPanel';
 
-export {XDSLayoutAreaContext} from './XDSLayoutAreaContext';
-export type {LayoutArea} from './XDSLayoutAreaContext';
+export {LayoutAreaContext} from './LayoutAreaContext';
+export type {LayoutArea} from './LayoutAreaContext';
 
-export {XDSLayoutDividerContext} from './XDSLayoutDividerContext';
-export type {LayoutDividerContextValue} from './XDSLayoutDividerContext';
+export {LayoutDividerContext} from './LayoutDividerContext';
+export type {LayoutDividerContextValue} from './LayoutDividerContext';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSCard as Card,
-  XDSHStack as HStack,
-  XDSLayout as Layout,
-  XDSLayoutAreaContext as LayoutAreaContext,
-  XDSLayoutContent as LayoutContent,
-  XDSLayoutDividerContext as LayoutDividerContext,
-  XDSLayoutFooter as LayoutFooter,
-  XDSLayoutHeader as LayoutHeader,
-  XDSLayoutPanel as LayoutPanel,
-  XDSSection as Section,
-  XDSStack as Stack,
-  XDSStackItem as StackItem,
-  XDSVStack as VStack,
+  EDGE_COMP_ATTR as XDSEDGE_COMP_ATTR,
+  Layout as XDSLayout,
+  LayoutAreaContext as XDSLayoutAreaContext,
+  LayoutContent as XDSLayoutContent,
+  LayoutDividerContext as XDSLayoutDividerContext,
+  LayoutFooter as XDSLayoutFooter,
+  LayoutHeader as XDSLayoutHeader,
+  LayoutPanel as XDSLayoutPanel,
 } from '.';
 export type {
-  XDSCardProps as CardProps,
-  XDSHStackProps as HStackProps,
-  XDSLayoutContentProps as LayoutContentProps,
-  XDSLayoutFooterProps as LayoutFooterProps,
-  XDSLayoutHeaderProps as LayoutHeaderProps,
-  XDSLayoutHeight as LayoutHeight,
-  XDSLayoutPanelProps as LayoutPanelProps,
-  XDSLayoutProps as LayoutProps,
-  XDSSectionProps as SectionProps,
-  XDSSectionVariant as SectionVariant,
-  XDSStackItemProps as StackItemProps,
-  XDSStackProps as StackProps,
-  XDSVStackProps as VStackProps,
+  ContainerComponent as XDSContainerComponent,
+  ContainerOptions as XDSContainerOptions,
+  LayoutArea as XDSLayoutArea,
+  LayoutContentProps as XDSLayoutContentProps,
+  LayoutDividerContextValue as XDSLayoutDividerContextValue,
+  LayoutFooterProps as XDSLayoutFooterProps,
+  LayoutHeaderProps as XDSLayoutHeaderProps,
+  LayoutHeight as XDSLayoutHeight,
+  LayoutPanelProps as XDSLayoutPanelProps,
+  LayoutProps as XDSLayoutProps,
+  SpacingToken as XDSSpacingToken,
 } from '.';
 // <compat-aliases:end>

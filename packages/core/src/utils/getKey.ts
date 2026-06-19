@@ -7,12 +7,12 @@
  * @position Shared utility; consumed by components that render keyed lists
  */
 
-export type XDSKey = string | number;
-export type XDSKeyFallback = XDSKey | (() => XDSKey);
+export type Key = string | number;
+export type KeyFallback = Key | (() => Key);
 
 export function getKey(
-  idKey: XDSKey | null | undefined,
-  fallback: XDSKeyFallback,
+  idKey: Key | null | undefined,
+  fallback: KeyFallback,
 ): string {
   if (idKey != null) {
     return `id:${idKey}`;

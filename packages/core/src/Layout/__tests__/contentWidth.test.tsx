@@ -8,21 +8,21 @@
 
 import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import {XDSLayout} from '../XDSLayout';
-import {XDSLayoutHeader} from '../XDSLayoutHeader';
-import {XDSLayoutFooter} from '../XDSLayoutFooter';
-import {XDSLayoutContent} from '../XDSLayoutContent';
+import {Layout} from '../Layout';
+import {LayoutHeader} from '../LayoutHeader';
+import {LayoutFooter} from '../LayoutFooter';
+import {LayoutContent} from '../LayoutContent';
 
 describe('Layout contentWidth', () => {
-  describe('XDSLayout', () => {
+  describe('Layout', () => {
     it('applies max-width constraint to the middle row', () => {
       render(
-        <XDSLayout
+        <Layout
           contentWidth={640}
           content={
-            <XDSLayoutContent>
+            <LayoutContent>
               <span data-testid="body">Body</span>
-            </XDSLayoutContent>
+            </LayoutContent>
           }
         />,
       );
@@ -35,11 +35,11 @@ describe('Layout contentWidth', () => {
 
     it('does not crash when contentWidth is not set', () => {
       render(
-        <XDSLayout
+        <Layout
           content={
-            <XDSLayoutContent>
+            <LayoutContent>
               <span data-testid="body">Body</span>
-            </XDSLayoutContent>
+            </LayoutContent>
           }
         />,
       );
@@ -47,16 +47,16 @@ describe('Layout contentWidth', () => {
     });
   });
 
-  describe('XDSLayoutHeader', () => {
+  describe('LayoutHeader', () => {
     it('always renders contentWidth inner wrapper', () => {
       render(
-        <XDSLayout
+        <Layout
           header={
-            <XDSLayoutHeader>
+            <LayoutHeader>
               <span data-testid="header-child">Header</span>
-            </XDSLayoutHeader>
+            </LayoutHeader>
           }
-          content={<XDSLayoutContent>Body</XDSLayoutContent>}
+          content={<LayoutContent>Body</LayoutContent>}
         />,
       );
       const headerChild = screen.getByTestId('header-child');
@@ -68,15 +68,15 @@ describe('Layout contentWidth', () => {
 
     it('keeps divider on outer element', () => {
       render(
-        <XDSLayout
+        <Layout
           contentWidth={640}
           defaultHasDividers
           header={
-            <XDSLayoutHeader>
+            <LayoutHeader>
               <span data-testid="header-child">Header</span>
-            </XDSLayoutHeader>
+            </LayoutHeader>
           }
-          content={<XDSLayoutContent>Body</XDSLayoutContent>}
+          content={<LayoutContent>Body</LayoutContent>}
         />,
       );
       const headerChild = screen.getByTestId('header-child');
@@ -87,15 +87,15 @@ describe('Layout contentWidth', () => {
     });
   });
 
-  describe('XDSLayoutFooter', () => {
+  describe('LayoutFooter', () => {
     it('always renders contentWidth inner wrapper', () => {
       render(
-        <XDSLayout
-          content={<XDSLayoutContent>Body</XDSLayoutContent>}
+        <Layout
+          content={<LayoutContent>Body</LayoutContent>}
           footer={
-            <XDSLayoutFooter>
+            <LayoutFooter>
               <span data-testid="footer-child">Footer</span>
-            </XDSLayoutFooter>
+            </LayoutFooter>
           }
         />,
       );
@@ -108,14 +108,14 @@ describe('Layout contentWidth', () => {
 
     it('keeps divider on outer element', () => {
       render(
-        <XDSLayout
+        <Layout
           contentWidth={640}
           defaultHasDividers
-          content={<XDSLayoutContent>Body</XDSLayoutContent>}
+          content={<LayoutContent>Body</LayoutContent>}
           footer={
-            <XDSLayoutFooter>
+            <LayoutFooter>
               <span data-testid="footer-child">Footer</span>
-            </XDSLayoutFooter>
+            </LayoutFooter>
           }
         />,
       );

@@ -2,19 +2,19 @@
 
 /**
  * @file groupItems.ts
- * @input Array of XDSSearchableItem with optional auxiliaryData.group
+ * @input Array of SearchableItem with optional auxiliaryData.group
  * @output Grouped structure preserving insertion order
  * @position Shared utility; used by CommandPalette, trigger menu, and
  *   any future component that needs to group search results by category.
  */
 
-import type {XDSSearchableItem} from '../Typeahead/types';
+import type {SearchableItem} from '../Typeahead/types';
 
 /**
  * A group of items with an optional heading.
  * `heading` is null for ungrouped items.
  */
-export interface ItemGroup<T extends XDSSearchableItem = XDSSearchableItem> {
+export interface ItemGroup<T extends SearchableItem = SearchableItem> {
   heading: string | null;
   items: T[];
 }
@@ -22,7 +22,7 @@ export interface ItemGroup<T extends XDSSearchableItem = XDSSearchableItem> {
 /**
  * Extract the group string from an item's auxiliaryData.
  */
-export function getItemGroup(item: XDSSearchableItem): string | undefined {
+export function getItemGroup(item: SearchableItem): string | undefined {
   const aux = item.auxiliaryData as Record<string, unknown> | undefined;
   return typeof aux?.group === 'string' ? aux.group : undefined;
 }
@@ -50,7 +50,7 @@ export function getItemGroup(item: XDSSearchableItem): string | undefined {
  * // ]
  * ```
  */
-export function groupItems<T extends XDSSearchableItem>(
+export function groupItems<T extends SearchableItem>(
   items: T[],
 ): ItemGroup<T>[] {
   const hasGroups = items.some(item => getItemGroup(item) != null);

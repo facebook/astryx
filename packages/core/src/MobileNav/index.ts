@@ -4,28 +4,29 @@
 
 /**
  * @file index.ts
- * @input Imports from XDSMobileNav.tsx, XDSMobileNavToggle.tsx
+ * @input Imports from MobileNav.tsx, MobileNavToggle.tsx
  * @output Re-exports MobileNav components and types
  * @position Barrel export; consumed by packages/core/src/index.ts
  */
 
-export {XDSMobileNav} from './XDSMobileNav';
-export type {XDSMobileNavProps} from './XDSMobileNav';
-export {XDSMobileNavToggle} from './XDSMobileNavToggle';
-export type {XDSMobileNavToggleProps} from './XDSMobileNavToggle';
+export {MobileNav} from './MobileNav';
+export type {MobileNavProps} from './MobileNav';
+export {MobileNavToggle} from './MobileNavToggle';
+export type {MobileNavToggleProps} from './MobileNavToggle';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSMobileNav as MobileNav,
-  XDSMobileNavToggle as MobileNavToggle,
+  MobileNav as XDSMobileNav,
+  MobileNavToggle as XDSMobileNavToggle,
 } from '.';
 export type {
-  XDSMobileNavProps as MobileNavProps,
-  XDSMobileNavToggleProps as MobileNavToggleProps,
+  MobileNavProps as XDSMobileNavProps,
+  MobileNavToggleProps as XDSMobileNavToggleProps,
 } from '.';
 // <compat-aliases:end>
