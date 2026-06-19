@@ -11,7 +11,9 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
 import {XDSTheme} from '@xds/core/theme';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
-import {astryxTheme} from '../../themes/astryxTheme';
+// Built theme (__built:true) so <XDSTheme> uses the pre-built CSS and skips
+// runtime style injection. Importing the source astryxTheme.ts re-triggers it.
+import {astryxTheme} from '@/themes/astryx';
 import {
   HeroReelProvider,
   HeroReelCards,

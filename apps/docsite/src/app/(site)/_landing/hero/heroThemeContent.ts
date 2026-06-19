@@ -11,9 +11,12 @@
  */
 
 import type {XDSDefinedTheme} from '@xds/core/theme';
-import {packages} from '../../../../generated/packageRegistry';
-import {themeObjects} from '../../../../generated/themeRegistry';
-import {astryxTheme, BRAND_BLUE} from '../../../../themes/astryxTheme';
+import {packages} from '@/generated/packageRegistry';
+import {themeObjects} from '@/generated/themeRegistry';
+// Built theme (__built:true) so the hero reel's <XDSTheme> slide uses pre-built
+// CSS and skips runtime injection. BRAND_BLUE (logo-only) lives in @/constants.
+import {astryxTheme} from '@/themes/astryx';
+import {BRAND_BLUE} from '@/constants';
 
 // Sentinel for the docsite's local brand theme (not an @xds/theme-* package).
 const ASTRYX = 'astryx';
