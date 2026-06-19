@@ -18,6 +18,7 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSSelectableCard} from '@xds/core/SelectableCard';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSDivider} from '@xds/core/Divider';
+import {useMediaQuery} from '@xds/core/hooks';
 import {ThemeShowcaseStore} from '../../../../packages/cli/templates/pages/theme-showcase/page';
 import {getThemeShowcaseContent} from './themeShowcaseContent';
 import {buildPlaygroundHref} from './playgroundLink';
@@ -82,7 +83,8 @@ function packageNameToSlug(packageName: string): string {
 // sidebar is hidden via @media at the same breakpoint so the two
 // surfaces don't double-render. Picked so the right pane keeps
 // enough horizontal room for the themed preview's product grid.
-const SIDEBAR_BREAKPOINT = '@media (max-width: 900px)';
+const SIDEBAR_QUERY = '(max-width: 900px)';
+const SIDEBAR_BREAKPOINT = `@media ${SIDEBAR_QUERY}`;
 
 // Fixed sidebar width — compact enough that the right pane gets the
 // lion's share of horizontal space, wide enough to fit the longest
@@ -443,20 +445,6 @@ const styles = stylex.create({
       gap: 'var(--spacing-3)',
     },
   },
-  // Page heading sizing. ThemeHeading renders in the desktop sidebar (260px
-  // column, where display-3 keeps "Themes" from wrapping) and in the mobile
-  // context block. Base stays display-3; only the narrow layout bumps to
-  // display-2 to match /templates and /components.
-  themeHeading: {
-    fontSize: {
-      default: 'var(--text-display-3-size)',
-      [SIDEBAR_BREAKPOINT]: 'var(--text-display-2-size)',
-    },
-    lineHeight: {
-      default: 'var(--text-display-3-leading)',
-      [SIDEBAR_BREAKPOINT]: 'var(--text-display-2-leading)',
-    },
-  },
 });
 
 // Per-theme override registry for the picker cards. Themes without
@@ -492,16 +480,25 @@ const PICKER_OVERRIDES: Record<
   },
 };
 
-function ThemeHeading({align = 'start'}: {align?: 'start' | 'center'}) {
+function ThemeHeading({
+  align = 'start',
+  isMobile = false,
+}: {
+  align?: 'start' | 'center';
+  isMobile?: boolean;
+}) {
   const isCentered = align === 'center';
 
   return (
     <XDSVStack gap={2} hAlign={isCentered ? 'center' : undefined}>
+      {/* display-3 in the desktop sidebar (display-2 wraps in the 260px
+          column); display-2 in the narrow layout to match /templates and
+          /components. Driven by the same SIDEBAR_QUERY mobile check the rest
+          of the component uses, not a separate CSS breakpoint. */}
       <XDSHeading
         level={1}
-        type="display-3"
-        justify={align}
-        xstyle={styles.themeHeading}>
+        type={isMobile ? 'display-2' : 'display-3'}
+        justify={align}>
         Themes
       </XDSHeading>
       <XDSText
@@ -555,6 +552,12 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
   // to toggle the floating toolbar visibility.
   const carouselRef = useRef<HTMLDivElement>(null);
   const [showMobileBar, setShowMobileBar] = useState(false);
+
+  // Narrow-viewport check — the same SIDEBAR_QUERY breakpoint that hides the
+  // sidebar and shows the mobile context block. Drives the heading's type so
+  // the JS render matches the layout swap (no parallel CSS breakpoint). Server
+  // default is desktop (false), matching the sidebar shown on first paint.
+  const isMobile = useMediaQuery(SIDEBAR_QUERY);
 
   // Show the floating toolbar when the carousel scrolls out of view.
   useEffect(() => {
@@ -682,11 +685,11 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
         <XDSCard variant="default" padding={0} xstyle={styles.sidebarCard}>
           <XDSVStack gap={4}>
             {/* Hero block — page-level heading + description + CTAs.
-                Heading is display-3 here (display-2 wraps in the 260px
-                sidebar); the mobile layout bumps it to display-2 via
-                styles.themeHeading. CTAs stack full-width. */}
+                Heading is display-3 in this sidebar (display-2 wraps in the
+                260px column); the narrow layout uses display-2 (see isMobile).
+                CTAs stack full-width. */}
             <XDSVStack gap={3}>
-              <ThemeHeading />
+              <ThemeHeading isMobile={isMobile} />
               {/* Action row — primary CTA takes the leading flex
                   space, mode toggle (icon-only) sits on the trailing
                   edge. Both belong here because they're page-level
@@ -841,7 +844,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
             Mirrors the sidebar's hero: heading, description, and
             action buttons (Open in Playground + mode toggle). */}
         <div {...stylex.props(styles.mobileContext)}>
-          <ThemeHeading align="center" />
+          <ThemeHeading align="center" isMobile={isMobile} />
           <XDSHStack gap={2} vAlign="center">
             <XDSButton
               variant="primary"
