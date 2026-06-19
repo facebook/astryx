@@ -16,7 +16,7 @@ export const docs = {
     },
     {
       name: 'shade',
-      type: "'default' | 'onMedia'",
+      type: "'default' | 'onMedia' | 'subtle' | 'inherit'",
       description: 'Color shade for light or dark backgrounds.',
       default: "'default'",
     },
@@ -69,7 +69,7 @@ export const docsZh = {
     },
     {
       name: 'shade',
-      type: "'default' | 'onMedia'",
+      type: "'default' | 'onMedia' | 'subtle' | 'inherit'",
       description: '浅色或深色背景的颜色色调。',
       default: "'default'",
     },

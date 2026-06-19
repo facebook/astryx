@@ -207,21 +207,67 @@ export function getMissingRequiredProps(
     .map(({row}) => row.name);
 }
 
+/**
+ * Returns the name of a callback's first parameter from its stringified type,
+ * e.g. `(page: number) => void` → `page`. Returns `null` for unnamed params.
+ */
+function getCallbackTargetProp(type: string): string | null {
+  const match = /^\s*\(\s*([^):,]+)/.exec(type);
+  if (!match) {
+    return null;
+  }
+  const name = match[1].trim().replace(/\?$/, '');
+  return /^[A-Za-z_$][\w$]*$/.test(name) ? name : null;
+}
+
+/**
+ * Wires controlled-component change handlers back into playground state so the
+ * preview reflects interaction (clicking a Pagination page, etc.). A callback
+ * whose first parameter names a value prop in `state` (page/onChange,
+ * value/onChange, pageSize/onPageSizeChange) replaces its noop with one that
+ * updates that prop. isOpen/onOpenChange stays gated behind canControlOpenState.
+ */
 export function buildRuntimePreviewState(
   state: Record<string, unknown>,
   onPropChange?: (propName: string, value: unknown) => void,
-  options?: {canControlOpenState?: boolean},
+  options?: {canControlOpenState?: boolean; knobs?: KnobProp[]},
 ): Record<string, unknown> {
-  if (
-    onPropChange == null ||
-    options?.canControlOpenState !== true ||
-    typeof state.isOpen !== 'boolean'
-  ) {
+  if (onPropChange == null) {
     return state;
   }
 
-  return {
-    ...state,
-    onOpenChange: (isOpen: boolean) => onPropChange('isOpen', isOpen),
-  };
+  const next: Record<string, unknown> = {...state};
+  let changed = false;
+
+  for (const {row, control} of options?.knobs ?? []) {
+    if (control.kind !== 'callback') {
+      continue;
+    }
+    // Only change handlers — not side-effect callbacks (changeAction) or
+    // one-off events (onClick).
+    if (!/^on[A-Z].*Change$/.test(row.name) && row.name !== 'onChange') {
+      continue;
+    }
+    const target = getCallbackTargetProp(row.type);
+    if (target == null || !(target in state)) {
+      continue;
+    }
+    if (target === 'isOpen' && options?.canControlOpenState !== true) {
+      continue;
+    }
+    next[row.name] = (value: unknown) => onPropChange(target, value);
+    changed = true;
+  }
+
+  // Fallback when knobs aren't supplied: bridge a controllable isOpen pair.
+  if (
+    !changed &&
+    options?.canControlOpenState === true &&
+    typeof state.isOpen === 'boolean'
+  ) {
+    next.onOpenChange = (isOpen: boolean) => onPropChange('isOpen', isOpen);
+    return next;
+  }
+
+  return changed ? next : state;
 }

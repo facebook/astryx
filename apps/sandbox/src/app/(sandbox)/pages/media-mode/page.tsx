@@ -230,8 +230,9 @@ export default function MediaModePage() {
 
       <Heading level={4}>Real Images</Heading>
       <div style={{fontSize: 12, color: '#888'}}>
+        
         Samples the upper-right corner where a remove button would sit.
-        Switch algorithms above — images re-detect with the selected algorithm.
+        Switch algorithms above; images re-detect with the selected algorithm.
       </div>
 
       <div style={gridStyle}>

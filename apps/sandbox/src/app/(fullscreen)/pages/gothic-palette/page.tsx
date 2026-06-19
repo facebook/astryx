@@ -94,7 +94,7 @@ export default function GothicPalettePage() {
     <ThemePalettePreview
       theme={gothicTheme}
       title="Gothic Theme Palette"
-      subtitle="Dark-only theme — deep blue-gray surfaces, distressed display heading, pastel categorical accents that glow against the dark page like illuminated panels."
+      subtitle="Dark-only theme: deep blue-gray surfaces, distressed display heading, pastel categorical accents that glow against the dark page like illuminated panels."
       tonalColors={TONAL_COLORS}
       coreSwatches={CORE}
       singleMode="dark"

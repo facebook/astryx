@@ -15,8 +15,8 @@ export type {
   XDSDateRangeInputSize,
   XDSDateRangeInputStatus,
   XDSDateRangeInputStatusType,
-  XDSDateRange,
-  XDSDateRangePreset,
+  DateRange,
+  DateRangePreset,
 } from './XDSDateRangeInput';
 
 
@@ -33,7 +33,5 @@ export type {
   XDSDateRangeInputSize as DateRangeInputSize,
   XDSDateRangeInputStatus as DateRangeInputStatus,
   XDSDateRangeInputStatusType as DateRangeInputStatusType,
-  XDSDateRange as DateRange,
-  XDSDateRangePreset as DateRangePreset,
 } from '.';
 // <compat-aliases:end>

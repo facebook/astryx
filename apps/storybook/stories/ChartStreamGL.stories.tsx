@@ -352,7 +352,8 @@ export const MultiSensorOverlay: StoryObj = {
       <Stack direction="vertical" gap={4}>
         <Heading level={3}>Multi-Sensor Overlay</Heading>
         <Text type="supporting" color="secondary">
-          Three streams sharing one chart — same xDomain, same yDomain=[0, 100].
+          
+          Three streams sharing one chart, same xDomain, same yDomain=[0, 100].
         </Text>
         <Chart
           data={[

@@ -249,7 +249,7 @@ export default function MegaMenuPage() {
                         />
                         <TopNavMegaMenuItem
                           title="Developer Tools"
-                          description="APIs, SDKs, and CLI tools for seamless integration"
+                          description="APIs, SDKs, and CLI tools for integration"
                           icon={<CodeIcon />}
                           href="#dev-tools"
                         />

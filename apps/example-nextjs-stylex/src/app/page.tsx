@@ -45,7 +45,8 @@ export default function Home() {
               <Text type="body" weight="bold">
                 @xds/core
               </Text>{' '}
-              as a pre-built dist package — StyleX is only used for
+              
+              as a pre-built dist package. StyleX is only used for
               product-level layout styles, not to compile XDS itself. XDS
               handles components, theming, and design tokens.
             </Text>

@@ -35,7 +35,7 @@ const meta: Meta<typeof ClickableCard> = {
       description: {
         component:
           'An interactive card for navigation or action targets. ' +
-          'Nested interactive elements (buttons, links) work independently — ' +
+          'Nested interactive elements (buttons, links) work independently; ' +
           "clicking them does NOT trigger the card's onClick or navigation. " +
           'Uses `useClickableContainer` internally.',
       },
@@ -64,7 +64,7 @@ export const Navigation: Story = {
     docs: {
       description: {
         story:
-          'Card with `href` — clicking navigates. Ctrl/Cmd+click opens new tab. Middle-click opens new tab.',
+          'Card with `href`: clicking navigates. Ctrl/Cmd+click opens new tab. Middle-click opens new tab.',
       },
     },
   },
@@ -91,7 +91,7 @@ export const WithOnClick: Story = {
     docs: {
       description: {
         story:
-          'Card with `onClick` — fires the handler when the card surface is clicked.',
+          'Card with `onClick`: fires the handler when the card surface is clicked.',
       },
     },
   },
@@ -195,7 +195,7 @@ export const ColorVariants: Story = {
     docs: {
       description: {
         story:
-          'All color variants — same palette as Card. Color cards have transparent borders.',
+          'All color variants: same palette as Card. Color cards have transparent borders.',
       },
     },
   },

@@ -165,6 +165,7 @@ export const docsDense = {
       { guidance: false, description: 'Skip heading levels \u2014 sequential h1 \u2192 h2 \u2192 h3.' },
       { guidance: false, description: 'Raw <p>/<h1>/<span> \u2014 use Text/Heading for theme tokens.' },
       { guidance: false, description: '`variant` prop \u2014 does not exist. Use `type` for text styling or Heading for headings.' },
+      { guidance: false, description: 'Text for headings: use Heading with level (1\u20136).' },
     ],
   },
 };

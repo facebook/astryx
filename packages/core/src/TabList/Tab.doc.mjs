@@ -9,6 +9,11 @@ export const docs = {
   isHiddenFromOverview: true,
   description:
     'Individual tab item that renders as a button or an anchor link, with selected-state styling and optional icons.',
+  // XDSTab requires XDSTabList context; wrap it so the preview doesn't throw.
+  playground: {
+    defaults: {value: 'tab-1', label: 'Tab'},
+    wrapper: {component: 'XDSTabList', props: {value: 'tab-1'}},
+  },
   props: [
     {
       name: 'value',
