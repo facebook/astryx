@@ -3,40 +3,39 @@
 
 /**
  * @file index.ts
- * @output Exports XDSContextMenu, XDSContextMenuItem and related types
+ * @output Exports ContextMenu, ContextMenuItem and related types
  * @position Public API entry point
  */
 
 export {
-  XDSContextMenu,
-  type XDSContextMenuProps,
-  type XDSContextMenuItemData,
-  type XDSContextMenuDivider,
-  type XDSContextMenuSection,
-  type XDSContextMenuOption,
-} from './XDSContextMenu';
+  ContextMenu,
+  type ContextMenuProps,
+  type ContextMenuItemData,
+  type ContextMenuDivider,
+  type ContextMenuSection,
+  type ContextMenuOption,
+} from './ContextMenu';
 
 export {
-  XDSDropdownMenuItem as XDSContextMenuItem,
-  type XDSDropdownMenuItemProps as XDSContextMenuItemProps,
-} from '../DropdownMenu/XDSDropdownMenuItem';
+  DropdownMenuItem as ContextMenuItem,
+  type DropdownMenuItemProps as ContextMenuItemProps,
+} from '../DropdownMenu/DropdownMenuItem';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSContextMenu as ContextMenu,
-  XDSContextMenuItem as ContextMenuItem,
+  ContextMenu as XDSContextMenu,
 } from '.';
 export type {
-  XDSContextMenuDivider as ContextMenuDivider,
-  XDSContextMenuItemData as ContextMenuItemData,
-  XDSContextMenuItemProps as ContextMenuItemProps,
-  XDSContextMenuOption as ContextMenuOption,
-  XDSContextMenuProps as ContextMenuProps,
-  XDSContextMenuSection as ContextMenuSection,
+  ContextMenuDivider as XDSContextMenuDivider,
+  ContextMenuItemData as XDSContextMenuItemData,
+  ContextMenuOption as XDSContextMenuOption,
+  ContextMenuProps as XDSContextMenuProps,
+  ContextMenuSection as XDSContextMenuSection,
 } from '.';
 // <compat-aliases:end>

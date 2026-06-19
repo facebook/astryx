@@ -4,32 +4,33 @@
 
 /**
  * @file index.ts
- * @input XDSPagination component and types
+ * @input Pagination component and types
  * @output Public API for Pagination module
  * @position Barrel export; consumed by packages/core/src/index.ts
  */
 
-export {XDSPagination, generatePageRange} from './XDSPagination';
+export {Pagination, generatePageRange} from './Pagination';
 export type {
-  XDSPaginationProps,
-  XDSPaginationVariant,
-  XDSPaginationVariantMap,
-  XDSPaginationSize,
-} from './XDSPagination';
+  PaginationProps,
+  PaginationVariant,
+  PaginationVariantMap,
+  PaginationSize,
+} from './Pagination';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSPagination as Pagination,
+  Pagination as XDSPagination,
 } from '.';
 export type {
-  XDSPaginationProps as PaginationProps,
-  XDSPaginationSize as PaginationSize,
-  XDSPaginationVariant as PaginationVariant,
-  XDSPaginationVariantMap as PaginationVariantMap,
+  PaginationProps as XDSPaginationProps,
+  PaginationSize as XDSPaginationSize,
+  PaginationVariant as XDSPaginationVariant,
+  PaginationVariantMap as XDSPaginationVariantMap,
 } from '.';
 // <compat-aliases:end>

@@ -4,7 +4,7 @@
  * @file stackItem.stylex.ts
  * @input Uses @stylexjs/stylex
  * @output StyleX utility for stack item styling
- * @position Layout utility; used by XDSStackItem and directly by components
+ * @position Layout utility; used by StackItem and directly by components
  *
  * SYNC: When modified, update /packages/core/src/Stack/Stack.doc.mjs
  */
@@ -94,7 +94,7 @@ export interface StackItemOptions {
 /**
  * StyleX utility to add stack item styles to any component.
  *
- * Use this to avoid wrapping components in XDSStackItem when you need
+ * Use this to avoid wrapping components in StackItem when you need
  * direct control over flex behavior.
  *
  * @example

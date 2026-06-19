@@ -6,7 +6,7 @@
  * @file useCalendarRovingTabindex.ts
  * @input Uses React useMemo, PlainDate utilities
  * @output Exports useCalendarRovingTabindex hook for accessible grid navigation
- * @position Calendar-specific hook; used by XDSCalendar
+ * @position Calendar-specific hook; used by Calendar
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Calendar/hooks/index.ts

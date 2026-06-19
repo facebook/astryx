@@ -5,65 +5,66 @@
 /**
  * @file index.ts
  * @input Imports from TopNav component files
- * @output Exports XDSTopNav and companion components
+ * @output Exports TopNav and companion components
  * @position Entry point for TopNav module
  *
  * SYNC: When modified, update /packages/core/src/TopNav/TopNav.doc.mjs
  */
 
-export {XDSTopNav} from './XDSTopNav';
-export type {XDSTopNavProps} from './XDSTopNav';
+export {TopNav} from './TopNav';
+export type {TopNavProps} from './TopNav';
 
-export {XDSTopNavHeading} from './XDSTopNavHeading';
-export type {XDSTopNavHeadingProps} from './XDSTopNavHeading';
+export {TopNavHeading} from './TopNavHeading';
+export type {TopNavHeadingProps} from './TopNavHeading';
 
-export {XDSTopNavItem} from './XDSTopNavItem';
-export type {XDSTopNavItemProps} from './XDSTopNavItem';
+export {TopNavItem} from './TopNavItem';
+export type {TopNavItemProps} from './TopNavItem';
 
-export {XDSTopNavMenu} from './XDSTopNavMenu';
-export type {XDSTopNavMenuProps, XDSTopNavMenuItemData} from './XDSTopNavMenu';
+export {TopNavMenu} from './TopNavMenu';
+export type {TopNavMenuProps, TopNavMenuItemData} from './TopNavMenu';
 
-export {XDSTopNavMegaMenu} from './XDSTopNavMegaMenu';
-export type {XDSTopNavMegaMenuProps} from './XDSTopNavMegaMenu';
+export {TopNavMegaMenu} from './TopNavMegaMenu';
+export type {TopNavMegaMenuProps} from './TopNavMegaMenu';
 
-export {XDSTopNavMegaMenuItem} from './XDSTopNavMegaMenuItem';
-export type {XDSTopNavMegaMenuItemProps} from './XDSTopNavMegaMenuItem';
+export {TopNavMegaMenuItem} from './TopNavMegaMenuItem';
+export type {TopNavMegaMenuItemProps} from './TopNavMegaMenuItem';
 
-export {XDSTopNavMegaMenuFeaturedCard} from './XDSTopNavMegaMenuFeaturedCard';
-export type {XDSTopNavMegaMenuFeaturedCardProps} from './XDSTopNavMegaMenuFeaturedCard';
+export {TopNavMegaMenuFeaturedCard} from './TopNavMegaMenuFeaturedCard';
+export type {TopNavMegaMenuFeaturedCardProps} from './TopNavMegaMenuFeaturedCard';
 
 export {
-  XDSTopNavRenderContext,
-  useXDSTopNavRenderMode,
-} from './XDSTopNavRenderContext';
-export type {XDSTopNavRenderMode} from './XDSTopNavRenderContext';
+  TopNavRenderContext,
+  useTopNavRenderMode,
+} from './TopNavRenderContext';
+export type {TopNavRenderMode} from './TopNavRenderContext';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSTopNav as TopNav,
-  XDSTopNavHeading as TopNavHeading,
-  XDSTopNavItem as TopNavItem,
-  XDSTopNavMegaMenu as TopNavMegaMenu,
-  XDSTopNavMegaMenuFeaturedCard as TopNavMegaMenuFeaturedCard,
-  XDSTopNavMegaMenuItem as TopNavMegaMenuItem,
-  XDSTopNavMenu as TopNavMenu,
-  XDSTopNavRenderContext as TopNavRenderContext,
-  useXDSTopNavRenderMode as useTopNavRenderMode,
+  TopNav as XDSTopNav,
+  TopNavHeading as XDSTopNavHeading,
+  TopNavItem as XDSTopNavItem,
+  TopNavMegaMenu as XDSTopNavMegaMenu,
+  TopNavMegaMenuFeaturedCard as XDSTopNavMegaMenuFeaturedCard,
+  TopNavMegaMenuItem as XDSTopNavMegaMenuItem,
+  TopNavMenu as XDSTopNavMenu,
+  TopNavRenderContext as XDSTopNavRenderContext,
+  useTopNavRenderMode as useXDSTopNavRenderMode,
 } from '.';
 export type {
-  XDSTopNavHeadingProps as TopNavHeadingProps,
-  XDSTopNavItemProps as TopNavItemProps,
-  XDSTopNavMegaMenuFeaturedCardProps as TopNavMegaMenuFeaturedCardProps,
-  XDSTopNavMegaMenuItemProps as TopNavMegaMenuItemProps,
-  XDSTopNavMegaMenuProps as TopNavMegaMenuProps,
-  XDSTopNavMenuItemData as TopNavMenuItemData,
-  XDSTopNavMenuProps as TopNavMenuProps,
-  XDSTopNavProps as TopNavProps,
-  XDSTopNavRenderMode as TopNavRenderMode,
+  TopNavHeadingProps as XDSTopNavHeadingProps,
+  TopNavItemProps as XDSTopNavItemProps,
+  TopNavMegaMenuFeaturedCardProps as XDSTopNavMegaMenuFeaturedCardProps,
+  TopNavMegaMenuItemProps as XDSTopNavMegaMenuItemProps,
+  TopNavMegaMenuProps as XDSTopNavMegaMenuProps,
+  TopNavMenuItemData as XDSTopNavMenuItemData,
+  TopNavMenuProps as XDSTopNavMenuProps,
+  TopNavProps as XDSTopNavProps,
+  TopNavRenderMode as XDSTopNavRenderMode,
 } from '.';
 // <compat-aliases:end>

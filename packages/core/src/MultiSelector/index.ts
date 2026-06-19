@@ -4,42 +4,44 @@
 
 /**
  * @file index.ts
- * @output Exports XDSMultiSelector and types
+ * @output Exports MultiSelector and types
  * @position Public API entry point
  */
 
 export {
-  XDSMultiSelector,
-  type XDSMultiSelectorProps,
-  type XDSMultiSelectorSize,
-  type XDSMultiSelectorStatusType,
-} from './XDSMultiSelector';
+  MultiSelector,
+  type MultiSelectorProps,
+  type MultiSelectorSize,
+  type MultiSelectorStatusType,
+} from './MultiSelector';
 export type {
-  XDSMultiSelectorOptionType,
-  XDSMultiSelectorOptionData,
-  XDSMultiSelectorDivider,
-  XDSMultiSelectorSection,
-  XDSMultiSelectorStatus,
+  MultiSelectorOptionType,
+  MultiSelectorOptionData,
+  MultiSelectorDivider,
+  MultiSelectorSection,
+  MultiSelectorStatus,
 } from './types';
 export {useMultiCombobox} from './hooks';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSMultiSelector as MultiSelector,
+  MultiSelector as XDSMultiSelector,
+  useMultiCombobox as useXDSMultiCombobox,
 } from '.';
 export type {
-  XDSMultiSelectorDivider as MultiSelectorDivider,
-  XDSMultiSelectorOptionData as MultiSelectorOptionData,
-  XDSMultiSelectorOptionType as MultiSelectorOptionType,
-  XDSMultiSelectorProps as MultiSelectorProps,
-  XDSMultiSelectorSection as MultiSelectorSection,
-  XDSMultiSelectorSize as MultiSelectorSize,
-  XDSMultiSelectorStatus as MultiSelectorStatus,
-  XDSMultiSelectorStatusType as MultiSelectorStatusType,
+  MultiSelectorDivider as XDSMultiSelectorDivider,
+  MultiSelectorOptionData as XDSMultiSelectorOptionData,
+  MultiSelectorOptionType as XDSMultiSelectorOptionType,
+  MultiSelectorProps as XDSMultiSelectorProps,
+  MultiSelectorSection as XDSMultiSelectorSection,
+  MultiSelectorSize as XDSMultiSelectorSize,
+  MultiSelectorStatus as XDSMultiSelectorStatus,
+  MultiSelectorStatusType as XDSMultiSelectorStatusType,
 } from '.';
 // <compat-aliases:end>

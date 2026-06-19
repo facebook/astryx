@@ -6,7 +6,7 @@
  * @file useCalendarNavigation.ts
  * @input Uses React useState, useMemo, useCallback, PlainDate utilities
  * @output Exports useCalendarNavigation hook for month navigation
- * @position Calendar-specific hook; used by XDSCalendar
+ * @position Calendar-specific hook; used by Calendar
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Calendar/hooks/index.ts

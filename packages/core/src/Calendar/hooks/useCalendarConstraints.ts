@@ -6,7 +6,7 @@
  * @file useCalendarConstraints.ts
  * @input Uses React useCallback, useMemo, PlainDate utilities
  * @output Exports useCalendarConstraints hook for date validation
- * @position Calendar-specific hook; used by XDSCalendar
+ * @position Calendar-specific hook; used by Calendar
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Calendar/hooks/index.ts

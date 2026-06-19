@@ -3,8 +3,8 @@
 /**
  * @file types.ts
  * @input None (pure type definitions)
- * @output Exports base Table interfaces: column, render props, plugin, XDSBaseTableProps
- * @position Type foundation; consumed by XDSBaseTable and extended by XDSTable
+ * @output Exports base Table interfaces: column, render props, plugin, BaseTableProps
+ * @position Type foundation; consumed by BaseTable and extended by Table
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Table/Table.doc.mjs (type descriptions)
@@ -21,8 +21,8 @@ import type {
   ReactNode,
 } from 'react';
 import type {StyleXStyles} from '../theme/types';
-import type {XDSBaseProps} from '../XDSBaseProps';
-import type {XDSTableFilterFieldRef} from './plugins/filtering/useXDSTableFiltering';
+import type {BaseProps} from '../BaseProps';
+import type {TableFilterFieldRef} from './plugins/filtering/useTableFiltering';
 
 // =============================================================================
 // Column Width
@@ -57,11 +57,11 @@ export type ColumnWidth = ProportionalWidth | PixelWidth;
 
 /**
  * Sortable column configuration.
- * Added to XDSTableColumn<T> via the `sortable` field.
+ * Added to TableColumn<T> via the `sortable` field.
  */
-export interface XDSTableSortableColumnConfig {
+export interface TableSortableColumnConfig {
   /**
-   * The sort key for this column. Must match a key used in XDSTableSortState.
+   * The sort key for this column. Must match a key used in TableSortState.
    * Allows decoupling column identity from sort identity (e.g., a "Full Name"
    * column might sort by `'lastName'`).
    *
@@ -80,7 +80,7 @@ export interface XDSTableSortableColumnConfig {
  *
  * @default 'start'
  */
-export type XDSTableColumnAlign = 'start' | 'center' | 'end';
+export type TableColumnAlign = 'start' | 'center' | 'end';
 
 // =============================================================================
 // Row Vertical Alignment
@@ -92,7 +92,7 @@ export type XDSTableColumnAlign = 'start' | 'center' | 'end';
  *
  * @default 'middle'
  */
-export type XDSTableVerticalAlign = 'middle' | 'top' | 'bottom';
+export type TableVerticalAlign = 'middle' | 'top' | 'bottom';
 
 // =============================================================================
 // Column Definition
@@ -103,7 +103,7 @@ export type XDSTableVerticalAlign = 'middle' | 'top' | 'bottom';
  *
  * @template T - The row data type
  */
-export interface XDSTableColumn<T extends Record<string, unknown>> {
+export interface TableColumn<T extends Record<string, unknown>> {
   /** Unique key identifying this column. Used as React key and to access data. */
   key: string;
   /** Header text displayed in `<th>`. Defaults to capitalized `key`. */
@@ -142,7 +142,7 @@ export interface XDSTableColumn<T extends Record<string, unknown>> {
    * { key: 'status', header: 'Status', align: 'center' }
    * ```
    */
-  align?: XDSTableColumnAlign;
+  align?: TableColumnAlign;
   /**
    * Sortable configuration for this column.
    * Set to `true` for default behavior (sortKey = column.key),
@@ -169,12 +169,12 @@ export interface XDSTableColumn<T extends Record<string, unknown>> {
    * ```
    */
   resizable?: boolean;
-  sortable?: boolean | XDSTableSortableColumnConfig;
+  sortable?: boolean | TableSortableColumnConfig;
   /**
    * Filter configuration for this column.
    *
    * References a field in the shared `PowerSearchConfig` passed to
-   * `useXDSTableFiltering`. The plugin resolves the operator's value
+   * `useTableFiltering`. The plugin resolves the operator's value
    * type and renders the matching control.
    *
    * Accepts:
@@ -190,26 +190,26 @@ export interface XDSTableColumn<T extends Record<string, unknown>> {
    * { key: 'status', header: 'Status', filter: { field: 'status', operator: 'is_not' } }
    * ```
    */
-  filter?: XDSTableFilterFieldRef | string;
+  filter?: TableFilterFieldRef | string;
   /**
    * Custom cell renderer. Receives the row item and returns rich JSX content.
    * Defaults to `String(item[key])` — use renderCell for rich content like
    * badges, status dots, formatted text, icons, or composed layouts.
    *
    * @compositionHint Use renderCell to compose rich table cells:
-   * - XDSBadge for status labels (success/warning/error variants)
-   * - XDSStatusDot for colored indicators
-   * - XDSText with color="success"|"error" for formatted values
-   * - XDSHStack to combine multiple elements in a cell
-   * - XDSAvatar for user/entity cells
+   * - Badge for status labels (success/warning/error variants)
+   * - StatusDot for colored indicators
+   * - Text with color="success"|"error" for formatted values
+   * - HStack to combine multiple elements in a cell
+   * - Avatar for user/entity cells
    *
    * @example
    * ```tsx
    * renderCell: (item) => (
-   *   <XDSHStack gap={2} align="center">
-   *     <XDSStatusDot status={item.isActive ? 'success' : 'error'} />
-   *     <XDSBadge variant={item.isActive ? 'success' : 'error'} label={item.isActive ? 'Active' : 'Inactive'} />
-   *   </XDSHStack>
+   *   <HStack gap={2} align="center">
+   *     <StatusDot status={item.isActive ? 'success' : 'error'} />
+   *     <Badge variant={item.isActive ? 'success' : 'error'} label={item.isActive ? 'Active' : 'Inactive'} />
+   *   </HStack>
    * )
    * ```
    */
@@ -237,7 +237,7 @@ export interface HeaderRowRenderProps {
  * Props passed through the plugin pipeline for each `<th>`.
  *
  * Uses named slots so multiple plugins can contribute content without
- * conflicts. Each plugin writes to its own slot; XDSBaseTable renders
+ * conflicts. Each plugin writes to its own slot; BaseTable renders
  * them in order: `before | content | after`, with `overlay` positioned
  * absolutely on top and `below` underneath the header row.
  *
@@ -304,7 +304,7 @@ export interface TablePlugin<
    * Runs before any element-level transforms. Use to filter, reorder,
    * or inject synthetic columns (e.g. a selection checkbox column).
    */
-  transformColumns?: (columns: XDSTableColumn<T>[]) => XDSTableColumn<T>[];
+  transformColumns?: (columns: TableColumn<T>[]) => TableColumn<T>[];
   /** Transform the root `<table>` element props */
   transformTable?: (props: TableRenderProps) => TableRenderProps;
   /** Transform the header `<tr>` props */
@@ -312,7 +312,7 @@ export interface TablePlugin<
   /** Transform each `<th>` props */
   transformHeaderCell?: (
     props: HeaderCellRenderProps,
-    column: XDSTableColumn<T>,
+    column: TableColumn<T>,
   ) => HeaderCellRenderProps;
   /** Transform each body `<tr>` props */
   transformBodyRow?: (
@@ -323,7 +323,7 @@ export interface TablePlugin<
   /** Transform each body `<td>` props */
   transformBodyCell?: (
     props: BodyCellRenderProps,
-    column: XDSTableColumn<T>,
+    column: TableColumn<T>,
     item: T,
   ) => BodyCellRenderProps;
   /** Wrap the table output in context providers */
@@ -355,22 +355,22 @@ export interface TableHeaderCellComponentProps extends ThHTMLAttributes<HTMLTabl
 }
 
 // =============================================================================
-// XDSBaseTable Props
+// BaseTable Props
 // =============================================================================
 
 /**
- * Props for the unstyled XDSBaseTable component.
+ * Props for the unstyled BaseTable component.
  *
  * @template T - The row data type
  */
-export interface XDSBaseTableProps<
+export interface BaseTableProps<
   T extends Record<string, unknown>,
-> extends XDSBaseProps<HTMLTableElement> {
+> extends BaseProps<HTMLTableElement> {
   ref?: React.Ref<HTMLTableElement>;
   /** Array of data items to render as rows */
   data?: T[];
   /** Column definitions. If omitted, auto-generated from data keys. */
-  columns?: XDSTableColumn<T>[];
+  columns?: TableColumn<T>[];
   /**
    * Row key for React reconciliation.
    * - `string` — property name to use as key (e.g. `"id"`), must be a key of `T`
@@ -387,7 +387,7 @@ export interface XDSBaseTableProps<
   tableProps?: HTMLAttributes<HTMLTableElement>;
   /**
    * Optional wrapper rendered around the `<table>` element, inside the
-   * plugin `transformTableContext` layer. Used by `XDSTable` to add a
+   * plugin `transformTableContext` layer. Used by `Table` to add a
    * horizontal scroll container so plugin chrome (pagination, toolbars)
    * stays outside the scrollable area.
    */
@@ -410,17 +410,17 @@ export interface XDSBaseTableProps<
    * Rendered as a full-width row spanning all columns.
    *
    * - **Omit or `undefined`** — renders a default compact "No data" empty state
-   * - **`ReactNode`** — renders your custom content (e.g. `<XDSEmptyState>`)
+   * - **`ReactNode`** — renders your custom content (e.g. `<EmptyState>`)
    * - **`false`** — disables the empty state entirely (renders empty `<tbody>`)
    *
-   * @default <XDSEmptyState title="No data" isCompact />
+   * @default <EmptyState title="No data" isCompact />
    *
    * @example
    * ```
-   * <XDSTable
+   * <Table
    *   data={filteredUsers}
    *   columns={columns}
-   *   emptyState={<XDSEmptyState title="No results" description="Try adjusting your filters." />}
+   *   emptyState={<EmptyState title="No results" description="Try adjusting your filters." />}
    * />
    * ```
    */

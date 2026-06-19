@@ -33,11 +33,11 @@ export {useScrollLock} from './useScrollLock';
 export {useEntryAnimation} from './useEntryAnimation';
 export type {EntryAnimationPreset} from './useEntryAnimation';
 
-export {useXDSStreamingText} from './useXDSStreamingText';
+export {useStreamingText} from './useStreamingText';
 export type {
   StreamingTextSpeed,
   UseStreamingTextOptions,
-} from './useXDSStreamingText';
+} from './useStreamingText';
 export {useImageMode} from './useImageMode';
 export type {ImageSampleRegion, UseImageModeOptions} from './useImageMode';
 
@@ -50,23 +50,53 @@ export type {
 export {useInputContainer} from './useInputContainer';
 export type {UseInputContainerOptions} from './useInputContainer';
 
-export {useXDSInteractiveRole} from './useXDSInteractiveRole';
+export {useInteractiveRole} from './useInteractiveRole';
 export type {
-  XDSInteractiveRole,
-  UseXDSInteractiveRoleOptions,
-} from './useXDSInteractiveRole';
+  InteractiveRole,
+  UseInteractiveRoleOptions,
+} from './useInteractiveRole';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  useXDSInteractiveRole as useInteractiveRole,
-  useXDSStreamingText as useStreamingText,
+  useClickableContainer as useXDSClickableContainer,
+  useEntryAnimation as useXDSEntryAnimation,
+  useFocusTrap as useXDSFocusTrap,
+  useGridFocus as useXDSGridFocus,
+  useImageMode as useXDSImageMode,
+  useInputContainer as useXDSInputContainer,
+  useInteractiveRole as useXDSInteractiveRole,
+  useListFocus as useXDSListFocus,
+  useMediaQuery as useXDSMediaQuery,
+  useOverflow as useXDSOverflow,
+  useScrollLock as useXDSScrollLock,
+  useScrollOverflow as useXDSScrollOverflow,
+  useStreamingText as useXDSStreamingText,
 } from '.';
 export type {
-  XDSInteractiveRole as InteractiveRole,
+  ClickableContainerResult as XDSClickableContainerResult,
+  EntryAnimationPreset as XDSEntryAnimationPreset,
+  ImageSampleRegion as XDSImageSampleRegion,
+  InteractiveRole as XDSInteractiveRole,
+  ScrollOverflowState as XDSScrollOverflowState,
+  StreamingTextSpeed as XDSStreamingTextSpeed,
+  UseClickableContainerOptions as XDSUseClickableContainerOptions,
+  UseFocusTrapOptions as XDSUseFocusTrapOptions,
+  UseFocusTrapReturn as XDSUseFocusTrapReturn,
+  UseGridFocusOptions as XDSUseGridFocusOptions,
+  UseGridFocusReturn as XDSUseGridFocusReturn,
+  UseImageModeOptions as XDSUseImageModeOptions,
+  UseInputContainerOptions as XDSUseInputContainerOptions,
+  UseInteractiveRoleOptions as XDSUseInteractiveRoleOptions,
+  UseListFocusOptions as XDSUseListFocusOptions,
+  UseListFocusReturn as XDSUseListFocusReturn,
+  UseOverflowOptions as XDSUseOverflowOptions,
+  UseOverflowReturn as XDSUseOverflowReturn,
+  UseStreamingTextOptions as XDSUseStreamingTextOptions,
 } from '.';
 // <compat-aliases:end>

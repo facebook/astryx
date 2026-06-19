@@ -5,31 +5,32 @@
 /**
  * @file index.ts
  * @input DateInput component exports
- * @output Re-exports XDSDateInput and types
+ * @output Re-exports DateInput and types
  * @position Package entry point for DateInput
  */
 
-export {XDSDateInput} from './XDSDateInput';
+export {DateInput} from './DateInput';
 export type {
-  XDSDateInputProps,
-  XDSDateInputSize,
-  XDSDateInputStatus,
-  XDSDateInputStatusType,
-} from './XDSDateInput';
+  DateInputProps,
+  DateInputSize,
+  DateInputStatus,
+  DateInputStatusType,
+} from './DateInput';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSDateInput as DateInput,
+  DateInput as XDSDateInput,
 } from '.';
 export type {
-  XDSDateInputProps as DateInputProps,
-  XDSDateInputSize as DateInputSize,
-  XDSDateInputStatus as DateInputStatus,
-  XDSDateInputStatusType as DateInputStatusType,
+  DateInputProps as XDSDateInputProps,
+  DateInputSize as XDSDateInputSize,
+  DateInputStatus as XDSDateInputStatus,
+  DateInputStatusType as XDSDateInputStatusType,
 } from '.';
 // <compat-aliases:end>

@@ -4,8 +4,8 @@
  * defineTheme — Create an XDS theme from a flat token map.
  *
  * Two distribution modes:
- * - Unbuilt: XDSTheme generates CSS and injects a <style> tag at runtime
- * - Built: `npx xds theme build` pre-compiles to a CSS file; XDSTheme just
+ * - Unbuilt: Theme generates CSS and injects a <style> tag at runtime
+ * - Built: `npx xds theme build` pre-compiles to a CSS file; Theme just
  *   sets the data-xds-theme attribute
  *
  * Token values can be:
@@ -24,13 +24,13 @@
  *   icons: oceanIcons,
  * });
  *
- * <XDSTheme theme={oceanTheme}>
+ * <Theme theme={oceanTheme}>
  *   <App />
- * </XDSTheme>
+ * </Theme>
  * ```
  */
 
-import type {XDSIconRegistry} from '../Icon/globalIconRegistry';
+import type {IconRegistry} from '../Icon/globalIconRegistry';
 import type {TypographyConfig, FontWeight} from './types';
 import {
   resolveOnMedia,
@@ -54,28 +54,28 @@ import {
 import {
   expandTypeScale,
   generateTypeScaleComponents,
-  type XDSTypeScaleConfig,
+  type TypeScaleConfig,
 } from './expandTypeScale';
 import {
   expandMotionScale,
-  type XDSMotionScaleConfig,
+  type MotionScaleConfig,
 } from './expandMotionScale';
 import {
   expandRadiusScale,
-  type XDSRadiusScaleConfig,
+  type RadiusScaleConfig,
 } from './expandRadiusScale';
-import {expandColorScale, type XDSColorScaleConfig} from './expandColorScale';
+import {expandColorScale, type ColorScaleConfig} from './expandColorScale';
 
 import type {DomainTokenName} from './domainTokens';
 import {domainTokenDefaults} from './domainTokens';
-import type {SyntaxTheme} from './syntax';
+import type {SyntaxThemeDefinition} from './syntax';
 
 // =============================================================================
 // Types
 // =============================================================================
 
 /** All valid XDS core token names */
-export type XDSCoreTokenName =
+export type CoreTokenName =
   | keyof typeof colorDefaults
   | keyof typeof spacingDefaults
   | keyof typeof sizeDefaults
@@ -90,13 +90,13 @@ export type XDSCoreTokenName =
   | keyof typeof typeScaleDefaults;
 
 /** All valid XDS token names — core + domain tokens */
-export type XDSTokenName = XDSCoreTokenName | DomainTokenName;
+export type TokenName = CoreTokenName | DomainTokenName;
 
 /**
  * Token value — either a single string or a [light, dark] tuple.
  * Tuples are converted to CSS light-dark() at theme creation time.
  */
-export type XDSTokenValue = string | [light: string, dark: string];
+export type TokenValue = string | [light: string, dark: string];
 
 /**
  * CSS property values for a style rule.
@@ -117,7 +117,7 @@ export type XDSTokenValue = string | [light: string, dark: string];
  * }
  * ```
  */
-export type XDSStyleOverrides = Record<string, string | Record<string, string>>;
+export type StyleOverrides = Record<string, string | Record<string, string>>;
 
 /**
  * Component style overrides.
@@ -153,13 +153,13 @@ export type XDSStyleOverrides = Record<string, string | Record<string, string>>;
  * }
  * ```
  */
-export type XDSComponentStyleMap = Record<
+export type ComponentStyleMap = Record<
   string,
-  Record<string, XDSStyleOverrides>
+  Record<string, StyleOverrides>
 >;
 
 /** Input to defineTheme */
-export interface XDSDefineThemeInput {
+export interface DefineThemeInput {
   /** Theme name — used for data-xds-theme attribute and identification */
   name: string;
 
@@ -183,7 +183,7 @@ export interface XDSDefineThemeInput {
    * });
    * ```
    */
-  extends?: XDSDefinedTheme;
+  extends?: DefinedTheme;
   /**
    * Unified typography configuration — fonts, scale, and weights.
    *
@@ -220,7 +220,7 @@ export interface XDSDefineThemeInput {
    * //   Cinematic: { fast: 200, medium: 500, slow: 1200, ratio: 0.7 }
    * ```
    */
-  motion?: XDSMotionScaleConfig;
+  motion?: MotionScaleConfig;
   /**
    * Radius configuration. Generates radius token overrides
    * from a base unit and multiplier.
@@ -239,7 +239,7 @@ export interface XDSDefineThemeInput {
    * radius: { base: 4, multiplier: 0 }
    * ```
    */
-  radius?: XDSRadiusScaleConfig;
+  radius?: RadiusScaleConfig;
   /**
    * Color scale configuration. Generates color token overrides from a
    * single accent color using the HCT perceptual color model.
@@ -253,11 +253,11 @@ export interface XDSDefineThemeInput {
    * color: { accent: '#0064E0', neutralStyle: 'cool', contrast: 'standard' }
    * ```
    */
-  color?: XDSColorScaleConfig;
+  color?: ColorScaleConfig;
   /** Token overrides — flat map of CSS custom property names to values.
    *  Values can be a string or [light, dark] tuple.
    *  Only include tokens you want to override; defaults fill the rest. */
-  tokens?: Partial<Record<XDSTokenName, XDSTokenValue>>;
+  tokens?: Partial<Record<TokenName, TokenValue>>;
   /**
    * Component style overrides — keyed by component name (lowercase).
    * Each entry maps style keys to CSS property overrides, scoped under
@@ -281,13 +281,13 @@ export interface XDSDefineThemeInput {
    * }
    * ```
    */
-  components?: XDSComponentStyleMap;
+  components?: ComponentStyleMap;
   /** Icon registry — maps semantic icon names to React nodes */
-  icons?: Partial<XDSIconRegistry>;
+  icons?: Partial<IconRegistry>;
   /**
    * Default syntax highlighting theme for code components.
    * Sets --color-syntax-* tokens at the theme root. Can be overridden
-   * per-region via XDSSyntaxTheme or per-instance via syntaxTheme prop.
+   * per-region via SyntaxTheme or per-instance via syntaxTheme prop.
    *
    * @example
    * ```tsx
@@ -295,13 +295,13 @@ export interface XDSDefineThemeInput {
    * defineTheme({ name: 'my-theme', syntax: dracula, ... })
    * ```
    */
-  syntax?: SyntaxTheme;
+  syntax?: SyntaxThemeDefinition;
   /**
    * Overrides for content on a dark surface (e.g. inverted toast,
    * dark tooltip). Accepts token and component overrides — same shape
    * as the main theme. Token defaults are generated if omitted.
    *
-   * Used by `<XDSMediaTheme surface="dark">` to set semantic tokens
+   * Used by `<MediaTheme surface="dark">` to set semantic tokens
    * and component styles so children render correctly against a dark
    * background.
    *
@@ -323,16 +323,16 @@ export interface XDSDefineThemeInput {
   onLight?: OnMediaOverrides;
 }
 
-/** A defined theme — ready to pass to <XDSTheme> */
-export interface XDSDefinedTheme {
+/** A defined theme — ready to pass to <Theme> */
+export interface DefinedTheme {
   /** Theme name */
   name: string;
   /** Token overrides — only the tokens the consumer specified */
   tokens: Record<string, string>;
   /** Component style overrides */
-  components?: XDSComponentStyleMap;
+  components?: ComponentStyleMap;
   /** Icon registry */
-  icons?: Partial<XDSIconRegistry>;
+  icons?: Partial<IconRegistry>;
   /** Whether this theme has been pre-compiled by theme build CLI */
   __built?: true;
   /**
@@ -341,11 +341,11 @@ export interface XDSDefinedTheme {
    * (e.g. data viz, canvas rendering) without parsing light-dark() strings.
    * @internal
    */
-  __inputTokens?: Partial<Record<string, XDSTokenValue>>;
+  __inputTokens?: Partial<Record<string, TokenValue>>;
   /**
    * Resolved on-media token overrides for dark surfaces.
    * Generated by defineTheme from defaults + user onDark overrides.
-   * Used by XDSMediaTheme and generateThemeRules.
+   * Used by MediaTheme and generateThemeRules.
    * @internal
    */
   __onDark?: ResolvedOnMedia;
@@ -386,7 +386,7 @@ export const xdsTokenDefaults: Record<string, string> = {
  * - String values pass through as-is
  * - [light, dark] tuples become light-dark(light, dark)
  */
-function resolveTokenValue(value: XDSTokenValue): string {
+function resolveTokenValue(value: TokenValue): string {
   if (Array.isArray(value)) {
     return `light-dark(${value[0]}, ${value[1]})`;
   }
@@ -399,9 +399,9 @@ function resolveTokenValue(value: XDSTokenValue): string {
  * This allows typeScale-generated rules to be overridden by explicit components.
  */
 function deepMergeComponents(
-  base?: XDSComponentStyleMap,
-  overrides?: XDSComponentStyleMap,
-): XDSComponentStyleMap | undefined {
+  base?: ComponentStyleMap,
+  overrides?: ComponentStyleMap,
+): ComponentStyleMap | undefined {
   if (!base && !overrides) {
     return undefined;
   }
@@ -412,7 +412,7 @@ function deepMergeComponents(
     return base;
   }
 
-  const result: XDSComponentStyleMap = {};
+  const result: ComponentStyleMap = {};
 
   // Start with all base entries
   for (const [component, rules] of Object.entries(base)) {
@@ -478,7 +478,7 @@ function buildFontFamily(
  * that are merged into the token map. Explicit `tokens` entries take
  * precedence over generated values.
  */
-export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
+export function defineTheme(input: DefineThemeInput): DefinedTheme {
   const tokens: Record<string, string> = {};
 
   // 0. Pre-seed from base theme when `extends` is provided (lowest precedence)
@@ -491,7 +491,7 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
 
   // Build typeScale config from typography if present
   const typo = input.typography;
-  let typeScaleConfig: XDSTypeScaleConfig | undefined;
+  let typeScaleConfig: TypeScaleConfig | undefined;
   if (typo?.scale) {
     // Collect weight overrides from typography roles
     const headingWeights: Partial<Record<1 | 2 | 3 | 4 | 5 | 6, string>> = {};
@@ -657,7 +657,7 @@ export {
 // =============================================================================
 
 /** Check if a theme object was created with defineTheme */
-export function isDefinedTheme(theme: unknown): theme is XDSDefinedTheme {
+export function isDefinedTheme(theme: unknown): theme is DefinedTheme {
   return (
     typeof theme === 'object' &&
     theme !== null &&

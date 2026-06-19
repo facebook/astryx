@@ -4,30 +4,31 @@
 
 /**
  * @file index.ts
- * @input XDSFieldStatus component source
- * @output Exports XDSFieldStatus and related types
+ * @input FieldStatus component source
+ * @output Exports FieldStatus and related types
  * @position Entry point for @xds/core/FieldStatus subpath export
  */
 
-export {XDSFieldStatus} from './XDSFieldStatus';
+export {FieldStatus} from './FieldStatus';
 export type {
-  XDSFieldStatusProps,
-  XDSFieldStatusVariant,
-  XDSFieldStatusVariantMap,
-} from './XDSFieldStatus';
+  FieldStatusProps,
+  FieldStatusVariant,
+  FieldStatusVariantMap,
+} from './FieldStatus';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSFieldStatus as FieldStatus,
+  FieldStatus as XDSFieldStatus,
 } from '.';
 export type {
-  XDSFieldStatusProps as FieldStatusProps,
-  XDSFieldStatusVariant as FieldStatusVariant,
-  XDSFieldStatusVariantMap as FieldStatusVariantMap,
+  FieldStatusProps as XDSFieldStatusProps,
+  FieldStatusVariant as XDSFieldStatusVariant,
+  FieldStatusVariantMap as XDSFieldStatusVariantMap,
 } from '.';
 // <compat-aliases:end>

@@ -12,7 +12,7 @@
  */
 
 // Base types
-export type {XDSBaseProps} from './XDSBaseProps';
+export type {BaseProps} from './BaseProps';
 
 // Components
 export * from './AppShell';
@@ -99,11 +99,11 @@ export * from './MobileNav';
 export * from './Pagination';
 export * from './ProgressBar';
 
-// Layout utilities and components (includes XDSHStack, XDSVStack)
+// Layout utilities and components (includes HStack, VStack)
 export * from './Layout';
 
-// Layer utilities (useXDSLayer hook and core types)
-export {useXDSLayer} from './Layer';
+// Layer utilities (useLayer hook and core types)
+export {useLayer} from './Layer';
 export type {
   LayerAlignment,
   LayerPlacement,
@@ -116,20 +116,20 @@ export type {
 } from './Layer';
 
 // Layer provider
-export {XDSLayerProvider} from './Layer';
-export type {XDSLayerProviderProps, LayerToastConfig} from './Layer';
+export {LayerProvider} from './Layer';
+export type {LayerProviderProps, LayerToastConfig} from './Layer';
 
 // Toast
-export {XDSToast, useXDSToast} from './Toast';
+export {Toast, useToast} from './Toast';
 export type {
-  XDSToastProps,
-  XDSToastType,
-  XDSToastPosition,
-  XDSToastCollisionBehavior,
-  XDSToastDismissReason,
-  XDSToastOptions,
-  XDSToastDismissFn,
-  XDSShowToastFn,
+  ToastProps,
+  ToastType,
+  ToastPosition,
+  ToastCollisionBehavior,
+  ToastDismissReason,
+  ToastOptions,
+  ToastDismissFn,
+  ShowToastFn,
 } from './Toast';
 
 // Popover component and hook

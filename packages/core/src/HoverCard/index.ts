@@ -12,30 +12,32 @@
  */
 
 // HoverCard hook
-export {useXDSHoverCard} from './useXDSHoverCard';
+export {useHoverCard} from './useHoverCard';
 export type {
   HoverCardFocusTrigger,
-  XDSHoverCardOptions,
-  XDSHoverCardReturn,
-} from './useXDSHoverCard';
+  HoverCardOptions,
+  HoverCardReturn,
+} from './useHoverCard';
 
 // HoverCard component
-export {XDSHoverCard} from './XDSHoverCard';
-export type {XDSHoverCardProps} from './XDSHoverCard';
+export {HoverCard} from './HoverCard';
+export type {HoverCardProps} from './HoverCard';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSHoverCard as HoverCard,
-  useXDSHoverCard as useHoverCard,
+  HoverCard as XDSHoverCard,
+  useHoverCard as useXDSHoverCard,
 } from '.';
 export type {
-  XDSHoverCardOptions as HoverCardOptions,
-  XDSHoverCardProps as HoverCardProps,
-  XDSHoverCardReturn as HoverCardReturn,
+  HoverCardFocusTrigger as XDSHoverCardFocusTrigger,
+  HoverCardOptions as XDSHoverCardOptions,
+  HoverCardProps as XDSHoverCardProps,
+  HoverCardReturn as XDSHoverCardReturn,
 } from '.';
 // <compat-aliases:end>

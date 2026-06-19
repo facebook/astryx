@@ -4,19 +4,19 @@
 
 /**
  * @file useTriggerMenu.tsx
- * @input Uses React, useXDSPopover, XDSSearchSource
+ * @input Uses React, usePopover, SearchSource
  * @output Exports useTriggerMenu hook for trigger-based menus in contentEditable
- * @position Internal hook; consumed by XDSChatComposerInput
+ * @position Internal hook; consumed by ChatComposerInput
  *
  * Detects trigger characters (@ / etc.) typed inside a contentEditable,
  * opens a popover at the cursor position with filtered items, handles
  * keyboard navigation, and inserts tokens or text on selection.
  *
- * Reuses XDSSearchSource from Typeahead for async/sync search with
+ * Reuses SearchSource from Typeahead for async/sync search with
  * cancel() support and debounce.
  *
  * SYNC: When modified, update:
- * - /packages/core/src/Chat/XDSChatComposerInput.tsx
+ * - /packages/core/src/Chat/ChatComposerInput.tsx
  * - /packages/core/src/Chat/index.ts
  */
 
@@ -29,7 +29,7 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {useXDSPopover} from '../Popover/useXDSPopover';
+import {usePopover} from '../Popover/usePopover';
 import {
   colorVars,
   spacingVars,
@@ -38,12 +38,12 @@ import {
   typographyVars,
 } from '../theme/tokens.stylex';
 import {mergeProps, groupItems} from '../utils';
-import type {XDSSearchableItem} from '../Typeahead/types';
+import type {SearchableItem} from '../Typeahead/types';
 import {xdsThemeProps} from '../utils/xdsThemeProps';
 import type {
-  XDSChatComposerTrigger,
-  XDSChatComposerToken,
-} from './XDSChatComposerInput';
+  ChatComposerTrigger,
+  ChatComposerToken,
+} from './ChatComposerInput';
 
 // =============================================================================
 // Types
@@ -51,17 +51,17 @@ import type {
 
 export interface TriggerMenuState {
   isActive: boolean;
-  activeTrigger: XDSChatComposerTrigger | null;
+  activeTrigger: ChatComposerTrigger | null;
   query: string;
-  items: XDSSearchableItem[];
+  items: SearchableItem[];
   highlightedIndex: number;
   isLoading: boolean;
 }
 
 export interface UseTriggerMenuOptions {
-  triggers?: XDSChatComposerTrigger[];
+  triggers?: ChatComposerTrigger[];
   editableRef: React.RefObject<HTMLDivElement | null>;
-  onInsertToken: (token: XDSChatComposerToken) => void;
+  onInsertToken: (token: ChatComposerToken) => void;
   onInsertText: (text: string) => void;
   onEmitChange: () => void;
   /**
@@ -187,9 +187,9 @@ function getTextBeforeCursor(editable: HTMLDivElement): string | null {
 
 function findActiveTrigger(
   textBeforeCursor: string,
-  triggers: XDSChatComposerTrigger[],
+  triggers: ChatComposerTrigger[],
 ): {
-  trigger: XDSChatComposerTrigger;
+  trigger: ChatComposerTrigger;
   query: string;
   triggerStart: number;
 } | null {
@@ -280,7 +280,7 @@ export function useTriggerMenu(
     }
   }, []);
 
-  const popover = useXDSPopover({
+  const popover = usePopover({
     onHide: useCallback(() => {
       removeAnchorSpan();
       setState(prev => ({
@@ -378,7 +378,7 @@ export function useTriggerMenu(
   }, [editableRef, popover, removeAnchorSpan]);
 
   const searchItems = useCallback(
-    (trigger: XDSChatComposerTrigger, query: string) => {
+    (trigger: ChatComposerTrigger, query: string) => {
       // Clear any pending debounce
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
@@ -387,7 +387,7 @@ export function useTriggerMenu(
 
       const doSearch = () => {
         if (trigger.searchSource) {
-          // Use XDSSearchSource \u2014 cancel previous, then search
+          // Use SearchSource \u2014 cancel previous, then search
           trigger.searchSource.cancel?.();
           setState(prev => ({...prev, isLoading: true}));
           const result = trigger.searchSource.search(query);
@@ -429,7 +429,7 @@ export function useTriggerMenu(
   );
 
   const selectItem = useCallback(
-    (item: XDSSearchableItem) => {
+    (item: SearchableItem) => {
       const trigger = state.activeTrigger;
       if (!trigger) {
         return;

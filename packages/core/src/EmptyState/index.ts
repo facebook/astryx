@@ -4,19 +4,20 @@
  * @file EmptyState component barrel export
  */
 
-export {XDSEmptyState} from './XDSEmptyState';
-export type {XDSEmptyStateProps} from './XDSEmptyState';
+export {EmptyState} from './EmptyState';
+export type {EmptyStateProps} from './EmptyState';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSEmptyState as EmptyState,
+  EmptyState as XDSEmptyState,
 } from '.';
 export type {
-  XDSEmptyStateProps as EmptyStateProps,
+  EmptyStateProps as XDSEmptyStateProps,
 } from '.';
 // <compat-aliases:end>

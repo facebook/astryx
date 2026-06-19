@@ -11,28 +11,28 @@
  * SYNC: When modified, update this header and /packages/core/src/Table/Table.doc.mjs
  */
 
-export {XDSTable} from './XDSTable';
-export {XDSTableRow} from './XDSTableRow';
-export {XDSTableCell} from './XDSTableCell';
-export {XDSTableHeaderCell} from './XDSTableHeaderCell';
-export {XDSTableHeader} from './XDSTableHeader';
-export {XDSTableBody} from './XDSTableBody';
-export {XDSTableFooter} from './XDSTableFooter';
-export {XDSTableContext} from './XDSTableContext';
-export {useXDSTableSelection} from './plugins/selection';
-export {useXDSTableSelectionState} from './plugins/selection';
-export {useXDSTableSortable} from './plugins/sortable';
-export {useXDSTableSortableState} from './plugins/sortable';
-export {useXDSTablePagination, paginateData} from './plugins/pagination';
-export {useXDSTableColumnSettings} from './plugins/columnSettings';
-export {useXDSTableColumnSettingsState} from './plugins/columnSettings';
-export {useXDSTableColumnResize} from './plugins/columnResize';
+export {Table} from './Table';
+export {TableRow} from './TableRow';
+export {TableCell} from './TableCell';
+export {TableHeaderCell} from './TableHeaderCell';
+export {TableHeader} from './TableHeader';
+export {TableBody} from './TableBody';
+export {TableFooter} from './TableFooter';
+export {TableContext} from './TableContext';
+export {useTableSelection} from './plugins/selection';
+export {useTableSelectionState} from './plugins/selection';
+export {useTableSortable} from './plugins/sortable';
+export {useTableSortableState} from './plugins/sortable';
+export {useTablePagination, paginateData} from './plugins/pagination';
+export {useTableColumnSettings} from './plugins/columnSettings';
+export {useTableColumnSettingsState} from './plugins/columnSettings';
+export {useTableColumnResize} from './plugins/columnResize';
 export {
-  useXDSTableFiltering,
-  useXDSTableFilterState,
+  useTableFiltering,
+  useTableFilterState,
   toSearchFilters,
 } from './plugins/filtering';
-export {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
+export {useBaseTablePlugins} from './useBaseTablePlugins';
 export {
   proportional,
   pixel,
@@ -41,9 +41,9 @@ export {
   DEFAULT_MIN_COLUMN_WIDTH,
 } from './columnUtils';
 export type {
-  XDSTableColumn,
-  XDSTableColumnAlign,
-  XDSTableVerticalAlign,
+  TableColumn,
+  TableColumnAlign,
+  TableVerticalAlign,
   ColumnWidth,
   ProportionalWidth,
   PixelWidth,
@@ -53,106 +53,129 @@ export type {
   HeaderCellRenderProps,
   BodyRowRenderProps,
   BodyCellRenderProps,
-  XDSBaseTableProps,
+  BaseTableProps,
 } from './types';
 export type {
-  XDSTableProps,
-  XDSTableDensity,
-  XDSTableDividers,
-  XDSTableTextOverflow,
-} from './XDSTable';
-export type {XDSTableRowProps} from './XDSTableRow';
-export type {XDSTableCellProps} from './XDSTableCell';
-export type {XDSTableHeaderCellProps} from './XDSTableHeaderCell';
-export type {XDSTableHeaderProps} from './XDSTableHeader';
-export type {XDSTableBodyProps} from './XDSTableBody';
-export type {XDSTableFooterProps} from './XDSTableFooter';
-export type {XDSTableContextValue} from './XDSTableContext';
-export type {UseXDSTableSelectionConfig} from './plugins/selection';
+  TableProps,
+  TableDensity,
+  TableDividers,
+  TableTextOverflow,
+} from './Table';
+export type {TableRowProps} from './TableRow';
+export type {TableCellProps} from './TableCell';
+export type {TableHeaderCellProps} from './TableHeaderCell';
+export type {TableHeaderProps} from './TableHeader';
+export type {TableBodyProps} from './TableBody';
+export type {TableFooterProps} from './TableFooter';
+export type {TableContextValue} from './TableContext';
+export type {UseTableSelectionConfig} from './plugins/selection';
 export type {
-  UseXDSTableSelectionStateConfig,
-  UseXDSTableSelectionStateResult,
+  UseTableSelectionStateConfig,
+  UseTableSelectionStateResult,
 } from './plugins/selection';
 export type {
-  UseXDSTableSortableConfig,
-  UseXDSTableSortableStateConfig,
-  UseXDSTableSortableStateResult,
-  XDSTableSortComparator,
-  XDSTableSortDirection,
-  XDSTableSortEntry,
-  XDSTableSortState,
+  UseTableSortableConfig,
+  UseTableSortableStateConfig,
+  UseTableSortableStateResult,
+  TableSortComparator,
+  TableSortDirection,
+  TableSortEntry,
+  TableSortState,
 } from './plugins/sortable';
-export type {XDSTableSortableColumnConfig} from './types';
-export type {UseXDSTablePaginationConfig} from './plugins/pagination';
+export type {TableSortableColumnConfig} from './types';
+export type {UseTablePaginationConfig} from './plugins/pagination';
 export type {
-  UseXDSTableColumnSettingsConfig,
-  XDSColumnSettingsOption,
+  UseTableColumnSettingsConfig,
+  ColumnSettingsOption,
 } from './plugins/columnSettings';
 export type {
-  UseXDSTableColumnSettingsStateConfig,
-  UseXDSTableColumnSettingsStateReturn,
+  UseTableColumnSettingsStateConfig,
+  UseTableColumnSettingsStateReturn,
 } from './plugins/columnSettings';
-export type {UseXDSTableColumnResizeConfig} from './plugins/columnResize';
+export type {UseTableColumnResizeConfig} from './plugins/columnResize';
 export type {
-  UseXDSTableFilteringConfig,
-  XDSTableFilterState,
-  XDSTableFilterVariant,
-  XDSTableFilterValue,
-  XDSTableFilterFieldRef,
+  UseTableFilteringConfig,
+  TableFilterState,
+  TableFilterVariant,
+  TableFilterValue,
+  TableFilterFieldRef,
 } from './plugins/filtering';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSTable as Table,
-  XDSTableBody as TableBody,
-  XDSTableCell as TableCell,
-  XDSTableContext as TableContext,
-  XDSTableFooter as TableFooter,
-  XDSTableHeader as TableHeader,
-  XDSTableHeaderCell as TableHeaderCell,
-  XDSTableRow as TableRow,
-  useXDSBaseTablePlugins as useBaseTablePlugins,
-  useXDSTableColumnResize as useTableColumnResize,
-  useXDSTableColumnSettings as useTableColumnSettings,
-  useXDSTableColumnSettingsState as useTableColumnSettingsState,
-  useXDSTableFilterState as useTableFilterState,
-  useXDSTableFiltering as useTableFiltering,
-  useXDSTablePagination as useTablePagination,
-  useXDSTableSelection as useTableSelection,
-  useXDSTableSelectionState as useTableSelectionState,
-  useXDSTableSortable as useTableSortable,
-  useXDSTableSortableState as useTableSortableState,
+  DEFAULT_MIN_COLUMN_WIDTH as XDSDEFAULT_MIN_COLUMN_WIDTH,
+  Table as XDSTable,
+  TableBody as XDSTableBody,
+  TableCell as XDSTableCell,
+  TableContext as XDSTableContext,
+  TableFooter as XDSTableFooter,
+  TableHeader as XDSTableHeader,
+  TableHeaderCell as XDSTableHeaderCell,
+  TableRow as XDSTableRow,
+  useBaseTablePlugins as useXDSBaseTablePlugins,
+  useTableColumnResize as useXDSTableColumnResize,
+  useTableColumnSettings as useXDSTableColumnSettings,
+  useTableColumnSettingsState as useXDSTableColumnSettingsState,
+  useTableFilterState as useXDSTableFilterState,
+  useTableFiltering as useXDSTableFiltering,
+  useTablePagination as useXDSTablePagination,
+  useTableSelection as useXDSTableSelection,
+  useTableSelectionState as useXDSTableSelectionState,
+  useTableSortable as useXDSTableSortable,
+  useTableSortableState as useXDSTableSortableState,
 } from '.';
 export type {
-  XDSBaseTableProps as BaseTableProps,
-  XDSColumnSettingsOption as ColumnSettingsOption,
-  XDSTableBodyProps as TableBodyProps,
-  XDSTableCellProps as TableCellProps,
-  XDSTableColumn as TableColumn,
-  XDSTableColumnAlign as TableColumnAlign,
-  XDSTableContextValue as TableContextValue,
-  XDSTableDensity as TableDensity,
-  XDSTableDividers as TableDividers,
-  XDSTableFilterFieldRef as TableFilterFieldRef,
-  XDSTableFilterState as TableFilterState,
-  XDSTableFilterValue as TableFilterValue,
-  XDSTableFilterVariant as TableFilterVariant,
-  XDSTableFooterProps as TableFooterProps,
-  XDSTableHeaderCellProps as TableHeaderCellProps,
-  XDSTableHeaderProps as TableHeaderProps,
-  XDSTableProps as TableProps,
-  XDSTableRowProps as TableRowProps,
-  XDSTableSortComparator as TableSortComparator,
-  XDSTableSortDirection as TableSortDirection,
-  XDSTableSortEntry as TableSortEntry,
-  XDSTableSortState as TableSortState,
-  XDSTableSortableColumnConfig as TableSortableColumnConfig,
-  XDSTableTextOverflow as TableTextOverflow,
-  XDSTableVerticalAlign as TableVerticalAlign,
+  BaseTableProps as XDSBaseTableProps,
+  BodyCellRenderProps as XDSBodyCellRenderProps,
+  BodyRowRenderProps as XDSBodyRowRenderProps,
+  ColumnSettingsOption as XDSColumnSettingsOption,
+  ColumnWidth as XDSColumnWidth,
+  HeaderCellRenderProps as XDSHeaderCellRenderProps,
+  HeaderRowRenderProps as XDSHeaderRowRenderProps,
+  PixelWidth as XDSPixelWidth,
+  ProportionalWidth as XDSProportionalWidth,
+  TableBodyProps as XDSTableBodyProps,
+  TableCellProps as XDSTableCellProps,
+  TableColumn as XDSTableColumn,
+  TableColumnAlign as XDSTableColumnAlign,
+  TableContextValue as XDSTableContextValue,
+  TableDensity as XDSTableDensity,
+  TableDividers as XDSTableDividers,
+  TableFilterFieldRef as XDSTableFilterFieldRef,
+  TableFilterState as XDSTableFilterState,
+  TableFilterValue as XDSTableFilterValue,
+  TableFilterVariant as XDSTableFilterVariant,
+  TableFooterProps as XDSTableFooterProps,
+  TableHeaderCellProps as XDSTableHeaderCellProps,
+  TableHeaderProps as XDSTableHeaderProps,
+  TablePlugin as XDSTablePlugin,
+  TableProps as XDSTableProps,
+  TableRenderProps as XDSTableRenderProps,
+  TableRowProps as XDSTableRowProps,
+  TableSortComparator as XDSTableSortComparator,
+  TableSortDirection as XDSTableSortDirection,
+  TableSortEntry as XDSTableSortEntry,
+  TableSortState as XDSTableSortState,
+  TableSortableColumnConfig as XDSTableSortableColumnConfig,
+  TableTextOverflow as XDSTableTextOverflow,
+  TableVerticalAlign as XDSTableVerticalAlign,
+  UseTableColumnResizeConfig as XDSUseTableColumnResizeConfig,
+  UseTableColumnSettingsConfig as XDSUseTableColumnSettingsConfig,
+  UseTableColumnSettingsStateConfig as XDSUseTableColumnSettingsStateConfig,
+  UseTableColumnSettingsStateReturn as XDSUseTableColumnSettingsStateReturn,
+  UseTableFilteringConfig as XDSUseTableFilteringConfig,
+  UseTablePaginationConfig as XDSUseTablePaginationConfig,
+  UseTableSelectionConfig as XDSUseTableSelectionConfig,
+  UseTableSelectionStateConfig as XDSUseTableSelectionStateConfig,
+  UseTableSelectionStateResult as XDSUseTableSelectionStateResult,
+  UseTableSortableConfig as XDSUseTableSortableConfig,
+  UseTableSortableStateConfig as XDSUseTableSortableStateConfig,
+  UseTableSortableStateResult as XDSUseTableSortableStateResult,
 } from '.';
 // <compat-aliases:end>

@@ -4,32 +4,34 @@
 
 /**
  * @file index.ts
- * @input Imports from XDSGrid.tsx and XDSGridSpan.tsx
+ * @input Imports from Grid.tsx and GridSpan.tsx
  * @output Exports Grid components and types
  * @position Package entry point for Grid
  *
  * SYNC: When modified, update /packages/core/src/Grid/Grid.doc.mjs
  */
 
-export {XDSGrid} from './XDSGrid';
-export type {XDSGridProps, XDSGridColumns, GridAlignment} from './XDSGrid';
+export {Grid} from './Grid';
+export type {GridProps, GridColumns, GridAlignment} from './Grid';
 
-export {XDSGridSpan} from './XDSGridSpan';
-export type {XDSGridSpanProps} from './XDSGridSpan';
+export {GridSpan} from './GridSpan';
+export type {GridSpanProps} from './GridSpan';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSGrid as Grid,
-  XDSGridSpan as GridSpan,
+  Grid as XDSGrid,
+  GridSpan as XDSGridSpan,
 } from '.';
 export type {
-  XDSGridColumns as GridColumns,
-  XDSGridProps as GridProps,
-  XDSGridSpanProps as GridSpanProps,
+  GridAlignment as XDSGridAlignment,
+  GridColumns as XDSGridColumns,
+  GridProps as XDSGridProps,
+  GridSpanProps as XDSGridSpanProps,
 } from '.';
 // <compat-aliases:end>

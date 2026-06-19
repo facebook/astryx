@@ -8,13 +8,13 @@
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  */
 
-export {XDSMarkdown} from './XDSMarkdown';
+export {Markdown} from './Markdown';
 export type {
-  XDSMarkdownProps,
-  XDSMarkdownSource,
-  XDSMarkdownComponents,
+  MarkdownProps,
+  MarkdownSource,
+  MarkdownComponents,
   MarkdownInlinePlugin,
-} from './XDSMarkdown';
+} from './Markdown';
 
 export {
   parseMarkdown,
@@ -33,16 +33,24 @@ export type {
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSMarkdown as Markdown,
+  Markdown as XDSMarkdown,
 } from '.';
 export type {
-  XDSMarkdownComponents as MarkdownComponents,
-  XDSMarkdownProps as MarkdownProps,
-  XDSMarkdownSource as MarkdownSource,
+  BlockNode as XDSBlockNode,
+  IncrementalParseState as XDSIncrementalParseState,
+  InlineNode as XDSInlineNode,
+  ListItemNode as XDSListItemNode,
+  MarkdownComponents as XDSMarkdownComponents,
+  MarkdownInlinePlugin as XDSMarkdownInlinePlugin,
+  MarkdownProps as XDSMarkdownProps,
+  MarkdownSource as XDSMarkdownSource,
+  TableAlignment as XDSTableAlignment,
+  TableCellNode as XDSTableCellNode,
 } from '.';
 // <compat-aliases:end>

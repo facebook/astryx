@@ -72,7 +72,7 @@ export const inputWrapperStyles = stylex.create({
 
 /**
  * Status border colors for input wrappers.
- * Keyed by XDSInputStatusType.
+ * Keyed by InputStatusType.
  */
 export const inputStatusBorderStyles = stylex.create({
   warning: {
@@ -88,7 +88,7 @@ export const inputStatusBorderStyles = stylex.create({
 
 /**
  * Status hover shadow styles for input wrappers.
- * Keyed by XDSInputStatusType.
+ * Keyed by InputStatusType.
  */
 export const inputStatusHoverShadowStyles = stylex.create({
   warning: {
@@ -120,7 +120,7 @@ export const inputStatusHoverShadowStyles = stylex.create({
 /**
  * Status focus border styles using :focus-within.
  * Used by input wrappers that contain a child input/textarea element.
- * Keyed by XDSInputStatusType.
+ * Keyed by InputStatusType.
  */
 export const inputStatusFocusWithinStyles = stylex.create({
   warning: {
@@ -146,7 +146,7 @@ export const inputStatusFocusWithinStyles = stylex.create({
 /**
  * Status focus border styles using :focus.
  * Used by components where the wrapper itself receives focus (e.g. Selector button).
- * Keyed by XDSInputStatusType.
+ * Keyed by InputStatusType.
  */
 export const inputStatusFocusStyles = stylex.create({
   warning: {

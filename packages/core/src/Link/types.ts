@@ -3,7 +3,7 @@
 /**
  * @file types.ts
  * @input React ElementType
- * @output Exports XDSLinkComponentType
+ * @output Exports LinkComponentType
  * @position Shared types for polymorphic link infrastructure
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -20,4 +20,4 @@ import type {ElementType} from 'react';
  * Uses `ElementType` (not `ComponentType`) so that `'a'` (the string)
  * is also valid, which is the default.
  */
-export type XDSLinkComponentType = ElementType;
+export type LinkComponentType = ElementType;

@@ -4,44 +4,47 @@
 
 /**
  * @file index.ts
- * @output Exports XDSSelector and types
+ * @output Exports Selector and types
  * @position Public API entry point
  */
 
 export {
-  XDSSelector,
-  type XDSSelectorProps,
-  type XDSSelectorSize,
-  type XDSSelectorStatus,
-  type XDSSelectorStatusType,
-} from './XDSSelector';
-export {XDSSelectorOption} from './XDSSelectorOption';
+  Selector,
+  type SelectorProps,
+  type SelectorSize,
+  type SelectorStatus,
+  type SelectorStatusType,
+} from './Selector';
+export {SelectorOption} from './SelectorOption';
 export type {
-  XDSSelectorOptionType,
-  XDSSelectorOptionData,
-  XDSSelectorDivider,
-  XDSSelectorSection,
+  SelectorOptionType,
+  SelectorOptionData,
+  SelectorDivider,
+  SelectorSection,
 } from './types';
 export {useCombobox, useSelectedItemOffset} from './hooks';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSSelector as Selector,
-  XDSSelectorOption as SelectorOption,
+  Selector as XDSSelector,
+  SelectorOption as XDSSelectorOption,
+  useCombobox as useXDSCombobox,
+  useSelectedItemOffset as useXDSSelectedItemOffset,
 } from '.';
 export type {
-  XDSSelectorDivider as SelectorDivider,
-  XDSSelectorOptionData as SelectorOptionData,
-  XDSSelectorOptionType as SelectorOptionType,
-  XDSSelectorProps as SelectorProps,
-  XDSSelectorSection as SelectorSection,
-  XDSSelectorSize as SelectorSize,
-  XDSSelectorStatus as SelectorStatus,
-  XDSSelectorStatusType as SelectorStatusType,
+  SelectorDivider as XDSSelectorDivider,
+  SelectorOptionData as XDSSelectorOptionData,
+  SelectorOptionType as XDSSelectorOptionType,
+  SelectorProps as XDSSelectorProps,
+  SelectorSection as XDSSelectorSection,
+  SelectorSize as XDSSelectorSize,
+  SelectorStatus as XDSSelectorStatus,
+  SelectorStatusType as XDSSelectorStatusType,
 } from '.';
 // <compat-aliases:end>
