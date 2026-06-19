@@ -355,7 +355,7 @@ export function useXDSChatDictation(
       return;
     }
     const span = document.createElement('span');
-    span.setAttribute('data-xds-dictation-interim', '');
+    span.setAttribute('data-astryx-dictation-interim', '');
     span.contentEditable = 'false';
     span.style.color = 'var(--color-text-disabled, #999)';
     span.style.fontStyle = 'italic';

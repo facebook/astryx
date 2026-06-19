@@ -363,7 +363,7 @@ export function useTriggerMenu(
 
     const span = document.createElement('span');
     span.setAttribute('aria-hidden', 'true');
-    span.setAttribute('data-xds-trigger-anchor', '');
+    span.setAttribute('data-astryx-trigger-anchor', '');
     span.style.position = 'fixed';
     span.style.left = `${rect.left}px`;
     span.style.top = `${rect.top}px`;

@@ -56,7 +56,7 @@ function ensureDynamicHighlightType(tokenType: string): void {
 
   if (!dynamicStyleSheet) {
     const style = document.createElement('style');
-    style.setAttribute('data-xds-highlight-dynamic', '');
+    style.setAttribute('data-astryx-highlight-dynamic', '');
     document.head.appendChild(style);
     dynamicStyleSheet = style.sheet ?? null;
     if (!dynamicStyleSheet) {

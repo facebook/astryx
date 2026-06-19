@@ -140,9 +140,11 @@ describe('generateOnMediaCSS', () => {
   it('emits @scope with [data-xds-media] token rules', () => {
     const theme = defineTheme({name: 'test'});
     const css = generateOnMediaCSS(theme);
-    expect(css).toContain('@scope ([data-xds-theme="test"])');
+    expect(css).toContain(
+      '@scope ([data-astryx-theme="test"], [data-xds-theme="test"])',
+    );
     // Same scope boundary as main theme
-    expect(css).toContain('to ([data-xds-theme])');
+    expect(css).toContain('to ([data-astryx-theme], [data-xds-theme])');
     expect(css).toContain('[data-xds-media="dark"]');
     expect(css).toContain('color-scheme: dark');
     expect(css).toContain('var(--color-on-dark)');
@@ -169,7 +171,9 @@ describe('generateOnMediaCSS', () => {
       },
     });
     const css = generateOnMediaCSS(theme);
-    expect(css).toContain('[data-xds-media="dark"] .xds-button.secondary');
+    expect(css).toContain(
+      ':is([data-astryx-media="dark"], [data-xds-media="dark"]) :is(.astryx-button.secondary, .xds-button.secondary)',
+    );
     expect(css).toContain(
       'background-color: color-mix(in srgb, white 20%, transparent)',
     );
@@ -190,7 +194,7 @@ describe('generateOnMediaCSS', () => {
       },
     });
     const css = generateOnMediaCSS(theme);
-    expect(css).toContain('.xds-button:hover');
+    expect(css).toContain(':is(.astryx-button, .xds-button):hover');
     expect(css).toContain('color: rgba(255,255,255,0.8)');
   });
 });
@@ -216,7 +220,7 @@ describe('reset.css baseline media rules', () => {
 
   it('flips color-scheme on [data-xds-media="dark"]', () => {
     const darkMatch = resetCSS.match(
-      /:where\(\[data-xds-media="dark"\]\)\s*\{([^}]+)\}/,
+      /:where\(\[data-astryx-media="dark"\], \[data-xds-media="dark"\]\)\s*\{([^}]+)\}/,
     );
     expect(darkMatch).not.toBeNull();
     expect(darkMatch![1]).toContain('color-scheme: dark');
@@ -224,7 +228,7 @@ describe('reset.css baseline media rules', () => {
 
   it('flips color-scheme on [data-xds-media="light"]', () => {
     const lightMatch = resetCSS.match(
-      /:where\(\[data-xds-media="light"\]\)\s*\{([^}]+)\}/,
+      /:where\(\[data-astryx-media="light"\], \[data-xds-media="light"\]\)\s*\{([^}]+)\}/,
     );
     expect(lightMatch).not.toBeNull();
     expect(lightMatch![1]).toContain('color-scheme: light');
@@ -232,7 +236,7 @@ describe('reset.css baseline media rules', () => {
 
   it('does NOT include token overrides at baseline level', () => {
     const darkMatch = resetCSS.match(
-      /:where\(\[data-xds-media="dark"\]\)\s*\{([^}]+)\}/,
+      /:where\(\[data-astryx-media="dark"\], \[data-xds-media="dark"\]\)\s*\{([^}]+)\}/,
     );
     expect(darkMatch![1]).not.toContain('--color-text-primary');
     expect(darkMatch![1]).not.toContain('--color-icon-primary');

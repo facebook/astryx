@@ -43,6 +43,7 @@ import type {ThemeMode} from './types';
 import {colorVars, typographyVars} from './tokens.stylex';
 import {registerIcons} from '../Icon/globalIconRegistry';
 import {generateThemeCSS, type XDSDefinedTheme} from './defineTheme';
+import {dataAttr, legacyDataAttr} from '../naming';
 import {XDSThemeContext} from './useXDSTheme';
 
 /**
@@ -140,8 +141,9 @@ function useThemeStyleInjection(theme: XDSDefinedTheme): void {
     // the theme region. Any class-based style (StyleX, .xds-*) wins.
     if (prose) {
       const proseStyle = document.createElement('style');
-      proseStyle.setAttribute('data-xds-theme-prose', theme.name);
-      proseStyle.setAttribute('data-xds-id', id);
+      proseStyle.setAttribute(legacyDataAttr('theme-prose'), theme.name);
+      proseStyle.setAttribute(dataAttr('theme-prose'), theme.name);
+      proseStyle.setAttribute(dataAttr('id'), id);
       proseStyle.textContent = `@layer reset {\n${prose}\n}`;
       document.head.appendChild(proseStyle);
     }
@@ -150,8 +152,9 @@ function useThemeStyleInjection(theme: XDSDefinedTheme): void {
     // so themes can intentionally restyle components.
     if (component) {
       const compStyle = document.createElement('style');
-      compStyle.setAttribute('data-xds-theme', theme.name);
-      compStyle.setAttribute('data-xds-id', id);
+      compStyle.setAttribute(legacyDataAttr('theme'), theme.name);
+      compStyle.setAttribute(dataAttr('theme'), theme.name);
+      compStyle.setAttribute(dataAttr('id'), id);
       compStyle.textContent = `@layer xds-theme {\n${component}\n}`;
       document.head.appendChild(compStyle);
     }
@@ -159,12 +162,13 @@ function useThemeStyleInjection(theme: XDSDefinedTheme): void {
     injectedThemes.add(themeKey);
 
     return () => {
-      // Remove both prose and component style tags
+      // Remove both prose and component style tags (matched by the new
+      // astryx id marker, which is always written above).
       const proseEl = document.querySelector(
-        `style[data-xds-theme-prose="${theme.name}"][data-xds-id="${id}"]`,
+        `style[${dataAttr('theme-prose')}="${theme.name}"][${dataAttr('id')}="${id}"]`,
       );
       const compEl = document.querySelector(
-        `style[data-xds-theme="${theme.name}"][data-xds-id="${id}"]`,
+        `style[${dataAttr('theme')}="${theme.name}"][${dataAttr('id')}="${id}"]`,
       );
       proseEl?.remove();
       compEl?.remove();
@@ -210,12 +214,16 @@ function useRootThemeSync(
       document.documentElement.removeAttribute('data-theme');
     }
 
-    // Sync theme name so @scope rules reach portals/fallback viewports
-    document.documentElement.setAttribute('data-xds-theme', themeName);
+    // Sync theme name so @scope rules reach portals/fallback viewports.
+    // Dual-emit new (astryx) + legacy (xds) attrs during the compat window
+    // (XDS-prefix migration P2380608025); generated theme CSS matches either.
+    document.documentElement.setAttribute(dataAttr('theme'), themeName);
+    document.documentElement.setAttribute(legacyDataAttr('theme'), themeName);
 
     return () => {
       document.documentElement.removeAttribute('data-theme');
-      document.documentElement.removeAttribute('data-xds-theme');
+      document.documentElement.removeAttribute(dataAttr('theme'));
+      document.documentElement.removeAttribute(legacyDataAttr('theme'));
     };
   }, [isNested, mode, themeName]);
 }

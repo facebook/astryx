@@ -39,7 +39,7 @@ function getFallbackContext(): XDSToastContextValue {
   }
 
   const container = document.createElement('div');
-  container.setAttribute('data-xds-toast-fallback', '');
+  container.setAttribute('data-astryx-toast-fallback', '');
   document.body.appendChild(container);
 
   let resolveCtx: ((ctx: XDSToastContextValue) => void) | undefined;
