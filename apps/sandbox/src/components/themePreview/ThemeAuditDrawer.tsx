@@ -465,7 +465,7 @@ export function ThemeAuditDrawer({
       `- Locate the \`defineTheme(...)\` call and find the existing \`tokens: { ... }\` block inside it.`,
       `- For each entry below, find a line whose key matches the token name and replace its value with the value below. Preserve indentation, quote style, and trailing comma. Replace any existing trailing inline comment with the annotation comment provided.`,
       `- If a token is not present, insert a new line at the bottom of the \`tokens\` block (just before the closing \`}\`) using the same indentation and quote style as sibling entries.`,
-      `- For \`--color-syntax-*\` entries: prefer to update the \`defineSyntaxTheme({ tokens: { ... } })\` block instead — strip the \`--color-syntax-\` prefix to get the key name (e.g. \`--color-syntax-keyword\` → \`keyword\`). Only fall back to inserting them as direct \`--color-syntax-*\` tokens inside \`defineTheme.tokens\` if no \`defineSyntaxTheme\` block exists.`,
+      `- For \`--color-syntax-*\` entries: prefer to update the \`defineSyntaxTheme({ tokens: { ... } })\` block instead. Strip the \`--color-syntax-\` prefix to get the key name (e.g. \`--color-syntax-keyword\` → \`keyword\`). Only fall back to inserting them as direct \`--color-syntax-*\` tokens inside \`defineTheme.tokens\` if no \`defineSyntaxTheme\` block exists.`,
       `- Do not modify any other tokens, comments, or surrounding code.`,
       '',
       inner,

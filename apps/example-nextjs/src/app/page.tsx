@@ -28,7 +28,8 @@ export default function Home() {
               <XDSText type="body" weight="bold">
                 @xds/core
               </XDSText>{' '}
-              as a pre-built dist package — no StyleX build plugin needed. Plain
+              
+              as a pre-built dist package: no StyleX build plugin needed. Plain
               inline styles handle layout. XDS handles components, theming, and
               design tokens.
             </XDSText>

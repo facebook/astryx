@@ -1044,7 +1044,8 @@ function TonalSection({
           margin: 0,
           marginBottom: 20,
         }}>
-        Full HCT tonal ramps — 21 perceptually uniform steps from black (T0) to
+        
+        Full HCT tonal ramps: 21 perceptually uniform steps from black (T0) to
         white (T100).
         {isDark && (
           <>

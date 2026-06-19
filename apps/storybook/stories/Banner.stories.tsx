@@ -223,7 +223,7 @@ export const AllFeatures: Story = {
       <XDSBanner
         status="warning"
         title="Dismissable"
-        description="Click the X to dismiss — works without onDismiss."
+        description="Click the X to dismiss. Works without onDismiss."
         isDismissable
       />
       <XDSBanner

@@ -156,8 +156,9 @@ function LayerProviderDemo() {
     <XDSLayerProvider toast={{position: 'topEnd', maxVisible: 3}}>
       <div style={{padding: 16}}>
         <XDSText type="body">
+          
           XDSLayerProvider wraps your app to configure layer systems (toast
-          positioning, max visible toasts). It is optional — hooks fall back to
+          positioning, max visible toasts). It is optional; hooks fall back to
           defaults when no provider exists.
         </XDSText>
       </div>

@@ -57,7 +57,8 @@ export default function Home() {
           <XDSVStack gap={2}>
             <XDSHeading level={1}>XDS + Tailwind</XDSHeading>
             <XDSText type="body" color="secondary">
-              Pre-built dist package — no StyleX plugin needed. Tailwind handles
+              
+              Pre-built dist package. No StyleX plugin needed. Tailwind handles
               layout, XDS handles components and tokens.
             </XDSText>
           </XDSVStack>
