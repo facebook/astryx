@@ -374,22 +374,22 @@ export const IndicatorComparison: Story = {
             <XDSStep
               step={0}
               label="Account"
-              icon={<XDSIcon icon="user" size="sm" />}
+              icon={<XDSIcon icon="info" size="sm" />}
             />
             <XDSStep
               step={1}
               label="Profile"
-              icon={<XDSIcon icon="user" size="sm" />}
+              icon={<XDSIcon icon="search" size="sm" />}
             />
             <XDSStep
               step={2}
               label="Settings"
-              icon={<XDSIcon icon="gear" size="sm" />}
+              icon={<XDSIcon icon="wrench" size="sm" />}
             />
             <XDSStep
               step={3}
               label="Review"
-              icon={<XDSIcon icon="eye" size="sm" />}
+              icon={<XDSIcon icon="clock" size="sm" />}
             />
             <XDSStep
               step={4}

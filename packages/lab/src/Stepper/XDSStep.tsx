@@ -45,9 +45,9 @@ import type {XDSStepStatus} from './XDSStepStatus';
 export type XDSStepIndicatorPreset = 'auto' | 'number' | 'none';
 export type XDSStepDensity = 'compact' | 'balanced' | 'spacious';
 
-export interface XDSStepProps extends XDSBaseProps<HTMLDivElement> {
+export interface XDSStepProps extends XDSBaseProps<HTMLLIElement> {
   /** Ref forwarded to the root element */
-  ref?: React.Ref<HTMLDivElement>;
+  ref?: React.Ref<HTMLLIElement>;
   /**
    * Zero-based index of this step. Used to derive progress (completed /
    * active / not-started) relative to the parent's `activeStep`.

@@ -135,18 +135,16 @@ export function XDSStepper({
       <ol
         ref={ref}
         aria-label={label}
+        {...rest}
         {...mergeProps(
           xdsThemeProps('stepper', {orientation}),
           stylex.props(
             styles.root,
-            orientation === 'horizontal'
-              ? styles.horizontal
-              : styles.vertical,
+            orientation === 'horizontal' ? styles.horizontal : styles.vertical,
             xstyle,
           ),
           className,
           style,
-          rest,
         )}>
         {/* Each step renders its own progress bar segment; no child
             introspection needed — steps derive state from context. */}
