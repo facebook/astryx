@@ -72,17 +72,11 @@ export interface XDSCheckboxListProps extends Omit<
   onChange?: (values: string[]) => void;
   /**
    * Async action on change. Fires after onChange.
-   * While the returned promise is pending, items are dimmed (reduced
-   * opacity) and marked `aria-busy`, and interaction is blocked.
+   * While the returned promise is pending, the toggled item shows a spinner
+   * inside its checkbox and is marked `aria-busy`, and re-toggling it is
+   * blocked. Other items remain interactive.
    */
   changeAction?: (values: string[]) => void | Promise<void>;
-  /**
-   * Whether the checkbox group is in an external loading state.
-   * While loading, items are dimmed (reduced opacity) and marked
-   * `aria-busy`, and interaction is blocked.
-   * @default false
-   */
-  isLoading?: boolean;
   /**
    * Spacing density for list items.
    * @default 'balanced'
@@ -137,7 +131,6 @@ export function XDSCheckboxList({
   value,
   onChange,
   changeAction,
-  isLoading = false,
   density = 'balanced',
   hasDividers = false,
   isDisabled = false,
@@ -157,19 +150,30 @@ export function XDSCheckboxList({
   const isCollectionMode = value !== undefined;
   const effectiveValue = value ?? EMPTY_ARRAY;
   const [optimisticValue, setOptimisticValue] = useOptimistic(effectiveValue);
-  const isBusy = isLoading || optimisticValue !== effectiveValue;
+  // Tracks which item has a pending `changeAction`. Auto-reverts to null when
+  // the transition settles, so the spinner clears without manual cleanup.
+  const [loadingValue, setLoadingValue] = useOptimistic<string | null>(null);
 
   const handleChange = useCallback(
-    (newValues: string[]) => {
+    (newValues: string[], toggledValue?: string) => {
       onChange?.(newValues);
       if (changeAction) {
         startTransition(async () => {
           setOptimisticValue(newValues);
+          if (toggledValue !== undefined) {
+            setLoadingValue(toggledValue);
+          }
           await changeAction(newValues);
         });
       }
     },
-    [onChange, changeAction, startTransition, setOptimisticValue],
+    [
+      onChange,
+      changeAction,
+      startTransition,
+      setOptimisticValue,
+      setLoadingValue,
+    ],
   );
 
   const contextValue = useMemo<XDSCheckboxListContextValue>(
@@ -178,7 +182,7 @@ export function XDSCheckboxList({
       onChange: isCollectionMode ? handleChange : undefined,
       isDisabled,
       isReadOnly,
-      isBusy,
+      loadingValue,
     }),
     [
       isCollectionMode,
@@ -186,7 +190,7 @@ export function XDSCheckboxList({
       handleChange,
       isDisabled,
       isReadOnly,
-      isBusy,
+      loadingValue,
     ],
   );
 

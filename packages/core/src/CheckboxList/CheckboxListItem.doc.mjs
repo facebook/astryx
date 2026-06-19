@@ -52,6 +52,13 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'isLoading',
+      type: 'boolean',
+      description:
+        'Whether this item is loading. Shows a spinner inside the checkbox and blocks interaction on this item. In collection mode, the toggled item also shows this automatically while the parent changeAction is pending.',
+      default: 'false',
+    },
+    {
       name: 'isChecked',
       type: "boolean | 'indeterminate'",
       description: 'Direct checked state (standalone mode only).',
@@ -98,6 +105,13 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'isLoading',
+      type: 'boolean',
+      description:
+        '此选项是否处于加载状态。在复选框内显示加载旋转器并阻止该选项的交互。在集合模式下，当父级 changeAction 处于待定状态时，被切换的选项会自动显示此状态。',
+      default: 'false',
+    },
+    {
       name: 'isChecked',
       type: "boolean | 'indeterminate'",
       description: '直接选中状态（仅独立模式）。',
@@ -121,6 +135,8 @@ export const docsDense = {
     description: 'Secondary text below label.',
     endContent: 'Content rendered after label area.',
     isDisabled: 'Whether this individual item disabled.',
+    isLoading:
+      'Item loading: spinner inside checkbox + blocks interaction. Auto-set on toggled item while parent changeAction pending.',
     isChecked: 'Direct checked state (standalone mode only).',
     onCheck: 'Direct check handler (standalone mode only).',
   },
