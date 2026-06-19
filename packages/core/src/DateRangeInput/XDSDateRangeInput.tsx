@@ -53,7 +53,7 @@ import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {xdsThemeProps} from '../utils/xdsThemeProps';
 
-export type {DateRange as XDSDateRange} from '../Calendar';
+export type {DateRange} from '../Calendar';
 
 export interface DateRangePreset {
   label: string;

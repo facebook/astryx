@@ -16,7 +16,7 @@
  * - Use currentColor for stroke/fill (inherits from parent)
  * - Are aria-hidden (decorative by default)
  * - Use stroke-based rendering with 1.5px stroke width (matching heroicons outline style)
- * - Status icons (checkCircle, xCircle, warning) use solid fills for better color visibility
+ * - Status icons (checkCircle, xCircle, warning, info) use solid fills for better color visibility
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Icon/globalIconRegistry.tsx (XDSIconName type if names change)
@@ -40,7 +40,7 @@ const svgProps = {
 
 /**
  * Props for solid/filled SVG icons.
- * Status icons (checkCircle, xCircle, warning) use solid fills for better
+ * Status icons (checkCircle, xCircle, warning, info) use solid fills for better
  * color visibility at small sizes, matching the heroicons solid style
  * used by themes.
  */
@@ -122,12 +122,14 @@ export const defaultIcons: XDSIconRegistry = {
     </svg>
   ),
 
-  /** ⓘ — information */
+  /** ⓘ — information (solid fill for status visibility) */
   info: (
-    <svg {...svgProps}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 11v5" />
-      <circle cx="12" cy="8" r="0.5" fill="currentColor" stroke="none" />
+    <svg {...solidSvgProps}>
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 4a1 1 0 100 2 1 1 0 000-2zm-.75 3.75a.75.75 0 011.5 0v5.5a.75.75 0 01-1.5 0v-5.5z"
+      />
     </svg>
   ),
 
