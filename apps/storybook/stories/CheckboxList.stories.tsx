@@ -219,6 +219,24 @@ export const Disabled: Story = {
   },
 };
 
+export const Loading: Story = {
+  render: args => {
+    const [value, setValue] = useState<string[]>(['email']);
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
+    return (
+      <XDSCheckboxList {...restArgs} value={value} onChange={setValue}>
+        <XDSCheckboxListItem label="Email" value="email" />
+        <XDSCheckboxListItem label="SMS" value="sms" />
+        <XDSCheckboxListItem label="Push notification" value="push" />
+      </XDSCheckboxList>
+    );
+  },
+  args: {
+    label: 'Notification preferences',
+    isLoading: true,
+  },
+};
+
 export const DisabledItem: Story = {
   render: args => {
     const [value, setValue] = useState<string[]>([]);

@@ -25,6 +25,7 @@ import {
   buildRuntimePreviewState,
   getMissingRequiredProps,
   pickPrimaryProps,
+  type KnobProp,
 } from './interactiveState';
 import type {
   PropDoc,
@@ -187,12 +188,16 @@ export function useInteractiveState(
 export function InteractivePreviewStage({
   name,
   state,
+  knobs,
+  playground,
   missingRequiredProps = [],
   onPropChange,
   canControlOpenState = false,
 }: {
   name: string;
   state: Record<string, unknown>;
+  knobs?: KnobProp[];
+  playground?: PlaygroundConfig | null;
   missingRequiredProps?: string[];
   onPropChange?: (propName: string, value: unknown) => void;
   canControlOpenState?: boolean;
@@ -202,9 +207,36 @@ export function InteractivePreviewStage({
   const runtimeState = useMemo(
     () =>
       resolveValue(
-        buildRuntimePreviewState(state, onPropChange, {canControlOpenState}),
+        buildRuntimePreviewState(state, onPropChange, {
+          canControlOpenState,
+          knobs,
+        }),
       ) as Record<string, unknown>,
-    [state, onPropChange, canControlOpenState],
+    [state, onPropChange, canControlOpenState, knobs],
+  );
+
+  // Sub-components that need a parent context provider declare it via
+  // `playground.wrapper`; wrap the previewed component in that parent.
+  const wrapper = playground?.wrapper ?? null;
+  const WrapperComponent = wrapper ? getXDSComponent(wrapper.component) : null;
+  const wrapperProps = useMemo(() => {
+    const resolved = wrapper?.props
+      ? (resolveValue(wrapper.props) as Record<string, unknown>)
+      : {};
+    // Wrapper parents require an onChange that can't be serialized; no-op it.
+    if (!('onChange' in resolved)) {
+      resolved.onChange = () => {};
+    }
+    return resolved;
+  }, [wrapper]);
+  const renderPreview = useCallback(
+    (rendered: ReactNode): ReactNode => {
+      if (wrapper && WrapperComponent) {
+        return createElement(WrapperComponent, wrapperProps, rendered);
+      }
+      return rendered;
+    },
+    [wrapper, WrapperComponent, wrapperProps],
   );
 
   if (missingRequiredProps.length > 0) {
@@ -305,8 +337,9 @@ export function InteractivePreviewStage({
               width: '100%',
               padding: 'var(--spacing-4)',
             }}>
-            <PreviewErrorBoundary resetKeys={[Component, runtimeState]}>
-              {createElement(Component, runtimeState)}
+            <PreviewErrorBoundary
+              resetKeys={[Component, runtimeState, WrapperComponent]}>
+              {renderPreview(createElement(Component, runtimeState))}
             </PreviewErrorBoundary>
           </Center>
         )}

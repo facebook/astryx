@@ -313,7 +313,8 @@ function TonalRamps({
         Tonal Palettes
       </h2>
       <p style={{fontSize: 11, color: '#888', margin: 0, marginBottom: 12}}>
-        OKLCH tonal ramps — {toneSteps.length} steps per channel.
+        
+        OKLCH tonal ramps: {toneSteps.length} steps per channel.
         {vibrancy !== 1.0 && ` Vibrancy: ${vibrancy.toFixed(1)}x.`}
       </p>
       <div style={{...S.tonalRow, marginBottom: 6}}>

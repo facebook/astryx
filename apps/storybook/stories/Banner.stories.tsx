@@ -223,7 +223,7 @@ export const AllFeatures: Story = {
       <Banner
         status="warning"
         title="Dismissable"
-        description="Click the X to dismiss — works without onDismiss."
+        description="Click the X to dismiss. Works without onDismiss."
         isDismissable
       />
       <Banner

@@ -156,8 +156,9 @@ function LayerProviderDemo() {
     <LayerProvider toast={{position: 'topEnd', maxVisible: 3}}>
       <div style={{padding: 16}}>
         <Text type="body">
+          
           LayerProvider wraps your app to configure layer systems (toast
-          positioning, max visible toasts). It is optional — hooks fall back to
+          positioning, max visible toasts). It is optional; hooks fall back to
           defaults when no provider exists.
         </Text>
       </div>

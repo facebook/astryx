@@ -186,7 +186,7 @@ export const WithMaxDateInLayout: Story = {
     label: 'End date',
     max: new Date().toISOString().slice(0, 10) as ISODateString,
     description:
-      'Max is today — open the calendar to verify the label does not turn grey when nav buttons are disabled',
+      'Max is today; open the calendar to verify the label does not turn grey when nav buttons are disabled',
     placeholder: 'Select an end date',
   },
 };

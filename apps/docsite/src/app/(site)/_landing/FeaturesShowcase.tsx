@@ -343,7 +343,7 @@ const features: Record<string, Feature> = {
     href: '/themes',
     image: {
       src: '/feature-brand.png',
-      alt: 'A product landing page styled with the Butter theme, shown alongside the theme\u2019s color swatches and type sample',
+      alt: 'A product landing page styled with the Butter theme, shown alongside the theme\'s color swatches and type sample',
     },
   },
   templates: {

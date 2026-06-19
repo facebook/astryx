@@ -34,8 +34,9 @@ export default function App() {
             <VStack gap={2}>
               <Heading level={1}>XDS + Vite + Tailwind</Heading>
               <Text type="body" color="secondary">
+                
                 XDS handles components and design tokens. Tailwind handles page
-                layout and custom styling — powered by the token bridge.
+                layout and custom styling, powered by the token bridge.
               </Text>
             </VStack>
 

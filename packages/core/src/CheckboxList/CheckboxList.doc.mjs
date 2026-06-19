@@ -50,7 +50,8 @@ export const docs = {
     {
       name: 'isLoading',
       type: 'boolean',
-      description: 'External loading state.',
+      description:
+        'External loading state. Dims items (reduced opacity), marks them aria-busy, and blocks interaction.',
       default: 'false',
     },
     {

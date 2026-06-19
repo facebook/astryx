@@ -171,7 +171,8 @@ export const WithoutCard: Story = {
     <VStack gap={2}>
       <Collapsible trigger="Show more details">
         <p {...stylex.props(styles.text)}>
-          Collapsible works anywhere — it doesn't require a card wrapper.
+          
+          Collapsible works anywhere; it doesn't require a card wrapper.
         </p>
       </Collapsible>
       <Collapsible trigger="Another section" defaultIsOpen={false}>

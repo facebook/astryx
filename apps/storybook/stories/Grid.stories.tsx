@@ -174,7 +174,8 @@ export const ResponsiveAutoFit: Story = {
       </div>
       <div {...stylex.props(styles.container)}>
         <Text type="supporting" xstyle={styles.sectionLabel}>
-          Same grid with 6 items — looks fine because items fill the tracks
+          
+          Same grid with 6 items; looks fine because items fill the tracks
         </Text>
         <Grid columns={{minWidth: 200}} gap={4}>
           <GridItem>Item 1</GridItem>

@@ -540,7 +540,8 @@ function ReducedMotionCard() {
 
         <VStack gap={2}>
           <Text type="supporting" color="secondary" display="block">
-            Honor the OS-level prefers-reduced-motion setting — replace movement
+            
+            Honor the OS-level prefers-reduced-motion setting; replace movement
             with instant state changes. Toggle the switch to simulate.
           </Text>
           <VStack gap={3}>

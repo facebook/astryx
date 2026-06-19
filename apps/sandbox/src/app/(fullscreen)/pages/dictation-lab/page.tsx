@@ -308,7 +308,7 @@ const notePatterns: NotePatternDef[] = [
   {
     id: 'whole-tone',
     label: 'whole tone',
-    desc: 'C-D-E \u2192 E-D-C \u2014 rising energy then settling',
+    desc: 'C-D-E \u2192 E-D-C, rising energy then settling',
     startNotes: [
       {freq: 523, delay: 0},
       {freq: 587, delay: 0.05},
@@ -465,7 +465,8 @@ export default function DictationLabPage() {
         <VStack gap={3}>
           <Heading level={3}>Live Demo</Heading>
           <Text type="supporting" color="secondary">
-            Click the mic button to start dictating. Speak naturally — the
+            
+            Click the mic button to start dictating. Speak naturally; the
             volume ring reacts to your voice.
           </Text>
 
@@ -612,7 +613,8 @@ export default function DictationLabPage() {
         <VStack gap={3}>
           <Heading level={3}>Sound Mixer</Heading>
           <Text type="supporting" color="secondary">
-            Combine any attack style with any note pattern. All synthesized — no
+            
+            Combine any attack style with any note pattern. All synthesized: no
             audio files.
           </Text>
 

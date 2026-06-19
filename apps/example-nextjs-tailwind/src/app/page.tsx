@@ -57,7 +57,8 @@ export default function Home() {
           <VStack gap={2}>
             <Heading level={1}>XDS + Tailwind</Heading>
             <Text type="body" color="secondary">
-              Pre-built dist package — no StyleX plugin needed. Tailwind handles
+              
+              Pre-built dist package. No StyleX plugin needed. Tailwind handles
               layout, XDS handles components and tokens.
             </Text>
           </VStack>
