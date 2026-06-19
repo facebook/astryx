@@ -130,6 +130,18 @@ body[data-hero-dark]:not([data-nav-mode='surface'])
   color: var(--hero-on-dark);
 }
 
+/* Exception: the primary "Get started" CTA paints its own solid accent fill,
+   so its label must use the on-accent ink — NOT the hero's light nav ink. The
+   rule above is correct for the transparent nav items/icons (they sit directly
+   on the dark slide body), but the filled CTA's accent flips light↔dark with
+   the color scheme, so a static light ink ends up light-on-light and vanishes
+   in actual dark mode. --color-on-accent is a light-dark() token that tracks
+   the fill, keeping the label legible in both modes. */
+body[data-hero-dark]:not([data-nav-mode='surface'])
+  .xds-top-nav:where(:not(.xds-app-shell .xds-app-shell *)) [data-variant='primary'] {
+  color: var(--color-on-accent);
+}
+
 /* Hide the prev/next chevron buttons inside the home page's hero theme
    switcher pagination so only the dot indicators show. XDSPagination's
    variant="dots" ships with chevrons by default; the hero wants a minimal

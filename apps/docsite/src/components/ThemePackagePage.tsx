@@ -25,6 +25,7 @@ import {packages} from '../generated/packageRegistry';
 import {themeObjects} from '../generated/themeRegistry';
 import {templates} from '../generated/templateRegistry';
 import {trackOpenPlayground, trackToggle} from '../lib/analytics';
+import {useThemeMode} from '../app/providers';
 
 // Raw source of the theme-showcase page template (embedded as a string in
 // the generated template registry). Used to prepopulate the playground's
@@ -482,7 +483,7 @@ function ThemeHeading({align = 'start'}: {align?: 'start' | 'center'}) {
 
   return (
     <XDSVStack gap={2} hAlign={isCentered ? 'center' : undefined}>
-      <XDSHeading level={1} type="display-3" justify={align}>
+      <XDSHeading level={1} type="display-2" justify={align}>
         Themes
       </XDSHeading>
       <XDSText
@@ -507,7 +508,27 @@ interface ThemePackagePageProps {
 }
 
 export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
-  const [mode, setMode] = useState<'light' | 'dark'>('light');
+  // The docsite's resolved color mode (light/dark). The preview seeds from and
+  // follows this so opening /themes in dark mode shows the demos in dark mode
+  // (initializing to light was jarring against a dark docsite). Once the user
+  // flips the preview's own mode toggle, `isModeManual` latches and the preview
+  // stops tracking the docsite — mirrors the manual-override pattern in
+  // providers.tsx so an explicit choice isn't clobbered by a later sync.
+  const {mode: docsiteMode} = useThemeMode();
+  const [mode, setMode] = useState<'light' | 'dark'>(docsiteMode);
+  const [isModeManual, setIsModeManual] = useState(false);
+
+  useEffect(() => {
+    if (isModeManual) {
+      return;
+    }
+    setMode(docsiteMode);
+  }, [docsiteMode, isModeManual]);
+
+  const handleToggleMode = useCallback(() => {
+    setIsModeManual(true);
+    setMode(m => (m === 'light' ? 'dark' : 'light'));
+  }, []);
   // Selected theme — seeded once from the parent's `packageName`
   // prop (the /themes page resolves it from the `?theme=<slug>`
   // query param, or Neutral if absent), then user-mutable via the
@@ -651,9 +672,10 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
         <XDSCard variant="default" padding={0} xstyle={styles.sidebarCard}>
           <XDSVStack gap={4}>
             {/* Hero block — page-level heading + description + CTAs.
-                Heading uses display-3 instead of display-2 because
-                the narrow sidebar column would wrap display-2 mid-
-                word; CTAs stack vertically + full-width because the
+                Heading uses display-2 to match the other site pages
+                (/templates, /components); "Themes" is a single short
+                word so it doesn't wrap in the 260px sidebar column.
+                CTAs stack vertically + full-width because the
                 side-by-side hero treatment doesn't fit in 260px. */}
             <XDSVStack gap={3}>
               <ThemeHeading />
@@ -692,6 +714,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                       item: selectedPkgName,
                       value: next,
                     });
+                    setIsModeManual(true);
                     setMode(next);
                   }}
                 />
@@ -803,7 +826,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
             label={modeToggleLabel}
             tooltip={modeToggleLabel}
             icon={modeToggleIcon}
-            onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
+            onClick={handleToggleMode}
           />
         </div>
 
@@ -842,6 +865,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                   item: selectedPkgName,
                   value: next,
                 });
+                setIsModeManual(true);
                 setMode(next);
               }}
             />
