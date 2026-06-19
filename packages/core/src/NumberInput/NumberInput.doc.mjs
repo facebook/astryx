@@ -75,12 +75,12 @@ export const docs = {
     },
     {
       name: 'startIcon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: 'Icon to display at the start of the input. See `npx xds docs icons` for valid semantic names.',
     },
     {
       name: 'labelIcon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: 'Icon to display before the label text. See `npx xds docs icons` for valid semantic names.',
     },
     {
@@ -249,12 +249,12 @@ export const docsZh = {
     },
     {
       name: 'startIcon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: '显示在输入框起始位置的图标。',
     },
     {
       name: 'labelIcon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: '显示在标签文本前的图标。',
     },
     {

@@ -2,11 +2,11 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSFileInput} from '@xds/core/FileInput';
+import {FileInput} from '@xds/core/FileInput';
 
-const meta: Meta<typeof XDSFileInput> = {
+const meta: Meta<typeof FileInput> = {
   title: 'Core/FileInput',
-  component: XDSFileInput,
+  component: FileInput,
   tags: ['autodocs'],
   argTypes: {
     label: {
@@ -71,12 +71,12 @@ const meta: Meta<typeof XDSFileInput> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSFileInput>;
+type Story = StoryObj<typeof FileInput>;
 
 export const Default: Story = {
   render: args => {
     const [value, setValue] = useState<File | File[] | null>(null);
-    return <XDSFileInput {...args} value={value} onChange={setValue} />;
+    return <FileInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Upload file',
@@ -87,7 +87,7 @@ export const Default: Story = {
 export const WithDescription: Story = {
   render: args => {
     const [value, setValue] = useState<File | File[] | null>(null);
-    return <XDSFileInput {...args} value={value} onChange={setValue} />;
+    return <FileInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Resume',
@@ -99,7 +99,7 @@ export const WithDescription: Story = {
 export const MultipleFiles: Story = {
   render: args => {
     const [value, setValue] = useState<File | File[] | null>(null);
-    return <XDSFileInput {...args} value={value} onChange={setValue} />;
+    return <FileInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Attachments',
@@ -113,7 +113,7 @@ export const MultipleFiles: Story = {
 export const ImagesOnly: Story = {
   render: args => {
     const [value, setValue] = useState<File | File[] | null>(null);
-    return <XDSFileInput {...args} value={value} onChange={setValue} />;
+    return <FileInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Profile photo',
@@ -126,7 +126,7 @@ export const ImagesOnly: Story = {
 export const DropzoneMode: Story = {
   render: args => {
     const [value, setValue] = useState<File | File[] | null>(null);
-    return <XDSFileInput {...args} value={value} onChange={setValue} />;
+    return <FileInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Upload files',
@@ -138,7 +138,7 @@ export const DropzoneMode: Story = {
 export const Required: Story = {
   render: args => {
     const [value, setValue] = useState<File | File[] | null>(null);
-    return <XDSFileInput {...args} value={value} onChange={setValue} />;
+    return <FileInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Supporting document',
@@ -149,7 +149,7 @@ export const Required: Story = {
 export const Optional: Story = {
   render: args => {
     const [value, setValue] = useState<File | File[] | null>(null);
-    return <XDSFileInput {...args} value={value} onChange={setValue} />;
+    return <FileInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Cover letter',
@@ -160,7 +160,7 @@ export const Optional: Story = {
 export const Disabled: Story = {
   render: args => {
     const [value, setValue] = useState<File | File[] | null>(null);
-    return <XDSFileInput {...args} value={value} onChange={setValue} />;
+    return <FileInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Upload locked',
@@ -172,7 +172,7 @@ export const Disabled: Story = {
 export const Loading: Story = {
   render: args => {
     const [value, setValue] = useState<File | File[] | null>(null);
-    return <XDSFileInput {...args} value={value} onChange={setValue} />;
+    return <FileInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Uploading...',
@@ -183,7 +183,7 @@ export const Loading: Story = {
 export const WithErrorStatus: Story = {
   render: args => {
     const [value, setValue] = useState<File | File[] | null>(null);
-    return <XDSFileInput {...args} value={value} onChange={setValue} />;
+    return <FileInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Upload document',
@@ -194,7 +194,7 @@ export const WithErrorStatus: Story = {
 export const WithSuccessStatus: Story = {
   render: args => {
     const [value, setValue] = useState<File | File[] | null>(null);
-    return <XDSFileInput {...args} value={value} onChange={setValue} />;
+    return <FileInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Upload document',
@@ -205,7 +205,7 @@ export const WithSuccessStatus: Story = {
 export const WithTooltip: Story = {
   render: args => {
     const [value, setValue] = useState<File | File[] | null>(null);
-    return <XDSFileInput {...args} value={value} onChange={setValue} />;
+    return <FileInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Tax documents',
@@ -228,12 +228,12 @@ export const AllVariations: Story = {
           gap: '24px',
           maxWidth: '400px',
         }}>
-        <XDSFileInput
+        <FileInput
           label="Default (input mode)"
           value={v1}
           onChange={setV1}
         />
-        <XDSFileInput
+        <FileInput
           label="Dropzone with constraints"
           value={v2}
           onChange={setV2}
@@ -244,15 +244,15 @@ export const AllVariations: Story = {
           maxFiles={5}
           description="Up to 5 images, max 5MB each"
         />
-        <XDSFileInput
+        <FileInput
           label="Dropzone mode"
           value={v3}
           onChange={setV3}
           mode="dropzone"
           placeholder="Drag files here or click to browse"
         />
-        <XDSFileInput label="Disabled" value={v4} onChange={setV4} isDisabled />
-        <XDSFileInput
+        <FileInput label="Disabled" value={v4} onChange={setV4} isDisabled />
+        <FileInput
           label="With error"
           value={v5}
           onChange={setV5}

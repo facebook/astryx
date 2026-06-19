@@ -3,8 +3,8 @@
 /**
  * @file text.stylex.ts
  * @input Uses StyleX, theme tokens
- * @output Exports StyleX styles for XDSText and XDSHeading props
- * @position Styles module; consumed by XDSText.tsx, XDSHeading.tsx
+ * @output Exports StyleX styles for Text and Heading props
+ * @position Styles module; consumed by Text.tsx, Heading.tsx
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Text/Text.doc.mjs
@@ -99,7 +99,7 @@ export const defaultWeightByTypeStyles = stylex.create({
 // =============================================================================
 // Baseline Size/Leading by Type (from type-scale tokens)
 //
-// These ensure XDSText renders with correct sizing even without a theme.
+// These ensure Text renders with correct sizing even without a theme.
 // Theme component overrides (.xds-text.body { ... } today, plus data-type
 // reflection on rendered text elements) win when present
 // because they have higher specificity via @scope.
@@ -148,7 +148,7 @@ export const sizeByTypeStyles = stylex.create({
 // =============================================================================
 // Baseline Size/Leading by Heading Level (from type-scale tokens)
 //
-// Same rationale as sizeByTypeStyles — ensures XDSHeading renders
+// Same rationale as sizeByTypeStyles — ensures Heading renders
 // with correct sizing even without a theme.
 // =============================================================================
 

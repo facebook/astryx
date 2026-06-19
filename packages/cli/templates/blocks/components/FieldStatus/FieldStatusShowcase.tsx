@@ -2,27 +2,27 @@
 
 'use client';
 
-import {XDSFieldStatus} from '@xds/core/FieldStatus';
-import {XDSVStack} from '@xds/core/Layout';
+import {FieldStatus} from '@xds/core/FieldStatus';
+import {VStack} from '@xds/core/Layout';
 
 export default function FieldStatusShowcase() {
   return (
-    <XDSVStack gap={4}>
-      <XDSFieldStatus
+    <VStack gap={4}>
+      <FieldStatus
         type="error"
         message="This field is required"
         variant="detached"
       />
-      <XDSFieldStatus
+      <FieldStatus
         type="warning"
         message="This username is already taken by another team"
         variant="detached"
       />
-      <XDSFieldStatus
+      <FieldStatus
         type="success"
         message="Your changes have been saved"
         variant="detached"
       />
-    </XDSVStack>
+    </VStack>
   );
 }

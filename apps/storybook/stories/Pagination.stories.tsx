@@ -2,11 +2,11 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {XDSPagination} from '@xds/core/Pagination';
+import {Pagination} from '@xds/core/Pagination';
 
-const meta: Meta<typeof XDSPagination> = {
+const meta: Meta<typeof Pagination> = {
   title: 'Core/Pagination',
-  component: XDSPagination,
+  component: Pagination,
   tags: ['autodocs'],
   argTypes: {
     page: {
@@ -35,16 +35,16 @@ const meta: Meta<typeof XDSPagination> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSPagination>;
+type Story = StoryObj<typeof Pagination>;
 
 // Interactive wrapper for controlled state
 function PaginationDemo(
-  props: Omit<React.ComponentProps<typeof XDSPagination>, 'onChange'>,
+  props: Omit<React.ComponentProps<typeof Pagination>, 'onChange'>,
 ) {
   const [page, setPage] = useState(props.page ?? 1);
   const [pageSize, setPageSize] = useState(props.pageSize ?? 10);
   return (
-    <XDSPagination
+    <Pagination
       {...props}
       page={page}
       onChange={setPage}

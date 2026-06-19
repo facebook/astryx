@@ -3,13 +3,13 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSMultiSelector} from '@xds/core/MultiSelector';
+import {MultiSelector} from '@xds/core/MultiSelector';
 
 export default function MultiSelectorSectionedMultiSelector() {
   const [value, setValue] = useState<string[]>([]);
   return (
     <div style={{width: 300}}>
-      <XDSMultiSelector
+      <MultiSelector
         label="Permissions"
         options={[
           {

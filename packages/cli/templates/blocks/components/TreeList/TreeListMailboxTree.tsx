@@ -2,26 +2,26 @@
 
 'use client';
 
-import {XDSTreeList} from '@xds/core/TreeList';
-import {XDSBadge} from '@xds/core/Badge';
+import {TreeList} from '@xds/core/TreeList';
+import {Badge} from '@xds/core/Badge';
 
 const noop = () => {};
 
 export default function TreeListMailboxTree() {
   return (
-    <XDSTreeList
+    <TreeList
       items={[
         {
           id: 'inbox',
           label: 'Inbox',
           isExpanded: true,
-          endContent: <XDSBadge label="3" />,
+          endContent: <Badge label="3" />,
           children: [
             {
               id: 'unread',
               label: 'Unread',
               onClick: noop,
-              endContent: <XDSBadge label="3" />,
+              endContent: <Badge label="3" />,
             },
             {id: 'starred', label: 'Starred', onClick: noop},
           ],
@@ -31,7 +31,7 @@ export default function TreeListMailboxTree() {
           id: 'drafts',
           label: 'Drafts',
           onClick: noop,
-          endContent: <XDSBadge label="1" />,
+          endContent: <Badge label="1" />,
         },
       ]}
     />

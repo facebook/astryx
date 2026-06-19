@@ -3,10 +3,10 @@
 'use client';
 
 import {
-  XDSChatTokenizedText,
-  XDSChatMessage,
-  XDSChatMessageBubble,
-  XDSChatMessageList,
+  ChatTokenizedText,
+  ChatMessage,
+  ChatMessageBubble,
+  ChatMessageList,
 } from '@xds/core/Chat';
 
 const tokens = [
@@ -16,14 +16,14 @@ const tokens = [
 
 export default function ChatTokenizedTextBasic() {
   return (
-    <XDSChatMessageList>
-      <XDSChatMessage sender="system">
-        <XDSChatMessageBubble>
-          <XDSChatTokenizedText tokens={tokens}>
+    <ChatMessageList>
+      <ChatMessage sender="system">
+        <ChatMessageBubble>
+          <ChatTokenizedText tokens={tokens}>
             Assign @cindy and @alex as reviewers.
-          </XDSChatTokenizedText>
-        </XDSChatMessageBubble>
-      </XDSChatMessage>
-    </XDSChatMessageList>
+          </ChatTokenizedText>
+        </ChatMessageBubble>
+      </ChatMessage>
+    </ChatMessageList>
   );
 }

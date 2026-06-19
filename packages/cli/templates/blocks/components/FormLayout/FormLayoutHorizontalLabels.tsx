@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSFormLayout} from '@xds/core/FormLayout';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSTextArea} from '@xds/core/TextArea';
+import {FormLayout} from '@xds/core/FormLayout';
+import {TextInput} from '@xds/core/TextInput';
+import {Selector} from '@xds/core/Selector';
+import {TextArea} from '@xds/core/TextArea';
 
 export default function FormLayoutHorizontalLabels() {
   const [displayName, setDisplayName] = useState('Jane Doe');
@@ -15,14 +15,14 @@ export default function FormLayoutHorizontalLabels() {
   const [bio, setBio] = useState('');
 
   return (
-    <XDSFormLayout direction="horizontal-labels">
-      <XDSTextInput
+    <FormLayout direction="horizontal-labels">
+      <TextInput
         label="Display Name"
         value={displayName}
         onChange={setDisplayName}
       />
-      <XDSTextInput label="Email" value={email} onChange={setEmail} />
-      <XDSSelector
+      <TextInput label="Email" value={email} onChange={setEmail} />
+      <Selector
         label="Timezone"
         value={timezone}
         onChange={v => setTimezone(v as string)}
@@ -32,7 +32,7 @@ export default function FormLayoutHorizontalLabels() {
           {label: 'UTC', value: 'UTC'},
         ]}
       />
-      <XDSTextArea label="Bio" value={bio} onChange={setBio} rows={3} />
-    </XDSFormLayout>
+      <TextArea label="Bio" value={bio} onChange={setBio} rows={3} />
+    </FormLayout>
   );
 }

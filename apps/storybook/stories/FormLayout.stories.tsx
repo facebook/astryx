@@ -2,16 +2,16 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSFormLayout} from '@xds/core/FormLayout';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSField} from '@xds/core/Field';
-import {XDSText} from '@xds/core/Text';
+import {FormLayout} from '@xds/core/FormLayout';
+import {TextInput} from '@xds/core/TextInput';
+import {Selector} from '@xds/core/Selector';
+import {Field} from '@xds/core/Field';
+import {Text} from '@xds/core/Text';
 import * as stylex from '@stylexjs/stylex';
 
-const meta: Meta<typeof XDSFormLayout> = {
+const meta: Meta<typeof FormLayout> = {
   title: 'Core/FormLayout',
-  component: XDSFormLayout,
+  component: FormLayout,
   tags: ['autodocs'],
   args: {
     direction: 'vertical',
@@ -26,7 +26,7 @@ const meta: Meta<typeof XDSFormLayout> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSFormLayout>;
+type Story = StoryObj<typeof FormLayout>;
 
 // Helper component that uses args so Storybook controls work
 function FormLayoutDemo({
@@ -38,11 +38,11 @@ function FormLayoutDemo({
   const [email, setEmail] = useState('');
   const [bio, setBio] = useState('');
   return (
-    <XDSFormLayout direction={direction}>
-      <XDSTextInput label="Name" value={name} onChange={setName} />
-      <XDSTextInput label="Email" value={email} onChange={setEmail} />
-      <XDSTextInput label="Bio" value={bio} onChange={setBio} />
-    </XDSFormLayout>
+    <FormLayout direction={direction}>
+      <TextInput label="Name" value={name} onChange={setName} />
+      <TextInput label="Email" value={email} onChange={setEmail} />
+      <TextInput label="Bio" value={bio} onChange={setBio} />
+    </FormLayout>
   );
 }
 
@@ -64,10 +64,10 @@ export const Horizontal: Story = {
     const [first, setFirst] = useState('');
     const [last, setLast] = useState('');
     return (
-      <XDSFormLayout direction={args.direction}>
-        <XDSTextInput label="First Name" value={first} onChange={setFirst} />
-        <XDSTextInput label="Last Name" value={last} onChange={setLast} />
-      </XDSFormLayout>
+      <FormLayout direction={args.direction}>
+        <TextInput label="First Name" value={first} onChange={setFirst} />
+        <TextInput label="Last Name" value={last} onChange={setLast} />
+      </FormLayout>
     );
   },
 };
@@ -84,14 +84,14 @@ export const HorizontalLabels: Story = {
     const [email, setEmail] = useState('jane@example.com');
     const [timezone, setTimezone] = useState('America/Los_Angeles');
     return (
-      <XDSFormLayout direction={args.direction}>
-        <XDSTextInput
+      <FormLayout direction={args.direction}>
+        <TextInput
           label="Display Name"
           value={displayName}
           onChange={setDisplayName}
         />
-        <XDSTextInput label="Email" value={email} onChange={setEmail} />
-        <XDSSelector
+        <TextInput label="Email" value={email} onChange={setEmail} />
+        <Selector
           label="Timezone"
           value={timezone}
           onChange={v => setTimezone(v as string)}
@@ -101,12 +101,12 @@ export const HorizontalLabels: Story = {
             {label: 'UTC', value: 'UTC'},
           ]}
         />
-      </XDSFormLayout>
+      </FormLayout>
     );
   },
 };
 
-// ─── Mixed: XDS inputs + XDSField-wrapped custom controls ─────────────────
+// ─── Mixed: XDS inputs + Field-wrapped custom controls ─────────────────
 
 const checkboxStyles = stylex.create({
   group: {
@@ -127,9 +127,9 @@ export const MixedControls: Story = {
     const [name, setName] = useState('');
     const [role, setRole] = useState('viewer');
     return (
-      <XDSFormLayout>
-        <XDSTextInput label="Name" value={name} onChange={setName} />
-        <XDSSelector
+      <FormLayout>
+        <TextInput label="Name" value={name} onChange={setName} />
+        <Selector
           label="Role"
           value={role}
           onChange={v => setRole(v as string)}
@@ -139,7 +139,7 @@ export const MixedControls: Story = {
             {label: 'Admin', value: 'admin'},
           ]}
         />
-        <XDSField label="Notifications" inputID="notif-group">
+        <Field label="Notifications" inputID="notif-group">
           <div {...stylex.props(checkboxStyles.group)} id="notif-group">
             <label {...stylex.props(checkboxStyles.label)}>
               <input type="checkbox" defaultChecked /> Email
@@ -151,8 +151,8 @@ export const MixedControls: Story = {
               <input type="checkbox" defaultChecked /> Push
             </label>
           </div>
-        </XDSField>
-      </XDSFormLayout>
+        </Field>
+      </FormLayout>
     );
   },
 };
@@ -169,18 +169,18 @@ export const Nested: Story = {
     const [state, setState] = useState('');
     const [zip, setZip] = useState('');
     return (
-      <XDSFormLayout>
-        <XDSFormLayout direction="horizontal">
-          <XDSTextInput label="First Name" value={first} onChange={setFirst} />
-          <XDSTextInput label="Last Name" value={last} onChange={setLast} />
-        </XDSFormLayout>
-        <XDSTextInput label="Email" value={email} onChange={setEmail} />
-        <XDSFormLayout direction="horizontal">
-          <XDSTextInput label="City" value={city} onChange={setCity} />
-          <XDSTextInput label="State" value={state} onChange={setState} />
-          <XDSTextInput label="ZIP" value={zip} onChange={setZip} />
-        </XDSFormLayout>
-      </XDSFormLayout>
+      <FormLayout>
+        <FormLayout direction="horizontal">
+          <TextInput label="First Name" value={first} onChange={setFirst} />
+          <TextInput label="Last Name" value={last} onChange={setLast} />
+        </FormLayout>
+        <TextInput label="Email" value={email} onChange={setEmail} />
+        <FormLayout direction="horizontal">
+          <TextInput label="City" value={city} onChange={setCity} />
+          <TextInput label="State" value={state} onChange={setState} />
+          <TextInput label="ZIP" value={zip} onChange={setZip} />
+        </FormLayout>
+      </FormLayout>
     );
   },
 };
@@ -233,7 +233,7 @@ export const InDialog: Story = {
     return (
       <div {...stylex.props(dialogStyles.container)}>
         <div {...stylex.props(dialogStyles.header)}>
-          <XDSText type="label">Edit Profile</XDSText>
+          <Text type="label">Edit Profile</Text>
         </div>
         <div {...stylex.props(dialogStyles.body)}>
           <form
@@ -242,10 +242,10 @@ export const InDialog: Story = {
               e.preventDefault();
               alert(`Saved: ${name}, ${email}`);
             }}>
-            <XDSFormLayout>
-              <XDSTextInput label="Name" value={name} onChange={setName} />
-              <XDSTextInput label="Email" value={email} onChange={setEmail} />
-            </XDSFormLayout>
+            <FormLayout>
+              <TextInput label="Name" value={name} onChange={setName} />
+              <TextInput label="Email" value={email} onChange={setEmail} />
+            </FormLayout>
           </form>
         </div>
         <div {...stylex.props(dialogStyles.footer)}>

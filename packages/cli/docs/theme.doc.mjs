@@ -7,7 +7,7 @@ export const docs = {
   title: 'Theme System',
   category: 'guide',
   description:
-    'XDSTheme provider, custom themes, theme build for production/SSR, light/dark mode, and component style overrides.',
+    'Theme provider, custom themes, theme build for production/SSR, light/dark mode, and component style overrides.',
 
   sections: [
     {
@@ -18,14 +18,14 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'Basic theme setup (runtime injection)',
-          code: `import {XDSTheme} from '@xds/core';
+          code: `import {Theme} from '@xds/core';
 import {defaultTheme} from '@xds/theme-default';
 
 function App() {
   return (
-    <XDSTheme theme={defaultTheme}>
+    <Theme theme={defaultTheme}>
       <YourApp />
-    </XDSTheme>
+    </Theme>
   );
 }`,
         },
@@ -33,15 +33,15 @@ function App() {
           type: 'code',
           lang: 'tsx',
           label: 'Optimized setup (pre-built CSS)',
-          code: `import {XDSTheme} from '@xds/core';
+          code: `import {Theme} from '@xds/core';
 import {defaultTheme} from '@xds/theme-default/built';
 import '@xds/theme-default/theme.css';
 
 function App() {
   return (
-    <XDSTheme theme={defaultTheme}>
+    <Theme theme={defaultTheme}>
       <YourApp />
-    </XDSTheme>
+    </Theme>
   );
 }`,
         },
@@ -83,14 +83,14 @@ function App() {
       ],
     },
     {
-      title: 'XDSTheme Props',
+      title: 'Theme Props',
   category: 'guide',
       content: [
         {
           type: 'table',
           headers: ['Prop', 'Type', 'Default', 'Description'],
           rows: [
-            ['theme', 'XDSDefinedTheme', '—', 'Theme object (required)'],
+            ['theme', 'DefinedTheme', '—', 'Theme object (required)'],
             [
               'mode',
               "'system' | 'light' | 'dark'",
@@ -312,8 +312,8 @@ const brandTheme = defineTheme({
           lang: 'tsx',
           label: 'Using custom variants',
           code: `// TypeScript knows about 'primary-muted' after xds theme build
-<XDSButton variant="primary-muted" label="Save draft" />
-<XDSBanner status="neutral" title="Note" />`,
+<Button variant="primary-muted" label="Save draft" />
+<Banner status="neutral" title="Note" />`,
         },
         {
           type: 'prose',
@@ -363,7 +363,7 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'The `__built: true` flag tells XDSTheme to skip runtime `<style>` injection; the CSS file handles it.',
+          text: 'The `__built: true` flag tells Theme to skip runtime `<style>` injection; the CSS file handles it.',
         },
         {
           type: 'code',
@@ -372,9 +372,9 @@ const brandTheme = defineTheme({
           code: `import {oceanTheme} from './themes/ocean';
 import './themes/ocean.css';
 
-<XDSTheme theme={oceanTheme}>
+<Theme theme={oceanTheme}>
   <App />
-</XDSTheme>`,
+</Theme>`,
         },
       ],
     },
@@ -447,7 +447,7 @@ import './themes/ocean.css';
       content: [
         {
           type: 'prose',
-          text: "Use [light, dark] tuples in token values for automatic mode switching. Use mode='system' (default) on XDSTheme to follow OS preference.",
+          text: "Use [light, dark] tuples in token values for automatic mode switching. Use mode='system' (default) on Theme to follow OS preference.",
         },
         {
           type: 'code',
@@ -461,12 +461,12 @@ import './themes/ocean.css';
           label: 'Toggle with a button',
           code: `const [mode, setMode] = useState<'light' | 'dark'>('light');
 
-<XDSTheme theme={myTheme} mode={mode}>
-  <XDSButton
+<Theme theme={myTheme} mode={mode}>
+  <Button
     label={mode === 'light' ? 'Switch to Dark' : 'Switch to Light'}
     onClick={() => setMode(m => (m === 'light' ? 'dark' : 'light'))}
   />
-</XDSTheme>;`,
+</Theme>;`,
         },
       ],
     },
@@ -476,23 +476,23 @@ import './themes/ocean.css';
       content: [
         {
           type: 'prose',
-          text: 'Wrap different sections in separate <XDSTheme> providers.',
+          text: 'Wrap different sections in separate <Theme> providers.',
         },
         {
           type: 'code',
           lang: 'tsx',
           label: 'Dark sidebar with light content',
-          code: `<XDSTheme theme={lightTheme} mode="light">
-  <XDSLayout
-    header={<XDSLayoutHeader>...</XDSLayoutHeader>}
+          code: `<Theme theme={lightTheme} mode="light">
+  <Layout
+    header={<LayoutHeader>...</LayoutHeader>}
     start={
-      <XDSTheme theme={darkTheme} mode="dark">
-        <XDSLayoutPanel>{/* Dark sidebar */}</XDSLayoutPanel>
-      </XDSTheme>
+      <Theme theme={darkTheme} mode="dark">
+        <LayoutPanel>{/* Dark sidebar */}</LayoutPanel>
+      </Theme>
     }
-    content={<XDSLayoutContent>{/* Light content */}</XDSLayoutContent>}
+    content={<LayoutContent>{/* Light content */}</LayoutContent>}
   />
-</XDSTheme>`,
+</Theme>`,
         },
       ],
     },
@@ -540,22 +540,22 @@ const chartTheme = {
       ],
     },
     {
-      title: 'useXDSTheme Hook',
+      title: 'useTheme Hook',
   category: 'guide',
       content: [
         {
           type: 'prose',
-          text: '`useXDSTheme()` uses the same token resolution as `resolveXDSThemeTokens()`, but reads the nearest XDSTheme and effective color mode from React context and media query state. Use it inside client components for SVG, canvas, charts, maps, and third-party configuration objects that need token values in JavaScript instead of `var(...)` references.',
+          text: '`useTheme()` uses the same token resolution as `resolveXDSThemeTokens()`, but reads the nearest Theme and effective color mode from React context and media query state. Use it inside client components for SVG, canvas, charts, maps, and third-party configuration objects that need token values in JavaScript instead of `var(...)` references.',
         },
         {
           type: 'code',
           lang: 'tsx',
           label: 'Access resolved token values in React',
           code: `import {useMemo} from 'react';
-import {useXDSTheme} from '@xds/core/theme';
+import {useTheme} from '@xds/core/theme';
 
 function ChartConfig() {
-  const {mode, tokens} = useXDSTheme();
+  const {mode, tokens} = useTheme();
 
   const options = useMemo(
     () => ({
@@ -572,7 +572,7 @@ function ChartConfig() {
         },
         {
           type: 'prose',
-          text: 'Prefer CSS variables, StyleX token imports, xstyle, or className for ordinary styling. To change the theme or mode, manage state at the app level and pass it to <XDSTheme>.',
+          text: 'Prefer CSS variables, StyleX token imports, xstyle, or className for ordinary styling. To change the theme or mode, manage state at the app level and pass it to <Theme>.',
         },
         {
           type: 'prose',

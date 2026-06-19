@@ -2,26 +2,26 @@
 
 'use client';
 
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSStack} from '@xds/core/Layout';
+import {Badge} from '@xds/core/Badge';
+import {Stack} from '@xds/core/Layout';
 
 export default function BadgeShowcase() {
   return (
-    <XDSStack direction="vertical" gap={4} hAlign="center">
-      <XDSStack direction="horizontal" gap={2}>
-        <XDSBadge label="Neutral" variant="neutral" />
-        <XDSBadge label="Info" variant="info" />
-        <XDSBadge label="Success" variant="success" />
-        <XDSBadge label="Warning" variant="warning" />
-        <XDSBadge label="Error" variant="error" />
-      </XDSStack>
-      <XDSStack direction="horizontal" gap={2}>
-        <XDSBadge label="Blue" variant="blue" />
-        <XDSBadge label="Purple" variant="purple" />
-        <XDSBadge label="Pink" variant="pink" />
-        <XDSBadge label="Teal" variant="teal" />
-        <XDSBadge label="Orange" variant="orange" />
-      </XDSStack>
-    </XDSStack>
+    <Stack direction="vertical" gap={4} hAlign="center">
+      <Stack direction="horizontal" gap={2}>
+        <Badge label="Neutral" variant="neutral" />
+        <Badge label="Info" variant="info" />
+        <Badge label="Success" variant="success" />
+        <Badge label="Warning" variant="warning" />
+        <Badge label="Error" variant="error" />
+      </Stack>
+      <Stack direction="horizontal" gap={2}>
+        <Badge label="Blue" variant="blue" />
+        <Badge label="Purple" variant="purple" />
+        <Badge label="Pink" variant="pink" />
+        <Badge label="Teal" variant="teal" />
+        <Badge label="Orange" variant="orange" />
+      </Stack>
+    </Stack>
   );
 }

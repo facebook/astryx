@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {TabList, Tab} from '@xds/core/TabList';
 
 const HomeIcon = (
   <svg viewBox="0 0 16 16" fill="currentColor" width="100%" height="100%">
@@ -24,9 +24,9 @@ const CogIcon = (
 export default function TabListTabsWithIcons() {
   const [value, setValue] = useState('home');
   return (
-    <XDSTabList value={value} onChange={setValue}>
-      <XDSTab value="home" label="Home" icon={HomeIcon} />
-      <XDSTab value="settings" label="Settings" icon={CogIcon} />
-    </XDSTabList>
+    <TabList value={value} onChange={setValue}>
+      <Tab value="home" label="Home" icon={HomeIcon} />
+      <Tab value="settings" label="Settings" icon={CogIcon} />
+    </TabList>
   );
 }

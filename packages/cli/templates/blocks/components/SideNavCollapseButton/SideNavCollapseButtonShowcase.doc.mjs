@@ -6,7 +6,7 @@ export const doc = {
   exampleFor: 'SideNavCollapseButton',
   name: 'SideNavCollapseButton',
   displayName: 'Side Nav Collapse Button',
-  description: 'Demonstrates XDSSideNavCollapseButton inside a collapsible SideNav.',
+  description: 'Demonstrates SideNavCollapseButton inside a collapsible SideNav.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 4 / 3,

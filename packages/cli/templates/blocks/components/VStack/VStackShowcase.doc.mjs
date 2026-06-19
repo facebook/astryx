@@ -6,7 +6,7 @@ export const doc = {
   exampleFor: 'VStack',
   name: 'VStack',
   displayName: 'V Stack',
-  description: 'Demonstrates XDSVStack arranging items vertically with different gaps.',
+  description: 'Demonstrates VStack arranging items vertically with different gaps.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 4 / 3,

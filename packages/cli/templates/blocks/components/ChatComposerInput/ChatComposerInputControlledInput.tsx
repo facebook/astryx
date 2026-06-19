@@ -3,29 +3,29 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSChatComposer, XDSChatComposerInput} from '@xds/core/Chat';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {ChatComposer, ChatComposerInput} from '@xds/core/Chat';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function ChatComposerInputControlledInput() {
   const [value, setValue] = useState('');
   return (
-    <XDSStack direction="vertical" gap={3} style={{width: '100%', maxWidth: 450}}>
-      <XDSChatComposer
+    <Stack direction="vertical" gap={3} style={{width: '100%', maxWidth: 450}}>
+      <ChatComposer
         onSubmit={() => setValue('')}
         value={value}
         onChange={setValue}
         input={
-          <XDSChatComposerInput
+          <ChatComposerInput
             value={value}
             onChange={setValue}
             placeholder="Type a message..."
           />
         }
       />
-      <XDSText type="supporting" color="secondary">
+      <Text type="supporting" color="secondary">
         Value: {JSON.stringify(value)}
-      </XDSText>
-    </XDSStack>
+      </Text>
+    </Stack>
   );
 }

@@ -2,13 +2,13 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSTokenizer} from '@xds/core/Tokenizer';
-import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
-import {XDSButton} from '@xds/core/Button';
+import {Tokenizer} from '@xds/core/Tokenizer';
+import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
+import {Button} from '@xds/core/Button';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
 // Sample data
-const users: XDSSearchableItem[] = [
+const users: SearchableItem[] = [
   {id: '1', label: 'Alice Johnson'},
   {id: '2', label: 'Bob Smith'},
   {id: '3', label: 'Charlie Brown'},
@@ -19,15 +19,15 @@ const users: XDSSearchableItem[] = [
   {id: '8', label: 'Henry Davis'},
 ];
 
-const userSource: XDSSearchSource = {
+const userSource: SearchSource = {
   search: (query: string) =>
     users.filter(u => u.label.toLowerCase().includes(query.toLowerCase())),
   bootstrap: () => users.slice(0, 5),
 };
 
-const meta: Meta<typeof XDSTokenizer> = {
+const meta: Meta<typeof Tokenizer> = {
   title: 'Core/Tokenizer',
-  component: XDSTokenizer,
+  component: Tokenizer,
   tags: ['autodocs'],
   argTypes: {
     label: {control: 'text'},
@@ -53,13 +53,13 @@ const meta: Meta<typeof XDSTokenizer> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSTokenizer>;
+type Story = StoryObj<typeof Tokenizer>;
 
 export const Default: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSSearchableItem[]>([]);
+    const [value, setValue] = useState<SearchableItem[]>([]);
     return (
-      <XDSTokenizer
+      <Tokenizer
         {...args}
         searchSource={userSource}
         value={value}
@@ -77,7 +77,7 @@ export const WithPreselected: Story = {
   render: args => {
     const [value, setValue] = useState([users[0], users[2]]);
     return (
-      <XDSTokenizer
+      <Tokenizer
         {...args}
         searchSource={userSource}
         value={value}
@@ -154,7 +154,7 @@ export const Disabled: Story = {
   render: args => {
     const [value] = useState([users[0], users[1]]);
     return (
-      <XDSTokenizer
+      <Tokenizer
         {...args}
         searchSource={userSource}
         value={value}
@@ -181,7 +181,7 @@ export const WithStartIconAndTokens: Story = {
   render: args => {
     const [value, setValue] = useState([users[0], users[2]]);
     return (
-      <XDSTokenizer
+      <Tokenizer
         {...args}
         searchSource={userSource}
         value={value}
@@ -198,9 +198,9 @@ export const WithStartIconAndTokens: Story = {
 
 export const WithEntriesOnFocus: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSSearchableItem[]>([]);
+    const [value, setValue] = useState<SearchableItem[]>([]);
     return (
-      <XDSTokenizer
+      <Tokenizer
         {...args}
         searchSource={userSource}
         value={value}
@@ -218,7 +218,7 @@ export const WithEntriesOnFocus: Story = {
 
 export const OverflowInline: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSSearchableItem[]>([
+    const [value, setValue] = useState<SearchableItem[]>([
       users[0],
       users[1],
       users[2],
@@ -228,7 +228,7 @@ export const OverflowInline: Story = {
     ]);
     return (
       <div>
-        <XDSTokenizer
+        <Tokenizer
           {...args}
           searchSource={userSource}
           value={value}
@@ -250,7 +250,7 @@ export const OverflowInline: Story = {
 
 export const OverflowLayer: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSSearchableItem[]>([
+    const [value, setValue] = useState<SearchableItem[]>([
       users[0],
       users[1],
       users[2],
@@ -260,7 +260,7 @@ export const OverflowLayer: Story = {
     ]);
     return (
       <div>
-        <XDSTokenizer
+        <Tokenizer
           {...args}
           searchSource={userSource}
           value={value}
@@ -282,17 +282,17 @@ export const OverflowLayer: Story = {
 
 export const WithEndContent: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSSearchableItem[]>([
+    const [value, setValue] = useState<SearchableItem[]>([
       users[0],
       users[2],
     ]);
     return (
-      <XDSTokenizer
+      <Tokenizer
         {...args}
         searchSource={userSource}
         value={value}
         onChange={items => setValue(items)}
-        endContent={<XDSButton label="Apply" variant="primary" size="sm" />}
+        endContent={<Button label="Apply" variant="primary" size="sm" />}
       />
     );
   },
@@ -303,17 +303,17 @@ export const WithEndContent: Story = {
 };
 
 // Empty source for free-text-only tokenizers
-const emptySource: XDSSearchSource = {
+const emptySource: SearchSource = {
   search: () => [],
   bootstrap: () => [],
 };
 
 export const Creatable: Story = {
   render: args => {
-    const [tags, setTags] = useState<XDSSearchableItem[]>([]);
+    const [tags, setTags] = useState<SearchableItem[]>([]);
     return (
       <div>
-        <XDSTokenizer
+        <Tokenizer
           {...args}
           searchSource={emptySource}
           value={tags}
@@ -337,12 +337,12 @@ export const Creatable: Story = {
 
 export const SizeVariants: Story = {
   render: () => {
-    const [sm, setSm] = useState<XDSSearchableItem[]>([]);
-    const [md, setMd] = useState<XDSSearchableItem[]>([users[0], users[2]]);
-    const [lg, setLg] = useState<XDSSearchableItem[]>([]);
+    const [sm, setSm] = useState<SearchableItem[]>([]);
+    const [md, setMd] = useState<SearchableItem[]>([users[0], users[2]]);
+    const [lg, setLg] = useState<SearchableItem[]>([]);
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
-        <XDSTokenizer
+        <Tokenizer
           label="Small (28px)"
           searchSource={userSource}
           value={sm}
@@ -351,7 +351,7 @@ export const SizeVariants: Story = {
           size="sm"
           hasClear
         />
-        <XDSTokenizer
+        <Tokenizer
           label="Medium (32px)"
           searchSource={userSource}
           value={md}
@@ -360,7 +360,7 @@ export const SizeVariants: Story = {
           size="md"
           hasClear
         />
-        <XDSTokenizer
+        <Tokenizer
           label="Large (36px)"
           searchSource={userSource}
           value={lg}
@@ -376,9 +376,9 @@ export const SizeVariants: Story = {
 
 export const CreatableWithSearch: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSSearchableItem[]>([]);
+    const [value, setValue] = useState<SearchableItem[]>([]);
     return (
-      <XDSTokenizer
+      <Tokenizer
         {...args}
         searchSource={userSource}
         value={value}

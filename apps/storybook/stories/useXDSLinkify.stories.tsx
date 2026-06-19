@@ -2,10 +2,10 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {useXDSLinkify} from '@xds/core/Link';
-import {XDSText} from '@xds/core/Text';
-import {XDSStack} from '@xds/core/Stack';
-import {XDSTextInput} from '@xds/core/TextInput';
+import {useLinkify} from '@xds/core/Link';
+import {Text} from '@xds/core/Text';
+import {Stack} from '@xds/core/Stack';
+import {TextInput} from '@xds/core/TextInput';
 
 // ---------------------------------------------------------------------------
 // Wrapper — hooks need a component
@@ -40,13 +40,13 @@ function LinkifyDemo({
     });
   }
 
-  const nodes = useXDSLinkify(text, {
+  const nodes = useLinkify(text, {
     patterns: patterns.length > 0 ? patterns : undefined,
     hasBuiltins,
   });
 
   return (
-    <XDSStack gap={4}>
+    <Stack gap={4}>
       <div
         style={{
           padding: 16,
@@ -54,12 +54,12 @@ function LinkifyDemo({
           background: 'var(--xds-color-bg-secondary, #f5f5f5)',
           minHeight: 40,
         }}>
-        <XDSText type="body">{nodes}</XDSText>
+        <Text type="body">{nodes}</Text>
       </div>
-      <XDSText type="supporting" color="secondary">
+      <Text type="supporting" color="secondary">
         {nodes.length} node{nodes.length !== 1 ? 's' : ''} rendered
-      </XDSText>
-    </XDSStack>
+      </Text>
+    </Stack>
   );
 }
 
@@ -68,7 +68,7 @@ function LinkifyDemo({
 // ---------------------------------------------------------------------------
 
 const meta: Meta<typeof LinkifyDemo> = {
-  title: 'Core/useXDSLinkify',
+  title: 'Core/useLinkify',
   component: LinkifyDemo,
   tags: ['autodocs'],
   argTypes: {
@@ -150,7 +150,7 @@ export const Interactive: Story = {
       'Check T12345, visit https://react.dev, or email hi@example.com',
     );
 
-    const nodes = useXDSLinkify(text, {
+    const nodes = useLinkify(text, {
       patterns: [
         {
           pattern: /\bT(\d+)\b/g,
@@ -167,8 +167,8 @@ export const Interactive: Story = {
     });
 
     return (
-      <XDSStack gap={4}>
-        <XDSTextInput
+      <Stack gap={4}>
+        <TextInput
           label="Enter text to linkify"
           value={text}
           onChange={newValue => setText(newValue)}
@@ -180,9 +180,9 @@ export const Interactive: Story = {
             background: 'var(--xds-color-bg-secondary, #f5f5f5)',
             minHeight: 40,
           }}>
-          <XDSText type="body">{nodes}</XDSText>
+          <Text type="body">{nodes}</Text>
         </div>
-      </XDSStack>
+      </Stack>
     );
   },
 };

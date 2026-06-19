@@ -4,7 +4,7 @@
  * @file streaming.ts
  * @input Boundary tracking and segment splitting for streaming fade-in animation
  * @output Exports computeBoundaries, computeSegments, and StreamingCursor type
- * @position Utility module; pure logic extracted from XDSMarkdown for testability
+ * @position Utility module; pure logic extracted from Markdown for testability
  */
 
 /**

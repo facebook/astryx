@@ -2,15 +2,15 @@
 
 'use client';
 
-import {XDSProgressBar} from '@xds/core/ProgressBar';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {ProgressBar} from '@xds/core/ProgressBar';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function ProgressBarCustomFormat() {
   return (
     <div style={{width: 300}}>
-      <XDSVStack gap={1}>
-        <XDSProgressBar
+      <VStack gap={1}>
+        <ProgressBar
           value={3.2}
           max={5}
           label="Disk usage"
@@ -19,10 +19,10 @@ export default function ProgressBarCustomFormat() {
             `${value} GB / ${max} GB`
           }
         />
-        <XDSText type="supporting" color="secondary">
+        <Text type="supporting" color="secondary">
           1.8 GB remaining
-        </XDSText>
-      </XDSVStack>
+        </Text>
+      </VStack>
     </div>
   );
 }

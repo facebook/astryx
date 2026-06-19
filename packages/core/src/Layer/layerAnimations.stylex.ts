@@ -5,7 +5,7 @@
  * @input Uses StyleX, theme duration/easing tokens
  * @output Exports shared entry animation styles for layer-based components
  * @position Shared animation primitives; consumed by DropdownMenu, Popover,
- *   HoverCard, Tooltip, Selector, and any component using useXDSLayer
+ *   HoverCard, Tooltip, Selector, and any component using useLayer
  *
  * Provides opt-in entry animations for popover/layer components.
  * Components apply these via the `xstyle` prop on `layer.render()`.

@@ -3,9 +3,9 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {AspectRatio} from '@xds/core/AspectRatio';
+import {HStack, VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 import {radiusVars} from '@xds/core/theme/tokens.stylex';
 
 const s = stylex.create({
@@ -46,17 +46,17 @@ const items = [
 
 export default function AspectRatioShowcase() {
   return (
-    <XDSHStack gap={4} vAlign="start">
+    <HStack gap={4} vAlign="start">
       {items.map(({ratio, label, src, alt}) => (
-        <XDSVStack key={label} gap={2} hAlign="center">
-          <XDSAspectRatio ratio={ratio} xstyle={s.ratioBox}>
+        <VStack key={label} gap={2} hAlign="center">
+          <AspectRatio ratio={ratio} xstyle={s.ratioBox}>
             <img src={src} alt={alt} {...stylex.props(s.image)} />
-          </XDSAspectRatio>
-          <XDSText type="supporting" color="secondary">
+          </AspectRatio>
+          <Text type="supporting" color="secondary">
             {label}
-          </XDSText>
-        </XDSVStack>
+          </Text>
+        </VStack>
       ))}
-    </XDSHStack>
+    </HStack>
   );
 }

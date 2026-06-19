@@ -4,7 +4,7 @@
  * @file padding.stylex.ts
  * @input Uses @stylexjs/stylex, spacing from theme
  * @output StyleX styles for numeric padding prop on layout components
- * @position Layout utility; used by XDSCard, XDSSection, and Layout sub-components
+ * @position Layout utility; used by Card, Section, and Layout sub-components
  */
 
 import * as stylex from '@stylexjs/stylex';

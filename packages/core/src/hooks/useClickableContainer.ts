@@ -99,7 +99,7 @@ export interface ClickableContainerResult {
  * When the user clicks a nested interactive element, it does nothing —
  * the nested element handles its own event.
  *
- * @compositionHint Use inside XDSClickableCard or XDSSelectableCard.
+ * @compositionHint Use inside ClickableCard or SelectableCard.
  * For custom interactive containers, pair with a ref to the outer div.
  *
  * @example

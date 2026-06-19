@@ -119,7 +119,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'XDSInputStatus',
+      type: 'InputStatus',
       description: 'Status indicator object for error, warning, or success states with a message.',
     },
     {
@@ -204,7 +204,7 @@ export const docsZh = {
     {name: 'hasClear', type: 'boolean', description: '当有值时显示清除按钮。', default: 'false'},
     {name: 'placeholder', type: 'string', description: '未选择日期时显示的占位符文本。', default: "'Select a date'"},
     {name: 'size', type: "'sm' | 'md' | 'lg'", description: '输入控件的尺寸。', default: "'md'"},
-    {name: 'status', type: 'XDSInputStatus', description: '错误、警告或成功状态的状态指示对象，附带消息。'},
+    {name: 'status', type: 'InputStatus', description: '错误、警告或成功状态的状态指示对象，附带消息。'},
     {name: 'labelTooltip', type: 'string', description: '通过标签末尾的信息图标显示的提示文本。'},
     {name: 'numberOfMonths', type: '1 | 2', description: '日历中同时显示的月份数量。', default: '1'},
     {name: 'xstyle', type: 'StyleXStyles', description: '用于布局自定义的 StyleX 样式。必须是 stylex.create() 的值。'},

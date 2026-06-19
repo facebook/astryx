@@ -2,11 +2,11 @@
 
 'use client';
 
-import {XDSSyntaxTheme} from '@xds/core/theme';
+import {SyntaxTheme} from '@xds/core/theme';
 import {oneDarkPro} from '@xds/core/theme/syntax';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {CodeBlock} from '@xds/core/CodeBlock';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const sampleCode = `async function save() {
   await api.update(values);
@@ -15,16 +15,16 @@ const sampleCode = `async function save() {
 
 export default function SyntaxThemeShowcase() {
   return (
-    <XDSSyntaxTheme theme={oneDarkPro}>
-      <XDSStack
+    <SyntaxTheme theme={oneDarkPro}>
+      <Stack
         direction="vertical"
         gap={2}
         style={{width: 360, maxWidth: '100%'}}>
-        <XDSText type="supporting" weight="bold" color="secondary">
+        <Text type="supporting" weight="bold" color="secondary">
           One Dark Pro preset
-        </XDSText>
-        <XDSCodeBlock code={sampleCode} language="tsx" />
-      </XDSStack>
-    </XDSSyntaxTheme>
+        </Text>
+        <CodeBlock code={sampleCode} language="tsx" />
+      </Stack>
+    </SyntaxTheme>
   );
 }

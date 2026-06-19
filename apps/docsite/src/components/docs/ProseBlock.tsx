@@ -3,7 +3,7 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSText} from '@xds/core/Text';
+import {Text} from '@xds/core/Text';
 import {renderInlineCode} from './renderInlineCode';
 
 const styles = stylex.create({
@@ -11,5 +11,5 @@ const styles = stylex.create({
 });
 
 export function ProseBlock({text}: {text: string}) {
-  return <XDSText xstyle={styles.prose}>{renderInlineCode(text)}</XDSText>;
+  return <Text xstyle={styles.prose}>{renderInlineCode(text)}</Text>;
 }

@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSMultiSelector} from '@xds/core/MultiSelector';
+import {MultiSelector} from '@xds/core/MultiSelector';
 
 const allColumns = [
   {value: 'name', label: 'Name'},
@@ -24,7 +24,7 @@ export default function MultiSelectorColumnVisibilitySelector() {
   ]);
   return (
     <div style={{width: 300}}>
-      <XDSMultiSelector
+      <MultiSelector
         label="Columns"
         isLabelHidden
         options={allColumns}

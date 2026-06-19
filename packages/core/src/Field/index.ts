@@ -4,30 +4,30 @@
 
 /**
  * @file index.ts
- * @input Imports XDSField component and types from XDSField.tsx, XDSFieldLabel from XDSFieldLabel.tsx, XDSFieldStatus from XDSFieldStatus.tsx
- * @output Exports XDSField, XDSFieldProps, XDSFieldStatusInput, XDSFieldStatusType, XDSFieldLabel, XDSFieldLabelProps, XDSFieldStatus component
+ * @input Imports Field component and types from Field.tsx, FieldLabel from FieldLabel.tsx, FieldStatus from FieldStatus.tsx
+ * @output Exports Field, FieldProps, FieldStatusInput, FieldStatusType, FieldLabel, FieldLabelProps, FieldStatus component
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
  * SYNC: When modified, update this header and /packages/core/src/Field/Field.doc.mjs
  */
 
-export {XDSField} from './XDSField';
+export {Field} from './Field';
 export type {
-  XDSFieldProps,
-  XDSFieldStatusInput,
-  XDSFieldStatusType,
-} from './XDSField';
-export {XDSFieldLabel} from './XDSFieldLabel';
-export type {XDSFieldLabelProps} from './XDSFieldLabel';
-export {XDSFieldStatus} from '../FieldStatus';
+  FieldProps,
+  FieldStatusInput,
+  FieldStatusType,
+} from './Field';
+export {FieldLabel} from './FieldLabel';
+export type {FieldLabelProps} from './FieldLabel';
+export {FieldStatus} from '../FieldStatus';
 export type {
-  XDSFieldStatusProps,
-  XDSFieldStatusVariant,
-  XDSFieldStatusVariantMap,
+  FieldStatusProps,
+  FieldStatusVariant,
+  FieldStatusVariantMap,
 } from '../FieldStatus';
 
 // Shared input types
-export type {XDSInputStatus, XDSInputStatusType, XDSInputSize} from './types';
+export type {InputStatus, InputStatusType, InputSize} from './types';
 
 // Shared input styles
 export {
@@ -39,4 +39,31 @@ export {
 } from './inputStyles.stylex';
 
 // Shared input components
-export {XDSInputClearButton} from './XDSInputClearButton';
+export {InputClearButton} from './InputClearButton';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  Field as XDSField,
+  FieldLabel as XDSFieldLabel,
+  FieldStatus as XDSFieldStatus,
+  InputClearButton as XDSInputClearButton,
+} from '.';
+export type {
+  FieldLabelProps as XDSFieldLabelProps,
+  FieldProps as XDSFieldProps,
+  FieldStatusInput as XDSFieldStatusInput,
+  FieldStatusProps as XDSFieldStatusProps,
+  FieldStatusType as XDSFieldStatusType,
+  FieldStatusVariant as XDSFieldStatusVariant,
+  FieldStatusVariantMap as XDSFieldStatusVariantMap,
+  InputSize as XDSInputSize,
+  InputStatus as XDSInputStatus,
+  InputStatusType as XDSInputStatusType,
+} from '.';
+// <compat-aliases:end>

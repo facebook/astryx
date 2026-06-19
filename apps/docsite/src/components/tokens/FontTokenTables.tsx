@@ -3,9 +3,9 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSTable, pixel, proportional} from '@xds/core/Table';
+import {HStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {Table, pixel, proportional} from '@xds/core/Table';
 import type {TokenTableProps} from './types';
 import {resolveToken, getTokensByPrefix} from './helpers';
 
@@ -38,7 +38,7 @@ export function FontFamilyTokenTable({theme}: TokenTableProps) {
   }));
 
   return (
-    <XDSTable
+    <Table
       data={data as Record<string, unknown>[]}
       columns={[
         {key: 'tokenName', header: 'Token', width: pixel(200)},
@@ -47,10 +47,10 @@ export function FontFamilyTokenTable({theme}: TokenTableProps) {
           header: 'Value',
           width: proportional(1, {minWidth: 300}),
           renderCell: (item: Record<string, unknown>) => (
-            <XDSHStack gap={3} vAlign="center">
-              <XDSText type="code" color="secondary">
+            <HStack gap={3} vAlign="center">
+              <Text type="code" color="secondary">
                 {(item.value as string)?.split(',')[0]?.trim()}
-              </XDSText>
+              </Text>
               <span
                 {...stylex.props(styles.fontSample)}
                 style={{
@@ -60,7 +60,7 @@ export function FontFamilyTokenTable({theme}: TokenTableProps) {
                 }}>
                 {FONT_SAMPLE}
               </span>
-            </XDSHStack>
+            </HStack>
           ),
         },
       ]}
@@ -79,7 +79,7 @@ export function FontWeightTokenTable({theme}: TokenTableProps) {
   }));
 
   return (
-    <XDSTable
+    <Table
       data={data as Record<string, unknown>[]}
       columns={[
         {key: 'tokenName', header: 'Token', width: pixel(200)},
@@ -88,16 +88,16 @@ export function FontWeightTokenTable({theme}: TokenTableProps) {
           header: 'Value',
           width: proportional(1, {minWidth: 300}),
           renderCell: (item: Record<string, unknown>) => (
-            <XDSHStack gap={3} vAlign="center">
-              <XDSText type="code" color="secondary">
+            <HStack gap={3} vAlign="center">
+              <Text type="code" color="secondary">
                 {item.value as string}
-              </XDSText>
+              </Text>
               <span
                 {...stylex.props(styles.weightSwatch)}
                 style={{fontWeight: item.value as string}}>
                 {FONT_SAMPLE}
               </span>
-            </XDSHStack>
+            </HStack>
           ),
         },
       ]}
@@ -116,7 +116,7 @@ export function FontSizeTokenTable({theme}: TokenTableProps) {
   }));
 
   return (
-    <XDSTable
+    <Table
       data={data as Record<string, unknown>[]}
       columns={[
         {key: 'tokenName', header: 'Token', width: pixel(200)},
@@ -125,10 +125,10 @@ export function FontSizeTokenTable({theme}: TokenTableProps) {
           header: 'Value',
           width: proportional(1, {minWidth: 300}),
           renderCell: (item: Record<string, unknown>) => (
-            <XDSHStack gap={3} vAlign="center">
-              <XDSText type="code" color="secondary">
+            <HStack gap={3} vAlign="center">
+              <Text type="code" color="secondary">
                 {item.value as string}
-              </XDSText>
+              </Text>
               <span
                 {...stylex.props(styles.fontSample)}
                 style={{
@@ -138,7 +138,7 @@ export function FontSizeTokenTable({theme}: TokenTableProps) {
                 }}>
                 {FONT_SAMPLE}
               </span>
-            </XDSHStack>
+            </HStack>
           ),
         },
       ]}

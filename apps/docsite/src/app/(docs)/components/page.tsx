@@ -8,16 +8,16 @@
 
 import {Fragment, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSText} from '@xds/core/Text';
-import {XDSHeading} from '@xds/core/Text';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSSection} from '@xds/core/Section';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSClickableCard} from '@xds/core/ClickableCard';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSButton} from '@xds/core/Button';
-import {XDSPopover} from '@xds/core/Popover';
-import {XDSCard} from '@xds/core/Card';
+import {Text} from '@xds/core/Text';
+import {Heading} from '@xds/core/Text';
+import {VStack} from '@xds/core/Layout';
+import {Section} from '@xds/core/Section';
+import {Grid} from '@xds/core/Grid';
+import {ClickableCard} from '@xds/core/ClickableCard';
+import {Divider} from '@xds/core/Divider';
+import {Button} from '@xds/core/Button';
+import {Popover} from '@xds/core/Popover';
+import {Card} from '@xds/core/Card';
 import {CodeExampleBlock} from '../../../components/CodeExampleBlock';
 import {components as componentRegistry} from '../../../generated/componentRegistry';
 import {blocks} from '../../../generated/blockRegistry';
@@ -130,55 +130,55 @@ export default function ComponentsGalleryPage() {
   }, [categorizedItems]);
 
   return (
-    <XDSSection maxWidth={1200} padding={6} xstyle={styles.section}>
-      <XDSVStack gap={10}>
-        <XDSVStack gap={4} hAlign="center">
-          <XDSVStack gap={2} style={{alignItems: 'center'}}>
-            <XDSText type="display-2" xstyle={styles.heroTitle}>
+    <Section maxWidth={1200} padding={6} xstyle={styles.section}>
+      <VStack gap={10}>
+        <VStack gap={4} hAlign="center">
+          <VStack gap={2} style={{alignItems: 'center'}}>
+            <Text type="display-2" xstyle={styles.heroTitle}>
               Browse the library
-            </XDSText>
-            <XDSText type="body" color="secondary" xstyle={styles.heroTitle}>
+            </Text>
+            <Text type="body" color="secondary" xstyle={styles.heroTitle}>
               Every component, with copy-ready examples for every variant,
               state, and pattern.
-            </XDSText>
-          </XDSVStack>
-          <XDSPopover
+            </Text>
+          </VStack>
+          <Popover
             width={360}
             content={
-              <XDSVStack gap={3}>
-                <XDSVStack gap={1}>
-                  <XDSText type="body" weight="bold">
+              <VStack gap={3}>
+                <VStack gap={1}>
+                  <Text type="body" weight="bold">
                     1. Install the package
-                  </XDSText>
-                  <XDSCard padding={0}>
+                  </Text>
+                  <Card padding={0}>
                     <CodeExampleBlock
                       code="npm install @xds/core"
                       language="bash"
                       hasCopyButton
                     />
-                  </XDSCard>
-                </XDSVStack>
-                <XDSVStack gap={1}>
-                  <XDSText type="body" weight="bold">
+                  </Card>
+                </VStack>
+                <VStack gap={1}>
+                  <Text type="body" weight="bold">
                     2. Import a component
-                  </XDSText>
-                  <XDSCard padding={0}>
+                  </Text>
+                  <Card padding={0}>
                     <CodeExampleBlock
                       code="import {...} from '@xds/core/ComponentName';"
                       language="typescript"
                       hasCopyButton
                     />
-                  </XDSCard>
-                </XDSVStack>
-              </XDSVStack>
+                  </Card>
+                </VStack>
+              </VStack>
             }>
-            <XDSButton
+            <Button
               variant="primary"
               size="lg"
               label="Install core library"
             />
-          </XDSPopover>
-        </XDSVStack>
+          </Popover>
+        </VStack>
 
         {CATEGORIES.map(cat => {
           const items = groupedByCategory.get(cat) ?? [];
@@ -188,16 +188,16 @@ export default function ComponentsGalleryPage() {
 
           return (
             <Fragment key={cat}>
-              <XDSDivider />
-              <XDSVStack gap={4}>
-                <XDSHeading level={2}>{cat}</XDSHeading>
-                <XDSGrid
+              <Divider />
+              <VStack gap={4}>
+                <Heading level={2}>{cat}</Heading>
+                <Grid
                   columns={{minWidth: 240, repeat: 'fill'}}
                   gap={3}
                   rowGap={4}>
                   {items.map(item => (
-                    <XDSVStack key={item.name} gap={1}>
-                      <XDSClickableCard
+                    <VStack key={item.name} gap={1}>
+                      <ClickableCard
                         label={item.displayName}
                         href={item.href}
                         padding={0}
@@ -210,16 +210,16 @@ export default function ComponentsGalleryPage() {
                         ) : (
                           <div {...stylex.props(styles.cardImage)} />
                         )}
-                      </XDSClickableCard>
-                      <XDSText type="supporting">{item.displayName}</XDSText>
-                    </XDSVStack>
+                      </ClickableCard>
+                      <Text type="supporting">{item.displayName}</Text>
+                    </VStack>
                   ))}
-                </XDSGrid>
-              </XDSVStack>
+                </Grid>
+              </VStack>
             </Fragment>
           );
         })}
-      </XDSVStack>
-    </XDSSection>
+      </VStack>
+    </Section>
   );
 }

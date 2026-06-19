@@ -3,11 +3,11 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
-import {XDSHStack, XDSVStack, XDSStackItem} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Divider} from '@xds/core/Divider';
+import {Card} from '@xds/core/Card';
+import {Section} from '@xds/core/Section';
+import {HStack, VStack, StackItem} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const styles = stylex.create({
   dividerFill: {
@@ -18,40 +18,40 @@ const styles = stylex.create({
 
 export default function DividerVertical() {
   return (
-    <XDSSection variant="transparent" width="100%">
-      <XDSCard>
-        <XDSHStack gap={4} align="stretch">
-          <XDSStackItem size="fill">
-            <XDSVStack gap={1}>
-              <XDSText type="label">Revenue</XDSText>
-              <XDSText type="label">$24,500</XDSText>
-              <XDSText type="supporting" color="secondary">
+    <Section variant="transparent" width="100%">
+      <Card>
+        <HStack gap={4} align="stretch">
+          <StackItem size="fill">
+            <VStack gap={1}>
+              <Text type="label">Revenue</Text>
+              <Text type="label">$24,500</Text>
+              <Text type="supporting" color="secondary">
                 +12% vs last month
-              </XDSText>
-            </XDSVStack>
-          </XDSStackItem>
-          <XDSDivider orientation="vertical" xstyle={styles.dividerFill} />
-          <XDSStackItem size="fill">
-            <XDSVStack gap={1}>
-              <XDSText type="label">Users</XDSText>
-              <XDSText type="label">1,240</XDSText>
-              <XDSText type="supporting" color="secondary">
+              </Text>
+            </VStack>
+          </StackItem>
+          <Divider orientation="vertical" xstyle={styles.dividerFill} />
+          <StackItem size="fill">
+            <VStack gap={1}>
+              <Text type="label">Users</Text>
+              <Text type="label">1,240</Text>
+              <Text type="supporting" color="secondary">
                 +8% vs last month
-              </XDSText>
-            </XDSVStack>
-          </XDSStackItem>
-          <XDSDivider orientation="vertical" xstyle={styles.dividerFill} />
-          <XDSStackItem size="fill">
-            <XDSVStack gap={1}>
-              <XDSText type="label">Conversion</XDSText>
-              <XDSText type="label">3.2%</XDSText>
-              <XDSText type="supporting" color="secondary">
+              </Text>
+            </VStack>
+          </StackItem>
+          <Divider orientation="vertical" xstyle={styles.dividerFill} />
+          <StackItem size="fill">
+            <VStack gap={1}>
+              <Text type="label">Conversion</Text>
+              <Text type="label">3.2%</Text>
+              <Text type="supporting" color="secondary">
                 -0.5% vs last month
-              </XDSText>
-            </XDSVStack>
-          </XDSStackItem>
-        </XDSHStack>
-      </XDSCard>
-    </XDSSection>
+              </Text>
+            </VStack>
+          </StackItem>
+        </HStack>
+      </Card>
+    </Section>
   );
 }

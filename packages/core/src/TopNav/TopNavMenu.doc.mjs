@@ -16,7 +16,7 @@ export const docs = {
     },
     {
       name: 'items',
-      type: 'XDSTopNavMenuItemData[]',
+      type: 'TopNavMenuItemData[]',
       description: 'Menu items to display in the hover popover.',
       required: true,
     },
@@ -48,7 +48,7 @@ export const docsZh = {
     },
     {
       name: 'items',
-      type: 'XDSTopNavMenuItemData[]',
+      type: 'TopNavMenuItemData[]',
       description: '在悬停弹出框中显示的菜单项。',
       required: true,
     },

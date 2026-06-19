@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSCenter} from '@xds/core/Center';
-import {XDSMarkdown} from '@xds/core/Markdown';
+import {Center} from '@xds/core/Center';
+import {Markdown} from '@xds/core/Markdown';
 
 const sources = {
   abc1: {
@@ -45,10 +45,10 @@ const content = [
 
 export default function MarkdownCitedContent() {
   return (
-    <XDSCenter width="100%" style={{maxWidth: 450}}>
-      <XDSMarkdown sources={sources} density="compact" headingLevelStart={3}>
+    <Center width="100%" style={{maxWidth: 450}}>
+      <Markdown sources={sources} density="compact" headingLevelStart={3}>
         {content}
-      </XDSMarkdown>
-    </XDSCenter>
+      </Markdown>
+    </Center>
   );
 }

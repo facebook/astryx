@@ -2,17 +2,17 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSTextArea} from '@xds/core/TextArea';
-import {XDSTextInput} from '@xds/core/TextInput';
+import {TextArea} from '@xds/core/TextArea';
+import {TextInput} from '@xds/core/TextInput';
 import {
   DocumentTextIcon,
   ChatBubbleLeftIcon,
   PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSTextArea> = {
+const meta: Meta<typeof TextArea> = {
   title: 'Core/TextArea',
-  component: XDSTextArea,
+  component: TextArea,
   tags: ['autodocs'],
   argTypes: {
     label: {
@@ -82,12 +82,12 @@ const meta: Meta<typeof XDSTextArea> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSTextArea>;
+type Story = StoryObj<typeof TextArea>;
 
 export const Default: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextArea {...args} value={value} onChange={setValue} />;
+    return <TextArea {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Description',
@@ -98,7 +98,7 @@ export const Default: Story = {
 export const WithDescription: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextArea {...args} value={value} onChange={setValue} />;
+    return <TextArea {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Bio',
@@ -110,7 +110,7 @@ export const WithDescription: Story = {
 export const WithHiddenLabel: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextArea {...args} value={value} onChange={setValue} />;
+    return <TextArea {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Comments',
@@ -125,7 +125,7 @@ export const WithValue: Story = {
       args.value ??
         'This is a pre-filled textarea with some content that demonstrates how the component handles existing text.',
     );
-    return <XDSTextArea {...args} value={value} onChange={setValue} />;
+    return <TextArea {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Notes',
@@ -137,7 +137,7 @@ export const WithValue: Story = {
 export const CustomRows: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextArea {...args} value={value} onChange={setValue} />;
+    return <TextArea {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Message',
@@ -165,42 +165,42 @@ export const AllVariations: Story = {
           gap: '16px',
           maxWidth: '400px',
         }}>
-        <XDSTextArea
+        <TextArea
           label="Visible label"
           value={value1}
           onChange={setValue1}
           placeholder="Enter text..."
         />
-        <XDSTextArea
+        <TextArea
           label="With description"
           description="Helpful description text"
           value={value4}
           onChange={setValue4}
           placeholder="Enter text..."
         />
-        <XDSTextArea
+        <TextArea
           label="Hidden label"
           isLabelHidden
           value={value2}
           onChange={setValue2}
           placeholder="Hidden label textarea"
         />
-        <XDSTextArea label="With value" value={value3} onChange={setValue3} />
-        <XDSTextArea
+        <TextArea label="With value" value={value3} onChange={setValue3} />
+        <TextArea
           label="Optional field"
           isOptional
           value={value5}
           onChange={setValue5}
           placeholder="Optional..."
         />
-        <XDSTextArea
+        <TextArea
           label="Required field"
           isRequired
           value={value6}
           onChange={setValue6}
           placeholder="Required..."
         />
-        <XDSTextArea
+        <TextArea
           label="Description with optional"
           description="Additional notes"
           isOptional
@@ -208,14 +208,14 @@ export const AllVariations: Story = {
           onChange={setValue7}
           placeholder="Notes..."
         />
-        <XDSTextArea
+        <TextArea
           label="Custom rows (6)"
           rows={6}
           value={value8}
           onChange={setValue8}
           placeholder="Larger textarea..."
         />
-        <XDSTextArea
+        <TextArea
           label="Disabled field"
           isDisabled
           value={value9}
@@ -229,7 +229,7 @@ export const AllVariations: Story = {
 export const OptionalField: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextArea {...args} value={value} onChange={setValue} />;
+    return <TextArea {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Additional Notes',
@@ -241,7 +241,7 @@ export const OptionalField: Story = {
 export const RequiredField: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextArea {...args} value={value} onChange={setValue} />;
+    return <TextArea {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Feedback',
@@ -253,7 +253,7 @@ export const RequiredField: Story = {
 export const DescriptionWithOptional: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextArea {...args} value={value} onChange={setValue} />;
+    return <TextArea {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Comments',
@@ -268,7 +268,7 @@ export const Disabled: Story = {
     const [value, setValue] = useState(
       args.value ?? 'This textarea is disabled and cannot be edited.',
     );
-    return <XDSTextArea {...args} value={value} onChange={setValue} />;
+    return <TextArea {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Disabled Field',
@@ -280,7 +280,7 @@ export const Disabled: Story = {
 export const WithStartIcon: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextArea {...args} value={value} onChange={setValue} />;
+    return <TextArea {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Notes',
@@ -302,21 +302,21 @@ export const StartIconVariations: Story = {
           gap: '16px',
           maxWidth: '400px',
         }}>
-        <XDSTextArea
+        <TextArea
           label="Notes"
           value={notes}
           onChange={setNotes}
           placeholder="Enter your notes..."
           startIcon={DocumentTextIcon}
         />
-        <XDSTextArea
+        <TextArea
           label="Message"
           value={message}
           onChange={setMessage}
           placeholder="Type your message..."
           startIcon={ChatBubbleLeftIcon}
         />
-        <XDSTextArea
+        <TextArea
           label="Draft"
           value={draft}
           onChange={setDraft}
@@ -331,7 +331,7 @@ export const StartIconVariations: Story = {
 export const ErrorStatus: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? 'Too short');
-    return <XDSTextArea {...args} value={value} onChange={setValue} />;
+    return <TextArea {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Description',
@@ -348,7 +348,7 @@ export const WarningStatus: Story = {
     const [value, setValue] = useState(
       args.value ?? 'This content may contain issues',
     );
-    return <XDSTextArea {...args} value={value} onChange={setValue} />;
+    return <TextArea {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Content',
@@ -365,7 +365,7 @@ export const SuccessStatus: Story = {
     const [value, setValue] = useState(
       args.value ?? 'This is a valid description that meets all requirements.',
     );
-    return <XDSTextArea {...args} value={value} onChange={setValue} />;
+    return <TextArea {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Description',
@@ -377,7 +377,7 @@ export const SuccessStatus: Story = {
 export const StatusWithoutMessage: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? 'Invalid content');
-    return <XDSTextArea {...args} value={value} onChange={setValue} />;
+    return <TextArea {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Field',
@@ -402,25 +402,25 @@ export const StatusVariations: Story = {
           gap: '16px',
           maxWidth: '400px',
         }}>
-        <XDSTextArea
+        <TextArea
           label="Error with message"
           value={error}
           onChange={setError}
           status={{type: 'error', message: 'Must be at least 50 characters'}}
         />
-        <XDSTextArea
+        <TextArea
           label="Warning with message"
           value={warning}
           onChange={setWarning}
           status={{type: 'warning', message: 'Content may need review'}}
         />
-        <XDSTextArea
+        <TextArea
           label="Success with message"
           value={success}
           onChange={setSuccess}
           status={{type: 'success', message: 'Description is valid'}}
         />
-        <XDSTextArea
+        <TextArea
           label="Error without message"
           value={errorNoMsg}
           onChange={setErrorNoMsg}
@@ -434,7 +434,7 @@ export const StatusVariations: Story = {
 export const WithTooltip: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextArea {...args} value={value} onChange={setValue} />;
+    return <TextArea {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'API Documentation',
@@ -447,7 +447,7 @@ export const WithTooltip: Story = {
 export const TooltipWithOptional: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextArea {...args} value={value} onChange={setValue} />;
+    return <TextArea {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Additional Notes',
@@ -463,7 +463,7 @@ export const CombinedFeatures: Story = {
     const [value, setValue] = useState('');
     return (
       <div style={{maxWidth: '400px'}}>
-        <XDSTextArea
+        <TextArea
           label="Detailed Description"
           description="Provide a comprehensive description of your project"
           value={value}
@@ -519,7 +519,7 @@ export const SizeVariants: Story = {
           return (
             <div key={sz} style={{display: 'flex', gap: '16px'}}>
               <div style={{flex: 1}}>
-                <XDSTextArea
+                <TextArea
                   label={label}
                   value={area}
                   onChange={setArea}
@@ -528,7 +528,7 @@ export const SizeVariants: Story = {
                 />
               </div>
               <div style={{flex: 1}}>
-                <XDSTextInput
+                <TextInput
                   label={label}
                   value={input}
                   onChange={setInput}
@@ -547,7 +547,7 @@ export const SizeVariants: Story = {
 export const WithMaxLength: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextArea {...args} value={value} onChange={setValue} />;
+    return <TextArea {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Bio',
@@ -562,7 +562,7 @@ export const MaxLengthWithValue: Story = {
       args.value ??
         'This is a pre-filled bio that demonstrates the character counter.',
     );
-    return <XDSTextArea {...args} value={value} onChange={setValue} />;
+    return <TextArea {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Bio',
@@ -585,21 +585,21 @@ export const MaxLengthVariations: Story = {
           gap: '16px',
           maxWidth: '400px',
         }}>
-        <XDSTextArea
+        <TextArea
           label="Short limit"
           value={short}
           onChange={setShort}
           placeholder="Max 50 characters"
           maxLength={50}
         />
-        <XDSTextArea
+        <TextArea
           label="Medium limit"
           value={medium}
           onChange={setMedium}
           placeholder="Max 100 characters"
           maxLength={100}
         />
-        <XDSTextArea
+        <TextArea
           label="Long limit"
           value={long}
           onChange={setLong}

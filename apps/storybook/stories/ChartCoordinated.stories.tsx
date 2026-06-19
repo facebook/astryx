@@ -12,8 +12,8 @@ import {
   XDSChartReferenceLine,
   useXDSChartColors,
 } from '@xds/lab';
-import {XDSStack, XDSText} from '@xds/core';
-import {XDSHeading} from '@xds/core/Text';
+import {Stack, Text} from '@xds/core';
+import {Heading} from '@xds/core/Text';
 import {useDataset} from './useDataset';
 
 const meta: Meta = {title: 'Lab/Chart Interactions/Coordinated Views'};
@@ -91,24 +91,24 @@ export const CoordinatedViews: StoryObj = {
     );
 
     if (!allData.length) {
-      return <XDSText type="supporting">Loading\u2026</XDSText>;
+      return <Text type="supporting">Loading\u2026</Text>;
     }
 
     const c = colors.categorical(3);
 
     return (
-      <XDSStack direction="vertical" gap={6}>
-        <XDSHeading level={3}>Coordinated Views</XDSHeading>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={6}>
+        <Heading level={3}>Coordinated Views</Heading>
+        <Text type="supporting" color="secondary">
           Brush on the scatter to filter the bar chart and table below.
           {brushRange
             ? ` Showing ${filteredData.length} cars with ${Math.round(brushRange[0])}\u2013${Math.round(brushRange[1])} HP.`
             : ` Showing all ${allData.length} cars.`}
-        </XDSText>
+        </Text>
 
         {/* Scatter with brush */}
-        <XDSStack direction="vertical" gap={1}>
-          <XDSText type="label">Horsepower vs MPG</XDSText>
+        <Stack direction="vertical" gap={1}>
+          <Text type="label">Horsepower vs MPG</Text>
           <XDSChart
             data={scatterData}
             xKey="hp"
@@ -138,11 +138,11 @@ export const CoordinatedViews: StoryObj = {
               </>
             )}
           </XDSChart>
-        </XDSStack>
+        </Stack>
 
         {/* Bar chart — reacts to brush */}
-        <XDSStack direction="vertical" gap={1}>
-          <XDSText type="label">Average MPG by Origin (filtered)</XDSText>
+        <Stack direction="vertical" gap={1}>
+          <Text type="label">Average MPG by Origin (filtered)</Text>
           <XDSChart
             data={barData}
             xKey="origin"
@@ -153,11 +153,11 @@ export const CoordinatedViews: StoryObj = {
             <XDSChartAxis position="left" />
             <XDSChartBar dataKey="avgMpg" color={c[1]} />
           </XDSChart>
-        </XDSStack>
+        </Stack>
 
         {/* Table — reacts to brush */}
-        <XDSStack direction="vertical" gap={1}>
-          <XDSText type="label">Top 10 cars (filtered)</XDSText>
+        <Stack direction="vertical" gap={1}>
+          <Text type="label">Top 10 cars (filtered)</Text>
           <div style={{fontSize: 12, overflow: 'auto'}}>
             <table style={{width: '100%', borderCollapse: 'collapse'}}>
               <thead>
@@ -186,8 +186,8 @@ export const CoordinatedViews: StoryObj = {
               </tbody>
             </table>
           </div>
-        </XDSStack>
-      </XDSStack>
+        </Stack>
+      </Stack>
     );
   },
 };

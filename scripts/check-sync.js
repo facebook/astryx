@@ -29,7 +29,31 @@ function addViolation(type, file, message) {
   violations.push({type, file, message});
 }
 
-// Get all component directories (dirs with at least one XDS*.tsx file)
+// A component source file is `XDS{Name}.tsx` today, or the bare `{Name}.tsx`
+// after the XDS-prefix migration (P2380608025, P4). Match both, excluding
+// tests, `use*` hooks, and `*Context.*` files. As in component discovery, a
+// BARE-named file is only treated as a component when a sibling doc exists
+// (`{Name}.doc.mjs` or `XDS{Name}.doc.mjs`) — otherwise internal PascalCase
+// helpers (OverlayScrim.tsx, PowerSearchEditPopover.tsx, ...) would be
+// misclassified. Prefixed files keep their existing behavior.
+// Mirrors packages/cli/src/lib/component-discovery.mjs (inlined; CommonJS).
+function isComponentSourceFile(fileName, dirPath) {
+  if (!fileName.endsWith('.tsx')) return false;
+  if (fileName.includes('.test.') || fileName.includes('Context.')) {
+    return false;
+  }
+  if (/^XDS[A-Z]\w+\.tsx$/.test(fileName)) return true;
+  if (/^[A-Z]\w+\.tsx$/.test(fileName)) {
+    const base = fileName.slice(0, -'.tsx'.length);
+    return (
+      fs.existsSync(path.join(dirPath, `${base}.doc.mjs`)) ||
+      fs.existsSync(path.join(dirPath, `XDS${base}.doc.mjs`))
+    );
+  }
+  return false;
+}
+
+// Get all component directories (dirs with at least one component source file)
 const componentDirs = fs
   .readdirSync(CORE_SRC, {withFileTypes: true})
   .filter((d) => d.isDirectory())
@@ -38,10 +62,7 @@ const componentDirs = fs
     const dirPath = path.join(CORE_SRC, name);
     return fs
       .readdirSync(dirPath)
-      .some(
-        (f) =>
-          f.startsWith('XDS') && f.endsWith('.tsx') && !f.includes('.test.'),
-      );
+      .some((f) => isComponentSourceFile(f, dirPath));
   });
 
 for (const comp of componentDirs) {
@@ -60,9 +81,7 @@ for (const comp of componentDirs) {
   }
 
   // --- Check 2 & 3: SYNC references ---
-  const xdsFiles = files.filter(
-    (f) => f.startsWith('XDS') && f.endsWith('.tsx') && !f.includes('.test.'),
-  );
+  const xdsFiles = files.filter((f) => isComponentSourceFile(f, dirPath));
 
   for (const xdsFile of xdsFiles) {
     const filePath = path.join(dirPath, xdsFile);

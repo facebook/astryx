@@ -125,7 +125,7 @@ function getRequiredFallbackValue(
     case 'slot-list':
       return buildSlotListDefault(row);
     case 'unknown':
-      if (/\bXDSSearchSource\b/.test(row.type)) {
+      if (/\bSearchSource\b/.test(row.type)) {
         return PREVIEW_SEARCH_SOURCE;
       }
       if (/\bnull\b/.test(row.type)) {

@@ -6,7 +6,7 @@ export const doc = {
   exampleFor: 'TopNavMenu',
   name: 'TopNavMenu',
   displayName: 'Top Nav Menu',
-  description: 'Demonstrates XDSTopNavMenu with a hover-triggered dropdown containing items with icons and descriptions.',
+  description: 'Demonstrates TopNavMenu with a hover-triggered dropdown containing items with icons and descriptions.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

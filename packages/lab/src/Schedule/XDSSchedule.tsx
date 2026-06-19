@@ -16,7 +16,7 @@
 
 import {Suspense, useCallback, useMemo, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {XDSBaseProps} from '@xds/core';
+import type {BaseProps} from '@xds/core';
 import {mergeProps, plainDateFromInstant} from '@xds/core/utils';
 import {eventOverlapsRange, getBrowserTimezoneID, sortEvents} from './dateMath';
 import {XDSScheduleContext} from './context';
@@ -39,7 +39,7 @@ import type {
 
 export interface XDSScheduleProps<
   Options extends XDSScheduleViewOptions = XDSScheduleViewOptions,
-> extends XDSBaseProps<HTMLDivElement> {
+> extends BaseProps<HTMLDivElement> {
   /** View object returned by a `createXDSSchedule*View()` factory. */
   view: XDSScheduleView<Options>;
   /** Static calendar events or an async loader called with the active Instant range. */

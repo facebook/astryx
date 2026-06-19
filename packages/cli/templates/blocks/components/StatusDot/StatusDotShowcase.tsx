@@ -2,17 +2,17 @@
 
 'use client';
 
-import {XDSStatusDot} from '@xds/core/StatusDot';
-import {XDSHStack} from '@xds/core/Layout';
+import {StatusDot} from '@xds/core/StatusDot';
+import {HStack} from '@xds/core/Layout';
 
 export default function StatusDotShowcase() {
   return (
-    <XDSHStack gap={2} vAlign="center">
-      <XDSStatusDot variant="success" label="Positive" />
-      <XDSStatusDot variant="warning" label="Warning" />
-      <XDSStatusDot variant="error" label="Negative" />
-      <XDSStatusDot variant="accent" label="Info" />
-      <XDSStatusDot variant="neutral" label="Neutral" />
-    </XDSHStack>
+    <HStack gap={2} vAlign="center">
+      <StatusDot variant="success" label="Positive" />
+      <StatusDot variant="warning" label="Warning" />
+      <StatusDot variant="error" label="Negative" />
+      <StatusDot variant="accent" label="Info" />
+      <StatusDot variant="neutral" label="Neutral" />
+    </HStack>
   );
 }

@@ -3,23 +3,23 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSSection} from '@xds/core/Section';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSCard} from '@xds/core/Card';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText} from '@xds/core/Text';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
-import {XDSLink} from '@xds/core/Link';
-import {XDSToken} from '@xds/core/Token';
-import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
-import {XDSTextArea} from '@xds/core/TextArea';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSBanner} from '@xds/core/Banner';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Center} from '@xds/core/Center';
+import {Section} from '@xds/core/Section';
+import {Grid} from '@xds/core/Grid';
+import {Card} from '@xds/core/Card';
+import {Button} from '@xds/core/Button';
+import {Text} from '@xds/core/Text';
+import {Icon} from '@xds/core/Icon';
+import {TextInput} from '@xds/core/TextInput';
+import {Selector} from '@xds/core/Selector';
+import {CheckboxInput} from '@xds/core/CheckboxInput';
+import {Link} from '@xds/core/Link';
+import {Token} from '@xds/core/Token';
+import {RadioList, RadioListItem} from '@xds/core/RadioList';
+import {TextArea} from '@xds/core/TextArea';
+import {Divider} from '@xds/core/Divider';
+import {Banner} from '@xds/core/Banner';
 import {
   RocketLaunchIcon,
   AdjustmentsHorizontalIcon,
@@ -107,49 +107,49 @@ export default function FormSimplePage() {
     );
 
   return (
-    <XDSCenter axis="horizontal">
-      <XDSVStack hAlign="center" width="100%">
-        <XDSSection
+    <Center axis="horizontal">
+      <VStack hAlign="center" width="100%">
+        <Section
           maxWidth={800}
           padding={6}
           paddingBlock={10}
           variant="section">
-          <XDSVStack gap={6}>
+          <VStack gap={6}>
             {/* Header */}
-            <XDSVStack gap={2} hAlign="center">
-              <XDSText type="display-1" weight="bold">
+            <VStack gap={2} hAlign="center">
+              <Text type="display-1" weight="bold">
                 Let's work together
-              </XDSText>
-              <XDSText type="body" color="secondary">
+              </Text>
+              <Text type="body" color="secondary">
                 Tell us a bit about what you're working on — we'd love to help.
-              </XDSText>
-            </XDSVStack>
+              </Text>
+            </VStack>
 
             {/* Why work with us */}
-            <XDSVStack gap={5}>
-              <XDSGrid columns={{minWidth: 200}} gap={4}>
+            <VStack gap={5}>
+              <Grid columns={{minWidth: 200}} gap={4}>
                 {WHY_US.map(item => (
-                  <XDSCard key={item.title}>
-                    <XDSVStack gap={3}>
-                      <XDSIcon icon={item.icon} size="lg" color="accent" />
-                      <XDSVStack gap={1}>
-                        <XDSText type="body" weight="bold">
+                  <Card key={item.title}>
+                    <VStack gap={3}>
+                      <Icon icon={item.icon} size="lg" color="accent" />
+                      <VStack gap={1}>
+                        <Text type="body" weight="bold">
                           {item.title}
-                        </XDSText>
-                        <XDSText type="supporting" color="secondary">
+                        </Text>
+                        <Text type="supporting" color="secondary">
                           {item.description}
-                        </XDSText>
-                      </XDSVStack>
-                    </XDSVStack>
-                  </XDSCard>
+                        </Text>
+                      </VStack>
+                    </VStack>
+                  </Card>
                 ))}
-              </XDSGrid>
-            </XDSVStack>
+              </Grid>
+            </VStack>
 
             {/* Your details */}
-            <XDSVStack gap={5}>
-              <XDSGrid columns={{minWidth: 260}} gap={4}>
-                <XDSTextInput
+            <VStack gap={5}>
+              <Grid columns={{minWidth: 260}} gap={4}>
+                <TextInput
                   label="Full Name"
                   placeholder="Full Name"
                   value={fullName}
@@ -160,7 +160,7 @@ export default function FormSimplePage() {
                       : undefined
                   }
                 />
-                <XDSTextInput
+                <TextInput
                   label="Email"
                   placeholder="you@company.com"
                   value={email}
@@ -171,9 +171,9 @@ export default function FormSimplePage() {
                       : undefined
                   }
                 />
-              </XDSGrid>
-              <XDSGrid columns={{minWidth: 260}} gap={4}>
-                <XDSTextInput
+              </Grid>
+              <Grid columns={{minWidth: 260}} gap={4}>
+                <TextInput
                   label="Company"
                   placeholder="Company"
                   value={company}
@@ -184,7 +184,7 @@ export default function FormSimplePage() {
                       : undefined
                   }
                 />
-                <XDSTextInput
+                <TextInput
                   label="Phone"
                   placeholder="Phone number"
                   value={phone}
@@ -195,33 +195,33 @@ export default function FormSimplePage() {
                       : undefined
                   }
                 />
-              </XDSGrid>
-            </XDSVStack>
+              </Grid>
+            </VStack>
 
-            <XDSDivider />
+            <Divider />
 
             {/* Your project */}
-            <XDSVStack gap={5}>
-              <XDSVStack gap={2}>
-                <XDSText type="label" color="secondary">
+            <VStack gap={5}>
+              <VStack gap={2}>
+                <Text type="label" color="secondary">
                   What are you going for?
-                </XDSText>
-                <XDSHStack gap={2} wrap="wrap">
+                </Text>
+                <HStack gap={2} wrap="wrap">
                   {CAMPAIGN_GOALS.map(goal => (
-                    <XDSToken
+                    <Token
                       key={goal}
                       label={goal}
                       color={goals.includes(goal) ? 'blue' : 'default'}
                       onClick={() => toggleGoal(goal)}
                     />
                   ))}
-                </XDSHStack>
+                </HStack>
                 {errors.goals && (
-                  <XDSBanner status="error" title={errors.goals} />
+                  <Banner status="error" title={errors.goals} />
                 )}
-              </XDSVStack>
+              </VStack>
 
-              <XDSSelector
+              <Selector
                 label="When are you thinking?"
                 placeholder="When are you thinking of launching?"
                 options={LAUNCH_OPTIONS}
@@ -234,7 +234,7 @@ export default function FormSimplePage() {
                 }
               />
 
-              <XDSSelector
+              <Selector
                 label="Ballpark budget?"
                 placeholder="What's your rough monthly budget?"
                 options={BUDGET_OPTIONS}
@@ -247,52 +247,52 @@ export default function FormSimplePage() {
                 }
               />
 
-              <XDSRadioList
+              <RadioList
                 label="How did you hear about us?"
                 value={hearAboutUs}
                 onChange={setHearAboutUs}>
-                <XDSRadioListItem label="Social media" value="social" />
-                <XDSRadioListItem label="Word of mouth" value="word-of-mouth" />
-                <XDSRadioListItem label="Search engine" value="search" />
-                <XDSRadioListItem label="Event or conference" value="event" />
-                <XDSRadioListItem label="Other" value="other" />
-              </XDSRadioList>
+                <RadioListItem label="Social media" value="social" />
+                <RadioListItem label="Word of mouth" value="word-of-mouth" />
+                <RadioListItem label="Search engine" value="search" />
+                <RadioListItem label="Event or conference" value="event" />
+                <RadioListItem label="Other" value="other" />
+              </RadioList>
 
-              <XDSTextArea
+              <TextArea
                 label="Anything else?"
                 placeholder="Tell us whatever else is on your mind..."
                 value={message}
                 onChange={setMessage}
               />
 
-              <XDSCheckboxInput
+              <CheckboxInput
                 label="I'm a budget decision-maker"
                 value={isDecider}
                 onChange={setIsDecider}
               />
-            </XDSVStack>
+            </VStack>
 
             {/* Submit */}
-            <XDSVStack gap={3}>
-              <XDSButton
+            <VStack gap={3}>
+              <Button
                 label="Submit"
                 variant="primary"
                 size="lg"
                 onClick={() => setSubmitted(true)}
               />
-              <XDSHStack gap={1} hAlign="center">
-                <XDSText type="supporting" color="secondary">
+              <HStack gap={1} hAlign="center">
+                <Text type="supporting" color="secondary">
                   By submitting you agree to our{' '}
-                  <XDSLink href="#" type="supporting">
+                  <Link href="#" type="supporting">
                     Privacy Policy
-                  </XDSLink>
+                  </Link>
                   .
-                </XDSText>
-              </XDSHStack>
-            </XDSVStack>
-          </XDSVStack>
-        </XDSSection>
-      </XDSVStack>
-    </XDSCenter>
+                </Text>
+              </HStack>
+            </VStack>
+          </VStack>
+        </Section>
+      </VStack>
+    </Center>
   );
 }

@@ -2,8 +2,8 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSAvatarStatusDot} from '@xds/core/Avatar';
+import {Avatar} from '@xds/core/Avatar';
+import {AvatarStatusDot} from '@xds/core/Avatar';
 import {spacingVars, typographyVars} from '@xds/core/theme/tokens.stylex';
 import {CheckIcon} from '@heroicons/react/24/solid';
 
@@ -24,9 +24,9 @@ const styles = stylex.create({
   },
 });
 
-const meta: Meta<typeof XDSAvatar> = {
+const meta: Meta<typeof Avatar> = {
   title: 'Core/Avatar',
-  component: XDSAvatar,
+  component: Avatar,
   tags: ['autodocs'],
   argTypes: {
     size: {
@@ -74,7 +74,7 @@ const meta: Meta<typeof XDSAvatar> = {
       control: 'boolean',
       description: 'Show status indicator dot',
       mapping: {
-        true: <XDSAvatarStatusDot />,
+        true: <AvatarStatusDot />,
         false: undefined,
       },
     },
@@ -82,7 +82,7 @@ const meta: Meta<typeof XDSAvatar> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSAvatar>;
+type Story = StoryObj<typeof Avatar>;
 
 export const Default: Story = {
   args: {
@@ -104,11 +104,11 @@ export const AllSizes: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <h4 {...stylex.props(styles.heading)}>Named Sizes</h4>
       <div {...stylex.props(styles.row)}>
-        <XDSAvatar name="TY" size="tiny" />
-        <XDSAvatar name="XS" size="xsmall" />
-        <XDSAvatar name="SM" size="small" />
-        <XDSAvatar name="MD" size="medium" />
-        <XDSAvatar name="LG" size="large" />
+        <Avatar name="TY" size="tiny" />
+        <Avatar name="XS" size="xsmall" />
+        <Avatar name="SM" size="small" />
+        <Avatar name="MD" size="medium" />
+        <Avatar name="LG" size="large" />
       </div>
     </div>
   ),
@@ -119,27 +119,27 @@ export const WithImages: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <h4 {...stylex.props(styles.heading)}>With Images (Different Sizes)</h4>
       <div {...stylex.props(styles.row)}>
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=1"
           name="User 1"
           size="tiny"
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=2"
           name="User 2"
           size="xsmall"
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=3"
           name="User 3"
           size="small"
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=4"
           name="User 4"
           size="medium"
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=5"
           name="User 5"
           size="large"
@@ -154,10 +154,10 @@ export const InitialsFallback: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <h4 {...stylex.props(styles.heading)}>Initials Fallback</h4>
       <div {...stylex.props(styles.row)}>
-        <XDSAvatar name="John Doe" size="medium" />
-        <XDSAvatar name="Alice" size="medium" />
-        <XDSAvatar name="Bob Smith Johnson" size="medium" />
-        <XDSAvatar name="Dr. Sarah Connor" size="medium" />
+        <Avatar name="John Doe" size="medium" />
+        <Avatar name="Alice" size="medium" />
+        <Avatar name="Bob Smith Johnson" size="medium" />
+        <Avatar name="Dr. Sarah Connor" size="medium" />
       </div>
     </div>
   ),
@@ -168,11 +168,11 @@ export const NoImageNoName: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <h4 {...stylex.props(styles.heading)}>Default Icon (No Image or Name)</h4>
       <div {...stylex.props(styles.row)}>
-        <XDSAvatar size="tiny" />
-        <XDSAvatar size="xsmall" />
-        <XDSAvatar size="small" />
-        <XDSAvatar size="medium" />
-        <XDSAvatar size="large" />
+        <Avatar size="tiny" />
+        <Avatar size="xsmall" />
+        <Avatar size="small" />
+        <Avatar size="medium" />
+        <Avatar size="large" />
       </div>
     </div>
   ),
@@ -185,7 +185,7 @@ export const FallbackChain: Story = {
       <div {...stylex.props(styles.row)}>
         <div>
           <p {...stylex.props(styles.heading)}>Valid src</p>
-          <XDSAvatar
+          <Avatar
             src="https://i.pravatar.cc/150?img=10"
             name="Test User"
             size="large"
@@ -195,7 +195,7 @@ export const FallbackChain: Story = {
           <p {...stylex.props(styles.heading)}>
             Invalid src, valid fallbackSrc
           </p>
-          <XDSAvatar
+          <Avatar
             src="https://invalid-url.example/broken.jpg"
             fallbackSrc="https://i.pravatar.cc/150?img=11"
             name="Test User"
@@ -204,7 +204,7 @@ export const FallbackChain: Story = {
         </div>
         <div>
           <p {...stylex.props(styles.heading)}>Both invalid, has name</p>
-          <XDSAvatar
+          <Avatar
             src="https://invalid-url.example/broken.jpg"
             fallbackSrc="https://also-invalid.example/broken.jpg"
             name="Test User"
@@ -213,7 +213,7 @@ export const FallbackChain: Story = {
         </div>
         <div>
           <p {...stylex.props(styles.heading)}>All invalid, no name</p>
-          <XDSAvatar
+          <Avatar
             src="https://invalid-url.example/broken.jpg"
             size="large"
           />
@@ -228,23 +228,23 @@ export const WithStatus: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <h4 {...stylex.props(styles.heading)}>With Status Indicators</h4>
       <div {...stylex.props(styles.row)}>
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=20"
           name="Online User"
           size="large"
-          status={<XDSAvatarStatusDot variant="success" label="Online" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=21"
           name="Offline User"
           size="large"
-          status={<XDSAvatarStatusDot variant="neutral" label="Offline" />}
+          status={<AvatarStatusDot variant="neutral" label="Offline" />}
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=22"
           name="Busy User"
           size="large"
-          status={<XDSAvatarStatusDot variant="error" label="Busy" />}
+          status={<AvatarStatusDot variant="error" label="Busy" />}
         />
       </div>
     </div>
@@ -261,92 +261,92 @@ export const StatusAcrossAllSizes: Story = {
 
       <h4 {...stylex.props(styles.heading)}>Named Sizes</h4>
       <div {...stylex.props(styles.row)}>
-        <XDSAvatar
+        <Avatar
           name="TY"
           size="tiny"
-          status={<XDSAvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" />}
         />
-        <XDSAvatar
+        <Avatar
           name="XS"
           size="xsmall"
-          status={<XDSAvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" />}
         />
-        <XDSAvatar
+        <Avatar
           name="SM"
           size="small"
-          status={<XDSAvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" />}
         />
-        <XDSAvatar
+        <Avatar
           name="MD"
           size="medium"
-          status={<XDSAvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" />}
         />
-        <XDSAvatar
+        <Avatar
           name="LG"
           size="large"
-          status={<XDSAvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" />}
         />
       </div>
 
       <h4 {...stylex.props(styles.heading)}>Numeric Sizes with Images</h4>
       <div {...stylex.props(styles.row)}>
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=30"
           name="U1"
           size={20}
-          status={<XDSAvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" />}
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=31"
           name="U2"
           size={32}
-          status={<XDSAvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" />}
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=32"
           name="U3"
           size={48}
-          status={<XDSAvatarStatusDot variant="error" />}
+          status={<AvatarStatusDot variant="error" />}
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=33"
           name="U4"
           size={72}
-          status={<XDSAvatarStatusDot variant="neutral" />}
+          status={<AvatarStatusDot variant="neutral" />}
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=34"
           name="U5"
           size={96}
-          status={<XDSAvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" />}
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=35"
           name="U6"
           size={128}
-          status={<XDSAvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" />}
         />
       </div>
 
       <h4 {...stylex.props(styles.heading)}>All Colors at Medium</h4>
       <div {...stylex.props(styles.row)}>
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=40"
           name="Positive"
           size="medium"
-          status={<XDSAvatarStatusDot variant="success" label="Online" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=41"
           name="Neutral"
           size="medium"
-          status={<XDSAvatarStatusDot variant="neutral" label="Offline" />}
+          status={<AvatarStatusDot variant="neutral" label="Offline" />}
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=42"
           name="Negative"
           size="medium"
-          status={<XDSAvatarStatusDot variant="error" label="Busy" />}
+          status={<AvatarStatusDot variant="error" label="Busy" />}
         />
       </div>
     </div>
@@ -358,10 +358,10 @@ export const StatusWithSizes: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <h4 {...stylex.props(styles.heading)}>Status with Different Sizes</h4>
       <div {...stylex.props(styles.row)}>
-        <XDSAvatar name="AB" size="small" status={<XDSAvatarStatusDot />} />
-        <XDSAvatar name="CD" size="medium" status={<XDSAvatarStatusDot />} />
-        <XDSAvatar name="EF" size="large" status={<XDSAvatarStatusDot />} />
-        <XDSAvatar name="GH" size={72} status={<XDSAvatarStatusDot />} />
+        <Avatar name="AB" size="small" status={<AvatarStatusDot />} />
+        <Avatar name="CD" size="medium" status={<AvatarStatusDot />} />
+        <Avatar name="EF" size="large" status={<AvatarStatusDot />} />
+        <Avatar name="GH" size={72} status={<AvatarStatusDot />} />
       </div>
     </div>
   ),
@@ -377,57 +377,57 @@ export const StatusWithIcon: Story = {
 
       <h4 {...stylex.props(styles.heading)}>Named Sizes</h4>
       <div {...stylex.props(styles.row)}>
-        <XDSAvatar
+        <Avatar
           name="TY"
           size="tiny"
           status={
-            <XDSAvatarStatusDot
+            <AvatarStatusDot
               variant="success"
               label="Verified"
               icon={<CheckIcon />}
             />
           }
         />
-        <XDSAvatar
+        <Avatar
           name="XS"
           size="xsmall"
           status={
-            <XDSAvatarStatusDot
+            <AvatarStatusDot
               variant="success"
               label="Verified"
               icon={<CheckIcon />}
             />
           }
         />
-        <XDSAvatar
+        <Avatar
           name="SM"
           size="small"
           status={
-            <XDSAvatarStatusDot
+            <AvatarStatusDot
               variant="success"
               label="Verified"
               icon={<CheckIcon />}
             />
           }
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=50"
           name="MD"
           size="medium"
           status={
-            <XDSAvatarStatusDot
+            <AvatarStatusDot
               variant="success"
               label="Verified"
               icon={<CheckIcon />}
             />
           }
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=51"
           name="LG"
           size="large"
           status={
-            <XDSAvatarStatusDot
+            <AvatarStatusDot
               variant="success"
               label="Verified"
               icon={<CheckIcon />}
@@ -438,72 +438,72 @@ export const StatusWithIcon: Story = {
 
       <h4 {...stylex.props(styles.heading)}>Numeric Sizes with Images</h4>
       <div {...stylex.props(styles.row)}>
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=30"
           name="U1"
           size={20}
           status={
-            <XDSAvatarStatusDot
+            <AvatarStatusDot
               variant="success"
               label="Verified"
               icon={<CheckIcon />}
             />
           }
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=31"
           name="U2"
           size={32}
           status={
-            <XDSAvatarStatusDot
+            <AvatarStatusDot
               variant="success"
               label="Verified"
               icon={<CheckIcon />}
             />
           }
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=32"
           name="U3"
           size={48}
           status={
-            <XDSAvatarStatusDot
+            <AvatarStatusDot
               variant="success"
               label="Verified"
               icon={<CheckIcon />}
             />
           }
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=33"
           name="U4"
           size={72}
           status={
-            <XDSAvatarStatusDot
+            <AvatarStatusDot
               variant="success"
               label="Verified"
               icon={<CheckIcon />}
             />
           }
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=34"
           name="U5"
           size={96}
           status={
-            <XDSAvatarStatusDot
+            <AvatarStatusDot
               variant="success"
               label="Verified"
               icon={<CheckIcon />}
             />
           }
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=35"
           name="U6"
           size={128}
           status={
-            <XDSAvatarStatusDot
+            <AvatarStatusDot
               variant="success"
               label="Verified"
               icon={<CheckIcon />}
@@ -514,36 +514,36 @@ export const StatusWithIcon: Story = {
 
       <h4 {...stylex.props(styles.heading)}>All Variants with Icons</h4>
       <div {...stylex.props(styles.row)}>
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=52"
           name="Positive"
           size="large"
           status={
-            <XDSAvatarStatusDot
+            <AvatarStatusDot
               variant="success"
               label="Verified"
               icon={<CheckIcon />}
             />
           }
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=53"
           name="Neutral"
           size="large"
           status={
-            <XDSAvatarStatusDot
+            <AvatarStatusDot
               variant="neutral"
               label="Pending"
               icon={<CheckIcon />}
             />
           }
         />
-        <XDSAvatar
+        <Avatar
           src="https://i.pravatar.cc/150?img=54"
           name="Negative"
           size="large"
           status={
-            <XDSAvatarStatusDot
+            <AvatarStatusDot
               variant="error"
               label="Rejected"
               icon={<CheckIcon />}
@@ -560,13 +560,13 @@ export const NumericSizes: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <h4 {...stylex.props(styles.heading)}>Numeric Pixel Sizes</h4>
       <div {...stylex.props(styles.row)}>
-        <XDSAvatar name="16" size={16} />
-        <XDSAvatar name="24" size={24} />
-        <XDSAvatar name="36" size={36} />
-        <XDSAvatar name="48" size={48} />
-        <XDSAvatar name="72" size={72} />
-        <XDSAvatar name="96" size={96} />
-        <XDSAvatar name="128" size={128} />
+        <Avatar name="16" size={16} />
+        <Avatar name="24" size={24} />
+        <Avatar name="36" size={36} />
+        <Avatar name="48" size={48} />
+        <Avatar name="72" size={72} />
+        <Avatar name="96" size={96} />
+        <Avatar name="128" size={128} />
       </div>
     </div>
   ),

@@ -3,51 +3,51 @@
 'use client';
 
 import {
-  XDSLayout,
-  XDSLayoutContent,
-  XDSLayoutHeader,
-  XDSLayoutFooter,
-  XDSLayoutPanel,
-  XDSCard,
-  XDSHStack,
+  Layout,
+  LayoutContent,
+  LayoutHeader,
+  LayoutFooter,
+  LayoutPanel,
+  Card,
+  HStack,
 } from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSButton} from '@xds/core/Button';
+import {Center} from '@xds/core/Center';
+import {Button} from '@xds/core/Button';
 
 export default function LayoutFooterShowcase() {
   return (
-    <XDSCenter width={400}>
-      <XDSLayout
+    <Center width={400}>
+      <Layout
         style={{width: '100%'}}
         height="fill"
         header={
-          <XDSLayoutHeader hasDivider>
-            <XDSCard variant="muted" />
-          </XDSLayoutHeader>
+          <LayoutHeader hasDivider>
+            <Card variant="muted" />
+          </LayoutHeader>
         }
         start={
-          <XDSLayoutPanel hasDivider width={140}>
-            <XDSCard variant="muted" />
-          </XDSLayoutPanel>
+          <LayoutPanel hasDivider width={140}>
+            <Card variant="muted" />
+          </LayoutPanel>
         }
         content={
-          <XDSLayoutContent>
-            <XDSCard variant="muted" />
-          </XDSLayoutContent>
+          <LayoutContent>
+            <Card variant="muted" />
+          </LayoutContent>
         }
         footer={
-          <XDSLayoutFooter hasDivider>
-            <XDSHStack gap={2} hAlign="end">
-              <XDSButton label="Cancel" variant="secondary">
+          <LayoutFooter hasDivider>
+            <HStack gap={2} hAlign="end">
+              <Button label="Cancel" variant="secondary">
                 Cancel
-              </XDSButton>
-              <XDSButton label="Save" variant="primary">
+              </Button>
+              <Button label="Save" variant="primary">
                 Save
-              </XDSButton>
-            </XDSHStack>
-          </XDSLayoutFooter>
+              </Button>
+            </HStack>
+          </LayoutFooter>
         }
       />
-    </XDSCenter>
+    </Center>
   );
 }

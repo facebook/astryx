@@ -6,10 +6,10 @@
  * @file OverlayScrim.tsx
  * @input Scrim props (mode, position, align, visibility)
  * @output Renders the scrim div with background, media theme, transitions
- * @position Internal rendering primitive; used by XDSOverlay and useXDSOverlay
+ * @position Internal rendering primitive; used by Overlay and useOverlay
  *
- * Not exported directly — consumers use XDSOverlay (component) or
- * useXDSOverlay (hook), both of which render this internally.
+ * Not exported directly — consumers use Overlay (component) or
+ * useOverlay (hook), both of which render this internally.
  */
 
 import type {ReactNode} from 'react';
@@ -20,7 +20,7 @@ import {
   easeVars,
   spacingVars,
 } from '../theme/tokens.stylex';
-import {XDSMediaTheme} from '../theme/XDSMediaTheme';
+import {MediaTheme} from '../theme/MediaTheme';
 import {mergeProps} from '../utils';
 import {overlayScope} from './overlay.markers.stylex';
 import {xdsThemeProps} from '../utils/xdsThemeProps';
@@ -264,7 +264,7 @@ export function OverlayScrim({
     scrim === 'dark' ? 'dark' : scrim === 'light' ? 'light' : null;
 
   const content = themeMode ? (
-    <XDSMediaTheme mode={themeMode}>{children}</XDSMediaTheme>
+    <MediaTheme mode={themeMode}>{children}</MediaTheme>
   ) : (
     children
   );

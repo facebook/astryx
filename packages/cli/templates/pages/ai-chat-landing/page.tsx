@@ -5,42 +5,42 @@
 import {useCallback, useRef, useState} from 'react';
 
 import {
-  XDSLayout,
-  XDSLayoutContent,
-  XDSVStack,
-  XDSHStack,
+  Layout,
+  LayoutContent,
+  VStack,
+  HStack,
 } from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
+import {Text, Heading} from '@xds/core/Text';
 import {
-  XDSChatComposer,
-  XDSChatComposerDrawer,
-  XDSChatComposerInput,
-  XDSChatDictationButton,
-  XDSChatLayout,
-  XDSChatMessage,
-  XDSChatMessageBubble,
-  XDSChatMessageList,
-  XDSChatMessageMetadata,
-  XDSChatSystemMessage,
-  useXDSChatDictation,
-  type XDSChatComposerInputHandle,
-  type XDSChatComposerTrigger,
+  ChatComposer,
+  ChatComposerDrawer,
+  ChatComposerInput,
+  ChatDictationButton,
+  ChatLayout,
+  ChatMessage,
+  ChatMessageBubble,
+  ChatMessageList,
+  ChatMessageMetadata,
+  ChatSystemMessage,
+  useChatDictation,
+  type ChatComposerInputHandle,
+  type ChatComposerTrigger,
 } from '@xds/core/Chat';
-import {XDSMarkdown} from '@xds/core/Markdown';
+import {Markdown} from '@xds/core/Markdown';
 import {
   createStaticSource,
-  XDSTypeaheadItem,
-  type XDSSearchableItem,
+  TypeaheadItem,
+  type SearchableItem,
 } from '@xds/core/Typeahead';
-import {XDSTimestamp} from '@xds/core/Timestamp';
-import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
-import {XDSButton} from '@xds/core/Button';
-import {XDSToken} from '@xds/core/Token';
-import {XDSCard} from '@xds/core/Card';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSIcon} from '@xds/core/Icon';
+import {Timestamp} from '@xds/core/Timestamp';
+import {ToggleButton, ToggleButtonGroup} from '@xds/core/ToggleButton';
+import {Button} from '@xds/core/Button';
+import {Token} from '@xds/core/Token';
+import {Card} from '@xds/core/Card';
+import {Grid} from '@xds/core/Grid';
+import {Icon} from '@xds/core/Icon';
 
-import {XDSDropdownMenu, XDSDropdownMenuItem} from '@xds/core/DropdownMenu';
+import {DropdownMenu, DropdownMenuItem} from '@xds/core/DropdownMenu';
 import {
   Cog6ToothIcon,
   AtSymbolIcon,
@@ -172,7 +172,7 @@ const MODE_OPTIONS = [
 
 // ============= TRIGGER DATA =============
 
-const MENTION_ITEMS: XDSSearchableItem<{role: string}>[] = [
+const MENTION_ITEMS: SearchableItem<{role: string}>[] = [
   {id: 'cindy', label: 'Cindy Zhang', auxiliaryData: {role: 'Design Systems'}},
   {id: 'alex', label: 'Alex Johnson', auxiliaryData: {role: 'Frontend'}},
   {id: 'sam', label: 'Sam Rivera', auxiliaryData: {role: 'Backend'}},
@@ -185,7 +185,7 @@ const MENTION_ITEMS: XDSSearchableItem<{role: string}>[] = [
   },
 ];
 
-const COMMAND_ITEMS: XDSSearchableItem<{description: string}>[] = [
+const COMMAND_ITEMS: SearchableItem<{description: string}>[] = [
   {
     id: 'summarize',
     label: 'summarize',
@@ -216,11 +216,11 @@ const COMMAND_ITEMS: XDSSearchableItem<{description: string}>[] = [
 const mentionSource = createStaticSource(MENTION_ITEMS);
 const commandSource = createStaticSource(COMMAND_ITEMS);
 
-const mentionTrigger: XDSChatComposerTrigger = {
+const mentionTrigger: ChatComposerTrigger = {
   character: '@',
   searchSource: mentionSource,
   renderItem: item => (
-    <XDSTypeaheadItem
+    <TypeaheadItem
       item={item}
       description={(item.auxiliaryData as {role: string})?.role}
     />
@@ -232,11 +232,11 @@ const mentionTrigger: XDSChatComposerTrigger = {
   }),
 };
 
-const commandTrigger: XDSChatComposerTrigger = {
+const commandTrigger: ChatComposerTrigger = {
   character: '/',
   searchSource: commandSource,
   renderItem: item => (
-    <XDSTypeaheadItem
+    <TypeaheadItem
       item={item}
       description={(item.auxiliaryData as {description: string})?.description}
     />
@@ -285,10 +285,10 @@ export default function AIChatTemplate() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [isModeMenuOpen, setIsModeMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const composerInputRef = useRef<XDSChatComposerInputHandle>(null);
+  const composerInputRef = useRef<ChatComposerInputHandle>(null);
   const shouldFocusComposerRef = useRef(false);
   const streamRef = useRef<ReturnType<typeof setInterval>>(undefined);
-  const dictation = useXDSChatDictation({inputRef: composerInputRef});
+  const dictation = useChatDictation({inputRef: composerInputRef});
   const activeMode = MODE_OPTIONS.find(m => m.key === mode) ?? MODE_OPTIONS[0];
   const suggestions = category ? CATEGORY_SUGGESTIONS[category] : null;
 
@@ -439,13 +439,13 @@ export default function AIChatTemplate() {
     inputMinHeight: string;
     extraFooterActions?: React.ReactNode;
   }) => (
-    <XDSChatComposer
+    <ChatComposer
       onSubmit={handleSubmit}
       onStop={handleStop}
       isStopShown={isStreaming}
       placeholder="Ask anything"
       input={
-        <XDSChatComposerInput
+        <ChatComposerInput
           handleRef={composerInputRef}
           triggers={composerTriggers}
           style={{minHeight: inputMinHeight}}
@@ -453,9 +453,9 @@ export default function AIChatTemplate() {
       }
       drawer={
         attachments.length > 0 ? (
-          <XDSChatComposerDrawer count={attachments.length}>
+          <ChatComposerDrawer count={attachments.length}>
             {attachments.map(name => (
-              <XDSToken
+              <Token
                 key={name}
                 label={name}
                 onRemove={() =>
@@ -463,35 +463,35 @@ export default function AIChatTemplate() {
                 }
               />
             ))}
-          </XDSChatComposerDrawer>
+          </ChatComposerDrawer>
         ) : undefined
       }
       headerActions={
         <>
-          <XDSDropdownMenu
+          <DropdownMenu
             button={{
               label: 'Reference',
               variant: 'ghost',
               size: 'sm',
-              icon: <XDSIcon icon={AtSymbolIcon} size="sm" />,
+              icon: <Icon icon={AtSymbolIcon} size="sm" />,
               isIconOnly: true,
             }}
             hasChevron={false}
             menuWidth={240}>
             {MENTION_ITEMS.map(item => (
-              <XDSDropdownMenuItem
+              <DropdownMenuItem
                 key={item.id}
                 label={item.label}
                 description={item.auxiliaryData?.role}
                 onClick={() => insertMentionToken(item)}
               />
             ))}
-          </XDSDropdownMenu>
-          <XDSButton
+          </DropdownMenu>
+          <Button
             label="Attach"
             variant="ghost"
             size="sm"
-            icon={<XDSIcon icon={PaperClipIcon} size="sm" />}
+            icon={<Icon icon={PaperClipIcon} size="sm" />}
             isIconOnly
             onClick={() => fileInputRef.current?.click()}
           />
@@ -499,12 +499,12 @@ export default function AIChatTemplate() {
       }
       footerActions={
         <>
-          <XDSDropdownMenu
+          <DropdownMenu
             button={{
               label: activeMode.label,
               variant: 'ghost',
               size: 'md',
-              icon: <XDSIcon icon={activeMode.icon} size="sm" />,
+              icon: <Icon icon={activeMode.icon} size="sm" />,
               children: activeMode.label,
             }}
             menuWidth={200}
@@ -541,7 +541,7 @@ export default function AIChatTemplate() {
           {extraFooterActions}
         </>
       }
-      sendActions={<XDSChatDictationButton dictation={dictation} />}
+      sendActions={<ChatDictationButton dictation={dictation} />}
     />
   );
 
@@ -551,11 +551,11 @@ export default function AIChatTemplate() {
 
   if (view === 'chat') {
     return (
-      <XDSLayout
+      <Layout
         height="fill"
         content={
-          <XDSLayoutContent padding={0}>
-            <XDSChatLayout
+          <LayoutContent padding={0}>
+            <ChatLayout
               style={{height: '100%'}}
               composer={
                 <>
@@ -563,30 +563,30 @@ export default function AIChatTemplate() {
                   {renderComposer({inputMinHeight: '44px'})}
                 </>
               }>
-              <XDSChatMessageList>
+              <ChatMessageList>
                 {messages.map(msg => {
                   if (msg.role === 'system') {
                     return (
-                      <XDSChatSystemMessage key={msg.id} variant="divider">
+                      <ChatSystemMessage key={msg.id} variant="divider">
                         {msg.text}
-                      </XDSChatSystemMessage>
+                      </ChatSystemMessage>
                     );
                   }
                   if (msg.role === 'user') {
                     return (
-                      <XDSChatMessage key={msg.id} sender="user">
+                      <ChatMessage key={msg.id} sender="user">
                         {msg.attachments && msg.attachments.length > 0 && (
-                          <XDSHStack gap={1} style={{flexWrap: 'wrap'}}>
+                          <HStack gap={1} style={{flexWrap: 'wrap'}}>
                             {msg.attachments.map(f => (
-                              <XDSToken key={f} label={f} />
+                              <Token key={f} label={f} />
                             ))}
-                          </XDSHStack>
+                          </HStack>
                         )}
-                        <XDSChatMessageBubble
+                        <ChatMessageBubble
                           metadata={
-                            <XDSChatMessageMetadata
+                            <ChatMessageMetadata
                               timestamp={
-                                <XDSTimestamp
+                                <Timestamp
                                   value={msg.sentAt.getTime()}
                                   format="time"
                                 />
@@ -594,26 +594,26 @@ export default function AIChatTemplate() {
                             />
                           }>
                           {msg.text}
-                        </XDSChatMessageBubble>
-                      </XDSChatMessage>
+                        </ChatMessageBubble>
+                      </ChatMessage>
                     );
                   }
                   return (
-                    <XDSChatMessage key={msg.id} sender="assistant">
-                      <XDSMarkdown density="compact">{msg.text}</XDSMarkdown>
+                    <ChatMessage key={msg.id} sender="assistant">
+                      <Markdown density="compact">{msg.text}</Markdown>
                       {!msg.isStreaming && msg.text && (
-                        <XDSChatMessageMetadata
+                        <ChatMessageMetadata
                           timestamp={
-                            <XDSTimestamp value={msg.id} format="time" />
+                            <Timestamp value={msg.id} format="time" />
                           }
                         />
                       )}
-                    </XDSChatMessage>
+                    </ChatMessage>
                   );
                 })}
-              </XDSChatMessageList>
-            </XDSChatLayout>
-          </XDSLayoutContent>
+              </ChatMessageList>
+            </ChatLayout>
+          </LayoutContent>
         }
       />
     );
@@ -624,37 +624,37 @@ export default function AIChatTemplate() {
   // ---------------------------------------------------------------------------
 
   return (
-    <XDSLayout
+    <Layout
       height="fill"
       contentWidth={720}
       padding={6}
       content={
-        <XDSLayoutContent>
-          <XDSVStack gap={8} vAlign="center" style={{minHeight: '100%'}}>
+        <LayoutContent>
+          <VStack gap={8} vAlign="center" style={{minHeight: '100%'}}>
             {/* Greeting */}
-            <XDSVStack gap={1}>
-              <XDSHStack gap={2} vAlign="center">
-                <XDSIcon icon={SparklesIcon} size="md" color="accent" />
-                <XDSText type="large" as="h2">
+            <VStack gap={1}>
+              <HStack gap={2} vAlign="center">
+                <Icon icon={SparklesIcon} size="md" color="accent" />
+                <Text type="large" as="h2">
                   Hi, Andrew
-                </XDSText>
-              </XDSHStack>
-              <XDSText type="display-2" as="h1">
+                </Text>
+              </HStack>
+              <Text type="display-2" as="h1">
                 Where should we start?
-              </XDSText>
-            </XDSVStack>
+              </Text>
+            </VStack>
 
             {/* Composer */}
             {fileInput}
             {renderComposer({
               inputMinHeight: '84px',
               extraFooterActions: (
-                <XDSDropdownMenu
+                <DropdownMenu
                   button={{
                     label: 'Settings',
                     variant: 'ghost',
                     size: 'md',
-                    icon: <XDSIcon icon={Cog6ToothIcon} size="sm" />,
+                    icon: <Icon icon={Cog6ToothIcon} size="sm" />,
                     children: 'Settings',
                   }}
                   menuWidth={200}
@@ -668,27 +668,27 @@ export default function AIChatTemplate() {
             })}
 
             {/* Category toggle buttons */}
-            <XDSVStack gap={6} style={{paddingInline: 'var(--spacing-3)'}}>
-              <XDSToggleButtonGroup
+            <VStack gap={6} style={{paddingInline: 'var(--spacing-3)'}}>
+              <ToggleButtonGroup
                 label="Category"
                 value={category}
                 onChange={setCategory}
                 size="lg">
                 {CATEGORIES.map(cat => (
-                  <XDSToggleButton
+                  <ToggleButton
                     key={cat.key}
                     value={cat.key}
                     label={cat.label}
-                    icon={<XDSIcon icon={cat.icon} size="sm" />}
+                    icon={<Icon icon={cat.icon} size="sm" />}
                   />
                 ))}
-              </XDSToggleButtonGroup>
+              </ToggleButtonGroup>
 
               {/* Suggestion cards */}
               {suggestions && (
-                <XDSGrid columns={{minWidth: 280}} gap={3}>
+                <Grid columns={{minWidth: 280}} gap={3}>
                   {suggestions.map(suggestion => (
-                    <XDSCard
+                    <Card
                       variant="muted"
                       key={suggestion.heading}
                       padding={3}
@@ -706,19 +706,19 @@ export default function AIChatTemplate() {
                           setMode(category);
                         }
                       }}>
-                      <XDSVStack gap={0.5}>
-                        <XDSHeading level={4}>{suggestion.heading}</XDSHeading>
-                        <XDSText type="body" color="secondary" size="xsm">
+                      <VStack gap={0.5}>
+                        <Heading level={4}>{suggestion.heading}</Heading>
+                        <Text type="body" color="secondary" size="xsm">
                           {suggestion.body}
-                        </XDSText>
-                      </XDSVStack>
-                    </XDSCard>
+                        </Text>
+                      </VStack>
+                    </Card>
                   ))}
-                </XDSGrid>
+                </Grid>
               )}
-            </XDSVStack>
-          </XDSVStack>
-        </XDSLayoutContent>
+            </VStack>
+          </VStack>
+        </LayoutContent>
       }
     />
   );

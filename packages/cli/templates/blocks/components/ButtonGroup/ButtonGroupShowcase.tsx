@@ -2,11 +2,11 @@
 
 'use client';
 
-import {XDSButtonGroup} from '@xds/core/ButtonGroup';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIconButton} from '@xds/core/IconButton';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSIcon} from '@xds/core/Icon';
+import {ButtonGroup} from '@xds/core/ButtonGroup';
+import {Button} from '@xds/core/Button';
+import {IconButton} from '@xds/core/IconButton';
+import {Stack} from '@xds/core/Layout';
+import {Icon} from '@xds/core/Icon';
 import {
   ClipboardDocumentIcon,
   ScissorsIcon,
@@ -16,23 +16,23 @@ import {
 
 export default function ButtonGroupShowcase() {
   return (
-    <XDSStack direction="horizontal" gap={6} vAlign="center">
-      <XDSButtonGroup label="Clipboard actions">
-        <XDSButton
+    <Stack direction="horizontal" gap={6} vAlign="center">
+      <ButtonGroup label="Clipboard actions">
+        <Button
           label="Copy"
-          icon={<XDSIcon icon={ClipboardDocumentIcon} />}
+          icon={<Icon icon={ClipboardDocumentIcon} />}
         />
-        <XDSButton label="Cut" icon={<XDSIcon icon={ScissorsIcon} />} />
-        <XDSButton label="Paste" icon={<XDSIcon icon={ClipboardIcon} />} />
-      </XDSButtonGroup>
-      <XDSButtonGroup label="Save options">
-        <XDSButton label="Save" variant="primary" />
-        <XDSIconButton
+        <Button label="Cut" icon={<Icon icon={ScissorsIcon} />} />
+        <Button label="Paste" icon={<Icon icon={ClipboardIcon} />} />
+      </ButtonGroup>
+      <ButtonGroup label="Save options">
+        <Button label="Save" variant="primary" />
+        <IconButton
           label="Save options"
           variant="primary"
-          icon={<XDSIcon icon={ChevronDownIcon} />}
+          icon={<Icon icon={ChevronDownIcon} />}
         />
-      </XDSButtonGroup>
-    </XDSStack>
+      </ButtonGroup>
+    </Stack>
   );
 }

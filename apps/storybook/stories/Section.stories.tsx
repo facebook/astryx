@@ -2,16 +2,16 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSSection} from '@xds/core/Section';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {Section} from '@xds/core/Section';
+import {VStack, HStack} from '@xds/core/Layout';
 import {
-  XDSLayout,
-  XDSLayoutHeader,
-  XDSLayoutContent,
-  XDSLayoutFooter,
-  XDSLayoutPanel,
+  Layout,
+  LayoutHeader,
+  LayoutContent,
+  LayoutFooter,
+  LayoutPanel,
 } from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
+import {Button} from '@xds/core/Button';
 import {
   colorVars,
   spacingVars,
@@ -49,9 +49,9 @@ const styles = stylex.create({
   },
 });
 
-const meta: Meta<typeof XDSSection> = {
+const meta: Meta<typeof Section> = {
   title: 'Core/Section',
-  component: XDSSection,
+  component: Section,
   tags: ['autodocs'],
   decorators: [
     Story => (
@@ -78,7 +78,7 @@ const meta: Meta<typeof XDSSection> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSSection>;
+type Story = StoryObj<typeof Section>;
 
 export const Default: Story = {
   args: {
@@ -86,12 +86,12 @@ export const Default: Story = {
     width: 300,
   },
   render: args => (
-    <XDSSection {...args}>
+    <Section {...args}>
       <p {...stylex.props(styles.text)}>
         A section with default padding. Sections are used to define distinct
         areas within a page.
       </p>
-    </XDSSection>
+    </Section>
   ),
 };
 
@@ -100,21 +100,21 @@ export const Variants: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <div>
         <h4 {...stylex.props(styles.heading)}>section (default)</h4>
-        <XDSSection variant="section" width={200}>
+        <Section variant="section" width={200}>
           <p {...stylex.props(styles.text)}>Surface background</p>
-        </XDSSection>
+        </Section>
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>muted</h4>
-        <XDSSection variant="muted" width={200}>
+        <Section variant="muted" width={200}>
           <p {...stylex.props(styles.text)}>Wash background</p>
-        </XDSSection>
+        </Section>
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>transparent</h4>
-        <XDSSection variant="transparent" width={200}>
+        <Section variant="transparent" width={200}>
           <p {...stylex.props(styles.text)}>Transparent background</p>
-        </XDSSection>
+        </Section>
       </div>
     </div>
   ),
@@ -122,81 +122,81 @@ export const Variants: Story = {
 
 export const WithSimpleContent: Story = {
   render: () => (
-    <XDSSection variant="muted" width={320}>
-      <XDSVStack gap={2}>
+    <Section variant="muted" width={320}>
+      <VStack gap={2}>
         <h3 {...stylex.props(styles.text)}>Section Title</h3>
         <p {...stylex.props(styles.text, styles.textSecondary)}>
-          This section contains simple content without XDSLayout. The container
+          This section contains simple content without Layout. The container
           padding is applied automatically.
         </p>
-      </XDSVStack>
-    </XDSSection>
+      </VStack>
+    </Section>
   ),
 };
 
 export const WithInnerLayout: Story = {
   render: () => (
-    <XDSSection variant="muted" width={350} height={250}>
-      <XDSLayout
+    <Section variant="muted" width={350} height={250}>
+      <Layout
         header={
-          <XDSLayoutHeader hasDivider>
+          <LayoutHeader hasDivider>
             <h3 {...stylex.props(styles.text)}>Section with Layout</h3>
-          </XDSLayoutHeader>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent>
+          <LayoutContent>
             <p {...stylex.props(styles.text, styles.textSecondary)}>
-              When using XDSLayout, the layout manages its own padding
+              When using Layout, the layout manages its own padding
               independently from the container padding.
             </p>
-          </XDSLayoutContent>
+          </LayoutContent>
         }
         footer={
-          <XDSLayoutFooter hasDivider>
-            <XDSHStack gap={2} hAlign="end">
-              <XDSButton label="Action" variant="primary">
+          <LayoutFooter hasDivider>
+            <HStack gap={2} hAlign="end">
+              <Button label="Action" variant="primary">
                 Action
-              </XDSButton>
-            </XDSHStack>
-          </XDSLayoutFooter>
+              </Button>
+            </HStack>
+          </LayoutFooter>
         }
       />
-    </XDSSection>
+    </Section>
   ),
 };
 
 export const PageLayout: Story = {
   render: () => (
-    <XDSSection variant="section" width={600} height={300}>
-      <XDSLayout
+    <Section variant="section" width={600} height={300}>
+      <Layout
         header={
-          <XDSLayoutHeader hasDivider>
-            <XDSVStack gap={2}>
+          <LayoutHeader hasDivider>
+            <VStack gap={2}>
               <h2 {...stylex.props(styles.text)}>Page Header</h2>
               <p {...stylex.props(styles.text, styles.textSecondary)}>
                 Welcome to the application
               </p>
-            </XDSVStack>
-          </XDSLayoutHeader>
+            </VStack>
+          </LayoutHeader>
         }
         start={
-          <XDSLayoutPanel hasDivider width={150}>
+          <LayoutPanel hasDivider width={150}>
             <h3 {...stylex.props(styles.text)}>Sidebar</h3>
-          </XDSLayoutPanel>
+          </LayoutPanel>
         }
         content={
-          <XDSLayoutContent>
-            <XDSVStack gap={2}>
+          <LayoutContent>
+            <VStack gap={2}>
               <h3 {...stylex.props(styles.text)}>Main Content</h3>
               <p {...stylex.props(styles.text, styles.textSecondary)}>
-                This demonstrates how XDSLayout can be used to create page
+                This demonstrates how Layout can be used to create page
                 layouts with header, sidebar, and content areas.
               </p>
-            </XDSVStack>
-          </XDSLayoutContent>
+            </VStack>
+          </LayoutContent>
         }
       />
-    </XDSSection>
+    </Section>
   ),
 };
 
@@ -205,19 +205,19 @@ export const FullBleed: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <div>
         <h4 {...stylex.props(styles.heading)}>Default (with padding)</h4>
-        <XDSSection variant="muted" width={250}>
+        <Section variant="muted" width={250}>
           <div style={{backgroundColor: 'rgba(0,100,200,0.2)', padding: 8}}>
             <p {...stylex.props(styles.text)}>Content with section padding</p>
           </div>
-        </XDSSection>
+        </Section>
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>Full Bleed (no padding)</h4>
-        <XDSSection variant="muted" width={250} padding={0}>
+        <Section variant="muted" width={250} padding={0}>
           <div style={{backgroundColor: 'rgba(0,100,200,0.2)', padding: 8}}>
             <p {...stylex.props(styles.text)}>Content touches section edges</p>
           </div>
-        </XDSSection>
+        </Section>
       </div>
     </div>
   ),
@@ -230,38 +230,38 @@ export const NestedPaddingInheritance: Story = {
         <h4 {...stylex.props(styles.heading)}>
           padding=6 → nested (inherits 6)
         </h4>
-        <XDSSection variant="section" width={350} padding={6}>
-          <XDSSection variant="muted">
+        <Section variant="section" width={350} padding={6}>
+          <Section variant="muted">
             <p {...stylex.props(styles.text)}>
               Inner section inherits padding=6 from parent. Edge compensation
               and content inset should both use 24px.
             </p>
-          </XDSSection>
-        </XDSSection>
+          </Section>
+        </Section>
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>padding=6 → nested padding=2</h4>
-        <XDSSection variant="section" width={350} padding={6}>
-          <XDSSection variant="muted" padding={2}>
+        <Section variant="section" width={350} padding={6}>
+          <Section variant="muted" padding={2}>
             <p {...stylex.props(styles.text)}>
               Inner section explicitly sets padding=2, overriding the parent's
               padding=6. Content inset is 8px.
             </p>
-          </XDSSection>
-        </XDSSection>
+          </Section>
+        </Section>
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>
           padding=2 → nested (inherits 2)
         </h4>
-        <XDSSection variant="section" width={350} padding={2}>
-          <XDSSection variant="muted">
+        <Section variant="section" width={350} padding={2}>
+          <Section variant="muted">
             <p {...stylex.props(styles.text)}>
               Inner section inherits padding=2 from parent. Both edge
               compensation and content inset use 8px.
             </p>
-          </XDSSection>
-        </XDSSection>
+          </Section>
+        </Section>
       </div>
     </div>
   ),

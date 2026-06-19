@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSIcon} from '@xds/core/Icon';
+import {ToggleButton, ToggleButtonGroup} from '@xds/core/ToggleButton';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {Icon} from '@xds/core/Icon';
 import {EyeIcon, EyeSlashIcon, FunnelIcon, MapPinIcon} from '@heroicons/react/24/outline';
 
 export default function ToggleButtonLabel() {
@@ -14,45 +14,45 @@ export default function ToggleButtonLabel() {
   const [filters, setFilters] = useState<string[]>([]);
 
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Standalone with label and icon
-        </XDSText>
-        <XDSStack direction="horizontal" gap={3} vAlign="center">
-          <XDSToggleButton
+        </Text>
+        <Stack direction="horizontal" gap={3} vAlign="center">
+          <ToggleButton
             label="Visible"
-            icon={<XDSIcon icon={EyeIcon} />}
-            pressedIcon={<XDSIcon icon={EyeSlashIcon} />}
+            icon={<Icon icon={EyeIcon} />}
+            pressedIcon={<Icon icon={EyeSlashIcon} />}
             isPressed={isVisible}
             onPressedChange={setIsVisible}>
             {isVisible ? 'Visible' : 'Hidden'}
-          </XDSToggleButton>
-        </XDSStack>
-      </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+          </ToggleButton>
+        </Stack>
+      </Stack>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Labeled group — filter toolbar
-        </XDSText>
-        <XDSToggleButtonGroup
+        </Text>
+        <ToggleButtonGroup
           type="multiple"
           value={filters}
           onChange={setFilters}
           label="Filters">
-          <XDSToggleButton
+          <ToggleButton
             value="filter"
             label="Filter"
-            icon={<XDSIcon icon={FunnelIcon} />}>
+            icon={<Icon icon={FunnelIcon} />}>
             Filter
-          </XDSToggleButton>
-          <XDSToggleButton
+          </ToggleButton>
+          <ToggleButton
             value="nearby"
             label="Nearby"
-            icon={<XDSIcon icon={MapPinIcon} />}>
+            icon={<Icon icon={MapPinIcon} />}>
             Nearby
-          </XDSToggleButton>
-        </XDSToggleButtonGroup>
-      </XDSStack>
-    </XDSStack>
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Stack>
+    </Stack>
   );
 }

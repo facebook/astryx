@@ -137,14 +137,14 @@ The CSS import order matters:
 
 ### 5. Theme provider
 
-Wrap your app with `XDSTheme` and the default theme:
+Wrap your app with `Theme` and the default theme:
 
 ```tsx
-import {XDSTheme} from '@xds/core/theme';
+import {Theme} from '@xds/core/theme';
 import {defaultTheme} from '@xds/theme-default';
 
 export default function App() {
-  return <XDSTheme theme={defaultTheme}>{/* your app */}</XDSTheme>;
+  return <Theme theme={defaultTheme}>{/* your app */}</Theme>;
 }
 ```
 

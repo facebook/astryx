@@ -2,11 +2,11 @@
 
 'use client';
 
-import {XDSProgressBar} from '@xds/core/ProgressBar';
+import {ProgressBar} from '@xds/core/ProgressBar';
 
 export default function ProgressBarWithValueLabel() {
   return (
-    <XDSProgressBar
+    <ProgressBar
       value={75}
       label="Storage used"
       hasValueLabel

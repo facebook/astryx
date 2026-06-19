@@ -9,17 +9,17 @@ export const docs = {
   isHiddenFromOverview: true,
   description:
     'Individual tab item that renders as a button or an anchor link, with selected-state styling and optional icons.',
-  // XDSTab requires XDSTabList context; wrap it so the preview doesn't throw.
+  // Tab requires TabList context; wrap it so the preview doesn't throw.
   playground: {
     defaults: {value: 'tab-1', label: 'Tab'},
-    wrapper: {component: 'XDSTabList', props: {value: 'tab-1'}},
+    wrapper: {component: 'TabList', props: {value: 'tab-1'}},
   },
   props: [
     {
       name: 'value',
       type: 'string',
       description:
-        'Unique value for this tab, matched against XDSTabListContext.value.',
+        'Unique value for this tab, matched against TabListContext.value.',
       required: true,
     },
     {
@@ -44,9 +44,9 @@ export const docs = {
     },
     {
       name: 'as',
-      type: 'XDSLinkComponentType',
+      type: 'LinkComponentType',
       description:
-        'Custom component to render instead of <a> for link tabs. Overrides the XDSLinkProvider default. Only applies when href is provided.',
+        'Custom component to render instead of <a> for link tabs. Overrides the LinkProvider default. Only applies when href is provided.',
     },
     {
       name: 'icon',
@@ -54,7 +54,7 @@ export const docs = {
       description: 'Icon element shown when the tab is not selected.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',
@@ -69,7 +69,7 @@ export const docs = {
         'Icon element shown when the tab is selected; falls back to icon if not provided.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'checkCircle',
             size: 'sm',
@@ -84,14 +84,14 @@ export const docs = {
         'Content rendered after the label, such as a badge count or status dot.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'chevronDown',
             size: 'sm',
           },
         },
         {
-          __element: 'XDSBadge',
+          __element: 'Badge',
           props: {
             label: '3',
           },
@@ -116,7 +116,7 @@ export const docsZh = {
     {
       name: 'value',
       type: 'string',
-      description: '此标签的唯一值，与 XDSTabListContext.value 进行匹配。',
+      description: '此标签的唯一值，与 TabListContext.value 进行匹配。',
       required: true,
     },
     {
@@ -140,9 +140,9 @@ export const docsZh = {
     },
     {
       name: 'as',
-      type: 'XDSLinkComponentType',
+      type: 'LinkComponentType',
       description:
-        '用于替代 <a> 渲染链接标签的自定义组件。覆盖 XDSLinkProvider 的默认值。仅在提供 href 时生效。',
+        '用于替代 <a> 渲染链接标签的自定义组件。覆盖 LinkProvider 的默认值。仅在提供 href 时生效。',
     },
     {
       name: 'icon',
@@ -175,13 +175,13 @@ export const docsDense = {
   description:
     'Individual tab; renders as button or anchor w/ selected-state styling + optional icons.',
   propDescriptions: {
-    value: 'Unique value matched against XDSTabListContext.value.',
+    value: 'Unique value matched against TabListContext.value.',
     label:
       'Accessible label; visible by default, aria-label when isLabelHidden.',
     isLabelHidden:
       'Visually hide label for icon-only tabs; label becomes aria-label.',
     href: 'URL; renders as <a> when provided.',
-    as: 'Custom link component overriding XDSLinkProvider; only w/ href.',
+    as: 'Custom link component overriding LinkProvider; only w/ href.',
     icon: 'Icon shown when not selected.',
     selectedIcon: 'Icon shown when selected; falls back to icon.',
     endContent: 'Content after the label (badge, status dot, etc.).',

@@ -4,8 +4,8 @@
 export const doc = {
   type: 'block',
   exampleFor: 'AlertDialog',
-  alsoExampleFor: ['useXDSImperativeAlertDialog'],
-  alsoShowcaseFor: ['useXDSImperativeAlertDialog'],
+  alsoExampleFor: ['useImperativeAlertDialog'],
+  alsoShowcaseFor: ['useImperativeAlertDialog'],
   name: 'AlertDialog — Delete',
   displayName: 'AlertDialog — Delete',
   description:

@@ -3,43 +3,43 @@
 'use client';
 
 import {
-  XDSDialog,
-  XDSDialogHeader,
-  useXDSImperativeDialog,
+  Dialog,
+  DialogHeader,
+  useImperativeDialog,
 } from '@xds/core/Dialog';
 import {
-  XDSLayout,
-  XDSLayoutContent,
-  XDSLayoutFooter,
-  XDSHStack,
+  Layout,
+  LayoutContent,
+  LayoutFooter,
+  HStack,
 } from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Text} from '@xds/core/Text';
 
 function Content({onClose}: {onClose: () => void}) {
   return (
-    <XDSLayout
+    <Layout
       header={
-        <XDSDialogHeader
+        <DialogHeader
           title="Delete project?"
           onOpenChange={() => onClose()}
         />
       }
       content={
-        <XDSLayoutContent>
-          <XDSText type="body">
+        <LayoutContent>
+          <Text type="body">
             This will permanently delete &quot;Marketing Dashboard&quot; and all
             of its data. This action cannot be undone.
-          </XDSText>
-        </XDSLayoutContent>
+          </Text>
+        </LayoutContent>
       }
       footer={
-        <XDSLayoutFooter>
-          <XDSHStack gap={2} hAlign="end">
-            <XDSButton label="Cancel" variant="secondary" onClick={onClose} />
-            <XDSButton label="Delete" variant="destructive" onClick={onClose} />
-          </XDSHStack>
-        </XDSLayoutFooter>
+        <LayoutFooter>
+          <HStack gap={2} hAlign="end">
+            <Button label="Cancel" variant="secondary" onClick={onClose} />
+            <Button label="Delete" variant="destructive" onClick={onClose} />
+          </HStack>
+        </LayoutFooter>
       }
     />
   );
@@ -47,11 +47,11 @@ function Content({onClose}: {onClose: () => void}) {
 
 // Remove isInline for production — dialogs should be modal.
 export default function DialogConfirmationDialog() {
-  const dialog = useXDSImperativeDialog({width: 400, purpose: 'form'});
+  const dialog = useImperativeDialog({width: 400, purpose: 'form'});
 
   return (
     <>
-      <XDSDialog
+      <Dialog
         isOpen
         isInline
         onOpenChange={() => {}}
@@ -60,7 +60,7 @@ export default function DialogConfirmationDialog() {
         <Content
           onClose={() => dialog.show(<Content onClose={() => dialog.hide()} />)}
         />
-      </XDSDialog>
+      </Dialog>
       {dialog.element}
     </>
   );

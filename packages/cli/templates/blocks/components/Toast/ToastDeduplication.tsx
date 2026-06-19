@@ -1,19 +1,19 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-// In production, use useXDSToast() hook for proper positioning, stacking, and lifecycle.
+// In production, use useToast() hook for proper positioning, stacking, and lifecycle.
 'use client';
 
-import {XDSToast} from '@xds/core/Toast';
-import {useXDSToast} from '@xds/core/Toast';
-import {XDSButton} from '@xds/core/Button';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {Toast} from '@xds/core/Toast';
+import {useToast} from '@xds/core/Toast';
+import {Button} from '@xds/core/Button';
+import {VStack, HStack} from '@xds/core/Layout';
 
 export default function ToastDeduplication() {
-  const toast = useXDSToast();
+  const toast = useToast();
 
   return (
-    <XDSVStack gap={3}>
-      <XDSToast
+    <VStack gap={3}>
+      <Toast
         type="info"
         body="You are offline"
         isAutoHide={false}
@@ -21,8 +21,8 @@ export default function ToastDeduplication() {
         isExiting={false}
         onDismiss={() => {}}
       />
-      <XDSHStack gap={3} vAlign="center">
-        <XDSButton
+      <HStack gap={3} vAlign="center">
+        <Button
           label="Offline (ignore)"
           variant="secondary"
           size="sm"
@@ -35,7 +35,7 @@ export default function ToastDeduplication() {
             })
           }
         />
-        <XDSButton
+        <Button
           label="Progress (overwrite)"
           variant="secondary"
           size="sm"
@@ -48,7 +48,7 @@ export default function ToastDeduplication() {
             })
           }
         />
-      </XDSHStack>
-    </XDSVStack>
+      </HStack>
+    </VStack>
   );
 }

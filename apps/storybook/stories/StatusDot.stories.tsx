@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSStatusDot} from '@xds/core/StatusDot';
+import {StatusDot} from '@xds/core/StatusDot';
 
-const meta: Meta<typeof XDSStatusDot> = {
+const meta: Meta<typeof StatusDot> = {
   title: 'Core/StatusDot',
-  component: XDSStatusDot,
+  component: StatusDot,
   tags: ['autodocs'],
   argTypes: {
     variant: {
@@ -29,7 +29,7 @@ const meta: Meta<typeof XDSStatusDot> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSStatusDot>;
+type Story = StoryObj<typeof StatusDot>;
 
 export const Default: Story = {
   args: {
@@ -41,11 +41,11 @@ export const Default: Story = {
 export const Variants: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-      <XDSStatusDot variant="success" label="Positive" />
-      <XDSStatusDot variant="warning" label="Warning" />
-      <XDSStatusDot variant="error" label="Negative" />
-      <XDSStatusDot variant="accent" label="Info" />
-      <XDSStatusDot variant="neutral" label="Neutral" />
+      <StatusDot variant="success" label="Positive" />
+      <StatusDot variant="warning" label="Warning" />
+      <StatusDot variant="error" label="Negative" />
+      <StatusDot variant="accent" label="Info" />
+      <StatusDot variant="neutral" label="Neutral" />
     </div>
   ),
 };
@@ -53,9 +53,9 @@ export const Variants: Story = {
 export const Pulsing: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-      <XDSStatusDot variant="success" label="Live" isPulsing />
-      <XDSStatusDot variant="warning" label="Processing" isPulsing />
-      <XDSStatusDot variant="error" label="Error" isPulsing />
+      <StatusDot variant="success" label="Live" isPulsing />
+      <StatusDot variant="warning" label="Processing" isPulsing />
+      <StatusDot variant="error" label="Error" isPulsing />
     </div>
   ),
 };
@@ -64,19 +64,19 @@ export const StatusIndicators: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
       <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-        <XDSStatusDot variant="success" label="Online" />
+        <StatusDot variant="success" label="Online" />
         <span>Online</span>
       </div>
       <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-        <XDSStatusDot variant="warning" label="Away" />
+        <StatusDot variant="warning" label="Away" />
         <span>Away</span>
       </div>
       <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-        <XDSStatusDot variant="error" label="Offline" />
+        <StatusDot variant="error" label="Offline" />
         <span>Offline</span>
       </div>
       <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-        <XDSStatusDot variant="neutral" label="Unknown" />
+        <StatusDot variant="neutral" label="Unknown" />
         <span>Unknown</span>
       </div>
     </div>
@@ -86,10 +86,10 @@ export const StatusIndicators: Story = {
 export const WithTooltip: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-      <XDSStatusDot variant="success" label="Online" tooltip="Online" />
-      <XDSStatusDot variant="warning" label="Away" tooltip="Away" />
-      <XDSStatusDot variant="error" label="Offline" tooltip="Offline" />
-      <XDSStatusDot variant="neutral" label="Unknown" tooltip="Unknown" />
+      <StatusDot variant="success" label="Online" tooltip="Online" />
+      <StatusDot variant="warning" label="Away" tooltip="Away" />
+      <StatusDot variant="error" label="Offline" tooltip="Offline" />
+      <StatusDot variant="neutral" label="Unknown" tooltip="Unknown" />
     </div>
   ),
 };

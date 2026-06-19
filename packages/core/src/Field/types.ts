@@ -12,20 +12,20 @@
 /**
  * Status type for input validation states.
  */
-export type XDSInputStatusType = 'warning' | 'error' | 'success';
+export type InputStatusType = 'warning' | 'error' | 'success';
 
 /**
  * Status indicator for input components.
  * Used by TextInput, TextArea, DatePicker, TimePicker, etc.
  */
-export interface XDSInputStatus {
+export interface InputStatus {
   /**
    * The type of status to display.
    * - 'error': Invalid input, prevents form submission
    * - 'warning': Caution, but allows submission
    * - 'success': Valid input confirmation
    */
-  type: XDSInputStatusType;
+  type: InputStatusType;
 
   /**
    * Optional message to display below the input.
@@ -37,4 +37,4 @@ export interface XDSInputStatus {
 /**
  * Standard size options for input components.
  */
-export type XDSInputSize = 'sm' | 'md' | 'lg';
+export type InputSize = 'sm' | 'md' | 'lg';

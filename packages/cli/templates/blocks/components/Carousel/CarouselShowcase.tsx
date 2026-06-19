@@ -2,10 +2,10 @@
 
 'use client';
 
-import {XDSCarousel} from '@xds/core/Carousel';
-import {XDSCard} from '@xds/core/Card';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
+import {Carousel} from '@xds/core/Carousel';
+import {Card} from '@xds/core/Card';
+import {Stack} from '@xds/core/Layout';
+import {Text, Heading} from '@xds/core/Text';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
@@ -27,22 +27,22 @@ const ITEMS = [
 
 export default function CarouselShowcase() {
   return (
-    <XDSCarousel
+    <Carousel
       gap={2}
       hasSnap
       hasButtons={false}
       aria-label="Workflow steps"
       xstyle={styles.root}>
       {ITEMS.map(item => (
-        <XDSCard key={item.title} padding={3} xstyle={styles.card}>
-          <XDSStack direction="vertical" gap={1}>
-            <XDSHeading level={5}>{item.title}</XDSHeading>
-            <XDSText type="supporting" color="secondary">
+        <Card key={item.title} padding={3} xstyle={styles.card}>
+          <Stack direction="vertical" gap={1}>
+            <Heading level={5}>{item.title}</Heading>
+            <Text type="supporting" color="secondary">
               {item.body}
-            </XDSText>
-          </XDSStack>
-        </XDSCard>
+            </Text>
+          </Stack>
+        </Card>
       ))}
-    </XDSCarousel>
+    </Carousel>
   );
 }

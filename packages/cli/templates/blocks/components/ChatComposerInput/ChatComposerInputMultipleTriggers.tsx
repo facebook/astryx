@@ -4,23 +4,23 @@
 
 import {useState} from 'react';
 import {
-  XDSChatComposer,
-  XDSChatComposerInput,
-  type XDSChatComposerTrigger,
+  ChatComposer,
+  ChatComposerInput,
+  type ChatComposerTrigger,
 } from '@xds/core/Chat';
 import {createStaticSource} from '@xds/core/Typeahead';
-import type {XDSSearchableItem} from '@xds/core/Typeahead';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import type {SearchableItem} from '@xds/core/Typeahead';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
-const USERS: XDSSearchableItem[] = [
+const USERS: SearchableItem[] = [
   {id: 'cindy', label: 'Cindy Zhang'},
   {id: 'alex', label: 'Alex Johnson'},
   {id: 'sam', label: 'Sam Rivera'},
   {id: 'jordan', label: 'Jordan Lee'},
 ];
 
-const COMMANDS: XDSSearchableItem[] = [
+const COMMANDS: SearchableItem[] = [
   {id: 'summarize', label: 'summarize'},
   {id: 'translate', label: 'translate'},
   {id: 'search', label: 'search'},
@@ -33,7 +33,7 @@ const commandSource = createStaticSource(COMMANDS);
 export default function ChatComposerInputMultipleTriggers() {
   const [value, setValue] = useState('');
 
-  const mentionTrigger: XDSChatComposerTrigger = {
+  const mentionTrigger: ChatComposerTrigger = {
     character: '@',
     searchSource: userSource,
     onSelect: item => ({
@@ -43,7 +43,7 @@ export default function ChatComposerInputMultipleTriggers() {
     }),
   };
 
-  const commandTrigger: XDSChatComposerTrigger = {
+  const commandTrigger: ChatComposerTrigger = {
     character: '/',
     searchSource: commandSource,
     onSelect: item => ({
@@ -54,14 +54,14 @@ export default function ChatComposerInputMultipleTriggers() {
   };
 
   return (
-    <XDSStack direction="vertical" gap={3} style={{width: '100%', maxWidth: 450}}>
-      <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={3} style={{width: '100%', maxWidth: 450}}>
+      <Text type="supporting" color="secondary">
         Type @ for mentions (blue) or / for commands (yellow)
-      </XDSText>
-      <XDSChatComposer
+      </Text>
+      <ChatComposer
         onSubmit={() => setValue('')}
         input={
-          <XDSChatComposerInput
+          <ChatComposerInput
             value={value}
             onChange={setValue}
             triggers={[mentionTrigger, commandTrigger]}
@@ -69,9 +69,9 @@ export default function ChatComposerInputMultipleTriggers() {
           />
         }
       />
-      <XDSText type="supporting" color="secondary">
+      <Text type="supporting" color="secondary">
         Value: {JSON.stringify(value)}
-      </XDSText>
-    </XDSStack>
+      </Text>
+    </Stack>
   );
 }

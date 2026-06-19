@@ -3,10 +3,10 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
-import {XDSCard} from '@xds/core/Card';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {CodeBlock as CoreCodeBlock} from '@xds/core/CodeBlock';
+import {Card} from '@xds/core/Card';
 
 const styles = stylex.create({
   root: {
@@ -24,14 +24,14 @@ export function CodeBlock({
   label?: string;
 }) {
   return (
-    <XDSVStack gap={1}>
+    <VStack gap={1}>
       {label && (
-        <XDSText type="supporting" color="secondary">
+        <Text type="supporting" color="secondary">
           {label}
-        </XDSText>
+        </Text>
       )}
-      <XDSCard variant="muted" xstyle={styles.root}>
-        <XDSCodeBlock
+      <Card variant="muted" xstyle={styles.root}>
+        <CoreCodeBlock
           code={code}
           language={lang}
           hasCopyButton
@@ -42,7 +42,7 @@ export function CodeBlock({
             } satisfies React.CSSProperties
           }
         />
-      </XDSCard>
-    </XDSVStack>
+      </Card>
+    </VStack>
   );
 }

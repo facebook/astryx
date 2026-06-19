@@ -33,13 +33,19 @@ describe('discoverComponents', () => {
     const buttonDir = path.join(srcDir, 'Button');
     fs.mkdirSync(buttonDir, {recursive: true});
     fs.writeFileSync(path.join(buttonDir, 'XDSButton.tsx'), '');
-    fs.writeFileSync(path.join(buttonDir, 'Button.doc.mjs'), "export const docs = {\n  name: 'Button',\n  group: 'Buttons',\n};");
+    fs.writeFileSync(
+      path.join(buttonDir, 'Button.doc.mjs'),
+      "export const docs = {\n  name: 'Button',\n  group: 'Buttons',\n};",
+    );
 
     // IconButton with group: 'Buttons'
     const iconBtnDir = path.join(srcDir, 'IconButton');
     fs.mkdirSync(iconBtnDir, {recursive: true});
     fs.writeFileSync(path.join(iconBtnDir, 'XDSIconButton.tsx'), '');
-    fs.writeFileSync(path.join(iconBtnDir, 'IconButton.doc.mjs'), "export const docs = {\n  name: 'IconButton',\n  group: 'Buttons',\n};");
+    fs.writeFileSync(
+      path.join(iconBtnDir, 'IconButton.doc.mjs'),
+      "export const docs = {\n  name: 'IconButton',\n  group: 'Buttons',\n};",
+    );
 
     // Avatar with no group
     const avatarDir = path.join(srcDir, 'Avatar');
@@ -83,7 +89,10 @@ describe('discoverComponents', () => {
     const middleDir = path.join(srcDir, 'Middle');
     fs.mkdirSync(middleDir, {recursive: true});
     fs.writeFileSync(path.join(middleDir, 'XDSMiddle.tsx'), '');
-    fs.writeFileSync(path.join(middleDir, 'Middle.doc.mjs'), "export const docs = {\n  name: 'Middle',\n  group: 'Inputs',\n};");
+    fs.writeFileSync(
+      path.join(middleDir, 'Middle.doc.mjs'),
+      "export const docs = {\n  name: 'Middle',\n  group: 'Inputs',\n};",
+    );
 
     const result = discoverComponents(tmpDir);
     const keys = Object.keys(result);
@@ -129,6 +138,86 @@ describe('discoverComponents', () => {
     const result = discoverComponents(tmpDir);
     expect(result).toEqual({});
   });
+
+  // XDS-prefix migration (P2380608025, P4): source files are renamed from
+  // `XDS{Name}.tsx` to the bare `{Name}.tsx`. Discovery must find both.
+  it('discovers components from bare {Name}.tsx files (post-rename)', () => {
+    const srcDir = path.join(tmpDir, 'src');
+    const buttonDir = path.join(srcDir, 'Button');
+    fs.mkdirSync(buttonDir, {recursive: true});
+    // Bare component file (no XDS prefix) + its doc
+    fs.writeFileSync(path.join(buttonDir, 'Button.tsx'), '');
+    fs.writeFileSync(
+      path.join(buttonDir, 'Button.doc.mjs'),
+      "export const docs = {name: 'Button'};",
+    );
+
+    const result = discoverComponents(tmpDir);
+    expect(result).toEqual({Button: ['Button']});
+  });
+
+  it('discovers a mix of prefixed and bare component files', () => {
+    const srcDir = path.join(tmpDir, 'src');
+
+    const buttonDir = path.join(srcDir, 'Button');
+    fs.mkdirSync(buttonDir, {recursive: true});
+    fs.writeFileSync(path.join(buttonDir, 'Button.tsx'), ''); // bare
+    fs.writeFileSync(
+      path.join(buttonDir, 'Button.doc.mjs'),
+      "export const docs = {name: 'Button'};",
+    );
+
+    const cardDir = path.join(srcDir, 'Card');
+    fs.mkdirSync(cardDir, {recursive: true});
+    fs.writeFileSync(path.join(cardDir, 'XDSCard.tsx'), ''); // prefixed
+    fs.writeFileSync(
+      path.join(cardDir, 'Card.doc.mjs'),
+      "export const docs = {name: 'Card'};",
+    );
+
+    const result = discoverComponents(tmpDir);
+    expect(result).toEqual({Button: ['Button'], Card: ['Card']});
+  });
+
+  it('does not surface bare PascalCase helper files without a doc', () => {
+    const srcDir = path.join(tmpDir, 'src');
+    const overlayDir = path.join(srcDir, 'Overlay');
+    fs.mkdirSync(overlayDir, {recursive: true});
+    // Real component (documented) + an internal PascalCase helper (no doc).
+    fs.writeFileSync(path.join(overlayDir, 'Overlay.tsx'), '');
+    fs.writeFileSync(path.join(overlayDir, 'OverlayScrim.tsx'), '');
+    fs.writeFileSync(
+      path.join(overlayDir, 'Overlay.doc.mjs'),
+      "export const docs = {name: 'Overlay'};",
+    );
+
+    const result = discoverComponents(tmpDir);
+    // OverlayScrim has no doc, so it must NOT be surfaced as a component.
+    expect(result).toEqual({Overlay: ['Overlay']});
+  });
+
+  it('finds the source file for both prefixed and bare names', () => {
+    const srcDir = path.join(tmpDir, 'src');
+
+    const buttonDir = path.join(srcDir, 'Button');
+    fs.mkdirSync(buttonDir, {recursive: true});
+    fs.writeFileSync(path.join(buttonDir, 'Button.tsx'), '// bare');
+    fs.writeFileSync(
+      path.join(buttonDir, 'Button.doc.mjs'),
+      "export const docs = {name: 'Button'};",
+    );
+
+    const cardDir = path.join(srcDir, 'Card');
+    fs.mkdirSync(cardDir, {recursive: true});
+    fs.writeFileSync(path.join(cardDir, 'XDSCard.tsx'), '// prefixed');
+
+    expect(findComponentSource(tmpDir, 'Button')).toBe(
+      path.join(buttonDir, 'Button.tsx'),
+    );
+    expect(findComponentSource(tmpDir, 'Card')).toBe(
+      path.join(cardDir, 'XDSCard.tsx'),
+    );
+  });
 });
 
 describe('findComponentReadme', () => {
@@ -136,7 +225,10 @@ describe('findComponentReadme', () => {
     const srcDir = path.join(tmpDir, 'src');
     const compDir = path.join(srcDir, 'Button');
     fs.mkdirSync(compDir, {recursive: true});
-    fs.writeFileSync(path.join(compDir, 'Button.doc.mjs'), 'export const docs = {}');
+    fs.writeFileSync(
+      path.join(compDir, 'Button.doc.mjs'),
+      'export const docs = {}',
+    );
 
     const result = findComponentReadme(tmpDir, 'Button');
     expect(result).toBe(path.join(compDir, 'Button.doc.mjs'));
@@ -146,7 +238,10 @@ describe('findComponentReadme', () => {
     const srcDir = path.join(tmpDir, 'src');
     const nestedDir = path.join(srcDir, 'Layout', 'Container');
     fs.mkdirSync(nestedDir, {recursive: true});
-    fs.writeFileSync(path.join(nestedDir, 'Container.doc.mjs'), 'export const docs = {}');
+    fs.writeFileSync(
+      path.join(nestedDir, 'Container.doc.mjs'),
+      'export const docs = {}',
+    );
 
     const result = findComponentReadme(tmpDir, 'Container');
     expect(result).toBe(path.join(nestedDir, 'Container.doc.mjs'));
@@ -157,7 +252,10 @@ describe('findComponentReadme', () => {
     const stackDir = path.join(srcDir, 'Stack');
     fs.mkdirSync(stackDir, {recursive: true});
     fs.writeFileSync(path.join(stackDir, 'XDSStackItem.tsx'), '');
-    fs.writeFileSync(path.join(stackDir, 'Stack.doc.mjs'), 'export const docs = {}');
+    fs.writeFileSync(
+      path.join(stackDir, 'Stack.doc.mjs'),
+      'export const docs = {}',
+    );
 
     const result = findComponentReadme(tmpDir, 'StackItem');
     expect(result).toBe(path.join(stackDir, 'Stack.doc.mjs'));
@@ -361,25 +459,31 @@ describe('discoverExternalComponentsGrouped', () => {
     // AppShell with group
     const shellDir = path.join(docsDir, 'AppShell');
     fs.mkdirSync(shellDir, {recursive: true});
-    fs.writeFileSync(path.join(shellDir, 'AppShell.doc.mjs'),
-      "export const docs = {\n  name: 'AppShell',\n  group: 'App Chrome',\n};");
+    fs.writeFileSync(
+      path.join(shellDir, 'AppShell.doc.mjs'),
+      "export const docs = {\n  name: 'AppShell',\n  group: 'App Chrome',\n};",
+    );
 
     // SideNav with same group
     const navDir = path.join(docsDir, 'SideNav');
     fs.mkdirSync(navDir, {recursive: true});
-    fs.writeFileSync(path.join(navDir, 'SideNav.doc.mjs'),
-      "export const docs = {\n  name: 'SideNav',\n  group: 'App Chrome',\n};");
+    fs.writeFileSync(
+      path.join(navDir, 'SideNav.doc.mjs'),
+      "export const docs = {\n  name: 'SideNav',\n  group: 'App Chrome',\n};",
+    );
 
     // Diff with no group
     const diffDir = path.join(docsDir, 'Diff');
     fs.mkdirSync(diffDir, {recursive: true});
-    fs.writeFileSync(path.join(diffDir, 'Diff.doc.mjs'),
-      "export const docs = {\n  name: 'Diff',\n};");
+    fs.writeFileSync(
+      path.join(diffDir, 'Diff.doc.mjs'),
+      "export const docs = {\n  name: 'Diff',\n};",
+    );
 
     const result = discoverExternalComponentsGrouped(docsDir);
     expect(result).toEqual({
       'App Chrome': ['AppShell', 'SideNav'],
-      'Diff': ['Diff'],
+      Diff: ['Diff'],
     });
   });
 
@@ -392,14 +496,18 @@ describe('discoverExternalComponentsGrouped', () => {
     const docsDir = path.join(tmpDir, 'src');
     const compDir = path.join(docsDir, 'Internal');
     fs.mkdirSync(compDir, {recursive: true});
-    fs.writeFileSync(path.join(compDir, 'Internal.doc.mjs'),
-      "export const docs = {\n  name: 'Internal',\n  hidden: true,\n};");
+    fs.writeFileSync(
+      path.join(compDir, 'Internal.doc.mjs'),
+      "export const docs = {\n  name: 'Internal',\n  hidden: true,\n};",
+    );
 
-    fs.writeFileSync(path.join(docsDir, 'Visible.doc.mjs'),
-      "export const docs = {\n  name: 'Visible',\n};");
+    fs.writeFileSync(
+      path.join(docsDir, 'Visible.doc.mjs'),
+      "export const docs = {\n  name: 'Visible',\n};",
+    );
 
     const result = discoverExternalComponentsGrouped(docsDir);
-    expect(result).toEqual({'Visible': ['Visible']});
+    expect(result).toEqual({Visible: ['Visible']});
   });
 
   it('sorts groups and ungrouped alphabetically', () => {
@@ -407,18 +515,24 @@ describe('discoverExternalComponentsGrouped', () => {
 
     const zDir = path.join(docsDir, 'Zebra');
     fs.mkdirSync(zDir, {recursive: true});
-    fs.writeFileSync(path.join(zDir, 'Zebra.doc.mjs'),
-      "export const docs = {\n  name: 'Zebra',\n  group: 'Animals',\n};");
+    fs.writeFileSync(
+      path.join(zDir, 'Zebra.doc.mjs'),
+      "export const docs = {\n  name: 'Zebra',\n  group: 'Animals',\n};",
+    );
 
     const aDir = path.join(docsDir, 'Alpha');
     fs.mkdirSync(aDir, {recursive: true});
-    fs.writeFileSync(path.join(aDir, 'Alpha.doc.mjs'),
-      "export const docs = {\n  name: 'Alpha',\n};");
+    fs.writeFileSync(
+      path.join(aDir, 'Alpha.doc.mjs'),
+      "export const docs = {\n  name: 'Alpha',\n};",
+    );
 
     const bDir = path.join(docsDir, 'Bear');
     fs.mkdirSync(bDir, {recursive: true});
-    fs.writeFileSync(path.join(bDir, 'Bear.doc.mjs'),
-      "export const docs = {\n  name: 'Bear',\n  group: 'Animals',\n};");
+    fs.writeFileSync(
+      path.join(bDir, 'Bear.doc.mjs'),
+      "export const docs = {\n  name: 'Bear',\n  group: 'Animals',\n};",
+    );
 
     const result = discoverExternalComponentsGrouped(docsDir);
     const keys = Object.keys(result);
@@ -474,30 +588,44 @@ describe('findExternalComponentDoc', () => {
   });
 });
 
-
 describe('searchComponents', () => {
   it('finds Collapsible when searching "accordion"', async () => {
-    const {searchComponents, discoverComponents} = await import('./component/index.mjs');
+    const {searchComponents, discoverComponents} =
+      await import('./component/index.mjs');
     const components = discoverComponents('packages/core');
-    const results = await searchComponents('accordion', 'packages/core', components);
+    const results = await searchComponents(
+      'accordion',
+      'packages/core',
+      components,
+    );
     expect(results.length).toBeGreaterThan(0);
     expect(results[0].name).toBe('Collapsible');
     expect(results[0].score).toBe(90);
   });
 
   it('finds Dialog when searching "modal"', async () => {
-    const {searchComponents, discoverComponents} = await import('./component/index.mjs');
+    const {searchComponents, discoverComponents} =
+      await import('./component/index.mjs');
     const components = discoverComponents('packages/core');
-    const results = await searchComponents('modal', 'packages/core', components);
+    const results = await searchComponents(
+      'modal',
+      'packages/core',
+      components,
+    );
     const dialog = results.find(r => r.name === 'Dialog');
     expect(dialog).toBeDefined();
     expect(dialog.score).toBe(90);
   });
 
   it('returns multiple matches for ambiguous terms like "select"', async () => {
-    const {searchComponents, discoverComponents} = await import('./component/index.mjs');
+    const {searchComponents, discoverComponents} =
+      await import('./component/index.mjs');
     const components = discoverComponents('packages/core');
-    const results = await searchComponents('select', 'packages/core', components);
+    const results = await searchComponents(
+      'select',
+      'packages/core',
+      components,
+    );
     const top90 = results.filter(r => r.score === 90);
     expect(top90.length).toBeGreaterThan(1);
     const names = top90.map(r => r.name);
@@ -505,17 +633,27 @@ describe('searchComponents', () => {
   });
 
   it('finds exact name matches with score 100', async () => {
-    const {searchComponents, discoverComponents} = await import('./component/index.mjs');
+    const {searchComponents, discoverComponents} =
+      await import('./component/index.mjs');
     const components = discoverComponents('packages/core');
-    const results = await searchComponents('Button', 'packages/core', components);
+    const results = await searchComponents(
+      'Button',
+      'packages/core',
+      components,
+    );
     expect(results[0].name).toBe('Button');
     expect(results[0].score).toBe(100);
   });
 
   it('returns empty array for complete gibberish', async () => {
-    const {searchComponents, discoverComponents} = await import('./component/index.mjs');
+    const {searchComponents, discoverComponents} =
+      await import('./component/index.mjs');
     const components = discoverComponents('packages/core');
-    const results = await searchComponents('zzzzzzzzzzz', 'packages/core', components);
+    const results = await searchComponents(
+      'zzzzzzzzzzz',
+      'packages/core',
+      components,
+    );
     expect(results.length).toBe(0);
   });
 });

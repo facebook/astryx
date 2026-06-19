@@ -1,14 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSCode} from '@xds/core/CodeBlock';
-import {XDSText} from '@xds/core/Text';
-import {XDSStack} from '@xds/core/Stack';
-import {XDSLink} from '@xds/core/Link';
+import {Code} from '@xds/core/CodeBlock';
+import {Text} from '@xds/core/Text';
+import {Stack} from '@xds/core/Stack';
+import {Link} from '@xds/core/Link';
 
-const meta: Meta<typeof XDSCode> = {
+const meta: Meta<typeof Code> = {
   title: 'Core/Code',
-  component: XDSCode,
+  component: Code,
   tags: ['autodocs'],
   argTypes: {
     children: {
@@ -19,7 +19,7 @@ const meta: Meta<typeof XDSCode> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSCode>;
+type Story = StoryObj<typeof Code>;
 
 export const Default: Story = {
   args: {
@@ -30,86 +30,86 @@ export const Default: Story = {
 export const InParagraph: Story = {
   name: 'Inline in paragraph',
   render: () => (
-    <XDSText type="body">
-      Use <XDSCode>useState</XDSCode> for local state and{' '}
-      <XDSCode>useEffect</XDSCode> for side effects. If you need shared state
-      across components, consider <XDSCode>useContext</XDSCode> or a state
+    <Text type="body">
+      Use <Code>useState</Code> for local state and{' '}
+      <Code>useEffect</Code> for side effects. If you need shared state
+      across components, consider <Code>useContext</Code> or a state
       management library.
-    </XDSText>
+    </Text>
   ),
 };
 
 export const InstructionalParagraph: Story = {
   name: 'Instructional text',
   render: () => (
-    <XDSStack gap={3}>
-      <XDSText type="body">
-        Install the package with <XDSCode>npm install @xds/core</XDSCode>, then
+    <Stack gap={3}>
+      <Text type="body">
+        Install the package with <Code>npm install @xds/core</Code>, then
         import the component:
-      </XDSText>
-      <XDSText type="body">
-        Add <XDSCode>{'<XDSButton label="Save">Save</XDSButton>'}</XDSCode> to
-        your JSX. The <XDSCode>label</XDSCode> prop is required for
+      </Text>
+      <Text type="body">
+        Add <Code>{'<Button label="Save">Save</Button>'}</Code> to
+        your JSX. The <Code>label</Code> prop is required for
         accessibility.
-      </XDSText>
-    </XDSStack>
+      </Text>
+    </Stack>
   ),
 };
 
 export const MixedInline: Story = {
   name: 'Mixed with links and emphasis',
   render: () => (
-    <XDSText type="body">
-      The <XDSCode>XDSThemeProvider</XDSCode> component wraps your app and
+    <Text type="body">
+      The <Code>ThemeProvider</Code> component wraps your app and
       supplies design tokens. See the{' '}
-      <XDSLink href="/docs/theme" isExternalLink={false}>
+      <Link href="/docs/theme" isExternalLink={false}>
         theme docs
-      </XDSLink>{' '}
-      for setup. Set <XDSCode>colorScheme=&quot;dark&quot;</XDSCode> to enable
+      </Link>{' '}
+      for setup. Set <Code>colorScheme=&quot;dark&quot;</Code> to enable
       dark mode.
-    </XDSText>
+    </Text>
   ),
 };
 
 export const VariousContent: Story = {
   name: 'Various code content',
   render: () => (
-    <XDSStack gap={2}>
-      <XDSText type="body">
-        Variable: <XDSCode>const count = 0</XDSCode>
-      </XDSText>
-      <XDSText type="body">
-        Terminal: <XDSCode>pnpm build --watch</XDSCode>
-      </XDSText>
-      <XDSText type="body">
-        CSS property: <XDSCode>border-radius: 8px</XDSCode>
-      </XDSText>
-      <XDSText type="body">
-        File path: <XDSCode>packages/core/src/CodeBlock/XDSCode.tsx</XDSCode>
-      </XDSText>
-      <XDSText type="body">
-        Keyboard shortcut: <XDSCode>Ctrl+Shift+P</XDSCode>
-      </XDSText>
-    </XDSStack>
+    <Stack gap={2}>
+      <Text type="body">
+        Variable: <Code>const count = 0</Code>
+      </Text>
+      <Text type="body">
+        Terminal: <Code>pnpm build --watch</Code>
+      </Text>
+      <Text type="body">
+        CSS property: <Code>border-radius: 8px</Code>
+      </Text>
+      <Text type="body">
+        File path: <Code>packages/core/src/CodeBlock/Code.tsx</Code>
+      </Text>
+      <Text type="body">
+        Keyboard shortcut: <Code>Ctrl+Shift+P</Code>
+      </Text>
+    </Stack>
   ),
 };
 
 export const TextSizes: Story = {
   name: 'Across text sizes',
   render: () => (
-    <XDSStack gap={2}>
-      <XDSText type="large">
-        Heading with <XDSCode>inline code</XDSCode>
-      </XDSText>
-      <XDSText type="body">
-        Body text with <XDSCode>inline code</XDSCode>
-      </XDSText>
-      <XDSText type="supporting">
-        Detail text with <XDSCode>inline code</XDSCode>
-      </XDSText>
-      <XDSText type="label">
-        Label text with <XDSCode>inline code</XDSCode>
-      </XDSText>
-    </XDSStack>
+    <Stack gap={2}>
+      <Text type="large">
+        Heading with <Code>inline code</Code>
+      </Text>
+      <Text type="body">
+        Body text with <Code>inline code</Code>
+      </Text>
+      <Text type="supporting">
+        Detail text with <Code>inline code</Code>
+      </Text>
+      <Text type="label">
+        Label text with <Code>inline code</Code>
+      </Text>
+    </Stack>
   ),
 };

@@ -2,23 +2,23 @@
 
 'use client';
 
-import {XDSList, XDSListItem} from '@xds/core/List';
+import {List, ListItem} from '@xds/core/List';
 
 export default function ListOrderedSteps() {
   return (
-    <XDSList listStyle="decimal">
-      <XDSListItem
+    <List listStyle="decimal">
+      <ListItem
         label="Install the package"
         description="npm install @xds/core"
       />
-      <XDSListItem
+      <ListItem
         label="Import components"
-        description="import { XDSList } from '@xds/core'"
+        description="import { List } from '@xds/core'"
       />
-      <XDSListItem
+      <ListItem
         label="Start building"
         description="Use components in your app"
       />
-    </XDSList>
+    </List>
   );
 }

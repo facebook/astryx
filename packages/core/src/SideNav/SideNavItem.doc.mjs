@@ -17,17 +17,17 @@ export const docs = {
     },
     {
       name: 'as',
-      type: 'XDSLinkComponentType',
+      type: 'LinkComponentType',
       description: 'Custom link component.',
     },
     {
       name: 'icon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: 'Icon displayed in the outline (unselected) variant. See `npx xds docs icons` for valid semantic names.',
     },
     {
       name: 'selectedIcon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: 'Icon displayed when the item is selected (filled variant). See `npx xds docs icons` for valid semantic names.',
     },
     {
@@ -58,14 +58,14 @@ export const docs = {
       description: 'Right-side content such as badges or counts.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'chevronDown',
             size: 'sm',
           },
         },
         {
-          __element: 'XDSBadge',
+          __element: 'Badge',
           props: {
             label: '3',
           },
@@ -78,7 +78,7 @@ export const docs = {
       description: 'Sub-items for nesting.',
       slotElements: [
         {
-          __element: 'XDSSideNavItem',
+          __element: 'SideNavItem',
           props: {
             label: 'Sub Item',
           },
@@ -108,17 +108,17 @@ export const docsZh = {
     },
     {
       name: 'as',
-      type: 'XDSLinkComponentType',
+      type: 'LinkComponentType',
       description: '自定义链接组件。',
     },
     {
       name: 'icon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: '轮廓（未选中）变体中显示的图标。',
     },
     {
       name: 'selectedIcon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: '选中时显示的图标（填充变体）。',
     },
     {

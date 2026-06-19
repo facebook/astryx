@@ -6,7 +6,7 @@ export const doc = {
   exampleFor: 'CommandPaletteItem',
   name: 'CommandPaletteItem',
   displayName: 'Command Palette Item',
-  description: 'Command palette items with custom content via renderItem and as composed XDSCommandPaletteItem with icons, highlighted, selected, and disabled states.',
+  description: 'Command palette items with custom content via renderItem and as composed CommandPaletteItem with icons, highlighted, selected, and disabled states.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 4 / 3,

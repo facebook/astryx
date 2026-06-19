@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSLink} from '@xds/core/Link';
-import {XDSText} from '@xds/core/Text';
+import {Link} from '@xds/core/Link';
+import {Text} from '@xds/core/Text';
 
-const meta: Meta<typeof XDSLink> = {
+const meta: Meta<typeof Link> = {
   title: 'Core/Link',
-  component: XDSLink,
+  component: Link,
   tags: ['autodocs'],
   argTypes: {
     label: {
@@ -53,7 +53,7 @@ const meta: Meta<typeof XDSLink> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSLink>;
+type Story = StoryObj<typeof Link>;
 
 export const Default: Story = {
   args: {
@@ -128,10 +128,10 @@ export const Standalone: Story = {
 
 export const InlineWithText: Story = {
   render: () => (
-    <XDSText type="body">
-      Read the <XDSLink href="/docs">documentation</XDSLink> for more
+    <Text type="body">
+      Read the <Link href="/docs">documentation</Link> for more
       information about using XDS components.
-    </XDSText>
+    </Text>
   ),
 };
 
@@ -145,37 +145,37 @@ export const AllVariants: Story = {
         maxWidth: '600px',
       }}>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-        <XDSLink href="/active" isStandalone>
+        <Link href="/active" isStandalone>
           Active (default)
-        </XDSLink>
-        <XDSLink href="/primary" color="primary" isStandalone>
+        </Link>
+        <Link href="/primary" color="primary" isStandalone>
           Primary
-        </XDSLink>
-        <XDSLink href="/secondary" color="secondary" isStandalone>
+        </Link>
+        <Link href="/secondary" color="secondary" isStandalone>
           Secondary
-        </XDSLink>
-        <XDSLink href="/inherit" color="inherit" isStandalone>
+        </Link>
+        <Link href="/inherit" color="inherit" isStandalone>
           Inherit
-        </XDSLink>
+        </Link>
       </div>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-        <XDSLink href="/underlined" hasUnderline isStandalone>
+        <Link href="/underlined" hasUnderline isStandalone>
           With underline
-        </XDSLink>
-        <XDSLink href="https://example.com" isExternalLink isStandalone>
+        </Link>
+        <Link href="https://example.com" isExternalLink isStandalone>
           External
-        </XDSLink>
-        <XDSLink href="/tooltip" tooltip="Helpful info" isStandalone>
+        </Link>
+        <Link href="/tooltip" tooltip="Helpful info" isStandalone>
           With tooltip
-        </XDSLink>
+        </Link>
       </div>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-        <XDSLink href="/disabled" isDisabled isStandalone>
+        <Link href="/disabled" isDisabled isStandalone>
           Disabled active
-        </XDSLink>
-        <XDSLink href="/disabled" color="secondary" isDisabled isStandalone>
+        </Link>
+        <Link href="/disabled" color="secondary" isDisabled isStandalone>
           Disabled secondary
-        </XDSLink>
+        </Link>
       </div>
     </div>
   ),
@@ -189,19 +189,19 @@ export const ExternalLinks: Story = {
         flexDirection: 'column',
         gap: '8px',
       }}>
-      <XDSLink href="https://github.com" isExternalLink isStandalone>
+      <Link href="https://github.com" isExternalLink isStandalone>
         GitHub
-      </XDSLink>
-      <XDSLink href="https://developer.mozilla.org" isExternalLink isStandalone>
+      </Link>
+      <Link href="https://developer.mozilla.org" isExternalLink isStandalone>
         MDN Web Docs
-      </XDSLink>
-      <XDSLink
+      </Link>
+      <Link
         href="https://react.dev"
         isExternalLink
         hasUnderline
         isStandalone>
         React Documentation
-      </XDSLink>
+      </Link>
     </div>
   ),
 };
@@ -209,25 +209,25 @@ export const ExternalLinks: Story = {
 export const LinksWithTooltips: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-      <XDSLink
+      <Link
         href="/settings"
         tooltip="Configure your account settings"
         isStandalone>
         Settings
-      </XDSLink>
-      <XDSLink
+      </Link>
+      <Link
         href="/profile"
         tooltip="View and edit your profile"
         isStandalone>
         Profile
-      </XDSLink>
-      <XDSLink
+      </Link>
+      <Link
         href="/help"
         tooltip="Get help and support"
         color="secondary"
         isStandalone>
         Help
-      </XDSLink>
+      </Link>
     </div>
   ),
 };
@@ -241,7 +241,7 @@ export const ButtonFallback: Story = {
     docs: {
       description: {
         story:
-          'When `href` is undefined, XDSLink renders a `<button>` with reset styles. ' +
+          'When `href` is undefined, Link renders a `<button>` with reset styles. ' +
           'Visually identical to a link, but semantically correct for actions that do not navigate.',
       },
     },
@@ -273,29 +273,29 @@ export const ButtonFallbackVariants: Story = {
         maxWidth: '600px',
       }}>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-        <XDSLink onClick={() => {}} isStandalone>
+        <Link onClick={() => {}} isStandalone>
           Active (default)
-        </XDSLink>
-        <XDSLink onClick={() => {}} color="primary" isStandalone>
+        </Link>
+        <Link onClick={() => {}} color="primary" isStandalone>
           Primary
-        </XDSLink>
-        <XDSLink onClick={() => {}} color="secondary" isStandalone>
+        </Link>
+        <Link onClick={() => {}} color="secondary" isStandalone>
           Secondary
-        </XDSLink>
-        <XDSLink onClick={() => {}} color="inherit" isStandalone>
+        </Link>
+        <Link onClick={() => {}} color="inherit" isStandalone>
           Inherit
-        </XDSLink>
+        </Link>
       </div>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-        <XDSLink onClick={() => {}} hasUnderline isStandalone>
+        <Link onClick={() => {}} hasUnderline isStandalone>
           With underline
-        </XDSLink>
-        <XDSLink onClick={() => {}} tooltip="Action tooltip" isStandalone>
+        </Link>
+        <Link onClick={() => {}} tooltip="Action tooltip" isStandalone>
           With tooltip
-        </XDSLink>
-        <XDSLink onClick={() => {}} isDisabled isStandalone>
+        </Link>
+        <Link onClick={() => {}} isDisabled isStandalone>
           Disabled
-        </XDSLink>
+        </Link>
       </div>
     </div>
   ),
@@ -312,10 +312,10 @@ export const ButtonFallbackVariants: Story = {
 
 export const ButtonFallbackInline: Story = {
   render: () => (
-    <XDSText type="body">
-      You can <XDSLink onClick={() => alert('Undo!')}>undo this action</XDSLink>{' '}
+    <Text type="body">
+      You can <Link onClick={() => alert('Undo!')}>undo this action</Link>{' '}
       if you change your mind.
-    </XDSText>
+    </Text>
   ),
   parameters: {
     docs: {
@@ -337,9 +337,9 @@ export const LinkVsButtonComparison: Story = {
         gap: '16px',
         maxWidth: '600px',
       }}>
-      <XDSText type="large" size="sm">
+      <Text type="large" size="sm">
         Link (with href) vs Button (without href)
-      </XDSText>
+      </Text>
       <div style={{display: 'flex', gap: '24px', alignItems: 'center'}}>
         <div
           style={{
@@ -348,12 +348,12 @@ export const LinkVsButtonComparison: Story = {
             gap: '4px',
             alignItems: 'center',
           }}>
-          <XDSLink href="/destination" isStandalone>
+          <Link href="/destination" isStandalone>
             I navigate
-          </XDSLink>
-          <XDSText type="body" size="sm" color="secondary">
+          </Link>
+          <Text type="body" size="sm" color="secondary">
             {'<a href="/destination">'}
-          </XDSText>
+          </Text>
         </div>
         <div
           style={{
@@ -362,17 +362,17 @@ export const LinkVsButtonComparison: Story = {
             gap: '4px',
             alignItems: 'center',
           }}>
-          <XDSLink onClick={() => alert('Action!')} isStandalone>
+          <Link onClick={() => alert('Action!')} isStandalone>
             I act
-          </XDSLink>
-          <XDSText type="body" size="sm" color="secondary">
+          </Link>
+          <Text type="body" size="sm" color="secondary">
             {'<button type="button">'}
-          </XDSText>
+          </Text>
         </div>
       </div>
-      <XDSText type="body" size="sm" color="secondary">
+      <Text type="body" size="sm" color="secondary">
         Both look the same, but inspect the DOM to see the semantic difference.
-      </XDSText>
+      </Text>
     </div>
   ),
   parameters: {

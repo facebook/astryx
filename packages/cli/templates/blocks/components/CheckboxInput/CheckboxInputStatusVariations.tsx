@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
-import {XDSStack} from '@xds/core/Layout';
+import {CheckboxInput} from '@xds/core/CheckboxInput';
+import {Stack} from '@xds/core/Layout';
 
 export default function CheckboxInputStatusVariations() {
   const [error, setError] = useState<boolean | 'indeterminate'>(false);
@@ -12,8 +12,8 @@ export default function CheckboxInputStatusVariations() {
   const [success, setSuccess] = useState<boolean | 'indeterminate'>(true);
 
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSCheckboxInput
+    <Stack direction="vertical" gap={4}>
+      <CheckboxInput
         label="Error"
         description="Required field that has not been accepted."
         value={error}
@@ -23,7 +23,7 @@ export default function CheckboxInputStatusVariations() {
           message: 'You must accept the terms to continue',
         }}
       />
-      <XDSCheckboxInput
+      <CheckboxInput
         label="Warning"
         description="Enabled setting with a side effect to be aware of."
         value={warning}
@@ -33,13 +33,13 @@ export default function CheckboxInputStatusVariations() {
           message: 'This data may be shared with partners',
         }}
       />
-      <XDSCheckboxInput
+      <CheckboxInput
         label="Success"
         description="Confirmed setting that has been verified."
         value={success}
         onChange={setSuccess}
         status={{type: 'success', message: 'Your email has been verified'}}
       />
-    </XDSStack>
+    </Stack>
   );
 }

@@ -3,12 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSPagination} from '@xds/core/Pagination';
-import {XDSCard} from '@xds/core/Card';
-import {XDSText} from '@xds/core/Text';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSIcon} from '@xds/core/Icon';
+import {Pagination} from '@xds/core/Pagination';
+import {Card} from '@xds/core/Card';
+import {Text} from '@xds/core/Text';
+import {Stack} from '@xds/core/Layout';
+import {Avatar} from '@xds/core/Avatar';
+import {Icon} from '@xds/core/Icon';
 import {StarIcon} from '@heroicons/react/24/solid';
 import * as stylex from '@stylexjs/stylex';
 
@@ -56,11 +56,11 @@ const styles = stylex.create({
 
 function Stars({count}: {count: number}) {
   return (
-    <XDSStack direction="horizontal" gap={0}>
+    <Stack direction="horizontal" gap={0}>
       {Array.from({length: count}, (_, i) => (
-        <XDSIcon key={i} icon={StarIcon} size="sm" color="warning" />
+        <Icon key={i} icon={StarIcon} size="sm" color="warning" />
       ))}
-    </XDSStack>
+    </Stack>
   );
 }
 
@@ -69,35 +69,35 @@ export default function PaginationDotsCarousel() {
   const review = REVIEWS[page - 1];
 
   return (
-    <XDSStack direction="vertical" gap={3} xstyle={styles.root}>
-      <XDSCard padding={5}>
-        <XDSStack direction="vertical" gap={3}>
+    <Stack direction="vertical" gap={3} xstyle={styles.root}>
+      <Card padding={5}>
+        <Stack direction="vertical" gap={3}>
           <Stars count={review.stars} />
-          <XDSText type="body">{review.quote}</XDSText>
-          <XDSStack
+          <Text type="body">{review.quote}</Text>
+          <Stack
             direction="horizontal"
             gap={3}
             vAlign="center"
             hAlign="start">
-            <XDSAvatar name={review.name} size="small" />
-            <XDSStack direction="vertical" gap={0}>
-              <XDSText type="supporting" weight="bold">
+            <Avatar name={review.name} size="small" />
+            <Stack direction="vertical" gap={0}>
+              <Text type="supporting" weight="bold">
                 {review.name}
-              </XDSText>
-              <XDSText type="supporting" color="secondary">
+              </Text>
+              <Text type="supporting" color="secondary">
                 {review.date}
-              </XDSText>
-            </XDSStack>
-          </XDSStack>
-        </XDSStack>
-      </XDSCard>
-      <XDSPagination
+              </Text>
+            </Stack>
+          </Stack>
+        </Stack>
+      </Card>
+      <Pagination
         page={page}
         onChange={setPage}
         totalPages={REVIEWS.length}
         variant="dots"
         xstyle={styles.pagination}
       />
-    </XDSStack>
+    </Stack>
   );
 }

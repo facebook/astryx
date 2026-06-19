@@ -2,24 +2,24 @@
 
 'use client';
 
-import {XDSBreadcrumbs, XDSBreadcrumbItem} from '@xds/core/Breadcrumbs';
-import {XDSIcon} from '@xds/core/Icon';
+import {Breadcrumbs, BreadcrumbItem} from '@xds/core/Breadcrumbs';
+import {Icon} from '@xds/core/Icon';
 import {HomeIcon, Cog6ToothIcon} from '@heroicons/react/24/outline';
 
 export default function BreadcrumbsWithIcons() {
   return (
-    <XDSBreadcrumbs>
-      <XDSBreadcrumbItem
+    <Breadcrumbs>
+      <BreadcrumbItem
         href="/"
-        startIcon={<XDSIcon icon={HomeIcon} size="sm" />}>
+        startIcon={<Icon icon={HomeIcon} size="sm" />}>
         Home
-      </XDSBreadcrumbItem>
-      <XDSBreadcrumbItem
+      </BreadcrumbItem>
+      <BreadcrumbItem
         href="/settings"
-        startIcon={<XDSIcon icon={Cog6ToothIcon} size="sm" />}>
+        startIcon={<Icon icon={Cog6ToothIcon} size="sm" />}>
         Settings
-      </XDSBreadcrumbItem>
-      <XDSBreadcrumbItem isCurrent>Profile</XDSBreadcrumbItem>
-    </XDSBreadcrumbs>
+      </BreadcrumbItem>
+      <BreadcrumbItem isCurrent>Profile</BreadcrumbItem>
+    </Breadcrumbs>
   );
 }

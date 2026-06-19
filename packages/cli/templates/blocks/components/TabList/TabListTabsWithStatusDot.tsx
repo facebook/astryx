@@ -3,24 +3,24 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
-import {XDSStatusDot} from '@xds/core/StatusDot';
+import {TabList, Tab} from '@xds/core/TabList';
+import {StatusDot} from '@xds/core/StatusDot';
 
 export default function TabListTabsWithStatusDot() {
   const [value, setValue] = useState('production');
   return (
-    <XDSTabList value={value} onChange={setValue}>
-      <XDSTab
+    <TabList value={value} onChange={setValue}>
+      <Tab
         value="production"
         label="Production"
-        endContent={<XDSStatusDot variant="success" label="Healthy" />}
+        endContent={<StatusDot variant="success" label="Healthy" />}
       />
-      <XDSTab
+      <Tab
         value="staging"
         label="Staging"
-        endContent={<XDSStatusDot variant="warning" label="Degraded" />}
+        endContent={<StatusDot variant="warning" label="Degraded" />}
       />
-      <XDSTab value="development" label="Development" />
-    </XDSTabList>
+      <Tab value="development" label="Development" />
+    </TabList>
   );
 }

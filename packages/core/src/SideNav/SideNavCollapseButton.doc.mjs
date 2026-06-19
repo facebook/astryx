@@ -7,12 +7,12 @@ export const docs = {
   subComponentOf: 'SideNav',
   displayName: 'Side Nav Collapse Button',
   isHiddenFromOverview: true,
-  description: 'Toggle button for sidenav collapse. Place inside XDSSideNav (reads context automatically) or outside (pass handleRef). Renders as an icon-only ghost button by default.',
+  description: 'Toggle button for sidenav collapse. Place inside SideNav (reads context automatically) or outside (pass handleRef). Renders as an icon-only ghost button by default.',
   props: [
     {
       name: 'handleRef',
-      type: 'RefObject<XDSSideNavImperativeCollapseHandle | null>',
-      description: 'Imperative collapse handle from XDSSideNav. Only needed when the button is rendered outside the sidenav.',
+      type: 'RefObject<SideNavImperativeCollapseHandle | null>',
+      description: 'Imperative collapse handle from SideNav. Only needed when the button is rendered outside the sidenav.',
     },
     {
       name: 'label',
@@ -31,12 +31,12 @@ export const docsZh = {
   name: 'SideNavCollapseButton',
   isHiddenFromOverview: true,
   displayName: 'Side Nav Collapse Button',
-  description: '侧边栏折叠切换按钮。放置在 XDSSideNav 内部（自动读取上下文）或外部（传入 handleRef）。默认渲染为仅图标的 ghost 按钮。',
+  description: '侧边栏折叠切换按钮。放置在 SideNav 内部（自动读取上下文）或外部（传入 handleRef）。默认渲染为仅图标的 ghost 按钮。',
   props: [
     {
       name: 'handleRef',
-      type: 'RefObject<XDSSideNavImperativeCollapseHandle | null>',
-      description: '来自 XDSSideNav 的命令式折叠句柄。仅在按钮渲染在侧边栏外部时需要。',
+      type: 'RefObject<SideNavImperativeCollapseHandle | null>',
+      description: '来自 SideNav 的命令式折叠句柄。仅在按钮渲染在侧边栏外部时需要。',
     },
     {
       name: 'label',
@@ -55,9 +55,9 @@ export const docsDense = {
   name: 'SideNavCollapseButton',
   isHiddenFromOverview: true,
   displayName: 'Side Nav Collapse Button',
-  description: 'Toggle button for sidenav collapse. Place inside XDSSideNav (reads context) or outside (pass handleRef). Icon-only ghost button by default.',
+  description: 'Toggle button for sidenav collapse. Place inside SideNav (reads context) or outside (pass handleRef). Icon-only ghost button by default.',
   propDescriptions: {
-    handleRef: 'Imperative collapse handle from XDSSideNav. Only needed when button rendered outside sidenav.',
+    handleRef: 'Imperative collapse handle from SideNav. Only needed when button rendered outside sidenav.',
     label: 'Custom label. Text button w/ chevron when provided, icon-only when omitted.',
     children: 'Custom content. Overrides default chevron icon + label.',
   },

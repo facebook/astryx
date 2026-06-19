@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSMultiSelector} from '@xds/core/MultiSelector';
+import {MultiSelector} from '@xds/core/MultiSelector';
 
 const countries = [
   'United States',
@@ -22,7 +22,7 @@ export default function MultiSelectorSearchableMultiSelector() {
   const [value, setValue] = useState<string[]>([]);
   return (
     <div style={{width: 300}}>
-      <XDSMultiSelector
+      <MultiSelector
         label="Countries"
         options={countries}
         value={value}

@@ -35,7 +35,7 @@ export const docs = {
     },
     {
       name: 'options',
-      type: 'XDSSelectorOption[]',
+      type: 'SelectorOption[]',
       description: 'Array of items: strings, objects with value/label/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
       required: true,
     },
@@ -112,7 +112,7 @@ export const docs = {
     },
     {
       name: 'renderOption',
-      type: '(option: XDSSelectorOptionData) => ReactNode',
+      type: '(option: SelectorOptionData) => ReactNode',
       description:
         'Custom render function for each selectable option in the dropdown. Use this instead of JSX children; dividers and sections are rendered by the selector.',
     },
@@ -122,7 +122,7 @@ export const docs = {
       description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
-  components: [{name: 'XDSSelectorOption'}],
+  components: [{name: 'SelectorOption'}],
   usage: {
     description:
       'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options.',
@@ -140,7 +140,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use renderOption for custom option rows. Do not pass XDSSelectorOption directly as JSX children.',
+          'Use renderOption for custom option rows. Do not pass SelectorOption directly as JSX children.',
       },
       {
         guidance: true,
@@ -227,7 +227,7 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          'Use renderOption for custom option rows. Do not pass XDSSelectorOption directly as JSX children.',
+          'Use renderOption for custom option rows. Do not pass SelectorOption directly as JSX children.',
       },
       {
         guidance: true,
@@ -314,7 +314,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'renderOption for custom rows; do not pass XDSSelectorOption as JSX children.',
+          'renderOption for custom rows; do not pass SelectorOption as JSX children.',
       },
       {
         guidance: true,

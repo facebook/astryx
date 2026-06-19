@@ -3,62 +3,62 @@
 'use client';
 
 import {
-  XDSLayout,
-  XDSLayoutHeader,
-  XDSLayoutContent,
-  XDSLayoutFooter,
-  XDSLayoutPanel,
-  XDSHStack,
-  XDSVStack,
+  Layout,
+  LayoutHeader,
+  LayoutContent,
+  LayoutFooter,
+  LayoutPanel,
+  HStack,
+  VStack,
 } from '@xds/core/Layout';
-import {XDSSection} from '@xds/core/Section';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSList, XDSListItem} from '@xds/core/List';
+import {Section} from '@xds/core/Section';
+import {Text, Heading} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Badge} from '@xds/core/Badge';
+import {List, ListItem} from '@xds/core/List';
 
 export default function LayoutShowcase() {
   return (
-    <XDSSection padding={4}>
-      <XDSLayout
+    <Section padding={4}>
+      <Layout
         height="fill"
         header={
-          <XDSLayoutHeader hasDivider>
-            <XDSHStack gap={2} vAlign="center">
-              <XDSHeading level={4}>Projects</XDSHeading>
-              <XDSBadge variant="info" label="3 active" />
-            </XDSHStack>
-          </XDSLayoutHeader>
+          <LayoutHeader hasDivider>
+            <HStack gap={2} vAlign="center">
+              <Heading level={4}>Projects</Heading>
+              <Badge variant="info" label="3 active" />
+            </HStack>
+          </LayoutHeader>
         }
         start={
-          <XDSLayoutPanel hasDivider width={140}>
-            <XDSList>
-              <XDSListItem label="Dashboard" isSelected />
-              <XDSListItem label="Analytics" />
-              <XDSListItem label="Settings" />
-            </XDSList>
-          </XDSLayoutPanel>
+          <LayoutPanel hasDivider width={140}>
+            <List>
+              <ListItem label="Dashboard" isSelected />
+              <ListItem label="Analytics" />
+              <ListItem label="Settings" />
+            </List>
+          </LayoutPanel>
         }
         content={
-          <XDSLayoutContent>
-            <XDSVStack gap={2}>
-              <XDSHeading level={5}>Welcome back</XDSHeading>
-              <XDSText type="body" color="secondary">
+          <LayoutContent>
+            <VStack gap={2}>
+              <Heading level={5}>Welcome back</Heading>
+              <Text type="body" color="secondary">
                 You have 3 active projects and 2 pending reviews.
-              </XDSText>
-            </XDSVStack>
-          </XDSLayoutContent>
+              </Text>
+            </VStack>
+          </LayoutContent>
         }
         footer={
-          <XDSLayoutFooter hasDivider>
-            <XDSHStack gap={2} hAlign="end">
-              <XDSButton label="New Project" variant="primary">
+          <LayoutFooter hasDivider>
+            <HStack gap={2} hAlign="end">
+              <Button label="New Project" variant="primary">
                 New Project
-              </XDSButton>
-            </XDSHStack>
-          </XDSLayoutFooter>
+              </Button>
+            </HStack>
+          </LayoutFooter>
         }
       />
-    </XDSSection>
+    </Section>
   );
 }

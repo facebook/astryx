@@ -4,7 +4,7 @@
  * @file stack.stylex.ts
  * @input Uses @stylexjs/stylex, spacing from theme
  * @output StyleX utility for stack (flex container) styling
- * @position Layout utility; used by XDSHStack, XDSVStack components
+ * @position Layout utility; used by HStack, VStack components
  *
  * SYNC: When modified, update /packages/core/src/Stack/Stack.doc.mjs
  */

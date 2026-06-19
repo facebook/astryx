@@ -9,14 +9,14 @@ import {
   type ReactNode,
 } from 'react';
 
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSDivider} from '@xds/core';
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
-import {XDSSideNav, XDSSideNavItem} from '@xds/core/SideNav';
-import {XDSBreadcrumbs, XDSBreadcrumbItem} from '@xds/core/Breadcrumbs';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
-import {XDSLink, XDSLinkProvider} from '@xds/core/Link';
+import {VStack} from '@xds/core/Layout';
+import {Text, Heading} from '@xds/core/Text';
+import {Divider} from '@xds/core';
+import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
+import {SideNav, SideNavItem} from '@xds/core/SideNav';
+import {Breadcrumbs, BreadcrumbItem} from '@xds/core/Breadcrumbs';
+import {TabList, Tab} from '@xds/core/TabList';
+import {Link, LinkProvider} from '@xds/core/Link';
 import * as stylex from '@stylexjs/stylex';
 
 // =============================================================================
@@ -114,193 +114,193 @@ export default function PolymorphicLinkPage() {
 
   return (
     <div {...stylex.props(styles.container)}>
-      <XDSVStack gap={6}>
-        <XDSVStack gap={2}>
-          <XDSHeading level={1}>Polymorphic Link</XDSHeading>
-          <XDSText type="body" color="secondary">
+      <VStack gap={6}>
+        <VStack gap={2}>
+          <Heading level={1}>Polymorphic Link</Heading>
+          <Text type="body" color="secondary">
             XDS components that render links can use a custom link component
-            instead of native {'<a>'}. Set it globally via XDSLinkProvider or
+            instead of native {'<a>'}. Set it globally via LinkProvider or
             per-component via the{' '}
-            <XDSText type="body" weight="bold">
+            <Text type="body" weight="bold">
               as
-            </XDSText>{' '}
+            </Text>{' '}
             prop.
-          </XDSText>
-        </XDSVStack>
+          </Text>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
         {/* ================================================================= */}
         {/* Section 1: Provider Demo */}
         {/* ================================================================= */}
-        <XDSVStack gap={3}>
-          <XDSHeading level={2}>Provider Demo</XDSHeading>
-          <XDSText type="body" color="secondary">
+        <VStack gap={3}>
+          <Heading level={2}>Provider Demo</Heading>
+          <Text type="body" color="secondary">
             All components below are wrapped in{' '}
-            <XDSText type="body" weight="bold">
-              XDSLinkProvider
-            </XDSText>{' '}
+            <Text type="body" weight="bold">
+              LinkProvider
+            </Text>{' '}
             with a simulated Next.js Link (blue dashed outline). Open the
             browser console to see navigation logs.
-          </XDSText>
+          </Text>
 
-          <XDSLinkProvider component={SimulatedNextLink}>
-            <XDSVStack gap={4}>
+          <LinkProvider component={SimulatedNextLink}>
+            <VStack gap={4}>
               {/* TopNav */}
-              <XDSVStack gap={1}>
-                <XDSText type="supporting" weight="bold">
-                  XDSTopNav
-                </XDSText>
+              <VStack gap={1}>
+                <Text type="supporting" weight="bold">
+                  TopNav
+                </Text>
                 <div {...stylex.props(styles.navWrapper)}>
-                  <XDSTopNav
+                  <TopNav
                     label="Provider demo navigation"
-                    heading={<XDSTopNavHeading heading="My App" />}
+                    heading={<TopNavHeading heading="My App" />}
                     startContent={
                       <>
-                        <XDSTopNavItem label="Home" href="/" isSelected />
-                        <XDSTopNavItem label="Products" href="/products" />
-                        <XDSTopNavItem label="About" href="/about" />
+                        <TopNavItem label="Home" href="/" isSelected />
+                        <TopNavItem label="Products" href="/products" />
+                        <TopNavItem label="About" href="/about" />
                       </>
                     }
                   />
                 </div>
-              </XDSVStack>
+              </VStack>
 
               {/* Breadcrumbs */}
-              <XDSVStack gap={1}>
-                <XDSText type="supporting" weight="bold">
-                  XDSBreadcrumbs
-                </XDSText>
-                <XDSBreadcrumbs label="Provider breadcrumbs">
-                  <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
-                  <XDSBreadcrumbItem href="/products">
+              <VStack gap={1}>
+                <Text type="supporting" weight="bold">
+                  Breadcrumbs
+                </Text>
+                <Breadcrumbs label="Provider breadcrumbs">
+                  <BreadcrumbItem href="/">Home</BreadcrumbItem>
+                  <BreadcrumbItem href="/products">
                     Products
-                  </XDSBreadcrumbItem>
-                  <XDSBreadcrumbItem isCurrent>Widget</XDSBreadcrumbItem>
-                </XDSBreadcrumbs>
-              </XDSVStack>
+                  </BreadcrumbItem>
+                  <BreadcrumbItem isCurrent>Widget</BreadcrumbItem>
+                </Breadcrumbs>
+              </VStack>
 
               {/* TabList */}
-              <XDSVStack gap={1}>
-                <XDSText type="supporting" weight="bold">
-                  XDSTabList (with href)
-                </XDSText>
-                <XDSTabList value={tab} onChange={setTab}>
-                  <XDSTab value="overview" label="Overview" href="/overview" />
-                  <XDSTab value="details" label="Details" href="/details" />
-                  <XDSTab value="reviews" label="Reviews" href="/reviews" />
-                </XDSTabList>
-              </XDSVStack>
+              <VStack gap={1}>
+                <Text type="supporting" weight="bold">
+                  TabList (with href)
+                </Text>
+                <TabList value={tab} onChange={setTab}>
+                  <Tab value="overview" label="Overview" href="/overview" />
+                  <Tab value="details" label="Details" href="/details" />
+                  <Tab value="reviews" label="Reviews" href="/reviews" />
+                </TabList>
+              </VStack>
 
               {/* SideNav */}
-              <XDSVStack gap={1}>
-                <XDSText type="supporting" weight="bold">
-                  XDSSideNav
-                </XDSText>
+              <VStack gap={1}>
+                <Text type="supporting" weight="bold">
+                  SideNav
+                </Text>
                 <div {...stylex.props(styles.sidenavWrapper)}>
-                  <XDSSideNav aria-label="Provider sidenav">
-                    <XDSSideNavItem
+                  <SideNav aria-label="Provider sidenav">
+                    <SideNavItem
                       label="Dashboard"
                       href="/dashboard"
                       isSelected
                     />
-                    <XDSSideNavItem label="Settings" href="/settings" />
-                    <XDSSideNavItem label="Profile" href="/profile" />
-                  </XDSSideNav>
+                    <SideNavItem label="Settings" href="/settings" />
+                    <SideNavItem label="Profile" href="/profile" />
+                  </SideNav>
                 </div>
-              </XDSVStack>
+              </VStack>
 
-              {/* XDSLink */}
-              <XDSVStack gap={1}>
-                <XDSText type="supporting" weight="bold">
-                  XDSLink
-                </XDSText>
-                <XDSLink href="/docs">
+              {/* Link */}
+              <VStack gap={1}>
+                <Text type="supporting" weight="bold">
+                  Link
+                </Text>
+                <Link href="/docs">
                   Go to documentation
-                </XDSLink>
-              </XDSVStack>
-            </XDSVStack>
-          </XDSLinkProvider>
-        </XDSVStack>
+                </Link>
+              </VStack>
+            </VStack>
+          </LinkProvider>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
         {/* ================================================================= */}
         {/* Section 2: Per-component `as` override */}
         {/* ================================================================= */}
-        <XDSVStack gap={3}>
-          <XDSHeading level={2}>Per-Component Override</XDSHeading>
-          <XDSText type="body" color="secondary">
+        <VStack gap={3}>
+          <Heading level={2}>Per-Component Override</Heading>
+          <Text type="body" color="secondary">
             The{' '}
-            <XDSText type="body" weight="bold">
+            <Text type="body" weight="bold">
               as
-            </XDSText>{' '}
+            </Text>{' '}
             prop overrides the provider for a single component. Below, the
             provider sets the blue link, but &quot;Products&quot; uses a green
             link via{' '}
-            <XDSText type="body" weight="bold">
+            <Text type="body" weight="bold">
               as={'{GreenLink}'}
-            </XDSText>
+            </Text>
             .
-          </XDSText>
+          </Text>
 
-          <XDSLinkProvider component={SimulatedNextLink}>
+          <LinkProvider component={SimulatedNextLink}>
             <div {...stylex.props(styles.navWrapper)}>
-              <XDSTopNav
+              <TopNav
                 label="Override demo navigation"
-                heading={<XDSTopNavHeading heading="Override Demo" />}
+                heading={<TopNavHeading heading="Override Demo" />}
                 startContent={
                   <>
-                    <XDSTopNavItem label="Home" href="/" isSelected />
-                    <XDSTopNavItem
+                    <TopNavItem label="Home" href="/" isSelected />
+                    <TopNavItem
                       label="Products"
                       href="/products"
                       as={GreenLink}
                     />
-                    <XDSTopNavItem label="About" href="/about" />
+                    <TopNavItem label="About" href="/about" />
                   </>
                 }
               />
             </div>
-          </XDSLinkProvider>
-        </XDSVStack>
+          </LinkProvider>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
         {/* ================================================================= */}
         {/* Section 3: Default behavior (no provider) */}
         {/* ================================================================= */}
-        <XDSVStack gap={3}>
-          <XDSHeading level={2}>Default Behavior</XDSHeading>
-          <XDSText type="body" color="secondary">
+        <VStack gap={3}>
+          <Heading level={2}>Default Behavior</Heading>
+          <Text type="body" color="secondary">
             Without a provider or{' '}
-            <XDSText type="body" weight="bold">
+            <Text type="body" weight="bold">
               as
-            </XDSText>{' '}
+            </Text>{' '}
             prop, components render native {'<a>'} elements as usual.
-          </XDSText>
+          </Text>
 
           <div {...stylex.props(styles.navWrapper)}>
-            <XDSTopNav
+            <TopNav
               label="Default navigation"
-              heading={<XDSTopNavHeading heading="Default" />}
+              heading={<TopNavHeading heading="Default" />}
               startContent={
                 <>
-                  <XDSTopNavItem label="Home" href="#home" isSelected />
-                  <XDSTopNavItem label="Products" href="#products" />
-                  <XDSTopNavItem label="About" href="#about" />
+                  <TopNavItem label="Home" href="#home" isSelected />
+                  <TopNavItem label="Products" href="#products" />
+                  <TopNavItem label="About" href="#about" />
                 </>
               }
             />
           </div>
 
-          <XDSBreadcrumbs label="Default breadcrumbs">
-            <XDSBreadcrumbItem href="#home">Home</XDSBreadcrumbItem>
-            <XDSBreadcrumbItem href="#products">Products</XDSBreadcrumbItem>
-            <XDSBreadcrumbItem isCurrent>Current Page</XDSBreadcrumbItem>
-          </XDSBreadcrumbs>
-        </XDSVStack>
-      </XDSVStack>
+          <Breadcrumbs label="Default breadcrumbs">
+            <BreadcrumbItem href="#home">Home</BreadcrumbItem>
+            <BreadcrumbItem href="#products">Products</BreadcrumbItem>
+            <BreadcrumbItem isCurrent>Current Page</BreadcrumbItem>
+          </Breadcrumbs>
+        </VStack>
+      </VStack>
     </div>
   );
 }

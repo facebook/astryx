@@ -10,8 +10,8 @@ import {
   useXDSChartColors,
   type XDSChartStreamGLHandle,
 } from '@xds/lab';
-import {XDSStack, XDSText} from '@xds/core';
-import {XDSHeading} from '@xds/core/Text';
+import {Stack, Text} from '@xds/core';
+import {Heading} from '@xds/core/Text';
 
 const meta: Meta = {
   title: 'Lab/ChartStreamPerf',
@@ -71,15 +71,15 @@ export const XDomainUpdateCost: StoryObj = {
     }, []);
 
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Performance: xDomain on every frame</XDSHeading>
-        <XDSStack direction="horizontal" gap={6}>
-          <XDSText type="label">FPS: {fps}</XDSText>
-          <XDSText type="label">Frame: {renderMs}ms</XDSText>
-          <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Performance: xDomain on every frame</Heading>
+        <Stack direction="horizontal" gap={6}>
+          <Text type="label">FPS: {fps}</Text>
+          <Text type="label">Frame: {renderMs}ms</Text>
+          <Text type="supporting" color="secondary">
             xDomain updates via setState on every requestAnimationFrame
-          </XDSText>
-        </XDSStack>
+          </Text>
+        </Stack>
         <XDSChart
           data={[
             {t: 0, v: 0},
@@ -100,7 +100,7 @@ export const XDomainUpdateCost: StoryObj = {
             lineWidth={1.5}
           />
         </XDSChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -159,17 +159,17 @@ export const ThrottledXDomain: StoryObj = {
     }, []);
 
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>
           Performance: throttled xDomain (500ms)
-        </XDSHeading>
-        <XDSStack direction="horizontal" gap={6}>
-          <XDSText type="label">FPS: {fps}</XDSText>
-          <XDSText type="label">Frame: {renderMs}ms</XDSText>
-          <XDSText type="supporting" color="secondary">
+        </Heading>
+        <Stack direction="horizontal" gap={6}>
+          <Text type="label">FPS: {fps}</Text>
+          <Text type="label">Frame: {renderMs}ms</Text>
+          <Text type="supporting" color="secondary">
             xDomain updates every 500ms; WebGL draws every frame
-          </XDSText>
-        </XDSStack>
+          </Text>
+        </Stack>
         <XDSChart
           data={[
             {t: 0, v: 0},
@@ -190,7 +190,7 @@ export const ThrottledXDomain: StoryObj = {
             lineWidth={1.5}
           />
         </XDSChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -258,11 +258,11 @@ export const StressTest: StoryObj = {
 
     const c = colors.categorical(3);
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>
           Stress: 3 streams + axes + grid @ 60fps
-        </XDSHeading>
-        <XDSText type="label">FPS: {fps}</XDSText>
+        </Heading>
+        <Text type="label">FPS: {fps}</Text>
         <XDSChart
           data={[
             {t: 0, v: 0},
@@ -298,7 +298,7 @@ export const StressTest: StoryObj = {
             opacity={0.8}
           />
         </XDSChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };

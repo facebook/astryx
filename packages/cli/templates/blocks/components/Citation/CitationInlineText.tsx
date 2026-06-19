@@ -2,31 +2,31 @@
 
 'use client';
 
-import {XDSCitation} from '@xds/core/Citation';
-import {XDSText} from '@xds/core/Text';
-import {XDSStack} from '@xds/core/Layout';
+import {Citation} from '@xds/core/Citation';
+import {Text} from '@xds/core/Text';
+import {Stack} from '@xds/core/Layout';
 
 export default function CitationInlineText() {
   return (
-    <XDSStack direction="vertical" gap={4} style={{maxWidth: 560}}>
-      <XDSText type="body">
+    <Stack direction="vertical" gap={4} style={{maxWidth: 560}}>
+      <Text type="body">
         React uses a virtual DOM to minimize expensive DOM operations
-        <XDSCitation
+        <Citation
           source={{title: 'React Documentation', url: 'https://react.dev'}}
           number={1}
           variant="number"
         />
         . This approach was inspired by earlier functional UI frameworks
-        <XDSCitation
+        <Citation
           source={{title: 'Elm Architecture', url: 'https://guide.elm-lang.org/architecture/'}}
           number={2}
           variant="number"
         />
         .
-      </XDSText>
-      <XDSText type="body">
+      </Text>
+      <Text type="body">
         StyleX compiles atomic CSS at build time for optimal performance
-        <XDSCitation
+        <Citation
           source={{
             title: 'StyleX Documentation',
             url: 'https://stylexjs.com',
@@ -36,7 +36,7 @@ export default function CitationInlineText() {
           variant="label"
         />
         .
-      </XDSText>
-    </XDSStack>
+      </Text>
+    </Stack>
   );
 }

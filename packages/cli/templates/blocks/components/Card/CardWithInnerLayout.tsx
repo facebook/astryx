@@ -2,43 +2,43 @@
 
 'use client';
 
-import {XDSCard} from '@xds/core/Card';
+import {Card} from '@xds/core/Card';
 import {
-  XDSLayout,
-  XDSLayoutHeader,
-  XDSLayoutContent,
-  XDSLayoutFooter,
-  XDSHStack,
+  Layout,
+  LayoutHeader,
+  LayoutContent,
+  LayoutFooter,
+  HStack,
 } from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSHeading, XDSText} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Heading, Text} from '@xds/core/Text';
 
 export default function CardWithInnerLayout() {
   return (
-    <XDSCard width={380}>
-      <XDSLayout
+    <Card width={380}>
+      <Layout
         header={
-          <XDSLayoutHeader hasDivider>
-            <XDSHeading level={3}>Edit Profile</XDSHeading>
-          </XDSLayoutHeader>
+          <LayoutHeader hasDivider>
+            <Heading level={3}>Edit Profile</Heading>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent>
-            <XDSText type="body" color="secondary">
+          <LayoutContent>
+            <Text type="body" color="secondary">
               Update your display name, bio, and profile photo. Changes are
               saved immediately.
-            </XDSText>
-          </XDSLayoutContent>
+            </Text>
+          </LayoutContent>
         }
         footer={
-          <XDSLayoutFooter hasDivider>
-            <XDSHStack gap={2} hAlign="end">
-              <XDSButton label="Cancel" variant="ghost" />
-              <XDSButton label="Save changes" variant="primary" />
-            </XDSHStack>
-          </XDSLayoutFooter>
+          <LayoutFooter hasDivider>
+            <HStack gap={2} hAlign="end">
+              <Button label="Cancel" variant="ghost" />
+              <Button label="Save changes" variant="primary" />
+            </HStack>
+          </LayoutFooter>
         }
       />
-    </XDSCard>
+    </Card>
   );
 }

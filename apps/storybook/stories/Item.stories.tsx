@@ -3,12 +3,12 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSItem} from '@xds/core/Item';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSText} from '@xds/core/Text';
-import {XDSStack} from '@xds/core/Layout';
+import {Item} from '@xds/core/Item';
+import {Avatar} from '@xds/core/Avatar';
+import {Badge} from '@xds/core/Badge';
+import {Icon} from '@xds/core/Icon';
+import {Text} from '@xds/core/Text';
+import {Stack} from '@xds/core/Layout';
 
 const storyStyles = stylex.create({
   iconCircle: {
@@ -31,9 +31,9 @@ import {
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSItem> = {
+const meta: Meta<typeof Item> = {
   title: 'Core/Item',
-  component: XDSItem,
+  component: Item,
   tags: ['autodocs'],
   argTypes: {
     align: {control: 'select', options: ['center', 'start']},
@@ -42,16 +42,16 @@ const meta: Meta<typeof XDSItem> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSItem>;
+type Story = StoryObj<typeof Item>;
 
 /** Basic item with all slots populated. */
 export const Default: Story = {
   render: () => (
-    <XDSItem
-      startContent={<XDSIcon icon={UserIcon} size="sm" />}
+    <Item
+      startContent={<Icon icon={UserIcon} size="sm" />}
       label="Alice Johnson"
       description="Software Engineer"
-      endContent={<XDSBadge label="Admin" />}
+      endContent={<Badge label="Admin" />}
     />
   ),
 };
@@ -59,109 +59,109 @@ export const Default: Story = {
 /** Contact list with avatars and roles. */
 export const ContactList: Story = {
   render: () => (
-    <XDSStack gap={0}>
-      <XDSItem
-        startContent={<XDSAvatar name="Alice Johnson" size={40} />}
+    <Stack gap={0}>
+      <Item
+        startContent={<Avatar name="Alice Johnson" size={40} />}
         label="Alice Johnson"
         description="Engineering Lead"
-        endContent={<XDSBadge label="Admin" />}
+        endContent={<Badge label="Admin" />}
         onClick={() => {}}
       />
-      <XDSItem
-        startContent={<XDSAvatar name="Bob Smith" size={40} />}
+      <Item
+        startContent={<Avatar name="Bob Smith" size={40} />}
         label="Bob Smith"
         description="Product Designer"
         onClick={() => {}}
       />
-      <XDSItem
-        startContent={<XDSAvatar name="Carol Williams" size={40} />}
+      <Item
+        startContent={<Avatar name="Carol Williams" size={40} />}
         label="Carol Williams"
         description="Data Scientist"
-        endContent={<XDSText color="secondary">Away</XDSText>}
+        endContent={<Text color="secondary">Away</Text>}
         onClick={() => {}}
       />
-    </XDSStack>
+    </Stack>
   ),
 };
 
 /** Notification inbox with timestamps and truncation. */
 export const Notifications: Story = {
   render: () => (
-    <XDSStack gap={0}>
-      <XDSItem
-        startContent={<XDSAvatar name="Alice" size={40} />}
+    <Stack gap={0}>
+      <Item
+        startContent={<Avatar name="Alice" size={40} />}
         label={
           <>
             <b>Alice</b> commented on your PR
           </>
         }
         description="Looks good, one nit on the error handling..."
-        endContent={<XDSText color="secondary">2h ago</XDSText>}
+        endContent={<Text color="secondary">2h ago</Text>}
         descriptionLines={1}
         onClick={() => {}}
       />
-      <XDSItem
+      <Item
         startContent={
           <div {...stylex.props(storyStyles.iconCircle)}>
-            <XDSIcon icon={BellIcon} size="sm" />
+            <Icon icon={BellIcon} size="sm" />
           </div>
         }
         label="Build completed successfully"
         description="Pipeline #4521 — all 42 tests passed"
-        endContent={<XDSText color="secondary">5h ago</XDSText>}
+        endContent={<Text color="secondary">5h ago</Text>}
         descriptionLines={1}
         onClick={() => {}}
       />
-    </XDSStack>
+    </Stack>
   ),
 };
 
 /** Compact menu items with icons. */
 export const CompactMenu: Story = {
   render: () => (
-    <XDSStack gap={0}>
-      <XDSItem
-        startContent={<XDSIcon icon={PencilSquareIcon} size="sm" />}
+    <Stack gap={0}>
+      <Item
+        startContent={<Icon icon={PencilSquareIcon} size="sm" />}
         label="Edit"
         density="compact"
         onClick={() => {}}
       />
-      <XDSItem
-        startContent={<XDSIcon icon={Cog6ToothIcon} size="sm" />}
+      <Item
+        startContent={<Icon icon={Cog6ToothIcon} size="sm" />}
         label="Settings"
         description="Manage your preferences"
         density="compact"
         onClick={() => {}}
       />
-      <XDSItem
-        startContent={<XDSIcon icon={ChatBubbleLeftIcon} size="sm" />}
+      <Item
+        startContent={<Icon icon={ChatBubbleLeftIcon} size="sm" />}
         label="Messages"
         density="compact"
-        endContent={<XDSBadge label="12" />}
+        endContent={<Badge label="12" />}
         onClick={() => {}}
       />
-    </XDSStack>
+    </Stack>
   ),
 };
 
 /** Spacious item rows for roomy layouts. */
 export const SpaciousRows: Story = {
   render: () => (
-    <XDSStack gap={0}>
-      <XDSItem
-        startContent={<XDSIcon icon={BellIcon} size="sm" />}
+    <Stack gap={0}>
+      <Item
+        startContent={<Icon icon={BellIcon} size="sm" />}
         label="Product updates"
         description="Major announcements and release notes"
         density="spacious"
       />
-      <XDSItem
-        startContent={<XDSIcon icon={ChatBubbleLeftIcon} size="sm" />}
+      <Item
+        startContent={<Icon icon={ChatBubbleLeftIcon} size="sm" />}
         label="Team messages"
         description="Direct messages, mentions, and thread replies"
-        endContent={<XDSBadge label="4" />}
+        endContent={<Badge label="4" />}
         density="spacious"
       />
-    </XDSStack>
+    </Stack>
   ),
 };
 
@@ -181,32 +181,32 @@ export const FileBrowser: Story = {
       });
 
     return (
-      <XDSStack gap={0}>
-        <XDSItem
-          startContent={<XDSIcon icon={DocumentIcon} size="sm" />}
+      <Stack gap={0}>
+        <Item
+          startContent={<Icon icon={DocumentIcon} size="sm" />}
           label="design-spec.pdf"
           description="Modified 2 hours ago"
-          endContent={<XDSText color="secondary">2.4 MB</XDSText>}
+          endContent={<Text color="secondary">2.4 MB</Text>}
           isSelected={selected.has('doc1')}
           onClick={() => toggle('doc1')}
         />
-        <XDSItem
-          startContent={<XDSIcon icon={DocumentIcon} size="sm" />}
+        <Item
+          startContent={<Icon icon={DocumentIcon} size="sm" />}
           label="architecture-diagram.png"
           description="Modified yesterday"
-          endContent={<XDSText color="secondary">1.2 MB</XDSText>}
+          endContent={<Text color="secondary">1.2 MB</Text>}
           isSelected={selected.has('doc2')}
           onClick={() => toggle('doc2')}
         />
-        <XDSItem
-          startContent={<XDSIcon icon={DocumentIcon} size="sm" />}
+        <Item
+          startContent={<Icon icon={DocumentIcon} size="sm" />}
           label="meeting-notes.md"
           description="Modified 3 days ago"
-          endContent={<XDSText color="secondary">48 KB</XDSText>}
+          endContent={<Text color="secondary">48 KB</Text>}
           isSelected={selected.has('doc3')}
           onClick={() => toggle('doc3')}
         />
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -214,9 +214,9 @@ export const FileBrowser: Story = {
 /** Search results with highlighted terms and links. */
 export const SearchResults: Story = {
   render: () => (
-    <XDSStack gap={0}>
-      <XDSItem
-        startContent={<XDSIcon icon={MagnifyingGlassIcon} size="sm" />}
+    <Stack gap={0}>
+      <Item
+        startContent={<Icon icon={MagnifyingGlassIcon} size="sm" />}
         label={
           <>
             XDS <b>Button</b> Component
@@ -226,8 +226,8 @@ export const SearchResults: Story = {
         descriptionLines={1}
         href="/docs/button"
       />
-      <XDSItem
-        startContent={<XDSIcon icon={MagnifyingGlassIcon} size="sm" />}
+      <Item
+        startContent={<Icon icon={MagnifyingGlassIcon} size="sm" />}
         label={
           <>
             XDS <b>Button</b>Group
@@ -237,40 +237,40 @@ export const SearchResults: Story = {
         descriptionLines={1}
         href="/docs/button-group"
       />
-    </XDSStack>
+    </Stack>
   ),
 };
 
 /** Disabled items. */
 export const Disabled: Story = {
   render: () => (
-    <XDSStack gap={0}>
-      <XDSItem
-        startContent={<XDSIcon icon={UserIcon} size="sm" />}
+    <Stack gap={0}>
+      <Item
+        startContent={<Icon icon={UserIcon} size="sm" />}
         label="Active item"
         description="This item is interactive"
         onClick={() => {}}
       />
-      <XDSItem
-        startContent={<XDSIcon icon={UserIcon} size="sm" />}
+      <Item
+        startContent={<Icon icon={UserIcon} size="sm" />}
         label="Disabled item"
         description="This item cannot be interacted with"
         onClick={() => {}}
         isDisabled
       />
-    </XDSStack>
+    </Stack>
   ),
 };
 
 /** Top-aligned layout for multi-line content. */
 export const AlignStart: Story = {
   render: () => (
-    <XDSItem
+    <Item
       align="start"
-      startContent={<XDSAvatar name="Alice" size={40} />}
+      startContent={<Avatar name="Alice" size={40} />}
       label="Alice Johnson"
       description="This is a longer description that wraps across multiple lines to demonstrate the align=start behavior, which positions the start and end content at the top rather than vertically centering them."
-      endContent={<XDSText color="secondary">Just now</XDSText>}
+      endContent={<Text color="secondary">Just now</Text>}
     />
   ),
 };

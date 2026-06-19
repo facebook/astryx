@@ -2,17 +2,17 @@
 
 'use client';
 
-import {XDSStatusDot} from '@xds/core/StatusDot';
-import {XDSHStack} from '@xds/core/Layout';
+import {StatusDot} from '@xds/core/StatusDot';
+import {HStack} from '@xds/core/Layout';
 
 export default function StatusDotPulsing() {
   return (
-    <XDSHStack gap={2} vAlign="center">
-      <XDSStatusDot variant="success" label="Live" isPulsing />
-      <XDSStatusDot variant="warning" label="Processing" isPulsing />
-      <XDSStatusDot variant="error" label="Error" isPulsing />
-      <XDSStatusDot variant="accent" label="Processing" isPulsing />
-      <XDSStatusDot variant="neutral" label="Error" isPulsing />
-    </XDSHStack>
+    <HStack gap={2} vAlign="center">
+      <StatusDot variant="success" label="Live" isPulsing />
+      <StatusDot variant="warning" label="Processing" isPulsing />
+      <StatusDot variant="error" label="Error" isPulsing />
+      <StatusDot variant="accent" label="Processing" isPulsing />
+      <StatusDot variant="neutral" label="Error" isPulsing />
+    </HStack>
   );
 }

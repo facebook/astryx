@@ -3,12 +3,12 @@
 'use client';
 
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSCard} from '@xds/core/Card';
-import {XDSLayout, XDSLayoutContent, XDSLayoutPanel} from '@xds/core/Layout';
-import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
-import {XDSVStack} from '@xds/core/Stack';
-import {XDSText} from '@xds/core/Text';
+import {Grid} from '@xds/core/Grid';
+import {Card} from '@xds/core/Card';
+import {Layout, LayoutContent, LayoutPanel} from '@xds/core/Layout';
+import {useResizable, ResizeHandle} from '@xds/core/Resizable';
+import {VStack} from '@xds/core/Stack';
+import {Text} from '@xds/core/Text';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
@@ -27,46 +27,46 @@ const teams = [
 ];
 
 export default function GridResponsiveAutoFit() {
-  const gridPanel = useXDSResizable({
+  const gridPanel = useResizable({
     defaultSize: 480,
     minSizePx: 100,
     maxSizePx: 480,
   });
 
   return (
-    <XDSCard
+    <Card
       variant="muted"
       padding={0}
       height={400}
       width="100%"
       style={{maxWidth: 500}}>
-      <XDSLayout
+      <Layout
         height="fill"
         start={
           <>
-            <XDSLayoutPanel
+            <LayoutPanel
               width={gridPanel.size}
               hasDivider={false}
               xstyle={styles.panel}>
-              <XDSGrid
+              <Grid
                 columns={{minWidth: 180, repeat: 'fit'}}
                 gap={4}
                 width="100%">
                 {teams.map(team => (
-                  <XDSCard key={team.name}>
-                    <XDSVStack gap={1}>
-                      <XDSText type="label" display="block">
+                  <Card key={team.name}>
+                    <VStack gap={1}>
+                      <Text type="label" display="block">
                         {team.name}
-                      </XDSText>
-                      <XDSText type="supporting" display="block">
+                      </Text>
+                      <Text type="supporting" display="block">
                         {team.members} members
-                      </XDSText>
-                    </XDSVStack>
-                  </XDSCard>
+                      </Text>
+                    </VStack>
+                  </Card>
                 ))}
-              </XDSGrid>
-            </XDSLayoutPanel>
-            <XDSResizeHandle
+              </Grid>
+            </LayoutPanel>
+            <ResizeHandle
               direction="horizontal"
               hasDivider
               isAlwaysVisible
@@ -75,8 +75,8 @@ export default function GridResponsiveAutoFit() {
             />
           </>
         }
-        content={<XDSLayoutContent />}
+        content={<LayoutContent />}
       />
-    </XDSCard>
+    </Card>
   );
 }

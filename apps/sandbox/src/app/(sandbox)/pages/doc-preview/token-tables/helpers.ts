@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import type {XDSDefinedTheme} from '@xds/core/theme';
+import type {DefinedTheme} from '@xds/core/theme';
 import {xdsTokenDefaults} from '@xds/core/theme';
 
 /**
@@ -21,7 +21,7 @@ export function parseLightDark(value: string): [string, string] | null {
  * then falls back to xdsTokenDefaults.
  */
 export function resolveTokenForMode(
-  theme: XDSDefinedTheme,
+  theme: DefinedTheme,
   tokenName: string,
   mode: 'light' | 'dark',
 ): string {
@@ -65,7 +65,7 @@ export function resolveTokenForMode(
  * Resolve a token for the current mode (resolves light-dark() to a single value).
  */
 export function resolveToken(
-  theme: XDSDefinedTheme,
+  theme: DefinedTheme,
   tokenName: string,
 ): string {
   const resolved = theme.tokens[tokenName];
@@ -91,7 +91,7 @@ export function resolveToken(
 /**
  * Check if a theme has dual light/dark mode support.
  */
-export function hasDualMode(theme: XDSDefinedTheme): boolean {
+export function hasDualMode(theme: DefinedTheme): boolean {
   const inputTokens = theme.__inputTokens;
   if (inputTokens) {
     return Object.values(inputTokens).some(v => Array.isArray(v));
@@ -106,7 +106,7 @@ export function hasDualMode(theme: XDSDefinedTheme): boolean {
  * Sorts numerically when tokens end with a number (e.g. --spacing-2 before --spacing-10).
  */
 export function getTokensByPrefix(
-  theme: XDSDefinedTheme,
+  theme: DefinedTheme,
   prefix: string,
 ): string[] {
   const allKeys = new Set([

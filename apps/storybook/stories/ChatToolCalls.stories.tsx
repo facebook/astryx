@@ -1,13 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSChatToolCalls, type XDSChatToolCallItem} from '@xds/core/Chat';
+import {ChatToolCalls, type ChatToolCallItem} from '@xds/core/Chat';
 import {useState, useCallback} from 'react';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {CodeBlock} from '@xds/core/CodeBlock';
 
-const meta: Meta<typeof XDSChatToolCalls> = {
+const meta: Meta<typeof ChatToolCalls> = {
   title: 'Core/ChatToolCalls',
-  component: XDSChatToolCalls,
+  component: ChatToolCalls,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
@@ -22,7 +22,7 @@ const meta: Meta<typeof XDSChatToolCalls> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSChatToolCalls>;
+type Story = StoryObj<typeof ChatToolCalls>;
 
 // =============================================================================
 // Stories
@@ -31,7 +31,7 @@ type Story = StoryObj<typeof XDSChatToolCalls>;
 /** Single tool call — renders inline, no group chrome */
 export const SingleCall: Story = {
   render: () => (
-    <XDSChatToolCalls
+    <ChatToolCalls
       calls={[
         {
           name: 'bash',
@@ -47,7 +47,7 @@ export const SingleCall: Story = {
 /** Multiple calls — pile visual with collapsible group */
 export const MultipleCalls: Story = {
   render: () => (
-    <XDSChatToolCalls
+    <ChatToolCalls
       calls={[
         {
           name: 'bash',
@@ -77,7 +77,7 @@ export const MultipleCalls: Story = {
 /** With node badges — shows which sandbox ran each tool */
 export const WithNodes: Story = {
   render: () => (
-    <XDSChatToolCalls
+    <ChatToolCalls
       calls={[
         {
           name: 'bash',
@@ -114,11 +114,11 @@ export const WithNodes: Story = {
 /** With stats — additions, deletions, file counts */
 export const WithStats: Story = {
   render: () => (
-    <XDSChatToolCalls
+    <ChatToolCalls
       calls={[
         {
           name: 'edit',
-          target: 'XDSButton.tsx',
+          target: 'Button.tsx',
           status: 'complete',
           duration: '85ms',
           node: 'cli:remote-server',
@@ -127,7 +127,7 @@ export const WithStats: Story = {
         },
         {
           name: 'edit',
-          target: 'XDSButton.test.tsx',
+          target: 'Button.test.tsx',
           status: 'complete',
           duration: '60ms',
           node: 'cli:remote-server',
@@ -149,7 +149,7 @@ export const WithStats: Story = {
 /** Error state — shows error indicator on group and individual calls */
 export const WithErrors: Story = {
   render: () => (
-    <XDSChatToolCalls
+    <ChatToolCalls
       calls={[
         {
           name: 'bash',
@@ -181,7 +181,7 @@ export const WithErrors: Story = {
 /** Running state — spinner on active calls */
 export const Running: Story = {
   render: () => (
-    <XDSChatToolCalls
+    <ChatToolCalls
       calls={[
         {
           name: 'bash',
@@ -204,7 +204,7 @@ export const Running: Story = {
 /** Streaming — tool calls arrive one by one with status transitions */
 export const Streaming: Story = {
   render: () => {
-    const allCalls: XDSChatToolCallItem[] = [
+    const allCalls: ChatToolCallItem[] = [
       {
         key: '1',
         name: 'web_search',
@@ -215,7 +215,7 @@ export const Streaming: Story = {
       {
         key: '2',
         name: 'read',
-        target: 'packages/core/src/Layer/useXDSLayer.tsx',
+        target: 'packages/core/src/Layer/useLayer.tsx',
         status: 'complete',
         duration: '45ms',
         node: 'cli:remote-server',
@@ -231,7 +231,7 @@ export const Streaming: Story = {
       {
         key: '4',
         name: 'edit',
-        target: 'XDSChatComposer.tsx',
+        target: 'ChatComposer.tsx',
         status: 'complete',
         duration: '120ms',
         node: 'cli:remote-server',
@@ -248,7 +248,7 @@ export const Streaming: Story = {
       },
     ];
 
-    const [calls, setCalls] = useState<XDSChatToolCallItem[]>([]);
+    const [calls, setCalls] = useState<ChatToolCallItem[]>([]);
     const [isRunning, setIsRunning] = useState(false);
 
     const start = useCallback(() => {
@@ -304,7 +304,7 @@ export const Streaming: Story = {
           }}>
           {isRunning ? 'Running...' : 'Start streaming'}
         </button>
-        {calls.length > 0 && <XDSChatToolCalls calls={calls} />}
+        {calls.length > 0 && <ChatToolCalls calls={calls} />}
       </div>
     );
   },
@@ -313,7 +313,7 @@ export const Streaming: Story = {
 /** Many calls — auto-collapses when >3 */
 export const ManyCalls: Story = {
   render: () => (
-    <XDSChatToolCalls
+    <ChatToolCalls
       calls={[
         {
           name: 'bash',
@@ -373,8 +373,8 @@ export const ManyCalls: Story = {
 /** Interactive calls — edit opens a diff modal, bash opens output */
 export const Interactive: Story = {
   render: () => {
-    const editDiff = `--- a/packages/core/src/Button/XDSButton.tsx
-+++ b/packages/core/src/Button/XDSButton.tsx
+    const editDiff = `--- a/packages/core/src/Button/Button.tsx
++++ b/packages/core/src/Button/Button.tsx
 @@ -55,7 +55,7 @@ const styles = stylex.create({
      gap: spacingVars['--spacing-2'],
      paddingBlock: spacingVars['--spacing-2'],
@@ -397,27 +397,27 @@ export const Interactive: Story = {
  });`;
 
     const testOutput = `$ yarn test
- PASS  packages/core/src/Button/XDSButton.test.tsx
- PASS  packages/core/src/Chat/XDSChatToolCalls.test.tsx
- PASS  packages/core/src/Chat/XDSChatComposerInput.test.tsx
+ PASS  packages/core/src/Button/Button.test.tsx
+ PASS  packages/core/src/Chat/ChatToolCalls.test.tsx
+ PASS  packages/core/src/Chat/ChatComposerInput.test.tsx
 
 Test Suites: 7 passed, 7 total
 Tests:       67 passed, 67 total
 Time:        6.1s`;
 
     return (
-      <XDSChatToolCalls
+      <ChatToolCalls
         calls={[
           {
             name: 'edit',
-            target: 'XDSButton.tsx',
+            target: 'Button.tsx',
             status: 'complete',
             duration: '85ms',
             node: 'cli:remote-server',
             additions: 12,
             deletions: 3,
             resultDetail: (
-              <XDSCodeBlock
+              <CodeBlock
                 code={editDiff}
                 language="typescript"
                 maxHeight="50vh"
@@ -431,7 +431,7 @@ Time:        6.1s`;
             duration: '6.1s',
             node: 'cli:remote-server',
             resultDetail: (
-              <XDSCodeBlock
+              <CodeBlock
                 code={testOutput}
                 language="bash"
                 maxHeight="50vh"
@@ -454,10 +454,10 @@ Time:        6.1s`;
 export const ErrorWithDetail: Story = {
   render: () => {
     const errorOutput = `$ yarn test
- PASS  packages/core/src/Chat/XDSChatReasoning.test.tsx (7 tests)
- FAIL  packages/core/src/Chat/XDSChatToolCalls.test.tsx
+ PASS  packages/core/src/Chat/ChatReasoning.test.tsx (7 tests)
+ FAIL  packages/core/src/Chat/ChatToolCalls.test.tsx
 
-  ● XDSChatToolCalls > renders group header for multiple calls
+  ● ChatToolCalls > renders group header for multiple calls
 
     ReferenceError: hasError is not defined
 
@@ -466,7 +466,7 @@ Tests:       4 failed, 63 passed, 67 total
 Time:        6.84s`;
 
     return (
-      <XDSChatToolCalls
+      <ChatToolCalls
         calls={[
           {
             name: 'bash',
@@ -477,7 +477,7 @@ Time:        6.84s`;
           },
           {
             name: 'read',
-            target: 'XDSChatToolCalls.tsx',
+            target: 'ChatToolCalls.tsx',
             status: 'complete',
             duration: '15ms',
             node: 'cli:remote-server',
@@ -490,7 +490,7 @@ Time:        6.84s`;
             node: 'cli:remote-server',
             errorMessage: '4 tests failed',
             resultDetail: (
-              <XDSCodeBlock
+              <CodeBlock
                 code={errorOutput}
                 language="bash"
                 maxHeight="50vh"
@@ -506,14 +506,14 @@ Time:        6.84s`;
 /** All statuses — shows every status icon treatment side by side */
 export const AllStatuses: Story = {
   render: () => (
-    <XDSChatToolCalls
+    <ChatToolCalls
       calls={[
         {key: 'pending', name: 'bash', target: 'yarn build', status: 'pending'},
         {key: 'running', name: 'bash', target: 'yarn test', status: 'running'},
         {
           key: 'complete',
           name: 'edit',
-          target: 'XDSButton.tsx',
+          target: 'Button.tsx',
           status: 'complete',
           duration: '120ms',
           additions: 8,

@@ -2,13 +2,13 @@
 
 'use client';
 
-import {XDSToolbar} from '@xds/core/Toolbar';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSMoreMenu} from '@xds/core/MoreMenu';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSTable} from '@xds/core/Table';
+import {Toolbar} from '@xds/core/Toolbar';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
+import {TextInput} from '@xds/core/TextInput';
+import {MoreMenu} from '@xds/core/MoreMenu';
+import {Stack} from '@xds/core/Layout';
+import {Table} from '@xds/core/Table';
 import * as stylex from '@stylexjs/stylex';
 import {
   MagnifyingGlassIcon,
@@ -23,14 +23,14 @@ const styles = stylex.create({
 
 export default function ToolbarTableFilter() {
   return (
-    <XDSStack direction="vertical" xstyle={styles.container}>
-      <XDSToolbar
+    <Stack direction="vertical" xstyle={styles.container}>
+      <Toolbar
         label="Table filters"
         size="sm"
         dividers={['bottom']}
         startContent={
           <>
-            <XDSTextInput
+            <TextInput
               label="Search"
               isLabelHidden
               placeholder="Search..."
@@ -38,20 +38,20 @@ export default function ToolbarTableFilter() {
               onChange={() => {}}
               startIcon={MagnifyingGlassIcon}
             />
-            <XDSButton
+            <Button
               label="Status"
               variant="secondary"
-              endContent={<XDSIcon icon={ChevronDownIcon} />}
+              endContent={<Icon icon={ChevronDownIcon} />}
             />
-            <XDSButton
+            <Button
               label="Priority"
               variant="secondary"
-              endContent={<XDSIcon icon={ChevronDownIcon} />}
+              endContent={<Icon icon={ChevronDownIcon} />}
             />
           </>
         }
         endContent={
-          <XDSMoreMenu
+          <MoreMenu
             items={[
               {label: 'Compact view'},
               {label: 'Comfortable view'},
@@ -60,7 +60,7 @@ export default function ToolbarTableFilter() {
           />
         }
       />
-      <XDSTable
+      <Table
         idKey="id"
         columns={[
           {key: 'task', header: 'Task'},
@@ -78,6 +78,6 @@ export default function ToolbarTableFilter() {
           {id: '3', task: 'Add unit tests', status: 'Open', priority: 'Low'},
         ]}
       />
-    </XDSStack>
+    </Stack>
   );
 }

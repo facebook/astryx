@@ -2,17 +2,17 @@
 
 'use client';
 
-import {XDSList, XDSListItem} from '@xds/core/List';
+import {List, ListItem} from '@xds/core/List';
 
 export default function ListItemBasicItem() {
   return (
-    <XDSList header="Account settings" hasDividers>
-      <XDSListItem label="Profile" description="Name, avatar, and bio" />
-      <XDSListItem label="Notifications" description="Email and push alerts" />
-      <XDSListItem
+    <List header="Account settings" hasDividers>
+      <ListItem label="Profile" description="Name, avatar, and bio" />
+      <ListItem label="Notifications" description="Email and push alerts" />
+      <ListItem
         label="Security"
         description="Password and two-factor auth"
       />
-    </XDSList>
+    </List>
   );
 }

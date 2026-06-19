@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSText} from '@xds/core/Text';
-import {XDSStack} from '@xds/core/Stack';
+import {Text} from '@xds/core/Text';
+import {Stack} from '@xds/core/Stack';
 
 const WEIGHTS = [
   {weight: 'normal' as const, label: 'Normal'},
@@ -14,12 +14,12 @@ const WEIGHTS = [
 
 export default function TextWeight() {
   return (
-    <XDSStack direction="vertical" gap={3}>
+    <Stack direction="vertical" gap={3}>
       {WEIGHTS.map(({weight, label}) => (
-        <XDSText key={weight} type="body" weight={weight} display="block">
+        <Text key={weight} type="body" weight={weight} display="block">
           {label}
-        </XDSText>
+        </Text>
       ))}
-    </XDSStack>
+    </Stack>
   );
 }

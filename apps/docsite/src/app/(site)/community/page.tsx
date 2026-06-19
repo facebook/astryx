@@ -19,7 +19,7 @@
  * in a small footer row so they don't compete with contribution
  * paths for visual weight.
  *
- * Note: "XDS" still appears in component names (XDSCard, XDSText,
+ * Note: "XDS" still appears in component names (Card, Text,
  * etc.) and package paths (@xds/core, @xds/lab) — those are
  * identifiers, not the product name. The product brand in copy
  * is Astryx.
@@ -28,14 +28,14 @@
 import {FileText, Scale} from 'lucide-react';
 import {NavSurfaceMode} from './NavSurfaceMode';
 import * as stylex from '@stylexjs/stylex';
-import {XDSCard} from '@xds/core/Card';
-import {XDSClickableCard} from '@xds/core/ClickableCard';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
-import {XDSLink} from '@xds/core/Link';
-import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSSection} from '@xds/core/Section';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
+import {Card} from '@xds/core/Card';
+import {ClickableCard} from '@xds/core/ClickableCard';
+import {HStack, VStack} from '@xds/core/Layout';
+import {Link} from '@xds/core/Link';
+import {List, ListItem} from '@xds/core/List';
+import {Section} from '@xds/core/Section';
+import {Heading, Text} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
 import {getKey} from '@xds/core/utils';
 import {AstryxLogo} from '../../../components/logos';
 import {GITHUB_REPO} from '../../../constants';
@@ -55,7 +55,7 @@ const PAGE_MAX_WIDTH = 1200;
 const styles = stylex.create({
   // Wrap the section so it caps at PAGE_MAX_WIDTH and centers in
   // the viewport. Done on a plain wrapper instead of via the
-  // section's maxWidth prop because XDSSection's negative-inline-
+  // section's maxWidth prop because Section's negative-inline-
   // margin styles (used to break out of container padding
   // elsewhere) beat any margin-inline:auto we try to set on the
   // section itself. Same pattern used on /themes.
@@ -64,7 +64,7 @@ const styles = stylex.create({
     marginInline: 'auto',
     width: '100%',
   },
-  // Vertical stack of top-level page sections. XDSVStack's gap
+  // Vertical stack of top-level page sections. VStack's gap
   // prop tops out at step 10 (= --spacing-10 = 40px), which is
   // too tight for this editorial page. Roll our own flex column
   // with calc(var(--spacing-12) * 2) = 96px — same pattern the
@@ -88,7 +88,7 @@ const styles = stylex.create({
     // Add the same section gap as bottom padding so the
     // Resources → footer break feels like another section gap
     // (96px) rather than abruptly hitting the footer with only
-    // the XDSSection's 24px padding underneath.
+    // the Section's 24px padding underneath.
     paddingBlockEnd: 'calc(var(--spacing-12) * 2)',
   },
   // Hero group — wraps the "Build with us" hero row + the wall
@@ -179,7 +179,7 @@ const styles = stylex.create({
     alignItems: 'flex-start',
   },
   // Step number column ("01", "02", …) — kept in the secondary
-  // text color via XDSText props; tabular-nums keeps the
+  // text color via Text props; tabular-nums keeps the
   // two-digit numbers vertically aligned across rows. Min-width
   // reserves space for two digits + a hairline of breathing room
   // so the column doesn't shift between "01" and "10".
@@ -203,7 +203,7 @@ const styles = stylex.create({
     // wallAvatarLayer (which uses position:absolute + inset:0
     // to fill the card area) escapes to the nearest positioned
     // ancestor and the avatars scatter across the whole page
-    // instead of staying inside the wall card. XDSCard's root
+    // instead of staying inside the wall card. Card's root
     // doesn't set position by default, so we set it here.
     //
     // isolation:isolate establishes a NEW stacking context here
@@ -262,7 +262,7 @@ const styles = stylex.create({
   // The "See contributors" anchor link below the wordmark.
   // Only positioning lives here (zIndex:1 keeps the link above
   // the scattered avatar layer); typography + color come from
-  // the XDSLink type="supporting" + color="secondary" props.
+  // the Link type="supporting" + color="secondary" props.
   wallSeeContributors: {
     position: 'relative',
     zIndex: 1,
@@ -324,7 +324,7 @@ const styles = stylex.create({
   // content. position:relative kept in case any descendant needs
   // a positioning ancestor. No paddingBlock here — vertical
   // spacing between sections is owned uniformly by the parent
-  // XDSVStack gap, so every section has the same breathing room.
+  // VStack gap, so every section has the same breathing room.
   // No overflow:hidden so the hover backdrop on each resource
   // row can paint into its negative-margin bleed zone without
   // getting clipped.
@@ -355,11 +355,11 @@ const styles = stylex.create({
     gap: 'var(--spacing-3)',
     minWidth: 0,
   },
-  // XDSList wrapper inside each category — turned into a 3-column
+  // List wrapper inside each category — turned into a 3-column
   // grid so items render as a balanced row instead of a tall
   // vertical strip. <ul> + <li> grid directly (the <li> children
   // become grid cells). Collapses to 2 cols on tablet, 1 on mobile.
-  // The optical alignment shift pulls items left by the XDSListItem's
+  // The optical alignment shift pulls items left by the ListItem's
   // internal start padding (≈ 12px = --spacing-3) so the row icons
   // sit flush with the page's left reading rail and the category
   // eyebrow label above.
@@ -395,7 +395,7 @@ const styles = stylex.create({
   // Resource description text — clamped to 2 lines so short
   // descriptions render naturally on 1 line and longer ones wrap
   // to 2 lines (anything beyond gets a "…" ellipsis). Prevents
-  // both the mid-character single-line truncation that XDSItem
+  // both the mid-character single-line truncation that Item
   // defaults to on string descriptions AND prevents long
   // descriptions from running 4+ lines and breaking the visual
   // rhythm of the grid.
@@ -411,7 +411,7 @@ const styles = stylex.create({
   // of items, and categories stack one after the other so the
   // reading order is unambiguous (instead of wrapping into 3 grid
   // columns that left awkward empty cells when categories had
-  // different item counts). The XDSList inside still gets the
+  // different item counts). The List inside still gets the
   // optical-alignment shift so list items sit flush with the
   // page's left reading rail.
   endBlockResourcesGrid: {
@@ -576,7 +576,7 @@ function WallCard({contributors}: {contributors: ReadonlyArray<Contributor>}) {
   }));
 
   return (
-    <XDSCard padding={0} xstyle={styles.wallCard}>
+    <Card padding={0} xstyle={styles.wallCard}>
       <div {...stylex.props(styles.wallAvatarLayer)} aria-hidden="true">
         {avatars.map(({src, key, slot}) => (
           <img
@@ -602,12 +602,12 @@ function WallCard({contributors}: {contributors: ReadonlyArray<Contributor>}) {
           aria-label="Astryx"
           {...stylex.props(styles.wallWordmark)}
         />
-        <XDSText type="body" color="primary" xstyle={styles.wallDescription}>
+        <Text type="body" color="primary" xstyle={styles.wallDescription}>
           A growing community of designers and engineers ship Astryx together.
           <br />
           Your name could be next.
-        </XDSText>
-        <XDSLink
+        </Text>
+        <Link
           label="See contributors"
           href={`${GITHUB_REPO}/graphs/contributors`}
           target="_blank"
@@ -616,9 +616,9 @@ function WallCard({contributors}: {contributors: ReadonlyArray<Contributor>}) {
           hasUnderline
           xstyle={styles.wallSeeContributors}>
           See contributors
-        </XDSLink>
+        </Link>
       </div>
-    </XDSCard>
+    </Card>
   );
 }
 
@@ -638,26 +638,26 @@ interface BlockCardProps {
 function BlockCard({label, description, href, badge, image}: BlockCardProps) {
   const showImage = image != null;
   return (
-    <XDSClickableCard
+    <ClickableCard
       label={`Open ${label}`}
       href={href}
       variant="gray"
       padding={5}
       xstyle={styles.blockCard}>
-      <XDSVStack
+      <VStack
         gap={1}
         align="start"
         xstyle={showImage ? styles.blockCardStack : undefined}>
-        <XDSHeading level={3} color="primary">
+        <Heading level={3} color="primary">
           {label}
-        </XDSHeading>
-        <XDSText type="body" color="primary">
+        </Heading>
+        <Text type="body" color="primary">
           {description}
-        </XDSText>
+        </Text>
         {badge && (
-          <XDSText type="supporting" color="secondary">
+          <Text type="supporting" color="secondary">
             {badge}
-          </XDSText>
+          </Text>
         )}
         {showImage && image && (
           <div {...stylex.props(styles.blockCardImage)}>
@@ -668,8 +668,8 @@ function BlockCard({label, description, href, badge, image}: BlockCardProps) {
             />
           </div>
         )}
-      </XDSVStack>
-    </XDSClickableCard>
+      </VStack>
+    </ClickableCard>
   );
 }
 
@@ -678,7 +678,7 @@ function BlockCard({label, description, href, badge, image}: BlockCardProps) {
 // =============================================================================
 
 // Brand glyphs for the Communications section's channel rows.
-// Each icon matches the XDSListItem startContent slot's expected
+// Each icon matches the ListItem startContent slot's expected
 // size (~20px). Inline SVGs keep the bundle lean and avoid
 // pulling in a brand-icon package for just three glyphs.
 
@@ -726,7 +726,7 @@ const DiscordGlyph = ({size = 20}: {size?: number}) => (
 // Shared shape for any titled link rendered in the bottom-of-page
 // Resources grid (long-form guides, legal pages, and community
 // channels all use this). title/description/href feed the
-// XDSListItem chrome; icon renders in the startContent slot at
+// ListItem chrome; icon renders in the startContent slot at
 // ~20px (Lucide icons + the brand glyphs above are interchangeable
 // since both accept the same `size` prop shape).
 interface Resource {
@@ -995,7 +995,7 @@ export default async function CommunityPage() {
   return (
     <div {...stylex.props(styles.pageWrap)}>
       <NavSurfaceMode />
-      <XDSSection padding={6}>
+      <Section padding={6}>
         <div {...stylex.props(styles.sectionStack)}>
           {/* Hero group — "Build with us" header row + the Astryx
               wall card below it. Wrapped together so they read as
@@ -1007,29 +1007,29 @@ export default async function CommunityPage() {
             {/* Hero row — title + tagline left, two CTAs right,
                 on a single line at wide widths. */}
             <div {...stylex.props(styles.heroRow)}>
-              <XDSVStack gap={1} xstyle={styles.heroText}>
-                <XDSHeading level={1} type="display-1" color="primary">
+              <VStack gap={1} xstyle={styles.heroText}>
+                <Heading level={1} type="display-1" color="primary">
                   Build with us
-                </XDSHeading>
-                <XDSText type="body" size="base" color="secondary">
+                </Heading>
+                <Text type="body" size="base" color="secondary">
                   A friendly community of designers and engineers shaping the
                   system together.
-                </XDSText>
-              </XDSVStack>
-              <XDSHStack gap={2} wrap="wrap">
-                <XDSButton
+                </Text>
+              </VStack>
+              <HStack gap={2} wrap="wrap">
+                <Button
                   variant="secondary"
                   size="md"
                   label="View Discussions"
                   href={`${GITHUB_REPO}/discussions`}
                 />
-                <XDSButton
+                <Button
                   variant="primary"
                   size="md"
                   label="Start Contributing"
                   href={`${WIKI_BASE}/Contributing`}
                 />
-              </XDSHStack>
+              </HStack>
             </div>
 
             {/* Wall card — multicolored Astryx wordmark in the
@@ -1054,31 +1054,31 @@ export default async function CommunityPage() {
               the card grid on the right start at the same top
               edge as the first step. */}
             <div {...stylex.props(styles.contribProcess)}>
-              <XDSVStack gap={1}>
-                <XDSHeading level={2} type="display-3">
+              <VStack gap={1}>
+                <Heading level={2} type="display-3">
                   How we build together
-                </XDSHeading>
-                <XDSText type="body" color="secondary">
+                </Heading>
+                <Text type="body" color="secondary">
                   Contributing to Astryx means contributing to the system, not
                   to a single component. Each step has a clear gate, so you
                   always know what comes next.
-                </XDSText>
-              </XDSVStack>
+                </Text>
+              </VStack>
               {RFC_STEPS.map(step => (
                 <div key={step.number} {...stylex.props(styles.processStep)}>
-                  <XDSText
+                  <Text
                     type="body"
                     weight="semibold"
                     color="secondary"
                     xstyle={styles.processStepNumber}>
                     {step.number}
-                  </XDSText>
-                  <XDSVStack gap={1}>
-                    <XDSHeading level={3}>{step.title}</XDSHeading>
-                    <XDSText type="supporting" color="secondary">
+                  </Text>
+                  <VStack gap={1}>
+                    <Heading level={3}>{step.title}</Heading>
+                    <Text type="supporting" color="secondary">
                       {step.description}
-                    </XDSText>
-                  </XDSVStack>
+                    </Text>
+                  </VStack>
                 </div>
               ))}
             </div>
@@ -1111,34 +1111,34 @@ export default async function CommunityPage() {
               category. */}
           <div {...stylex.props(styles.endBlock)}>
             <div {...stylex.props(styles.endBlockResources)}>
-              <XDSHeading
+              <Heading
                 level={2}
                 type="display-2"
                 xstyle={styles.endBlockHeaderText}>
                 Resources
-              </XDSHeading>
+              </Heading>
               {/* Categorized resource columns — each category
                   (Contributing, Design, Legal) gets its own
                   column with a small uppercase eyebrow label
-                  above its XDSList. Readers can scan by topic
+                  above its List. Readers can scan by topic
                   before drilling into individual items. */}
               <div {...stylex.props(styles.endBlockResourcesGrid)}>
                 {RESOURCE_CATEGORIES.map(category => (
                   <div
                     key={category.label}
                     {...stylex.props(styles.resourceColumn)}>
-                    <XDSHeading level={4} color="primary">
+                    <Heading level={4} color="primary">
                       {category.label}
-                    </XDSHeading>
-                    <XDSList xstyle={styles.resourceList}>
+                    </Heading>
+                    <List xstyle={styles.resourceList}>
                       {category.items.map(resource => {
                         const Icon = resource.icon;
                         return (
-                          <XDSListItem
+                          <ListItem
                             key={resource.title}
                             label={resource.title}
                             // Wrap the description string in a span
-                            // (ReactNode, not plain string) so XDSItem
+                            // (ReactNode, not plain string) so Item
                             // skips its automatic single-line truncation
                             // and the description wraps to 2 lines
                             // naturally — the resourceDescription style
@@ -1160,14 +1160,14 @@ export default async function CommunityPage() {
                           />
                         );
                       })}
-                    </XDSList>
+                    </List>
                   </div>
                 ))}
               </div>
             </div>
           </div>
         </div>
-      </XDSSection>
+      </Section>
     </div>
   );
 }

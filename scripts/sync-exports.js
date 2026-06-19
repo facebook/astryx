@@ -58,9 +58,18 @@ const STATIC_EXPORTS = {
     types: './src/xds.css.d.ts',
     default: './dist/xds.css',
   },
+  './astryx.css': {
+    types: './src/astryx.css.d.ts',
+    default: './dist/astryx.css',
+  },
   './tailwind-theme.css': {
     types: './src/tailwind-theme.css.d.ts',
     default: './src/tailwind-theme.css',
+  },
+  './naming': {
+    source: './src/naming.ts',
+    types: './dist/naming.d.ts',
+    default: './dist/naming.js',
   },
   './theme/tokens': {
     source: './src/theme/tokens.ts',
@@ -222,7 +231,7 @@ function main() {
 
   const dirs = discoverExportDirs();
   console.log(
-    `✓ Synced ${Object.keys(newExports).length} exports (${dirs.length} components/modules)`
+    `✓ Synced ${Object.keys(newExports).length} exports (${dirs.length} components/modules)`,
   );
 }
 

@@ -56,8 +56,8 @@ export const docs = {
       {guidance: true, description: 'Use axis="horizontal" or axis="vertical" when you only need one direction. Both axes is the default but not always needed.'},
       {guidance: true, description: 'Set a height when centering vertically. Center needs a defined height to know what space to center within.'},
       {guidance: true, description: 'Use isInline to center small elements like icons or badges within a line of text without breaking the text flow.'},
-      {guidance: false, description: 'Wrap large page sections in Center. Use XDSLayout or XDSAppShell for page-level structure.'},
-      {guidance: false, description: 'Use Center for horizontal lists of items. Use XDSStack with hAlign="center" instead.'},
+      {guidance: false, description: 'Wrap large page sections in Center. Use Layout or AppShell for page-level structure.'},
+      {guidance: false, description: 'Use Center for horizontal lists of items. Use Stack with hAlign="center" instead.'},
     ],
     anatomy: [
       {name: 'Container', required: true, description: 'A flexbox wrapper that aligns its children to the center along the chosen axis.'},
@@ -77,8 +77,8 @@ export const docsZh = {
       {guidance: true, description: 'Use axis="horizontal" or axis="vertical" when you only need one direction. Both axes is the default but not always needed.'},
       {guidance: true, description: 'Set a height when centering vertically. Center needs a defined height to know what space to center within.'},
       {guidance: true, description: 'Use isInline to center small elements like icons or badges within a line of text without breaking the text flow.'},
-      {guidance: false, description: 'Wrap large page sections in Center. Use XDSLayout or XDSAppShell for page-level structure.'},
-      {guidance: false, description: 'Use Center for horizontal lists of items. Use XDSStack with hAlign="center" instead.'},
+      {guidance: false, description: 'Wrap large page sections in Center. Use Layout or AppShell for page-level structure.'},
+      {guidance: false, description: 'Use Center for horizontal lists of items. Use Stack with hAlign="center" instead.'},
     ],
   },
   props: [
@@ -116,8 +116,8 @@ export const docsDense = {
       {guidance: true, description: 'Use axis="horizontal" or axis="vertical" when you only need one direction. Both axes is the default but not always needed.'},
       {guidance: true, description: 'Set a height when centering vertically. Center needs a defined height to know what space to center within.'},
       {guidance: true, description: 'Use isInline to center small elements (icons, badges) within a line of text without breaking text flow.'},
-      {guidance: false, description: 'Wrap large page sections in Center. Use XDSLayout or XDSAppShell for page-level structure.'},
-      {guidance: false, description: 'Use Center for horizontal lists of items. Use XDSStack with hAlign="center" instead.'},
+      {guidance: false, description: 'Wrap large page sections in Center. Use Layout or AppShell for page-level structure.'},
+      {guidance: false, description: 'Use Center for horizontal lists of items. Use Stack with hAlign="center" instead.'},
     ],
   },
   propDescriptions: {

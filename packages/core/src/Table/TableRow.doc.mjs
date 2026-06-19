@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Table',
   displayName: 'Table Row',
   isHiddenFromOverview: true,
-  description: '<tr> wrapper that reads XDSTableContext to apply striped, hover, and divider styles when used inside XDSTable.',
+  description: '<tr> wrapper that reads TableContext to apply striped, hover, and divider styles when used inside Table.',
   props: [
     {
       name: 'children',
@@ -22,7 +22,7 @@ export const docsZh = {
   name: 'TableRow',
   isHiddenFromOverview: true,
   displayName: 'Table Row',
-  description: '<tr> 包装器，读取 XDSTableContext 以在 XDSTable 内部使用时应用条纹、悬停和分隔线样式。',
+  description: '<tr> 包装器，读取 TableContext 以在 Table 内部使用时应用条纹、悬停和分隔线样式。',
   props: [
     {
       name: 'children',
@@ -37,7 +37,7 @@ export const docsDense = {
   name: 'TableRow',
   isHiddenFromOverview: true,
   displayName: 'Table Row',
-  description: '<tr> wrapper; reads XDSTableContext for striped/hover/divider styles.',
+  description: '<tr> wrapper; reads TableContext for striped/hover/divider styles.',
   propDescriptions: {
     children: 'Row cell elements.',
   },

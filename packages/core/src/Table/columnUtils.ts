@@ -2,9 +2,9 @@
 
 /**
  * @file columnUtils.ts
- * @input XDSTableColumn types from types.ts
+ * @input TableColumn types from types.ts
  * @output Pure utility functions for column width, layout resolution, and auto-generation
- * @position Utility layer; consumed by XDSBaseTable.tsx
+ * @position Utility layer; consumed by BaseTable.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Table/Table.doc.mjs (utility descriptions)
@@ -12,7 +12,7 @@
  */
 
 import type {CSSProperties, ReactNode} from 'react';
-import type {XDSTableColumn, ProportionalWidth, PixelWidth} from './types';
+import type {TableColumn, ProportionalWidth, PixelWidth} from './types';
 
 /** Default minimum width (in px) for proportional columns. */
 export const DEFAULT_MIN_COLUMN_WIDTH = 120;
@@ -56,7 +56,7 @@ export interface ResolvedColumnWidths {
  * @returns Pre-computed widths for each column and the table minimum width
  */
 export function resolveColumnWidths<T extends Record<string, unknown>>(
-  columns: XDSTableColumn<T>[],
+  columns: TableColumn<T>[],
 ): ResolvedColumnWidths {
   // --- Pass 1: Categorize columns and compute totals ---
   let totalProportion = 0;
@@ -265,7 +265,7 @@ const PX_PER_CHAR = 8;
  */
 export function generateColumns<T extends Record<string, unknown>>(
   data: T[],
-): XDSTableColumn<T>[] {
+): TableColumn<T>[] {
   if (data.length === 0) {
     return [];
   }

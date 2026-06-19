@@ -4,7 +4,7 @@
  * @file styles.ts
  * @input Uses stylex, theme tokens
  * @output Exports calendar styles (structural) and theme styles (customizable)
- * @position Shared styles; used by XDSCalendar
+ * @position Shared styles; used by Calendar
  *
  * Style Organization:
  * - *Styles objects: Structural/layout styles (spacing, sizing, positioning)

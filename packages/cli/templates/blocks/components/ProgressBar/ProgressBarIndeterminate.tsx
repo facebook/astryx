@@ -2,10 +2,8 @@
 
 'use client';
 
-import {XDSProgressBar} from '@xds/core/ProgressBar';
+import {ProgressBar} from '@xds/core/ProgressBar';
 
 export default function ProgressBarIndeterminate() {
-  return (
-    <XDSProgressBar isIndeterminate label="Loading..." style={{width: 300}} />
-  );
+  return (<ProgressBar isIndeterminate label="Loading..." style={{width: 300}} />);
 }

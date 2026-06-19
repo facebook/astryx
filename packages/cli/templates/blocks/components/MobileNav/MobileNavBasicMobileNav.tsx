@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSMobileNav} from '@xds/core/MobileNav';
-import {XDSSideNavSection, XDSSideNavItem} from '@xds/core/SideNav';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
+import {MobileNav} from '@xds/core/MobileNav';
+import {SideNavSection, SideNavItem} from '@xds/core/SideNav';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
 import {
   HomeIcon,
   FolderIcon,
@@ -19,40 +19,40 @@ export default function MobileNavBasicMobileNav() {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <>
-      <XDSButton
+      <Button
         label="Open Navigation"
-        icon={<XDSIcon icon="menu" color="inherit" />}
+        icon={<Icon icon="menu" color="inherit" />}
         variant="ghost"
         onClick={() => setIsOpen(true)}
         isIconOnly
       />
-      <XDSMobileNav
+      <MobileNav
         isOpen={isOpen}
         onOpenChange={open => setIsOpen(open)}
         header="Navigation">
-        <XDSSideNavSection title="Main">
-          <XDSSideNavItem
+        <SideNavSection title="Main">
+          <SideNavItem
             label="Dashboard"
             icon={HomeIcon}
             isSelected
             href="/dashboard"
           />
-          <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
-          <XDSSideNavItem
+          <SideNavItem label="Projects" icon={FolderIcon} href="/projects" />
+          <SideNavItem
             label="Analytics"
             icon={ChartBarIcon}
             href="/analytics"
           />
-        </XDSSideNavSection>
-        <XDSSideNavSection title="Settings">
-          <XDSSideNavItem
+        </SideNavSection>
+        <SideNavSection title="Settings">
+          <SideNavItem
             label="General"
             icon={Cog6ToothIcon}
             href="/settings"
           />
-          <XDSSideNavItem label="Team" icon={UsersIcon} href="/team" />
-        </XDSSideNavSection>
-      </XDSMobileNav>
+          <SideNavItem label="Team" icon={UsersIcon} href="/team" />
+        </SideNavSection>
+      </MobileNav>
     </>
   );
 }

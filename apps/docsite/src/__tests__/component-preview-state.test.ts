@@ -25,7 +25,7 @@ function prop(
 describe('component detail preview state', () => {
   it('generates safe runtime defaults for typeahead-like required props', async () => {
     const knobs = pickPrimaryProps('BaseTypeahead', [
-      prop({name: 'searchSource', type: 'XDSSearchSource<T>', required: true}),
+      prop({name: 'searchSource', type: 'SearchSource<T>', required: true}),
       prop({name: 'value', type: 'T | null', required: true}),
       prop({
         name: 'onChange',
@@ -61,7 +61,7 @@ describe('component detail preview state', () => {
         type: '(isOpen: boolean) => void',
         required: true,
       }),
-      prop({name: 'searchSource', type: 'XDSSearchSource<T>', required: true}),
+      prop({name: 'searchSource', type: 'SearchSource<T>', required: true}),
       prop({name: 'isInline', type: 'boolean'}),
     ]);
 

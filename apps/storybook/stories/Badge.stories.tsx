@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSBadge} from '@xds/core/Badge';
+import {Badge} from '@xds/core/Badge';
 
-const meta: Meta<typeof XDSBadge> = {
+const meta: Meta<typeof Badge> = {
   title: 'Core/Badge',
-  component: XDSBadge,
+  component: Badge,
   tags: ['autodocs'],
   argTypes: {
     variant: {
@@ -36,7 +36,7 @@ const meta: Meta<typeof XDSBadge> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSBadge>;
+type Story = StoryObj<typeof Badge>;
 
 export const Default: Story = {
   args: {
@@ -47,11 +47,11 @@ export const Default: Story = {
 export const Variants: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-      <XDSBadge variant="neutral" label="Neutral" />
-      <XDSBadge variant="info" label="Info" />
-      <XDSBadge variant="success" label="Success" />
-      <XDSBadge variant="warning" label="Warning" />
-      <XDSBadge variant="error" label="Error" />
+      <Badge variant="neutral" label="Neutral" />
+      <Badge variant="info" label="Info" />
+      <Badge variant="success" label="Success" />
+      <Badge variant="warning" label="Warning" />
+      <Badge variant="error" label="Error" />
     </div>
   ),
 };
@@ -59,9 +59,9 @@ export const Variants: Story = {
 export const Counts: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-      <XDSBadge variant="info" label={3} />
-      <XDSBadge variant="error" label="99+" />
-      <XDSBadge variant="success" label={12} />
+      <Badge variant="info" label={3} />
+      <Badge variant="error" label="99+" />
+      <Badge variant="success" label={12} />
     </div>
   ),
 };
@@ -69,10 +69,10 @@ export const Counts: Story = {
 export const StatusLabels: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-      <XDSBadge variant="success" label="Active" />
-      <XDSBadge variant="warning" label="Pending" />
-      <XDSBadge variant="error" label="Failed" />
-      <XDSBadge variant="neutral" label="Draft" />
+      <Badge variant="success" label="Active" />
+      <Badge variant="warning" label="Pending" />
+      <Badge variant="error" label="Failed" />
+      <Badge variant="neutral" label="Draft" />
     </div>
   ),
 };
@@ -80,15 +80,15 @@ export const StatusLabels: Story = {
 export const NonSemanticColors: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
-      <XDSBadge variant="blue" label="Design" />
-      <XDSBadge variant="cyan" label="DevOps" />
-      <XDSBadge variant="green" label="Backend" />
-      <XDSBadge variant="orange" label="Urgent" />
-      <XDSBadge variant="pink" label="Marketing" />
-      <XDSBadge variant="purple" label="Engineering" />
-      <XDSBadge variant="red" label="Critical" />
-      <XDSBadge variant="teal" label="Research" />
-      <XDSBadge variant="yellow" label="Review" />
+      <Badge variant="blue" label="Design" />
+      <Badge variant="cyan" label="DevOps" />
+      <Badge variant="green" label="Backend" />
+      <Badge variant="orange" label="Urgent" />
+      <Badge variant="pink" label="Marketing" />
+      <Badge variant="purple" label="Engineering" />
+      <Badge variant="red" label="Critical" />
+      <Badge variant="teal" label="Research" />
+      <Badge variant="yellow" label="Review" />
     </div>
   ),
 };

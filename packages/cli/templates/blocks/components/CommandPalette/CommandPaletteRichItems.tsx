@@ -3,13 +3,13 @@
 'use client';
 
 import {useMemo} from 'react';
-import {XDSCommandPalette} from '@xds/core/CommandPalette';
-import {XDSText} from '@xds/core/Text';
-import {XDSKbd} from '@xds/core/Kbd';
+import {CommandPalette} from '@xds/core/CommandPalette';
+import {Text} from '@xds/core/Text';
+import {Kbd} from '@xds/core/Kbd';
 import {createStaticSource} from '@xds/core/Typeahead';
-import type {XDSSearchableItem} from '@xds/core/Typeahead';
+import type {SearchableItem} from '@xds/core/Typeahead';
 
-type RichCommand = XDSSearchableItem<{
+type RichCommand = SearchableItem<{
   group?: string;
   shortcut?: string;
 }>;
@@ -41,18 +41,18 @@ export default function CommandPaletteRichItems() {
   const source = useMemo(() => createStaticSource(commands), []);
 
   return (
-    <XDSCommandPalette
+    <CommandPalette
       isOpen
       isInline
       onOpenChange={() => {}}
       searchSource={source}
       renderItem={(item: RichCommand) => (
         <>
-          <XDSText type="body" style={{flex: 1}}>
+          <Text type="body" style={{flex: 1}}>
             {item.label}
-          </XDSText>
+          </Text>
           {item.auxiliaryData?.shortcut && (
-            <XDSKbd keys={item.auxiliaryData.shortcut} />
+            <Kbd keys={item.auxiliaryData.shortcut} />
           )}
         </>
       )}

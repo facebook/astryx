@@ -2,9 +2,9 @@
 
 'use client';
 
-import {XDSToken} from '@xds/core/Token';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Token} from '@xds/core/Token';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const COLORS = [
   {color: 'default' as const, label: 'Default'},
@@ -22,31 +22,31 @@ const COLORS = [
 
 export default function TokenColors() {
   return (
-    <XDSStack
+    <Stack
       direction="vertical"
       gap={10}
       width="100%"
       style={{maxWidth: 400}}>
-      <XDSStack direction="vertical" gap={2}>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={2}>
+        <Text type="supporting" color="secondary">
           Default
-        </XDSText>
-        <XDSStack direction="horizontal" gap={1} wrap="wrap">
+        </Text>
+        <Stack direction="horizontal" gap={1} wrap="wrap">
           {COLORS.map(({color, label}) => (
-            <XDSToken key={color} label={label} color={color} />
+            <Token key={color} label={label} color={color} />
           ))}
-        </XDSStack>
-      </XDSStack>
-      <XDSStack direction="vertical" gap={2}>
-        <XDSText type="supporting" color="secondary">
+        </Stack>
+      </Stack>
+      <Stack direction="vertical" gap={2}>
+        <Text type="supporting" color="secondary">
           Disabled
-        </XDSText>
-        <XDSStack direction="horizontal" gap={1} wrap="wrap">
+        </Text>
+        <Stack direction="horizontal" gap={1} wrap="wrap">
           {COLORS.map(({color, label}) => (
-            <XDSToken key={color} label={label} color={color} isDisabled />
+            <Token key={color} label={label} color={color} isDisabled />
           ))}
-        </XDSStack>
-      </XDSStack>
-    </XDSStack>
+        </Stack>
+      </Stack>
+    </Stack>
   );
 }

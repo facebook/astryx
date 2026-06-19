@@ -2,36 +2,36 @@
 
 'use client';
 
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSText} from '@xds/core/Text';
+import {Badge} from '@xds/core/Badge';
+import {Icon} from '@xds/core/Icon';
+import {List, ListItem} from '@xds/core/List';
+import {Text} from '@xds/core/Text';
 
 export default function ListItemWithMetadata() {
   return (
-    <XDSList header="Inbox" density="compact" hasDividers>
-      <XDSListItem
+    <List header="Inbox" density="compact" hasDividers>
+      <ListItem
         label="Launch checklist"
         description="3 tasks still need an owner"
-        startContent={<XDSIcon icon="check" size="sm" color="success" />}
-        endContent={<XDSBadge label="3" variant="blue" />}
+        startContent={<Icon icon="check" size="sm" color="success" />}
+        endContent={<Badge label="3" variant="blue" />}
         isSelected
         onClick={() => {}}
       />
-      <XDSListItem
+      <ListItem
         label="Security review"
         description="Waiting on approval"
-        startContent={<XDSIcon icon="warning" size="sm" color="warning" />}
-        endContent={<XDSText color="secondary">Yesterday</XDSText>}
+        startContent={<Icon icon="warning" size="sm" color="warning" />}
+        endContent={<Text color="secondary">Yesterday</Text>}
         onClick={() => {}}
       />
-      <XDSListItem
+      <ListItem
         label="Old incident report"
         description="Archived and read-only"
-        startContent={<XDSIcon icon="copy" size="sm" color="secondary" />}
-        endContent={<XDSText color="secondary">Apr 12</XDSText>}
+        startContent={<Icon icon="copy" size="sm" color="secondary" />}
+        endContent={<Text color="secondary">Apr 12</Text>}
         isDisabled
       />
-    </XDSList>
+    </List>
   );
 }

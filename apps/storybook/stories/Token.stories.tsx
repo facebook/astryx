@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSToken, type XDSTokenColor} from '@xds/core/Token';
+import {Token, type TokenColor} from '@xds/core/Token';
 
-const meta: Meta<typeof XDSToken> = {
+const meta: Meta<typeof Token> = {
   title: 'Core/Token',
-  component: XDSToken,
+  component: Token,
   tags: ['autodocs'],
   argTypes: {
     color: {
@@ -46,7 +46,7 @@ const meta: Meta<typeof XDSToken> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSToken>;
+type Story = StoryObj<typeof Token>;
 
 export const Default: Story = {
   args: {
@@ -54,7 +54,7 @@ export const Default: Story = {
   },
 };
 
-const allColors: XDSTokenColor[] = [
+const allColors: TokenColor[] = [
   'default',
   'red',
   'orange',
@@ -72,7 +72,7 @@ export const Colors: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
       {allColors.map(color => (
-        <XDSToken key={color} label={color} color={color} />
+        <Token key={color} label={color} color={color} />
       ))}
     </div>
   ),
@@ -81,7 +81,7 @@ export const Colors: Story = {
 export const WithIcon: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-      <XDSToken
+      <Token
         label="Star"
         icon={
           <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
@@ -89,7 +89,7 @@ export const WithIcon: Story = {
           </svg>
         }
       />
-      <XDSToken
+      <Token
         label="Info"
         color="blue"
         icon={
@@ -120,13 +120,13 @@ export const WithIcon: Story = {
 export const WithRemove: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-      <XDSToken label="Removable" onRemove={() => alert('Removed!')} />
-      <XDSToken
+      <Token label="Removable" onRemove={() => alert('Removed!')} />
+      <Token
         label="Red tag"
         color="red"
         onRemove={() => alert('Removed!')}
       />
-      <XDSToken
+      <Token
         label="Blue tag"
         color="blue"
         onRemove={() => alert('Removed!')}
@@ -138,8 +138,8 @@ export const WithRemove: Story = {
 export const Clickable: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-      <XDSToken label="Click me" onClick={() => alert('Clicked!')} />
-      <XDSToken
+      <Token label="Click me" onClick={() => alert('Clicked!')} />
+      <Token
         label="Green action"
         color="green"
         onClick={() => alert('Clicked!')}
@@ -151,8 +151,8 @@ export const Clickable: Story = {
 export const AsLink: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-      <XDSToken label="Link token" href="#" />
-      <XDSToken label="Purple link" color="purple" href="#" />
+      <Token label="Link token" href="#" />
+      <Token label="Purple link" color="purple" href="#" />
     </div>
   ),
 };
@@ -160,7 +160,7 @@ export const AsLink: Story = {
 export const WithEndContent: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-      <XDSToken
+      <Token
         label="Count"
         endContent={
           <span
@@ -173,7 +173,7 @@ export const WithEndContent: Story = {
           </span>
         }
       />
-      <XDSToken
+      <Token
         label="Status"
         color="green"
         endContent={
@@ -195,18 +195,18 @@ export const WithEndContent: Story = {
 export const Disabled: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-      <XDSToken label="Disabled" isDisabled />
-      <XDSToken
+      <Token label="Disabled" isDisabled />
+      <Token
         label="Disabled click"
         onClick={() => alert('Should not fire')}
         isDisabled
       />
-      <XDSToken
+      <Token
         label="Disabled remove"
         onRemove={() => alert('Should not fire')}
         isDisabled
       />
-      <XDSToken label="Disabled link" href="#" isDisabled />
+      <Token label="Disabled link" href="#" isDisabled />
     </div>
   ),
 };
@@ -217,25 +217,25 @@ export const SizeVariants: Story = {
       <div>
         <h4 style={{margin: '0 0 8px'}}>Small (20px)</h4>
         <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-          <XDSToken label="Small" size="sm" />
-          <XDSToken label="Removable" size="sm" onRemove={() => {}} />
-          <XDSToken label="Clickable" size="sm" onClick={() => {}} />
+          <Token label="Small" size="sm" />
+          <Token label="Removable" size="sm" onRemove={() => {}} />
+          <Token label="Clickable" size="sm" onClick={() => {}} />
         </div>
       </div>
       <div>
         <h4 style={{margin: '0 0 8px'}}>Medium (24px, default)</h4>
         <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-          <XDSToken label="Medium" size="md" />
-          <XDSToken label="Removable" size="md" onRemove={() => {}} />
-          <XDSToken label="Clickable" size="md" onClick={() => {}} />
+          <Token label="Medium" size="md" />
+          <Token label="Removable" size="md" onRemove={() => {}} />
+          <Token label="Clickable" size="md" onClick={() => {}} />
         </div>
       </div>
       <div>
         <h4 style={{margin: '0 0 8px'}}>Large (28px)</h4>
         <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-          <XDSToken label="Large" size="lg" />
-          <XDSToken label="Removable" size="lg" onRemove={() => {}} />
-          <XDSToken label="Clickable" size="lg" onClick={() => {}} />
+          <Token label="Large" size="lg" />
+          <Token label="Removable" size="lg" onRemove={() => {}} />
+          <Token label="Clickable" size="lg" onClick={() => {}} />
         </div>
       </div>
     </div>
@@ -249,7 +249,7 @@ export const AllVariations: Story = {
         <h4 style={{margin: '0 0 8px'}}>Display only</h4>
         <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
           {allColors.map(color => (
-            <XDSToken key={color} label={color} color={color} />
+            <Token key={color} label={color} color={color} />
           ))}
         </div>
       </div>
@@ -257,7 +257,7 @@ export const AllVariations: Story = {
         <h4 style={{margin: '0 0 8px'}}>With remove</h4>
         <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
           {allColors.map(color => (
-            <XDSToken
+            <Token
               key={color}
               label={color}
               color={color}
@@ -270,7 +270,7 @@ export const AllVariations: Story = {
         <h4 style={{margin: '0 0 8px'}}>Clickable</h4>
         <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
           {allColors.map(color => (
-            <XDSToken
+            <Token
               key={color}
               label={color}
               color={color}
@@ -283,7 +283,7 @@ export const AllVariations: Story = {
         <h4 style={{margin: '0 0 8px'}}>Disabled</h4>
         <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
           {allColors.map(color => (
-            <XDSToken key={color} label={color} color={color} isDisabled />
+            <Token key={color} label={color} color={color} isDisabled />
           ))}
         </div>
       </div>

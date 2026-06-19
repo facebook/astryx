@@ -1,12 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-export type XDSClassValue = string | number | undefined | null;
-export type XDSClassProps = Record<string, XDSClassValue>;
-export type XDSThemeDataAttributes = Record<
+import {stableClassName, legacyStableClassName} from '../naming';
+
+export type ClassValue = string | number | undefined | null;
+export type ClassProps = Record<string, ClassValue>;
+export type ThemeDataAttributes = Record<
   `data-${string}`,
   string | undefined
 >;
-export type XDSThemeProps = {className: string} & XDSThemeDataAttributes;
+export type ThemeProps = {className: string} & ThemeDataAttributes;
 
 function toDataAttributeName(prop: string): `data-${string}` {
   return `data-${prop.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()}`;
@@ -26,6 +28,10 @@ function classTokenForPropValue(prop: string, value: string): string {
  * `data-size`, `data-level`, etc.) so consumers can migrate CSS selectors
  * away from collision-prone bare class names while old selectors keep working.
  *
+ * The `xds-`/`astryx-` prefix comes from the centralized naming module
+ * (`packages/core/src/naming.ts`) so the prefix migration flips in one place.
+ *
+ * <!-- SYNC: packages/core/src/naming.ts (namespace prefix source of truth) -->
  * <!-- SYNC: packages/cli/src/commands/build-theme.mjs (parseStyleKey + selector generation) -->
  * <!-- SYNC: packages/core/src/utils/parseStyleKey.ts -->
  *
@@ -35,22 +41,25 @@ function classTokenForPropValue(prop: string, value: string): string {
  *
  * @param component - Component name in lowercase (e.g. 'button', 'card')
  * @param props - Visual prop values to include as legacy variant classes
- * @returns Class name string (e.g. "xds-button secondary sm")
+ * @returns Class name string (e.g. "astryx-button xds-button secondary sm")
  *
  * @example
  * ```ts
- * legacyClassName('button', { variant: 'secondary', size: 'sm' })
- * // → "xds-button secondary sm"
+ * dualClassName('button', { variant: 'secondary', size: 'sm' })
+ * // → "astryx-button xds-button secondary sm"
  *
- * legacyClassName('heading', { level: 1 })
- * // → "xds-heading level-1"
+ * dualClassName('heading', { level: 1 })
+ * // → "astryx-heading xds-heading level-1"
  *
- * legacyClassName('card')
- * // → "xds-card"
+ * dualClassName('card')
+ * // → "astryx-card xds-card"
  * ```
  */
-function legacyClassName(component: string, props?: XDSClassProps): string {
-  const classes = [`xds-${component}`];
+function dualClassName(component: string, props?: ClassProps): string {
+  // Dual-emit both the new (astryx-*) and legacy (xds-*) base class so existing
+  // consumer CSS selectors keep matching during the compat window. The new
+  // prefix is listed first; legacy stays until the final cutover (P10).
+  const classes = [stableClassName(component), legacyStableClassName(component)];
 
   if (props) {
     for (const [prop, value] of Object.entries(props)) {
@@ -72,9 +81,9 @@ function legacyClassName(component: string, props?: XDSClassProps): string {
  * Nullish values are omitted.
  */
 export function xdsThemeDataAttributes(
-  props?: XDSClassProps,
-): XDSThemeDataAttributes {
-  const attrs: XDSThemeDataAttributes = {};
+  props?: ClassProps,
+): ThemeDataAttributes {
+  const attrs: ThemeDataAttributes = {};
 
   if (props) {
     for (const [prop, value] of Object.entries(props)) {
@@ -97,15 +106,15 @@ export function xdsThemeDataAttributes(
  *
  * ```ts
  * xdsThemeProps('button', { variant: 'primary', size: 'sm' })
- * // → { className: 'xds-button primary sm', data-variant: 'primary', data-size: 'sm' }
+ * // → { className: 'astryx-button xds-button primary sm', data-variant: 'primary', data-size: 'sm' }
  * ```
  */
 export function xdsThemeProps(
   component: string,
-  props?: XDSClassProps,
-): XDSThemeProps {
+  props?: ClassProps,
+): ThemeProps {
   return {
-    className: legacyClassName(component, props),
+    className: dualClassName(component, props),
     ...xdsThemeDataAttributes(props),
   };
 }

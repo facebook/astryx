@@ -4,8 +4,8 @@
 export const doc = {
   type: 'block',
   exampleFor: 'Dialog',
-  alsoExampleFor: ['useXDSImperativeDialog'],
-  alsoShowcaseFor: ['useXDSImperativeDialog'],
+  alsoExampleFor: ['useImperativeDialog'],
+  alsoShowcaseFor: ['useImperativeDialog'],
   name: 'Dialog — Confirmation',
   displayName: 'Dialog — Confirmation',
   description:

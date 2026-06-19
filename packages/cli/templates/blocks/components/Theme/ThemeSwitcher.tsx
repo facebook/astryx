@@ -3,13 +3,13 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSTheme, defineTheme} from '@xds/core/theme';
-import {XDSCard} from '@xds/core/Card';
-import {XDSButton} from '@xds/core/Button';
-import {XDSSection} from '@xds/core/Section';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSHeading, XDSText} from '@xds/core/Text';
+import {Theme, defineTheme} from '@xds/core/theme';
+import {Card} from '@xds/core/Card';
+import {Button} from '@xds/core/Button';
+import {Section} from '@xds/core/Section';
+import {Stack} from '@xds/core/Layout';
+import {Selector} from '@xds/core/Selector';
+import {Heading, Text} from '@xds/core/Text';
 
 const warmTheme = defineTheme({
   name: 'warm-docs',
@@ -47,27 +47,27 @@ export default function ThemeSwitcher() {
   const [themeName, setThemeName] = useState<ThemeName>('Warm');
 
   return (
-    <XDSSection variant="muted" padding={4} maxWidth={420}>
-      <XDSStack direction="vertical" gap={3}>
-        <XDSSelector
+    <Section variant="muted" padding={4} maxWidth={420}>
+      <Stack direction="vertical" gap={3}>
+        <Selector
           label="Theme"
           value={themeName}
           options={Object.keys(themes)}
           onChange={next => setThemeName(next as ThemeName)}
         />
-        <XDSTheme theme={themes[themeName]}>
-          <XDSCard padding={4} width="100%">
-            <XDSStack direction="vertical" gap={3}>
-              <XDSHeading level={4}>{themeName} preview</XDSHeading>
-              <XDSText type="body" color="secondary">
+        <Theme theme={themes[themeName]}>
+          <Card padding={4} width="100%">
+            <Stack direction="vertical" gap={3}>
+              <Heading level={4}>{themeName} preview</Heading>
+              <Text type="body" color="secondary">
                 Switching the theme object updates all tokens and component
                 styles below the provider.
-              </XDSText>
-              <XDSButton label="Save changes" />
-            </XDSStack>
-          </XDSCard>
-        </XDSTheme>
-      </XDSStack>
-    </XDSSection>
+              </Text>
+              <Button label="Save changes" />
+            </Stack>
+          </Card>
+        </Theme>
+      </Stack>
+    </Section>
   );
 }

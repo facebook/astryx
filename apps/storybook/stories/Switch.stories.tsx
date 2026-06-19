@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSSwitch} from '@xds/core/Switch';
+import {Switch} from '@xds/core/Switch';
 import {
   BellIcon,
   MoonIcon,
@@ -10,9 +10,9 @@ import {
   CloudArrowUpIcon,
 } from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSSwitch> = {
+const meta: Meta<typeof Switch> = {
   title: 'Core/Switch',
-  component: XDSSwitch,
+  component: Switch,
   tags: ['autodocs'],
   argTypes: {
     label: {
@@ -58,14 +58,14 @@ const meta: Meta<typeof XDSSwitch> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSSwitch>;
+type Story = StoryObj<typeof Switch>;
 
 export const Default: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? false);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSSwitch
+      <Switch
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -82,7 +82,7 @@ export const On: Story = {
     const [value, setValue] = useState(args.value ?? true);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSSwitch
+      <Switch
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -100,7 +100,7 @@ export const WithDescription: Story = {
     const [value, setValue] = useState(args.value ?? false);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSSwitch
+      <Switch
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -118,7 +118,7 @@ export const WithHiddenLabel: Story = {
     const [value, setValue] = useState(args.value ?? false);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSSwitch
+      <Switch
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -136,7 +136,7 @@ export const Disabled: Story = {
     const [value, setValue] = useState(args.value ?? false);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSSwitch
+      <Switch
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -155,7 +155,7 @@ export const DisabledOn: Story = {
     const [value, setValue] = useState(args.value ?? true);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSSwitch
+      <Switch
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -174,7 +174,7 @@ export const Required: Story = {
     const [value, setValue] = useState(args.value ?? false);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSSwitch
+      <Switch
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -192,7 +192,7 @@ export const Optional: Story = {
     const [value, setValue] = useState(args.value ?? false);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSSwitch
+      <Switch
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -210,7 +210,7 @@ export const WithLabelIcon: Story = {
     const [value, setValue] = useState(args.value ?? false);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSSwitch
+      <Switch
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -229,7 +229,7 @@ export const WithLabelTooltip: Story = {
     const [value, setValue] = useState(args.value ?? false);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSSwitch
+      <Switch
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -248,7 +248,7 @@ export const LabelPositionStart: Story = {
     const [value, setValue] = useState(args.value ?? false);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSSwitch
+      <Switch
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -268,7 +268,7 @@ export const LabelSpacingSpread: Story = {
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
       <div style={{width: 300, border: '1px solid #ccc', padding: 16}}>
-        <XDSSwitch
+        <Switch
           {...restArgs}
           value={value}
           onChange={checked => setValue(checked)}
@@ -298,21 +298,21 @@ export const AllVariations: Story = {
           gap: '16px',
           maxWidth: '400px',
         }}>
-        <XDSSwitch label="Off state" value={value1} onChange={setValue1} />
-        <XDSSwitch label="On state" value={value2} onChange={setValue2} />
-        <XDSSwitch
+        <Switch label="Off state" value={value1} onChange={setValue1} />
+        <Switch label="On state" value={value2} onChange={setValue2} />
+        <Switch
           label="Disabled off"
           value={value3}
           onChange={setValue3}
           isDisabled
         />
-        <XDSSwitch
+        <Switch
           label="Disabled on"
           value={value4}
           onChange={setValue4}
           isDisabled
         />
-        <XDSSwitch
+        <Switch
           label="With description"
           description="Additional context for this setting"
           value={value5}
@@ -336,21 +336,21 @@ export const LabelIconVariations: Story = {
           gap: '16px',
           maxWidth: '400px',
         }}>
-        <XDSSwitch
+        <Switch
           label="Notifications"
           description="Receive push notifications"
           value={value1}
           onChange={setValue1}
           labelIcon={BellIcon}
         />
-        <XDSSwitch
+        <Switch
           label="Dark mode"
           description="Use dark color scheme"
           value={value2}
           onChange={setValue2}
           labelIcon={MoonIcon}
         />
-        <XDSSwitch
+        <Switch
           label="Two-factor authentication"
           description="Add an extra layer of security"
           value={value3}
@@ -375,13 +375,13 @@ export const LabelPositionComparison: Story = {
           gap: '16px',
           maxWidth: '400px',
         }}>
-        <XDSSwitch
+        <Switch
           label="Label at end (default)"
           value={value1}
           onChange={setValue1}
           labelPosition="end"
         />
-        <XDSSwitch
+        <Switch
           label="Label at start"
           value={value2}
           onChange={setValue2}
@@ -408,7 +408,7 @@ export const SpreadSpacingExample: Story = {
           borderRadius: '8px',
           padding: '16px',
         }}>
-        <XDSSwitch
+        <Switch
           label="Enable notifications"
           value={value1}
           onChange={setValue1}
@@ -416,7 +416,7 @@ export const SpreadSpacingExample: Story = {
           labelSpacing="spread"
           labelIcon={BellIcon}
         />
-        <XDSSwitch
+        <Switch
           label="Dark mode"
           value={value2}
           onChange={setValue2}
@@ -424,7 +424,7 @@ export const SpreadSpacingExample: Story = {
           labelSpacing="spread"
           labelIcon={MoonIcon}
         />
-        <XDSSwitch
+        <Switch
           label="Auto-save"
           value={value3}
           onChange={setValue3}
@@ -443,7 +443,7 @@ export const WithErrorStatus: Story = {
     const [value, setValue] = useState(args.value ?? false);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSSwitch
+      <Switch
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -462,7 +462,7 @@ export const WithWarningStatus: Story = {
     const [value, setValue] = useState(args.value ?? true);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSSwitch
+      <Switch
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -481,7 +481,7 @@ export const WithSuccessStatus: Story = {
     const [value, setValue] = useState(args.value ?? true);
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSSwitch
+      <Switch
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -508,7 +508,7 @@ export const StatusVariations: Story = {
           gap: '24px',
           maxWidth: '400px',
         }}>
-        <XDSSwitch
+        <Switch
           label="Accept terms and conditions"
           value={value1}
           onChange={setValue1}
@@ -518,7 +518,7 @@ export const StatusVariations: Story = {
             message: 'You must accept the terms to continue',
           }}
         />
-        <XDSSwitch
+        <Switch
           label="Share usage data"
           description="Help us improve by sharing anonymous usage statistics"
           value={value2}
@@ -528,7 +528,7 @@ export const StatusVariations: Story = {
             message: 'This data may be shared with partners',
           }}
         />
-        <XDSSwitch
+        <Switch
           label="Two-factor authentication"
           value={value3}
           onChange={setValue3}

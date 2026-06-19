@@ -2,16 +2,16 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
+import {CheckboxInput} from '@xds/core/CheckboxInput';
 import {
   BellIcon,
   EnvelopeIcon,
   ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSCheckboxInput> = {
+const meta: Meta<typeof CheckboxInput> = {
   title: 'Core/CheckboxInput',
-  component: XDSCheckboxInput,
+  component: CheckboxInput,
   tags: ['autodocs'],
   argTypes: {
     label: {
@@ -50,7 +50,7 @@ const meta: Meta<typeof XDSCheckboxInput> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSCheckboxInput>;
+type Story = StoryObj<typeof CheckboxInput>;
 
 export const Default: Story = {
   render: args => {
@@ -59,7 +59,7 @@ export const Default: Story = {
     );
     const {value: _, onChange: __, ...restArgs} = args;
     return (
-      <XDSCheckboxInput
+      <CheckboxInput
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -78,7 +78,7 @@ export const Checked: Story = {
     );
     const {value: _, onChange: __, ...restArgs} = args;
     return (
-      <XDSCheckboxInput
+      <CheckboxInput
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -98,7 +98,7 @@ export const WithDescription: Story = {
     );
     const {value: _, onChange: __, ...restArgs} = args;
     return (
-      <XDSCheckboxInput
+      <CheckboxInput
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -118,7 +118,7 @@ export const WithHiddenLabel: Story = {
     );
     const {value: _, onChange: __, ...restArgs} = args;
     return (
-      <XDSCheckboxInput
+      <CheckboxInput
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -138,7 +138,7 @@ export const Indeterminate: Story = {
     );
     const {value: _, onChange: __, ...restArgs} = args;
     return (
-      <XDSCheckboxInput
+      <CheckboxInput
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -159,7 +159,7 @@ export const Disabled: Story = {
     );
     const {value: _, onChange: __, ...restArgs} = args;
     return (
-      <XDSCheckboxInput
+      <CheckboxInput
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -180,7 +180,7 @@ export const DisabledChecked: Story = {
     );
     const {value: _, onChange: __, ...restArgs} = args;
     return (
-      <XDSCheckboxInput
+      <CheckboxInput
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -211,25 +211,25 @@ export const AllVariations: Story = {
           gap: '16px',
           maxWidth: '400px',
         }}>
-        <XDSCheckboxInput
+        <CheckboxInput
           label="Unchecked"
           value={value1}
           onChange={setValue1}
         />
-        <XDSCheckboxInput label="Checked" value={value2} onChange={setValue2} />
-        <XDSCheckboxInput
+        <CheckboxInput label="Checked" value={value2} onChange={setValue2} />
+        <CheckboxInput
           label="Indeterminate"
           description="Some items are selected"
           value={value3}
           onChange={setValue3}
         />
-        <XDSCheckboxInput
+        <CheckboxInput
           label="Disabled unchecked"
           value={value4}
           onChange={setValue4}
           isDisabled
         />
-        <XDSCheckboxInput
+        <CheckboxInput
           label="Disabled checked"
           value={value5}
           onChange={setValue5}
@@ -247,7 +247,7 @@ export const SmallSize: Story = {
     );
     const {value: _, onChange: __, ...restArgs} = args;
     return (
-      <XDSCheckboxInput
+      <CheckboxInput
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -274,25 +274,25 @@ export const SizeComparison: Story = {
           gap: '16px',
           maxWidth: '400px',
         }}>
-        <XDSCheckboxInput
+        <CheckboxInput
           label="Medium size (default)"
           value={value1}
           onChange={setValue1}
           size="md"
         />
-        <XDSCheckboxInput
+        <CheckboxInput
           label="Small size"
           value={value2}
           onChange={setValue2}
           size="sm"
         />
-        <XDSCheckboxInput
+        <CheckboxInput
           label="Medium size checked"
           value={value3}
           onChange={setValue3}
           size="md"
         />
-        <XDSCheckboxInput
+        <CheckboxInput
           label="Small size checked"
           value={value4}
           onChange={setValue4}
@@ -310,7 +310,7 @@ export const WithStartIcon: Story = {
     );
     const {value: _, onChange: __, ...restArgs} = args;
     return (
-      <XDSCheckboxInput
+      <CheckboxInput
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -337,21 +337,21 @@ export const StartIconVariations: Story = {
           gap: '16px',
           maxWidth: '400px',
         }}>
-        <XDSCheckboxInput
+        <CheckboxInput
           label="Email notifications"
           description="Receive updates via email"
           value={value1}
           onChange={setValue1}
           labelIcon={EnvelopeIcon}
         />
-        <XDSCheckboxInput
+        <CheckboxInput
           label="Push notifications"
           description="Get instant alerts on your device"
           value={value2}
           onChange={setValue2}
           labelIcon={BellIcon}
         />
-        <XDSCheckboxInput
+        <CheckboxInput
           label="Two-factor authentication"
           description="Add an extra layer of security"
           value={value3}
@@ -371,7 +371,7 @@ export const WithErrorStatus: Story = {
     );
     const {value: _, onChange: __, ...restArgs} = args;
     return (
-      <XDSCheckboxInput
+      <CheckboxInput
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -391,7 +391,7 @@ export const WithWarningStatus: Story = {
     );
     const {value: _, onChange: __, ...restArgs} = args;
     return (
-      <XDSCheckboxInput
+      <CheckboxInput
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -412,7 +412,7 @@ export const WithSuccessStatus: Story = {
     );
     const {value: _, onChange: __, ...restArgs} = args;
     return (
-      <XDSCheckboxInput
+      <CheckboxInput
         {...restArgs}
         value={value}
         onChange={checked => setValue(checked)}
@@ -438,7 +438,7 @@ export const StatusVariations: Story = {
           gap: '24px',
           maxWidth: '400px',
         }}>
-        <XDSCheckboxInput
+        <CheckboxInput
           label="Accept terms and conditions"
           value={value1}
           onChange={setValue1}
@@ -447,7 +447,7 @@ export const StatusVariations: Story = {
             message: 'You must accept the terms to continue',
           }}
         />
-        <XDSCheckboxInput
+        <CheckboxInput
           label="Share usage data"
           description="Help us improve by sharing anonymous usage statistics"
           value={value2}
@@ -457,7 +457,7 @@ export const StatusVariations: Story = {
             message: 'This data may be shared with partners',
           }}
         />
-        <XDSCheckboxInput
+        <CheckboxInput
           label="Email verified"
           value={value3}
           onChange={setValue3}

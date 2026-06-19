@@ -2,16 +2,16 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
+import {Dialog, DialogHeader} from '@xds/core/Dialog';
 import {
-  XDSLayout,
-  XDSLayoutContent,
-  XDSLayoutFooter,
-  XDSHStack,
+  Layout,
+  LayoutContent,
+  LayoutFooter,
+  HStack,
 } from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText} from '@xds/core/Text';
-import {XDSTextInput} from '@xds/core/TextInput';
+import {Button} from '@xds/core/Button';
+import {Text} from '@xds/core/Text';
+import {TextInput} from '@xds/core/TextInput';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
@@ -20,9 +20,9 @@ const styles = stylex.create({
   },
 });
 
-const meta: Meta<typeof XDSDialog> = {
+const meta: Meta<typeof Dialog> = {
   title: 'Core/Dialog',
-  component: XDSDialog,
+  component: Dialog,
   tags: ['autodocs'],
   argTypes: {
     isOpen: {
@@ -51,56 +51,56 @@ const meta: Meta<typeof XDSDialog> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSDialog>;
+type Story = StoryObj<typeof Dialog>;
 
 /**
- * Basic modal example with XDSDialogHeader
+ * Basic modal example with DialogHeader
  */
 function BasicModalExample() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
-      <XDSButton
+      <Button
         label="Open Modal"
         variant="secondary"
         onClick={() => setIsOpen(true)}
       />
-      <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
-        <XDSLayout
+      <Dialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
+        <Layout
           header={
-            <XDSDialogHeader
+            <DialogHeader
               title="Modal Title"
               onOpenChange={open => setIsOpen(open)}
             />
           }
           content={
-            <XDSLayoutContent>
-              <XDSText type="body">
+            <LayoutContent>
+              <Text type="body">
                 This is a modal using the native &lt;dialog&gt; element with
-                XDSLayout for structured content. Click outside or press Escape
+                Layout for structured content. Click outside or press Escape
                 to close.
-              </XDSText>
-            </XDSLayoutContent>
+              </Text>
+            </LayoutContent>
           }
           footer={
-            <XDSLayoutFooter>
-              <XDSHStack gap={2} hAlign="end">
-                <XDSButton
+            <LayoutFooter>
+              <HStack gap={2} hAlign="end">
+                <Button
                   label="Cancel"
                   variant="secondary"
                   onClick={() => setIsOpen(false)}
                 />
-                <XDSButton
+                <Button
                   label="Confirm"
                   variant="primary"
                   onClick={() => setIsOpen(false)}
                 />
-              </XDSHStack>
-            </XDSLayoutFooter>
+              </HStack>
+            </LayoutFooter>
           }
         />
-      </XDSDialog>
+      </Dialog>
     </>
   );
 }
@@ -117,46 +117,46 @@ function SubtitleModalExample() {
 
   return (
     <>
-      <XDSButton
+      <Button
         label="Open Modal with Subtitle"
         variant="secondary"
         onClick={() => setIsOpen(true)}
       />
-      <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
-        <XDSLayout
+      <Dialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
+        <Layout
           header={
-            <XDSDialogHeader
+            <DialogHeader
               title="Edit User Profile"
               subtitle="Make changes to your account settings"
               onOpenChange={open => setIsOpen(open)}
             />
           }
           content={
-            <XDSLayoutContent>
-              <XDSText type="body">
+            <LayoutContent>
+              <Text type="body">
                 The subtitle appears below the title in smaller, secondary text.
                 It provides additional context about the dialog&apos;s purpose.
-              </XDSText>
-            </XDSLayoutContent>
+              </Text>
+            </LayoutContent>
           }
           footer={
-            <XDSLayoutFooter>
-              <XDSHStack gap={2} hAlign="end">
-                <XDSButton
+            <LayoutFooter>
+              <HStack gap={2} hAlign="end">
+                <Button
                   label="Cancel"
                   variant="secondary"
                   onClick={() => setIsOpen(false)}
                 />
-                <XDSButton
+                <Button
                   label="Save Changes"
                   variant="primary"
                   onClick={() => setIsOpen(false)}
                 />
-              </XDSHStack>
-            </XDSLayoutFooter>
+              </HStack>
+            </LayoutFooter>
           }
         />
-      </XDSDialog>
+      </Dialog>
     </>
   );
 }
@@ -173,42 +173,42 @@ function WideModalExample() {
 
   return (
     <>
-      <XDSButton
+      <Button
         label="Open Wide Modal (600px)"
         variant="secondary"
         onClick={() => setIsOpen(true)}
       />
-      <XDSDialog
+      <Dialog
         isOpen={isOpen}
         onOpenChange={open => setIsOpen(open)}
         width={600}>
-        <XDSLayout
+        <Layout
           header={
-            <XDSDialogHeader
+            <DialogHeader
               title="Wide Modal"
               onOpenChange={open => setIsOpen(open)}
             />
           }
           content={
-            <XDSLayoutContent>
-              <XDSText type="body">
+            <LayoutContent>
+              <Text type="body">
                 This modal has a custom width of 600px.
-              </XDSText>
-            </XDSLayoutContent>
+              </Text>
+            </LayoutContent>
           }
           footer={
-            <XDSLayoutFooter>
-              <XDSHStack hAlign="end">
-                <XDSButton
+            <LayoutFooter>
+              <HStack hAlign="end">
+                <Button
                   label="Close"
                   variant="primary"
                   onClick={() => setIsOpen(false)}
                 />
-              </XDSHStack>
-            </XDSLayoutFooter>
+              </HStack>
+            </LayoutFooter>
           }
         />
-      </XDSDialog>
+      </Dialog>
     </>
   );
 }
@@ -225,54 +225,54 @@ function FullscreenModalExample() {
 
   return (
     <>
-      <XDSButton
+      <Button
         label="Open Fullscreen Modal"
         variant="secondary"
         onClick={() => setIsOpen(true)}
       />
-      <XDSDialog
+      <Dialog
         isOpen={isOpen}
         onOpenChange={open => setIsOpen(open)}
         variant="fullscreen">
-        <XDSLayout
+        <Layout
           header={
-            <XDSDialogHeader
+            <DialogHeader
               title="Fullscreen Modal"
               onOpenChange={open => setIsOpen(open)}
             />
           }
           content={
-            <XDSLayoutContent>
+            <LayoutContent>
               <div
                 style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
-                <XDSText type="body">
+                <Text type="body">
                   This modal takes up the entire viewport. The width, maxHeight,
                   and position props are ignored in fullscreen mode.
-                </XDSText>
+                </Text>
                 {Array.from({length: 30}, (_, i) => (
-                  <XDSText type="body" key={i}>
+                  <Text type="body" key={i}>
                     {i + 1}. Lorem ipsum dolor sit amet, consectetur adipiscing
                     elit. Sed do eiusmod tempor incididunt ut labore et dolore
                     magna aliqua. Ut enim ad minim veniam, quis nostrud
                     exercitation ullamco laboris.
-                  </XDSText>
+                  </Text>
                 ))}
               </div>
-            </XDSLayoutContent>
+            </LayoutContent>
           }
           footer={
-            <XDSLayoutFooter>
-              <XDSHStack hAlign="end">
-                <XDSButton
+            <LayoutFooter>
+              <HStack hAlign="end">
+                <Button
                   label="Close"
                   variant="primary"
                   onClick={() => setIsOpen(false)}
                 />
-              </XDSHStack>
-            </XDSLayoutFooter>
+              </HStack>
+            </LayoutFooter>
           }
         />
-      </XDSDialog>
+      </Dialog>
     </>
   );
 }
@@ -295,43 +295,43 @@ function RequiredModalExample() {
 
   return (
     <>
-      <XDSButton
+      <Button
         label="Open Required Modal"
         variant="destructive"
         onClick={() => setIsOpen(true)}
       />
       {accepted && (
-        <XDSText type="body" color="primary" xstyle={styles.acceptedMessage}>
+        <Text type="body" color="primary" xstyle={styles.acceptedMessage}>
           ✓ Terms accepted
-        </XDSText>
+        </Text>
       )}
-      <XDSDialog
+      <Dialog
         isOpen={isOpen}
         onOpenChange={open => setIsOpen(open)}
         purpose="required">
-        <XDSLayout
-          header={<XDSDialogHeader title="Accept Terms" />}
+        <Layout
+          header={<DialogHeader title="Accept Terms" />}
           content={
-            <XDSLayoutContent>
-              <XDSText type="body">
+            <LayoutContent>
+              <Text type="body">
                 This is a required modal. You cannot dismiss it by clicking
                 outside or pressing Escape. You must complete the action.
-              </XDSText>
-            </XDSLayoutContent>
+              </Text>
+            </LayoutContent>
           }
           footer={
-            <XDSLayoutFooter>
-              <XDSHStack hAlign="end">
-                <XDSButton
+            <LayoutFooter>
+              <HStack hAlign="end">
+                <Button
                   label="I Accept"
                   variant="primary"
                   onClick={handleAccept}
                 />
-              </XDSHStack>
-            </XDSLayoutFooter>
+              </HStack>
+            </LayoutFooter>
           }
         />
-      </XDSDialog>
+      </Dialog>
     </>
   );
 }
@@ -348,50 +348,50 @@ function FormModalExample() {
 
   return (
     <>
-      <XDSButton
+      <Button
         label="Open Form Modal"
         variant="secondary"
         onClick={() => setIsOpen(true)}
       />
-      <XDSDialog
+      <Dialog
         isOpen={isOpen}
         onOpenChange={open => setIsOpen(open)}
         purpose="form"
         width={500}>
-        <XDSLayout
+        <Layout
           header={
-            <XDSDialogHeader
+            <DialogHeader
               title="Edit Profile"
               onOpenChange={open => setIsOpen(open)}
             />
           }
           content={
-            <XDSLayoutContent>
-              <XDSText type="body">
+            <LayoutContent>
+              <Text type="body">
                 This modal uses purpose=&quot;form&quot;. Clicking outside
                 won&apos;t close it (to prevent accidental data loss), but you
                 can still press Escape. Try clicking outside vs pressing Escape.
-              </XDSText>
-            </XDSLayoutContent>
+              </Text>
+            </LayoutContent>
           }
           footer={
-            <XDSLayoutFooter>
-              <XDSHStack gap={2} hAlign="end">
-                <XDSButton
+            <LayoutFooter>
+              <HStack gap={2} hAlign="end">
+                <Button
                   label="Cancel"
                   variant="secondary"
                   onClick={() => setIsOpen(false)}
                 />
-                <XDSButton
+                <Button
                   label="Save"
                   variant="primary"
                   onClick={() => setIsOpen(false)}
                 />
-              </XDSHStack>
-            </XDSLayoutFooter>
+              </HStack>
+            </LayoutFooter>
           }
         />
-      </XDSDialog>
+      </Dialog>
     </>
   );
 }
@@ -408,44 +408,44 @@ function InfoModalExample() {
 
   return (
     <>
-      <XDSButton
+      <Button
         label="Open Info Modal"
         variant="secondary"
         onClick={() => setIsOpen(true)}
       />
-      <XDSDialog
+      <Dialog
         isOpen={isOpen}
         onOpenChange={open => setIsOpen(open)}
         purpose="info">
-        <XDSLayout
+        <Layout
           header={
-            <XDSDialogHeader
+            <DialogHeader
               title="Information"
               onOpenChange={open => setIsOpen(open)}
             />
           }
           content={
-            <XDSLayoutContent>
-              <XDSText type="body">
+            <LayoutContent>
+              <Text type="body">
                 This modal uses purpose=&quot;info&quot; (default). You can
                 close it by clicking outside, pressing Escape, or using the
                 button.
-              </XDSText>
-            </XDSLayoutContent>
+              </Text>
+            </LayoutContent>
           }
           footer={
-            <XDSLayoutFooter>
-              <XDSHStack hAlign="end">
-                <XDSButton
+            <LayoutFooter>
+              <HStack hAlign="end">
+                <Button
                   label="Got it"
                   variant="primary"
                   onClick={() => setIsOpen(false)}
                 />
-              </XDSHStack>
-            </XDSLayoutFooter>
+              </HStack>
+            </LayoutFooter>
           }
         />
-      </XDSDialog>
+      </Dialog>
     </>
   );
 }
@@ -462,44 +462,44 @@ function PositionedModalExample() {
 
   return (
     <>
-      <XDSButton
+      <Button
         label="Open Positioned Modal"
         variant="secondary"
         onClick={() => setIsOpen(true)}
       />
-      <XDSDialog
+      <Dialog
         isOpen={isOpen}
         onOpenChange={open => setIsOpen(open)}
         position={{top: 100, right: 20}}
         width={350}>
-        <XDSLayout
+        <Layout
           header={
-            <XDSDialogHeader
+            <DialogHeader
               title="Positioned Modal"
               onOpenChange={open => setIsOpen(open)}
             />
           }
           content={
-            <XDSLayoutContent>
-              <XDSText type="body">
+            <LayoutContent>
+              <Text type="body">
                 This modal is positioned at top: 100px, right: 20px instead of
                 being centered.
-              </XDSText>
-            </XDSLayoutContent>
+              </Text>
+            </LayoutContent>
           }
           footer={
-            <XDSLayoutFooter>
-              <XDSHStack hAlign="end">
-                <XDSButton
+            <LayoutFooter>
+              <HStack hAlign="end">
+                <Button
                   label="Close"
                   variant="primary"
                   onClick={() => setIsOpen(false)}
                 />
-              </XDSHStack>
-            </XDSLayoutFooter>
+              </HStack>
+            </LayoutFooter>
           }
         />
-      </XDSDialog>
+      </Dialog>
     </>
   );
 }
@@ -516,57 +516,57 @@ function ScrollingModalExample() {
 
   return (
     <>
-      <XDSButton
+      <Button
         label="Open Scrolling Modal"
         variant="secondary"
         onClick={() => setIsOpen(true)}
       />
-      <XDSDialog
+      <Dialog
         isOpen={isOpen}
         onOpenChange={open => setIsOpen(open)}
         maxHeight="50vh">
-        <XDSLayout
+        <Layout
           header={
-            <XDSDialogHeader
+            <DialogHeader
               title="Terms and Conditions"
               onOpenChange={open => setIsOpen(open)}
             />
           }
           content={
-            <XDSLayoutContent>
+            <LayoutContent>
               <div
                 style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
                 {Array.from({length: 20}, (_, i) => (
-                  <XDSText type="body" key={i}>
+                  <Text type="body" key={i}>
                     {i + 1}. Lorem ipsum dolor sit amet, consectetur adipiscing
                     elit. Sed do eiusmod tempor incididunt ut labore et dolore
                     magna aliqua. Ut enim ad minim veniam, quis nostrud
                     exercitation ullamco laboris nisi ut aliquip ex ea commodo
                     consequat. Duis aute irure dolor in reprehenderit in
                     voluptate velit esse cillum dolore eu fugiat nulla pariatur.
-                  </XDSText>
+                  </Text>
                 ))}
               </div>
-            </XDSLayoutContent>
+            </LayoutContent>
           }
           footer={
-            <XDSLayoutFooter>
-              <XDSHStack gap={2} hAlign="end">
-                <XDSButton
+            <LayoutFooter>
+              <HStack gap={2} hAlign="end">
+                <Button
                   label="Decline"
                   variant="secondary"
                   onClick={() => setIsOpen(false)}
                 />
-                <XDSButton
+                <Button
                   label="Accept"
                   variant="primary"
                   onClick={() => setIsOpen(false)}
                 />
-              </XDSHStack>
-            </XDSLayoutFooter>
+              </HStack>
+            </LayoutFooter>
           }
         />
-      </XDSDialog>
+      </Dialog>
     </>
   );
 }
@@ -589,54 +589,54 @@ function ConfirmationModalExample() {
 
   return (
     <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
-      <XDSButton
+      <Button
         label="Delete Item"
         variant="destructive"
         onClick={() => setIsOpen(true)}
       />
       {deleted && (
-        <XDSText type="body" color="primary">
+        <Text type="body" color="primary">
           ✓ Item deleted (demo)
-        </XDSText>
+        </Text>
       )}
-      <XDSDialog
+      <Dialog
         isOpen={isOpen}
         onOpenChange={open => setIsOpen(open)}
         width={350}
         purpose="form">
-        <XDSLayout
+        <Layout
           header={
-            <XDSDialogHeader
+            <DialogHeader
               title="Confirm Delete"
               onOpenChange={open => setIsOpen(open)}
             />
           }
           content={
-            <XDSLayoutContent>
-              <XDSText type="body">
+            <LayoutContent>
+              <Text type="body">
                 Are you sure you want to delete this item? This action cannot be
                 undone.
-              </XDSText>
-            </XDSLayoutContent>
+              </Text>
+            </LayoutContent>
           }
           footer={
-            <XDSLayoutFooter>
-              <XDSHStack gap={2} hAlign="end">
-                <XDSButton
+            <LayoutFooter>
+              <HStack gap={2} hAlign="end">
+                <Button
                   label="Cancel"
                   variant="secondary"
                   onClick={() => setIsOpen(false)}
                 />
-                <XDSButton
+                <Button
                   label="Delete"
                   variant="destructive"
                   onClick={handleDelete}
                 />
-              </XDSHStack>
-            </XDSLayoutFooter>
+              </HStack>
+            </LayoutFooter>
           }
         />
-      </XDSDialog>
+      </Dialog>
     </div>
   );
 }
@@ -666,32 +666,32 @@ function AutoFocusInputExample() {
   const [value, setValue] = useState('');
   return (
     <>
-      <XDSButton
+      <Button
         label="Open Dialog"
         variant="secondary"
         onClick={() => setIsOpen(true)}
       />
-      <XDSDialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
-        <XDSLayout
+      <Dialog isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
+        <Layout
           header={
-            <XDSDialogHeader
+            <DialogHeader
               title="Auto-focused Input"
               onOpenChange={open => setIsOpen(open)}
             />
           }
           content={
-            <XDSLayoutContent>
-              <XDSTextInput
+            <LayoutContent>
+              <TextInput
                 label="Name"
                 placeholder="This input is focused on mount"
                 value={value}
                 onChange={setValue}
                 hasAutoFocus
               />
-            </XDSLayoutContent>
+            </LayoutContent>
           }
         />
-      </XDSDialog>
+      </Dialog>
     </>
   );
 }
