@@ -11,10 +11,19 @@ import {astryxTheme} from '../themes/astryx';
 type ThemeMode = 'light' | 'dark';
 
 const ThemeModeContext = createContext<{
+  /** Resolved color mode for UI consumers (toggle icon, ColorSwatch). */
   mode: ThemeMode;
+  /**
+   * Raw, system-aware mode for theme rendering. Stays 'system' on the first
+   * paint so nested <XDSTheme> scopes keep `color-scheme: light dark` and their
+   * light-dark() tokens follow the OS preference — no flash before the OS mode
+   * resolves (#2713).
+   */
+  themeMode: 'system' | ThemeMode;
   toggleMode: () => void;
 }>({
   mode: 'light',
+  themeMode: 'system',
   toggleMode: () => {},
 });
 
@@ -53,7 +62,7 @@ export function Providers({children}: {children: React.ReactNode}) {
   const resolvedMode: ThemeMode = mode === 'dark' ? 'dark' : 'light';
 
   return (
-    <ThemeModeContext value={{mode: resolvedMode, toggleMode}}>
+    <ThemeModeContext value={{mode: resolvedMode, themeMode: mode, toggleMode}}>
       <XDSTheme theme={astryxTheme} mode={mode}>
         <XDSLinkProvider component={Link}>{children}</XDSLinkProvider>
       </XDSTheme>
