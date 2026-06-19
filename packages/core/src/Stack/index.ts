@@ -32,12 +32,16 @@ export type {StackItemProps} from './StackItem';
 // augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
+  HStack as XDSHStack,
   Stack as XDSStack,
   StackItem as XDSStackItem,
+  VStack as XDSVStack,
 } from '.';
 export type {
+  HStackProps as XDSHStackProps,
   StackAlignment as XDSStackAlignment,
   StackItemProps as XDSStackItemProps,
   StackProps as XDSStackProps,
+  VStackProps as XDSVStackProps,
 } from '.';
 // <compat-aliases:end>
