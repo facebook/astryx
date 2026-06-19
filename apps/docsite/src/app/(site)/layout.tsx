@@ -23,7 +23,9 @@ export default async function MarketingLayout({
       topNav={<SharedTopNav />}>
       <div className={styles.shell}>
         <div className={styles.main}>{children}</div>
-        <SiteFooter />
+        <div className={styles.footer}>
+          <SiteFooter />
+        </div>
       </div>
     </XDSAppShell>
   );
