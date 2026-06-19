@@ -59,6 +59,23 @@ describe('XDSMetricTile', () => {
     expect(screen.getByText('+12.5%')).toBeInTheDocument();
   });
 
+  it('renders the delta trend via a theme icon (XDSIcon), not a raw svg', () => {
+    const {container} = render(
+      <XDSMetricTile value={100} deltaValue="+1%" deltaTrend="upward" />,
+    );
+    // Registry icons render as a styled span carrying the xds-icon class.
+    expect(container.querySelector('.xds-icon')).toBeInTheDocument();
+  });
+
+  it('renders a help icon button when a hovercard is provided', () => {
+    render(
+      <XDSMetricTile value={1} title="Revenue" hovercard="What this means" />,
+    );
+    expect(
+      screen.getByRole('button', {name: 'Help Message'}),
+    ).toBeInTheDocument();
+  });
+
   it('renders zero correctly', () => {
     render(<XDSMetricTile value={0} data-testid="metric" />);
     expect(screen.getByTestId('metric')).toHaveTextContent('0');

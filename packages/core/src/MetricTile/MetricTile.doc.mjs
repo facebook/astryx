@@ -10,7 +10,7 @@ export const docs = {
     {
       name: 'value',
       type: 'number | null | undefined',
-      description: 'The metric value to display. When null or undefined, displays an em-dash (—).',
+      description: 'The metric value to display. When null or undefined, displays a double hyphen (--).',
     },
     {
       name: 'title',

@@ -4,7 +4,7 @@
 
 /**
  * @file XDSMetricTile.tsx
- * @input Uses React, XDSText, XDSHoverCard, theme tokens
+ * @input Uses React, XDSText, XDSIcon, XDSHoverCard, theme tokens
  * @output Exports XDSMetricTile component and related types
  * @position Core implementation; consumed by index.ts
  *
@@ -24,10 +24,12 @@ import {
   typeScaleVars,
   fontWeightVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 import {XDSText} from '../Text/XDSText';
-import {truncationStyles} from '../Text/text.stylex';
 import {XDSHoverCard} from '../HoverCard/XDSHoverCard';
+import {XDSIcon} from '../Icon/XDSIcon';
+import type {XDSIconName, XDSIconColor} from '../Icon';
 
 // =============================================================================
 // Styles
@@ -57,7 +59,9 @@ const styles = stylex.create({
   helpIcon: {
     display: 'inline-flex',
     alignItems: 'center',
-    height: spacingVars['--spacing-5'],
+    // Match the title's line height so the inline help icon is vertically
+    // centered against the title text rather than floating on a magic height.
+    height: typeScaleVars['--text-body-leading'],
     marginInlineStart: spacingVars['--spacing-1'],
   },
   helpButton: {
@@ -71,24 +75,9 @@ const styles = stylex.create({
   tabularNums: {
     fontVariantNumeric: 'tabular-nums',
   },
-  title: {
-    fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: typeScaleVars['--text-body-leading'],
-    fontWeight: typeScaleVars['--text-body-weight'],
-    color: colorVars['--color-text-primary'],
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-  },
-  subtitle: {
-    fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: typeScaleVars['--text-supporting-leading'],
-    fontWeight: typeScaleVars['--text-supporting-weight'],
-    color: colorVars['--color-text-secondary'],
-  },
 });
 
 const gapStyles = stylex.create({
-  sm: {gap: spacingVars['--spacing-0-5']},
   md: {gap: spacingVars['--spacing-2']},
   titleBottom: {gap: 0},
   titleTop: {gap: spacingVars['--spacing-2']},
@@ -99,6 +88,11 @@ const paddingStyles = stylex.create({
   small: {padding: spacingVars['--spacing-4']},
 });
 
+// The metric value is the tile's focal "number" and needs explicit display
+// sizing that doesn't map 1:1 to an XDSText semantic type, so it is styled
+// directly from type-scale tokens (themeable) rather than hardcoded values:
+//  - large -> display-2 scale
+//  - small -> heading-1 scale at normal weight
 const valueStyles = stylex.create({
   large: {
     fontSize: typeScaleVars['--text-display-2-size'],
@@ -112,12 +106,6 @@ const valueStyles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-primary'],
   },
-});
-
-const deltaIconColorStyles = stylex.create({
-  favorable: {color: colorVars['--color-success']},
-  unfavorable: {color: colorVars['--color-error']},
-  neutral: {color: colorVars['--color-icon-secondary']},
 });
 
 // =============================================================================
@@ -269,29 +257,28 @@ function getFormatter(
 // Delta Indicator
 // =============================================================================
 
-const TREND_PATHS: Record<XDSMetricDeltaTrend, string> = {
-  upward: 'M7 14l5-5 5 5',
-  downward: 'M7 10l5 5 5-5',
-  flat: 'M5 12h14',
+/**
+ * Maps a delta trend to a semantic icon name from the theme's icon map.
+ * Using the registry (instead of hardcoded SVG paths) keeps these icons
+ * themeable — a consumer theme can swap the arrow glyphs via registerIcons.
+ * 'flat' has no dedicated horizontal-line icon in the default registry, so we
+ * use 'arrowsUpDown' as the closest semantic for "no clear direction".
+ */
+const TREND_ICONS: Record<XDSMetricDeltaTrend, XDSIconName> = {
+  upward: 'arrowUp',
+  downward: 'arrowDown',
+  flat: 'arrowsUpDown',
 };
 
-function TrendArrowSvg({
-  direction,
-  ...props
-}: {direction: XDSMetricDeltaTrend} & React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}>
-      <path d={TREND_PATHS[direction]} />
-    </svg>
-  );
-}
+/** Maps delta favorability to a semantic icon color. */
+const FAVORABILITY_ICON_COLORS: Record<
+  XDSMetricDeltaFavorability,
+  XDSIconColor
+> = {
+  favorable: 'success',
+  unfavorable: 'error',
+  neutral: 'secondary',
+};
 
 const deltaGapStyle = stylex.create({
   root: {gap: spacingVars['--spacing-1']},
@@ -309,9 +296,11 @@ function DeltaIndicator({
   return (
     <div {...stylex.props(styles.row, deltaGapStyle.root)}>
       {trend != null && (
-        <span {...stylex.props(deltaIconColorStyles[favorability])}>
-          <TrendArrowSvg direction={trend} width={16} height={16} />
-        </span>
+        <XDSIcon
+          icon={TREND_ICONS[trend]}
+          size="sm"
+          color={FAVORABILITY_ICON_COLORS[favorability]}
+        />
       )}
       {typeof value === 'string' ? (
         <XDSText type="body" color="secondary">
@@ -321,52 +310,6 @@ function DeltaIndicator({
         value
       )}
     </div>
-  );
-}
-
-// =============================================================================
-// Info Icon for Hovercard (12px filled info-circle, matching www XDSHelpMessage)
-// =============================================================================
-
-function InfoCircle12() {
-  return (
-    <svg
-      width={12}
-      height={12}
-      viewBox="0 0 12 12"
-      fill="currentColor"
-      aria-hidden="true">
-      <path d="M6 0a6 6 0 1 0 0 12A6 6 0 0 0 6 0zm.75 9h-1.5V5.25h1.5V9zm0-4.5h-1.5v-1.5h1.5v1.5z" />
-    </svg>
-  );
-}
-
-// =============================================================================
-// Title Text (handles truncation + style merging)
-// =============================================================================
-
-function TitleText({
-  numberOfLines,
-  children,
-}: {
-  numberOfLines: number;
-  children: ReactNode;
-}) {
-  const stylexResult = stylex.props(
-    styles.title,
-    numberOfLines === 1 && truncationStyles.singleLine,
-    numberOfLines > 1 && truncationStyles.multiLine,
-  );
-
-  const mergedStyle =
-    numberOfLines > 1
-      ? {...stylexResult.style, WebkitLineClamp: numberOfLines}
-      : stylexResult.style;
-
-  return (
-    <span className={stylexResult.className} style={mergedStyle}>
-      {children}
-    </span>
   );
 }
 
@@ -418,7 +361,15 @@ export function XDSMetricTile({
     <div {...stylex.props(styles.titleBlock)}>
       <div {...stylex.props(styles.titleLine)}>
         {title != null && (
-          <TitleText numberOfLines={numberOfTitleLines}>{title}</TitleText>
+          // XDSText carries the body type-scale tokens (size/weight/leading)
+          // and handles multi-line truncation + truncation tooltip for us.
+          <XDSText
+            type="body"
+            color="primary"
+            maxLines={numberOfTitleLines}
+            display="inline">
+            {title}
+          </XDSText>
         )}
         {hovercard != null && (
           <XDSHoverCard content={hovercard}>
@@ -427,14 +378,15 @@ export function XDSMetricTile({
                 type="button"
                 aria-label="Help Message"
                 {...stylex.props(styles.helpButton)}>
-                <InfoCircle12 />
+                <XDSIcon icon="info" size="xsm" color="inherit" />
               </button>
             </span>
           </XDSHoverCard>
         )}
       </div>
       {subtitle != null && (
-        <span {...stylex.props(styles.subtitle)}>{subtitle}</span>
+        // 'supporting' type defaults to secondary color via XDSText.
+        <XDSText type="supporting">{subtitle}</XDSText>
       )}
     </div>
   );
@@ -443,7 +395,7 @@ export function XDSMetricTile({
     <div {...stylex.props(styles.row, gapStyles.md)}>
       <div
         {...mergeProps(
-          xdsClassName('metric-tile-value'),
+          xdsThemeProps('metric-tile-value'),
           stylex.props(valueStyles[size]),
         )}
         data-testid={
@@ -465,7 +417,7 @@ export function XDSMetricTile({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('metric-tile', {size}),
+        xdsThemeProps('metric-tile', {size}),
         stylex.props(
           styles.root,
           styles.column,

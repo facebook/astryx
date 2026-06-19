@@ -336,8 +336,7 @@
     "./MetricTile": {
       "source": "./src/MetricTile/index.ts",
       "types": "./dist/MetricTile/index.d.ts",
-      "import": "./dist/MetricTile/index.mjs",
-      "require": "./dist/MetricTile/index.js"
+      "default": "./dist/MetricTile/index.js"
     },
     "./MobileNav": {
       "source": "./src/MobileNav/index.ts",
