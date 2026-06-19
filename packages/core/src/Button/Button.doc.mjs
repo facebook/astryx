@@ -101,7 +101,7 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        'Optional visible content. When provided, rendered instead of label as the visible text.',
+        'Optional override for visible text. When provided, displayed instead of label — but label is still required (it provides the accessible name). For most cases, just use label alone: <XDSButton label="Save" />.',
     },
     {
       name: 'endContent',
@@ -198,7 +198,7 @@ export const docsZh = {
       default: 'false',
     },
     {name: 'icon', type: 'ReactNode', description: '图标元素。仅提供 icon 而不提供 children 时，按钮渲染为正方形的纯图标按钮。'},
-    {name: 'children', type: 'ReactNode', description: '按钮内容。与 icon 同时提供时，文本渲染在图标旁边。'},
+    {name: 'children', type: 'ReactNode', description: '可选的可见内容覆盖；label 仍然是必需的（用于无障碍名称）。大多数情况使用 <XDSButton label="Save" />。'},
     {
       name: 'endContent',
       type: 'ReactElement<XDSIconProps> | ReactElement<XDSBadgeProps>',
@@ -264,7 +264,7 @@ export const docsDense = {
     isLoading: 'shows spinner+disables interaction; announces via live region',
     icon: 'icon element rendered before label text',
     isIconOnly: 'when true, renders square icon-only button; label becomes aria-label',
-    children: 'optional visible content; rendered instead of label when provided',
+    children: 'optional visible override; label is still required for a11y. Prefer <XDSButton label="Save" /> over using children',
     endContent: 'trailing icon/badge after label; ignored when isIconOnly; color inherited',
     tooltip: 'tooltip on hover',
     onClick: 'standard click handler; fires before clickAction',
