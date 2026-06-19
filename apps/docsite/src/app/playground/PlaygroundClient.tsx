@@ -80,7 +80,7 @@ import {
 import {templates} from '../../generated/templateRegistry';
 import {PreviewStage, type Viewport} from './PreviewStage';
 import {ConfirmDialog} from './ConfirmDialog';
-import {BRAND_ICON} from '../../components/XDSWordmark';
+import {AstryxIcon} from '../../components/logos';
 import {annotateInstanceIds} from './propertyEditor/componentInstances';
 import {trackCopy} from '../../lib/analytics';
 import {ThemeEditor} from './themeEditor/ThemeEditor';
@@ -669,7 +669,20 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
   const mobileTopNav = isMobile ? (
     <XDSTopNav
       label="Playground navigation"
-      heading={<XDSTopNavHeading logo={BRAND_ICON} headingHref="/" />}
+      heading={
+        <XDSTopNavHeading
+          logo={
+            <AstryxIcon
+              width={24}
+              height={24}
+              role="img"
+              aria-label="Astryx"
+              style={{display: 'block', color: 'var(--color-brand)'}}
+            />
+          }
+          headingHref="/"
+        />
+      }
       centerContent={
         <XDSTabList
           value={mobileTab}
@@ -710,7 +723,15 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
     <XDSSideNav
       header={
         <XDSSideNavHeading
-          icon={BRAND_ICON}
+          icon={
+            <AstryxIcon
+              width={24}
+              height={24}
+              role="img"
+              aria-label="Astryx"
+              style={{display: 'block', color: 'var(--color-brand)'}}
+            />
+          }
           heading="Playground"
           headingHref="/"
           xstyle={s.sideNavHeading}
