@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 import {dailyTheme} from '@xds/theme-daily/built';
 import {ThemePalettePreview} from '@/components/ThemePalettePreview';
 import type {TonalColor} from '@/components/ThemePalettePreview';
@@ -44,11 +44,11 @@ function DisplayTextSection() {
   return (
     <div>
       <h3 style={sectionTitle}>Display Text (PT Serif Italic)</h3>
-      <XDSVStack gap={2}>
-        <XDSText type="display-1">Display 1</XDSText>
-        <XDSText type="display-2">Display 2</XDSText>
-        <XDSText type="display-3">Display 3</XDSText>
-      </XDSVStack>
+      <VStack gap={2}>
+        <Text type="display-1">Display 1</Text>
+        <Text type="display-2">Display 2</Text>
+        <Text type="display-3">Display 3</Text>
+      </VStack>
     </div>
   );
 }

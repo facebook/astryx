@@ -6,7 +6,7 @@
  * XDS Theme System
  *
  * Exports:
- * - XDSTheme: Provider component that applies theme
+ * - Theme: Provider component that applies theme
  * - defineTheme: Create themes with token + component overrides
  * - Token exports for direct use in StyleX
  *
@@ -15,9 +15,9 @@
  *   import { neutralTheme } from '@xds/theme-neutral';
  */
 
-export {XDSTheme} from './XDSTheme';
-export {XDSMediaTheme} from './XDSMediaTheme';
-export type {XDSMediaThemeProps} from './XDSMediaTheme';
+export {Theme} from './Theme';
+export {MediaTheme} from './MediaTheme';
+export type {MediaThemeProps} from './MediaTheme';
 export {
   defineTheme,
   generateThemeCSS,
@@ -31,13 +31,13 @@ export {
   xdsTokenDefaults,
 } from './defineTheme';
 export type {
-  XDSDefineThemeInput,
-  XDSDefinedTheme,
-  XDSCoreTokenName,
-  XDSTokenName,
-  XDSTokenValue,
-  XDSComponentStyleMap,
-  XDSStyleOverrides,
+  DefineThemeInput,
+  DefinedTheme,
+  CoreTokenName,
+  TokenName,
+  TokenValue,
+  ComponentStyleMap,
+  StyleOverrides,
 } from './defineTheme';
 
 export type {
@@ -55,7 +55,7 @@ export {
 // Syntax theme API
 export {defineSyntaxTheme} from './syntax';
 export type {
-  SyntaxTheme,
+  SyntaxThemeDefinition,
   SyntaxThemeInput,
   SyntaxThemeTokenKey,
   SyntaxThemeTokenMap,
@@ -63,25 +63,25 @@ export type {
   SyntaxTokenValue,
 } from './syntax';
 
-// XDSSyntaxTheme provider
-export {XDSSyntaxTheme, useXDSSyntaxTheme} from './syntax';
-export type {UseXDSSyntaxThemeReturn} from './syntax';
+// SyntaxTheme provider
+export {SyntaxTheme, useSyntaxTheme} from './syntax';
+export type {UseSyntaxThemeReturn} from './syntax';
 
 export {expandTypeScale, generateTypeScaleComponents} from './expandTypeScale';
-export type {XDSTypeScaleConfig, TypeScaleTokens} from './expandTypeScale';
+export type {TypeScaleConfig, TypeScaleTokens} from './expandTypeScale';
 
 export {expandRadiusScale} from './expandRadiusScale';
 export type {
-  XDSRadiusScaleConfig,
+  RadiusScaleConfig,
   RadiusScaleTokens,
 } from './expandRadiusScale';
 
 export {expandColorScale} from './expandColorScale';
-export type {XDSColorScaleConfig, ColorScaleTokens} from './expandColorScale';
+export type {ColorScaleConfig, ColorScaleTokens} from './expandColorScale';
 
 export {expandMotionScale} from './expandMotionScale';
 export type {
-  XDSMotionScaleConfig,
+  MotionScaleConfig,
   MotionScaleTokens,
 } from './expandMotionScale';
 
@@ -132,8 +132,8 @@ export type {
   TypeScaleVarName,
 } from './tokens.stylex';
 
-export {useXDSTheme, XDSThemeContext} from './useXDSTheme';
-export type {UseXDSThemeReturn, XDSThemeContextValue} from './useXDSTheme';
+export {useTheme, ThemeContext} from './useTheme';
+export type {UseThemeReturn, ThemeContextValue} from './useTheme';
 export {
   resolveXDSThemeToken,
   resolveXDSThemeTokens,
@@ -143,19 +143,95 @@ export {
 export type {
   ResolveXDSThemeTokenOptions,
   ResolveXDSThemeTokensOptions,
-  XDSResolvedThemeMode,
+  ResolvedThemeMode,
 } from './tokens';
 
 export type {
   ThemeMode,
-  HeadingLevel,
-  XDSTextType,
-  XDSBuiltinTextType,
-  XDSCustomTextTypes,
-  XDSTextSize,
-  XDSTextWeight,
-  XDSTextColor,
+  HeadingTag,
+  TextType,
+  BuiltinTextType,
+  CustomTextTypes,
+  TextSize,
+  TextWeight,
+  TextColor,
   TypographyConfig,
   TypographyRole,
   FontWeight,
 } from './types';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  MediaTheme as XDSMediaTheme,
+  SyntaxTheme as XDSSyntaxTheme,
+  Theme as XDSTheme,
+  ThemeContext as XDSThemeContext,
+  useSyntaxTheme as useXDSSyntaxTheme,
+  useTheme as useXDSTheme,
+} from '.';
+export type {
+  BorderVarName as XDSBorderVarName,
+  BuiltinTextType as XDSBuiltinTextType,
+  ColorScaleConfig as XDSColorScaleConfig,
+  ColorScaleTokens as XDSColorScaleTokens,
+  ColorVarName as XDSColorVarName,
+  ComponentStyleMap as XDSComponentStyleMap,
+  CoreTokenName as XDSCoreTokenName,
+  CustomTextTypes as XDSCustomTextTypes,
+  DataTokenName as XDSDataTokenName,
+  DefineThemeInput as XDSDefineThemeInput,
+  DefinedTheme as XDSDefinedTheme,
+  DomainTokenName as XDSDomainTokenName,
+  DurationVarName as XDSDurationVarName,
+  EaseVarName as XDSEaseVarName,
+  FontWeight as XDSFontWeight,
+  FontWeightVarName as XDSFontWeightVarName,
+  HeadingTag as XDSHeadingTag,
+  MediaThemeProps as XDSMediaThemeProps,
+  MotionScaleConfig as XDSMotionScaleConfig,
+  MotionScaleTokens as XDSMotionScaleTokens,
+  RadiusScaleConfig as XDSRadiusScaleConfig,
+  RadiusScaleTokens as XDSRadiusScaleTokens,
+  RadiusVarName as XDSRadiusVarName,
+  ResolveXDSThemeTokenOptions as XDSResolveXDSThemeTokenOptions,
+  ResolveXDSThemeTokensOptions as XDSResolveXDSThemeTokensOptions,
+  ResolvedThemeMode as XDSResolvedThemeMode,
+  ShadowVarName as XDSShadowVarName,
+  SizeVarName as XDSSizeVarName,
+  SpacingVarName as XDSSpacingVarName,
+  StyleOverrides as XDSStyleOverrides,
+  SyntaxThemeDefinition as XDSSyntaxThemeDefinition,
+  SyntaxThemeInput as XDSSyntaxThemeInput,
+  SyntaxThemeTokenInput as XDSSyntaxThemeTokenInput,
+  SyntaxThemeTokenKey as XDSSyntaxThemeTokenKey,
+  SyntaxThemeTokenMap as XDSSyntaxThemeTokenMap,
+  SyntaxTokenName as XDSSyntaxTokenName,
+  SyntaxTokenValue as XDSSyntaxTokenValue,
+  TextColor as XDSTextColor,
+  TextSize as XDSTextSize,
+  TextSizeVarName as XDSTextSizeVarName,
+  TextType as XDSTextType,
+  TextWeight as XDSTextWeight,
+  ThemeCSSOutput as XDSThemeCSSOutput,
+  ThemeContextValue as XDSThemeContextValue,
+  ThemeMode as XDSThemeMode,
+  ThemeRulesSplit as XDSThemeRulesSplit,
+  TokenName as XDSTokenName,
+  TokenValue as XDSTokenValue,
+  TransitionVarName as XDSTransitionVarName,
+  TypeScaleConfig as XDSTypeScaleConfig,
+  TypeScaleTokens as XDSTypeScaleTokens,
+  TypeScaleVarName as XDSTypeScaleVarName,
+  TypographyConfig as XDSTypographyConfig,
+  TypographyRole as XDSTypographyRole,
+  TypographyVarName as XDSTypographyVarName,
+  UseSyntaxThemeReturn as XDSUseSyntaxThemeReturn,
+  UseThemeReturn as XDSUseThemeReturn,
+} from '.';
+// <compat-aliases:end>

@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSMoreMenu} from '@xds/core/MoreMenu';
-import {XDSButton} from '@xds/core/Button';
+import {MoreMenu} from '@xds/core/MoreMenu';
+import {Button} from '@xds/core/Button';
 import {
   PencilIcon,
   TrashIcon,
@@ -12,9 +12,9 @@ import {
   Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSMoreMenu> = {
+const meta: Meta<typeof MoreMenu> = {
   title: 'Core/MoreMenu',
-  component: XDSMoreMenu,
+  component: MoreMenu,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
@@ -49,12 +49,12 @@ const meta: Meta<typeof XDSMoreMenu> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSMoreMenu>;
+type Story = StoryObj<typeof MoreMenu>;
 
 // Basic usage — just items, all defaults
 export const Default: Story = {
   render: () => (
-    <XDSMoreMenu
+    <MoreMenu
       items={[
         {label: 'Edit', onClick: () => console.log('Edit clicked')},
         {label: 'Duplicate', onClick: () => console.log('Duplicate clicked')},
@@ -67,7 +67,7 @@ export const Default: Story = {
 // With icons on items
 export const WithIcons: Story = {
   render: () => (
-    <XDSMoreMenu
+    <MoreMenu
       items={[
         {
           label: 'Edit',
@@ -97,7 +97,7 @@ export const WithIcons: Story = {
 // With dividers
 export const WithDividers: Story = {
   render: () => (
-    <XDSMoreMenu
+    <MoreMenu
       items={[
         {
           label: 'Edit',
@@ -123,7 +123,7 @@ export const WithDividers: Story = {
 // With sections
 export const WithSections: Story = {
   render: () => (
-    <XDSMoreMenu
+    <MoreMenu
       label="Document actions"
       items={[
         {
@@ -161,7 +161,7 @@ export const WithSections: Story = {
 // Small size — for table rows and dense layouts
 export const SmallSize: Story = {
   render: () => (
-    <XDSMoreMenu
+    <MoreMenu
       size="sm"
       label="Row actions"
       items={[
@@ -185,17 +185,17 @@ export const SmallSize: Story = {
 export const Variants: Story = {
   render: () => (
     <div style={{display: 'flex', gap: 16, alignItems: 'center'}}>
-      <XDSMoreMenu
+      <MoreMenu
         variant="ghost"
         label="Ghost variant"
         items={[{label: 'Action', onClick: () => {}}]}
       />
-      <XDSMoreMenu
+      <MoreMenu
         variant="secondary"
         label="Secondary variant"
         items={[{label: 'Action', onClick: () => {}}]}
       />
-      <XDSMoreMenu
+      <MoreMenu
         variant="primary"
         label="Primary variant"
         items={[{label: 'Action', onClick: () => {}}]}
@@ -207,7 +207,7 @@ export const Variants: Story = {
 // Disabled state
 export const Disabled: Story = {
   render: () => (
-    <XDSMoreMenu
+    <MoreMenu
       isDisabled
       items={[
         {label: 'Edit', onClick: () => console.log('Edit')},
@@ -221,9 +221,9 @@ export const Disabled: Story = {
 export const InToolbar: Story = {
   render: () => (
     <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
-      <XDSButton label="Save" variant="primary" onClick={() => {}} />
-      <XDSButton label="Preview" variant="secondary" onClick={() => {}} />
-      <XDSMoreMenu
+      <Button label="Save" variant="primary" onClick={() => {}} />
+      <Button label="Preview" variant="secondary" onClick={() => {}} />
+      <MoreMenu
         label="More actions"
         items={[
           {
@@ -251,7 +251,7 @@ export const InToolbar: Story = {
 // With custom item rendering
 export const CustomItemRendering: Story = {
   render: () => (
-    <XDSMoreMenu
+    <MoreMenu
       label="User actions"
       items={[
         {label: 'Alice Johnson', onClick: () => console.log('Alice')},
@@ -265,7 +265,7 @@ export const CustomItemRendering: Story = {
 // With disabled items
 export const WithDisabledItems: Story = {
   render: () => (
-    <XDSMoreMenu
+    <MoreMenu
       items={[
         {
           label: 'Edit',
@@ -294,7 +294,7 @@ export const WithDisabledItems: Story = {
 export const CustomIcon: Story = {
   render: () => (
     <div style={{display: 'flex', gap: 16, alignItems: 'center'}}>
-      <XDSMoreMenu
+      <MoreMenu
         icon={<Cog6ToothIcon />}
         label="Settings"
         items={[
@@ -303,7 +303,7 @@ export const CustomIcon: Story = {
           {label: 'Logout', onClick: () => console.log('Logout')},
         ]}
       />
-      <XDSMoreMenu
+      <MoreMenu
         icon={<PencilIcon />}
         label="Edit options"
         items={[

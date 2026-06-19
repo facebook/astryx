@@ -3,7 +3,7 @@
 'use client';
 
 import {usePathname} from 'next/navigation';
-import {XDSAppShell} from '@xds/core/AppShell';
+import {AppShell} from '@xds/core/AppShell';
 import {SandboxNav} from './SandboxNav';
 
 const FULLSCREEN_PATHS = ['/pages/color-studio'];
@@ -17,8 +17,8 @@ export function SandboxShell({children}: {children: React.ReactNode}) {
   }
 
   return (
-    <XDSAppShell sideNav={<SandboxNav />} contentPadding={0}>
+    <AppShell sideNav={<SandboxNav />} contentPadding={0}>
       {children}
-    </XDSAppShell>
+    </AppShell>
   );
 }

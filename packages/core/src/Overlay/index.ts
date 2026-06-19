@@ -5,11 +5,11 @@
  * @position Overlay barrel export
  */
 
-export {XDSOverlay} from './XDSOverlay';
-export type {XDSOverlayProps} from './XDSOverlay';
+export {Overlay} from './Overlay';
+export type {OverlayProps} from './Overlay';
 
-export {useXDSOverlay} from './useXDSOverlay';
-export type {UseXDSOverlayOptions, UseXDSOverlayResult} from './useXDSOverlay';
+export {useOverlay} from './useOverlay';
+export type {UseOverlayOptions, UseOverlayResult} from './useOverlay';
 
 export type {
   OverlayScrimMode,
@@ -17,3 +17,25 @@ export type {
   OverlayAlign,
   OverlayShowOn,
 } from './OverlayScrim';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  Overlay as XDSOverlay,
+  useOverlay as useXDSOverlay,
+} from '.';
+export type {
+  OverlayAlign as XDSOverlayAlign,
+  OverlayPosition as XDSOverlayPosition,
+  OverlayProps as XDSOverlayProps,
+  OverlayScrimMode as XDSOverlayScrimMode,
+  OverlayShowOn as XDSOverlayShowOn,
+  UseOverlayOptions as XDSUseOverlayOptions,
+  UseOverlayResult as XDSUseOverlayResult,
+} from '.';
+// <compat-aliases:end>

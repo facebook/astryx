@@ -17,7 +17,7 @@ export const docs = {
     },
     {
       name: 'options',
-      type: 'XDSTabMenuOption[]',
+      type: 'TabMenuOption[]',
       description: 'Array of menu options rendered in the dropdown.',
       required: true,
     },
@@ -38,7 +38,7 @@ export const docsZh = {
     },
     {
       name: 'options',
-      type: 'XDSTabMenuOption[]',
+      type: 'TabMenuOption[]',
       description: '在下拉菜单中渲染的菜单选项数组。',
       required: true,
     },

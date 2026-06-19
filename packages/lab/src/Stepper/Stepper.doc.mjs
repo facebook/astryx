@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('../../core/src/docs-types').ComponentDoc} */
 
 export const docs = {
   name: 'Stepper',
@@ -10,17 +10,18 @@ export const docs = {
   keywords: ['stepper', 'steps', 'wizard', 'workflow', 'progress', 'multi-step', 'form wizard', 'onboarding'],
   usage: {
     description:
-      'Steppers display progress through a sequence of logical and numbered steps. Use them for multi-step workflows like forms, onboarding flows, or checkout processes where users need to see their position and the steps ahead.',
+      'Steppers display progress through a sequence of logical and numbered steps. Use them for multi-step workflows like forms, onboarding flows, or checkout processes where users need to see their position and the steps ahead. Rendered as an ordered list (not a navigation landmark).',
     bestPractices: [
       {guidance: true, description: 'Keep step labels short and descriptive: "Payment" not "Enter your payment information".'},
       {guidance: true, description: 'Use the vertical orientation for narrow containers or when steps have longer descriptions.'},
       {guidance: true, description: 'Provide onStepClick for non-linear workflows where users may need to revisit earlier steps.'},
+      {guidance: true, description: 'Use status only to apply a semantic color (accent/success/warning/error); pass a custom icon for richer indicators.'},
       {guidance: false, description: 'Use a stepper for fewer than 3 steps; a simple heading or progress bar works better.'},
       {guidance: false, description: 'Use more than 7 steps; consider grouping related steps or using a different pattern.'},
     ],
     anatomy: [
-      {name: 'Step indicator', required: true, description: 'A numbered circle showing the step position. Shows a checkmark when completed.'},
-      {name: 'Connector', required: true, description: 'A line between step indicators. Filled when the preceding step is completed.'},
+      {name: 'Progress bar', required: true, description: 'A 4px segmented bar per step. Filled for completed and active steps.'},
+      {name: 'Indicator', required: false, description: 'A numbered badge, a check, or any custom icon. Controlled via the indicator and icon props.'},
       {name: 'Label', required: true, description: 'Text identifying the step.'},
       {name: 'Description', required: false, description: 'Supporting text below the label with additional context.'},
     ],
@@ -28,9 +29,8 @@ export const docs = {
   theming: {
     targets: [
       {className: 'xds-stepper', visualProps: ['orientation']},
-      {className: 'xds-step', states: ['active', 'completed', 'upcoming', 'disabled', 'error']},
-      {className: 'xds-step-indicator', states: ['active', 'completed', 'upcoming', 'disabled', 'error']},
-      {className: 'xds-step-connector'},
+      {className: 'xds-step', visualProps: ['progress', 'status']},
+      {className: 'xds-step-bar'},
     ],
   },
   components: [
@@ -38,7 +38,7 @@ export const docs = {
       name: 'XDSStepper',
       displayName: 'Stepper',
       description:
-        'Container component that manages step state and renders steps in horizontal or vertical orientation.',
+        'Container component that manages step state and renders steps in horizontal or vertical orientation as an ordered list.',
       props: [
         {
           name: 'activeStep',
@@ -61,13 +61,19 @@ export const docs = {
         {
           name: 'onStepClick',
           type: '(index: number) => void',
-          description: 'Called when a step indicator is clicked. Enables non-linear navigation. Completed and active steps become clickable.',
+          description: 'Called when a step is clicked. Enables non-linear navigation. All non-disabled steps become clickable, including not-started steps.',
         },
         {
           name: 'label',
           type: 'string',
-          description: 'Accessible label for the stepper navigation landmark.',
+          description: 'Accessible label describing the set of steps (applied to the ordered list).',
           default: "'Progress'",
+        },
+        {
+          name: 'density',
+          type: "'compact' | 'balanced' | 'spacious'",
+          description: 'Controls the padding of all steps.',
+          default: "'balanced'",
         },
         {
           name: 'xstyle',
@@ -80,18 +86,18 @@ export const docs = {
       name: 'XDSStep',
       displayName: 'Step',
       description:
-        'Individual step within a stepper. Renders a numbered indicator, connector line, and label with optional description.',
+        'Individual step within a stepper. Renders a progress-bar segment, an indicator, and a label with optional description.',
       props: [
         {
           name: 'step',
           type: 'number',
-          description: 'Zero-based index of this step. Used to determine active/completed state relative to the parent activeStep.',
+          description: 'Zero-based index of this step. Used to derive progress (completed/active/not-started) relative to the parent activeStep.',
           required: true,
         },
         {
           name: 'label',
           type: 'string',
-          description: 'Step label text displayed below (horizontal) or beside (vertical) the indicator.',
+          description: 'Step label text.',
           required: true,
         },
         {
@@ -107,13 +113,19 @@ export const docs = {
         {
           name: 'icon',
           type: 'ReactNode',
-          description: 'Custom icon to replace the step number or checkmark indicator.',
+          description: 'Custom icon rendered inside the indicator. Accepts any node (e.g. an XDSIcon). Takes precedence over the built-in number/check.',
           slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
         },
         {
-          name: 'isCompleted',
-          type: 'boolean',
-          description: 'Override the auto-computed completed state. By default, steps before activeStep are completed.',
+          name: 'status',
+          type: "'accent' | 'success' | 'warning' | 'error'",
+          description: 'Semantic color for the step. Controls color only and maps to the global XDS semantic tokens. Leave unset for the progress-derived default coloring.',
+        },
+        {
+          name: 'indicator',
+          type: "'auto' | 'number' | 'none' | ReactNode",
+          description: "What to show as the step indicator. 'auto' shows a number until completed then a check, 'number' always shows a numbered badge, 'none' hides it, or pass any ReactNode for a custom indicator.",
+          default: "'auto'",
         },
         {
           name: 'isDisabled',
@@ -122,10 +134,20 @@ export const docs = {
           default: 'false',
         },
         {
-          name: 'hasError',
+          name: 'isOptional',
           type: 'boolean',
-          description: 'Shows an error state on the step indicator and label.',
+          description: 'Marks the step as optional, appending an "Optional" affordance after the label.',
           default: 'false',
+        },
+        {
+          name: 'endContent',
+          type: 'ReactNode',
+          description: 'Trailing content rendered at the end of the label row.',
+        },
+        {
+          name: 'density',
+          type: "'compact' | 'balanced' | 'spacious'",
+          description: 'Controls vertical padding of the step. Falls back to the stepper-level density when unset.',
         },
       ],
     },
@@ -137,7 +159,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('../../core/src/docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'numbered step sequence for multi-step workflows',
   usage: {
@@ -159,28 +181,32 @@ export const docsDense = {
         children: 'XDSStep elements',
         orientation: 'horizontal or vertical layout',
         onStepClick: 'enables non-linear navigation',
-        label: 'nav landmark aria-label',
+        label: 'ordered-list aria-label',
+        density: 'padding of all steps',
         xstyle: 'StyleX layout customization',
       },
     },
     {
       name: 'XDSStep',
       displayName: 'Step',
-      description: 'individual step w/ indicator, connector, label',
+      description: 'individual step w/ progress bar, indicator, label',
       propDescriptions: {
         step: 'zero-based step index',
         label: 'step label text',
         description: 'supporting text below label',
-        icon: 'custom icon replacing number/check',
-        isCompleted: 'override auto-completed state',
+        icon: 'custom icon for the indicator',
+        status: 'semantic color: accent/success/warning/error (color only)',
+        indicator: "'auto' | 'number' | 'none' | custom node",
         isDisabled: 'disable interaction',
-        hasError: 'error state on indicator and label',
+        isOptional: 'append Optional affordance',
+        endContent: 'trailing content in label row',
+        density: 'per-step padding override',
       },
     },
   ],
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('../../core/src/docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Stepper',
   displayName: 'Stepper',
@@ -199,9 +225,8 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'xds-stepper', visualProps: ['orientation']},
-      {className: 'xds-step', states: ['active', 'completed', 'upcoming', 'disabled', 'error']},
-      {className: 'xds-step-indicator', states: ['active', 'completed', 'upcoming', 'disabled', 'error']},
-      {className: 'xds-step-connector'},
+      {className: 'xds-step', visualProps: ['progress', 'status']},
+      {className: 'xds-step-bar'},
     ],
   },
   components: [
@@ -213,23 +238,27 @@ export const docsZh = {
         {name: 'activeStep', type: 'number', description: '当前活动步骤的从零开始的索引。', required: true},
         {name: 'children', type: 'ReactNode', description: '要在步骤器中渲染的 XDSStep 元素。', required: true},
         {name: 'orientation', type: "'horizontal' | 'vertical'", description: '步骤器的布局方向。', default: "'horizontal'"},
-        {name: 'onStepClick', type: '(index: number) => void', description: '点击步骤指示器时调用。启用非线性导航。'},
-        {name: 'label', type: 'string', description: '步骤器导航地标的无障碍标签。', default: "'Progress'"},
+        {name: 'onStepClick', type: '(index: number) => void', description: '点击步骤时调用。启用非线性导航。'},
+        {name: 'label', type: 'string', description: '有序列表的无障碍标签。', default: "'Progress'"},
+        {name: 'density', type: "'compact' | 'balanced' | 'spacious'", description: '控制所有步骤的内边距。', default: "'balanced'"},
         {name: 'xstyle', type: 'StyleXStyles', description: '用于布局自定义的 StyleX 样式。'},
       ],
     },
     {
       name: 'XDSStep',
       displayName: 'Step',
-      description: '步骤器中的单个步骤。渲染编号指示器、连接线和带可选描述的标签。',
+      description: '步骤器中的单个步骤。渲染进度条、指示器和带可选描述的标签。',
       props: [
         {name: 'step', type: 'number', description: '此步骤的从零开始的索引。', required: true},
         {name: 'label', type: 'string', description: '步骤标签文本。', required: true},
         {name: 'description', type: 'string', description: '标签下方的可选描述。'},
-        {name: 'icon', type: 'ReactNode', description: '替换步骤编号或勾选指示器的自定义图标。'},
-        {name: 'isCompleted', type: 'boolean', description: '覆盖自动计算的完成状态。'},
+        {name: 'icon', type: 'ReactNode', description: '指示器中的自定义图标。'},
+        {name: 'status', type: "'accent' | 'success' | 'warning' | 'error'", description: '步骤的语义颜色，仅控制颜色。'},
+        {name: 'indicator', type: "'auto' | 'number' | 'none' | ReactNode", description: '指示器显示内容。', default: "'auto'"},
         {name: 'isDisabled', type: 'boolean', description: '禁用交互并使步骤指示器和标签变暗。', default: 'false'},
-        {name: 'hasError', type: 'boolean', description: '在步骤指示器和标签上显示错误状态。', default: 'false'},
+        {name: 'isOptional', type: 'boolean', description: '标记步骤为可选。', default: 'false'},
+        {name: 'endContent', type: 'ReactNode', description: '标签行末尾的尾随内容。'},
+        {name: 'density', type: "'compact' | 'balanced' | 'spacious'", description: '步骤的内边距覆盖。'},
       ],
     },
   ],

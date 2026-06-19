@@ -5,11 +5,27 @@
 /**
  * @file index.ts
  * @input Imports from Toolbar component files
- * @output Exports XDSToolbar and types
+ * @output Exports Toolbar and types
  * @position Entry point for Toolbar module
  *
  * SYNC: When modified, update /packages/core/src/Toolbar/Toolbar.doc.mjs
  */
 
-export {XDSToolbar} from './XDSToolbar';
-export type {XDSToolbarProps, XDSToolbarSize} from './XDSToolbar';
+export {Toolbar} from './Toolbar';
+export type {ToolbarProps, ToolbarSize} from './Toolbar';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  Toolbar as XDSToolbar,
+} from '.';
+export type {
+  ToolbarProps as XDSToolbarProps,
+  ToolbarSize as XDSToolbarSize,
+} from '.';
+// <compat-aliases:end>

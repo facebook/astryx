@@ -3,12 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSSwitch} from '@xds/core/Switch';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Button} from '@xds/core/Button';
+import {Heading, Text} from '@xds/core/Text';
+import {Badge} from '@xds/core/Badge';
+import {Avatar} from '@xds/core/Avatar';
+import {Switch} from '@xds/core/Switch';
 
 const BAR_HEIGHTS = [28, 40, 22, 48, 34, 18, 44, 30];
 
@@ -47,16 +47,16 @@ export default function ShowcaseComponentsPage() {
             flexDirection: 'column' as const,
             justifyContent: 'space-between',
           }}>
-          <XDSVStack gap={4}>
-            <XDSHeading level={2}>Build with XDS</XDSHeading>
-            <XDSText type="body" color="secondary">
+          <VStack gap={4}>
+            <Heading level={2}>Build with XDS</Heading>
+            <Text type="body" color="secondary">
               Open source components for Nest and beyond
-            </XDSText>
-          </XDSVStack>
-          <XDSHStack gap={2}>
-            <XDSButton label="Get started" variant="primary" size="md" />
-            <XDSButton label="Read docs" variant="secondary" size="md" />
-          </XDSHStack>
+            </Text>
+          </VStack>
+          <HStack gap={2}>
+            <Button label="Get started" variant="primary" size="md" />
+            <Button label="Read docs" variant="secondary" size="md" />
+          </HStack>
         </div>
 
         {/* Card 2: Settings — middle column, row 1 */}
@@ -67,22 +67,22 @@ export default function ShowcaseComponentsPage() {
             padding: 24,
             boxShadow: '0 2px 20px rgba(0,0,0,0.06)',
           }}>
-          <XDSVStack gap={4}>
-            <XDSText type="body" weight="bold">
+          <VStack gap={4}>
+            <Text type="body" weight="bold">
               Settings
-            </XDSText>
-            <XDSSwitch
+            </Text>
+            <Switch
               label="Light mode"
               value={lightMode}
               onChange={setLightMode}
             />
-            <XDSSwitch
+            <Switch
               label="Animations"
               value={animations}
               onChange={setAnimations}
             />
-            <XDSSwitch label="Compact" value={compact} onChange={setCompact} />
-          </XDSVStack>
+            <Switch label="Compact" value={compact} onChange={setCompact} />
+          </VStack>
         </div>
 
         {/* Card 3: Stats — right column, row 1 */}
@@ -93,8 +93,8 @@ export default function ShowcaseComponentsPage() {
             padding: 24,
             boxShadow: '0 2px 20px rgba(0,0,0,0.06)',
           }}>
-          <XDSVStack gap={3}>
-            <XDSHeading level={3}>Components</XDSHeading>
+          <VStack gap={3}>
+            <Heading level={3}>Components</Heading>
             <div
               style={{
                 fontSize: 48,
@@ -104,10 +104,10 @@ export default function ShowcaseComponentsPage() {
               }}>
               48
             </div>
-            <XDSText type="supporting" color="secondary">
+            <Text type="supporting" color="secondary">
               +12 this quarter
-            </XDSText>
-            <XDSHStack gap={1} vAlign="end">
+            </Text>
+            <HStack gap={1} vAlign="end">
               {BAR_HEIGHTS.map((h, i) => (
                 <div
                   key={i}
@@ -119,14 +119,14 @@ export default function ShowcaseComponentsPage() {
                   }}
                 />
               ))}
-            </XDSHStack>
-            <XDSText type="supporting" color="secondary">
+            </HStack>
+            <Text type="supporting" color="secondary">
               Coverage → 87%
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
+            </Text>
+            <Text type="supporting" color="secondary">
               Adoption → 92%
-            </XDSText>
-          </XDSVStack>
+            </Text>
+          </VStack>
         </div>
 
         {/* Card 4: Badges — middle column, row 2 */}
@@ -137,17 +137,17 @@ export default function ShowcaseComponentsPage() {
             padding: 24,
             boxShadow: '0 2px 20px rgba(0,0,0,0.06)',
           }}>
-          <XDSVStack gap={3}>
-            <XDSHStack gap={2}>
-              <XDSBadge label="v0.0.8 Released" variant="success" />
-            </XDSHStack>
-            <XDSHStack gap={2}>
-              <XDSBadge label="Open Source" variant="info" />
-            </XDSHStack>
-            <XDSHStack gap={2}>
-              <XDSBadge label="AI Ready" variant="warning" />
-            </XDSHStack>
-          </XDSVStack>
+          <VStack gap={3}>
+            <HStack gap={2}>
+              <Badge label="v0.0.8 Released" variant="success" />
+            </HStack>
+            <HStack gap={2}>
+              <Badge label="Open Source" variant="info" />
+            </HStack>
+            <HStack gap={2}>
+              <Badge label="AI Ready" variant="warning" />
+            </HStack>
+          </VStack>
         </div>
 
         {/* Card 5: Avatars — right column, row 2 */}
@@ -158,18 +158,18 @@ export default function ShowcaseComponentsPage() {
             padding: 24,
             boxShadow: '0 2px 20px rgba(0,0,0,0.06)',
           }}>
-          <XDSVStack gap={3}>
-            <XDSHStack gap={2}>
-              <XDSAvatar name="Ruby C" />
-              <XDSAvatar name="Cindy Z" />
-              <XDSAvatar name="Alex M" />
-              <XDSAvatar name="Sam K" />
-              <XDSAvatar name="+3" />
-            </XDSHStack>
-            <XDSText type="supporting" color="secondary">
+          <VStack gap={3}>
+            <HStack gap={2}>
+              <Avatar name="Ruby C" />
+              <Avatar name="Cindy Z" />
+              <Avatar name="Alex M" />
+              <Avatar name="Sam K" />
+              <Avatar name="+3" />
+            </HStack>
+            <Text type="supporting" color="secondary">
               XDS Core Team
-            </XDSText>
-          </XDSVStack>
+            </Text>
+          </VStack>
         </div>
       </div>
     </div>

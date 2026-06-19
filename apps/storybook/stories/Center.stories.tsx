@@ -2,11 +2,11 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSText} from '@xds/core/Text';
+import {Center} from '@xds/core/Center';
+import {Card} from '@xds/core/Card';
+import {Section} from '@xds/core/Section';
+import {Icon} from '@xds/core/Icon';
+import {Text} from '@xds/core/Text';
 import {CheckCircleIcon} from '@heroicons/react/24/outline';
 import {
   colorVars,
@@ -44,9 +44,9 @@ const Box = ({children}: {children: React.ReactNode}) => (
   <div {...stylex.props(styles.box)}>{children}</div>
 );
 
-const meta: Meta<typeof XDSCenter> = {
+const meta: Meta<typeof Center> = {
   title: 'Core/Center',
-  component: XDSCenter,
+  component: Center,
   tags: ['autodocs'],
   argTypes: {
     axis: {
@@ -72,7 +72,7 @@ const meta: Meta<typeof XDSCenter> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSCenter>;
+type Story = StoryObj<typeof Center>;
 
 export const Default: Story = {
   args: {
@@ -82,11 +82,11 @@ export const Default: Story = {
     children: null,
   },
   render: args => (
-    <XDSSection variant="muted" width="100%">
-      <XDSCenter {...args}>
+    <Section variant="muted" width="100%">
+      <Center {...args}>
         <Box>Centered Content</Box>
-      </XDSCenter>
-    </XDSSection>
+      </Center>
+    </Section>
   ),
 };
 
@@ -97,11 +97,11 @@ export const HorizontalOnly: Story = {
     children: null,
   },
   render: args => (
-    <XDSSection variant="muted" width="100%">
-      <XDSCenter {...args}>
+    <Section variant="muted" width="100%">
+      <Center {...args}>
         <Box>Horizontal Center</Box>
-      </XDSCenter>
-    </XDSSection>
+      </Center>
+    </Section>
   ),
 };
 
@@ -113,11 +113,11 @@ export const VerticalOnly: Story = {
     children: null,
   },
   render: args => (
-    <XDSSection variant="muted" width="100%">
-      <XDSCenter {...args}>
+    <Section variant="muted" width="100%">
+      <Center {...args}>
         <Box>Vertical Center</Box>
-      </XDSCenter>
-    </XDSSection>
+      </Center>
+    </Section>
   ),
 };
 
@@ -129,11 +129,11 @@ export const FullSize: Story = {
     children: null,
   },
   render: args => (
-    <XDSSection variant="muted">
-      <XDSCenter {...args}>
+    <Section variant="muted">
+      <Center {...args}>
         <Box>Full Width, Fixed Height</Box>
-      </XDSCenter>
-    </XDSSection>
+      </Center>
+    </Section>
   ),
 };
 
@@ -143,17 +143,17 @@ export const Inline: Story = {
     children: null,
   },
   render: args => (
-    <XDSSection variant="muted">
-      <XDSCard>
-        <XDSText type="body">
+    <Section variant="muted">
+      <Card>
+        <Text type="body">
           Text with inline centered icon:{' '}
-          <XDSCenter {...args} xstyle={styles.iconWrapper}>
-            <XDSIcon icon={CheckCircleIcon} size="sm" />
-          </XDSCenter>{' '}
+          <Center {...args} xstyle={styles.iconWrapper}>
+            <Icon icon={CheckCircleIcon} size="sm" />
+          </Center>{' '}
           and more text after.
-        </XDSText>
-      </XDSCard>
-    </XDSSection>
+        </Text>
+      </Card>
+    </Section>
   ),
 };
 
@@ -165,13 +165,13 @@ export const WithIcon: Story = {
     children: null,
   },
   render: args => (
-    <XDSSection variant="muted">
-      <XDSCenter {...args}>
+    <Section variant="muted">
+      <Center {...args}>
         <div {...stylex.props(styles.iconWrapper)}>
-          <XDSIcon icon={CheckCircleIcon} size="lg" />
+          <Icon icon={CheckCircleIcon} size="lg" />
         </div>
-      </XDSCenter>
-    </XDSSection>
+      </Center>
+    </Section>
   ),
 };
 
@@ -181,13 +181,13 @@ export const InsideACard: Story = {
     children: null,
   },
   render: args => (
-    <XDSSection variant="muted">
-      <XDSCard>
-        <XDSCenter {...args}>
+    <Section variant="muted">
+      <Card>
+        <Center {...args}>
           <Box>Centered in Card</Box>
-        </XDSCenter>
-      </XDSCard>
-    </XDSSection>
+        </Center>
+      </Card>
+    </Section>
   ),
 };
 
@@ -196,33 +196,33 @@ export const AllAxisModes: Story = {
     children: null,
   },
   render: () => (
-    <XDSSection variant="muted">
+    <Section variant="muted">
       <div {...stylex.props(styles.storyWrapper)}>
-        <XDSCard>
-          <XDSText type="supporting" display="block">
+        <Card>
+          <Text type="supporting" display="block">
             axis: both (default)
-          </XDSText>
-          <XDSCenter axis="both" width={300} height={150}>
+          </Text>
+          <Center axis="both" width={300} height={150}>
             <Box>Both Axes</Box>
-          </XDSCenter>
-        </XDSCard>
-        <XDSCard>
-          <XDSText type="supporting" display="block">
+          </Center>
+        </Card>
+        <Card>
+          <Text type="supporting" display="block">
             axis: horizontal
-          </XDSText>
-          <XDSCenter axis="horizontal" width={300}>
+          </Text>
+          <Center axis="horizontal" width={300}>
             <Box>Horizontal Only</Box>
-          </XDSCenter>
-        </XDSCard>
-        <XDSCard>
-          <XDSText type="supporting" display="block">
+          </Center>
+        </Card>
+        <Card>
+          <Text type="supporting" display="block">
             axis: vertical
-          </XDSText>
-          <XDSCenter axis="vertical" height={150}>
+          </Text>
+          <Center axis="vertical" height={150}>
             <Box>Vertical Only</Box>
-          </XDSCenter>
-        </XDSCard>
+          </Center>
+        </Card>
       </div>
-    </XDSSection>
+    </Section>
   ),
 };

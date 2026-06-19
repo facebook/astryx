@@ -2,13 +2,13 @@
 
 'use client';
 
-import {XDSTreeList} from '@xds/core/TreeList';
+import {TreeList} from '@xds/core/TreeList';
 
 const noop = () => {};
 
 export default function TreeListShowcase() {
   return (
-    <XDSTreeList
+    <TreeList
       items={[
         {
           id: 'src',

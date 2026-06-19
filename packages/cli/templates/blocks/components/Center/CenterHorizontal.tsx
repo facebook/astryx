@@ -2,11 +2,11 @@
 
 'use client';
 
-import {XDSCard} from '@xds/core/Card';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSHeading} from '@xds/core/Text';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSIconButton} from '@xds/core/IconButton';
+import {Card} from '@xds/core/Card';
+import {Stack} from '@xds/core/Layout';
+import {Heading} from '@xds/core/Text';
+import {Icon} from '@xds/core/Icon';
+import {IconButton} from '@xds/core/IconButton';
 import {
   BoldIcon,
   ItalicIcon,
@@ -18,48 +18,48 @@ import {
 
 export default function CenterHorizontal() {
   return (
-    <XDSCard width={520} padding={2}>
-      <XDSStack direction="horizontal" vAlign="center">
-        <XDSHeading level={2}>Untitled Document</XDSHeading>
-        <XDSStack direction="horizontal" gap={0} hAlign="end" style={{flex: 1}}>
-          <XDSIconButton
+    <Card width={520} padding={2}>
+      <Stack direction="horizontal" vAlign="center">
+        <Heading level={2}>Untitled Document</Heading>
+        <Stack direction="horizontal" gap={0} hAlign="end" style={{flex: 1}}>
+          <IconButton
             label="Bold"
-            icon={<XDSIcon icon={BoldIcon} />}
+            icon={<Icon icon={BoldIcon} />}
             variant="ghost"
             size="sm"
           />
-          <XDSIconButton
+          <IconButton
             label="Italic"
-            icon={<XDSIcon icon={ItalicIcon} />}
+            icon={<Icon icon={ItalicIcon} />}
             variant="ghost"
             size="sm"
           />
-          <XDSIconButton
+          <IconButton
             label="Underline"
-            icon={<XDSIcon icon={UnderlineIcon} />}
+            icon={<Icon icon={UnderlineIcon} />}
             variant="ghost"
             size="sm"
           />
-          <XDSIconButton
+          <IconButton
             label="List"
-            icon={<XDSIcon icon={ListBulletIcon} />}
+            icon={<Icon icon={ListBulletIcon} />}
             variant="ghost"
             size="sm"
           />
-          <XDSIconButton
+          <IconButton
             label="Link"
-            icon={<XDSIcon icon={LinkIcon} />}
+            icon={<Icon icon={LinkIcon} />}
             variant="ghost"
             size="sm"
           />
-          <XDSIconButton
+          <IconButton
             label="Image"
-            icon={<XDSIcon icon={PhotoIcon} />}
+            icon={<Icon icon={PhotoIcon} />}
             variant="ghost"
             size="sm"
           />
-        </XDSStack>
-      </XDSStack>
-    </XDSCard>
+        </Stack>
+      </Stack>
+    </Card>
   );
 }

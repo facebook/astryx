@@ -21,7 +21,7 @@ export const docs = {
       description: 'Product/app icon.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',
@@ -60,7 +60,7 @@ export const docs = {
       description: 'Menu content rendered inside a popover.',
       slotElements: [
         {
-          __element: 'XDSButton',
+          __element: 'Button',
           props: {
             label: 'Action',
             variant: 'ghost',
@@ -75,7 +75,7 @@ export const docs = {
       description: 'Content rendered at the trailing edge of the heading row, between text and chevron. Useful for badges, status indicators, or compact action buttons. Hidden when collapsed.',
       slotElements: [
         {
-          __element: 'XDSButton',
+          __element: 'Button',
           props: {
             label: 'Action',
             variant: 'ghost',

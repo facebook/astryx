@@ -3,15 +3,15 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSTimeInput} from '@xds/core/TimeInput';
-import {XDSStack} from '@xds/core/Layout';
+import {TimeInput} from '@xds/core/TimeInput';
+import {Stack} from '@xds/core/Layout';
 
 export default function TimeInputConstrained() {
   const [evening, setEvening] = useState(undefined);
 
   return (
-    <XDSStack direction="vertical" gap={3}>
-      <XDSTimeInput
+    <Stack direction="vertical" gap={3}>
+      <TimeInput
         label="Dinner reservation"
         min={'17:00' as never}
         max={'22:00' as never}
@@ -21,6 +21,6 @@ export default function TimeInputConstrained() {
         onChange={setEvening as never}
         hasClear
       />
-    </XDSStack>
+    </Stack>
   );
 }

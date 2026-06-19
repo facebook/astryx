@@ -10,7 +10,7 @@ export const docs = {
   keywords: ["appshell","layout","scaffold","sidebar","sidenav","topnav","header","navigation","dashboard","shell","page","frame"],
   usage: {
     description:
-      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive mobile navigation and skip-to-content automatically. Configure side nav collapse on XDSSideNav with its collapsible prop.',
+      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive mobile navigation and skip-to-content automatically. Configure side nav collapse on SideNav with its collapsible prop.',
     bestPractices: [
       {guidance: true, description: 'Choose the right height: use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
       {guidance: true, description: 'Set `contentPadding` based on content type: 4 for forms and settings, 0 for tables and dashboards.'},
@@ -28,34 +28,34 @@ export const docs = {
       name: 'contentPadding',
       type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description:
-        'Padding for the main content area. Set based on the dominant content pattern: 4 (16px) for forms/settings/text, 0 for dashboards/maps/tables. Override individual sections with XDSSection.',
+        'Padding for the main content area. Set based on the dominant content pattern: 4 (16px) for forms/settings/text, 0 for dashboards/maps/tables. Override individual sections with Section.',
       default: '0',
     },
     {
       name: 'topNav',
       type: 'ReactNode',
-      description: 'Top navigation slot, typically XDSTopNav.',
-      slotElements: [{__element: 'XDSTopNav', props: {label: 'Navigation'}}],
+      description: 'Top navigation slot, typically TopNav.',
+      slotElements: [{__element: 'TopNav', props: {label: 'Navigation'}}],
     },
     {
       name: 'sideNav',
       type: 'ReactNode',
-      description: 'Side navigation slot, typically XDSSideNav.',
-      slotElements: [{__element: 'XDSSideNav', props: {}}],
+      description: 'Side navigation slot, typically SideNav.',
+      slotElements: [{__element: 'SideNav', props: {}}],
     },
     {
       name: 'mobileNav',
       type: 'ReactNode',
       description:
         'Mobile navigation configuration. Accepts false (disable), config object (tune auto behavior), or ReactNode (full custom drawer).',
-      slotElements: [{__element: 'XDSMobileNav', props: {}}],
+      slotElements: [{__element: 'MobileNav', props: {}}],
     },
     {
       name: 'banner',
       type: 'ReactNode',
       description:
         'Banner slot for system-wide announcements, placed above the topNav.',
-      slotElements: [{__element: 'XDSBanner', props: {title: 'Info', status: 'info', container: 'section'}}],
+      slotElements: [{__element: 'Banner', props: {title: 'Info', status: 'info', container: 'section'}}],
     },
     {
       name: 'height',
@@ -83,24 +83,24 @@ export const docs = {
       variant: 'surface',
       contentPadding: 4,
       topNav: {
-        __element: 'XDSTopNav',
-        props: {label: 'Navigation', heading: {__element: 'XDSTopNavHeading', props: {heading: 'My App'}}},
+        __element: 'TopNav',
+        props: {label: 'Navigation', heading: {__element: 'TopNavHeading', props: {heading: 'My App'}}},
       },
       sideNav: {
-        __element: 'XDSSideNav',
+        __element: 'SideNav',
         props: {},
         children: [
-          {__element: 'XDSSideNavItem', props: {label: 'Dashboard', isSelected: true}},
-          {__element: 'XDSSideNavItem', props: {label: 'Settings'}},
-          {__element: 'XDSSideNavItem', props: {label: 'Help'}},
+          {__element: 'SideNavItem', props: {label: 'Dashboard', isSelected: true}},
+          {__element: 'SideNavItem', props: {label: 'Settings'}},
+          {__element: 'SideNavItem', props: {label: 'Help'}},
         ],
       },
       children: {
-        __element: 'XDSVStack',
+        __element: 'VStack',
         props: {gap: 3},
         children: [
-          {__element: 'XDSHeading', props: {level: 2}, children: 'Dashboard'},
-          {__element: 'XDSText', props: {type: 'body', color: 'secondary'}, children: 'Welcome back. Here is an overview of your workspace.'},
+          {__element: 'Heading', props: {level: 2}, children: 'Dashboard'},
+          {__element: 'Text', props: {type: 'body', color: 'secondary'}, children: 'Welcome back. Here is an overview of your workspace.'},
         ],
       },
     },
@@ -120,7 +120,7 @@ export const docsZh = {
   displayName: 'App Shell',
   usage: {
     description:
-      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive mobile navigation and skip-to-content automatically. Configure side nav collapse on XDSSideNav with its collapsible prop.',
+      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive mobile navigation and skip-to-content automatically. Configure side nav collapse on SideNav with its collapsible prop.',
     bestPractices: [
       {guidance: true, description: 'Choose the right height: use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
       {guidance: true, description: 'Set `contentPadding` based on content type: 4 for forms and settings, 0 for tables and dashboards.'},
@@ -134,11 +134,11 @@ export const docsZh = {
       name: 'contentPadding',
       type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description:
-        '主内容区域的内边距。根据页面主要内容模式设置：4（16px）适用于表单/设置/文本页面，0 适用于仪表盘/地图/表格。可通过 XDSSection 覆盖个别区域。',
+        '主内容区域的内边距。根据页面主要内容模式设置：4（16px）适用于表单/设置/文本页面，0 适用于仪表盘/地图/表格。可通过 Section 覆盖个别区域。',
       default: '0',
     },
-    {name: 'topNav', type: 'ReactNode', description: '顶部导航插槽，通常为 XDSTopNav。'},
-    {name: 'sideNav', type: 'ReactNode', description: '侧边导航插槽，通常为 XDSSideNav。'},
+    {name: 'topNav', type: 'ReactNode', description: '顶部导航插槽，通常为 TopNav。'},
+    {name: 'sideNav', type: 'ReactNode', description: '侧边导航插槽，通常为 SideNav。'},
     {name: 'mobileNav', type: 'ReactNode', description: '移动端导航配置。接受 false（禁用）、配置对象（调整自动行为）或 ReactNode（完全自定义抽屉）。'},
     {name: 'banner', type: 'ReactNode', description: '横幅插槽，用于全局公告，放置在 topNav 上方。'},
     {
@@ -179,10 +179,10 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'app-level layout shell w/ header, side nav, main content; composes XDSLayout internally, replaces XDSPage+XDSPageLayout',
+    'app-level layout shell w/ header, side nav, main content; composes Layout internally, replaces Page+PageLayout',
   usage: {
     description:
-      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive mobile navigation and skip-to-content automatically. Configure side nav collapse on XDSSideNav with its collapsible prop.',
+      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page. It handles responsive mobile navigation and skip-to-content automatically. Configure side nav collapse on SideNav with its collapsible prop.',
     bestPractices: [
       {guidance: true, description: 'Choose the right height: use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
       {guidance: true, description: 'Set `contentPadding` based on content type: 4 for forms and settings, 0 for tables and dashboards.'},
@@ -192,8 +192,8 @@ export const docsDense = {
   },
   propDescriptions: {
     children: 'main content area, rendered inside <main>',
-    topNav: 'top nav slot, typically XDSTopNav',
-    sideNav: 'side nav slot, typically XDSSideNav',
+    topNav: 'top nav slot, typically TopNav',
+    sideNav: 'side nav slot, typically SideNav',
     mobileNav: 'mobile nav config: false | MobileNavConfig | ReactNode',
     banner: 'slot for system-wide announcements above topNav',
     height:
@@ -201,7 +201,7 @@ export const docsDense = {
     variant:
       'nav bg style: wash=wash bg, surface=surface bg, section=dividers, elevated=wash nav w/ elevated surface content+radius',
     contentPadding:
-      'main content area padding. 4 (16px) for forms/settings/text, 0 for dashboards/maps/tables. Override per-section via XDSSection.',
+      'main content area padding. 4 (16px) for forms/settings/text, 0 for dashboards/maps/tables. Override per-section via Section.',
     xstyle: 'StyleX layout customization via stylex.create()',
   },
 };

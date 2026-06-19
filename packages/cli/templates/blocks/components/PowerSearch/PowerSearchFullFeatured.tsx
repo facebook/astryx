@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSPowerSearch} from '@xds/core/PowerSearch';
+import {PowerSearch} from '@xds/core/PowerSearch';
 import type {PowerSearchConfig, PowerSearchFilter} from '@xds/core/PowerSearch';
-import type {XDSSearchSource, XDSSearchableItem} from '@xds/core/Typeahead';
+import type {SearchSource, SearchableItem} from '@xds/core/Typeahead';
 
 const statusValues = [
   {value: 'open', label: 'Open'},
@@ -19,13 +19,13 @@ const priorityValues = [
   {value: 'p2', label: 'P2 — Medium'},
   {value: 'p3', label: 'P3 — Low'},
 ];
-const users: XDSSearchableItem[] = [
+const users: SearchableItem[] = [
   {id: 'user-1', label: 'Alice Johnson'},
   {id: 'user-2', label: 'Bob Smith'},
   {id: 'user-3', label: 'Charlie Brown'},
   {id: 'user-4', label: 'Diana Prince'},
 ];
-const userSource: XDSSearchSource = {
+const userSource: SearchSource = {
   search: (q: string) =>
     users.filter(u => u.label.toLowerCase().includes(q.toLowerCase())),
   bootstrap: () => users,
@@ -91,7 +91,7 @@ export default function PowerSearchFullFeatured() {
   const [filters, setFilters] = useState<PowerSearchFilter[]>([]);
 
   return (
-    <XDSPowerSearch
+    <PowerSearch
       style={{width: 300}}
       config={config}
       filters={filters}

@@ -2,7 +2,7 @@
 
 'use client';
 
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {CodeBlock} from '@xds/core/CodeBlock';
 
 const code = `import {useState, useEffect} from 'react';
 
@@ -20,7 +20,7 @@ export function useUser(id: string) {
 
 export default function CodeBlockShowcase() {
   return (
-    <XDSCodeBlock
+    <CodeBlock
       code={code}
       language="typescript"
       title="useUser.ts"

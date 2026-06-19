@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {XDSNumberInput} from '@xds/core/NumberInput';
+import {NumberInput} from '@xds/core/NumberInput';
 
 export default function NumberInputShowcase() {
   return (
     <div style={{width: 300}}>
-      <XDSNumberInput
+      <NumberInput
         label="Quantity"
         placeholder="Enter quantity"
         value={0}

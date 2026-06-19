@@ -4,12 +4,12 @@
 
 import {useState} from 'react';
 import {
-  XDSTable,
-  useXDSTableSelection,
-  useXDSTableSelectionState,
+  Table,
+  useTableSelection,
+  useTableSelectionState,
   proportional,
 } from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
+import type {TableColumn} from '@xds/core/Table';
 
 interface User extends Record<string, unknown> {
   id: string;
@@ -26,7 +26,7 @@ const users: User[] = [
   {id: '5', name: 'Eve', email: 'eve@example.com', role: 'Admin'},
 ];
 
-const columns: XDSTableColumn<User>[] = [
+const columns: TableColumn<User>[] = [
   {key: 'name', header: 'Name', width: proportional(1)},
   {key: 'email', header: 'Email', width: proportional(2)},
   {key: 'role', header: 'Role', width: proportional(1)},
@@ -35,16 +35,16 @@ const columns: XDSTableColumn<User>[] = [
 export default function TableSelectableTable() {
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-  const {selectionConfig} = useXDSTableSelectionState<User>({
+  const {selectionConfig} = useTableSelectionState<User>({
     data: users,
     idKey: 'id',
     selectedKeys,
     setSelectedKeys,
   });
-  const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
+  const selectionPlugin = useTableSelection<User>(selectionConfig);
 
   return (
-    <XDSTable
+    <Table
       data={users}
       columns={columns}
       idKey="id"

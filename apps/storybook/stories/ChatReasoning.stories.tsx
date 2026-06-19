@@ -2,13 +2,13 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSChatMessageList,
-  XDSChatMessage,
-  XDSChatMessageBubble,
+  ChatMessageList,
+  ChatMessage,
+  ChatMessageBubble,
 } from '@xds/core/Chat';
 import {XDSChatReasoning} from '@xds/lab';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSMarkdown} from '@xds/core/Markdown';
+import {Avatar} from '@xds/core/Avatar';
+import {Markdown} from '@xds/core/Markdown';
 import {useState, useEffect} from 'react';
 
 const meta: Meta = {
@@ -43,12 +43,12 @@ export const Collapsed: StoryObj = {
 export const Expanded: StoryObj = {
   render: () => (
     <XDSChatReasoning duration="8s" defaultIsExpanded>
-      <XDSMarkdown density="compact">{`First, I need to understand the constraints:
+      <Markdown density="compact">{`First, I need to understand the constraints:
 1. Three fields, three crops (wheat, corn, soy)
 2. No adjacent fields can have the same crop
 3. No field can repeat its crop from the previous year
 
-For **Year 1**: 3 \u00d7 2 \u00d7 2 = 12 arrangements...`}</XDSMarkdown>
+For **Year 1**: 3 \u00d7 2 \u00d7 2 = 12 arrangements...`}</Markdown>
     </XDSChatReasoning>
   ),
 };
@@ -88,20 +88,20 @@ export const CustomLabel: StoryObj = {
 /** In a message — reasoning above the response */
 export const InMessage: StoryObj = {
   render: () => (
-    <XDSChatMessageList>
-      <XDSChatMessage sender="user">
-        <XDSChatMessageBubble>
+    <ChatMessageList>
+      <ChatMessage sender="user">
+        <ChatMessageBubble>
           How many valid planting arrangements are possible over 3 years?
-        </XDSChatMessageBubble>
-      </XDSChatMessage>
-      <XDSChatMessage
+        </ChatMessageBubble>
+      </ChatMessage>
+      <ChatMessage
         sender="assistant"
-        avatar={<XDSAvatar name="AI" size="small" />}>
+        avatar={<Avatar name="AI" size="small" />}>
         <XDSChatReasoning duration="12s">
           Let me work through the constraints systematically...
         </XDSChatReasoning>
-        <XDSMarkdown density="compact">{`There are **42** valid planting arrangements over 3 years.`}</XDSMarkdown>
-      </XDSChatMessage>
-    </XDSChatMessageList>
+        <Markdown density="compact">{`There are **42** valid planting arrangements over 3 years.`}</Markdown>
+      </ChatMessage>
+    </ChatMessageList>
   ),
 };

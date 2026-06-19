@@ -3,12 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSToolbar} from '@xds/core/Toolbar';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
-import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
+import {Toolbar} from '@xds/core/Toolbar';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
+import {TabList, Tab} from '@xds/core/TabList';
+import {Card} from '@xds/core/Card';
+import {Section} from '@xds/core/Section';
 import {PlusIcon} from '@heroicons/react/24/outline';
 import * as stylex from '@stylexjs/stylex';
 
@@ -24,26 +24,26 @@ const styles = stylex.create({
 export default function ToolbarWithTabs() {
   const [tab, setTab] = useState('overview');
   return (
-    <XDSCard xstyle={styles.card}>
-      <XDSToolbar
+    <Card xstyle={styles.card}>
+      <Toolbar
         label="Section navigation"
         dividers={['bottom']}
         startContent={
-          <XDSTabList value={tab} onChange={setTab}>
-            <XDSTab value="overview" label="Overview" />
-            <XDSTab value="analytics" label="Analytics" />
-            <XDSTab value="settings" label="Settings" />
-          </XDSTabList>
+          <TabList value={tab} onChange={setTab}>
+            <Tab value="overview" label="Overview" />
+            <Tab value="analytics" label="Analytics" />
+            <Tab value="settings" label="Settings" />
+          </TabList>
         }
         endContent={
-          <XDSButton
+          <Button
             label="New item"
-            icon={<XDSIcon icon={PlusIcon} />}
+            icon={<Icon icon={PlusIcon} />}
             isIconOnly
           />
         }
       />
-      <XDSSection />
-    </XDSCard>
+      <Section />
+    </Card>
   );
 }

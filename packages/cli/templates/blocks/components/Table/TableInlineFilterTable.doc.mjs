@@ -4,7 +4,7 @@
 export const doc = {
   type: 'block',
   exampleFor: 'Table',
-  alsoExampleFor: ['useXDSTableFiltering', 'useXDSTableFilterState'],
+  alsoExampleFor: ['useTableFiltering', 'useTableFilterState'],
   name: 'Table — Inline Filters',
   displayName: 'Table — Inline Filters',
   description:

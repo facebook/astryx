@@ -2,12 +2,12 @@
 
 'use client';
 
-import {XDSMediaTheme} from '@xds/core/theme';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSButton} from '@xds/core/Button';
-import {XDSSection} from '@xds/core/Section';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {MediaTheme} from '@xds/core/theme';
+import {AspectRatio} from '@xds/core/AspectRatio';
+import {Button} from '@xds/core/Button';
+import {Section} from '@xds/core/Section';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 // light-home-square-1 from xds_oss asset set
 const BRIGHT_ROOM_IMAGE_URL =
@@ -15,7 +15,7 @@ const BRIGHT_ROOM_IMAGE_URL =
 
 export default function MediaThemeLightScrim() {
   return (
-    <XDSAspectRatio
+    <AspectRatio
       ratio={16 / 9}
       style={{
         width: 360,
@@ -27,7 +27,7 @@ export default function MediaThemeLightScrim() {
         alt="Bright room"
         style={{width: '100%', height: '100%', objectFit: 'cover'}}
       />
-      <XDSSection
+      <Section
         variant="transparent"
         padding={4}
         style={{
@@ -39,18 +39,18 @@ export default function MediaThemeLightScrim() {
           borderRadius: 'var(--radius-container)',
           boxShadow: 'var(--shadow-med)',
         }}>
-        <XDSMediaTheme mode="light">
-          <XDSStack direction="vertical" gap={2}>
-            <XDSText type="body" weight="bold">
+        <MediaTheme mode="light">
+          <Stack direction="vertical" gap={2}>
+            <Text type="body" weight="bold">
               Bright media surface
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
+            </Text>
+            <Text type="supporting" color="secondary">
               Use mode="light" when content sits on a light card or scrim.
-            </XDSText>
-            <XDSButton label="Open" variant="ghost" size="sm" />
-          </XDSStack>
-        </XDSMediaTheme>
-      </XDSSection>
-    </XDSAspectRatio>
+            </Text>
+            <Button label="Open" variant="ghost" size="sm" />
+          </Stack>
+        </MediaTheme>
+      </Section>
+    </AspectRatio>
   );
 }

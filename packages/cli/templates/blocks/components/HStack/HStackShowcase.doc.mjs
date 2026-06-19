@@ -6,7 +6,7 @@ export const doc = {
   exampleFor: 'HStack',
   name: 'HStack',
   displayName: 'H Stack',
-  description: 'Demonstrates XDSHStack arranging items horizontally with different gaps and alignments.',
+  description: 'Demonstrates HStack arranging items horizontally with different gaps and alignments.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

@@ -3,12 +3,12 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSHStack, XDSVStack} from '@xds/core/Stack';
-import {XDSCard} from '@xds/core/Card';
-import {XDSCarousel} from '@xds/core/Carousel';
-import {XDSButton} from '@xds/core/Button';
-import {XDSTheme} from '@xds/core/theme';
+import {Text, Heading} from '@xds/core/Text';
+import {HStack, VStack} from '@xds/core/Stack';
+import {Card} from '@xds/core/Card';
+import {Carousel} from '@xds/core/Carousel';
+import {Button} from '@xds/core/Button';
+import {Theme} from '@xds/core/theme';
 import {
   spacingDefaults,
   radiusDefaults,
@@ -50,7 +50,7 @@ const themePackages = packages
   });
 
 // Re-set XDS's structural tokens (spacing, radii, font sizes) back to
-// the defaults exported from @xds/core. Each <XDSTheme> wrapper sets a
+// the defaults exported from @xds/core. Each <Theme> wrapper sets a
 // full token bundle including these structural slots, which would make
 // gallery tiles visually inconsistent (different button heights, badge
 // sizes, banner padding). Resetting only the structural tokens — while
@@ -74,7 +74,7 @@ const STRUCTURAL_TOKEN_OVERRIDES: React.CSSProperties = {
 // the active tile + a clean peek of the next one on the right.
 const CARD_WIDTH = 800;
 
-// Per-slide height. XDSCarousel uses `align-items: center` on its
+// Per-slide height. Carousel uses `align-items: center` on its
 // scroller, so without an explicit height each slide sizes to its
 // content and tiles render at visibly different heights based on
 // which theme is showing. 620px chosen empirically as the smallest
@@ -176,7 +176,7 @@ const styles = stylex.create({
   },
   // Cluster on the right of the header row — "Create a custom theme"
   // ghost button + "Explore all themes" secondary button. Strictly
-  // the XDSButton docs discourage button-for-navigation, but the
+  // the Button docs discourage button-for-navigation, but the
   // same docsite uses this pattern on the hero CTAs (`Get started`
   // / `Browse components`) so the visual treatment is consistent
   // with the rest of the landing.
@@ -230,7 +230,7 @@ const styles = stylex.create({
       '@media (max-width: 800px)': 1180,
     },
   },
-  // The XDSCard host inside each slide. Fills the slide width and
+  // The Card host inside each slide. Fills the slide width and
   // height so the inner ThemeShowcaseTile stretches to match.
   cardFill: {
     width: '100%',
@@ -244,15 +244,15 @@ const styles = stylex.create({
 
 function ShowcaseHeading() {
   return (
-    <XDSVStack gap={4} xstyle={styles.headingBlock}>
-      <XDSHeading
+    <VStack gap={4} xstyle={styles.headingBlock}>
+      <Heading
         level={2}
         type="display-2"
         color="primary"
         xstyle={styles.fillWidth}>
         Custom styles as unique as your app
-      </XDSHeading>
-      <XDSText
+      </Heading>
+      <Text
         display="block"
         type="body"
         color="secondary"
@@ -261,31 +261,31 @@ function ShowcaseHeading() {
         Astryx makes it easy to apply your brand; no rewrites needed.
         Customize your theme at the token level: color, typography, radius, and
         motion.
-      </XDSText>
-    </XDSVStack>
+      </Text>
+    </VStack>
   );
 }
 
 function HeaderLinks() {
   return (
-    <XDSHStack gap={2} align="center" xstyle={styles.headerLinks}>
-      <XDSButton
+    <HStack gap={2} align="center" xstyle={styles.headerLinks}>
+      <Button
         variant="ghost"
         label="Create a custom theme"
         href="/docs/theme"
       />
-      <XDSButton
+      <Button
         variant="secondary"
         label="Explore all themes"
         href="/themes"
       />
-    </XDSHStack>
+    </HStack>
   );
 }
 
 export function ThemingShowcase() {
   return (
-    <XDSVStack
+    <VStack
       as="section"
       gap={10}
       align="stretch"
@@ -296,21 +296,21 @@ export function ThemingShowcase() {
           share the same outer page gutter (PAGE_GUTTER) so they
           align to the page's content rim. The carousel below bleeds
           past this gutter to fill 100vw. */}
-      <XDSHStack
+      <HStack
         gap={6}
         align="stretch"
         hAlign="between"
         xstyle={styles.headerRow}>
         <ShowcaseHeading />
         <HeaderLinks />
-      </XDSHStack>
+      </HStack>
 
       {/* Scroller padding that aligns the first tile to the heading
           text column. This is a layout concern (not chrome) so it
           remains as a scoped style targeting this carousel's scroller.
 
           TODO: Consider a `scrollerXstyle` prop or padding prop on
-          XDSCarousel if this pattern recurs in other full-bleed usages.
+          Carousel if this pattern recurs in other full-bleed usages.
        */}
       <style>{`
         [aria-label="Available themes"] > div:first-child {
@@ -334,7 +334,7 @@ export function ThemingShowcase() {
       `}</style>
 
       <div {...stylex.props(styles.carouselWrap)}>
-        <XDSCarousel
+        <Carousel
           aria-label="Available themes"
           gap={4}
           hasSnap
@@ -350,12 +350,12 @@ export function ThemingShowcase() {
               .replace(/\s*Theme$/, '');
             return (
               <div key={pkg.name} {...stylex.props(styles.slide)}>
-                <XDSCard
+                <Card
                   padding={0}
                   variant="transparent"
                   xstyle={styles.cardFill}>
                   <div {...stylex.props(styles.previewFrame)}>
-                    <XDSTheme theme={theme} mode="light">
+                    <Theme theme={theme} mode="light">
                       <div style={STRUCTURAL_TOKEN_OVERRIDES}>
                         <ThemeShowcaseTile
                           label={label}
@@ -363,14 +363,14 @@ export function ThemingShowcase() {
                           description={pkg.description}
                         />
                       </div>
-                    </XDSTheme>
+                    </Theme>
                   </div>
-                </XDSCard>
+                </Card>
               </div>
             );
           })}
-        </XDSCarousel>
+        </Carousel>
       </div>
-    </XDSVStack>
+    </VStack>
   );
 }

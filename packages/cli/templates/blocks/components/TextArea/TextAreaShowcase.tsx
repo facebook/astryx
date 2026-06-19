@@ -2,12 +2,12 @@
 
 'use client';
 
-import {XDSTextArea} from '@xds/core/TextArea';
+import {TextArea} from '@xds/core/TextArea';
 
 export default function TextAreaShowcase() {
   return (
     <div style={{width: 400}}>
-      <XDSTextArea
+      <TextArea
         label="Description"
         value=""
         onChange={() => {}}

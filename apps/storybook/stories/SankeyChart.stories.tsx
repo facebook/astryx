@@ -10,8 +10,8 @@ import {
   type SankeyNode,
   type SankeyLink,
 } from '@xds/lab';
-import {XDSStack, XDSText} from '@xds/core';
-import {XDSHeading} from '@xds/core/Text';
+import {Stack, Text} from '@xds/core';
+import {Heading} from '@xds/core/Text';
 
 const meta: Meta = {
   title: 'Lab/SankeyChart',
@@ -57,11 +57,11 @@ const funnelColumns = [
 /** Classic diverging funnel with grid lines */
 export const ConversionFunnel: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Conversion Funnel</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Conversion Funnel</Heading>
+      <Text type="body" color="secondary">
         User journey · Last 30 days
-      </XDSText>
+      </Text>
       <XDSSankeyChart
         nodes={funnelNodes}
         links={funnelLinks}
@@ -72,7 +72,7 @@ export const ConversionFunnel: Story = {
         <XDSSankeyNode />
         <XDSSankeyLabel />
       </XDSSankeyChart>
-    </XDSStack>
+    </Stack>
   ),
 };
 
@@ -126,11 +126,11 @@ const revenueColumns = [
 /** Converging Sankey — multiple sources flowing to fewer destinations */
 export const RevenueFlow: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Revenue Sources</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Revenue Sources</Heading>
+      <Text type="body" color="secondary">
         Channel attribution · March 2026
-      </XDSText>
+      </Text>
       <XDSSankeyChart
         nodes={revenueNodes}
         links={revenueLinks}
@@ -141,7 +141,7 @@ export const RevenueFlow: Story = {
         <XDSSankeyNode />
         <XDSSankeyLabel />
       </XDSSankeyChart>
-    </XDSStack>
+    </Stack>
   ),
 };
 
@@ -163,17 +163,17 @@ export const AutoColumns: Story = {
     ];
 
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Auto Column Detection</XDSHeading>
-        <XDSText type="body" color="secondary">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Auto Column Detection</Heading>
+        <Text type="body" color="secondary">
           No explicit columns — topologically sorted
-        </XDSText>
+        </Text>
         <XDSSankeyChart nodes={nodes} links={links} height={280}>
           <XDSSankeyLink tension={0.6} />
           <XDSSankeyNode />
           <XDSSankeyLabel showPercent={false} />
         </XDSSankeyChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -231,11 +231,11 @@ export const ManyColumns: Story = {
     ];
 
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Deep Funnel (6 stages)</XDSHeading>
-        <XDSText type="body" color="secondary">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Deep Funnel (6 stages)</Heading>
+        <Text type="body" color="secondary">
           Scrolls horizontally when columns exceed container width
-        </XDSText>
+        </Text>
         <div
           style={{
             maxWidth: 600,
@@ -255,7 +255,7 @@ export const ManyColumns: Story = {
             <XDSSankeyLabel />
           </XDSSankeyChart>
         </div>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -305,11 +305,11 @@ const bizColumns = [
  */
 export const BusinessFunnel: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Acquisition Funnel</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Acquisition Funnel</Heading>
+      <Text type="body" color="secondary">
         Blue = progression · Gray = drop-off
-      </XDSText>
+      </Text>
       <XDSSankeyChart
         nodes={bizNodes}
         links={bizLinks}
@@ -320,7 +320,7 @@ export const BusinessFunnel: Story = {
         <XDSSankeyNode />
         <XDSSankeyLabel />
       </XDSSankeyChart>
-    </XDSStack>
+    </Stack>
   ),
 };
 
@@ -358,11 +358,11 @@ const demoColumns = [
 /** Wide bars with rotated labels and column headers — art deco style */
 export const WideBarStyle: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Survey Flow</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Survey Flow</Heading>
+      <Text type="body" color="secondary">
         Wider node bars with rotated text labels
-      </XDSText>
+      </Text>
       <XDSSankeyChart
         nodes={demoNodes}
         links={demoLinks}
@@ -374,7 +374,7 @@ export const WideBarStyle: Story = {
         <XDSSankeyNode />
         <XDSSankeyLabel />
       </XDSSankeyChart>
-    </XDSStack>
+    </Stack>
   ),
 };
 
@@ -537,11 +537,11 @@ function formatBudget(value: number): string {
  */
 export const USFederalBudget: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>US Federal Budget FY2020</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>US Federal Budget FY2020</Heading>
+      <Text type="body" color="secondary">
         Revenue sources → receiving agencies (vega-datasets/budget.json)
-      </XDSText>
+      </Text>
       <XDSSankeyChart
         nodes={budgetNodes}
         links={budgetLinks}
@@ -552,7 +552,7 @@ export const USFederalBudget: Story = {
         <XDSSankeyNode />
         <XDSSankeyLabel formatValue={formatBudget} />
       </XDSSankeyChart>
-    </XDSStack>
+    </Stack>
   ),
 };
 
@@ -561,11 +561,11 @@ export const USFederalBudget: Story = {
 /** Monochrome — flat black ribbons on white, editorial style */
 export const Monochrome: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Petroleum Flow</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Petroleum Flow</Heading>
+      <Text type="body" color="secondary">
         Monochrome — flat color, no gradients
-      </XDSText>
+      </Text>
       <XDSSankeyChart
         nodes={funnelNodes}
         links={funnelLinks}
@@ -576,18 +576,18 @@ export const Monochrome: Story = {
         <XDSSankeyNode glow={false} />
         <XDSSankeyLabel />
       </XDSSankeyChart>
-    </XDSStack>
+    </Stack>
   ),
 };
 
 /** Source-colored — each link takes its source node's color */
 export const SourceColored: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Source-Colored Links</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Source-Colored Links</Heading>
+      <Text type="body" color="secondary">
         Each ribbon matches its source node
-      </XDSText>
+      </Text>
       <XDSSankeyChart
         nodes={funnelNodes}
         links={funnelLinks}
@@ -598,18 +598,18 @@ export const SourceColored: Story = {
         <XDSSankeyNode />
         <XDSSankeyLabel />
       </XDSSankeyChart>
-    </XDSStack>
+    </Stack>
   ),
 };
 
 /** Target-colored — each link takes its target node's color */
 export const TargetColored: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Target-Colored Links</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Target-Colored Links</Heading>
+      <Text type="body" color="secondary">
         Each ribbon matches its destination node
-      </XDSText>
+      </Text>
       <XDSSankeyChart
         nodes={funnelNodes}
         links={funnelLinks}
@@ -620,18 +620,18 @@ export const TargetColored: Story = {
         <XDSSankeyNode />
         <XDSSankeyLabel />
       </XDSSankeyChart>
-    </XDSStack>
+    </Stack>
   ),
 };
 
 /** Leaned gradient — source-biased, transitions late */
 export const LeanedSourceGradient: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Source-Leaned Gradient</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Source-Leaned Gradient</Heading>
+      <Text type="body" color="secondary">
         bias=0.2 — holds source color, transitions near target
-      </XDSText>
+      </Text>
       <XDSSankeyChart
         nodes={funnelNodes}
         links={funnelLinks}
@@ -642,18 +642,18 @@ export const LeanedSourceGradient: Story = {
         <XDSSankeyNode />
         <XDSSankeyLabel />
       </XDSSankeyChart>
-    </XDSStack>
+    </Stack>
   ),
 };
 
 /** Leaned gradient — target-biased, transitions early */
 export const LeanedTargetGradient: Story = {
   render: () => (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Target-Leaned Gradient</XDSHeading>
-      <XDSText type="body" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Target-Leaned Gradient</Heading>
+      <Text type="body" color="secondary">
         bias=0.8 — transitions early, holds target color
-      </XDSText>
+      </Text>
       <XDSSankeyChart
         nodes={funnelNodes}
         links={funnelLinks}
@@ -664,6 +664,6 @@ export const LeanedTargetGradient: Story = {
         <XDSSankeyNode />
         <XDSSankeyLabel />
       </XDSSankeyChart>
-    </XDSStack>
+    </Stack>
   ),
 };

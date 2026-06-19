@@ -2,11 +2,11 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSThumbnail} from '@xds/core/Thumbnail';
+import {Thumbnail} from '@xds/core/Thumbnail';
 
-const meta: Meta<typeof XDSThumbnail> = {
+const meta: Meta<typeof Thumbnail> = {
   title: 'Core/Thumbnail',
-  component: XDSThumbnail,
+  component: Thumbnail,
   tags: ['autodocs'],
   argTypes: {
     src: {
@@ -29,7 +29,7 @@ const meta: Meta<typeof XDSThumbnail> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSThumbnail>;
+type Story = StoryObj<typeof Thumbnail>;
 
 // Deterministic picsum images by ID
 const DARK_IMAGE = 'https://picsum.photos/id/1042/200/200'; // dark interior
@@ -63,7 +63,7 @@ export const WithRemove: Story = {
       );
     }
     return (
-      <XDSThumbnail
+      <Thumbnail
         src={LIGHT_IMAGE}
         alt="Removable thumbnail"
         label="photo.png"
@@ -84,7 +84,7 @@ export const WithCaption: Story = {
       );
     }
     return (
-      <XDSThumbnail
+      <Thumbnail
         src={WARM_IMAGE}
         alt="Photo with metadata"
         label="screenshot.png"
@@ -133,7 +133,7 @@ export const Placeholder: Story = {
       );
     }
     return (
-      <XDSThumbnail label="report.pdf" onRemove={() => setVisible(false)} />
+      <Thumbnail label="report.pdf" onRemove={() => setVisible(false)} />
     );
   },
 };
@@ -166,7 +166,7 @@ export const MediaModeTest: Story = {
         </p>
         <div style={{display: 'flex', gap: 8, alignItems: 'flex-start'}}>
           {items.map(item => (
-            <XDSThumbnail
+            <Thumbnail
               key={item.label}
               src={item.src}
               alt={item.alt}
@@ -199,7 +199,7 @@ export const Gallery: Story = {
     return (
       <div style={{display: 'flex', gap: 8, alignItems: 'flex-start'}}>
         {items.map(item => (
-          <XDSThumbnail
+          <Thumbnail
             key={item.id}
             src={item.src}
             alt={item.label}

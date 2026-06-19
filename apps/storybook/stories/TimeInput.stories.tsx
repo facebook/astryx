@@ -2,12 +2,12 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSTimeInput} from '@xds/core/TimeInput';
+import {TimeInput} from '@xds/core/TimeInput';
 import type {ISOTimeString} from '@xds/core';
 
-const meta: Meta<typeof XDSTimeInput> = {
+const meta: Meta<typeof TimeInput> = {
   title: 'Core/TimeInput',
-  component: XDSTimeInput,
+  component: TimeInput,
   tags: ['autodocs'],
   argTypes: {
     label: {
@@ -67,12 +67,12 @@ const meta: Meta<typeof XDSTimeInput> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSTimeInput>;
+type Story = StoryObj<typeof TimeInput>;
 
 export const Default: Story = {
   render: args => {
     const [value, setValue] = useState<ISOTimeString | undefined>(undefined);
-    return <XDSTimeInput {...args} value={value} onChange={setValue} />;
+    return <TimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Time',
@@ -85,7 +85,7 @@ export const WithValue: Story = {
     const [value, setValue] = useState<ISOTimeString | undefined>(
       '14:30' as ISOTimeString,
     );
-    return <XDSTimeInput {...args} value={value} onChange={setValue} />;
+    return <TimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Meeting time',
@@ -97,7 +97,7 @@ export const TwentyFourHourFormat: Story = {
     const [value, setValue] = useState<ISOTimeString | undefined>(
       '14:30' as ISOTimeString,
     );
-    return <XDSTimeInput {...args} value={value} onChange={setValue} />;
+    return <TimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Time (24h)',
@@ -110,7 +110,7 @@ export const WithSeconds: Story = {
     const [value, setValue] = useState<ISOTimeString | undefined>(
       '14:30:45' as ISOTimeString,
     );
-    return <XDSTimeInput {...args} value={value} onChange={setValue} />;
+    return <TimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Precise time',
@@ -123,7 +123,7 @@ export const WithClearButton: Story = {
     const [value, setValue] = useState<ISOTimeString | undefined>(
       '09:00' as ISOTimeString,
     );
-    return <XDSTimeInput {...args} value={value} onChange={setValue} />;
+    return <TimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Start time',
@@ -134,7 +134,7 @@ export const WithClearButton: Story = {
 export const WithDescription: Story = {
   render: args => {
     const [value, setValue] = useState<ISOTimeString | undefined>(undefined);
-    return <XDSTimeInput {...args} value={value} onChange={setValue} />;
+    return <TimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Alarm time',
@@ -146,7 +146,7 @@ export const WithDescription: Story = {
 export const WithMinMax: Story = {
   render: args => {
     const [value, setValue] = useState<ISOTimeString | undefined>(undefined);
-    return <XDSTimeInput {...args} value={value} onChange={setValue} />;
+    return <TimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Appointment time',
@@ -162,7 +162,7 @@ export const WithIncrement: Story = {
     const [value, setValue] = useState<ISOTimeString | undefined>(
       '09:00' as ISOTimeString,
     );
-    return <XDSTimeInput {...args} value={value} onChange={setValue} />;
+    return <TimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Time slot',
@@ -174,7 +174,7 @@ export const WithIncrement: Story = {
 export const Optional: Story = {
   render: args => {
     const [value, setValue] = useState<ISOTimeString | undefined>(undefined);
-    return <XDSTimeInput {...args} value={value} onChange={setValue} />;
+    return <TimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Preferred time',
@@ -186,7 +186,7 @@ export const Optional: Story = {
 export const Required: Story = {
   render: args => {
     const [value, setValue] = useState<ISOTimeString | undefined>(undefined);
-    return <XDSTimeInput {...args} value={value} onChange={setValue} />;
+    return <TimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Start time',
@@ -200,7 +200,7 @@ export const Disabled: Story = {
     const [value, setValue] = useState<ISOTimeString | undefined>(
       '10:00' as ISOTimeString,
     );
-    return <XDSTimeInput {...args} value={value} onChange={setValue} />;
+    return <TimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Locked time',
@@ -211,7 +211,7 @@ export const Disabled: Story = {
 export const SmallSize: Story = {
   render: args => {
     const [value, setValue] = useState<ISOTimeString | undefined>(undefined);
-    return <XDSTimeInput {...args} value={value} onChange={setValue} />;
+    return <TimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Time',
@@ -225,7 +225,7 @@ export const WithErrorStatus: Story = {
     const [value, setValue] = useState<ISOTimeString | undefined>(
       '22:00' as ISOTimeString,
     );
-    return <XDSTimeInput {...args} value={value} onChange={setValue} />;
+    return <TimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Event time',
@@ -241,7 +241,7 @@ export const WithWarningStatus: Story = {
     const [value, setValue] = useState<ISOTimeString | undefined>(
       '07:00' as ISOTimeString,
     );
-    return <XDSTimeInput {...args} value={value} onChange={setValue} />;
+    return <TimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Meeting time',
@@ -257,7 +257,7 @@ export const WithSuccessStatus: Story = {
     const [value, setValue] = useState<ISOTimeString | undefined>(
       '10:00' as ISOTimeString,
     );
-    return <XDSTimeInput {...args} value={value} onChange={setValue} />;
+    return <TimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Scheduled time',
@@ -294,45 +294,45 @@ export const AllVariations: Story = {
           gap: '16px',
           maxWidth: '300px',
         }}>
-        <XDSTimeInput
+        <TimeInput
           label="Default (12h)"
           value={value1}
           onChange={setValue1}
           placeholder="Select a time"
         />
-        <XDSTimeInput
+        <TimeInput
           label="24-hour format"
           value={value2}
           onChange={setValue2}
           hourFormat="24h"
         />
-        <XDSTimeInput
+        <TimeInput
           label="With seconds"
           value={value3}
           onChange={setValue3}
           hasSeconds
         />
-        <XDSTimeInput
+        <TimeInput
           label="With clear button"
           value={value4}
           onChange={setValue4}
           hasClear
           placeholder="Select a time"
         />
-        <XDSTimeInput
+        <TimeInput
           label="With description"
           description="Pick your preferred time"
           value={value5}
           onChange={setValue5}
           placeholder="Select a time"
         />
-        <XDSTimeInput
+        <TimeInput
           label="Disabled"
           isDisabled
           value={value6}
           onChange={setValue6}
         />
-        <XDSTimeInput
+        <TimeInput
           label="With error"
           value={value7}
           onChange={setValue7}

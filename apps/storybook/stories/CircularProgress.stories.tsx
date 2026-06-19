@@ -2,7 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSCircularProgress} from '@xds/lab/CircularProgress';
-import {XDSText} from '@xds/core/Text';
+import {Text} from '@xds/core/Text';
 
 const meta: Meta<typeof XDSCircularProgress> = {
   title: 'Lab/CircularProgress',
@@ -71,17 +71,17 @@ export const SizesWithLabels: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '24px', alignItems: 'center'}}>
       <XDSCircularProgress value={60} size="sm" label="Small">
-        <XDSText type="supporting" style={{fontSize: 8}}>
+        <Text type="supporting" style={{fontSize: 8}}>
           60%
-        </XDSText>
+        </Text>
       </XDSCircularProgress>
       <XDSCircularProgress value={60} size="md" label="Medium">
-        <XDSText type="supporting" style={{fontSize: 11}}>
+        <Text type="supporting" style={{fontSize: 11}}>
           60%
-        </XDSText>
+        </Text>
       </XDSCircularProgress>
       <XDSCircularProgress value={60} size="lg" label="Large">
-        <XDSText type="body">60%</XDSText>
+        <Text type="body">60%</Text>
       </XDSCircularProgress>
     </div>
   ),

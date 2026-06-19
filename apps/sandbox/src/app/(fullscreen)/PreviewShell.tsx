@@ -4,18 +4,18 @@
 
 import {useState, useCallback, useEffect, useMemo, useRef} from 'react';
 import {usePathname, useRouter} from 'next/navigation';
-import {XDSText} from '@xds/core/Text';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
-import {XDSButton} from '@xds/core/Button';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
-import {XDSCommandPalette} from '@xds/core/CommandPalette';
+import {Text} from '@xds/core/Text';
+import {DropdownMenu} from '@xds/core/DropdownMenu';
+import {Button} from '@xds/core/Button';
+import {CodeBlock} from '@xds/core/CodeBlock';
+import {CommandPalette} from '@xds/core/CommandPalette';
 import {createStaticSource} from '@xds/core/Typeahead';
 import {
-  XDSSegmentedControl,
-  XDSSegmentedControlItem,
+  SegmentedControl,
+  SegmentedControlItem,
 } from '@xds/core/SegmentedControl';
-import {XDSTreeList} from '@xds/core/TreeList';
-import type {XDSTreeListItemData} from '@xds/core/TreeList';
+import {TreeList} from '@xds/core/TreeList';
+import type {TreeListItemData} from '@xds/core/TreeList';
 import {categories} from '../sandboxPages';
 import {useThemeControls, SANDBOX_THEMES} from '../providers';
 import {sourceRegistry} from '../../generated/sourceRegistry';
@@ -25,17 +25,17 @@ import {blocks} from '../../generated/blockRegistry';
 const blocksByHref = new Map(blocks.map(b => [b.href.replace(/\/$/, ''), b]));
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
-function buildNavTree(currentPath: string): XDSTreeListItemData[] {
+function buildNavTree(currentPath: string): TreeListItemData[] {
   const norm = currentPath.replace(/\/$/, '');
 
-  const pageItems: XDSTreeListItemData[] = templates.map(t => ({
+  const pageItems: TreeListItemData[] = templates.map(t => ({
     id: t.href,
     label: t.name,
     href: basePath + t.href,
     isSelected: t.href.replace(/\/$/, '') === norm,
   }));
 
-  const componentMap = new Map<string, XDSTreeListItemData[]>();
+  const componentMap = new Map<string, TreeListItemData[]>();
   for (const b of blocks) {
     const group = b.component;
     let items = componentMap.get(group);
@@ -54,7 +54,7 @@ function buildNavTree(currentPath: string): XDSTreeListItemData[] {
     });
   }
 
-  const componentItems: XDSTreeListItemData[] = [...componentMap.entries()]
+  const componentItems: TreeListItemData[] = [...componentMap.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([name, items]) => ({
       id: `component-${name}`,
@@ -277,7 +277,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
   if (isEmbed) {
     // Embedded template previews need a full-height chain so page roots sized
     // with min-height:100% (e.g. centered login pages) fill the frame instead of
-    // collapsing to content height. The chain is html → body → XDSTheme wrapper
+    // collapsing to content height. The chain is html → body → Theme wrapper
     // ([data-xds-theme]) → template root. Rendered inline (not in the layout
     // <head>) so it applies reliably in the embed context.
     return (
@@ -425,7 +425,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           position: 'relative',
           overflow: 'visible',
         }}>
-        <XDSButton
+        <Button
           variant="ghost"
           size="sm"
           label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
@@ -454,7 +454,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           </button>
         </div>
 
-        <XDSCommandPalette
+        <CommandPalette
           isOpen={paletteOpen}
           onOpenChange={setPaletteOpen}
           searchSource={searchSource}
@@ -483,53 +483,53 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           )}
         />
 
-        <XDSSegmentedControl
+        <SegmentedControl
           value={view}
           onChange={handleViewChange}
           label="Toggle preview or code view"
           size="sm">
-          <XDSSegmentedControlItem
+          <SegmentedControlItem
             value="preview"
             label="Preview"
             isLabelHidden
             icon={<EyeIcon width={14} height={14} />}
           />
-          <XDSSegmentedControlItem
+          <SegmentedControlItem
             value="code"
             label="Code"
             isLabelHidden
             icon={<CodeIcon width={14} height={14} />}
           />
-        </XDSSegmentedControl>
+        </SegmentedControl>
 
         {view === 'preview' && !isBlock && (
-          <XDSSegmentedControl
+          <SegmentedControl
             value={viewport}
             onChange={v => setViewport(v as ViewportSize)}
             label="Viewport size"
             size="sm">
-            <XDSSegmentedControlItem
+            <SegmentedControlItem
               value="desktop"
               label="Desktop"
               isLabelHidden
               icon={<DesktopIcon width={14} height={14} />}
             />
-            <XDSSegmentedControlItem
+            <SegmentedControlItem
               value="tablet"
               label="Tablet"
               isLabelHidden
               icon={<TabletIcon width={14} height={14} />}
             />
-            <XDSSegmentedControlItem
+            <SegmentedControlItem
               value="mobile"
               label="Mobile"
               isLabelHidden
               icon={<PhoneIcon width={14} height={14} />}
             />
-          </XDSSegmentedControl>
+          </SegmentedControl>
         )}
 
-        <XDSDropdownMenu
+        <DropdownMenu
           button={{
             label:
               SANDBOX_THEMES.find(t => t.id === themeName)?.label ?? themeName,
@@ -542,7 +542,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
             onClick: () => setThemeName(id),
           }))}
         />
-        <XDSButton
+        <Button
           variant="ghost"
           size="sm"
           label={mode === 'light' ? 'Light mode' : 'Dark mode'}
@@ -556,7 +556,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
           isIconOnly
         />
-        <XDSButton
+        <Button
           variant="ghost"
           size="sm"
           label={copied ? 'Copied' : 'Copy source'}
@@ -584,7 +584,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
               overflowY: 'auto',
               padding: '8px 0',
             }}>
-            <XDSTreeList items={navTree} density="compact" />
+            <TreeList items={navTree} density="compact" />
           </div>
         )}
 
@@ -639,7 +639,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
         ) : (
           <div style={{flex: 1, overflow: 'auto'}}>
             {resolvedSource ? (
-              <XDSCodeBlock
+              <CodeBlock
                 code={resolvedSource}
                 language="tsx"
                 hasLineNumbers
@@ -653,9 +653,9 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}>
-                <XDSText type="body" color="secondary">
+                <Text type="body" color="secondary">
                   Source not available
-                </XDSText>
+                </Text>
               </div>
             )}
           </div>

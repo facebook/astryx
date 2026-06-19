@@ -19,11 +19,11 @@
  * - Status icons (checkCircle, xCircle, warning, info) use solid fills for better color visibility
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Icon/globalIconRegistry.tsx (XDSIconName type if names change)
+ * - /packages/core/src/Icon/globalIconRegistry.tsx (IconName type if names change)
  * - /packages/core/src/Icon/Icon.doc.mjs (fallback icon documentation)
  */
 
-import type {XDSIconRegistry} from './globalIconRegistry';
+import type {IconRegistry} from './globalIconRegistry';
 
 const svgProps = {
   xmlns: 'http://www.w3.org/2000/svg',
@@ -53,7 +53,7 @@ const solidSvgProps = {
   'aria-hidden': true as const,
 };
 
-export const defaultIcons: XDSIconRegistry = {
+export const defaultIcons: IconRegistry = {
   /** ✕ — two diagonal lines */
   close: (
     <svg {...svgProps}>

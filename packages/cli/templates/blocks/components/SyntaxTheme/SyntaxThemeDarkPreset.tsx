@@ -2,9 +2,9 @@
 
 'use client';
 
-import {XDSSyntaxTheme} from '@xds/core/theme';
+import {SyntaxTheme} from '@xds/core/theme';
 import {dracula} from '@xds/core/theme/syntax';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {CodeBlock} from '@xds/core/CodeBlock';
 
 const code = `function greet(name: string) {
   return \`Hello, \${name}!\`;
@@ -12,8 +12,8 @@ const code = `function greet(name: string) {
 
 export default function SyntaxThemeDarkPreset() {
   return (
-    <XDSSyntaxTheme theme={dracula}>
-      <XDSCodeBlock code={code} language="tsx" title="Dracula preset" />
-    </XDSSyntaxTheme>
+    <SyntaxTheme theme={dracula}>
+      <CodeBlock code={code} language="tsx" title="Dracula preset" />
+    </SyntaxTheme>
   );
 }

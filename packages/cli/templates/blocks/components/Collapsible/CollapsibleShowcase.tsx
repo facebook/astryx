@@ -2,33 +2,33 @@
 
 'use client';
 
-import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
-import {XDSText} from '@xds/core/Text';
-import {XDSCard} from '@xds/core/Card';
-import {XDSVStack} from '@xds/core/Layout';
+import {Collapsible, CollapsibleGroup} from '@xds/core/Collapsible';
+import {Text} from '@xds/core/Text';
+import {Card} from '@xds/core/Card';
+import {VStack} from '@xds/core/Layout';
 
 export default function CollapsibleShowcase() {
   return (
-    <XDSCard width={400}>
-      <XDSCollapsibleGroup type="single" defaultValue="notifications">
-        <XDSVStack gap={6}>
-          <XDSCollapsible trigger="General settings" value="general">
-            <XDSText type="body" color="secondary">
+    <Card width={400}>
+      <CollapsibleGroup type="single" defaultValue="notifications">
+        <VStack gap={6}>
+          <Collapsible trigger="General settings" value="general">
+            <Text type="body" color="secondary">
               Configure your display name, language, and time zone preferences.
-            </XDSText>
-          </XDSCollapsible>
-          <XDSCollapsible trigger="Notifications" value="notifications">
-            <XDSText type="body" color="secondary">
+            </Text>
+          </Collapsible>
+          <Collapsible trigger="Notifications" value="notifications">
+            <Text type="body" color="secondary">
               Choose which email and push notifications you want to receive.
-            </XDSText>
-          </XDSCollapsible>
-          <XDSCollapsible trigger="Privacy" value="privacy">
-            <XDSText type="body" color="secondary">
+            </Text>
+          </Collapsible>
+          <Collapsible trigger="Privacy" value="privacy">
+            <Text type="body" color="secondary">
               Manage your data sharing preferences and account visibility.
-            </XDSText>
-          </XDSCollapsible>
-        </XDSVStack>
-      </XDSCollapsibleGroup>
-    </XDSCard>
+            </Text>
+          </Collapsible>
+        </VStack>
+      </CollapsibleGroup>
+    </Card>
   );
 }

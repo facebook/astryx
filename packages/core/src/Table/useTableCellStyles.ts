@@ -4,22 +4,22 @@
 
 /**
  * @file useTableCellStyles.ts
- * @input React, StyleX, XDSTableContext, theme tokens
+ * @input React, StyleX, TableContext, theme tokens
  * @output Exports shared cell styling utilities
- * @position Utility layer; consumed by XDSTableCell and XDSTableHeaderCell
+ * @position Utility layer; consumed by TableCell and TableHeaderCell
  *
  * Consolidates the shared pattern of building divider style arrays
  * and merging consumer xstyle. Eliminates structural duplication
  * between body cells and header cells.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Table/XDSTableCell.tsx
- * - /packages/core/src/Table/XDSTableHeaderCell.tsx
+ * - /packages/core/src/Table/TableCell.tsx
+ * - /packages/core/src/Table/TableHeaderCell.tsx
  */
 
 import {use} from 'react';
 import type {StyleXStyles} from '../theme/types';
-import {XDSTableContext, type XDSTableContextValue} from './XDSTableContext';
+import {TableContext, type TableContextValue} from './TableContext';
 
 // =============================================================================
 // Shared Style Builders
@@ -31,7 +31,7 @@ import {XDSTableContext, type XDSTableContextValue} from './XDSTableContext';
  * dividers the same way.
  */
 export function buildDividerStyles(
-  ctx: XDSTableContextValue,
+  ctx: TableContextValue,
   dividerRowStyle: StyleXStyles,
   dividerColumnStyle: StyleXStyles,
 ): StyleXStyles[] {
@@ -66,9 +66,9 @@ export function mergeXStyle(
 }
 
 /**
- * Read the XDSTableContext. Returns null when outside XDSTable,
+ * Read the TableContext. Returns null when outside Table,
  * signaling that the component should render unstyled.
  */
-export function useTableContext(): XDSTableContextValue | null {
-  return use(XDSTableContext);
+export function useTableContext(): TableContextValue | null {
+  return use(TableContext);
 }

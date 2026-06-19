@@ -3,31 +3,31 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSCheckboxList, XDSCheckboxListItem} from '@xds/core/CheckboxList';
+import {CheckboxList, CheckboxListItem} from '@xds/core/CheckboxList';
 export default function CheckboxListShowcase() {
   const [value, setValue] = useState<string[]>(['email']);
   return (
-    <XDSCheckboxList
+    <CheckboxList
       label="Notification preferences"
       description="Choose how you would like to be notified"
       value={value}
       onChange={setValue}
       hasDividers>
-      <XDSCheckboxListItem
+      <CheckboxListItem
         label="Email"
         value="email"
         description="Weekly digest every Monday"
       />
-      <XDSCheckboxListItem
+      <CheckboxListItem
         label="Push notification"
         value="push"
         description="Instant alerts on your device"
       />
-      <XDSCheckboxListItem
+      <CheckboxListItem
         label="SMS"
         value="sms"
         description="Standard messaging rates apply"
       />
-    </XDSCheckboxList>
+    </CheckboxList>
   );
 }

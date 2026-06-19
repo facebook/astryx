@@ -14,7 +14,7 @@ export const docs = {
   },
   components: [
     {
-      name: 'XDSToolbar',
+      name: 'Toolbar',
       displayName: 'Toolbar',
       description:
         'General-purpose toolbar container with three content slots and roving tabindex.',
@@ -29,22 +29,22 @@ export const docs = {
           name: 'startContent',
           type: 'ReactNode',
           description: 'Content aligned to the start (left in LTR).',
-          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
+          slotElements: [{__element: 'Icon', props: {icon: 'check', size: 'sm'}}],
         },
         {
           name: 'centerContent',
           type: 'ReactNode',
           description:
             'Centered content. Switches layout to CSS grid (1fr auto 1fr).',
-          slotElements: [{__element: 'XDSText', props: {type: 'body', weight: 'bold'}, children: 'Center'}],
+          slotElements: [{__element: 'Text', props: {type: 'body', weight: 'bold'}, children: 'Center'}],
         },
         {
           name: 'endContent',
           type: 'ReactNode',
           description: 'Content aligned to the end (right in LTR).',
           slotElements: [
-            {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
-            {__element: 'XDSBadge', props: {label: '3'}},
+            {__element: 'Icon', props: {icon: 'chevronDown', size: 'sm'}},
+            {__element: 'Badge', props: {label: '3'}},
           ],
         },
         {
@@ -68,8 +68,8 @@ export const docs = {
         },
         {
           name: 'variant',
-          type: 'XDSSectionVariant',
-          description: 'Visual variant passed to XDSSection.',
+          type: 'SectionVariant',
+          description: 'Visual variant passed to Section.',
           default: "'transparent'",
         },
         {
@@ -99,7 +99,7 @@ export const docs = {
 export const docsZh = {
   components: [
     {
-      name: 'XDSToolbar',
+      name: 'Toolbar',
       displayName: 'Toolbar',
       description: '通用工具栏容器，提供三个内容插槽和循环 Tab。',
       propDescriptions: {
@@ -110,7 +110,7 @@ export const docsZh = {
         density: '工具栏密度。控制最小高度。',
         gap: '插槽内项目间距。',
         orientation: '键盘导航方向。控制方向键方向。',
-        variant: '传递给 XDSSection 的视觉变体。',
+        variant: '传递给 Section 的视觉变体。',
         xstyle: '用于布局自定义的 StyleX 样式。必须是 stylex.create() 的值。',
       },
     },
@@ -148,7 +148,7 @@ export const docsDense = {
   },
   components: [
     {
-      name: 'XDSToolbar',
+      name: 'Toolbar',
       displayName: 'Toolbar',
       description: 'Toolbar container w/ 3 content slots + roving tabindex.',
       propDescriptions: {
@@ -159,7 +159,7 @@ export const docsDense = {
         density: 'Toolbar density; controls min-height.',
         gap: 'Gap between slot items.',
         orientation: 'Keyboard nav direction.',
-        variant: 'Visual variant for XDSSection.',
+        variant: 'Visual variant for Section.',
         xstyle: 'StyleX layout styles. Must be stylex.create() value.',
       },
     },

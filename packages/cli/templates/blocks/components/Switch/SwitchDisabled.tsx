@@ -3,12 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSSwitch} from '@xds/core/Switch';
+import {Switch} from '@xds/core/Switch';
 
 export default function SwitchDisabled() {
   const [value, setValue] = useState(false);
   return (
-    <XDSSwitch
+    <Switch
       label="Premium feature"
       description="Upgrade to enable this option"
       value={value}

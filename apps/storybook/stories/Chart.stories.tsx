@@ -16,7 +16,7 @@ import {
   XDSChartHeatmapGL,
   useXDSChartColors,
 } from '@xds/lab';
-import {XDSStack, XDSText} from '@xds/core';
+import {Stack, Text} from '@xds/core';
 import {useDataset} from './useDataset';
 
 /**
@@ -65,7 +65,7 @@ export const BarChart: StoryObj = {
         .slice(0, 10);
     }, [raw]);
     if (loading) {
-      return <XDSText type="supporting">Loading…</XDSText>;
+      return <Text type="supporting">Loading…</Text>;
     }
     return (
       <XDSChart data={data} xKey="variety" yKeys={['avgYield']} height={300}>
@@ -102,7 +102,7 @@ export const LineChart: StoryObj = {
         .slice(-12);
     }, [raw]);
     if (loading) {
-      return <XDSText type="supporting">Loading…</XDSText>;
+      return <Text type="supporting">Loading…</Text>;
     }
     const c = colors.categorical(2);
     return (
@@ -140,7 +140,7 @@ export const ScatterPlot: StoryObj = {
         .map(d => ({hp: d.Horsepower, mpg: d.Miles_per_Gallon}));
     }, [raw]);
     if (loading) {
-      return <XDSText type="supporting">Loading…</XDSText>;
+      return <Text type="supporting">Loading…</Text>;
     }
     return (
       <XDSChart
@@ -174,13 +174,13 @@ export const WebGLScatter: StoryObj = {
         .map(d => ({distance: d.distance, delay: d.delay}));
     }, [raw]);
     if (loading) {
-      return <XDSText type="supporting">Loading 10k flights…</XDSText>;
+      return <Text type="supporting">Loading 10k flights…</Text>;
     }
     return (
-      <XDSStack direction="vertical" gap={2}>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={2}>
+        <Text type="supporting" color="secondary">
           {data.length.toLocaleString()} flights
-        </XDSText>
+        </Text>
         <XDSChart
           data={data}
           xKey="distance"
@@ -197,7 +197,7 @@ export const WebGLScatter: StoryObj = {
             opacity={0.3}
           />
         </XDSChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -234,7 +234,7 @@ export const ConfidenceBand: StoryObj = {
         .slice(-24);
     }, [raw]);
     if (loading) {
-      return <XDSText type="supporting">Loading…</XDSText>;
+      return <Text type="supporting">Loading…</Text>;
     }
     return (
       <XDSChart
@@ -292,7 +292,7 @@ export const Heatmap: StoryObj = {
         }));
     }, [raw]);
     if (loading) {
-      return <XDSText type="supporting">Loading…</XDSText>;
+      return <Text type="supporting">Loading…</Text>;
     }
     return (
       <XDSChart data={data} xKey="year" yKeys={['lifeExp']} height={300}>

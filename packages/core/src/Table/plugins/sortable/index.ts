@@ -1,15 +1,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-export {useXDSTableSortable} from './useXDSTableSortable';
+export {useTableSortable} from './useTableSortable';
 export type {
-  UseXDSTableSortableConfig,
-  XDSTableSortDirection,
-  XDSTableSortEntry,
-  XDSTableSortState,
-} from './useXDSTableSortable';
-export {useXDSTableSortableState} from './useXDSTableSortableState';
+  UseTableSortableConfig,
+  TableSortDirection,
+  TableSortEntry,
+  TableSortState,
+} from './useTableSortable';
+export {useTableSortableState} from './useTableSortableState';
 export type {
-  UseXDSTableSortableStateConfig,
-  UseXDSTableSortableStateResult,
-  XDSTableSortComparator,
-} from './useXDSTableSortableState';
+  UseTableSortableStateConfig,
+  UseTableSortableStateResult,
+  TableSortComparator,
+} from './useTableSortableState';

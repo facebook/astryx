@@ -3,16 +3,16 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSMultiSelector} from '@xds/core/MultiSelector';
-import {XDSVStack} from '@xds/core/Layout';
+import {MultiSelector} from '@xds/core/MultiSelector';
+import {VStack} from '@xds/core/Layout';
 
 export default function MultiSelectorForm() {
   const [columns, setColumns] = useState<string[]>(['name', 'email']);
   const [filters, setFilters] = useState<string[]>([]);
   return (
     <div style={{width: 300}}>
-      <XDSVStack gap={4}>
-        <XDSMultiSelector
+      <VStack gap={4}>
+        <MultiSelector
           label="Visible columns"
           description="Choose which columns to display in the table"
           options={[
@@ -28,7 +28,7 @@ export default function MultiSelectorForm() {
           isRequired
           triggerDisplay="labels"
         />
-        <XDSMultiSelector
+        <MultiSelector
           label="Status filter"
           description="Filter by status"
           options={['Active', 'Inactive', 'Pending', 'Archived']}
@@ -38,7 +38,7 @@ export default function MultiSelectorForm() {
           triggerDisplay="badges"
           placeholder="All statuses"
         />
-      </XDSVStack>
+      </VStack>
     </div>
   );
 }

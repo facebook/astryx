@@ -4,7 +4,7 @@
 export const doc = {
   type: 'block',
   exampleFor: 'Collapsible',
-  alsoShowcaseFor: ['useXDSCollapsible'],
+  alsoShowcaseFor: ['useCollapsible'],
   name: 'Collapsible',
   displayName: 'Collapsible',
   description:

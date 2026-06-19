@@ -2,42 +2,42 @@
 
 'use client';
 
-import {XDSProgressBar} from '@xds/core/ProgressBar';
-import {XDSVStack} from '@xds/core/Layout';
+import {ProgressBar} from '@xds/core/ProgressBar';
+import {VStack} from '@xds/core/Layout';
 
 export default function ProgressBarSemanticVariants() {
   return (
-    <XDSVStack gap={4} width="100%" style={{maxWidth: 300}}>
-      <XDSProgressBar
+    <VStack gap={4} width="100%" style={{maxWidth: 300}}>
+      <ProgressBar
         value={60}
         label="Accent"
         variant="accent"
         hasValueLabel
       />
-      <XDSProgressBar
+      <ProgressBar
         value={80}
         label="Positive"
         variant="success"
         hasValueLabel
       />
-      <XDSProgressBar
+      <ProgressBar
         value={50}
         label="Warning"
         variant="warning"
         hasValueLabel
       />
-      <XDSProgressBar
+      <ProgressBar
         value={92}
         label="Negative"
         variant="error"
         hasValueLabel
       />
-      <XDSProgressBar
+      <ProgressBar
         value={35}
         label="Neutral"
         variant="neutral"
         hasValueLabel
       />
-    </XDSVStack>
+    </VStack>
   );
 }

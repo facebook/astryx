@@ -2,24 +2,24 @@
 
 'use client';
 
-import {XDSCitation} from '@xds/core/Citation';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Citation} from '@xds/core/Citation';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function CitationShowcase() {
   return (
-    <XDSStack direction="vertical" gap={6}>
-      <XDSStack direction="vertical" gap={2}>
-        <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={6}>
+      <Stack direction="vertical" gap={2}>
+        <Text type="supporting" color="secondary">
           Label variant
-        </XDSText>
-        <XDSStack direction="horizontal" gap={2} style={{flexWrap: 'wrap'}}>
-          <XDSCitation
+        </Text>
+        <Stack direction="horizontal" gap={2} style={{flexWrap: 'wrap'}}>
+          <Citation
             source={{title: 'React Documentation', url: 'https://react.dev'}}
             number={1}
             variant="label"
           />
-          <XDSCitation
+          <Citation
             source={{
               title: 'GitHub',
               url: 'https://github.com',
@@ -28,35 +28,35 @@ export default function CitationShowcase() {
             number={2}
             variant="label"
           />
-          <XDSCitation
+          <Citation
             source={{title: 'Internal reference'}}
             number={3}
             variant="label"
           />
-        </XDSStack>
-      </XDSStack>
-      <XDSStack direction="vertical" gap={2}>
-        <XDSText type="supporting" color="secondary">
+        </Stack>
+      </Stack>
+      <Stack direction="vertical" gap={2}>
+        <Text type="supporting" color="secondary">
           Number variant
-        </XDSText>
-        <XDSStack direction="horizontal" gap={2}>
-          <XDSCitation
+        </Text>
+        <Stack direction="horizontal" gap={2}>
+          <Citation
             source={{title: 'TypeScript Handbook', url: 'https://typescriptlang.org'}}
             number={1}
             variant="number"
           />
-          <XDSCitation
+          <Citation
             source={{title: 'MDN Web Docs', url: 'https://developer.mozilla.org'}}
             number={2}
             variant="number"
           />
-          <XDSCitation
+          <Citation
             source={{title: 'W3C Specification'}}
             number={3}
             variant="number"
           />
-        </XDSStack>
-      </XDSStack>
-    </XDSStack>
+        </Stack>
+      </Stack>
+    </Stack>
   );
 }

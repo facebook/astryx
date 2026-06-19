@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSSwitch} from '@xds/core/Switch';
-import {XDSCard} from '@xds/core/Card';
-import {XDSVStack} from '@xds/core/Layout';
+import {Switch} from '@xds/core/Switch';
+import {Card} from '@xds/core/Card';
+import {VStack} from '@xds/core/Layout';
 
 export default function SwitchSettingsPanel() {
   const [notifications, setNotifications] = useState(false);
@@ -13,30 +13,30 @@ export default function SwitchSettingsPanel() {
   const [autoSave, setAutoSave] = useState(false);
 
   return (
-    <XDSCard width="100%" style={{maxWidth: 300}}>
-      <XDSVStack gap={4}>
-        <XDSSwitch
+    <Card width="100%" style={{maxWidth: 300}}>
+      <VStack gap={4}>
+        <Switch
           label="Enable notifications"
           value={notifications}
           onChange={setNotifications}
           labelPosition="start"
           labelSpacing="spread"
         />
-        <XDSSwitch
+        <Switch
           label="Dark mode"
           value={darkMode}
           onChange={setDarkMode}
           labelPosition="start"
           labelSpacing="spread"
         />
-        <XDSSwitch
+        <Switch
           label="Auto-save"
           value={autoSave}
           onChange={setAutoSave}
           labelPosition="start"
           labelSpacing="spread"
         />
-      </XDSVStack>
-    </XDSCard>
+      </VStack>
+    </Card>
   );
 }

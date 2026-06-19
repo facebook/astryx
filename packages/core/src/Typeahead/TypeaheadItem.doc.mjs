@@ -10,7 +10,7 @@ export const docs = {
   props: [
     {
       name: 'item',
-      type: 'XDSSearchableItem',
+      type: 'SearchableItem',
       description: 'The search result item to render.',
       required: true,
     },
@@ -20,7 +20,7 @@ export const docs = {
       description: 'Icon or avatar to display before the label.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',
@@ -54,7 +54,7 @@ export const docsZh = {
   props: [
     {
       name: 'item',
-      type: 'XDSSearchableItem',
+      type: 'SearchableItem',
       description: '要渲染的搜索结果项。',
       required: true,
     },

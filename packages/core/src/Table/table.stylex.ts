@@ -3,13 +3,13 @@
 /**
  * @file table.stylex.ts
  * @input StyleX, theme tokens
- * @output Shared table styles used by XDSTableCell, XDSTableHeaderCell, XDSTableRow
+ * @output Shared table styles used by TableCell, TableHeaderCell, TableRow
  * @position Utility styles; consumed by cell and row components
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Table/XDSTableCell.tsx
- * - /packages/core/src/Table/XDSTableHeaderCell.tsx
- * - /packages/core/src/Table/XDSTableRow.tsx
+ * - /packages/core/src/Table/TableCell.tsx
+ * - /packages/core/src/Table/TableHeaderCell.tsx
+ * - /packages/core/src/Table/TableRow.tsx
  */
 
 import * as stylex from '@stylexjs/stylex';
@@ -18,7 +18,7 @@ import {spacingVars} from '../theme/tokens.stylex';
 /**
  * Scoped marker for table row ancestor selectors.
  *
- * Applied to each `<tr>` via XDSTableRow so that cell-level
+ * Applied to each `<tr>` via TableRow so that cell-level
  * `stylex.when.ancestor(':last-child', tableRowMarker)` only matches
  * the parent row — not other ancestors like `<tbody>` or `<table>`.
  */
@@ -30,7 +30,7 @@ export const tableRowMarker: ReturnType<typeof stylex.defineMarker> =
  *
  * Applied at the <td>/<th> level when textOverflow is 'truncate'.
  * For data-driven tables in truncate mode, the default renderer wraps
- * content in <XDSText maxLines={1}> for smart tooltips that only appear
+ * content in <Text maxLines={1}> for smart tooltips that only appear
  * when text is actually overflowing.
  */
 export const overflowStyles = stylex.create({
@@ -62,7 +62,7 @@ export const wrapStyles = stylex.create({
  *
  * When a table is inside a Card, Section, or Layout area, the table
  * element applies negative inline margins to bleed edge-to-edge
- * (see XDSTable.tsx containerBleed style). These styles ensure the
+ * (see Table.tsx containerBleed style). These styles ensure the
  * first and last columns' outer padding aligns with the container's
  * content inset, with a minimum of --spacing-2 (8px).
  *

@@ -4,14 +4,14 @@
 
 import {useMemo} from 'react';
 import {
-  XDSCommandPalette,
-  XDSCommandPaletteList,
-  XDSCommandPaletteGroup,
-  XDSCommandPaletteItem,
+  CommandPalette,
+  CommandPaletteList,
+  CommandPaletteGroup,
+  CommandPaletteItem,
 } from '@xds/core/CommandPalette';
 import {createStaticSource} from '@xds/core/Typeahead';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function CommandPaletteGroupShowcase() {
   const source = useMemo(
@@ -28,42 +28,41 @@ export default function CommandPaletteGroupShowcase() {
   );
 
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Data-driven grouping (auxiliaryData.group)
-        </XDSText>
-        <XDSCommandPalette
+        </Text>
+        <CommandPalette
           isOpen
           isInline
           onOpenChange={() => {}}
           searchSource={source}
         />
-      </XDSStack>
-
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
-          Composed form (XDSCommandPaletteGroup + XDSCommandPaletteItem)
-        </XDSText>
-        <XDSCommandPaletteList>
-          <XDSCommandPaletteGroup heading="Navigation">
-            <XDSCommandPaletteItem value="home" onSelect={() => {}}>
+      </Stack>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
+          Composed form (CommandPaletteGroup + CommandPaletteItem)
+        </Text>
+        <CommandPaletteList>
+          <CommandPaletteGroup heading="Navigation">
+            <CommandPaletteItem value="home" onSelect={() => {}}>
               Home
-            </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="dashboard" onSelect={() => {}}>
+            </CommandPaletteItem>
+            <CommandPaletteItem value="dashboard" onSelect={() => {}}>
               Dashboard
-            </XDSCommandPaletteItem>
-          </XDSCommandPaletteGroup>
-          <XDSCommandPaletteGroup heading="Actions">
-            <XDSCommandPaletteItem value="new-file" onSelect={() => {}}>
+            </CommandPaletteItem>
+          </CommandPaletteGroup>
+          <CommandPaletteGroup heading="Actions">
+            <CommandPaletteItem value="new-file" onSelect={() => {}}>
               New File
-            </XDSCommandPaletteItem>
-            <XDSCommandPaletteItem value="save" onSelect={() => {}}>
+            </CommandPaletteItem>
+            <CommandPaletteItem value="save" onSelect={() => {}}>
               Save All
-            </XDSCommandPaletteItem>
-          </XDSCommandPaletteGroup>
-        </XDSCommandPaletteList>
-      </XDSStack>
-    </XDSStack>
+            </CommandPaletteItem>
+          </CommandPaletteGroup>
+        </CommandPaletteList>
+      </Stack>
+    </Stack>
   );
 }

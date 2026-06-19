@@ -4,10 +4,10 @@
 
 import {useMemo} from 'react';
 import {
-  XDSCommandPalette,
-  XDSCommandPaletteInput,
+  CommandPalette,
+  CommandPaletteInput,
 } from '@xds/core/CommandPalette';
-import type {XDSSearchSource} from '@xds/core/Typeahead';
+import type {SearchSource} from '@xds/core/Typeahead';
 
 const allFiles = [
   {id: 'readme', label: 'README.md'},
@@ -18,7 +18,7 @@ const allFiles = [
 ];
 
 export default function CommandPaletteAsyncSearch() {
-  const source = useMemo<XDSSearchSource>(
+  const source = useMemo<SearchSource>(
     () => ({
       async search(query: string) {
         await new Promise(r => setTimeout(r, 400));
@@ -34,12 +34,12 @@ export default function CommandPaletteAsyncSearch() {
   );
 
   return (
-    <XDSCommandPalette
+    <CommandPalette
       isOpen
       isInline
       onOpenChange={() => {}}
       searchSource={source}
-      input={<XDSCommandPaletteInput placeholder="Search files..." />}
+      input={<CommandPaletteInput placeholder="Search files..." />}
       emptyBootstrapText="Type a filename to search"
       emptySearchText="No files found"
     />

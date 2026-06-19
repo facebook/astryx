@@ -11,8 +11,8 @@ import {
   useXDSChartRange,
   type XDSChartStreamGLHandle,
 } from '@xds/lab';
-import {XDSStack, XDSText} from '@xds/core';
-import {XDSHeading} from '@xds/core/Text';
+import {Stack, Text} from '@xds/core';
+import {Heading} from '@xds/core/Text';
 
 const meta: Meta = {
   title: 'Lab/useXDSChartRange',
@@ -42,12 +42,12 @@ export const KnownRange: StoryObj = {
     }, [push]);
 
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Known Range (0-100%)</XDSHeading>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Known Range (0-100%)</Heading>
+        <Text type="supporting" color="secondary">
           yDomain fixed at [0, 100]. useXDSChartRange manages xDomain sliding
           window.
-        </XDSText>
+        </Text>
         <XDSChart
           data={[]}
           xKey="t"
@@ -65,7 +65,7 @@ export const KnownRange: StoryObj = {
             lineWidth={1.5}
           />
         </XDSChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -93,12 +93,12 @@ export const UnknownRange: StoryObj = {
     }, [push]);
 
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Unknown Range (auto-tracks)</XDSHeading>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Unknown Range (auto-tracks)</Heading>
+        <Text type="supporting" color="secondary">
           No fixed yDomain. Range auto-expands as data reveals amplitude.
           Currently: [{yDomain[0].toFixed(1)}, {yDomain[1].toFixed(1)}]
-        </XDSText>
+        </Text>
         <XDSChart
           data={[]}
           xKey="t"
@@ -116,7 +116,7 @@ export const UnknownRange: StoryObj = {
             lineWidth={1.5}
           />
         </XDSChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -157,12 +157,12 @@ export const ZeroCentered: StoryObj = {
     }, [push]);
 
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Zero-Centered (seismograph)</XDSHeading>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Zero-Centered (seismograph)</Heading>
+        <Text type="supporting" color="secondary">
           yCenter=true keeps 0 at center. Range auto-expands on quake bursts.
           Currently: [{yDomain[0].toFixed(1)}, {yDomain[1].toFixed(1)}]
-        </XDSText>
+        </Text>
         <XDSChart
           data={[]}
           xKey="t"
@@ -182,7 +182,7 @@ export const ZeroCentered: StoryObj = {
             opacity={0.9}
           />
         </XDSChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };

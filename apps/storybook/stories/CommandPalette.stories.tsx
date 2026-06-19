@@ -10,24 +10,24 @@
 import {useState, useMemo} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSCommandPalette,
-  XDSCommandPaletteInput,
-  XDSCommandPaletteFooter,
+  CommandPalette,
+  CommandPaletteInput,
+  CommandPaletteFooter,
 } from '@xds/core/CommandPalette';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
 import {createStaticSource} from '@xds/core/Typeahead';
-import type {XDSSearchSource, XDSSearchableItem} from '@xds/core/Typeahead';
-import type {XDSIconName} from '@xds/core/Icon';
+import type {SearchSource, SearchableItem} from '@xds/core/Typeahead';
+import type {IconName} from '@xds/core/Icon';
 
-const meta: Meta<typeof XDSCommandPalette> = {
+const meta: Meta<typeof CommandPalette> = {
   title: 'Core/CommandPalette',
-  component: XDSCommandPalette,
+  component: CommandPalette,
   tags: ['autodocs'],
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSCommandPalette>;
+type Story = StoryObj<typeof CommandPalette>;
 
 // ─── Default ─────────────────────────────────────────────────────────────────
 
@@ -48,11 +48,11 @@ export const Default: Story = {
     );
     return (
       <>
-        <XDSButton
+        <Button
           label="Open Command Palette"
           onClick={() => setIsOpen(true)}
         />
-        <XDSCommandPalette
+        <CommandPalette
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           searchSource={source}
@@ -94,8 +94,8 @@ export const AutoGrouped: Story = {
     );
     return (
       <>
-        <XDSButton label="Open Grouped" onClick={() => setIsOpen(true)} />
-        <XDSCommandPalette
+        <Button label="Open Grouped" onClick={() => setIsOpen(true)} />
+        <CommandPalette
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           searchSource={source}
@@ -107,8 +107,8 @@ export const AutoGrouped: Story = {
 
 // ─── Custom rendering via renderItem ─────────────────────────────────────────
 
-type RichCommand = XDSSearchableItem<{
-  icon?: XDSIconName;
+type RichCommand = SearchableItem<{
+  icon?: IconName;
   group?: string;
   shortcut?: string;
   keywords?: string[];
@@ -162,8 +162,8 @@ export const WithRenderItem: Story = {
     );
     return (
       <>
-        <XDSButton label="Open Rich Palette" onClick={() => setIsOpen(true)} />
-        <XDSCommandPalette
+        <Button label="Open Rich Palette" onClick={() => setIsOpen(true)} />
+        <CommandPalette
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           searchSource={source}
@@ -171,7 +171,7 @@ export const WithRenderItem: Story = {
             <span
               style={{display: 'flex', alignItems: 'center', gap: 8, flex: 1}}>
               {item.auxiliaryData?.icon && (
-                <XDSIcon icon={item.auxiliaryData.icon} size="sm" />
+                <Icon icon={item.auxiliaryData.icon} size="sm" />
               )}
               <span style={{flex: 1}}>{item.label}</span>
               {item.auxiliaryData?.shortcut && (
@@ -205,8 +205,8 @@ export const Picker: Story = {
     );
     return (
       <>
-        <XDSButton label={`Theme: ${theme}`} onClick={() => setIsOpen(true)} />
-        <XDSCommandPalette
+        <Button label={`Theme: ${theme}`} onClick={() => setIsOpen(true)} />
+        <CommandPalette
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           searchSource={source}
@@ -219,7 +219,7 @@ export const Picker: Story = {
             <span
               style={{display: 'flex', alignItems: 'center', gap: 8, flex: 1}}>
               <span style={{flex: 1}}>{item.label}</span>
-              {isSelected && <XDSIcon icon="check" size="sm" />}
+              {isSelected && <Icon icon="check" size="sm" />}
             </span>
           )}
         />
@@ -234,7 +234,7 @@ export const Picker: Story = {
 export const AsyncSearch: Story = {
   render: function Render() {
     const [isOpen, setIsOpen] = useState(false);
-    const source = useMemo<XDSSearchSource>(() => {
+    const source = useMemo<SearchSource>(() => {
       let controller: AbortController | null = null;
       return {
         cancel() {
@@ -262,12 +262,12 @@ export const AsyncSearch: Story = {
     }, []);
     return (
       <>
-        <XDSButton label="Open File Search" onClick={() => setIsOpen(true)} />
-        <XDSCommandPalette
+        <Button label="Open File Search" onClick={() => setIsOpen(true)} />
+        <CommandPalette
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           searchSource={source}
-          input={<XDSCommandPaletteInput placeholder="Search files..." />}
+          input={<CommandPaletteInput placeholder="Search files..." />}
           emptyBootstrapText="Type a filename to search"
           emptySearchText="No files found"
         />
@@ -282,7 +282,7 @@ export const AsyncSearch: Story = {
 export const WithKeywords: Story = {
   render: function Render() {
     const [isOpen, setIsOpen] = useState(false);
-    const commands: XDSSearchableItem<{aliases?: string[]}>[] = [
+    const commands: SearchableItem<{aliases?: string[]}>[] = [
       {id: 'home', label: 'Home'},
       {
         id: 'dark-mode',
@@ -304,8 +304,8 @@ export const WithKeywords: Story = {
     );
     return (
       <>
-        <XDSButton label="Open (try 'theme')" onClick={() => setIsOpen(true)} />
-        <XDSCommandPalette
+        <Button label="Open (try 'theme')" onClick={() => setIsOpen(true)} />
+        <CommandPalette
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           searchSource={source}
@@ -333,8 +333,8 @@ export const ManyItems: Story = {
     const source = useMemo(() => createStaticSource(items), []);
     return (
       <>
-        <XDSButton label="Open (50 items)" onClick={() => setIsOpen(true)} />
-        <XDSCommandPalette
+        <Button label="Open (50 items)" onClick={() => setIsOpen(true)} />
+        <CommandPalette
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           searchSource={source}
@@ -360,15 +360,15 @@ export const CustomFooter: Story = {
     );
     return (
       <>
-        <XDSButton label="Open" onClick={() => setIsOpen(true)} />
-        <XDSCommandPalette
+        <Button label="Open" onClick={() => setIsOpen(true)} />
+        <CommandPalette
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           searchSource={source}
           footer={
-            <XDSCommandPaletteFooter>
+            <CommandPaletteFooter>
               <span>Pro tip: use ⌘K to open anywhere</span>
-            </XDSCommandPaletteFooter>
+            </CommandPaletteFooter>
           }
         />
       </>

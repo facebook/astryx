@@ -4,7 +4,7 @@ import * as stylex from '@stylexjs/stylex';
 
 /**
  * Scoped marker for Overlay ancestor hover selectors.
- * When applied to a container, enables XDSOverlayScrim's
+ * When applied to a container, enables OverlayScrim's
  * CSS-driven showOn="hover" / "focus" / "hover-or-focus" behavior.
  */
 export const overlayScope: ReturnType<typeof stylex.defineMarker> =

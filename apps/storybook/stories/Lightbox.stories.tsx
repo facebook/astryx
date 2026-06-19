@@ -2,16 +2,16 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSLightbox, useXDSLightbox} from '@xds/core/Lightbox';
+import {Lightbox, useLightbox} from '@xds/core/Lightbox';
 
-const meta: Meta<typeof XDSLightbox> = {
+const meta: Meta<typeof Lightbox> = {
   title: 'Core/Lightbox',
-  component: XDSLightbox,
+  component: Lightbox,
   tags: ['autodocs'],
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSLightbox>;
+type Story = StoryObj<typeof Lightbox>;
 
 const SAMPLE_IMAGE = 'https://picsum.photos/id/10/1200/800';
 const GALLERY_MEDIA = [
@@ -35,7 +35,7 @@ export const Default: Story = {
     return (
       <>
         <button onClick={() => setIsOpen(true)}>Open lightbox</button>
-        <XDSLightbox
+        <Lightbox
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           media={{
@@ -75,7 +75,7 @@ export const Gallery: Story = {
             />
           ))}
         </div>
-        <XDSLightbox
+        <Lightbox
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           media={GALLERY_MEDIA}
@@ -93,7 +93,7 @@ export const WithZoom: Story = {
     return (
       <>
         <button onClick={() => setIsOpen(true)}>Open with zoom</button>
-        <XDSLightbox
+        <Lightbox
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           media={{src: SAMPLE_IMAGE, alt: 'Forest path'}}
@@ -110,7 +110,7 @@ export const WithCaption: Story = {
     return (
       <>
         <button onClick={() => setIsOpen(true)}>Open with caption</button>
-        <XDSLightbox
+        <Lightbox
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           media={{
@@ -131,7 +131,7 @@ export const Video: Story = {
     return (
       <>
         <button onClick={() => setIsOpen(true)}>Open video</button>
-        <XDSLightbox
+        <Lightbox
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           media={{
@@ -148,7 +148,7 @@ export const Video: Story = {
 
 export const WithHook: Story = {
   render: () => {
-    const lightbox = useXDSLightbox({media: GALLERY_MEDIA});
+    const lightbox = useLightbox({media: GALLERY_MEDIA});
     return (
       <>
         <div style={{display: 'flex', gap: '8px'}}>

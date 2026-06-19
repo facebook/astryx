@@ -3,13 +3,13 @@
 'use client';
 
 import {
-  XDSAlertDialog,
-  useXDSImperativeAlertDialog,
+  AlertDialog,
+  useImperativeAlertDialog,
 } from '@xds/core/AlertDialog';
 
 // Remove isInline for production — alert dialogs should be modal.
 export default function AlertDialogDeleteConfirmation() {
-  const alert = useXDSImperativeAlertDialog();
+  const alert = useImperativeAlertDialog();
 
   const alertProps = {
     title: 'Delete item?',
@@ -20,7 +20,7 @@ export default function AlertDialogDeleteConfirmation() {
 
   return (
     <>
-      <XDSAlertDialog
+      <AlertDialog
         isOpen
         isInline
         onOpenChange={() => {}}

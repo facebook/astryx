@@ -3,12 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSTypeahead} from '@xds/core/Typeahead';
-import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
-import {XDSCenter} from '@xds/core/Center';
+import {Typeahead} from '@xds/core/Typeahead';
+import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
+import {Center} from '@xds/core/Center';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
-const items: XDSSearchableItem[] = [
+const items: SearchableItem[] = [
   {id: '1', label: 'Olivia Martin'},
   {id: '2', label: 'Jackson Lee'},
   {id: '3', label: 'Isabella Nguyen'},
@@ -19,17 +19,17 @@ const items: XDSSearchableItem[] = [
   {id: '8', label: 'Ethan Jones'},
 ];
 
-const searchSource: XDSSearchSource = {
+const searchSource: SearchSource = {
   search: (query: string) =>
     items.filter(i => i.label.toLowerCase().includes(query.toLowerCase())),
   bootstrap: () => items.slice(0, 5),
 };
 
 export default function TypeaheadSearchField() {
-  const [value, setValue] = useState<XDSSearchableItem | null>(null);
+  const [value, setValue] = useState<SearchableItem | null>(null);
   return (
-    <XDSCenter width={320}>
-      <XDSTypeahead
+    <Center width={320}>
+      <Typeahead
         label="Team member"
         placeholder="Search people..."
         searchSource={searchSource}
@@ -38,6 +38,6 @@ export default function TypeaheadSearchField() {
         startIcon={MagnifyingGlassIcon}
         hasEntriesOnFocus
       />
-    </XDSCenter>
+    </Center>
   );
 }

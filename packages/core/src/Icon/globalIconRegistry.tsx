@@ -3,7 +3,7 @@
 /**
  * @file globalIconRegistry.tsx
  * @input None (pure module-level state)
- * @output Exports registerIcons, getIconRegistry, getIcon, resetIcons, XDSIconName, XDSIconRegistry
+ * @output Exports registerIcons, getIconRegistry, getIcon, resetIcons, IconName, IconRegistry
  * @position Global icon registry; works in both server and client environments
  *
  * This module has NO 'use client' directive — it's importable from RSC.
@@ -24,7 +24,7 @@ import {defaultIcons} from './defaultIcons';
  * visual representation. Themes provide the actual icon components.
  */
 // SYNC: packages/cli/docs/icons.doc.mjs — update USAGE_HINTS when adding names
-export type XDSIconName =
+export type IconName =
   | 'close'
   | 'chevronDown'
   | 'chevronLeft'
@@ -55,13 +55,13 @@ export type XDSIconName =
 /**
  * Icon registry mapping semantic names to React nodes.
  */
-export type XDSIconRegistry = Record<XDSIconName, ReactNode>;
+export type IconRegistry = Record<IconName, ReactNode>;
 
 // =============================================================================
 // Global Registry
 // =============================================================================
 
-let globalRegistry: Partial<XDSIconRegistry> = {};
+let globalRegistry: Partial<IconRegistry> = {};
 
 /**
  * Register icons at the module level. Works in both server and client
@@ -77,7 +77,7 @@ let globalRegistry: Partial<XDSIconRegistry> = {};
  * registerIcons(brandIcons);
  * ```
  */
-export function registerIcons(icons: Partial<XDSIconRegistry>): void {
+export function registerIcons(icons: Partial<IconRegistry>): void {
   globalRegistry = {...globalRegistry, ...icons};
 }
 
@@ -86,13 +86,13 @@ export function registerIcons(icons: Partial<XDSIconRegistry>): void {
  * built-in defaults.
  *
  * Works in both server and client environments. Useful for tooling that needs
- * to derive valid semantic icon-name options from the same registry XDSIcon
+ * to derive valid semantic icon-name options from the same registry Icon
  * resolves against.
  */
-export function getIconRegistry(): Readonly<XDSIconRegistry> {
+export function getIconRegistry(): Readonly<IconRegistry> {
   const registry = {...defaultIcons};
 
-  for (const name of Object.keys(globalRegistry) as XDSIconName[]) {
+  for (const name of Object.keys(globalRegistry) as IconName[]) {
     registry[name] = globalRegistry[name] ?? defaultIcons[name];
   }
 
@@ -105,7 +105,7 @@ export function getIconRegistry(): Readonly<XDSIconRegistry> {
  * Works in both server and client environments.
  * Falls back to built-in default icons when no override is registered.
  */
-export function getIcon(name: XDSIconName): ReactNode {
+export function getIcon(name: IconName): ReactNode {
   return globalRegistry[name] ?? defaultIcons[name];
 }
 

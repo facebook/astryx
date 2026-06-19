@@ -2,22 +2,22 @@
 
 'use client';
 
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
-import {XDSToken} from '@xds/core/Token';
+import {HStack, VStack} from '@xds/core/Layout';
+import {Token} from '@xds/core/Token';
 
 export default function StackDirections() {
   return (
-    <XDSHStack gap={10} hAlign="center">
-      <XDSHStack gap={2} vAlign="center">
-        <XDSToken label="Horizontal" />
-        <XDSToken label="Horizontal" />
-        <XDSToken label="Horizontal" />
-      </XDSHStack>
-      <XDSVStack gap={2}>
-        <XDSToken label="Vertical" />
-        <XDSToken label="Vertical" />
-        <XDSToken label="Vertical" />
-      </XDSVStack>
-    </XDSHStack>
+    <HStack gap={10} hAlign="center">
+      <HStack gap={2} vAlign="center">
+        <Token label="Horizontal" />
+        <Token label="Horizontal" />
+        <Token label="Horizontal" />
+      </HStack>
+      <VStack gap={2}>
+        <Token label="Vertical" />
+        <Token label="Vertical" />
+        <Token label="Vertical" />
+      </VStack>
+    </HStack>
   );
 }

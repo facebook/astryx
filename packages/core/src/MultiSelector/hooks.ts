@@ -4,19 +4,19 @@
 
 /**
  * @file hooks.ts
- * @input Uses React hooks, XDSMultiSelectorOptionData type
+ * @input Uses React hooks, MultiSelectorOptionData type
  * @output Exports useMultiCombobox hook
- * @position Internal hook; used by XDSMultiSelector.tsx
+ * @position Internal hook; used by MultiSelector.tsx
  *
  * SYNC: When modified, update:
  * - /packages/core/src/MultiSelector/index.ts
  */
 
 import {useCallback, useRef, useState} from 'react';
-import type {XDSMultiSelectorOptionData} from './types';
+import type {MultiSelectorOptionData} from './types';
 
 interface UseMultiComboboxOptions {
-  selectableItems: XDSMultiSelectorOptionData[];
+  selectableItems: MultiSelectorOptionData[];
   isDisabled?: boolean;
   isOpen: boolean;
   hasSearch?: boolean;
@@ -32,7 +32,7 @@ interface UseMultiComboboxResult {
   getItemId: (index: number) => string;
   onTriggerClick: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
-  onItemMouseEnter: (item: XDSMultiSelectorOptionData, index: number) => void;
+  onItemMouseEnter: (item: MultiSelectorOptionData, index: number) => void;
 }
 
 /**
@@ -88,7 +88,7 @@ export function useMultiCombobox({
   }, [isDisabled, isOpen, onOpen, closeAndReset, hasSearch]);
 
   const onItemMouseEnter = useCallback(
-    (item: XDSMultiSelectorOptionData, index: number) => {
+    (item: MultiSelectorOptionData, index: number) => {
       if (!item.disabled) {
         setHighlightedIndex(index);
       }

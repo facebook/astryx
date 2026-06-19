@@ -2,11 +2,11 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
-import {XDSSection} from '@xds/core/Section';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSVStack} from '@xds/core/Stack';
-import {XDSMediaTheme} from '@xds/core/theme';
+import {Grid, GridSpan} from '@xds/core/Grid';
+import {Section} from '@xds/core/Section';
+import {Text, Heading} from '@xds/core/Text';
+import {VStack} from '@xds/core/Stack';
+import {MediaTheme} from '@xds/core/theme';
 import {
   colorVars,
   spacingVars,
@@ -131,11 +131,11 @@ function GalleryCard({
         {...stylex.props(
           showOverlay ? styles.overlayAlwaysOn : styles.overlay,
         )}>
-        <XDSMediaTheme mode="dark">
-          <XDSVStack gap={1}>
-            <XDSText type="label">{image.title}</XDSText>
-          </XDSVStack>
-        </XDSMediaTheme>
+        <MediaTheme mode="dark">
+          <VStack gap={1}>
+            <Text type="label">{image.title}</Text>
+          </VStack>
+        </MediaTheme>
       </div>
     </div>
   );
@@ -144,53 +144,53 @@ function GalleryCard({
 // ─── Stories ────────────────────────────────────────────────────────────────
 
 /**
- * A Pinterest-style masonry gallery using XDSGrid with row spans.
+ * A Pinterest-style masonry gallery using Grid with row spans.
  *
  * The key technique: define explicit row tracks with `gridTemplateRows`,
- * then use `XDSGridSpan` with different `rows` values to create items of
+ * then use `GridSpan` with different `rows` values to create items of
  * varying heights. This produces the characteristic staggered masonry layout
  * without any JavaScript height calculation.
  */
 export const MasonryGallery: Story = {
   render: () => (
-    <XDSSection variant="muted" padding={6}>
-      <XDSVStack gap={5}>
-        <XDSVStack gap={2}>
-          <XDSHeading level={2}>Mixed Gallery</XDSHeading>
-          <XDSText type="body">
+    <Section variant="muted" padding={6}>
+      <VStack gap={5}>
+        <VStack gap={2}>
+          <Heading level={2}>Mixed Gallery</Heading>
+          <Text type="body">
             A masonry-style gallery using CSS Grid row spans. Each item spans a
             different number of rows to create a staggered, Pinterest-like
             layout.
-          </XDSText>
-        </XDSVStack>
+          </Text>
+        </VStack>
 
-        <XDSGrid columns={3} rowHeight={80} gap={3}>
+        <Grid columns={3} rowHeight={80} gap={3}>
           {/* Column 1: 4 + 2 = 6 rows */}
-          <XDSGridSpan rows={4}>
+          <GridSpan rows={4}>
             <GalleryCard image={IMAGES[0]} />
-          </XDSGridSpan>
-          <XDSGridSpan rows={2}>
+          </GridSpan>
+          <GridSpan rows={2}>
             <GalleryCard image={IMAGES[1]} />
-          </XDSGridSpan>
+          </GridSpan>
 
           {/* Column 2: 2 + 4 = 6 rows */}
-          <XDSGridSpan rows={2}>
+          <GridSpan rows={2}>
             <GalleryCard image={IMAGES[2]} />
-          </XDSGridSpan>
-          <XDSGridSpan rows={4}>
+          </GridSpan>
+          <GridSpan rows={4}>
             <GalleryCard image={IMAGES[3]} />
-          </XDSGridSpan>
+          </GridSpan>
 
           {/* Column 3: 3 + 3 = 6 rows */}
-          <XDSGridSpan rows={3}>
+          <GridSpan rows={3}>
             <GalleryCard image={IMAGES[4]} />
-          </XDSGridSpan>
-          <XDSGridSpan rows={3}>
+          </GridSpan>
+          <GridSpan rows={3}>
             <GalleryCard image={IMAGES[0]} />
-          </XDSGridSpan>
-        </XDSGrid>
-      </XDSVStack>
-    </XDSSection>
+          </GridSpan>
+        </Grid>
+      </VStack>
+    </Section>
   ),
 };
 
@@ -201,56 +201,56 @@ export const MasonryGallery: Story = {
 export const DenseMasonry: Story = {
   render: () => {
     return (
-      <XDSSection variant="muted" padding={6}>
-        <XDSVStack gap={5}>
-          <XDSVStack gap={2}>
-            <XDSHeading level={2}>Dense Masonry</XDSHeading>
-            <XDSText type="body">
+      <Section variant="muted" padding={6}>
+        <VStack gap={5}>
+          <VStack gap={2}>
+            <Heading level={2}>Dense Masonry</Heading>
+            <Text type="body">
               A 4-column layout with <code>rowHeight={60}</code>. Each item gets
               a different row span for natural visual rhythm.
-            </XDSText>
-          </XDSVStack>
+            </Text>
+          </VStack>
 
-          <XDSGrid columns={4} rowHeight={60} gap={3}>
-            <XDSGridSpan rows={4}>
+          <Grid columns={4} rowHeight={60} gap={3}>
+            <GridSpan rows={4}>
               <GalleryCard image={IMAGES[2]} showOverlay />
-            </XDSGridSpan>
-            <XDSGridSpan rows={3}>
+            </GridSpan>
+            <GridSpan rows={3}>
               <GalleryCard image={IMAGES[0]} showOverlay />
-            </XDSGridSpan>
-            <XDSGridSpan rows={5}>
+            </GridSpan>
+            <GridSpan rows={5}>
               <GalleryCard image={IMAGES[3]} showOverlay />
-            </XDSGridSpan>
-            <XDSGridSpan rows={3}>
+            </GridSpan>
+            <GridSpan rows={3}>
               <GalleryCard image={IMAGES[4]} showOverlay />
-            </XDSGridSpan>
-            <XDSGridSpan rows={3}>
+            </GridSpan>
+            <GridSpan rows={3}>
               <GalleryCard image={IMAGES[1]} showOverlay />
-            </XDSGridSpan>
-            <XDSGridSpan rows={4}>
+            </GridSpan>
+            <GridSpan rows={4}>
               <GalleryCard image={IMAGES[4]} showOverlay />
-            </XDSGridSpan>
-            <XDSGridSpan rows={2}>
+            </GridSpan>
+            <GridSpan rows={2}>
               <GalleryCard image={IMAGES[0]} showOverlay />
-            </XDSGridSpan>
-            <XDSGridSpan rows={4}>
+            </GridSpan>
+            <GridSpan rows={4}>
               <GalleryCard image={IMAGES[2]} showOverlay />
-            </XDSGridSpan>
-            <XDSGridSpan rows={3}>
+            </GridSpan>
+            <GridSpan rows={3}>
               <GalleryCard image={IMAGES[3]} showOverlay />
-            </XDSGridSpan>
-            <XDSGridSpan rows={5}>
+            </GridSpan>
+            <GridSpan rows={5}>
               <GalleryCard image={IMAGES[1]} showOverlay />
-            </XDSGridSpan>
-            <XDSGridSpan rows={3}>
+            </GridSpan>
+            <GridSpan rows={3}>
               <GalleryCard image={IMAGES[4]} showOverlay />
-            </XDSGridSpan>
-            <XDSGridSpan rows={4}>
+            </GridSpan>
+            <GridSpan rows={4}>
               <GalleryCard image={IMAGES[0]} showOverlay />
-            </XDSGridSpan>
-          </XDSGrid>
-        </XDSVStack>
-      </XDSSection>
+            </GridSpan>
+          </Grid>
+        </VStack>
+      </Section>
     );
   },
 };
@@ -263,43 +263,43 @@ export const DenseMasonry: Story = {
 export const FeaturedMasonry: Story = {
   render: () => {
     return (
-      <XDSSection variant="muted" padding={6}>
-        <XDSVStack gap={5}>
-          <XDSVStack gap={2}>
-            <XDSHeading level={2}>Featured Masonry</XDSHeading>
-            <XDSText type="body">
+      <Section variant="muted" padding={6}>
+        <VStack gap={5}>
+          <VStack gap={2}>
+            <Heading level={2}>Featured Masonry</Heading>
+            <Text type="body">
               Combines column spans and row spans for a featured hero layout.
               The primary image spans 2 columns × 5 rows.
-            </XDSText>
-          </XDSVStack>
+            </Text>
+          </VStack>
 
-          <XDSGrid columns={3} rowHeight={70} gap={3}>
+          <Grid columns={3} rowHeight={70} gap={3}>
             {/* Hero — 2 cols × 5 rows */}
-            <XDSGridSpan columns={2} rows={5}>
+            <GridSpan columns={2} rows={5}>
               <GalleryCard image={IMAGES[2]} showOverlay />
-            </XDSGridSpan>
+            </GridSpan>
 
             {/* Sidebar items */}
-            <XDSGridSpan rows={3}>
+            <GridSpan rows={3}>
               <GalleryCard image={IMAGES[0]} showOverlay />
-            </XDSGridSpan>
-            <XDSGridSpan rows={2}>
+            </GridSpan>
+            <GridSpan rows={2}>
               <GalleryCard image={IMAGES[1]} showOverlay />
-            </XDSGridSpan>
+            </GridSpan>
 
             {/* Bottom row */}
-            <XDSGridSpan rows={3}>
+            <GridSpan rows={3}>
               <GalleryCard image={IMAGES[3]} showOverlay />
-            </XDSGridSpan>
-            <XDSGridSpan rows={3}>
+            </GridSpan>
+            <GridSpan rows={3}>
               <GalleryCard image={IMAGES[4]} showOverlay />
-            </XDSGridSpan>
-            <XDSGridSpan rows={3}>
+            </GridSpan>
+            <GridSpan rows={3}>
               <GalleryCard image={IMAGES[1]} showOverlay />
-            </XDSGridSpan>
-          </XDSGrid>
-        </XDSVStack>
-      </XDSSection>
+            </GridSpan>
+          </Grid>
+        </VStack>
+      </Section>
     );
   },
 };

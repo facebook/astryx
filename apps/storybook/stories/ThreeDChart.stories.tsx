@@ -10,8 +10,8 @@ import {
   XDS3DSurface,
   useXDSChartColors,
 } from '@xds/lab';
-import {XDSStack, XDSText} from '@xds/core';
-import {XDSHeading} from '@xds/core/Text';
+import {Stack, Text} from '@xds/core';
+import {Heading} from '@xds/core/Text';
 
 const meta: Meta = {
   title: 'Lab/ThreeDChart',
@@ -32,11 +32,11 @@ export const Scatter3D: StoryObj = {
   render: () => {
     const colors = useXDSChartColors();
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>3D Scatter Plot</XDSHeading>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>3D Scatter Plot</Heading>
+        <Text type="supporting" color="secondary">
           200 points. Drag to rotate. Depth encoded via size and opacity.
-        </XDSText>
+        </Text>
         <XDS3DChart
           data={scatterData}
           xKey="x"
@@ -48,7 +48,7 @@ export const Scatter3D: StoryObj = {
           <XDS3DAxis />
           <XDS3DScatter color={colors.categorical(1)[0]} radius={4} />
         </XDS3DChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -71,11 +71,11 @@ export const Bar3D: StoryObj = {
   render: () => {
     const colors = useXDSChartColors();
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>3D Bar Chart</XDSHeading>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>3D Bar Chart</Heading>
+        <Text type="supporting" color="secondary">
           Sales by product x region. Drag to rotate.
-        </XDSText>
+        </Text>
         <XDS3DChart
           data={barData}
           xKey="product"
@@ -91,7 +91,7 @@ export const Bar3D: StoryObj = {
             barDepth={0.12}
           />
         </XDS3DChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -112,11 +112,11 @@ export const Surface3D: StoryObj = {
   render: () => {
     const colors = useXDSChartColors();
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>3D Surface</XDSHeading>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>3D Surface</Heading>
+        <Text type="supporting" color="secondary">
           sin(x) * cos(z) surface. Drag to rotate. Color maps to height.
-        </XDSText>
+        </Text>
         <XDS3DChart
           data={surfaceData}
           xKey="x"
@@ -128,7 +128,7 @@ export const Surface3D: StoryObj = {
           <XDS3DAxis />
           <XDS3DSurface colorRange={colors.sequential.blue(5)} />
         </XDS3DChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -138,8 +138,8 @@ export const Wireframe3D: StoryObj = {
   render: () => {
     const colors = useXDSChartColors();
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>3D Wireframe</XDSHeading>
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>3D Wireframe</Heading>
         <XDS3DChart
           data={surfaceData}
           xKey="x"
@@ -150,7 +150,7 @@ export const Wireframe3D: StoryObj = {
           <XDS3DGrid />
           <XDS3DSurface colorRange={colors.sequential.teal(5)} wireframe />
         </XDS3DChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };

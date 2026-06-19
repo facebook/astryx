@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import type {XDSSearchableItem} from '@xds/core/Typeahead';
+import type {SearchableItem} from '@xds/core/Typeahead';
 import type {ComponentEntry} from '../generated/componentRegistry';
 import type {PackageMeta} from '../generated/packageRegistry';
 import type {DocTopic} from '../generated/docsRegistry';
@@ -12,7 +12,7 @@ export interface SearchItemAuxiliaryData {
   keywords: string[];
 }
 
-export interface SearchItem extends XDSSearchableItem<SearchItemAuxiliaryData> {
+export interface SearchItem extends SearchableItem<SearchItemAuxiliaryData> {
   id: string;
   label: string;
   auxiliaryData: SearchItemAuxiliaryData;

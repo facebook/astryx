@@ -3,19 +3,19 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSSegmentedControl,
-  XDSSegmentedControlItem,
+  SegmentedControl,
+  SegmentedControlItem,
 } from '@xds/core/SegmentedControl';
-import {XDSIcon} from '@xds/core/Icon';
+import {Icon} from '@xds/core/Icon';
 import {
   Squares2X2Icon,
   ListBulletIcon,
   TableCellsIcon,
 } from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSSegmentedControl> = {
+const meta: Meta<typeof SegmentedControl> = {
   title: 'Core/SegmentedControl',
-  component: XDSSegmentedControl,
+  component: SegmentedControl,
   tags: ['autodocs'],
   argTypes: {
     size: {
@@ -31,7 +31,7 @@ const meta: Meta<typeof XDSSegmentedControl> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSSegmentedControl>;
+type Story = StoryObj<typeof SegmentedControl>;
 
 export const Default: Story = {
   args: {
@@ -41,16 +41,16 @@ export const Default: Story = {
   render: args => {
     const [value, setValue] = useState('grid');
     return (
-      <XDSSegmentedControl
+      <SegmentedControl
         value={value}
         onChange={setValue}
         label="View mode"
         size={args.size}
         isDisabled={args.isDisabled}>
-        <XDSSegmentedControlItem value="grid" label="Grid" />
-        <XDSSegmentedControlItem value="list" label="List" />
-        <XDSSegmentedControlItem value="table" label="Table" />
-      </XDSSegmentedControl>
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+        <SegmentedControlItem value="table" label="Table" />
+      </SegmentedControl>
     );
   },
 };
@@ -62,27 +62,27 @@ export const WithIcons: Story = {
   render: args => {
     const [value, setValue] = useState('grid');
     return (
-      <XDSSegmentedControl
+      <SegmentedControl
         value={value}
         onChange={setValue}
         label="View mode"
         size={args.size}>
-        <XDSSegmentedControlItem
+        <SegmentedControlItem
           value="grid"
           label="Grid"
-          icon={<XDSIcon icon={Squares2X2Icon} color="inherit" />}
+          icon={<Icon icon={Squares2X2Icon} color="inherit" />}
         />
-        <XDSSegmentedControlItem
+        <SegmentedControlItem
           value="list"
           label="List"
-          icon={<XDSIcon icon={ListBulletIcon} color="inherit" />}
+          icon={<Icon icon={ListBulletIcon} color="inherit" />}
         />
-        <XDSSegmentedControlItem
+        <SegmentedControlItem
           value="table"
           label="Table"
-          icon={<XDSIcon icon={TableCellsIcon} color="inherit" />}
+          icon={<Icon icon={TableCellsIcon} color="inherit" />}
         />
-      </XDSSegmentedControl>
+      </SegmentedControl>
     );
   },
 };
@@ -94,24 +94,24 @@ export const IconOnly: Story = {
   render: args => {
     const [value, setValue] = useState('grid');
     return (
-      <XDSSegmentedControl
+      <SegmentedControl
         value={value}
         onChange={setValue}
         label="View mode"
         size={args.size}>
-        <XDSSegmentedControlItem
+        <SegmentedControlItem
           value="grid"
           label="Grid"
           isLabelHidden
-          icon={<XDSIcon icon={Squares2X2Icon} color="inherit" />}
+          icon={<Icon icon={Squares2X2Icon} color="inherit" />}
         />
-        <XDSSegmentedControlItem
+        <SegmentedControlItem
           value="list"
           label="List"
           isLabelHidden
-          icon={<XDSIcon icon={ListBulletIcon} color="inherit" />}
+          icon={<Icon icon={ListBulletIcon} color="inherit" />}
         />
-      </XDSSegmentedControl>
+      </SegmentedControl>
     );
   },
 };
@@ -125,43 +125,43 @@ export const SizeVariants: Story = {
           <div style={{marginBottom: '8px', fontSize: '12px', color: '#666'}}>
             Small
           </div>
-          <XDSSegmentedControl
+          <SegmentedControl
             value={value}
             onChange={setValue}
             label="Time period"
             size="sm">
-            <XDSSegmentedControlItem value="day" label="Day" />
-            <XDSSegmentedControlItem value="week" label="Week" />
-            <XDSSegmentedControlItem value="month" label="Month" />
-          </XDSSegmentedControl>
+            <SegmentedControlItem value="day" label="Day" />
+            <SegmentedControlItem value="week" label="Week" />
+            <SegmentedControlItem value="month" label="Month" />
+          </SegmentedControl>
         </div>
         <div>
           <div style={{marginBottom: '8px', fontSize: '12px', color: '#666'}}>
             Medium (default)
           </div>
-          <XDSSegmentedControl
+          <SegmentedControl
             value={value}
             onChange={setValue}
             label="Time period"
             size="md">
-            <XDSSegmentedControlItem value="day" label="Day" />
-            <XDSSegmentedControlItem value="week" label="Week" />
-            <XDSSegmentedControlItem value="month" label="Month" />
-          </XDSSegmentedControl>
+            <SegmentedControlItem value="day" label="Day" />
+            <SegmentedControlItem value="week" label="Week" />
+            <SegmentedControlItem value="month" label="Month" />
+          </SegmentedControl>
         </div>
         <div>
           <div style={{marginBottom: '8px', fontSize: '12px', color: '#666'}}>
             Large
           </div>
-          <XDSSegmentedControl
+          <SegmentedControl
             value={value}
             onChange={setValue}
             label="Time period"
             size="lg">
-            <XDSSegmentedControlItem value="day" label="Day" />
-            <XDSSegmentedControlItem value="week" label="Week" />
-            <XDSSegmentedControlItem value="month" label="Month" />
-          </XDSSegmentedControl>
+            <SegmentedControlItem value="day" label="Day" />
+            <SegmentedControlItem value="week" label="Week" />
+            <SegmentedControlItem value="month" label="Month" />
+          </SegmentedControl>
         </div>
       </div>
     );
@@ -172,15 +172,15 @@ export const Disabled: Story = {
   render: () => {
     const [value, setValue] = useState('all');
     return (
-      <XDSSegmentedControl
+      <SegmentedControl
         value={value}
         onChange={setValue}
         label="Filter"
         isDisabled>
-        <XDSSegmentedControlItem value="all" label="All" />
-        <XDSSegmentedControlItem value="active" label="Active" />
-        <XDSSegmentedControlItem value="completed" label="Completed" />
-      </XDSSegmentedControl>
+        <SegmentedControlItem value="all" label="All" />
+        <SegmentedControlItem value="active" label="Active" />
+        <SegmentedControlItem value="completed" label="Completed" />
+      </SegmentedControl>
     );
   },
 };
@@ -189,14 +189,14 @@ export const DisabledItem: Story = {
   render: () => {
     const [value, setValue] = useState('hourly');
     return (
-      <XDSSegmentedControl
+      <SegmentedControl
         value={value}
         onChange={setValue}
         label="Data granularity">
-        <XDSSegmentedControlItem value="hourly" label="Hourly" />
-        <XDSSegmentedControlItem value="daily" label="Daily" />
-        <XDSSegmentedControlItem value="weekly" label="Weekly" isDisabled />
-      </XDSSegmentedControl>
+        <SegmentedControlItem value="hourly" label="Hourly" />
+        <SegmentedControlItem value="daily" label="Daily" />
+        <SegmentedControlItem value="weekly" label="Weekly" isDisabled />
+      </SegmentedControl>
     );
   },
 };

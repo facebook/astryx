@@ -4,14 +4,14 @@
  * @file paginateData.ts
  * @input Data array, page number, page size
  * @output Sliced data array for the current page
- * @position Pagination utility; used alongside useXDSTablePagination for client-side pagination
+ * @position Pagination utility; used alongside useTablePagination for client-side pagination
  */
 
 /**
  * Slice a data array for the current page.
  *
  * Pure utility for client-side pagination. For server-side pagination
- * where data is already sliced, pass it directly to XDSTable.
+ * where data is already sliced, pass it directly to Table.
  *
  * @param data - Full data array
  * @param page - Current page number (1-based)
@@ -23,7 +23,7 @@
  * const [page, setPage] = useState(1);
  * const pageSize = 10;
  *
- * <XDSTable data={paginateData(data, page, pageSize)} ... />
+ * <Table data={paginateData(data, page, pageSize)} ... />
  * ```
  */
 export function paginateData<T>(

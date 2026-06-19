@@ -24,13 +24,13 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSTheme} from '@xds/core/theme';
-import {XDSText} from '@xds/core/Text';
-import {XDSPagination} from '@xds/core/Pagination';
+import {Theme} from '@xds/core/theme';
+import {Text} from '@xds/core/Text';
+import {Pagination} from '@xds/core/Pagination';
 import {useMediaQuery} from '@xds/core/hooks';
 import {useThemeMode} from '../../../providers';
 import {HERO_THEME_SLIDES, type HeroThemeSlide} from './heroThemeContent';
-import {AstryxWordmark} from './AstryxWordmark';
+import {AstryxLogo} from '../../../../components/logos';
 import {HeroFloatingCards} from './HeroFloatingCards';
 
 // How long each theme stays on screen before auto-advancing (ms).
@@ -272,22 +272,30 @@ export function HeroReelWordmark() {
           styles.wordmarkWrap,
           dynamic.wordmarkColor('var(--color-text-accent)'),
         )}>
-        <AstryxWordmark className={stylex.props(styles.wordmark).className} />
+        <AstryxLogo
+          role="img"
+          aria-label="Astryx"
+          className={stylex.props(styles.wordmark).className}
+        />
       </div>
     );
   }
 
   const active = reel.slides[reel.index];
   return (
-    <XDSTheme theme={active.theme} mode={effectiveMode(active, reel.userMode)}>
+    <Theme theme={active.theme} mode={effectiveMode(active, reel.userMode)}>
       <div
         {...stylex.props(
           styles.wordmarkWrap,
           dynamic.wordmarkColor(active.wordmarkColor),
         )}>
-        <AstryxWordmark className={stylex.props(styles.wordmark).className} />
+        <AstryxLogo
+          role="img"
+          aria-label="Astryx"
+          className={stylex.props(styles.wordmark).className}
+        />
       </div>
-    </XDSTheme>
+    </Theme>
   );
 }
 
@@ -309,7 +317,7 @@ export function HeroReelCards() {
   const shown = reel.animate ? mounted : true;
 
   return (
-    <XDSTheme theme={active.theme} mode={effectiveMode(active, reel.userMode)}>
+    <Theme theme={active.theme} mode={effectiveMode(active, reel.userMode)}>
       <div {...stylex.props(styles.themeFill)} aria-hidden="true" />
       <div {...stylex.props(styles.navBackdrop)} aria-hidden="true" />
       <div
@@ -327,7 +335,7 @@ export function HeroReelCards() {
       <div {...stylex.props(styles.cardsLayer)}>
         <HeroFloatingCards content={active.content} mounted={shown} />
       </div>
-    </XDSTheme>
+    </Theme>
   );
 }
 
@@ -342,9 +350,9 @@ export function HeroReelStack() {
   }
   const active = reel.slides[reel.index];
   return (
-    <XDSTheme theme={active.theme} mode={effectiveMode(active, reel.userMode)}>
+    <Theme theme={active.theme} mode={effectiveMode(active, reel.userMode)}>
       <HeroFloatingCards content={active.content} mounted layout="stack" />
-    </XDSTheme>
+    </Theme>
   );
 }
 
@@ -359,11 +367,11 @@ export function HeroReelDots() {
 
   return (
     <>
-      {/* Real XDSPagination (dots variant). It's 1-indexed, so page = index+1.
+      {/* Real Pagination (dots variant). It's 1-indexed, so page = index+1.
           The prev/next chevrons it ships with are hidden on the home page via
           a [data-home-page] CSS rule in globals.css, leaving just the dots. */}
       <div {...stylex.props(styles.dots)}>
-        <XDSPagination
+        <Pagination
           variant="dots"
           label="Preview Astryx themes"
           page={index + 1}
@@ -371,13 +379,13 @@ export function HeroReelDots() {
           onChange={p => goTo(p - 1)}
         />
       </div>
-      <XDSText
+      <Text
         as="span"
         type="supporting"
         aria-live="polite"
         xstyle={styles.srOnly}>
         {active.label} theme
-      </XDSText>
+      </Text>
     </>
   );
 }

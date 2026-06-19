@@ -3,13 +3,13 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSNumberInput} from '@xds/core/NumberInput';
+import {NumberInput} from '@xds/core/NumberInput';
 
 export default function NumberInputRangeNumberInput() {
   const [value, setValue] = useState<number | null>(3);
   return (
     <div style={{width: 300}}>
-      <XDSNumberInput
+      <NumberInput
         label="Team Size"
         placeholder="1–50"
         min={1}

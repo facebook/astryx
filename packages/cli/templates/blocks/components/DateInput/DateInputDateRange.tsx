@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSDateInput} from '@xds/core/DateInput';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {DateInput} from '@xds/core/DateInput';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 type DateString =
   `${number}${number}${number}${number}-${number}${number}-${number}${number}`;
@@ -27,11 +27,11 @@ export default function DateInputDateRange() {
   const [value, setValue] = useState<DateString | undefined>(undefined);
 
   return (
-    <XDSStack direction="vertical" gap={4} width="100%" style={{maxWidth: 400}}>
-      <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4} width="100%" style={{maxWidth: 400}}>
+      <Text type="supporting" color="secondary">
         {value ? `Booked: ${value}` : 'Pick a date in the available range'}
-      </XDSText>
-      <XDSDateInput
+      </Text>
+      <DateInput
         label="Booking date"
         min={min}
         max={max}
@@ -40,6 +40,6 @@ export default function DateInputDateRange() {
         value={value}
         onChange={setValue}
       />
-    </XDSStack>
+    </Stack>
   );
 }

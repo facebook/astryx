@@ -2,104 +2,104 @@
 
 'use client';
 
-import {XDSToggleButton} from '@xds/core/ToggleButton';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSIcon} from '@xds/core/Icon';
+import {ToggleButton} from '@xds/core/ToggleButton';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {Icon} from '@xds/core/Icon';
 import {StarIcon as StarOutline} from '@heroicons/react/24/outline';
 import {StarIcon as StarSolid} from '@heroicons/react/24/solid';
 
 export default function ToggleButtonStates() {
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Default
-        </XDSText>
-        <XDSStack direction="horizontal" gap={3} vAlign="center">
-          <XDSToggleButton
+        </Text>
+        <Stack direction="horizontal" gap={3} vAlign="center">
+          <ToggleButton
             label="Favorite"
-            icon={<XDSIcon icon={StarOutline} />}
-            pressedIcon={<XDSIcon icon={StarSolid} />}
+            icon={<Icon icon={StarOutline} />}
+            pressedIcon={<Icon icon={StarSolid} />}
             isPressed={false}
             onPressedChange={() => {}}
           />
-          <XDSToggleButton
+          <ToggleButton
             label="Favorite"
-            icon={<XDSIcon icon={StarOutline} />}
-            pressedIcon={<XDSIcon icon={StarSolid} />}
+            icon={<Icon icon={StarOutline} />}
+            pressedIcon={<Icon icon={StarSolid} />}
             isPressed={false}
             onPressedChange={() => {}}
             isIconOnly
           />
-        </XDSStack>
-      </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+        </Stack>
+      </Stack>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Pressed
-        </XDSText>
-        <XDSStack direction="horizontal" gap={3} vAlign="center">
-          <XDSToggleButton
+        </Text>
+        <Stack direction="horizontal" gap={3} vAlign="center">
+          <ToggleButton
             label="Favorite"
-            icon={<XDSIcon icon={StarOutline} />}
-            pressedIcon={<XDSIcon icon={StarSolid} />}
+            icon={<Icon icon={StarOutline} />}
+            pressedIcon={<Icon icon={StarSolid} />}
             isPressed={true}
             onPressedChange={() => {}}
           />
-          <XDSToggleButton
+          <ToggleButton
             label="Favorite"
-            icon={<XDSIcon icon={StarOutline} />}
-            pressedIcon={<XDSIcon icon={StarSolid} />}
+            icon={<Icon icon={StarOutline} />}
+            pressedIcon={<Icon icon={StarSolid} />}
             isPressed={true}
             onPressedChange={() => {}}
             isIconOnly
           />
-        </XDSStack>
-      </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+        </Stack>
+      </Stack>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Disabled
-        </XDSText>
-        <XDSStack direction="horizontal" gap={3} vAlign="center">
-          <XDSToggleButton
+        </Text>
+        <Stack direction="horizontal" gap={3} vAlign="center">
+          <ToggleButton
             label="Favorite"
-            icon={<XDSIcon icon={StarOutline} />}
+            icon={<Icon icon={StarOutline} />}
             isPressed={false}
             onPressedChange={() => {}}
             isDisabled
           />
-          <XDSToggleButton
+          <ToggleButton
             label="Favorite"
-            icon={<XDSIcon icon={StarOutline} />}
+            icon={<Icon icon={StarOutline} />}
             isPressed={false}
             onPressedChange={() => {}}
             isIconOnly
             isDisabled
           />
-        </XDSStack>
-      </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+        </Stack>
+      </Stack>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Loading
-        </XDSText>
-        <XDSStack direction="horizontal" gap={3} vAlign="center">
-          <XDSToggleButton
+        </Text>
+        <Stack direction="horizontal" gap={3} vAlign="center">
+          <ToggleButton
             label="Favorite"
-            icon={<XDSIcon icon={StarOutline} />}
+            icon={<Icon icon={StarOutline} />}
             isPressed={false}
             onPressedChange={() => {}}
             isLoading
           />
-          <XDSToggleButton
+          <ToggleButton
             label="Favorite"
-            icon={<XDSIcon icon={StarOutline} />}
+            icon={<Icon icon={StarOutline} />}
             isPressed={false}
             onPressedChange={() => {}}
             isIconOnly
             isLoading
           />
-        </XDSStack>
-      </XDSStack>
-    </XDSStack>
+        </Stack>
+      </Stack>
+    </Stack>
   );
 }

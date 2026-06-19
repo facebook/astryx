@@ -2,23 +2,23 @@
 
 /**
  * @file utils.ts
- * @output Utility functions for XDSSelector
- * @position Utilities; used by XDSSelector.tsx
+ * @output Utility functions for Selector
+ * @position Utilities; used by Selector.tsx
  */
 
 import type {
-  XDSSelectorOptionType,
-  XDSSelectorOptionData,
-  XDSSelectorDivider,
-  XDSSelectorSection,
+  SelectorOptionType,
+  SelectorOptionData,
+  SelectorDivider,
+  SelectorSection,
 } from './types';
 
 /**
  * Type guard: check if option is a selectable option (string or OptionData)
  */
 export function isOptionData(
-  option: XDSSelectorOptionType,
-): option is XDSSelectorOptionData | string {
+  option: SelectorOptionType,
+): option is SelectorOptionData | string {
   if (typeof option === 'string') {
     return true;
   }
@@ -29,8 +29,8 @@ export function isOptionData(
  * Type guard: check if option is a divider
  */
 export function isDivider(
-  option: XDSSelectorOptionType,
-): option is XDSSelectorDivider {
+  option: SelectorOptionType,
+): option is SelectorDivider {
   return (
     typeof option === 'object' && 'type' in option && option.type === 'divider'
   );
@@ -40,8 +40,8 @@ export function isDivider(
  * Type guard: check if option is a section
  */
 export function isSection(
-  option: XDSSelectorOptionType,
-): option is XDSSelectorSection {
+  option: SelectorOptionType,
+): option is SelectorSection {
   return (
     typeof option === 'object' && 'type' in option && option.type === 'section'
   );
@@ -51,8 +51,8 @@ export function isSection(
  * Normalize string or option to consistent shape
  */
 export function normalizeOption(
-  option: string | XDSSelectorOptionData,
-): XDSSelectorOptionData {
+  option: string | SelectorOptionData,
+): SelectorOptionData {
   if (typeof option === 'string') {
     return {value: option, label: option};
   }
@@ -66,9 +66,9 @@ export function normalizeOption(
  * Get all selectable options (flattening sections)
  */
 export function getSelectableOptions(
-  options: XDSSelectorOptionType[],
-): XDSSelectorOptionData[] {
-  const result: XDSSelectorOptionData[] = [];
+  options: SelectorOptionType[],
+): SelectorOptionData[] {
+  const result: SelectorOptionData[] = [];
 
   for (const option of options) {
     if (isOptionData(option)) {

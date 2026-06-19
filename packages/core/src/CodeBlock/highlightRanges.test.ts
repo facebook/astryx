@@ -54,7 +54,7 @@ describe('applyHighlightRangesChunked', () => {
 
     // Need to inject the style element mock
     const mockStyle = document.createElement('style');
-    mockStyle.setAttribute('data-xds-highlight-styles', '');
+    mockStyle.setAttribute('data-astryx-highlight-styles', '');
     document.head.appendChild(mockStyle);
 
     const cleanup = applyHighlightRangesChunked(codeEl, tokenLines);
@@ -72,7 +72,7 @@ describe('applyHighlightRangesChunked', () => {
     const tokenLines: TokenLine[] = [[], [{type: 'keyword', start: 0, end: 5}]];
 
     const mockStyle = document.createElement('style');
-    mockStyle.setAttribute('data-xds-highlight-styles', '');
+    mockStyle.setAttribute('data-astryx-highlight-styles', '');
     document.head.appendChild(mockStyle);
 
     const cleanup = applyHighlightRangesChunked(codeEl, tokenLines);
@@ -94,7 +94,7 @@ describe('applyHighlightRangesChunked', () => {
     ];
 
     const mockStyle = document.createElement('style');
-    mockStyle.setAttribute('data-xds-highlight-styles', '');
+    mockStyle.setAttribute('data-astryx-highlight-styles', '');
     document.head.appendChild(mockStyle);
 
     const cleanup = applyHighlightRangesChunked(codeEl, tokenLines);

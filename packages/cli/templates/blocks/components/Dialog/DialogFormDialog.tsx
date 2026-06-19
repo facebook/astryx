@@ -4,59 +4,59 @@
 
 import {useState} from 'react';
 import {
-  XDSDialog,
-  XDSDialogHeader,
-  useXDSImperativeDialog,
+  Dialog,
+  DialogHeader,
+  useImperativeDialog,
 } from '@xds/core/Dialog';
 import {
-  XDSLayout,
-  XDSLayoutContent,
-  XDSLayoutFooter,
-  XDSHStack,
-  XDSVStack,
+  Layout,
+  LayoutContent,
+  LayoutFooter,
+  HStack,
+  VStack,
 } from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSTextArea} from '@xds/core/TextArea';
+import {Button} from '@xds/core/Button';
+import {TextInput} from '@xds/core/TextInput';
+import {TextArea} from '@xds/core/TextArea';
 
 function Content({onClose}: {onClose: () => void}) {
   const [name, setName] = useState('Ruby Cheung');
   const [bio, setBio] = useState('Design systems engineer');
 
   return (
-    <XDSLayout
+    <Layout
       header={
-        <XDSDialogHeader
+        <DialogHeader
           title="Edit profile"
           subtitle="Update your display name and bio"
           onOpenChange={() => onClose()}
         />
       }
       content={
-        <XDSLayoutContent>
-          <XDSVStack gap={4}>
-            <XDSTextInput
+        <LayoutContent>
+          <VStack gap={4}>
+            <TextInput
               label="Display name"
               value={name}
               onChange={setName}
               placeholder="Enter your name"
             />
-            <XDSTextArea
+            <TextArea
               label="Bio"
               value={bio}
               onChange={setBio}
               placeholder="Tell us about yourself"
             />
-          </XDSVStack>
-        </XDSLayoutContent>
+          </VStack>
+        </LayoutContent>
       }
       footer={
-        <XDSLayoutFooter>
-          <XDSHStack gap={2} hAlign="end">
-            <XDSButton label="Cancel" variant="secondary" onClick={onClose} />
-            <XDSButton label="Save" variant="primary" onClick={onClose} />
-          </XDSHStack>
-        </XDSLayoutFooter>
+        <LayoutFooter>
+          <HStack gap={2} hAlign="end">
+            <Button label="Cancel" variant="secondary" onClick={onClose} />
+            <Button label="Save" variant="primary" onClick={onClose} />
+          </HStack>
+        </LayoutFooter>
       }
     />
   );
@@ -64,11 +64,11 @@ function Content({onClose}: {onClose: () => void}) {
 
 // Remove isInline for production — dialogs should be modal.
 export default function DialogFormDialog() {
-  const dialog = useXDSImperativeDialog({purpose: 'form', width: 480});
+  const dialog = useImperativeDialog({purpose: 'form', width: 480});
 
   return (
     <>
-      <XDSDialog
+      <Dialog
         isOpen
         isInline
         onOpenChange={() => {}}
@@ -77,7 +77,7 @@ export default function DialogFormDialog() {
         <Content
           onClose={() => dialog.show(<Content onClose={() => dialog.hide()} />)}
         />
-      </XDSDialog>
+      </Dialog>
       {dialog.element}
     </>
   );

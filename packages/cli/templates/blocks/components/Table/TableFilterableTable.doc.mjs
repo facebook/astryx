@@ -4,8 +4,8 @@
 export const doc = {
   type: 'block',
   exampleFor: 'Table',
-  alsoExampleFor: ['useXDSTableFiltering', 'useXDSTableFilterState'],
-  alsoShowcaseFor: ['useXDSTableFiltering', 'useXDSTableFilterState'],
+  alsoExampleFor: ['useTableFiltering', 'useTableFilterState'],
+  alsoShowcaseFor: ['useTableFiltering', 'useTableFilterState'],
   name: 'Table — Popover Filters',
   displayName: 'Table — Popover Filters',
   description:

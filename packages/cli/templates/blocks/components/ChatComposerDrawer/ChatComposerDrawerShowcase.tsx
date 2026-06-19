@@ -2,11 +2,11 @@
 
 'use client';
 
-import {XDSChatComposer, XDSChatComposerDrawer} from '@xds/core/Chat';
-import {XDSToken} from '@xds/core/Token';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSStack} from '@xds/core/Layout';
+import {ChatComposer, ChatComposerDrawer} from '@xds/core/Chat';
+import {Token} from '@xds/core/Token';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
+import {Stack} from '@xds/core/Layout';
 import {PaperClipIcon} from '@heroicons/react/24/outline';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, borderVars, radiusVars} from '@xds/core/theme/tokens.stylex';
@@ -20,31 +20,31 @@ const styles = stylex.create({
 
 export default function ChatComposerDrawerShowcase() {
   return (
-    <XDSStack direction="vertical" gap={4} width={480}>
-      <XDSChatComposer
+    <Stack direction="vertical" gap={4} width={480}>
+      <ChatComposer
         onSubmit={() => {}}
         drawer={
-          <XDSChatComposerDrawer
+          <ChatComposerDrawer
             count={4}
             label="Attachments"
             xstyle={styles.drawerBorder}>
-            <XDSToken label="design-spec.pdf" onRemove={() => {}} />
-            <XDSToken label="api-schema.json" onRemove={() => {}} />
-            <XDSToken label="screenshot.png" onRemove={() => {}} />
-            <XDSToken label="meeting-notes.md" onRemove={() => {}} />
-          </XDSChatComposerDrawer>
+            <Token label="design-spec.pdf" onRemove={() => {}} />
+            <Token label="api-schema.json" onRemove={() => {}} />
+            <Token label="screenshot.png" onRemove={() => {}} />
+            <Token label="meeting-notes.md" onRemove={() => {}} />
+          </ChatComposerDrawer>
         }
         headerActions={
-          <XDSButton
+          <Button
             label="Attach"
             variant="ghost"
             size="sm"
-            icon={<XDSIcon icon={PaperClipIcon} size="sm" />}
+            icon={<Icon icon={PaperClipIcon} size="sm" />}
             isIconOnly
             onClick={() => {}}
           />
         }
       />
-    </XDSStack>
+    </Stack>
   );
 }

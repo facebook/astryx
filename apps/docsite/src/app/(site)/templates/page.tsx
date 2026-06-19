@@ -10,15 +10,15 @@ import {useCallback, useMemo, useState} from 'react';
 import type {CSSProperties} from 'react';
 import {useSearchParams, useRouter, usePathname} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
-import {useXDSAppShellMobile} from '@xds/core/AppShell';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSSection} from '@xds/core/Section';
-import {XDSClickableCard} from '@xds/core/ClickableCard';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSButton} from '@xds/core/Button';
-import {XDSOverlay} from '@xds/core/Overlay';
-import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
+import {useAppShellMobile} from '@xds/core/AppShell';
+import {Text, Heading} from '@xds/core/Text';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Section} from '@xds/core/Section';
+import {ClickableCard} from '@xds/core/ClickableCard';
+import {Grid} from '@xds/core/Grid';
+import {Button} from '@xds/core/Button';
+import {Overlay} from '@xds/core/Overlay';
+import {ToggleButton, ToggleButtonGroup} from '@xds/core/ToggleButton';
 import {templates} from '../../../generated/templateRegistry';
 import {TemplateThumbnail} from '../../../components/TemplateThumbnail';
 import {buildPlaygroundHref} from '../../../components/playgroundLink';
@@ -95,7 +95,7 @@ interface TemplateItem {
 }
 
 export default function TemplatesPage() {
-  const {isMobile} = useXDSAppShellMobile();
+  const {isMobile} = useAppShellMobile();
 
   // Flat, display-ordered list of available templates. Ordered by category
   // group (per GROUP_ORDER) then name, so the single grid stays stable.
@@ -198,35 +198,35 @@ export default function TemplatesPage() {
   );
 
   return (
-    <XDSSection maxWidth={1200} padding={6} style={{marginInline: 'auto'}}>
-      <XDSVStack gap={10}>
+    <Section maxWidth={1200} padding={6} style={{marginInline: 'auto'}}>
+      <VStack gap={10}>
         {/* Header */}
-        <XDSVStack gap={6} align="stretch">
-          <XDSVStack gap={2}>
-            <XDSHeading level={1} type="display-2" justify="center">
+        <VStack gap={6} align="stretch">
+          <VStack gap={2}>
+            <Heading level={1} type="display-2" justify="center">
               Templates
-            </XDSHeading>
-            <XDSText type="body" color="secondary" justify="center">
+            </Heading>
+            <Text type="body" color="secondary" justify="center">
               Ready-to-use page templates to kickstart your project.
-            </XDSText>
-          </XDSVStack>
-          <XDSToggleButtonGroup
+            </Text>
+          </VStack>
+          <ToggleButtonGroup
             label="Filter templates by category"
             value={activeCategory}
             onChange={value => setActiveCategory(value ?? 'All')}
             xstyle={styles.categoryFilter}>
             {categories.map(category => (
-              <XDSToggleButton
+              <ToggleButton
                 key={category}
                 label={category}
                 value={category}
               />
             ))}
-          </XDSToggleButtonGroup>
-        </XDSVStack>
+          </ToggleButtonGroup>
+        </VStack>
 
         {/* Body */}
-        <XDSGrid
+        <Grid
           columns={{minWidth: isMobile ? 280 : 420}}
           gap={4}
           width="100%">
@@ -234,7 +234,7 @@ export default function TemplatesPage() {
             const templateContent = <TemplateThumbnail slug={item.slug} />;
 
             return (
-              <XDSClickableCard
+              <ClickableCard
                 key={item.slug}
                 padding={0}
                 maxWidth="100%"
@@ -244,11 +244,11 @@ export default function TemplatesPage() {
                 {isMobile ? (
                   templateContent
                 ) : (
-                  <XDSOverlay
+                  <Overlay
                     showOn="hover"
                     scrim="dark"
                     content={
-                      <XDSVStack
+                      <VStack
                         role="presentation"
                         onClick={() => openPreview(item.slug)}
                         justify="end"
@@ -257,18 +257,18 @@ export default function TemplatesPage() {
                         width="100%"
                         gap={4}
                         style={{...OVERLAY_CLICK_LAYER_STYLE, padding: 8}}>
-                        <XDSVStack gap={0.5}>
-                          <XDSHeading level={3}>{item.name}</XDSHeading>
-                          <XDSText maxLines={2}>{item.description}</XDSText>
-                        </XDSVStack>
-                        <XDSHStack gap={2}>
-                          <XDSButton
+                        <VStack gap={0.5}>
+                          <Heading level={3}>{item.name}</Heading>
+                          <Text maxLines={2}>{item.description}</Text>
+                        </VStack>
+                        <HStack gap={2}>
+                          <Button
                             label="Preview"
                             variant="secondary"
                             onClick={() => openPreview(item.slug)}
                           />
                           {item.source && (
-                            <XDSButton
+                            <Button
                               label="Open in Playground"
                               variant="secondary"
                               href={buildPlaygroundHref(item.source)}
@@ -282,17 +282,17 @@ export default function TemplatesPage() {
                               }}
                             />
                           )}
-                        </XDSHStack>
-                      </XDSVStack>
+                        </HStack>
+                      </VStack>
                     }>
                     {templateContent}
-                  </XDSOverlay>
+                  </Overlay>
                 )}
-              </XDSClickableCard>
+              </ClickableCard>
             );
           })}
-        </XDSGrid>
-      </XDSVStack>
+        </Grid>
+      </VStack>
 
       <TemplatePreviewDialog
         items={flatItems}
@@ -306,6 +306,6 @@ export default function TemplatesPage() {
         onIndexChange={setOpenIndex}
         variant={isMobile ? 'fullscreen' : undefined}
       />
-    </XDSSection>
+    </Section>
   );
 }

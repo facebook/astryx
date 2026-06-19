@@ -19,7 +19,7 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'Input and XDSInputGroupText children.',
+      description: 'Input and InputGroupText children.',
       required: true,
     },
     {
@@ -65,7 +65,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'XDSInputStatus',
+      type: 'InputStatus',
       description: 'Status indicator applied to the group border.',
     },
     {
@@ -85,13 +85,13 @@ export const docs = {
     },
   ],
   components: [
-    {name: 'XDSInputGroupText'},
+    {name: 'InputGroupText'},
   ],
   usage: {
     description: 'InputGroup connects an input with prefix/suffix addons in a single visual unit. Use it for URL fields, currency inputs, search fields with action buttons, or any input that needs contextual decorations.',
     bestPractices: [
       {guidance: true, description: 'Use text addons to show units, prefixes, or suffixes that clarify the input format (e.g., "$", "kg", "https://").'},
-      {guidance: true, description: 'Use XDSInputGroupText for static prefixes/suffixes like "$", "kg", or "https://".'},
+      {guidance: true, description: 'Use InputGroupText for static prefixes/suffixes like "$", "kg", or "https://".'},
       {guidance: true, description: 'Set isLabelHidden on the inner input and let the group label be visible.'},
       {guidance: false, description: 'Don\'t put multiple text inputs in one group; use separate fields instead.'},
       {guidance: false, description: 'Don\'t use InputGroup for unrelated inputs; it\'s for a single input with decorations.'},
@@ -99,7 +99,7 @@ export const docs = {
     anatomy: [
       {name: 'Label', required: true, description: 'Text above the group.'},
       {name: 'Prefix addon', required: false, description: 'Content before the input (text, icon, or button).'},
-      {name: 'Input', required: true, description: 'The main input element (XDSTextInput, XDSNumberInput, etc.).'},
+      {name: 'Input', required: true, description: 'The main input element (TextInput, NumberInput, etc.).'},
       {name: 'Suffix addon', required: false, description: 'Content after the input (text, icon, or button).'},
       {name: 'Status message', required: false, description: 'An error, warning, or success message below the group.'},
     ],
@@ -113,7 +113,7 @@ export const docsDense = {
     description: 'InputGroup connects an input with addons. Use for URL fields, currency inputs, search with actions.',
     bestPractices: [
       {guidance: true, description: 'Use text addons to show units, prefixes, or suffixes that clarify input format (e.g. "$", "kg", "https://").'},
-      {guidance: true, description: 'Use XDSInputGroupText for static prefixes/suffixes like "$", "kg", or "https://".'},
+      {guidance: true, description: 'Use InputGroupText for static prefixes/suffixes like "$", "kg", or "https://".'},
       {guidance: true, description: 'Set isLabelHidden on the inner input and let the group label be visible.'},
       {guidance: false, description: 'Don\'t put multiple text inputs in one group; use separate fields instead.'},
       {guidance: false, description: 'Don\'t use InputGroup for unrelated inputs; it\'s for a single input with decorations.'},

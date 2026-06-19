@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSNavIcon} from '@xds/core/NavIcon';
+import {NavIcon} from '@xds/core/NavIcon';
 import {
   HomeIcon,
   CubeIcon,
@@ -10,9 +10,9 @@ import {
   SparklesIcon,
 } from '@heroicons/react/24/solid';
 
-const meta: Meta<typeof XDSNavIcon> = {
+const meta: Meta<typeof NavIcon> = {
   title: 'Core/NavIcon',
-  component: XDSNavIcon,
+  component: NavIcon,
   tags: ['autodocs'],
   argTypes: {
     icon: {
@@ -22,7 +22,7 @@ const meta: Meta<typeof XDSNavIcon> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSNavIcon>;
+type Story = StoryObj<typeof NavIcon>;
 
 export const Default: Story = {
   args: {
@@ -45,11 +45,11 @@ export const WithBoltIcon: Story = {
 export const Gallery: Story = {
   render: () => (
     <div style={{display: 'flex', gap: 16, alignItems: 'center'}}>
-      <XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />
-      <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-      <XDSNavIcon icon={<BoltIcon style={{width: 16, height: 16}} />} />
-      <XDSNavIcon icon={<RocketLaunchIcon style={{width: 16, height: 16}} />} />
-      <XDSNavIcon icon={<SparklesIcon style={{width: 16, height: 16}} />} />
+      <NavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />
+      <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+      <NavIcon icon={<BoltIcon style={{width: 16, height: 16}} />} />
+      <NavIcon icon={<RocketLaunchIcon style={{width: 16, height: 16}} />} />
+      <NavIcon icon={<SparklesIcon style={{width: 16, height: 16}} />} />
     </div>
   ),
 };

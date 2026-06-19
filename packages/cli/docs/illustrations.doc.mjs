@@ -59,26 +59,26 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Center illustrations inside XDSCenter with supporting text stacked below. Typical illustration sizes range from 120px for inline empty states to 240px for full-page onboarding screens. Always pair the illustration with a heading and optional body text to explain what the user should do next.',
+          text: 'Center illustrations inside Center with supporting text stacked below. Typical illustration sizes range from 120px for inline empty states to 240px for full-page onboarding screens. Always pair the illustration with a heading and optional body text to explain what the user should do next.',
         },
         {
           type: 'code',
           lang: 'tsx',
           label: 'Empty state with illustration',
-          code: `<XDSCenter>
-  <XDSStack direction="vertical" gap={3} hAlign="center">
+          code: `<Center>
+  <Stack direction="vertical" gap={3} hAlign="center">
     <img
       src="/illustrations/empty-search.svg"
       alt="No results"
       style={{ width: 200, height: 200 }}
     />
-    <XDSHeading level={3}>No results found</XDSHeading>
-    <XDSText type="body" color="secondary">
+    <Heading level={3}>No results found</Heading>
+    <Text type="body" color="secondary">
       Try adjusting your search or filters to find what you\u2019re
       looking for.
-    </XDSText>
-  </XDSStack>
-</XDSCenter>`,
+    </Text>
+  </Stack>
+</Center>`,
         },
       ],
     },

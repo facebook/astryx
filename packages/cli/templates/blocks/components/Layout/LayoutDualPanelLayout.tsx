@@ -3,64 +3,64 @@
 'use client';
 
 import {
-  XDSLayout,
-  XDSLayoutHeader,
-  XDSLayoutContent,
-  XDSLayoutPanel,
-  XDSVStack,
+  Layout,
+  LayoutHeader,
+  LayoutContent,
+  LayoutPanel,
+  VStack,
 } from '@xds/core/Layout';
-import {XDSCard} from '@xds/core/Card';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSList, XDSListItem} from '@xds/core/List';
+import {Card} from '@xds/core/Card';
+import {Heading, Text} from '@xds/core/Text';
+import {List, ListItem} from '@xds/core/List';
 
 export default function LayoutDualPanelLayout() {
   return (
-    <XDSCard width="100%" style={{maxWidth: 500}}>
-      <XDSLayout
+    <Card width="100%" style={{maxWidth: 500}}>
+      <Layout
         header={
-          <XDSLayoutHeader hasDivider>
-            <XDSHeading level={4}>File Browser</XDSHeading>
-          </XDSLayoutHeader>
+          <LayoutHeader hasDivider>
+            <Heading level={4}>File Browser</Heading>
+          </LayoutHeader>
         }
         start={
-          <XDSLayoutPanel width={120} hasDivider>
-            <XDSVStack gap={1}>
-              <XDSText type="label" color="secondary">
+          <LayoutPanel width={120} hasDivider>
+            <VStack gap={1}>
+              <Text type="label" color="secondary">
                 Folders
-              </XDSText>
-              <XDSList>
-                <XDSListItem label="Documents" />
-                <XDSListItem label="Projects" isSelected />
-                <XDSListItem label="Downloads" />
-              </XDSList>
-            </XDSVStack>
-          </XDSLayoutPanel>
+              </Text>
+              <List>
+                <ListItem label="Documents" />
+                <ListItem label="Projects" isSelected />
+                <ListItem label="Downloads" />
+              </List>
+            </VStack>
+          </LayoutPanel>
         }
         content={
-          <XDSLayoutContent>
-            <XDSVStack gap={2}>
-              <XDSText type="label" color="secondary">
+          <LayoutContent>
+            <VStack gap={2}>
+              <Text type="label" color="secondary">
                 Files
-              </XDSText>
-              <XDSCard variant="muted">
-                <XDSText type="body">
+              </Text>
+              <Card variant="muted">
+                <Text type="body">
                   Select a folder to view its contents
-                </XDSText>
-              </XDSCard>
-            </XDSVStack>
-          </XDSLayoutContent>
+                </Text>
+              </Card>
+            </VStack>
+          </LayoutContent>
         }
         end={
-          <XDSLayoutPanel width={120} hasDivider>
-            <XDSVStack gap={2}>
-              <XDSText type="label" color="secondary">
+          <LayoutPanel width={120} hasDivider>
+            <VStack gap={2}>
+              <Text type="label" color="secondary">
                 Details
-              </XDSText>
-              <XDSText type="body">Select a file to view details</XDSText>
-            </XDSVStack>
-          </XDSLayoutPanel>
+              </Text>
+              <Text type="body">Select a file to view details</Text>
+            </VStack>
+          </LayoutPanel>
         }
       />
-    </XDSCard>
+    </Card>
   );
 }

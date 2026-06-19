@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
-import {XDSIcon} from '@xds/core/Icon';
+import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
+import {Icon} from '@xds/core/Icon';
 
 function HomeIcon() {
   return (
@@ -25,24 +25,24 @@ function HomeIcon() {
 
 export default function TopNavItemShowcase() {
   return (
-    <XDSTopNav
+    <TopNav
       style={{width: 600}}
       label="Navigation items demo"
-      heading={<XDSTopNavHeading heading="App" />}
+      heading={<TopNavHeading heading="App" />}
       startContent={
         <>
-          <XDSTopNavItem
+          <TopNavItem
             label="Dashboard"
             href="#"
             isSelected
             icon={<HomeIcon />}
           />
-          <XDSTopNavItem label="Projects" href="#" />
-          <XDSTopNavItem label="Reports" href="#" />
-          <XDSTopNavItem label="Archived" href="#" isDisabled />
+          <TopNavItem label="Projects" href="#" />
+          <TopNavItem label="Reports" href="#" />
+          <TopNavItem label="Archived" href="#" isDisabled />
         </>
       }
-      endContent={<XDSIcon icon="search" />}
+      endContent={<Icon icon="search" />}
     />
   );
 }

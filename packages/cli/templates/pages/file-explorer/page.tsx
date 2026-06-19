@@ -4,19 +4,19 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
-import {XDSToolbar} from '@xds/core/Toolbar';
-import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSIconButton} from '@xds/core/IconButton';
-import {XDSSection} from '@xds/core/Section';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
+import {Layout, LayoutContent} from '@xds/core/Layout';
+import {Toolbar} from '@xds/core/Toolbar';
+import {List, ListItem} from '@xds/core/List';
+import {HStack, VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {Icon} from '@xds/core/Icon';
+import {IconButton} from '@xds/core/IconButton';
+import {Section} from '@xds/core/Section';
+import {Avatar} from '@xds/core/Avatar';
+import {MetadataList, MetadataListItem} from '@xds/core/MetadataList';
 import {
-  XDSSegmentedControl,
-  XDSSegmentedControlItem,
+  SegmentedControl,
+  SegmentedControlItem,
 } from '@xds/core/SegmentedControl';
 import {
   ChevronLeftIcon,
@@ -347,20 +347,20 @@ export default function FileExplorerPage() {
   };
 
   return (
-    <XDSLayout
+    <Layout
       xstyle={styles.page}
       height="fill"
       header={
-        <XDSToolbar
+        <Toolbar
           label="File Explorer"
           size="sm"
           dividers={['bottom']}
           startContent={
             <>
-              <XDSIconButton
+              <IconButton
                 variant="ghost"
                 size="sm"
-                icon={<XDSIcon icon={ChevronLeftIcon} size="sm" />}
+                icon={<Icon icon={ChevronLeftIcon} size="sm" />}
                 onClick={() => {
                   if (selectedPath.length > 0) {
                     setSelectedPath(selectedPath.slice(0, -1));
@@ -369,77 +369,77 @@ export default function FileExplorerPage() {
                 isDisabled={selectedPath.length === 0}
                 label="Go back"
               />
-              <XDSIconButton
+              <IconButton
                 variant="ghost"
                 size="sm"
-                icon={<XDSIcon icon={ChevronRightIcon} size="sm" />}
+                icon={<Icon icon={ChevronRightIcon} size="sm" />}
                 isDisabled
                 label="Go forward"
               />
-              <XDSText type="label">{currentFolderName}</XDSText>
+              <Text type="label">{currentFolderName}</Text>
             </>
           }
           centerContent={
-            <XDSSegmentedControl
+            <SegmentedControl
               value="column"
               onChange={() => {}}
               label="View mode">
-              <XDSSegmentedControlItem
+              <SegmentedControlItem
                 value="grid"
                 label="Grid"
-                icon={<XDSIcon icon={Squares2X2Icon} size="sm" />}
+                icon={<Icon icon={Squares2X2Icon} size="sm" />}
                 isLabelHidden
               />
-              <XDSSegmentedControlItem
+              <SegmentedControlItem
                 value="list"
                 label="List"
-                icon={<XDSIcon icon={Bars4Icon} size="sm" />}
+                icon={<Icon icon={Bars4Icon} size="sm" />}
                 isLabelHidden
               />
-              <XDSSegmentedControlItem
+              <SegmentedControlItem
                 value="column"
                 label="Column"
-                icon={<XDSIcon icon={ViewColumnsIcon} size="sm" />}
+                icon={<Icon icon={ViewColumnsIcon} size="sm" />}
                 isLabelHidden
               />
-              <XDSSegmentedControlItem
+              <SegmentedControlItem
                 value="gallery"
                 label="Gallery"
-                icon={<XDSIcon icon={TableCellsIcon} size="sm" />}
+                icon={<Icon icon={TableCellsIcon} size="sm" />}
                 isLabelHidden
               />
-            </XDSSegmentedControl>
+            </SegmentedControl>
           }
           endContent={
             <>
-              <XDSIconButton
+              <IconButton
                 variant="ghost"
                 size="sm"
-                icon={<XDSIcon icon={AdjustmentsHorizontalIcon} size="sm" />}
+                icon={<Icon icon={AdjustmentsHorizontalIcon} size="sm" />}
                 label="Group"
               />
-              <XDSIconButton
+              <IconButton
                 variant="ghost"
                 size="sm"
-                icon={<XDSIcon icon={ShareIcon} size="sm" />}
+                icon={<Icon icon={ShareIcon} size="sm" />}
                 label="Share"
               />
-              <XDSIconButton
+              <IconButton
                 variant="ghost"
                 size="sm"
-                icon={<XDSIcon icon={TagIcon} size="sm" />}
+                icon={<Icon icon={TagIcon} size="sm" />}
                 label="Tags"
               />
-              <XDSIconButton
+              <IconButton
                 variant="ghost"
                 size="sm"
-                icon={<XDSIcon icon={EllipsisHorizontalIcon} size="sm" />}
+                icon={<Icon icon={EllipsisHorizontalIcon} size="sm" />}
                 label="More"
               />
-              <XDSIconButton
+              <IconButton
                 variant="ghost"
                 size="sm"
-                icon={<XDSIcon icon={MagnifyingGlassIcon} size="sm" />}
+                icon={<Icon icon={MagnifyingGlassIcon} size="sm" />}
                 label="Search"
               />
             </>
@@ -447,20 +447,20 @@ export default function FileExplorerPage() {
         />
       }
       content={
-        <XDSLayoutContent padding={0} isScrollable={false}>
-          <XDSHStack height="100%" xstyle={styles.columnRow}>
+        <LayoutContent padding={0} isScrollable={false}>
+          <HStack height="100%" xstyle={styles.columnRow}>
             {columns.map((col, colIndex) => {
               const showDivider =
                 colIndex < columns.length - 1 || selectedFile != null;
               return (
-                <XDSSection
+                <Section
                   key={colIndex}
                   width={240}
                   padding={2}
                   variant="transparent"
                   dividers={showDivider ? ['end'] : undefined}
                   xstyle={[styles.scrollable, styles.fixedColumn]}>
-                  <XDSList density="compact" hasDividers={false}>
+                  <List density="compact" hasDividers={false}>
                     {col.items.map(item => {
                       const isSelected = col.selectedId === item.id;
                       const hasChildren =
@@ -468,11 +468,11 @@ export default function FileExplorerPage() {
                         item.children != null &&
                         item.children.length > 0;
                       return (
-                        <XDSListItem
+                        <ListItem
                           key={item.id}
                           label={item.name}
                           startContent={
-                            <XDSIcon
+                            <Icon
                               icon={
                                 item.type === 'folder'
                                   ? FolderIcon
@@ -486,7 +486,7 @@ export default function FileExplorerPage() {
                           }
                           endContent={
                             hasChildren ? (
-                              <XDSIcon
+                              <Icon
                                 icon={ChevronRightIcon}
                                 size="xsm"
                                 color="secondary"
@@ -498,39 +498,39 @@ export default function FileExplorerPage() {
                         />
                       );
                     })}
-                  </XDSList>
-                </XDSSection>
+                  </List>
+                </Section>
               );
             })}
             {selectedFile && (
-              <XDSSection
+              <Section
                 padding={6}
                 variant="transparent"
                 xstyle={[styles.scrollable, styles.detailColumn]}>
-                <XDSVStack gap={4} hAlign="center">
-                  <XDSAvatar name={selectedFile.name} size={96} />
-                  <XDSVStack gap={1} hAlign="center">
-                    <XDSText type="label">{selectedFile.name}</XDSText>
-                    <XDSText type="supporting">
+                <VStack gap={4} hAlign="center">
+                  <Avatar name={selectedFile.name} size={96} />
+                  <VStack gap={1} hAlign="center">
+                    <Text type="label">{selectedFile.name}</Text>
+                    <Text type="supporting">
                       {getFileExtension(selectedFile.name)} Document
-                    </XDSText>
-                  </XDSVStack>
-                  <XDSMetadataList title="Information">
-                    <XDSMetadataListItem label="Created">
+                    </Text>
+                  </VStack>
+                  <MetadataList title="Information">
+                    <MetadataListItem label="Created">
                       March 28, 2026 at 2:15 PM
-                    </XDSMetadataListItem>
-                    <XDSMetadataListItem label="Modified">
+                    </MetadataListItem>
+                    <MetadataListItem label="Modified">
                       Yesterday, 10:27 PM
-                    </XDSMetadataListItem>
-                    <XDSMetadataListItem label="Kind">
+                    </MetadataListItem>
+                    <MetadataListItem label="Kind">
                       {getFileExtension(selectedFile.name)} Document
-                    </XDSMetadataListItem>
-                  </XDSMetadataList>
-                </XDSVStack>
-              </XDSSection>
+                    </MetadataListItem>
+                  </MetadataList>
+                </VStack>
+              </Section>
             )}
-          </XDSHStack>
-        </XDSLayoutContent>
+          </HStack>
+        </LayoutContent>
       }
     />
   );

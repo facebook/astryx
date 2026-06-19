@@ -11,11 +11,11 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'XDSToggleButton children.',
+      description: 'ToggleButton children.',
       required: true,
       slotElements: [
         {
-          __element: 'XDSToggleButton',
+          __element: 'ToggleButton',
           props: {
             label: 'Option',
             value: 'option',
@@ -83,7 +83,7 @@ export const docsZh = {
   displayName: 'Toggle Button Group',
   description: '将切换按钮分组，支持单选或多选行为。通过 type 判别联合类型实现类型安全。',
   propDescriptions: {
-    children: 'XDSToggleButton 子元素。',
+    children: 'ToggleButton 子元素。',
     label: '分组的无障碍标签 (aria-label)。',
     type: '选择模式。single 允许单个激活，multiple 允许多个。',
     value: '当前选中的值。类型取决于选择模式。',
@@ -101,7 +101,7 @@ export const docsDense = {
   displayName: 'Toggle Button Group',
   description: 'groups toggle btns for exclusive/multi-select; discriminated union on type',
   propDescriptions: {
-    children: 'XDSToggleButton children',
+    children: 'ToggleButton children',
     label: 'a11y label (aria-label)',
     type: 'selection mode: single or multiple',
     value: 'selected value(s); type depends on mode',

@@ -3,9 +3,9 @@
 'use client';
 
 import {useState, useMemo} from 'react';
-import {XDSCommandPalette} from '@xds/core/CommandPalette';
-import {XDSText} from '@xds/core/Text';
-import {XDSIcon} from '@xds/core/Icon';
+import {CommandPalette} from '@xds/core/CommandPalette';
+import {Text} from '@xds/core/Text';
+import {Icon} from '@xds/core/Icon';
 import {createStaticSource} from '@xds/core/Typeahead';
 
 export default function CommandPalettePickerMode() {
@@ -21,7 +21,7 @@ export default function CommandPalettePickerMode() {
   );
 
   return (
-    <XDSCommandPalette
+    <CommandPalette
       isOpen
       isInline
       onOpenChange={() => {}}
@@ -30,10 +30,10 @@ export default function CommandPalettePickerMode() {
       onValueChange={setTheme}
       renderItem={(item, isSelected) => (
         <>
-          <XDSText type="body" style={{flex: 1}}>
+          <Text type="body" style={{flex: 1}}>
             {item.label}
-          </XDSText>
-          {isSelected && <XDSIcon icon="check" size="sm" />}
+          </Text>
+          {isSelected && <Icon icon="check" size="sm" />}
         </>
       )}
     />

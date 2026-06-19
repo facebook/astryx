@@ -59,7 +59,7 @@ export const docs = {
   props: [
     {
       name: 'source',
-      type: 'XDSCitationSource',
+      type: 'CitationSource',
       description:
         'The citation source object containing title, url, and optional icon.',
       required: true,

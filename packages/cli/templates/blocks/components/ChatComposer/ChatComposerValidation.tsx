@@ -2,18 +2,18 @@
 
 'use client';
 
-import {XDSChatComposer} from '@xds/core/Chat';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {ChatComposer} from '@xds/core/Chat';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function ChatComposerValidation() {
   return (
-    <XDSStack direction="vertical" gap={4} style={{width: '100%', maxWidth: 450}}>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4} style={{width: '100%', maxWidth: 450}}>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Error message (with top position)
-        </XDSText>
-        <XDSChatComposer
+        </Text>
+        <ChatComposer
           onSubmit={value => {
             console.log('Sent:', value);
           }}
@@ -23,12 +23,12 @@ export default function ChatComposerValidation() {
             message: 'Failed to send message. Please try again.',
           }}
         />
-      </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+      </Stack>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Warning message (with bottom position)
-        </XDSText>
-        <XDSChatComposer
+        </Text>
+        <ChatComposer
           onSubmit={value => {
             console.log('Sent:', value);
           }}
@@ -37,7 +37,7 @@ export default function ChatComposerValidation() {
             message: 'Context window is 90% full.',
           }}
         />
-      </XDSStack>
-    </XDSStack>
+      </Stack>
+    </Stack>
   );
 }

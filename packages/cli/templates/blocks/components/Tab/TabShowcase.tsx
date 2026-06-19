@@ -2,17 +2,17 @@
 
 'use client';
 
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
-import {XDSBadge} from '@xds/core/Badge';
+import {TabList, Tab} from '@xds/core/TabList';
+import {Badge} from '@xds/core/Badge';
 
 export default function TabShowcase() {
   return (
-    <XDSTabList value="inbox" onChange={() => {}}>
-      <XDSTab
+    <TabList value="inbox" onChange={() => {}}>
+      <Tab
         value="inbox"
         label="Inbox"
-        endContent={<XDSBadge label="3" variant="info" />}
+        endContent={<Badge label="3" variant="info" />}
       />
-    </XDSTabList>
+    </TabList>
   );
 }

@@ -82,14 +82,14 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'app/page.tsx',
-          code: `import {XDSButton} from '@xds/core/Button';
-import {XDSVStack} from '@xds/core/Layout';
+          code: `import {Button} from '@xds/core/Button';
+import {VStack} from '@xds/core/Layout';
 
 export default function Page() {
   return (
-    <XDSVStack gap={2}>
-      <XDSButton label="Hello XDS" onClick={() => alert('Hi!')} />
-    </XDSVStack>
+    <VStack gap={2}>
+      <Button label="Hello XDS" onClick={() => alert('Hi!')} />
+    </VStack>
   );
 }`,
         },
@@ -112,7 +112,7 @@ const overrides = stylex.create({
   save: { alignSelf: 'flex-end', marginTop: 16 },
 });
 
-<XDSButton label="Save" xstyle={overrides.save} />`,
+<Button label="Save" xstyle={overrides.save} />`,
         },
       ],
     },

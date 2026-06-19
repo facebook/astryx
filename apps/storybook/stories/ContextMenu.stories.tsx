@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSContextMenu, XDSContextMenuItem} from '@xds/core/ContextMenu';
-import {XDSDivider} from '@xds/core/Divider';
+import {ContextMenu, ContextMenuItem} from '@xds/core/ContextMenu';
+import {Divider} from '@xds/core/Divider';
 import {
   PencilIcon,
   TrashIcon,
@@ -27,9 +27,9 @@ const triggerStyles = stylex.create({
   },
 });
 
-const meta: Meta<typeof XDSContextMenu> = {
+const meta: Meta<typeof ContextMenu> = {
   title: 'Core/ContextMenu',
-  component: XDSContextMenu,
+  component: ContextMenu,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
@@ -59,24 +59,24 @@ const meta: Meta<typeof XDSContextMenu> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSContextMenu>;
+type Story = StoryObj<typeof ContextMenu>;
 
 export const Default: Story = {
   render: () => (
-    <XDSContextMenu
+    <ContextMenu
       items={[
         {label: 'Cut', onClick: () => console.log('Cut')},
         {label: 'Copy', onClick: () => console.log('Copy')},
         {label: 'Paste', onClick: () => console.log('Paste')},
       ]}>
       <div {...stylex.props(triggerStyles.area)}>Right-click this area</div>
-    </XDSContextMenu>
+    </ContextMenu>
   ),
 };
 
 export const WithIcons: Story = {
   render: () => (
-    <XDSContextMenu
+    <ContextMenu
       items={[
         {
           label: 'Cut',
@@ -101,13 +101,13 @@ export const WithIcons: Story = {
         },
       ]}>
       <div {...stylex.props(triggerStyles.area)}>Right-click for actions</div>
-    </XDSContextMenu>
+    </ContextMenu>
   ),
 };
 
 export const WithSections: Story = {
   render: () => (
-    <XDSContextMenu
+    <ContextMenu
       items={[
         {
           type: 'section',
@@ -150,13 +150,13 @@ export const WithSections: Story = {
       <div {...stylex.props(triggerStyles.area)}>
         Right-click for grouped actions
       </div>
-    </XDSContextMenu>
+    </ContextMenu>
   ),
 };
 
 export const WithDividers: Story = {
   render: () => (
-    <XDSContextMenu
+    <ContextMenu
       items={[
         {label: 'Edit', onClick: () => console.log('Edit')},
         {label: 'Duplicate', onClick: () => console.log('Duplicate')},
@@ -164,13 +164,13 @@ export const WithDividers: Story = {
         {label: 'Delete', onClick: () => console.log('Delete')},
       ]}>
       <div {...stylex.props(triggerStyles.area)}>Right-click this area</div>
-    </XDSContextMenu>
+    </ContextMenu>
   ),
 };
 
 export const WithDisabledItems: Story = {
   render: () => (
-    <XDSContextMenu
+    <ContextMenu
       items={[
         {
           label: 'Edit',
@@ -185,13 +185,13 @@ export const WithDisabledItems: Story = {
         {label: 'Delete (no permission)', icon: TrashIcon, isDisabled: true},
       ]}>
       <div {...stylex.props(triggerStyles.area)}>Right-click this area</div>
-    </XDSContextMenu>
+    </ContextMenu>
   ),
 };
 
 export const CustomWidth: Story = {
   render: () => (
-    <XDSContextMenu
+    <ContextMenu
       menuWidth={280}
       items={[
         {
@@ -205,13 +205,13 @@ export const CustomWidth: Story = {
         {label: 'Short', onClick: () => console.log('Option 3')},
       ]}>
       <div {...stylex.props(triggerStyles.area)}>Right-click for wide menu</div>
-    </XDSContextMenu>
+    </ContextMenu>
   ),
 };
 
 export const SmallSize: Story = {
   render: () => (
-    <XDSContextMenu
+    <ContextMenu
       size="sm"
       items={[
         {label: 'Cut', onClick: () => console.log('Cut')},
@@ -221,13 +221,13 @@ export const SmallSize: Story = {
       <div {...stylex.props(triggerStyles.area)}>
         Right-click for compact menu
       </div>
-    </XDSContextMenu>
+    </ContextMenu>
   ),
 };
 
 export const Disabled: Story = {
   render: () => (
-    <XDSContextMenu
+    <ContextMenu
       isDisabled
       items={[
         {label: 'Cut', onClick: () => console.log('Cut')},
@@ -236,27 +236,27 @@ export const Disabled: Story = {
       <div {...stylex.props(triggerStyles.area)}>
         Right-click shows native menu (disabled)
       </div>
-    </XDSContextMenu>
+    </ContextMenu>
   ),
 };
 
 export const CompoundBasic: Story = {
   render: () => (
-    <XDSContextMenu
+    <ContextMenu
       menuContent={
         <>
-          <XDSContextMenuItem
+          <ContextMenuItem
             icon={PencilIcon}
             label="Edit"
             onClick={() => console.log('Edit')}
           />
-          <XDSContextMenuItem
+          <ContextMenuItem
             icon={DocumentDuplicateIcon}
             label="Duplicate"
             onClick={() => console.log('Duplicate')}
           />
-          <XDSDivider />
-          <XDSContextMenuItem
+          <Divider />
+          <ContextMenuItem
             icon={TrashIcon}
             label="Delete"
             onClick={() => console.log('Delete')}
@@ -266,30 +266,30 @@ export const CompoundBasic: Story = {
       <div {...stylex.props(triggerStyles.area)}>
         Right-click for compound menu
       </div>
-    </XDSContextMenu>
+    </ContextMenu>
   ),
 };
 
 export const CompoundWithDescriptions: Story = {
   render: () => (
-    <XDSContextMenu
+    <ContextMenu
       menuWidth={280}
       menuContent={
         <>
-          <XDSContextMenuItem
+          <ContextMenuItem
             icon={PencilIcon}
             label="Edit"
             description="Modify this item"
             onClick={() => console.log('Edit')}
           />
-          <XDSContextMenuItem
+          <ContextMenuItem
             icon={ShareIcon}
             label="Share"
             description="Share with others"
             onClick={() => console.log('Share')}
           />
-          <XDSDivider />
-          <XDSContextMenuItem
+          <Divider />
+          <ContextMenuItem
             icon={TrashIcon}
             label="Delete"
             description="Permanently remove"
@@ -300,6 +300,6 @@ export const CompoundWithDescriptions: Story = {
       <div {...stylex.props(triggerStyles.area)}>
         Right-click for detailed menu
       </div>
-    </XDSContextMenu>
+    </ContextMenu>
   ),
 };

@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSChatToolCalls} from '@xds/core/Chat';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {ChatToolCalls} from '@xds/core/Chat';
+import {CodeBlock} from '@xds/core/CodeBlock';
 
 const editDiff = `--- a/src/utils/formatDate.ts
 +++ b/src/utils/formatDate.ts
@@ -29,7 +29,7 @@ Time:        1.8s`;
 
 export default function ChatToolCallsInteractiveToolCalls() {
   return (
-    <XDSChatToolCalls
+    <ChatToolCalls
       defaultIsExpanded
       calls={[
         {
@@ -41,7 +41,7 @@ export default function ChatToolCallsInteractiveToolCalls() {
           additions: 6,
           deletions: 3,
           resultDetail: (
-            <XDSCodeBlock
+            <CodeBlock
               code={editDiff}
               language="typescript"
               maxHeight="50vh"
@@ -55,7 +55,7 @@ export default function ChatToolCallsInteractiveToolCalls() {
           duration: '1.8s',
           node: 'cli:remote-server',
           resultDetail: (
-            <XDSCodeBlock code={testOutput} language="bash" maxHeight="50vh" />
+            <CodeBlock code={testOutput} language="bash" maxHeight="50vh" />
           ),
         },
         {

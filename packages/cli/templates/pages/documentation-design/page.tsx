@@ -5,30 +5,30 @@
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
+  SideNav,
+  SideNavHeading,
+  SideNavItem,
+  SideNavSection,
 } from '@xds/core/SideNav';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIconButton} from '@xds/core/IconButton';
-import {XDSCard} from '@xds/core/Card';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSToken} from '@xds/core/Token';
-import {XDSBanner} from '@xds/core/Banner';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
-import {XDSHStack, XDSVStack, XDSStackItem} from '@xds/core/Stack';
-import {XDSLayout, XDSLayoutContent, XDSLayoutPanel} from '@xds/core/Layout';
-import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSTooltip} from '@xds/core/Tooltip';
-import {XDSTable, pixel} from '@xds/core/Table';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSSection} from '@xds/core/Section';
-import {XDSCenter} from '@xds/core/Center';
+import {Heading, Text} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {IconButton} from '@xds/core/IconButton';
+import {Card} from '@xds/core/Card';
+import {Avatar} from '@xds/core/Avatar';
+import {Badge} from '@xds/core/Badge';
+import {Token} from '@xds/core/Token';
+import {Banner} from '@xds/core/Banner';
+import {CodeBlock} from '@xds/core/CodeBlock';
+import {TabList, Tab} from '@xds/core/TabList';
+import {HStack, VStack, StackItem} from '@xds/core/Stack';
+import {Layout, LayoutContent, LayoutPanel} from '@xds/core/Layout';
+import {Dialog, DialogHeader} from '@xds/core/Dialog';
+import {Divider} from '@xds/core/Divider';
+import {Tooltip} from '@xds/core/Tooltip';
+import {Table, pixel} from '@xds/core/Table';
+import {Icon} from '@xds/core/Icon';
+import {Section} from '@xds/core/Section';
+import {Center} from '@xds/core/Center';
 import {
   ArrowTopRightOnSquareIcon,
   ArrowsPointingOutIcon,
@@ -46,23 +46,23 @@ const styles = stylex.create({
 function DialogPreview() {
   const [isOpen, setIsOpen] = useState(false);
   return (
-    <XDSVStack gap={3}>
-      <XDSHeading level={3}>Dialog</XDSHeading>
-      <XDSButton
+    <VStack gap={3}>
+      <Heading level={3}>Dialog</Heading>
+      <Button
         label="Open Dialog"
         variant="primary"
         onClick={() => setIsOpen(true)}
       />
-      <XDSDialog isOpen={isOpen} onOpenChange={setIsOpen}>
-        <XDSDialogHeader title="Example Dialog" onOpenChange={setIsOpen} />
-        <XDSSection padding={4}>
-          <XDSText type="body">
+      <Dialog isOpen={isOpen} onOpenChange={setIsOpen}>
+        <DialogHeader title="Example Dialog" onOpenChange={setIsOpen} />
+        <Section padding={4}>
+          <Text type="body">
             This is an example dialog. Dialogs are used to require user action
             or display important information that needs acknowledgment.
-          </XDSText>
-        </XDSSection>
-      </XDSDialog>
-    </XDSVStack>
+          </Text>
+        </Section>
+      </Dialog>
+    </VStack>
   );
 }
 
@@ -428,13 +428,13 @@ const COMPONENT_DOCS: Record<
         title: 'Semantics',
         description:
           'We have four semantic buttons types: flat, default, primary, and destructive. Flat buttons are used to limit visual prominence, whereas primary emphasizes a single action. Use destructive for deletions that trigger dialog confirmations.',
-        code: `<XDSButton label="Flat" variant="ghost" />\n<XDSButton label="Default" variant="secondary" />\n<XDSButton label="Primary" variant="primary" />\n<XDSButton label="Destructive" variant="destructive" />`,
+        code: `<Button label="Flat" variant="ghost" />\n<Button label="Default" variant="secondary" />\n<Button label="Primary" variant="primary" />\n<Button label="Destructive" variant="destructive" />`,
       },
       {
         title: 'Default button with badge',
         description:
           'Buttons can include a badge to highlight new or updated actions.',
-        code: `<XDSButton\n  label="Button"\n  variant="default"\n/>`,
+        code: `<Button\n  label="Button"\n  variant="default"\n/>`,
       },
     ],
   },
@@ -504,50 +504,50 @@ function ComponentDetailView({
 
   const EXAMPLE_PREVIEWS: Record<string, React.ReactNode[]> = {
     button: [
-      <XDSHStack key="semantics" gap={3} vAlign="center">
-        <XDSButton label="Flat" variant="ghost" />
-        <XDSButton label="Default" variant="secondary" />
-        <XDSButton label="Primary" variant="primary" />
-        <XDSButton label="Destructive" variant="destructive" />
-      </XDSHStack>,
-      <XDSButton key="badge" label="Button" variant="secondary" />,
+      <HStack key="semantics" gap={3} vAlign="center">
+        <Button label="Flat" variant="ghost" />
+        <Button label="Default" variant="secondary" />
+        <Button label="Primary" variant="primary" />
+        <Button label="Destructive" variant="destructive" />
+      </HStack>,
+      <Button key="badge" label="Button" variant="secondary" />,
     ],
   };
 
   const COMPONENT_PREVIEWS: Record<string, React.ReactNode> = {
     button: (
-      <XDSButton
+      <Button
         label="Button"
         variant="secondary"
-        icon={<XDSIcon icon={PlusIcon} />}
-        endContent={<XDSBadge label="New" variant="info" />}
+        icon={<Icon icon={PlusIcon} />}
+        endContent={<Badge label="New" variant="info" />}
       />
     ),
-    avatar: <XDSAvatar name="Alice" size="medium" />,
-    badge: <XDSBadge label="Success" variant="success" />,
+    avatar: <Avatar name="Alice" size="medium" />,
+    badge: <Badge label="Success" variant="success" />,
     card: (
-      <XDSCard>
-        <XDSVStack gap={2}>
-          <XDSHeading level={4}>Card Title</XDSHeading>
-          <XDSText type="body" color="secondary">
+      <Card>
+        <VStack gap={2}>
+          <Heading level={4}>Card Title</Heading>
+          <Text type="body" color="secondary">
             Cards group related content and actions.
-          </XDSText>
-        </XDSVStack>
-      </XDSCard>
+          </Text>
+        </VStack>
+      </Card>
     ),
     banner: (
-      <XDSBanner status="info" title="Information">
-        <XDSText type="body">This is an informational banner message.</XDSText>
-      </XDSBanner>
+      <Banner status="info" title="Information">
+        <Text type="body">This is an informational banner message.</Text>
+      </Banner>
     ),
     dialog: <DialogPreview />,
-    text: <XDSText type="body">Body text</XDSText>,
-    divider: <XDSDivider />,
-    token: <XDSToken label="Design" />,
+    text: <Text type="body">Body text</Text>,
+    divider: <Divider />,
+    token: <Token label="Design" />,
     tooltip: (
-      <XDSTooltip content="Primary action">
-        <XDSButton label="Hover me" variant="primary" />
-      </XDSTooltip>
+      <Tooltip content="Primary action">
+        <Button label="Hover me" variant="primary" />
+      </Tooltip>
     ),
   };
 
@@ -555,43 +555,43 @@ function ComponentDetailView({
   const previews = EXAMPLE_PREVIEWS[activeNav] ?? [];
 
   return (
-    <XDSLayout
+    <Layout
       height="fill"
       contentWidth={960}
       start={
-        <XDSLayoutPanel hasDivider padding={0}>
+        <LayoutPanel hasDivider padding={0}>
           {nav}
-        </XDSLayoutPanel>
+        </LayoutPanel>
       }
       content={
-        <XDSLayoutContent padding={8}>
-          <XDSVStack gap={8}>
-            <XDSVStack gap={2}>
-              <XDSText type="display-1">{getComponentName(activeNav)}</XDSText>
-              <XDSText type="supporting" color="secondary">
+        <LayoutContent padding={8}>
+          <VStack gap={8}>
+            <VStack gap={2}>
+              <Text type="display-1">{getComponentName(activeNav)}</Text>
+              <Text type="supporting" color="secondary">
                 March 30, 2026 · Updated 5:40 p.m. PST
-              </XDSText>
-            </XDSVStack>
+              </Text>
+            </VStack>
 
-            <XDSDivider />
+            <Divider />
 
-            <XDSCard variant="muted" padding={0}>
-              <XDSCenter height={360}>
+            <Card variant="muted" padding={0}>
+              <Center height={360}>
                 {COMPONENT_PREVIEWS[activeNav] ?? (
-                  <XDSText type="supporting" color="secondary">
+                  <Text type="supporting" color="secondary">
                     Preview coming soon
-                  </XDSText>
+                  </Text>
                 )}
-              </XDSCenter>
-            </XDSCard>
+              </Center>
+            </Card>
 
-            <XDSVStack gap={4}>
-              <XDSHeading level={2}>Usage</XDSHeading>
-              <XDSText type="large" weight="normal">
+            <VStack gap={4}>
+              <Heading level={2}>Usage</Heading>
+              <Text type="large" weight="normal">
                 {docs.usage}
-              </XDSText>
-              <XDSHeading level={3}>Best practices</XDSHeading>
-              <XDSTable
+              </Text>
+              <Heading level={3}>Best practices</Heading>
+              <Table
                 data={docs.bestPractices as Record<string, unknown>[]}
                 columns={[
                   {
@@ -599,7 +599,7 @@ function ComponentDetailView({
                     header: 'Guidance',
                     width: pixel(125),
                     renderCell: (item: Record<string, unknown>) => (
-                      <XDSBadge
+                      <Badge
                         label={item.type === 'do' ? 'Do' : 'Dont'}
                         variant={item.type === 'do' ? 'success' : 'error'}
                       />
@@ -609,92 +609,92 @@ function ComponentDetailView({
                     key: 'text',
                     header: 'Practices',
                     renderCell: (item: Record<string, unknown>) => (
-                      <XDSText type="body" textWrap="wrap">
+                      <Text type="body" textWrap="wrap">
                         {item.text as string}
-                      </XDSText>
+                      </Text>
                     ),
                   },
                 ]}
                 density="spacious"
                 dividers="rows"
               />
-            </XDSVStack>
+            </VStack>
 
-            <XDSDivider />
+            <Divider />
 
-            <XDSVStack gap={4}>
-              <XDSHeading level={2}>Examples</XDSHeading>
-              <XDSText type="large" weight="normal">
+            <VStack gap={4}>
+              <Heading level={2}>Examples</Heading>
+              <Text type="large" weight="normal">
                 Explore common configurations, variations, and states for this
                 component.
-              </XDSText>
-            </XDSVStack>
-            <XDSVStack gap={8}>
+              </Text>
+            </VStack>
+            <VStack gap={8}>
               {docs.examples.map((example, i) => {
                 const tabKey = `${activeNav}-${i}`;
                 const activeTab = exampleTabs[tabKey] ?? 'description';
                 return (
-                  <XDSCard key={i} padding={0}>
-                    <XDSSection padding={3} variant="transparent">
-                      <XDSHStack gap={3} vAlign="center">
-                        <XDSStackItem size="fill">
-                          <XDSText type="body" weight="medium">
+                  <Card key={i} padding={0}>
+                    <Section padding={3} variant="transparent">
+                      <HStack gap={3} vAlign="center">
+                        <StackItem size="fill">
+                          <Text type="body" weight="medium">
                             {example.title}
-                          </XDSText>
-                        </XDSStackItem>
-                        <XDSHStack gap={1} vAlign="center">
-                          <XDSButton
+                          </Text>
+                        </StackItem>
+                        <HStack gap={1} vAlign="center">
+                          <Button
                             label="Open in Craft"
                             variant="ghost"
                             size="sm"
-                            icon={<XDSIcon icon={ArrowTopRightOnSquareIcon} />}
+                            icon={<Icon icon={ArrowTopRightOnSquareIcon} />}
                           />
-                          <XDSButton
+                          <Button
                             label="Send to CLI"
                             variant="ghost"
                             size="sm"
                           />
-                          <XDSIconButton
+                          <IconButton
                             label="Fullscreen"
                             variant="ghost"
                             size="sm"
-                            icon={<XDSIcon icon={ArrowsPointingOutIcon} />}
+                            icon={<Icon icon={ArrowsPointingOutIcon} />}
                           />
-                        </XDSHStack>
-                      </XDSHStack>
-                    </XDSSection>
-                    <XDSCenter height={280}>
+                        </HStack>
+                      </HStack>
+                    </Section>
+                    <Center height={280}>
                       {previews[i] ?? (
-                        <XDSText type="supporting" color="secondary">
+                        <Text type="supporting" color="secondary">
                           Preview coming soon
-                        </XDSText>
+                        </Text>
                       )}
-                    </XDSCenter>
-                    <XDSSection variant="muted" padding={3} dividers={['top']}>
-                      <XDSVStack gap={3}>
-                        <XDSTabList
+                    </Center>
+                    <Section variant="muted" padding={3} dividers={['top']}>
+                      <VStack gap={3}>
+                        <TabList
                           value={activeTab}
                           onChange={value =>
                             setExampleTabs(prev => ({...prev, [tabKey]: value}))
                           }
                           size="sm"
                           xstyle={styles.tabListFlush}>
-                          <XDSTab value="description" label="Description" />
-                          <XDSTab value="code" label="Code" />
-                        </XDSTabList>
+                          <Tab value="description" label="Description" />
+                          <Tab value="code" label="Code" />
+                        </TabList>
                         {activeTab === 'description' ? (
-                          <XDSText type="body">{example.description}</XDSText>
+                          <Text type="body">{example.description}</Text>
                         ) : (
-                          <XDSCodeBlock code={example.code} language="tsx" />
+                          <CodeBlock code={example.code} language="tsx" />
                         )}
-                      </XDSVStack>
-                    </XDSSection>
-                  </XDSCard>
+                      </VStack>
+                    </Section>
+                  </Card>
                 );
               })}
-            </XDSVStack>
-          </XDSVStack>
-        </XDSLayoutContent>
+            </VStack>
+          </VStack>
+        </LayoutContent>
       }
     />
   );
@@ -711,11 +711,11 @@ export default function DesignDocumentationPage() {
     <ComponentDetailView
       activeNav={activePage}
       nav={
-        <XDSSideNav header={<XDSSideNavHeading heading="Product Name" />}>
+        <SideNav header={<SideNavHeading heading="Product Name" />}>
           {COMPONENT_CATEGORIES.map(category => (
-            <XDSSideNavSection key={category.label} title={category.label}>
+            <SideNavSection key={category.label} title={category.label}>
               {category.items.map(item => (
-                <XDSSideNavItem
+                <SideNavItem
                   key={item.key}
                   label={item.name}
                   isSelected={activePage === item.key}
@@ -726,9 +726,9 @@ export default function DesignDocumentationPage() {
                   }
                 />
               ))}
-            </XDSSideNavSection>
+            </SideNavSection>
           ))}
-        </XDSSideNav>
+        </SideNav>
       }
     />
   );

@@ -2,38 +2,38 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSChatLayout,
-  XDSChatMessageList,
-  XDSChatMessage,
-  XDSChatMessageBubble,
-  XDSChatMessageMetadata,
-  XDSChatSystemMessage,
-  XDSChatComposer,
-  XDSChatComposerDrawer,
-  XDSChatComposerInput,
-  XDSChatTokenizedText,
-  XDSChatToolCalls,
-  type XDSChatComposerInputHandle,
-  type XDSChatComposerToken,
-  type XDSChatComposerTrigger,
-  type XDSChatToolCallItem,
+  ChatLayout,
+  ChatMessageList,
+  ChatMessage,
+  ChatMessageBubble,
+  ChatMessageMetadata,
+  ChatSystemMessage,
+  ChatComposer,
+  ChatComposerDrawer,
+  ChatComposerInput,
+  ChatTokenizedText,
+  ChatToolCalls,
+  type ChatComposerInputHandle,
+  type ChatComposerToken,
+  type ChatComposerTrigger,
+  type ChatToolCallItem,
 } from '@xds/core/Chat';
-import {XDSMarkdown} from '@xds/core/Markdown';
-import {XDSToken} from '@xds/core/Token';
-import {XDSButton} from '@xds/core/Button';
-import {XDSTimestamp} from '@xds/core/Timestamp';
+import {Markdown} from '@xds/core/Markdown';
+import {Token} from '@xds/core/Token';
+import {Button} from '@xds/core/Button';
+import {Timestamp} from '@xds/core/Timestamp';
 import {HandThumbUpIcon, HandThumbDownIcon} from '@heroicons/react/24/outline';
 import {ClipboardDocumentIcon} from '@heroicons/react/24/outline';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
-import {XDSProgressBar} from '@xds/core/ProgressBar';
-import {useXDSTooltip} from '@xds/core/Tooltip';
+import {CodeBlock} from '@xds/core/CodeBlock';
+import {ProgressBar} from '@xds/core/ProgressBar';
+import {useTooltip} from '@xds/core/Tooltip';
 import {createStaticSource} from '@xds/core/Typeahead';
-import {XDSEmptyState} from '@xds/core/EmptyState';
+import {EmptyState} from '@xds/core/EmptyState';
 import {useState, useCallback, useRef} from 'react';
 
-const meta: Meta<typeof XDSChatLayout> = {
+const meta: Meta<typeof ChatLayout> = {
   title: 'Core/ChatLayout',
-  component: XDSChatLayout,
+  component: ChatLayout,
   tags: ['autodocs'],
   parameters: {layout: 'fullscreen'},
 };
@@ -108,7 +108,7 @@ type Message =
       role: 'user';
       text: string;
       files?: string[];
-      tokens?: XDSChatComposerToken[];
+      tokens?: ChatComposerToken[];
       isSending?: boolean;
       sentAt?: Date;
     }
@@ -117,7 +117,7 @@ type Message =
       role: 'assistant';
       text: string;
       introText?: string;
-      toolCalls?: XDSChatToolCallItem[];
+      toolCalls?: ChatToolCallItem[];
       isStreaming?: boolean;
     }
   | {id: number; role: 'system'; text: string};
@@ -134,12 +134,12 @@ const SEED_MESSAGES: Message[] = [
     id: 3,
     role: 'assistant',
     introText: "I'll read the Button component and check the focus styles.",
-    text: "I'll read the Button component and check the focus styles.\n\nAdded a `:focus-visible` style with a 2px solid outline and 2px offset. All 24 Button tests pass.\n\n```css\n:focus-visible {\n  outline: 2px solid var(--color-ring-focus);\n  outline-offset: 2px;\n}\n```\n\nHere's the test breakdown:\n\n| Suite | Tests | Duration | Status |\n|-------|-------|----------|--------|\n| XDSButton.test.tsx | 18 | 1.2s | ✓ Pass |\n| XDSButton.a11y.test.tsx | 4 | 0.8s | ✓ Pass |\n| XDSButton.snapshot.test.tsx | 2 | 0.3s | ✓ Pass |\n\nThe focus ring meets **WCAG 2.4.7** requirements and uses the theme's focus color token.",
+    text: "I'll read the Button component and check the focus styles.\n\nAdded a `:focus-visible` style with a 2px solid outline and 2px offset. All 24 Button tests pass.\n\n```css\n:focus-visible {\n  outline: 2px solid var(--color-ring-focus);\n  outline-offset: 2px;\n}\n```\n\nHere's the test breakdown:\n\n| Suite | Tests | Duration | Status |\n|-------|-------|----------|--------|\n| Button.test.tsx | 18 | 1.2s | ✓ Pass |\n| Button.a11y.test.tsx | 4 | 0.8s | ✓ Pass |\n| Button.snapshot.test.tsx | 2 | 0.3s | ✓ Pass |\n\nThe focus ring meets **WCAG 2.4.7** requirements and uses the theme's focus color token.",
     toolCalls: [
       {
         key: '1',
         name: 'read',
-        target: 'XDSButton.tsx',
+        target: 'Button.tsx',
         status: 'complete',
         duration: '45ms',
         node: 'xds',
@@ -147,14 +147,14 @@ const SEED_MESSAGES: Message[] = [
       {
         key: '2',
         name: 'edit',
-        target: 'XDSButton.tsx',
+        target: 'Button.tsx',
         status: 'complete',
         duration: '120ms',
         node: 'xds',
         additions: 8,
         deletions: 2,
         resultDetail: (
-          <XDSCodeBlock
+          <CodeBlock
             code={`:focus-visible {\n  outline: 2px solid var(--color-ring-focus);\n  outline-offset: 2px;\n}`}
             language="css"
           />
@@ -168,7 +168,7 @@ const SEED_MESSAGES: Message[] = [
         duration: '6.1s',
         node: 'xds',
         resultDetail: (
-          <XDSCodeBlock
+          <CodeBlock
             code={`$ yarn test\n✓ 24 tests passed (3 suites)`}
             language="bash"
           />
@@ -196,8 +196,8 @@ export const FullAIChat: StoryObj = {
     const [files, setFiles] = useState<string[]>([]);
     const [isStreaming, setIsStreaming] = useState(false);
     const streamRef = useRef<ReturnType<typeof setInterval>>(undefined);
-    const inputRef = useRef<XDSChatComposerInputHandle>(null);
-    const contextTooltip = useXDSTooltip({placement: 'above'});
+    const inputRef = useRef<ChatComposerInputHandle>(null);
+    const contextTooltip = useTooltip({placement: 'above'});
 
     const mentionTokens = CONTACTS.map(c => ({
       value: `@${c.id}`,
@@ -205,7 +205,7 @@ export const FullAIChat: StoryObj = {
       variant: 'blue' as const,
     }));
 
-    const triggers: XDSChatComposerTrigger[] = [
+    const triggers: ChatComposerTrigger[] = [
       {
         character: '@',
         searchSource: createStaticSource(CONTACTS),
@@ -226,7 +226,7 @@ export const FullAIChat: StoryObj = {
       (
         introText: string,
         resultText: string,
-        toolCalls?: XDSChatToolCallItem[],
+        toolCalls?: ChatToolCallItem[],
       ) => {
         const msgId = Date.now();
         setIsStreaming(true);
@@ -327,7 +327,7 @@ export const FullAIChat: StoryObj = {
     );
 
     // Simulate backend token resolution — extract @mentions from text
-    const resolveTokens = (text: string): XDSChatComposerToken[] =>
+    const resolveTokens = (text: string): ChatComposerToken[] =>
       CONTACTS.filter(c => text.includes(`@${c.id}`)).map(c => ({
         value: `@${c.id}`,
         label: `@${c.label}`,
@@ -366,7 +366,7 @@ export const FullAIChat: StoryObj = {
               {
                 key: 'r1',
                 name: 'read',
-                target: 'XDSCard.tsx',
+                target: 'Card.tsx',
                 status: 'complete',
                 duration: '35ms',
                 node: 'xds',
@@ -374,7 +374,7 @@ export const FullAIChat: StoryObj = {
               {
                 key: 'e1',
                 name: 'edit',
-                target: 'XDSCard.tsx',
+                target: 'Card.tsx',
                 status: 'complete',
                 duration: '90ms',
                 node: 'xds',
@@ -409,26 +409,26 @@ export const FullAIChat: StoryObj = {
     }, []);
 
     const composerEl = (
-      <XDSChatComposer
+      <ChatComposer
         onSubmit={handleSubmit}
         onStop={handleStop}
         isStopShown={isStreaming}
         drawer={
           files.length > 0 ? (
-            <XDSChatComposerDrawer>
+            <ChatComposerDrawer>
               {files.map(f => (
-                <XDSToken
+                <Token
                   key={f}
                   label={f}
                   onRemove={() => setFiles(prev => prev.filter(x => x !== f))}
                 />
               ))}
-            </XDSChatComposerDrawer>
+            </ChatComposerDrawer>
           ) : undefined
         }
         headerActions={
           <>
-            <XDSButton
+            <Button
               label="Mention"
               variant="ghost"
               size="sm"
@@ -439,7 +439,7 @@ export const FullAIChat: StoryObj = {
                 inputRef.current?.insertText('@');
               }}
             />
-            <XDSButton
+            <Button
               label="Attach"
               variant="ghost"
               size="sm"
@@ -453,7 +453,7 @@ export const FullAIChat: StoryObj = {
         }
         headerContext={
           <>
-            <XDSProgressBar
+            <ProgressBar
               ref={contextTooltip.ref}
               aria-describedby={contextTooltip.describedBy}
               label="Context"
@@ -466,17 +466,17 @@ export const FullAIChat: StoryObj = {
           </>
         }
         input={
-          <XDSChatComposerInput
+          <ChatComposerInput
             handleRef={inputRef}
             triggers={triggers}
             placeholder="Ask about the codebase..."
           />
         }
         footerActions={
-          <XDSButton label="Claude Opus" variant="ghost" size="md" />
+          <Button label="Claude Opus" variant="ghost" size="md" />
         }
         sendActions={
-          <XDSButton
+          <Button
             label="Microphone"
             variant="ghost"
             size="md"
@@ -489,31 +489,31 @@ export const FullAIChat: StoryObj = {
 
     return (
       <div style={{height: '100vh', display: 'flex', flexDirection: 'column'}}>
-        <XDSChatLayout composer={composerEl}>
-          <XDSChatMessageList>
+        <ChatLayout composer={composerEl}>
+          <ChatMessageList>
             {messages.map(msg => {
               if (msg.role === 'system') {
                 return (
-                  <XDSChatSystemMessage key={msg.id} variant="divider">
+                  <ChatSystemMessage key={msg.id} variant="divider">
                     {msg.text}
-                  </XDSChatSystemMessage>
+                  </ChatSystemMessage>
                 );
               }
               if (msg.role === 'user') {
                 return (
-                  <XDSChatMessage key={msg.id} sender="user">
+                  <ChatMessage key={msg.id} sender="user">
                     {msg.files && (
-                      <XDSChatComposerDrawer>
+                      <ChatComposerDrawer>
                         {msg.files.map(f => (
-                          <XDSToken key={f} label={f} />
+                          <Token key={f} label={f} />
                         ))}
-                      </XDSChatComposerDrawer>
+                      </ChatComposerDrawer>
                     )}
-                    <XDSChatMessageBubble
+                    <ChatMessageBubble
                       metadata={
-                        <XDSChatMessageMetadata
+                        <ChatMessageMetadata
                           timestamp={
-                            <XDSTimestamp
+                            <Timestamp
                               value={
                                 msg.sentAt?.toISOString() ??
                                 new Date(msg.id).toISOString()
@@ -524,11 +524,11 @@ export const FullAIChat: StoryObj = {
                           status={msg.isSending ? 'sending' : undefined}
                         />
                       }>
-                      <XDSChatTokenizedText tokens={mentionTokens}>
+                      <ChatTokenizedText tokens={mentionTokens}>
                         {msg.text}
-                      </XDSChatTokenizedText>
-                    </XDSChatMessageBubble>
-                  </XDSChatMessage>
+                      </ChatTokenizedText>
+                    </ChatMessageBubble>
+                  </ChatMessage>
                 );
               }
               {
@@ -545,20 +545,20 @@ export const FullAIChat: StoryObj = {
                     ? msg.text
                     : null;
               return (
-                <XDSChatMessage key={msg.id} sender="assistant">
+                <ChatMessage key={msg.id} sender="assistant">
                   {introContent && (
-                    <XDSMarkdown density="compact">{introContent}</XDSMarkdown>
+                    <Markdown density="compact">{introContent}</Markdown>
                   )}
                   {hasToolCalls && (
-                    <XDSChatToolCalls calls={msg.toolCalls ?? []} />
+                    <ChatToolCalls calls={msg.toolCalls ?? []} />
                   )}
                   {restContent && (
-                    <XDSMarkdown density="compact">{restContent}</XDSMarkdown>
+                    <Markdown density="compact">{restContent}</Markdown>
                   )}
                   {!msg.isStreaming && msg.text && (
-                    <XDSChatMessageMetadata
+                    <ChatMessageMetadata
                       timestamp={
-                        <XDSTimestamp
+                        <Timestamp
                           value={new Date(msg.id).toISOString()}
                           format="time"
                         />
@@ -567,7 +567,7 @@ export const FullAIChat: StoryObj = {
                         <>
                           <span>Claude Opus 4.6</span>
                           <span>·</span>
-                          <XDSButton
+                          <Button
                             label="Thumbs up"
                             icon={
                               <HandThumbUpIcon
@@ -578,7 +578,7 @@ export const FullAIChat: StoryObj = {
                             size="sm"
                             isIconOnly
                           />
-                          <XDSButton
+                          <Button
                             label="Thumbs down"
                             icon={
                               <HandThumbDownIcon
@@ -589,7 +589,7 @@ export const FullAIChat: StoryObj = {
                             size="sm"
                             isIconOnly
                           />
-                          <XDSButton
+                          <Button
                             label="Copy"
                             icon={
                               <ClipboardDocumentIcon
@@ -604,11 +604,11 @@ export const FullAIChat: StoryObj = {
                       }
                     />
                   )}
-                </XDSChatMessage>
+                </ChatMessage>
               );
             })}
-          </XDSChatMessageList>
-        </XDSChatLayout>
+          </ChatMessageList>
+        </ChatLayout>
       </div>
     );
   },
@@ -622,7 +622,7 @@ export const PanelView: StoryObj = {
     const [files, setFiles] = useState<string[]>([]);
     const [isStreaming, setIsStreaming] = useState(false);
     const streamRef = useRef<ReturnType<typeof setInterval>>(undefined);
-    const inputRef = useRef<XDSChatComposerInputHandle>(null);
+    const inputRef = useRef<ChatComposerInputHandle>(null);
 
     const mentionTokens = CONTACTS.map(c => ({
       value: `@${c.id}`,
@@ -630,7 +630,7 @@ export const PanelView: StoryObj = {
       variant: 'blue' as const,
     }));
 
-    const triggers: XDSChatComposerTrigger[] = [
+    const triggers: ChatComposerTrigger[] = [
       {
         character: '@',
         searchSource: createStaticSource(CONTACTS),
@@ -717,26 +717,26 @@ export const PanelView: StoryObj = {
     }, []);
 
     const composerEl = (
-      <XDSChatComposer
+      <ChatComposer
         onSubmit={handleSubmit}
         onStop={handleStop}
         isStopShown={isStreaming}
         drawer={
           files.length > 0 ? (
-            <XDSChatComposerDrawer>
+            <ChatComposerDrawer>
               {files.map(f => (
-                <XDSToken
+                <Token
                   key={f}
                   label={f}
                   onRemove={() => setFiles(prev => prev.filter(x => x !== f))}
                 />
               ))}
-            </XDSChatComposerDrawer>
+            </ChatComposerDrawer>
           ) : undefined
         }
         headerActions={
           <>
-            <XDSButton
+            <Button
               label="Mention"
               variant="ghost"
               size="sm"
@@ -747,7 +747,7 @@ export const PanelView: StoryObj = {
                 inputRef.current?.insertText('@');
               }}
             />
-            <XDSButton
+            <Button
               label="Attach"
               variant="ghost"
               size="sm"
@@ -760,7 +760,7 @@ export const PanelView: StoryObj = {
           </>
         }
         input={
-          <XDSChatComposerInput
+          <ChatComposerInput
             handleRef={inputRef}
             triggers={triggers}
             placeholder="Ask something..."
@@ -778,72 +778,72 @@ export const PanelView: StoryObj = {
           borderRadius: 8,
           overflow: 'hidden',
         }}>
-        <XDSChatLayout composer={composerEl}>
-          <XDSChatMessageList>
+        <ChatLayout composer={composerEl}>
+          <ChatMessageList>
             {messages.map(msg => {
               if (msg.role === 'system') {
                 return (
-                  <XDSChatSystemMessage key={msg.id} variant="divider">
+                  <ChatSystemMessage key={msg.id} variant="divider">
                     {msg.text}
-                  </XDSChatSystemMessage>
+                  </ChatSystemMessage>
                 );
               }
               if (msg.role === 'user') {
                 return (
-                  <XDSChatMessage key={msg.id} sender="user">
+                  <ChatMessage key={msg.id} sender="user">
                     {msg.files && (
-                      <XDSChatComposerDrawer>
+                      <ChatComposerDrawer>
                         {msg.files.map(f => (
-                          <XDSToken key={f} label={f} />
+                          <Token key={f} label={f} />
                         ))}
-                      </XDSChatComposerDrawer>
+                      </ChatComposerDrawer>
                     )}
-                    <XDSChatMessageBubble>
-                      <XDSChatTokenizedText tokens={mentionTokens}>
+                    <ChatMessageBubble>
+                      <ChatTokenizedText tokens={mentionTokens}>
                         {msg.text}
-                      </XDSChatTokenizedText>
-                    </XDSChatMessageBubble>
-                  </XDSChatMessage>
+                      </ChatTokenizedText>
+                    </ChatMessageBubble>
+                  </ChatMessage>
                 );
               }
               return (
-                <XDSChatMessage key={msg.id} sender="assistant">
+                <ChatMessage key={msg.id} sender="assistant">
                   {msg.text && (
-                    <XDSMarkdown density="compact">{msg.text}</XDSMarkdown>
+                    <Markdown density="compact">{msg.text}</Markdown>
                   )}
                   {msg.toolCalls && msg.toolCalls.length > 0 && (
-                    <XDSChatToolCalls calls={msg.toolCalls ?? []} />
+                    <ChatToolCalls calls={msg.toolCalls ?? []} />
                   )}
-                </XDSChatMessage>
+                </ChatMessage>
               );
             })}
-          </XDSChatMessageList>
-        </XDSChatLayout>
+          </ChatMessageList>
+        </ChatLayout>
       </div>
     );
   },
 };
 
-/** Empty state using XDSEmptyState */
+/** Empty state using EmptyState */
 export const WithEmptyState: StoryObj = {
   name: 'Empty State',
   render: () => (
     <div style={{height: '100vh', display: 'flex', flexDirection: 'column'}}>
-      <XDSChatLayout
+      <ChatLayout
         composer={
-          <XDSChatComposer
+          <ChatComposer
             onSubmit={() => {}}
             placeholder="Start a conversation…"
           />
         }
         emptyState={
-          <XDSEmptyState
+          <EmptyState
             title="No messages yet"
             description="Start a conversation by typing below."
           />
         }>
         {[]}
-      </XDSChatLayout>
+      </ChatLayout>
     </div>
   ),
 };

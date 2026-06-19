@@ -3,19 +3,19 @@
 'use client';
 
 import {
-  XDSDialog,
-  XDSDialogHeader,
-  useXDSImperativeDialog,
+  Dialog,
+  DialogHeader,
+  useImperativeDialog,
 } from '@xds/core/Dialog';
 import {
-  XDSLayout,
-  XDSLayoutContent,
-  XDSLayoutFooter,
-  XDSHStack,
-  XDSVStack,
+  Layout,
+  LayoutContent,
+  LayoutFooter,
+  HStack,
+  VStack,
 } from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Text} from '@xds/core/Text';
 
 const TERMS = [
   'You agree to use the service only for lawful purposes and in compliance with all applicable laws and regulations in your jurisdiction.',
@@ -37,31 +37,31 @@ const TERMS = [
 
 function Content({onClose}: {onClose: () => void}) {
   return (
-    <XDSLayout
+    <Layout
       header={
-        <XDSDialogHeader
+        <DialogHeader
           title="Terms and Conditions"
           onOpenChange={() => onClose()}
         />
       }
       content={
-        <XDSLayoutContent>
-          <XDSVStack gap={3}>
+        <LayoutContent>
+          <VStack gap={3}>
             {TERMS.map((term, i) => (
-              <XDSText type="body" key={i}>
+              <Text type="body" key={i}>
                 {i + 1}. {term}
-              </XDSText>
+              </Text>
             ))}
-          </XDSVStack>
-        </XDSLayoutContent>
+          </VStack>
+        </LayoutContent>
       }
       footer={
-        <XDSLayoutFooter>
-          <XDSHStack gap={2} hAlign="end">
-            <XDSButton label="Decline" variant="secondary" onClick={onClose} />
-            <XDSButton label="Accept" variant="primary" onClick={onClose} />
-          </XDSHStack>
-        </XDSLayoutFooter>
+        <LayoutFooter>
+          <HStack gap={2} hAlign="end">
+            <Button label="Decline" variant="secondary" onClick={onClose} />
+            <Button label="Accept" variant="primary" onClick={onClose} />
+          </HStack>
+        </LayoutFooter>
       }
     />
   );
@@ -69,15 +69,15 @@ function Content({onClose}: {onClose: () => void}) {
 
 // Remove isInline for production — dialogs should be modal.
 export default function DialogScrollingContent() {
-  const dialog = useXDSImperativeDialog({maxHeight: '50vh'});
+  const dialog = useImperativeDialog({maxHeight: '50vh'});
 
   return (
     <>
-      <XDSDialog isOpen isInline onOpenChange={() => {}} maxHeight={360}>
+      <Dialog isOpen isInline onOpenChange={() => {}} maxHeight={360}>
         <Content
           onClose={() => dialog.show(<Content onClose={() => dialog.hide()} />)}
         />
-      </XDSDialog>
+      </Dialog>
       {dialog.element}
     </>
   );

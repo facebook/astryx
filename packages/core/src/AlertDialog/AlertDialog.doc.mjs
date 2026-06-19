@@ -21,7 +21,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'AlertDialog asks the user to confirm a destructive or irreversible action before it happens. Use it for things like deleting content, revoking access, or discarding unsaved changes.\n\nFor cases where you want to show an alert without managing open state, use the `useXDSImperativeAlertDialog` hook: call `alert.show(options)` and render `alert.element` in your tree.',
+      'AlertDialog asks the user to confirm a destructive or irreversible action before it happens. Use it for things like deleting content, revoking access, or discarding unsaved changes.\n\nFor cases where you want to show an alert without managing open state, use the `useImperativeAlertDialog` hook: call `alert.show(options)` and render `alert.element` in your tree.',
     bestPractices: [
       {guidance: true, description: 'Make the action button label specific: "Delete project" is better than "OK" or "Confirm".'},
       {guidance: true, description: 'Describe what will happen in the description so the user knows the consequences before confirming.'},
@@ -84,7 +84,7 @@ export const docs = {
     },
     {
       name: 'actionVariant',
-      type: 'XDSButtonVariant',
+      type: 'ButtonVariant',
       default: "'destructive'",
       description: 'Action button variant.',
     },
@@ -107,7 +107,7 @@ export const docs = {
     },
   ],
   components: [
-    {name: 'useXDSImperativeAlertDialog'},
+    {name: 'useImperativeAlertDialog'},
   ],
 };
 
@@ -116,7 +116,7 @@ export const docsDense = {
   description: 'Confirms destructive/irreversible action before it happens (delete, revoke access, discard unsaved changes).',
   usage: {
     description:
-      'AlertDialog confirms destructive/irreversible action (delete, revoke access, discard changes). To show w/o managing open state, use useXDSImperativeAlertDialog hook: call alert.show(options) + render alert.element in tree.',
+      'AlertDialog confirms destructive/irreversible action (delete, revoke access, discard changes). To show w/o managing open state, use useImperativeAlertDialog hook: call alert.show(options) + render alert.element in tree.',
     bestPractices: [
       {guidance: true, description: 'Make action button label specific: "Delete project" > "OK"/"Confirm".'},
       {guidance: true, description: 'Describe consequences in description so user knows outcome before confirming.'},

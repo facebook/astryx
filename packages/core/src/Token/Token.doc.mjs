@@ -30,7 +30,7 @@ export const docs = {
       name: 'icon',
       type: 'ReactNode',
       description: 'Optional icon rendered before the label.',
-      slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
+      slotElements: [{__element: 'Icon', props: {icon: 'check', size: 'sm'}}],
     },
     {
       name: 'isDisabled',
@@ -69,8 +69,8 @@ export const docs = {
       description:
         'Content rendered after the label and before the remove button.',
       slotElements: [
-        {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
-        {__element: 'XDSBadge', props: {label: '3'}},
+        {__element: 'Icon', props: {icon: 'chevronDown', size: 'sm'}},
+        {__element: 'Badge', props: {label: '3'}},
       ],
     },
     {

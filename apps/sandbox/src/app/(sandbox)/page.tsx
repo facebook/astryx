@@ -4,13 +4,13 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSLayout, XDSLayoutHeader, XDSLayoutContent} from '@xds/core/Layout';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSVStack} from '@xds/core/Stack';
-import {XDSDivider} from '@xds/core/Divider';
+import {Text, Heading} from '@xds/core/Text';
+import {Layout, LayoutHeader, LayoutContent} from '@xds/core/Layout';
+import {TextInput} from '@xds/core/TextInput';
+import {ToggleButton, ToggleButtonGroup} from '@xds/core/ToggleButton';
+import {Grid} from '@xds/core/Grid';
+import {VStack} from '@xds/core/Stack';
+import {Divider} from '@xds/core/Divider';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {categories} from '../sandboxPages';
 import {ProjectCard} from '../ProjectCard';
@@ -80,17 +80,17 @@ export default function Home() {
   }, [activeTab, filtered]);
 
   return (
-    <XDSLayout
+    <Layout
       header={
-        <XDSLayoutHeader hasDivider padding={6}>
-          <XDSHeading level={1}>XDS Sandbox</XDSHeading>
-        </XDSLayoutHeader>
+        <LayoutHeader hasDivider padding={6}>
+          <Heading level={1}>XDS Sandbox</Heading>
+        </LayoutHeader>
       }
       content={
-        <XDSLayoutContent padding={6}>
-          <XDSVStack gap={6}>
-            <XDSVStack gap={4}>
-              <XDSTextInput
+        <LayoutContent padding={6}>
+          <VStack gap={6}>
+            <VStack gap={4}>
+              <TextInput
                 label="Search"
                 isLabelHidden
                 placeholder="Search..."
@@ -99,50 +99,50 @@ export default function Home() {
                 startIcon={SearchIcon}
                 size="lg"
               />
-              <XDSToggleButtonGroup
+              <ToggleButtonGroup
                 label="Filter by category"
                 value={activeTab}
                 onChange={v => setActiveTab(v ?? 'All')}>
                 {CATEGORY_FILTERS.map(cat => (
-                  <XDSToggleButton
+                  <ToggleButton
                     key={cat}
                     label={cat}
                     value={cat}
                     size="lg"
                   />
                 ))}
-              </XDSToggleButtonGroup>
-            </XDSVStack>
+              </ToggleButtonGroup>
+            </VStack>
 
             {filtered.length === 0 ? (
               <div {...stylex.props(styles.emptyState)}>
-                <XDSText type="supporting" color="secondary">
+                <Text type="supporting" color="secondary">
                   No results found.
-                </XDSText>
+                </Text>
               </div>
             ) : groupedSections != null ? (
-              <XDSVStack gap={6}>
+              <VStack gap={6}>
                 {groupedSections.flatMap(section => [
-                  <XDSDivider key={`d-${section.category}`} />,
-                  <XDSVStack gap={6} key={section.category}>
-                    <XDSHeading level={2}>{section.category}</XDSHeading>
-                    <XDSGrid columns={{minWidth: 320}} gap={4}>
+                  <Divider key={`d-${section.category}`} />,
+                  <VStack gap={6} key={section.category}>
+                    <Heading level={2}>{section.category}</Heading>
+                    <Grid columns={{minWidth: 320}} gap={4}>
                       {section.pages.map(page => (
                         <ProjectCard key={page.href} page={page} />
                       ))}
-                    </XDSGrid>
-                  </XDSVStack>,
+                    </Grid>
+                  </VStack>,
                 ])}
-              </XDSVStack>
+              </VStack>
             ) : (
-              <XDSGrid columns={{minWidth: 320}} gap={4}>
+              <Grid columns={{minWidth: 320}} gap={4}>
                 {filtered.map(page => (
                   <ProjectCard key={page.href} page={page} />
                 ))}
-              </XDSGrid>
+              </Grid>
             )}
-          </XDSVStack>
-        </XDSLayoutContent>
+          </VStack>
+        </LayoutContent>
       }
     />
   );

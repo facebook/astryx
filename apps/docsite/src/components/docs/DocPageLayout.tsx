@@ -9,10 +9,10 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSSection} from '@xds/core/Section';
-import {XDSDivider} from '@xds/core/Divider';
+import {Text, Heading} from '@xds/core/Text';
+import {VStack} from '@xds/core/Layout';
+import {Section} from '@xds/core/Section';
+import {Divider} from '@xds/core/Divider';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
@@ -32,21 +32,21 @@ export function DocPageLayout({
   children: ReactNode;
 }) {
   return (
-    <XDSSection maxWidth={800} padding={6} xstyle={styles.section}>
-      <XDSVStack gap={10}>
-        <XDSVStack gap={4}>
-          <XDSHeading level={1} type="display-1">
+    <Section maxWidth={800} padding={6} xstyle={styles.section}>
+      <VStack gap={10}>
+        <VStack gap={4}>
+          <Heading level={1} type="display-1">
             {title}
-          </XDSHeading>
+          </Heading>
           {description ? (
-            <XDSText type="large" weight="normal" color="secondary">
+            <Text type="large" weight="normal" color="secondary">
               {description}
-            </XDSText>
+            </Text>
           ) : null}
-          <XDSDivider />
-        </XDSVStack>
+          <Divider />
+        </VStack>
         {children}
-      </XDSVStack>
-    </XDSSection>
+      </VStack>
+    </Section>
   );
 }

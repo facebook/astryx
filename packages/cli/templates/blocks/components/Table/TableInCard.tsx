@@ -2,11 +2,11 @@
 
 'use client';
 
-import {XDSTable, proportional} from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
-import {XDSCard} from '@xds/core/Card';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSHeading} from '@xds/core/Text';
+import {Table, proportional} from '@xds/core/Table';
+import type {TableColumn} from '@xds/core/Table';
+import {Card} from '@xds/core/Card';
+import {VStack} from '@xds/core/Layout';
+import {Heading} from '@xds/core/Text';
 
 interface User extends Record<string, unknown> {
   id: string;
@@ -27,7 +27,7 @@ const users: User[] = [
   {id: '4', name: 'Diana Prince', role: 'Engineer', email: 'diana@example.com'},
 ];
 
-const columns: XDSTableColumn<User>[] = [
+const columns: TableColumn<User>[] = [
   {key: 'name', header: 'Name', width: proportional(1)},
   {key: 'role', header: 'Role', width: proportional(1)},
   {key: 'email', header: 'Email', width: proportional(2)},
@@ -35,11 +35,11 @@ const columns: XDSTableColumn<User>[] = [
 
 export default function TableInCard() {
   return (
-    <XDSCard width={520}>
-      <XDSVStack gap={3}>
-        <XDSHeading level={3}>Team Members</XDSHeading>
-        <XDSTable data={users} columns={columns} idKey="id" hasHover />
-      </XDSVStack>
-    </XDSCard>
+    <Card width={520}>
+      <VStack gap={3}>
+        <Heading level={3}>Team Members</Heading>
+        <Table data={users} columns={columns} idKey="id" hasHover />
+      </VStack>
+    </Card>
   );
 }

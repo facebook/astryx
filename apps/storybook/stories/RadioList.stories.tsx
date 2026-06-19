@@ -2,11 +2,11 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
+import {RadioList, RadioListItem} from '@xds/core/RadioList';
 
-const meta: Meta<typeof XDSRadioList> = {
+const meta: Meta<typeof RadioList> = {
   title: 'Core/RadioList',
-  component: XDSRadioList,
+  component: RadioList,
   tags: ['autodocs'],
   argTypes: {
     label: {
@@ -47,18 +47,18 @@ const meta: Meta<typeof XDSRadioList> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSRadioList>;
+type Story = StoryObj<typeof RadioList>;
 
 export const Default: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSRadioList {...restArgs} value={value} onChange={setValue}>
-        <XDSRadioListItem label="Email" value="email" />
-        <XDSRadioListItem label="SMS" value="sms" />
-        <XDSRadioListItem label="Push notification" value="push" />
-      </XDSRadioList>
+      <RadioList {...restArgs} value={value} onChange={setValue}>
+        <RadioListItem label="Email" value="email" />
+        <RadioListItem label="SMS" value="sms" />
+        <RadioListItem label="Push notification" value="push" />
+      </RadioList>
     );
   },
   args: {
@@ -71,23 +71,23 @@ export const WithDescription: Story = {
     const [value, setValue] = useState(args.value ?? '');
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSRadioList {...restArgs} value={value} onChange={setValue}>
-        <XDSRadioListItem
+      <RadioList {...restArgs} value={value} onChange={setValue}>
+        <RadioListItem
           label="Email"
           value="email"
           description="Receive notifications via email"
         />
-        <XDSRadioListItem
+        <RadioListItem
           label="SMS"
           value="sms"
           description="Standard messaging rates apply"
         />
-        <XDSRadioListItem
+        <RadioListItem
           label="Push notification"
           value="push"
           description="Instant alerts on your device"
         />
-      </XDSRadioList>
+      </RadioList>
     );
   },
   args: {
@@ -101,11 +101,11 @@ export const Horizontal: Story = {
     const [value, setValue] = useState(args.value ?? '');
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSRadioList {...restArgs} value={value} onChange={setValue}>
-        <XDSRadioListItem label="Small" value="sm" />
-        <XDSRadioListItem label="Medium" value="md" />
-        <XDSRadioListItem label="Large" value="lg" />
-      </XDSRadioList>
+      <RadioList {...restArgs} value={value} onChange={setValue}>
+        <RadioListItem label="Small" value="sm" />
+        <RadioListItem label="Medium" value="md" />
+        <RadioListItem label="Large" value="lg" />
+      </RadioList>
     );
   },
   args: {
@@ -119,11 +119,11 @@ export const Disabled: Story = {
     const [value, setValue] = useState(args.value ?? 'email');
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSRadioList {...restArgs} value={value} onChange={setValue}>
-        <XDSRadioListItem label="Email" value="email" />
-        <XDSRadioListItem label="SMS" value="sms" />
-        <XDSRadioListItem label="Push notification" value="push" />
-      </XDSRadioList>
+      <RadioList {...restArgs} value={value} onChange={setValue}>
+        <RadioListItem label="Email" value="email" />
+        <RadioListItem label="SMS" value="sms" />
+        <RadioListItem label="Push notification" value="push" />
+      </RadioList>
     );
   },
   args: {
@@ -137,11 +137,11 @@ export const DisabledItem: Story = {
     const [value, setValue] = useState(args.value ?? '');
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSRadioList {...restArgs} value={value} onChange={setValue}>
-        <XDSRadioListItem label="Email" value="email" />
-        <XDSRadioListItem label="SMS" value="sms" isDisabled />
-        <XDSRadioListItem label="Push notification" value="push" />
-      </XDSRadioList>
+      <RadioList {...restArgs} value={value} onChange={setValue}>
+        <RadioListItem label="Email" value="email" />
+        <RadioListItem label="SMS" value="sms" isDisabled />
+        <RadioListItem label="Push notification" value="push" />
+      </RadioList>
     );
   },
   args: {
@@ -154,11 +154,11 @@ export const Required: Story = {
     const [value, setValue] = useState(args.value ?? '');
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSRadioList {...restArgs} value={value} onChange={setValue}>
-        <XDSRadioListItem label="Email" value="email" />
-        <XDSRadioListItem label="SMS" value="sms" />
-        <XDSRadioListItem label="Push notification" value="push" />
-      </XDSRadioList>
+      <RadioList {...restArgs} value={value} onChange={setValue}>
+        <RadioListItem label="Email" value="email" />
+        <RadioListItem label="SMS" value="sms" />
+        <RadioListItem label="Push notification" value="push" />
+      </RadioList>
     );
   },
   args: {
@@ -172,11 +172,11 @@ export const Optional: Story = {
     const [value, setValue] = useState(args.value ?? '');
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSRadioList {...restArgs} value={value} onChange={setValue}>
-        <XDSRadioListItem label="Email" value="email" />
-        <XDSRadioListItem label="SMS" value="sms" />
-        <XDSRadioListItem label="Push notification" value="push" />
-      </XDSRadioList>
+      <RadioList {...restArgs} value={value} onChange={setValue}>
+        <RadioListItem label="Email" value="email" />
+        <RadioListItem label="SMS" value="sms" />
+        <RadioListItem label="Push notification" value="push" />
+      </RadioList>
     );
   },
   args: {
@@ -190,11 +190,11 @@ export const WithErrorStatus: Story = {
     const [value, setValue] = useState(args.value ?? '');
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSRadioList {...restArgs} value={value} onChange={setValue}>
-        <XDSRadioListItem label="Email" value="email" />
-        <XDSRadioListItem label="SMS" value="sms" />
-        <XDSRadioListItem label="Push notification" value="push" />
-      </XDSRadioList>
+      <RadioList {...restArgs} value={value} onChange={setValue}>
+        <RadioListItem label="Email" value="email" />
+        <RadioListItem label="SMS" value="sms" />
+        <RadioListItem label="Push notification" value="push" />
+      </RadioList>
     );
   },
   args: {
@@ -209,23 +209,23 @@ export const WithStartContent: Story = {
     const [value, setValue] = useState(args.value ?? '');
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSRadioList {...restArgs} value={value} onChange={setValue}>
-        <XDSRadioListItem
+      <RadioList {...restArgs} value={value} onChange={setValue}>
+        <RadioListItem
           label="Email"
           value="email"
           startContent={<span>📧</span>}
         />
-        <XDSRadioListItem
+        <RadioListItem
           label="SMS"
           value="sms"
           startContent={<span>💬</span>}
         />
-        <XDSRadioListItem
+        <RadioListItem
           label="Push notification"
           value="push"
           startContent={<span>🔔</span>}
         />
-      </XDSRadioList>
+      </RadioList>
     );
   },
   args: {
@@ -238,23 +238,23 @@ export const WithEndContent: Story = {
     const [value, setValue] = useState(args.value ?? '');
     const {value: _value, onChange: _onChange, ...restArgs} = args;
     return (
-      <XDSRadioList {...restArgs} value={value} onChange={setValue}>
-        <XDSRadioListItem
+      <RadioList {...restArgs} value={value} onChange={setValue}>
+        <RadioListItem
           label="Free"
           value="free"
           endContent={<span style={{color: '#0D8626'}}>$0/mo</span>}
         />
-        <XDSRadioListItem
+        <RadioListItem
           label="Pro"
           value="pro"
           endContent={<span style={{color: '#0064E0'}}>$9/mo</span>}
         />
-        <XDSRadioListItem
+        <RadioListItem
           label="Enterprise"
           value="enterprise"
           endContent={<span style={{color: '#5B08D8'}}>Custom</span>}
         />
-      </XDSRadioList>
+      </RadioList>
     );
   },
   args: {
@@ -276,47 +276,47 @@ export const AllVariations: Story = {
           gap: '24px',
           maxWidth: '400px',
         }}>
-        <XDSRadioList label="Unselected" value={value1} onChange={setValue1}>
-          <XDSRadioListItem label="Option A" value="a" />
-          <XDSRadioListItem label="Option B" value="b" />
-        </XDSRadioList>
-        <XDSRadioList label="Pre-selected" value={value2} onChange={setValue2}>
-          <XDSRadioListItem label="Email" value="email" />
-          <XDSRadioListItem label="SMS" value="sms" />
-        </XDSRadioList>
-        <XDSRadioList
+        <RadioList label="Unselected" value={value1} onChange={setValue1}>
+          <RadioListItem label="Option A" value="a" />
+          <RadioListItem label="Option B" value="b" />
+        </RadioList>
+        <RadioList label="Pre-selected" value={value2} onChange={setValue2}>
+          <RadioListItem label="Email" value="email" />
+          <RadioListItem label="SMS" value="sms" />
+        </RadioList>
+        <RadioList
           label="Disabled group"
           value=""
           onChange={() => {}}
           isDisabled>
-          <XDSRadioListItem label="Option A" value="a" />
-          <XDSRadioListItem label="Option B" value="b" />
-        </XDSRadioList>
-        <XDSRadioList
+          <RadioListItem label="Option A" value="a" />
+          <RadioListItem label="Option B" value="b" />
+        </RadioList>
+        <RadioList
           label="With descriptions"
           value={value3}
           onChange={setValue3}>
-          <XDSRadioListItem
+          <RadioListItem
             label="Email"
             value="email"
             description="Delivered to your inbox"
           />
-          <XDSRadioListItem
+          <RadioListItem
             label="SMS"
             value="sms"
             description="Standard rates apply"
           />
-        </XDSRadioList>
-        <XDSRadioList
+        </RadioList>
+        <RadioList
           label="Horizontal"
           value={value4}
           onChange={setValue4}
           orientation="horizontal">
-          <XDSRadioListItem label="S" value="sm" />
-          <XDSRadioListItem label="M" value="md" />
-          <XDSRadioListItem label="L" value="lg" />
-        </XDSRadioList>
-        <XDSRadioList
+          <RadioListItem label="S" value="sm" />
+          <RadioListItem label="M" value="md" />
+          <RadioListItem label="L" value="lg" />
+        </RadioList>
+        <RadioList
           label="With error"
           value=""
           onChange={() => {}}
@@ -325,9 +325,9 @@ export const AllVariations: Story = {
             type: 'error',
             message: 'Please select an option',
           }}>
-          <XDSRadioListItem label="Option A" value="a" />
-          <XDSRadioListItem label="Option B" value="b" />
-        </XDSRadioList>
+          <RadioListItem label="Option A" value="a" />
+          <RadioListItem label="Option B" value="b" />
+        </RadioList>
       </div>
     );
   },

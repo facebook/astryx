@@ -3,47 +3,46 @@
 'use client';
 
 import {
-  XDSChatMessageList,
-  XDSChatMessage,
-  XDSChatMessageBubble,
-  XDSChatMessageMetadata,
+  ChatMessageList,
+  ChatMessage,
+  ChatMessageBubble,
+  ChatMessageMetadata,
 } from '@xds/core/Chat';
-import {XDSTimestamp} from '@xds/core/Timestamp';
+import {Timestamp} from '@xds/core/Timestamp';
 
 export default function ChatMessageBubbleShowcase() {
   return (
-    <XDSChatMessageList style={{maxWidth: 600}}>
-      <XDSChatMessage sender="user">
-        <XDSChatMessageBubble group="first">
+    <ChatMessageList style={{maxWidth: 600}}>
+      <ChatMessage sender="user">
+        <ChatMessageBubble group="first">
           I just pushed the latest changes to the feature branch.
-        </XDSChatMessageBubble>
-        <XDSChatMessageBubble
+        </ChatMessageBubble>
+        <ChatMessageBubble
           group="last"
           metadata={
-            <XDSChatMessageMetadata
+            <ChatMessageMetadata
               timestamp={
-                <XDSTimestamp value="2026-04-10T09:15:00" format="time" />
+                <Timestamp value="2026-04-10T09:15:00" format="time" />
               }
               status="read"
             />
           }>
           Can you review when you get a chance?
-        </XDSChatMessageBubble>
-      </XDSChatMessage>
-
-      <XDSChatMessage sender="assistant">
-        <XDSChatMessageBubble
+        </ChatMessageBubble>
+      </ChatMessage>
+      <ChatMessage sender="assistant">
+        <ChatMessageBubble
           variant="ghost"
           metadata={
-            <XDSChatMessageMetadata
+            <ChatMessageMetadata
               timestamp={
-                <XDSTimestamp value="2026-04-10T09:16:00" format="time" />
+                <Timestamp value="2026-04-10T09:16:00" format="time" />
               }
             />
           }>
           The changes look great. Ship it!
-        </XDSChatMessageBubble>
-      </XDSChatMessage>
-    </XDSChatMessageList>
+        </ChatMessageBubble>
+      </ChatMessage>
+    </ChatMessageList>
   );
 }

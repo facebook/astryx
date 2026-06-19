@@ -6,7 +6,7 @@
  * @file useCalendarDays.ts
  * @input Uses React useMemo, PlainDate utilities
  * @output Exports useCalendarDays hook for generating calendar day grids
- * @position Calendar-specific hook; used by XDSCalendar
+ * @position Calendar-specific hook; used by Calendar
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Calendar/hooks/index.ts

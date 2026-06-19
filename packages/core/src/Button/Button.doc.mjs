@@ -88,7 +88,7 @@ export const docs = {
       type: 'ReactNode',
       description:
         'Icon element rendered before the label text.',
-      slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
+      slotElements: [{__element: 'Icon', props: {icon: 'check', size: 'sm'}}],
     },
     {
       name: 'isIconOnly',
@@ -101,16 +101,16 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        'Optional visible content. When provided, rendered instead of label as the visible text.',
+        'Optional override for visible text. When provided, displayed instead of label — but label is still required (it provides the accessible name). For most cases, just use label alone: <Button label="Save" />.',
     },
     {
       name: 'endContent',
-      type: 'ReactElement<XDSIconProps> | ReactElement<XDSBadgeProps>',
+      type: 'ReactElement<IconProps> | ReactElement<BadgeProps>',
       description:
         'Trailing icon or badge rendered after the label. Ignored when isIconOnly is true. Color is inherited from the button variant.',
       slotElements: [
-        {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
-        {__element: 'XDSBadge', props: {label: '3'}},
+        {__element: 'Icon', props: {icon: 'chevronDown', size: 'sm'}},
+        {__element: 'Badge', props: {label: '3'}},
       ],
     },
     {
@@ -198,12 +198,12 @@ export const docsZh = {
       default: 'false',
     },
     {name: 'icon', type: 'ReactNode', description: '图标元素。仅提供 icon 而不提供 children 时，按钮渲染为正方形的纯图标按钮。'},
-    {name: 'children', type: 'ReactNode', description: '按钮内容。与 icon 同时提供时，文本渲染在图标旁边。'},
+    {name: 'children', type: 'ReactNode', description: '可选的可见内容覆盖；label 仍然是必需的（用于无障碍名称）。大多数情况使用 <Button label="Save" />。'},
     {
       name: 'endContent',
-      type: 'ReactElement<XDSIconProps> | ReactElement<XDSBadgeProps>',
+      type: 'ReactElement<IconProps> | ReactElement<BadgeProps>',
       description:
-        '标签后方渲染的尾部图标或徽章。仅接受 <XDSIcon> 或 <XDSBadge>。纯图标按钮时忽略。颜色继承自按钮变体。',
+        '标签后方渲染的尾部图标或徽章。仅接受 <Icon> 或 <Badge>。纯图标按钮时忽略。颜色继承自按钮变体。',
     },
     {name: 'tooltip', type: 'string', description: '悬停时显示的提示文本。'},
     {name: 'onClick', type: '(e: MouseEvent) => void', description: '标准点击处理函数（从 ButtonHTMLAttributes 透传）。'},
@@ -264,7 +264,7 @@ export const docsDense = {
     isLoading: 'shows spinner+disables interaction; announces via live region',
     icon: 'icon element rendered before label text',
     isIconOnly: 'when true, renders square icon-only button; label becomes aria-label',
-    children: 'optional visible content; rendered instead of label when provided',
+    children: 'optional visible override; label is still required for a11y. Prefer <Button label="Save" /> over using children',
     endContent: 'trailing icon/badge after label; ignored when isIconOnly; color inherited',
     tooltip: 'tooltip on hover',
     onClick: 'standard click handler; fires before clickAction',

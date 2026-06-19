@@ -9,8 +9,8 @@ import {
 } from '../components/component-detail/parsePropType';
 
 describe('component detail prop controls', () => {
-  it('treats XDSInputStatus as an editable status object control', () => {
-    expect(parsePropType('XDSInputStatus', 'status')).toEqual({
+  it('treats InputStatus as an editable status object control', () => {
+    expect(parsePropType('InputStatus', 'status')).toEqual({
       kind: 'input-status',
       options: ['error', 'warning', 'success'],
       allowEmpty: true,
@@ -89,8 +89,8 @@ describe('component detail prop controls', () => {
     }
   });
 
-  it('derives XDSIconType options from the canonical icon registry', () => {
-    const control = parsePropType('XDSIconType', 'labelIcon');
+  it('derives IconType options from the canonical icon registry', () => {
+    const control = parsePropType('IconType', 'labelIcon');
 
     expect(control).toMatchObject({
       kind: 'enum',

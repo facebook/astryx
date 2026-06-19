@@ -4,8 +4,8 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSText} from '@xds/core/Text';
-import {XDSHStack, XDSStackItem} from '@xds/core/Stack';
+import {Text} from '@xds/core/Text';
+import {HStack, StackItem} from '@xds/core/Stack';
 import {getTokenLabel} from './helpers';
 
 const s = stylex.create({
@@ -35,16 +35,16 @@ export function TokenRow({
   input: ReactNode;
 }) {
   return (
-    <XDSHStack gap={3} vAlign="center" justify="between" xstyle={s.row}>
-      <XDSStackItem size="fill" xstyle={s.label}>
-        <XDSText type="body" color="primary" maxLines={1}>
+    <HStack gap={3} vAlign="center" justify="between" xstyle={s.row}>
+      <StackItem size="fill" xstyle={s.label}>
+        <Text type="body" color="primary" maxLines={1}>
           {getTokenLabel(tokenName)}
-        </XDSText>
-      </XDSStackItem>
-      <XDSHStack gap={2} vAlign="center" xstyle={s.controls}>
+        </Text>
+      </StackItem>
+      <HStack gap={2} vAlign="center" xstyle={s.controls}>
         {preview}
         {input}
-      </XDSHStack>
-    </XDSHStack>
+      </HStack>
+    </HStack>
   );
 }

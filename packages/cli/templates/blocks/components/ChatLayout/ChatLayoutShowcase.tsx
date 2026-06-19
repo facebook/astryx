@@ -3,42 +3,42 @@
 'use client';
 
 import {
-  XDSChatLayout,
-  XDSChatMessageList,
-  XDSChatMessage,
-  XDSChatMessageBubble,
-  XDSChatComposer,
-  XDSChatTokenizedText,
+  ChatLayout,
+  ChatMessageList,
+  ChatMessage,
+  ChatMessageBubble,
+  ChatComposer,
+  ChatTokenizedText,
 } from '@xds/core/Chat';
-import {XDSVStack} from '@xds/core/Stack';
+import {VStack} from '@xds/core/Stack';
 
 const TOKENS = [{value: '/review', label: '/review', variant: 'blue' as const}];
 
 export default function ChatLayoutShowcase() {
   return (
-    <XDSVStack width={450}>
-      <XDSChatLayout
+    <VStack width={450}>
+      <ChatLayout
         composer={
-          <XDSChatComposer
+          <ChatComposer
             onSubmit={() => {}}
             placeholder="Ask something..."
           />
         }>
-        <XDSChatMessageList>
-          <XDSChatMessage sender="user">
-            <XDSChatMessageBubble>
-              <XDSChatTokenizedText tokens={TOKENS}>
+        <ChatMessageList>
+          <ChatMessage sender="user">
+            <ChatMessageBubble>
+              <ChatTokenizedText tokens={TOKENS}>
                 /review the changes in this file
-              </XDSChatTokenizedText>
-            </XDSChatMessageBubble>
-          </XDSChatMessage>
-          <XDSChatMessage sender="assistant">
-            <XDSChatMessageBubble variant="ghost">
+              </ChatTokenizedText>
+            </ChatMessageBubble>
+          </ChatMessage>
+          <ChatMessage sender="assistant">
+            <ChatMessageBubble variant="ghost">
               Reading the file now...
-            </XDSChatMessageBubble>
-          </XDSChatMessage>
-        </XDSChatMessageList>
-      </XDSChatLayout>
-    </XDSVStack>
+            </ChatMessageBubble>
+          </ChatMessage>
+        </ChatMessageList>
+      </ChatLayout>
+    </VStack>
   );
 }

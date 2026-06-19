@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSFieldLabel} from '@xds/core/Field';
-import {XDSVStack} from '@xds/core/Layout';
+import {FieldLabel} from '@xds/core/Field';
+import {VStack} from '@xds/core/Layout';
 
 const LockIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -14,29 +14,29 @@ const LockIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function FieldLabelShowcase() {
   return (
-    <XDSVStack gap={4}>
-      <XDSFieldLabel
+    <VStack gap={4}>
+      <FieldLabel
         label="Email address"
         inputID="email-input"
         isRequired
       />
-      <XDSFieldLabel
+      <FieldLabel
         label="Phone number"
         inputID="phone-input"
         isOptional
         description="Include country code for international numbers"
       />
-      <XDSFieldLabel
+      <FieldLabel
         label="API key"
         inputID="api-input"
         labelTooltip="Your API key can be found in the developer settings"
         labelIcon={LockIcon}
       />
-      <XDSFieldLabel
+      <FieldLabel
         label="Disabled field"
         inputID="disabled-input"
         isDisabled
       />
-    </XDSVStack>
+    </VStack>
   );
 }

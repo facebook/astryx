@@ -2,12 +2,12 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import React from 'react';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {CodeBlock} from '@xds/core/CodeBlock';
 import {
-  XDSSyntaxTheme as SyntaxThemeProvider,
+  SyntaxTheme as SyntaxThemeProvider,
   defineSyntaxTheme,
 } from '@xds/core/theme/syntax';
-import {defineTheme, XDSTheme} from '@xds/core/theme';
+import {defineTheme, Theme} from '@xds/core/theme';
 import {
   oneDarkPro,
   dracula,
@@ -70,7 +70,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          'Syntax theme provider for code components. Wraps XDSCodeBlock and XDSCodeEditor ' +
+          'Syntax theme provider for code components. Wraps CodeBlock and CodeEditor ' +
           'to apply community syntax color themes. 12 presets ship in @xds/core/theme/syntax.',
       },
     },
@@ -86,7 +86,7 @@ export default meta;
 export const OneDarkPro: StoryObj = {
   render: () => (
     <SyntaxThemeProvider theme={oneDarkPro}>
-      <XDSCodeBlock
+      <CodeBlock
         code={sampleCode}
         language="typescript"
         title="UserCard.tsx"
@@ -99,7 +99,7 @@ export const OneDarkPro: StoryObj = {
 export const Dracula: StoryObj = {
   render: () => (
     <SyntaxThemeProvider theme={dracula}>
-      <XDSCodeBlock
+      <CodeBlock
         code={sampleCode}
         language="typescript"
         title="UserCard.tsx"
@@ -112,7 +112,7 @@ export const Dracula: StoryObj = {
 export const Monokai: StoryObj = {
   render: () => (
     <SyntaxThemeProvider theme={monokai}>
-      <XDSCodeBlock
+      <CodeBlock
         code={sampleCode}
         language="typescript"
         title="UserCard.tsx"
@@ -125,7 +125,7 @@ export const Monokai: StoryObj = {
 export const Nord: StoryObj = {
   render: () => (
     <SyntaxThemeProvider theme={nord}>
-      <XDSCodeBlock
+      <CodeBlock
         code={sampleCode}
         language="typescript"
         title="UserCard.tsx"
@@ -138,7 +138,7 @@ export const Nord: StoryObj = {
 export const TokyoNight: StoryObj = {
   render: () => (
     <SyntaxThemeProvider theme={tokyoNight}>
-      <XDSCodeBlock
+      <CodeBlock
         code={sampleCode}
         language="typescript"
         title="UserCard.tsx"
@@ -151,7 +151,7 @@ export const TokyoNight: StoryObj = {
 export const CatppuccinMocha: StoryObj = {
   render: () => (
     <SyntaxThemeProvider theme={catppuccinMocha}>
-      <XDSCodeBlock
+      <CodeBlock
         code={sampleCode}
         language="typescript"
         title="UserCard.tsx"
@@ -164,7 +164,7 @@ export const CatppuccinMocha: StoryObj = {
 export const GitHubLight: StoryObj = {
   render: () => (
     <SyntaxThemeProvider theme={githubLight}>
-      <XDSCodeBlock
+      <CodeBlock
         code={sampleCode}
         language="typescript"
         title="UserCard.tsx"
@@ -177,7 +177,7 @@ export const GitHubLight: StoryObj = {
 export const GitHubDark: StoryObj = {
   render: () => (
     <SyntaxThemeProvider theme={githubDark}>
-      <XDSCodeBlock
+      <CodeBlock
         code={sampleCode}
         language="typescript"
         title="UserCard.tsx"
@@ -190,7 +190,7 @@ export const GitHubDark: StoryObj = {
 export const SolarizedLight: StoryObj = {
   render: () => (
     <SyntaxThemeProvider theme={solarizedLight}>
-      <XDSCodeBlock
+      <CodeBlock
         code={sampleCode}
         language="typescript"
         title="UserCard.tsx"
@@ -203,7 +203,7 @@ export const SolarizedLight: StoryObj = {
 export const OneLight: StoryObj = {
   render: () => (
     <SyntaxThemeProvider theme={oneLight}>
-      <XDSCodeBlock
+      <CodeBlock
         code={sampleCode}
         language="typescript"
         title="UserCard.tsx"
@@ -216,7 +216,7 @@ export const OneLight: StoryObj = {
 export const CatppuccinLatte: StoryObj = {
   render: () => (
     <SyntaxThemeProvider theme={catppuccinLatte}>
-      <XDSCodeBlock
+      <CodeBlock
         code={sampleCode}
         language="typescript"
         title="UserCard.tsx"
@@ -229,7 +229,7 @@ export const CatppuccinLatte: StoryObj = {
 export const TokyoNightLight: StoryObj = {
   render: () => (
     <SyntaxThemeProvider theme={tokyoNightLight}>
-      <XDSCodeBlock
+      <CodeBlock
         code={sampleCode}
         language="typescript"
         title="UserCard.tsx"
@@ -258,7 +258,7 @@ export const AllThemesGallery: StoryObj = {
     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
       {allSyntaxPresets.map(theme => (
         <SyntaxThemeProvider key={theme.name} theme={theme}>
-          <XDSCodeBlock
+          <CodeBlock
             code={shortCode}
             language="typescript"
             title={theme.name}
@@ -281,13 +281,13 @@ export const NestedOverride: StoryObj = {
   render: () => (
     <SyntaxThemeProvider theme={nord}>
       <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
-        <XDSCodeBlock
+        <CodeBlock
           code="// Inherits Nord from provider"
           language="typescript"
           title="nord (from provider)"
         />
         <SyntaxThemeProvider theme={dracula}>
-          <XDSCodeBlock
+          <CodeBlock
             code="// Inner provider overrides to Dracula"
             language="typescript"
             title="dracula (inner override)"
@@ -325,7 +325,7 @@ const cyberpunk = defineSyntaxTheme({
 export const CustomTheme: StoryObj = {
   render: () => (
     <SyntaxThemeProvider theme={cyberpunk}>
-      <XDSCodeBlock
+      <CodeBlock
         code={sampleCode}
         language="typescript"
         title="Custom: Cyberpunk"
@@ -350,13 +350,13 @@ const darkDevTheme = defineTheme({
 
 export const ThemeWithSyntaxDefaults: StoryObj = {
   render: () => (
-    <XDSTheme theme={darkDevTheme} mode="dark">
-      <XDSCodeBlock
+    <Theme theme={darkDevTheme} mode="dark">
+      <CodeBlock
         code={sampleCode}
         language="typescript"
         title="defineTheme with syntax: dracula"
         hasLineNumbers
       />
-    </XDSTheme>
+    </Theme>
   ),
 };

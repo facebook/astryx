@@ -2,18 +2,18 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
+import {Card} from '@xds/core/Card';
+import {Section} from '@xds/core/Section';
 import {
-  XDSVStack,
-  XDSHStack,
-  XDSLayout,
-  XDSLayoutHeader,
-  XDSLayoutContent,
-  XDSLayoutFooter,
+  VStack,
+  HStack,
+  Layout,
+  LayoutHeader,
+  LayoutContent,
+  LayoutFooter,
 } from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSHeading} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Heading} from '@xds/core/Text';
 import {
   colorVars,
   spacingVars,
@@ -47,9 +47,9 @@ const styles = stylex.create({
   },
 });
 
-const meta: Meta<typeof XDSCard> = {
+const meta: Meta<typeof Card> = {
   title: 'Core/Card',
-  component: XDSCard,
+  component: Card,
   tags: ['autodocs'],
   decorators: [
     Story => (
@@ -79,67 +79,67 @@ const meta: Meta<typeof XDSCard> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSCard>;
+type Story = StoryObj<typeof Card>;
 
 export const Default: Story = {
   args: {
     width: 300,
   },
   render: args => (
-    <XDSCard {...args}>
+    <Card {...args}>
       <p {...stylex.props(styles.text)}>
         Simple content inside a card. The card provides default padding via the
         --container-padding CSS variable.
       </p>
-    </XDSCard>
+    </Card>
   ),
 };
 
 export const WithSimpleContent: Story = {
   render: () => (
-    <XDSCard width={320}>
-      <XDSVStack gap={2}>
-        <XDSHeading level={3}>Card Title</XDSHeading>
+    <Card width={320}>
+      <VStack gap={2}>
+        <Heading level={3}>Card Title</Heading>
         <p {...stylex.props(styles.text, styles.textSecondary)}>
-          This card contains simple content without XDSLayout. The container
+          This card contains simple content without Layout. The container
           padding is applied automatically.
         </p>
-      </XDSVStack>
-    </XDSCard>
+      </VStack>
+    </Card>
   ),
 };
 
 export const WithInnerLayout: Story = {
   render: () => (
-    <XDSCard width={350}>
-      <XDSLayout
+    <Card width={350}>
+      <Layout
         header={
-          <XDSLayoutHeader hasDivider>
-            <XDSHeading level={3}>Card with Layout</XDSHeading>
-          </XDSLayoutHeader>
+          <LayoutHeader hasDivider>
+            <Heading level={3}>Card with Layout</Heading>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent>
+          <LayoutContent>
             <p {...stylex.props(styles.text, styles.textSecondary)}>
-              When using XDSLayout, the layout uses negative margin to escape
+              When using Layout, the layout uses negative margin to escape
               the container padding, then manages its own padding.
             </p>
-          </XDSLayoutContent>
+          </LayoutContent>
         }
         footer={
-          <XDSLayoutFooter hasDivider>
-            <XDSHStack gap={2} hAlign="end">
-              <XDSButton label="Cancel" variant="secondary">
+          <LayoutFooter hasDivider>
+            <HStack gap={2} hAlign="end">
+              <Button label="Cancel" variant="secondary">
                 Cancel
-              </XDSButton>
-              <XDSButton label="Save" variant="primary">
+              </Button>
+              <Button label="Save" variant="primary">
                 Save
-              </XDSButton>
-            </XDSHStack>
-          </XDSLayoutFooter>
+              </Button>
+            </HStack>
+          </LayoutFooter>
         }
       />
-    </XDSCard>
+    </Card>
   ),
 };
 
@@ -148,21 +148,21 @@ export const Sizes: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <div>
         <h4 {...stylex.props(styles.heading)}>Small (200px)</h4>
-        <XDSCard width={200}>
+        <Card width={200}>
           <p {...stylex.props(styles.text)}>Small card</p>
-        </XDSCard>
+        </Card>
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>Medium (300px)</h4>
-        <XDSCard width={300}>
+        <Card width={300}>
           <p {...stylex.props(styles.text)}>Medium card</p>
-        </XDSCard>
+        </Card>
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>Large (400px)</h4>
-        <XDSCard width={400}>
+        <Card width={400}>
           <p {...stylex.props(styles.text)}>Large card</p>
-        </XDSCard>
+        </Card>
       </div>
     </div>
   ),
@@ -170,92 +170,92 @@ export const Sizes: Story = {
 
 export const FixedHeight: Story = {
   render: () => (
-    <XDSCard width={300} height={200}>
-      <XDSLayout
+    <Card width={300} height={200}>
+      <Layout
         header={
-          <XDSLayoutHeader hasDivider>
-            <XDSHeading level={3}>Fixed Height Card</XDSHeading>
-          </XDSLayoutHeader>
+          <LayoutHeader hasDivider>
+            <Heading level={3}>Fixed Height Card</Heading>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent>
+          <LayoutContent>
             <p {...stylex.props(styles.text, styles.textSecondary)}>
               This card has a fixed height. Content area will scroll if needed.
             </p>
-          </XDSLayoutContent>
+          </LayoutContent>
         }
       />
-    </XDSCard>
+    </Card>
   ),
 };
 
 export const NestedCards: Story = {
   render: () => (
-    <XDSCard width={400}>
-      <XDSVStack gap={3}>
-        <XDSHeading level={3}>Parent Card</XDSHeading>
-        <XDSCard width="100%">
+    <Card width={400}>
+      <VStack gap={3}>
+        <Heading level={3}>Parent Card</Heading>
+        <Card width="100%">
           <p {...stylex.props(styles.text, styles.textSecondary)}>
             Nested card resets --container-padding and gets its own padding.
           </p>
-        </XDSCard>
-        <XDSCard width="100%">
+        </Card>
+        <Card width="100%">
           <p {...stylex.props(styles.text, styles.textSecondary)}>
             Another nested card with independent padding.
           </p>
-        </XDSCard>
-      </XDSVStack>
-    </XDSCard>
+        </Card>
+      </VStack>
+    </Card>
   ),
 };
 
 export const NestedSections: Story = {
   render: () => (
-    <XDSCard width={400}>
-      <XDSSection variant="transparent" dividers={['bottom']}>
-        <XDSVStack gap={2}>
-          <XDSHeading level={3}>First Section</XDSHeading>
+    <Card width={400}>
+      <Section variant="transparent" dividers={['bottom']}>
+        <VStack gap={2}>
+          <Heading level={3}>First Section</Heading>
           <p {...stylex.props(styles.text, styles.textSecondary)}>
             This section escapes the card padding on top and sides because it's
             the first child.
           </p>
-        </XDSVStack>
-      </XDSSection>
-      <XDSSection variant="transparent" dividers={['bottom']}>
-        <XDSVStack gap={2}>
-          <XDSHeading level={3}>Middle Section</XDSHeading>
+        </VStack>
+      </Section>
+      <Section variant="transparent" dividers={['bottom']}>
+        <VStack gap={2}>
+          <Heading level={3}>Middle Section</Heading>
           <p {...stylex.props(styles.text, styles.textSecondary)}>
             Middle sections only escape horizontal padding, maintaining visual
             separation from adjacent sections.
           </p>
-        </XDSVStack>
-      </XDSSection>
-      <XDSSection variant="transparent">
-        <XDSVStack gap={2}>
-          <XDSHeading level={3}>Last Section</XDSHeading>
+        </VStack>
+      </Section>
+      <Section variant="transparent">
+        <VStack gap={2}>
+          <Heading level={3}>Last Section</Heading>
           <p {...stylex.props(styles.text, styles.textSecondary)}>
             This section escapes the card padding on bottom and sides because
             it's the last child.
           </p>
-        </XDSVStack>
-      </XDSSection>
-    </XDSCard>
+        </VStack>
+      </Section>
+    </Card>
   ),
 };
 
 export const SingleSection: Story = {
   render: () => (
-    <XDSCard width={350}>
-      <XDSSection variant="muted">
-        <XDSVStack gap={2}>
-          <XDSHeading level={3}>Only Section (Full Bleed All Sides)</XDSHeading>
+    <Card width={350}>
+      <Section variant="muted">
+        <VStack gap={2}>
+          <Heading level={3}>Only Section (Full Bleed All Sides)</Heading>
           <p {...stylex.props(styles.text, styles.textSecondary)}>
             When a section is both first and last child, it gets full bleed on
             all four sides, completely filling the card.
           </p>
-        </XDSVStack>
-      </XDSSection>
-    </XDSCard>
+        </VStack>
+      </Section>
+    </Card>
   ),
 };
 
@@ -264,27 +264,27 @@ export const MixedContent: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <div>
         <h4 {...stylex.props(styles.heading)}>Simple Content</h4>
-        <XDSCard width={250}>
-          <XDSVStack gap={2}>
-            <XDSHeading level={3}>Card Title</XDSHeading>
+        <Card width={250}>
+          <VStack gap={2}>
+            <Heading level={3}>Card Title</Heading>
             <p {...stylex.props(styles.text, styles.textSecondary)}>
               Regular content uses the card's container padding.
             </p>
-          </XDSVStack>
-        </XDSCard>
+          </VStack>
+        </Card>
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>With Section</h4>
-        <XDSCard width={250}>
-          <XDSSection variant="muted">
-            <XDSVStack gap={2}>
-              <XDSHeading level={3}>Card Title</XDSHeading>
+        <Card width={250}>
+          <Section variant="muted">
+            <VStack gap={2}>
+              <Heading level={3}>Card Title</Heading>
               <p {...stylex.props(styles.text, styles.textSecondary)}>
                 Section content bleeds to the card edges.
               </p>
-            </XDSVStack>
-          </XDSSection>
-        </XDSCard>
+            </VStack>
+          </Section>
+        </Card>
       </div>
     </div>
   ),
@@ -295,19 +295,19 @@ export const FullBleed: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <div>
         <h4 {...stylex.props(styles.heading)}>Default (with padding)</h4>
-        <XDSCard width={250}>
+        <Card width={250}>
           <div style={{backgroundColor: 'rgba(0,100,200,0.2)', padding: 8}}>
             <p {...stylex.props(styles.text)}>Content with card padding</p>
           </div>
-        </XDSCard>
+        </Card>
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>Full Bleed (no padding)</h4>
-        <XDSCard width={250} padding={0}>
+        <Card width={250} padding={0}>
           <div style={{backgroundColor: 'rgba(0,100,200,0.2)', padding: 8}}>
             <p {...stylex.props(styles.text)}>Content touches card edges</p>
           </div>
-        </XDSCard>
+        </Card>
       </div>
     </div>
   ),
@@ -330,77 +330,77 @@ export const OnBackgrounds: Story = {
       <div {...stylex.props(styles.pageWrapper)}>
         <h4 {...stylex.props(styles.heading)}>Cards on wash background</h4>
         <div {...stylex.props(styles.storyWrapper)}>
-          <XDSCard width={250}>
-            <XDSVStack gap={2}>
-              <XDSHeading level={3}>Card on Wash</XDSHeading>
+          <Card width={250}>
+            <VStack gap={2}>
+              <Heading level={3}>Card on Wash</Heading>
               <p {...stylex.props(styles.text, styles.textSecondary)}>
                 Cards stand out clearly against the wash background, creating a
                 layered visual hierarchy.
               </p>
-            </XDSVStack>
-          </XDSCard>
-          <XDSCard width={250}>
-            <XDSVStack gap={2}>
-              <XDSHeading level={3}>Another Card</XDSHeading>
+            </VStack>
+          </Card>
+          <Card width={250}>
+            <VStack gap={2}>
+              <Heading level={3}>Another Card</Heading>
               <p {...stylex.props(styles.text, styles.textSecondary)}>
                 Multiple cards on wash create a dashboard-like layout.
               </p>
-            </XDSVStack>
-          </XDSCard>
+            </VStack>
+          </Card>
         </div>
       </div>
-      <XDSSection variant="section" width="100%">
+      <Section variant="section" width="100%">
         <h4 {...stylex.props(styles.heading)}>Cards on surface section</h4>
         <div {...stylex.props(styles.storyWrapper)}>
-          <XDSCard width={250}>
-            <XDSVStack gap={2}>
-              <XDSHeading level={3}>Card on Surface</XDSHeading>
+          <Card width={250}>
+            <VStack gap={2}>
+              <Heading level={3}>Card on Surface</Heading>
               <p {...stylex.props(styles.text, styles.textSecondary)}>
                 On a surface background, cards are more subtle since both share
                 the same base color.
               </p>
-            </XDSVStack>
-          </XDSCard>
-          <XDSCard width={250}>
-            <XDSVStack gap={2}>
-              <XDSHeading level={3}>Another Card</XDSHeading>
+            </VStack>
+          </Card>
+          <Card width={250}>
+            <VStack gap={2}>
+              <Heading level={3}>Another Card</Heading>
               <p {...stylex.props(styles.text, styles.textSecondary)}>
                 The card border provides separation from the surface.
               </p>
-            </XDSVStack>
-          </XDSCard>
+            </VStack>
+          </Card>
         </div>
-      </XDSSection>
+      </Section>
     </div>
   ),
 };
 
 /**
  * Callout card: a muted card used as a callout/highlight area.
- * Uses `variant="muted"` directly on XDSCard instead of wrapping content
+ * Uses `variant="muted"` directly on Card instead of wrapping content
  * in a wash section — simpler and semantically cleaner.
  */
 export const Callout: Story = {
   render: () => (
     <div {...stylex.props(styles.storyWrapper)}>
-      <XDSCard width={350} variant="muted">
-        <XDSVStack gap={2}>
-          <XDSHeading level={3}>💡 Tip</XDSHeading>
+      <Card width={350} variant="muted">
+        <VStack gap={2}>
+          <Heading level={3}>💡 Tip</Heading>
           <p {...stylex.props(styles.text, styles.textSecondary)}>
             Use <code>variant="muted"</code> for callouts, tips, or highlighted
             information. The muted background provides visual contrast without
             needing a nested section.
           </p>
-        </XDSVStack>
-      </XDSCard>
-      <XDSCard width={350} variant="muted">
-        <XDSVStack gap={2}>
-          <XDSHeading level={3}>⚠️ Warning</XDSHeading>
+        </VStack>
+      </Card>
+      <Card width={350} variant="muted">
+        <VStack gap={2}>
+          <Heading level={3}>⚠️ Warning</Heading>
           <p {...stylex.props(styles.text, styles.textSecondary)}>
             Muted cards work well for alerts and warnings too.
           </p>
-        </XDSVStack>
-      </XDSCard>
+        </VStack>
+      </Card>
     </div>
   ),
 };
@@ -431,9 +431,9 @@ export const ColorVariants: Story = {
       ).map(variant => (
         <div key={variant}>
           <h4 {...stylex.props(styles.heading)}>{variant}</h4>
-          <XDSCard width={160} variant={variant}>
+          <Card width={160} variant={variant}>
             <p {...stylex.props(styles.text)}>{variant}</p>
-          </XDSCard>
+          </Card>
         </div>
       ))}
     </div>

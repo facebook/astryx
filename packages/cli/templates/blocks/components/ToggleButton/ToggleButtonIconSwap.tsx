@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSToggleButton} from '@xds/core/ToggleButton';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSIcon} from '@xds/core/Icon';
+import {ToggleButton} from '@xds/core/ToggleButton';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {Icon} from '@xds/core/Icon';
 import {StarIcon as StarOutline, BookmarkIcon as BookmarkOutline, BellIcon, BellSlashIcon} from '@heroicons/react/24/outline';
 import {StarIcon as StarSolid, BookmarkIcon as BookmarkSolid} from '@heroicons/react/24/solid';
 
@@ -16,36 +16,36 @@ export default function ToggleButtonIconSwap() {
   const [isMuted, setIsMuted] = useState(false);
 
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Text type="supporting" color="secondary">
         Outline → solid icon swap on press
-      </XDSText>
-      <XDSStack direction="horizontal" gap={3} vAlign="center">
-        <XDSToggleButton
+      </Text>
+      <Stack direction="horizontal" gap={3} vAlign="center">
+        <ToggleButton
           label="Favorite"
-          icon={<XDSIcon icon={StarOutline} />}
-          pressedIcon={<XDSIcon icon={StarSolid} />}
+          icon={<Icon icon={StarOutline} />}
+          pressedIcon={<Icon icon={StarSolid} />}
           isPressed={isFavorited}
           onPressedChange={setIsFavorited}
           isIconOnly
         />
-        <XDSToggleButton
+        <ToggleButton
           label="Bookmark"
-          icon={<XDSIcon icon={BookmarkOutline} />}
-          pressedIcon={<XDSIcon icon={BookmarkSolid} />}
+          icon={<Icon icon={BookmarkOutline} />}
+          pressedIcon={<Icon icon={BookmarkSolid} />}
           isPressed={isBookmarked}
           onPressedChange={setIsBookmarked}
           isIconOnly
         />
-        <XDSToggleButton
+        <ToggleButton
           label={isMuted ? 'Unmute notifications' : 'Mute notifications'}
-          icon={<XDSIcon icon={BellIcon} />}
-          pressedIcon={<XDSIcon icon={BellSlashIcon} />}
+          icon={<Icon icon={BellIcon} />}
+          pressedIcon={<Icon icon={BellSlashIcon} />}
           isPressed={isMuted}
           onPressedChange={setIsMuted}
           isIconOnly
         />
-      </XDSStack>
-    </XDSStack>
+      </Stack>
+    </Stack>
   );
 }

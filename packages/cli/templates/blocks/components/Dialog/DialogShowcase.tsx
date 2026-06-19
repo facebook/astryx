@@ -2,22 +2,22 @@
 
 'use client';
 
-import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
-import {XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Dialog, DialogHeader} from '@xds/core/Dialog';
+import {Layout, LayoutContent} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 // Remove isInline for production — dialogs should be modal.
 export default function DialogShowcase() {
   return (
-    <XDSDialog isOpen isInline onOpenChange={() => {}}>
-      <XDSLayout
-        header={<XDSDialogHeader title="Modal Title" onOpenChange={() => {}} />}
+    <Dialog isOpen isInline onOpenChange={() => {}}>
+      <Layout
+        header={<DialogHeader title="Modal Title" onOpenChange={() => {}} />}
         content={
-          <XDSLayoutContent>
-            <XDSText type="body">Dialog content goes here.</XDSText>
-          </XDSLayoutContent>
+          <LayoutContent>
+            <Text type="body">Dialog content goes here.</Text>
+          </LayoutContent>
         }
       />
-    </XDSDialog>
+    </Dialog>
   );
 }

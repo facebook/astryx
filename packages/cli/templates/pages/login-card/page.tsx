@@ -5,15 +5,15 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {CubeIcon} from '@heroicons/react/24/outline';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSButton} from '@xds/core/Button';
-import {XDSCard} from '@xds/core/Card';
-import {XDSLink} from '@xds/core/Link';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSIcon} from '@xds/core/Icon';
+import {VStack} from '@xds/core/Layout';
+import {Center} from '@xds/core/Center';
+import {Text, Heading} from '@xds/core/Text';
+import {TextInput} from '@xds/core/TextInput';
+import {Button} from '@xds/core/Button';
+import {Card} from '@xds/core/Card';
+import {Link} from '@xds/core/Link';
+import {Divider} from '@xds/core/Divider';
+import {Icon} from '@xds/core/Icon';
 import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 
 // Brand sign-in marks — no heroicons or template-assets equivalent.
@@ -63,7 +63,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-background-body'],
     padding: spacingVars['--spacing-6'],
   },
-  // Cap the column at 400px but let it shrink to fit narrow screens (XDSStack
+  // Cap the column at 400px but let it shrink to fit narrow screens (Stack
   // has no maxWidth prop, so it's set here).
   content: {
     width: '100%',
@@ -91,30 +91,30 @@ export default function LoginSimple() {
   };
 
   return (
-    <XDSCenter axis="both" xstyle={styles.page}>
-      <XDSVStack gap={4} hAlign="center" xstyle={styles.content}>
+    <Center axis="both" xstyle={styles.page}>
+      <VStack gap={4} hAlign="center" xstyle={styles.content}>
         {/* Logo */}
-        <XDSVStack gap={2} hAlign="center">
-          <XDSIcon icon={CubeIcon} size="lg" />
-          <XDSText type="body" weight="bold" size="lg">
+        <VStack gap={2} hAlign="center">
+          <Icon icon={CubeIcon} size="lg" />
+          <Text type="body" weight="bold" size="lg">
             Product Inc.
-          </XDSText>
-        </XDSVStack>
+          </Text>
+        </VStack>
 
         {/* Card */}
-        <XDSCard padding={8} width="100%">
-          <XDSVStack gap={4} hAlign="stretch">
+        <Card padding={8} width="100%">
+          <VStack gap={4} hAlign="stretch">
             {/* Header */}
-            <XDSVStack gap={1} hAlign="center">
-              <XDSHeading level={2}>Welcome back</XDSHeading>
-              <XDSText type="body" color="secondary" size="sm">
+            <VStack gap={1} hAlign="center">
+              <Heading level={2}>Welcome back</Heading>
+              <Text type="body" color="secondary" size="sm">
                 Sign in to your account
-              </XDSText>
-            </XDSVStack>
+              </Text>
+            </VStack>
 
             {/* Form fields */}
-            <XDSVStack gap={2}>
-              <XDSTextInput
+            <VStack gap={2}>
+              <TextInput
                 label="Email"
                 isLabelHidden
                 type="email"
@@ -123,8 +123,8 @@ export default function LoginSimple() {
                 onChange={setEmail}
                 size="lg"
               />
-              <XDSVStack gap={1}>
-                <XDSTextInput
+              <VStack gap={1}>
+                <TextInput
                   label="Password"
                   isLabelHidden
                   placeholder="Enter your password"
@@ -145,21 +145,21 @@ export default function LoginSimple() {
                   }
                 />
                 {loginFailed && (
-                  <XDSVStack hAlign="end">
-                    <XDSLink
+                  <VStack hAlign="end">
+                    <Link
                       href="#"
                       size="sm"
                       color="secondary"
                       type="supporting">
                       Forgot password?
-                    </XDSLink>
-                  </XDSVStack>
+                    </Link>
+                  </VStack>
                 )}
-              </XDSVStack>
-            </XDSVStack>
+              </VStack>
+            </VStack>
 
             {/* Login button */}
-            <XDSButton
+            <Button
               label="Login"
               variant="primary"
               size="lg"
@@ -168,51 +168,51 @@ export default function LoginSimple() {
             />
 
             {/* Divider */}
-            <XDSDivider label="Or continue with" />
+            <Divider label="Or continue with" />
 
             {/* Social buttons */}
-            <XDSVStack gap={3} hAlign="stretch">
-              <XDSButton
+            <VStack gap={3} hAlign="stretch">
+              <Button
                 label="Login with Apple"
                 variant="secondary"
                 icon={<AppleIcon />}
                 size="lg"
               />
-              <XDSButton
+              <Button
                 label="Login with Google"
                 variant="secondary"
                 icon={<GoogleIcon />}
                 size="lg"
               />
-            </XDSVStack>
+            </VStack>
 
             {/* Sign up link */}
-            <XDSVStack hAlign="center">
-              <XDSText type="supporting" color="secondary">
+            <VStack hAlign="center">
+              <Text type="supporting" color="secondary">
                 Don&apos;t have an account?{' '}
-                <XDSLink href="#" type="supporting">
+                <Link href="#" type="supporting">
                   Sign up
-                </XDSLink>
-              </XDSText>
-            </XDSVStack>
-          </XDSVStack>
-        </XDSCard>
+                </Link>
+              </Text>
+            </VStack>
+          </VStack>
+        </Card>
 
         {/* Terms */}
-        <XDSVStack hAlign="center" width="100%">
-          <XDSText type="supporting" color="secondary" justify="center">
+        <VStack hAlign="center" width="100%">
+          <Text type="supporting" color="secondary" justify="center">
             By clicking continue, you agree to our{' '}
-            <XDSLink href="#" type="supporting">
+            <Link href="#" type="supporting">
               Terms of Service
-            </XDSLink>{' '}
+            </Link>{' '}
             and{' '}
-            <XDSLink href="#" type="supporting">
+            <Link href="#" type="supporting">
               Privacy Policy
-            </XDSLink>
+            </Link>
             .
-          </XDSText>
-        </XDSVStack>
-      </XDSVStack>
-    </XDSCenter>
+          </Text>
+        </VStack>
+      </VStack>
+    </Center>
   );
 }

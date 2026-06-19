@@ -2,12 +2,12 @@
 
 'use client';
 
-import {XDSCarousel} from '@xds/core/Carousel';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSCard} from '@xds/core/Card';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Carousel} from '@xds/core/Carousel';
+import {Avatar} from '@xds/core/Avatar';
+import {Badge} from '@xds/core/Badge';
+import {Card} from '@xds/core/Card';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const TEAM = [
   {name: 'Alice Chen', role: 'Engineering Lead', color: 'blue' as const},
@@ -19,25 +19,25 @@ const TEAM = [
 
 export default function CarouselSnap() {
   return (
-    <XDSStack direction="vertical" gap={3} style={{maxWidth: 520, padding: 8}}>
-      <XDSText type="body" weight="bold">
+    <Stack direction="vertical" gap={3} style={{maxWidth: 520, padding: 8}}>
+      <Text type="body" weight="bold">
         Team members
-      </XDSText>
-      <XDSCarousel gap={2} hasSnap hasButtons aria-label="Team members">
+      </Text>
+      <Carousel gap={2} hasSnap hasButtons aria-label="Team members">
         {TEAM.map(person => (
-          <XDSCard key={person.name} width={180} minHeight={140}>
-            <XDSStack direction="vertical" gap={3} hAlign="center">
-              <XDSAvatar name={person.name} size="medium" />
-              <XDSStack direction="vertical" gap={1} hAlign="center">
-                <XDSText type="body" weight="bold">
+          <Card key={person.name} width={180} minHeight={140}>
+            <Stack direction="vertical" gap={3} hAlign="center">
+              <Avatar name={person.name} size="medium" />
+              <Stack direction="vertical" gap={1} hAlign="center">
+                <Text type="body" weight="bold">
                   {person.name}
-                </XDSText>
-                <XDSBadge variant={person.color} label={person.role} />
-              </XDSStack>
-            </XDSStack>
-          </XDSCard>
+                </Text>
+                <Badge variant={person.color} label={person.role} />
+              </Stack>
+            </Stack>
+          </Card>
         ))}
-      </XDSCarousel>
-    </XDSStack>
+      </Carousel>
+    </Stack>
   );
 }

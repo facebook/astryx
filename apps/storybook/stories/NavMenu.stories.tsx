@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSNavHeadingMenu, XDSNavHeadingMenuItem} from '@xds/core/NavMenu';
+import {NavHeadingMenu, NavHeadingMenuItem} from '@xds/core/NavMenu';
 import {
   Cog6ToothIcon,
   UserIcon,
@@ -11,9 +11,9 @@ import {
   ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSNavHeadingMenu> = {
+const meta: Meta<typeof NavHeadingMenu> = {
   title: 'Core/NavMenu',
-  component: XDSNavHeadingMenu,
+  component: NavHeadingMenu,
   tags: ['autodocs'],
   argTypes: {
     size: {
@@ -36,16 +36,16 @@ const meta: Meta<typeof XDSNavHeadingMenu> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSNavHeadingMenu>;
+type Story = StoryObj<typeof NavHeadingMenu>;
 
 export const Default: Story = {
   args: {
     size: 'md',
     children: (
       <>
-        <XDSNavHeadingMenuItem label="Dashboard" href="#" />
-        <XDSNavHeadingMenuItem label="Analytics" href="#" />
-        <XDSNavHeadingMenuItem label="Settings" href="#" />
+        <NavHeadingMenuItem label="Dashboard" href="#" />
+        <NavHeadingMenuItem label="Analytics" href="#" />
+        <NavHeadingMenuItem label="Settings" href="#" />
       </>
     ),
   },
@@ -56,19 +56,19 @@ export const WithIcons: Story = {
     size: 'md',
     children: (
       <>
-        <XDSNavHeadingMenuItem label="Profile" icon={UserIcon} href="#" />
-        <XDSNavHeadingMenuItem
+        <NavHeadingMenuItem label="Profile" icon={UserIcon} href="#" />
+        <NavHeadingMenuItem
           label="Documents"
           icon={DocumentTextIcon}
           href="#"
         />
-        <XDSNavHeadingMenuItem label="Analytics" icon={ChartBarIcon} href="#" />
-        <XDSNavHeadingMenuItem
+        <NavHeadingMenuItem label="Analytics" icon={ChartBarIcon} href="#" />
+        <NavHeadingMenuItem
           label="Security"
           icon={ShieldCheckIcon}
           href="#"
         />
-        <XDSNavHeadingMenuItem label="Settings" icon={Cog6ToothIcon} href="#" />
+        <NavHeadingMenuItem label="Settings" icon={Cog6ToothIcon} href="#" />
       </>
     ),
   },
@@ -79,19 +79,19 @@ export const WithDescriptions: Story = {
     size: 'lg',
     children: (
       <>
-        <XDSNavHeadingMenuItem
+        <NavHeadingMenuItem
           label="Profile"
           description="Manage your account settings"
           icon={UserIcon}
           href="#"
         />
-        <XDSNavHeadingMenuItem
+        <NavHeadingMenuItem
           label="Settings"
           description="Configure application preferences"
           icon={Cog6ToothIcon}
           href="#"
         />
-        <XDSNavHeadingMenuItem
+        <NavHeadingMenuItem
           label="Sign out"
           description="End your current session"
           icon={ArrowRightStartOnRectangleIcon}
@@ -106,9 +106,9 @@ export const SmallSize: Story = {
     size: 'sm',
     children: (
       <>
-        <XDSNavHeadingMenuItem label="Edit" href="#" />
-        <XDSNavHeadingMenuItem label="Duplicate" href="#" />
-        <XDSNavHeadingMenuItem label="Delete" />
+        <NavHeadingMenuItem label="Edit" href="#" />
+        <NavHeadingMenuItem label="Duplicate" href="#" />
+        <NavHeadingMenuItem label="Delete" />
       </>
     ),
   },
@@ -119,10 +119,10 @@ export const DisabledItems: Story = {
     size: 'md',
     children: (
       <>
-        <XDSNavHeadingMenuItem label="Dashboard" href="#" />
-        <XDSNavHeadingMenuItem label="Analytics" href="#" isDisabled />
-        <XDSNavHeadingMenuItem label="Settings" href="#" />
-        <XDSNavHeadingMenuItem label="Admin" isDisabled />
+        <NavHeadingMenuItem label="Dashboard" href="#" />
+        <NavHeadingMenuItem label="Analytics" href="#" isDisabled />
+        <NavHeadingMenuItem label="Settings" href="#" />
+        <NavHeadingMenuItem label="Admin" isDisabled />
       </>
     ),
   },

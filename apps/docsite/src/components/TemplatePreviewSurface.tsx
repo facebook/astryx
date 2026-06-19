@@ -13,9 +13,9 @@
 
 import {Suspense} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSText} from '@xds/core/Text';
-import {XDSSkeleton} from '@xds/core/Skeleton';
-import {XDSTheme} from '@xds/core/theme';
+import {Text} from '@xds/core/Text';
+import {Skeleton} from '@xds/core/Skeleton';
+import {Theme} from '@xds/core/theme';
 import {neutralTheme} from '@xds/theme-neutral/built';
 import {useThemeMode} from '../app/providers';
 import {getTemplateComponent} from './templateComponents';
@@ -45,18 +45,18 @@ export function TemplatePreviewSurface({slug}: {slug: string}) {
         <Suspense
           fallback={
             <div {...stylex.props(styles.skeleton)}>
-              <XDSSkeleton width="100%" height="100%" />
+              <Skeleton width="100%" height="100%" />
             </div>
           }>
-          <XDSTheme theme={neutralTheme} mode={mode}>
+          <Theme theme={neutralTheme} mode={mode}>
             <Component />
-          </XDSTheme>
+          </Theme>
         </Suspense>
       ) : (
         <div {...stylex.props(styles.emptyState)}>
-          <XDSText type="body" color="secondary">
+          <Text type="body" color="secondary">
             A live preview isn&rsquo;t available for this template yet.
-          </XDSText>
+          </Text>
         </div>
       )}
     </div>

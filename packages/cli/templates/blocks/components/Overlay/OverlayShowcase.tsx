@@ -3,11 +3,11 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSOverlay} from '@xds/core/Overlay';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSButton} from '@xds/core/Button';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Overlay} from '@xds/core/Overlay';
+import {AspectRatio} from '@xds/core/AspectRatio';
+import {Button} from '@xds/core/Button';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const styles = stylex.create({
   frame: {
@@ -28,23 +28,23 @@ const styles = stylex.create({
 
 export default function OverlayShowcase() {
   return (
-    <XDSOverlay
+    <Overlay
       align="center"
       content={
-        <XDSVStack gap={2} xstyle={styles.content}>
-          <XDSText type="supporting" weight="bold" color="inherit">
+        <VStack gap={2} xstyle={styles.content}>
+          <Text type="supporting" weight="bold" color="inherit">
             Design system foundations
-          </XDSText>
-          <XDSButton label="Open gallery" variant="secondary" size="sm" />
-        </XDSVStack>
+          </Text>
+          <Button label="Open gallery" variant="secondary" size="sm" />
+        </VStack>
       }>
-      <XDSAspectRatio ratio={16 / 9} xstyle={styles.frame}>
+      <AspectRatio ratio={16 / 9} xstyle={styles.frame}>
         <img
           src="https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png"
           alt="Abstract landscape"
           {...stylex.props(styles.image)}
         />
-      </XDSAspectRatio>
-    </XDSOverlay>
+      </AspectRatio>
+    </Overlay>
   );
 }

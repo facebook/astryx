@@ -3,9 +3,9 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSTable} from '@xds/core/Table';
+import {HStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {Table} from '@xds/core/Table';
 import type {TokenTableProps} from './types';
 import {resolveToken, getTokensByPrefix} from './helpers';
 
@@ -27,7 +27,7 @@ export function ElevationTokenTable({theme}: TokenTableProps) {
   }));
 
   return (
-    <XDSTable
+    <Table
       data={data as Record<string, unknown>[]}
       columns={[
         {key: 'tokenName', header: 'Token'},
@@ -35,10 +35,10 @@ export function ElevationTokenTable({theme}: TokenTableProps) {
           key: 'value',
           header: 'Value',
           renderCell: (item: Record<string, unknown>) => (
-            <XDSHStack gap={2} align="center">
+            <HStack gap={2} align="center">
               <div {...stylex.props(styles.shadowBox)} style={{boxShadow: item.value as string}} />
-              <XDSText type="code" color="secondary">{item.value as string}</XDSText>
-            </XDSHStack>
+              <Text type="code" color="secondary">{item.value as string}</Text>
+            </HStack>
           ),
         },
       ]}

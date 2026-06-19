@@ -20,18 +20,18 @@ import type {
   PowerSearchEntity,
 } from './types';
 import type {InternalConfig} from './useInternalConfig';
-import type {XDSSearchableItem, XDSSearchSource} from '../Typeahead/types';
+import type {SearchableItem, SearchSource} from '../Typeahead/types';
 import type {ISODateString} from '../utils/dateTypes';
 import type {ISOTimeString} from '../utils';
 
 // Lazy import to avoid circular deps — these are all from the same package
-import {XDSTextInput} from '../TextInput';
-import {XDSNumberInput} from '../NumberInput';
-import {XDSDateInput} from '../DateInput';
-import {XDSTimeInput} from '../TimeInput';
-import {XDSSelector} from '../Selector';
-import {XDSTokenizer} from '../Tokenizer';
-import {XDSTypeahead} from '../Typeahead';
+import {TextInput} from '../TextInput';
+import {NumberInput} from '../NumberInput';
+import {DateInput} from '../DateInput';
+import {TimeInput} from '../TimeInput';
+import {Selector} from '../Selector';
+import {Tokenizer} from '../Tokenizer';
+import {Typeahead} from '../Typeahead';
 
 export interface PowerSearchValueEditorProps {
   operatorValue: OperatorValue;
@@ -48,8 +48,8 @@ export interface PowerSearchValueEditorProps {
 // =============================================================================
 
 function createStaticSource(
-  items: XDSSearchableItem[],
-): XDSSearchSource<XDSSearchableItem> {
+  items: SearchableItem[],
+): SearchSource<SearchableItem> {
   return {
     search(query: string) {
       const lower = query.toLowerCase();
@@ -63,7 +63,7 @@ function createStaticSource(
 
 function enumItemsToSearchableItems(
   values: ReadonlyArray<EnumItem>,
-): XDSSearchableItem[] {
+): SearchableItem[] {
   return values.map(item => ({
     id: item.value,
     label: item.label,
@@ -90,12 +90,12 @@ function StringEditor({
   // When a searchSource is provided, render a typeahead instead of a plain
   // text input so users get suggestions (#1103).
   if (operatorValue.searchSource) {
-    const selectedItem: XDSSearchableItem | null = currentValue
+    const selectedItem: SearchableItem | null = currentValue
       ? {id: currentValue, label: currentValue}
       : null;
 
     return (
-      <XDSTypeahead
+      <Typeahead
         label="Value"
         isLabelHidden
         searchSource={operatorValue.searchSource}
@@ -114,7 +114,7 @@ function StringEditor({
   }
 
   return (
-    <XDSTextInput
+    <TextInput
       label="Value"
       isLabelHidden
       value={currentValue}
@@ -135,14 +135,14 @@ function StringListEditor({
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
 }) {
-  const currentValue: XDSSearchableItem[] = useMemo(() => {
+  const currentValue: SearchableItem[] = useMemo(() => {
     if (filterValue?.type !== 'string_list') {
       return [];
     }
     return filterValue.value.map(v => ({id: v, label: v}));
   }, [filterValue]);
 
-  const source = useMemo<XDSSearchSource<XDSSearchableItem>>(() => {
+  const source = useMemo<SearchSource<SearchableItem>>(() => {
     if (operatorValue.searchSource) {
       return operatorValue.searchSource;
     }
@@ -159,7 +159,7 @@ function StringListEditor({
     operatorValue.isArbitraryStringAllowed || !operatorValue.searchSource;
 
   return (
-    <XDSTokenizer
+    <Tokenizer
       label="Values"
       isLabelHidden
       searchSource={source}
@@ -190,7 +190,7 @@ function IntegerEditor({
     filterValue?.type === 'integer' ? filterValue.value : undefined;
 
   return (
-    <XDSNumberInput
+    <NumberInput
       label="Value"
       isLabelHidden
       value={currentValue ?? null}
@@ -219,7 +219,7 @@ function FloatEditor({
     filterValue?.type === 'float' ? filterValue.value : undefined;
 
   return (
-    <XDSNumberInput
+    <NumberInput
       label="Value"
       isLabelHidden
       value={currentValue ?? null}
@@ -249,7 +249,7 @@ function TimeEditor({
       : undefined;
 
   return (
-    <XDSTimeInput
+    <TimeInput
       label="Time"
       isLabelHidden
       value={currentValue}
@@ -282,7 +282,7 @@ function DateAbsoluteEditor({
   }, [filterValue]);
 
   return (
-    <XDSDateInput
+    <DateInput
       label="Date"
       isLabelHidden
       value={currentValue}
@@ -341,7 +341,7 @@ function DateRelativeEditor({
   }, [operatorValue.isPastAllowed, operatorValue.isFutureAllowed]);
 
   return (
-    <XDSSelector
+    <Selector
       label="Relative date"
       isLabelHidden
       options={options}
@@ -427,13 +427,13 @@ function DateRangeEditor({
 
   return (
     <>
-      <XDSDateInput
+      <DateInput
         label="Start date"
         isLabelHidden
         value={startValue}
         onChange={handleStartChange}
       />
-      <XDSDateInput
+      <DateInput
         label="End date"
         isLabelHidden
         value={endValue}
@@ -465,7 +465,7 @@ function EnumEditor({
   );
 
   return (
-    <XDSSelector
+    <Selector
       label="Value"
       isLabelHidden
       options={options}
@@ -493,7 +493,7 @@ function EnumListEditor({
 
   const source = useMemo(() => createStaticSource(items), [items]);
 
-  const currentValue: XDSSearchableItem[] = useMemo(() => {
+  const currentValue: SearchableItem[] = useMemo(() => {
     if (filterValue?.type !== 'enum_list') {
       return [];
     }
@@ -504,7 +504,7 @@ function EnumListEditor({
   }, [filterValue, operatorValue.values]);
 
   return (
-    <XDSTokenizer
+    <Tokenizer
       label="Values"
       isLabelHidden
       searchSource={source}
@@ -531,7 +531,7 @@ function EntityListEditor({
   filterValue: FilterValue | undefined;
   onChange: (value: FilterValue) => void;
 }) {
-  const source = useMemo<XDSSearchSource<XDSSearchableItem>>(() => {
+  const source = useMemo<SearchSource<SearchableItem>>(() => {
     if (operatorValue.searchSource) {
       return operatorValue.searchSource;
     }
@@ -542,7 +542,7 @@ function EntityListEditor({
   }, [operatorValue.searchSource]);
 
   // Preserve photo in auxiliaryData so it round-trips through the tokenizer (#1106).
-  const currentValue: XDSSearchableItem[] = useMemo(() => {
+  const currentValue: SearchableItem[] = useMemo(() => {
     if (filterValue?.type !== 'entity_list') {
       return [];
     }
@@ -554,7 +554,7 @@ function EntityListEditor({
   }, [filterValue]);
 
   return (
-    <XDSTokenizer
+    <Tokenizer
       label="Entities"
       isLabelHidden
       searchSource={source}

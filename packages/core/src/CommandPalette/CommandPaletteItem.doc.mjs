@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'CommandPalette',
   displayName: 'Command Palette Item',
   isHiddenFromOverview: true,
-  description: 'A selectable item. Accepts arbitrary children for full rendering control. Registers with context for keyboard navigation when inside XDSCommandPalette.',
+  description: 'A selectable item. Accepts arbitrary children for full rendering control. Registers with context for keyboard navigation when inside CommandPalette.',
   props: [
     {
       name: 'value',
@@ -29,7 +29,7 @@ export const docs = {
     {
       name: 'isHighlighted',
       type: 'boolean',
-      description: 'Whether this item has keyboard focus. Derived from context when inside XDSCommandPalette.',
+      description: 'Whether this item has keyboard focus. Derived from context when inside CommandPalette.',
       default: 'false',
     },
     {
@@ -61,7 +61,7 @@ export const docsZh = {
     value: '用于标识和选择的唯一值。',
     children: '条目内容——渲染图标、描述、键盘快捷键等。',
     onSelect: '通过点击或 Enter 选择此条目时调用。',
-    isHighlighted: '此条目是否具有键盘焦点。在 XDSCommandPalette 内从上下文派生。',
+    isHighlighted: '此条目是否具有键盘焦点。在 CommandPalette 内从上下文派生。',
     isSelected: '此条目在选择器模式下是否被选中。',
     isDisabled: '条目是否为非交互状态。',
     xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。',

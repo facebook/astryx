@@ -4,21 +4,21 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSTokenizer} from '@xds/core/Tokenizer';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
+import {Tokenizer} from '@xds/core/Tokenizer';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
 
 const styles = stylex.create({
   fixed: {width: 400},
 });
 
-const emptySource: XDSSearchSource = {
+const emptySource: SearchSource = {
   search: () => [],
   bootstrap: () => [],
 };
 
-const users: XDSSearchableItem[] = [
+const users: SearchableItem[] = [
   {id: '1', label: 'Alice Johnson'},
   {id: '2', label: 'Bob Smith'},
   {id: '3', label: 'Charlie Brown'},
@@ -26,23 +26,23 @@ const users: XDSSearchableItem[] = [
   {id: '5', label: 'Eve Williams'},
 ];
 
-const userSource: XDSSearchSource = {
+const userSource: SearchSource = {
   search: (query: string) =>
     users.filter(u => u.label.toLowerCase().includes(query.toLowerCase())),
   bootstrap: () => users,
 };
 
 export default function TokenizerCreatable() {
-  const [tags, setTags] = useState<XDSSearchableItem[]>([]);
-  const [members, setMembers] = useState<XDSSearchableItem[]>([]);
+  const [tags, setTags] = useState<SearchableItem[]>([]);
+  const [members, setMembers] = useState<SearchableItem[]>([]);
 
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Free-text only
-        </XDSText>
-        <XDSTokenizer
+        </Text>
+        <Tokenizer
           label="Tags"
           searchSource={emptySource}
           value={tags}
@@ -51,12 +51,12 @@ export default function TokenizerCreatable() {
           placeholder="Type a tag and press Enter..."
           xstyle={styles.fixed}
         />
-      </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+      </Stack>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Create or search
-        </XDSText>
-        <XDSTokenizer
+        </Text>
+        <Tokenizer
           label="Team Members"
           searchSource={userSource}
           value={members}
@@ -66,7 +66,7 @@ export default function TokenizerCreatable() {
           placeholder="Search or type a new name..."
           xstyle={styles.fixed}
         />
-      </XDSStack>
-    </XDSStack>
+      </Stack>
+    </Stack>
   );
 }

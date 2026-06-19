@@ -2,14 +2,14 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSTabList, XDSTab, XDSTabMenu} from '@xds/core/TabList';
-import {XDSCarousel} from '@xds/core/Carousel';
-import {XDSButton} from '@xds/core/Button';
+import {TabList, Tab, TabMenu} from '@xds/core/TabList';
+import {Carousel} from '@xds/core/Carousel';
+import {Button} from '@xds/core/Button';
 import {PlusIcon, FunnelIcon} from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSTabList> = {
+const meta: Meta<typeof TabList> = {
   title: 'Core/TabList',
-  component: XDSTabList,
+  component: TabList,
   tags: ['autodocs'],
   argTypes: {
     size: {
@@ -21,7 +21,7 @@ const meta: Meta<typeof XDSTabList> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSTabList>;
+type Story = StoryObj<typeof TabList>;
 
 export const Default: Story = {
   args: {
@@ -30,11 +30,11 @@ export const Default: Story = {
   render: args => {
     const [value, setValue] = useState('home');
     return (
-      <XDSTabList value={value} onChange={setValue} size={args.size}>
-        <XDSTab value="home" label="Home" />
-        <XDSTab value="projects" label="Projects" />
-        <XDSTab value="settings" label="Settings" />
-      </XDSTabList>
+      <TabList value={value} onChange={setValue} size={args.size}>
+        <Tab value="home" label="Home" />
+        <Tab value="projects" label="Projects" />
+        <Tab value="settings" label="Settings" />
+      </TabList>
     );
   },
 };
@@ -46,10 +46,10 @@ export const WithMenu: Story = {
   render: args => {
     const [value, setValue] = useState('home');
     return (
-      <XDSTabList value={value} onChange={setValue} size={args.size}>
-        <XDSTab value="home" label="Home" />
-        <XDSTab value="projects" label="Projects" />
-        <XDSTabMenu
+      <TabList value={value} onChange={setValue} size={args.size}>
+        <Tab value="home" label="Home" />
+        <Tab value="projects" label="Projects" />
+        <TabMenu
           label="More"
           options={[
             {value: 'analytics', label: 'Analytics'},
@@ -57,7 +57,7 @@ export const WithMenu: Story = {
             {value: 'billing', label: 'Billing'},
           ]}
         />
-      </XDSTabList>
+      </TabList>
     );
   },
 };
@@ -69,17 +69,17 @@ export const MenuWithSelectedChild: Story = {
   render: args => {
     const [value, setValue] = useState('analytics');
     return (
-      <XDSTabList value={value} onChange={setValue} size={args.size}>
-        <XDSTab value="home" label="Home" />
-        <XDSTab value="projects" label="Projects" />
-        <XDSTabMenu
+      <TabList value={value} onChange={setValue} size={args.size}>
+        <Tab value="home" label="Home" />
+        <Tab value="projects" label="Projects" />
+        <TabMenu
           label="More"
           options={[
             {value: 'analytics', label: 'Analytics'},
             {value: 'reports', label: 'Reports'},
           ]}
         />
-      </XDSTabList>
+      </TabList>
     );
   },
 };
@@ -101,11 +101,11 @@ export const SizeVariants: Story = {
               size=\"{size}\"
             </div>
             <div style={{border: '1px dashed #ccc', display: 'inline-flex'}}>
-              <XDSTabList value={value} onChange={setValue} size={size}>
-                <XDSTab value="home" label="Home" />
-                <XDSTab value="projects" label="Projects" />
-                <XDSTab value="settings" label="Settings" />
-              </XDSTabList>
+              <TabList value={value} onChange={setValue} size={size}>
+                <Tab value="home" label="Home" />
+                <Tab value="projects" label="Projects" />
+                <Tab value="settings" label="Settings" />
+              </TabList>
             </div>
           </div>
         ))}
@@ -138,10 +138,10 @@ export const WithIcons: Story = {
     );
 
     return (
-      <XDSTabList value={value} onChange={setValue} size={args.size}>
-        <XDSTab value="home" label="Home" icon={HomeIcon} />
-        <XDSTab value="settings" label="Settings" icon={CogIcon} />
-      </XDSTabList>
+      <TabList value={value} onChange={setValue} size={args.size}>
+        <Tab value="home" label="Home" icon={HomeIcon} />
+        <Tab value="settings" label="Settings" icon={CogIcon} />
+      </TabList>
     );
   },
 };
@@ -172,21 +172,21 @@ export const IconOnly: Story = {
     );
 
     return (
-      <XDSTabList value={value} onChange={setValue} size={args.size}>
-        <XDSTab
+      <TabList value={value} onChange={setValue} size={args.size}>
+        <Tab
           value="desktop"
           label="Desktop preview"
           icon={DesktopIcon}
           isLabelHidden
         />
-        <XDSTab
+        <Tab
           value="phone"
           label="Phone preview"
           icon={PhoneIcon}
           isLabelHidden
         />
-        <XDSTab value="theme" label="Theme" icon={ThemeIcon} isLabelHidden />
-      </XDSTabList>
+        <Tab value="theme" label="Theme" icon={ThemeIcon} isLabelHidden />
+      </TabList>
     );
   },
 };
@@ -199,10 +199,10 @@ export const WithActions: Story = {
   render: () => {
     const [value, setValue] = useState('all');
     return (
-      <XDSTabList value={value} onChange={setValue} size="lg" hasDivider>
-        <XDSTab value="all" label="All items" />
-        <XDSTab value="active" label="Active" />
-        <XDSTab value="archived" label="Archived" />
+      <TabList value={value} onChange={setValue} size="lg" hasDivider>
+        <Tab value="all" label="All items" />
+        <Tab value="active" label="Active" />
+        <Tab value="archived" label="Archived" />
         <div
           style={{
             marginInlineStart: 'auto',
@@ -210,21 +210,21 @@ export const WithActions: Story = {
             alignItems: 'center',
             gap: '4px',
           }}>
-          <XDSButton
+          <Button
             label="Filter"
             variant="ghost"
             size="sm"
             icon={<FunnelIcon />}
             isIconOnly
           />
-          <XDSButton
+          <Button
             label="New item"
             variant="primary"
             size="sm"
             icon={<PlusIcon />}
           />
         </div>
-      </XDSTabList>
+      </TabList>
     );
   },
 };
@@ -234,18 +234,18 @@ export const FillLayout: Story = {
     const [value, setValue] = useState('home');
     return (
       <div style={{width: '500px'}}>
-        <XDSTabList value={value} onChange={setValue} layout="fill" hasDivider>
-          <XDSTab value="home" label="Home" />
-          <XDSTab value="projects" label="Projects" />
-          <XDSTab value="settings" label="Settings" />
-        </XDSTabList>
+        <TabList value={value} onChange={setValue} layout="fill" hasDivider>
+          <Tab value="home" label="Home" />
+          <Tab value="projects" label="Projects" />
+          <Tab value="settings" label="Settings" />
+        </TabList>
       </div>
     );
   },
 };
 
 /**
- * When tabs overflow, wrap XDSTabList's children in XDSCarousel.
+ * When tabs overflow, wrap TabList's children in Carousel.
  * The Carousel handles scroll, fade masks, and arrow buttons.
  * Each tab keeps its intrinsic label width — no truncation.
  */
@@ -254,19 +254,19 @@ export const Overflow: Story = {
     const [value, setValue] = useState('overview');
     return (
       <div style={{maxWidth: '400px', border: '1px dashed #ccc'}}>
-        <XDSTabList value={value} onChange={setValue}>
-          <XDSCarousel gap={0.5} hasSnap={false}>
-            <XDSTab value="overview" label="Overview" />
-            <XDSTab value="activity" label="Activity" />
-            <XDSTab value="members" label="Members" />
-            <XDSTab value="settings" label="Settings" />
-            <XDSTab value="integrations" label="Integrations" />
-            <XDSTab value="billing" label="Billing & Plans" />
-            <XDSTab value="security" label="Security" />
-            <XDSTab value="notifications" label="Notifications" />
-            <XDSTab value="api" label="API Keys" />
-          </XDSCarousel>
-        </XDSTabList>
+        <TabList value={value} onChange={setValue}>
+          <Carousel gap={0.5} hasSnap={false}>
+            <Tab value="overview" label="Overview" />
+            <Tab value="activity" label="Activity" />
+            <Tab value="members" label="Members" />
+            <Tab value="settings" label="Settings" />
+            <Tab value="integrations" label="Integrations" />
+            <Tab value="billing" label="Billing & Plans" />
+            <Tab value="security" label="Security" />
+            <Tab value="notifications" label="Notifications" />
+            <Tab value="api" label="API Keys" />
+          </Carousel>
+        </TabList>
       </div>
     );
   },
@@ -280,16 +280,16 @@ export const OverflowWithDivider: Story = {
     const [value, setValue] = useState('dashboard');
     return (
       <div style={{maxWidth: '350px'}}>
-        <XDSTabList value={value} onChange={setValue} hasDivider size="lg">
-          <XDSCarousel gap={0.5} hasSnap={false}>
-            <XDSTab value="dashboard" label="Dashboard" />
-            <XDSTab value="analytics" label="Analytics" />
-            <XDSTab value="reports" label="Reports" />
-            <XDSTab value="customers" label="Customers" />
-            <XDSTab value="products" label="Products" />
-            <XDSTab value="orders" label="Orders" />
-          </XDSCarousel>
-        </XDSTabList>
+        <TabList value={value} onChange={setValue} hasDivider size="lg">
+          <Carousel gap={0.5} hasSnap={false}>
+            <Tab value="dashboard" label="Dashboard" />
+            <Tab value="analytics" label="Analytics" />
+            <Tab value="reports" label="Reports" />
+            <Tab value="customers" label="Customers" />
+            <Tab value="products" label="Products" />
+            <Tab value="orders" label="Orders" />
+          </Carousel>
+        </TabList>
       </div>
     );
   },

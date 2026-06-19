@@ -2,13 +2,13 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState, useRef} from 'react';
-import {useXDSToast, XDSToastViewport} from '@xds/core/Toast';
-import type {XDSToastType} from '@xds/core/Toast';
-import {XDSButton} from '@xds/core/Button';
-import {XDSLink} from '@xds/core/Link';
-import {XDSCard} from '@xds/core/Card';
-import {XDSStack} from '@xds/core/Stack';
-import {XDSDialog} from '@xds/core/Dialog';
+import {useToast, ToastViewport} from '@xds/core/Toast';
+import type {ToastType} from '@xds/core/Toast';
+import {Button} from '@xds/core/Button';
+import {Link} from '@xds/core/Link';
+import {Card} from '@xds/core/Card';
+import {Stack} from '@xds/core/Stack';
+import {Dialog} from '@xds/core/Dialog';
 
 const meta: Meta = {
   title: 'Core/Toast',
@@ -17,7 +17,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          'Imperative toast notification system. Use `useXDSToast()` to show transient feedback messages. Works with or without `XDSLayerProvider`.',
+          'Imperative toast notification system. Use `useToast()` to show transient feedback messages. Works with or without `LayerProvider`.',
       },
     },
   },
@@ -31,9 +31,9 @@ export default meta;
 
 export const Default: StoryObj = {
   render: function DefaultStory() {
-    const toast = useXDSToast();
+    const toast = useToast();
     return (
-      <XDSButton
+      <Button
         label="Show toast"
         onClick={() => toast({body: 'This is an info toast'})}
       />
@@ -47,12 +47,12 @@ export const Default: StoryObj = {
 
 export const Types: StoryObj = {
   render: function TypesStory() {
-    const toast = useXDSToast();
-    const types: XDSToastType[] = ['info', 'error'];
+    const toast = useToast();
+    const types: ToastType[] = ['info', 'error'];
     return (
-      <XDSStack direction="horizontal" gap={2}>
+      <Stack direction="horizontal" gap={2}>
         {types.map(type => (
-          <XDSButton
+          <Button
             key={type}
             label={type}
             variant={type === 'error' ? 'destructive' : 'secondary'}
@@ -64,7 +64,7 @@ export const Types: StoryObj = {
             }
           />
         ))}
-      </XDSStack>
+      </Stack>
     );
   },
   parameters: {
@@ -83,17 +83,17 @@ export const Types: StoryObj = {
 
 export const WithAction: StoryObj = {
   render: function WithActionStory() {
-    const toast = useXDSToast();
+    const toast = useToast();
     return (
-      <XDSStack direction="horizontal" gap={2}>
-        <XDSButton
+      <Stack direction="horizontal" gap={2}>
+        <Button
           label="With button"
           onClick={() =>
             toast({
               body: 'Item deleted',
               isAutoHide: false,
               endContent: (
-                <XDSButton
+                <Button
                   label="Undo"
                   variant="secondary"
                   size="sm"
@@ -103,7 +103,7 @@ export const WithAction: StoryObj = {
             })
           }
         />
-        <XDSButton
+        <Button
           label="With link"
           variant="secondary"
           onClick={() =>
@@ -111,14 +111,14 @@ export const WithAction: StoryObj = {
               body: 'Your report is ready.',
               isAutoHide: false,
               endContent: (
-                <XDSLink href="#" hasUnderline>
+                <Link href="#" hasUnderline>
                   View report
-                </XDSLink>
+                </Link>
               ),
             })
           }
         />
-      </XDSStack>
+      </Stack>
     );
   },
   parameters: {
@@ -137,9 +137,9 @@ export const WithAction: StoryObj = {
 
 export const ErrorPersists: StoryObj = {
   render: function ErrorPersistsStory() {
-    const toast = useXDSToast();
+    const toast = useToast();
     return (
-      <XDSButton
+      <Button
         label="Trigger error"
         variant="destructive"
         onClick={() =>
@@ -167,11 +167,11 @@ export const ErrorPersists: StoryObj = {
 
 export const ProgrammaticDismiss: StoryObj = {
   render: function ProgrammaticDismissStory() {
-    const toast = useXDSToast();
+    const toast = useToast();
     const dismissRef = useRef<(() => void) | null>(null);
     return (
-      <XDSStack direction="horizontal" gap={2}>
-        <XDSButton
+      <Stack direction="horizontal" gap={2}>
+        <Button
           label="Show persistent toast"
           onClick={() => {
             dismissRef.current = toast({
@@ -180,7 +180,7 @@ export const ProgrammaticDismiss: StoryObj = {
             });
           }}
         />
-        <XDSButton
+        <Button
           label="Dismiss"
           variant="secondary"
           onClick={() => {
@@ -188,14 +188,14 @@ export const ProgrammaticDismiss: StoryObj = {
             dismissRef.current = null;
           }}
         />
-      </XDSStack>
+      </Stack>
     );
   },
   parameters: {
     docs: {
       description: {
         story:
-          '`useXDSToast()` returns a dismiss function. Call it to remove the toast programmatically.',
+          '`useToast()` returns a dismiss function. Call it to remove the toast programmatically.',
       },
     },
   },
@@ -207,10 +207,10 @@ export const ProgrammaticDismiss: StoryObj = {
 
 export const Deduplication: StoryObj = {
   render: function DeduplicationStory() {
-    const toast = useXDSToast();
+    const toast = useToast();
     return (
-      <XDSStack direction="horizontal" gap={2}>
-        <XDSButton
+      <Stack direction="horizontal" gap={2}>
+        <Button
           label="Offline (ignore)"
           onClick={() =>
             toast({
@@ -221,7 +221,7 @@ export const Deduplication: StoryObj = {
             })
           }
         />
-        <XDSButton
+        <Button
           label="Progress (overwrite)"
           variant="secondary"
           onClick={() =>
@@ -233,7 +233,7 @@ export const Deduplication: StoryObj = {
             })
           }
         />
-      </XDSStack>
+      </Stack>
     );
   },
   parameters: {
@@ -252,14 +252,14 @@ export const Deduplication: StoryObj = {
 
 export const Stacking: StoryObj = {
   render: function StackingStory() {
-    const toast = useXDSToast();
+    const toast = useToast();
     const countRef = useRef(0);
     return (
-      <XDSButton
+      <Button
         label="Add toast"
         onClick={() => {
           countRef.current++;
-          const types: XDSToastType[] = ['info', 'error'];
+          const types: ToastType[] = ['info', 'error'];
           const type = types[countRef.current % types.length];
           toast({
             body: `Toast #${countRef.current} — ${type} notification.`,
@@ -284,15 +284,15 @@ export const Stacking: StoryObj = {
 
 export const NoProvider: StoryObj = {
   render: function NoProviderStory() {
-    const toast = useXDSToast();
+    const toast = useToast();
     return (
-      <XDSCard padding={4}>
-        <XDSStack gap={2}>
+      <Card padding={4}>
+        <Stack gap={2}>
           <p style={{margin: 0, fontSize: 14}}>
-            No XDSLayerProvider: the hook creates a fallback viewport on
+            No LayerProvider: the hook creates a fallback viewport on
             document.body automatically.
           </p>
-          <XDSButton
+          <Button
             label="Show toast"
             onClick={() =>
               toast({
@@ -300,15 +300,15 @@ export const NoProvider: StoryObj = {
               })
             }
           />
-        </XDSStack>
-      </XDSCard>
+        </Stack>
+      </Card>
     );
   },
   parameters: {
     docs: {
       description: {
         story:
-          '`useXDSToast()` works without a provider. It lazily mounts a fallback viewport on first call.',
+          '`useToast()` works without a provider. It lazily mounts a fallback viewport on first call.',
       },
     },
   },
@@ -322,50 +322,50 @@ export const ToastOverDialog: StoryObj = {
   render: function ToastOverDialogStory() {
     const [isOpen, setIsOpen] = useState(false);
     return (
-      <XDSStack gap={2}>
-        <XDSButton label="Open dialog" onClick={() => setIsOpen(true)} />
-        <XDSDialog isOpen={isOpen} onOpenChange={() => setIsOpen(false)}>
-          <XDSToastViewport isTopLayer={false}>
+      <Stack gap={2}>
+        <Button label="Open dialog" onClick={() => setIsOpen(true)} />
+        <Dialog isOpen={isOpen} onOpenChange={() => setIsOpen(false)}>
+          <ToastViewport isTopLayer={false}>
             <DialogToastContent onClose={() => setIsOpen(false)} />
-          </XDSToastViewport>
-        </XDSDialog>
-      </XDSStack>
+          </ToastViewport>
+        </Dialog>
+      </Stack>
     );
   },
   parameters: {
     docs: {
       description: {
         story:
-          "Dialog with its own `XDSToastViewport`: toasts render inside the dialog's top layer context and appear above the dialog overlay.",
+          "Dialog with its own `ToastViewport`: toasts render inside the dialog's top layer context and appear above the dialog overlay.",
       },
     },
   },
 };
 
 function DialogToastContent({onClose}: {onClose: () => void}) {
-  const toast = useXDSToast();
+  const toast = useToast();
   return (
-    <XDSStack gap={3}>
+    <Stack gap={3}>
       <p>
         This dialog has its own toast viewport. Toasts fired here render inside
         the dialog, above its overlay.
       </p>
-      <XDSStack direction="horizontal" gap={2} wrap="wrap">
-        <XDSButton label="Close" variant="secondary" onClick={onClose} />
-        <XDSButton
+      <Stack direction="horizontal" gap={2} wrap="wrap">
+        <Button label="Close" variant="secondary" onClick={onClose} />
+        <Button
           label="Show toast"
           onClick={() => {
             toast({body: 'Toast from inside the dialog!'});
           }}
         />
-        <XDSButton
+        <Button
           label="Error toast"
           variant="destructive"
           onClick={() => {
             toast({body: 'Something went wrong.', type: 'error'});
           }}
         />
-      </XDSStack>
-    </XDSStack>
+      </Stack>
+    </Stack>
   );
 }

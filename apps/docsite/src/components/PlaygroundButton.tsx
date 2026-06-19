@@ -2,7 +2,7 @@
 
 'use client';
 
-import {XDSButton} from '@xds/core/Button';
+import {Button} from '@xds/core/Button';
 import {buildPlaygroundHref} from './playgroundLink';
 
 interface PlaygroundButtonProps {
@@ -17,7 +17,7 @@ export function PlaygroundButton({
   const href = buildPlaygroundHref(source);
 
   return (
-    <XDSButton
+    <Button
       label={label}
       variant="secondary"
       size="sm"

@@ -4,9 +4,9 @@
 
 import type {ComponentProps} from 'react';
 import {
-  XDSSideNav,
-  XDSSideNavItem,
-  XDSSideNavSection,
+  SideNav,
+  SideNavItem,
+  SideNavSection,
 } from '@xds/core/SideNav';
 
 function HomeIcon(props: ComponentProps<'svg'>) {
@@ -44,15 +44,15 @@ function CogIcon(props: ComponentProps<'svg'>) {
 
 export default function SideNavSectionShowcase() {
   return (
-    <XDSSideNav>
-      <XDSSideNavSection title="Overview">
-        <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected href="#" />
-        <XDSSideNavItem label="Analytics" icon={ChartIcon} href="#" />
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Account">
-        <XDSSideNavItem label="Profile" icon={UserIcon} href="#" />
-        <XDSSideNavItem label="Settings" icon={CogIcon} href="#" />
-      </XDSSideNavSection>
-    </XDSSideNav>
+    <SideNav>
+      <SideNavSection title="Overview">
+        <SideNavItem label="Dashboard" icon={HomeIcon} isSelected href="#" />
+        <SideNavItem label="Analytics" icon={ChartIcon} href="#" />
+      </SideNavSection>
+      <SideNavSection title="Account">
+        <SideNavItem label="Profile" icon={UserIcon} href="#" />
+        <SideNavItem label="Settings" icon={CogIcon} href="#" />
+      </SideNavSection>
+    </SideNav>
   );
 }

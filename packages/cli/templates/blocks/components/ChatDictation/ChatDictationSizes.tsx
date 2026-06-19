@@ -2,10 +2,10 @@
 
 'use client';
 
-import {XDSChatDictationButton} from '@xds/core/Chat';
+import {ChatDictationButton} from '@xds/core/Chat';
 import type {UseSpeechRecognitionReturn} from '@xds/core/Chat';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const noop = () => {};
 
@@ -39,25 +39,25 @@ const listeningDictation: UseSpeechRecognitionReturn = {
 
 export default function ChatDictationSizes() {
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Small
-        </XDSText>
-        <XDSStack direction="horizontal" gap={4} vAlign="center">
-          <XDSChatDictationButton dictation={idleDictation} size="sm" />
-          <XDSChatDictationButton dictation={listeningDictation} size="sm" />
-        </XDSStack>
-      </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+        </Text>
+        <Stack direction="horizontal" gap={4} vAlign="center">
+          <ChatDictationButton dictation={idleDictation} size="sm" />
+          <ChatDictationButton dictation={listeningDictation} size="sm" />
+        </Stack>
+      </Stack>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Medium
-        </XDSText>
-        <XDSStack direction="horizontal" gap={4} vAlign="center">
-          <XDSChatDictationButton dictation={idleDictation} size="md" />
-          <XDSChatDictationButton dictation={listeningDictation} size="md" />
-        </XDSStack>
-      </XDSStack>
-    </XDSStack>
+        </Text>
+        <Stack direction="horizontal" gap={4} vAlign="center">
+          <ChatDictationButton dictation={idleDictation} size="md" />
+          <ChatDictationButton dictation={listeningDictation} size="md" />
+        </Stack>
+      </Stack>
+    </Stack>
   );
 }

@@ -20,11 +20,11 @@ import {createRoot, type Root} from 'react-dom/client';
 import * as stylex from '@stylexjs/stylex';
 import './targetingOverlay.css';
 import {Settings, X} from 'lucide-react';
-import {XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSPopover} from '@xds/core/Popover';
-import {XDSTheme, XDSMediaTheme} from '@xds/core/theme';
+import {HStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Popover} from '@xds/core/Popover';
+import {Theme, MediaTheme} from '@xds/core/theme';
 import type {ThemeMode} from '@xds/core/theme';
 import {astryxTheme} from '../../../themes/astryx';
 import {PropertyEditor} from './PropertyEditor';
@@ -51,19 +51,19 @@ function TargetLabel({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const badge = (
-    <XDSMediaTheme mode="dark">
-      <XDSHStack gap={2} vAlign="center" xstyle={styles.badge}>
-        <XDSText>{name}</XDSText>
+    <MediaTheme mode="dark">
+      <HStack gap={2} vAlign="center" xstyle={styles.badge}>
+        <Text>{name}</Text>
         {isInteractive && (
-          <XDSHStack xstyle={styles.badgeActions}>
-            <XDSButton
+          <HStack xstyle={styles.badgeActions}>
+            <Button
               label="Properties"
               variant="ghost"
               size="sm"
               isIconOnly
               icon={<Settings size={12} />}
             />
-            <XDSButton
+            <Button
               label="Deselect"
               variant="ghost"
               size="sm"
@@ -71,10 +71,10 @@ function TargetLabel({
               icon={<X size={12} />}
               onClick={() => clearSelectionOverlay()}
             />
-          </XDSHStack>
+          </HStack>
         )}
-      </XDSHStack>
-    </XDSMediaTheme>
+      </HStack>
+    </MediaTheme>
   );
 
   if (!isInteractive) {
@@ -86,7 +86,7 @@ function TargetLabel({
   const instanceIndex = sep >= 0 ? Number(id.slice(sep + 1)) : 0;
 
   return (
-    <XDSPopover
+    <Popover
       label="Component properties"
       placement="below"
       alignment="start"
@@ -103,7 +103,7 @@ function TargetLabel({
         />
       }>
       {badge}
-    </XDSPopover>
+    </Popover>
   );
 }
 
@@ -141,7 +141,7 @@ function renderTargetLabel(label: HTMLDivElement) {
   const isInteractive = label.dataset.interactive === 'true';
   const id = label.dataset.labelId ?? '';
   root.render(
-    <XDSTheme theme={astryxTheme} mode={activeSiteMode}>
+    <Theme theme={astryxTheme} mode={activeSiteMode}>
       <TargetLabel
         name={name}
         isInteractive={isInteractive}
@@ -149,7 +149,7 @@ function renderTargetLabel(label: HTMLDivElement) {
         code={cleanSource}
         onCodeChange={postEditToParent}
       />
-    </XDSTheme>,
+    </Theme>,
   );
 }
 

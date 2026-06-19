@@ -9,6 +9,58 @@ import * as path from 'node:path';
 
 const SKIP_DIRS = new Set(['hooks', 'utils', '__tests__', 'node_modules']);
 
+// Component source files are named `XDS{Name}.tsx` today. The XDS-prefix
+// migration (P2380608025, P4) renames them to the bare `{Name}.tsx` form, so
+// discovery must recognize BOTH. The `XDS` prefix has historically doubled as
+// a "this is a top-level component" marker, so naively matching all PascalCase
+// `.tsx` files would surface internal helpers that happen to be PascalCase
+// (`OverlayScrim.tsx`, `PowerSearchEditPopover.tsx`, ...). To avoid that
+// regression, a BARE-named file is only treated as a component when a matching
+// doc file exists for it (`{Name}.doc.mjs` or `XDS{Name}.doc.mjs` in the same
+// directory). Prefixed `XDS{Name}.tsx` files keep their existing behavior.
+const PREFIXED_COMPONENT_FILE_RE = /^XDS[A-Z]\w+\.tsx$/;
+const BARE_COMPONENT_FILE_RE = /^[A-Z]\w+\.tsx$/;
+
+/**
+ * Whether a filename looks like a component source file, excluding tests,
+ * Context files, and (implicitly, via the uppercase-first match) `use*` hooks.
+ *
+ * Recognizes both the current `XDSButton.tsx` form and the post-migration
+ * bare `Button.tsx` form. Bare matches additionally require a sibling doc file
+ * so internal PascalCase helpers are not misclassified as components.
+ *
+ * @param {string} fileName
+ * @param {string} dirPath — directory containing the file (for the bare-name doc check)
+ * @returns {boolean}
+ */
+function isComponentSourceFile(fileName, dirPath) {
+  if (fileName.includes('.test.') || fileName.includes('Context.')) {
+    return false;
+  }
+  if (PREFIXED_COMPONENT_FILE_RE.test(fileName)) {
+    return true;
+  }
+  if (BARE_COMPONENT_FILE_RE.test(fileName)) {
+    const base = fileName.replace(/\.tsx$/, '');
+    return (
+      fs.existsSync(path.join(dirPath, `${base}.doc.mjs`)) ||
+      fs.existsSync(path.join(dirPath, `XDS${base}.doc.mjs`))
+    );
+  }
+  return false;
+}
+
+/**
+ * Strip the optional `XDS` prefix and `.tsx` suffix to get the bare component
+ * name. Works for both `XDSButton.tsx` and `Button.tsx`.
+ *
+ * @param {string} fileName
+ * @returns {string}
+ */
+function componentNameFromFile(fileName) {
+  return fileName.replace(/^XDS/, '').replace(/\.tsx$/, '');
+}
+
 // Matches the top-level `group: 'GroupName'` field in a .doc.mjs file.
 // Only matches at shallow indentation (≤ 4 spaces from line start) to avoid
 // picking up nested `group:` fields inside prop descriptions.
@@ -64,11 +116,7 @@ export function discoverComponents(coreDir) {
     for (const entry of entries) {
       if (entry.isDirectory()) {
         results.push(...collectXDSFiles(path.join(dirPath, entry.name)));
-      } else if (
-        /^XDS[A-Z]\w+\.tsx$/.test(entry.name) &&
-        !entry.name.includes('.test.') &&
-        !entry.name.includes('Context.')
-      ) {
+      } else if (isComponentSourceFile(entry.name, dirPath)) {
         results.push(entry.name);
       }
     }
@@ -96,7 +144,7 @@ export function discoverComponents(coreDir) {
     if (hidden) continue;
 
     for (const fileName of xdsFiles) {
-      const componentName = fileName.replace(/^XDS/, '').replace(/\.tsx$/, '');
+      const componentName = componentNameFromFile(fileName);
       if (hiddenComponents.has(componentName)) continue;
 
       // Check for a per-component doc file that overrides the directory group
@@ -222,15 +270,21 @@ export function findComponentReadme(coreDir, name) {
  */
 export function findComponentSource(coreDir, name) {
   const srcDir = path.join(coreDir, 'src');
-  const xdsName = `XDS${name}.tsx`;
+  // Try the prefixed form (`XDSButton.tsx`) first since that is the current
+  // on-disk convention, then the bare form (`Button.tsx`) that the XDS-prefix
+  // migration (P4) renames to. Listing the prefixed name first keeps behavior
+  // identical until files are actually renamed.
+  const candidateFiles = [`XDS${name}.tsx`, `${name}.tsx`];
 
   function searchDir(dirPath) {
     if (!fs.existsSync(dirPath)) return null;
     const entries = fs.readdirSync(dirPath, {withFileTypes: true});
 
-    // Check for exact match first
-    const exact = path.join(dirPath, xdsName);
-    if (fs.existsSync(exact)) return exact;
+    // Check for an exact match (prefixed or bare) first
+    for (const candidate of candidateFiles) {
+      const exact = path.join(dirPath, candidate);
+      if (fs.existsSync(exact)) return exact;
+    }
 
     // Recurse into subdirectories
     for (const entry of entries) {

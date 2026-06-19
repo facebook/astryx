@@ -28,7 +28,7 @@
  *     - Otherwise treat as PascalCase / camelCase and space-separate the
  *       words while preserving capitalization
  *       (`ChatMessageMetadata` -> `Chat Message Metadata`,
- *        `XDSButton`         -> `XDS Button`).
+ *        `Button`         -> `XDS Button`).
  *
  * Run from the repo root:
  *   node apps/docsite/scripts/backfill-display-name.mjs
@@ -81,7 +81,7 @@ function findDocFiles(root, out = []) {
  *  - Otherwise treat as PascalCase / camelCase, insert spaces between
  *    word boundaries while preserving capitalization:
  *    `ChatMessageMetadata` -> `Chat Message Metadata`.
- *    `XDSButton`           -> `XDS Button`.
+ *    `Button`           -> `XDS Button`.
  */
 function deriveDisplayName(name) {
   if (!name) return name;
@@ -100,7 +100,7 @@ function deriveDisplayName(name) {
 //
 // We also DO need to handle subcomponent / hook entries that live inside
 // `components: [...]` arrays in a parent .doc.mjs (e.g. AlertDialog has
-// XDSAlertDialog + useXDSImperativeAlertDialog as nested entries). The
+// AlertDialog + useImperativeAlertDialog as nested entries). The
 // generator's `requireDisplayName` validator reads `displayName` from
 // each subcomponent at runtime, so each nested object needs the field too.
 //
@@ -130,9 +130,9 @@ function looksLikeComponentName(name) {
   // Multi-word names (e.g. "Blank Page") are always component / template
   // display names.
   if (name.includes(' ')) return true;
-  // PascalCase identifiers (`Button`, `AlertDialog`, `XDSAlertDialog`).
+  // PascalCase identifiers (`Button`, `AlertDialog`, `AlertDialog`).
   if (/^[A-Z][A-Za-z0-9]*$/.test(name)) return true;
-  // Hook identifiers (`useFoo`, `useXDSFoo`).
+  // Hook identifiers (`useFoo`, `useFoo`).
   if (/^use[A-Z][A-Za-z0-9]*$/.test(name)) return true;
   return false;
 }

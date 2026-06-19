@@ -11,9 +11,9 @@ import React, {
   useCallback,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSSkeleton} from '@xds/core/Skeleton';
-import {XDSText} from '@xds/core/Text';
-import {XDSTheme} from '@xds/core/theme';
+import {Skeleton} from '@xds/core/Skeleton';
+import {Text} from '@xds/core/Text';
+import {Theme} from '@xds/core/theme';
 import {neutralTheme} from '@xds/theme-neutral/built';
 import {useThemeMode} from '../app/providers';
 
@@ -73,9 +73,9 @@ class ShowcaseErrorBoundary extends React.Component<
     if (this.state.hasError) {
       return (
         <div {...stylex.props(styles.errorFallback)}>
-          <XDSText type="supporting" color="secondary">
+          <Text type="supporting" color="secondary">
             Preview unavailable
-          </XDSText>
+          </Text>
         </div>
       );
     }
@@ -171,12 +171,12 @@ export function ShowcaseThumbnail({
             <Suspense
               fallback={
                 <div {...stylex.props(styles.skeleton)}>
-                  <XDSSkeleton width="100%" height="100%" />
+                  <Skeleton width="100%" height="100%" />
                 </div>
               }>
-              <XDSTheme theme={neutralTheme} mode={mode}>
+              <Theme theme={neutralTheme} mode={mode}>
                 <Component />
-              </XDSTheme>
+              </Theme>
             </Suspense>
           </ShowcaseErrorBoundary>
         </div>

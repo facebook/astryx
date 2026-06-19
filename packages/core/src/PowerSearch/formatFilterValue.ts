@@ -4,7 +4,7 @@
  * @file formatFilterValue.ts
  * @input OperatorValue, FilterValue, config
  * @output Formatted display string for a filter value
- * @position Pure utility; consumed by XDSPowerSearch token rendering
+ * @position Pure utility; consumed by PowerSearch token rendering
  *
  * SYNC: When modified, update:
  * - /packages/core/src/PowerSearch/index.ts

@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSPowerSearch} from '@xds/core/PowerSearch';
+import {PowerSearch} from '@xds/core/PowerSearch';
 import type {PowerSearchConfig, PowerSearchFilter} from '@xds/core/PowerSearch';
 
 const statusValues = [
@@ -63,7 +63,7 @@ export default function PowerSearchContentSearch() {
   const [filters, setFilters] = useState<PowerSearchFilter[]>([]);
 
   return (
-    <XDSPowerSearch
+    <PowerSearch
       style={{width: 300}}
       config={config}
       filters={filters}

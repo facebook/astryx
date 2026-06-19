@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSStack} from '@xds/core/Layout';
+import {TextInput} from '@xds/core/TextInput';
+import {Stack} from '@xds/core/Layout';
 
 export default function TextInputSizes() {
   const [sm, setSm] = useState('');
@@ -13,29 +13,29 @@ export default function TextInputSizes() {
 
   return (
     <div style={{width: 300}}>
-      <XDSStack direction="vertical" gap={3}>
-        <XDSTextInput
+      <Stack direction="vertical" gap={3}>
+        <TextInput
           label="Small"
           value={sm}
           onChange={setSm}
           placeholder="Enter a value"
           size="sm"
         />
-        <XDSTextInput
+        <TextInput
           label="Medium"
           value={md}
           onChange={setMd}
           placeholder="Enter a value"
           size="md"
         />
-        <XDSTextInput
+        <TextInput
           label="Large"
           value={lg}
           onChange={setLg}
           placeholder="Enter a value"
           size="lg"
         />
-      </XDSStack>
+      </Stack>
     </div>
   );
 }

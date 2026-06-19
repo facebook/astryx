@@ -47,7 +47,7 @@ export const docs = {
     },
     {
       name: 'labelIcon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: 'Icon before the label text. See `npx xds docs icons` for valid semantic names.',
     },
     {
@@ -102,7 +102,7 @@ export const docsZh = {
     },
     {
       name: 'labelIcon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: '标签文本前的图标。',
     },
     {

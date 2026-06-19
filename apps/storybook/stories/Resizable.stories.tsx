@@ -3,16 +3,16 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '@xds/core/theme/tokens.stylex';
-import {XDSResizeHandle, useXDSResizable} from '@xds/core/Resizable';
-import {XDSText, XDSHeading} from '@xds/core/Text';
+import {ResizeHandle, useResizable} from '@xds/core/Resizable';
+import {Text, Heading} from '@xds/core/Text';
 import {
-  XDSLayout,
-  XDSLayoutContent,
-  XDSLayoutPanel,
-  XDSStack,
+  Layout,
+  LayoutContent,
+  LayoutPanel,
+  Stack,
 } from '@xds/core/Layout';
-import {XDSSideNav, XDSSideNavItem} from '@xds/core/SideNav';
-import {XDSDivider} from '@xds/core/Divider';
+import {SideNav, SideNavItem} from '@xds/core/SideNav';
+import {Divider} from '@xds/core/Divider';
 
 const ps = stylex.create({
   shell: {
@@ -27,49 +27,49 @@ const ps = stylex.create({
   sz: {opacity: 0.6, fontSize: 12, fontFamily: 'monospace'},
 });
 
-const meta: Meta<typeof XDSResizeHandle> = {
+const meta: Meta<typeof ResizeHandle> = {
   title: 'Lab/Resizable',
-  component: XDSResizeHandle,
+  component: ResizeHandle,
   tags: ['autodocs'],
   parameters: {
     layout: 'padded',
     docs: {
       description: {
         component:
-          'Hook-based resizable panel system. useXDSResizable() manages size state; ' +
-          'XDSResizeHandle provides the interactive pill-grip separator with optional divider line.',
+          'Hook-based resizable panel system. useResizable() manages size state; ' +
+          'ResizeHandle provides the interactive pill-grip separator with optional divider line.',
       },
     },
   },
 };
 export default meta;
-type Story = StoryObj<typeof XDSResizeHandle>;
+type Story = StoryObj<typeof ResizeHandle>;
 /** Basic horizontal split with divider line. */
 export const HorizontalSplit: Story = {
   render: () => {
-    const sidebar = useXDSResizable({
+    const sidebar = useResizable({
       defaultSize: 250,
       minSizePx: 150,
       maxSizePx: 500,
     });
     return (
       <div {...stylex.props(ps.shell)}>
-        <XDSLayout
+        <Layout
           height="fill"
           start={
             <>
-              <XDSLayoutPanel width={sidebar.size} hasDivider={false}>
-                <XDSStack gap={2}>
-                  <XDSHeading level={4}>Sidebar</XDSHeading>
-                  <XDSText>
+              <LayoutPanel width={sidebar.size} hasDivider={false}>
+                <Stack gap={2}>
+                  <Heading level={4}>Sidebar</Heading>
+                  <Text>
                     <span {...stylex.props(ps.sz)}>{sidebar.size}px</span>
-                  </XDSText>
-                  <XDSText>
+                  </Text>
+                  <Text>
                     Drag the handle to resize. Arrow keys when focused.
-                  </XDSText>
-                </XDSStack>
-              </XDSLayoutPanel>
-              <XDSResizeHandle
+                  </Text>
+                </Stack>
+              </LayoutPanel>
+              <ResizeHandle
                 direction="horizontal"
                 hasDivider
                 resizable={sidebar.props}
@@ -78,12 +78,12 @@ export const HorizontalSplit: Story = {
             </>
           }
           content={
-            <XDSLayoutContent>
-              <XDSStack gap={2}>
-                <XDSHeading level={4}>Content</XDSHeading>
-                <XDSText>Main content area fills remaining space.</XDSText>
-              </XDSStack>
-            </XDSLayoutContent>
+            <LayoutContent>
+              <Stack gap={2}>
+                <Heading level={4}>Content</Heading>
+                <Text>Main content area fills remaining space.</Text>
+              </Stack>
+            </LayoutContent>
           }
         />
       </div>
@@ -94,26 +94,26 @@ export const HorizontalSplit: Story = {
 /** Vertical split with divider line. */
 export const VerticalSplit: Story = {
   render: () => {
-    const top = useXDSResizable({
+    const top = useResizable({
       defaultSize: 250,
       minSizePx: 100,
       maxSizePx: 350,
     });
     return (
       <div {...stylex.props(ps.shell)}>
-        <XDSLayout
+        <Layout
           height="fill"
           header={
             <div style={{height: top.size}}>
-              <XDSLayoutPanel padding={4} width="100%">
-                <XDSStack gap={2}>
-                  <XDSHeading level={4}>Editor</XDSHeading>
-                  <XDSText>
+              <LayoutPanel padding={4} width="100%">
+                <Stack gap={2}>
+                  <Heading level={4}>Editor</Heading>
+                  <Text>
                     <span {...stylex.props(ps.sz)}>{top.size}px</span>
-                  </XDSText>
-                </XDSStack>
-              </XDSLayoutPanel>
-              <XDSResizeHandle
+                  </Text>
+                </Stack>
+              </LayoutPanel>
+              <ResizeHandle
                 direction="vertical"
                 hasDivider
                 resizable={top.props}
@@ -122,12 +122,12 @@ export const VerticalSplit: Story = {
             </div>
           }
           content={
-            <XDSLayoutContent>
-              <XDSStack gap={2}>
-                <XDSHeading level={4}>Terminal</XDSHeading>
-                <XDSText>Bottom panel fills remaining space.</XDSText>
-              </XDSStack>
-            </XDSLayoutContent>
+            <LayoutContent>
+              <Stack gap={2}>
+                <Heading level={4}>Terminal</Heading>
+                <Text>Bottom panel fills remaining space.</Text>
+              </Stack>
+            </LayoutContent>
           }
         />
       </div>
@@ -138,7 +138,7 @@ export const VerticalSplit: Story = {
 /** Collapsible sidebar — drag past threshold or double-click to collapse. */
 export const Collapsible: Story = {
   render: () => {
-    const sidebar = useXDSResizable({
+    const sidebar = useResizable({
       defaultSize: 260,
       minSizePx: 180,
       collapsible: true,
@@ -146,24 +146,24 @@ export const Collapsible: Story = {
     });
     return (
       <div {...stylex.props(ps.shell)}>
-        <XDSLayout
+        <Layout
           height="fill"
           start={
             <>
               {!sidebar.isCollapsed && (
-                <XDSLayoutPanel width={sidebar.size} hasDivider={false}>
-                  <XDSStack gap={2}>
-                    <XDSHeading level={4}>Sidebar</XDSHeading>
-                    <XDSText>
+                <LayoutPanel width={sidebar.size} hasDivider={false}>
+                  <Stack gap={2}>
+                    <Heading level={4}>Sidebar</Heading>
+                    <Text>
                       <span {...stylex.props(ps.sz)}>{sidebar.size}px</span>
-                    </XDSText>
-                    <XDSText>
+                    </Text>
+                    <Text>
                       Double-click handle or press Enter to collapse.
-                    </XDSText>
-                  </XDSStack>
-                </XDSLayoutPanel>
+                    </Text>
+                  </Stack>
+                </LayoutPanel>
               )}
-              <XDSResizeHandle
+              <ResizeHandle
                 direction="horizontal"
                 hasDivider
                 resizable={sidebar.props}
@@ -172,10 +172,10 @@ export const Collapsible: Story = {
             </>
           }
           content={
-            <XDSLayoutContent>
-              <XDSStack gap={2}>
-                <XDSHeading level={4}>Content</XDSHeading>
-                <XDSText>
+            <LayoutContent>
+              <Stack gap={2}>
+                <Heading level={4}>Content</Heading>
+                <Text>
                   Sidebar is {sidebar.isCollapsed ? 'collapsed' : 'expanded'}.
                   {sidebar.isCollapsed && (
                     <button
@@ -184,9 +184,9 @@ export const Collapsible: Story = {
                       Expand
                     </button>
                   )}
-                </XDSText>
-              </XDSStack>
-            </XDSLayoutContent>
+                </Text>
+              </Stack>
+            </LayoutContent>
           }
         />
       </div>
@@ -197,31 +197,31 @@ export const Collapsible: Story = {
 /** Three-panel IDE layout with nested horizontal + vertical splits. */
 export const ThreePanelIDE: Story = {
   render: () => {
-    const explorer = useXDSResizable({
+    const explorer = useResizable({
       defaultSize: 220,
       minSizePx: 150,
       maxSizePx: 400,
     });
-    const editor = useXDSResizable({
+    const editor = useResizable({
       defaultSize: 280,
       minSizePx: 100,
       maxSizePx: 350,
     });
     return (
       <div {...stylex.props(ps.shell)}>
-        <XDSLayout
+        <Layout
           height="fill"
           start={
             <>
-              <XDSLayoutPanel width={explorer.size} hasDivider={false}>
-                <XDSStack gap={2}>
-                  <XDSHeading level={4}>Explorer</XDSHeading>
-                  <XDSText>
+              <LayoutPanel width={explorer.size} hasDivider={false}>
+                <Stack gap={2}>
+                  <Heading level={4}>Explorer</Heading>
+                  <Text>
                     <span {...stylex.props(ps.sz)}>{explorer.size}px</span>
-                  </XDSText>
-                </XDSStack>
-              </XDSLayoutPanel>
-              <XDSResizeHandle
+                  </Text>
+                </Stack>
+              </LayoutPanel>
+              <ResizeHandle
                 direction="horizontal"
                 hasDivider
                 resizable={explorer.props}
@@ -230,7 +230,7 @@ export const ThreePanelIDE: Story = {
             </>
           }
           content={
-            <XDSLayoutContent padding={0}>
+            <LayoutContent padding={0}>
               <div
                 style={{
                   display: 'flex',
@@ -238,24 +238,24 @@ export const ThreePanelIDE: Story = {
                   height: '100%',
                 }}>
                 <div style={{flex: 'none', height: editor.size, padding: 16}}>
-                  <XDSStack gap={2}>
-                    <XDSHeading level={4}>Editor</XDSHeading>
-                    <XDSText>
+                  <Stack gap={2}>
+                    <Heading level={4}>Editor</Heading>
+                    <Text>
                       <span {...stylex.props(ps.sz)}>{editor.size}px</span>
-                    </XDSText>
-                  </XDSStack>
+                    </Text>
+                  </Stack>
                 </div>
-                <XDSResizeHandle
+                <ResizeHandle
                   direction="vertical"
                   hasDivider
                   resizable={editor.props}
                   label="Resize editor"
                 />
                 <div style={{flex: 1, padding: 16}}>
-                  <XDSHeading level={4}>Terminal</XDSHeading>
+                  <Heading level={4}>Terminal</Heading>
                 </div>
               </div>
-            </XDSLayoutContent>
+            </LayoutContent>
           }
         />
       </div>
@@ -266,7 +266,7 @@ export const ThreePanelIDE: Story = {
 /** Snap points — sidebar snaps to predefined widths. */
 export const SnapPoints: Story = {
   render: () => {
-    const sidebar = useXDSResizable({
+    const sidebar = useResizable({
       defaultSize: 260,
       minSizePx: 56,
       maxSizePx: 600,
@@ -275,26 +275,26 @@ export const SnapPoints: Story = {
     const isRail = sidebar.size <= 60;
     return (
       <div {...stylex.props(ps.shell)}>
-        <XDSLayout
+        <Layout
           height="fill"
           start={
             <>
-              <XDSLayoutPanel width={sidebar.size} hasDivider={false}>
+              <LayoutPanel width={sidebar.size} hasDivider={false}>
                 {isRail ? (
-                  <XDSText>{'\u2630'}</XDSText>
+                  <Text>{'\u2630'}</Text>
                 ) : (
-                  <XDSStack gap={2}>
-                    <XDSHeading level={4}>Sidebar</XDSHeading>
-                    <XDSText>
+                  <Stack gap={2}>
+                    <Heading level={4}>Sidebar</Heading>
+                    <Text>
                       <span {...stylex.props(ps.sz)}>{sidebar.size}px</span>
-                    </XDSText>
-                    <XDSText>
+                    </Text>
+                    <Text>
                       Snaps to 56 \u00b7 160 \u00b7 260 \u00b7 400px.
-                    </XDSText>
-                  </XDSStack>
+                    </Text>
+                  </Stack>
                 )}
-              </XDSLayoutPanel>
-              <XDSResizeHandle
+              </LayoutPanel>
+              <ResizeHandle
                 direction="horizontal"
                 hasDivider
                 resizable={sidebar.props}
@@ -303,9 +303,9 @@ export const SnapPoints: Story = {
             </>
           }
           content={
-            <XDSLayoutContent>
-              <XDSHeading level={4}>Content</XDSHeading>
-            </XDSLayoutContent>
+            <LayoutContent>
+              <Heading level={4}>Content</Heading>
+            </LayoutContent>
           }
         />
       </div>
@@ -316,27 +316,27 @@ export const SnapPoints: Story = {
 /** Pill hidden at rest — only appears on hover/focus. */
 export const HiddenPill: Story = {
   render: () => {
-    const sidebar = useXDSResizable({
+    const sidebar = useResizable({
       defaultSize: 250,
       minSizePx: 150,
       maxSizePx: 500,
     });
     return (
       <div {...stylex.props(ps.shell)}>
-        <XDSLayout
+        <Layout
           height="fill"
           start={
             <>
-              <XDSLayoutPanel width={sidebar.size} hasDivider={false}>
-                <XDSStack gap={2}>
-                  <XDSHeading level={4}>Sidebar</XDSHeading>
-                  <XDSText>
+              <LayoutPanel width={sidebar.size} hasDivider={false}>
+                <Stack gap={2}>
+                  <Heading level={4}>Sidebar</Heading>
+                  <Text>
                     <span {...stylex.props(ps.sz)}>{sidebar.size}px</span>
-                  </XDSText>
-                  <XDSText>Pill only appears on hover.</XDSText>
-                </XDSStack>
-              </XDSLayoutPanel>
-              <XDSResizeHandle
+                  </Text>
+                  <Text>Pill only appears on hover.</Text>
+                </Stack>
+              </LayoutPanel>
+              <ResizeHandle
                 direction="horizontal"
                 hasDivider
                 isAlwaysVisible={false}
@@ -346,9 +346,9 @@ export const HiddenPill: Story = {
             </>
           }
           content={
-            <XDSLayoutContent>
-              <XDSHeading level={4}>Content</XDSHeading>
-            </XDSLayoutContent>
+            <LayoutContent>
+              <Heading level={4}>Content</Heading>
+            </LayoutContent>
           }
         />
       </div>
@@ -359,17 +359,17 @@ export const HiddenPill: Story = {
 /** Disabled handle — divider visible but non-interactive. */
 export const Disabled: Story = {
   render: () => {
-    const sidebar = useXDSResizable({defaultSize: 250, minSizePx: 150});
+    const sidebar = useResizable({defaultSize: 250, minSizePx: 150});
     return (
       <div {...stylex.props(ps.shell)}>
-        <XDSLayout
+        <Layout
           height="fill"
           start={
             <>
-              <XDSLayoutPanel width={sidebar.size} hasDivider={false}>
-                <XDSHeading level={4}>Sidebar (locked)</XDSHeading>
-              </XDSLayoutPanel>
-              <XDSResizeHandle
+              <LayoutPanel width={sidebar.size} hasDivider={false}>
+                <Heading level={4}>Sidebar (locked)</Heading>
+              </LayoutPanel>
+              <ResizeHandle
                 direction="horizontal"
                 hasDivider
                 resizable={sidebar.props}
@@ -379,9 +379,9 @@ export const Disabled: Story = {
             </>
           }
           content={
-            <XDSLayoutContent>
-              <XDSHeading level={4}>Content</XDSHeading>
-            </XDSLayoutContent>
+            <LayoutContent>
+              <Heading level={4}>Content</Heading>
+            </LayoutContent>
           }
         />
       </div>
@@ -389,10 +389,10 @@ export const Disabled: Story = {
   },
 };
 
-/** Integration with XDSLayout — resizable sidebar with collapsible. */
-export const WithXDSLayout: Story = {
+/** Integration with Layout — resizable sidebar with collapsible. */
+export const WithLayout: Story = {
   render: () => {
-    const sidebar = useXDSResizable({
+    const sidebar = useResizable({
       defaultSize: 260,
       minSizePx: 180,
       maxSizePx: 450,
@@ -401,28 +401,28 @@ export const WithXDSLayout: Story = {
     });
     return (
       <div {...stylex.props(ps.shell)} style={{height: 500}}>
-        <XDSLayout
+        <Layout
           height="fill"
           start={
             <>
               {!sidebar.isCollapsed && (
-                <XDSLayoutPanel
+                <LayoutPanel
                   resizable={sidebar.props}
                   hasDivider={false}
                   role="navigation"
                   label="Sidebar">
-                  <XDSStack gap={2}>
-                    <XDSHeading level={4}>Navigation</XDSHeading>
-                    <XDSText>
+                  <Stack gap={2}>
+                    <Heading level={4}>Navigation</Heading>
+                    <Text>
                       <span {...stylex.props(ps.sz)}>{sidebar.size}px</span>
-                    </XDSText>
-                    <XDSDivider />
-                    <XDSText>Drag the handle to resize.</XDSText>
-                    <XDSText>Double-click or press Enter to collapse.</XDSText>
-                  </XDSStack>
-                </XDSLayoutPanel>
+                    </Text>
+                    <Divider />
+                    <Text>Drag the handle to resize.</Text>
+                    <Text>Double-click or press Enter to collapse.</Text>
+                  </Stack>
+                </LayoutPanel>
               )}
-              <XDSResizeHandle
+              <ResizeHandle
                 direction="horizontal"
                 hasDivider
                 resizable={sidebar.props}
@@ -431,14 +431,14 @@ export const WithXDSLayout: Story = {
             </>
           }
           content={
-            <XDSLayoutContent>
-              <XDSStack gap={3}>
-                <XDSHeading level={3}>Main Content</XDSHeading>
-                <XDSText>
-                  XDSLayoutPanel with resizable prop + XDSResizeHandle with
+            <LayoutContent>
+              <Stack gap={3}>
+                <Heading level={3}>Main Content</Heading>
+                <Text>
+                  LayoutPanel with resizable prop + ResizeHandle with
                   hasDivider.
-                </XDSText>
-                <XDSText>
+                </Text>
+                <Text>
                   Sidebar is{' '}
                   <strong>
                     {sidebar.isCollapsed ? 'collapsed' : 'expanded'}
@@ -450,9 +450,9 @@ export const WithXDSLayout: Story = {
                       Expand
                     </button>
                   )}
-                </XDSText>
-              </XDSStack>
-            </XDSLayoutContent>
+                </Text>
+              </Stack>
+            </LayoutContent>
           }
         />
       </div>
@@ -463,7 +463,7 @@ export const WithXDSLayout: Story = {
 /** AppShell with resizable SideNav. */
 export const WithAppShell: Story = {
   render: () => {
-    const nav = useXDSResizable({
+    const nav = useResizable({
       defaultSize: 260,
       minSizePx: 200,
       maxSizePx: 400,
@@ -473,20 +473,20 @@ export const WithAppShell: Story = {
     });
     return (
       <div {...stylex.props(ps.shell)} style={{height: 500}}>
-        <XDSLayout
+        <Layout
           height="fill"
           start={
             <>
               {!nav.isCollapsed && (
-                <XDSLayoutPanel width={nav.size} hasDivider={false} padding={0}>
-                  <XDSSideNav>
-                    <XDSSideNavItem label="Home" isSelected />
-                    <XDSSideNavItem label="Dashboard" />
-                    <XDSSideNavItem label="Settings" />
-                  </XDSSideNav>
-                </XDSLayoutPanel>
+                <LayoutPanel width={nav.size} hasDivider={false} padding={0}>
+                  <SideNav>
+                    <SideNavItem label="Home" isSelected />
+                    <SideNavItem label="Dashboard" />
+                    <SideNavItem label="Settings" />
+                  </SideNav>
+                </LayoutPanel>
               )}
-              <XDSResizeHandle
+              <ResizeHandle
                 direction="horizontal"
                 hasDivider
                 resizable={nav.props}
@@ -495,20 +495,20 @@ export const WithAppShell: Story = {
             </>
           }
           content={
-            <XDSLayoutContent>
-              <XDSStack gap={3}>
-                <XDSHeading level={3}>Dashboard</XDSHeading>
-                <XDSText>
+            <LayoutContent>
+              <Stack gap={3}>
+                <Heading level={3}>Dashboard</Heading>
+                <Text>
                   <span {...stylex.props(ps.sz)}>{nav.size}px</span>
                   {' \u2014 '}
                   {nav.isCollapsed ? 'Collapsed' : 'Expanded'}
-                </XDSText>
-                <XDSText>
-                  SideNav width driven by useXDSResizable. Double-click handle
+                </Text>
+                <Text>
+                  SideNav width driven by useResizable. Double-click handle
                   to collapse.
-                </XDSText>
-              </XDSStack>
-            </XDSLayoutContent>
+                </Text>
+              </Stack>
+            </LayoutContent>
           }
         />
       </div>
