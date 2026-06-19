@@ -8,6 +8,14 @@ export const docs = {
   displayName: 'Segmented Control Item',
   isHiddenFromOverview: true,
   description: 'Individual segment item rendering as a radio button within the segmented control.',
+  // XDSSegmentedControlItem requires XDSSegmentedControl context; wrap it so the preview doesn't throw.
+  playground: {
+    defaults: {value: 'item-1', label: 'Item'},
+    wrapper: {
+      component: 'XDSSegmentedControl',
+      props: {value: 'item-1', label: 'Segmented control'},
+    },
+  },
   props: [
     {
       name: 'value',

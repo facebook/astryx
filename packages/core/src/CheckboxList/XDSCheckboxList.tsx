@@ -25,6 +25,7 @@ import {
   type ReactNode,
 } from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
 import {XDSField} from '../Field/XDSField';
 import type {XDSInputStatus} from '../Field/types';
 import {XDSList} from '../List/XDSList';
@@ -72,14 +73,11 @@ export interface XDSCheckboxListProps extends Omit<
   onChange?: (values: string[]) => void;
   /**
    * Async action on change. Fires after onChange.
-   * While pending, items show reduced opacity and aria-busy.
+   * While the returned promise is pending, the toggled item shows a spinner
+   * inside its checkbox and is marked `aria-busy`, and re-toggling it is
+   * blocked. Other items remain interactive.
    */
   changeAction?: (values: string[]) => void | Promise<void>;
-  /**
-   * Whether the checkbox group is in an external loading state.
-   * @default false
-   */
-  isLoading?: boolean;
   /**
    * Spacing density for list items.
    * @default 'balanced'
@@ -102,6 +100,12 @@ export interface XDSCheckboxListProps extends Omit<
    * @default false
    */
   isReadOnly?: boolean;
+  /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
   /**
    * Checkbox list items to render.
    */
@@ -134,13 +138,13 @@ export function XDSCheckboxList({
   value,
   onChange,
   changeAction,
-  isLoading = false,
   density = 'balanced',
   hasDividers = false,
   isDisabled = false,
   isReadOnly = false,
   children,
   ref,
+  width,
   xstyle,
   className,
   style,
@@ -154,19 +158,30 @@ export function XDSCheckboxList({
   const isCollectionMode = value !== undefined;
   const effectiveValue = value ?? EMPTY_ARRAY;
   const [optimisticValue, setOptimisticValue] = useOptimistic(effectiveValue);
-  const isBusy = isLoading || optimisticValue !== effectiveValue;
+  // Tracks which item has a pending `changeAction`. Auto-reverts to null when
+  // the transition settles, so the spinner clears without manual cleanup.
+  const [loadingValue, setLoadingValue] = useOptimistic<string | null>(null);
 
   const handleChange = useCallback(
-    (newValues: string[]) => {
+    (newValues: string[], toggledValue?: string) => {
       onChange?.(newValues);
       if (changeAction) {
         startTransition(async () => {
           setOptimisticValue(newValues);
+          if (toggledValue !== undefined) {
+            setLoadingValue(toggledValue);
+          }
           await changeAction(newValues);
         });
       }
     },
-    [onChange, changeAction, startTransition, setOptimisticValue],
+    [
+      onChange,
+      changeAction,
+      startTransition,
+      setOptimisticValue,
+      setLoadingValue,
+    ],
   );
 
   const contextValue = useMemo<XDSCheckboxListContextValue>(
@@ -175,7 +190,7 @@ export function XDSCheckboxList({
       onChange: isCollectionMode ? handleChange : undefined,
       isDisabled,
       isReadOnly,
-      isBusy,
+      loadingValue,
     }),
     [
       isCollectionMode,
@@ -183,7 +198,7 @@ export function XDSCheckboxList({
       handleChange,
       isDisabled,
       isReadOnly,
-      isBusy,
+      loadingValue,
     ],
   );
 
@@ -207,6 +222,7 @@ export function XDSCheckboxList({
           : undefined
       }
       statusVariant="detached"
+      width={width}
       xstyle={xstyle}
       {...mergeProps(xdsThemeProps('checkbox-list'), {className, style})}>
       <XDSCheckboxListContext value={contextValue}>

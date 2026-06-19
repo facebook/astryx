@@ -68,6 +68,16 @@ export interface XDSCheckboxListItemProps extends XDSBaseProps<HTMLLIElement> {
    */
   isDisabled?: boolean;
   /**
+   * Whether this item is in a loading state. Renders a spinner inside the
+   * checkbox and blocks interaction on this item only.
+   *
+   * In collection mode, this is also driven automatically: when the parent
+   * `XDSCheckboxList` has a `changeAction`, the toggled item shows its
+   * spinner while that promise is pending.
+   * @default false
+   */
+  isLoading?: boolean;
+  /**
    * Direct checked state (standalone mode only).
    * Ignored when inside XDSCheckboxList.
    */
@@ -111,6 +121,7 @@ export function XDSCheckboxListItem({
   description,
   endContent,
   isDisabled: isItemDisabled = false,
+  isLoading: isItemLoading = false,
   isChecked,
   onCheck,
   ref,
@@ -135,7 +146,13 @@ export function XDSCheckboxListItem({
   // Disabled: parent-level OR item-level
   const effectiveDisabled = (ctx?.isDisabled ?? false) || isItemDisabled;
   const effectiveReadOnly = ctx?.isReadOnly ?? false;
-  const isBusy = ctx?.isBusy ?? false;
+  // Loading is per-item: explicit item prop OR (collection mode) the item
+  // whose `changeAction` is currently pending in the parent.
+  const isBusy =
+    isItemLoading ||
+    (ctx?.loadingValue != null && value !== undefined
+      ? ctx.loadingValue === value
+      : false);
 
   // Resolve checked state:
   // 1. Collection mode (inside XDSCheckboxList with value[])
@@ -157,12 +174,16 @@ export function XDSCheckboxListItem({
     }
 
     if (ctx && ctx.value !== undefined && value !== undefined) {
-      // Collection mode
+      // Collection mode — pass the toggled value up so the list can show a
+      // spinner on this item while a changeAction is pending.
       const currentlyChecked = ctx.value.includes(value);
       if (currentlyChecked) {
-        ctx.onChange?.(ctx.value.filter(v => v !== value));
+        ctx.onChange?.(
+          ctx.value.filter(v => v !== value),
+          value,
+        );
       } else {
-        ctx.onChange?.([...ctx.value, value]);
+        ctx.onChange?.([...ctx.value, value], value);
       }
     } else {
       // Standalone mode
@@ -203,6 +224,7 @@ export function XDSCheckboxListItem({
           onChange={() => handleToggle()}
           isDisabled={effectiveDisabled}
           isReadOnly={effectiveReadOnly}
+          isLoading={isBusy}
           size={checkboxSize}
         />
       }

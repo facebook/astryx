@@ -45,13 +45,8 @@ export const docs = {
     {
       name: 'changeAction',
       type: '(values: string[]) => void | Promise<void>',
-      description: 'Async action on change with optimistic updates.',
-    },
-    {
-      name: 'isLoading',
-      type: 'boolean',
-      description: 'External loading state.',
-      default: 'false',
+      description:
+        'Async action on change with optimistic updates. While the promise is pending, the toggled item shows a spinner inside its checkbox and is marked aria-busy.',
     },
     {
       name: 'isLabelHidden',

@@ -38,6 +38,7 @@ import {
   borderVars,
 } from '../theme/tokens.stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
 import {XDSFieldStatus} from '../FieldStatus/XDSFieldStatus';
 import type {XDSIconType} from '../Icon';
@@ -102,6 +103,9 @@ const styles = stylex.create({
   },
   // State-dependent colors with ancestor hover behavior
   checkboxUnchecked: {
+    // Foreground for the inherit-shade loading spinner (reads currentColor):
+    // brand accent on the light surface fill.
+    color: colorVars['--color-accent'],
     borderColor: {
       default: colorVars['--color-border-emphasized'],
       [stylex.when.ancestor(':hover', checkboxScope)]: {
@@ -116,6 +120,9 @@ const styles = stylex.create({
     },
   },
   checkboxChecked: {
+    // Foreground for the inherit-shade loading spinner (reads currentColor):
+    // on-accent color against the accent fill.
+    color: colorVars['--color-on-accent'],
     borderColor: {
       default: colorVars['--color-accent'],
       [stylex.when.ancestor(':hover', checkboxScope)]: {
@@ -280,6 +287,12 @@ export interface XDSCheckboxInputProps extends Omit<XDSBaseProps, 'onChange'> {
    */
   isRequired?: boolean;
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * The size of the checkbox.
    * - 'sm': Compact size (28px row height)
    * - 'md': Default size (36px row height)
@@ -304,6 +317,11 @@ export interface XDSCheckboxInputProps extends Omit<XDSBaseProps, 'onChange'> {
    */
   status?: XDSInputStatus;
 }
+
+// Dynamic field width (number -> px, string used as-is).
+const dynamicWidthStyles = stylex.create({
+  width: (width: SizeValue | null) => ({width}),
+});
 
 /**
  * A checkbox input component for toggling boolean values.
@@ -340,6 +358,7 @@ export function XDSCheckboxInput({
   onBlur,
   labelIcon,
   status,
+  width,
   xstyle,
   className,
   style,
@@ -383,7 +402,7 @@ export function XDSCheckboxInput({
     <div
       {...mergeProps(
         xdsThemeProps('checkbox-input', {size}),
-        stylex.props(xstyle),
+        stylex.props(width != null && dynamicWidthStyles.width(width), xstyle),
         className,
         style,
       )}>
@@ -454,10 +473,7 @@ export function XDSCheckboxInput({
               ),
             )}>
             {isBusy ? (
-              <XDSSpinner
-                size="sm"
-                shade={isCheckedOrIndeterminate ? 'onMedia' : 'default'}
-              />
+              <XDSSpinner size="sm" shade="inherit" />
             ) : (
               <>
                 <svg

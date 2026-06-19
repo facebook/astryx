@@ -76,9 +76,9 @@ export interface DateRelativeOperatorValue {
 export interface DateRangeOperatorValue {
   readonly type: 'date_range';
   /** Preset date ranges (e.g. "Last 7 days"). */
-  readonly intervalDatePresets?: ReadonlyArray<DateRangePreset>;
+  readonly intervalDatePresets?: ReadonlyArray<DateRangeFilterPreset>;
   /** Preset relative dates. */
-  readonly relativeDatePresets?: ReadonlyArray<RelativeDatePreset>;
+  readonly relativeDatePresets?: ReadonlyArray<RelativeDateFilterPreset>;
 }
 
 export interface EnumItem {
@@ -271,12 +271,12 @@ export interface DateTimeRange {
   readonly end: DateTimeRangePart;
 }
 
-export interface DateRangePreset {
+export interface DateRangeFilterPreset {
   readonly label: string;
   readonly value: DateTimeRange;
 }
 
-export interface RelativeDatePreset {
+export interface RelativeDateFilterPreset {
   readonly label: string;
   readonly value: string;
 }

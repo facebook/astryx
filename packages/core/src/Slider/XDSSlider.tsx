@@ -40,6 +40,7 @@ import {XDSTooltip} from '../Tooltip/XDSTooltip';
 import type {XDSInputStatus} from '../Field/types';
 import {mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
 import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
@@ -66,6 +67,12 @@ export interface XDSSliderBaseProps extends Omit<
   isRequired?: boolean;
   /** Status indicator for the slider. */
   status?: XDSInputStatus;
+  /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
   /** Tooltip text to display in an info icon at the end of the label. */
   labelTooltip?: string;
   /** Minimum value. @default 0 */
@@ -335,6 +342,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
     formatValue,
     valueDisplay = 'tooltip',
     marks,
+    width,
     xstyle,
     className,
     style,
@@ -737,6 +745,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
       }
       labelTooltip={labelTooltip}
       statusVariant="detached"
+      width={width}
       xstyle={xstyle}
       className={className}
       style={style}>

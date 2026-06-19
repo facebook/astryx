@@ -24,8 +24,12 @@ import {XDSDropdownMenu} from '../DropdownMenu/XDSDropdownMenu';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import type {XDSDropdownMenuOption} from '../DropdownMenu';
 import type {XDSButtonVariant, XDSButtonSize} from '../Button';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
-export interface XDSMoreMenuProps {
+export interface XDSMoreMenuProps extends Pick<
+  XDSBaseProps,
+  'xstyle' | 'className' | 'style'
+> {
   /** Ref forwarded to the trigger button */
   ref?: React.Ref<HTMLButtonElement>;
 
@@ -112,6 +116,9 @@ export function XDSMoreMenu({
   isMenuOpen,
   onOpenChange,
   hasAutoFocus,
+  xstyle,
+  className: classNameProp,
+  style,
   'data-testid': testId,
   ref,
 }: XDSMoreMenuProps) {
@@ -120,7 +127,11 @@ export function XDSMoreMenu({
 
   return (
     <XDSDropdownMenu
-      className="xds-more-menu"
+      className={
+        classNameProp ? `xds-more-menu ${classNameProp}` : 'xds-more-menu'
+      }
+      xstyle={xstyle}
+      style={style}
       isMenuOpen={isMenuOpen}
       onOpenChange={onOpenChange}
       button={{

@@ -44,6 +44,13 @@ describe('XDSSpinner', () => {
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
   });
 
+  it('renders with shade inherit', () => {
+    render(<XDSSpinner shade="inherit" data-testid="spinner" />);
+    const spinner = screen.getByTestId('spinner');
+    expect(spinner).toBeInTheDocument();
+    expect(spinner).toHaveAttribute('data-shade', 'inherit');
+  });
+
   it('has role="status"', () => {
     render(<XDSSpinner data-testid="spinner" />);
     expect(screen.getByRole('status')).toBeInTheDocument();

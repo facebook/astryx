@@ -199,6 +199,8 @@ function ComponentDetailInner({
                   <InteractivePreviewStage
                     name={comp.name}
                     state={state}
+                    knobs={knobs}
+                    playground={comp.playground}
                     missingRequiredProps={missingRequiredProps}
                     onPropChange={setProp}
                     canControlOpenState={

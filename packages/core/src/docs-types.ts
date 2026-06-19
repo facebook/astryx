@@ -389,7 +389,24 @@ export interface ElementDescriptor {
 export interface PlaygroundConfig {
   /** Initial prop values for the playground preview.
    *  Keys are prop names. Values are primitives or ElementDescriptors. */
-  defaults: Record<string, unknown>;
+  defaults?: Record<string, unknown>;
+  /** Required parent wrapper for sub-components that depend on a parent
+   *  context provider (e.g. `XDSTab` calls `useXDSTabListContext()` and throws
+   *  standalone). The preview wraps the component in this parent before
+   *  rendering, injecting it as `children`. Provide any props the wrapper
+   *  requires (e.g. a matching `value`).
+   *
+   *  @example
+   *  ```
+   *  playground: {wrapper: {component: 'XDSTabList', props: {value: 'tab-1'}}}
+   *  ```
+   */
+  wrapper?: {
+    /** Parent component name as exported from `@xds/core`, e.g. `'XDSTabList'`. */
+    component: string;
+    /** Props for the wrapper. The previewed sub-component becomes its `children`. */
+    props?: Record<string, unknown>;
+  };
 }
 
 /**

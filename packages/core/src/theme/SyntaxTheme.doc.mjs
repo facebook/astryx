@@ -104,6 +104,6 @@ export const docsDense = {
   },
   propDescriptions: {
     theme:
-      'syntax highlighting theme: preset from @xds/core/theme/syntax or custom theme created w/ defineSyntaxTheme(). **(required)**',
+      'syntax highlighting theme: preset from @xds/core/theme/syntax or custom theme created w/ defineSyntaxTheme()',
   },
 };

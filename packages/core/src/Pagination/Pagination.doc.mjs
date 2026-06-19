@@ -107,6 +107,14 @@ export const docs = {
       {className: 'xds-pagination-dot', visualProps: ['size'], states: ['active']},
     ],
   },
+  playground: {
+    defaults: {
+      page: 1,
+      totalItems: 100,
+      pageSize: 10,
+      variant: 'pages',
+    },
+  },
   usage: {
     description:
       'Pagination lets users step through pages of content. Place it below a table, list, or card grid so users can move forward and backward through results. Pick a variant to match the context: numbered pages for data tables, a count for large lists, compact for tight spaces, or dots for carousels.',

@@ -272,8 +272,8 @@ export function DiscoverShowcase() {
                 color="secondary"
                 xstyle={styles.supportingText}>
                 Browse {CORE_COMPONENT_COUNT_ROUNDED}+ components, explore
-                production-ready templates, and tune themes to match your brand
-                — pick a starting point and go.
+                production-ready templates, and tune themes to match your brand;
+                pick a starting point and go.
               </XDSText>
             </XDSVStack>
             <XDSGrid

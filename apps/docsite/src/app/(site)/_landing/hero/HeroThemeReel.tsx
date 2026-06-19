@@ -46,8 +46,12 @@ interface HeroReelState {
   /** Whether entrance/cycle animation should run (false under reduced-motion). */
   animate: boolean;
   setPaused: (paused: boolean) => void;
-  /** The docsite's active color mode (from the global theme toggle / OS). */
-  userMode: 'light' | 'dark';
+  /**
+   * The docsite's color mode for theme rendering. 'system' on the first paint
+   * (before the OS preference resolves) so slides keep `color-scheme: light
+   * dark` and their light-dark() tokens follow the OS — no flash (#2713).
+   */
+  userMode: 'system' | 'light' | 'dark';
 }
 
 const HeroReelContext = createContext<HeroReelState | null>(null);
@@ -59,12 +63,13 @@ function useHeroReel(): HeroReelState | null {
 /**
  * The color mode a slide should render in: dark-first themes (e.g. Gothic) are
  * always dark; every other theme follows the docsite's color mode so the hero
- * respects the user's light/dark toggle.
+ * respects the user's light/dark toggle (and the OS preference via 'system'
+ * before that resolves).
  */
 function effectiveMode(
   slide: HeroThemeSlide,
-  userMode: 'light' | 'dark',
-): 'light' | 'dark' {
+  userMode: 'system' | 'light' | 'dark',
+): 'system' | 'light' | 'dark' {
   return slide.isDark ? 'dark' : userMode;
 }
 
@@ -72,6 +77,9 @@ function effectiveMode(
  * Whether the active hero slide should render with light text/nav. True when
  * the slide is a dark-first theme (e.g. Gothic) OR the docsite is in dark mode —
  * in both cases the hero sits on a dark body and its text/nav must go light.
+ * 'system' is treated as not-dark here: the light-text overrides only apply once
+ * the resolved dark mode is known, which avoids forcing light ink on a slide
+ * that may still paint its light scheme.
  */
 export function useHeroReelIsDark(): boolean {
   const reel = useContext(HeroReelContext);
@@ -204,7 +212,7 @@ export function HeroReelProvider({children}: {children: ReactNode}) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
-  const {mode: userMode} = useThemeMode();
+  const {themeMode: userMode} = useThemeMode();
 
   const goTo = useCallback(
     (next: number) => {

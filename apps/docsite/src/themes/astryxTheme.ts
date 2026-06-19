@@ -7,15 +7,15 @@
  * in the UI — buttons, links, focus rings, the Switch "on" track, accent
  * icons, and tints — is driven by the high-emphasis PRIMARY ink (warm
  * near-black). So the theme makes the accent tokens resolve to PRIMARY, and
- * the brand blue lives in its own BRAND_BLUE constant reserved for the logo
- * (applied by the hero, not by any semantic token here).
+ * the brand blue lives in the `BRAND_BLUE` constant in `@/constants`, reserved
+ * for the logo (applied by the hero, not by any semantic token here).
  *
  *   1. PRIMARY    — the high-emphasis foreground ink (warm near-black). Drives
  *      primary text/icons AND the accent tokens, so all interactive UI reads
  *      as near-black rather than blue. See `PRIMARY` below.
  *   2. BRAND_BLUE — the Astryx brand blue, reserved for the logo only. Not
  *      wired to any semantic accent token; the hero paints the wordmark with
- *      it directly. See `BRAND_BLUE` below.
+ *      it directly. Defined in `@/constants`.
  *
  * The only other overrides are the cream body color, Figtree typography, a
  * +4px radius bump, semibold display headings, and pill buttons. The neutral
@@ -25,6 +25,11 @@
  */
 
 import {defineTheme, type XDSTokenValue} from '@xds/core/theme';
+
+// Relative import (not the `@/` alias) because this theme file is also loaded
+// in isolation by the `xds theme build` CLI via jiti, which does not resolve
+// the `@/*` tsconfig path alias.
+import {BRAND_BLUE} from '../constants';
 
 // === PRIMARY (high-emphasis foreground ink — drives accent too) ==============
 // Warm near-black that harmonizes with the cream body (light) and a warm
@@ -38,15 +43,11 @@ const PRIMARY = 'light-dark(#15110C, #DFE2E5)';
 const PRIMARY_MUTED =
   'light-dark(rgba(21, 17, 12, 0.08), rgba(223, 226, 229, 0.14))';
 
-// === BRAND_BLUE (logo only) ==================================================
-// Brand blue (#225BFF) — the same blue baked into the Astryx logo/favicon.
-// Reserved for the wordmark; the hero applies it directly (this theme does not
-// point any accent token at it). Dark mode uses a lighter blue (#3D87FF) so the
-// logo stays legible on the dark body. Exported so the hero can reference the
-// exact brand value instead of hardcoding it.
-// Also exposed to the UI as the custom CSS variable --color-brand, so consumers
-// can reference the brand blue via var(--color-brand).
-export const BRAND_BLUE = 'light-dark(#225BFF, #3D87FF)';
+// BRAND_BLUE (logo/wordmark only) lives in `@/constants` — kept out of this
+// source theme so consumers can read it without importing the unbuilt theme
+// object (which would re-trigger runtime style injection). It is also exposed
+// to the UI here as the custom CSS variable --color-brand (see the token block
+// below), so consumers can reference the brand blue via var(--color-brand).
 
 export const astryxTheme = defineTheme({
   name: 'astryx',

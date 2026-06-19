@@ -129,6 +129,6 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    mode: 'surface luminance context: dark for content over dark backgrounds (light text, white-tinted interactions), light for content over light backgrounds (dark text, black-tinted interactions). **(required)**',
+    mode: 'surface luminance context: dark for content over dark backgrounds (light text, white-tinted interactions), light for content over light backgrounds (dark text, black-tinted interactions)',
   },
 };
