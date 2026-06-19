@@ -4,7 +4,7 @@
  * @file utils.ts
  * @input None
  * @output Re-exports shared date utility functions for calendar components
- * @position Shared utilities; used by XDSCalendar, XDSCalendarMonthGrid, XDSCalendarDayCell
+ * @position Shared utilities; used by Calendar, CalendarMonthGrid, CalendarDayCell
  */
 
 import {plainDateFormat, DATE_FORMAT_WITH_WEEKDAY} from '../utils/plainDate';

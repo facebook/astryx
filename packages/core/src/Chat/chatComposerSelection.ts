@@ -6,7 +6,7 @@
  * @file chatComposerSelection.ts
  * @input Uses DOM Selection / Range APIs
  * @output Exports selection helpers used by the chat composer
- * @position Internal helper module shared by XDSChatComposerInput and useXDSChatComposerTokens
+ * @position Internal helper module shared by ChatComposerInput and useChatComposerTokens
  *
  * Selection helpers for the contentEditable chat input. Both the
  * imperative `insertToken` / `insertText` APIs and the paste pipeline
@@ -21,8 +21,8 @@
  * `selection.getRangeAt(0)` safely.
  *
  * SYNC: When modified, update:
- * - /packages/core/src/Chat/XDSChatComposerInput.tsx (consumer)
- * - /packages/core/src/Chat/useXDSChatComposerTokens.ts (consumer)
+ * - /packages/core/src/Chat/ChatComposerInput.tsx (consumer)
+ * - /packages/core/src/Chat/useChatComposerTokens.ts (consumer)
  */
 
 /**

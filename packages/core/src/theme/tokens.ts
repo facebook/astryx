@@ -2,33 +2,33 @@
 
 /**
  * @file tokens.ts
- * @input XDSDefinedTheme objects and token names
+ * @input DefinedTheme objects and token names
  * @output Server-safe token helpers for resolving theme values and building CSS var references
- * @position Public theme utility; backs useXDSTheme and external styling-library adapters
+ * @position Public theme utility; backs useTheme and external styling-library adapters
  *
  * Use these helpers when code outside React hooks needs XDS token values:
  * build-time theme adapters, chart configuration, canvas/SVG rendering, tests,
  * or plain JS theme objects for other styling libraries.
  *
  * SYNC: When modified, update:
- * - /packages/core/src/theme/useXDSTheme.ts
+ * - /packages/core/src/theme/useTheme.ts
  * - /packages/core/src/theme/index.ts
  */
 
 import {
   xdsTokenDefaults,
-  type XDSDefinedTheme,
-  type XDSTokenName,
-  type XDSTokenValue,
+  type DefinedTheme,
+  type TokenName,
+  type TokenValue,
 } from './defineTheme';
 
 /** Resolved color mode used when choosing the side of light/dark token values. */
-export type XDSResolvedThemeMode = 'light' | 'dark';
+export type ResolvedThemeMode = 'light' | 'dark';
 
 /** Options for resolving all tokens from a theme object. */
 export interface ResolveXDSThemeTokensOptions {
   /** Effective mode to resolve. Pass an explicit value; this helper does not read media queries. */
-  mode: XDSResolvedThemeMode;
+  mode: ResolvedThemeMode;
 }
 
 /** Options for resolving one token from a theme object. */
@@ -54,14 +54,14 @@ export interface ResolveXDSThemeTokenOptions extends ResolveXDSThemeTokensOption
  * };
  * ```
  */
-export function xdsTokenVar(name: XDSTokenName | (string & {})): string {
+export function xdsTokenVar(name: TokenName | (string & {})): string {
   return `var(${name})`;
 }
 
 /** Flat map of every known XDS token name to its `var(--token-name)` reference. */
-export const xdsTokenVars: Record<XDSTokenName, string> = Object.fromEntries(
+export const xdsTokenVars: Record<TokenName, string> = Object.fromEntries(
   Object.keys(xdsTokenDefaults).map(name => [name, xdsTokenVar(name)]),
-) as Record<XDSTokenName, string>;
+) as Record<TokenName, string>;
 
 /**
  * Split the arguments of a CSS function body on the first top-level comma.
@@ -129,8 +129,8 @@ function parseLightDark(value: string): [light: string, dark: string] | null {
  * - any other string → returned unchanged
  */
 function resolveXDSTokenValue(
-  value: XDSTokenValue,
-  mode: XDSResolvedThemeMode,
+  value: TokenValue,
+  mode: ResolvedThemeMode,
 ): string {
   if (Array.isArray(value)) {
     return mode === 'dark' ? value[1] : value[0];
@@ -150,13 +150,13 @@ function resolveXDSTokenValue(
  * The result starts with `xdsTokenDefaults`, applies `theme.tokens`, then
  * reapplies `theme.__inputTokens` when available so explicit tuple overrides
  * retain their original light/dark sides instead of relying on CSS parsing.
- * This mirrors the token resolution used by `useXDSTheme()` but does not need
+ * This mirrors the token resolution used by `useTheme()` but does not need
  * React context or media queries.
  *
  * Pass `theme` as null/undefined to resolve defaults only.
  */
 export function resolveXDSThemeTokens(
-  theme: XDSDefinedTheme | null | undefined,
+  theme: DefinedTheme | null | undefined,
   options: ResolveXDSThemeTokensOptions,
 ): Record<string, string> {
   const {mode} = options;
@@ -187,8 +187,8 @@ export function resolveXDSThemeTokens(
 
 /** Resolve one XDS token value for a theme and effective color mode. */
 export function resolveXDSThemeToken(
-  theme: XDSDefinedTheme | null | undefined,
-  name: XDSTokenName | (string & {}),
+  theme: DefinedTheme | null | undefined,
+  name: TokenName | (string & {}),
   options: ResolveXDSThemeTokenOptions,
 ): string {
   const tokens = resolveXDSThemeTokens(theme, options);

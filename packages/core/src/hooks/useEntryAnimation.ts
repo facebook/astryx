@@ -5,7 +5,7 @@
  * @file useEntryAnimation.ts
  * @input Uses React, StyleX, theme tokens
  * @output Exports useEntryAnimation hook for mount-only entry animations
- * @position Hook utility; consumed by XDSFieldStatus and available to consumers
+ * @position Hook utility; consumed by FieldStatus and available to consumers
  *
  * Provides entry animations for conditionally rendered elements.
  * Only animates when the element is dynamically mounted after the initial

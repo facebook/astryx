@@ -4,37 +4,38 @@
 
 /**
  * @file index.ts
- * @input Imports XDSRadioList, XDSRadioListItem components and types
- * @output Exports XDSRadioList, XDSRadioListProps, XDSRadioListItem, XDSRadioListItemProps
+ * @input Imports RadioList, RadioListItem components and types
+ * @output Exports RadioList, RadioListProps, RadioListItem, RadioListItemProps
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
  * SYNC: When modified, update this header
  */
 
-export {XDSRadioList, XDSRadioListContext} from './XDSRadioList';
+export {RadioList, RadioListContext} from './RadioList';
 export type {
-  XDSRadioListProps,
-  XDSRadioListSize,
-  XDSRadioListContextValue,
-} from './XDSRadioList';
-export {XDSRadioListItem} from './XDSRadioListItem';
-export type {XDSRadioListItemProps} from './XDSRadioListItem';
+  RadioListProps,
+  RadioListSize,
+  RadioListContextValue,
+} from './RadioList';
+export {RadioListItem} from './RadioListItem';
+export type {RadioListItemProps} from './RadioListItem';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSRadioList as RadioList,
-  XDSRadioListContext as RadioListContext,
-  XDSRadioListItem as RadioListItem,
+  RadioList as XDSRadioList,
+  RadioListContext as XDSRadioListContext,
+  RadioListItem as XDSRadioListItem,
 } from '.';
 export type {
-  XDSRadioListContextValue as RadioListContextValue,
-  XDSRadioListItemProps as RadioListItemProps,
-  XDSRadioListProps as RadioListProps,
-  XDSRadioListSize as RadioListSize,
+  RadioListContextValue as XDSRadioListContextValue,
+  RadioListItemProps as XDSRadioListItemProps,
+  RadioListProps as XDSRadioListProps,
+  RadioListSize as XDSRadioListSize,
 } from '.';
 // <compat-aliases:end>

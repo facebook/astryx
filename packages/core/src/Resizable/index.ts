@@ -4,36 +4,42 @@
 
 /**
  * @file index.ts
- * @input Imports from useXDSResizable and XDSResizeHandle
+ * @input Imports from useResizable and ResizeHandle
  * @output Re-exports all public Resizable API
  * @position Package entry point for Resizable
  */
 
-export {useXDSResizable} from './useXDSResizable';
+export {useResizable} from './useResizable';
 export type {
   ResizableRegion,
   ResizableRegionConfig,
   ResizableProps,
-  XDSResizableConfig,
+  ResizableConfig,
   UseXDSResizableSingleConfig,
   UseXDSResizableMultiConfig,
-} from './useXDSResizable';
+} from './useResizable';
 
-export {XDSResizeHandle} from './XDSResizeHandle';
-export type {XDSResizeHandleProps} from './XDSResizeHandle';
+export {ResizeHandle} from './ResizeHandle';
+export type {ResizeHandleProps} from './ResizeHandle';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSResizeHandle as ResizeHandle,
-  useXDSResizable as useResizable,
+  ResizeHandle as XDSResizeHandle,
+  useResizable as useXDSResizable,
 } from '.';
 export type {
-  XDSResizableConfig as ResizableConfig,
-  XDSResizeHandleProps as ResizeHandleProps,
+  ResizableConfig as XDSResizableConfig,
+  ResizableProps as XDSResizableProps,
+  ResizableRegion as XDSResizableRegion,
+  ResizableRegionConfig as XDSResizableRegionConfig,
+  ResizeHandleProps as XDSResizeHandleProps,
+  UseXDSResizableMultiConfig as XDSUseXDSResizableMultiConfig,
+  UseXDSResizableSingleConfig as XDSUseXDSResizableSingleConfig,
 } from '.';
 // <compat-aliases:end>

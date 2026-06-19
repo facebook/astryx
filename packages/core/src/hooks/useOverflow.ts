@@ -6,7 +6,7 @@
  * @file useOverflow.ts
  * @input Uses React useState, useCallback, useRef; useIsomorphicLayoutEffect
  * @output Exports useOverflow hook for measuring and managing horizontal overflow
- * @position Core hook; used by XDSOverflowList and consumers for overflow patterns
+ * @position Core hook; used by OverflowList and consumers for overflow patterns
  *
  * Measures children rendered in a hidden container to determine how many fit
  * in the available width, without flickering. Uses ResizeObserver to react

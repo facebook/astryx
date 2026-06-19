@@ -4,35 +4,36 @@
 
 /**
  * @file index.ts
- * @input Imports from XDSToggleButton.tsx and XDSToggleButtonGroup.tsx
- * @output Exports XDSToggleButton, XDSToggleButtonGroup, and types
+ * @input Imports from ToggleButton.tsx and ToggleButtonGroup.tsx
+ * @output Exports ToggleButton, ToggleButtonGroup, and types
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  */
 
-export {XDSToggleButton} from './XDSToggleButton';
-export type {XDSToggleButtonProps} from './XDSToggleButton';
+export {ToggleButton} from './ToggleButton';
+export type {ToggleButtonProps} from './ToggleButton';
 
-export {XDSToggleButtonGroup} from './XDSToggleButtonGroup';
+export {ToggleButtonGroup} from './ToggleButtonGroup';
 export type {
-  XDSToggleButtonGroupProps,
-  XDSToggleButtonGroupSingleProps,
-  XDSToggleButtonGroupMultipleProps,
-} from './XDSToggleButtonGroup';
+  ToggleButtonGroupProps,
+  ToggleButtonGroupSingleProps,
+  ToggleButtonGroupMultipleProps,
+} from './ToggleButtonGroup';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSToggleButton as ToggleButton,
-  XDSToggleButtonGroup as ToggleButtonGroup,
+  ToggleButton as XDSToggleButton,
+  ToggleButtonGroup as XDSToggleButtonGroup,
 } from '.';
 export type {
-  XDSToggleButtonGroupMultipleProps as ToggleButtonGroupMultipleProps,
-  XDSToggleButtonGroupProps as ToggleButtonGroupProps,
-  XDSToggleButtonGroupSingleProps as ToggleButtonGroupSingleProps,
-  XDSToggleButtonProps as ToggleButtonProps,
+  ToggleButtonGroupMultipleProps as XDSToggleButtonGroupMultipleProps,
+  ToggleButtonGroupProps as XDSToggleButtonGroupProps,
+  ToggleButtonGroupSingleProps as XDSToggleButtonGroupSingleProps,
+  ToggleButtonProps as XDSToggleButtonProps,
 } from '.';
 // <compat-aliases:end>

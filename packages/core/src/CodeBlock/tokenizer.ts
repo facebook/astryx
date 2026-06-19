@@ -4,10 +4,10 @@
  * @file tokenizer.ts
  * @input Code string and language identifier
  * @output Array of per-line token arrays with line-relative offsets
- * @position Shared utility; consumed by XDSCodeBlock and XDSCodeEditor
+ * @position Shared utility; consumed by CodeBlock and CodeEditor
  *
  * SYNC: When modified, update:
- * - /packages/core/src/CodeBlock/XDSCodeBlock.tsx
+ * - /packages/core/src/CodeBlock/CodeBlock.tsx
  * - /packages/core/src/CodeBlock/highlightRanges.ts
  */
 

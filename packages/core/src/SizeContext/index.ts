@@ -2,30 +2,31 @@
 
 /**
  * @file index.ts
- * @input XDSSizeContext.ts
+ * @input SizeContext.ts
  * @output Re-exports size context utilities
  * @position Public entry point for @xds/core/SizeContext
  */
 
 export {
-  XDSSizeContext,
-  XDSSizeProvider,
-  useXDSSize,
-  type XDSElementSize,
-} from './XDSSizeContext';
+  SizeContext,
+  SizeProvider,
+  useSize,
+  type ElementSize,
+} from './SizeContext';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSSizeContext as SizeContext,
-  XDSSizeProvider as SizeProvider,
-  useXDSSize as useSize,
+  SizeContext as XDSSizeContext,
+  SizeProvider as XDSSizeProvider,
+  useSize as useXDSSize,
 } from '.';
 export type {
-  XDSElementSize as ElementSize,
+  ElementSize as XDSElementSize,
 } from '.';
 // <compat-aliases:end>

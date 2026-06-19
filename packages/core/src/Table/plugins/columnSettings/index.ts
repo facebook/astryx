@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-export {useXDSTableColumnSettings} from './useXDSTableColumnSettings';
+export {useTableColumnSettings} from './useTableColumnSettings';
 export type {
   UseXDSTableColumnSettingsConfig,
-  XDSColumnSettingsOption,
-} from './useXDSTableColumnSettings';
-export {useXDSTableColumnSettingsState} from './useXDSTableColumnSettingsState';
+  ColumnSettingsOption,
+} from './useTableColumnSettings';
+export {useTableColumnSettingsState} from './useTableColumnSettingsState';
 export type {
   UseXDSTableColumnSettingsStateConfig,
   UseXDSTableColumnSettingsStateReturn,
-} from './useXDSTableColumnSettingsState';
+} from './useTableColumnSettingsState';

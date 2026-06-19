@@ -2,23 +2,24 @@
 
 /**
  * @file index.ts
- * @input XDSVStack component source
- * @output Exports XDSVStack and its props type
+ * @input VStack component source
+ * @output Exports VStack and its props type
  * @position Entry point for @xds/core/VStack subpath export
  */
 
-export {XDSVStack, type XDSVStackProps} from './XDSVStack';
+export {VStack, type VStackProps} from './VStack';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSVStack as VStack,
+  VStack as XDSVStack,
 } from '.';
 export type {
-  XDSVStackProps as VStackProps,
+  VStackProps as XDSVStackProps,
 } from '.';
 // <compat-aliases:end>

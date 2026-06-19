@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-export {useXDSTableFiltering, toSearchFilters} from './useXDSTableFiltering';
-export {useXDSTableFilterState} from './useXDSTableFilterState';
-export type {UseXDSTableFilterStateResult} from './useXDSTableFilterState';
+export {useTableFiltering, toSearchFilters} from './useTableFiltering';
+export {useTableFilterState} from './useTableFilterState';
+export type {UseXDSTableFilterStateResult} from './useTableFilterState';
 export type {
   UseXDSTableFilteringConfig,
-  XDSTableFilterState,
-  XDSTableFilterVariant,
-  XDSTableFilterValue,
-  XDSTableFilterFieldRef,
-} from './useXDSTableFiltering';
+  TableFilterState,
+  TableFilterVariant,
+  TableFilterValue,
+  TableFilterFieldRef,
+} from './useTableFiltering';

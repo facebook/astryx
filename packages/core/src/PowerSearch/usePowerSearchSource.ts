@@ -5,21 +5,21 @@
 /**
  * @file usePowerSearchSource.ts
  * @input InternalConfig
- * @output XDSSearchSource for field typeahead in the main tokenizer
- * @position Hook; consumed by XDSPowerSearch
+ * @output SearchSource for field typeahead in the main tokenizer
+ * @position Hook; consumed by PowerSearch
  *
  * SYNC: When modified, update:
  * - /packages/core/src/PowerSearch/index.ts
  */
 
 import {useMemo} from 'react';
-import type {XDSSearchSource} from '../Typeahead/types';
+import type {SearchSource} from '../Typeahead/types';
 import type {InternalConfig} from './useInternalConfig';
 import type {PowerSearchItem, PowerSearchOperator, FilterValue} from './types';
 
 export function usePowerSearchSource(
   config: InternalConfig,
-): XDSSearchSource<PowerSearchItem> {
+): SearchSource<PowerSearchItem> {
   return useMemo(() => {
     const allItems = buildFieldItems(config);
 

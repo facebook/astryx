@@ -55,7 +55,7 @@ function uniqueSlug(baseSlug: string, counts: Map<string, number>): string {
 /**
  * Extract heading items from a Markdown string.
  *
- * Uses XDSMarkdown's parser so fenced code blocks, tables, lists, and inline
+ * Uses Markdown's parser so fenced code blocks, tables, lists, and inline
  * formatting are interpreted consistently with rendered Markdown output.
  */
 export function parseOutlineFromMarkdown(markdown: string): OutlineItem[] {

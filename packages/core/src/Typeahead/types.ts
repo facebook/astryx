@@ -4,7 +4,7 @@
  * @file types.ts
  * @input None
  * @output Exports shared types for Typeahead and Tokenizer components
- * @position Shared type definitions; consumed by XDSBaseTypeahead, XDSTypeahead, XDSTokenizer
+ * @position Shared type definitions; consumed by BaseTypeahead, Typeahead, Tokenizer
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Typeahead/index.ts
@@ -18,7 +18,7 @@ import type {ReactNode} from 'react';
  *
  * @example
  * ```tsx
- * interface UserItem extends XDSSearchableItem<{ avatar: string; role: string }> {}
+ * interface UserItem extends SearchableItem<{ avatar: string; role: string }> {}
  *
  * const user: UserItem = {
  *   id: '1',
@@ -27,7 +27,7 @@ import type {ReactNode} from 'react';
  * };
  * ```
  */
-export interface XDSSearchableItem<TAuxData = unknown> {
+export interface SearchableItem<TAuxData = unknown> {
   /**
    * Unique identifier for the item.
    */
@@ -58,13 +58,13 @@ export interface XDSSearchableItem<TAuxData = unknown> {
  * @example
  * ```tsx
  * // Sync search source
- * const fruitSource: XDSSearchSource = {
+ * const fruitSource: SearchSource = {
  *   search: (query) => fruits.filter(f => f.label.includes(query)),
  *   bootstrap: () => fruits.slice(0, 5),
  * };
  *
  * // Async search source with cancel support
- * const userSource: XDSSearchSource<UserItem> = {
+ * const userSource: SearchSource<UserItem> = {
  *   _controller: null as AbortController | null,
  *   cancel() { this._controller?.abort(); },
  *   async search(query) {
@@ -82,8 +82,8 @@ export interface XDSSearchableItem<TAuxData = unknown> {
  * };
  * ```
  */
-export interface XDSSearchSource<
-  T extends XDSSearchableItem = XDSSearchableItem,
+export interface SearchSource<
+  T extends SearchableItem = SearchableItem,
 > {
   /**
    * Called on query change. Returns matching items.

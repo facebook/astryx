@@ -4,32 +4,33 @@
 
 /**
  * @file index.ts
- * @input Imports from XDSList.tsx and XDSListItem.tsx
- * @output Exports XDSList, XDSListItem components and their props/types
+ * @input Imports from List.tsx and ListItem.tsx
+ * @output Exports List, ListItem components and their props/types
  * @position Package entry point for List
  *
  * SYNC: When modified, update /packages/core/src/List/List.doc.mjs
  */
 
-export {XDSList} from './XDSList';
-export type {XDSListProps, XDSListStyle, XDSListDensity} from './XDSList';
-export {XDSListItem} from './XDSListItem';
-export type {XDSListItemProps} from './XDSListItem';
+export {List} from './List';
+export type {ListProps, ListStyle, ListDensity} from './List';
+export {ListItem} from './ListItem';
+export type {ListItemProps} from './ListItem';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSList as List,
-  XDSListItem as ListItem,
+  List as XDSList,
+  ListItem as XDSListItem,
 } from '.';
 export type {
-  XDSListDensity as ListDensity,
-  XDSListItemProps as ListItemProps,
-  XDSListProps as ListProps,
-  XDSListStyle as ListStyle,
+  ListDensity as XDSListDensity,
+  ListItemProps as XDSListItemProps,
+  ListProps as XDSListProps,
+  ListStyle as XDSListStyle,
 } from '.';
 // <compat-aliases:end>

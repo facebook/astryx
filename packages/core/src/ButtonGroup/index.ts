@@ -4,33 +4,34 @@
 
 /**
  * @file index.ts
- * @input Imports from XDSButtonGroup.tsx and XDSButtonGroupContext.ts
- * @output Exports XDSButtonGroup, context hook, and types
+ * @input Imports from ButtonGroup.tsx and ButtonGroupContext.ts
+ * @output Exports ButtonGroup, context hook, and types
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  */
 
-export {XDSButtonGroup} from './XDSButtonGroup';
-export type {XDSButtonGroupProps} from './XDSButtonGroup';
+export {ButtonGroup} from './ButtonGroup';
+export type {ButtonGroupProps} from './ButtonGroup';
 
-export {useXDSButtonGroup} from './XDSButtonGroupContext';
+export {useButtonGroup} from './ButtonGroupContext';
 export type {
-  XDSButtonGroupOrientation,
-  XDSButtonGroupContextValue,
-} from './XDSButtonGroupContext';
+  ButtonGroupOrientation,
+  ButtonGroupContextValue,
+} from './ButtonGroupContext';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSButtonGroup as ButtonGroup,
-  useXDSButtonGroup as useButtonGroup,
+  ButtonGroup as XDSButtonGroup,
+  useButtonGroup as useXDSButtonGroup,
 } from '.';
 export type {
-  XDSButtonGroupContextValue as ButtonGroupContextValue,
-  XDSButtonGroupOrientation as ButtonGroupOrientation,
-  XDSButtonGroupProps as ButtonGroupProps,
+  ButtonGroupContextValue as XDSButtonGroupContextValue,
+  ButtonGroupOrientation as XDSButtonGroupOrientation,
+  ButtonGroupProps as XDSButtonGroupProps,
 } from '.';
 // <compat-aliases:end>

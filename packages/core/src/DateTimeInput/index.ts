@@ -5,34 +5,36 @@
 /**
  * @file index.ts
  * @input DateTimeInput component exports
- * @output Re-exports XDSDateTimeInput and types
+ * @output Re-exports DateTimeInput and types
  * @position Package entry point for DateTimeInput
  */
 
-export {XDSDateTimeInput} from './XDSDateTimeInput';
+export {DateTimeInput} from './DateTimeInput';
 export type {
-  XDSDateTimeInputProps,
-  XDSDateTimeInputSize,
-  XDSDateTimeInputHourFormat,
-  XDSDateTimeInputStatus,
-  XDSDateTimeInputStatusType,
+  DateTimeInputProps,
+  DateTimeInputSize,
+  DateTimeInputHourFormat,
+  DateTimeInputStatus,
+  DateTimeInputStatusType,
   ISODateTimeString,
-} from './XDSDateTimeInput';
+} from './DateTimeInput';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSDateTimeInput as DateTimeInput,
+  DateTimeInput as XDSDateTimeInput,
 } from '.';
 export type {
-  XDSDateTimeInputHourFormat as DateTimeInputHourFormat,
-  XDSDateTimeInputProps as DateTimeInputProps,
-  XDSDateTimeInputSize as DateTimeInputSize,
-  XDSDateTimeInputStatus as DateTimeInputStatus,
-  XDSDateTimeInputStatusType as DateTimeInputStatusType,
+  DateTimeInputHourFormat as XDSDateTimeInputHourFormat,
+  DateTimeInputProps as XDSDateTimeInputProps,
+  DateTimeInputSize as XDSDateTimeInputSize,
+  DateTimeInputStatus as XDSDateTimeInputStatus,
+  DateTimeInputStatusType as XDSDateTimeInputStatusType,
+  ISODateTimeString as XDSISODateTimeString,
 } from '.';
 // <compat-aliases:end>

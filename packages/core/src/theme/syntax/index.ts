@@ -20,8 +20,8 @@ export type {
   SyntaxTokenValue,
 } from './defineSyntaxTheme';
 
-export {XDSSyntaxTheme, useXDSSyntaxTheme} from './XDSSyntaxTheme';
-export type {UseXDSSyntaxThemeReturn} from './XDSSyntaxTheme';
+export {SyntaxTheme, useSyntaxTheme} from './SyntaxTheme';
+export type {UseXDSSyntaxThemeReturn} from './SyntaxTheme';
 
 // Community syntax theme presets (formerly @xds/theme-syntax)
 export {

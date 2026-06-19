@@ -1,0 +1,338 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file Switch.test.tsx
+ * @input Uses vitest, @testing-library/react, Switch component
+ * @output Unit tests for Switch component behavior
+ * @position Testing; validates Switch.tsx implementation
+ *
+ * SYNC: When Switch.tsx changes, update tests to match new behavior
+ */
+
+import {describe, it, expect, vi} from 'vitest';
+import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {Switch} from './Switch';
+
+describe('Switch', () => {
+  it('renders with label', () => {
+    render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByLabelText('Enable notifications')).toBeInTheDocument();
+  });
+
+  it('renders as off by default', () => {
+    render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('switch')).not.toBeChecked();
+  });
+
+  it('renders as on when value prop is true', () => {
+    render(
+      <Switch
+        label="Enable notifications"
+        value={true}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('switch')).toBeChecked();
+  });
+
+  it('calls onChange with new checked state when clicked', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={handleChange}
+      />,
+    );
+
+    const switchEl = screen.getByRole('switch');
+    await user.click(switchEl);
+    expect(handleChange).toHaveBeenCalledTimes(1);
+    expect(handleChange).toHaveBeenCalledWith(true, expect.any(Object));
+  });
+
+  it('calls onChange with false when turning off', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <Switch
+        label="Enable notifications"
+        value={true}
+        onChange={handleChange}
+      />,
+    );
+
+    const switchEl = screen.getByRole('switch');
+    await user.click(switchEl);
+    expect(handleChange).toHaveBeenCalledWith(false, expect.any(Object));
+  });
+
+  it('works when clicking on the label', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={handleChange}
+      />,
+    );
+
+    const label = screen.getByText('Enable notifications');
+    await user.click(label);
+    expect(handleChange).toHaveBeenCalledWith(true, expect.any(Object));
+  });
+
+  it('renders description when provided', () => {
+    render(
+      <Switch
+        label="Dark mode"
+        description="Switch to a darker color scheme"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    expect(
+      screen.getByText('Switch to a darker color scheme'),
+    ).toBeInTheDocument();
+  });
+
+  it('associates description with switch via aria-describedby', () => {
+    render(
+      <Switch
+        label="Dark mode"
+        description="Switch to a darker color scheme"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    const switchEl = screen.getByRole('switch');
+    const description = screen.getByText('Switch to a darker color scheme');
+    expect(switchEl).toHaveAttribute('aria-describedby', description.id);
+  });
+
+  it('is disabled when isDisabled prop is true', () => {
+    render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        isDisabled
+      />,
+    );
+    expect(screen.getByRole('switch')).toBeDisabled();
+  });
+
+  it('does not call onChange when isDisabled', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={handleChange}
+        isDisabled
+      />,
+    );
+
+    const switchEl = screen.getByRole('switch');
+    await user.click(switchEl);
+    expect(handleChange).not.toHaveBeenCalled();
+  });
+
+  it('forwards ref correctly', () => {
+    const ref = vi.fn();
+    render(
+      <Switch
+        ref={ref}
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    expect(ref).toHaveBeenCalledWith(expect.any(HTMLInputElement));
+  });
+
+  it('visually hides label when isLabelHidden is true', () => {
+    render(
+      <Switch
+        label="Toggle row"
+        isLabelHidden
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    const label = screen.getByText('Toggle row');
+    expect(label).toBeInTheDocument();
+    // Label should still be accessible
+    expect(screen.getByLabelText('Toggle row')).toBeInTheDocument();
+  });
+
+  it('shows label visually by default', () => {
+    render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    const label = screen.getByText('Enable notifications');
+    expect(label).toBeVisible();
+  });
+
+  it('renders with labelPosition start (label before switch)', () => {
+    const {container} = render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        labelPosition="start"
+      />,
+    );
+    // The outer div wraps the container div which has the label and switch
+    const outerDiv = container.firstChild as HTMLElement;
+    const containerDiv = outerDiv.firstChild as HTMLElement;
+    const children = Array.from(containerDiv.children);
+    // First child should be label wrapper, second should be switch wrapper
+    expect(children.length).toBe(2);
+  });
+
+  it('renders with labelPosition end (switch before label)', () => {
+    const {container} = render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        labelPosition="end"
+      />,
+    );
+    // The outer div wraps the container div which has the switch and label
+    const outerDiv = container.firstChild as HTMLElement;
+    const containerDiv = outerDiv.firstChild as HTMLElement;
+    const children = Array.from(containerDiv.children);
+    // First child should be switch wrapper, second should be label wrapper
+    expect(children.length).toBe(2);
+  });
+
+  it('has role="switch" for accessibility', () => {
+    render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('switch')).toBeInTheDocument();
+  });
+
+  it('sets aria-busy on input when loading', () => {
+    render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        isLoading
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('renders status message when status prop is provided', () => {
+    render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Failed to save setting'}}
+      />,
+    );
+    expect(screen.getByText('Failed to save setting')).toBeInTheDocument();
+  });
+
+  it('sets aria-invalid when status type is error', () => {
+    render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Error message'}}
+      />,
+    );
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('does not set aria-invalid when status type is not error', () => {
+    render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        status={{type: 'warning', message: 'Warning message'}}
+      />,
+    );
+    expect(screen.getByRole('switch')).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('associates status message with switch via aria-describedby', () => {
+    render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Error message'}}
+      />,
+    );
+    const switchEl = screen.getByRole('switch');
+    const describedBy = switchEl.getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+  });
+
+  it('calls onFocus and onBlur callbacks', async () => {
+    const user = userEvent.setup();
+    const handleFocus = vi.fn();
+    const handleBlur = vi.fn();
+    render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+      />,
+    );
+
+    const switchEl = screen.getByRole('switch');
+    await user.click(switchEl);
+    expect(handleFocus).toHaveBeenCalled();
+
+    await user.tab();
+    expect(handleBlur).toHaveBeenCalled();
+  });
+
+  it('sets required attribute when isRequired is true', () => {
+    render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        isRequired
+      />,
+    );
+    expect(screen.getByRole('switch')).toBeRequired();
+  });
+
+});

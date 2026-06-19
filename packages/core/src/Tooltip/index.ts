@@ -12,30 +12,32 @@
  */
 
 // Tooltip hook
-export {useXDSTooltip} from './useXDSTooltip';
+export {useTooltip} from './useTooltip';
 export type {
   TooltipFocusTrigger,
-  XDSTooltipOptions,
-  XDSTooltipReturn,
-} from './useXDSTooltip';
+  TooltipOptions,
+  TooltipReturn,
+} from './useTooltip';
 
 // Tooltip component
-export {XDSTooltip} from './XDSTooltip';
-export type {XDSTooltipProps} from './XDSTooltip';
+export {Tooltip} from './Tooltip';
+export type {TooltipProps} from './Tooltip';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSTooltip as Tooltip,
-  useXDSTooltip as useTooltip,
+  Tooltip as XDSTooltip,
+  useTooltip as useXDSTooltip,
 } from '.';
 export type {
-  XDSTooltipOptions as TooltipOptions,
-  XDSTooltipProps as TooltipProps,
-  XDSTooltipReturn as TooltipReturn,
+  TooltipFocusTrigger as XDSTooltipFocusTrigger,
+  TooltipOptions as XDSTooltipOptions,
+  TooltipProps as XDSTooltipProps,
+  TooltipReturn as XDSTooltipReturn,
 } from '.';
 // <compat-aliases:end>

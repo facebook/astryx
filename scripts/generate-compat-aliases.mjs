@@ -65,20 +65,26 @@ function parseExportEntries(txt) {
   return entries;
 }
 
-/** Compute the bare (unprefixed) name for an XDS* or useXDS* identifier. */
-function bareName(id) {
-  if (id.startsWith('useXDS')) return 'use' + id.slice(6);
-  if (id.startsWith('XDS')) return id.slice(3);
+/**
+ * Compute the legacy XDS-prefixed name for a bare canonical identifier.
+ * Post-P4 the source declares bare names (Button, useTheme); this generator
+ * emits the deprecated XDS* aliases (XDSButton, useXDSTheme) for compat.
+ * Hooks: use<Cap> -> useXDS<Cap>. Components/types: <Cap> -> XDS<Cap>.
+ */
+function prefixedName(id) {
+  if (/^use[A-Z]/.test(id)) return 'useXDS' + id.slice(3);
+  if (/^[A-Z]/.test(id)) return 'XDS' + id;
   return null;
 }
 
 /**
- * Pre-pass: collect bare (non-XDS) names already exported by ANY barrel.
- * The root barrel uses `export *`, so a generated bare alias that duplicates
- * an existing bare export elsewhere causes TS2308 ambiguity. We skip those.
+ * Pre-pass: collect XDS-prefixed names already exported by ANY barrel.
+ * The root barrel uses `export *`, so a generated prefixed alias that
+ * duplicates an existing prefixed export elsewhere causes TS2308 ambiguity.
+ * We skip those.
  */
-function collectExistingBareNames() {
-  const bare = new Set();
+function collectExistingPrefixedNames() {
+  const prefixed = new Set();
   for (const entry of fs.readdirSync(SRC, {withFileTypes: true})) {
     if (!entry.isDirectory()) continue;
     const idx = path.join(SRC, entry.name, 'index.ts');
@@ -88,15 +94,15 @@ function collectExistingBareNames() {
     // don't treat previously-generated aliases as "existing".
     if (raw.includes(MARKER_START)) raw = raw.slice(0, raw.indexOf(MARKER_START));
     for (const e of parseExportEntries(raw)) {
-      if (!e.alias.startsWith('XDS') && !e.alias.startsWith('useXDS')) {
-        bare.add(e.alias);
+      if (e.alias.startsWith('XDS') || e.alias.startsWith('useXDS')) {
+        prefixed.add(e.alias);
       }
     }
   }
-  return bare;
+  return prefixed;
 }
 
-const EXISTING_BARE = collectExistingBareNames();
+const EXISTING_PREFIXED = collectExistingPrefixedNames();
 
 function generateBlock(filePath) {
   const raw = fs.readFileSync(filePath, 'utf8');
@@ -111,23 +117,24 @@ function generateBlock(filePath) {
 
   // Build alias specifiers. Every alias re-exports from the barrel itself
   // ('.') rather than the original source module: by the time this block runs,
-  // the prefixed name is already exported by this barrel, and re-exporting from
-  // '.' avoids the renamed-re-export problem (e.g. `X as XDSFoo from './src'`
-  // where './src' has no member named `XDSFoo`).
+  // the bare canonical name is already exported by this barrel, and
+  // re-exporting from '.' avoids the renamed-re-export problem and preserves
+  // module augmentability through the alias (verified: a consumer augmenting
+  // the XDS* alias flows to the bare canonical interface).
   const valueSpecs = [];
   const typeSpecs = [];
 
   for (const entry of entries) {
     const exported = entry.alias;
-    const bare = bareName(exported);
-    if (!bare) continue;
-    if (existingNames.has(bare)) continue; // skip if bare already exported in THIS barrel
-    if (EXISTING_BARE.has(bare)) continue; // skip if bare already exported by ANY barrel (root export * ambiguity)
-    const spec = `${exported} as ${bare}`;
+    const prefixed = prefixedName(exported);
+    if (!prefixed) continue;
+    if (existingNames.has(prefixed)) continue; // skip if prefixed already exported in THIS barrel
+    if (EXISTING_PREFIXED.has(prefixed)) continue; // skip if prefixed already exported by ANY barrel (root export * ambiguity)
+    const spec = `${exported} as ${prefixed}`;
     (entry.isType ? typeSpecs : valueSpecs).push(spec);
   }
 
-  // De-dup (a barrel may export the same prefixed name more than once).
+  // De-dup (a barrel may export the same bare name more than once).
   const uniqValue = [...new Set(valueSpecs)].sort();
   const uniqType = [...new Set(typeSpecs)].sort();
   if (uniqValue.length === 0 && uniqType.length === 0) return {base, block: null};
@@ -135,9 +142,10 @@ function generateBlock(filePath) {
   const lines = [
     '',
     MARKER_START,
-    '// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).',
-    '// Prefixed names above remain canonical + module-augmentation targets.',
-    '// These bare re-exports reference the SAME values/types.',
+    '// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).',
+    '// Bare names above are canonical + module-augmentation targets.',
+    '// These prefixed re-exports reference the SAME values/types and remain',
+    '// augmentable (consumer `declare module` augmentations of XDS* flow through).',
     '// Regenerate: node scripts/generate-compat-aliases.mjs',
   ];
   if (uniqValue.length) {

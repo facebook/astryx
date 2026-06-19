@@ -4,37 +4,40 @@
 
 /**
  * @file index.ts
- * @input Imports XDSLightbox component, useXDSLightbox hook, and types
- * @output Exports XDSLightbox, useXDSLightbox, and all related types
+ * @input Imports Lightbox component, useLightbox hook, and types
+ * @output Exports Lightbox, useLightbox, and all related types
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  */
 
-export {XDSLightbox} from './XDSLightbox';
+export {Lightbox} from './Lightbox';
 export type {
-  XDSLightboxProps,
-  XDSLightboxMedia,
-  XDSLightboxMediaType,
-} from './XDSLightbox';
+  LightboxProps,
+  LightboxMedia,
+  LightboxMediaType,
+} from './Lightbox';
 
-export {useXDSLightbox} from './useXDSLightbox';
+export {useLightbox} from './useLightbox';
 export type {
   UseXDSLightboxOptions,
   UseXDSLightboxReturn,
-} from './useXDSLightbox';
+} from './useLightbox';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSLightbox as Lightbox,
-  useXDSLightbox as useLightbox,
+  Lightbox as XDSLightbox,
+  useLightbox as useXDSLightbox,
 } from '.';
 export type {
-  XDSLightboxMedia as LightboxMedia,
-  XDSLightboxMediaType as LightboxMediaType,
-  XDSLightboxProps as LightboxProps,
+  LightboxMedia as XDSLightboxMedia,
+  LightboxMediaType as XDSLightboxMediaType,
+  LightboxProps as XDSLightboxProps,
+  UseXDSLightboxOptions as XDSUseXDSLightboxOptions,
+  UseXDSLightboxReturn as XDSUseXDSLightboxReturn,
 } from '.';
 // <compat-aliases:end>

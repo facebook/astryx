@@ -4,7 +4,7 @@
  * @file types.ts
  * @input None
  * @output Exports OutlineItem type
- * @position Shared type definitions; consumed by XDSOutline, hooks, and parser utils
+ * @position Shared type definitions; consumed by Outline, hooks, and parser utils
  *
  * SYNC: When modified, update /packages/core/src/Outline/Outline.doc.mjs
  */

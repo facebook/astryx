@@ -1,5 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-export {useXDSTablePagination} from './useXDSTablePagination';
-export type {UseXDSTablePaginationConfig} from './useXDSTablePagination';
+export {useTablePagination} from './useTablePagination';
+export type {UseXDSTablePaginationConfig} from './useTablePagination';
 export {paginateData} from './paginateData';

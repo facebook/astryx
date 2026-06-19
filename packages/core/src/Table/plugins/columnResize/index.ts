@@ -1,4 +1,4 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-export {useXDSTableColumnResize} from './useXDSTableColumnResize';
-export type {UseXDSTableColumnResizeConfig} from './useXDSTableColumnResize';
+export {useTableColumnResize} from './useTableColumnResize';
+export type {UseXDSTableColumnResizeConfig} from './useTableColumnResize';

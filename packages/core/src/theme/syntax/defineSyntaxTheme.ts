@@ -6,7 +6,7 @@
  * @file defineSyntaxTheme.ts
  * @input syntaxTokenDefaults from tokens.ts
  * @output defineSyntaxTheme, SyntaxTheme, syntaxThemeStyle
- * @position Syntax theme definition API; consumed by presets, XDSSyntaxTheme, defineTheme
+ * @position Syntax theme definition API; consumed by presets, SyntaxTheme, defineTheme
  *
  * @see https://github.com/facebookexperimental/xds/issues/1148
  */

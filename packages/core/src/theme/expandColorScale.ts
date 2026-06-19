@@ -33,7 +33,7 @@ import {hexToHct, tonalPalette, hexWithAlpha} from './hct';
  * { accent: '#B7410E', neutralStyle: 'warm', contrast: 'high' }
  * ```
  */
-export interface XDSColorScaleConfig {
+export interface ColorScaleConfig {
   /** Seed accent color as hex (#RRGGBB). Everything derives from this. */
   accent: string;
 
@@ -92,7 +92,7 @@ function ld(light: string, dark: string): string {
  * ```
  */
 export function expandColorScale(
-  config: XDSColorScaleConfig,
+  config: ColorScaleConfig,
 ): ColorScaleTokens {
   const {accent, neutralStyle = 'cool', contrast = 'standard'} = config;
 

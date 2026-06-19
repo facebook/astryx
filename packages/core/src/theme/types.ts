@@ -93,9 +93,9 @@ export type ThemeMode = 'system' | 'light' | 'dark';
 export type HeadingLevel = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 
 /**
- * Built-in semantic text types for XDSText.
+ * Built-in semantic text types for Text.
  */
-export type XDSBuiltinTextType =
+export type BuiltinTextType =
   | 'body'
   | 'large'
   | 'label'
@@ -107,7 +107,7 @@ export type XDSBuiltinTextType =
   | 'inherit';
 
 /**
- * Semantic text types for XDSText.
+ * Semantic text types for Text.
  *
  * Themes can define custom text types via component overrides in defineTheme.
  * Custom types render with `body` baseline styles and receive their visual
@@ -116,7 +116,7 @@ export type XDSBuiltinTextType =
  * To add type-safe custom types, use module augmentation:
  * ```ts
  * declare module '@xds/core/theme' {
- *   interface XDSCustomTextTypes {
+ *   interface CustomTextTypes {
  *     hero: true;
  *     caption: true;
  *   }
@@ -127,17 +127,17 @@ export type XDSBuiltinTextType =
  * detects new `type:*` values in a theme's component overrides.
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface XDSCustomTextTypes {}
+export interface CustomTextTypes {}
 
-export type XDSTextType =
-  | XDSBuiltinTextType
-  | (keyof XDSCustomTextTypes & string);
+export type TextType =
+  | BuiltinTextType
+  | (keyof CustomTextTypes & string);
 
 /**
- * Text size scale for XDSText size prop override
+ * Text size scale for Text size prop override
  * Maps to --text-* tokens
  */
-export type XDSTextSize =
+export type TextSize =
   | '4xs'
   | '3xs'
   | '2xs'
@@ -151,14 +151,14 @@ export type XDSTextSize =
   | '4xl';
 
 /**
- * Font weight variants for XDSText/XDSHeading
+ * Font weight variants for Text/Heading
  */
-export type XDSTextWeight = 'normal' | 'medium' | 'semibold' | 'bold';
+export type TextWeight = 'normal' | 'medium' | 'semibold' | 'bold';
 
 /**
- * Text color variants for XDSText/XDSHeading
+ * Text color variants for Text/Heading
  */
-export type XDSTextColor =
+export type TextColor =
   | 'primary'
   | 'secondary'
   | 'disabled'
@@ -167,31 +167,31 @@ export type XDSTextColor =
   | 'inherit';
 
 /**
- * Display mode for XDSText/XDSHeading
+ * Display mode for Text/Heading
  */
-export type XDSTextDisplay = 'inline' | 'block';
+export type TextDisplay = 'inline' | 'block';
 
 /**
  * Word break behavior for truncated text
  */
-export type XDSWordBreak = 'break-word' | 'break-all';
+export type WordBreak = 'break-word' | 'break-all';
 
 /**
  * Text wrap behavior
  */
-export type XDSTextWrap = 'wrap' | 'nowrap' | 'balance' | 'pretty';
+export type TextWrap = 'wrap' | 'nowrap' | 'balance' | 'pretty';
 
 /**
  * Text alignment (justification). Uses logical properties (start/end)
  * for i18n/RTL compatibility.
  */
-export type XDSTextJustify = 'start' | 'center' | 'end';
+export type TextJustify = 'start' | 'center' | 'end';
 
 /**
- * Allowed CSS properties for XDSText/XDSHeading xstyle prop.
+ * Allowed CSS properties for Text/Heading xstyle prop.
  * Constrained to layout-only properties to prevent typography escapes.
  */
-export type XDSTextXStyleAllowed = {
+export type TextXStyleAllowed = {
   // Index signature required for StyleXStyles compatibility
   [key: string]: unknown;
 

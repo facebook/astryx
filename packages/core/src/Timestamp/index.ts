@@ -11,20 +11,21 @@
  * SYNC: When adding new Timestamp files, update exports here
  */
 
-export {XDSTimestamp} from './XDSTimestamp';
-export type {XDSTimestampProps, XDSTimestampFormat} from './XDSTimestamp';
+export {Timestamp} from './Timestamp';
+export type {TimestampProps, TimestampFormat} from './Timestamp';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSTimestamp as Timestamp,
+  Timestamp as XDSTimestamp,
 } from '.';
 export type {
-  XDSTimestampFormat as TimestampFormat,
-  XDSTimestampProps as TimestampProps,
+  TimestampFormat as XDSTimestampFormat,
+  TimestampProps as XDSTimestampProps,
 } from '.';
 // <compat-aliases:end>

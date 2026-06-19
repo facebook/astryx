@@ -6,7 +6,7 @@
  * @file PowerSearchEditPopover.tsx
  * @input InternalConfig, PartialFilter
  * @output Edit popover content with field/operator selectors and value editor
- * @position Sub-component; consumed by XDSPowerSearch
+ * @position Sub-component; consumed by PowerSearch
  *
  * SYNC: When modified, update:
  * - /packages/core/src/PowerSearch/index.ts
@@ -14,11 +14,11 @@
 
 import React, {useState, useCallback, useEffect, useMemo, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSButton} from '../Button';
-import {XDSSelector} from '../Selector';
-import {XDSHStack, XDSVStack} from '../Stack';
-import {XDSIcon} from '../Icon';
-import {XDSTreeList, type XDSTreeListItemData} from '../TreeList';
+import {Button} from '../Button';
+import {Selector} from '../Selector';
+import {HStack, VStack} from '../Stack';
+import {Icon} from '../Icon';
+import {TreeList, type TreeListItemData} from '../TreeList';
 import {spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {PowerSearchValueEditor} from './PowerSearchValueEditor';
 import type {InternalConfig} from './useInternalConfig';
@@ -305,9 +305,9 @@ function NestedSubFilterRow({
   );
 
   return (
-    <XDSHStack gap={2} vAlign="center">
+    <HStack gap={2} vAlign="center">
       <div {...stylex.props(styles.nestedFieldSelector)}>
-        <XDSSelector
+        <Selector
           label="Field"
           isLabelHidden
           options={fieldOptions}
@@ -319,7 +319,7 @@ function NestedSubFilterRow({
       </div>
       {operatorOptions.length > 0 && (
         <div {...stylex.props(styles.nestedOperatorSelector)}>
-          <XDSSelector
+          <Selector
             label="Operator"
             isLabelHidden
             options={operatorOptions}
@@ -341,7 +341,7 @@ function NestedSubFilterRow({
           />
         </div>
       )}
-    </XDSHStack>
+    </HStack>
   );
 }
 
@@ -452,8 +452,8 @@ function NestedEditor({
   function buildTreeItems(
     filters: EditablePartialFilter[],
     parentPath: number[],
-  ): XDSTreeListItemData[] {
-    const items: XDSTreeListItemData[] = filters.map((sf, idx) => {
+  ): TreeListItemData[] {
+    const items: TreeListItemData[] = filters.map((sf, idx) => {
       const itemPath = [...parentPath, idx];
       const op = sf.operator
         ? config.getOperator(sf.field, sf.operator)
@@ -467,7 +467,7 @@ function NestedEditor({
           children.push({
             id: `${itemPath.join('-')}-add`,
             label: (
-              <XDSButton
+              <Button
                 label="+ Add filter"
                 onClick={() => handleAdd(itemPath)}
                 variant="ghost"
@@ -490,9 +490,9 @@ function NestedEditor({
           isExpanded: true,
           children,
           endContent: !isReadOnly ? (
-            <XDSButton
+            <Button
               label="Remove filter"
-              icon={<XDSIcon icon="close" size="sm" />}
+              icon={<Icon icon="close" size="sm" />}
               variant="ghost"
               size="sm"
               onClick={() => handleRemove(itemPath)}
@@ -514,9 +514,9 @@ function NestedEditor({
           />
         ),
         endContent: !isReadOnly ? (
-          <XDSButton
+          <Button
             label="Remove filter"
-            icon={<XDSIcon icon="close" size="sm" />}
+            icon={<Icon icon="close" size="sm" />}
             variant="ghost"
             size="sm"
             onClick={() => handleRemove(itemPath)}
@@ -535,7 +535,7 @@ function NestedEditor({
     treeChildren.push({
       id: 'add-filter',
       label: (
-        <XDSButton
+        <Button
           label="+ Add filter"
           onClick={() => handleAdd([])}
           variant="ghost"
@@ -549,7 +549,7 @@ function NestedEditor({
     <div {...stylex.props(styles.nestedRootLabel)}>
       {operatorOptions.length > 1 ? (
         <div {...stylex.props(styles.operatorSelector)}>
-          <XDSSelector
+          <Selector
             label="Group operator"
             isLabelHidden
             options={operatorOptions}
@@ -565,7 +565,7 @@ function NestedEditor({
     </div>
   );
 
-  const items: XDSTreeListItemData[] = [
+  const items: TreeListItemData[] = [
     {
       id: 'nested-root',
       label: rootLabel,
@@ -574,7 +574,7 @@ function NestedEditor({
     },
   ];
 
-  return <XDSTreeList items={items} density="balanced" />;
+  return <TreeList items={items} density="balanced" />;
 }
 
 // =============================================================================
@@ -728,10 +728,10 @@ export function PowerSearchEditPopover({
     return (
       <div {...stylex.props(styles.container)} onKeyDown={handleKeyDown}>
         <div {...stylex.props(styles.content)}>
-          <XDSVStack gap={2}>
-            <XDSHStack gap={2}>
+          <VStack gap={2}>
+            <HStack gap={2}>
               <div {...stylex.props(styles.fieldSelector)}>
-                <XDSSelector
+                <Selector
                   label="Field"
                   isLabelHidden
                   options={fieldOptions}
@@ -741,7 +741,7 @@ export function PowerSearchEditPopover({
                   size="md"
                 />
               </div>
-            </XDSHStack>
+            </HStack>
             <NestedEditor
               config={config}
               partialFilter={partialFilter}
@@ -750,12 +750,12 @@ export function PowerSearchEditPopover({
               onPartialFilterChange={setPartialFilter}
               isReadOnly={isReadOnly}
             />
-          </XDSVStack>
+          </VStack>
         </div>
         <div {...stylex.props(styles.footer)}>
-          <XDSHStack gap={2} hAlign="between">
+          <HStack gap={2} hAlign="between">
             {!isReadOnly && mode === 'edit' ? (
-              <XDSButton
+              <Button
                 label="Delete"
                 onClick={handleDelete}
                 variant="ghost"
@@ -764,22 +764,22 @@ export function PowerSearchEditPopover({
             ) : (
               <div />
             )}
-            <XDSHStack gap={2}>
-              <XDSButton
+            <HStack gap={2}>
+              <Button
                 label="Cancel"
                 onClick={onCancel}
                 variant="ghost"
                 size="sm"
               />
-              <XDSButton
+              <Button
                 label={saveButtonLabel}
                 onClick={handleSave}
                 variant="primary"
                 size="sm"
                 isDisabled={isSaveDisabled}
               />
-            </XDSHStack>
-          </XDSHStack>
+            </HStack>
+          </HStack>
         </div>
       </div>
     );
@@ -788,9 +788,9 @@ export function PowerSearchEditPopover({
   return (
     <div {...stylex.props(styles.container)} onKeyDown={handleKeyDown}>
       <div {...stylex.props(styles.content)}>
-        <XDSHStack gap={2}>
+        <HStack gap={2}>
           <div {...stylex.props(styles.fieldSelector)}>
-            <XDSSelector
+            <Selector
               label="Field"
               isLabelHidden
               options={fieldOptions}
@@ -802,7 +802,7 @@ export function PowerSearchEditPopover({
           </div>
           {showOperatorSelector && operatorOptions.length > 0 && (
             <div {...stylex.props(styles.operatorSelector)}>
-              <XDSSelector
+              <Selector
                 label="Operator"
                 isLabelHidden
                 options={operatorOptions}
@@ -825,13 +825,13 @@ export function PowerSearchEditPopover({
               />
             </div>
           )}
-        </XDSHStack>
+        </HStack>
       </div>
       {!isEmptyType && (
         <div {...stylex.props(styles.footer)}>
-          <XDSHStack gap={2} hAlign="between">
+          <HStack gap={2} hAlign="between">
             {!isReadOnly && mode === 'edit' ? (
-              <XDSButton
+              <Button
                 label="Delete"
                 onClick={handleDelete}
                 variant="ghost"
@@ -840,22 +840,22 @@ export function PowerSearchEditPopover({
             ) : (
               <div />
             )}
-            <XDSHStack gap={2}>
-              <XDSButton
+            <HStack gap={2}>
+              <Button
                 label="Cancel"
                 onClick={onCancel}
                 variant="ghost"
                 size="sm"
               />
-              <XDSButton
+              <Button
                 label={saveButtonLabel}
                 onClick={handleSave}
                 variant="primary"
                 size="sm"
                 isDisabled={isSaveDisabled}
               />
-            </XDSHStack>
-          </XDSHStack>
+            </HStack>
+          </HStack>
         </div>
       )}
     </div>

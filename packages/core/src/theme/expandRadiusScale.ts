@@ -43,7 +43,7 @@
  * { base: 4, multiplier: 1.5 }
  * ```
  */
-export interface XDSRadiusScaleConfig {
+export interface RadiusScaleConfig {
   /** Base radius unit in px. Default: 4 */
   base: number;
   /** Multiplier applied to scalable tokens (inner through page). Default: 1. Range: 0-2 */
@@ -82,7 +82,7 @@ export type RadiusScaleTokens = Record<string, string>;
  * ```
  */
 export function expandRadiusScale(
-  config: XDSRadiusScaleConfig,
+  config: RadiusScaleConfig,
 ): RadiusScaleTokens {
   const {base, multiplier} = config;
   return {

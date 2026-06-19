@@ -4,42 +4,43 @@
 
 /**
  * @file index.ts
- * @output Exports XDSDropdownMenu, XDSDropdownMenuItem and related types
+ * @output Exports DropdownMenu, DropdownMenuItem and related types
  * @position Public API entry point
  */
 
 export {
-  XDSDropdownMenu,
-  type XDSDropdownMenuProps,
-  type XDSDropdownMenuButtonProps,
-  type XDSDropdownMenuItemData,
-  type XDSDropdownMenuDivider,
-  type XDSDropdownMenuSection,
-  type XDSDropdownMenuOption,
-} from './XDSDropdownMenu';
+  DropdownMenu,
+  type DropdownMenuProps,
+  type DropdownMenuButtonProps,
+  type DropdownMenuItemData,
+  type DropdownMenuDivider,
+  type DropdownMenuSection,
+  type DropdownMenuOption,
+} from './DropdownMenu';
 
 export {
-  XDSDropdownMenuItem,
-  type XDSDropdownMenuItemProps,
-} from './XDSDropdownMenuItem';
+  DropdownMenuItem,
+  type DropdownMenuItemProps,
+} from './DropdownMenuItem';
 
 
 // <compat-aliases:start> — generated, do not edit by hand
-// Unprefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Prefixed names above remain canonical + module-augmentation targets.
-// These bare re-exports reference the SAME values/types.
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
-  XDSDropdownMenu as DropdownMenu,
-  XDSDropdownMenuItem as DropdownMenuItem,
+  DropdownMenu as XDSDropdownMenu,
+  DropdownMenuItem as XDSDropdownMenuItem,
 } from '.';
 export type {
-  XDSDropdownMenuButtonProps as DropdownMenuButtonProps,
-  XDSDropdownMenuDivider as DropdownMenuDivider,
-  XDSDropdownMenuItemData as DropdownMenuItemData,
-  XDSDropdownMenuItemProps as DropdownMenuItemProps,
-  XDSDropdownMenuOption as DropdownMenuOption,
-  XDSDropdownMenuProps as DropdownMenuProps,
-  XDSDropdownMenuSection as DropdownMenuSection,
+  DropdownMenuButtonProps as XDSDropdownMenuButtonProps,
+  DropdownMenuDivider as XDSDropdownMenuDivider,
+  DropdownMenuItemData as XDSDropdownMenuItemData,
+  DropdownMenuItemProps as XDSDropdownMenuItemProps,
+  DropdownMenuOption as XDSDropdownMenuOption,
+  DropdownMenuProps as XDSDropdownMenuProps,
+  DropdownMenuSection as XDSDropdownMenuSection,
 } from '.';
 // <compat-aliases:end>

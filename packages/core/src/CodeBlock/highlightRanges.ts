@@ -4,7 +4,7 @@
  * @file highlightRanges.ts
  * @input Line divs, per-line token arrays, CSS Custom Highlight API
  * @output Creates/removes highlight Range objects for syntax coloring
- * @position Shared utility consumed by XDSCodeBlock (ranges mode)
+ * @position Shared utility consumed by CodeBlock (ranges mode)
  *
  * Tokens are per-line with line-relative offsets, so we map directly
  * from line div → text node → Range. No global text-node map, no
