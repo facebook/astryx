@@ -51,13 +51,17 @@ export {InputClearButton} from './InputClearButton';
 export {
   Field as XDSField,
   FieldLabel as XDSFieldLabel,
+  FieldStatus as XDSFieldStatus,
   InputClearButton as XDSInputClearButton,
 } from '.';
 export type {
   FieldLabelProps as XDSFieldLabelProps,
   FieldProps as XDSFieldProps,
   FieldStatusInput as XDSFieldStatusInput,
+  FieldStatusProps as XDSFieldStatusProps,
   FieldStatusType as XDSFieldStatusType,
+  FieldStatusVariant as XDSFieldStatusVariant,
+  FieldStatusVariantMap as XDSFieldStatusVariantMap,
   InputSize as XDSInputSize,
   InputStatus as XDSInputStatus,
   InputStatusType as XDSInputStatusType,

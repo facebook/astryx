@@ -30,10 +30,12 @@ export {
 // Regenerate: node scripts/generate-compat-aliases.mjs
 export {
   ContextMenu as XDSContextMenu,
+  ContextMenuItem as XDSContextMenuItem,
 } from '.';
 export type {
   ContextMenuDivider as XDSContextMenuDivider,
   ContextMenuItemData as XDSContextMenuItemData,
+  ContextMenuItemProps as XDSContextMenuItemProps,
   ContextMenuOption as XDSContextMenuOption,
   ContextMenuProps as XDSContextMenuProps,
   ContextMenuSection as XDSContextMenuSection,

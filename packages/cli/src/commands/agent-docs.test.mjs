@@ -31,7 +31,7 @@ afterEach(() => {
 describe('generateCompressedIndex', () => {
   it('includes the version number', () => {
     const result = generateCompressedIndex('1.2.3');
-    expect(result).toContain('XDS v1.2.3');
+    expect(result).toContain('Astryx v1.2.3');
     expect(result).toContain('<!-- XDS:START -->');
     expect(result).toContain('<!-- XDS:END -->');
   });
@@ -39,7 +39,7 @@ describe('generateCompressedIndex', () => {
   it('includes theme nudge rule', () => {
     const result = generateCompressedIndex('1.0.0');
     expect(result).toMatch(/xds theme/);
-    expect(result).toMatch(/never override --xds-color/);
+    expect(result).toMatch(/never override --astryx-color/);
   });
 
   it('includes upgrade command and migration rule', () => {
@@ -158,7 +158,7 @@ describe('injectAgentsMd', () => {
     const content = fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
     expect(content).toContain('# AGENTS.md');
     expect(content).toContain('<!-- XDS:START -->');
-    expect(content).toContain('XDS v1.0.0');
+    expect(content).toContain('Astryx v1.0.0');
     expect(content).toContain('<!-- XDS:END -->');
   });
 
@@ -178,7 +178,7 @@ More stuff.
     injectAgentsMd(tmpDir, '2.0.0');
 
     const content = fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
-    expect(content).toContain('XDS v2.0.0');
+    expect(content).toContain('Astryx v2.0.0');
     expect(content).not.toContain('old content');
     expect(content).toContain('Some content.');
     expect(content).toContain('More stuff.');
@@ -196,7 +196,7 @@ Existing agent docs.
     const content = fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
     expect(content).toContain('Existing agent docs.');
     expect(content).toContain('<!-- XDS:START -->');
-    expect(content).toContain('XDS v1.0.0');
+    expect(content).toContain('Astryx v1.0.0');
   });
 });
 
@@ -211,7 +211,7 @@ describe('injectClaudeMd', () => {
     expect(content).toContain('# Claude Config');
     expect(content).toContain('Existing rules.');
     expect(content).toContain('<!-- XDS:START -->');
-    expect(content).toContain('XDS v1.0.0');
+    expect(content).toContain('Astryx v1.0.0');
   });
 
   it('does not create CLAUDE.md when it does not exist', () => {
@@ -235,7 +235,7 @@ Other rules.
     injectClaudeMd(tmpDir, '2.0.0');
 
     const content = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
-    expect(content).toContain('XDS v2.0.0');
+    expect(content).toContain('Astryx v2.0.0');
     expect(content).not.toContain('old content');
     expect(content).toContain('Other rules.');
   });
@@ -425,7 +425,7 @@ describe('installAgentDocs', () => {
 
     expect(written).toEqual(['CLAUDE.md']);
     const content = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
-    expect(content).toContain('XDS v2.0.0');
+    expect(content).toContain('Astryx v2.0.0');
     expect(content).not.toContain('PLACEHOLDER_STALE_CONTENT');
     expect(content).toContain('Other rules.');
   });
