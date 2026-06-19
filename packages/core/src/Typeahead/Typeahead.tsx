@@ -42,6 +42,7 @@ import {renderIconSlot, type IconType} from '../Icon';
 import {spacingVars, sizeVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
+import type {SizeValue} from '../utils/types';
 import type {SearchableItem, SearchSource} from './types';
 import {xdsThemeProps} from '../utils/xdsThemeProps';
 
@@ -74,6 +75,12 @@ export interface TypeaheadProps<T extends SearchableItem> extends Omit<
    * Accepts a ReactNode (e.g. `<Icon icon={SearchIcon} />`) or an SVG icon component directly.
    */
   startIcon?: ReactNode | IconType;
+  /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
   /** Label tooltip. */
   labelTooltip?: string;
   /** Search source providing items. */
@@ -208,6 +215,7 @@ export function Typeahead<T extends SearchableItem>({
   debounceMs,
   onChangeQuery,
   onOpenChange,
+  width,
   xstyle,
   className,
   style,
@@ -358,6 +366,7 @@ export function Typeahead<T extends SearchableItem>({
           : undefined
       }
       labelTooltip={labelTooltip}
+      width={width}
       xstyle={xstyle}
       className={className}
       style={style}>

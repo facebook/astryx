@@ -19,6 +19,15 @@
    override real XDS semantic tokens). Each is a light-dark() pair so dark
    mode is handled by the value itself, no consumer logic required. */
 :root {
+  /* AppShell measures its header post-hydration and sets
+     --appshell-header-height on the shell element. Until that runs, every
+     consumer (the hero's fixed `top`, the nav backdrop, the docs content
+     padding) falls back to mismatched literals, so the top spacing visibly
+     pops in on load (#2713). Seed the auto-mode header height (--spacing-12 =
+     48px) here so the very first paint already reserves the right offset; the
+     AppShell then overwrites it with the measured value (identical, no jump). */
+  --appshell-header-height: var(--spacing-12, 48px);
+
   /* Feature card backdrop. Soft pastel blue in light mode, deep navy in
      dark mode. Consumed by FeaturesShowcase's bento cards via
      `backgroundColor: var(--xds-marketing-feature-card-bg)`. Picked
@@ -44,10 +53,9 @@
    scrolling clears the nav, and add an actual padding-top to the main
    element so the first paint already has the offset in place.
 
-   The --appshell-header-height variable is populated by the AppShell once
-   it measures the rendered header (post-hydration). The 64px fallback
-   approximates the default XDS top-nav height so the layout reserves
-   space immediately on the first paint. */
+   The --appshell-header-height variable is seeded at :root (above) and then
+   re-set by the AppShell once it measures the rendered header. The literal
+   fallbacks below only apply if the :root seed is ever missing. */
 body:not(:has([data-playground-page])) #xds-app-shell-main {
   scroll-padding-top: var(--appshell-header-height, 64px);
   padding-top: var(--appshell-header-height, 64px);

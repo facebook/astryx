@@ -42,6 +42,7 @@ import {Spinner} from '../Spinner';
 import {mergeProps} from '../utils';
 import {switchScope} from './switch.markers.stylex';
 import type {BaseProps} from '../BaseProps';
+import type {SizeValue} from '../utils/types';
 import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // Fixed dimensions: 40px width, 24px height, 16px thumb (off), 20px thumb (on)
@@ -259,6 +260,12 @@ export interface SwitchProps extends Omit<BaseProps, 'onChange'> {
    */
   labelIcon?: ReactNode | IconType;
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
@@ -282,6 +289,11 @@ export interface SwitchProps extends Omit<BaseProps, 'onChange'> {
    */
   status?: InputStatus;
 }
+
+// Dynamic field width (number -> px, string used as-is).
+const dynamicWidthStyles = stylex.create({
+  width: (width: SizeValue | null) => ({width}),
+});
 
 /**
  * A toggle switch component for boolean values.
@@ -319,6 +331,7 @@ export function Switch({
   labelPosition = 'end',
   labelSpacing = 'default',
   status,
+  width,
   xstyle,
   className,
   style,
@@ -435,7 +448,7 @@ export function Switch({
           labelPosition: labelPosition !== 'end' ? labelPosition : undefined,
           labelSpacing: labelSpacing !== 'default' ? labelSpacing : undefined,
         }),
-        stylex.props(xstyle),
+        stylex.props(width != null && dynamicWidthStyles.width(width), xstyle),
         className,
         style,
       )}>

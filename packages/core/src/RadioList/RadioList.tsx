@@ -23,6 +23,7 @@ import {Field} from '../Field/Field';
 import type {InputStatus} from '../Field/types';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
+import type {SizeValue} from '../utils/types';
 import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 /**
@@ -117,6 +118,12 @@ export interface RadioListProps extends Omit<
    */
   size?: RadioListSize;
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
@@ -159,6 +166,7 @@ export function RadioList({
   size = 'md',
   status,
   labelTooltip,
+  width,
   xstyle,
   className,
   style,
@@ -198,6 +206,7 @@ export function RadioList({
       }
       labelTooltip={labelTooltip}
       statusVariant="detached"
+      width={width}
       xstyle={xstyle}
       className={className}
       style={style}>

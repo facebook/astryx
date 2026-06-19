@@ -24,8 +24,12 @@ import {DropdownMenu} from '../DropdownMenu/DropdownMenu';
 import {useSize} from '../SizeContext/SizeContext';
 import type {DropdownMenuOption} from '../DropdownMenu';
 import type {ButtonVariant, ButtonSize} from '../Button';
+import type {BaseProps} from '../BaseProps';
 
-export interface MoreMenuProps {
+export interface MoreMenuProps extends Pick<
+  BaseProps,
+  'xstyle' | 'className' | 'style'
+> {
   /** Ref forwarded to the trigger button */
   ref?: React.Ref<HTMLButtonElement>;
 
@@ -112,6 +116,9 @@ export function MoreMenu({
   isMenuOpen,
   onOpenChange,
   hasAutoFocus,
+  xstyle,
+  className: classNameProp,
+  style,
   'data-testid': testId,
   ref,
 }: MoreMenuProps) {
@@ -120,7 +127,11 @@ export function MoreMenu({
 
   return (
     <DropdownMenu
-      className="xds-more-menu"
+      className={
+        classNameProp ? `xds-more-menu ${classNameProp}` : 'xds-more-menu'
+      }
+      xstyle={xstyle}
+      style={style}
       isMenuOpen={isMenuOpen}
       onOpenChange={onOpenChange}
       button={{

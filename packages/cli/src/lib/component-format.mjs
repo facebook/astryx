@@ -37,6 +37,30 @@ function formatPropsTable(props) {
 }
 
 /**
+ * Render a sub-component block (the `### Name` sections under "## Components").
+ *
+ * Sub-components are sometimes declared as a bare reference, e.g.
+ * `{name: 'RadioListItem'}`, with their description/props documented in
+ * their own `.doc.mjs`. Without guarding, `comp.description` is `undefined`
+ * and was being printed literally as the string "undefined". Emit the
+ * description only when present, and when there are no inline props point the
+ * reader at the sub-component's own docs instead of a blank/`undefined` block.
+ */
+function formatSubComponent(comp) {
+  const out = [`### ${comp.name}\n`];
+  if (comp.description) {
+    out.push(comp.description + '\n');
+  }
+  const table = formatPropsTable(comp.props);
+  if (table) {
+    out.push(table + '\n');
+  } else {
+    out.push(`See \`xds component ${comp.name}\` for props and usage.\n`);
+  }
+  return out;
+}
+
+/**
  * Get the variant values for a given theming target, extracting them from
  * the visualProps and the variant prop in the component's props list.
  * Returns an array of variant strings from the `variant` prop type,
@@ -166,9 +190,7 @@ export function formatFull(docs, options = {}) {
   if ('components' in docs) {
     sections.push('## Components\n');
     for (const comp of docs.components) {
-      sections.push(`### ${comp.name}\n`);
-      sections.push(comp.description + '\n');
-      sections.push(formatPropsTable(comp.props) + '\n');
+      sections.push(...formatSubComponent(comp));
       if (comp.examples?.length) {
         for (const ex of comp.examples) {
           if (ex.label) sections.push(`#### ${ex.label}\n`);
@@ -282,9 +304,11 @@ export function formatFull(docs, options = {}) {
  * Includes: import, best practices, props, theming.
  */
 export function formatCompact(docs, componentName, importHint) {
-  // Use the bare component name directly (no XDS prefix). The .doc.mjs files
-  // already store bare names ('Button', 'Card'). P1 bare aliases resolve.
-  const displayName = componentName;
+  // Bare name (un-prefix migration P5a): the CLI now presents component names
+  // without the XDS prefix. componentName is already bare post-P4.
+  const displayName = componentName.startsWith('XDS')
+    ? componentName.slice(3)
+    : componentName;
 
   const sections = [];
 
@@ -321,9 +345,7 @@ export function formatCompact(docs, componentName, importHint) {
 
   if ('components' in docs) {
     for (const comp of docs.components) {
-      sections.push(`### ${comp.name}\n`);
-      sections.push(comp.description + '\n');
-      sections.push(formatPropsTable(comp.props) + '\n');
+      sections.push(...formatSubComponent(comp));
     }
   }
 
@@ -363,8 +385,9 @@ export function formatCompact(docs, componentName, importHint) {
  * For multi-component docs, extracts the entry matching componentName.
  */
 export function formatBrief(docs, componentName, importHint, options = {}) {
-  // Use the bare component name directly (no XDS prefix).
-  const displayName = componentName;
+  const displayName = componentName.startsWith('XDS')
+    ? componentName.slice(3)
+    : componentName;
 
   // Find the right props and examples for this component
   let props = [];
@@ -513,7 +536,7 @@ export async function formatBriefAll(coreDir, {zh = false, lang, themeData = nul
         const importPath = resolveImportPath(coreDir, comp);
         output.push(formatBrief(docs, comp, importPath, { themeData }));
       } else {
-        output.push(`XDS${comp}\n  (no docs)\n`);
+        output.push(`${comp}\n  (no docs)\n`);
       }
     }
   }

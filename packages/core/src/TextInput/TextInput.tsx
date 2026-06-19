@@ -118,6 +118,7 @@ import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import type {BaseProps} from '../BaseProps';
+import type {SizeValue} from '../utils/types';
 import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export type TextInputType = 'text' | 'password' | 'email';
@@ -199,6 +200,12 @@ export interface TextInputProps extends Omit<
    */
   placeholder?: string;
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
@@ -259,6 +266,7 @@ export function TextInput({
   htmlName,
   onEnter,
   onKeyDown,
+  width,
   xstyle,
   className,
   style,
@@ -419,7 +427,8 @@ export function TextInput({
             }
           : undefined
       }
-      labelTooltip={labelTooltip}>
+      labelTooltip={labelTooltip}
+      width={width}>
       {inputWrapper}
     </Field>
   );

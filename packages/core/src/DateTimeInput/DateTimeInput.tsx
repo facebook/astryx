@@ -76,6 +76,7 @@ import {
 } from '../utils/plainDate';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
+import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {xdsThemeProps} from '../utils/xdsThemeProps';
 
@@ -294,6 +295,12 @@ export interface DateTimeInputProps extends Omit<
   status?: InputStatus;
 
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
@@ -382,6 +389,7 @@ export function DateTimeInput({
   status,
   labelTooltip,
   numberOfMonths = 1,
+  width,
   xstyle,
   className,
   style,
@@ -777,7 +785,8 @@ export function DateTimeInput({
           : undefined
       }
       labelTooltip={labelTooltip}
-      statusVariant="detached">
+      statusVariant="detached"
+      width={width}>
       <div
         {...rest}
         {...mergeProps(
