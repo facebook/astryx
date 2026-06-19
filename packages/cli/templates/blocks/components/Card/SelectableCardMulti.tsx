@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSSelectableCard} from '@xds/core/SelectableCard';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSText} from '@xds/core/Text';
+import {SelectableCard} from '@xds/core/SelectableCard';
+import {Grid} from '@xds/core/Grid';
+import {Text} from '@xds/core/Text';
 
 const tags = [
   {id: 'react', name: 'React', variant: 'blue' as const},
@@ -20,9 +20,9 @@ export default function SelectableCardMulti() {
   const [selected, setSelected] = useState(new Set(['react', 'typescript']));
 
   return (
-    <XDSGrid columns={3} gap={2} width={400}>
+    <Grid columns={3} gap={2} width={400}>
       {tags.map(tag => (
-        <XDSSelectableCard
+        <SelectableCard
           key={tag.id}
           label={tag.name}
           isSelected={selected.has(tag.id)}
@@ -38,11 +38,11 @@ export default function SelectableCardMulti() {
               return next;
             });
           }}>
-          <XDSText type="body" weight="bold">
+          <Text type="body" weight="bold">
             {tag.name}
-          </XDSText>
-        </XDSSelectableCard>
+          </Text>
+        </SelectableCard>
       ))}
-    </XDSGrid>
+    </Grid>
   );
 }

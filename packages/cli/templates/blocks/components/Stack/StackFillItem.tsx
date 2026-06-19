@@ -2,10 +2,10 @@
 
 'use client';
 
-import {XDSStack, XDSStackItem} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSAvatar} from '@xds/core/Avatar';
+import {Stack, StackItem} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Avatar} from '@xds/core/Avatar';
 
 const USERS = [
   {name: 'Olivia Chen', role: 'Engineering Lead'},
@@ -15,31 +15,31 @@ const USERS = [
 
 export default function StackFillItem() {
   return (
-    <XDSStack direction="vertical" gap={3} width="100%" style={{maxWidth: 300}}>
+    <Stack direction="vertical" gap={3} width="100%" style={{maxWidth: 300}}>
       {USERS.map(user => (
-        <XDSStack
+        <Stack
           key={user.name}
           direction="horizontal"
           gap={3}
           vAlign="center">
-          <XDSStackItem size="static">
-            <XDSAvatar name={user.name} size="small" />
-          </XDSStackItem>
-          <XDSStackItem size="fill">
-            <XDSStack direction="vertical" gap={0}>
-              <XDSText type="body" weight="bold">
+          <StackItem size="static">
+            <Avatar name={user.name} size="small" />
+          </StackItem>
+          <StackItem size="fill">
+            <Stack direction="vertical" gap={0}>
+              <Text type="body" weight="bold">
                 {user.name}
-              </XDSText>
-              <XDSText type="supporting" color="secondary">
+              </Text>
+              <Text type="supporting" color="secondary">
                 {user.role}
-              </XDSText>
-            </XDSStack>
-          </XDSStackItem>
-          <XDSStackItem size="static">
-            <XDSButton label="View" variant="secondary" size="sm" />
-          </XDSStackItem>
-        </XDSStack>
+              </Text>
+            </Stack>
+          </StackItem>
+          <StackItem size="static">
+            <Button label="View" variant="secondary" size="sm" />
+          </StackItem>
+        </Stack>
       ))}
-    </XDSStack>
+    </Stack>
   );
 }

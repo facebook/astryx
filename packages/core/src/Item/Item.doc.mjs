@@ -22,15 +22,15 @@ export const docs = {
   },
   components: [
     {
-      name: 'XDSItem',
+      name: 'Item',
       displayName: 'Item',
       description: 'A universal item primitive that unifies the "start content + label + description + end content" layout pattern. Use as a building block for list items, menu items, contact rows, notifications, and more.',
       props: [
         {name: 'label', type: 'ReactNode', description: 'Primary text identifying this item. Accepts string (auto-truncated) or ReactNode (for rich content).', required: true},
         {name: 'marker', type: 'ReactNode', description: 'Marker rendered before startContent as a direct flex child. Use for list bullets/counters that need custom baseline alignment.'},
-        {name: 'startContent', type: 'ReactNode', description: 'Content rendered before the label/description area, such as an icon, avatar, or checkbox.', slotElements: [{__element: 'XDSAvatar', props: {name: 'Ada Lovelace', size: 'xsmall'}}, {__element: 'XDSIcon', props: {icon: 'info', size: 'sm', color: 'secondary'}}]},
-        {name: 'description', type: 'ReactNode', description: 'Secondary text — subtitle, description, or supporting info.'},
-        {name: 'endContent', type: 'ReactNode', description: 'Content rendered after the label/description area, such as badges, metadata, timestamps, or action buttons.', slotElements: [{__element: 'XDSBadge', props: {label: 3}}, {__element: 'XDSText', props: {color: 'secondary'}, children: '2h ago'}]},
+        {name: 'startContent', type: 'ReactNode', description: 'Content rendered before the label/description area, such as an icon, avatar, or checkbox.', slotElements: [{__element: 'Avatar', props: {name: 'Ada Lovelace', size: 'xsmall'}}, {__element: 'Icon', props: {icon: 'info', size: 'sm', color: 'secondary'}}]},
+        {name: 'description', type: 'ReactNode', description: 'Secondary text: subtitle, description, or supporting info.'},
+        {name: 'endContent', type: 'ReactNode', description: 'Content rendered after the label/description area, such as badges, metadata, timestamps, or action buttons.', slotElements: [{__element: 'Badge', props: {label: 3}}, {__element: 'Text', props: {color: 'secondary'}, children: '2h ago'}]},
         {name: 'as', type: "'div' | 'li' | 'span'", description: 'HTML element to render as the root.', default: "'div'"},
         {name: 'align', type: "'center' | 'start'", description: 'Vertical alignment of start/end content slots.', default: "'center'"},
         {name: 'density', type: "'compact' | 'balanced' | 'spacious'", description: 'Spacing density. "compact" uses 4px block padding, "balanced" uses 8px, and "spacious" uses 12px block and inline padding.', default: "'balanced'"},
@@ -57,9 +57,9 @@ export const docs = {
       {guidance: true, description: 'Use density="compact" for menus and dense lists, "balanced" for standard rows, and "spacious" for roomier layouts.'},
       {guidance: true, description: 'Set labelLines and descriptionLines to control truncation when content length varies.'},
       {guidance: true, description: 'Use align="start" when start or end content is taller than a single line of text.'},
-      {guidance: false, description: "Don't nest interactive elements (buttons, links) inside an interactive XDSItem; it creates confusing focus and click targets."},
-      {guidance: false, description: "Don't use XDSItem for navigation between views; use proper navigation components instead."},
-      {guidance: false, description: "Don't add read/unread or inbox-specific behavior directly; compose a thin wrapper like XDSPreviewItem instead."},
+      {guidance: false, description: "Don't nest interactive elements (buttons, links) inside an interactive Item; it creates confusing focus and click targets."},
+      {guidance: false, description: "Don't use Item for navigation between views; use proper navigation components instead."},
+      {guidance: false, description: "Don't add read/unread or inbox-specific behavior directly; compose a thin wrapper like PreviewItem instead."},
     ],
     anatomy: [
       {name: 'Marker', required: false, description: 'Optional list bullet/counter rendered before start content.'},
@@ -75,7 +75,7 @@ export const docs = {
 export const docsZh = {
   components: [
     {
-      name: 'XDSItem',
+      name: 'Item',
       displayName: 'Item',
       description: '通用项目原语，统一 "起始内容 + 标签 + 描述 + 结束内容" 布局模式。用作列表项、菜单项、联系人行、通知等的构建块。',
       propDescriptions: {
@@ -110,9 +110,9 @@ export const docsZh = {
       {guidance: true, description: '菜单和密集列表使用 density="compact"，标准行使用 "balanced"，宽松布局使用 "spacious"。'},
       {guidance: true, description: '设置 labelLines 和 descriptionLines 控制内容长度不定时的截断。'},
       {guidance: true, description: '当起始或结束内容高于单行文本时使用 align="start"。'},
-      {guidance: false, description: '不要在交互式 XDSItem 内嵌套交互元素（按钮、链接）。'},
-      {guidance: false, description: '不要使用 XDSItem 进行视图间导航：使用适当的导航组件。'},
-      {guidance: false, description: '不要直接添加已读/未读行为：组合一个薄包装器如 XDSPreviewItem。'},
+      {guidance: false, description: '不要在交互式 Item 内嵌套交互元素（按钮、链接）。'},
+      {guidance: false, description: '不要使用 Item 进行视图间导航：使用适当的导航组件。'},
+      {guidance: false, description: '不要直接添加已读/未读行为：组合一个薄包装器如 PreviewItem。'},
     ],
     anatomy: [
       {name: '标记', required: false, description: '在起始内容之前渲染的可选列表项目符号/计数器。'},
@@ -135,14 +135,14 @@ export const docsDense = {
       {guidance: true, description: 'density="compact" for menus/dense lists, "balanced" for standard rows, "spacious" for roomier layouts.'},
       {guidance: true, description: 'labelLines/descriptionLines for truncation control.'},
       {guidance: true, description: 'align="start" when start/end content is taller than one text line.'},
-      {guidance: false, description: "Don't nest interactive elements inside interactive XDSItem."},
+      {guidance: false, description: "Don't nest interactive elements inside interactive Item."},
       {guidance: false, description: "Don't use for view navigation; use nav components."},
       {guidance: false, description: "Don't add inbox-specific behavior; compose a wrapper."},
     ],
   },
   components: [
     {
-      name: 'XDSItem',
+      name: 'Item',
       displayName: 'Item',
       description: 'universal item primitive w/ startContent+label+description+endContent layout',
       propDescriptions: {

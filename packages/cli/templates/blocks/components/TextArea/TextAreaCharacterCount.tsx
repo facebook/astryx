@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSTextArea} from '@xds/core/TextArea';
+import {TextArea} from '@xds/core/TextArea';
 
 export default function TextAreaCharacterCount() {
   const [value, setValue] = useState(
@@ -12,7 +12,7 @@ export default function TextAreaCharacterCount() {
 
   return (
     <div style={{width: 400}}>
-      <XDSTextArea
+      <TextArea
         label="Status update"
         value={value}
         onChange={setValue}

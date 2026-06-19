@@ -2,12 +2,12 @@
 
 'use client';
 
-import {XDSText} from '@xds/core/Text';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSPopover} from '@xds/core/Popover';
+import {Text} from '@xds/core/Text';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Popover} from '@xds/core/Popover';
 import {CodeExampleBlock} from '../CodeExampleBlock';
-import {XDSButton} from '@xds/core/Button';
-import {XDSCard} from '@xds/core/Card';
+import {Button} from '@xds/core/Button';
+import {Card} from '@xds/core/Card';
 
 export interface InstallStep {
   label: string;
@@ -43,35 +43,35 @@ export function PackageActions({
   ];
 
   return (
-    <XDSHStack gap={2}>
-      <XDSPopover
+    <HStack gap={2}>
+      <Popover
         width={360}
         content={
-          <XDSVStack gap={3}>
+          <VStack gap={3}>
             {steps.map((step, i) => (
-              <XDSVStack key={i} gap={1}>
-                <XDSText type="body" weight="bold">
+              <VStack key={i} gap={1}>
+                <Text type="body" weight="bold">
                   {i + 1}. {step.label}
-                </XDSText>
-                <XDSCard padding={0}>
+                </Text>
+                <Card padding={0}>
                   <CodeExampleBlock
                     code={step.code}
                     language={step.language ?? 'bash'}
                     hasCopyButton
                   />
-                </XDSCard>
-              </XDSVStack>
+                </Card>
+              </VStack>
             ))}
-          </XDSVStack>
+          </VStack>
         }>
-        <XDSButton
+        <Button
           label={version ? `Install v${version}` : 'Install'}
           variant="primary"
         />
-      </XDSPopover>
+      </Popover>
       {cta && (
-        <XDSButton label={cta.label} href={cta.href} variant="secondary" />
+        <Button label={cta.label} href={cta.href} variant="secondary" />
       )}
-    </XDSHStack>
+    </HStack>
   );
 }

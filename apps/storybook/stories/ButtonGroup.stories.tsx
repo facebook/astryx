@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSButtonGroup} from '@xds/core/ButtonGroup';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIconButton} from '@xds/core/IconButton';
-import {XDSIcon} from '@xds/core/Icon';
+import {ButtonGroup} from '@xds/core/ButtonGroup';
+import {Button} from '@xds/core/Button';
+import {IconButton} from '@xds/core/IconButton';
+import {Icon} from '@xds/core/Icon';
 import {
   ClipboardDocumentIcon,
   ScissorsIcon,
@@ -17,9 +17,9 @@ import {
   ChevronDownIcon,
 } from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSButtonGroup> = {
+const meta: Meta<typeof ButtonGroup> = {
   title: 'Core/ButtonGroup',
-  component: XDSButtonGroup,
+  component: ButtonGroup,
   tags: ['autodocs'],
   argTypes: {
     orientation: {control: 'select', options: ['horizontal', 'vertical']},
@@ -28,72 +28,72 @@ const meta: Meta<typeof XDSButtonGroup> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSButtonGroup>;
+type Story = StoryObj<typeof ButtonGroup>;
 
 const iconSize = {width: 16, height: 16} as const;
 
 /** Basic horizontal button group with text buttons. */
 export const Horizontal: Story = {
   render: () => (
-    <XDSButtonGroup label="Clipboard actions">
-      <XDSButton
+    <ButtonGroup label="Clipboard actions">
+      <Button
         label="Copy"
         icon={<ClipboardDocumentIcon style={iconSize} />}
       />
-      <XDSButton label="Cut" icon={<ScissorsIcon style={iconSize} />} />
-      <XDSButton label="Paste" icon={<ClipboardIcon style={iconSize} />} />
-    </XDSButtonGroup>
+      <Button label="Cut" icon={<ScissorsIcon style={iconSize} />} />
+      <Button label="Paste" icon={<ClipboardIcon style={iconSize} />} />
+    </ButtonGroup>
   ),
 };
 
 /** Vertical button group. */
 export const Vertical: Story = {
   render: () => (
-    <XDSButtonGroup label="Actions" orientation="vertical">
-      <XDSButton label="Copy" />
-      <XDSButton label="Cut" />
-      <XDSButton label="Paste" />
-    </XDSButtonGroup>
+    <ButtonGroup label="Actions" orientation="vertical">
+      <Button label="Copy" />
+      <Button label="Cut" />
+      <Button label="Paste" />
+    </ButtonGroup>
   ),
 };
 
 /** Icon-only button group for compact toolbars. */
 export const IconOnly: Story = {
   render: () => (
-    <XDSButtonGroup label="Text formatting">
-      <XDSIconButton
+    <ButtonGroup label="Text formatting">
+      <IconButton
         label="Bold"
-        icon={<XDSIcon icon={BoldIcon} size="sm" />}
+        icon={<Icon icon={BoldIcon} size="sm" />}
       />
-      <XDSIconButton
+      <IconButton
         label="Italic"
-        icon={<XDSIcon icon={ItalicIcon} size="sm" />}
+        icon={<Icon icon={ItalicIcon} size="sm" />}
       />
-      <XDSIconButton
+      <IconButton
         label="Underline"
-        icon={<XDSIcon icon={UnderlineIcon} size="sm" />}
+        icon={<Icon icon={UnderlineIcon} size="sm" />}
       />
-    </XDSButtonGroup>
+    </ButtonGroup>
   ),
 };
 
 /** Undo/redo pair with ghost variant. */
 export const GhostPair: Story = {
   render: () => (
-    <XDSButtonGroup label="History">
-      <XDSButton
+    <ButtonGroup label="History">
+      <Button
         label="Undo"
         variant="ghost"
         icon={<ArrowUturnLeftIcon style={iconSize} />}
         isIconOnly
       />
-      <XDSButton
+      <Button
         label="Redo"
         variant="ghost"
         icon={<ArrowUturnRightIcon style={iconSize} />}
         isIconOnly
       />
-    </XDSButtonGroup>
+    </ButtonGroup>
   ),
 };
 
@@ -101,18 +101,18 @@ export const GhostPair: Story = {
 export const Sizes: Story = {
   render: () => (
     <div style={{display: 'flex', gap: 16, alignItems: 'center'}}>
-      <XDSButtonGroup label="Small actions" size="sm">
-        <XDSButton label="Copy" />
-        <XDSButton label="Paste" />
-      </XDSButtonGroup>
-      <XDSButtonGroup label="Medium actions" size="md">
-        <XDSButton label="Copy" />
-        <XDSButton label="Paste" />
-      </XDSButtonGroup>
-      <XDSButtonGroup label="Large actions" size="lg">
-        <XDSButton label="Copy" />
-        <XDSButton label="Paste" />
-      </XDSButtonGroup>
+      <ButtonGroup label="Small actions" size="sm">
+        <Button label="Copy" />
+        <Button label="Paste" />
+      </ButtonGroup>
+      <ButtonGroup label="Medium actions" size="md">
+        <Button label="Copy" />
+        <Button label="Paste" />
+      </ButtonGroup>
+      <ButtonGroup label="Large actions" size="lg">
+        <Button label="Copy" />
+        <Button label="Paste" />
+      </ButtonGroup>
     </div>
   ),
 };
@@ -120,42 +120,42 @@ export const Sizes: Story = {
 /** Primary variant button group. */
 export const PrimaryVariant: Story = {
   render: () => (
-    <XDSButtonGroup label="Save options">
-      <XDSButton label="Save" variant="primary" />
-      <XDSButton
+    <ButtonGroup label="Save options">
+      <Button label="Save" variant="primary" />
+      <Button
         label="Save options"
         variant="primary"
         icon={<ChevronDownIcon style={iconSize} />}
         isIconOnly
       />
-    </XDSButtonGroup>
+    </ButtonGroup>
   ),
 };
 
 /** Two-button group (common split button pattern). */
 export const SplitButton: Story = {
   render: () => (
-    <XDSButtonGroup label="Merge options">
-      <XDSButton label="Merge pull request" variant="primary" />
-      <XDSButton
+    <ButtonGroup label="Merge options">
+      <Button label="Merge pull request" variant="primary" />
+      <Button
         label="More merge options"
         variant="primary"
         icon={<ChevronDownIcon style={iconSize} />}
         isIconOnly
       />
-    </XDSButtonGroup>
+    </ButtonGroup>
   ),
 };
 
 /** Mixed button and icon button children. */
 export const Mixed: Story = {
   render: () => (
-    <XDSButtonGroup label="Edit actions">
-      <XDSButton label="Edit" />
-      <XDSIconButton
+    <ButtonGroup label="Edit actions">
+      <Button label="Edit" />
+      <IconButton
         label="More options"
         icon={<ChevronDownIcon style={iconSize} />}
       />
-    </XDSButtonGroup>
+    </ButtonGroup>
   ),
 };

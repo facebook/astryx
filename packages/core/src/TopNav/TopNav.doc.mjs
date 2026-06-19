@@ -11,7 +11,7 @@ export const docs = {
   playground: {
     defaults: {
       label: 'Navigation',
-      heading: {__element: 'XDSTopNavHeading', props: {heading: 'My App'}},
+      heading: {__element: 'TopNavHeading', props: {heading: 'My App'}},
     },
   },
   theming: {
@@ -30,10 +30,10 @@ export const docs = {
     {
       name: 'heading',
       type: 'ReactNode',
-      description: 'Heading slot content (logo, brand) — positioned at the left edge of the nav bar.',
+      description: 'Heading slot content (logo, brand): positioned at the left edge of the nav bar.',
       slotElements: [
         {
-          __element: 'XDSText',
+          __element: 'Text',
           props: {
             type: 'body',
             weight: 'bold',
@@ -45,10 +45,10 @@ export const docs = {
     {
       name: 'startContent',
       type: 'ReactNode',
-      description: 'Start content slot for navigation items or breadcrumbs — positioned after the heading, left-aligned.',
+      description: 'Start content slot for navigation items or breadcrumbs: positioned after the heading, left-aligned.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',
@@ -62,7 +62,7 @@ export const docs = {
       description: 'Alias for startContent. Prefer startContent when composing with heading, centerContent, or endContent; children keeps the common React nav-item pattern from silently dropping items.',
       slotElements: [
         {
-          __element: 'XDSTopNavItem',
+          __element: 'TopNavItem',
           props: {
             label: 'Home',
             href: '#',
@@ -73,10 +73,10 @@ export const docs = {
     {
       name: 'centerContent',
       type: 'ReactNode',
-      description: 'Center content slot (tabs, search bar, primary navigation) — when provided, switches the layout to a three-column CSS grid for true horizontal centering.',
+      description: 'Center content slot (tabs, search bar, primary navigation): when provided, switches the layout to a three-column CSS grid for true horizontal centering.',
       slotElements: [
         {
-          __element: 'XDSText',
+          __element: 'Text',
           props: {
             type: 'body',
             weight: 'bold',
@@ -88,17 +88,17 @@ export const docs = {
     {
       name: 'endContent',
       type: 'ReactNode',
-      description: 'End content slot for search, icons, or user profile — positioned at the right edge.',
+      description: 'End content slot for search, icons, or user profile: positioned at the right edge.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'chevronDown',
             size: 'sm',
           },
         },
         {
-          __element: 'XDSBadge',
+          __element: 'Badge',
           props: {
             label: '3',
           },
@@ -113,16 +113,16 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
   components: [
-    {name: 'XDSTopNavHeading'},
-    {name: 'XDSTopNavItem'},
-    {name: 'XDSTopNavMenu'},
-    {name: 'XDSTopNavMegaMenu'},
-    {name: 'XDSTopNavMegaMenuItem'},
-    {name: 'XDSTopNavMegaMenuFeaturedCard'},
+    {name: 'TopNavHeading'},
+    {name: 'TopNavItem'},
+    {name: 'TopNavMenu'},
+    {name: 'TopNavMegaMenu'},
+    {name: 'TopNavMegaMenuItem'},
+    {name: 'TopNavMegaMenuFeaturedCard'},
   ],
   usage: {
     description:

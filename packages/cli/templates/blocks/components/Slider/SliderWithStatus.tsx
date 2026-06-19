@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSSlider} from '@xds/core/Slider';
-import {XDSVStack} from '@xds/core/Layout';
+import {Slider} from '@xds/core/Slider';
+import {VStack} from '@xds/core/Layout';
 
 export default function SliderWithStatus() {
   const [value1, setValue1] = useState(95);
@@ -12,26 +12,26 @@ export default function SliderWithStatus() {
   const [value3, setValue3] = useState(75);
   return (
     <div style={{width: 300}}>
-      <XDSVStack gap={6}>
-        <XDSSlider
+      <VStack gap={6}>
+        <Slider
           label="CPU Usage"
           value={value1}
           onChange={setValue1}
           status={{type: 'error', message: 'CPU usage is critically high'}}
         />
-        <XDSSlider
+        <Slider
           label="Memory"
           value={value2}
           onChange={setValue2}
           status={{type: 'warning', message: 'Memory usage is moderate'}}
         />
-        <XDSSlider
+        <Slider
           label="Disk"
           value={value3}
           onChange={setValue3}
           status={{type: 'success', message: 'Disk usage is healthy'}}
         />
-      </XDSVStack>
+      </VStack>
     </div>
   );
 }

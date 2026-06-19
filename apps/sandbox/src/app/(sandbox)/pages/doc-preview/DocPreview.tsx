@@ -4,10 +4,10 @@
 
 import {useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSDivider} from '@xds/core/Divider';
-import type {XDSDefinedTheme} from '@xds/core/theme';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {Divider} from '@xds/core/Divider';
+import type {DefinedTheme} from '@xds/core/theme';
 import type {ReferenceDoc, ReferenceSection} from '@xds/core';
 import {SectionRenderer} from './SectionRenderer';
 import {
@@ -40,7 +40,7 @@ const styles = stylex.create({
 
 const TOKEN_TABLE_BY_CATEGORY: Record<
   string,
-  React.ComponentType<{theme: XDSDefinedTheme}>
+  React.ComponentType<{theme: DefinedTheme}>
 > = {
   color: ColorTokenTable,
   spacing: SpacingTokenTable,
@@ -57,7 +57,7 @@ function ThemeTokenSection({
   theme,
 }: {
   category: string;
-  theme: XDSDefinedTheme;
+  theme: DefinedTheme;
 }) {
   const Component = TOKEN_TABLE_BY_CATEGORY[category];
   if (!Component) {
@@ -77,7 +77,7 @@ export function DocPreview({
 }: {
   doc: ReferenceDoc;
   version?: string;
-  theme: XDSDefinedTheme;
+  theme: DefinedTheme;
 }) {
   const {usageSections, practiceSections, overviewSections} = useMemo(() => {
     const usage: ReferenceSection[] = [];
@@ -130,21 +130,21 @@ export function DocPreview({
 
   return (
     <div {...stylex.props(styles.root)}>
-      <XDSVStack gap={8}>
+      <VStack gap={8}>
         {/* Title + Version */}
-        <XDSVStack gap={1}>
-          <XDSText type="display-1" as="h1">
+        <VStack gap={1}>
+          <Text type="display-1" as="h1">
             {doc.title}
-          </XDSText>
+          </Text>
           {version && (
-            <XDSText
+            <Text
               type="supporting"
               color="secondary"
               xstyle={styles.version}>
               v{version}
-            </XDSText>
+            </Text>
           )}
-        </XDSVStack>
+        </VStack>
 
         {/* Overview */}
         {overviewSections.map((section, i) => (
@@ -154,7 +154,7 @@ export function DocPreview({
         {/* Usage */}
         {usageSections.length > 0 && (
           <>
-            <XDSDivider />
+            <Divider />
             {usageSections.map((section, i) => (
               <SectionRenderer key={`usage-${i}`} section={section} />
             ))}
@@ -164,7 +164,7 @@ export function DocPreview({
         {/* Best Practices */}
         {practiceSections.length > 0 && (
           <>
-            <XDSDivider />
+            <Divider />
             {practiceSections.map((section, i) => (
               <SectionRenderer key={`practice-${i}`} section={section} />
             ))}
@@ -174,11 +174,11 @@ export function DocPreview({
         {/* Token tables */}
         {doc.tokenCategory && (
           <>
-            <XDSDivider />
+            <Divider />
             <ThemeTokenSection category={doc.tokenCategory} theme={theme} />
           </>
         )}
-      </XDSVStack>
+      </VStack>
     </div>
   );
 }

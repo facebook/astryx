@@ -10,8 +10,8 @@ import {
   useXDSChartColors,
   type XDSChartStreamGLHandle,
 } from '@xds/lab';
-import {XDSStack, XDSText} from '@xds/core';
-import {XDSHeading} from '@xds/core/Text';
+import {Stack, Text} from '@xds/core';
+import {Heading} from '@xds/core/Text';
 
 const meta: Meta = {
   title: 'Lab/ChartStreamGL',
@@ -52,12 +52,12 @@ export const StockPrice: StoryObj = {
     }, []);
 
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Simulated Stock Ticker</XDSHeading>
-        <XDSStack direction="horizontal" gap={3} vAlign="center">
-          <XDSText type="label">ACME Corp</XDSText>
-          <XDSText type="body">${price.toFixed(2)}</XDSText>
-        </XDSStack>
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Simulated Stock Ticker</Heading>
+        <Stack direction="horizontal" gap={3} vAlign="center">
+          <Text type="label">ACME Corp</Text>
+          <Text type="body">${price.toFixed(2)}</Text>
+        </Stack>
         <XDSChart
           data={[
             {t: 0, v: 130},
@@ -79,7 +79,7 @@ export const StockPrice: StoryObj = {
             lineWidth={1.5}
           />
         </XDSChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -183,10 +183,10 @@ export const ServerDashboard: StoryObj = {
     };
 
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Server Metrics Dashboard</XDSHeading>
-        <XDSStack direction="vertical" gap={1}>
-          <XDSText type="label">CPU Usage (%)</XDSText>
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Server Metrics Dashboard</Heading>
+        <Stack direction="vertical" gap={1}>
+          <Text type="label">CPU Usage (%)</Text>
           <XDSChart {...chartProps} xDomain={cpuX}>
             <XDSChartGrid horizontal />
             <XDSChartAxis position="bottom" />
@@ -198,9 +198,9 @@ export const ServerDashboard: StoryObj = {
               lineWidth={1.5}
             />
           </XDSChart>
-        </XDSStack>
-        <XDSStack direction="vertical" gap={1}>
-          <XDSText type="label">Memory Usage (%)</XDSText>
+        </Stack>
+        <Stack direction="vertical" gap={1}>
+          <Text type="label">Memory Usage (%)</Text>
           <XDSChart {...chartProps} xDomain={memX}>
             <XDSChartGrid horizontal />
             <XDSChartAxis position="bottom" />
@@ -212,9 +212,9 @@ export const ServerDashboard: StoryObj = {
               lineWidth={1.5}
             />
           </XDSChart>
-        </XDSStack>
-        <XDSStack direction="vertical" gap={1}>
-          <XDSText type="label">Network I/O (Mbps)</XDSText>
+        </Stack>
+        <Stack direction="vertical" gap={1}>
+          <Text type="label">Network I/O (Mbps)</Text>
           <XDSChart {...chartProps} xDomain={netX}>
             <XDSChartGrid horizontal />
             <XDSChartAxis position="bottom" />
@@ -226,8 +226,8 @@ export const ServerDashboard: StoryObj = {
               lineWidth={1.5}
             />
           </XDSChart>
-        </XDSStack>
-      </XDSStack>
+        </Stack>
+      </Stack>
     );
   },
 };
@@ -271,12 +271,12 @@ export const SeismographDemo: StoryObj = {
     }, []);
 
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Seismograph</XDSHeading>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Seismograph</Heading>
+        <Text type="supporting" color="secondary">
           yBaseline=&quot;zero&quot; anchors 0 to center. Both axes from chart
           context.
-        </XDSText>
+        </Text>
         <XDSChart
           data={[
             {t: 0, v: -80},
@@ -299,7 +299,7 @@ export const SeismographDemo: StoryObj = {
             opacity={0.9}
           />
         </XDSChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -349,11 +349,12 @@ export const MultiSensorOverlay: StoryObj = {
     }, []);
 
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Multi-Sensor Overlay</XDSHeading>
-        <XDSText type="supporting" color="secondary">
-          Three streams sharing one chart — same xDomain, same yDomain=[0, 100].
-        </XDSText>
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Multi-Sensor Overlay</Heading>
+        <Text type="supporting" color="secondary">
+          
+          Three streams sharing one chart, same xDomain, same yDomain=[0, 100].
+        </Text>
         <XDSChart
           data={[
             {t: 0, v: 0},
@@ -389,7 +390,7 @@ export const MultiSensorOverlay: StoryObj = {
             opacity={0.8}
           />
         </XDSChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };

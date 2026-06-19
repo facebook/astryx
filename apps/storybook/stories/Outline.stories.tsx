@@ -3,18 +3,18 @@
 import {useRef, type ReactNode} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSOutline,
+  Outline,
   useOutlineFromDOM,
   useOutlineFromMarkdown,
 } from '@xds/core/Outline';
 import type {OutlineItem} from '@xds/core/Outline';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSMarkdown} from '@xds/core/Markdown';
-import {XDSHeading, XDSText} from '@xds/core/Text';
+import {Badge} from '@xds/core/Badge';
+import {Markdown} from '@xds/core/Markdown';
+import {Heading, Text} from '@xds/core/Text';
 
-const meta: Meta<typeof XDSOutline> = {
+const meta: Meta<typeof Outline> = {
   title: 'Core/Outline',
-  component: XDSOutline,
+  component: Outline,
   tags: ['autodocs'],
   argTypes: {
     label: {
@@ -34,7 +34,7 @@ const meta: Meta<typeof XDSOutline> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSOutline>;
+type Story = StoryObj<typeof Outline>;
 
 const outlineItems: OutlineItem[] = [
   {id: 'overview', label: 'Overview', level: 2},
@@ -52,7 +52,7 @@ const markdownContent = [
   '',
   '## Installation',
   '',
-  'Install the package and wrap the app in an XDSTheme provider.',
+  'Install the package and wrap the app in an Theme provider.',
   '',
   '### Package setup',
   '',
@@ -130,7 +130,7 @@ export const WithDocument: Story = {
         <section>
           <h2 id="installation">Installation</h2>
           <p>
-            Install the package, wrap the app with XDSTheme, and import
+            Install the package, wrap the app with Theme, and import
             components from their subpaths.
           </p>
         </section>
@@ -160,7 +160,7 @@ export const WithDocument: Story = {
         </section>
       </article>
       <aside style={{position: 'sticky', top: 24, alignSelf: 'start'}}>
-        <XDSOutline items={outlineItems} />
+        <Outline items={outlineItems} />
       </aside>
     </div>
   ),
@@ -178,7 +178,7 @@ export const ExtractFromMarkdown: Story = {
           gap: 32,
           maxWidth: 960,
         }}>
-        <XDSMarkdown
+        <Markdown
           components={{
             heading: ({level, children}) => {
               const Tag = `h${level}` as
@@ -192,9 +192,9 @@ export const ExtractFromMarkdown: Story = {
             },
           }}>
           {markdownContent}
-        </XDSMarkdown>
+        </Markdown>
         <aside style={{position: 'sticky', top: 24, alignSelf: 'start'}}>
-          <XDSOutline items={items} />
+          <Outline items={items} />
         </aside>
       </div>
     );
@@ -216,48 +216,48 @@ export const ExtractFromHTML: Story = {
         }}>
         <article ref={contentRef} style={{display: 'grid', gap: 24}}>
           <section>
-            <XDSHeading id="account-settings" level={2}>
+            <Heading id="account-settings" level={2}>
               Account settings
-            </XDSHeading>
-            <XDSText type="body">
+            </Heading>
+            <Text type="body">
               Manage profile, authentication, and workspace preferences.
-            </XDSText>
+            </Text>
             <div style={{display: 'flex', gap: 8, marginTop: 12}}>
-              <XDSBadge variant="success" label="Active" />
-              <XDSBadge variant="neutral" label="Workspace" />
+              <Badge variant="success" label="Active" />
+              <Badge variant="neutral" label="Workspace" />
             </div>
           </section>
           <section>
-            <XDSHeading id="notifications" level={2}>
+            <Heading id="notifications" level={2}>
               Notifications
-            </XDSHeading>
-            <XDSText type="body">
+            </Heading>
+            <Text type="body">
               Choose which product events should notify the team.
-            </XDSText>
-            <XDSHeading id="email-alerts" level={3}>
+            </Text>
+            <Heading id="email-alerts" level={3}>
               Email alerts
-            </XDSHeading>
-            <XDSText type="body">
+            </Heading>
+            <Text type="body">
               Use email for low-frequency summaries and approvals.
-            </XDSText>
-            <XDSHeading id="push-alerts" level={3}>
+            </Text>
+            <Heading id="push-alerts" level={3}>
               Push alerts
-            </XDSHeading>
-            <XDSText type="body">
+            </Heading>
+            <Text type="body">
               Use push for time-sensitive updates and incidents.
-            </XDSText>
+            </Text>
           </section>
           <section>
-            <XDSHeading id="billing" level={2}>
+            <Heading id="billing" level={2}>
               Billing
-            </XDSHeading>
-            <XDSText type="body">
+            </Heading>
+            <Text type="body">
               Review invoices, payment methods, and usage limits.
-            </XDSText>
+            </Text>
           </section>
         </article>
         <aside style={{position: 'sticky', top: 24, alignSelf: 'start'}}>
-          <XDSOutline items={items} />
+          <Outline items={items} />
         </aside>
       </div>
     );
@@ -279,7 +279,7 @@ export const DeepNesting: Story = {
 
     return (
       <div style={{width: 240}}>
-        <XDSOutline items={items} activeId="subsection-1-1-1" />
+        <Outline items={items} activeId="subsection-1-1-1" />
       </div>
     );
   },

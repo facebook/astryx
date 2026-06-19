@@ -11,9 +11,9 @@ export const docs = {
   playground: {
     defaults: {
       children: [
-        {__element: 'XDSSideNavItem', props: {label: 'Dashboard', isSelected: true}},
-        {__element: 'XDSSideNavItem', props: {label: 'Projects'}},
-        {__element: 'XDSSideNavItem', props: {label: 'Settings'}},
+        {__element: 'SideNavItem', props: {label: 'Dashboard', isSelected: true}},
+        {__element: 'SideNavItem', props: {label: 'Projects'}},
+        {__element: 'SideNavItem', props: {label: 'Settings'}},
       ],
     },
   },
@@ -30,10 +30,10 @@ export const docs = {
     {
       name: 'header',
       type: 'ReactNode',
-      description: 'Header area (typically XDSSideNavHeading). Sticky.',
+      description: 'Header area (typically SideNavHeading). Sticky.',
       slotElements: [
         {
-          __element: 'XDSText',
+          __element: 'Text',
           props: {
             type: 'body',
           },
@@ -47,7 +47,7 @@ export const docs = {
       description: 'Content below the header, e.g., a create button.',
       slotElements: [
         {
-          __element: 'XDSText',
+          __element: 'Text',
           props: {
             type: 'body',
           },
@@ -61,7 +61,7 @@ export const docs = {
       description: 'Navigation sections and items. Scrollable.',
       slotElements: [
         {
-          __element: 'XDSSideNavItem',
+          __element: 'SideNavItem',
           props: {
             label: 'Nav Item',
           },
@@ -74,7 +74,7 @@ export const docs = {
       description: 'Footer area above the icon bar.',
       slotElements: [
         {
-          __element: 'XDSText',
+          __element: 'Text',
           props: {
             type: 'body',
           },
@@ -88,7 +88,7 @@ export const docs = {
       description: 'Footer icon bar.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',
@@ -104,20 +104,20 @@ export const docs = {
     },
     {
       name: 'handleRef',
-      type: 'Ref<XDSSideNavImperativeCollapseHandle>',
-      description: 'Imperative collapse handle for XDSSideNavCollapseButton instances rendered outside this SideNav. Separate from `ref`, which continues to expose the root HTMLElement.',
+      type: 'Ref<SideNavImperativeCollapseHandle>',
+      description: 'Imperative collapse handle for SideNavCollapseButton instances rendered outside this SideNav. Separate from `ref`, which continues to expose the root HTMLElement.',
     },
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
   components: [
-    {name: 'XDSSideNavHeading'},
-    {name: 'XDSSideNavItem'},
-    {name: 'XDSSideNavSection'},
-    {name: 'XDSSideNavCollapseButton'},
+    {name: 'SideNavHeading'},
+    {name: 'SideNavItem'},
+    {name: 'SideNavSection'},
+    {name: 'SideNavCollapseButton'},
   ],
   usage: {
     description:

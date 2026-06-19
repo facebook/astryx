@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
-import {stripTemplateAssetRefs} from './template.mjs';
+import {stripTemplateAssetRefs, template} from './template.mjs';
 
 describe('stripTemplateAssetRefs', () => {
   it('replaces a lookaside xds_oss image URL with an inline data URI', () => {
@@ -52,5 +52,27 @@ describe('stripTemplateAssetRefs', () => {
     const src = "import x from './local.png'; const y = '/public/logo.svg';";
     const out = stripTemplateAssetRefs(src);
     expect(out).toBe(src);
+  });
+});
+
+describe('template --skeleton component extraction (prefix-agnostic)', () => {
+  // Regression guard: templates author bare component names post un-prefix
+  // migration (P2380608025). The extractors previously matched only the
+  // `XDS`-prefixed form, so `--skeleton` returned an empty components list and
+  // an empty skeleton body for bare templates.
+  it('extracts components and a skeleton from a bare-named template', async () => {
+    const result = await template('contact-form', {skeleton: true});
+
+    expect(result.type).toBe('template.skeleton');
+    expect(Array.isArray(result.data.components)).toBe(true);
+    expect(result.data.components.length).toBeGreaterThan(0);
+    // The contact-form template composes a Card + form inputs.
+    expect(result.data.components).toContain('Card');
+    expect(result.data.components).toContain('TextInput');
+
+    // Skeleton body is non-empty and uses bare component tags (no XDS prefix).
+    expect(result.data.skeleton.trim().length).toBeGreaterThan(0);
+    expect(result.data.skeleton).toMatch(/<[A-Z]\w+/);
+    expect(result.data.skeleton).not.toContain('<XDS');
   });
 });

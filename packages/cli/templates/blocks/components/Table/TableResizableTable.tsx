@@ -4,8 +4,8 @@
 
 import {useState} from 'react';
 import {
-  XDSTable,
-  useXDSTableColumnResize,
+  Table,
+  useTableColumnResize,
   proportional,
   pixel,
 } from '@xds/core/Table';
@@ -39,7 +39,7 @@ const columns = [
 export default function TableResizableTable() {
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
 
-  const resizePlugin = useXDSTableColumnResize({
+  const resizePlugin = useTableColumnResize({
     columnWidths,
     columns,
     onColumnResizeEnd: updates => {
@@ -48,7 +48,7 @@ export default function TableResizableTable() {
   });
 
   return (
-    <XDSTable
+    <Table
       data={users}
       columns={columns}
       idKey="id"

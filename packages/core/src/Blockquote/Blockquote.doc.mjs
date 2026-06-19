@@ -38,7 +38,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Use for quoted text, testimonials, or highlighted excerpts from external sources.' },
       { guidance: true, description: 'Provide a cite prop when the source of the quote is known.' },
-      { guidance: false, description: 'Use for callout boxes or informational notes; use XDSBanner for those.' },
+      { guidance: false, description: 'Use for callout boxes or informational notes; use Banner for those.' },
     ],
   },
 };
@@ -76,7 +76,7 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: '用于引用文本、推荐语或来自外部来源的高亮摘录。' },
       { guidance: true, description: '当引用来源已知时，提供 cite 属性。' },
-      { guidance: false, description: '用于提示框或信息说明，应使用 XDSBanner。' },
+      { guidance: false, description: '用于提示框或信息说明，应使用 Banner。' },
     ],
   },
 };
@@ -89,7 +89,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Use for quoted text, testimonials, or highlighted excerpts.' },
       { guidance: true, description: 'Provide cite when source is known.' },
-      { guidance: false, description: 'Use for callouts/notes; use XDSBanner instead.' },
+      { guidance: false, description: 'Use for callouts/notes; use Banner instead.' },
     ],
   },
   propDescriptions: {

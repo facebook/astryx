@@ -4,16 +4,16 @@
 
 import { useState, useEffect } from "react";
 import * as stylex from "@stylexjs/stylex";
-import { XDSHStack } from "@xds/core/Layout";
-import { XDSText } from "@xds/core/Text";
+import { HStack } from "@xds/core/Layout";
+import { Text } from "@xds/core/Text";
 import {
-  XDSSegmentedControl,
-  XDSSegmentedControlItem,
+  SegmentedControl,
+  SegmentedControlItem,
 } from "@xds/core/SegmentedControl";
-import { XDSSpinner } from "@xds/core/Spinner";
+import { Spinner } from "@xds/core/Spinner";
 import type { ReferenceDoc } from "@xds/core";
 import { DocPreview } from "./DocPreview";
-import { XDSThemeContext } from "@xds/core/theme";
+import { ThemeContext } from "@xds/core/theme";
 import { useContext } from "react";
 
 const styles = stylex.create({
@@ -65,41 +65,41 @@ export default function DocPreviewPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  const ctx = useContext(XDSThemeContext);
+  const ctx = useContext(ThemeContext);
   const doc = docs[topic] ?? null;
 
   return (
     <div {...stylex.props(styles.page)}>
       <div {...stylex.props(styles.topBar)}>
-        <XDSHStack gap={4} align="center">
-          <XDSText type="label" color="secondary">
+        <HStack gap={4} align="center">
+          <Text type="label" color="secondary">
             Foundations
-          </XDSText>
-          <XDSSegmentedControl
+          </Text>
+          <SegmentedControl
             value={topic}
             onChange={setTopic}
             label="Doc topic"
             size="sm"
           >
             {TOPICS.map((t) => (
-              <XDSSegmentedControlItem
+              <SegmentedControlItem
                 key={t.value}
                 value={t.value}
                 label={t.label}
               />
             ))}
-          </XDSSegmentedControl>
-        </XDSHStack>
+          </SegmentedControl>
+        </HStack>
       </div>
       {loading ? (
         <div {...stylex.props(styles.loading)}>
-          <XDSSpinner size="md" />
+          <Spinner size="md" />
         </div>
       ) : doc ? (
         ctx?.theme ? <DocPreview doc={doc} version={version} theme={ctx.theme} /> : null
       ) : (
         <div {...stylex.props(styles.loading)}>
-          <XDSText color="secondary">No doc found for &quot;{topic}&quot;</XDSText>
+          <Text color="secondary">No doc found for &quot;{topic}&quot;</Text>
         </div>
       )}
     </div>

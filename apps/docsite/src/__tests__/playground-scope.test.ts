@@ -123,12 +123,12 @@ describe('playground-scope', () => {
     expect(scopeContent).toContain("'@xds/theme-matcha/built':");
   });
 
-  it('includes XDSTheme controlled wrapper and tokens', () => {
-    expect(scopeContent).toContain("'@xds/core/theme': {XDSTheme:");
+  it('includes Theme controlled wrapper and tokens', () => {
+    expect(scopeContent).toContain("'@xds/core/theme': {Theme:");
     expect(scopeContent).toContain(
       "'@xds/core/theme/tokens.stylex': xdsTokens,",
     );
-    expect(scopeContent).toContain('ControlledXDSTheme');
+    expect(scopeContent).toContain('ControlledTheme');
     expect(scopeContent).toContain('SCOPE_THEMES');
   });
 

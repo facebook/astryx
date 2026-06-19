@@ -11,7 +11,7 @@ export const docs = {
   playground: {
     defaults: {
       label: 'Email address',
-      children: {__element: 'XDSTextInput', props: {label: 'Email', placeholder: 'you@example.com'}},
+      children: {__element: 'TextInput', props: {label: 'Email', placeholder: 'you@example.com'}},
     },
   },
   theming: {
@@ -83,7 +83,7 @@ export const docs = {
     },
     {
       name: 'labelIcon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: 'Icon to display before the label text. See `npx xds docs icons` for valid semantic names.',
     },
     {
@@ -93,7 +93,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'XDSFieldStatus',
+      type: 'FieldStatus',
       description: 'Status indicator with type and optional message. When message is set, displays a colored status box.',
     },
     {
@@ -103,6 +103,11 @@ export const docs = {
       default: "'attached'",
     },
     {
+      name: 'width',
+      type: 'SizeValue',
+      description: 'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field — label, control, and status — so they stay aligned. Prefer this over setting width via xstyle/className/style, which only size the inner control box.',
+    },
+    {
       name: 'ref',
       type: 'React.Ref<HTMLDivElement>',
       description: 'Ref forwarded to the root element.',
@@ -110,7 +115,7 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
     {
       name: 'className',
@@ -124,8 +129,8 @@ export const docs = {
     },
   ],
   components: [
-    {name: 'XDSFieldLabel'},
-    {name: 'XDSFieldStatus'},
+    {name: 'FieldLabel'},
+    {name: 'FieldStatus'},
   ],
   usage: {
     description: 'Field wraps any input control with a label, description, and validation status. Use it to build accessible forms with consistent labeling, optional/required indicators, and inline error, warning, or success feedback.',

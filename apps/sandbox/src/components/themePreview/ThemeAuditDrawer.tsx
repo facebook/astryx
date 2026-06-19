@@ -23,18 +23,18 @@
  */
 
 import {useEffect, useMemo, useReducer, useRef, useState} from 'react';
-import type {XDSDefinedTheme} from '@xds/core/theme';
+import type {DefinedTheme} from '@xds/core/theme';
 
 // XDS components — used in the editor popover, export dialog, and the
 // row trigger so the audit drawer's interactive surfaces stay
 // consistent with the rest of XDS instead of a hand-rolled clone of
 // each one.
-import {XDSPopover} from '@xds/core/Popover';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
-import {XDSButton} from '@xds/core/Button';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Popover} from '@xds/core/Popover';
+import {TabList, Tab} from '@xds/core/TabList';
+import {Button} from '@xds/core/Button';
+import {TextInput} from '@xds/core/TextInput';
+import {HStack, VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 import {TONE_STEPS, type Mode, type RampSeed, type ToneStep} from './colorMath';
 import {
@@ -88,7 +88,7 @@ export interface ThemeAuditData {
  * usage map the drawer renders, without re-running the snap math.
  */
 export function useThemeAudit(
-  theme: XDSDefinedTheme,
+  theme: DefinedTheme,
   rampSeeds: RampSeed[],
 ): ThemeAuditData {
   return useMemo(() => {
@@ -360,7 +360,7 @@ const S = {
         : undefined,
   }),
   // Native <select> used inside the popover's Palette tab for ramp+tone
-  // — `XDSDropdownMenu` is heavier than needed for a small list and the
+  // — `DropdownMenu` is heavier than needed for a small list and the
   // native control gives us free keyboard navigation.
   select: {
     appearance: 'none',
@@ -465,7 +465,7 @@ export function ThemeAuditDrawer({
       `- Locate the \`defineTheme(...)\` call and find the existing \`tokens: { ... }\` block inside it.`,
       `- For each entry below, find a line whose key matches the token name and replace its value with the value below. Preserve indentation, quote style, and trailing comma. Replace any existing trailing inline comment with the annotation comment provided.`,
       `- If a token is not present, insert a new line at the bottom of the \`tokens\` block (just before the closing \`}\`) using the same indentation and quote style as sibling entries.`,
-      `- For \`--color-syntax-*\` entries: prefer to update the \`defineSyntaxTheme({ tokens: { ... } })\` block instead — strip the \`--color-syntax-\` prefix to get the key name (e.g. \`--color-syntax-keyword\` → \`keyword\`). Only fall back to inserting them as direct \`--color-syntax-*\` tokens inside \`defineTheme.tokens\` if no \`defineSyntaxTheme\` block exists.`,
+      `- For \`--color-syntax-*\` entries: prefer to update the \`defineSyntaxTheme({ tokens: { ... } })\` block instead. Strip the \`--color-syntax-\` prefix to get the key name (e.g. \`--color-syntax-keyword\` → \`keyword\`). Only fall back to inserting them as direct \`--color-syntax-*\` tokens inside \`defineTheme.tokens\` if no \`defineSyntaxTheme\` block exists.`,
       `- Do not modify any other tokens, comments, or surrounding code.`,
       '',
       inner,
@@ -620,25 +620,25 @@ export function ThemeAuditDrawer({
         </div>
         {overrideCount > 0 && (
           <div style={S.applyFooter}>
-            <XDSText type="supporting" color="secondary">
+            <Text type="supporting" color="secondary">
               {justCopied
                 ? 'Copied to clipboard'
                 : `${overrideCount} token${overrideCount === 1 ? '' : 's'} pending`}
-            </XDSText>
-            <XDSHStack gap={2}>
-              <XDSButton
+            </Text>
+            <HStack gap={2}>
+              <Button
                 label="Discard"
                 variant="ghost"
                 size="sm"
                 onClick={() => dispatchOverrides({type: 'reset'})}
               />
-              <XDSButton
+              <Button
                 label={`Copy snippet (${overrideCount})`}
                 variant="primary"
                 size="sm"
                 onClick={handleCopySnippet}
               />
-            </XDSHStack>
+            </HStack>
           </div>
         )}
       </aside>
@@ -772,12 +772,12 @@ function ColorRow({
               : 'No default value'
           }
         />
-        {/* Trigger lives inside XDSPopover — it auto-locates the
+        {/* Trigger lives inside Popover — it auto-locates the
             <button>, manages anchor positioning via CSS anchor
             positioning, handles outside-click + Esc + focus
             management, and stacks correctly above sibling content
             without needing a manual z-index. */}
-        <XDSPopover
+        <Popover
           isOpen={popoverOpen}
           onOpenChange={setPopoverOpen}
           isEnabled={!snap.indirect}
@@ -838,9 +838,9 @@ function ColorRow({
             />
             <span style={S.triggerLabel}>{inputDisplay}</span>
           </button>
-        </XDSPopover>
+        </Popover>
         {override ? (
-          <XDSButton
+          <Button
             label="reset"
             variant="ghost"
             size="sm"
@@ -858,7 +858,7 @@ function ColorRow({
           // Original alpha is preserved through the snap — committing
           // a snap on a 10%-alpha overlay token writes the ramp
           // swatch with `1A` (10%) appended, not the bare 6-digit hex.
-          <XDSButton
+          <Button
             label="snap"
             variant="ghost"
             size="sm"
@@ -878,7 +878,7 @@ function ColorRow({
 }
 
 // =============================================================================
-// Editor popover content — rendered inside <XDSPopover> as the `content` prop
+// Editor popover content — rendered inside <Popover> as the `content` prop
 // =============================================================================
 
 interface EditorPopoverContentProps {
@@ -900,7 +900,7 @@ interface EditorPopoverContentProps {
 
 /**
  * Body of the editor popover. The popover chrome (positioning, outside-
- * click, Esc, focus management) is provided by `XDSPopover`; this is just
+ * click, Esc, focus management) is provided by `Popover`; this is just
  * the content that renders inside.
  *
  * Both tabs commit edits live — picking a new tone or dragging the color
@@ -979,16 +979,16 @@ function EditorPopoverContent({
   })();
 
   return (
-    <XDSVStack gap={3} style={{padding: 4, minWidth: 0}}>
-      <XDSTabList
+    <VStack gap={3} style={{padding: 4, minWidth: 0}}>
+      <TabList
         value={tab}
         onChange={v => setTab(v as 'custom' | 'palette')}
         layout="fill"
         size="sm"
         hasDivider>
-        <XDSTab value="custom" label="Custom" />
-        <XDSTab value="palette" label="Palette" />
-      </XDSTabList>
+        <Tab value="custom" label="Custom" />
+        <Tab value="palette" label="Palette" />
+      </TabList>
       {/* Live preview reflects the in-progress selection, NOT the row's
           current value. So when the user adjusts a dropdown, the swatch
           updates to show what committing would produce — even before
@@ -1039,7 +1039,7 @@ function EditorPopoverContent({
           }
         />
       )}
-    </XDSVStack>
+    </VStack>
   );
 }
 
@@ -1094,13 +1094,13 @@ function CustomTab({
   const swatchColor = composeAlphaHex(draftParsed.hex, draftParsed.alpha);
 
   return (
-    <XDSVStack gap={2}>
-      <XDSHStack gap={2} vAlign="center">
-        <XDSText type="supporting" color="secondary" style={{minWidth: 48}}>
+    <VStack gap={2}>
+      <HStack gap={2} vAlign="center">
+        <Text type="supporting" color="secondary" style={{minWidth: 48}}>
           Hex
-        </XDSText>
+        </Text>
         <div style={{flex: 1, position: 'relative'}}>
-          <XDSTextInput
+          <TextInput
             label={`Hex value for ${tokenName} (${mode})`}
             isLabelHidden
             size="sm"
@@ -1177,7 +1177,7 @@ function CustomTab({
             }}
           />
         </div>
-      </XDSHStack>
+      </HStack>
       <AlphaInput
         alphaPct={alphaPct}
         setAlphaPct={(nextPct: number) => {
@@ -1194,13 +1194,13 @@ function CustomTab({
         }}
         labelFor={`Opacity for ${tokenName} (${mode})`}
       />
-    </XDSVStack>
+    </VStack>
   );
 }
 
 /**
  * Numeric Opacity stepper input shared by both popover tabs. Renders
- * as `[Opacity %]  [_ 50 _]` — XDSTextInput in number mode with native
+ * as `[Opacity %]  [_ 50 _]` — TextInput in number mode with native
  * step controls + a trailing "%" affordance. Range clamped 0-100;
  * non-numeric input snaps back to the current value.
  */
@@ -1234,10 +1234,10 @@ function AlphaInput({
   };
 
   return (
-    <XDSHStack gap={2} vAlign="center">
-      <XDSText type="supporting" color="secondary" style={{minWidth: 48}}>
+    <HStack gap={2} vAlign="center">
+      <Text type="supporting" color="secondary" style={{minWidth: 48}}>
         Opacity
-      </XDSText>
+      </Text>
       {/* Stretch to fill the column so the input lines up with the
           Ramp/Tone selects above (which use flex: 1, maxWidth: none). */}
       <div
@@ -1294,7 +1294,7 @@ function AlphaInput({
           %
         </span>
       </div>
-    </XDSHStack>
+    </HStack>
   );
 }
 
@@ -1330,15 +1330,15 @@ function PaletteTab({
    *  OLD value. The optional override wins when supplied. */
   onPick: (rampName: string, tone: ToneStep, alphaOverride?: number) => void;
 }) {
-  // Native <select>s here rather than XDSDropdownMenu — the menu
+  // Native <select>s here rather than DropdownMenu — the menu
   // component is heavier than needed for a 10-item ramp / 21-step tone
   // picker, and the native control gives us free keyboard navigation.
   return (
-    <XDSVStack gap={2}>
-      <XDSHStack gap={2} vAlign="center">
-        <XDSText type="supporting" color="secondary" style={{minWidth: 48}}>
+    <VStack gap={2}>
+      <HStack gap={2} vAlign="center">
+        <Text type="supporting" color="secondary" style={{minWidth: 48}}>
           Ramp
-        </XDSText>
+        </Text>
         <select
           value={rampName}
           onChange={e => {
@@ -1353,11 +1353,11 @@ function PaletteTab({
             </option>
           ))}
         </select>
-      </XDSHStack>
-      <XDSHStack gap={2} vAlign="center">
-        <XDSText type="supporting" color="secondary" style={{minWidth: 48}}>
+      </HStack>
+      <HStack gap={2} vAlign="center">
+        <Text type="supporting" color="secondary" style={{minWidth: 48}}>
           Tone
-        </XDSText>
+        </Text>
         <select
           value={tone}
           onChange={e => {
@@ -1373,7 +1373,7 @@ function PaletteTab({
             </option>
           ))}
         </select>
-      </XDSHStack>
+      </HStack>
       <AlphaInput
         alphaPct={alphaPct}
         setAlphaPct={(nextPct: number) => {
@@ -1385,6 +1385,6 @@ function PaletteTab({
         }}
         labelFor={`Opacity for ${tokenName} (${mode})`}
       />
-    </XDSVStack>
+    </VStack>
   );
 }

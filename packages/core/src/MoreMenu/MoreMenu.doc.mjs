@@ -10,9 +10,9 @@ export const docs = {
   props: [
     {
       name: 'items',
-      type: 'XDSDropdownMenuOption[]',
+      type: 'DropdownMenuOption[]',
       description:
-        'Menu items: data array of actions, dividers, and sections. Same type as XDSDropdownMenu items prop.',
+        'Menu items: data array of actions, dividers, and sections. Same type as DropdownMenu items prop.',
       required: true,
     },
     {
@@ -24,13 +24,13 @@ export const docs = {
     },
     {
       name: 'variant',
-      type: 'XDSButtonVariant',
+      type: 'ButtonVariant',
       description: 'Visual style variant of the trigger button.',
       default: "'ghost'",
     },
     {
       name: 'size',
-      type: 'XDSButtonSize',
+      type: 'ButtonSize',
       description: 'Size of the trigger button.',
       default: "'md'",
     },
@@ -39,7 +39,7 @@ export const docs = {
       type: 'ReactNode',
       description:
         'Override the default three-dot icon. Accepts any ReactNode.',
-      slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
+      slotElements: [{__element: 'Icon', props: {icon: 'check', size: 'sm'}}],
     },
     {
       name: 'isDisabled',
@@ -55,7 +55,7 @@ export const docs = {
     },
     {
       name: 'children',
-      type: '(item: XDSDropdownMenuItemData) => ReactNode',
+      type: '(item: DropdownMenuItemData) => ReactNode',
       description:
         'Custom render function for items. Only called for selectable items (not dividers/sections).',
     },
@@ -97,9 +97,9 @@ export const docsZh = {
   props: [
     {
       name: 'items',
-      type: 'XDSDropdownMenuOption[]',
+      type: 'DropdownMenuOption[]',
       description:
-        '菜单项，由操作、分割线和分组组成的数据数组。类型与 XDSDropdownMenu 的 items 属性相同。',
+        '菜单项，由操作、分割线和分组组成的数据数组。类型与 DropdownMenu 的 items 属性相同。',
       required: true,
     },
     {
@@ -111,13 +111,13 @@ export const docsZh = {
     },
     {
       name: 'variant',
-      type: 'XDSButtonVariant',
+      type: 'ButtonVariant',
       description: '触发按钮的视觉样式变体。',
       default: "'ghost'",
     },
     {
       name: 'size',
-      type: 'XDSButtonSize',
+      type: 'ButtonSize',
       description: '触发按钮的尺寸。',
       default: "'md'",
     },
@@ -141,7 +141,7 @@ export const docsZh = {
     },
     {
       name: 'children',
-      type: '(item: XDSDropdownMenuItemData) => ReactNode',
+      type: '(item: DropdownMenuItemData) => ReactNode',
       description:
         '自定义项目渲染函数。仅对可选择的项目调用（不包括分割线/分组）。',
     },
@@ -171,7 +171,7 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'Overflow menu w/ three-dot icon trigger. Convenience wrapper composing icon-only XDSButton w/ dropdown menu, eliminating boilerplate for state management, positioning, accessibility.',
+    'Overflow menu w/ three-dot icon trigger. Convenience wrapper composing icon-only Button w/ dropdown menu, eliminating boilerplate for state management, positioning, accessibility.',
   usage: {
     description:
       'MoreMenu is a three-dot button that opens a list of actions. Use it for secondary actions that don\'t need to be always visible, like in table rows, card headers, or toolbars.',
@@ -182,7 +182,7 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    items: 'Menu items (actions, dividers, sections). Same type as XDSDropdownMenu items.',
+    items: 'Menu items (actions, dividers, sections). Same type as DropdownMenu items.',
     label: 'Accessible label (aria-label) + tooltip text.',
     variant: 'Trigger button visual style variant.',
     size: 'Trigger button size.',

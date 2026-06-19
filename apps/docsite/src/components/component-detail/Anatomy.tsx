@@ -2,11 +2,11 @@
 
 'use client';
 
-import {XDSHeading} from '@xds/core/Text';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSSection} from '@xds/core/Section';
-import {XDSTable, pixel} from '@xds/core/Table';
-import {XDSBadge} from '@xds/core/Badge';
+import {Heading} from '@xds/core/Text';
+import {VStack} from '@xds/core/Layout';
+import {Section} from '@xds/core/Section';
+import {Table, pixel} from '@xds/core/Table';
+import {Badge} from '@xds/core/Badge';
 import type {AnatomyElement} from '../../generated/componentRegistry';
 import {MarkdownText} from '../MarkdownText';
 
@@ -26,10 +26,10 @@ export function Anatomy({elements}: AnatomyProps) {
   })) as Record<string, unknown>[];
 
   return (
-    <XDSSection>
-      <XDSVStack gap={2}>
-        <XDSHeading level={3}>Anatomy</XDSHeading>
-        <XDSTable
+    <Section>
+      <VStack gap={2}>
+        <Heading level={3}>Anatomy</Heading>
+        <Table
           data={data}
           columns={[
             {
@@ -43,7 +43,7 @@ export function Anatomy({elements}: AnatomyProps) {
               width: pixel(80),
               renderCell: (item: Record<string, unknown>) =>
                 item.required === true ? (
-                  <XDSBadge label="required" variant="info" />
+                  <Badge label="required" variant="info" />
                 ) : null,
             },
             {
@@ -59,7 +59,7 @@ export function Anatomy({elements}: AnatomyProps) {
           density="spacious"
           dividers="rows"
         />
-      </XDSVStack>
-    </XDSSection>
+      </VStack>
+    </Section>
   );
 }

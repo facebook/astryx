@@ -3,16 +3,16 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {DropdownMenu} from '@xds/core/DropdownMenu';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function DropdownMenuWithDisabledItems() {
   const [lastAction, setLastAction] = useState<string | null>(null);
 
   return (
-    <XDSVStack gap={3}>
-      <XDSDropdownMenu
+    <VStack gap={3}>
+      <DropdownMenu
         button={{label: 'Manage team'}}
         items={[
           {label: 'Invite member', onClick: () => setLastAction('Invite')},
@@ -23,13 +23,13 @@ export default function DropdownMenuWithDisabledItems() {
         ]}
       />
       {lastAction && (
-        <XDSText type="supporting" color="secondary">
+        <Text type="supporting" color="secondary">
           Last action: {lastAction}
-        </XDSText>
+        </Text>
       )}
-      <XDSText type="supporting" color="secondary">
+      <Text type="supporting" color="secondary">
         Destructive actions are disabled for non-admin users
-      </XDSText>
-    </XDSVStack>
+      </Text>
+    </VStack>
   );
 }

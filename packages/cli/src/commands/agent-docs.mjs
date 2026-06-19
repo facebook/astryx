@@ -115,7 +115,7 @@ export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPre
   }
 
   // Header
-  lines.push(`XDS v${version} — ${componentCount} components`);
+  lines.push(`Astryx v${version} — ${componentCount} components`);
   lines.push('');
 
   // Behavioral workflow — templates first, then component lookup
@@ -125,16 +125,16 @@ export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPre
   lines.push(`3. \`${run} component <Name>\` — read props + examples for EVERY component you use`);
   lines.push('');
   lines.push('Templates are reference code — read them for composition patterns, not just scaffolding.');
-  lines.push('Full pages → dashboard (uses XDSAppShell). Forms → contact-form. Tables → data-table. Settings → settings-sidebar.');
+  lines.push('Full pages → dashboard (uses AppShell). Forms → contact-form. Tables → data-table. Settings → settings-sidebar.');
   lines.push('');
 
   // Rules — inline, compact, prevents the top error categories
   lines.push('No <div> anywhere — not for layout, not for wrappers, not for spacing. Use components.');
-  lines.push('Full-page shells → XDSAppShell (not XDSLayout). Sidebar nav → XDSSideNav (not XDSList).');
+  lines.push('Full-page shells → AppShell (not Layout). Sidebar nav → SideNav (not List).');
   lines.push('No style={{}} — use the xstyle prop on components for custom styling.');
   lines.push('If a component prop does what you need, use it — never replicate with CSS/stylex.');
   lines.push(`No magic values — run \`${run} docs tokens\` for spacing/color/radius.`);
-  lines.push(`To change accent/brand colors: \`${run} theme\` — never override --xds-color-* in :root.`);
+  lines.push(`To change accent/brand colors: \`${run} theme\` — never override --astryx-color-* in :root.`);
   lines.push('');
 
   // CLI quick reference

@@ -4,13 +4,13 @@
 
 import type {ComponentProps} from 'react';
 import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
+  SideNav,
+  SideNavHeading,
+  SideNavItem,
+  SideNavSection,
 } from '@xds/core/SideNav';
-import {XDSListItem} from '@xds/core/List';
-import {XDSNavIcon} from '@xds/core/NavIcon';
+import {ListItem} from '@xds/core/List';
+import {NavIcon} from '@xds/core/NavIcon';
 
 function HomeIcon(props: ComponentProps<'svg'>) {
   return (
@@ -31,11 +31,11 @@ function CogIcon(props: ComponentProps<'svg'>) {
 
 export default function SideNavWithHeaderMenu() {
   return (
-    <XDSSideNav
+    <SideNav
       header={
-        <XDSSideNavHeading
+        <SideNavHeading
           icon={
-            <XDSNavIcon
+            <NavIcon
               icon={
                 <svg
                   style={{width: 16, height: 16}}
@@ -56,18 +56,18 @@ export default function SideNavWithHeaderMenu() {
           subheading="Business Account"
           menu={
             <>
-              <XDSListItem label="Personal Account" href="#" />
-              <XDSListItem label="Acme Corp" href="#" />
-              <XDSListItem label="Add account" href="#" />
-              <XDSListItem label="Sign out" href="#" />
+              <ListItem label="Personal Account" href="#" />
+              <ListItem label="Acme Corp" href="#" />
+              <ListItem label="Add account" href="#" />
+              <ListItem label="Sign out" href="#" />
             </>
           }
         />
       }>
-      <XDSSideNavSection title="Navigation">
-        <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected />
-        <XDSSideNavItem label="Settings" icon={CogIcon} />
-      </XDSSideNavSection>
-    </XDSSideNav>
+      <SideNavSection title="Navigation">
+        <SideNavItem label="Dashboard" icon={HomeIcon} isSelected />
+        <SideNavItem label="Settings" icon={CogIcon} />
+      </SideNavSection>
+    </SideNav>
   );
 }

@@ -2,32 +2,32 @@
 
 'use client';
 
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
-import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
+import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
+import {NavIcon} from '@xds/core/NavIcon';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
 import {CubeIcon, UserCircleIcon} from '@heroicons/react/24/outline';
 
 export default function TopNavWithLogo() {
   return (
-    <XDSTopNav
+    <TopNav
       label="Main navigation"
       heading={
-        <XDSTopNavHeading
+        <TopNavHeading
           heading="My App"
-          logo={<XDSNavIcon icon={<XDSIcon icon={CubeIcon} size="sm" />} />}
+          logo={<NavIcon icon={<Icon icon={CubeIcon} size="sm" />} />}
           href="#"
         />
       }
       startContent={
         <>
-          <XDSTopNavItem label="Overview" href="#" isSelected />
-          <XDSTopNavItem label="Analytics" href="#" />
-          <XDSTopNavItem label="Reports" href="#" />
+          <TopNavItem label="Overview" href="#" isSelected />
+          <TopNavItem label="Analytics" href="#" />
+          <TopNavItem label="Reports" href="#" />
         </>
       }
       endContent={
-        <XDSButton
+        <Button
           label="Profile"
           variant="ghost"
           icon={<UserCircleIcon />}

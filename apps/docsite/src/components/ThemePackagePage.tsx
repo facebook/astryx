@@ -7,18 +7,19 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePathname, useRouter} from 'next/navigation';
 import {Sun, Moon} from 'lucide-react';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSCard} from '@xds/core/Card';
-import {XDSCarousel} from '@xds/core/Carousel';
-import {XDSTheme} from '@xds/core/theme';
-import type {XDSDefinedTheme} from '@xds/core/theme';
-import {XDSButton} from '@xds/core/Button';
-import {XDSLink} from '@xds/core/Link';
-import {XDSSelectableCard} from '@xds/core/SelectableCard';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSDivider} from '@xds/core/Divider';
-import ThemeShowcase from '../../../../packages/cli/templates/pages/theme-showcase/page';
+import {HStack, VStack} from '@xds/core/Layout';
+import {Heading, Text} from '@xds/core/Text';
+import {Card} from '@xds/core/Card';
+import {Carousel} from '@xds/core/Carousel';
+import {Theme} from '@xds/core/theme';
+import type {DefinedTheme} from '@xds/core/theme';
+import {Button} from '@xds/core/Button';
+import {Link} from '@xds/core/Link';
+import {SelectableCard} from '@xds/core/SelectableCard';
+import {Selector} from '@xds/core/Selector';
+import {Divider} from '@xds/core/Divider';
+import {ThemeShowcaseStore} from '../../../../packages/cli/templates/pages/theme-showcase/page';
+import {getThemeShowcaseContent} from './themeShowcaseContent';
 import {buildPlaygroundHref} from './playgroundLink';
 import {packages} from '../generated/packageRegistry';
 import {themeObjects} from '../generated/themeRegistry';
@@ -30,6 +31,10 @@ import {trackOpenPlayground, trackToggle} from '../lib/analytics';
 // code editor when the user clicks "Open in Playground" from a theme.
 const THEME_SHOWCASE_SOURCE =
   templates.find(t => t.slug === 'theme-showcase')?.source ?? '';
+
+// CDN host for the per-theme picker banners (same host as the showcase
+// product photos), so the artwork can be updated without a code change.
+const PICKER_CDN = 'https://lookaside.facebook.com/assets/xds_oss';
 
 // Gallery order — themes are listed in the same canonical visual-
 // closeness order used elsewhere (most restrained → most expressive).
@@ -72,7 +77,7 @@ function packageNameToSlug(packageName: string): string {
 }
 
 // Below this viewport width the sidebar collapses to a compact
-// XDSSelector dropdown + inline action row above the preview. The
+// Selector dropdown + inline action row above the preview. The
 // sidebar is hidden via @media at the same breakpoint so the two
 // surfaces don't double-render. Picked so the right pane keeps
 // enough horizontal room for the themed preview's product grid.
@@ -85,7 +90,7 @@ const SIDEBAR_BREAKPOINT = '@media (max-width: 900px)';
 const SIDEBAR_WIDTH = 260;
 
 // Sticky-top offset for the sidebar. Clears the docsite's sticky
-// XDSAppShell top nav (which uses --appshell-header-height,
+// AppShell top nav (which uses --appshell-header-height,
 // populated post-hydration) plus a touch of breathing room so the
 // sidebar pill doesn't look glued to the nav's bottom edge.
 const SIDEBAR_STICKY_TOP =
@@ -162,7 +167,7 @@ const styles = stylex.create({
   },
   // Make every action button (hero CTAs, mode toggle, Open in Playground)
   // stretch to the sidebar width and left-align its label
-  // (XDSButton's default is centered, which looks off in a vertical
+  // (Button's default is centered, which looks off in a vertical
   // nav-style list).
   themeListButton: {
     width: '100%',
@@ -176,17 +181,17 @@ const styles = stylex.create({
     flex: 1,
     minWidth: 0,
   },
-  // Themed theme-row card. The XDSSelectableCard wrapper itself
+  // Themed theme-row card. The SelectableCard wrapper itself
   // stays variant="transparent" + padding=0 so it doesn't paint a
   // surface from the OUTER docsite theme; the inner themedSurface
-  // div (rendered inside its own <XDSTheme>) does the painting using
+  // div (rendered inside its own <Theme>) does the painting using
   // the theme being represented. That way each card reads as a
   // miniature brand preview rather than a docsite-Astryx card with
   // theme-colored text on top.
   themeCard: {
     width: '100%',
   },
-  // Inner card surface — lives inside the per-card <XDSTheme>
+  // Inner card surface — lives inside the per-card <Theme>
   // wrapper so the theme's heading typography (used by the
   // wordmark) + brand color tokens (used by the gradient) all
   // resolve to the represented theme's values. Each card becomes
@@ -212,7 +217,7 @@ const styles = stylex.create({
     // own container radius. (Matcha uses a smaller container
     // radius than Neutral, which would otherwise visibly differ
     // when its card lives in the picker beside the others.) The
-    // outer XDSSelectableCard's selected-state inset shadow uses
+    // outer SelectableCard's selected-state inset shadow uses
     // the same radius implicitly via its own borderRadius, so this
     // value should stay in sync with the docsite's container
     // radius (12px in Astryx).
@@ -240,50 +245,51 @@ const styles = stylex.create({
   // Per-theme bespoke picker artwork — one rule per theme that
   // has a custom photo (vs. the multi-radial-gradient default).
   // Each rule sets the picker card's background to a dedicated
-  // /theme-<slug>-picker.png image. These are SEPARATE files from
-  // the /theme-<slug>-preview.png images used on the /themes
-  // overview + detail page hero — these picker assets are sized
-  // and art-directed for the small 120px-tall picker card.
+  // theme-<slug>-picker.png banner hosted on the XDS asset CDN
+  // (see PICKER_CDN). These are SEPARATE files from the
+  // theme-<slug>-preview.png images used on the /themes overview +
+  // detail page hero — these picker assets are sized and
+  // art-directed for the small 120px-tall picker card.
   // background-size:cover so each image always fills the card
   // regardless of the source's intrinsic dimensions.
   surfaceButter: {
     backgroundColor: 'transparent',
-    backgroundImage: 'url(/theme-butter-picker.png)',
+    backgroundImage: `url(${PICKER_CDN}/theme-butter-picker.png)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
   },
   surfaceGothic: {
     backgroundColor: 'transparent',
-    backgroundImage: 'url(/theme-gothic-picker.png)',
+    backgroundImage: `url(${PICKER_CDN}/theme-gothic-picker.png)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
   },
   surfaceY2k: {
     backgroundColor: 'transparent',
-    backgroundImage: 'url(/theme-y2k-picker.png)',
+    backgroundImage: `url(${PICKER_CDN}/theme-y2k-picker.png)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
   },
   surfaceStone: {
     backgroundColor: 'transparent',
-    backgroundImage: 'url(/theme-stone-picker.png)',
+    backgroundImage: `url(${PICKER_CDN}/theme-stone-picker.png)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
   },
   surfaceNeutral: {
     backgroundColor: 'transparent',
-    backgroundImage: 'url(/theme-neutral-picker.png)',
+    backgroundImage: `url(${PICKER_CDN}/theme-neutral-picker.png)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
   },
   surfaceMatcha: {
     backgroundColor: 'transparent',
-    backgroundImage: 'url(/theme-matcha-picker.png)',
+    backgroundImage: `url(${PICKER_CDN}/theme-matcha-picker.png)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
@@ -294,26 +300,19 @@ const styles = stylex.create({
   // (the default --color-text-primary often disappears into a
   // busy image, whereas the theme's accent provides natural
   // contrast against the rest of the brand-colored artwork).
-  // The token resolves inside each card's own <XDSTheme> wrapper,
+  // The token resolves inside each card's own <Theme> wrapper,
   // so each card picks up its theme's accent — Butter's brand
   // blue, Gothic's accent, etc.
   labelAccent: {
     color: 'var(--color-accent)',
-  },
-  // White wordmark override for cards whose photo backdrop is too
-  // dark / busy for the theme accent to read against (e.g. Stone's
-  // dark thistle photo). Uses --color-on-dark which resolves to
-  // white in both modes.
-  labelOnDark: {
-    color: 'var(--color-on-dark)',
   },
   // Theme name on top of the gradient — rendered in the theme's
   // heading font so the wordmark previews the brand at a glance.
   // Color uses --color-text-primary so it reads against the soft
   // gradient backdrop in both light and dark themes.
   //
-  // Fixed fontSize (24px) overrides each theme's own heading type-
-  // scale so the picker reads at a uniform size across all 6 cards.
+  // Fixed fontSize (24px desktop / 20px narrow) overrides each theme's own
+  // heading type-scale so the picker reads at a uniform size across all 6 cards.
   // Without this, themes with larger heading defaults (e.g. Gothic's
   // Manufacturing Consent display family) render noticeably bigger
   // than themes with smaller defaults. Wide-glyph cursive fonts
@@ -330,11 +329,11 @@ const styles = stylex.create({
     // renders in Sarina (cursive), Gothic in Manufacturing Consent
     // (distressed display), and themes without a display family
     // override fall back to their heading font (Outfit, system,
-    // etc.). The XDSText below uses type="display-3" so the
+    // etc.). The Text below uses type="display-3" so the
     // .xds-text.display-3 selector in each theme's @scope'd CSS (legacy class
     // selector; text also emits data-type="display-3")
     // applies the right family per card.
-    fontSize: 32,
+    fontSize: 24,
     lineHeight: 1.2,
     color: 'var(--color-text-primary)',
     maxWidth: '100%',
@@ -345,14 +344,14 @@ const styles = stylex.create({
     zIndex: 1,
   },
   mobileThemeCardLabel: {
-    fontSize: 24,
+    fontSize: 20,
   },
   // Mobile-only floating toolbar that replaces the sidebar at
   // narrow viewports. position:fixed so it stays pinned to the
   // bottom of the viewport as the user scrolls the right pane;
   // horizontally centered with inset + auto margins instead of
   // transform so CSS-anchor-positioned popovers inside it (like
-  // XDSSelector's menu) anchor to the visible trigger location.
+  // Selector's menu) anchor to the visible trigger location.
   // Floating toolbar — appears when the theme carousel scrolls out of
   // view. Hidden by default (opacity:0, pointer-events:none) and becomes
   // visible when the `data-visible` attribute is set.
@@ -397,7 +396,7 @@ const styles = stylex.create({
   mobileSelector: {
     minWidth: 160,
   },
-  // Mobile theme carousel — horizontal row of theme cards. XDSCarousel
+  // Mobile theme carousel — horizontal row of theme cards. Carousel
   // owns scrolling, snapping, overflow affordances, and scrollbar behavior;
   // this wrapper style only controls breakpoint visibility.
   mobileCarousel: {
@@ -451,9 +450,9 @@ const styles = stylex.create({
 // can swap the card's `surface` (background image) and the `label`
 // color (most use labelAccent so the wordmark reads as a brand
 // signature on top of the photo). Adding artwork for a new theme
-// is a two-step addition: drop a public/theme-<slug>-picker.png
-// file + a `surface<Name>` rule into the styles block above, then
-// reference both here.
+// is a two-step addition: upload a theme-<slug>-picker.png banner to
+// the asset CDN (PICKER_CDN) + add a `surface<Name>` rule into the
+// styles block above, then reference both here.
 const PICKER_OVERRIDES: Record<
   string,
   {surface: StyleXStyles; label?: StyleXStyles}
@@ -467,7 +466,7 @@ const PICKER_OVERRIDES: Record<
     label: styles.labelAccent,
   },
   '@xds/theme-y2k': {surface: styles.surfaceY2k, label: styles.labelAccent},
-  '@xds/theme-stone': {surface: styles.surfaceStone, label: styles.labelOnDark},
+  '@xds/theme-stone': {surface: styles.surfaceStone, label: styles.labelAccent},
   '@xds/theme-neutral': {
     surface: styles.surfaceNeutral,
     label: styles.labelAccent,
@@ -482,29 +481,29 @@ function ThemeHeading({align = 'start'}: {align?: 'start' | 'center'}) {
   const isCentered = align === 'center';
 
   return (
-    <XDSVStack gap={2} hAlign={isCentered ? 'center' : undefined}>
-      <XDSHeading level={1} type="display-3" justify={align}>
+    <VStack gap={2} hAlign={isCentered ? 'center' : undefined}>
+      <Heading level={1} type="display-3" justify={align}>
         Themes
-      </XDSHeading>
-      <XDSText
+      </Heading>
+      <Text
         type="body"
         color="secondary"
         display={isCentered ? 'block' : 'inline'}
         justify={align}>
         Preview each theme, then start from one and make it your own.{' '}
-        <XDSLink type="body" color="secondary" href="/docs/theme" hasUnderline>
+        <Link type="body" color="secondary" href="/docs/theme" hasUnderline>
           Learn how theming works
-        </XDSLink>
+        </Link>
         .
-      </XDSText>
-    </XDSVStack>
+      </Text>
+    </VStack>
   );
 }
 
 interface ThemePackagePageProps {
   /** Full npm package name — seeds the initial selected theme. */
   packageName: string;
-  theme: XDSDefinedTheme;
+  theme: DefinedTheme;
 }
 
 export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
@@ -629,8 +628,8 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
   // Open in Playground destination: the main /playground seeded with
   // the theme-showcase template in the code editor (#code) and the
   // selected theme in the theme editor (?theme=<slug>). Navigation goes
-  // through the framework — XDSButton's href renders the docsite's Next
-  // <Link> (via XDSLinkProvider), so this is a soft, client-side
+  // through the framework — Button's href renders the docsite's Next
+  // <Link> (via LinkProvider), so this is a soft, client-side
   // transition rather than a full-page reload. The playground reads the
   // seeded code from window.location.hash in a mount effect (the
   // App-Router-safe way to read a fragment — useSearchParams only sees
@@ -649,22 +648,22 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
           toggle), divider, and the theme picker (one card per
           theme). */}
       <aside {...stylex.props(styles.sidebar)} aria-label="Theme picker">
-        <XDSCard variant="default" padding={0} xstyle={styles.sidebarCard}>
-          <XDSVStack gap={4}>
+        <Card variant="default" padding={0} xstyle={styles.sidebarCard}>
+          <VStack gap={4}>
             {/* Hero block — page-level heading + description + CTAs.
                 Heading uses display-3 instead of display-2 because
                 the narrow sidebar column would wrap display-2 mid-
                 word; CTAs stack vertically + full-width because the
                 side-by-side hero treatment doesn't fit in 260px. */}
-            <XDSVStack gap={3}>
+            <VStack gap={3}>
               <ThemeHeading />
               {/* Action row — primary CTA takes the leading flex
                   space, mode toggle (icon-only) sits on the trailing
                   edge. Both belong here because they're page-level
                   preview controls; the theme list below stays a
                   pure picker. */}
-              <XDSHStack gap={2} vAlign="center">
-                <XDSButton
+              <HStack gap={2} vAlign="center">
+                <Button
                   variant="primary"
                   size="lg"
                   label="Open in Playground"
@@ -678,7 +677,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                     });
                   }}
                 />
-                <XDSButton
+                <Button
                   variant="ghost"
                   size="lg"
                   isIconOnly
@@ -696,16 +695,16 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                     setMode(next);
                   }}
                 />
-              </XDSHStack>
-            </XDSVStack>
+              </HStack>
+            </VStack>
 
-            <XDSDivider />
+            <Divider />
 
-            {/* Theme list — one XDSSelectableCard per theme. Each
-                card's inner content is wrapped in <XDSTheme> so the
+            {/* Theme list — one SelectableCard per theme. Each
+                card's inner content is wrapped in <Theme> so the
                 background color + heading typography reflect the
                 theme it represents, giving users a miniature brand
-                preview right in the picker. XDSSelectableCard
+                preview right in the picker. SelectableCard
                 handles selection state (inset accent border),
                 aria-selected, and focus chrome. */}
             <div {...stylex.props(styles.themeList)}>
@@ -720,7 +719,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                 // wordmark.
                 const override = PICKER_OVERRIDES[pkg.name];
                 return (
-                  <XDSSelectableCard
+                  <SelectableCard
                     key={pkg.name}
                     label={`Preview ${label} theme`}
                     isSelected={isActive}
@@ -735,7 +734,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                       // mode toggle to dark. (The dark-mode brand
                       // colors for some themes are much darker,
                       // which would make the picker look gloomy.)
-                      <XDSTheme theme={cardTheme} mode="light">
+                      <Theme theme={cardTheme} mode="light">
                         <div
                           {...stylex.props(
                             styles.themedSurface,
@@ -744,7 +743,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                             // no override so the call doesn't choke.
                             override?.surface ?? false,
                           )}>
-                          <XDSText
+                          <Text
                             type="display-3"
                             weight="bold"
                             xstyle={[
@@ -752,25 +751,25 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                               override?.label ?? false,
                             ]}>
                             {label}
-                          </XDSText>
+                          </Text>
                         </div>
-                      </XDSTheme>
+                      </Theme>
                     ) : (
                       <div {...stylex.props(styles.themedSurface)}>
-                        <XDSText
+                        <Text
                           type="display-3"
                           weight="bold"
                           xstyle={styles.themeCardLabel}>
                           {label}
-                        </XDSText>
+                        </Text>
                       </div>
                     )}
-                  </XDSSelectableCard>
+                  </SelectableCard>
                 );
               })}
             </div>
-          </XDSVStack>
-        </XDSCard>
+          </VStack>
+        </Card>
       </aside>
 
       {/* Right column — themed preview + card showcase. The mobile
@@ -787,7 +786,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
             showMobileBar && styles.mobileBarVisible,
           )}>
           <div {...stylex.props(styles.mobileSelector)}>
-            <XDSSelector
+            <Selector
               label="Theme"
               isLabelHidden
               size="sm"
@@ -797,7 +796,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
               onChange={handleSelectPkg}
             />
           </div>
-          <XDSButton
+          <Button
             variant="ghost"
             size="sm"
             isIconOnly
@@ -813,8 +812,8 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
             action buttons (Open in Playground + mode toggle). */}
         <div {...stylex.props(styles.mobileContext)}>
           <ThemeHeading align="center" />
-          <XDSHStack gap={2} vAlign="center">
-            <XDSButton
+          <HStack gap={2} vAlign="center">
+            <Button
               variant="primary"
               size="lg"
               label="Open in Playground"
@@ -828,7 +827,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                 });
               }}
             />
-            <XDSButton
+            <Button
               variant="ghost"
               size="lg"
               isIconOnly
@@ -846,13 +845,13 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                 setMode(next);
               }}
             />
-          </XDSHStack>
+          </HStack>
         </div>
 
         {/* Mobile theme carousel — horizontal row of theme cards.
             When this scrolls out of view, the floating toolbar appears.
-            XDSCarousel owns scroll behavior and snap affordances. */}
-        <XDSCarousel
+            Carousel owns scroll behavior and snap affordances. */}
+        <Carousel
           ref={carouselRef}
           gap={3}
           hasButtons={false}
@@ -866,20 +865,20 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
             const override = PICKER_OVERRIDES[pkg.name];
             return (
               <div key={pkg.name} {...stylex.props(styles.mobileCarouselCard)}>
-                <XDSSelectableCard
+                <SelectableCard
                   label={`Preview ${label} theme`}
                   isSelected={isActive}
                   onChange={() => handleSelectPkg(pkg.name)}
                   padding={0}
                   variant="transparent">
                   {cardTheme ? (
-                    <XDSTheme theme={cardTheme} mode="light">
+                    <Theme theme={cardTheme} mode="light">
                       <div
                         {...stylex.props(
                           styles.themedSurface,
                           override?.surface ?? false,
                         )}>
-                        <XDSText
+                        <Text
                           type="display-3"
                           weight="bold"
                           xstyle={[
@@ -888,12 +887,12 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                             override?.label ?? false,
                           ]}>
                           {label}
-                        </XDSText>
+                        </Text>
                       </div>
-                    </XDSTheme>
+                    </Theme>
                   ) : (
                     <div {...stylex.props(styles.themedSurface)}>
-                      <XDSText
+                      <Text
                         type="display-3"
                         weight="bold"
                         xstyle={[
@@ -901,14 +900,14 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                           styles.mobileThemeCardLabel,
                         ]}>
                         {label}
-                      </XDSText>
+                      </Text>
                     </div>
                   )}
-                </XDSSelectableCard>
+                </SelectableCard>
               </div>
             );
           })}
-        </XDSCarousel>
+        </Carousel>
 
         {/* Themed preview — the theme-showcase template rendered with
             the selected theme, wrapped in a bordered, rounded card so
@@ -916,11 +915,17 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
             chrome. overflow:hidden (showcaseCard) clips the template's
             own backgrounds (top nav, sections) to the card's radius. */}
         <div {...stylex.props(styles.showcaseBlock)}>
-          <XDSCard padding={0} xstyle={styles.showcaseCard}>
-            <XDSTheme theme={selectedTheme} mode={mode}>
-              <ThemeShowcase />
-            </XDSTheme>
-          </XDSCard>
+          <Card padding={0} xstyle={styles.showcaseCard}>
+            <Theme theme={selectedTheme} mode={mode}>
+              {/* Bespoke per-theme content (e.g. Matcha's café menu); falls
+                  back to the template's neutral defaults when undefined. */}
+              <ThemeShowcaseStore
+                {...getThemeShowcaseContent(
+                  selectedPkgName.replace('@xds/theme-', ''),
+                )}
+              />
+            </Theme>
+          </Card>
         </div>
       </div>
     </div>

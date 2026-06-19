@@ -4,10 +4,10 @@
 
 import type {ComponentProps} from 'react';
 import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
+  SideNav,
+  SideNavHeading,
+  SideNavItem,
+  SideNavSection,
 } from '@xds/core/SideNav';
 
 function HomeIcon(props: ComponentProps<'svg'>) {
@@ -44,33 +44,33 @@ function DocumentTextIcon(props: ComponentProps<'svg'>) {
 
 export default function SideNavShowcase() {
   return (
-    <XDSSideNav
-      header={<XDSSideNavHeading heading="My App" headingHref="/" />}>
-      <XDSSideNavSection title="Main">
-        <XDSSideNavItem
+    <SideNav
+      header={<SideNavHeading heading="My App" headingHref="/" />}>
+      <SideNavSection title="Main">
+        <SideNavItem
           label="Dashboard"
           icon={HomeIcon}
           isSelected
           href="/dashboard"
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Projects"
           icon={FolderIcon}
           href="/projects"
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Analytics"
           icon={ChartBarIcon}
           href="/analytics"
         />
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Documents">
-        <XDSSideNavItem
+      </SideNavSection>
+      <SideNavSection title="Documents">
+        <SideNavItem
           label="All Documents"
           icon={DocumentTextIcon}
           href="/documents"
         />
-      </XDSSideNavSection>
-    </XDSSideNav>
+      </SideNavSection>
+    </SideNav>
   );
 }

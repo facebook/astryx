@@ -3,32 +3,32 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
+import {RadioList, RadioListItem} from '@xds/core/RadioList';
 
 export default function RadioListWithDescriptions() {
   const [value, setValue] = useState('');
 
   return (
-    <XDSRadioList
+    <RadioList
       label="Notification preference"
       description="Choose how you would like to be notified"
       value={value}
       onChange={setValue}>
-      <XDSRadioListItem
+      <RadioListItem
         label="Email"
         value="email"
         description="Receive notifications via email"
       />
-      <XDSRadioListItem
+      <RadioListItem
         label="SMS"
         value="sms"
         description="Standard messaging rates apply"
       />
-      <XDSRadioListItem
+      <RadioListItem
         label="Push notification"
         value="push"
         description="Instant alerts on your device"
       />
-    </XDSRadioList>
+    </RadioList>
   );
 }

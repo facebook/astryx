@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
-import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSButton} from '@xds/core/Button';
+import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
+import {NavIcon} from '@xds/core/NavIcon';
+import {Button} from '@xds/core/Button';
 import {
   HomeIcon,
   Cog6ToothIcon,
@@ -15,9 +15,9 @@ import {
   ChartBarIcon,
 } from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSTopNav> = {
+const meta: Meta<typeof TopNav> = {
   title: 'Core/TopNav',
-  component: XDSTopNav,
+  component: TopNav,
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
@@ -31,34 +31,34 @@ const meta: Meta<typeof XDSTopNav> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSTopNav>;
+type Story = StoryObj<typeof TopNav>;
 
 export const Default: Story = {
   args: {
     label: 'Main navigation',
-    heading: <XDSTopNavHeading heading="My App" />,
+    heading: <TopNavHeading heading="My App" />,
     startContent: (
       <>
-        <XDSTopNavItem label="Home" href="#" isSelected />
-        <XDSTopNavItem label="Products" href="#" />
-        <XDSTopNavItem label="About" href="#" />
+        <TopNavItem label="Home" href="#" isSelected />
+        <TopNavItem label="Products" href="#" />
+        <TopNavItem label="About" href="#" />
       </>
     ),
     endContent: (
       <>
-        <XDSButton
+        <Button
           label="Search"
           variant="ghost"
           icon={<MagnifyingGlassIcon style={{width: 16, height: 16}} />}
           isIconOnly
         />
-        <XDSButton
+        <Button
           label="Notifications"
           variant="ghost"
           icon={<BellIcon style={{width: 16, height: 16}} />}
           isIconOnly
         />
-        <XDSButton
+        <Button
           label="Profile"
           variant="ghost"
           icon={<UserCircleIcon style={{width: 16, height: 16}} />}
@@ -71,13 +71,13 @@ export const Default: Story = {
 
 export const ChildrenNavigationItems: Story = {
   render: () => (
-    <XDSTopNav
+    <TopNav
       label="Main navigation"
-      heading={<XDSTopNavHeading heading="Children Alias" />}>
-      <XDSTopNavItem label="Home" href="#" isSelected />
-      <XDSTopNavItem label="Products" href="#" />
-      <XDSTopNavItem label="About" href="#" />
-    </XDSTopNav>
+      heading={<TopNavHeading heading="Children Alias" />}>
+      <TopNavItem label="Home" href="#" isSelected />
+      <TopNavItem label="Products" href="#" />
+      <TopNavItem label="About" href="#" />
+    </TopNav>
   ),
 };
 
@@ -85,23 +85,23 @@ export const WithLogo: Story = {
   args: {
     label: 'Main navigation',
     heading: (
-      <XDSTopNavHeading
+      <TopNavHeading
         heading="Dashboard"
         logo={
-          <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
         }
         href="#"
       />
     ),
     startContent: (
       <>
-        <XDSTopNavItem label="Overview" href="#" isSelected />
-        <XDSTopNavItem label="Analytics" href="#" />
-        <XDSTopNavItem label="Reports" href="#" />
+        <TopNavItem label="Overview" href="#" isSelected />
+        <TopNavItem label="Analytics" href="#" />
+        <TopNavItem label="Reports" href="#" />
       </>
     ),
     endContent: (
-      <XDSButton
+      <Button
         label="Profile"
         variant="ghost"
         icon={<UserCircleIcon style={{width: 16, height: 16}} />}
@@ -115,28 +115,28 @@ export const TitleOnly: Story = {
   args: {
     label: 'Main navigation',
     heading: (
-      <XDSTopNavHeading
+      <TopNavHeading
         heading="Simple App"
         logo={
-          <XDSNavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />
+          <NavIcon icon={<HomeIcon style={{width: 16, height: 16}} />} />
         }
       />
     ),
-    endContent: <XDSButton label="Sign in" variant="primary" />,
+    endContent: <Button label="Sign in" variant="primary" />,
   },
 };
 
 export const NavItemStates: Story = {
   render: () => (
-    <XDSTopNav
+    <TopNav
       label="Navigation states demo"
-      heading={<XDSTopNavHeading heading="States" />}
+      heading={<TopNavHeading heading="States" />}
       startContent={
         <>
-          <XDSTopNavItem label="Selected" href="#" isSelected />
-          <XDSTopNavItem label="Default" href="#" />
-          <XDSTopNavItem label="Disabled" href="#" isDisabled />
-          <XDSTopNavItem
+          <TopNavItem label="Selected" href="#" isSelected />
+          <TopNavItem label="Default" href="#" />
+          <TopNavItem label="Disabled" href="#" isDisabled />
+          <TopNavItem
             label="With Icon"
             href="#"
             icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
@@ -149,33 +149,33 @@ export const NavItemStates: Story = {
 
 export const CenteredNavigation: Story = {
   render: () => (
-    <XDSTopNav
+    <TopNav
       label="Main navigation"
       heading={
-        <XDSTopNavHeading
+        <TopNavHeading
           heading="My App"
           logo={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
           href="#"
         />
       }
       centerContent={
         <>
-          <XDSTopNavItem label="Home" href="#" isSelected />
-          <XDSTopNavItem label="Products" href="#" />
-          <XDSTopNavItem label="About" href="#" />
+          <TopNavItem label="Home" href="#" isSelected />
+          <TopNavItem label="Products" href="#" />
+          <TopNavItem label="About" href="#" />
         </>
       }
       endContent={
         <>
-          <XDSButton
+          <Button
             label="Search"
             variant="ghost"
             icon={<MagnifyingGlassIcon style={{width: 16, height: 16}} />}
             isIconOnly
           />
-          <XDSButton
+          <Button
             label="Profile"
             variant="ghost"
             icon={<UserCircleIcon style={{width: 16, height: 16}} />}
@@ -189,13 +189,13 @@ export const CenteredNavigation: Story = {
 
 export const CenteredWithStartContent: Story = {
   render: () => (
-    <XDSTopNav
+    <TopNav
       label="Main navigation"
       heading={
-        <XDSTopNavHeading
+        <TopNavHeading
           heading="Dashboard"
           logo={
-            <XDSNavIcon
+            <NavIcon
               icon={<ChartBarIcon style={{width: 16, height: 16}} />}
             />
           }
@@ -203,7 +203,7 @@ export const CenteredWithStartContent: Story = {
         />
       }
       startContent={
-        <XDSTopNavItem
+        <TopNavItem
           label="Back"
           href="#"
           icon={<HomeIcon style={{width: 16, height: 16}} />}
@@ -211,13 +211,13 @@ export const CenteredWithStartContent: Story = {
       }
       centerContent={
         <>
-          <XDSTopNavItem label="Overview" href="#" isSelected />
-          <XDSTopNavItem label="Analytics" href="#" />
-          <XDSTopNavItem label="Reports" href="#" />
+          <TopNavItem label="Overview" href="#" isSelected />
+          <TopNavItem label="Analytics" href="#" />
+          <TopNavItem label="Reports" href="#" />
         </>
       }
       endContent={
-        <XDSButton
+        <Button
           label="Profile"
           variant="ghost"
           icon={<UserCircleIcon style={{width: 16, height: 16}} />}
@@ -232,18 +232,18 @@ export const CenterContentWithoutEnd: Story = {
   args: {
     label: 'Main navigation',
     heading: (
-      <XDSTopNavHeading
+      <TopNavHeading
         heading="My App"
         logo={
-          <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
         }
         href="#"
       />
     ),
     centerContent: (
       <>
-        <XDSTopNavItem label="Home" href="#" isSelected />
-        <XDSTopNavItem label="Products" href="#" />
+        <TopNavItem label="Home" href="#" isSelected />
+        <TopNavItem label="Products" href="#" />
       </>
     ),
   },
@@ -251,13 +251,13 @@ export const CenterContentWithoutEnd: Story = {
 
 export const FullExample: Story = {
   render: () => (
-    <XDSTopNav
+    <TopNav
       label="Main navigation"
       heading={
-        <XDSTopNavHeading
+        <TopNavHeading
           heading="Enterprise Dashboard"
           logo={
-            <XDSNavIcon
+            <NavIcon
               icon={<ChartBarIcon style={{width: 16, height: 16}} />}
             />
           }
@@ -266,23 +266,23 @@ export const FullExample: Story = {
       }
       startContent={
         <>
-          <XDSTopNavItem
+          <TopNavItem
             label="Dashboard"
             href="#"
             isSelected
             icon={<HomeIcon style={{width: 16, height: 16}} />}
           />
-          <XDSTopNavItem
+          <TopNavItem
             label="Reports"
             href="#"
             icon={<DocumentTextIcon style={{width: 16, height: 16}} />}
           />
-          <XDSTopNavItem
+          <TopNavItem
             label="Analytics"
             href="#"
             icon={<ChartBarIcon style={{width: 16, height: 16}} />}
           />
-          <XDSTopNavItem
+          <TopNavItem
             label="Settings"
             href="#"
             icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
@@ -291,19 +291,19 @@ export const FullExample: Story = {
       }
       endContent={
         <>
-          <XDSButton
+          <Button
             label="Search"
             variant="ghost"
             icon={<MagnifyingGlassIcon style={{width: 16, height: 16}} />}
             isIconOnly
           />
-          <XDSButton
+          <Button
             label="Notifications"
             variant="ghost"
             icon={<BellIcon style={{width: 16, height: 16}} />}
             isIconOnly
           />
-          <XDSButton label="Upgrade" variant="primary" />
+          <Button label="Upgrade" variant="primary" />
         </>
       }
     />

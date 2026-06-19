@@ -5,34 +5,34 @@ import {xdsThemeDataAttributes, xdsThemeProps} from './xdsThemeProps';
 
 describe('xdsThemeProps', () => {
   it('returns base class for component', () => {
-    expect(xdsThemeProps('card').className).toBe('xds-card');
+    expect(xdsThemeProps('card').className).toBe('astryx-card xds-card');
   });
 
   it('adds variant classes', () => {
     expect(
       xdsThemeProps('button', {variant: 'secondary', size: 'sm'}).className,
-    ).toBe('xds-button secondary sm');
+    ).toBe('astryx-button xds-button secondary sm');
   });
 
   it('prefixes numeric values with prop name', () => {
     expect(xdsThemeProps('heading', {level: 1}).className).toBe(
-      'xds-heading level-1',
+      'astryx-heading xds-heading level-1',
     );
   });
 
   it('skips null and undefined props', () => {
     expect(
       xdsThemeProps('button', {variant: 'primary', size: undefined}).className,
-    ).toBe('xds-button primary');
+    ).toBe('astryx-button xds-button primary');
   });
 
   it('works with no props', () => {
-    expect(xdsThemeProps('divider').className).toBe('xds-divider');
+    expect(xdsThemeProps('divider').className).toBe('astryx-divider xds-divider');
   });
 
   it('handles string numeric values', () => {
     expect(xdsThemeProps('heading', {level: '3'}).className).toBe(
-      'xds-heading level-3',
+      'astryx-heading xds-heading level-3',
     );
   });
 
@@ -60,7 +60,7 @@ describe('xdsThemeProps', () => {
 
   it('returns class and data attributes together', () => {
     expect(xdsThemeProps('button', {variant: 'primary', size: 'sm'})).toEqual({
-      className: 'xds-button primary sm',
+      className: 'astryx-button xds-button primary sm',
       'data-variant': 'primary',
       'data-size': 'sm',
     });

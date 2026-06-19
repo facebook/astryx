@@ -6,7 +6,7 @@
  * @file useGridFocus.ts
  * @input Uses React useCallback, useRef
  * @output Exports useGridFocus hook for grid keyboard navigation
- * @position Core hook; used by XDSCalendar for date grid navigation
+ * @position Core hook; used by Calendar for date grid navigation
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts

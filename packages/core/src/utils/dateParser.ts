@@ -4,7 +4,7 @@
  * @file dateParser.ts
  * @input Uses Intl.DateTimeFormat for locale detection
  * @output Exports date parsing utilities for user input
- * @position Core utility; used by XDSDateInput, XDSDateTimeInput
+ * @position Core utility; used by DateInput, DateTimeInput
  *
  * SYNC: When modified, update:
  * - /packages/core/src/utils/dateParser.test.ts

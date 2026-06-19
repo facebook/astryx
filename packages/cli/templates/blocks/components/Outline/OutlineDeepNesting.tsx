@@ -2,7 +2,7 @@
 
 'use client';
 
-import {XDSOutline} from '@xds/core/Outline';
+import {Outline} from '@xds/core/Outline';
 import type {OutlineItem} from '@xds/core/Outline';
 
 const items: OutlineItem[] = [
@@ -20,7 +20,7 @@ const items: OutlineItem[] = [
 export default function OutlineDeepNesting() {
   return (
     <div style={{width: 240}}>
-      <XDSOutline items={items} activeId="deep-color" />
+      <Outline items={items} activeId="deep-color" />
     </div>
   );
 }

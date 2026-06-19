@@ -1,14 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSClickableCard} from '@xds/core/ClickableCard';
-import {XDSText} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {ClickableCard} from '@xds/core/ClickableCard';
+import {Text} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {VStack, HStack} from '@xds/core/Layout';
 
-const meta: Meta<typeof XDSClickableCard> = {
+const meta: Meta<typeof ClickableCard> = {
   title: 'Core/ClickableCard',
-  component: XDSClickableCard,
+  component: ClickableCard,
   tags: ['autodocs'],
   argTypes: {
     variant: {
@@ -35,7 +35,7 @@ const meta: Meta<typeof XDSClickableCard> = {
       description: {
         component:
           'An interactive card for navigation or action targets. ' +
-          'Nested interactive elements (buttons, links) work independently — ' +
+          'Nested interactive elements (buttons, links) work independently; ' +
           "clicking them does NOT trigger the card's onClick or navigation. " +
           'Uses `useClickableContainer` internally.',
       },
@@ -44,27 +44,27 @@ const meta: Meta<typeof XDSClickableCard> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSClickableCard>;
+type Story = StoryObj<typeof ClickableCard>;
 
 export const Navigation: Story = {
   name: 'Navigation (href)',
   render: () => (
-    <XDSClickableCard label="Settings" href="/settings" width={300}>
-      <XDSVStack gap={1}>
-        <XDSText type="body" weight="bold">
+    <ClickableCard label="Settings" href="/settings" width={300}>
+      <VStack gap={1}>
+        <Text type="body" weight="bold">
           Settings
-        </XDSText>
-        <XDSText type="supporting" color="secondary">
+        </Text>
+        <Text type="supporting" color="secondary">
           Manage your preferences
-        </XDSText>
-      </XDSVStack>
-    </XDSClickableCard>
+        </Text>
+      </VStack>
+    </ClickableCard>
   ),
   parameters: {
     docs: {
       description: {
         story:
-          'Card with `href` — clicking navigates. Ctrl/Cmd+click opens new tab. Middle-click opens new tab.',
+          'Card with `href`: clicking navigates. Ctrl/Cmd+click opens new tab. Middle-click opens new tab.',
       },
     },
   },
@@ -73,25 +73,25 @@ export const Navigation: Story = {
 export const WithOnClick: Story = {
   name: 'Action (onClick)',
   render: () => (
-    <XDSClickableCard
+    <ClickableCard
       label="Open modal"
       onClick={() => alert('Card clicked!')}
       width={300}>
-      <XDSVStack gap={1}>
-        <XDSText type="body" weight="bold">
+      <VStack gap={1}>
+        <Text type="body" weight="bold">
           Click me
-        </XDSText>
-        <XDSText type="supporting" color="secondary">
+        </Text>
+        <Text type="supporting" color="secondary">
           Opens a modal
-        </XDSText>
-      </XDSVStack>
-    </XDSClickableCard>
+        </Text>
+      </VStack>
+    </ClickableCard>
   ),
   parameters: {
     docs: {
       description: {
         story:
-          'Card with `onClick` — fires the handler when the card surface is clicked.',
+          'Card with `onClick`: fires the handler when the card surface is clicked.',
       },
     },
   },
@@ -100,21 +100,21 @@ export const WithOnClick: Story = {
 export const NestedButton: Story = {
   name: 'Nested Interactive Elements',
   render: () => (
-    <XDSClickableCard label="Product card" href="/product/123" width={300}>
-      <XDSVStack gap={2}>
-        <XDSText type="body" weight="bold">
+    <ClickableCard label="Product card" href="/product/123" width={300}>
+      <VStack gap={2}>
+        <Text type="body" weight="bold">
           Product Name
-        </XDSText>
-        <XDSText type="supporting" color="secondary">
+        </Text>
+        <Text type="supporting" color="secondary">
           $29.99
-        </XDSText>
-        <XDSButton
+        </Text>
+        <Button
           label="Add to cart"
           onClick={() => alert('Added to cart! (card did NOT navigate)')}
           variant="primary"
         />
-      </XDSVStack>
-    </XDSClickableCard>
+      </VStack>
+    </ClickableCard>
   ),
   parameters: {
     docs: {
@@ -130,20 +130,20 @@ export const NestedButton: Story = {
 
 export const Disabled: Story = {
   render: () => (
-    <XDSClickableCard
+    <ClickableCard
       label="Disabled card"
       onClick={() => {}}
       isDisabled
       width={300}>
-      <XDSVStack gap={1}>
-        <XDSText type="body" weight="bold">
+      <VStack gap={1}>
+        <Text type="body" weight="bold">
           Disabled
-        </XDSText>
-        <XDSText type="supporting" color="secondary">
+        </Text>
+        <Text type="supporting" color="secondary">
           This card cannot be clicked
-        </XDSText>
-      </XDSVStack>
-    </XDSClickableCard>
+        </Text>
+      </VStack>
+    </ClickableCard>
   ),
   parameters: {
     docs: {
@@ -175,27 +175,27 @@ export const ColorVariants: Story = {
     ] as const;
 
     return (
-      <XDSHStack gap={3} wrap="wrap">
+      <HStack gap={3} wrap="wrap">
         {variants.map(v => (
-          <XDSClickableCard
+          <ClickableCard
             key={v}
             label={v}
             onClick={() => alert(v)}
             variant={v}
             width={140}>
-            <XDSText type="body" weight="bold">
+            <Text type="body" weight="bold">
               {v}
-            </XDSText>
-          </XDSClickableCard>
+            </Text>
+          </ClickableCard>
         ))}
-      </XDSHStack>
+      </HStack>
     );
   },
   parameters: {
     docs: {
       description: {
         story:
-          'All color variants — same palette as XDSCard. Color cards have transparent borders.',
+          'All color variants: same palette as Card. Color cards have transparent borders.',
       },
     },
   },

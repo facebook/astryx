@@ -3,9 +3,9 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSTable, pixel} from '@xds/core/Table';
+import {HStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {Table, pixel} from '@xds/core/Table';
 import {useMediaQuery} from '@xds/core/hooks';
 import type {TokenTableProps} from './types';
 import {
@@ -78,7 +78,7 @@ export function ColorTokenTable({theme}: TokenTableProps) {
 
   if (isDual) {
     return (
-      <XDSTable
+      <Table
         data={data as Record<string, unknown>[]}
         columns={[
           {key: 'tokenName', header: 'Token', width: pixel(260)},
@@ -91,15 +91,15 @@ export function ColorTokenTable({theme}: TokenTableProps) {
               const isSame = light === dark;
 
               return (
-                <XDSHStack gap={2} vAlign="center">
+                <HStack gap={2} vAlign="center">
                   <ContextSwatch value={light} surface="light" />
                   <ContextSwatch value={dark} surface="dark" />
                   {!isMobile && (
-                    <XDSText type="code" color="secondary">
+                    <Text type="code" color="secondary">
                       {isSame ? light : `${light} / ${dark}`}
-                    </XDSText>
+                    </Text>
                   )}
-                </XDSHStack>
+                </HStack>
               );
             },
           },
@@ -112,7 +112,7 @@ export function ColorTokenTable({theme}: TokenTableProps) {
   }
 
   return (
-    <XDSTable
+    <Table
       data={data as Record<string, unknown>[]}
       columns={[
         {key: 'tokenName', header: 'Token', width: pixel(260)},
@@ -120,14 +120,14 @@ export function ColorTokenTable({theme}: TokenTableProps) {
           key: 'light',
           header: 'Value',
           renderCell: (item: Record<string, unknown>) => (
-            <XDSHStack gap={2} vAlign="center">
+            <HStack gap={2} vAlign="center">
               <Swatch value={item.light as string} />
               {!isMobile && (
-                <XDSText type="code" color="secondary">
+                <Text type="code" color="secondary">
                   {item.light as string}
-                </XDSText>
+                </Text>
               )}
-            </XDSHStack>
+            </HStack>
           ),
         },
       ]}

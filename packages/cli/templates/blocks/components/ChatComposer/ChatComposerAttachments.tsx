@@ -2,28 +2,28 @@
 
 'use client';
 
-import {XDSChatComposer, XDSChatComposerDrawer} from '@xds/core/Chat';
-import {XDSToken} from '@xds/core/Token';
-import {XDSStack} from '@xds/core/Layout';
+import {ChatComposer, ChatComposerDrawer} from '@xds/core/Chat';
+import {Token} from '@xds/core/Token';
+import {Stack} from '@xds/core/Layout';
 
 export default function ChatComposerAttachments() {
   return (
-    <XDSStack direction="vertical" style={{width: '100%', maxWidth: 450}}>
-      <XDSChatComposer
+    <Stack direction="vertical" style={{width: '100%', maxWidth: 450}}>
+      <ChatComposer
         onSubmit={value => {
           console.log('Sent:', value);
         }}
         drawer={
-          <XDSChatComposerDrawer count={6}>
-            <XDSToken label="feature-prd.docx" onRemove={() => {}} />
-            <XDSToken label="2026-roadmap.pdf" onRemove={() => {}} />
-            <XDSToken label="user-flow.fig" onRemove={() => {}} />
-            <XDSToken label="launch-plan.docx" onRemove={() => {}} />
-            <XDSToken label="user-feedback.csv" onRemove={() => {}} />
-            <XDSToken label="analytics-kpis.csv" onRemove={() => {}} />
-          </XDSChatComposerDrawer>
+          <ChatComposerDrawer count={6}>
+            <Token label="feature-prd.docx" onRemove={() => {}} />
+            <Token label="2026-roadmap.pdf" onRemove={() => {}} />
+            <Token label="user-flow.fig" onRemove={() => {}} />
+            <Token label="launch-plan.docx" onRemove={() => {}} />
+            <Token label="user-feedback.csv" onRemove={() => {}} />
+            <Token label="analytics-kpis.csv" onRemove={() => {}} />
+          </ChatComposerDrawer>
         }
       />
-    </XDSStack>
+    </Stack>
   );
 }

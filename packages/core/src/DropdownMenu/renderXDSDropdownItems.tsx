@@ -2,14 +2,14 @@
 
 /**
  * @file renderXDSDropdownItems.tsx
- * @output Converts data-driven menu items into XDSDropdownMenuItem components
- * @position Utility; used by XDSDropdownMenu to unify data-driven and compound paths
+ * @output Converts data-driven menu items into DropdownMenuItem components
+ * @position Utility; used by DropdownMenu to unify data-driven and compound paths
  */
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSDivider} from '../Divider';
-import {XDSDropdownMenuItem} from './XDSDropdownMenuItem';
+import {Divider} from '../Divider';
+import {DropdownMenuItem} from './DropdownMenuItem';
 import {
   spacingVars,
   typographyVars,
@@ -17,10 +17,10 @@ import {
   colorVars,
 } from '../theme/tokens.stylex';
 import type {
-  XDSDropdownMenuItemData,
-  XDSDropdownMenuOption,
-  XDSDropdownMenuSection,
-} from './XDSDropdownMenu';
+  DropdownMenuItemData,
+  DropdownMenuOption,
+  DropdownMenuSection,
+} from './DropdownMenu';
 
 const styles = stylex.create({
   sectionHeading: {
@@ -37,20 +37,20 @@ const styles = stylex.create({
   },
 });
 
-function getItemKey(item: XDSDropdownMenuItemData): string {
+function getItemKey(item: DropdownMenuItemData): string {
   return `item-${item.label}`;
 }
 
-function getSectionKey(section: XDSDropdownMenuSection, index: number): string {
+function getSectionKey(section: DropdownMenuSection, index: number): string {
   return `section-${section.title ?? index}`;
 }
 
 /**
- * Converts data-driven items into XDSDropdownMenuItem components,
+ * Converts data-driven items into DropdownMenuItem components,
  * so both modes share the same rendering and keyboard navigation path.
  */
 export function renderXDSDropdownItems(
-  items: XDSDropdownMenuOption[],
+  items: DropdownMenuOption[],
 ): ReactNode {
   const elements: ReactNode[] = [];
 
@@ -59,7 +59,7 @@ export function renderXDSDropdownItems(
 
     if ('type' in option && option.type === 'divider') {
       elements.push(
-        <XDSDivider key={`divider-${i}`} xstyle={styles.divider} />,
+        <Divider key={`divider-${i}`} xstyle={styles.divider} />,
       );
     } else if ('type' in option && option.type === 'section') {
       elements.push(
@@ -73,7 +73,7 @@ export function renderXDSDropdownItems(
             </div>
           )}
           {option.items.map(item => (
-            <XDSDropdownMenuItem
+            <DropdownMenuItem
               key={getItemKey(item)}
               icon={item.icon}
               label={item.label}
@@ -85,7 +85,7 @@ export function renderXDSDropdownItems(
       );
     } else if (!('type' in option)) {
       elements.push(
-        <XDSDropdownMenuItem
+        <DropdownMenuItem
           key={getItemKey(option)}
           icon={option.icon}
           label={option.label}

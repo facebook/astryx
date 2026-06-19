@@ -2,9 +2,9 @@
 
 'use client';
 
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Avatar} from '@xds/core/Avatar';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const NAMES = [
   {name: 'John Doe', note: 'First + last'},
@@ -15,15 +15,15 @@ const NAMES = [
 
 export default function AvatarInitialsFallback() {
   return (
-    <XDSStack direction="horizontal" gap={6} vAlign="center">
+    <Stack direction="horizontal" gap={6} vAlign="center">
       {NAMES.map(({name, note}) => (
-        <XDSStack key={name} direction="vertical" gap={2} hAlign="center">
-          <XDSAvatar name={name} size="medium" />
-          <XDSText type="supporting" color="secondary">
+        <Stack key={name} direction="vertical" gap={2} hAlign="center">
+          <Avatar name={name} size="medium" />
+          <Text type="supporting" color="secondary">
             {note}
-          </XDSText>
-        </XDSStack>
+          </Text>
+        </Stack>
       ))}
-    </XDSStack>
+    </Stack>
   );
 }

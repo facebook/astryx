@@ -23,8 +23,8 @@ export const docs = {
   props: [
     {
       name: 'type',
-      type: "'body' | 'large' | 'label' | 'supporting' | 'code'",
-      description: 'Semantic text type. Determines size, weight, and line-height from the theme.',
+      type: "'body' | 'large' | 'label' | 'supporting' | 'code' | 'display-1' | 'display-2' | 'display-3'",
+      description: 'Semantic text type. Determines size, weight, and line-height from the theme. Note: this prop is called `type`, not `variant`.',
       default: "'body'",
     },
     {
@@ -68,8 +68,8 @@ export const docs = {
     },
     {
       name: 'hasTruncateTooltip',
-      type: 'boolean | LayerPlacement',
-      description: 'Controls tooltip behavior for truncated text. true shows the tooltip at the default position, false disables it, or a LayerPlacement string sets a specific position.',
+      type: "boolean | 'above' | 'below' | 'start' | 'end'",
+      description: "Controls tooltip behavior for truncated text. true shows the tooltip at the default position, false disables it, or a placement string ('above' | 'below' | 'start' | 'end') sets a specific position.",
       default: 'true',
     },
     {
@@ -108,23 +108,25 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
   components: [
-    {name: 'XDSHeading'},
+    {name: 'Heading'},
   ],
   usage: {
     description:
-      'Text renders styled body text and headings from the theme. Use XDSText with a semantic type for body copy, labels, and captions, and XDSHeading for section titles that output the correct h1\u2013h6 element.',
+      'Text renders styled body text and headings from the theme. Use Text with a semantic type for body copy, labels, and captions, and Heading for section titles that output the correct h1\u2013h6 element.',
     bestPractices: [
       { guidance: true, description: 'Pick a semantic type (body, label, supporting, large, code) instead of manually setting size and weight \u2014 the theme handles the details.' },
-      { guidance: true, description: 'Set accessibilityLevel on XDSHeading when the visual level differs from the document outline so screen readers announce the correct hierarchy.' },
+      { guidance: true, description: 'Set accessibilityLevel on Heading when the visual level differs from the document outline so screen readers announce the correct hierarchy.' },
       { guidance: true, description: 'Use maxLines with a number to truncate long content \u2014 a tooltip appears automatically on hover so no text is lost.' },
       { guidance: true, description: 'Enable hasTabularNumbers for columns of numeric data so digits align vertically across rows.' },
       { guidance: false, description: 'Override size and weight when a semantic type already matches \u2014 extra overrides fight the theme and break when themes change.' },
       { guidance: false, description: 'Skip heading levels in the document outline \u2014 go h1 then h2 then h3, never h1 then h3.' },
-      { guidance: false, description: 'Use raw HTML tags like <p>, <h1>\u2013<h6>, or <span> for text \u2014 XDSText and XDSHeading apply the correct theme tokens automatically.' },
+      { guidance: false, description: 'Use raw HTML tags like <p>, <h1>\u2013<h6>, or <span> for text \u2014 Text and Heading apply the correct theme tokens automatically.' },
+      { guidance: false, description: 'Pass a `variant` prop \u2014 Text does not have a `variant` prop. Use `type` for semantic styling (body, label, large, supporting, code) or use Heading for headings.' },
+      { guidance: false, description: 'Use Text for headings \u2014 use Heading with a `level` prop (1\u20136) for section titles and headings.' },
     ],
   },
 };
@@ -133,15 +135,17 @@ export const docs = {
 export const docsZh = {
   usage: {
     description:
-      'Text renders styled body text and headings from the theme. Use XDSText with a semantic type for body copy, labels, and captions, and XDSHeading for section titles that output the correct h1\u2013h6 element.',
+      'Text renders styled body text and headings from the theme. Use Text with a semantic type for body copy, labels, and captions, and Heading for section titles that output the correct h1\u2013h6 element.',
     bestPractices: [
       { guidance: true, description: 'Pick a semantic type (body, label, supporting, large, code) instead of manually setting size and weight \u2014 the theme handles the details.' },
-      { guidance: true, description: 'Set accessibilityLevel on XDSHeading when the visual level differs from the document outline so screen readers announce the correct hierarchy.' },
+      { guidance: true, description: 'Set accessibilityLevel on Heading when the visual level differs from the document outline so screen readers announce the correct hierarchy.' },
       { guidance: true, description: 'Use maxLines with a number to truncate long content \u2014 a tooltip appears automatically on hover so no text is lost.' },
       { guidance: true, description: 'Enable hasTabularNumbers for columns of numeric data so digits align vertically across rows.' },
       { guidance: false, description: 'Override size and weight when a semantic type already matches \u2014 extra overrides fight the theme and break when themes change.' },
       { guidance: false, description: 'Skip heading levels in the document outline \u2014 go h1 then h2 then h3, never h1 then h3.' },
-      { guidance: false, description: 'Use raw HTML tags like <p>, <h1>\u2013<h6>, or <span> for text \u2014 XDSText and XDSHeading apply the correct theme tokens automatically.' },
+      { guidance: false, description: 'Use raw HTML tags like <p>, <h1>\u2013<h6>, or <span> for text \u2014 Text and Heading apply the correct theme tokens automatically.' },
+      { guidance: false, description: 'Pass a `variant` prop \u2014 Text does not have a `variant` prop. Use `type` for semantic styling (body, label, large, supporting, code) or use Heading for headings.' },
+      { guidance: false, description: 'Use Text for headings \u2014 use Heading with a `level` prop (1\u20136) for section titles and headings.' },
     ],
   },
 };
@@ -151,15 +155,17 @@ export const docsDense = {
   description: 'semantic body text + headings w/ theme-driven type scale, truncation, tabular numbers',
   usage: {
     description:
-      'Text renders styled body text and headings. XDSText for body copy with semantic types, XDSHeading for h1\u2013h6 with theme tokens.',
+      'Text renders styled body text and headings. Text for body copy with semantic types, Heading for h1\u2013h6 with theme tokens.',
     bestPractices: [
       { guidance: true, description: 'Semantic type (body, label, supporting, large, code) instead of manual size/weight.' },
-      { guidance: true, description: 'accessibilityLevel on XDSHeading when visual level differs from document outline.' },
+      { guidance: true, description: 'accessibilityLevel on Heading when visual level differs from document outline.' },
       { guidance: true, description: 'maxLines for truncation \u2014 tooltip shows full text on hover.' },
       { guidance: true, description: 'hasTabularNumbers for aligned numeric columns.' },
       { guidance: false, description: 'Override size/weight when a semantic type already matches.' },
       { guidance: false, description: 'Skip heading levels \u2014 sequential h1 \u2192 h2 \u2192 h3.' },
-      { guidance: false, description: 'Raw <p>/<h1>/<span> \u2014 use XDSText/XDSHeading for theme tokens.' },
+      { guidance: false, description: 'Raw <p>/<h1>/<span> \u2014 use Text/Heading for theme tokens.' },
+      { guidance: false, description: '`variant` prop \u2014 does not exist. Use `type` for text styling or Heading for headings.' },
+      { guidance: false, description: 'Text for headings: use Heading with level (1\u20136).' },
     ],
   },
 };

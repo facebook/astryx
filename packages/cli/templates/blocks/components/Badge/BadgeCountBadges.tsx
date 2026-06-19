@@ -2,9 +2,9 @@
 
 'use client';
 
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Badge} from '@xds/core/Badge';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const COUNTS = [
   {variant: 'info' as const, label: '3', note: 'Messages'},
@@ -15,15 +15,15 @@ const COUNTS = [
 
 export default function BadgeCountBadges() {
   return (
-    <XDSStack direction="horizontal" gap={8} hAlign="center" vAlign="center">
+    <Stack direction="horizontal" gap={8} hAlign="center" vAlign="center">
       {COUNTS.map(({variant, label, note}) => (
-        <XDSStack key={note} direction="vertical" gap={2} hAlign="center">
-          <XDSBadge variant={variant} label={label} />
-          <XDSText type="supporting" color="secondary">
+        <Stack key={note} direction="vertical" gap={2} hAlign="center">
+          <Badge variant={variant} label={label} />
+          <Text type="supporting" color="secondary">
             {note}
-          </XDSText>
-        </XDSStack>
+          </Text>
+        </Stack>
       ))}
-    </XDSStack>
+    </Stack>
   );
 }

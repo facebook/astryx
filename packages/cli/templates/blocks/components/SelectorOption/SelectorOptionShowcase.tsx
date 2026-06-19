@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSSelector, XDSSelectorOption} from '@xds/core/Selector';
+import {Selector, SelectorOption} from '@xds/core/Selector';
 import {UserIcon} from '@heroicons/react/24/outline';
 
 const descriptions: Record<string, string> = {
@@ -24,20 +24,20 @@ export default function SelectorOptionShowcase() {
   const [value, setValue] = useState<string | undefined>('editor');
 
   return (
-    <XDSSelector
+    <Selector
       style={{width: 300}}
       label="Role"
       options={roles}
       value={value}
       onChange={setValue}
-      placeholder="Assign a role...">
-      {option => (
-        <XDSSelectorOption
+      placeholder="Assign a role..."
+      renderOption={option => (
+        <SelectorOption
           icon={UserIcon}
           label={option.label}
           description={descriptions[option.value]}
         />
       )}
-    </XDSSelector>
+    />
   );
 }

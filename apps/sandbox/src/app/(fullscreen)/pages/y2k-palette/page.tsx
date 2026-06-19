@@ -6,7 +6,7 @@
 // Y2K Theme Palette Preview
 // =============================================================================
 
-import {XDSVStack} from '@xds/core/Layout';
+import {VStack} from '@xds/core/Layout';
 import {y2kTheme} from '@xds/theme-y2k/built';
 // `y2kPalettes` is only exported from the source entry, not /built.
 import {y2kPalettes} from '@xds/theme-y2k';
@@ -39,11 +39,11 @@ function DisplayTextSection() {
   return (
     <div>
       <h3 style={sectionTitle}>Display Text (Crimson Text)</h3>
-      <XDSVStack gap={2}>
+      <VStack gap={2}>
         <span style={{fontFamily: CRIMSON, fontSize: 83, fontWeight: 400, lineHeight: 1.15}}>Display 1</span>
         <span style={{fontFamily: CRIMSON, fontSize: 67, fontWeight: 400, lineHeight: 1.15}}>Display 2</span>
         <span style={{fontFamily: CRIMSON, fontSize: 53, fontWeight: 400, lineHeight: 1.2}}>Display 3</span>
-      </XDSVStack>
+      </VStack>
     </div>
   );
 }
@@ -53,7 +53,7 @@ export default function Y2kPalettePage() {
     <ThemePalettePreview
       theme={y2kTheme}
       title="Y2K Theme Palette"
-      subtitle="A bubbly, playful pop theme — hot pink body, lime green accents, Crimson Text headings + Poppins body."
+      subtitle="A bubbly, playful pop theme: hot pink body, lime green accents, Crimson Text headings + Poppins body."
       tonalColors={TONAL_COLORS}
       leadingExtras={<DisplayTextSection />}
     />

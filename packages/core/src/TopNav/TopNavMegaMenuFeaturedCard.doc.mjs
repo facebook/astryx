@@ -6,7 +6,7 @@ export const docs = {
   name: 'TopNavMegaMenuFeaturedCard',
   subComponentOf: 'TopNav',
   displayName: 'Top Nav Mega Menu Featured Card',
-  description: 'Standard featured card for the XDSTopNavMegaMenu featured slot. Provides a consistent card with optional image, title, description, and CTA link.',
+  description: 'Standard featured card for the TopNavMegaMenu featured slot. Provides a consistent card with optional image, title, description, and CTA link.',
   props: [
     {
       name: 'title',

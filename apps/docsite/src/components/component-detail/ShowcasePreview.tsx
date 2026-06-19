@@ -3,11 +3,12 @@
 'use client';
 
 import {useEffect, useState, type ComponentType} from 'react';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSText} from '@xds/core/Text';
-import {XDSSpinner} from '@xds/core/Spinner';
+import {Center} from '@xds/core/Center';
+import {Text} from '@xds/core/Text';
+import {Spinner} from '@xds/core/Spinner';
 import {useMediaQuery} from '@xds/core/hooks';
 import {showcaseRegistry} from '../../generated/showcaseRegistry';
+import {preventPreviewNavigation} from './previewNavigation';
 
 interface ShowcasePreviewProps {
   name: string;
@@ -29,25 +30,28 @@ export function ShowcasePreview({name}: ShowcasePreviewProps) {
       .catch(() => setError(true));
   }, [name]);
 
+  const previewNavigationProps =
+    name === 'SideNav' ? {onClickCapture: preventPreviewNavigation} : {};
+
   const placeholderStyle = isSmall
     ? {minHeight: 160, width: '100%'}
     : {aspectRatio: '16 / 9', width: '100%'};
 
   if (error) {
     return (
-      <XDSCenter style={placeholderStyle}>
-        <XDSText type="supporting" color="secondary">
+      <Center style={placeholderStyle}>
+        <Text type="supporting" color="secondary">
           Preview not available
-        </XDSText>
-      </XDSCenter>
+        </Text>
+      </Center>
     );
   }
 
   if (!Component) {
     return (
-      <XDSCenter style={placeholderStyle}>
-        <XDSSpinner size="md" />
-      </XDSCenter>
+      <Center style={placeholderStyle}>
+        <Spinner size="md" />
+      </Center>
     );
   }
 
@@ -61,7 +65,8 @@ export function ShowcasePreview({name}: ShowcasePreviewProps) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-        }}>
+        }}
+        {...previewNavigationProps}>
         <div style={{minWidth: 'fit-content'}}>
           <Component />
         </div>
@@ -78,7 +83,8 @@ export function ShowcasePreview({name}: ShowcasePreviewProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-      }}>
+      }}
+      {...previewNavigationProps}>
       <Component />
     </div>
   );

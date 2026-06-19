@@ -2,14 +2,14 @@
 
 'use client';
 
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {TabList, Tab} from '@xds/core/TabList';
 
 export default function TabListShowcase() {
   return (
-    <XDSTabList value="home" onChange={() => {}}>
-      <XDSTab value="home" label="Home" />
-      <XDSTab value="projects" label="Projects" />
-      <XDSTab value="settings" label="Settings" />
-    </XDSTabList>
+    <TabList value="home" onChange={() => {}}>
+      <Tab value="home" label="Home" />
+      <Tab value="projects" label="Projects" />
+      <Tab value="settings" label="Settings" />
+    </TabList>
   );
 }

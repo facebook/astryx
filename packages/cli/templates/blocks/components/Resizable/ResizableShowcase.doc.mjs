@@ -4,8 +4,8 @@
 export const doc = {
   type: 'block',
   exampleFor: 'Resizable',
-  alsoExampleFor: ['useXDSResizable'],
-  alsoShowcaseFor: ['useXDSResizable'],
+  alsoExampleFor: ['useResizable'],
+  alsoShowcaseFor: ['useResizable'],
   name: 'Resizable',
   displayName: 'Resizable',
   description:

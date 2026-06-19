@@ -8,6 +8,14 @@ export const docs = {
   displayName: 'Radio List Item',
   isHiddenFromOverview: true,
   description: 'Individual radio item with label, description, and content slots.',
+  // RadioListItem requires RadioList context; wrap it so the preview doesn't throw.
+  playground: {
+    defaults: {value: 'option-1', label: 'Option'},
+    wrapper: {
+      component: 'RadioList',
+      props: {value: 'option-1', label: 'Radio list'},
+    },
+  },
   props: [
     {
       name: 'label',
@@ -38,7 +46,7 @@ export const docs = {
       description: 'Content to render before the radio circle.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',
@@ -52,14 +60,14 @@ export const docs = {
       description: 'Content to render after the label.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'chevronDown',
             size: 'sm',
           },
         },
         {
-          __element: 'XDSBadge',
+          __element: 'Badge',
           props: {
             label: '3',
           },

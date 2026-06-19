@@ -7,7 +7,17 @@ export const docs = {
   displayName: 'Multi Selector',
   group: 'Selector',
   category: 'Data Input',
-  keywords: ['multiselect', 'checkbox', 'dropdown', 'multi', 'picker', 'checklist', 'facet', 'filter', 'select'],
+  keywords: [
+    'multiselect',
+    'checkbox',
+    'dropdown',
+    'multi',
+    'picker',
+    'checklist',
+    'facet',
+    'filter',
+    'select',
+  ],
   theming: {
     targets: [
       {className: 'xds-multi-selector', visualProps: ['size', 'status']},
@@ -15,7 +25,7 @@ export const docs = {
   },
   components: [
     {
-      name: 'XDSMultiSelector',
+      name: 'MultiSelector',
       displayName: 'Multi Selector',
       description:
         'Multi-select dropdown with checkboxes for choosing multiple items.',
@@ -28,7 +38,7 @@ export const docs = {
         },
         {
           name: 'options',
-          type: 'XDSMultiSelectorOptionType[]',
+          type: 'MultiSelectorOptionType[]',
           description:
             'Array of items: strings, objects with value/label/icon/disabled, dividers, or sections.',
           required: true,
@@ -133,9 +143,10 @@ export const docs = {
           description: 'Validation status with an optional message.',
         },
         {
-          name: 'children',
-          type: '(option: XDSMultiSelectorOptionData) => ReactNode',
-          description: 'Custom render function for each option in the dropdown.',
+          name: 'renderOption',
+          type: '(option: MultiSelectorOptionData) => ReactNode',
+          description:
+            'Custom render function for each selectable option in the dropdown. Not called for dividers, sections, or the select-all row.',
         },
         {
           name: 'xstyle',
@@ -143,17 +154,41 @@ export const docs = {
           description:
             'StyleX styles for layout customization. Must be a stylex.create() value.',
         },
-      ],    },
+      ],
+    },
   ],
   usage: {
     description:
       'A checkbox dropdown for selecting multiple values from a list. Selected items can display as a count, labels, or badges. Use it for filtering or when presenting a finite set of options where multiple choices are needed.',
     bestPractices: [
-      { guidance: true, description: 'Use for a moderate, finite set of options where multiple choices are needed.' },
-      { guidance: true, description: 'Enable search filtering when the list exceeds ~15 options.' },
-      { guidance: true, description: 'Enable select-all when most users will want all or nearly all options selected.' },
-      { guidance: false, description: 'Use for single-value selection; use Selector instead.' },
-      { guidance: false, description: 'Show more than ~20 options without enabling search.' },
+      {
+        guidance: true,
+        description:
+          'Use for a moderate, finite set of options where multiple choices are needed.',
+      },
+      {
+        guidance: true,
+        description:
+          'Enable search filtering when the list exceeds ~15 options.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use renderOption for custom option rows; the checkbox affordance remains owned by MultiSelector.',
+      },
+      {
+        guidance: true,
+        description:
+          'Enable select-all when most users will want all or nearly all options selected.',
+      },
+      {
+        guidance: false,
+        description: 'Use for single-value selection; use Selector instead.',
+      },
+      {
+        guidance: false,
+        description: 'Show more than ~20 options without enabling search.',
+      },
     ],
   },
 };
@@ -162,19 +197,21 @@ export const docs = {
 export const docsZh = {
   components: [
     {
-      name: 'XDSMultiSelector',
+      name: 'MultiSelector',
       displayName: 'Multi Selector',
       description: '带复选框的多选下拉框，用于从列表中选择多项。',
       propDescriptions: {
         label: '无障碍标签文本。',
-        options: '项目数组——字符串、带 value/label/icon/disabled 的对象、分隔线或分组。',
+        options:
+          '项目数组——字符串、带 value/label/icon/disabled 的对象、分隔线或分组。',
         value: '当前选中的值。',
         onChange: '选择变化时触发的回调。',
         changeAction: '变化时的异步操作，在 onChange 之后触发。',
         placeholder: '未选择值时显示的占位文本。',
         size: '选择器的尺寸变体。',
         triggerDisplay: '在触发器中显示选中项的方式。',
-        maxBadges: '显示"+N"之前的最大徽章数。仅适用于 triggerDisplay="badges"。',
+        maxBadges:
+          '显示"+N"之前的最大徽章数。仅适用于 triggerDisplay="badges"。',
         hasSelectAll: '是否显示全选复选框。',
         selectAllLabel: '全选复选框的标签。',
         hasSearch: '是否显示用于过滤选项的搜索输入。',
@@ -186,7 +223,8 @@ export const docsZh = {
         isRequired: '将字段标记为必填。',
         isLoading: '在触发器中显示加载旋转器。',
         status: '带可选消息的验证状态。',
-        children: '每个选项的自定义渲染函数。',
+        renderOption:
+          '每个可选选项的自定义渲染函数。不会用于分隔线、分组或全选行。',
         xstyle: '布局自定义的 StyleX 样式，必须是 stylex.create() 值。',
       },
     },
@@ -195,37 +233,85 @@ export const docsZh = {
     description:
       'A checkbox dropdown for selecting multiple values from a list. Selected items can display as a count, labels, or badges. Use it for filtering or when presenting a finite set of options where multiple choices are needed.',
     bestPractices: [
-      { guidance: true, description: 'Use for a moderate, finite set of options where multiple choices are needed.' },
-      { guidance: true, description: 'Enable search filtering when the list exceeds ~15 options.' },
-      { guidance: true, description: 'Enable select-all when most users will want all or nearly all options selected.' },
-      { guidance: false, description: 'Use for single-value selection; use Selector instead.' },
-      { guidance: false, description: 'Show more than ~20 options without enabling search.' },
+      {
+        guidance: true,
+        description:
+          'Use for a moderate, finite set of options where multiple choices are needed.',
+      },
+      {
+        guidance: true,
+        description:
+          'Enable search filtering when the list exceeds ~15 options.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use renderOption for custom option rows; the checkbox affordance remains owned by MultiSelector.',
+      },
+      {
+        guidance: true,
+        description:
+          'Enable select-all when most users will want all or nearly all options selected.',
+      },
+      {
+        guidance: false,
+        description: 'Use for single-value selection; use Selector instead.',
+      },
+      {
+        guidance: false,
+        description: 'Show more than ~20 options without enabling search.',
+      },
     ],
   },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'checkbox multi-select dropdown for finite sets like column toggles or filter facets',
+  description:
+    'checkbox multi-select dropdown for finite sets like column toggles or filter facets',
   usage: {
     description:
       'A checkbox dropdown for selecting multiple values from a list. Selected items can display as a count, labels, or badges. Use it for filtering or when presenting a finite set of options where multiple choices are needed.',
     bestPractices: [
-      { guidance: true, description: 'Use for a moderate, finite set of options where multiple choices are needed.' },
-      { guidance: true, description: 'Enable search filtering when the list exceeds ~15 options.' },
-      { guidance: true, description: 'Enable select-all when most users will want all or nearly all options selected.' },
-      { guidance: false, description: 'Use for single-value selection; use Selector instead.' },
-      { guidance: false, description: 'Show more than ~20 options without enabling search.' },
+      {
+        guidance: true,
+        description:
+          'Use for a moderate, finite set of options where multiple choices are needed.',
+      },
+      {
+        guidance: true,
+        description:
+          'Enable search filtering when the list exceeds ~15 options.',
+      },
+      {
+        guidance: true,
+        description:
+          'renderOption for custom rows; checkbox affordance stays owned by MultiSelector.',
+      },
+      {
+        guidance: true,
+        description:
+          'Enable select-all when most users will want all or nearly all options selected.',
+      },
+      {
+        guidance: false,
+        description: 'Use for single-value selection; use Selector instead.',
+      },
+      {
+        guidance: false,
+        description: 'Show more than ~20 options without enabling search.',
+      },
     ],
   },
   components: [
     {
-      name: 'XDSMultiSelector',
+      name: 'MultiSelector',
       displayName: 'Multi Selector',
       description: 'checkbox multi-select dropdown',
       propDescriptions: {
         label: 'a11y label',
-        options: 'items: strings, objects w/ value/label/icon/disabled, dividers, sections',
+        options:
+          'items: strings, objects w/ value/label/icon/disabled, dividers, sections',
         value: 'selected values',
         onChange: 'callback on selection change',
         changeAction: 'async; fires after onChange',
@@ -244,7 +330,8 @@ export const docsDense = {
         isRequired: 'marks required',
         isLoading: 'spinner in trigger',
         status: 'validation status w/ optional message',
-        children: 'custom render fn per option',
+        renderOption:
+          'custom render fn per selectable option; not dividers/sections/select-all',
         xstyle: 'StyleX layout styles; stylex.create() only',
       },
     },

@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {XDSHeading} from '@xds/core/Text';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSSection} from '@xds/core/Section';
+import {Heading} from '@xds/core/Text';
+import {VStack} from '@xds/core/Layout';
+import {Section} from '@xds/core/Section';
 import {BestPracticesBlock} from '../docs/BestPracticesBlock';
 import type {BestPractice} from '../../generated/componentRegistry';
 
@@ -16,13 +16,13 @@ export function BestPractices({practices}: BestPracticesProps) {
   }
 
   return (
-    <XDSSection>
-      <XDSVStack gap={4}>
-        <XDSHeading level={2} type="display-3">
+    <Section>
+      <VStack gap={4}>
+        <Heading level={2} type="display-3">
           Best practices
-        </XDSHeading>
+        </Heading>
         <BestPracticesBlock items={practices} />
-      </XDSVStack>
-    </XDSSection>
+      </VStack>
+    </Section>
   );
 }

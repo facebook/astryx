@@ -4,20 +4,50 @@
  * @file Theme CSS generation utilities
  *
  * Shared logic for generating CSS rules from a resolved theme definition.
- * Used by both the runtime path (XDSTheme injects <style>) and the build
+ * Used by both the runtime path (Theme injects <style>) and the build
  * path (`xds theme build` pre-compiles to CSS files).
  *
  * Extracted from defineTheme.ts to reduce cyclomatic complexity and provide
  * a clear single-responsibility module for CSS generation.
  *
- * @input XDSDefinedTheme (resolved theme object from defineTheme)
+ * @input DefinedTheme (resolved theme object from defineTheme)
  * @output CSS rule strings, split by layer (component vs prose)
  * @position packages/core/src/theme/generateThemeRules.ts
  */
 
-import type {XDSDefinedTheme} from './defineTheme';
+import type {DefinedTheme} from './defineTheme';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {getDerivedVars} from './derivedVarRegistry';
+import {cssVar, classPrefix, legacyClassPrefix, dataAttrNamespace, legacyDataAttrNamespace} from '../naming';
+
+/**
+ * Dual-prefix theme @scope selectors (XDS-prefix migration P2380608025).
+ *
+ * Theme CSS is @scope'd to the theme-name data attribute that Theme writes.
+ * During the compat window Theme dual-emits BOTH data-astryx-theme and
+ * data-xds-theme, so the generated CSS must match either form. These helpers
+ * build selector-lists covering both prefixes so existing (xds) and new
+ * (astryx) attribute writers both resolve.
+ *
+ * @example themeScopeStart('mytheme')
+ *   -> '[data-astryx-theme="mytheme"], [data-xds-theme="mytheme"]'
+ */
+function themeScopeStart(name: string): string {
+  return `[data-${dataAttrNamespace}-theme="${name}"], [data-${legacyDataAttrNamespace}-theme="${name}"]`;
+}
+
+/** Scope limit matching either prefix's theme attribute (nested-theme boundary). */
+const THEME_SCOPE_TO = `[data-${dataAttrNamespace}-theme], [data-${legacyDataAttrNamespace}-theme]`;
+
+/** Media-surface selector matching either prefix, e.g. for [data-*-media="dark"]. */
+function mediaSelector(surface: string): string {
+  return `[data-${dataAttrNamespace}-media="${surface}"], [data-${legacyDataAttrNamespace}-media="${surface}"]`;
+}
+
+/** Component base-class selector matching either prefix, e.g. '.astryx-button, .xds-button'. */
+function componentClassSelector(component: string, suffix: string): string {
+  return `.${classPrefix}-${component}${suffix}, .${legacyClassPrefix}-${component}${suffix}`;
+}
 
 // =============================================================================
 // Types
@@ -144,12 +174,16 @@ function parsePadding(props: [string, string][]): ParsedPadding {
 /**
  * Expand parsed padding into component-scoped public tokens.
  *
- * Emits --xds-<component>-padding (shorthand) and directional overrides:
- *   --xds-card-padding: 20px
- *   --xds-card-padding-inline: 20px
- *   --xds-card-padding-block-start: 20px
- *   --xds-card-padding-block-end: 20px
+ * Emits the rebranded --astryx-<component>-padding tokens (shorthand +
+ * directional overrides), e.g.:
+ *   --astryx-card-padding: 20px
+ *   --astryx-card-padding-inline: 20px
+ *   --astryx-card-padding-block-start: 20px
+ *   --astryx-card-padding-block-end: 20px
  *
+ * The component reads these with an inverted fallback chain
+ * (var(--xds-*, var(--astryx-*, default))) so a legacy --xds-* override set by
+ * existing consumer code still wins during the compat window (P2380608025).
  * The container.stylex.ts default styles read these via var() fallbacks,
  * so the theme CSS sets the value and the component picks it up through
  * CSS custom property cascade — no layer competition with StyleX output.
@@ -158,7 +192,7 @@ function expandContainerPadding(
   component: string,
   parsed: ParsedPadding,
 ): [string, string][] {
-  const prefix = `--xds-${component}-padding`;
+  const prefix = cssVar(`${component}-padding`);
   const tokens: [string, string][] = [];
 
   // Resolve effective inline values (inlineStart/End override inline)
@@ -214,7 +248,7 @@ function expandContainerPadding(
  * Returns an array of CSS rule strings — the shared format used by both
  * the runtime path (useInsertionEffect) and the build path (xds theme build).
  */
-export function generateThemeRules(theme: XDSDefinedTheme): string[] {
+export function generateThemeRules(theme: DefinedTheme): string[] {
   const parts: string[] = [];
   const tokens = theme.tokens;
 
@@ -269,7 +303,7 @@ function generateComponentRules(
       }
 
       const suffix = parseStyleKey(key);
-      const baseSelector = `.xds-${component}${suffix}`;
+      const baseSelector = componentClassSelector(component, suffix);
 
       // Separate regular properties from pseudo-class overrides
       const props: [string, string][] = [];
@@ -445,7 +479,7 @@ function generateColorOverrides(
  * that need to beat StyleX — they stay in xds-theme (above StyleX layers).
  */
 export function generateThemeRulesSplit(
-  theme: XDSDefinedTheme,
+  theme: DefinedTheme,
 ): ThemeRulesSplit {
   const allRules = generateThemeRules(theme);
 
@@ -471,9 +505,9 @@ export function generateThemeRulesSplit(
  * to media contexts — only tokens change. Themes can further customize
  * via onDark.components / onLight.components.
  */
-export function generateOnMediaCSS(theme: XDSDefinedTheme): string {
+export function generateOnMediaCSS(theme: DefinedTheme): string {
   const parts: string[] = [];
-  const scopeSelector = `[data-xds-theme="${theme.name}"]`;
+  const scopeSelector = themeScopeStart(theme.name);
 
   for (const surface of ['dark', 'light'] as const) {
     const onMedia = surface === 'dark' ? theme.__onDark : theme.__onLight;
@@ -487,7 +521,7 @@ export function generateOnMediaCSS(theme: XDSDefinedTheme): string {
       const declarations = tokenEntries
         .map(([prop, value]) => `    ${prop}: ${value};`)
         .join('\n');
-      parts.push(`  [data-xds-media="${surface}"] {\n${declarations}\n  }`);
+      parts.push(`  ${mediaSelector(surface)} {\n${declarations}\n  }`);
     }
 
     // Component overrides
@@ -505,7 +539,7 @@ export function generateOnMediaCSS(theme: XDSDefinedTheme): string {
           }
 
           const suffix = parseStyleKey(key);
-          const baseSelector = `[data-xds-media="${surface}"] .xds-${component}${suffix}`;
+          const baseSelector = `:is(${mediaSelector(surface)}) :is(${componentClassSelector(component, suffix)})`;
 
           const props: [string, string][] = [];
           const pseudos: [string, Record<string, string>][] = [];
@@ -544,7 +578,7 @@ export function generateOnMediaCSS(theme: XDSDefinedTheme): string {
   }
 
   const inner = parts.join('\n\n');
-  return `@scope (${scopeSelector}) to ([data-xds-theme]) {\n${inner}\n}`;
+  return `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${inner}\n}`;
 }
 
 /**
@@ -558,10 +592,10 @@ export function generateOnMediaCSS(theme: XDSDefinedTheme): string {
  * sit at reset-layer priority where any class-based style wins, while component
  * overrides sit above StyleX so themes can restyle components intentionally.
  */
-export function generateThemeCSS(theme: XDSDefinedTheme): ThemeCSSOutput {
+export function generateThemeCSS(theme: DefinedTheme): ThemeCSSOutput {
   const {component, prose} = generateThemeRulesSplit(theme);
-  const scopeSelector = `[data-xds-theme="${theme.name}"]`;
-  const scopeTo = `[data-xds-theme]`;
+  const scopeSelector = themeScopeStart(theme.name);
+  const scopeTo = THEME_SCOPE_TO;
 
   let proseCss = '';
   if (prose.length > 0) {
@@ -592,12 +626,12 @@ export function generateThemeCSS(theme: XDSDefinedTheme): ThemeCSSOutput {
  * @deprecated Use generateThemeCSS() which returns { prose, component } for proper layering.
  * This flat version is kept for backwards compatibility with tests and simple cases.
  */
-export function generateThemeCSSFlat(theme: XDSDefinedTheme): string {
+export function generateThemeCSSFlat(theme: DefinedTheme): string {
   const rules = generateThemeRules(theme);
   if (rules.length === 0) {
     return '';
   }
-  const scopeSelector = `[data-xds-theme="${theme.name}"]`;
+  const scopeSelector = themeScopeStart(theme.name);
   const inner = rules.join('\n\n');
-  return `@scope (${scopeSelector}) to ([data-xds-theme]) {\n${inner}\n}`;
+  return `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${inner}\n}`;
 }

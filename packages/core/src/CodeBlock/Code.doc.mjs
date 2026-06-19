@@ -6,7 +6,7 @@ export const docs = {
   name: 'Code',
   subComponentOf: 'CodeBlock',
   displayName: 'Code',
-  description: 'Inline code element. Renders a styled <code> with monospace font and muted background. For fenced blocks, use XDSCodeBlock.',
+  description: 'Inline code element. Renders a styled <code> with monospace font and muted background. For fenced blocks, use CodeBlock.',
   props: [
     {
       name: 'children',
@@ -40,7 +40,7 @@ export const docs = {
 export const docsZh = {
   name: 'Code',
   displayName: 'Code',
-  description: '内联代码元素。渲染带等宽字体和低调背景的 <code>。如需围栏代码块，请使用 XDSCodeBlock。',
+  description: '内联代码元素。渲染带等宽字体和低调背景的 <code>。如需围栏代码块，请使用 CodeBlock。',
   propDescriptions: {
     children: '代码内容。',
     xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。',

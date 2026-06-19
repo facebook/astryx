@@ -6,35 +6,35 @@ import * as React from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {
-  XDSVStack,
-  XDSHStack,
-  XDSStack,
-  XDSStackItem,
-  XDSLayout,
-  XDSLayoutHeader,
-  XDSLayoutContent,
-  XDSLayoutFooter,
+  VStack,
+  HStack,
+  Stack,
+  StackItem,
+  Layout,
+  LayoutHeader,
+  LayoutContent,
+  LayoutFooter,
 } from '@xds/core/Layout';
-import {XDSCard} from '@xds/core/Card';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSSwitch} from '@xds/core/Switch';
-import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSSlider} from '@xds/core/Slider';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
-import {XDSPopover} from '@xds/core/Popover';
-import {XDSHoverCard} from '@xds/core/HoverCard';
-import {XDSTooltip} from '@xds/core/Tooltip';
-import {XDSDialog} from '@xds/core/Dialog';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
-import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSSpinner} from '@xds/core/Spinner';
-import {XDSSkeleton} from '@xds/core/Skeleton';
-import {XDSProgressBar} from '@xds/core/ProgressBar';
-import {XDSStatusDot} from '@xds/core/StatusDot';
+import {Card} from '@xds/core/Card';
+import {Button} from '@xds/core/Button';
+import {Text, Heading} from '@xds/core/Text';
+import {Divider} from '@xds/core/Divider';
+import {Switch} from '@xds/core/Switch';
+import {CheckboxInput} from '@xds/core/CheckboxInput';
+import {TextInput} from '@xds/core/TextInput';
+import {Slider} from '@xds/core/Slider';
+import {Selector} from '@xds/core/Selector';
+import {DropdownMenu} from '@xds/core/DropdownMenu';
+import {Popover} from '@xds/core/Popover';
+import {HoverCard} from '@xds/core/HoverCard';
+import {Tooltip} from '@xds/core/Tooltip';
+import {Dialog} from '@xds/core/Dialog';
+import {TabList, Tab} from '@xds/core/TabList';
+import {List, ListItem} from '@xds/core/List';
+import {Spinner} from '@xds/core/Spinner';
+import {Skeleton} from '@xds/core/Skeleton';
+import {ProgressBar} from '@xds/core/ProgressBar';
+import {StatusDot} from '@xds/core/StatusDot';
 import {
   colorVars,
   spacingVars,
@@ -94,57 +94,57 @@ function NavigationOverlaysCard() {
 
   return (
     <>
-      <XDSCard>
-        <XDSVStack gap={4}>
-          <XDSText type="label" display="block">
+      <Card>
+        <VStack gap={4}>
+          <Text type="label" display="block">
             Navigation & Overlays
-          </XDSText>
-          <XDSVStack gap={2}>
-            <XDSText type="supporting" color="secondary" display="block">
+          </Text>
+          <VStack gap={2}>
+            <Text type="supporting" color="secondary" display="block">
               Modal — backdrop fade and content entry · duration-medium-max
-            </XDSText>
-            <XDSHStack gap={2}>
-              <XDSButton
+            </Text>
+            <HStack gap={2}>
+              <Button
                 label="Open modal"
                 onClick={() => setModalOpen(true)}
               />
-            </XDSHStack>
-          </XDSVStack>
-        </XDSVStack>
-      </XDSCard>
-      <XDSDialog isOpen={modalOpen} onOpenChange={setModalOpen} width={420}>
-        <XDSLayout
+            </HStack>
+          </VStack>
+        </VStack>
+      </Card>
+      <Dialog isOpen={modalOpen} onOpenChange={setModalOpen} width={420}>
+        <Layout
           header={
-            <XDSLayoutHeader hasDivider padding={4}>
-              <XDSHeading level={3}>Confirm action</XDSHeading>
-            </XDSLayoutHeader>
+            <LayoutHeader hasDivider padding={4}>
+              <Heading level={3}>Confirm action</Heading>
+            </LayoutHeader>
           }
           content={
-            <XDSLayoutContent padding={4}>
-              <XDSText type="body" color="secondary">
+            <LayoutContent padding={4}>
+              <Text type="body" color="secondary">
                 The dialog uses the active theme&apos;s motion tokens for entry
                 and dismiss. Backdrop and content animate together.
-              </XDSText>
-            </XDSLayoutContent>
+              </Text>
+            </LayoutContent>
           }
           footer={
-            <XDSLayoutFooter hasDivider padding={4}>
-              <XDSHStack gap={2}>
-                <XDSButton
+            <LayoutFooter hasDivider padding={4}>
+              <HStack gap={2}>
+                <Button
                   label="Cancel"
                   variant="secondary"
                   onClick={() => setModalOpen(false)}
                 />
-                <XDSButton
+                <Button
                   label="Confirm"
                   variant="primary"
                   onClick={() => setModalOpen(false)}
                 />
-              </XDSHStack>
-            </XDSLayoutFooter>
+              </HStack>
+            </LayoutFooter>
           }
         />
-      </XDSDialog>
+      </Dialog>
     </>
   );
 }
@@ -155,27 +155,27 @@ function NavigationOverlaysCard() {
 
 function PopoverDemoContent() {
   return (
-    <XDSCard variant="transparent" padding={3} maxWidth={220}>
-      <XDSVStack gap={1}>
-        <XDSText type="label">Popover</XDSText>
-        <XDSText type="supporting" color="secondary">
+    <Card variant="transparent" padding={3} maxWidth={220}>
+      <VStack gap={1}>
+        <Text type="label">Popover</Text>
+        <Text type="supporting" color="secondary">
           Uses duration-fast-max. Fades and translates toward the trigger.
-        </XDSText>
-      </XDSVStack>
-    </XDSCard>
+        </Text>
+      </VStack>
+    </Card>
   );
 }
 
 function HoverCardDemoContent() {
   return (
-    <XDSCard variant="transparent" padding={3} maxWidth={220}>
-      <XDSVStack gap={1}>
-        <XDSText type="label">HoverCard</XDSText>
-        <XDSText type="supporting" color="secondary">
+    <Card variant="transparent" padding={3} maxWidth={220}>
+      <VStack gap={1}>
+        <Text type="label">HoverCard</Text>
+        <Text type="supporting" color="secondary">
           Hover to trigger · duration-fast-max
-        </XDSText>
-      </XDSVStack>
-    </XDSCard>
+        </Text>
+      </VStack>
+    </Card>
   );
 }
 
@@ -191,31 +191,31 @@ function MicroInteractionsCard() {
   const [showStatus, setShowStatus] = React.useState(false);
 
   return (
-    <XDSCard>
-      <XDSVStack gap={4}>
-        <XDSText type="label" display="block">
+    <Card>
+      <VStack gap={4}>
+        <Text type="label" display="block">
           Micro-Interactions
-        </XDSText>
+        </Text>
 
-        <XDSVStack gap={2}>
-          <XDSText type="supporting" color="secondary" display="block">
+        <VStack gap={2}>
+          <Text type="supporting" color="secondary" display="block">
             Buttons — hover, press, focus · duration-fast · Dropdown ·
             duration-fast-max
-          </XDSText>
-          <XDSHStack gap={2} wrap="wrap">
-            <XDSButton label="Primary" variant="primary" onClick={() => {}} />
-            <XDSButton
+          </Text>
+          <HStack gap={2} wrap="wrap">
+            <Button label="Primary" variant="primary" onClick={() => {}} />
+            <Button
               label="Secondary"
               variant="secondary"
               onClick={() => {}}
             />
-            <XDSButton label="Ghost" variant="ghost" onClick={() => {}} />
-            <XDSButton
+            <Button label="Ghost" variant="ghost" onClick={() => {}} />
+            <Button
               label="Destructive"
               variant="destructive"
               onClick={() => {}}
             />
-            <XDSDropdownMenu
+            <DropdownMenu
               button={{label: 'Dropdown', variant: 'secondary'}}
               items={[
                 {label: 'Edit', onClick: () => {}},
@@ -224,99 +224,99 @@ function MicroInteractionsCard() {
                 {label: 'Delete', onClick: () => {}},
               ]}
             />
-          </XDSHStack>
-        </XDSVStack>
+          </HStack>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
-        <XDSVStack gap={2}>
-          <XDSText type="supporting" color="secondary" display="block">
+        <VStack gap={2}>
+          <Text type="supporting" color="secondary" display="block">
             Popover · HoverCard · Tooltip — fade + translate · duration-fast-max
             · direction-aware
-          </XDSText>
-          <XDSHStack gap={2} vAlign="center" wrap="wrap">
-            <XDSPopover
+          </Text>
+          <HStack gap={2} vAlign="center" wrap="wrap">
+            <Popover
               content={<PopoverDemoContent />}
               placement="below"
               hasCloseButton={false}>
-              <XDSButton label="Below" variant="secondary" size="sm" />
-            </XDSPopover>
-            <XDSPopover
+              <Button label="Below" variant="secondary" size="sm" />
+            </Popover>
+            <Popover
               content={<PopoverDemoContent />}
               placement="above"
               hasCloseButton={false}>
-              <XDSButton label="Above" variant="secondary" size="sm" />
-            </XDSPopover>
-            <XDSPopover
+              <Button label="Above" variant="secondary" size="sm" />
+            </Popover>
+            <Popover
               content={<PopoverDemoContent />}
               placement="end"
               hasCloseButton={false}>
-              <XDSButton label="End" variant="secondary" size="sm" />
-            </XDSPopover>
-            <XDSPopover
+              <Button label="End" variant="secondary" size="sm" />
+            </Popover>
+            <Popover
               content={<PopoverDemoContent />}
               placement="start"
               hasCloseButton={false}>
-              <XDSButton label="Start" variant="secondary" size="sm" />
-            </XDSPopover>
-            <XDSHoverCard content={<HoverCardDemoContent />} placement="below">
-              <XDSButton label="HoverCard" variant="secondary" size="sm" />
-            </XDSHoverCard>
-            <XDSTooltip content="Tooltip · duration-fast-max">
-              <XDSButton label="Tooltip" variant="secondary" size="sm" />
-            </XDSTooltip>
-          </XDSHStack>
-        </XDSVStack>
+              <Button label="Start" variant="secondary" size="sm" />
+            </Popover>
+            <HoverCard content={<HoverCardDemoContent />} placement="below">
+              <Button label="HoverCard" variant="secondary" size="sm" />
+            </HoverCard>
+            <Tooltip content="Tooltip · duration-fast-max">
+              <Button label="Tooltip" variant="secondary" size="sm" />
+            </Tooltip>
+          </HStack>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
-        <XDSVStack gap={2}>
-          <XDSText type="supporting" color="secondary" display="block">
+        <VStack gap={2}>
+          <Text type="supporting" color="secondary" display="block">
             Switches — thumb slide, track color · duration-fast
-          </XDSText>
-          <XDSHStack gap={4}>
-            <XDSSwitch
+          </Text>
+          <HStack gap={4}>
+            <Switch
               label="Notifications"
               value={switch1}
               onChange={setSwitch1}
             />
-            <XDSSwitch label="Sync" value={switch2} onChange={setSwitch2} />
-          </XDSHStack>
-        </XDSVStack>
+            <Switch label="Sync" value={switch2} onChange={setSwitch2} />
+          </HStack>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
-        <XDSVStack gap={2}>
-          <XDSText type="supporting" color="secondary" display="block">
+        <VStack gap={2}>
+          <Text type="supporting" color="secondary" display="block">
             Checkboxes — check transition · duration-fast
-          </XDSText>
-          <XDSHStack gap={6}>
-            <XDSCheckboxInput
+          </Text>
+          <HStack gap={6}>
+            <CheckboxInput
               label="Option A"
               value={check1}
               onChange={setCheck1}
             />
-            <XDSCheckboxInput
+            <CheckboxInput
               label="Option B"
               value={check2}
               onChange={setCheck2}
             />
-            <XDSCheckboxInput
+            <CheckboxInput
               label="Option C"
               value={check3}
               onChange={setCheck3}
             />
-          </XDSHStack>
-        </XDSVStack>
+          </HStack>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
-        <XDSVStack gap={2}>
-          <XDSText type="supporting" color="secondary" display="block">
+        <VStack gap={2}>
+          <Text type="supporting" color="secondary" display="block">
             Slider — thumb travel · duration-fast · value tooltip ·
             duration-fast-min
-          </XDSText>
-          <XDSSlider
+          </Text>
+          <Slider
             label="Volume"
             value={sliderValue}
             onChange={setSliderValue}
@@ -324,17 +324,17 @@ function MicroInteractionsCard() {
             max={100}
             xstyle={styles.maxW300}
           />
-        </XDSVStack>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
-        <XDSVStack gap={2}>
-          <XDSText type="supporting" color="secondary" display="block">
+        <VStack gap={2}>
+          <Text type="supporting" color="secondary" display="block">
             Input validation — status message entry · duration-fast-max
-          </XDSText>
-          <XDSHStack gap={3} vAlign="end">
-            <XDSStackItem size="fill" xstyle={styles.textInputItem}>
-              <XDSTextInput
+          </Text>
+          <HStack gap={3} vAlign="end">
+            <StackItem size="fill" xstyle={styles.textInputItem}>
+              <TextInput
                 label="Email"
                 value={emailValue}
                 onChange={setEmailValue}
@@ -345,31 +345,31 @@ function MicroInteractionsCard() {
                     : undefined
                 }
               />
-            </XDSStackItem>
-            <XDSButton
+            </StackItem>
+            <Button
               label={showStatus ? 'Clear' : 'Validate'}
               variant={showStatus ? 'ghost' : 'secondary'}
               onClick={() => setShowStatus(v => !v)}
             />
-          </XDSHStack>
-        </XDSVStack>
+          </HStack>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
-        <XDSVStack gap={2}>
-          <XDSText type="supporting" color="secondary" display="block">
+        <VStack gap={2}>
+          <Text type="supporting" color="secondary" display="block">
             Selector — open/close, chevron rotation · duration-fast-max
-          </XDSText>
-          <XDSSelector
+          </Text>
+          <Selector
             label="Fruit"
             options={['Apple', 'Banana', 'Orange', 'Mango']}
             value={selectorValue}
             onChange={setSelectorValue}
             xstyle={styles.maxW220}
           />
-        </XDSVStack>
-      </XDSVStack>
-    </XDSCard>
+        </VStack>
+      </VStack>
+    </Card>
   );
 }
 
@@ -381,56 +381,56 @@ function LoadingStatusCard() {
   const [progressValue, setProgressValue] = React.useState(65);
 
   return (
-    <XDSCard>
-      <XDSVStack gap={4}>
-        <XDSText type="label" display="block">
+    <Card>
+      <VStack gap={4}>
+        <Text type="label" display="block">
           Loading & Status
-        </XDSText>
+        </Text>
 
-        <XDSVStack gap={2}>
-          <XDSText type="supporting" color="secondary" display="block">
+        <VStack gap={2}>
+          <Text type="supporting" color="secondary" display="block">
             Spinners — continuous rotation · duration-medium-max
-          </XDSText>
-          <XDSHStack gap={4} vAlign="center">
-            <XDSSpinner size="sm" />
-            <XDSSpinner size="md" />
-            <XDSSpinner size="lg" />
-          </XDSHStack>
-        </XDSVStack>
+          </Text>
+          <HStack gap={4} vAlign="center">
+            <Spinner size="sm" />
+            <Spinner size="md" />
+            <Spinner size="lg" />
+          </HStack>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
-        <XDSVStack gap={2}>
-          <XDSText type="supporting" color="secondary" display="block">
+        <VStack gap={2}>
+          <Text type="supporting" color="secondary" display="block">
             Skeletons — pulsing opacity with stagger · duration-medium-max
-          </XDSText>
-          <XDSVStack gap={2}>
-            <XDSHStack gap={3} vAlign="center">
-              <XDSSkeleton width={40} height={40} radius="rounded" index={0} />
-              <XDSStackItem size="fill">
-                <XDSVStack gap={1}>
-                  <XDSSkeleton width={160} height={14} index={1} />
-                  <XDSSkeleton width={100} height={10} index={2} />
-                </XDSVStack>
-              </XDSStackItem>
-            </XDSHStack>
-            <XDSSkeleton width="100%" height={12} index={3} />
-            <XDSSkeleton width="80%" height={12} index={4} />
-            <XDSSkeleton width="60%" height={12} index={5} />
-          </XDSVStack>
-        </XDSVStack>
+          </Text>
+          <VStack gap={2}>
+            <HStack gap={3} vAlign="center">
+              <Skeleton width={40} height={40} radius="rounded" index={0} />
+              <StackItem size="fill">
+                <VStack gap={1}>
+                  <Skeleton width={160} height={14} index={1} />
+                  <Skeleton width={100} height={10} index={2} />
+                </VStack>
+              </StackItem>
+            </HStack>
+            <Skeleton width="100%" height={12} index={3} />
+            <Skeleton width="80%" height={12} index={4} />
+            <Skeleton width="60%" height={12} index={5} />
+          </VStack>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
-        <XDSVStack gap={2}>
-          <XDSText type="supporting" color="secondary" display="block">
+        <VStack gap={2}>
+          <Text type="supporting" color="secondary" display="block">
             Progress — determinate: duration-medium · indeterminate: continuous
-          </XDSText>
-          <XDSVStack gap={3}>
-            <XDSProgressBar value={progressValue} label={`${progressValue}%`} />
-            <XDSHStack gap={2}>
+          </Text>
+          <VStack gap={3}>
+            <ProgressBar value={progressValue} label={`${progressValue}%`} />
+            <HStack gap={2}>
               {[0, 25, 50, 75, 100].map(v => (
-                <XDSButton
+                <Button
                   key={v}
                   label={`${v}%`}
                   variant="ghost"
@@ -438,33 +438,33 @@ function LoadingStatusCard() {
                   onClick={() => setProgressValue(v)}
                 />
               ))}
-            </XDSHStack>
-          </XDSVStack>
-        </XDSVStack>
+            </HStack>
+          </VStack>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
-        <XDSVStack gap={2}>
-          <XDSText type="supporting" color="secondary" display="block">
+        <VStack gap={2}>
+          <Text type="supporting" color="secondary" display="block">
             Status dots — continuous pulse · 2s loop
-          </XDSText>
-          <XDSHStack gap={4} vAlign="center">
-            <XDSHStack gap={2} vAlign="center">
-              <XDSStatusDot variant="success" label="Online" isPulsing />
-              <XDSText type="body">Online</XDSText>
-            </XDSHStack>
-            <XDSHStack gap={2} vAlign="center">
-              <XDSStatusDot variant="warning" label="Away" isPulsing />
-              <XDSText type="body">Away</XDSText>
-            </XDSHStack>
-            <XDSHStack gap={2} vAlign="center">
-              <XDSStatusDot variant="error" label="Busy" isPulsing />
-              <XDSText type="body">Busy</XDSText>
-            </XDSHStack>
-          </XDSHStack>
-        </XDSVStack>
-      </XDSVStack>
-    </XDSCard>
+          </Text>
+          <HStack gap={4} vAlign="center">
+            <HStack gap={2} vAlign="center">
+              <StatusDot variant="success" label="Online" isPulsing />
+              <Text type="body">Online</Text>
+            </HStack>
+            <HStack gap={2} vAlign="center">
+              <StatusDot variant="warning" label="Away" isPulsing />
+              <Text type="body">Away</Text>
+            </HStack>
+            <HStack gap={2} vAlign="center">
+              <StatusDot variant="error" label="Busy" isPulsing />
+              <Text type="body">Busy</Text>
+            </HStack>
+          </HStack>
+        </VStack>
+      </VStack>
+    </Card>
   );
 }
 
@@ -476,50 +476,50 @@ function SurfaceInteractionsCard() {
   const [activeTab, setActiveTab] = React.useState('overview');
 
   return (
-    <XDSCard>
-      <XDSVStack gap={4}>
-        <XDSText type="label" display="block">
+    <Card>
+      <VStack gap={4}>
+        <Text type="label" display="block">
           Surface Interactions
-        </XDSText>
+        </Text>
 
-        <XDSVStack gap={2}>
-          <XDSText type="supporting" color="secondary" display="block">
+        <VStack gap={2}>
+          <Text type="supporting" color="secondary" display="block">
             Tabs — color, active indicator · duration-fast
-          </XDSText>
-          <XDSTabList value={activeTab} onChange={setActiveTab}>
-            <XDSTab value="overview" label="Overview" />
-            <XDSTab value="analytics" label="Analytics" />
-            <XDSTab value="reports" label="Reports" />
-            <XDSTab value="settings" label="Settings" />
-          </XDSTabList>
-        </XDSVStack>
+          </Text>
+          <TabList value={activeTab} onChange={setActiveTab}>
+            <Tab value="overview" label="Overview" />
+            <Tab value="analytics" label="Analytics" />
+            <Tab value="reports" label="Reports" />
+            <Tab value="settings" label="Settings" />
+          </TabList>
+        </VStack>
 
-        <XDSDivider />
+        <Divider />
 
-        <XDSVStack gap={2}>
-          <XDSText type="supporting" color="secondary" display="block">
+        <VStack gap={2}>
+          <Text type="supporting" color="secondary" display="block">
             List items — background hover · duration-fast-min
-          </XDSText>
-          <XDSList density="balanced" hasDividers>
-            <XDSListItem
+          </Text>
+          <List density="balanced" hasDividers>
+            <ListItem
               label="Dashboard"
               description="View your metrics"
               onClick={() => {}}
             />
-            <XDSListItem
+            <ListItem
               label="Projects"
               description="Manage active projects"
               onClick={() => {}}
             />
-            <XDSListItem
+            <ListItem
               label="Settings"
               description="Configure preferences"
               onClick={() => {}}
             />
-          </XDSList>
-        </XDSVStack>
-      </XDSVStack>
-    </XDSCard>
+          </List>
+        </VStack>
+      </VStack>
+    </Card>
   );
 }
 
@@ -532,44 +532,45 @@ function ReducedMotionCard() {
   const [moved, setMoved] = React.useState(false);
 
   return (
-    <XDSCard>
-      <XDSVStack gap={4}>
-        <XDSText type="label" display="block">
+    <Card>
+      <VStack gap={4}>
+        <Text type="label" display="block">
           Reduced Motion
-        </XDSText>
+        </Text>
 
-        <XDSVStack gap={2}>
-          <XDSText type="supporting" color="secondary" display="block">
-            Honor the OS-level prefers-reduced-motion setting — replace movement
+        <VStack gap={2}>
+          <Text type="supporting" color="secondary" display="block">
+            
+            Honor the OS-level prefers-reduced-motion setting; replace movement
             with instant state changes. Toggle the switch to simulate.
-          </XDSText>
-          <XDSVStack gap={3}>
-            <XDSStack xstyle={styles.ballLane}>
-              <XDSStack
+          </Text>
+          <VStack gap={3}>
+            <Stack xstyle={styles.ballLane}>
+              <Stack
                 xstyle={[
                   styles.ball,
                   moved && styles.ballEnd,
                   simulateReduced && styles.ballReduced,
                 ]}
               />
-            </XDSStack>
-            <XDSHStack gap={3} vAlign="center">
-              <XDSButton
+            </Stack>
+            <HStack gap={3} vAlign="center">
+              <Button
                 label={moved ? 'Reset' : 'Move'}
                 variant="primary"
                 size="sm"
                 onClick={() => setMoved(m => !m)}
               />
-              <XDSSwitch
+              <Switch
                 label="Simulate reduced motion"
                 value={simulateReduced}
                 onChange={setSimulateReduced}
               />
-            </XDSHStack>
-          </XDSVStack>
-        </XDSVStack>
-      </XDSVStack>
-    </XDSCard>
+            </HStack>
+          </VStack>
+        </VStack>
+      </VStack>
+    </Card>
   );
 }
 
@@ -579,23 +580,23 @@ function ReducedMotionCard() {
 
 export default function MotionExamplesPage() {
   return (
-    <XDSVStack gap={6} xstyle={styles.pageContainer}>
-      <XDSVStack gap={2}>
-        <XDSHeading level={1}>Motion Examples</XDSHeading>
-        <XDSText type="body" color="secondary">
+    <VStack gap={6} xstyle={styles.pageContainer}>
+      <VStack gap={2}>
+        <Heading level={1}>Motion Examples</Heading>
+        <Text type="body" color="secondary">
           How XDS components apply duration and easing tokens. Each section
           calls out which tokens drive the motion so you can see the scale in
           action.
-        </XDSText>
-      </XDSVStack>
+        </Text>
+      </VStack>
 
-      <XDSVStack gap={4}>
+      <VStack gap={4}>
         <NavigationOverlaysCard />
         <MicroInteractionsCard />
         <LoadingStatusCard />
         <SurfaceInteractionsCard />
         <ReducedMotionCard />
-      </XDSVStack>
-    </XDSVStack>
+      </VStack>
+    </VStack>
   );
 }

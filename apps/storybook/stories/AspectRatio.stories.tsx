@@ -2,10 +2,10 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSText} from '@xds/core/Text';
-import {XDSSkeleton} from '@xds/core/Skeleton';
+import {AspectRatio} from '@xds/core/AspectRatio';
+import {Grid} from '@xds/core/Grid';
+import {Text} from '@xds/core/Text';
+import {Skeleton} from '@xds/core/Skeleton';
 import {
   colorVars,
   spacingVars,
@@ -66,9 +66,9 @@ const styles = stylex.create({
   },
 });
 
-const meta: Meta<typeof XDSAspectRatio> = {
+const meta: Meta<typeof AspectRatio> = {
   title: 'Core/AspectRatio',
-  component: XDSAspectRatio,
+  component: AspectRatio,
   tags: ['autodocs'],
   argTypes: {
     ratio: {
@@ -85,7 +85,7 @@ const meta: Meta<typeof XDSAspectRatio> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSAspectRatio>;
+type Story = StoryObj<typeof AspectRatio>;
 
 // Placeholder image URLs
 const PLACEHOLDER_IMAGE = 'https://picsum.photos/800/600';
@@ -97,16 +97,16 @@ export const Default: Story = {
   },
   render: args => (
     <div {...stylex.props(styles.container)}>
-      <XDSText type="supporting" xstyle={styles.sectionLabel}>
+      <Text type="supporting" xstyle={styles.sectionLabel}>
         16:9 Aspect Ratio (Default)
-      </XDSText>
-      <XDSAspectRatio {...args}>
+      </Text>
+      <AspectRatio {...args}>
         <img
           {...stylex.props(styles.image)}
           src={PLACEHOLDER_IMAGE}
           alt="16:9 placeholder"
         />
-      </XDSAspectRatio>
+      </AspectRatio>
     </div>
   ),
 };
@@ -114,16 +114,16 @@ export const Default: Story = {
 export const Widescreen16x9: Story = {
   render: () => (
     <div {...stylex.props(styles.container)}>
-      <XDSText type="supporting" xstyle={styles.sectionLabel}>
+      <Text type="supporting" xstyle={styles.sectionLabel}>
         16:9 - Standard widescreen (YouTube, TV)
-      </XDSText>
-      <XDSAspectRatio ratio={16 / 9}>
+      </Text>
+      <AspectRatio ratio={16 / 9}>
         <img
           {...stylex.props(styles.image)}
           src={PLACEHOLDER_IMAGE}
           alt="16:9 widescreen"
         />
-      </XDSAspectRatio>
+      </AspectRatio>
     </div>
   ),
 };
@@ -131,16 +131,16 @@ export const Widescreen16x9: Story = {
 export const Classic4x3: Story = {
   render: () => (
     <div {...stylex.props(styles.container)}>
-      <XDSText type="supporting" xstyle={styles.sectionLabel}>
+      <Text type="supporting" xstyle={styles.sectionLabel}>
         4:3 - Classic TV and photography
-      </XDSText>
-      <XDSAspectRatio ratio={4 / 3}>
+      </Text>
+      <AspectRatio ratio={4 / 3}>
         <img
           {...stylex.props(styles.image)}
           src={PLACEHOLDER_IMAGE}
           alt="4:3 classic"
         />
-      </XDSAspectRatio>
+      </AspectRatio>
     </div>
   ),
 };
@@ -148,16 +148,16 @@ export const Classic4x3: Story = {
 export const Square1x1: Story = {
   render: () => (
     <div {...stylex.props(styles.smallContainer)}>
-      <XDSText type="supporting" xstyle={styles.sectionLabel}>
+      <Text type="supporting" xstyle={styles.sectionLabel}>
         1:1 - Square (Instagram, avatars)
-      </XDSText>
-      <XDSAspectRatio ratio={1}>
+      </Text>
+      <AspectRatio ratio={1}>
         <img
           {...stylex.props(styles.image)}
           src={PLACEHOLDER_SQUARE}
           alt="1:1 square"
         />
-      </XDSAspectRatio>
+      </AspectRatio>
     </div>
   ),
 };
@@ -165,14 +165,14 @@ export const Square1x1: Story = {
 export const Ultrawide21x9: Story = {
   render: () => (
     <div {...stylex.props(styles.wideContainer)}>
-      <XDSText type="supporting" xstyle={styles.sectionLabel}>
+      <Text type="supporting" xstyle={styles.sectionLabel}>
         21:9 - Ultrawide cinematic
-      </XDSText>
-      <XDSAspectRatio ratio={21 / 9}>
+      </Text>
+      <AspectRatio ratio={21 / 9}>
         <div {...stylex.props(styles.gradientPlaceholder)}>
-          <XDSText type="label">Ultrawide 21:9</XDSText>
+          <Text type="label">Ultrawide 21:9</Text>
         </div>
-      </XDSAspectRatio>
+      </AspectRatio>
     </div>
   ),
 };
@@ -184,16 +184,16 @@ export const EllipseCircle: Story = {
   },
   render: args => (
     <div {...stylex.props(styles.smallContainer)}>
-      <XDSText type="supporting" xstyle={styles.sectionLabel}>
+      <Text type="supporting" xstyle={styles.sectionLabel}>
         Ellipse at 1:1 — a circle (avatars, profile images)
-      </XDSText>
-      <XDSAspectRatio {...args}>
+      </Text>
+      <AspectRatio {...args}>
         <img
           {...stylex.props(styles.image)}
           src={PLACEHOLDER_SQUARE}
           alt="Circular media"
         />
-      </XDSAspectRatio>
+      </AspectRatio>
     </div>
   ),
 };
@@ -205,16 +205,16 @@ export const EllipseOval: Story = {
   },
   render: args => (
     <div {...stylex.props(styles.container)}>
-      <XDSText type="supporting" xstyle={styles.sectionLabel}>
+      <Text type="supporting" xstyle={styles.sectionLabel}>
         Ellipse at 16:9 — an oval (respects the ratio)
-      </XDSText>
-      <XDSAspectRatio {...args}>
+      </Text>
+      <AspectRatio {...args}>
         <img
           {...stylex.props(styles.image)}
           src={PLACEHOLDER_IMAGE}
           alt="Oval media"
         />
-      </XDSAspectRatio>
+      </AspectRatio>
     </div>
   ),
 };
@@ -223,20 +223,20 @@ export const WithPlaceholderSkeleton: Story = {
   render: () => (
     <div {...stylex.props(styles.storyWrapper)}>
       <div {...stylex.props(styles.container)}>
-        <XDSText type="supporting" xstyle={styles.sectionLabel}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
           16:9 with loading skeleton
-        </XDSText>
-        <XDSAspectRatio ratio={16 / 9}>
-          <XDSSkeleton width="100%" height="100%" />
-        </XDSAspectRatio>
+        </Text>
+        <AspectRatio ratio={16 / 9}>
+          <Skeleton width="100%" height="100%" />
+        </AspectRatio>
       </div>
       <div {...stylex.props(styles.smallContainer)}>
-        <XDSText type="supporting" xstyle={styles.sectionLabel}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
           1:1 with loading skeleton
-        </XDSText>
-        <XDSAspectRatio ratio={1}>
-          <XDSSkeleton width="100%" height="100%" />
-        </XDSAspectRatio>
+        </Text>
+        <AspectRatio ratio={1}>
+          <Skeleton width="100%" height="100%" />
+        </AspectRatio>
       </div>
     </div>
   ),
@@ -245,10 +245,10 @@ export const WithPlaceholderSkeleton: Story = {
 export const ResponsiveGrid: Story = {
   render: () => (
     <div {...stylex.props(styles.wideContainer)}>
-      <XDSText type="supporting" xstyle={styles.sectionLabel}>
+      <Text type="supporting" xstyle={styles.sectionLabel}>
         Responsive grid of aspect ratio boxes
-      </XDSText>
-      <XDSGrid columns={{minWidth: 200}} gap={4}>
+      </Text>
+      <Grid columns={{minWidth: 200}} gap={4}>
         {[
           {ratio: 16 / 9, label: '16:9'},
           {ratio: 4 / 3, label: '4:3'},
@@ -258,14 +258,14 @@ export const ResponsiveGrid: Story = {
           {ratio: 2 / 3, label: '2:3 Portrait'},
         ].map(({ratio, label}) => (
           <div key={label} {...stylex.props(styles.gridItem)}>
-            <XDSAspectRatio ratio={ratio}>
+            <AspectRatio ratio={ratio}>
               <div {...stylex.props(styles.placeholder)}>
-                <XDSText type="label">{label}</XDSText>
+                <Text type="label">{label}</Text>
               </div>
-            </XDSAspectRatio>
+            </AspectRatio>
           </div>
         ))}
-      </XDSGrid>
+      </Grid>
     </div>
   ),
 };
@@ -274,54 +274,54 @@ export const AllRatiosComparison: Story = {
   render: () => (
     <div {...stylex.props(styles.storyWrapper)}>
       <div {...stylex.props(styles.container)}>
-        <XDSText type="supporting" xstyle={styles.sectionLabel}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
           16:9 (1.778) - Widescreen HD
-        </XDSText>
-        <XDSAspectRatio ratio={16 / 9}>
+        </Text>
+        <AspectRatio ratio={16 / 9}>
           <div {...stylex.props(styles.placeholder)}>
-            <XDSText type="body">16:9</XDSText>
+            <Text type="body">16:9</Text>
           </div>
-        </XDSAspectRatio>
+        </AspectRatio>
       </div>
       <div {...stylex.props(styles.container)}>
-        <XDSText type="supporting" xstyle={styles.sectionLabel}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
           4:3 (1.333) - Classic TV
-        </XDSText>
-        <XDSAspectRatio ratio={4 / 3}>
+        </Text>
+        <AspectRatio ratio={4 / 3}>
           <div {...stylex.props(styles.placeholder)}>
-            <XDSText type="body">4:3</XDSText>
+            <Text type="body">4:3</Text>
           </div>
-        </XDSAspectRatio>
+        </AspectRatio>
       </div>
       <div {...stylex.props(styles.smallContainer)}>
-        <XDSText type="supporting" xstyle={styles.sectionLabel}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
           1:1 (1.0) - Square
-        </XDSText>
-        <XDSAspectRatio ratio={1}>
+        </Text>
+        <AspectRatio ratio={1}>
           <div {...stylex.props(styles.placeholder)}>
-            <XDSText type="body">1:1</XDSText>
+            <Text type="body">1:1</Text>
           </div>
-        </XDSAspectRatio>
+        </AspectRatio>
       </div>
       <div {...stylex.props(styles.container)}>
-        <XDSText type="supporting" xstyle={styles.sectionLabel}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
           3:2 (1.5) - Classic 35mm Film
-        </XDSText>
-        <XDSAspectRatio ratio={3 / 2}>
+        </Text>
+        <AspectRatio ratio={3 / 2}>
           <div {...stylex.props(styles.placeholder)}>
-            <XDSText type="body">3:2</XDSText>
+            <Text type="body">3:2</Text>
           </div>
-        </XDSAspectRatio>
+        </AspectRatio>
       </div>
       <div {...stylex.props(styles.wideContainer)}>
-        <XDSText type="supporting" xstyle={styles.sectionLabel}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
           21:9 (2.333) - Ultrawide Cinematic
-        </XDSText>
-        <XDSAspectRatio ratio={21 / 9}>
+        </Text>
+        <AspectRatio ratio={21 / 9}>
           <div {...stylex.props(styles.placeholder)}>
-            <XDSText type="body">21:9</XDSText>
+            <Text type="body">21:9</Text>
           </div>
-        </XDSAspectRatio>
+        </AspectRatio>
       </div>
     </div>
   ),
@@ -330,20 +330,20 @@ export const AllRatiosComparison: Story = {
 export const ImageGallery: Story = {
   render: () => (
     <div {...stylex.props(styles.wideContainer)}>
-      <XDSText type="supporting" xstyle={styles.sectionLabel}>
+      <Text type="supporting" xstyle={styles.sectionLabel}>
         Image gallery with consistent aspect ratios
-      </XDSText>
-      <XDSGrid columns={3} gap={4}>
+      </Text>
+      <Grid columns={3} gap={4}>
         {Array.from({length: 6}, (_, i) => (
-          <XDSAspectRatio key={i} ratio={4 / 3}>
+          <AspectRatio key={i} ratio={4 / 3}>
             <img
               {...stylex.props(styles.image)}
               src={`https://picsum.photos/seed/${i + 1}/400/300`}
               alt={`Gallery image ${i + 1}`}
             />
-          </XDSAspectRatio>
+          </AspectRatio>
         ))}
-      </XDSGrid>
+      </Grid>
     </div>
   ),
 };

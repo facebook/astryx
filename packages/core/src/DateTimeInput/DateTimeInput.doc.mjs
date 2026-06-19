@@ -119,7 +119,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'XDSInputStatus',
+      type: 'InputStatus',
       description: 'Status indicator object for error, warning, or success states with a message.',
     },
     {
@@ -150,8 +150,8 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Provide clear labels and descriptions so users understand what datetime is expected.' },
       { guidance: true, description: 'Use min and max to restrict selectable datetimes to valid ranges.' },
-      { guidance: true, description: 'Use hasClear when the datetime is optional so the user can easily reset it.' },
-      { guidance: true, description: 'Choose the hour format (12h or 24h) that matches your audience’s locale.' },
+      { guidance: true, description: 'Use hasClear when the datetime is optional so the user can reset it.' },
+      { guidance: true, description: "Choose the hour format (12h or 24h) that matches your audience's locale." },
       { guidance: false, description: 'Use DateTimeInput when only a date is needed; use DateInput instead.' },
       { guidance: false, description: 'Use DateTimeInput when only a time is needed; use TimeInput instead.' },
       { guidance: false, description: 'Hide the label without surrounding context that makes the field purpose obvious.' },
@@ -177,8 +177,8 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Provide clear labels and descriptions so users understand what datetime is expected.' },
       { guidance: true, description: 'Use min and max to restrict selectable datetimes to valid ranges.' },
-      { guidance: true, description: 'Use hasClear when the datetime is optional so the user can easily reset it.' },
-      { guidance: true, description: 'Choose the hour format (12h or 24h) that matches your audience’s locale.' },
+      { guidance: true, description: 'Use hasClear when the datetime is optional so the user can reset it.' },
+      { guidance: true, description: "Choose the hour format (12h or 24h) that matches your audience's locale." },
       { guidance: false, description: 'Use DateTimeInput when only a date is needed; use DateInput instead.' },
       { guidance: false, description: 'Use DateTimeInput when only a time is needed; use TimeInput instead.' },
       { guidance: false, description: 'Hide the label without surrounding context that makes the field purpose obvious.' },
@@ -204,7 +204,7 @@ export const docsZh = {
     {name: 'hasClear', type: 'boolean', description: '当有值时显示清除按钮。', default: 'false'},
     {name: 'placeholder', type: 'string', description: '未选择日期时显示的占位符文本。', default: "'Select a date'"},
     {name: 'size', type: "'sm' | 'md' | 'lg'", description: '输入控件的尺寸。', default: "'md'"},
-    {name: 'status', type: 'XDSInputStatus', description: '错误、警告或成功状态的状态指示对象，附带消息。'},
+    {name: 'status', type: 'InputStatus', description: '错误、警告或成功状态的状态指示对象，附带消息。'},
     {name: 'labelTooltip', type: 'string', description: '通过标签末尾的信息图标显示的提示文本。'},
     {name: 'numberOfMonths', type: '1 | 2', description: '日历中同时显示的月份数量。', default: '1'},
     {name: 'xstyle', type: 'StyleXStyles', description: '用于布局自定义的 StyleX 样式。必须是 stylex.create() 的值。'},
@@ -225,7 +225,7 @@ export const docsDense = {
       { guidance: true, description: 'Provide clear labels + descriptions so users understand what datetime is expected.' },
       { guidance: true, description: 'Use min and max to restrict selectable datetimes to valid ranges.' },
       { guidance: true, description: 'Use hasClear when the datetime is optional so the user can reset it.' },
-      { guidance: true, description: 'Choose the hour format (12h or 24h) that matches your audience\u2019s locale.' },
+      { guidance: true, description: "Choose the hour format (12h or 24h) that matches your audience's locale." },
       { guidance: false, description: 'Use DateTimeInput when only a date is needed; use DateInput instead.' },
       { guidance: false, description: 'Use DateTimeInput when only a time is needed; use TimeInput instead.' },
       { guidance: false, description: 'Hide the label without surrounding context that makes the field purpose obvious.' },

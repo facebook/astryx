@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSHeading} from '@xds/core/Text';
-import {XDSText} from '@xds/core/Text';
+import {Heading} from '@xds/core/Text';
+import {Text} from '@xds/core/Text';
 
-const meta: Meta<typeof XDSHeading> = {
+const meta: Meta<typeof Heading> = {
   title: 'Core/Heading',
-  component: XDSHeading,
+  component: Heading,
   tags: ['autodocs'],
   argTypes: {
     level: {
@@ -62,7 +62,7 @@ const meta: Meta<typeof XDSHeading> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSHeading>;
+type Story = StoryObj<typeof Heading>;
 
 // =============================================================================
 // Heading Levels
@@ -117,10 +117,10 @@ export const Level6: Story = {
 export const AllLevels: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
-      <XDSText type="supporting" display="block">
+      <Text type="supporting" display="block">
         Type scale: base=14px, ratio=1.2, h4 anchored to base. Sizes are
         computed from the geometric progression: size = base × ratio^step
-      </XDSText>
+      </Text>
       <div
         style={{
           display: 'flex',
@@ -128,12 +128,12 @@ export const AllLevels: Story = {
           gap: '8px',
           marginTop: '8px',
         }}>
-        <XDSHeading level={1}>Heading 1 — 24px</XDSHeading>
-        <XDSHeading level={2}>Heading 2 — 20px</XDSHeading>
-        <XDSHeading level={3}>Heading 3 — 17px</XDSHeading>
-        <XDSHeading level={4}>Heading 4 — 14px (base)</XDSHeading>
-        <XDSHeading level={5}>Heading 5 — 12px</XDSHeading>
-        <XDSHeading level={6}>Heading 6 — 10px</XDSHeading>
+        <Heading level={1}>Heading 1 — 24px</Heading>
+        <Heading level={2}>Heading 2 — 20px</Heading>
+        <Heading level={3}>Heading 3 — 17px</Heading>
+        <Heading level={4}>Heading 4 — 14px (base)</Heading>
+        <Heading level={5}>Heading 5 — 12px</Heading>
+        <Heading level={6}>Heading 6 — 10px</Heading>
       </div>
     </div>
   ),
@@ -146,25 +146,25 @@ export const AllLevels: Story = {
 export const ColorVariants: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
-      <XDSHeading level={2} color="primary">
+      <Heading level={2} color="primary">
         Primary heading (default)
-      </XDSHeading>
-      <XDSHeading level={2} color="secondary">
+      </Heading>
+      <Heading level={2} color="secondary">
         Secondary heading
-      </XDSHeading>
-      <XDSHeading level={2} color="disabled">
+      </Heading>
+      <Heading level={2} color="disabled">
         Disabled heading
-      </XDSHeading>
-      <XDSHeading level={2} color="placeholder">
+      </Heading>
+      <Heading level={2} color="placeholder">
         Placeholder heading
-      </XDSHeading>
-      <XDSHeading level={2} color="active">
+      </Heading>
+      <Heading level={2} color="active">
         Active heading (accent)
-      </XDSHeading>
+      </Heading>
       <div style={{color: 'purple'}}>
-        <XDSHeading level={2} color="inherit">
+        <Heading level={2} color="inherit">
           Inherit heading (from parent)
-        </XDSHeading>
+        </Heading>
       </div>
     </div>
   ),
@@ -178,23 +178,23 @@ export const DisplayModes: Story = {
   render: () => (
     <div>
       <div style={{marginBottom: '16px'}}>
-        <XDSHeading level={3} display="inline">
+        <Heading level={3} display="inline">
           Inline H3{' '}
-        </XDSHeading>
-        <XDSHeading level={3} display="inline">
+        </Heading>
+        <Heading level={3} display="inline">
           flows together{' '}
-        </XDSHeading>
-        <XDSHeading level={3} display="inline">
+        </Heading>
+        <Heading level={3} display="inline">
           on the same line
-        </XDSHeading>
+        </Heading>
       </div>
       <div>
-        <XDSHeading level={3} display="block">
+        <Heading level={3} display="block">
           Block H3 (default)
-        </XDSHeading>
-        <XDSHeading level={3} display="block">
+        </Heading>
+        <Heading level={3} display="block">
           Each heading on its own line
-        </XDSHeading>
+        </Heading>
       </div>
     </div>
   ),
@@ -207,9 +207,9 @@ export const DisplayModes: Story = {
 export const SingleLineTruncation: Story = {
   render: () => (
     <div style={{width: '300px', border: '1px solid #ccc', padding: '12px'}}>
-      <XDSHeading level={2} maxLines={1}>
+      <Heading level={2} maxLines={1}>
         Very Long Heading That Will Be Truncated To One Line With Ellipsis
-      </XDSHeading>
+      </Heading>
     </div>
   ),
 };
@@ -217,10 +217,10 @@ export const SingleLineTruncation: Story = {
 export const MultiLineTruncation: Story = {
   render: () => (
     <div style={{width: '300px', border: '1px solid #ccc', padding: '12px'}}>
-      <XDSHeading level={2} maxLines={2}>
+      <Heading level={2} maxLines={2}>
         Very Long Heading That Will Be Truncated To Two Lines To Keep Card
         Layout Compact
-      </XDSHeading>
+      </Heading>
     </div>
   ),
 };
@@ -233,19 +233,19 @@ export const AccessibilityLevel: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
       <div>
-        <XDSText type="supporting" display="block">
+        <Text type="supporting" display="block">
           Normal heading: visual and semantic levels match
-        </XDSText>
-        <XDSHeading level={2}>Section Title (h2, aria-level=2)</XDSHeading>
+        </Text>
+        <Heading level={2}>Section Title (h2, aria-level=2)</Heading>
       </div>
       <div style={{marginTop: '16px'}}>
-        <XDSText type="supporting" display="block">
+        <Text type="supporting" display="block">
           Sidebar heading: visual h2 but semantic h3 (doesn't affect main
           outline)
-        </XDSText>
-        <XDSHeading level={2} accessibilityLevel={3}>
+        </Text>
+        <Heading level={2} accessibilityLevel={3}>
           Sidebar Section (looks like h2, aria-level=3)
-        </XDSHeading>
+        </Heading>
       </div>
     </div>
   ),
@@ -267,21 +267,21 @@ export const Capsize: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           Without capsize (red border shows extra space):
-        </XDSText>
+        </Text>
         <div style={{border: '1px solid red', display: 'inline-block'}}>
-          <XDSHeading level={1}>Regular Heading</XDSHeading>
+          <Heading level={1}>Regular Heading</Heading>
         </div>
       </div>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           With capsize (optically aligned):
-        </XDSText>
+        </Text>
         <div style={{border: '1px solid red', display: 'inline-block'}}>
-          <XDSHeading level={1} hasCapsize>
+          <Heading level={1} hasCapsize>
             Capsize Heading
-          </XDSHeading>
+          </Heading>
         </div>
       </div>
     </div>
@@ -295,26 +295,26 @@ export const Capsize: Story = {
 export const PageLayout: Story = {
   render: () => (
     <div style={{maxWidth: '800px'}}>
-      <XDSHeading level={1}>Dashboard Overview</XDSHeading>
-      <XDSText type="supporting" display="block">
+      <Heading level={1}>Dashboard Overview</Heading>
+      <Text type="supporting" display="block">
         Last updated 5 minutes ago
-      </XDSText>
+      </Text>
 
       <div style={{marginTop: '32px'}}>
-        <XDSHeading level={2}>Recent Activity</XDSHeading>
-        <XDSText type="body" display="block">
+        <Heading level={2}>Recent Activity</Heading>
+        <Text type="body" display="block">
           Here's what's been happening in your workspace.
-        </XDSText>
+        </Text>
       </div>
 
       <div style={{marginTop: '24px'}}>
-        <XDSHeading level={3}>Today</XDSHeading>
-        <XDSText type="body" display="block">
+        <Heading level={3}>Today</Heading>
+        <Text type="body" display="block">
           • Project Alpha updated
           <br />
           • 3 new comments
           <br />• Task completed
-        </XDSText>
+        </Text>
       </div>
     </div>
   ),
@@ -338,19 +338,19 @@ export const CardGrid: Story = {
             border: '1px solid #e0e0e0',
             boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
           }}>
-          <XDSHeading level={3} maxLines={1}>
+          <Heading level={3} maxLines={1}>
             {i === 1 && 'Very Long Card Title That Gets Truncated'}
             {i === 2 && 'Another Card'}
             {i === 3 &&
               'Third Card With An Even Longer Title That Will Be Truncated'}
-          </XDSHeading>
-          <XDSText type="body" maxLines={2} display="block">
+          </Heading>
+          <Text type="body" maxLines={2} display="block">
             This is a card description that might be quite long and needs to be
             truncated after two lines to keep the card compact and uniform.
-          </XDSText>
-          <XDSText type="supporting" display="block">
+          </Text>
+          <Text type="supporting" display="block">
             Updated {i} hour{i > 1 ? 's' : ''} ago
-          </XDSText>
+          </Text>
         </div>
       ))}
     </div>

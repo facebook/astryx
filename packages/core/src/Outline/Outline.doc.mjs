@@ -35,7 +35,7 @@ export const docs = {
   },
   components: [
     {
-      name: 'XDSOutline',
+      name: 'Outline',
       displayName: 'Outline',
       description:
         'Document outline navigation with sliding indicator track. Renders a flat heading list as anchor links with a density variant and scroll-spy active state when uncontrolled.',
@@ -82,7 +82,7 @@ export const docs = {
         {
           label: 'Basic',
           code: `
-import {XDSOutline} from '@xds/core/Outline';
+import {Outline} from '@xds/core/Outline';
 
 const items = [
   {id: 'overview', label: 'Overview', level: 2},
@@ -93,31 +93,31 @@ const items = [
 ];
 
 // Uncontrolled: built-in scroll-spy tracks the topmost visible heading.
-<XDSOutline items={items} />;
+<Outline items={items} />;
 `,
         },
         {
           label: 'Compact (density="compact")',
           code: `
-import {XDSOutline} from '@xds/core/Outline';
+import {Outline} from '@xds/core/Outline';
 
 // Dense sidebars use the compact variant; the sliding indicator
 // automatically matches the shorter item height.
-<XDSOutline items={items} density="compact" />;
+<Outline items={items} density="compact" />;
 `,
         },
         {
           label: 'Controlled active section',
           code: `
 import {useState} from 'react';
-import {XDSOutline} from '@xds/core/Outline';
+import {Outline} from '@xds/core/Outline';
 
 function ControlledOutline() {
   const [activeId, setActiveId] = useState('overview');
 
   // Providing activeId disables built-in scroll-spy — you own the active state.
   return (
-    <XDSOutline
+    <Outline
       items={items}
       activeId={activeId}
       onActiveIdChange={setActiveId}
@@ -129,12 +129,12 @@ function ControlledOutline() {
         {
           label: 'Generate items from markdown',
           code: `
-import {XDSOutline, useOutlineFromMarkdown} from '@xds/core/Outline';
+import {Outline, useOutlineFromMarkdown} from '@xds/core/Outline';
 
 function MarkdownOutline({markdown}) {
   // Derives {id, label, level} items from headings in the source.
   const items = useOutlineFromMarkdown(markdown);
-  return <XDSOutline items={items} />;
+  return <Outline items={items} />;
 }
 `,
         },
@@ -168,7 +168,7 @@ export const docsZh = {
   },
   components: [
     {
-      name: 'XDSOutline',
+      name: 'Outline',
       displayName: 'Outline',
       description:
         '文档大纲导航，带有滑动指示器轨道。将扁平标题列表渲染为锚点链接，支持密度变体和非受控模式下的滚动监听。',
@@ -251,7 +251,7 @@ export const docsDense = {
   },
   components: [
     {
-      name: 'XDSOutline',
+      name: 'Outline',
       displayName: 'Outline',
       description:
         'Document outline nav with sliding indicator. Renders heading anchors with a density variant and manages scroll-spy active state when uncontrolled.',

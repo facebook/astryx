@@ -2,11 +2,11 @@
 
 'use client';
 
-import {XDSChatComposer, XDSChatComposerDrawer} from '@xds/core/Chat';
-import {XDSToken} from '@xds/core/Token';
-import {XDSThumbnail} from '@xds/core/Thumbnail';
-import {XDSCarousel} from '@xds/core/Carousel';
-import {XDSStack} from '@xds/core/Layout';
+import {ChatComposer, ChatComposerDrawer} from '@xds/core/Chat';
+import {Token} from '@xds/core/Token';
+import {Thumbnail} from '@xds/core/Thumbnail';
+import {Carousel} from '@xds/core/Carousel';
+import {Stack} from '@xds/core/Layout';
 
 const IMAGE_ATTACHMENTS = [
   {
@@ -43,15 +43,15 @@ const IMAGE_ATTACHMENTS = [
 
 export default function ChatComposerDrawerAttachments() {
   return (
-    <XDSStack direction="vertical" gap={4} width={480}>
-      <XDSChatComposer
+    <Stack direction="vertical" gap={4} width={480}>
+      <ChatComposer
         onSubmit={() => {}}
         drawer={
-          <XDSChatComposerDrawer>
-            <XDSStack direction="vertical" gap={2} width="100%">
-              <XDSCarousel gap={1}>
+          <ChatComposerDrawer>
+            <Stack direction="vertical" gap={2} width="100%">
+              <Carousel gap={1}>
                 {IMAGE_ATTACHMENTS.map(img => (
-                  <XDSThumbnail
+                  <Thumbnail
                     key={img.id}
                     src={img.src}
                     alt={img.alt}
@@ -59,15 +59,15 @@ export default function ChatComposerDrawerAttachments() {
                     onRemove={() => {}}
                   />
                 ))}
-              </XDSCarousel>
-              <XDSStack direction="horizontal" gap={1} wrap="wrap">
-                <XDSToken label="quarterly-report.pdf" onRemove={() => {}} />
-                <XDSToken label="budget-forecast.xlsx" onRemove={() => {}} />
-              </XDSStack>
-            </XDSStack>
-          </XDSChatComposerDrawer>
+              </Carousel>
+              <Stack direction="horizontal" gap={1} wrap="wrap">
+                <Token label="quarterly-report.pdf" onRemove={() => {}} />
+                <Token label="budget-forecast.xlsx" onRemove={() => {}} />
+              </Stack>
+            </Stack>
+          </ChatComposerDrawer>
         }
       />
-    </XDSStack>
+    </Stack>
   );
 }

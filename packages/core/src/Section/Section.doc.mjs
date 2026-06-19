@@ -70,12 +70,12 @@ export const docs = {
   },
   usage: {
     description:
-      'Section is the correct way to create page regions and group related content on a page. Use it for settings groups, form sections, sidebar areas, or any time you need visual separation between parts of a page. If you are tempted to use a Card for a page section, use XDSSection instead.',
+      'Section is the correct way to create page regions and group related content on a page. Use it for settings groups, form sections, sidebar areas, or any time you need visual separation between parts of a page. If you are tempted to use a Card for a page section, use Section instead.',
     bestPractices: [
       { guidance: true, description: 'Use Section for page-level grouping: settings panels, form groups, sidebar regions. These are sections of a page, not discrete items.' },
       { guidance: true, description: 'Start with the default variant. Use muted only to call attention to a specific region.' },
       { guidance: true, description: 'Add dividers between same-background sections that need separation.' },
-      { guidance: true, description: 'Combine with a heading + XDSStack for a typical page section pattern.' },
+      { guidance: true, description: 'Combine with a heading + Stack for a typical page section pattern.' },
       { guidance: false, description: 'Use Card when you mean Section. Cards are for discrete items (one notification, one profile). Sections are for page regions.' },
     ],
   },
@@ -147,12 +147,12 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Section is the correct way to create page regions and group related content on a page. Use it for settings groups, form sections, sidebar areas, or any time you need visual separation between parts of a page. If you are tempted to use a Card for a page section, use XDSSection instead.',
+      'Section is the correct way to create page regions and group related content on a page. Use it for settings groups, form sections, sidebar areas, or any time you need visual separation between parts of a page. If you are tempted to use a Card for a page section, use Section instead.',
     bestPractices: [
       { guidance: true, description: 'Use Section for page-level grouping: settings panels, form groups, sidebar regions. These are sections of a page, not discrete items.' },
       { guidance: true, description: 'Start with the default variant. Use muted only to call attention to a specific region.' },
       { guidance: true, description: 'Add dividers between same-background sections that need separation.' },
-      { guidance: true, description: 'Combine with a heading + XDSStack for a typical page section pattern.' },
+      { guidance: true, description: 'Combine with a heading + Stack for a typical page section pattern.' },
       { guidance: false, description: 'Use Card when you mean Section. Cards are for discrete items (one notification, one profile). Sections are for page regions.' },
     ],
   },
@@ -169,7 +169,7 @@ export const docsDense = {
       { guidance: true, description: 'Use Section for page-level grouping: settings panels, form groups, sidebar regions. Page sections, not discrete items.' },
       { guidance: true, description: 'Start w/ default variant. Use muted only to call attention to a specific region.' },
       { guidance: true, description: 'Add dividers between same-background sections that need separation.' },
-      { guidance: true, description: 'Combine w/ heading + XDSStack for typical page section pattern.' },
+      { guidance: true, description: 'Combine w/ heading + Stack for typical page section pattern.' },
       { guidance: false, description: 'Use Card when you mean Section. Cards = discrete items (one notification, one profile). Sections = page regions.' },
     ],
   },

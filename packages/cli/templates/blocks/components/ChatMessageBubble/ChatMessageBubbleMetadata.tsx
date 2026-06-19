@@ -3,69 +3,68 @@
 'use client';
 
 import {
-  XDSChatMessageList,
-  XDSChatMessage,
-  XDSChatMessageBubble,
-  XDSChatMessageMetadata,
+  ChatMessageList,
+  ChatMessage,
+  ChatMessageBubble,
+  ChatMessageMetadata,
 } from '@xds/core/Chat';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSTimestamp} from '@xds/core/Timestamp';
-import {XDSText} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSHStack} from '@xds/core/Layout';
+import {Avatar} from '@xds/core/Avatar';
+import {Timestamp} from '@xds/core/Timestamp';
+import {Text} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
+import {HStack} from '@xds/core/Layout';
 
 export default function ChatMessageBubbleMetadata() {
   return (
-    <XDSChatMessageList style={{maxWidth: 500}}>
-      <XDSChatMessage
+    <ChatMessageList style={{maxWidth: 500}}>
+      <ChatMessage
         sender="assistant"
-        avatar={<XDSAvatar name="Agent" size="small" />}>
-        <XDSChatMessageBubble
+        avatar={<Avatar name="Agent" size="small" />}>
+        <ChatMessageBubble
           name={
-            <XDSText type="supporting" weight="semibold" color="secondary">
+            <Text type="supporting" weight="semibold" color="secondary">
               Agent
-            </XDSText>
+            </Text>
           }
           metadata={
-            <XDSChatMessageMetadata
+            <ChatMessageMetadata
               timestamp={
-                <XDSTimestamp value="2026-04-10T09:15:00" format="time" />
+                <Timestamp value="2026-04-10T09:15:00" format="time" />
               }
               footer={
-                <XDSHStack gap={1}>
-                  <XDSButton
+                <HStack gap={1}>
+                  <Button
                     label="Copy"
                     variant="ghost"
                     size="sm"
-                    icon={<XDSIcon icon="copy" size="sm" />}
+                    icon={<Icon icon="copy" size="sm" />}
                     isIconOnly
                     onClick={() => {}}
                   />
-                  <XDSText type="supporting" color="secondary">
+                  <Text type="supporting" color="secondary">
                     Claude Opus 4.6
-                  </XDSText>
-                </XDSHStack>
+                  </Text>
+                </HStack>
               }
             />
           }>
           Your deployment finished successfully. All 14 checks passed.
-        </XDSChatMessageBubble>
-      </XDSChatMessage>
-
-      <XDSChatMessage sender="user">
-        <XDSChatMessageBubble
+        </ChatMessageBubble>
+      </ChatMessage>
+      <ChatMessage sender="user">
+        <ChatMessageBubble
           metadata={
-            <XDSChatMessageMetadata
+            <ChatMessageMetadata
               timestamp={
-                <XDSTimestamp value="2026-04-10T09:16:00" format="time" />
+                <Timestamp value="2026-04-10T09:16:00" format="time" />
               }
               status="read"
             />
           }>
           Great, can you send me the production URL?
-        </XDSChatMessageBubble>
-      </XDSChatMessage>
-    </XDSChatMessageList>
+        </ChatMessageBubble>
+      </ChatMessage>
+    </ChatMessageList>
   );
 }

@@ -23,36 +23,36 @@ import {
   Wallet,
   User,
 } from 'lucide-react';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {useXDSAppShellMobile} from '@xds/core/AppShell';
-import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
-import {XDSCard} from '@xds/core/Card';
-import {XDSButton} from '@xds/core/Button';
-import {XDSLink} from '@xds/core/Link';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSBanner} from '@xds/core/Banner';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
-import {XDSItem} from '@xds/core/Item';
-import {XDSTable, proportional, pixel} from '@xds/core/Table';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
-import {XDSSelectableCard} from '@xds/core/SelectableCard';
-import {XDSMoreMenu} from '@xds/core/MoreMenu';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSSection} from '@xds/core/Section';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSNumberInput} from '@xds/core/NumberInput';
-import {XDSOverflowList} from '@xds/core/OverflowList';
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
+import {Text, Heading} from '@xds/core/Text';
+import {VStack, HStack} from '@xds/core/Layout';
+import {useAppShellMobile} from '@xds/core/AppShell';
+import {Grid, GridSpan} from '@xds/core/Grid';
+import {Card} from '@xds/core/Card';
+import {Button} from '@xds/core/Button';
+import {Link} from '@xds/core/Link';
+import {Badge} from '@xds/core/Badge';
+import {Banner} from '@xds/core/Banner';
+import {Divider} from '@xds/core/Divider';
+import {CheckboxInput} from '@xds/core/CheckboxInput';
+import {Item} from '@xds/core/Item';
+import {Table, proportional, pixel} from '@xds/core/Table';
+import {TextInput} from '@xds/core/TextInput';
+import {Selector} from '@xds/core/Selector';
+import {RadioList, RadioListItem} from '@xds/core/RadioList';
+import {SelectableCard} from '@xds/core/SelectableCard';
+import {MoreMenu} from '@xds/core/MoreMenu';
+import {Center} from '@xds/core/Center';
+import {Section} from '@xds/core/Section';
+import {AspectRatio} from '@xds/core/AspectRatio';
+import {NumberInput} from '@xds/core/NumberInput';
+import {OverflowList} from '@xds/core/OverflowList';
+import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
 import {
-  XDSChatComposer,
-  XDSChatMessage,
-  XDSChatMessageBubble,
-  XDSChatMessageList,
-  XDSChatSystemMessage,
+  ChatComposer,
+  ChatMessage,
+  ChatMessageBubble,
+  ChatMessageList,
+  ChatSystemMessage,
 } from '@xds/core/Chat';
 
 // Styles passed to XDS components via their `xstyle` prop. These are
@@ -89,6 +89,12 @@ const styles = stylex.create({
     paddingInline: 'var(--spacing-6)',
     width: '100%',
     overflowX: 'auto' as const,
+  },
+  // Inset the table by --spacing-6 (the card is padding={0}) so its edge lines
+  // up with the header/filter row in every theme's spacing scale.
+  inventoryTableWrap: {
+    paddingInline: 'var(--spacing-6)',
+    paddingBlockEnd: 'var(--spacing-2)',
   },
   searchInput: {
     flex: 1,
@@ -138,6 +144,12 @@ const styles = stylex.create({
     textAlign: 'center' as const,
     maxWidth: 560,
   },
+  // Hero headline painted with the theme's accent-text ink. Text has no
+  // 'accent' color value, so we set the dedicated --color-text-accent token
+  // directly (distinct from --color-accent / the 'active' color).
+  heroHeadline: {
+    color: 'var(--color-text-accent)',
+  },
   centerText: {
     textAlign: 'center',
   },
@@ -148,7 +160,10 @@ const styles = stylex.create({
     flex: 1,
   },
   quantityInput: {
-    width: 40,
+    // minWidth (not a hard width) so the field grows to fit the digit + the
+    // theme's input padding. A fixed 40px was too tight on themes with larger
+    // padding / bigger type scale (e.g. Matcha, Y2K), clipping the value.
+    minWidth: 64,
     flexShrink: 0,
   },
   cartButton: {
@@ -168,16 +183,16 @@ const inlineStyles: Record<string, CSSProperties> = {
     paddingBottom: 'var(--spacing-4)',
   },
   thumbnail: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     borderRadius: 'var(--radius-element)',
     objectFit: 'cover',
     display: 'block',
     flexShrink: 0,
   },
   thumbnailFallback: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     borderRadius: 'var(--radius-element)',
     backgroundColor: 'var(--color-background-muted)',
     color: 'var(--color-text-secondary)',
@@ -187,21 +202,6 @@ const inlineStyles: Record<string, CSSProperties> = {
     fontSize: 'var(--font-size-sm)',
     fontWeight: 600,
     flexShrink: 0,
-  },
-  sparkline: {
-    display: 'flex',
-    alignItems: 'flex-end',
-    justifyContent: 'space-around',
-    height: 120,
-    width: '100%',
-    gap: 8,
-  },
-  sparkLabels: {
-    display: 'flex',
-    justifyContent: 'space-around',
-    width: '100%',
-    color: 'var(--color-text-secondary)',
-    fontSize: 'var(--font-size-xs)',
   },
   kpiValue: {
     fontSize: 24,
@@ -248,64 +248,100 @@ const inlineStyles: Record<string, CSSProperties> = {
   },
 };
 
-// Sparkline bar — height is data-driven, so it's a function returning an
-// inline style object (same reasoning as inlineStyles above).
-const sparkBarStyle = (height: string): CSSProperties => ({
-  flex: 1,
-  minWidth: 0,
-  borderRadius: 'var(--radius-element)',
-  backgroundColor: 'var(--color-background-green)',
-  height,
-});
-
 const PRODUCT_IMAGE_KEYS = ['watch', 'headphones', 'backpack'];
 
-const PRODUCTS = [
+/** Categorical badge variants usable for showcase product/inventory tags. */
+export type ShowcaseBadgeVariant =
+  | 'blue'
+  | 'cyan'
+  | 'green'
+  | 'orange'
+  | 'pink'
+  | 'purple'
+  | 'red'
+  | 'teal'
+  | 'yellow';
+
+export interface ProductSpec {
+  name: string;
+  description: string;
+  badge: string;
+  badgeVariant: ShowcaseBadgeVariant;
+}
+
+const DEFAULT_PRODUCTS: ProductSpec[] = [
   {
     name: 'Minimalist Watch',
     description: 'Clean design meets everyday durability.',
     badge: 'New',
-    badgeVariant: 'blue' as const,
+    badgeVariant: 'blue',
   },
   {
     name: 'Wireless Headphones',
     description: 'Immersive sound, all-day comfort.',
     badge: 'Popular',
-    badgeVariant: 'green' as const,
+    badgeVariant: 'green',
   },
   {
     name: 'Canvas Backpack',
     description: 'Water-resistant canvas with a quiet, modern profile.',
     badge: 'Limited',
-    badgeVariant: 'yellow' as const,
+    badgeVariant: 'yellow',
   },
 ];
 
-const PREVIEW_IMAGES: Record<string, string> = {
-  watch: '/neutral/preview-watch.png',
-  headphones: '/neutral/preview-headphones.png',
-  backpack: '/neutral/preview-backpack.png',
-  wallet: '/neutral/preview-wallet.png',
-  mug: '/neutral/preview-mug.png',
-  throw_: '/neutral/preview-throw.png',
+// Neutral product photos, served from the shared xds_oss asset CDN so the
+// scaffolded template renders real imagery without needing local public assets.
+const NEUTRAL_CDN = 'https://lookaside.facebook.com/assets/xds_oss';
+const DEFAULT_IMAGES: Record<string, string> = {
+  watch: `${NEUTRAL_CDN}/Neutral-Watch.png`,
+  headphones: `${NEUTRAL_CDN}/Neutral-Headphones.png`,
+  backpack: `${NEUTRAL_CDN}/Neutral-Backpack.png`,
+  wallet: `${NEUTRAL_CDN}/Neutral-Wallet.png`,
+  tumbler: `${NEUTRAL_CDN}/Neutral-Tumbler.png`,
+  throw_: `${NEUTRAL_CDN}/Neutral-Blanket.png`,
 };
 
+export interface ThemeShowcaseProps {
+  /** Product card images keyed by slot (watch/headphones/backpack/…). */
+  images?: Record<string, string>;
+  /** The three hero product cards. Defaults to the neutral store products. */
+  products?: ProductSpec[];
+  /** Inventory table rows. Defaults to the neutral store inventory. */
+  inventory?: InventoryRow[];
+}
+
+// Default export is the route page (sandbox renders this as a Next.js page, so
+// it must take no props / satisfy PageProps). It renders the store with the
+// neutral defaults. Consumers that need per-theme content import the named
+// `ThemeShowcaseStore` below and pass images/products/inventory.
 export default function ThemeShowcase() {
-  const images: Record<string, string> = PREVIEW_IMAGES;
-  const {isMobile} = useXDSAppShellMobile();
+  return <ThemeShowcaseStore />;
+}
+
+export function ThemeShowcaseStore({
+  images = DEFAULT_IMAGES,
+  products = DEFAULT_PRODUCTS,
+  inventory = DEFAULT_INVENTORY,
+}: ThemeShowcaseProps = {}) {
+  const {isMobile} = useAppShellMobile();
   return (
     <div
       style={{
         minHeight: '100%',
         backgroundColor: 'var(--color-background-body)',
       }}>
-      <StorePreview images={images} isMobile={isMobile} />
+      <StorePreview images={images} products={products} isMobile={isMobile} />
       <div
         style={{
           padding: 'var(--spacing-6)',
           backgroundColor: 'var(--color-background-surface)',
         }}>
-        <CardShowcase images={images} isMobile={isMobile} />
+        <CardShowcase
+          images={images}
+          inventory={inventory}
+          isMobile={isMobile}
+        />
       </div>
     </div>
   );
@@ -313,62 +349,66 @@ export default function ThemeShowcase() {
 
 function CardShowcase({
   images,
+  inventory,
   isMobile,
 }: {
   images: Record<string, string>;
+  inventory: InventoryRow[];
   isMobile: boolean;
 }) {
   const columns = isMobile ? 1 : ({minWidth: 200, repeat: 'fit'} as const);
 
   return (
-    <XDSVStack gap={8}>
-      <XDSGrid columns={columns} gap={4}>
-        <XDSGridSpan columns={1}>
+    <VStack gap={8}>
+      <Grid columns={columns} gap={4}>
+        <GridSpan columns={1}>
           <CheckoutCard isMobile={isMobile} />
-        </XDSGridSpan>
-        <XDSGridSpan columns={isMobile ? 1 : 2}>
+        </GridSpan>
+        <GridSpan columns={isMobile ? 1 : 2}>
           <ChatCard />
-        </XDSGridSpan>
-      </XDSGrid>
-      <XDSGrid columns={columns} gap={4}>
-        <XDSGridSpan columns={isMobile ? 1 : 3}>
-          <InventoryCard images={images} />
-        </XDSGridSpan>
-        <XDSGridSpan columns={1}>
+        </GridSpan>
+      </Grid>
+      <Grid columns={columns} gap={4}>
+        <GridSpan columns={isMobile ? 1 : 3}>
+          <InventoryCard images={images} inventory={inventory} />
+        </GridSpan>
+        <GridSpan columns={1}>
           <LatestActivityCard isMobile={isMobile} />
-        </XDSGridSpan>
-      </XDSGrid>
-    </XDSVStack>
+        </GridSpan>
+      </Grid>
+    </VStack>
   );
 }
 
 function StorePreview({
   images,
+  products,
   isMobile,
 }: {
   images: Record<string, string>;
+  products: ProductSpec[];
   isMobile: boolean;
 }) {
   return (
     <div data-theme-preview="true">
-      <XDSVStack gap={0}>
-        <XDSTopNav
+      <VStack gap={0}>
+        <TopNav
           label="Theme preview navigation"
-          heading={<XDSTopNavHeading heading="Studio" />}
+          heading={<TopNavHeading heading="Studio" />}
           centerContent={
             isMobile ? undefined : (
               <>
-                <XDSTopNavItem label="Shop" href="#" isSelected />
-                <XDSTopNavItem label="New In" href="#" />
-                <XDSTopNavItem label="Stories" href="#" />
-                <XDSTopNavItem label="Help" href="#" />
+                <TopNavItem label="Shop" href="#" isSelected />
+                <TopNavItem label="New In" href="#" />
+                <TopNavItem label="Stories" href="#" />
+                <TopNavItem label="Help" href="#" />
               </>
             )
           }
           endContent={
-            <XDSHStack gap={2} vAlign="center">
-              <XDSHStack gap={0.5}>
-                <XDSButton
+            <HStack gap={2} vAlign="center">
+              <HStack gap={0.5}>
+                <Button
                   label="Search"
                   tooltip="Search"
                   variant="ghost"
@@ -376,7 +416,7 @@ function StorePreview({
                   icon={<Search size={20} />}
                   href="#"
                 />
-                <XDSButton
+                <Button
                   label="Account"
                   tooltip="Account"
                   variant="ghost"
@@ -384,7 +424,7 @@ function StorePreview({
                   icon={<User size={20} />}
                   href="#"
                 />
-                <XDSButton
+                <Button
                   label="Cart"
                   tooltip="Cart"
                   variant="ghost"
@@ -392,58 +432,58 @@ function StorePreview({
                   icon={<ShoppingBag size={20} />}
                   href="#"
                 />
-              </XDSHStack>
-              <XDSButton label="Sign in" variant="primary" href="#" />
-            </XDSHStack>
+              </HStack>
+              <Button label="Sign in" variant="primary" href="#" />
+            </HStack>
           }
         />
 
-        <XDSSection padding={6} variant="transparent">
-          <XDSVStack gap={10} xstyle={[styles.content, styles.contentFluid]}>
-            <XDSCenter>
-              <XDSVStack gap={4} hAlign="center" xstyle={styles.heroText}>
-                <XDSText type="display-3">
+        <Section padding={6} variant="transparent">
+          <VStack gap={10} xstyle={[styles.content, styles.contentFluid]}>
+            <Center>
+              <VStack gap={4} hAlign="center" xstyle={styles.heroText}>
+                <Text type="display-2" xstyle={styles.heroHeadline}>
                   Little joys,
                   <br />
                   everywhere you go
-                </XDSText>
-                <XDSText type="body" color="secondary">
+                </Text>
+                <Text type="body" color="secondary">
                   We believe the smallest details are the ones that matter most.
                   Turn an ordinary day into something worth remembering.
-                </XDSText>
-              </XDSVStack>
-            </XDSCenter>
+                </Text>
+              </VStack>
+            </Center>
 
-            <XDSGrid columns={isMobile ? 1 : {minWidth: 200, max: 3}} gap={4}>
-              {PRODUCTS.map((p, i) => (
-                <XDSCard key={p.name} padding={0} height="100%">
-                  <XDSVStack gap={0} xstyle={styles.cardStack}>
-                    <XDSAspectRatio ratio={1}>
+            <Grid columns={isMobile ? 1 : {minWidth: 200, max: 3}} gap={4}>
+              {products.map((p, i) => (
+                <Card key={p.name} padding={0} height="100%">
+                  <VStack gap={0} xstyle={styles.cardStack}>
+                    <AspectRatio ratio={1}>
                       <img
                         src={images[PRODUCT_IMAGE_KEYS[i]]}
                         alt={p.name}
                         style={inlineStyles.productImage}
                       />
-                    </XDSAspectRatio>
+                    </AspectRatio>
                     <div style={inlineStyles.cardBody}>
-                      <XDSVStack
+                      <VStack
                         gap={2}
                         hAlign="center"
                         xstyle={styles.cardStack}>
-                        <XDSHStack>
-                          <XDSBadge label={p.badge} variant={p.badgeVariant} />
-                        </XDSHStack>
-                        <XDSHeading level={2} xstyle={styles.centerText}>
+                        <HStack>
+                          <Badge label={p.badge} variant={p.badgeVariant} />
+                        </HStack>
+                        <Heading level={2} xstyle={styles.centerText}>
                           {p.name}
-                        </XDSHeading>
-                        <XDSText
+                        </Heading>
+                        <Text
                           type="supporting"
                           color="secondary"
                           xstyle={[styles.cardDescription, styles.centerText]}>
                           {p.description}
-                        </XDSText>
-                        <XDSHStack gap={2} vAlign="center" hAlign="center">
-                          <XDSNumberInput
+                        </Text>
+                        <HStack gap={2} vAlign="center" hAlign="center">
+                          <NumberInput
                             label="Quantity"
                             isLabelHidden
                             value={1}
@@ -453,34 +493,35 @@ function StorePreview({
                             size="sm"
                             xstyle={styles.quantityInput}
                           />
-                          <XDSButton
+                          <Button
                             label="Add to cart"
                             variant="secondary"
+                            size="sm"
                             href="#"
                             xstyle={styles.cartButton}
                           />
-                        </XDSHStack>
-                      </XDSVStack>
+                        </HStack>
+                      </VStack>
                     </div>
-                  </XDSVStack>
-                </XDSCard>
+                  </VStack>
+                </Card>
               ))}
-            </XDSGrid>
-          </XDSVStack>
-        </XDSSection>
-      </XDSVStack>
+            </Grid>
+          </VStack>
+        </Section>
+      </VStack>
     </div>
   );
 }
 
 function CheckoutCard({isMobile}: {isMobile: boolean}) {
   return (
-    <XDSCard padding={5} xstyle={styles.card}>
-      <XDSVStack gap={4} xstyle={styles.checkoutStack}>
-        <XDSHeading level={2}>Checkout</XDSHeading>
+    <Card padding={5} xstyle={styles.card}>
+      <VStack gap={4} xstyle={styles.checkoutStack}>
+        <Heading level={2}>Checkout</Heading>
 
-        <XDSVStack gap={3} xstyle={styles.checkoutStack}>
-          <XDSTextInput
+        <VStack gap={3} xstyle={styles.checkoutStack}>
+          <TextInput
             label="Email"
             placeholder="you@studio.com"
             value=""
@@ -488,97 +529,97 @@ function CheckoutCard({isMobile}: {isMobile: boolean}) {
             size="lg"
           />
 
-          <XDSRadioList
+          <RadioList
             label="Shipping method"
             description="Delivery time may vary based on location and availability."
             value="economy"
             onChange={() => {}}>
-            <XDSRadioListItem
+            <RadioListItem
               value="economy"
               label="Economy Shipping"
               description="Delivered in 5–7 business days"
               endContent={
-                <XDSText type="body" weight="bold">
+                <Text type="body" weight="bold">
                   $12.00
-                </XDSText>
+                </Text>
               }
             />
-            <XDSRadioListItem
+            <RadioListItem
               value="standard"
               label="Standard Shipping"
               description="Delivered in 3–5 business days"
               endContent={
-                <XDSText type="body" weight="bold">
+                <Text type="body" weight="bold">
                   $16.00
-                </XDSText>
+                </Text>
               }
             />
-            <XDSRadioListItem
+            <RadioListItem
               value="express"
               label="Express Shipping"
               description="Delivered in 1–2 business days"
               endContent={
-                <XDSText type="body" weight="bold">
+                <Text type="body" weight="bold">
                   $24.00
-                </XDSText>
+                </Text>
               }
             />
-          </XDSRadioList>
+          </RadioList>
 
-          <XDSVStack gap={2} xstyle={styles.checkoutStack}>
-            <XDSText type="supporting" weight="bold">
+          <VStack gap={2} xstyle={styles.checkoutStack}>
+            <Text type="supporting" weight="bold">
               Payment method
-            </XDSText>
-            <XDSGrid columns={isMobile ? 1 : {minWidth: 70, max: 3}} gap={2}>
-              <XDSSelectableCard
+            </Text>
+            <Grid columns={isMobile ? 1 : {minWidth: 70, max: 3}} gap={2}>
+              <SelectableCard
                 label="Pay with card"
                 isSelected={true}
                 onChange={() => {}}
                 padding={3}>
-                <XDSVStack
+                <VStack
                   gap={1}
                   hAlign="center"
                   xstyle={styles.paymentCardContent}>
                   <CreditCard size={20} />
-                  <XDSText type="supporting" weight="bold">
+                  <Text type="supporting" weight="bold">
                     Card
-                  </XDSText>
-                </XDSVStack>
-              </XDSSelectableCard>
-              <XDSSelectableCard
+                  </Text>
+                </VStack>
+              </SelectableCard>
+              <SelectableCard
                 label="Pay with Apple Pay"
                 isSelected={false}
                 onChange={() => {}}
                 padding={3}>
-                <XDSVStack
+                <VStack
                   gap={1}
                   hAlign="center"
                   xstyle={styles.paymentCardContent}>
                   <Smartphone size={20} />
-                  <XDSText type="supporting" weight="bold">
+                  <Text type="supporting" weight="bold">
                     Apple Pay
-                  </XDSText>
-                </XDSVStack>
-              </XDSSelectableCard>
-              <XDSSelectableCard
+                  </Text>
+                </VStack>
+              </SelectableCard>
+              <SelectableCard
                 label="Pay with Google Pay"
                 isSelected={false}
                 onChange={() => {}}
                 padding={3}>
-                <XDSVStack
+                <VStack
                   gap={1}
                   hAlign="center"
                   xstyle={styles.paymentCardContent}>
                   <Wallet size={20} />
-                  <XDSText type="supporting" weight="bold">
+                  <Text type="supporting" weight="bold">
                     Google Pay
-                  </XDSText>
-                </XDSVStack>
-              </XDSSelectableCard>
-            </XDSGrid>
-          </XDSVStack>
+                  </Text>
+                </VStack>
+              </SelectableCard>
+            </Grid>
+          </VStack>
 
-          <XDSTextInput
+          <TextInput
             label="Card number"
             placeholder="1234 1234 1234 1234"
             value=""
@@ -587,24 +628,24 @@ function CheckoutCard({isMobile}: {isMobile: boolean}) {
             size="lg"
           />
 
-          <XDSGrid columns={isMobile ? 1 : {minWidth: 90, max: 2}} gap={2}>
-            <XDSTextInput
+          <Grid columns={isMobile ? 1 : {minWidth: 90, max: 2}} gap={2}>
+            <TextInput
               label="Expiry"
               placeholder="MM / YY"
               value=""
               onChange={() => {}}
               size="lg"
             />
-            <XDSTextInput
+            <TextInput
               label="CVC"
               placeholder="123"
               value=""
               onChange={() => {}}
               size="lg"
             />
-          </XDSGrid>
+          </Grid>
 
-          <XDSSelector
+          <Selector
             label="Country"
             value="us"
             onChange={() => {}}
@@ -618,23 +659,23 @@ function CheckoutCard({isMobile}: {isMobile: boolean}) {
               {value: 'au', label: 'Australia'},
             ]}
           />
-        </XDSVStack>
+        </VStack>
 
-        <XDSCheckboxInput
+        <CheckboxInput
           label="Securely save my information for 1-click checkout"
           description="Pay faster on Studio and everywhere Link is accepted."
           value={true}
           onChange={() => {}}
         />
 
-        <XDSButton
+        <Button
           variant="primary"
           size="lg"
           label="Pay now"
           icon={<Lock size={16} />}
         />
-      </XDSVStack>
-    </XDSCard>
+      </VStack>
+    </Card>
   );
 }
 
@@ -646,16 +687,16 @@ const SUGGESTED_QUESTIONS = [
 
 function ChatCard() {
   return (
-    <XDSCard padding={0} xstyle={styles.chatCard}>
-      <XDSHStack
+    <Card padding={0} xstyle={styles.chatCard}>
+      <HStack
         hAlign="between"
         vAlign="center"
         gap={3}
         xstyle={styles.chatHeader}>
-        <XDSHeading level={2}>Studio AI</XDSHeading>
+        <Heading level={2}>Studio AI</Heading>
 
-        <XDSHStack gap={1} vAlign="center">
-          <XDSButton
+        <HStack gap={1} vAlign="center">
+          <Button
             variant="ghost"
             size="sm"
             isIconOnly
@@ -663,7 +704,7 @@ function ChatCard() {
             tooltip="Export conversation"
             icon={<Download size={16} />}
           />
-          <XDSButton
+          <Button
             variant="ghost"
             size="sm"
             isIconOnly
@@ -671,105 +712,105 @@ function ChatCard() {
             tooltip="Close chat"
             icon={<X size={16} />}
           />
-        </XDSHStack>
-      </XDSHStack>
+        </HStack>
+      </HStack>
 
-      <XDSDivider variant="subtle" />
+      <Divider variant="subtle" />
 
       <div style={inlineStyles.chatBody}>
-        <XDSChatMessageList>
-          <XDSChatSystemMessage>Today</XDSChatSystemMessage>
+        <ChatMessageList>
+          <ChatSystemMessage>Today</ChatSystemMessage>
 
-          <XDSChatMessage sender="user">
-            <XDSChatMessageBubble variant="filled">
+          <ChatMessage sender="user">
+            <ChatMessageBubble variant="filled">
               Where’s my order?
-            </XDSChatMessageBubble>
-          </XDSChatMessage>
+            </ChatMessageBubble>
+          </ChatMessage>
 
-          <XDSChatMessage sender="assistant">
-            <XDSVStack gap={3}>
-              <XDSText type="body">
+          <ChatMessage sender="assistant">
+            <VStack gap={3}>
+              <Text type="body">
                 Your order #1043 — the Minimalist Watch and Linen Throw —
                 shipped this morning from the Aisle 3 warehouse and is currently
                 in transit with UPS. It’s on track to arrive at your address by
                 end of day tomorrow.
-              </XDSText>
-              <XDSText type="body">
+              </Text>
+              <Text type="body">
                 Let me know if you’d like to reschedule the delivery, redirect
                 it to a pickup point, or start a return once it arrives.
-              </XDSText>
-            </XDSVStack>
-          </XDSChatMessage>
+              </Text>
+            </VStack>
+          </ChatMessage>
 
-          <XDSChatMessage sender="user">
-            <XDSChatMessageBubble variant="filled">
+          <ChatMessage sender="user">
+            <ChatMessageBubble variant="filled">
               Can you show me the full details?
-            </XDSChatMessageBubble>
-          </XDSChatMessage>
+            </ChatMessageBubble>
+          </ChatMessage>
 
-          <XDSChatMessage sender="assistant">
-            <XDSVStack gap={3}>
-              <XDSText type="body">
+          <ChatMessage sender="assistant">
+            <VStack gap={3}>
+              <Text type="body">
                 Here’s everything I have on order #1043:
-              </XDSText>
-              <XDSCard padding={3}>
-                <XDSVStack gap={1}>
-                  <XDSItem
+              </Text>
+              <Card padding={3}>
+                <VStack gap={1}>
+                  <Item
                     label="Items"
                     description="Minimalist Watch · Linen Throw"
                     endContent={
-                      <XDSText type="body" weight="bold">
+                      <Text type="body" weight="bold">
                         $248
-                      </XDSText>
+                      </Text>
                     }
                   />
-                  <XDSItem
+                  <Item
                     label="Shipping"
                     description="UPS Ground"
                     endContent={
-                      <XDSText type="body" weight="bold">
+                      <Text type="body" weight="bold">
                         $12
-                      </XDSText>
+                      </Text>
                     }
                   />
-                  <XDSItem
+                  <Item
                     label="Estimated arrival"
                     description="Tomorrow by 8pm"
-                    endContent={<XDSBadge variant="green" label="On time" />}
+                    endContent={<Badge variant="green" label="On time" />}
                   />
-                  <XDSItem
+                  <Item
                     label="Tracking"
                     description="UPS 1Z 999 AA1 0123 4567 84"
-                    endContent={<XDSLink href="#">Track →</XDSLink>}
+                    endContent={<Link href="#">Track →</Link>}
                   />
-                </XDSVStack>
-              </XDSCard>
-            </XDSVStack>
-          </XDSChatMessage>
-        </XDSChatMessageList>
+                </VStack>
+              </Card>
+            </VStack>
+          </ChatMessage>
+        </ChatMessageList>
       </div>
 
       <div style={inlineStyles.chatSuggestions}>
-        <XDSHStack gap={1} hAlign="center" wrap="wrap">
+        <HStack gap={1} hAlign="center" wrap="wrap">
           {SUGGESTED_QUESTIONS.map(question => (
-            <XDSButton
+            <Button
               key={question}
               variant="secondary"
               size="sm"
               label={question}
             />
           ))}
-        </XDSHStack>
+        </HStack>
       </div>
 
       <div style={inlineStyles.chatComposer}>
-        <XDSChatComposer
+        <ChatComposer
           value=""
           onChange={() => {}}
           onSubmit={() => {}}
           placeholder="Ask Studio AI…"
           footerActions={
-            <XDSButton
+            <Button
               variant="ghost"
               size="md"
               isIconOnly
@@ -779,7 +820,7 @@ function ChatCard() {
             />
           }
           sendActions={
-            <XDSButton
+            <Button
               variant="ghost"
               size="md"
               isIconOnly
@@ -790,12 +831,9 @@ function ChatCard() {
           }
         />
       </div>
-    </XDSCard>
+    </Card>
   );
 }
-
-const SPARKLINE_DATA = [55, 70, 92, 78, 60];
-const SPARKLINE_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May'];
 
 interface ActivityRow {
   id: string;
@@ -856,48 +894,35 @@ function formatAmount(amount: number): string {
 
 function LatestActivityCard({isMobile}: {isMobile: boolean}) {
   return (
-    <XDSCard padding={5} xstyle={styles.activityCard}>
-      <XDSVStack gap={4} xstyle={styles.activityCardStack}>
-        <XDSHeading level={2}>Revenue</XDSHeading>
+    <Card padding={5} xstyle={styles.activityCard}>
+      <VStack gap={4} xstyle={styles.activityCardStack}>
+        <Heading level={2}>Revenue</Heading>
 
-        <XDSVStack gap={2}>
-          <div style={inlineStyles.sparkline} aria-hidden="true">
-            {SPARKLINE_DATA.map((value, i) => (
-              <div key={i} style={sparkBarStyle(value + '%')} />
-            ))}
-          </div>
-          <div style={inlineStyles.sparkLabels} aria-hidden="true">
-            {SPARKLINE_LABELS.map(label => (
-              <span key={label}>{label}</span>
-            ))}
-          </div>
-        </XDSVStack>
-
-        <XDSGrid columns={isMobile ? 1 : 2} gap={3}>
-          <XDSVStack gap={0}>
+        <Grid columns={isMobile ? 1 : 2} gap={3}>
+          <VStack gap={0}>
             <span style={inlineStyles.kpiValue}>18K</span>
-            <XDSText type="supporting" color="secondary">
+            <Text type="supporting" color="secondary">
               Monthly revenue
-            </XDSText>
-          </XDSVStack>
-          <XDSVStack gap={0}>
+            </Text>
+          </VStack>
+          <VStack gap={0}>
             <span style={inlineStyles.kpiValue}>+12%</span>
-            <XDSText type="supporting" color="secondary">
+            <Text type="supporting" color="secondary">
               Order growth
-            </XDSText>
-          </XDSVStack>
-        </XDSGrid>
+            </Text>
+          </VStack>
+        </Grid>
 
-        <XDSDivider variant="subtle" />
+        <Divider variant="subtle" />
 
-        <XDSHStack hAlign="between" vAlign="center">
-          <XDSHeading level={3}>Activity</XDSHeading>
-          <XDSLink href="#">See all</XDSLink>
-        </XDSHStack>
+        <HStack hAlign="between" vAlign="center">
+          <Heading level={3}>Activity</Heading>
+          <Link href="#">See all</Link>
+        </HStack>
 
-        <XDSVStack gap={1} xstyle={styles.activityListFade}>
+        <VStack gap={1} xstyle={styles.activityListFade}>
           {ACTIVITY.map(item => (
-            <XDSItem
+            <Item
               key={item.id}
               startContent={
                 <div style={inlineStyles.activityIcon} aria-hidden="true">
@@ -907,25 +932,25 @@ function LatestActivityCard({isMobile}: {isMobile: boolean}) {
               label={item.label}
               description={item.detail}
               endContent={
-                <XDSText
+                <Text
                   type="body"
                   weight="bold"
                   color={item.amount < 0 ? 'secondary' : 'primary'}>
                   {formatAmount(item.amount)}
-                </XDSText>
+                </Text>
               }
               href="#"
             />
           ))}
-        </XDSVStack>
-      </XDSVStack>
-    </XDSCard>
+        </VStack>
+      </VStack>
+    </Card>
   );
 }
 
-type TagSpec = {label: string; variant: 'blue' | 'green' | 'orange' | 'yellow'};
+type TagSpec = {label: string; variant: ShowcaseBadgeVariant};
 
-interface InventoryRow extends Record<string, unknown> {
+export interface InventoryRow extends Record<string, unknown> {
   id: string;
   name: string;
   meta: string;
@@ -937,7 +962,7 @@ interface InventoryRow extends Record<string, unknown> {
   selected: boolean;
 }
 
-const INVENTORY: InventoryRow[] = [
+const DEFAULT_INVENTORY: InventoryRow[] = [
   {
     id: 'a',
     name: 'Minimalist Watch',
@@ -984,12 +1009,12 @@ const INVENTORY: InventoryRow[] = [
   },
   {
     id: 'e',
-    name: 'Travel Mug',
+    name: 'Travel Tumbler',
     meta: 'Vacuum insulated, 16oz',
     available: 87,
     location: 'Aisle 5',
     tags: [{label: 'Drinkware', variant: 'green'}],
-    imageKey: 'mug',
+    imageKey: 'tumbler',
     thumbnailFallback: 'T',
     selected: false,
   },
@@ -1007,13 +1032,10 @@ const INVENTORY: InventoryRow[] = [
 ];
 
 const LOW_STOCK_THRESHOLD = 25;
-const LOW_STOCK_COUNT = INVENTORY.filter(
-  row => row.available < LOW_STOCK_THRESHOLD,
-).length;
 
 function SelectCell({row}: {row: InventoryRow}) {
   return (
-    <XDSCheckboxInput
+    <CheckboxInput
       label={'Select ' + row.name}
       isLabelHidden
       value={row.selected}
@@ -1031,7 +1053,7 @@ function ItemCell({
 }) {
   const thumbnailSrc = row.imageKey ? images[row.imageKey] : undefined;
   return (
-    <XDSHStack gap={3} vAlign="center">
+    <HStack gap={3} vAlign="center">
       {thumbnailSrc ? (
         <img src={thumbnailSrc} alt="" style={inlineStyles.thumbnail} />
       ) : (
@@ -1039,32 +1061,33 @@ function ItemCell({
           {row.thumbnailFallback}
         </div>
       )}
-      <XDSVStack gap={0} style={{minWidth: 0}}>
-        <XDSText type="body" weight="bold">
+      <VStack gap={0} style={{minWidth: 0}}>
+        <Text type="body" weight="bold">
           {row.name}
-        </XDSText>
-        <XDSText type="supporting" color="secondary">
+        </Text>
+        <Text type="supporting" color="secondary">
           {row.meta}
-        </XDSText>
-      </XDSVStack>
-    </XDSHStack>
+        </Text>
+      </VStack>
+    </HStack>
   );
 }
 
 function TagsCell({row}: {row: InventoryRow}) {
   return (
-    <XDSHStack gap={1} wrap="wrap" hAlign="end">
+    <HStack gap={1} wrap="wrap" hAlign="end">
       {row.tags.map(tag => (
-        <XDSBadge key={tag.label} label={tag.label} variant={tag.variant} />
+        <Badge key={tag.label} label={tag.label} variant={tag.variant} />
       ))}
-    </XDSHStack>
+    </HStack>
   );
 }
 
 function ActionsCell() {
   return (
-    <XDSMoreMenu
+    <MoreMenu
       label="Row actions"
+      size="sm"
       items={[
         {label: 'Edit'},
         {label: 'Duplicate'},
@@ -1076,31 +1099,40 @@ function ActionsCell() {
   );
 }
 
-function InventoryCard({images}: {images: Record<string, string>}) {
+function InventoryCard({
+  images,
+  inventory,
+}: {
+  images: Record<string, string>;
+  inventory: InventoryRow[];
+}) {
+  const lowStockCount = inventory.filter(
+    row => row.available < LOW_STOCK_THRESHOLD,
+  ).length;
   return (
-    <XDSCard padding={0} xstyle={styles.inventoryCard}>
-      <XDSHStack
+    <Card padding={0} xstyle={styles.inventoryCard}>
+      <HStack
         hAlign="between"
         vAlign="center"
         xstyle={styles.inventoryHeader}>
-        <XDSHeading level={2}>Inventory</XDSHeading>
-        <XDSButton
+        <Heading level={2}>Inventory</Heading>
+        <Button
           label="Add item"
           variant="primary"
           size="sm"
           icon={<Plus size={16} />}
         />
-      </XDSHStack>
+      </HStack>
 
-      <XDSDivider variant="subtle" />
+      <Divider variant="subtle" />
 
-      <XDSHStack
+      <HStack
         gap={3}
         vAlign="center"
         hAlign="between"
         xstyle={styles.inventoryFilterRow}>
-        <XDSHStack gap={2} vAlign="center" style={{flex: 1, minWidth: 0}}>
-          <XDSTextInput
+        <HStack gap={2} vAlign="center" style={{flex: 1, minWidth: 0}}>
+          <TextInput
             label="Search inventory"
             isLabelHidden
             placeholder="Type and hit enter…"
@@ -1109,17 +1141,17 @@ function InventoryCard({images}: {images: Record<string, string>}) {
             startIcon={<Search size={16} />}
             xstyle={styles.searchInput}
           />
-          <XDSOverflowList
+          <OverflowList
             gap={2}
             overflowRenderer={() => (
-              <XDSButton
+              <Button
                 label="Filters"
                 variant="ghost"
                 size="sm"
                 icon={<Tag size={16} />}
               />
             )}>
-            <XDSSelector
+            <Selector
               label="Categories"
               isLabelHidden
               placeholder="Categories"
@@ -1129,7 +1161,7 @@ function InventoryCard({images}: {images: Record<string, string>}) {
               onChange={() => {}}
               options={['Wearables', 'Audio', 'Bags', 'Drinkware', 'Home']}
             />
-            <XDSSelector
+            <Selector
               label="Locations"
               isLabelHidden
               placeholder="Locations"
@@ -1146,7 +1178,7 @@ function InventoryCard({images}: {images: Record<string, string>}) {
                 'Aisle 6',
               ]}
             />
-            <XDSSelector
+            <Selector
               label="Tags"
               isLabelHidden
               placeholder="Tags"
@@ -1163,10 +1195,10 @@ function InventoryCard({images}: {images: Record<string, string>}) {
                 'Home',
               ]}
             />
-          </XDSOverflowList>
-        </XDSHStack>
-        <XDSHStack gap={1} vAlign="center">
-          <XDSButton
+          </OverflowList>
+        </HStack>
+        <HStack gap={1} vAlign="center">
+          <Button
             variant="ghost"
             size="sm"
             isIconOnly
@@ -1174,7 +1206,7 @@ function InventoryCard({images}: {images: Record<string, string>}) {
             tooltip="List view"
             icon={<List size={18} />}
           />
-          <XDSButton
+          <Button
             variant="ghost"
             size="sm"
             isIconOnly
@@ -1182,63 +1214,75 @@ function InventoryCard({images}: {images: Record<string, string>}) {
             tooltip="Grid view"
             icon={<LayoutGrid size={18} />}
           />
-        </XDSHStack>
-      </XDSHStack>
+        </HStack>
+      </HStack>
 
-      {LOW_STOCK_COUNT > 0 && (
+      {lowStockCount > 0 && (
         <div style={inlineStyles.inventoryBannerWrap}>
-          <XDSBanner
+          <Banner
             status="warning"
-            title={LOW_STOCK_COUNT + ' items are running low'}
+            title={lowStockCount + ' items are running low'}
           />
         </div>
       )}
 
-      <XDSTable<InventoryRow>
-        data={INVENTORY}
-        columns={[
-          {
-            key: 'select',
-            header: '',
-            width: pixel(48),
-            renderCell: row => <SelectCell row={row} />,
-          },
-          {
-            key: 'item',
-            header: 'Item',
-            width: proportional(3),
-            renderCell: row => <ItemCell row={row} images={images} />,
-          },
-          {
-            key: 'available',
-            header: 'Available',
-            width: pixel(100),
-            renderCell: row => <XDSText type="body">{row.available}</XDSText>,
-          },
-          {
-            key: 'location',
-            header: 'Location',
-            width: pixel(100),
-            renderCell: row => <XDSText type="body">{row.location}</XDSText>,
-          },
-          {
-            key: 'tags',
-            header: 'Tags',
-            width: proportional(2),
-            align: 'end',
-            renderCell: row => <TagsCell row={row} />,
-          },
-          {
-            key: 'actions',
-            header: '',
-            width: pixel(48),
-            renderCell: () => <ActionsCell />,
-          },
-        ]}
-        density="spacious"
-        dividers="rows"
-        hasHover
-      />
-    </XDSCard>
+      <div {...stylex.props(styles.inventoryTableWrap)}>
+        <Table<InventoryRow>
+          data={inventory}
+          columns={[
+            {
+              key: 'select',
+              header: '',
+              // Wide enough that the control + the theme's cell padding (up to
+              // --spacing-4 = 16px/side on spacious density) fit inside the cell,
+              // so the control's hover background doesn't overflow toward the
+              // card's clipped (rounded) edge on larger-padding themes.
+              width: pixel(64),
+              renderCell: row => <SelectCell row={row} />,
+            },
+            {
+              key: 'item',
+              header: 'Item',
+              // Lower min-width (default 120) so the table fits its container on
+              // larger-spacing themes instead of overflowing the actions column.
+              width: proportional(3, {minWidth: 80}),
+              renderCell: row => <ItemCell row={row} images={images} />,
+            },
+            {
+              key: 'available',
+              header: 'Available',
+              width: pixel(100),
+              renderCell: row => <Text type="body">{row.available}</Text>,
+            },
+            {
+              key: 'location',
+              header: 'Location',
+              width: pixel(100),
+              renderCell: row => <Text type="body">{row.location}</Text>,
+            },
+            {
+              key: 'tags',
+              header: 'Tags',
+              width: proportional(2, {minWidth: 80}),
+              align: 'end',
+              renderCell: row => <TagsCell row={row} />,
+            },
+            {
+              key: 'actions',
+              header: '',
+              // Match the select column: fit the sm more-menu button + cell
+              // padding so its hover background stays clear of the card's
+              // clipped rounded edge across themes.
+              width: pixel(64),
+              align: 'end',
+              renderCell: () => <ActionsCell />,
+            },
+          ]}
+          density="spacious"
+          dividers="rows"
+          hasHover
+        />
+      </div>
+    </Card>
   );
 }

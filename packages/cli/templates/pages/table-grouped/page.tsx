@@ -3,45 +3,45 @@
 'use client';
 
 import React, {useState, useMemo} from 'react';
-import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
+import {useResizable, ResizeHandle} from '@xds/core/Resizable';
 import type {ResizableProps} from '@xds/core/Resizable';
 import * as stylex from '@stylexjs/stylex';
 import {
-  XDSLayout,
-  XDSLayoutContent,
-  XDSLayoutFooter,
-  XDSLayoutHeader,
-  XDSLayoutPanel,
-  XDSVStack,
-  XDSHStack,
-  XDSStackItem,
+  Layout,
+  LayoutContent,
+  LayoutFooter,
+  LayoutHeader,
+  LayoutPanel,
+  VStack,
+  HStack,
+  StackItem,
 } from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSButton} from '@xds/core/Button';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSPowerSearch} from '@xds/core/PowerSearch';
+import {Text, Heading} from '@xds/core/Text';
+import {TextInput} from '@xds/core/TextInput';
+import {Button} from '@xds/core/Button';
+import {Badge} from '@xds/core/Badge';
+import {Avatar} from '@xds/core/Avatar';
+import {Selector} from '@xds/core/Selector';
+import {PowerSearch} from '@xds/core/PowerSearch';
 import type {PowerSearchConfig, PowerSearchFilter} from '@xds/core/PowerSearch';
-import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
-import {XDSPopover} from '@xds/core/Popover';
-import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSStatusDot} from '@xds/core/StatusDot';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
+import {Dialog, DialogHeader} from '@xds/core/Dialog';
+import {Popover} from '@xds/core/Popover';
+import {RadioList, RadioListItem} from '@xds/core/RadioList';
+import {DropdownMenu} from '@xds/core/DropdownMenu';
+import {Center} from '@xds/core/Center';
+import {Icon} from '@xds/core/Icon';
+import {StatusDot} from '@xds/core/StatusDot';
+import {Divider} from '@xds/core/Divider';
+import {MetadataList, MetadataListItem} from '@xds/core/MetadataList';
 import {
-  XDSTable,
-  XDSTableRow,
-  XDSTableCell,
+  Table,
+  TableRow,
+  TableCell,
   proportional,
   pixel,
   resolveColumnWidths,
 } from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
+import type {TableColumn} from '@xds/core/Table';
 import {
   ChevronRightIcon,
   ChevronDownIcon,
@@ -60,19 +60,9 @@ const pageStyles = stylex.create({
   groupHeaderRow: {
     cursor: 'pointer',
     backgroundColor: 'var(--color-background-muted)',
-    borderBottomWidth: 1,
-    borderBottomStyle: 'solid',
-    borderBottomColor: 'var(--color-border)',
-  },
-  headerRow: {
-    paddingBottom: 'var(--spacing-4)',
   },
   groupHeaderCell: {
     padding: 'var(--spacing-3) var(--spacing-4)',
-  },
-  flexFill: {
-    flexGrow: 1,
-    minWidth: 0,
   },
 });
 
@@ -627,7 +617,7 @@ function getGroupLabel(groupBy: GroupByField, key: string): string {
   return key;
 }
 
-const columns: XDSTableColumn<TaskRow>[] = [
+const columns: TableColumn<TaskRow>[] = [
   {
     key: 'status',
     header: '',
@@ -752,90 +742,93 @@ function TaskDetailPanel({
     return null;
   }
   return (
-    <XDSLayoutPanel
+    // Panel owns the separator (its full-height left border). The adjacent
+    // ResizeHandle is kept divider-less + isAlwaysVisible={false} so its
+    // always-on pill doesn't float above the panel as a stray stub.
+    <LayoutPanel
       hasDivider
       resizable={resizable}
       padding={4}
       role="complementary"
       label="Task details">
-      <XDSVStack gap={4}>
-        <XDSHStack gap={2} vAlign="center">
-          <XDSStackItem size="fill">
-            <XDSText type="supporting" color="secondary">
+      <VStack gap={4}>
+        <HStack gap={2} vAlign="center">
+          <StackItem size="fill">
+            <Text type="supporting" color="secondary">
               {task.taskId}
-            </XDSText>
-          </XDSStackItem>
-          <XDSButton
+            </Text>
+          </StackItem>
+          <Button
             label="Close panel"
             variant="ghost"
             size="sm"
-            icon={<XDSIcon icon={XMarkIcon} size="sm" />}
+            icon={<Icon icon={XMarkIcon} size="sm" />}
             isIconOnly
             onClick={onClose}
           />
-        </XDSHStack>
+        </HStack>
 
-        <XDSVStack gap={1}>
-          <XDSHeading level={3}>{task.title}</XDSHeading>
+        <VStack gap={1}>
+          <Heading level={3}>{task.title}</Heading>
           {task.subtitle && (
-            <XDSText type="body" color="secondary">
+            <Text type="body" color="secondary">
               {task.subtitle}
-            </XDSText>
+            </Text>
           )}
-        </XDSVStack>
+        </VStack>
 
-        <XDSMetadataList label={{position: 'start'}}>
-          <XDSMetadataListItem label="Status">
-            <XDSHStack gap={2} vAlign="center">
-              <XDSStatusDot
+        <MetadataList label={{position: 'start'}}>
+          <MetadataListItem label="Status">
+            <HStack gap={2} vAlign="center">
+              <StatusDot
                 variant={STATUS_DOT_VARIANT[task.status]}
                 label={STATUS_LABEL[task.status]}
               />
-              <XDSText type="body">{STATUS_LABEL[task.status]}</XDSText>
-            </XDSHStack>
-          </XDSMetadataListItem>
-          <XDSMetadataListItem label="Priority">
-            <XDSHStack gap={2} vAlign="center">
-              <XDSIcon
+              <Text type="body">{STATUS_LABEL[task.status]}</Text>
+            </HStack>
+          </MetadataListItem>
+          <MetadataListItem label="Priority">
+            <HStack gap={2} vAlign="center">
+              <Icon
                 icon={ChartBarIcon}
                 size="sm"
                 color={PRIORITY_COLOR[task.priority]}
               />
-              <XDSText type="body">{PRIORITY_LABEL[task.priority]}</XDSText>
-            </XDSHStack>
-          </XDSMetadataListItem>
-          <XDSMetadataListItem label="Assignee">
-            <XDSHStack gap={2} vAlign="center">
-              <XDSAvatar name={task.assignee} size="xsmall" />
-              <XDSText type="body">{task.assignee}</XDSText>
-            </XDSHStack>
-          </XDSMetadataListItem>
-          <XDSMetadataListItem label="Project">
+              <Text type="body">{PRIORITY_LABEL[task.priority]}</Text>
+            </HStack>
+          </MetadataListItem>
+          <MetadataListItem label="Assignee">
+            <HStack gap={2} vAlign="center">
+              <Avatar name={task.assignee} size="xsmall" />
+              <Text type="body">{task.assignee}</Text>
+            </HStack>
+          </MetadataListItem>
+          <MetadataListItem label="Project">
             {task.project || '\u2014'}
-          </XDSMetadataListItem>
-          <XDSMetadataListItem label="Created">
+          </MetadataListItem>
+          <MetadataListItem label="Created">
             {task.created}
-          </XDSMetadataListItem>
-          <XDSMetadataListItem label="Updated">
+          </MetadataListItem>
+          <MetadataListItem label="Updated">
             {task.updated}
-          </XDSMetadataListItem>
-        </XDSMetadataList>
+          </MetadataListItem>
+        </MetadataList>
 
         {task.tags.length > 0 && (
           <>
-            <XDSDivider />
-            <XDSVStack gap={2}>
-              <XDSText type="label">Labels</XDSText>
-              <XDSHStack gap={2}>
+            <Divider />
+            <VStack gap={2}>
+              <Text type="label">Labels</Text>
+              <HStack gap={2}>
                 {task.tags.map(tag => (
-                  <XDSBadge key={tag} variant="neutral" label={tag} />
+                  <Badge key={tag} variant="neutral" label={tag} />
                 ))}
-              </XDSHStack>
-            </XDSVStack>
+              </HStack>
+            </VStack>
           </>
         )}
-      </XDSVStack>
-    </XDSLayoutPanel>
+      </VStack>
+    </LayoutPanel>
   );
 }
 
@@ -892,7 +885,7 @@ export default function DataTableTemplate() {
     });
   };
 
-  const detailPanel = useXDSResizable({
+  const detailPanel = useResizable({
     defaultSize: 360,
     minSizePx: 280,
     maxSizePx: 500,
@@ -903,66 +896,66 @@ export default function DataTableTemplate() {
 
   return (
     <>
-      <XDSLayout
+      <Layout
         height="fill"
         header={
-          <XDSLayoutHeader hasDivider padding={4}>
-            <XDSVStack gap={4}>
-              <XDSHStack gap={3} vAlign="center">
-                <XDSStackItem size="fill">
-                  <XDSHeading level={1}>All Issues</XDSHeading>
-                </XDSStackItem>
-                <XDSButton
+          <LayoutHeader hasDivider padding={4}>
+            <VStack gap={4}>
+              <HStack gap={3} vAlign="center">
+                <StackItem size="fill">
+                  <Heading level={1}>All Issues</Heading>
+                </StackItem>
+                <Button
                   label="Create issue"
                   variant="primary"
                   size="lg"
                   onClick={() => setDialogOpen(true)}
                 />
-              </XDSHStack>
-              <XDSHStack gap={2} vAlign="center">
-                <XDSStackItem size="fill">
-                  <XDSPowerSearch
+              </HStack>
+              <HStack gap={2} vAlign="center">
+                <StackItem size="fill">
+                  <PowerSearch
                     config={powerSearchConfig}
                     filters={powerSearchFilters}
                     onChange={newFilters => setPowerSearchFilters(newFilters)}
                     placeholder="Filter issues..."
                     resultCount={`${filtered.length} issue${filtered.length !== 1 ? 's' : ''}`}
                   />
-                </XDSStackItem>
-                <XDSPopover
+                </StackItem>
+                <Popover
                   placement="below"
                   alignment="end"
                   width={320}
                   label="Grouping options"
                   content={
-                    <XDSVStack gap={4}>
-                      <XDSRadioList
+                    <VStack gap={4}>
+                      <RadioList
                         label="Group by"
                         value={groupBy}
                         onChange={v => setGroupBy(v as GroupByField)}>
                         {GROUP_BY_OPTIONS.map(opt => (
-                          <XDSRadioListItem
+                          <RadioListItem
                             key={opt.value}
                             value={opt.value}
                             label={opt.label}
                           />
                         ))}
-                      </XDSRadioList>
-                    </XDSVStack>
+                      </RadioList>
+                    </VStack>
                   }>
-                  <XDSButton
+                  <Button
                     label="View Options"
                     variant="secondary"
                     size="md"
                   />
-                </XDSPopover>
-              </XDSHStack>
-            </XDSVStack>
-          </XDSLayoutHeader>
+                </Popover>
+              </HStack>
+            </VStack>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent role="main" padding={0}>
-            <XDSTable
+          <LayoutContent role="main" padding={0}>
+            <Table
               columns={columns}
               density="balanced"
               dividers="rows"
@@ -986,7 +979,7 @@ export default function DataTableTemplate() {
                 return (
                   <React.Fragment key={key}>
                     {groupBy !== 'none' && (
-                      <XDSTableRow
+                      <TableRow
                         role="button"
                         tabIndex={0}
                         onClick={() => toggleGroup(key)}
@@ -997,97 +990,96 @@ export default function DataTableTemplate() {
                           }
                         }}
                         xstyle={[pageStyles.groupHeaderRow]}>
-                        <td
+                        <TableCell
                           colSpan={COL_COUNT}
-                          {...stylex.props(pageStyles.groupHeaderCell)}>
-                          <XDSHStack gap={2} vAlign="center">
-                            <XDSIcon
+                          xstyle={pageStyles.groupHeaderCell}>
+                          <HStack gap={2} vAlign="center">
+                            <Icon
                               icon={
                                 isExpanded ? ChevronDownIcon : ChevronRightIcon
                               }
                               size="sm"
                               color="secondary"
                             />
-                            <XDSText type="body" weight="bold">
+                            <Text type="body" weight="bold">
                               {getGroupLabel(groupBy, key)}
-                            </XDSText>
-                            <XDSBadge
+                            </Text>
+                            <Badge
                               variant="neutral"
                               label={String(tasks.length)}
                             />
-                          </XDSHStack>
-                        </td>
-                      </XDSTableRow>
+                          </HStack>
+                        </TableCell>
+                      </TableRow>
                     )}
-
                     {(groupBy === 'none' || isExpanded) &&
                       tasks.map(task => (
-                        <XDSTableRow
+                        <TableRow
                           key={task.id}
                           onClick={() => setSelectedTask(task)}>
-                          <XDSTableCell>
-                            <XDSCenter axis="horizontal">
-                              <XDSStatusDot
+                          <TableCell>
+                            <Center axis="horizontal">
+                              <StatusDot
                                 variant={STATUS_DOT_VARIANT[task.status]}
                                 label={STATUS_LABEL[task.status]}
                               />
-                            </XDSCenter>
-                          </XDSTableCell>
-                          <XDSTableCell>
-                            <XDSHStack gap={3} vAlign="center">
-                              <XDSIcon
+                            </Center>
+                          </TableCell>
+                          <TableCell>
+                            <HStack gap={3} vAlign="center">
+                              <Icon
                                 icon={ChartBarIcon}
                                 size="sm"
                                 color={PRIORITY_COLOR[task.priority]}
                               />
-                              <XDSText type="supporting" color="secondary">
+                              <Text type="supporting" color="secondary">
                                 {task.taskId}
-                              </XDSText>
-                              <XDSText type="body" maxLines={1}>
+                              </Text>
+                              <Text type="body" maxLines={1}>
                                 {task.title}
-                              </XDSText>
+                              </Text>
                               {task.subtitle && (
-                                <XDSText
+                                <Text
                                   type="body"
                                   color="secondary"
                                   maxLines={1}>
                                   › {task.subtitle}
-                                </XDSText>
+                                </Text>
                               )}
-                            </XDSHStack>
-                          </XDSTableCell>
-                          <XDSTableCell>
+                            </HStack>
+                          </TableCell>
+                          <TableCell>
                             {task.project ? (
-                              <XDSText type="body" maxLines={1}>
+                              <Text type="body" maxLines={1}>
                                 {task.project}
-                              </XDSText>
+                              </Text>
                             ) : (
-                              <XDSText type="supporting" color="secondary">
+                              <Text type="supporting" color="secondary">
                                 —
-                              </XDSText>
+                              </Text>
                             )}
-                          </XDSTableCell>
-                          <XDSTableCell>
-                            <XDSText type="supporting" color="secondary">
+                          </TableCell>
+                          <TableCell>
+                            <Text type="supporting" color="secondary">
                               {task.created}
-                            </XDSText>
-                          </XDSTableCell>
-                          <XDSTableCell>
-                            <XDSText type="supporting" color="secondary">
+                            </Text>
+                          </TableCell>
+                          <TableCell>
+                            <Text type="supporting" color="secondary">
                               {task.updated}
-                            </XDSText>
-                          </XDSTableCell>
-                          <XDSTableCell>
-                            <XDSAvatar name={task.assignee} size="xsmall" />
-                          </XDSTableCell>
-                          <XDSTableCell>
-                            <XDSDropdownMenu
+                            </Text>
+                          </TableCell>
+                          <TableCell>
+                            <Avatar name={task.assignee} size="xsmall" />
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu
                               button={{
                                 label: 'Actions',
                                 variant: 'ghost',
                                 size: 'sm',
                                 icon: (
-                                  <XDSIcon
+                                  <Icon
                                     icon={EllipsisHorizontalIcon}
                                     size="sm"
                                   />
@@ -1129,19 +1121,23 @@ export default function DataTableTemplate() {
                                 },
                               ]}
                             />
-                          </XDSTableCell>
-                        </XDSTableRow>
+                          </TableCell>
+                        </TableRow>
                       ))}
                   </React.Fragment>
                 );
               })}
-            </XDSTable>
-          </XDSLayoutContent>
+            </Table>
+          </LayoutContent>
         }
         end={
           selectedTask && (
             <>
-              <XDSResizeHandle resizable={detailPanel.props} isReversed />
+              <ResizeHandle
+                resizable={detailPanel.props}
+                isReversed
+                isAlwaysVisible={false}
+              />
               <TaskDetailPanel
                 task={selectedTask}
                 onClose={() => setSelectedTask(null)}
@@ -1151,25 +1147,24 @@ export default function DataTableTemplate() {
           )
         }
       />
-
-      <XDSDialog isOpen={dialogOpen} onOpenChange={open => setDialogOpen(open)}>
-        <XDSLayout
+      <Dialog isOpen={dialogOpen} onOpenChange={open => setDialogOpen(open)}>
+        <Layout
           header={
-            <XDSDialogHeader
+            <DialogHeader
               title="Create Issue"
               onOpenChange={open => setDialogOpen(open)}
             />
           }
           content={
-            <XDSLayoutContent padding={4}>
-              <XDSVStack gap={4}>
-                <XDSTextInput
+            <LayoutContent padding={4}>
+              <VStack gap={4}>
+                <TextInput
                   label="Title"
                   placeholder="Issue title"
                   value=""
                   onChange={() => {}}
                 />
-                <XDSSelector
+                <Selector
                   label="Status"
                   value="todo"
                   options={[
@@ -1179,7 +1174,7 @@ export default function DataTableTemplate() {
                   ]}
                   onChange={() => {}}
                 />
-                <XDSSelector
+                <Selector
                   label="Priority"
                   value="none"
                   options={[
@@ -1191,35 +1186,35 @@ export default function DataTableTemplate() {
                   ]}
                   onChange={() => {}}
                 />
-                <XDSTextInput
+                <TextInput
                   label="Project"
                   placeholder="Project name"
                   value=""
                   onChange={() => {}}
                 />
-              </XDSVStack>
-            </XDSLayoutContent>
+              </VStack>
+            </LayoutContent>
           }
           footer={
-            <XDSLayoutFooter hasDivider>
-              <XDSHStack gap={2} hAlign="end">
-                <XDSButton
+            <LayoutFooter hasDivider>
+              <HStack gap={2} hAlign="end">
+                <Button
                   label="Cancel"
                   variant="secondary"
                   size="md"
                   onClick={() => setDialogOpen(false)}
                 />
-                <XDSButton
+                <Button
                   label="Create"
                   variant="primary"
                   size="md"
                   onClick={() => setDialogOpen(false)}
                 />
-              </XDSHStack>
-            </XDSLayoutFooter>
+              </HStack>
+            </LayoutFooter>
           }
         />
-      </XDSDialog>
+      </Dialog>
     </>
   );
 }

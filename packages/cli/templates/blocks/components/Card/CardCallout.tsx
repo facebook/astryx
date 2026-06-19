@@ -2,29 +2,29 @@
 
 'use client';
 
-import {XDSCard} from '@xds/core/Card';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSHeading, XDSText} from '@xds/core/Text';
+import {Card} from '@xds/core/Card';
+import {Stack} from '@xds/core/Layout';
+import {Heading, Text} from '@xds/core/Text';
 
 export default function CardCallout() {
   return (
-    <XDSStack direction="horizontal" gap={4}>
-      <XDSCard width={270} variant="muted">
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={3}>Tip</XDSHeading>
-          <XDSText type="body" color="secondary">
+    <Stack direction="horizontal" gap={4}>
+      <Card width={270} variant="muted">
+        <Stack direction="vertical" gap={2}>
+          <Heading level={3}>Tip</Heading>
+          <Text type="body" color="secondary">
             Use the muted variant for callouts or supplementary information.
-          </XDSText>
-        </XDSStack>
-      </XDSCard>
-      <XDSCard width={270} variant="muted">
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={3}>Note</XDSHeading>
-          <XDSText type="body" color="secondary">
+          </Text>
+        </Stack>
+      </Card>
+      <Card width={270} variant="muted">
+        <Stack direction="vertical" gap={2}>
+          <Heading level={3}>Note</Heading>
+          <Text type="body" color="secondary">
             Muted cards work well in sidebars or help panels.
-          </XDSText>
-        </XDSStack>
-      </XDSCard>
-    </XDSStack>
+          </Text>
+        </Stack>
+      </Card>
+    </Stack>
   );
 }

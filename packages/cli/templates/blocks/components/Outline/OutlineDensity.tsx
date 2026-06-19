@@ -2,10 +2,10 @@
 
 'use client';
 
-import {XDSOutline} from '@xds/core/Outline';
+import {Outline} from '@xds/core/Outline';
 import type {OutlineItem} from '@xds/core/Outline';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {HStack, VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const items: OutlineItem[] = [
   {id: 'density-getting-started', label: 'Getting started', level: 2},
@@ -17,27 +17,27 @@ const items: OutlineItem[] = [
 
 export default function OutlineDensity() {
   return (
-    <XDSHStack gap={10} vAlign="start">
-      <XDSVStack gap={3} style={{width: 200}}>
-        <XDSText type="supporting" color="secondary" weight="medium">
+    <HStack gap={10} vAlign="start">
+      <VStack gap={3} style={{width: 200}}>
+        <Text type="supporting" color="secondary" weight="medium">
           Default
-        </XDSText>
-        <XDSOutline
+        </Text>
+        <Outline
           items={items}
           density="default"
           activeId="density-configuration"
         />
-      </XDSVStack>
-      <XDSVStack gap={3} style={{width: 200}}>
-        <XDSText type="supporting" color="secondary" weight="medium">
+      </VStack>
+      <VStack gap={3} style={{width: 200}}>
+        <Text type="supporting" color="secondary" weight="medium">
           Compact
-        </XDSText>
-        <XDSOutline
+        </Text>
+        <Outline
           items={items}
           density="compact"
           activeId="density-configuration"
         />
-      </XDSVStack>
-    </XDSHStack>
+      </VStack>
+    </HStack>
   );
 }

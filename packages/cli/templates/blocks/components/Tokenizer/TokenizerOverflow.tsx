@@ -4,16 +4,16 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSTokenizer} from '@xds/core/Tokenizer';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
+import {Tokenizer} from '@xds/core/Tokenizer';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
 
 const styles = stylex.create({
   fixed: {width: 400, maxWidth: 400},
 });
 
-const users: XDSSearchableItem[] = [
+const users: SearchableItem[] = [
   {id: '1', label: 'Alice Johnson'},
   {id: '2', label: 'Bob Smith'},
   {id: '3', label: 'Charlie Brown'},
@@ -22,23 +22,23 @@ const users: XDSSearchableItem[] = [
   {id: '6', label: 'Frank Miller'},
 ];
 
-const userSource: XDSSearchSource = {
+const userSource: SearchSource = {
   search: (query: string) =>
     users.filter(u => u.label.toLowerCase().includes(query.toLowerCase())),
   bootstrap: () => users,
 };
 
 export default function TokenizerOverflow() {
-  const [inlineValue, setInlineValue] = useState<XDSSearchableItem[]>(users);
-  const [layerValue, setLayerValue] = useState<XDSSearchableItem[]>(users);
+  const [inlineValue, setInlineValue] = useState<SearchableItem[]>(users);
+  const [layerValue, setLayerValue] = useState<SearchableItem[]>(users);
 
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Inline overflow — content shifts down on expand
-        </XDSText>
-        <XDSTokenizer
+        </Text>
+        <Tokenizer
           label="Inline Overflow"
           placeholder="Add more..."
           searchSource={userSource}
@@ -47,12 +47,12 @@ export default function TokenizerOverflow() {
           tokenOverflowBehavior="unfocusedInline"
           xstyle={styles.fixed}
         />
-      </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+      </Stack>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Layer overflow — expands as overlay, no layout shift
-        </XDSText>
-        <XDSTokenizer
+        </Text>
+        <Tokenizer
           label="Layer Overflow"
           placeholder="Add more..."
           searchSource={userSource}
@@ -61,7 +61,7 @@ export default function TokenizerOverflow() {
           tokenOverflowBehavior="unfocusedLayer"
           xstyle={styles.fixed}
         />
-      </XDSStack>
-    </XDSStack>
+      </Stack>
+    </Stack>
   );
 }

@@ -10,8 +10,8 @@ export const docs = {
   props: [
     {
       name: 'icon',
-      type: 'XDSIconName | ComponentType<SVGProps>',
-      description: 'Semantic icon name or SVG component. Run `npx xds docs icons` for valid names.',
+      type: 'IconName | ComponentType<SVGProps>',
+      description: 'Semantic icon name or SVG component. Run `npx xds docs icons` for valid names. Note: this prop is called `icon`, not `name`.',
       required: true,
     },
     {
@@ -43,6 +43,7 @@ export const docs = {
       { guidance: false, description: 'Resize icons with arbitrary pixel values; use the provided size props.' },
       { guidance: false, description: 'Mix icon styles (e.g. outline and filled) within the same context.' },
       { guidance: false, description: 'Render raw SVG elements; always wrap in Icon for consistent sizing and color.' },
+      { guidance: false, description: 'Pass a `name` prop \u2014 Icon uses `icon` (not `name`) to specify which icon to render.' },
     ],
   },
 };
@@ -54,7 +55,7 @@ export const docsZh = {
   props: [
     {
       name: 'icon',
-      type: 'XDSIconName | ComponentType<SVGProps>',
+      type: 'IconName | ComponentType<SVGProps>',
       description: '语义图标名称或 SVG 组件。运行 `npx xds docs icons` 查看可用名称。',
       required: true,
     },
@@ -87,6 +88,7 @@ export const docsZh = {
       { guidance: false, description: 'Resize icons with arbitrary pixel values; use the provided size props.' },
       { guidance: false, description: 'Mix icon styles (e.g. outline and filled) within the same context.' },
       { guidance: false, description: 'Render raw SVG elements; always wrap in Icon for consistent sizing and color.' },
+      { guidance: false, description: 'Pass a `name` prop \u2014 Icon uses `icon` (not `name`) to specify which icon to render.' },
     ],
   },
 };
@@ -106,6 +108,7 @@ export const docsDense = {
       { guidance: false, description: 'Resize icons with arbitrary pixel values; use the provided size props.' },
       { guidance: false, description: 'Mix icon styles (e.g. outline and filled) within the same context.' },
       { guidance: false, description: 'Render raw SVG elements; always wrap in Icon for consistent sizing and color.' },
+      { guidance: false, description: '`name` prop \u2014 does not exist. Use `icon` to specify which icon to render.' },
     ],
   },
   propDescriptions: {

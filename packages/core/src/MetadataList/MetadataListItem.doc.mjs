@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'MetadataList',
   displayName: 'Metadata List Item',
   isHiddenFromOverview: true,
-  description: 'A single labeled metadata value within an XDSMetadataList.',
+  description: 'A single labeled metadata value within an MetadataList.',
   props: [
     {
       name: 'children',
@@ -27,7 +27,7 @@ export const docs = {
       description: 'Icon rendered before the label text.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',
@@ -42,7 +42,7 @@ export const docsZh = {
   name: 'MetadataListItem',
   isHiddenFromOverview: true,
   displayName: 'Metadata List Item',
-  description: 'XDSMetadataList 中的单个带标签元数据值。',
+  description: 'MetadataList 中的单个带标签元数据值。',
   propDescriptions: {
     children: '此元数据项的内容值。',
     label: '此元数据项的标签文本。',
@@ -54,7 +54,7 @@ export const docsDense = {
   name: 'MetadataListItem',
   isHiddenFromOverview: true,
   displayName: 'Metadata List Item',
-  description: 'single labeled value in XDSMetadataList',
+  description: 'single labeled value in MetadataList',
   propDescriptions: {
     children: 'value content',
     label: 'label text',

@@ -2,13 +2,13 @@
 
 'use client';
 
-import {XDSMoreMenu} from '@xds/core/MoreMenu';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSToolbar} from '@xds/core/Toolbar';
-import {XDSHeading} from '@xds/core/Text';
-import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
+import {MoreMenu} from '@xds/core/MoreMenu';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
+import {Toolbar} from '@xds/core/Toolbar';
+import {Heading} from '@xds/core/Text';
+import {Card} from '@xds/core/Card';
+import {Section} from '@xds/core/Section';
 import {
   ArrowLeftIcon,
   ArrowDownTrayIcon,
@@ -28,24 +28,24 @@ const styles = stylex.create({
 
 export default function MoreMenuInToolbar() {
   return (
-    <XDSCard width="100%" height="100%" xstyle={styles.card}>
-      <XDSToolbar
+    <Card width="100%" height="100%" xstyle={styles.card}>
+      <Toolbar
         label="Project actions"
         size="sm"
         dividers={['bottom']}
         startContent={
-          <XDSButton
+          <Button
             label="Back"
             variant="ghost"
-            icon={<XDSIcon icon={ArrowLeftIcon} />}
+            icon={<Icon icon={ArrowLeftIcon} />}
             isIconOnly
           />
         }
-        centerContent={<XDSHeading level={5}>Title</XDSHeading>}
+        centerContent={<Heading level={5}>Title</Heading>}
         endContent={
           <>
             <div {...stylex.props(styles.moreMenuWrapper)}>
-              <XDSMoreMenu
+              <MoreMenu
                 label="More actions"
                 size="sm"
                 items={[
@@ -56,12 +56,12 @@ export default function MoreMenuInToolbar() {
                 ]}
               />
             </div>
-            <XDSButton label="Discard" variant="secondary" size="sm" />
-            <XDSButton label="Save" variant="primary" size="sm" />
+            <Button label="Discard" variant="secondary" size="sm" />
+            <Button label="Save" variant="primary" size="sm" />
           </>
         }
       />
-      <XDSSection />
-    </XDSCard>
+      <Section />
+    </Card>
   );
 }

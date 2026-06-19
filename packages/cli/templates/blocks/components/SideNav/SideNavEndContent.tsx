@@ -4,14 +4,14 @@
 
 import type {ComponentProps} from 'react';
 import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
+  SideNav,
+  SideNavHeading,
+  SideNavItem,
+  SideNavSection,
 } from '@xds/core/SideNav';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSText} from '@xds/core/Text';
-import {XDSMoreMenu} from '@xds/core/MoreMenu';
+import {Badge} from '@xds/core/Badge';
+import {Text} from '@xds/core/Text';
+import {MoreMenu} from '@xds/core/MoreMenu';
 
 function HomeIcon(props: ComponentProps<'svg'>) {
   return (
@@ -47,16 +47,16 @@ function UserGroupIcon(props: ComponentProps<'svg'>) {
 
 export default function SideNavEndContent() {
   return (
-    <XDSSideNav
-      header={<XDSSideNavHeading heading="My App" headingHref="/" />}>
-      <XDSSideNavSection title="Navigation" isHeaderHidden>
-        <XDSSideNavItem
+    <SideNav
+      header={<SideNavHeading heading="My App" headingHref="/" />}>
+      <SideNavSection title="Navigation" isHeaderHidden>
+        <SideNavItem
           label="Dashboard"
           icon={HomeIcon}
           isSelected
           href="/dashboard"
           endContent={
-            <XDSMoreMenu
+            <MoreMenu
               size="sm"
               items={[
                 {label: 'Pin to top', onClick: () => {}},
@@ -65,29 +65,29 @@ export default function SideNavEndContent() {
             />
           }
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Projects"
           icon={FolderIcon}
           href="/projects"
-          endContent={<XDSBadge label={12} />}
+          endContent={<Badge label={12} />}
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Analytics"
           icon={ChartBarIcon}
           href="/analytics"
-          endContent={<XDSBadge label="New" />}
+          endContent={<Badge label="New" />}
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Team"
           icon={UserGroupIcon}
           href="/team"
           endContent={
-            <XDSText type="supporting" color="secondary">
+            <Text type="supporting" color="secondary">
               8 members
-            </XDSText>
+            </Text>
           }
         />
-      </XDSSideNavSection>
-    </XDSSideNav>
+      </SideNavSection>
+    </SideNav>
   );
 }

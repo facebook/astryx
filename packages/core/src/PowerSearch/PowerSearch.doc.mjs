@@ -73,7 +73,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'XDSInputStatus',
+      type: 'InputStatus',
       description:
         'Validation status object with type and optional message.',
     },
@@ -96,7 +96,7 @@ export const docs = {
     },
     {
       name: 'handleRef',
-      type: 'Ref<XDSPowerSearchHandle>',
+      type: 'Ref<PowerSearchHandle>',
       description:
         'Imperative handle with focusTypeahead() and blurTypeahead() methods.',
     },
@@ -106,8 +106,8 @@ export const docs = {
       description:
         'Content to display at the end of the input row. Useful for action buttons or other controls.',
       slotElements: [
-        {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
-        {__element: 'XDSBadge', props: {label: '3'}},
+        {__element: 'Icon', props: {icon: 'chevronDown', size: 'sm'}},
+        {__element: 'Badge', props: {label: '3'}},
       ],
     },
     {
@@ -214,7 +214,7 @@ export const docsZh = {
     },
     {
       name: 'status',
-      type: 'XDSInputStatus',
+      type: 'InputStatus',
       description: '带有类型和可选消息的验证状态对象。',
     },
     {
@@ -236,7 +236,7 @@ export const docsZh = {
     },
     {
       name: 'handleRef',
-      type: 'Ref<XDSPowerSearchHandle>',
+      type: 'Ref<PowerSearchHandle>',
       description: '提供 focusTypeahead() 和 blurTypeahead() 方法的命令式句柄。',
     },
     {

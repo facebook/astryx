@@ -26,7 +26,7 @@ export const docs = {
       description: 'Section items.',
       slotElements: [
         {
-          __element: 'XDSSideNavItem',
+          __element: 'SideNavItem',
           props: {
             label: 'Item',
           },
@@ -39,14 +39,14 @@ export const docs = {
       description: 'Right-side content in the section header.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'chevronDown',
             size: 'sm',
           },
         },
         {
-          __element: 'XDSBadge',
+          __element: 'Badge',
           props: {
             label: '3',
           },
@@ -62,7 +62,7 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
 };

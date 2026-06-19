@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Icon} from '@xds/core/Icon';
+import {HStack, VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 import {
   HomeIcon,
   HeartIcon,
@@ -20,9 +20,9 @@ import {
   StarIcon as StarIconSolid,
 } from '@heroicons/react/24/solid';
 
-const meta: Meta<typeof XDSIcon> = {
+const meta: Meta<typeof Icon> = {
   title: 'Core/Icon',
-  component: XDSIcon,
+  component: Icon,
   tags: ['autodocs'],
   argTypes: {
     icon: {
@@ -53,7 +53,7 @@ const meta: Meta<typeof XDSIcon> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSIcon>;
+type Story = StoryObj<typeof Icon>;
 
 export const Default: Story = {
   args: {
@@ -144,14 +144,14 @@ export const SolidIcon: Story = {
 export const AllColors: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-      <XDSIcon icon={HomeIcon} color="primary" />
-      <XDSIcon icon={UserIcon} color="secondary" />
-      <XDSIcon icon={CogIcon} color="tertiary" />
-      <XDSIcon icon={BellIcon} color="disabled" />
-      <XDSIcon icon={HeartIcon} color="accent" />
-      <XDSIcon icon={CheckCircleIcon} color="success" />
-      <XDSIcon icon={XCircleIcon} color="error" />
-      <XDSIcon icon={ExclamationTriangleIcon} color="warning" />
+      <Icon icon={HomeIcon} color="primary" />
+      <Icon icon={UserIcon} color="secondary" />
+      <Icon icon={CogIcon} color="tertiary" />
+      <Icon icon={BellIcon} color="disabled" />
+      <Icon icon={HeartIcon} color="accent" />
+      <Icon icon={CheckCircleIcon} color="success" />
+      <Icon icon={XCircleIcon} color="error" />
+      <Icon icon={ExclamationTriangleIcon} color="warning" />
     </div>
   ),
 };
@@ -159,10 +159,10 @@ export const AllColors: Story = {
 export const AllSizes: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-      <XDSIcon icon={StarIcon} size="xsm" />
-      <XDSIcon icon={StarIcon} size="sm" />
-      <XDSIcon icon={StarIcon} size="md" />
-      <XDSIcon icon={StarIcon} size="lg" />
+      <Icon icon={StarIcon} size="xsm" />
+      <Icon icon={StarIcon} size="sm" />
+      <Icon icon={StarIcon} size="md" />
+      <Icon icon={StarIcon} size="lg" />
     </div>
   ),
 };
@@ -177,7 +177,7 @@ export const OutlineVsSolid: Story = {
           alignItems: 'center',
           gap: '8px',
         }}>
-        <XDSIcon icon={HeartIcon} size="lg" color="error" />
+        <Icon icon={HeartIcon} size="lg" color="error" />
         <span style={{fontSize: '12px', color: '#666'}}>Outline</span>
       </div>
       <div
@@ -187,7 +187,7 @@ export const OutlineVsSolid: Story = {
           alignItems: 'center',
           gap: '8px',
         }}>
-        <XDSIcon icon={HeartIconSolid} size="lg" color="error" />
+        <Icon icon={HeartIconSolid} size="lg" color="error" />
         <span style={{fontSize: '12px', color: '#666'}}>Solid</span>
       </div>
       <div
@@ -197,7 +197,7 @@ export const OutlineVsSolid: Story = {
           alignItems: 'center',
           gap: '8px',
         }}>
-        <XDSIcon icon={StarIcon} size="lg" color="warning" />
+        <Icon icon={StarIcon} size="lg" color="warning" />
         <span style={{fontSize: '12px', color: '#666'}}>Outline</span>
       </div>
       <div
@@ -207,7 +207,7 @@ export const OutlineVsSolid: Story = {
           alignItems: 'center',
           gap: '8px',
         }}>
-        <XDSIcon icon={StarIconSolid} size="lg" color="warning" />
+        <Icon icon={StarIconSolid} size="lg" color="warning" />
         <span style={{fontSize: '12px', color: '#666'}}>Solid</span>
       </div>
     </div>
@@ -224,7 +224,7 @@ export const InheritColor: Story = {
           alignItems: 'center',
           gap: '4px',
         }}>
-        <XDSIcon icon={HomeIcon} color="inherit" size="sm" />
+        <Icon icon={HomeIcon} color="inherit" size="sm" />
         Blue text
       </span>
       <span
@@ -234,7 +234,7 @@ export const InheritColor: Story = {
           alignItems: 'center',
           gap: '4px',
         }}>
-        <XDSIcon icon={CheckCircleIcon} color="inherit" size="sm" />
+        <Icon icon={CheckCircleIcon} color="inherit" size="sm" />
         Green text
       </span>
       <span
@@ -244,7 +244,7 @@ export const InheritColor: Story = {
           alignItems: 'center',
           gap: '4px',
         }}>
-        <XDSIcon icon={XCircleIcon} color="inherit" size="sm" />
+        <Icon icon={XCircleIcon} color="inherit" size="sm" />
         Red text
       </span>
     </div>
@@ -253,7 +253,7 @@ export const InheritColor: Story = {
 
 export const NonSemanticColors: Story = {
   render: () => (
-    <XDSHStack gap={4} wrap="wrap">
+    <HStack gap={4} wrap="wrap">
       {(
         [
           'blue',
@@ -268,11 +268,11 @@ export const NonSemanticColors: Story = {
           'purple',
         ] as const
       ).map(color => (
-        <XDSVStack key={color} gap={1} hAlign="center">
-          <XDSIcon icon={StarIcon} color={color} />
-          <XDSText type="supporting">{color}</XDSText>
-        </XDSVStack>
+        <VStack key={color} gap={1} hAlign="center">
+          <Icon icon={StarIcon} color={color} />
+          <Text type="supporting">{color}</Text>
+        </VStack>
       ))}
-    </XDSHStack>
+    </HStack>
   ),
 };

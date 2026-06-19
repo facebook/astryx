@@ -50,9 +50,9 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    label: 'accessibility label **(required)**',
-    isSelected: 'controlled selection state **(required)**',
-    onChange: 'called when toggled **(required)**',
+    label: 'accessibility label',
+    isSelected: 'controlled selection state',
+    onChange: 'called when toggled',
     isDisabled: 'disables card',
     padding: 'inner padding',
     variant: 'background color variant',

@@ -1,14 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSBanner} from '@xds/core/Banner';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
+import {Banner} from '@xds/core/Banner';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
 import {ShieldCheckIcon} from '@heroicons/react/24/solid';
 
-const meta: Meta<typeof XDSBanner> = {
+const meta: Meta<typeof Banner> = {
   title: 'Core/Banner',
-  component: XDSBanner,
+  component: Banner,
   tags: ['autodocs'],
   argTypes: {
     status: {
@@ -35,7 +35,7 @@ const meta: Meta<typeof XDSBanner> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSBanner>;
+type Story = StoryObj<typeof Banner>;
 
 export const Info: Story = {
   args: {
@@ -79,7 +79,7 @@ export const WithEndButton: Story = {
     status: 'info',
     title: 'New update available',
     description: 'Version 2.0 is ready to install.',
-    endContent: <XDSButton label="Update now" variant="primary" size="sm" />,
+    endContent: <Button label="Update now" variant="primary" size="sm" />,
   },
 };
 
@@ -117,7 +117,7 @@ export const CollapsibleContent: Story = {
     status: 'info',
     title: 'Emphasized Text',
     description: 'Description text',
-    endContent: <XDSButton label="Button" variant="secondary" size="sm" />,
+    endContent: <Button label="Button" variant="secondary" size="sm" />,
     isDismissable: true,
     children: (
       <div
@@ -140,7 +140,7 @@ export const CollapsibleContentExpanded: Story = {
     title: 'Emphasized Text',
     description: 'Description text',
     defaultIsExpanded: true,
-    endContent: <XDSButton label="Button" variant="secondary" size="sm" />,
+    endContent: <Button label="Button" variant="secondary" size="sm" />,
     isDismissable: true,
     children: (
       <div
@@ -179,7 +179,7 @@ export const ContentAreaWithAction: Story = {
     status: 'warning',
     title: 'Configuration changes detected',
     description: 'Review the changes before they take effect.',
-    endContent: <XDSButton label="Review" variant="secondary" size="sm" />,
+    endContent: <Button label="Review" variant="secondary" size="sm" />,
     isDismissable: true,
     defaultIsExpanded: true,
     children: (
@@ -198,10 +198,10 @@ export const AllStatuses: Story = {
   name: 'All Status Variants',
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
-      <XDSBanner status="info" title="Info banner" />
-      <XDSBanner status="warning" title="Warning banner" />
-      <XDSBanner status="error" title="Error banner" />
-      <XDSBanner status="success" title="Success banner" />
+      <Banner status="info" title="Info banner" />
+      <Banner status="warning" title="Warning banner" />
+      <Banner status="error" title="Error banner" />
+      <Banner status="success" title="Success banner" />
     </div>
   ),
 };
@@ -210,30 +210,30 @@ export const AllFeatures: Story = {
   name: 'All Features Combined',
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
-      <XDSBanner
+      <Banner
         status="info"
         title="Simple banner"
         description="Just the colored header area."
       />
-      <XDSBanner
+      <Banner
         status="info"
         title="With custom icon"
-        icon={<XDSIcon icon={ShieldCheckIcon} size="md" color="accent" />}
+        icon={<Icon icon={ShieldCheckIcon} size="md" color="accent" />}
       />
-      <XDSBanner
+      <Banner
         status="warning"
         title="Dismissable"
-        description="Click the X to dismiss — works without onDismiss."
+        description="Click the X to dismiss. Works without onDismiss."
         isDismissable
       />
-      <XDSBanner
+      <Banner
         status="info"
         title="With action button"
         endContent={
-          <XDSButton label="Learn more" variant="secondary" size="sm" />
+          <Button label="Learn more" variant="secondary" size="sm" />
         }
       />
-      <XDSBanner
+      <Banner
         status="error"
         title="With collapsible content"
         description="Click the chevron to expand."
@@ -242,8 +242,8 @@ export const AllFeatures: Story = {
           This content sits on a card-colored background, visually distinct from
           the status header above.
         </div>
-      </XDSBanner>
-      <XDSBanner
+      </Banner>
+      <Banner
         status="success"
         title="Expanded by default"
         description="This content area starts open."
@@ -252,8 +252,8 @@ export const AllFeatures: Story = {
         <div style={{fontSize: '13px'}}>
           Content is visible immediately because defaultIsExpanded is true.
         </div>
-      </XDSBanner>
-      <XDSBanner
+      </Banner>
+      <Banner
         status="error"
         title="Section container"
         description="Full-width with no border-radius."

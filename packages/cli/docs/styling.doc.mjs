@@ -31,7 +31,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'All approaches resolve to the same design tokens, so theming and dark mode work regardless of which you choose. For external styling libraries, run `npx xds docs styling-libraries`; it covers Tailwind, StyleX, Panda, Chakra, MUI, CSS-in-JS, CSS Modules, Sass, and `useXDSTheme()` for non-CSS processing.',
+          text: 'All approaches resolve to the same design tokens, so theming and dark mode work regardless of which you choose. For external styling libraries, run `npx xds docs styling-libraries`; it covers Tailwind, StyleX, Panda, Chakra, MUI, CSS-in-JS, CSS Modules, Sass, and `useTheme()` for non-CSS processing.',
         },
       ],
     },
@@ -54,8 +54,8 @@ const overrides = stylex.create({
   saveButton: { alignSelf: 'flex-end' },
 });
 
-<XDSCard xstyle={overrides.card} />
-<XDSButton label="Save" xstyle={overrides.saveButton} />`,
+<Card xstyle={overrides.card} />
+<Button label="Save" xstyle={overrides.saveButton} />`,
         },
         {
           type: 'code',
@@ -72,7 +72,7 @@ const overrides = stylex.create({
   },
 });
 
-<XDSCard xstyle={overrides.card}>...</XDSCard>`,
+<Card xstyle={overrides.card}>...</Card>`,
         },
         {
           type: 'list',
@@ -113,8 +113,8 @@ const overrides = stylex.create({
           lang: 'tsx',
           label: 'Tailwind utilities alongside components',
           code: `<div className="text-primary bg-surface rounded-container p-4 flex gap-3">
-  <XDSButton label="Save" variant="primary" />
-  <XDSButton label="Cancel" variant="secondary" />
+  <Button label="Save" variant="primary" />
+  <Button label="Cancel" variant="secondary" />
 </div>`,
         },
         {
@@ -135,10 +135,10 @@ const overrides = stylex.create({
           type: 'code',
           lang: 'tsx',
           label: 'className with Tailwind utilities',
-          code: `<XDSCard className="shadow-lg hover:shadow-xl transition-shadow">
+          code: `<Card className="shadow-lg hover:shadow-xl transition-shadow">
   ...
-</XDSCard>
-<XDSButton label="Save" className="my-app-save-btn" />`,
+</Card>
+<Button label="Save" className="my-app-save-btn" />`,
         },
         {
           type: 'prose',
@@ -158,21 +158,21 @@ const overrides = stylex.create({
           type: 'code',
           lang: 'tsx',
           label: 'Data attributes, event handlers, and ARIA',
-          code: `<XDSCard
+          code: `<Card
   data-testid="user-card"
   data-user-id={user.id}
   onMouseEnter={handleHover}
   aria-label="User profile card"
 >
   ...
-</XDSCard>`,
+</Card>`,
         },
         {
           type: 'code',
           lang: 'tsx',
           label: 'Ref forwarding',
           code: `const cardRef = useRef<HTMLDivElement>(null);
-<XDSCard ref={cardRef}>...</XDSCard>`,
+<Card ref={cardRef}>...</Card>`,
         },
         {
           type: 'prose',
@@ -199,26 +199,26 @@ const overrides = stylex.create({
   content: { gap: 'var(--spacing-4)' },
 });
 
-<XDSDialog isOpen={isOpen} onClose={close} xstyle={overrides.dialog}>
-  <XDSLayout
+<Dialog isOpen={isOpen} onClose={close} xstyle={overrides.dialog}>
+  <Layout
     header={
-      <XDSLayoutHeader hasDivider>
-        <XDSHeading level={2}>Edit Profile</XDSHeading>
-      </XDSLayoutHeader>
+      <LayoutHeader hasDivider>
+        <Heading level={2}>Edit Profile</Heading>
+      </LayoutHeader>
     }
     content={
-      <XDSLayoutContent xstyle={overrides.content}>
-        <XDSTextInput label="Name" value={name} onChange={setName} />
-      </XDSLayoutContent>
+      <LayoutContent xstyle={overrides.content}>
+        <TextInput label="Name" value={name} onChange={setName} />
+      </LayoutContent>
     }
     footer={
-      <XDSLayoutFooter hasDivider>
-        <XDSButton label="Cancel" variant="secondary" onClick={close} />
-        <XDSButton label="Save" variant="primary" onClick={save} />
-      </XDSLayoutFooter>
+      <LayoutFooter hasDivider>
+        <Button label="Cancel" variant="secondary" onClick={close} />
+        <Button label="Save" variant="primary" onClick={save} />
+      </LayoutFooter>
     }
   />
-</XDSDialog>`,
+</Dialog>`,
         },
         {
           type: 'prose',
@@ -253,13 +253,13 @@ const overrides = stylex.create({
           type: 'code',
           lang: 'tsx',
           label: 'What components reflect',
-          code: `// <XDSButton variant="primary" size="sm" />
+          code: `// <Button variant="primary" size="sm" />
 // preferred selector attrs: data-variant="primary" data-size="sm"
 
-// <XDSCard variant="elevated" />
+// <Card variant="elevated" />
 // preferred selector attrs: data-variant="elevated"
 
-// <XDSHeading level={2} />
+// <Heading level={2} />
 // preferred selector attrs: data-level="2"`,
         },
         {
@@ -313,7 +313,7 @@ const styles = stylex.create({
   },
 });
 
-<XDSCard xstyle={styles.surface} />`,
+<Card xstyle={styles.surface} />`,
         },
         {
           type: 'code',

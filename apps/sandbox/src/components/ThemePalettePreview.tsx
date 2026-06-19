@@ -4,21 +4,21 @@
 
 import {useMemo, useReducer} from 'react';
 
-import {XDSBanner} from '@xds/core/Banner';
-import {XDSSpinner} from '@xds/core/Spinner';
-import {XDSProgressBar} from '@xds/core/ProgressBar';
-import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
-import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
-import {XDSSwitch} from '@xds/core/Switch';
-import {XDSCard} from '@xds/core/Card';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSButton} from '@xds/core/Button';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSTheme} from '@xds/core/theme';
-import type {XDSDefinedTheme} from '@xds/core/theme';
-import {XDSLayerProvider} from '@xds/core/Layer';
+import {Banner} from '@xds/core/Banner';
+import {Spinner} from '@xds/core/Spinner';
+import {ProgressBar} from '@xds/core/ProgressBar';
+import {CheckboxInput} from '@xds/core/CheckboxInput';
+import {RadioList, RadioListItem} from '@xds/core/RadioList';
+import {Switch} from '@xds/core/Switch';
+import {Card} from '@xds/core/Card';
+import {TextInput} from '@xds/core/TextInput';
+import {Badge} from '@xds/core/Badge';
+import {Button} from '@xds/core/Button';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Text, Heading} from '@xds/core/Text';
+import {Theme} from '@xds/core/theme';
+import type {DefinedTheme} from '@xds/core/theme';
+import {LayerProvider} from '@xds/core/Layer';
 import {defaultTheme} from '@xds/theme-default/built';
 
 import {ThemeAuditDrawer, useThemeAudit} from './themePreview/ThemeAuditDrawer';
@@ -301,7 +301,7 @@ export interface CoreSwatch {
 
 export interface ThemePalettePreviewProps {
   /** The XDS theme object */
-  theme: XDSDefinedTheme;
+  theme: DefinedTheme;
   /** Theme display name for the page title */
   title: string;
   /** Description subtitle */
@@ -559,60 +559,60 @@ function TextRampSection() {
   return (
     <div style={S.section}>
       <h3 style={S.sectionTitle}>Text Hierarchy (1.25 scale, 14px base)</h3>
-      <XDSVStack gap={2}>
-        <XDSHStack gap={2} vAlign="end">
-          <XDSHeading level={1}>Heading 1</XDSHeading>
-          <XDSText type="supporting" color="secondary">
+      <VStack gap={2}>
+        <HStack gap={2} vAlign="end">
+          <Heading level={1}>Heading 1</Heading>
+          <Text type="supporting" color="secondary">
             {sizes.h1}px
-          </XDSText>
-        </XDSHStack>
-        <XDSHStack gap={2} vAlign="end">
-          <XDSHeading level={2}>Heading 2</XDSHeading>
-          <XDSText type="supporting" color="secondary">
+          </Text>
+        </HStack>
+        <HStack gap={2} vAlign="end">
+          <Heading level={2}>Heading 2</Heading>
+          <Text type="supporting" color="secondary">
             {sizes.h2}px
-          </XDSText>
-        </XDSHStack>
-        <XDSHStack gap={2} vAlign="end">
-          <XDSHeading level={3}>Heading 3</XDSHeading>
-          <XDSText type="supporting" color="secondary">
+          </Text>
+        </HStack>
+        <HStack gap={2} vAlign="end">
+          <Heading level={3}>Heading 3</Heading>
+          <Text type="supporting" color="secondary">
             {sizes.h3}px
-          </XDSText>
-        </XDSHStack>
-        <XDSHStack gap={2} vAlign="end">
-          <XDSHeading level={4}>Heading 4</XDSHeading>
-          <XDSText type="supporting" color="secondary">
+          </Text>
+        </HStack>
+        <HStack gap={2} vAlign="end">
+          <Heading level={4}>Heading 4</Heading>
+          <Text type="supporting" color="secondary">
             {sizes.h4}px
-          </XDSText>
-        </XDSHStack>
-        <XDSHStack gap={2} vAlign="end">
-          <XDSText type="body">Body — primary</XDSText>
-          <XDSText type="supporting" color="secondary">
+          </Text>
+        </HStack>
+        <HStack gap={2} vAlign="end">
+          <Text type="body">Body — primary</Text>
+          <Text type="supporting" color="secondary">
             {sizes.body}px
-          </XDSText>
-        </XDSHStack>
-        <XDSHStack gap={2} vAlign="end">
-          <XDSText type="body" color="secondary">
+          </Text>
+        </HStack>
+        <HStack gap={2} vAlign="end">
+          <Text type="body" color="secondary">
             Body — secondary
-          </XDSText>
-          <XDSText type="supporting" color="secondary">
+          </Text>
+          <Text type="supporting" color="secondary">
             {sizes.body}px
-          </XDSText>
-        </XDSHStack>
-        <XDSHStack gap={2} vAlign="end">
-          <XDSText type="supporting">Supporting</XDSText>
-          <XDSText type="supporting" color="secondary">
+          </Text>
+        </HStack>
+        <HStack gap={2} vAlign="end">
+          <Text type="supporting">Supporting</Text>
+          <Text type="supporting" color="secondary">
             {sizes.supporting}px
-          </XDSText>
-        </XDSHStack>
-        <XDSHStack gap={2} vAlign="end">
-          <XDSText type="body" color="disabled">
+          </Text>
+        </HStack>
+        <HStack gap={2} vAlign="end">
+          <Text type="body" color="disabled">
             Disabled
-          </XDSText>
-          <XDSText type="supporting" color="secondary">
+          </Text>
+          <Text type="supporting" color="secondary">
             {sizes.body}px
-          </XDSText>
-        </XDSHStack>
-      </XDSVStack>
+          </Text>
+        </HStack>
+      </VStack>
     </div>
   );
 }
@@ -621,13 +621,13 @@ function SemanticBadgeSection() {
   return (
     <div style={S.section}>
       <h3 style={S.sectionTitle}>Semantic Badges</h3>
-      <XDSHStack gap={2} wrap="wrap">
-        <XDSBadge variant="success" label="Success" />
-        <XDSBadge variant="error" label="Error" />
-        <XDSBadge variant="warning" label="Warning" />
-        <XDSBadge variant="info" label="Info" />
-        <XDSBadge variant="neutral" label="Neutral" />
-      </XDSHStack>
+      <HStack gap={2} wrap="wrap">
+        <Badge variant="success" label="Success" />
+        <Badge variant="error" label="Error" />
+        <Badge variant="warning" label="Warning" />
+        <Badge variant="info" label="Info" />
+        <Badge variant="neutral" label="Neutral" />
+      </HStack>
     </div>
   );
 }
@@ -636,17 +636,17 @@ function CategoricalBadgeSection() {
   return (
     <div style={S.section}>
       <h3 style={S.sectionTitle}>Categorical Badges</h3>
-      <XDSHStack gap={2} wrap="wrap">
-        <XDSBadge variant="blue" label="Blue" />
-        <XDSBadge variant="cyan" label="Cyan" />
-        <XDSBadge variant="green" label="Green" />
-        <XDSBadge variant="orange" label="Orange" />
-        <XDSBadge variant="pink" label="Pink" />
-        <XDSBadge variant="purple" label="Purple" />
-        <XDSBadge variant="red" label="Red" />
-        <XDSBadge variant="teal" label="Teal" />
-        <XDSBadge variant="yellow" label="Yellow" />
-      </XDSHStack>
+      <HStack gap={2} wrap="wrap">
+        <Badge variant="blue" label="Blue" />
+        <Badge variant="cyan" label="Cyan" />
+        <Badge variant="green" label="Green" />
+        <Badge variant="orange" label="Orange" />
+        <Badge variant="pink" label="Pink" />
+        <Badge variant="purple" label="Purple" />
+        <Badge variant="red" label="Red" />
+        <Badge variant="teal" label="Teal" />
+        <Badge variant="yellow" label="Yellow" />
+      </HStack>
     </div>
   );
 }
@@ -655,7 +655,7 @@ function ButtonSection() {
   return (
     <div style={S.section}>
       <h3 style={S.sectionTitle}>Buttons</h3>
-      <XDSVStack gap={4}>
+      <VStack gap={4}>
         <div>
           <div
             style={{
@@ -666,12 +666,12 @@ function ButtonSection() {
             }}>
             Default
           </div>
-          <XDSHStack gap={3} vAlign="center">
-            <XDSButton label="Primary" variant="primary" />
-            <XDSButton label="Secondary" variant="secondary" />
-            <XDSButton label="Ghost" variant="ghost" />
-            <XDSButton label="Destructive" variant="destructive" />
-          </XDSHStack>
+          <HStack gap={3} vAlign="center">
+            <Button label="Primary" variant="primary" />
+            <Button label="Secondary" variant="secondary" />
+            <Button label="Ghost" variant="ghost" />
+            <Button label="Destructive" variant="destructive" />
+          </HStack>
         </div>
         <div>
           <div
@@ -683,14 +683,14 @@ function ButtonSection() {
             }}>
             Disabled
           </div>
-          <XDSHStack gap={3} vAlign="center">
-            <XDSButton label="Primary" variant="primary" isDisabled />
-            <XDSButton label="Secondary" variant="secondary" isDisabled />
-            <XDSButton label="Ghost" variant="ghost" isDisabled />
-            <XDSButton label="Destructive" variant="destructive" isDisabled />
-          </XDSHStack>
+          <HStack gap={3} vAlign="center">
+            <Button label="Primary" variant="primary" isDisabled />
+            <Button label="Secondary" variant="secondary" isDisabled />
+            <Button label="Ghost" variant="ghost" isDisabled />
+            <Button label="Destructive" variant="destructive" isDisabled />
+          </HStack>
         </div>
-      </XDSVStack>
+      </VStack>
     </div>
   );
 }
@@ -699,11 +699,11 @@ function SpinnerSection() {
   return (
     <div>
       <h3 style={S.sectionTitle}>Spinners</h3>
-      <XDSHStack gap={4} vAlign="center">
-        <XDSSpinner size="sm" />
-        <XDSSpinner size="md" />
-        <XDSSpinner size="lg" />
-      </XDSHStack>
+      <HStack gap={4} vAlign="center">
+        <Spinner size="sm" />
+        <Spinner size="md" />
+        <Spinner size="lg" />
+      </HStack>
     </div>
   );
 }
@@ -712,22 +712,22 @@ function ProgressBarSection() {
   return (
     <div>
       <h3 style={S.sectionTitle}>Progress</h3>
-      <XDSVStack gap={3}>
-        <XDSProgressBar value={75} label="Progress" hasValueLabel />
-        <XDSProgressBar
+      <VStack gap={3}>
+        <ProgressBar value={75} label="Progress" hasValueLabel />
+        <ProgressBar
           value={40}
           label="Upload"
           variant="success"
           hasValueLabel
         />
-        <XDSProgressBar
+        <ProgressBar
           value={90}
           label="Storage"
           variant="warning"
           hasValueLabel
         />
-        <XDSProgressBar isIndeterminate label="Loading..." />
-      </XDSVStack>
+        <ProgressBar isIndeterminate label="Loading..." />
+      </VStack>
     </div>
   );
 }
@@ -736,44 +736,44 @@ function CheckboxRadioSwitchSection() {
   return (
     <div>
       <h3 style={S.sectionTitle}>Controls</h3>
-      <XDSVStack gap={4}>
-        <XDSVStack gap={2}>
-          <XDSCheckboxInput
+      <VStack gap={4}>
+        <VStack gap={2}>
+          <CheckboxInput
             label="Enable notifications"
             value={true}
             onChange={() => {}}
           />
-          <XDSCheckboxInput
+          <CheckboxInput
             label="Auto-save drafts"
             value={false}
             onChange={() => {}}
           />
-          <XDSCheckboxInput
+          <CheckboxInput
             label="Show previews"
             value={true}
             onChange={() => {}}
             isDisabled
           />
-        </XDSVStack>
-        <XDSRadioList
+        </VStack>
+        <RadioList
           label="Display mode"
           value="comfortable"
           onChange={() => {}}>
-          <XDSRadioListItem value="compact" label="Compact" />
-          <XDSRadioListItem value="comfortable" label="Comfortable" />
-          <XDSRadioListItem value="spacious" label="Spacious" />
-        </XDSRadioList>
-        <XDSVStack gap={2}>
-          <XDSSwitch label="Dark mode" value={true} onChange={() => {}} />
-          <XDSSwitch label="Reduce motion" value={false} onChange={() => {}} />
-          <XDSSwitch
+          <RadioListItem value="compact" label="Compact" />
+          <RadioListItem value="comfortable" label="Comfortable" />
+          <RadioListItem value="spacious" label="Spacious" />
+        </RadioList>
+        <VStack gap={2}>
+          <Switch label="Dark mode" value={true} onChange={() => {}} />
+          <Switch label="Reduce motion" value={false} onChange={() => {}} />
+          <Switch
             label="High contrast"
             value={false}
             onChange={() => {}}
             isDisabled
           />
-        </XDSVStack>
-      </XDSVStack>
+        </VStack>
+      </VStack>
     </div>
   );
 }
@@ -804,11 +804,11 @@ function CardVariantsSection() {
           gap: 10,
         }}>
         {CARD_VARIANTS.map(v => (
-          <XDSCard key={v} variant={v} padding={2}>
-            <XDSText type="supporting" weight="bold">
+          <Card key={v} variant={v} padding={2}>
+            <Text type="supporting" weight="bold">
               {v}
-            </XDSText>
-          </XDSCard>
+            </Text>
+          </Card>
         ))}
       </div>
     </div>
@@ -868,18 +868,18 @@ function ElevationsSection({
       label: 'Low — popovers / dropdowns / composer',
       shadow: 'var(--shadow-low)',
       consumers:
-        'XDSPopover, TopNav mega menu, XDSSegmentedControl item, XDSChatComposer (resting)',
+        'Popover, TopNav mega menu, SegmentedControl item, ChatComposer (resting)',
     },
     {
       label: 'Medium — hover / floating',
       shadow: 'var(--shadow-med)',
       consumers:
-        'XDSHoverCard, XDSToast, XDSCarousel scroll button, Chat scroll button, XDSThumbnail (hover), XDSChatComposer (hover/focus)',
+        'HoverCard, Toast, Carousel scroll button, Chat scroll button, Thumbnail (hover), ChatComposer (hover/focus)',
     },
     {
       label: 'High — modal / dialog',
       shadow: 'var(--shadow-high)',
-      consumers: 'XDSDialog',
+      consumers: 'Dialog',
     },
   ];
 
@@ -947,28 +947,28 @@ function BannerSection() {
   return (
     <div style={S.section}>
       <h3 style={S.sectionTitle}>Banners</h3>
-      <XDSVStack gap={2}>
-        <XDSBanner
+      <VStack gap={2}>
+        <Banner
           status="info"
           title="Info banner title"
           description="Description text for the info state."
         />
-        <XDSBanner
+        <Banner
           status="success"
           title="Success banner title"
           description="Description text for the success state."
         />
-        <XDSBanner
+        <Banner
           status="warning"
           title="Warning banner title"
           description="Description text for the warning state."
         />
-        <XDSBanner
+        <Banner
           status="error"
           title="Error banner title"
           description="Description text for the error state."
         />
-      </XDSVStack>
+      </VStack>
     </div>
   );
 }
@@ -977,38 +977,38 @@ function InputSection() {
   return (
     <div style={S.section}>
       <h3 style={S.sectionTitle}>Inputs</h3>
-      <XDSVStack gap={3}>
-        <XDSTextInput
+      <VStack gap={3}>
+        <TextInput
           label="Default"
           placeholder="Placeholder text"
           value=""
           onChange={() => {}}
         />
-        <XDSTextInput
+        <TextInput
           label="Success"
           value="Valid input"
           onChange={() => {}}
           status={{type: 'success', message: 'Looks good!'}}
         />
-        <XDSTextInput
+        <TextInput
           label="Error"
           value="Invalid input"
           onChange={() => {}}
           status={{type: 'error', message: 'This field is required.'}}
         />
-        <XDSTextInput
+        <TextInput
           label="Warning"
           value="Risky value"
           onChange={() => {}}
           status={{type: 'warning', message: 'This value may cause issues.'}}
         />
-        <XDSTextInput
+        <TextInput
           label="Disabled"
           value="Cannot edit"
           onChange={() => {}}
           isDisabled
         />
-      </XDSVStack>
+      </VStack>
     </div>
   );
 }
@@ -1044,7 +1044,8 @@ function TonalSection({
           margin: 0,
           marginBottom: 20,
         }}>
-        Full HCT tonal ramps — 21 perceptually uniform steps from black (T0) to
+        
+        Full HCT tonal ramps: 21 perceptually uniform steps from black (T0) to
         white (T100).
         {isDark && (
           <>
@@ -1162,7 +1163,7 @@ function ModeColumn({
   overrideVars,
   bare = false,
 }: {
-  theme: XDSDefinedTheme;
+  theme: DefinedTheme;
   mode: Mode;
   coreSwatches?: CoreSwatch[];
   extraSections?: React.ReactNode;
@@ -1170,9 +1171,9 @@ function ModeColumn({
   shadowDescription?: string;
   /**
    * Pending-overrides CSS custom properties spread onto the column's
-   * outermost styled wrapper *inside* the XDSTheme scope. Required:
-   * XDSTheme re-injects the canonical token values on its own scope
-   * element, so any `--color-*` overrides applied above XDSTheme would
+   * outermost styled wrapper *inside* the Theme scope. Required:
+   * Theme re-injects the canonical token values on its own scope
+   * element, so any `--color-*` overrides applied above Theme would
    * be stomped by the inner theme rules. Putting the overrides
    * inside the theme wrapper (as inline style on a child element)
    * wins via specificity.
@@ -1194,8 +1195,8 @@ function ModeColumn({
     : S.modeCol(VAR_SURFACES.body, VAR_SURFACES.textPrimary);
 
   return (
-    <XDSTheme theme={theme} mode={mode}>
-      <XDSLayerProvider>
+    <Theme theme={theme} mode={mode}>
+      <LayerProvider>
         <div style={{...columnStyle, ...overrideVars}}>
           {!bare && (
             <p style={S.modeLabel}>
@@ -1220,8 +1221,8 @@ function ModeColumn({
           <ElevationsSection mode={mode} description={shadowDescription} />
           {extraSections}
         </div>
-      </XDSLayerProvider>
-    </XDSTheme>
+      </LayerProvider>
+    </Theme>
   );
 }
 
@@ -1343,8 +1344,8 @@ export function ThemePalettePreview({
           CSS vars live here so they cascade into every preview component
           (page background, tonal block, mode columns) but NOT into the
           audit drawer rendered in its own theme below. */}
-      <XDSTheme theme={theme} mode={chromeMode}>
-        <XDSLayerProvider>
+      <Theme theme={theme} mode={chromeMode}>
+        <LayerProvider>
           <div
             style={{
               ...S.page,
@@ -1357,9 +1358,9 @@ export function ThemePalettePreview({
               <h1 style={S.title}>{title}</h1>
               <p style={S.subtitle}>{subtitle}</p>
               {tonalModes.map(m => (
-                <XDSTheme key={m} theme={theme} mode={m}>
-                  <XDSLayerProvider>
-                    {/* Spread overrideVars *inside* the inner XDSTheme so
+                <Theme key={m} theme={theme} mode={m}>
+                  <LayerProvider>
+                    {/* Spread overrideVars *inside* the inner Theme so
                       pending overrides win over the theme's own
                       `:scope { --color-*: … }` rules. Same trick the
                       ModeColumn uses. */}
@@ -1384,14 +1385,14 @@ export function ThemePalettePreview({
                         usage={effectiveUsage}
                       />
                     </div>
-                  </XDSLayerProvider>
-                </XDSTheme>
+                  </LayerProvider>
+                </Theme>
               ))}
               <div style={columnsStyle}>{renderColumns()}</div>
             </div>
           </div>
-        </XDSLayerProvider>
-      </XDSTheme>
+        </LayerProvider>
+      </Theme>
 
       {/* Audit drawer + draft indicator — mounted *outside* the audited
           theme so the drawer's own chrome (buttons, borders, text) stays
@@ -1399,16 +1400,16 @@ export function ThemePalettePreview({
           neutral default theme so it always looks the same across all 5
           palette pages. Position-fixed elements inside the drawer
           attach to the viewport, not this wrapper. */}
-      <XDSTheme theme={defaultTheme} mode="light">
-        <XDSLayerProvider>
+      <Theme theme={defaultTheme} mode="light">
+        <LayerProvider>
           <ThemeAuditDrawer
             audit={audit}
             themeName={theme.name}
             overrides={overrides}
             dispatchOverrides={dispatchOverrides}
           />
-        </XDSLayerProvider>
-      </XDSTheme>
+        </LayerProvider>
+      </Theme>
     </>
   );
 }

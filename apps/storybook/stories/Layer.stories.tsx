@@ -3,10 +3,10 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {useXDSLayer} from '@xds/core/Layer';
-import {XDSLayerProvider} from '@xds/core/Layer';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText} from '@xds/core/Text';
+import {useLayer} from '@xds/core/Layer';
+import {LayerProvider} from '@xds/core/Layer';
+import {Button} from '@xds/core/Button';
+import {Text} from '@xds/core/Text';
 
 const styles = stylex.create({
   popoverContent: {
@@ -41,20 +41,20 @@ export default meta;
 type Story = StoryObj;
 
 function ContextModeDemo() {
-  const layer = useXDSLayer({mode: 'context', lightDismiss: true});
+  const layer = useLayer({mode: 'context', lightDismiss: true});
 
   return (
     <div {...stylex.props(styles.demoArea)}>
-      <XDSButton
+      <Button
         ref={layer.ref}
         label="Show layer"
         onClick={() => (layer.isOpen ? layer.hide() : layer.show())}
       />
       {layer.render(
         <div {...stylex.props(styles.popoverContent)}>
-          <XDSText type="body">
+          <Text type="body">
             This layer is anchored to the button using CSS Anchor Positioning.
-          </XDSText>
+          </Text>
         </div>,
         {placement: 'below', alignment: 'center'},
       )}
@@ -70,7 +70,7 @@ function PlacementDemo() {
   const [placement, setPlacement] = useState<
     'above' | 'below' | 'start' | 'end'
   >('above');
-  const layer = useXDSLayer({mode: 'context', lightDismiss: true});
+  const layer = useLayer({mode: 'context', lightDismiss: true});
 
   return (
     <div
@@ -82,7 +82,7 @@ function PlacementDemo() {
       }}>
       <div style={{display: 'flex', gap: 8}}>
         {(['above', 'below', 'start', 'end'] as const).map(p => (
-          <XDSButton
+          <Button
             key={p}
             label={p}
             variant={placement === p ? 'primary' : 'secondary'}
@@ -91,14 +91,14 @@ function PlacementDemo() {
         ))}
       </div>
       <div {...stylex.props(styles.demoArea)}>
-        <XDSButton
+        <Button
           ref={layer.ref}
           label="Trigger"
           onClick={() => (layer.isOpen ? layer.hide() : layer.show())}
         />
         {layer.render(
           <div {...stylex.props(styles.popoverContent)}>
-            <XDSText type="body">Placement: {placement}</XDSText>
+            <Text type="body">Placement: {placement}</Text>
           </div>,
           {placement, alignment: 'center'},
         )}
@@ -113,7 +113,7 @@ export const Placements: Story = {
 
 function FixedModeDemo() {
   const [coords, setCoords] = useState({x: 0, y: 0});
-  const layer = useXDSLayer({mode: 'fixed', lightDismiss: true});
+  const layer = useLayer({mode: 'fixed', lightDismiss: true});
 
   return (
     <div
@@ -132,14 +132,14 @@ function FixedModeDemo() {
         });
         layer.show();
       }}>
-      <XDSText type="supporting" style={{padding: 16}}>
+      <Text type="supporting" style={{padding: 16}}>
         Click anywhere in this area to show a fixed-position layer
-      </XDSText>
+      </Text>
       {layer.render(
         <div {...stylex.props(styles.popoverContent)}>
-          <XDSText type="body">
+          <Text type="body">
             Fixed at ({Math.round(coords.x)}, {Math.round(coords.y)})
-          </XDSText>
+          </Text>
         </div>,
         {x: coords.x, y: coords.y},
       )}
@@ -153,15 +153,16 @@ export const FixedMode: Story = {
 
 function LayerProviderDemo() {
   return (
-    <XDSLayerProvider toast={{position: 'topEnd', maxVisible: 3}}>
+    <LayerProvider toast={{position: 'topEnd', maxVisible: 3}}>
       <div style={{padding: 16}}>
-        <XDSText type="body">
-          XDSLayerProvider wraps your app to configure layer systems (toast
-          positioning, max visible toasts). It is optional — hooks fall back to
+        <Text type="body">
+          
+          LayerProvider wraps your app to configure layer systems (toast
+          positioning, max visible toasts). It is optional; hooks fall back to
           defaults when no provider exists.
-        </XDSText>
+        </Text>
       </div>
-    </XDSLayerProvider>
+    </LayerProvider>
   );
 }
 

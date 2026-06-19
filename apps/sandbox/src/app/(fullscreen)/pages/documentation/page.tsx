@@ -4,19 +4,19 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSCard} from '@xds/core/Card';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSToken} from '@xds/core/Token';
-import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSBanner} from '@xds/core/Banner';
-import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSTooltip} from '@xds/core/Tooltip';
-import {XDSTable} from '@xds/core/Table';
+import {Heading, Text} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Card} from '@xds/core/Card';
+import {DropdownMenu} from '@xds/core/DropdownMenu';
+import {Avatar} from '@xds/core/Avatar';
+import {Badge} from '@xds/core/Badge';
+import {Token} from '@xds/core/Token';
+import {List, ListItem} from '@xds/core/List';
+import {Banner} from '@xds/core/Banner';
+import {Dialog, DialogHeader} from '@xds/core/Dialog';
+import {Divider} from '@xds/core/Divider';
+import {Tooltip} from '@xds/core/Tooltip';
+import {Table} from '@xds/core/Table';
 
 const localStyles = stylex.create({
   previewCard: {
@@ -94,9 +94,9 @@ function SectionLabel({label}: {label: string}) {
         padding: '12px 8px 4px',
         margin: 0,
       }}>
-      <XDSText type="supporting" weight="semibold" color="secondary">
+      <Text type="supporting" weight="semibold" color="secondary">
         {label}
-      </XDSText>
+      </Text>
     </div>
   );
 }
@@ -110,22 +110,22 @@ function DialogPreview() {
   return (
     <div>
       <div style={{marginBottom: 16}}>
-        <XDSHeading level={3}>Dialog</XDSHeading>
+        <Heading level={3}>Dialog</Heading>
       </div>
-      <XDSButton
+      <Button
         label="Open Dialog"
         variant="primary"
         onClick={() => setIsOpen(true)}
       />
-      <XDSDialog isOpen={isOpen} onOpenChange={setIsOpen}>
-        <XDSDialogHeader title="Example Dialog" onOpenChange={setIsOpen} />
+      <Dialog isOpen={isOpen} onOpenChange={setIsOpen}>
+        <DialogHeader title="Example Dialog" onOpenChange={setIsOpen} />
         <div style={{padding: 16}}>
-          <XDSText type="body">
+          <Text type="body">
             This is an example dialog. Dialogs are used to require user action
             or display important information that needs acknowledgment.
-          </XDSText>
+          </Text>
         </div>
-      </XDSDialog>
+      </Dialog>
     </div>
   );
 }
@@ -552,7 +552,7 @@ const COMPONENT_DOCS: Record<
       'In toolbars and action bars for contextual operations',
     ],
     whenNotToUse: [
-      'For navigation to another page — use Link instead',
+      'For navigation to another page; use Link instead',
       'To toggle a state on/off — use ToggleButton or Switch instead',
       'When the action is part of a menu — use DropdownMenu instead',
     ],
@@ -650,7 +650,7 @@ export default function DocumentationPage() {
     button: (
       <div>
         <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Variants</XDSHeading>
+          <Heading level={3}>Variants</Heading>
         </div>
         <div
           style={{
@@ -659,12 +659,12 @@ export default function DocumentationPage() {
             flexWrap: 'wrap' as const,
             marginBottom: 32,
           }}>
-          <XDSButton label="Primary" variant="primary" />
-          <XDSButton label="Secondary" variant="secondary" />
-          <XDSButton label="Ghost" variant="ghost" />
+          <Button label="Primary" variant="primary" />
+          <Button label="Secondary" variant="secondary" />
+          <Button label="Ghost" variant="ghost" />
         </div>
         <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Sizes</XDSHeading>
+          <Heading level={3}>Sizes</Heading>
         </div>
         <div
           style={{
@@ -673,16 +673,16 @@ export default function DocumentationPage() {
             alignItems: 'center',
             flexWrap: 'wrap' as const,
           }}>
-          <XDSButton label="Small" variant="primary" size="sm" />
-          <XDSButton label="Medium" variant="primary" size="md" />
-          <XDSButton label="Large" variant="primary" size="lg" />
+          <Button label="Small" variant="primary" size="sm" />
+          <Button label="Medium" variant="primary" size="md" />
+          <Button label="Large" variant="primary" size="lg" />
         </div>
       </div>
     ),
     avatar: (
       <div>
         <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Sizes</XDSHeading>
+          <Heading level={3}>Sizes</Heading>
         </div>
         <div
           style={{
@@ -691,16 +691,16 @@ export default function DocumentationPage() {
             alignItems: 'center',
             flexWrap: 'wrap' as const,
           }}>
-          <XDSAvatar name="Alice" size="small" />
-          <XDSAvatar name="Bob" size="medium" />
-          <XDSAvatar name="Charlie" size="large" />
+          <Avatar name="Alice" size="small" />
+          <Avatar name="Bob" size="medium" />
+          <Avatar name="Charlie" size="large" />
         </div>
       </div>
     ),
     badge: (
       <div>
         <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Variants</XDSHeading>
+          <Heading level={3}>Variants</Heading>
         </div>
         <div
           style={{
@@ -708,52 +708,52 @@ export default function DocumentationPage() {
             gap: 12,
             flexWrap: 'wrap' as const,
           }}>
-          <XDSBadge label="Default" />
-          <XDSBadge label="Info" variant="info" />
-          <XDSBadge label="Success" variant="success" />
-          <XDSBadge label="Warning" variant="warning" />
-          <XDSBadge label="Error" variant="error" />
+          <Badge label="Default" />
+          <Badge label="Info" variant="info" />
+          <Badge label="Success" variant="success" />
+          <Badge label="Warning" variant="warning" />
+          <Badge label="Error" variant="error" />
         </div>
       </div>
     ),
     card: (
       <div>
         <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Card</XDSHeading>
+          <Heading level={3}>Card</Heading>
         </div>
         <div style={{maxWidth: 400}}>
-          <XDSCard>
+          <Card>
             <div style={{padding: 16}}>
-              <XDSHeading level={4}>Card Title</XDSHeading>
+              <Heading level={4}>Card Title</Heading>
               <div style={{marginTop: 8}}>
-                <XDSText type="body" color="secondary">
+                <Text type="body" color="secondary">
                   Cards are containers for grouping related content and actions.
                   They provide a flexible surface for displaying information.
-                </XDSText>
+                </Text>
               </div>
             </div>
-          </XDSCard>
+          </Card>
         </div>
       </div>
     ),
     banner: (
       <div>
         <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Status Variants</XDSHeading>
+          <Heading level={3}>Status Variants</Heading>
         </div>
         <div
           style={{display: 'flex', flexDirection: 'column' as const, gap: 12}}>
-          <XDSBanner status="info" title="Information">
-            <XDSText type="body">
+          <Banner status="info" title="Information">
+            <Text type="body">
               This is an informational banner message.
-            </XDSText>
-          </XDSBanner>
-          <XDSBanner status="success" title="Success">
-            <XDSText type="body">Operation completed successfully.</XDSText>
-          </XDSBanner>
-          <XDSBanner status="warning" title="Warning">
-            <XDSText type="body">Please review before continuing.</XDSText>
-          </XDSBanner>
+            </Text>
+          </Banner>
+          <Banner status="success" title="Success">
+            <Text type="body">Operation completed successfully.</Text>
+          </Banner>
+          <Banner status="warning" title="Warning">
+            <Text type="body">Please review before continuing.</Text>
+          </Banner>
         </div>
       </div>
     ),
@@ -761,51 +761,51 @@ export default function DocumentationPage() {
     text: (
       <div>
         <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Typography Scale</XDSHeading>
+          <Heading level={3}>Typography Scale</Heading>
         </div>
         <div
           style={{display: 'flex', flexDirection: 'column' as const, gap: 12}}>
-          <XDSText type="display-1">Display 1</XDSText>
-          <XDSText type="display-2">Display 2</XDSText>
-          <XDSText type="display-3">Display 3</XDSText>
-          <XDSHeading level={1}>Heading 1</XDSHeading>
-          <XDSHeading level={2}>Heading 2</XDSHeading>
-          <XDSHeading level={3}>Heading 3</XDSHeading>
-          <XDSHeading level={4}>Heading 4</XDSHeading>
-          <XDSText type="body">Body text</XDSText>
-          <XDSText type="supporting">Supporting text</XDSText>
+          <Text type="display-1">Display 1</Text>
+          <Text type="display-2">Display 2</Text>
+          <Text type="display-3">Display 3</Text>
+          <Heading level={1}>Heading 1</Heading>
+          <Heading level={2}>Heading 2</Heading>
+          <Heading level={3}>Heading 3</Heading>
+          <Heading level={4}>Heading 4</Heading>
+          <Text type="body">Body text</Text>
+          <Text type="supporting">Supporting text</Text>
         </div>
       </div>
     ),
     divider: (
       <div>
         <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Divider</XDSHeading>
+          <Heading level={3}>Divider</Heading>
         </div>
         <div
           style={{display: 'flex', flexDirection: 'column' as const, gap: 24}}>
           <div>
-            <XDSText type="supporting" color="secondary">
+            <Text type="supporting" color="secondary">
               Subtle (default)
-            </XDSText>
+            </Text>
             <div style={{marginTop: 8}}>
-              <XDSDivider />
+              <Divider />
             </div>
           </div>
           <div>
-            <XDSText type="supporting" color="secondary">
+            <Text type="supporting" color="secondary">
               Strong
-            </XDSText>
+            </Text>
             <div style={{marginTop: 8}}>
-              <XDSDivider variant="strong" />
+              <Divider variant="strong" />
             </div>
           </div>
           <div>
-            <XDSText type="supporting" color="secondary">
+            <Text type="supporting" color="secondary">
               With label
-            </XDSText>
+            </Text>
             <div style={{marginTop: 8}}>
-              <XDSDivider label="Section" />
+              <Divider label="Section" />
             </div>
           </div>
         </div>
@@ -814,7 +814,7 @@ export default function DocumentationPage() {
     token: (
       <div>
         <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Tokens</XDSHeading>
+          <Heading level={3}>Tokens</Heading>
         </div>
         <div
           style={{
@@ -822,17 +822,17 @@ export default function DocumentationPage() {
             gap: 8,
             flexWrap: 'wrap' as const,
           }}>
-          <XDSToken label="Design" />
-          <XDSToken label="Engineering" />
-          <XDSToken label="Product" />
-          <XDSToken label="Research" />
+          <Token label="Design" />
+          <Token label="Engineering" />
+          <Token label="Product" />
+          <Token label="Research" />
         </div>
       </div>
     ),
     tooltip: (
       <div>
         <div style={{marginBottom: 16}}>
-          <XDSHeading level={3}>Tooltip</XDSHeading>
+          <Heading level={3}>Tooltip</Heading>
         </div>
         <div
           style={{
@@ -840,15 +840,15 @@ export default function DocumentationPage() {
             gap: 12,
             flexWrap: 'wrap' as const,
           }}>
-          <XDSTooltip content="Primary action">
-            <XDSButton label="Hover me" variant="primary" />
-          </XDSTooltip>
-          <XDSTooltip content="Secondary action">
-            <XDSButton label="Or me" variant="secondary" />
-          </XDSTooltip>
-          <XDSTooltip content="Ghost action">
-            <XDSButton label="Or me" variant="ghost" />
-          </XDSTooltip>
+          <Tooltip content="Primary action">
+            <Button label="Hover me" variant="primary" />
+          </Tooltip>
+          <Tooltip content="Secondary action">
+            <Button label="Or me" variant="secondary" />
+          </Tooltip>
+          <Tooltip content="Ghost action">
+            <Button label="Or me" variant="ghost" />
+          </Tooltip>
         </div>
       </div>
     ),
@@ -891,24 +891,24 @@ export default function DocumentationPage() {
             overflowY: 'auto' as const,
             padding: '0 16px 16px 16px',
           }}>
-          <XDSList density="balanced">
-            <XDSListItem
+          <List density="balanced">
+            <ListItem
               label="Overview"
               isSelected={selectedComponent === null}
               onClick={() => {
                 setSelectedComponent(null);
               }}
             />
-            <XDSListItem label="Getting started" onClick={() => {}} />
-            <XDSListItem label="Quick start" onClick={() => {}} />
-          </XDSList>
+            <ListItem label="Getting started" onClick={() => {}} />
+            <ListItem label="Quick start" onClick={() => {}} />
+          </List>
 
           {COMPONENT_CATEGORIES.map(category => (
             <div key={category.label}>
               <SectionLabel label={category.label.toUpperCase()} />
-              <XDSList density="balanced">
+              <List density="balanced">
                 {category.items.map(item => (
-                  <XDSListItem
+                  <ListItem
                     key={item.key}
                     label={item.name}
                     isSelected={
@@ -920,7 +920,7 @@ export default function DocumentationPage() {
                     }}
                   />
                 ))}
-              </XDSList>
+              </List>
             </div>
           ))}
         </nav>
@@ -951,21 +951,21 @@ export default function DocumentationPage() {
                 minHeight: 320,
               }}>
               <div style={{flex: 1, minWidth: 0}}>
-                <XDSText type="supporting" color="secondary">
+                <Text type="supporting" color="secondary">
                   XDS Design System
-                </XDSText>
+                </Text>
                 <div style={{marginTop: 8}}>
-                  <XDSText type="display-1">Web overview</XDSText>
+                  <Text type="display-1">Web overview</Text>
                 </div>
                 <div style={{marginTop: 16}}>
-                  <XDSText type="large" color="secondary">
+                  <Text type="large" color="secondary">
                     XDS Web React is an open-source UI library created by the
                     XDS Design Team to help developers quickly build beautiful,
                     accessible products.
-                  </XDSText>
+                  </Text>
                 </div>
                 <div style={{marginTop: 24}}>
-                  <XDSButton
+                  <Button
                     label="Get started"
                     variant="primary"
                     size="lg"
@@ -983,7 +983,7 @@ export default function DocumentationPage() {
             {COMPONENT_CATEGORIES.map(category => (
               <div key={category.label} style={{marginBottom: 64}}>
                 <div style={{marginBottom: 16}}>
-                  <XDSText type="display-2">{category.label}</XDSText>
+                  <Text type="display-2">{category.label}</Text>
                 </div>
                 <div
                   style={{
@@ -1000,19 +1000,19 @@ export default function DocumentationPage() {
                         setActiveNav(item.key);
                       }}
                       style={{cursor: 'pointer'}}>
-                      <XDSCard
+                      <Card
                         variant="muted"
                         padding={0}
                         minHeight={160}
                         xstyle={localStyles.previewCard}
                       />
                       <div style={{paddingTop: 12}}>
-                        <XDSText type="body" style={{fontWeight: 700}}>
+                        <Text type="body" style={{fontWeight: 700}}>
                           {item.name}
-                        </XDSText>
-                        <XDSText type="body" color="secondary">
+                        </Text>
+                        <Text type="body" color="secondary">
                           {item.desc}
-                        </XDSText>
+                        </Text>
                       </div>
                     </div>
                   ))}
@@ -1025,12 +1025,12 @@ export default function DocumentationPage() {
           <div style={{maxWidth: 840, margin: '0 auto'}}>
             {/* Header */}
             <div style={{marginBottom: 8}}>
-              <XDSText type="display-1">{getComponentName(activeNav)}</XDSText>
+              <Text type="display-1">{getComponentName(activeNav)}</Text>
             </div>
             <div style={{marginBottom: 32}}>
-              <XDSText type="supporting" color="secondary">
+              <Text type="supporting" color="secondary">
                 March 30, 2026 · Updated 5:40 p.m. PST
-              </XDSText>
+              </Text>
             </div>
 
             {/* Live Preview Card */}
@@ -1051,17 +1051,17 @@ export default function DocumentationPage() {
                     '1px solid var(--color-divider, rgba(0,0,0,0.08))',
                   backgroundColor: 'var(--color-background-surface, #ffffff)',
                 }}>
-                <XDSText type="supporting" weight="semibold" color="secondary">
+                <Text type="supporting" weight="semibold" color="secondary">
                   Live preview
-                </XDSText>
+                </Text>
                 <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
-                  <XDSButton
+                  <Button
                     label="Open in Craft"
                     variant="ghost"
                     size="sm"
                     icon={<ExternalLinkIcon />}
                   />
-                  <XDSDropdownMenu
+                  <DropdownMenu
                     button={{
                       label: 'Variants',
                       variant: 'ghost',
@@ -1074,14 +1074,14 @@ export default function DocumentationPage() {
                       {label: 'Ghost', onClick: () => {}},
                     ]}
                   />
-                  <XDSButton
+                  <Button
                     label="Toggle theme"
                     variant="ghost"
                     size="sm"
                     isIconOnly
                     icon={<SunIcon />}
                   />
-                  <XDSButton
+                  <Button
                     label="Fullscreen"
                     variant="ghost"
                     size="sm"
@@ -1099,9 +1099,9 @@ export default function DocumentationPage() {
                   backgroundColor: 'var(--color-background-muted, #f5f5f5)',
                 }}>
                 {COMPONENT_PREVIEWS[activeNav] ?? (
-                  <XDSText type="supporting" color="secondary">
+                  <Text type="supporting" color="secondary">
                     Preview coming soon
-                  </XDSText>
+                  </Text>
                 )}
               </div>
             </div>
@@ -1111,28 +1111,28 @@ export default function DocumentationPage() {
               const docs = getComponentDocs(activeNav);
               return (
                 <div style={{marginBottom: 48}}>
-                  <XDSHeading level={3}>{docs.tagline}</XDSHeading>
+                  <Heading level={3}>{docs.tagline}</Heading>
                   <div style={{marginTop: 12}}>
-                    <XDSText type="body">{docs.description}</XDSText>
+                    <Text type="body">{docs.description}</Text>
                   </div>
                   <div style={{marginTop: 24}}>
-                    <XDSHeading level={4}>When to use</XDSHeading>
+                    <Heading level={4}>When to use</Heading>
                     <div style={{marginTop: 8}}>
-                      <XDSList density="compact" listStyle="disc">
+                      <List density="compact" listStyle="disc">
                         {docs.whenToUse.map((item, i) => (
-                          <XDSListItem key={i} label={item} />
+                          <ListItem key={i} label={item} />
                         ))}
-                      </XDSList>
+                      </List>
                     </div>
                   </div>
                   <div style={{marginTop: 24}}>
-                    <XDSHeading level={4}>When NOT to use</XDSHeading>
+                    <Heading level={4}>When NOT to use</Heading>
                     <div style={{marginTop: 8}}>
-                      <XDSList density="compact" listStyle="disc">
+                      <List density="compact" listStyle="disc">
                         {docs.whenNotToUse.map((item, i) => (
-                          <XDSListItem key={i} label={item} />
+                          <ListItem key={i} label={item} />
                         ))}
-                      </XDSList>
+                      </List>
                     </div>
                   </div>
                 </div>
@@ -1144,7 +1144,7 @@ export default function DocumentationPage() {
               const docs = getComponentDocs(activeNav);
               return (
                 <div style={{marginBottom: 48}}>
-                  <XDSHeading level={2}>Anatomy</XDSHeading>
+                  <Heading level={2}>Anatomy</Heading>
                   <div
                     style={{
                       marginTop: 16,
@@ -1155,20 +1155,20 @@ export default function DocumentationPage() {
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}>
-                    <XDSText type="supporting" color="secondary">
+                    <Text type="supporting" color="secondary">
                       Anatomy diagram
-                    </XDSText>
+                    </Text>
                   </div>
                   <div style={{marginTop: 16}}>
-                    <XDSText type="body">
+                    <Text type="body">
                       The {getComponentName(activeNav)} is composed of the
                       following elements. Required elements must always be
                       present, while optional elements can be included as
                       needed.
-                    </XDSText>
+                    </Text>
                   </div>
                   <div style={{marginTop: 16}}>
-                    <XDSTable
+                    <Table
                       data={docs.anatomy as Record<string, unknown>[]}
                       columns={[
                         {key: 'element', header: 'Element'},

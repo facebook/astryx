@@ -3,14 +3,14 @@
 'use client';
 
 import {
-  XDSTopNav,
-  XDSTopNavHeading,
-  XDSTopNavItem,
-  XDSTopNavMenu,
+  TopNav,
+  TopNavHeading,
+  TopNavItem,
+  TopNavMenu,
 } from '@xds/core/TopNav';
-import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
+import {NavIcon} from '@xds/core/NavIcon';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
 import {
   CubeIcon,
   ChartBarIcon,
@@ -22,19 +22,19 @@ import {
 
 export default function TopNavHoverMenu() {
   return (
-    <XDSTopNav
+    <TopNav
       label="Main navigation"
       heading={
-        <XDSTopNavHeading
+        <TopNavHeading
           heading="My App"
-          logo={<XDSNavIcon icon={<XDSIcon icon={CubeIcon} size="sm" />} />}
+          logo={<NavIcon icon={<Icon icon={CubeIcon} size="sm" />} />}
           href="#"
         />
       }
       startContent={
         <>
-          <XDSTopNavItem label="Home" href="#" isSelected />
-          <XDSTopNavMenu
+          <TopNavItem label="Home" href="#" isSelected />
+          <TopNavMenu
             label="Products"
             items={[
               {
@@ -63,11 +63,11 @@ export default function TopNavHoverMenu() {
               },
             ]}
           />
-          <XDSTopNavItem label="Pricing" href="#" />
+          <TopNavItem label="Pricing" href="#" />
         </>
       }
       endContent={
-        <XDSButton
+        <Button
           label="Profile"
           variant="ghost"
           icon={<UserCircleIcon />}

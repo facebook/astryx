@@ -2,40 +2,40 @@
 
 'use client';
 
-import {useXDSHoverCard} from '@xds/core/HoverCard';
-import {XDSButton} from '@xds/core/Button';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {useHoverCard} from '@xds/core/HoverCard';
+import {Button} from '@xds/core/Button';
+import {Center} from '@xds/core/Center';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function HoverCardHookUsage() {
-  const hoverCard = useXDSHoverCard({
+  const hoverCard = useHoverCard({
     placement: 'below',
     delay: 100,
     isDefaultOpen: true,
   });
 
   return (
-    <XDSCenter height={220}>
-      <XDSButton
+    <Center height={220}>
+      <Button
         label="Hover profile"
         ref={hoverCard.ref}
         aria-describedby={hoverCard.describedBy}
       />
       {hoverCard.renderHoverCard(
-        <XDSVStack gap={1}>
-          <XDSText type="body" weight="bold">
+        <VStack gap={1}>
+          <Text type="body" weight="bold">
             Alex Morgan
-          </XDSText>
-          <XDSText type="body" color="secondary">
+          </Text>
+          <Text type="body" color="secondary">
             Staff designer · Product systems
-          </XDSText>
-          <XDSText type="body" color="secondary">
+          </Text>
+          <Text type="body" color="secondary">
             Owns interaction patterns for overlays and navigation.
-          </XDSText>
-        </XDSVStack>,
+          </Text>
+        </VStack>,
         {placement: 'below', alignment: 'center'},
       )}
-    </XDSCenter>
+    </Center>
   );
 }

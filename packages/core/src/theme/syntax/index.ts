@@ -12,7 +12,7 @@ export type {SyntaxTokenName} from './tokens';
 
 export {defineSyntaxTheme, syntaxThemeStyle, syntaxThemeToCSS} from './defineSyntaxTheme';
 export type {
-  SyntaxTheme,
+  SyntaxThemeDefinition,
   SyntaxThemeInput,
   SyntaxThemeTokenKey,
   SyntaxThemeTokenMap,
@@ -20,8 +20,8 @@ export type {
   SyntaxTokenValue,
 } from './defineSyntaxTheme';
 
-export {XDSSyntaxTheme, useXDSSyntaxTheme} from './XDSSyntaxTheme';
-export type {UseXDSSyntaxThemeReturn} from './XDSSyntaxTheme';
+export {SyntaxTheme, useSyntaxTheme} from './SyntaxTheme';
+export type {UseSyntaxThemeReturn} from './SyntaxTheme';
 
 // Community syntax theme presets (formerly @xds/theme-syntax)
 export {

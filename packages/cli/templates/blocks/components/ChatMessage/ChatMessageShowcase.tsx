@@ -3,54 +3,53 @@
 'use client';
 
 import {
-  XDSChatMessageList,
-  XDSChatMessage,
-  XDSChatMessageBubble,
-  XDSChatMessageMetadata,
+  ChatMessageList,
+  ChatMessage,
+  ChatMessageBubble,
+  ChatMessageMetadata,
 } from '@xds/core/Chat';
-import {XDSTimestamp} from '@xds/core/Timestamp';
-import {XDSText} from '@xds/core/Text';
+import {Timestamp} from '@xds/core/Timestamp';
+import {Text} from '@xds/core/Text';
 
 export default function ChatMessageShowcase() {
   return (
-    <XDSChatMessageList style={{maxWidth: 600}}>
-      <XDSChatMessage sender="user">
-        <XDSChatMessageBubble group="first">
+    <ChatMessageList style={{maxWidth: 600}}>
+      <ChatMessage sender="user">
+        <ChatMessageBubble group="first">
           I just pushed the refactored auth module.
-        </XDSChatMessageBubble>
-        <XDSChatMessageBubble
+        </ChatMessageBubble>
+        <ChatMessageBubble
           group="last"
           metadata={
-            <XDSChatMessageMetadata
+            <ChatMessageMetadata
               timestamp={
-                <XDSTimestamp value="2026-04-28T14:30:00" format="time" />
+                <Timestamp value="2026-04-28T14:30:00" format="time" />
               }
               status="read"
             />
           }>
           Can you review the token validation changes?
-        </XDSChatMessageBubble>
-      </XDSChatMessage>
-
-      <XDSChatMessage sender="assistant">
-        <XDSChatMessageBubble
+        </ChatMessageBubble>
+      </ChatMessage>
+      <ChatMessage sender="assistant">
+        <ChatMessageBubble
           variant="ghost"
           metadata={
-            <XDSChatMessageMetadata
+            <ChatMessageMetadata
               timestamp={
-                <XDSTimestamp value="2026-04-28T14:31:00" format="time" />
+                <Timestamp value="2026-04-28T14:31:00" format="time" />
               }
               footer={
-                <XDSText type="supporting" color="secondary">
+                <Text type="supporting" color="secondary">
                   Claude Opus 4.6
-                </XDSText>
+                </Text>
               }
             />
           }>
           Looks good — the refresh token rotation is solid and the error
           handling covers all the edge cases. Ship it.
-        </XDSChatMessageBubble>
-      </XDSChatMessage>
-    </XDSChatMessageList>
+        </ChatMessageBubble>
+      </ChatMessage>
+    </ChatMessageList>
   );
 }

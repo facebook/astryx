@@ -8,6 +8,14 @@ export const docs = {
   displayName: 'Segmented Control Item',
   isHiddenFromOverview: true,
   description: 'Individual segment item rendering as a radio button within the segmented control.',
+  // SegmentedControlItem requires SegmentedControl context; wrap it so the preview doesn't throw.
+  playground: {
+    defaults: {value: 'item-1', label: 'Item'},
+    wrapper: {
+      component: 'SegmentedControl',
+      props: {value: 'item-1', label: 'Segmented control'},
+    },
+  },
   props: [
     {
       name: 'value',
@@ -33,7 +41,7 @@ export const docs = {
       description: 'Icon element displayed before the label.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',

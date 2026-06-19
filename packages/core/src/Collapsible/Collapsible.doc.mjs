@@ -11,7 +11,7 @@ export const docs = {
   playground: {
     defaults: {
       trigger: 'Click to expand',
-      children: {__element: 'XDSText', props: {type: 'body'}, children: 'This content is revealed when the collapsible is expanded. It can contain any components.'},
+      children: {__element: 'Text', props: {type: 'body'}, children: 'This content is revealed when the collapsible is expanded. It can contain any components.'},
     },
   },
   theming: {
@@ -19,7 +19,7 @@ export const docs = {
       {className: 'xds-collapsible'},
     ],
   },
-  description: 'A primitive that makes any content collapsible — a trigger button toggles visibility of the content area, managing its own state or deferring to a parent XDSCollapsibleGroup.',
+  description: 'A primitive that makes any content collapsible: a trigger button toggles visibility of the content area, managing its own state or deferring to a parent CollapsibleGroup.',
   props: [
     {
       name: 'trigger',
@@ -28,7 +28,7 @@ export const docs = {
       required: true,
       slotElements: [
         {
-          __element: 'XDSText',
+          __element: 'Text',
           props: {
             type: 'body',
           },
@@ -60,17 +60,17 @@ export const docs = {
     {
       name: 'value',
       type: 'string',
-      description: 'Identifier used for group coordination. Required when placed inside an XDSCollapsibleGroup.',
+      description: 'Identifier used for group coordination. Required when placed inside an CollapsibleGroup.',
     },
   ],
   components: [
-    {name: 'XDSCollapsibleGroup'},
+    {name: 'CollapsibleGroup'},
   ],
   usage: {
-    description: 'Collapsible hides and reveals content behind a trigger button. Use it in settings panels, FAQ pages, or detail views to keep the page scannable while letting users drill into sections they care about. Wrap multiple collapsibles in XDSCollapsibleGroup for accordion behavior. For custom collapsible components, use the `useXDSCollapsible` hook directly (`xds hook useXDSCollapsible`).',
+    description: 'Collapsible hides and reveals content behind a trigger button. Use it in settings panels, FAQ pages, or detail views to keep the page scannable while letting users drill into sections they care about. Wrap multiple collapsibles in CollapsibleGroup for accordion behavior. For custom collapsible components, use the `useCollapsible` hook directly (`xds hook useCollapsible`).',
     bestPractices: [
-      { guidance: true, description: 'Wrap each XDSCollapsible in an XDSCard for visual separation in accordion layouts.' },
-      { guidance: true, description: 'Use XDSCollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
+      { guidance: true, description: 'Wrap each Collapsible in an Card for visual separation in accordion layouts.' },
+      { guidance: true, description: 'Use CollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
       { guidance: true, description: 'Use type="multiple" when users need to compare content across sections, like feature lists or pricing tiers.' },
       { guidance: true, description: 'Start sections open (defaultIsOpen) when the content is likely needed on first view; don\'t make users click to see essential info.' },
       { guidance: false, description: 'Hide critical or required content behind a collapsible; users may not discover it.' },
@@ -88,10 +88,10 @@ export const docs = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
   usage: {
-    description: 'Collapsible hides and reveals content behind a trigger button. Use it in settings panels, FAQ pages, or detail views to keep the page scannable while letting users drill into sections they care about. Wrap multiple collapsibles in XDSCollapsibleGroup for accordion behavior.',
+    description: 'Collapsible hides and reveals content behind a trigger button. Use it in settings panels, FAQ pages, or detail views to keep the page scannable while letting users drill into sections they care about. Wrap multiple collapsibles in CollapsibleGroup for accordion behavior.',
     bestPractices: [
-      { guidance: true, description: 'Wrap each XDSCollapsible in an XDSCard for visual separation in accordion layouts.' },
-      { guidance: true, description: 'Use XDSCollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
+      { guidance: true, description: 'Wrap each Collapsible in an Card for visual separation in accordion layouts.' },
+      { guidance: true, description: 'Use CollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
       { guidance: true, description: 'Use type="multiple" when users need to compare content across sections, like feature lists or pricing tiers.' },
       { guidance: true, description: 'Start sections open (defaultIsOpen) when the content is likely needed on first view; don\'t make users click to see essential info.' },
       { guidance: false, description: 'Hide critical or required content behind a collapsible; users may not discover it.' },
@@ -105,10 +105,10 @@ export const docsZh = {
 export const docsDense = {
   description: 'hide/reveal content behind a trigger; group for accordion behavior',
   usage: {
-    description: 'Collapsible hides and reveals content behind a trigger button. Use in settings, FAQs, or detail views. Wrap in XDSCollapsibleGroup for accordion behavior.',
+    description: 'Collapsible hides and reveals content behind a trigger button. Use in settings, FAQs, or detail views. Wrap in CollapsibleGroup for accordion behavior.',
     bestPractices: [
-      { guidance: true, description: 'Wrap each XDSCollapsible in an XDSCard for visual separation in accordion layouts.' },
-      { guidance: true, description: 'Use XDSCollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
+      { guidance: true, description: 'Wrap each Collapsible in an Card for visual separation in accordion layouts.' },
+      { guidance: true, description: 'Use CollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
       { guidance: true, description: 'Use type="multiple" when users need to compare across sections.' },
       { guidance: true, description: 'Start sections open (defaultIsOpen) when content is needed on first view.' },
       { guidance: false, description: 'Hide critical content behind a collapsible; users may not discover it.' },

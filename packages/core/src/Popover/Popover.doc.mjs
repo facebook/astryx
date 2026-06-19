@@ -10,7 +10,7 @@ export const docs = {
   keywords: ["popover","popup","dropdown","tooltip","overlay","flyout","callout","popper","anchor","floating","bubble"],
   components: [
     {
-      name: 'XDSPopover',
+      name: 'Popover',
       displayName: 'Popover',
       description:
         'A click-triggered popover for displaying interactive content anchored to a trigger element.',      props: [
@@ -31,17 +31,17 @@ export const docs = {
           type: 'ReactNode',
           description: 'Content to display inside the popover.',
           required: true,
-          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Content text'}],
+          slotElements: [{__element: 'Text', props: {type: 'body'}, children: 'Content text'}],
         },
         {
           name: 'placement',
-          type: 'LayerPlacement',
+          type: "'above' | 'below' | 'start' | 'end'",
           description: 'Position placement relative to the trigger.',
           default: "'below'",
         },
         {
           name: 'alignment',
-          type: 'LayerAlignment',
+          type: "'start' | 'center' | 'end'",
           description: 'Alignment along the placement axis.',
           default: "'start'",
         },
@@ -100,8 +100,8 @@ export const docs = {
   ],
   playground: {
     defaults: {
-      content: {__element: 'XDSText', props: {type: 'body'}, children: 'Popover content goes here.'},
-      children: {__element: 'XDSButton', props: {label: 'Open popover', variant: 'secondary'}},
+      content: {__element: 'Text', props: {type: 'body'}, children: 'Popover content goes here.'},
+      children: {__element: 'Button', props: {label: 'Open popover', variant: 'secondary'}},
     },
   },
   theming: {
@@ -139,7 +139,7 @@ export const docsZh = {
   displayName: 'Popover',
   components: [
     {
-      name: 'XDSPopover',
+      name: 'Popover',
       displayName: 'Popover',
       description:
         '一个点击触发的弹出框，用于显示锚定到触发元素的交互式内容。',
@@ -164,13 +164,13 @@ export const docsZh = {
         },
         {
           name: 'placement',
-          type: 'LayerPlacement',
+          type: "'above' | 'below' | 'start' | 'end'",
           description: '相对于触发器的位置放置方式。',
           default: "'below'",
         },
         {
           name: 'alignment',
-          type: 'LayerAlignment',
+          type: "'start' | 'center' | 'end'",
           description: '沿放置轴的对齐方式。',
           default: "'start'",
         },
@@ -273,7 +273,7 @@ export const docsDense = {
   },
   components: [
     {
-      name: 'XDSPopover',
+      name: 'Popover',
       displayName: 'Popover',
       description:
         'Click-triggered popover for interactive content anchored to trigger element.',

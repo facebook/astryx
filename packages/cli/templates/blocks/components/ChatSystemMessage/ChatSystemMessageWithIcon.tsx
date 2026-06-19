@@ -2,10 +2,10 @@
 
 'use client';
 
-import {XDSChatMessageList, XDSChatSystemMessage} from '@xds/core/Chat';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {ChatMessageList, ChatSystemMessage} from '@xds/core/Chat';
+import {Icon} from '@xds/core/Icon';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 import {
   LockClosedIcon,
   ShieldCheckIcon,
@@ -15,24 +15,24 @@ import {
 
 export default function ChatSystemMessageWithIcon() {
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Text type="supporting" color="secondary">
         Icons reinforce the message type
-      </XDSText>
-      <XDSChatMessageList>
-        <XDSChatSystemMessage icon={<XDSIcon icon={UserPlusIcon} />}>
+      </Text>
+      <ChatMessageList>
+        <ChatSystemMessage icon={<Icon icon={UserPlusIcon} />}>
           Jordan was added to the conversation
-        </XDSChatSystemMessage>
-        <XDSChatSystemMessage icon={<XDSIcon icon={LockClosedIcon} />}>
+        </ChatSystemMessage>
+        <ChatSystemMessage icon={<Icon icon={LockClosedIcon} />}>
           Messages are end-to-end encrypted
-        </XDSChatSystemMessage>
-        <XDSChatSystemMessage icon={<XDSIcon icon={SparklesIcon} />}>
+        </ChatSystemMessage>
+        <ChatSystemMessage icon={<Icon icon={SparklesIcon} />}>
           Agent is generating a response…
-        </XDSChatSystemMessage>
-        <XDSChatSystemMessage icon={<XDSIcon icon={ShieldCheckIcon} />}>
+        </ChatSystemMessage>
+        <ChatSystemMessage icon={<Icon icon={ShieldCheckIcon} />}>
           Conversation verified by admin
-        </XDSChatSystemMessage>
-      </XDSChatMessageList>
-    </XDSStack>
+        </ChatSystemMessage>
+      </ChatMessageList>
+    </Stack>
   );
 }

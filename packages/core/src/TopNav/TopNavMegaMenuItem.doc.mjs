@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'TopNav',
   displayName: 'Top Nav Mega Menu Item',
   isHiddenFromOverview: true,
-  description: 'An individual item inside an XDSTopNavMegaMenu. Renders itself in both desktop (popover grid) and mobile drawer modes via render mode context.',
+  description: 'An individual item inside an TopNavMegaMenu. Renders itself in both desktop (popover grid) and mobile drawer modes via render mode context.',
   props: [
     {
       name: 'title',
@@ -26,7 +26,7 @@ export const docs = {
       description: 'Optional icon element displayed to the left.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',
@@ -46,8 +46,8 @@ export const docs = {
     },
     {
       name: 'as',
-      type: 'XDSLinkComponentType',
-      description: 'Custom component to render instead of <a> for link items. Overrides the provider-level default set by XDSLinkProvider.',
+      type: 'LinkComponentType',
+      description: 'Custom component to render instead of <a> for link items. Overrides the provider-level default set by LinkProvider.',
     },
   ],
 };
@@ -86,8 +86,8 @@ export const docsZh = {
     },
     {
       name: 'as',
-      type: 'XDSLinkComponentType',
-      description: '用于替代 <a> 的自定义链接组件。覆盖 XDSLinkProvider 设置的默认组件。',
+      type: 'LinkComponentType',
+      description: '用于替代 <a> 的自定义链接组件。覆盖 LinkProvider 设置的默认组件。',
     },
   ],
 };
@@ -103,6 +103,6 @@ export const docsDense = {
     icon: 'Left icon element.',
     href: 'Navigation URL.',
     onClick: 'Click callback.',
-    as: 'Custom link component, overrides XDSLinkProvider default.',
+    as: 'Custom link component, overrides LinkProvider default.',
   },
 };

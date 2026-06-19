@@ -9,8 +9,8 @@ import {
   useXDSChartColors,
   type SequentialHue,
 } from '@xds/lab';
-import {XDSStack, XDSText} from '@xds/core';
-import {XDSHeading} from '@xds/core/Text';
+import {Stack, Text} from '@xds/core';
+import {Heading} from '@xds/core/Text';
 
 const meta: Meta = {title: 'Lab/ChartHeatmapGL'};
 export default meta;
@@ -40,8 +40,8 @@ const gridData = days.flatMap((day, di) =>
 function ActivityGridDemo() {
   const colors = useXDSChartColors();
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Heatmap \u2014 Activity by Day x Hour</XDSHeading>
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Heatmap \u2014 Activity by Day x Hour</Heading>
       <XDSChart data={gridData} xKey="hour" yKeys={['activity']} height={280}>
         <XDSChartAxis position="bottom" />
         <XDSChartHeatmapGL
@@ -56,7 +56,7 @@ function ActivityGridDemo() {
           label="Activity"
         />
       </XDSChart>
-    </XDSStack>
+    </Stack>
   );
 }
 export const ActivityGrid: StoryObj = {render: () => <ActivityGridDemo />};
@@ -65,11 +65,11 @@ function ColorRampsDemo() {
   const colors = useXDSChartColors();
   const hues: SequentialHue[] = ['blue', 'shamrock', 'orange', 'purple', 'red'];
   return (
-    <XDSStack direction="vertical" gap={6}>
-      <XDSHeading level={3}>Heatmap Color Ramps</XDSHeading>
+    <Stack direction="vertical" gap={6}>
+      <Heading level={3}>Heatmap Color Ramps</Heading>
       {hues.map(hue => (
-        <XDSStack key={hue} direction="vertical" gap={1}>
-          <XDSText type="label">sequential.{hue}(5)</XDSText>
+        <Stack key={hue} direction="vertical" gap={1}>
+          <Text type="label">sequential.{hue}(5)</Text>
           <XDSChart
             data={gridData}
             xKey="hour"
@@ -83,9 +83,9 @@ function ColorRampsDemo() {
               colorRange={colors.sequential[hue](5)}
             />
           </XDSChart>
-        </XDSStack>
+        </Stack>
       ))}
-    </XDSStack>
+    </Stack>
   );
 }
 export const ColorRamps: StoryObj = {render: () => <ColorRampsDemo />};
@@ -105,8 +105,8 @@ const bigGrid = bigRows.flatMap(row =>
 function LargeGridDemo() {
   const colors = useXDSChartColors();
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>Heatmap \u2014 50x50 Grid</XDSHeading>
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>Heatmap \u2014 50x50 Grid</Heading>
       <XDSChart data={bigGrid} xKey="col" yKeys={['value']} height={400}>
         <XDSChartHeatmapGL
           xKey="col"
@@ -121,7 +121,7 @@ function LargeGridDemo() {
           label="Intensity"
         />
       </XDSChart>
-    </XDSStack>
+    </Stack>
   );
 }
 export const LargeGrid: StoryObj = {render: () => <LargeGridDemo />};

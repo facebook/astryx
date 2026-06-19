@@ -59,7 +59,7 @@ export const docs = {
     },
     {
       name: 'sources',
-      type: 'Record<string, XDSMarkdownSource>',
+      type: 'Record<string, MarkdownSource>',
       description:
         'Citation sources keyed by ID. When provided, [id] and 【id】 markers in the markdown that match a key are rendered as citation chips.',
     },
@@ -93,7 +93,7 @@ export const docs = {
       name: 'autolink',
       type: "'gfm'",
       description:
-        "Opt-in autolinking of bare URLs and emails. 'gfm' applies GitHub-Flavored Markdown autolink-literal rules: bare https?://…, www.…, <scheme:url>, <email>, and user@host all become links. Trailing sentence punctuation and unbalanced trailing close-parens are excluded; matches inside code spans, code blocks, existing links, and image alt text are skipped. Default behavior (option unset) is unchanged.",
+        "Opt-in autolinking of bare URLs and emails. 'gfm' applies GitHub-Flavored Markdown autolink-literal rules: bare https?://..., www...., <scheme:url>, <email>, and user@host all become links. Trailing sentence punctuation and unbalanced trailing close-parens are excluded; matches inside code spans, code blocks, existing links, and image alt text are skipped. Default behavior (option unset) is unchanged.",
     },
     {
       name: 'xstyle',
@@ -121,7 +121,7 @@ export const docs = {
   ],
   playground: {
     defaults: {
-      children: '## Getting Started\n\nInstall the package:\n\n```bash\nnpm install @xds/core\n```\n\nThen import and use any component:\n\n```tsx\nimport {XDSButton} from \'@xds/core/Button\';\n```\n\n**Bold**, *italic*, and `inline code` all work.',
+      children: '## Getting Started\n\nInstall the package:\n\n```bash\nnpm install @xds/core\n```\n\nThen import and use any component:\n\n```tsx\nimport {Button} from \'@xds/core/Button\';\n```\n\n**Bold**, *italic*, and `inline code` all work.',
     },
   },
   theming: {
@@ -136,50 +136,50 @@ export const docs = {
       { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
       { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns like issue refs, diff refs, and mentions instead of preprocessing the markdown string.' },
-      { guidance: false, description: 'Use Markdown for hand-authored layouts; use XDSText and XDSHeading directly when you control the content.' },
+      { guidance: false, description: 'Use Markdown for hand-authored layouts; use Text and Heading directly when you control the content.' },
     ],
   },
   examples: [
     {
       label: 'Inline display',
       code: `
-import {XDSText} from '@xds/core/Text';
+import {Text} from '@xds/core/Text';
 
-<XDSText>
+<Text>
   This description includes{' '}
-  <XDSMarkdown display="inline">{'\`inline code\` and **bold text**'}</XDSMarkdown>
+  <Markdown display="inline">{'\`inline code\` and **bold text**'}</Markdown>
   .
-</XDSText>;
+</Text>;
 `,
     },
     {
       label: 'GFM autolinks',
       code: `
-<XDSMarkdown autolink="gfm">
+<Markdown autolink="gfm">
   {'Visit https://example.com or email contact@example.com. ' +
     'You can also bracket links: <https://docs.example.com>.'}
-</XDSMarkdown>;
+</Markdown>;
 `,
     },
     {
       label: 'Inline Plugins',
       code: `
-import {XDSLink} from '@xds/core/Link';
+import {Link} from '@xds/core/Link';
 
 const issuePlugins = [
   {
     pattern: /\\b([A-Z][A-Z0-9]+-\\d+)\\b/g,
     render: (match, key) => (
-      <XDSLink key={key} href={\`/issues/\${match[1]}\`}>
+      <Link key={key} href={\`/issues/\${match[1]}\`}>
         {match[0]}
-      </XDSLink>
+      </Link>
     ),
   },
 ];
 
-<XDSMarkdown inlinePlugins={issuePlugins}>
+<Markdown inlinePlugins={issuePlugins}>
   {'Fixed PROJ-123. Inline code stays plain: \`PROJ-999\`.'}
-</XDSMarkdown>;
+</Markdown>;
 `,
     },
   ],
@@ -229,7 +229,7 @@ export const docsZh = {
     },
     {
       name: 'sources',
-      type: 'Record<string, XDSMarkdownSource>',
+      type: 'Record<string, MarkdownSource>',
       description:
         '按 ID 索引的引用来源。提供后，Markdown 中匹配的 [id] 和 【id】 标记将渲染为引用标签。',
     },
@@ -299,7 +299,7 @@ export const docsZh = {
       { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
       { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns like issue refs, diff refs, and mentions instead of preprocessing the markdown string.' },
-      { guidance: false, description: 'Use Markdown for hand-authored layouts; use XDSText and XDSHeading directly when you control the content.' },
+      { guidance: false, description: 'Use Markdown for hand-authored layouts; use Text and Heading directly when you control the content.' },
     ],
   },
 };
@@ -314,16 +314,16 @@ export const docsDense = {
       { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
       { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns (issue refs, diff refs, mentions) instead of preprocessing the markdown string.' },
-      { guidance: false, description: 'Use Markdown for hand-authored layouts; use XDSText and XDSHeading directly when you control the content.' },
+      { guidance: false, description: 'Use Markdown for hand-authored layouts; use Text and Heading directly when you control the content.' },
     ],
   },
   propDescriptions: {
-    children: 'Markdown string. **(required)**',
+    children: 'markdown string',
     density: "Block spacing. 'default'|'compact'. Default: 'default'.",
     headingLevelStart: 'Maps # to this heading level (1-6). Clamped to h6. Default: 1.',
     isStreaming: 'Incremental parse + fade-in for streamed chunks. Default: false.',
     onLinkClick: '(href, event) => void|false. Return false prevents navigation.',
-    sources: 'Record<string, XDSMarkdownSource>. Citation sources by ID. [id]/【id】 markers render as chips.',
+    sources: 'Record<string, MarkdownSource>. Citation sources by ID. [id]/【id】 markers render as chips.',
     citationStyle: "'label'|'number'. label=chip w/ title+icon, number=compact badge. Default: 'label'.",
     contentWidth: 'number|string. Max width for prose (headings, paragraphs, lists). Tables/code unconstrained.',
     contentAlign: "'start'|'center'. Prose alignment when contentWidth < container. Default: 'start'.",

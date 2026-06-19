@@ -444,7 +444,7 @@ function ensureBaselineShims(): void {
   const utilsPath = path.join(baselineDir, 'lib', 'utils.ts');
   if (!fs.existsSync(utilsPath)) {
     throw new Error(
-      'Baseline components not found at .baseline/ — run pnpm install in internal/vibe-tests',
+      'Baseline components not found at .baseline/: run pnpm install in internal/vibe-tests',
     );
   }
 }
@@ -538,6 +538,7 @@ function getTsconfigForTarget(target: string): string {
   switch (target) {
     case 'xds':
     case 'xds-tailwind':
+    case 'astryx':
       return path.join(VIBE_DIR, 'tsconfig.xds.json');
     case 'baseline':
       return path.join(VIBE_DIR, 'tsconfig.baseline.json');

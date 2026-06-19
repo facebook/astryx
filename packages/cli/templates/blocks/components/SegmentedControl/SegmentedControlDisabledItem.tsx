@@ -4,20 +4,20 @@
 
 import {useState} from 'react';
 import {
-  XDSSegmentedControl,
-  XDSSegmentedControlItem,
+  SegmentedControl,
+  SegmentedControlItem,
 } from '@xds/core/SegmentedControl';
 
 export default function SegmentedControlDisabledItem() {
   const [value, setValue] = useState('hourly');
   return (
-    <XDSSegmentedControl
+    <SegmentedControl
       value={value}
       onChange={setValue}
       label="Data granularity">
-      <XDSSegmentedControlItem value="hourly" label="Hourly" />
-      <XDSSegmentedControlItem value="daily" label="Daily" />
-      <XDSSegmentedControlItem value="weekly" label="Weekly" isDisabled />
-    </XDSSegmentedControl>
+      <SegmentedControlItem value="hourly" label="Hourly" />
+      <SegmentedControlItem value="daily" label="Daily" />
+      <SegmentedControlItem value="weekly" label="Weekly" isDisabled />
+    </SegmentedControl>
   );
 }

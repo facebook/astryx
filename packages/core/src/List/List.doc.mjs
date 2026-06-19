@@ -19,10 +19,10 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'List items (XDSListItem components).',
+      description: 'List items (ListItem components).',
       slotElements: [
         {
-          __element: 'XDSListItem',
+          __element: 'ListItem',
           props: {
             label: 'List item',
           },
@@ -47,7 +47,7 @@ export const docs = {
       description: 'Header content, associated with the list via aria-labelledby.',
       slotElements: [
         {
-          __element: 'XDSText',
+          __element: 'Text',
           props: {
             type: 'body',
           },
@@ -64,11 +64,11 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
   components: [
-    {name: 'XDSListItem'},
+    {name: 'ListItem'},
   ],
   usage: {
     description:
@@ -112,7 +112,7 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'Vertical list for rendering item collections w/ consistent spacing, dividers, marker styles. Composition model: XDSList wraps XDSListItem sub-components.',
+    'Vertical list for rendering item collections w/ consistent spacing, dividers, marker styles. Composition model: List wraps ListItem sub-components.',
   usage: {
     description:
       'A vertical collection of items with consistent spacing, dividers, and optional markers. Supports headers, icons, avatars, badges, and interactive items with click or link behavior. Use it to display ordered or unordered groups of related content.',

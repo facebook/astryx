@@ -2,27 +2,27 @@
 
 'use client';
 
-import {XDSOverflowList} from '@xds/core/OverflowList';
-import {XDSButton} from '@xds/core/Button';
+import {OverflowList} from '@xds/core/OverflowList';
+import {Button} from '@xds/core/Button';
 
 export default function OverflowListShowcase() {
   return (
     <div style={{maxWidth: 400, border: '1px dashed #ccc', padding: 8}}>
-      <XDSOverflowList
+      <OverflowList
         gap={2}
         overflowRenderer={overflowItems => (
-          <XDSButton
+          <Button
             label={`+${overflowItems.length} more`}
             variant="ghost"
             size="sm"
           />
         )}>
-        <XDSButton label="Edit" size="sm" />
-        <XDSButton label="Duplicate" size="sm" />
-        <XDSButton label="Share" size="sm" />
-        <XDSButton label="Archive" size="sm" />
-        <XDSButton label="Delete" size="sm" />
-      </XDSOverflowList>
+        <Button label="Edit" size="sm" />
+        <Button label="Duplicate" size="sm" />
+        <Button label="Share" size="sm" />
+        <Button label="Archive" size="sm" />
+        <Button label="Delete" size="sm" />
+      </OverflowList>
     </div>
   );
 }

@@ -72,7 +72,9 @@ function isInputStatusType(typeStr: string, propName?: string): boolean {
     return false;
   }
 
-  if (/\bXDS(?:InputStatus|FieldStatus)\b/.test(typeStr)) {
+  // Prefix-agnostic (XDS-prefix migration P2380608025): match both the legacy
+  // prefixed names (XDSInputStatus/XDSFieldStatus) and the bare forms.
+  if (/\b(?:XDS)?(?:InputStatus|FieldStatus)\b/.test(typeStr)) {
     return true;
   }
 
@@ -128,6 +130,18 @@ export function parsePropType(
     return {kind: 'unknown'};
   }
 
+  // Status objects are edited as typed validation-state objects, not slot
+  // elements. Check this before slotElements so a stale/generated descriptor on
+  // a status row cannot make the preview pass a React element where components
+  // expect {type, message}.
+  if (isInputStatusType(t, propName)) {
+    return {
+      kind: 'input-status',
+      options: parseStatusOptions(t),
+      allowEmpty: true,
+    };
+  }
+
   // If slotElements is declared, use it directly for the element control
   if (slotElements && slotElements.length > 0) {
     const options = slotElements.map(el => ({
@@ -165,27 +179,20 @@ export function parsePropType(
   if (t === 'SizeValue') {
     return {kind: 'number'};
   }
-  if (t === 'XDSDefinedTheme') {
+  if (t === 'DefinedTheme') {
     return {kind: 'theme'};
   }
   if (t === 'SyntaxTheme') {
     return {kind: 'syntax-theme'};
   }
-  if (isInputStatusType(t, propName)) {
-    return {
-      kind: 'input-status',
-      options: parseStatusOptions(t),
-      allowEmpty: true,
-    };
-  }
-  if (t === 'XDSIconType' || t === 'XDSIconName') {
+  if (t === 'IconType' || t === 'IconName') {
     return {
       kind: 'enum',
       options: Object.keys(getIconRegistry()),
       allowEmpty: true,
     };
   }
-  if (t === 'XDSAppShellBreakpoint') {
+  if (t === 'AppShellBreakpoint') {
     return {
       kind: 'enum',
       options: ['sm', 'md', 'lg', 'none'],
@@ -214,13 +221,24 @@ export function parsePropType(
     if (isIconProp) {
       return {
         kind: 'element',
-        options: [{label: 'Icon', componentName: 'XDSIcon'}],
+        options: [{label: 'Icon', componentName: 'Icon'}],
       };
     }
     return {kind: 'string'};
   }
 
   const parts = splitUnion(t);
+
+  // A union of only the primitives `string`/`number` (e.g. `number | string`,
+  // optionally nullable) is editable as free text — accepts e.g. "64px" or 64.
+  const nonNullishParts = parts.filter(p => p !== 'null' && p !== 'undefined');
+  if (
+    nonNullishParts.length > 0 &&
+    nonNullishParts.every(p => p === 'string' || p === 'number')
+  ) {
+    return {kind: 'string'};
+  }
+
   const literals: string[] = [];
   const optionValues: Record<string, EnumOptionValue> = {};
   let allowEmpty = false;

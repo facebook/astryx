@@ -2,16 +2,16 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSToolbar} from '@xds/core/Toolbar';
-import {XDSButton} from '@xds/core/Button';
-import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
-import {XDSLayout} from '@xds/core/Layout';
-import {XDSLayoutHeader} from '@xds/core/Layout';
-import {XDSLayoutContent} from '@xds/core/Layout';
-import {XDSVStack} from '@xds/core/Layout';
+import {Toolbar} from '@xds/core/Toolbar';
+import {Button} from '@xds/core/Button';
+import {Card} from '@xds/core/Card';
+import {Section} from '@xds/core/Section';
+import {Text, Heading} from '@xds/core/Text';
+import {TabList, Tab} from '@xds/core/TabList';
+import {Layout} from '@xds/core/Layout';
+import {LayoutHeader} from '@xds/core/Layout';
+import {LayoutContent} from '@xds/core/Layout';
+import {VStack} from '@xds/core/Layout';
 import {
   Cog6ToothIcon,
   FunnelIcon,
@@ -26,16 +26,16 @@ import {
   Squares2X2Icon,
 } from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSToolbar> = {
+const meta: Meta<typeof Toolbar> = {
   title: 'Core/ToolbarEdgeCompensation',
-  component: XDSToolbar,
+  component: Toolbar,
   parameters: {
     layout: 'padded',
   },
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSToolbar>;
+type Story = StoryObj<typeof Toolbar>;
 
 function AlignmentGuide({
   children,
@@ -54,15 +54,15 @@ function AlignmentGuide({
 
 function BodyContent({lines = 3}: {lines?: number}) {
   return (
-    <XDSVStack gap={2}>
+    <VStack gap={2}>
       {Array.from({length: lines}, (_, i) => (
-        <XDSText type="body" key={i}>
+        <Text type="body" key={i}>
           {i === 0
             ? 'Body content should align with the toolbar text or button labels above.'
             : 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore.'}
-        </XDSText>
+        </Text>
       ))}
-    </XDSVStack>
+    </VStack>
   );
 }
 
@@ -74,35 +74,35 @@ function BodyContent({lines = 3}: {lines?: number}) {
 export const GhostButtonsBothEdges: Story = {
   name: 'Ghost buttons: start + end',
   render: () => (
-    <XDSVStack gap={4}>
+    <VStack gap={4}>
       {(['sm', 'md', 'lg'] as const).map(size => (
         <AlignmentGuide key={size} label={`size="${size}"`}>
-          <XDSCard width={600}>
-            <XDSToolbar
+          <Card width={600}>
+            <Toolbar
               label={`Ghost buttons ${size}`}
               size={size}
               dividers={['bottom']}
               startContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Back"
                     variant="ghost"
                     icon={<ArrowLeftIcon />}
                     isIconOnly
                   />
-                  <XDSButton label="Edit" variant="ghost" />
-                  <XDSButton label="Share" variant="ghost" />
+                  <Button label="Edit" variant="ghost" />
+                  <Button label="Share" variant="ghost" />
                 </>
               }
               endContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Filter"
                     variant="ghost"
                     icon={<FunnelIcon />}
                     isIconOnly
                   />
-                  <XDSButton
+                  <Button
                     label="Settings"
                     variant="ghost"
                     icon={<Cog6ToothIcon />}
@@ -111,13 +111,13 @@ export const GhostButtonsBothEdges: Story = {
                 </>
               }
             />
-            <XDSSection>
+            <Section>
               <BodyContent />
-            </XDSSection>
-          </XDSCard>
+            </Section>
+          </Card>
         </AlignmentGuide>
       ))}
-    </XDSVStack>
+    </VStack>
   ),
 };
 
@@ -129,24 +129,24 @@ export const GhostButtonsBothEdges: Story = {
 export const SolidButtonsBothEdges: Story = {
   name: 'Solid buttons: start + end',
   render: () => (
-    <XDSVStack gap={4}>
+    <VStack gap={4}>
       {(['sm', 'md', 'lg'] as const).map(size => (
         <AlignmentGuide key={size} label={`size="${size}"`}>
-          <XDSCard width={600}>
-            <XDSToolbar
+          <Card width={600}>
+            <Toolbar
               label={`Solid buttons ${size}`}
               size={size}
               dividers={['bottom']}
-              startContent={<XDSButton label="New item" icon={<PlusIcon />} />}
-              endContent={<XDSButton label="Save" />}
+              startContent={<Button label="New item" icon={<PlusIcon />} />}
+              endContent={<Button label="Save" />}
             />
-            <XDSSection>
+            <Section>
               <BodyContent />
-            </XDSSection>
-          </XDSCard>
+            </Section>
+          </Card>
         </AlignmentGuide>
       ))}
-    </XDSVStack>
+    </VStack>
   ),
 };
 
@@ -158,34 +158,34 @@ export const SolidButtonsBothEdges: Story = {
 export const GhostStartSolidEnd: Story = {
   name: 'Mixed: ghost start, solid end',
   render: () => (
-    <XDSVStack gap={4}>
+    <VStack gap={4}>
       {(['sm', 'md', 'lg'] as const).map(size => (
         <AlignmentGuide key={size} label={`size="${size}"`}>
-          <XDSCard width={600}>
-            <XDSToolbar
+          <Card width={600}>
+            <Toolbar
               label={`Mixed ${size}`}
               size={size}
               dividers={['bottom']}
               startContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Back"
                     variant="ghost"
                     icon={<ArrowLeftIcon />}
                     isIconOnly
                   />
-                  <XDSButton label="Edit" variant="ghost" />
+                  <Button label="Edit" variant="ghost" />
                 </>
               }
-              endContent={<XDSButton label="Save" />}
+              endContent={<Button label="Save" />}
             />
-            <XDSSection>
+            <Section>
               <BodyContent />
-            </XDSSection>
-          </XDSCard>
+            </Section>
+          </Card>
         </AlignmentGuide>
       ))}
-    </XDSVStack>
+    </VStack>
   ),
 };
 
@@ -197,24 +197,24 @@ export const GhostStartSolidEnd: Story = {
 export const SolidStartGhostEnd: Story = {
   name: 'Mixed: solid start, ghost end',
   render: () => (
-    <XDSVStack gap={4}>
+    <VStack gap={4}>
       {(['sm', 'md', 'lg'] as const).map(size => (
         <AlignmentGuide key={size} label={`size="${size}"`}>
-          <XDSCard width={600}>
-            <XDSToolbar
+          <Card width={600}>
+            <Toolbar
               label={`Mixed ${size}`}
               size={size}
               dividers={['bottom']}
-              startContent={<XDSButton label="New item" icon={<PlusIcon />} />}
+              startContent={<Button label="New item" icon={<PlusIcon />} />}
               endContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Filter"
                     variant="ghost"
                     icon={<FunnelIcon />}
                     isIconOnly
                   />
-                  <XDSButton
+                  <Button
                     label="More"
                     variant="ghost"
                     icon={<EllipsisHorizontalIcon />}
@@ -223,13 +223,13 @@ export const SolidStartGhostEnd: Story = {
                 </>
               }
             />
-            <XDSSection>
+            <Section>
               <BodyContent />
-            </XDSSection>
-          </XDSCard>
+            </Section>
+          </Card>
         </AlignmentGuide>
       ))}
-    </XDSVStack>
+    </VStack>
   ),
 };
 
@@ -241,24 +241,24 @@ export const SolidStartGhostEnd: Story = {
 export const HeadingStartGhostEnd: Story = {
   name: 'Heading start + ghost end',
   render: () => (
-    <XDSVStack gap={4}>
+    <VStack gap={4}>
       {(['sm', 'md', 'lg'] as const).map(size => (
         <AlignmentGuide key={size} label={`size="${size}"`}>
-          <XDSCard width={600}>
-            <XDSToolbar
+          <Card width={600}>
+            <Toolbar
               label={`Heading ${size}`}
               size={size}
               dividers={['bottom']}
-              startContent={<XDSHeading level={4}>Section Title</XDSHeading>}
+              startContent={<Heading level={4}>Section Title</Heading>}
               endContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Filter"
                     variant="ghost"
                     icon={<FunnelIcon />}
                     isIconOnly
                   />
-                  <XDSButton
+                  <Button
                     label="Add"
                     variant="ghost"
                     icon={<PlusIcon />}
@@ -267,13 +267,13 @@ export const HeadingStartGhostEnd: Story = {
                 </>
               }
             />
-            <XDSSection>
+            <Section>
               <BodyContent />
-            </XDSSection>
-          </XDSCard>
+            </Section>
+          </Card>
         </AlignmentGuide>
       ))}
-    </XDSVStack>
+    </VStack>
   ),
 };
 
@@ -285,26 +285,26 @@ export const HeadingStartGhostEnd: Story = {
 export const TextStartGhostEnd: Story = {
   name: 'Text start + ghost end',
   render: () => (
-    <XDSCard width={600}>
-      <XDSToolbar
+    <Card width={600}>
+      <Toolbar
         label="Text start"
         dividers={['bottom']}
         startContent={
-          <XDSText type="body" weight="bold">
+          <Text type="body" weight="bold">
             3 items selected
-          </XDSText>
+          </Text>
         }
         endContent={
           <>
-            <XDSButton label="Delete" variant="ghost" />
-            <XDSButton label="Archive" variant="ghost" />
+            <Button label="Delete" variant="ghost" />
+            <Button label="Archive" variant="ghost" />
           </>
         }
       />
-      <XDSSection>
+      <Section>
         <BodyContent />
-      </XDSSection>
-    </XDSCard>
+      </Section>
+    </Card>
   ),
 };
 
@@ -316,17 +316,17 @@ export const TextStartGhostEnd: Story = {
 export const HeadingStartSolidEnd: Story = {
   name: 'Heading start + solid end',
   render: () => (
-    <XDSCard width={600}>
-      <XDSToolbar
+    <Card width={600}>
+      <Toolbar
         label="Heading solid"
         dividers={['bottom']}
-        startContent={<XDSHeading level={4}>Project Settings</XDSHeading>}
-        endContent={<XDSButton label="Save changes" />}
+        startContent={<Heading level={4}>Project Settings</Heading>}
+        endContent={<Button label="Save changes" />}
       />
-      <XDSSection>
+      <Section>
         <BodyContent />
-      </XDSSection>
-    </XDSCard>
+      </Section>
+    </Card>
   ),
 };
 
@@ -334,42 +334,42 @@ export const HeadingStartSolidEnd: Story = {
 // 8. Layout WITHOUT contentWidth — toolbar full bleed
 // ---------------------------------------------------------------------------
 
-/** Toolbar in XDSLayout header, no contentWidth. Full-width toolbar, edge compensation normal. */
+/** Toolbar in Layout header, no contentWidth. Full-width toolbar, edge compensation normal. */
 export const LayoutNoContentWidth: Story = {
   name: 'Layout: no contentWidth, ghost buttons',
   render: () => (
     <div style={{height: 400, border: '1px solid #e0e0e0', borderRadius: 8}}>
-      <XDSLayout
+      <Layout
         header={
-          <XDSLayoutHeader hasDivider padding={0}>
-            <XDSToolbar
+          <LayoutHeader hasDivider padding={0}>
+            <Toolbar
               label="App header"
               startContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Menu"
                     variant="ghost"
                     icon={<Squares2X2Icon />}
                     isIconOnly
                   />
-                  <XDSHeading level={4}>Dashboard</XDSHeading>
+                  <Heading level={4}>Dashboard</Heading>
                 </>
               }
               endContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Search"
                     variant="ghost"
                     icon={<MagnifyingGlassIcon />}
                     isIconOnly
                   />
-                  <XDSButton
+                  <Button
                     label="Notifications"
                     variant="ghost"
                     icon={<BellIcon />}
                     isIconOnly
                   />
-                  <XDSButton
+                  <Button
                     label="Settings"
                     variant="ghost"
                     icon={<Cog6ToothIcon />}
@@ -378,12 +378,12 @@ export const LayoutNoContentWidth: Story = {
                 </>
               }
             />
-          </XDSLayoutHeader>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent>
+          <LayoutContent>
             <BodyContent lines={6} />
-          </XDSLayoutContent>
+          </LayoutContent>
         }
       />
     </div>
@@ -395,25 +395,25 @@ export const LayoutNoContentWidthSolid: Story = {
   name: 'Layout: no contentWidth, solid buttons',
   render: () => (
     <div style={{height: 400, border: '1px solid #e0e0e0', borderRadius: 8}}>
-      <XDSLayout
+      <Layout
         header={
-          <XDSLayoutHeader hasDivider padding={0}>
-            <XDSToolbar
+          <LayoutHeader hasDivider padding={0}>
+            <Toolbar
               label="App header"
-              startContent={<XDSHeading level={4}>Dashboard</XDSHeading>}
+              startContent={<Heading level={4}>Dashboard</Heading>}
               endContent={
                 <>
-                  <XDSButton label="Cancel" variant="secondary" />
-                  <XDSButton label="Save" />
+                  <Button label="Cancel" variant="secondary" />
+                  <Button label="Save" />
                 </>
               }
             />
-          </XDSLayoutHeader>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent>
+          <LayoutContent>
             <BodyContent lines={6} />
-          </XDSLayoutContent>
+          </LayoutContent>
         }
       />
     </div>
@@ -424,37 +424,37 @@ export const LayoutNoContentWidthSolid: Story = {
 // 9. Layout WITH contentWidth — the critical case
 // ---------------------------------------------------------------------------
 
-/** Toolbar in XDSLayout with contentWidth=640. Header is full bleed, body is constrained. Ghost buttons should still align flush. */
+/** Toolbar in Layout with contentWidth=640. Header is full bleed, body is constrained. Ghost buttons should still align flush. */
 export const LayoutWithContentWidth: Story = {
   name: 'Layout: contentWidth=640, ghost buttons',
   render: () => (
     <div style={{height: 400, border: '1px solid #e0e0e0', borderRadius: 8}}>
-      <XDSLayout
+      <Layout
         contentWidth={640}
         header={
-          <XDSLayoutHeader hasDivider padding={0}>
-            <XDSToolbar
+          <LayoutHeader hasDivider padding={0}>
+            <Toolbar
               label="Page header"
               startContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Back"
                     variant="ghost"
                     icon={<ArrowLeftIcon />}
                     isIconOnly
                   />
-                  <XDSHeading level={4}>Settings</XDSHeading>
+                  <Heading level={4}>Settings</Heading>
                 </>
               }
               endContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Search"
                     variant="ghost"
                     icon={<MagnifyingGlassIcon />}
                     isIconOnly
                   />
-                  <XDSButton
+                  <Button
                     label="More"
                     variant="ghost"
                     icon={<EllipsisHorizontalIcon />}
@@ -463,12 +463,12 @@ export const LayoutWithContentWidth: Story = {
                 </>
               }
             />
-          </XDSLayoutHeader>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent>
+          <LayoutContent>
             <BodyContent lines={6} />
-          </XDSLayoutContent>
+          </LayoutContent>
         }
       />
     </div>
@@ -480,26 +480,26 @@ export const LayoutWithContentWidthSolid: Story = {
   name: 'Layout: contentWidth=640, solid buttons',
   render: () => (
     <div style={{height: 400, border: '1px solid #e0e0e0', borderRadius: 8}}>
-      <XDSLayout
+      <Layout
         contentWidth={640}
         header={
-          <XDSLayoutHeader hasDivider padding={0}>
-            <XDSToolbar
+          <LayoutHeader hasDivider padding={0}>
+            <Toolbar
               label="Page header"
-              startContent={<XDSHeading level={4}>Settings</XDSHeading>}
+              startContent={<Heading level={4}>Settings</Heading>}
               endContent={
                 <>
-                  <XDSButton label="Cancel" variant="secondary" />
-                  <XDSButton label="Save" />
+                  <Button label="Cancel" variant="secondary" />
+                  <Button label="Save" />
                 </>
               }
             />
-          </XDSLayoutHeader>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent>
+          <LayoutContent>
             <BodyContent lines={6} />
-          </XDSLayoutContent>
+          </LayoutContent>
         }
       />
     </div>
@@ -511,31 +511,31 @@ export const LayoutWithContentWidthMixed: Story = {
   name: 'Layout: contentWidth=640, mixed',
   render: () => (
     <div style={{height: 400, border: '1px solid #e0e0e0', borderRadius: 8}}>
-      <XDSLayout
+      <Layout
         contentWidth={640}
         header={
-          <XDSLayoutHeader hasDivider padding={0}>
-            <XDSToolbar
+          <LayoutHeader hasDivider padding={0}>
+            <Toolbar
               label="Page header"
               startContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Back"
                     variant="ghost"
                     icon={<ArrowLeftIcon />}
                     isIconOnly
                   />
-                  <XDSHeading level={4}>Edit Project</XDSHeading>
+                  <Heading level={4}>Edit Project</Heading>
                 </>
               }
-              endContent={<XDSButton label="Save changes" />}
+              endContent={<Button label="Save changes" />}
             />
-          </XDSLayoutHeader>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent>
+          <LayoutContent>
             <BodyContent lines={6} />
-          </XDSLayoutContent>
+          </LayoutContent>
         }
       />
     </div>
@@ -551,32 +551,32 @@ export const LayoutContentWidth960: Story = {
   name: 'Layout: contentWidth=960, ghost buttons',
   render: () => (
     <div style={{height: 400, border: '1px solid #e0e0e0', borderRadius: 8}}>
-      <XDSLayout
+      <Layout
         contentWidth={960}
         header={
-          <XDSLayoutHeader hasDivider padding={0}>
-            <XDSToolbar
+          <LayoutHeader hasDivider padding={0}>
+            <Toolbar
               label="Dashboard header"
               startContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Back"
                     variant="ghost"
                     icon={<ChevronLeftIcon />}
                     isIconOnly
                   />
-                  <XDSHeading level={4}>Analytics Dashboard</XDSHeading>
+                  <Heading level={4}>Analytics Dashboard</Heading>
                 </>
               }
               endContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Share"
                     variant="ghost"
                     icon={<ShareIcon />}
                     isIconOnly
                   />
-                  <XDSButton
+                  <Button
                     label="Settings"
                     variant="ghost"
                     icon={<Cog6ToothIcon />}
@@ -585,12 +585,12 @@ export const LayoutContentWidth960: Story = {
                 </>
               }
             />
-          </XDSLayoutHeader>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent>
+          <LayoutContent>
             <BodyContent lines={6} />
-          </XDSLayoutContent>
+          </LayoutContent>
         }
       />
     </div>
@@ -606,25 +606,25 @@ export const LayoutWithPadding: Story = {
   name: 'Layout: padding=4, ghost buttons',
   render: () => (
     <div style={{height: 400, border: '1px solid #e0e0e0', borderRadius: 8}}>
-      <XDSLayout
+      <Layout
         padding={4}
         header={
-          <XDSLayoutHeader hasDivider padding={0}>
-            <XDSToolbar
+          <LayoutHeader hasDivider padding={0}>
+            <Toolbar
               label="Padded layout header"
               startContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Back"
                     variant="ghost"
                     icon={<ArrowLeftIcon />}
                     isIconOnly
                   />
-                  <XDSHeading level={4}>Padded Layout</XDSHeading>
+                  <Heading level={4}>Padded Layout</Heading>
                 </>
               }
               endContent={
-                <XDSButton
+                <Button
                   label="Settings"
                   variant="ghost"
                   icon={<Cog6ToothIcon />}
@@ -632,12 +632,12 @@ export const LayoutWithPadding: Story = {
                 />
               }
             />
-          </XDSLayoutHeader>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent>
+          <LayoutContent>
             <BodyContent lines={6} />
-          </XDSLayoutContent>
+          </LayoutContent>
         }
       />
     </div>
@@ -649,33 +649,33 @@ export const LayoutWithPaddingAndContentWidth: Story = {
   name: 'Layout: padding=4 + contentWidth=640',
   render: () => (
     <div style={{height: 400, border: '1px solid #e0e0e0', borderRadius: 8}}>
-      <XDSLayout
+      <Layout
         padding={4}
         contentWidth={640}
         header={
-          <XDSLayoutHeader hasDivider padding={0}>
-            <XDSToolbar
+          <LayoutHeader hasDivider padding={0}>
+            <Toolbar
               label="Padded constrained header"
               startContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Back"
                     variant="ghost"
                     icon={<ArrowLeftIcon />}
                     isIconOnly
                   />
-                  <XDSHeading level={4}>Constrained + Padded</XDSHeading>
+                  <Heading level={4}>Constrained + Padded</Heading>
                 </>
               }
               endContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Share"
                     variant="ghost"
                     icon={<ShareIcon />}
                     isIconOnly
                   />
-                  <XDSButton
+                  <Button
                     label="Settings"
                     variant="ghost"
                     icon={<Cog6ToothIcon />}
@@ -684,12 +684,12 @@ export const LayoutWithPaddingAndContentWidth: Story = {
                 </>
               }
             />
-          </XDSLayoutHeader>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent>
+          <LayoutContent>
             <BodyContent lines={6} />
-          </XDSLayoutContent>
+          </LayoutContent>
         }
       />
     </div>
@@ -705,24 +705,24 @@ export const LayoutHeaderDefaultPadding: Story = {
   name: 'Layout: header default padding + toolbar',
   render: () => (
     <div style={{height: 400, border: '1px solid #e0e0e0', borderRadius: 8}}>
-      <XDSLayout
+      <Layout
         header={
-          <XDSLayoutHeader hasDivider>
-            <XDSToolbar
+          <LayoutHeader hasDivider>
+            <Toolbar
               label="Double padded?"
               startContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Back"
                     variant="ghost"
                     icon={<ArrowLeftIcon />}
                     isIconOnly
                   />
-                  <XDSHeading level={4}>Double Padding Check</XDSHeading>
+                  <Heading level={4}>Double Padding Check</Heading>
                 </>
               }
               endContent={
-                <XDSButton
+                <Button
                   label="Settings"
                   variant="ghost"
                   icon={<Cog6ToothIcon />}
@@ -730,12 +730,12 @@ export const LayoutHeaderDefaultPadding: Story = {
                 />
               }
             />
-          </XDSLayoutHeader>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent>
+          <LayoutContent>
             <BodyContent lines={4} />
-          </XDSLayoutContent>
+          </LayoutContent>
         }
       />
     </div>
@@ -752,23 +752,23 @@ export const SideBySideComparison: Story = {
   render: () => (
     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24}}>
       <AlignmentGuide label="Ghost buttons (should align flush)">
-        <XDSCard>
-          <XDSToolbar
+        <Card>
+          <Toolbar
             label="Ghost"
             dividers={['bottom']}
             startContent={
               <>
-                <XDSButton
+                <Button
                   label="Back"
                   variant="ghost"
                   icon={<ArrowLeftIcon />}
                   isIconOnly
                 />
-                <XDSButton label="Edit" variant="ghost" />
+                <Button label="Edit" variant="ghost" />
               </>
             }
             endContent={
-              <XDSButton
+              <Button
                 label="More"
                 variant="ghost"
                 icon={<EllipsisHorizontalIcon />}
@@ -776,23 +776,23 @@ export const SideBySideComparison: Story = {
               />
             }
           />
-          <XDSSection>
+          <Section>
             <BodyContent />
-          </XDSSection>
-        </XDSCard>
+          </Section>
+        </Card>
       </AlignmentGuide>
       <AlignmentGuide label="Solid buttons (natural padding)">
-        <XDSCard>
-          <XDSToolbar
+        <Card>
+          <Toolbar
             label="Solid"
             dividers={['bottom']}
-            startContent={<XDSButton label="New" icon={<PlusIcon />} />}
-            endContent={<XDSButton label="Save" />}
+            startContent={<Button label="New" icon={<PlusIcon />} />}
+            endContent={<Button label="Save" />}
           />
-          <XDSSection>
+          <Section>
             <BodyContent />
-          </XDSSection>
-        </XDSCard>
+          </Section>
+        </Card>
       </AlignmentGuide>
     </div>
   ),
@@ -806,32 +806,32 @@ export const SideBySideComparison: Story = {
 export const ThreeSlotGhostEdges: Story = {
   name: 'Three-slot: ghost edges + center heading',
   render: () => (
-    <XDSVStack gap={4}>
+    <VStack gap={4}>
       {(['sm', 'md', 'lg'] as const).map(size => (
         <AlignmentGuide key={size} label={`size="${size}"`}>
-          <XDSCard width={700}>
-            <XDSToolbar
+          <Card width={700}>
+            <Toolbar
               label={`Three slot ${size}`}
               size={size}
               dividers={['bottom']}
               startContent={
-                <XDSButton
+                <Button
                   label="Back"
                   variant="ghost"
                   icon={<ChevronLeftIcon />}
                   isIconOnly
                 />
               }
-              centerContent={<XDSHeading level={4}>Document Title</XDSHeading>}
+              centerContent={<Heading level={4}>Document Title</Heading>}
               endContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Share"
                     variant="ghost"
                     icon={<ShareIcon />}
                     isIconOnly
                   />
-                  <XDSButton
+                  <Button
                     label="More"
                     variant="ghost"
                     icon={<EllipsisHorizontalIcon />}
@@ -840,13 +840,13 @@ export const ThreeSlotGhostEdges: Story = {
                 </>
               }
             />
-            <XDSSection>
+            <Section>
               <BodyContent />
-            </XDSSection>
-          </XDSCard>
+            </Section>
+          </Card>
         </AlignmentGuide>
       ))}
-    </XDSVStack>
+    </VStack>
   ),
 };
 
@@ -858,30 +858,30 @@ export const ThreeSlotGhostEdges: Story = {
 export const ThreeSlotMixed: Story = {
   name: 'Three-slot: ghost start, solid end',
   render: () => (
-    <XDSCard width={700}>
-      <XDSToolbar
+    <Card width={700}>
+      <Toolbar
         label="Mixed three slot"
         dividers={['bottom']}
         startContent={
-          <XDSButton
+          <Button
             label="Back"
             variant="ghost"
             icon={<ChevronLeftIcon />}
             isIconOnly
           />
         }
-        centerContent={<XDSHeading level={4}>Page Title</XDSHeading>}
+        centerContent={<Heading level={4}>Page Title</Heading>}
         endContent={
           <>
-            <XDSButton label="Cancel" variant="secondary" />
-            <XDSButton label="Publish" />
+            <Button label="Cancel" variant="secondary" />
+            <Button label="Publish" />
           </>
         }
       />
-      <XDSSection>
+      <Section>
         <BodyContent />
-      </XDSSection>
-    </XDSCard>
+      </Section>
+    </Card>
   ),
 };
 
@@ -893,24 +893,24 @@ export const ThreeSlotMixed: Story = {
 export const StackedVariants: Story = {
   name: 'Stress: stacked toolbar variants',
   render: () => (
-    <XDSCard width={700}>
-      <XDSToolbar
+    <Card width={700}>
+      <Toolbar
         label="Ghost both"
         size="sm"
         dividers={['bottom']}
         startContent={
           <>
-            <XDSButton
+            <Button
               label="Back"
               variant="ghost"
               icon={<ArrowLeftIcon />}
               isIconOnly
             />
-            <XDSHeading level={4}>Ghost + Heading</XDSHeading>
+            <Heading level={4}>Ghost + Heading</Heading>
           </>
         }
         endContent={
-          <XDSButton
+          <Button
             label="Settings"
             variant="ghost"
             icon={<Cog6ToothIcon />}
@@ -918,19 +918,19 @@ export const StackedVariants: Story = {
           />
         }
       />
-      <XDSToolbar
+      <Toolbar
         label="Solid both"
         size="sm"
         dividers={['bottom']}
-        startContent={<XDSButton label="Add" size="sm" icon={<PlusIcon />} />}
-        endContent={<XDSButton label="Save" size="sm" />}
+        startContent={<Button label="Add" size="sm" icon={<PlusIcon />} />}
+        endContent={<Button label="Save" size="sm" />}
       />
-      <XDSToolbar
+      <Toolbar
         label="Ghost start solid end"
         size="sm"
         dividers={['bottom']}
         startContent={
-          <XDSButton
+          <Button
             label="Back"
             variant="ghost"
             icon={<ChevronLeftIcon />}
@@ -938,24 +938,24 @@ export const StackedVariants: Story = {
           />
         }
         endContent={
-          <XDSButton label="Next" size="sm" icon={<ChevronRightIcon />} />
+          <Button label="Next" size="sm" icon={<ChevronRightIcon />} />
         }
       />
-      <XDSToolbar
+      <Toolbar
         label="Text start ghost end"
         size="sm"
         dividers={['bottom']}
         startContent={
-          <XDSText type="body" weight="bold">
+          <Text type="body" weight="bold">
             Selection mode
-          </XDSText>
+          </Text>
         }
-        endContent={<XDSButton label="Done" variant="ghost" />}
+        endContent={<Button label="Done" variant="ghost" />}
       />
-      <XDSSection>
+      <Section>
         <BodyContent lines={2} />
-      </XDSSection>
-    </XDSCard>
+      </Section>
+    </Card>
   ),
 };
 
@@ -967,35 +967,35 @@ export const StackedVariants: Story = {
 export const CardLayoutContentWidthToolbar: Story = {
   name: 'Card > Layout(contentWidth) > Toolbar header',
   render: () => (
-    <XDSVStack gap={4}>
+    <VStack gap={4}>
       <AlignmentGuide label="contentWidth=640, ghost buttons">
-        <XDSCard width={900}>
-          <XDSLayout
+        <Card width={900}>
+          <Layout
             contentWidth={640}
             header={
-              <XDSLayoutHeader hasDivider padding={0}>
-                <XDSToolbar
+              <LayoutHeader hasDivider padding={0}>
+                <Toolbar
                   label="Card layout header"
                   startContent={
                     <>
-                      <XDSButton
+                      <Button
                         label="Back"
                         variant="ghost"
                         icon={<ArrowLeftIcon />}
                         isIconOnly
                       />
-                      <XDSHeading level={4}>Project Settings</XDSHeading>
+                      <Heading level={4}>Project Settings</Heading>
                     </>
                   }
                   endContent={
                     <>
-                      <XDSButton
+                      <Button
                         label="Search"
                         variant="ghost"
                         icon={<MagnifyingGlassIcon />}
                         isIconOnly
                       />
-                      <XDSButton
+                      <Button
                         label="Settings"
                         variant="ghost"
                         icon={<Cog6ToothIcon />}
@@ -1004,70 +1004,70 @@ export const CardLayoutContentWidthToolbar: Story = {
                     </>
                   }
                 />
-              </XDSLayoutHeader>
+              </LayoutHeader>
             }
             content={
-              <XDSLayoutContent>
+              <LayoutContent>
                 <BodyContent lines={4} />
-              </XDSLayoutContent>
+              </LayoutContent>
             }
           />
-        </XDSCard>
+        </Card>
       </AlignmentGuide>
       <AlignmentGuide label="contentWidth=640, mixed (ghost start, solid end)">
-        <XDSCard width={900}>
-          <XDSLayout
+        <Card width={900}>
+          <Layout
             contentWidth={640}
             header={
-              <XDSLayoutHeader hasDivider padding={0}>
-                <XDSToolbar
+              <LayoutHeader hasDivider padding={0}>
+                <Toolbar
                   label="Card layout header"
                   startContent={
                     <>
-                      <XDSButton
+                      <Button
                         label="Back"
                         variant="ghost"
                         icon={<ArrowLeftIcon />}
                         isIconOnly
                       />
-                      <XDSHeading level={4}>Edit Document</XDSHeading>
+                      <Heading level={4}>Edit Document</Heading>
                     </>
                   }
-                  endContent={<XDSButton label="Save changes" />}
+                  endContent={<Button label="Save changes" />}
                 />
-              </XDSLayoutHeader>
+              </LayoutHeader>
             }
             content={
-              <XDSLayoutContent>
+              <LayoutContent>
                 <BodyContent lines={4} />
-              </XDSLayoutContent>
+              </LayoutContent>
             }
           />
-        </XDSCard>
+        </Card>
       </AlignmentGuide>
       <AlignmentGuide label="contentWidth=640, heading start, no end">
-        <XDSCard width={900}>
-          <XDSLayout
+        <Card width={900}>
+          <Layout
             contentWidth={640}
             header={
-              <XDSLayoutHeader hasDivider padding={0}>
-                <XDSToolbar
+              <LayoutHeader hasDivider padding={0}>
+                <Toolbar
                   label="Card layout header"
                   startContent={
-                    <XDSHeading level={4}>Notifications</XDSHeading>
+                    <Heading level={4}>Notifications</Heading>
                   }
                 />
-              </XDSLayoutHeader>
+              </LayoutHeader>
             }
             content={
-              <XDSLayoutContent>
+              <LayoutContent>
                 <BodyContent lines={4} />
-              </XDSLayoutContent>
+              </LayoutContent>
             }
           />
-        </XDSCard>
+        </Card>
       </AlignmentGuide>
-    </XDSVStack>
+    </VStack>
   ),
 };
 
@@ -1079,32 +1079,32 @@ export const CardLayoutContentWidthToolbar: Story = {
 export const CardSmallPaddingLayoutToolbar: Story = {
   name: 'Card(12px) > Layout > Toolbar + body',
   render: () => (
-    <XDSCard width={700} padding={3}>
-      <XDSLayout
+    <Card width={700} padding={3}>
+      <Layout
         header={
-          <XDSLayoutHeader hasDivider padding={0}>
-            <XDSToolbar
+          <LayoutHeader hasDivider padding={0}>
+            <Toolbar
               label="Card header"
               startContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Back"
                     variant="ghost"
                     icon={<ArrowLeftIcon />}
                     isIconOnly
                   />
-                  <XDSHeading level={4}>Project Settings</XDSHeading>
+                  <Heading level={4}>Project Settings</Heading>
                 </>
               }
               endContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Search"
                     variant="ghost"
                     icon={<MagnifyingGlassIcon />}
                     isIconOnly
                   />
-                  <XDSButton
+                  <Button
                     label="Settings"
                     variant="ghost"
                     icon={<Cog6ToothIcon />}
@@ -1113,15 +1113,15 @@ export const CardSmallPaddingLayoutToolbar: Story = {
                 </>
               }
             />
-          </XDSLayoutHeader>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent>
+          <LayoutContent>
             <BodyContent lines={4} />
-          </XDSLayoutContent>
+          </LayoutContent>
         }
       />
-    </XDSCard>
+    </Card>
   ),
 };
 
@@ -1129,36 +1129,36 @@ export const CardSmallPaddingLayoutToolbar: Story = {
 // 19. Toolbar with TabList — size cascades from toolbar
 // ---------------------------------------------------------------------------
 
-/** Toolbar with tab navigation. Size prop on toolbar cascades to tabs and buttons via XDSSizeContext. */
+/** Toolbar with tab navigation. Size prop on toolbar cascades to tabs and buttons via SizeContext. */
 export const WithTabs: Story = {
   name: 'Tabs in toolbar (all sizes)',
   render: () => {
     const [tab, setTab] = useState('overview');
     return (
-      <XDSVStack gap={4}>
+      <VStack gap={4}>
         {(['sm', 'md', 'lg'] as const).map(size => (
           <AlignmentGuide key={size} label={`size="${size}"`}>
-            <XDSCard width={700}>
-              <XDSToolbar
+            <Card width={700}>
+              <Toolbar
                 label={`Tab toolbar ${size}`}
                 size={size}
                 dividers={['bottom']}
                 startContent={
-                  <XDSTabList value={tab} onChange={setTab}>
-                    <XDSTab value="overview" label="Overview" />
-                    <XDSTab value="analytics" label="Analytics" />
-                    <XDSTab value="settings" label="Settings" />
-                  </XDSTabList>
+                  <TabList value={tab} onChange={setTab}>
+                    <Tab value="overview" label="Overview" />
+                    <Tab value="analytics" label="Analytics" />
+                    <Tab value="settings" label="Settings" />
+                  </TabList>
                 }
                 endContent={
                   <>
-                    <XDSButton
+                    <Button
                       label="Filter"
                       variant="ghost"
                       icon={<FunnelIcon />}
                       isIconOnly
                     />
-                    <XDSButton
+                    <Button
                       label="Add"
                       variant="ghost"
                       icon={<PlusIcon />}
@@ -1167,13 +1167,13 @@ export const WithTabs: Story = {
                   </>
                 }
               />
-              <XDSSection>
+              <Section>
                 <BodyContent />
-              </XDSSection>
-            </XDSCard>
+              </Section>
+            </Card>
           </AlignmentGuide>
         ))}
-      </XDSVStack>
+      </VStack>
     );
   },
 };

@@ -8,8 +8,8 @@ import {
   XDSChartDotGLInteractive,
   useXDSChartColors,
 } from '@xds/lab';
-import {XDSStack, XDSText} from '@xds/core';
-import {XDSHeading} from '@xds/core/Text';
+import {Stack, Text} from '@xds/core';
+import {Heading} from '@xds/core/Text';
 
 const meta: Meta = {title: 'Lab/ChartDotGLInteractive'};
 export default meta;
@@ -26,11 +26,11 @@ const bigScatter = Array.from({length: 50000}, (_, i) => ({
 function GPUPicking5kDemo() {
   const colors = useXDSChartColors();
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>GPU Color-Picking \u2014 5,000 points</XDSHeading>
-      <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>GPU Color-Picking \u2014 5,000 points</Heading>
+      <Text type="supporting" color="secondary">
         Hover any point. O(1) via readPixels.
-      </XDSText>
+      </Text>
       <XDSChart data={scatterData} xKey="x" yKeys={['y']} height={400}>
         <XDSChartGrid horizontal vertical />
         <XDSChartAxis position="bottom" />
@@ -42,7 +42,7 @@ function GPUPicking5kDemo() {
           opacity={0.6}
         />
       </XDSChart>
-    </XDSStack>
+    </Stack>
   );
 }
 export const GPUPicking5k: StoryObj = {render: () => <GPUPicking5kDemo />};
@@ -50,8 +50,8 @@ export const GPUPicking5k: StoryObj = {render: () => <GPUPicking5kDemo />};
 function GPUPicking50kDemo() {
   const colors = useXDSChartColors();
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>GPU Color-Picking \u2014 50,000 points</XDSHeading>
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>GPU Color-Picking \u2014 50,000 points</Heading>
       <XDSChart data={bigScatter} xKey="x" yKeys={['y']} height={400}>
         <XDSChartGrid horizontal />
         <XDSChartAxis position="bottom" />
@@ -70,7 +70,7 @@ function GPUPicking50kDemo() {
           )}
         />
       </XDSChart>
-    </XDSStack>
+    </Stack>
   );
 }
 export const GPUPicking50k: StoryObj = {render: () => <GPUPicking50kDemo />};

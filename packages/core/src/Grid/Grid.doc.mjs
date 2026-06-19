@@ -16,7 +16,7 @@ export const docs = {
       { guidance: true, description: 'Cap the column count with `max` to prevent rows from getting too wide on large screens.' },
       { guidance: true, description: 'Use `repeat: \'fill\'` (the default) for consistent item widths. Use `\'fit\'` when items should stretch to fill leftover space.' },
       { guidance: false, description: 'Write manual CSS grid; Grid handles spacing and responsive behavior for you.' },
-      { guidance: false, description: 'Use `XDSHStack` with wrapping for grids; use Grid instead.' },
+      { guidance: false, description: 'Use `HStack` with wrapping for grids; use Grid instead.' },
     ],
   },
   theming: {
@@ -35,7 +35,7 @@ export const docs = {
     {
       name: 'minChildWidth',
       type: 'number',
-      description: 'Deprecated — use `columns={{minWidth: 280}}` instead. Minimum item width in px; enables responsive auto-fit.',
+      description: 'Deprecated: use `columns={{minWidth: 280}}` instead. Minimum item width in px; enables responsive auto-fit.',
     },
     {
       name: 'width',
@@ -82,11 +82,11 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
   components: [
-    {name: 'XDSGridSpan'},
+    {name: 'GridSpan'},
   ],
 };
 
@@ -100,7 +100,7 @@ export const docsZh = {
       { guidance: true, description: 'Cap the column count with `max` to prevent rows from getting too wide on large screens.' },
       { guidance: true, description: 'Use `repeat: \'fill\'` (the default) for consistent item widths. Use `\'fit\'` when items should stretch to fill leftover space.' },
       { guidance: false, description: 'Write manual CSS grid; Grid handles spacing and responsive behavior for you.' },
-      { guidance: false, description: 'Use `XDSHStack` with wrapping for grids; use Grid instead.' },
+      { guidance: false, description: 'Use `HStack` with wrapping for grids; use Grid instead.' },
     ],
   },
 };
@@ -115,7 +115,7 @@ export const docsDense = {
       { guidance: true, description: 'Cap the column count with max to prevent rows from getting too wide on large screens.' },
       { guidance: true, description: 'Use repeat: \'fill\' (the default) for consistent item widths. Use \'fit\' when items should stretch to fill leftover space.' },
       { guidance: false, description: 'Write manual CSS grid; Grid handles spacing and responsive behavior for you.' },
-      { guidance: false, description: 'Use XDSHStack with wrapping for grids; use Grid instead.' },
+      { guidance: false, description: 'Use HStack with wrapping for grids; use Grid instead.' },
     ],
   },
 };

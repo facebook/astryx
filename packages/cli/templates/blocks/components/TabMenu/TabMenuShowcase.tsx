@@ -2,14 +2,14 @@
 
 'use client';
 
-import {XDSTabList, XDSTab, XDSTabMenu} from '@xds/core/TabList';
+import {TabList, Tab, TabMenu} from '@xds/core/TabList';
 
 export default function TabMenuShowcase() {
   return (
-    <XDSTabList value="settings" onChange={() => {}}>
-      <XDSTab value="overview" label="Overview" />
-      <XDSTab value="activity" label="Activity" />
-      <XDSTabMenu
+    <TabList value="settings" onChange={() => {}}>
+      <Tab value="overview" label="Overview" />
+      <Tab value="activity" label="Activity" />
+      <TabMenu
         label="More"
         options={[
           {value: 'settings', label: 'Settings'},
@@ -17,6 +17,6 @@ export default function TabMenuShowcase() {
           {value: 'billing', label: 'Billing'},
         ]}
       />
-    </XDSTabList>
+    </TabList>
   );
 }

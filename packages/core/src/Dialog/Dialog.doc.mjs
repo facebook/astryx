@@ -15,9 +15,9 @@ export const docs = {
       onOpenChange: undefined,
       width: 400,
       children: {
-        __element: 'XDSVStack', props: {gap: 2}, children: [
-          {__element: 'XDSHeading', props: {level: 3}, children: 'Dialog Title'},
-          {__element: 'XDSText', props: {type: 'body'}, children: 'Are you sure you want to proceed? This action can be undone later from settings.'},
+        __element: 'VStack', props: {gap: 2}, children: [
+          {__element: 'Heading', props: {level: 3}, children: 'Dialog Title'},
+          {__element: 'Text', props: {type: 'body'}, children: 'Are you sure you want to proceed? This action can be undone later from settings.'},
         ],
       },
     },
@@ -69,13 +69,13 @@ export const docs = {
     },
     {
       name: 'position',
-      type: 'XDSDialogPosition',
+      type: 'DialogPosition',
       description: 'Static position for the dialog; centered by default when omitted.',
     },
     {
       name: 'variant',
       type: "'standard' | 'fullscreen'",
-      description: 'Dialog variant — fullscreen expands to fill the entire viewport.',
+      description: 'Dialog variant: fullscreen expands to fill the entire viewport.',
       default: "'standard'",
     },
     {
@@ -92,11 +92,11 @@ export const docs = {
     },
   ],
   components: [
-    {name: 'XDSDialogHeader'},
-    {name: 'useXDSImperativeDialog'},
+    {name: 'DialogHeader'},
+    {name: 'useImperativeDialog'},
   ],
   usage: {
-    description: 'Dialog displays a modal overlay that blocks interaction with the page until the user responds. Use it for delete confirmations, edit forms, terms acceptance, or any decision that should not be skipped.\n\nFor cases where you want to show a dialog without managing open state, use the `useXDSImperativeDialog` hook: call `dialog.show(content)` and render `dialog.element` in your tree.',
+    description: 'Dialog displays a modal overlay that blocks interaction with the page until the user responds. Use it for delete confirmations, edit forms, terms acceptance, or any decision that should not be skipped.\n\nFor cases where you want to show a dialog without managing open state, use the `useImperativeDialog` hook: call `dialog.show(content)` and render `dialog.element` in your tree.',
     bestPractices: [
       { guidance: true, description: 'Choose the right purpose: info for dismissable content, form to prevent accidental backdrop dismissal, required when the user must respond.' },
       { guidance: true, description: 'Include a clear title in the header so users immediately understand what the dialog is asking.' },

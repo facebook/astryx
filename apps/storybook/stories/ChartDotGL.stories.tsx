@@ -9,8 +9,8 @@ import {
   XDSChartDotGL,
   useXDSChartColors,
 } from '@xds/lab';
-import {XDSStack, XDSText} from '@xds/core';
-import {XDSHeading} from '@xds/core/Text';
+import {Stack, Text} from '@xds/core';
+import {Heading} from '@xds/core/Text';
 
 const meta: Meta = {title: 'Lab/ChartDotGL'};
 export default meta;
@@ -28,29 +28,29 @@ function SVGvsWebGLDemo() {
   const colors = useXDSChartColors();
   const c = colors.categorical(2);
   return (
-    <XDSStack direction="vertical" gap={6}>
-      <XDSHeading level={3}>SVG vs WebGL</XDSHeading>
-      <XDSStack direction="horizontal" gap={6}>
-        <XDSStack direction="vertical" gap={1}>
-          <XDSText type="label">SVG (XDSChartDot)</XDSText>
+    <Stack direction="vertical" gap={6}>
+      <Heading level={3}>SVG vs WebGL</Heading>
+      <Stack direction="horizontal" gap={6}>
+        <Stack direction="vertical" gap={1}>
+          <Text type="label">SVG (XDSChartDot)</Text>
           <XDSChart data={smallData} xKey="x" yKeys={['y']} height={250}>
             <XDSChartGrid horizontal />
             <XDSChartAxis position="bottom" />
             <XDSChartAxis position="left" />
             <XDSChartDot dataKey="y" color={c[0]} radius={4} />
           </XDSChart>
-        </XDSStack>
-        <XDSStack direction="vertical" gap={1}>
-          <XDSText type="label">WebGL (XDSChartDotGL)</XDSText>
+        </Stack>
+        <Stack direction="vertical" gap={1}>
+          <Text type="label">WebGL (XDSChartDotGL)</Text>
           <XDSChart data={smallData} xKey="x" yKeys={['y']} height={250}>
             <XDSChartGrid horizontal />
             <XDSChartAxis position="bottom" />
             <XDSChartAxis position="left" />
             <XDSChartDotGL dataKey="y" color={c[0]} size={8} />
           </XDSChart>
-        </XDSStack>
-      </XDSStack>
-    </XDSStack>
+        </Stack>
+      </Stack>
+    </Stack>
   );
 }
 export const SVGvsWebGL: StoryObj = {render: () => <SVGvsWebGLDemo />};
@@ -58,8 +58,8 @@ export const SVGvsWebGL: StoryObj = {render: () => <SVGvsWebGLDemo />};
 function LargeDatasetDemo() {
   const colors = useXDSChartColors();
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSHeading level={3}>WebGL \u2014 5,000 points</XDSHeading>
+    <Stack direction="vertical" gap={4}>
+      <Heading level={3}>WebGL \u2014 5,000 points</Heading>
       <XDSChart data={largeData} xKey="x" yKeys={['y']} height={400}>
         <XDSChartGrid horizontal vertical />
         <XDSChartAxis position="bottom" />
@@ -71,7 +71,7 @@ function LargeDatasetDemo() {
           opacity={0.5}
         />
       </XDSChart>
-    </XDSStack>
+    </Stack>
   );
 }
 export const LargeDataset: StoryObj = {render: () => <LargeDatasetDemo />};

@@ -3,51 +3,51 @@
 'use client';
 
 import {
-  XDSLayout,
-  XDSLayoutHeader,
-  XDSLayoutContent,
-  XDSLayoutFooter,
-  XDSHStack,
-  XDSVStack,
+  Layout,
+  LayoutHeader,
+  LayoutContent,
+  LayoutFooter,
+  HStack,
+  VStack,
 } from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSHeading, XDSText} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Heading, Text} from '@xds/core/Text';
 
 export default function LayoutContentWidth() {
   return (
-    <XDSLayout
+    <Layout
       height="fill"
       contentWidth={360}
       header={
-        <XDSLayoutHeader hasDivider>
-          <XDSHeading level={4}>Centered Form</XDSHeading>
-        </XDSLayoutHeader>
+        <LayoutHeader hasDivider>
+          <Heading level={4}>Centered Form</Heading>
+        </LayoutHeader>
       }
       content={
-        <XDSLayoutContent>
-          <XDSVStack gap={3}>
-            <XDSText type="body">
+        <LayoutContent>
+          <VStack gap={3}>
+            <Text type="body">
               The contentWidth prop constrains content to a maximum width and
               centers it within the layout. Dividers remain full-bleed while
               content stays narrow and readable.
-            </XDSText>
-            <XDSText type="body" color="secondary">
+            </Text>
+            <Text type="body" color="secondary">
               Common widths: 640 for forms, 960 for content pages.
-            </XDSText>
-          </XDSVStack>
-        </XDSLayoutContent>
+            </Text>
+          </VStack>
+        </LayoutContent>
       }
       footer={
-        <XDSLayoutFooter hasDivider>
-          <XDSHStack gap={2} hAlign="end">
-            <XDSButton label="Cancel" variant="secondary">
+        <LayoutFooter hasDivider>
+          <HStack gap={2} hAlign="end">
+            <Button label="Cancel" variant="secondary">
               Cancel
-            </XDSButton>
-            <XDSButton label="Submit" variant="primary">
+            </Button>
+            <Button label="Submit" variant="primary">
               Submit
-            </XDSButton>
-          </XDSHStack>
-        </XDSLayoutFooter>
+            </Button>
+          </HStack>
+        </LayoutFooter>
       }
     />
   );

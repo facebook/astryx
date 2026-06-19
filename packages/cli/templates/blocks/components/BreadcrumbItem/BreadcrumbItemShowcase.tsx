@@ -3,9 +3,9 @@
 'use client';
 
 import type {ComponentProps} from 'react';
-import {XDSBreadcrumbs, XDSBreadcrumbItem} from '@xds/core/Breadcrumbs';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Breadcrumbs, BreadcrumbItem} from '@xds/core/Breadcrumbs';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 function HomeIcon(props: ComponentProps<'svg'>) {
   return (
@@ -26,53 +26,50 @@ function HomeIcon(props: ComponentProps<'svg'>) {
 
 export default function BreadcrumbItemShowcase() {
   return (
-    <XDSVStack gap={4}>
-      <XDSVStack gap={1}>
-        <XDSText type="supporting" color="secondary">
+    <VStack gap={4}>
+      <VStack gap={1}>
+        <Text type="supporting" color="secondary">
           With start icon
-        </XDSText>
-        <XDSBreadcrumbs>
-          <XDSBreadcrumbItem href="/" startIcon={<HomeIcon />}>
+        </Text>
+        <Breadcrumbs>
+          <BreadcrumbItem href="/" startIcon={<HomeIcon />}>
             Home
-          </XDSBreadcrumbItem>
-          <XDSBreadcrumbItem href="/docs">Docs</XDSBreadcrumbItem>
-          <XDSBreadcrumbItem isCurrent>Components</XDSBreadcrumbItem>
-        </XDSBreadcrumbs>
-      </XDSVStack>
-
-      <XDSVStack gap={1}>
-        <XDSText type="supporting" color="secondary">
+          </BreadcrumbItem>
+          <BreadcrumbItem href="/docs">Docs</BreadcrumbItem>
+          <BreadcrumbItem isCurrent>Components</BreadcrumbItem>
+        </Breadcrumbs>
+      </VStack>
+      <VStack gap={1}>
+        <Text type="supporting" color="secondary">
           As current page (non-link)
-        </XDSText>
-        <XDSBreadcrumbs>
-          <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
-          <XDSBreadcrumbItem href="/settings">Settings</XDSBreadcrumbItem>
-          <XDSBreadcrumbItem isCurrent>Profile</XDSBreadcrumbItem>
-        </XDSBreadcrumbs>
-      </XDSVStack>
-
-      <XDSVStack gap={1}>
-        <XDSText type="supporting" color="secondary">
+        </Text>
+        <Breadcrumbs>
+          <BreadcrumbItem href="/">Home</BreadcrumbItem>
+          <BreadcrumbItem href="/settings">Settings</BreadcrumbItem>
+          <BreadcrumbItem isCurrent>Profile</BreadcrumbItem>
+        </Breadcrumbs>
+      </VStack>
+      <VStack gap={1}>
+        <Text type="supporting" color="secondary">
           Supporting variant
-        </XDSText>
-        <XDSBreadcrumbs variant="supporting">
-          <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
-          <XDSBreadcrumbItem href="/admin">Admin</XDSBreadcrumbItem>
-          <XDSBreadcrumbItem href="/admin/users">Users</XDSBreadcrumbItem>
-          <XDSBreadcrumbItem isCurrent>Permissions</XDSBreadcrumbItem>
-        </XDSBreadcrumbs>
-      </XDSVStack>
-
-      <XDSVStack gap={1}>
-        <XDSText type="supporting" color="secondary">
+        </Text>
+        <Breadcrumbs variant="supporting">
+          <BreadcrumbItem href="/">Home</BreadcrumbItem>
+          <BreadcrumbItem href="/admin">Admin</BreadcrumbItem>
+          <BreadcrumbItem href="/admin/users">Users</BreadcrumbItem>
+          <BreadcrumbItem isCurrent>Permissions</BreadcrumbItem>
+        </Breadcrumbs>
+      </VStack>
+      <VStack gap={1}>
+        <Text type="supporting" color="secondary">
           With onClick handler (no href)
-        </XDSText>
-        <XDSBreadcrumbs>
-          <XDSBreadcrumbItem onClick={() => {}}>Dashboard</XDSBreadcrumbItem>
-          <XDSBreadcrumbItem onClick={() => {}}>Projects</XDSBreadcrumbItem>
-          <XDSBreadcrumbItem isCurrent>Project Alpha</XDSBreadcrumbItem>
-        </XDSBreadcrumbs>
-      </XDSVStack>
-    </XDSVStack>
+        </Text>
+        <Breadcrumbs>
+          <BreadcrumbItem onClick={() => {}}>Dashboard</BreadcrumbItem>
+          <BreadcrumbItem onClick={() => {}}>Projects</BreadcrumbItem>
+          <BreadcrumbItem isCurrent>Project Alpha</BreadcrumbItem>
+        </Breadcrumbs>
+      </VStack>
+    </VStack>
   );
 }

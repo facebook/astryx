@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSButton} from '@xds/core/Button';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
+import {Button} from '@xds/core/Button';
+import {Heading, Text} from '@xds/core/Text';
+import {Badge} from '@xds/core/Badge';
+import {DropdownMenu} from '@xds/core/DropdownMenu';
 
 // ---------------------------------------------------------------------------
 // Inline SVG Icons
@@ -243,7 +243,7 @@ const BUTTON_CODE_LINES: Array<{spans: Array<{text: string; color: string}>}> =
       spans: [
         {text: 'import ', color: '#c678dd'},
         {text: '{', color: '#abb2bf'},
-        {text: 'XDSButton', color: '#e5c07b'},
+        {text: 'Button', color: '#e5c07b'},
         {text: '}', color: '#abb2bf'},
         {text: ' from ', color: '#c678dd'},
         {text: "'@xds/core/Button'", color: '#98c379'},
@@ -268,7 +268,7 @@ const BUTTON_CODE_LINES: Array<{spans: Array<{text: string; color: string}>}> =
     {
       spans: [
         {text: '    <', color: '#abb2bf'},
-        {text: 'XDSButton', color: '#e5c07b'},
+        {text: 'Button', color: '#e5c07b'},
       ],
     },
     {
@@ -340,7 +340,7 @@ export default function DocDocsPage() {
             flexShrink: 0,
           }}>
           <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
-            <XDSButton
+            <Button
               label="Menu"
               variant="ghost"
               size="sm"
@@ -372,7 +372,7 @@ export default function DocDocsPage() {
               Docs
             </span>
           </div>
-          <XDSButton
+          <Button
             label="Collapse sidebar"
             variant="ghost"
             size="sm"
@@ -520,13 +520,13 @@ export default function DocDocsPage() {
                 Live preview
               </span>
               <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
-                <XDSButton
+                <Button
                   label="Open in Craft"
                   variant="ghost"
                   size="sm"
                   icon={<ExternalLinkIcon />}
                 />
-                <XDSDropdownMenu
+                <DropdownMenu
                   button={{
                     label: 'Variant',
                     variant: 'ghost',
@@ -539,7 +539,7 @@ export default function DocDocsPage() {
                     {label: 'Ghost', onClick: () => {}},
                   ]}
                 />
-                <XDSDropdownMenu
+                <DropdownMenu
                   button={{
                     label: 'Light',
                     variant: 'ghost',
@@ -551,14 +551,14 @@ export default function DocDocsPage() {
                     {label: 'Dark', onClick: () => {}},
                   ]}
                 />
-                <XDSButton
+                <Button
                   label="Toggle code"
                   variant={showCode ? 'secondary' : 'ghost'}
                   size="sm"
                   icon={<CodeIcon />}
                   onClick={() => setShowCode(!showCode)}
                 />
-                <XDSButton
+                <Button
                   label="Fullscreen"
                   variant="ghost"
                   size="sm"
@@ -583,11 +583,11 @@ export default function DocDocsPage() {
                   backgroundColor: 'var(--color-background-body, #f5f6f7)',
                   padding: 32,
                 }}>
-                <XDSButton
+                <Button
                   label="Button"
                   variant="primary"
                   icon={<PlusIcon />}
-                  endContent={<XDSBadge label="New" variant="info" />}
+                  endContent={<Badge label="New" variant="info" />}
                 />
               </div>
 
@@ -648,13 +648,13 @@ export default function DocDocsPage() {
           {/* Documentation Content */}
           {/* ============================================================= */}
           <div style={{marginBottom: 32}}>
-            <XDSHeading level={2}>
+            <Heading level={2}>
               A button initiates an instantaneous action.
-            </XDSHeading>
+            </Heading>
           </div>
 
           <div style={{marginBottom: 32}}>
-            <XDSText type="body">
+            <Text type="body">
               Buttons are clickable elements used to trigger actions. They
               communicate calls to action to the user and allow users to
               interact with pages in a variety of ways. Button labels express
@@ -662,11 +662,11 @@ export default function DocDocsPage() {
               can contain a combination of a clear label and an icon, while
               standalone icon buttons are reserved for recurring, universally
               understood actions.
-            </XDSText>
+            </Text>
           </div>
 
           <div style={{marginBottom: 16}}>
-            <XDSHeading level={3}>When to use</XDSHeading>
+            <Heading level={3}>When to use</Heading>
           </div>
 
           <ul
@@ -684,7 +684,8 @@ export default function DocDocsPage() {
             </li>
             <li>Toggling a UI element or performing an inline action</li>
             <li>
-              Performing destructive actions such as deleting items — use the
+              
+              Performing destructive actions such as deleting items; use the
               danger variant for these
             </li>
           </ul>

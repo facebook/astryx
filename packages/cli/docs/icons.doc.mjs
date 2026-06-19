@@ -19,7 +19,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Components that accept an icon prop use XDSIconType: either a semantic name string or a direct SVG component. The semantic names below are resolved through the global icon registry.',
+          text: 'Components that accept an icon prop use IconType: either a semantic name string or a direct SVG component. The semantic names below are resolved through the global icon registry.',
         },
         {
           type: 'table',
@@ -61,7 +61,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'For icons not in the semantic list, pass an SVG component directly. Any ComponentType<SVGProps<SVGSVGElement>> works; XDSIcon applies size and color styling automatically.',
+          text: 'For icons not in the semantic list, pass an SVG component directly. Any ComponentType<SVGProps<SVGSVGElement>> works; Icon applies size and color styling automatically.',
         },
         {
           type: 'code',
@@ -70,8 +70,8 @@ export const docs = {
           code: `import { PhotoIcon } from '@heroicons/react/24/outline';
 import { HeartIcon } from 'lucide-react';
 
-<XDSIcon icon={PhotoIcon} size="lg" />
-<XDSIcon icon={HeartIcon} color="negative" />`,
+<Icon icon={PhotoIcon} size="lg" />
+<Icon icon={HeartIcon} color="negative" />`,
         },
       ],
     },
@@ -110,7 +110,7 @@ registerIcons({
           type: 'list',
           style: 'ordered',
           items: [
-            'Add the name to XDSIconName type in packages/core/src/Icon/globalIconRegistry.tsx',
+            'Add the name to IconName type in packages/core/src/Icon/globalIconRegistry.tsx',
             'Add the default SVG to packages/core/src/Icon/defaultIcons.tsx',
             'Add a row to the Available Names table in packages/cli/docs/icons.doc.mjs',
           ],

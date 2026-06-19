@@ -2,27 +2,27 @@
 
 'use client';
 
-import {XDSAvatar, XDSAvatarStatusDot} from '@xds/core/Avatar';
-import {XDSHStack} from '@xds/core/Layout';
+import {Avatar, AvatarStatusDot} from '@xds/core/Avatar';
+import {HStack} from '@xds/core/Layout';
 
 export default function AvatarStatusDotShowcase() {
   return (
-    <XDSHStack gap={4} vAlign="center">
-      <XDSAvatar
+    <HStack gap={4} vAlign="center">
+      <Avatar
         name="Online User"
         size="large"
-        status={<XDSAvatarStatusDot variant="success" label="Online" />}
+        status={<AvatarStatusDot variant="success" label="Online" />}
       />
-      <XDSAvatar
+      <Avatar
         name="Away User"
         size="large"
-        status={<XDSAvatarStatusDot variant="neutral" label="Away" />}
+        status={<AvatarStatusDot variant="neutral" label="Away" />}
       />
-      <XDSAvatar
+      <Avatar
         name="Busy User"
         size="large"
-        status={<XDSAvatarStatusDot variant="error" label="Busy" />}
+        status={<AvatarStatusDot variant="error" label="Busy" />}
       />
-    </XDSHStack>
+    </HStack>
   );
 }

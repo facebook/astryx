@@ -6,7 +6,7 @@ export const doc = {
   exampleFor: 'CommandPaletteGroup',
   name: 'CommandPaletteGroup',
   displayName: 'Command Palette Group',
-  description: 'Command palette groups in both data-driven (auxiliaryData.group) and composed (XDSCommandPaletteGroup + XDSCommandPaletteItem) forms.',
+  description: 'Command palette groups in both data-driven (auxiliaryData.group) and composed (CommandPaletteGroup + CommandPaletteItem) forms.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 4 / 3,

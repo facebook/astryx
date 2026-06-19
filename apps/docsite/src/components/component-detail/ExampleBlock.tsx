@@ -3,22 +3,29 @@
 'use client';
 
 import {useEffect, useState, type ComponentType} from 'react';
-import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSText} from '@xds/core/Text';
+import {Card} from '@xds/core/Card';
+import {Section} from '@xds/core/Section';
+import {Center} from '@xds/core/Center';
+import {Text} from '@xds/core/Text';
 import {CodeExampleBlock} from '../CodeExampleBlock';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
-import {XDSSpinner} from '@xds/core/Spinner';
-import {XDSButton} from '@xds/core/Button';
-import {XDSHStack} from '@xds/core/Layout';
+import {TabList, Tab} from '@xds/core/TabList';
+import {Spinner} from '@xds/core/Spinner';
+import {Button} from '@xds/core/Button';
+import {HStack} from '@xds/core/Layout';
 import type {ExampleEntry} from '../../generated/exampleRegistry';
 import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {buildPlaygroundHref} from '../playgroundLink';
 import {trackOpenPlayground} from '../../lib/analytics';
 import {MarkdownText} from '../MarkdownText';
+import {preventPreviewNavigation} from './previewNavigation';
 
-function LivePreview({entry}: {entry: ExampleEntry}) {
+function LivePreview({
+  entry,
+  componentName,
+}: {
+  entry: ExampleEntry;
+  componentName: string;
+}) {
   const [Component, setComponent] = useState<ComponentType | null>(null);
   const [error, setError] = useState(false);
 
@@ -29,21 +36,26 @@ function LivePreview({entry}: {entry: ExampleEntry}) {
       .catch(() => setError(true));
   }, [entry]);
 
+  const previewNavigationProps =
+    componentName === 'SideNav'
+      ? {onClickCapture: preventPreviewNavigation}
+      : {};
+
   if (error) {
     return (
-      <XDSCenter style={{minHeight: 200, width: '100%'}}>
-        <XDSText type="supporting" color="secondary">
+      <Center style={{minHeight: 200, width: '100%'}}>
+        <Text type="supporting" color="secondary">
           Preview not available
-        </XDSText>
-      </XDSCenter>
+        </Text>
+      </Center>
     );
   }
 
   if (!Component) {
     return (
-      <XDSCenter style={{minHeight: 200, width: '100%'}}>
-        <XDSSpinner size="md" />
-      </XDSCenter>
+      <Center style={{minHeight: 200, width: '100%'}}>
+        <Spinner size="md" />
+      </Center>
     );
   }
 
@@ -56,7 +68,8 @@ function LivePreview({entry}: {entry: ExampleEntry}) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-      }}>
+      }}
+      {...previewNavigationProps}>
       <div style={{minWidth: 'fit-content', padding: 'var(--spacing-4)'}}>
         <Component />
       </div>
@@ -66,30 +79,31 @@ function LivePreview({entry}: {entry: ExampleEntry}) {
 
 interface ExampleBlockProps {
   entry: ExampleEntry;
+  componentName: string;
 }
 
-export function ExampleBlock({entry}: ExampleBlockProps) {
+export function ExampleBlock({entry, componentName}: ExampleBlockProps) {
   const [tab, setTab] = useState<string>('description');
 
   return (
     <ComponentPreviewTheme>
-      <XDSCard padding={3}>
-        <XDSText type="body" weight="medium">
+      <Card padding={3}>
+        <Text type="body" weight="medium">
           {entry.name}
-        </XDSText>
+        </Text>
 
-        <LivePreview entry={entry} />
+        <LivePreview entry={entry} componentName={componentName} />
 
-        <XDSSection variant="muted" padding={1} dividers={['top']}>
-          <XDSHStack
+        <Section variant="muted" padding={1} dividers={['top']}>
+          <HStack
             gap={1}
             style={{justifyContent: 'space-between', alignItems: 'center'}}>
-            <XDSTabList value={tab} onChange={setTab} size="sm">
-              <XDSTab value="description" label="Description" />
-              <XDSTab value="code" label="Code" />
-            </XDSTabList>
+            <TabList value={tab} onChange={setTab} size="sm">
+              <Tab value="description" label="Description" />
+              <Tab value="code" label="Code" />
+            </TabList>
             {entry.source && (
-              <XDSButton
+              <Button
                 label="Open in Playground"
                 variant="ghost"
                 size="sm"
@@ -99,9 +113,9 @@ export function ExampleBlock({entry}: ExampleBlockProps) {
                 }}
               />
             )}
-          </XDSHStack>
-        </XDSSection>
-        <XDSSection variant="muted" padding={tab === 'code' ? 0 : 4}>
+          </HStack>
+        </Section>
+        <Section variant="muted" padding={tab === 'code' ? 0 : 4}>
           {tab === 'description' ? (
             <MarkdownText type="body">
               {entry.description || 'No description available.'}
@@ -115,8 +129,8 @@ export function ExampleBlock({entry}: ExampleBlockProps) {
               width="100%"
             />
           )}
-        </XDSSection>
-      </XDSCard>
+        </Section>
+      </Card>
     </ComponentPreviewTheme>
   );
 }

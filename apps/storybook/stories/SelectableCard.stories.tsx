@@ -2,13 +2,13 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {XDSSelectableCard} from '@xds/core/SelectableCard';
-import {XDSText} from '@xds/core/Text';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {SelectableCard} from '@xds/core/SelectableCard';
+import {Text} from '@xds/core/Text';
+import {HStack, VStack} from '@xds/core/Layout';
 
-const meta: Meta<typeof XDSSelectableCard> = {
+const meta: Meta<typeof SelectableCard> = {
   title: 'Core/SelectableCard',
-  component: XDSSelectableCard,
+  component: SelectableCard,
   tags: ['autodocs'],
   argTypes: {
     variant: {
@@ -35,7 +35,7 @@ const meta: Meta<typeof XDSSelectableCard> = {
       description: {
         component:
           'A card that toggles between selected and unselected states. ' +
-          'Shows an accent border when selected. Manage selection state externally — ' +
+          'Shows an accent border when selected. Manage selection state externally: ' +
           'single value for radio behavior, Set for multi-select.',
       },
     },
@@ -43,7 +43,7 @@ const meta: Meta<typeof XDSSelectableCard> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSSelectableCard>;
+type Story = StoryObj<typeof SelectableCard>;
 
 export const SingleSelect: Story = {
   name: 'Single Select (Radio)',
@@ -56,25 +56,25 @@ export const SingleSelect: Story = {
     ];
 
     return (
-      <XDSHStack gap={3}>
+      <HStack gap={3}>
         {plans.map(plan => (
-          <XDSSelectableCard
+          <SelectableCard
             key={plan.id}
             label={plan.name}
             isSelected={selected === plan.id}
             onChange={() => setSelected(plan.id)}
             width={200}>
-            <XDSVStack gap={1}>
-              <XDSText type="body" weight="bold">
+            <VStack gap={1}>
+              <Text type="body" weight="bold">
                 {plan.name}
-              </XDSText>
-              <XDSText type="supporting" color="secondary">
+              </Text>
+              <Text type="supporting" color="secondary">
                 {plan.price}
-              </XDSText>
-            </XDSVStack>
-          </XDSSelectableCard>
+              </Text>
+            </VStack>
+          </SelectableCard>
         ))}
-      </XDSHStack>
+      </HStack>
     );
   },
   parameters: {
@@ -99,9 +99,9 @@ export const MultiSelect: Story = {
     ];
 
     return (
-      <XDSHStack gap={3}>
+      <HStack gap={3}>
         {filters.map(f => (
-          <XDSSelectableCard
+          <SelectableCard
             key={f.id}
             label={f.name}
             isSelected={selected.has(f.id)}
@@ -117,12 +117,12 @@ export const MultiSelect: Story = {
               });
             }}
             width={150}>
-            <XDSText type="body" weight="bold">
+            <Text type="body" weight="bold">
               {f.name}
-            </XDSText>
-          </XDSSelectableCard>
+            </Text>
+          </SelectableCard>
         ))}
-      </XDSHStack>
+      </HStack>
     );
   },
   parameters: {
@@ -155,9 +155,9 @@ export const ColorVariants: Story = {
     ] as const;
 
     return (
-      <XDSHStack gap={3} wrap="wrap">
+      <HStack gap={3} wrap="wrap">
         {variants.map(v => (
-          <XDSSelectableCard
+          <SelectableCard
             key={v}
             label={v}
             isSelected={selected.has(v)}
@@ -174,12 +174,12 @@ export const ColorVariants: Story = {
             }}
             variant={v}
             width={140}>
-            <XDSText type="body" weight="bold">
+            <Text type="body" weight="bold">
               {v}
-            </XDSText>
-          </XDSSelectableCard>
+            </Text>
+          </SelectableCard>
         ))}
-      </XDSHStack>
+      </HStack>
     );
   },
   parameters: {
@@ -194,37 +194,37 @@ export const ColorVariants: Story = {
 
 export const Disabled: Story = {
   render: () => (
-    <XDSHStack gap={3}>
-      <XDSSelectableCard
+    <HStack gap={3}>
+      <SelectableCard
         label="Enabled"
         isSelected={true}
         onChange={() => {}}
         width={200}>
-        <XDSText type="body" weight="bold">
+        <Text type="body" weight="bold">
           Selected & Enabled
-        </XDSText>
-      </XDSSelectableCard>
-      <XDSSelectableCard
+        </Text>
+      </SelectableCard>
+      <SelectableCard
         label="Disabled"
         isSelected={true}
         onChange={() => {}}
         isDisabled
         width={200}>
-        <XDSText type="body" weight="bold">
+        <Text type="body" weight="bold">
           Selected & Disabled
-        </XDSText>
-      </XDSSelectableCard>
-      <XDSSelectableCard
+        </Text>
+      </SelectableCard>
+      <SelectableCard
         label="Disabled unselected"
         isSelected={false}
         onChange={() => {}}
         isDisabled
         width={200}>
-        <XDSText type="body" weight="bold">
+        <Text type="body" weight="bold">
           Unselected & Disabled
-        </XDSText>
-      </XDSSelectableCard>
-    </XDSHStack>
+        </Text>
+      </SelectableCard>
+    </HStack>
   ),
   parameters: {
     docs: {

@@ -3,34 +3,34 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSMobileNav} from '@xds/core/MobileNav';
-import {XDSSideNavSection, XDSSideNavItem} from '@xds/core/SideNav';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
+import {MobileNav} from '@xds/core/MobileNav';
+import {SideNavSection, SideNavItem} from '@xds/core/SideNav';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
 import {HomeIcon, FolderIcon} from '@heroicons/react/24/outline';
 
 export default function MobileNavWithoutTitleMobileNav() {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <>
-      <XDSButton
+      <Button
         label="Open Navigation"
-        icon={<XDSIcon icon="menu" color="inherit" />}
+        icon={<Icon icon="menu" color="inherit" />}
         variant="ghost"
         onClick={() => setIsOpen(true)}
         isIconOnly
       />
-      <XDSMobileNav isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
-        <XDSSideNavSection title="Main">
-          <XDSSideNavItem
+      <MobileNav isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
+        <SideNavSection title="Main">
+          <SideNavItem
             label="Dashboard"
             icon={HomeIcon}
             isSelected
             href="/dashboard"
           />
-          <XDSSideNavItem label="Projects" icon={FolderIcon} href="/projects" />
-        </XDSSideNavSection>
-      </XDSMobileNav>
+          <SideNavItem label="Projects" icon={FolderIcon} href="/projects" />
+        </SideNavSection>
+      </MobileNav>
     </>
   );
 }

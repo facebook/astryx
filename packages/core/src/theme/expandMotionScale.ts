@@ -42,7 +42,7 @@
  * { fast: 175, medium: 410, ratio: 0.75, easing: 'cubic-bezier(0.0, 0.0, 0.2, 1)' }
  * ```
  */
-export interface XDSMotionScaleConfig {
+export interface MotionScaleConfig {
   /** Base duration for micro-interactions in ms (hover, toggle, checkbox). */
   fast: number;
   /** Base duration for entrance/exit animations in ms (dialog, drawer, panel). */
@@ -91,7 +91,7 @@ function roundMs(ms: number): number {
  * @returns Token overrides to merge into the theme token map
  */
 export function expandMotionScale(
-  config: XDSMotionScaleConfig,
+  config: MotionScaleConfig,
 ): MotionScaleTokens {
   const {fast, medium, slow, ratio, easing} = config;
 

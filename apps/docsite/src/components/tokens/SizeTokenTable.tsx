@@ -3,9 +3,9 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSTable, pixel} from '@xds/core/Table';
+import {HStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {Table, pixel} from '@xds/core/Table';
 import type {TokenTableProps} from './types';
 import {resolveToken, getTokensByPrefix} from './helpers';
 
@@ -26,7 +26,7 @@ export function SizeTokenTable({theme}: TokenTableProps) {
   }));
 
   return (
-    <XDSTable
+    <Table
       data={data as Record<string, unknown>[]}
       columns={[
         {key: 'tokenName', header: 'Token', width: pixel(200)},
@@ -34,7 +34,7 @@ export function SizeTokenTable({theme}: TokenTableProps) {
           key: 'value',
           header: 'Value',
           renderCell: (item: Record<string, unknown>) => (
-            <XDSHStack gap={2} vAlign="center">
+            <HStack gap={2} vAlign="center">
               <div
                 {...stylex.props(styles.box)}
                 style={{
@@ -42,10 +42,10 @@ export function SizeTokenTable({theme}: TokenTableProps) {
                   height: item.value as string,
                 }}
               />
-              <XDSText type="code" color="secondary">
+              <Text type="code" color="secondary">
                 {item.value as string}
-              </XDSText>
-            </XDSHStack>
+              </Text>
+            </HStack>
           ),
         },
       ]}

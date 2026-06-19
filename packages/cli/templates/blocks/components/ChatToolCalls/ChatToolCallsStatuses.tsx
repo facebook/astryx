@@ -2,11 +2,11 @@
 
 'use client';
 
-import {XDSChatToolCalls} from '@xds/core/Chat';
+import {ChatToolCalls} from '@xds/core/Chat';
 
 export default function ChatToolCallsStatuses() {
   return (
-    <XDSChatToolCalls
+    <ChatToolCalls
       defaultIsExpanded
       calls={[
         {

@@ -26,12 +26,12 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'The trigger area — right-click on this content to open the menu.',
+      description: 'The trigger area: right-click on this content to open the menu.',
       required: true,
     },
     {
       name: 'items',
-      type: 'XDSContextMenuOption[]',
+      type: 'ContextMenuOption[]',
       description: 'Array of menu entries. Each entry is one of: an action item `{label, onClick?, icon?, isDisabled?}`, a divider `{type: "divider"}`, or a section `{type: "section", title?, items: [...action items]}`.',
       required: true,
     },
@@ -49,7 +49,7 @@ export const docs = {
     {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
-      description: 'Size of menu items — controls padding density.',
+      description: 'Size of menu items: controls padding density.',
       default: "'md'",
     },
     {
@@ -66,7 +66,7 @@ export const docs = {
     },
   ],
   components: [
-    {name: 'XDSContextMenuItem'},
+    {name: 'ContextMenuItem'},
   ],
   usage: {
     description: 'A right-click context menu that appears at the cursor position. Use to provide contextual actions for specific elements or regions without cluttering the UI with visible buttons.',

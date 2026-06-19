@@ -122,7 +122,9 @@ export function XDSChartAxis({
   // For the bottom axis, draw the axis line at y=0 when the domain spans
   // negative values (so the axis line still represents zero, not the chart edge).
   const axisLineY = (() => {
-    if (position !== 'bottom') return 0;
+    if (position !== 'bottom') {
+      return 0;
+    }
     const domain = yScale.domain();
     if (domain[0] < 0 && domain[1] > 0) {
       return yScale(0) - height;

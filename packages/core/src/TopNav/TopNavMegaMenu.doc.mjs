@@ -6,7 +6,7 @@ export const docs = {
   name: 'TopNavMegaMenu',
   subComponentOf: 'TopNav',
   displayName: 'Top Nav Mega Menu',
-  description: 'Navigation item that displays a full-width mega menu panel on hover. Uses a slots API with items and featured props. XDSTopNavMegaMenuItem renders itself in both desktop and mobile drawer modes. Supports inline collapsible drawer via render mode context.',
+  description: 'Navigation item that displays a full-width mega menu panel on hover. Uses a slots API with items and featured props. TopNavMegaMenuItem renders itself in both desktop and mobile drawer modes. Supports inline collapsible drawer via render mode context.',
   props: [
     {
       name: 'label',
@@ -17,10 +17,10 @@ export const docs = {
     {
       name: 'items',
       type: 'ReactNode',
-      description: 'Menu items slot — typically XDSTopNavMegaMenuItem components, but accepts any ReactNode.',
+      description: 'Menu items slot: typically TopNavMegaMenuItem components, but accepts any ReactNode.',
       slotElements: [
         {
-          __element: 'XDSTopNavItem',
+          __element: 'TopNavItem',
           props: {
             label: 'Item',
             href: '#',
@@ -31,10 +31,10 @@ export const docs = {
     {
       name: 'featured',
       type: 'ReactNode',
-      description: 'Featured content slot — rendered in the right panel on desktop, below items in the mobile drawer.',
+      description: 'Featured content slot: rendered in the right panel on desktop, below items in the mobile drawer.',
       slotElements: [
         {
-          __element: 'XDSCard',
+          __element: 'Card',
           props: {
             padding: 4,
           },
@@ -65,7 +65,7 @@ export const docs = {
 export const docsZh = {
   name: 'TopNavMegaMenu',
   displayName: 'Top Nav Mega Menu',
-  description: '导航项，在悬停时显示全宽超级菜单面板。使用插槽 API（items 和 featured）。XDSTopNavMegaMenuItem 在桌面和移动抽屉模式中自行渲染。',
+  description: '导航项，在悬停时显示全宽超级菜单面板。使用插槽 API（items 和 featured）。TopNavMegaMenuItem 在桌面和移动抽屉模式中自行渲染。',
   props: [
     {
       name: 'label',
@@ -76,7 +76,7 @@ export const docsZh = {
     {
       name: 'items',
       type: 'ReactNode',
-      description: '菜单项插槽 — 通常为 XDSTopNavMegaMenuItem 组件，但接受任何 ReactNode。',
+      description: '菜单项插槽 — 通常为 TopNavMegaMenuItem 组件，但接受任何 ReactNode。',
     },
     {
       name: 'featured',
@@ -109,8 +109,8 @@ export const docsDense = {
   description: 'Nav item w/ full-width mega menu panel on hover. Slots API w/ items+featured ReactNode props. Mobile drawer inline collapsible.',
   propDescriptions: {
     label: 'Trigger button visible label.',
-    items: 'Menu items slot — typically XDSTopNavMegaMenuItem, accepts any ReactNode.',
-    featured: 'Featured content slot — right panel desktop, below items in drawer.',
+    items: 'Menu items slot: typically TopNavMegaMenuItem, accepts any ReactNode.',
+    featured: 'Featured content slot: right panel desktop, below items in drawer.',
     delay: 'Show delay ms on hover.',
     hideDelay: 'Hide delay ms after mouse leaves.',
     onOpenChange: 'Fired on open/close. For coordinating wrapper styles.',

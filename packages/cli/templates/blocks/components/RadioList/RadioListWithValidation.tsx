@@ -3,13 +3,13 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
+import {RadioList, RadioListItem} from '@xds/core/RadioList';
 
 export default function RadioListWithValidation() {
   const [value, setValue] = useState('');
 
   return (
-    <XDSRadioList
+    <RadioList
       label="Notification preference"
       isRequired
       status={
@@ -19,9 +19,9 @@ export default function RadioListWithValidation() {
       }
       value={value}
       onChange={setValue}>
-      <XDSRadioListItem label="Email" value="email" />
-      <XDSRadioListItem label="SMS" value="sms" />
-      <XDSRadioListItem label="Push notification" value="push" />
-    </XDSRadioList>
+      <RadioListItem label="Email" value="email" />
+      <RadioListItem label="SMS" value="sms" />
+      <RadioListItem label="Push notification" value="push" />
+    </RadioList>
   );
 }

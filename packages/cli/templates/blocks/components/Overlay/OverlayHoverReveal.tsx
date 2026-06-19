@@ -3,9 +3,9 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSOverlay} from '@xds/core/Overlay';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSButton} from '@xds/core/Button';
+import {Overlay} from '@xds/core/Overlay';
+import {AspectRatio} from '@xds/core/AspectRatio';
+import {Button} from '@xds/core/Button';
 
 const styles = stylex.create({
   frame: {
@@ -23,17 +23,17 @@ const styles = stylex.create({
 
 export default function OverlayHoverReveal() {
   return (
-    <XDSOverlay
+    <Overlay
       showOn="hover"
       align="center"
-      content={<XDSButton label="Quick view" variant="secondary" size="sm" />}>
-      <XDSAspectRatio ratio={16 / 9} xstyle={styles.frame}>
+      content={<Button label="Quick view" variant="secondary" size="sm" />}>
+      <AspectRatio ratio={16 / 9} xstyle={styles.frame}>
         <img
           src="https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-1.png"
           alt="Workspace preview"
           {...stylex.props(styles.image)}
         />
-      </XDSAspectRatio>
-    </XDSOverlay>
+      </AspectRatio>
+    </Overlay>
   );
 }

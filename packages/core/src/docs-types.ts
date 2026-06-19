@@ -32,7 +32,7 @@ export interface PropDoc {
    *  Union: `"'primary' | 'secondary' | 'ghost'"`
    *  Function: `"(checked: boolean, e: ChangeEvent) => void"`
    *  Async: `"(e: MouseEvent) => void | Promise<void>"`
-   *  Generic: `"XDSTableColumn<T>[]"` */
+   *  Generic: `"TableColumn<T>[]"` */
   type: string;
   /** What this prop does, in 1-2 sentences. Focus on behavior and
    *  consequences rather than restating the prop name.
@@ -60,12 +60,12 @@ export interface PropDoc {
    *  @example
    *  ```
    *  // Single option — renders as a toggle switch
-   *  slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}]
+   *  slotElements: [{__element: 'Icon', props: {icon: 'check', size: 'sm'}}]
    *
    *  // Multiple options — renders as a selector
    *  slotElements: [
-   *    {__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}},
-   *    {__element: 'XDSBadge', props: {label: 'Badge'}},
+   *    {__element: 'Icon', props: {icon: 'check', size: 'sm'}},
+   *    {__element: 'Badge', props: {label: 'Badge'}},
    *  ]
    *  ```
    */
@@ -181,22 +181,22 @@ export interface ComponentVar {
 
 /**
  * Documents one component within a multi-component directory. Used when a
- * directory exports multiple public components (e.g. Table exports XDSTable,
- * XDSBaseTable, XDSTableRow, XDSTableCell, XDSTableHeaderCell).
+ * directory exports multiple public components (e.g. Table exports Table,
+ * BaseTable, TableRow, TableCell, TableHeaderCell).
  *
  * Also use for hooks that are part of a component API (e.g.
- * useXDSTableSelection). For hook entries, document arguments in `params`
+ * useTableSelection). For hook entries, document arguments in `params`
  * and return fields in `returns` so the docsite renders a Parameters / Returns
  * signature instead of an interactive Properties playground. Order components
  * with the primary/most-used component first.
  */
 export interface ComponentEntry {
-  /** Full export name including XDS prefix. e.g. `"XDSTableRow"`,
-   *  `"XDSDialogHeader"`, `"useXDSTableSelection"` */
+  /** Full export name including XDS prefix. e.g. `"TableRow"`,
+   *  `"DialogHeader"`, `"useTableSelection"` */
   name: string;
   /** Human-readable display name for this subcomponent. Matches the import
    *  name visually with spaces between PascalCase / camelCase words
-   *  (e.g. `"XDSTableRow"` → `"XDS Table Row"`). See `BaseDoc.displayName`. */
+   *  (e.g. `"TableRow"` → `"XDS Table Row"`). See `BaseDoc.displayName`. */
   displayName: string;
   /** One-sentence description of what this specific component does.
    *  For sub-components, explain the role within the parent composition. */
@@ -315,7 +315,7 @@ export interface UsageDoc {
 
 /**
  * A serializable descriptor for a React element. The playground resolves
- * these at runtime via `createElement(XDSCore[component], props, ...children)`.
+ * these at runtime via `createElement(Core[component], props, ...children)`.
  *
  * Use this for any prop value that needs to be a React element —
  * children slots, icon props, endContent, etc.
@@ -323,15 +323,15 @@ export interface UsageDoc {
  * @example
  * ```
  * // Simple element
- * {__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}
+ * {__element: 'Icon', props: {icon: 'check', size: 'sm'}}
  *
  * // Element with text children
- * {__element: 'XDSText', props: {type: 'body'}, children: 'Hello world'}
+ * {__element: 'Text', props: {type: 'body'}, children: 'Hello world'}
  *
  * // Nested composition
- * {__element: 'XDSVStack', props: {gap: 2}, children: [
- *   {__element: 'XDSHeading', props: {level: 3}, children: 'Title'},
- *   {__element: 'XDSText', props: {}, children: 'Body text'},
+ * {__element: 'VStack', props: {gap: 2}, children: [
+ *   {__element: 'Heading', props: {level: 3}, children: 'Title'},
+ *   {__element: 'Text', props: {}, children: 'Body text'},
  * ]}
  * ```
  */
@@ -367,9 +367,9 @@ export interface ElementDescriptor {
  *   defaults: {
  *     padding: 4,
  *     children: {
- *       __element: 'XDSVStack', props: {gap: 2}, children: [
- *         {__element: 'XDSHeading', props: {level: 3}, children: 'Card Title'},
- *         {__element: 'XDSText', props: {type: 'body'}, children: 'Card content goes here.'},
+ *       __element: 'VStack', props: {gap: 2}, children: [
+ *         {__element: 'Heading', props: {level: 3}, children: 'Card Title'},
+ *         {__element: 'Text', props: {type: 'body'}, children: 'Card content goes here.'},
  *       ],
  *     },
  *   },
@@ -381,7 +381,7 @@ export interface ElementDescriptor {
  *     isOpen: true,
  *     isInline: true,
  *     onOpenChange: undefined,
- *     children: {__element: 'XDSText', props: {type: 'body'}, children: 'Dialog content'},
+ *     children: {__element: 'Text', props: {type: 'body'}, children: 'Dialog content'},
  *   },
  * }
  * ```
@@ -389,7 +389,24 @@ export interface ElementDescriptor {
 export interface PlaygroundConfig {
   /** Initial prop values for the playground preview.
    *  Keys are prop names. Values are primitives or ElementDescriptors. */
-  defaults: Record<string, unknown>;
+  defaults?: Record<string, unknown>;
+  /** Required parent wrapper for sub-components that depend on a parent
+   *  context provider (e.g. `Tab` calls `useTabListContext()` and throws
+   *  standalone). The preview wraps the component in this parent before
+   *  rendering, injecting it as `children`. Provide any props the wrapper
+   *  requires (e.g. a matching `value`).
+   *
+   *  @example
+   *  ```
+   *  playground: {wrapper: {component: 'TabList', props: {value: 'tab-1'}}}
+   *  ```
+   */
+  wrapper?: {
+    /** Parent component name as exported from `@xds/core`, e.g. `'TabList'`. */
+    component: string;
+    /** Props for the wrapper. The previewed sub-component becomes its `children`. */
+    props?: Record<string, unknown>;
+  };
 }
 
 /**
@@ -518,7 +535,7 @@ export interface SingleComponentDoc extends BaseDoc {
  * the entry's content is emitted from the sub-component's own file, not here.
  */
 export interface ComponentRef {
-  /** Full export name including XDS prefix, e.g. `"XDSChatComposer"`. Must
+  /** Full export name including XDS prefix, e.g. `"ChatComposer"`. Must
    *  match the `name` field of the referenced sub-component's own doc. */
   name: string;
 }
@@ -561,9 +578,9 @@ export interface SubComponentDoc extends Omit<BaseDoc, 'usage'> {
   description: string;
   /** All public props for this sub-component. */
   props: PropDoc[];
-  /** Usage is optional for sub-components — when omitted, the registry entry
-   *  carries the sub-component's own props/description with no usage prose
-   *  (it is NOT inherited from the parent, which was the #2602 bug). */
+  /** Usage is optional for sub-components — when omitted, generated surfaces
+   *  should use the sub-component's own description as the concise usage
+   *  summary (not inherited from the parent, which was the #2602 bug). */
   usage?: UsageDoc;
 }
 
@@ -1002,7 +1019,7 @@ export interface HookReturnDoc {
 /**
  * Documentation for a standalone hook's .doc.mjs file.
  *
- * Hooks that are part of a component's API (e.g. useXDSImperativeDialog)
+ * Hooks that are part of a component's API (e.g. useImperativeDialog)
  * should be documented in the component's MultiComponentDoc.components array.
  *
  * Standalone hooks (e.g. useMediaQuery, useFocusTrap, useOverflow) get
@@ -1032,8 +1049,8 @@ export interface HookDoc {
   /** Usage documentation — description, best practices. */
   usage: UsageDoc;
   /** Component names this hook is commonly used with.
-   *  Enables cross-referencing: \`xds component Toast\` can mention useXDSToast,
-   *  and \`xds hook useXDSToast\` can link back to Toast. */
+   *  Enables cross-referencing: \`xds component Toast\` can mention useToast,
+   *  and \`xds hook useToast\` can link back to Toast. */
   relatedComponents?: string[];
   /** Other hook names this hook is commonly used with. */
   relatedHooks?: string[];

@@ -3,16 +3,16 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {DropdownMenu} from '@xds/core/DropdownMenu';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function DropdownMenuActions() {
   const [lastAction, setLastAction] = useState<string | null>(null);
 
   return (
-    <XDSVStack gap={3}>
-      <XDSDropdownMenu
+    <VStack gap={3}>
+      <DropdownMenu
         button={{label: 'Actions'}}
         items={[
           {label: 'Edit', onClick: () => setLastAction('Edit')},
@@ -24,10 +24,10 @@ export default function DropdownMenuActions() {
         ]}
       />
       {lastAction && (
-        <XDSText type="supporting" color="secondary">
+        <Text type="supporting" color="secondary">
           Last action: {lastAction}
-        </XDSText>
+        </Text>
       )}
-    </XDSVStack>
+    </VStack>
   );
 }

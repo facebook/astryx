@@ -1,24 +1,24 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-// In production, use useXDSToast() hook for proper positioning, stacking, and lifecycle.
+// In production, use useToast() hook for proper positioning, stacking, and lifecycle.
 'use client';
 
-import {XDSToast} from '@xds/core/Toast';
-import {useXDSToast} from '@xds/core/Toast';
-import {XDSButton} from '@xds/core/Button';
-import {XDSLink} from '@xds/core/Link';
-import {XDSVStack} from '@xds/core/Layout';
+import {Toast} from '@xds/core/Toast';
+import {useToast} from '@xds/core/Toast';
+import {Button} from '@xds/core/Button';
+import {Link} from '@xds/core/Link';
+import {VStack} from '@xds/core/Layout';
 
 export default function ToastAction() {
-  const toast = useXDSToast();
+  const toast = useToast();
 
   return (
-    <XDSVStack gap={3}>
-      <XDSToast
+    <VStack gap={3}>
+      <Toast
         type="info"
         body="Item deleted"
         endContent={
-          <XDSButton
+          <Button
             label="Undo"
             variant="secondary"
             size="sm"
@@ -30,19 +30,19 @@ export default function ToastAction() {
         isExiting={false}
         onDismiss={() => {}}
       />
-      <XDSToast
+      <Toast
         type="info"
         body="Your report is ready."
         endContent={
-          <XDSLink href="#" hasUnderline>
+          <Link href="#" hasUnderline>
             View report
-          </XDSLink>
+          </Link>
         }
         isAutoHide={false}
         autoHideDuration={5000}
         isExiting={false}
         onDismiss={() => {}}
       />
-    </XDSVStack>
+    </VStack>
   );
 }

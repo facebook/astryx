@@ -37,8 +37,10 @@ jobs:
               { owner, repo, pull_number: pr.number }
             );
 
-            // Find new component directories: packages/core/src/<Name>/XDS<Name>.tsx
-            const newComponentPattern = /^packages\/core\/src\/([A-Z][A-Za-z]+)\/XDS\1\.tsx$/;
+            // Find new component directories:
+            //   packages/core/src/<Name>/XDS<Name>.tsx  (current convention)
+            //   packages/core/src/<Name>/<Name>.tsx      (post XDS-prefix migration, P2380608025)
+            const newComponentPattern = /^packages\/core\/src\/([A-Z][A-Za-z]+)\/(?:XDS)?\1\.tsx$/;
             const newComponents = new Set();
 
             for (const file of files) {

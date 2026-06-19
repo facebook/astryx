@@ -36,7 +36,7 @@ export const docs = {
   props: [
     {
       name: 'calls',
-      type: 'XDSChatToolCallItem[]',
+      type: 'ChatToolCallItem[]',
       description:
         'Array of tool call data. Each item has name, status, target, duration, node, additions, deletions, stats, errorMessage, resultDetail, key, and data.',
       required: true,

@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Chat',
   displayName: 'Chat Send Button',
   isHiddenFromOverview: true,
-  description: 'Circular send/stop toggle button for the chat composer. Place it inside XDSChatComposer where it reads context automatically — no wiring needed. When streaming starts, the button switches from a primary send icon to a secondary stop icon. Override any context value via props for standalone or custom usage.',
+  description: 'Circular send/stop toggle button for the chat composer. Place it inside ChatComposer where it reads context automatically: no wiring needed. When streaming starts, the button switches from a primary send icon to a secondary stop icon. Override any context value via props for standalone or custom usage.',
   props: [
     {
       name: 'isStopShown',
@@ -35,7 +35,7 @@ export const docs = {
       description: 'Custom icon for the send state. Defaults to arrowUp from icon registry.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',
@@ -49,7 +49,7 @@ export const docs = {
       description: 'Custom icon for the stop state. Defaults to stop from icon registry.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',
@@ -66,7 +66,7 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
 };
@@ -75,7 +75,7 @@ export const docsZh = {
   name: 'ChatSendButton',
   isHiddenFromOverview: true,
   displayName: 'Chat Send Button',
-  description: '编写器的圆形发送/停止切换按钮。默认从 XDSChatComposerContext 读取状态，在 XDSChatComposer 内自动工作。所有上下文值均可通过 props 覆盖以用于独立使用。',
+  description: '编写器的圆形发送/停止切换按钮。默认从 ChatComposerContext 读取状态，在 ChatComposer 内自动工作。所有上下文值均可通过 props 覆盖以用于独立使用。',
   propDescriptions: {
     isStopShown: '是否显示停止按钮。默认使用上下文值。',
     isDisabled: '发送按钮是否禁用。默认使用上下文的 !canSend。',
@@ -92,7 +92,7 @@ export const docsDense = {
   name: 'ChatSendButton',
   isHiddenFromOverview: true,
   displayName: 'Chat Send Button',
-  description: 'circular send/stop toggle btn for composer; reads XDSChatComposerContext; all context vals overridable via props',
+  description: 'circular send/stop toggle btn for composer; reads ChatComposerContext; all context vals overridable via props',
   propDescriptions: {
     isStopShown: 'stop button visibility; defaults to context',
     isDisabled: 'disabled; defaults to !canSend from context',

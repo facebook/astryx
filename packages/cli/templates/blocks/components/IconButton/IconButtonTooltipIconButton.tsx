@@ -2,31 +2,31 @@
 
 'use client';
 
-import {XDSIconButton} from '@xds/core/IconButton';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSHStack} from '@xds/core/Stack';
+import {IconButton} from '@xds/core/IconButton';
+import {Icon} from '@xds/core/Icon';
+import {HStack} from '@xds/core/Stack';
 
 export default function IconButtonTooltipIconButton() {
   return (
-    <XDSHStack gap={2}>
-      <XDSIconButton
+    <HStack gap={2}>
+      <IconButton
         label="Search"
-        icon={<XDSIcon icon="search" color="inherit" />}
+        icon={<Icon icon="search" color="inherit" />}
         variant="ghost"
         tooltip="Search items"
       />
-      <XDSIconButton
+      <IconButton
         label="Copy link"
-        icon={<XDSIcon icon="copy" color="inherit" />}
+        icon={<Icon icon="copy" color="inherit" />}
         variant="ghost"
         tooltip="Copy to clipboard"
       />
-      <XDSIconButton
+      <IconButton
         label="More options"
-        icon={<XDSIcon icon="moreHorizontal" color="inherit" />}
+        icon={<Icon icon="moreHorizontal" color="inherit" />}
         variant="ghost"
         tooltip="More options"
       />
-    </XDSHStack>
+    </HStack>
   );
 }

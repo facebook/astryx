@@ -38,10 +38,10 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'XDSBreadcrumbItem elements to render inside the breadcrumb trail.',
+      description: 'BreadcrumbItem elements to render inside the breadcrumb trail.',
       slotElements: [
         {
-          __element: 'XDSBreadcrumbItem',
+          __element: 'BreadcrumbItem',
           props: {
             href: '#',
           },
@@ -57,7 +57,7 @@ export const docs = {
       default: "'/'",
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'chevronRight',
             size: 'sm',
@@ -68,7 +68,7 @@ export const docs = {
     {
       name: 'variant',
       type: "'default' | 'supporting'",
-      description: 'Visual variant — supporting is smaller with secondary text styling.',
+      description: 'Visual variant: supporting is smaller with secondary text styling.',
       default: "'default'",
     },
     {
@@ -80,11 +80,49 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
   components: [
-    {name: 'XDSBreadcrumbItem'},
+    {
+      name: 'BreadcrumbItem',
+      displayName: 'Breadcrumb Item',
+      description: 'Individual breadcrumb item. Renders as a link when href is provided, or as plain text for the current page.',
+      props: [
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: 'Label content for the breadcrumb item.',
+          required: true,
+        },
+        {
+          name: 'href',
+          type: 'string',
+          description: 'URL the breadcrumb links to; omit for non-navigable items.',
+        },
+        {
+          name: 'onClick',
+          type: '(e: MouseEvent) => void',
+          description: 'Click handler for the breadcrumb item.',
+        },
+        {
+          name: 'isCurrent',
+          type: 'boolean',
+          description: 'Marks this item as the current page, applying aria-current="page".',
+          default: 'false',
+        },
+        {
+          name: 'startIcon',
+          type: 'ReactNode',
+          description: 'Icon rendered before the item label.',
+        },
+        {
+          name: 'as',
+          type: 'LinkComponentType',
+          description: 'Custom link component to render instead of <a>. Overrides the provider-level default from LinkProvider. Only applies to non-current items.',
+        },
+      ],
+    },
   ],
 };
 

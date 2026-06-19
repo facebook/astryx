@@ -4,12 +4,12 @@
 
 import {useState} from 'react';
 import {usePathname} from 'next/navigation';
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
-import {XDSButton} from '@xds/core/Button';
-import {XDSHStack} from '@xds/core/Layout';
-import {Search, HandHeart, Sun, Moon} from 'lucide-react';
+import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
+import {Button} from '@xds/core/Button';
+import {HStack} from '@xds/core/Layout';
+import {Search, HeartHandshake, Sun, Moon} from 'lucide-react';
 import {GITHUB_REPO} from '../constants';
-import {BRAND_ICON} from './XDSWordmark';
+import {AstryxIcon} from './logos';
 import {SearchPalette} from './SearchPalette';
 import {components} from '../generated/componentRegistry';
 import {packages} from '../generated/packageRegistry';
@@ -66,32 +66,45 @@ export function SharedTopNav() {
 
   return (
     <>
-      <XDSTopNav
+      <TopNav
         label="Astryx navigation"
-        heading={<XDSTopNavHeading logo={BRAND_ICON} headingHref="/" />}
+        heading={
+          <TopNavHeading
+            logo={
+              <AstryxIcon
+                width={24}
+                height={24}
+                role="img"
+                aria-label="Astryx"
+                style={{display: 'block', color: 'var(--color-brand)'}}
+              />
+            }
+            headingHref="/"
+          />
+        }
         centerContent={
           <>
-            <XDSTopNavItem
+            <TopNavItem
               label="Docs"
               href="/docs"
               isSelected={getActiveItem() === 'docs'}
             />
-            <XDSTopNavItem
+            <TopNavItem
               label="Components"
               href="/components"
               isSelected={getActiveItem() === 'components'}
             />
-            <XDSTopNavItem
+            <TopNavItem
               label="Templates"
               href="/templates"
               isSelected={getActiveItem() === 'templates'}
             />
-            <XDSTopNavItem
+            <TopNavItem
               label="Themes"
               href="/themes"
               isSelected={getActiveItem() === 'themes'}
             />
-            <XDSTopNavItem
+            <TopNavItem
               label="Playground"
               href="/playground"
               isSelected={getActiveItem() === 'playground'}
@@ -99,9 +112,9 @@ export function SharedTopNav() {
           </>
         }
         endContent={
-          <XDSHStack gap={2}>
-            <XDSHStack gap={0.5}>
-              <XDSButton
+          <HStack gap={2}>
+            <HStack gap={0.5}>
+              <Button
                 label="Search"
                 tooltip="Search"
                 variant="ghost"
@@ -112,7 +125,7 @@ export function SharedTopNav() {
                   setIsSearchOpen(true);
                 }}
               />
-              <XDSButton
+              <Button
                 label={
                   mode === 'light'
                     ? 'Switch to dark mode'
@@ -128,15 +141,15 @@ export function SharedTopNav() {
                 icon={mode === 'light' ? <Moon size={20} /> : <Sun size={20} />}
                 onClick={toggleMode}
               />
-              <XDSButton
+              <Button
                 label="Community"
                 tooltip="Community"
                 variant="ghost"
                 isIconOnly
-                icon={<HandHeart size={20} />}
+                icon={<HeartHandshake size={20} />}
                 href="/community"
               />
-              <XDSButton
+              <Button
                 label="GitHub"
                 tooltip="GitHub"
                 variant="ghost"
@@ -145,8 +158,8 @@ export function SharedTopNav() {
                 href={GITHUB_REPO}
                 onClick={() => trackClickCta({target: 'github'})}
               />
-            </XDSHStack>
-            <XDSButton
+            </HStack>
+            <Button
               label="Get started"
               variant="primary"
               href="/docs/getting-started"
@@ -154,7 +167,7 @@ export function SharedTopNav() {
                 trackClickCta({page: 'landing', target: 'get_started'})
               }
             />
-          </XDSHStack>
+          </HStack>
         }
       />
       <SearchPalette

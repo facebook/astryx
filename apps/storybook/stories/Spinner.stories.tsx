@@ -1,13 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSSpinner} from '@xds/core/Spinner';
-import {XDSText} from '@xds/core/Text';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {Spinner} from '@xds/core/Spinner';
+import {Text} from '@xds/core/Text';
+import {HStack, VStack} from '@xds/core/Layout';
 
-const meta: Meta<typeof XDSSpinner> = {
+const meta: Meta<typeof Spinner> = {
   title: 'Core/Spinner',
-  component: XDSSpinner,
+  component: Spinner,
   tags: ['autodocs'],
   argTypes: {
     size: {
@@ -24,7 +24,7 @@ const meta: Meta<typeof XDSSpinner> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSSpinner>;
+type Story = StoryObj<typeof Spinner>;
 
 export const Default: Story = {
   args: {
@@ -35,49 +35,49 @@ export const Default: Story = {
 
 export const Sizes: Story = {
   render: () => (
-    <XDSHStack gap={4} vAlign="center">
-      <XDSSpinner size="sm" />
-      <XDSSpinner size="md" />
-      <XDSSpinner size="lg" />
-      <XDSSpinner size="xl" />
-    </XDSHStack>
+    <HStack gap={4} vAlign="center">
+      <Spinner size="sm" />
+      <Spinner size="md" />
+      <Spinner size="lg" />
+      <Spinner size="xl" />
+    </HStack>
   ),
 };
 
 export const Shades: Story = {
   render: () => (
-    <XDSHStack gap={4} vAlign="center">
-      <XDSSpinner shade="default" />
+    <HStack gap={4} vAlign="center">
+      <Spinner shade="default" />
       <div
         style={{
           backgroundColor: '#1a1a2e',
           padding: 16,
           borderRadius: 8,
         }}>
-        <XDSSpinner shade="onMedia" />
+        <Spinner shade="onMedia" />
       </div>
-    </XDSHStack>
+    </HStack>
   ),
 };
 
 export const WithLabel: Story = {
   render: () => (
-    <XDSHStack gap={8} vAlign="start">
-      <XDSSpinner size="lg" label="Loading..." />
-      <XDSSpinner
+    <HStack gap={8} vAlign="start">
+      <Spinner size="lg" label="Loading..." />
+      <Spinner
         size="lg"
         label={
-          <XDSVStack gap={0} hAlign="center">
-            <XDSText type="body" weight="bold">
+          <VStack gap={0} hAlign="center">
+            <Text type="body" weight="bold">
               Fetching data
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
+            </Text>
+            <Text type="supporting" color="secondary">
               This may take a moment
-            </XDSText>
-          </XDSVStack>
+            </Text>
+          </VStack>
         }
         aria-label="Fetching data"
       />
-    </XDSHStack>
+    </HStack>
   ),
 };

@@ -2,7 +2,7 @@
 
 'use client';
 
-import {XDSVStack} from '@xds/core/Layout';
+import {VStack} from '@xds/core/Layout';
 import {stoneTheme} from '@xds/theme-stone/built';
 // `stonePalettes` is only exported from the source entry, not /built.
 import {stonePalettes} from '@xds/theme-stone';
@@ -49,7 +49,7 @@ function DisplayTextSection() {
   return (
     <div>
       <h3 style={sectionTitle}>Display Text (Montserrat)</h3>
-      <XDSVStack gap={2}>
+      <VStack gap={2}>
         <span
           style={{
             fontFamily: MONTSERRAT,
@@ -91,7 +91,7 @@ function DisplayTextSection() {
           }}>
           Quietly hewn from sand and time
         </span>
-      </XDSVStack>
+      </VStack>
     </div>
   );
 }
@@ -101,11 +101,11 @@ export default function StonePalettePage() {
     <ThemePalettePreview
       theme={stoneTheme}
       title="Stone Theme Palette"
-      subtitle="A warm, earthy neutral theme inspired by natural stone and sandstone. Light mode uses pastel T90 surfaces with T30 text; dark mode uses T35 surfaces with T90 text — same hex as the light-mode pastel, clean palette symmetry. Montserrat for headings and display, Figtree for body, JetBrains Mono for code."
+      subtitle="A warm, earthy neutral theme inspired by natural stone and sandstone. Light mode uses pastel T90 surfaces with T30 text; dark mode uses T35 surfaces with T90 text, same hex as the light-mode pastel, clean palette symmetry. Montserrat for headings and display, Figtree for body, JetBrains Mono for code."
       tonalColors={TONAL_COLORS}
       coreSwatches={CORE}
       leadingExtras={<DisplayTextSection />}
-      shadowDescription="Three shadow levels — warm, low-alpha drop shadow stack using Stone 900. Plain drops in both modes (no inset bezel); dark surfaces lift via a slightly lighter card token rather than a shadow rim."
+      shadowDescription="Three shadow levels: warm, low-alpha drop shadow stack using Stone 900. Plain drops in both modes (no inset bezel); dark surfaces lift via a slightly lighter card token rather than a shadow rim."
     />
   );
 }

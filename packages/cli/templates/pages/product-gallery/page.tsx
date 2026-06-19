@@ -2,19 +2,19 @@
 
 'use client';
 
-import {XDSVStack, XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSCard} from '@xds/core/Card';
-import {XDSIcon} from '@xds/core/Icon';
+import {VStack, Layout, LayoutContent} from '@xds/core/Layout';
+import {Text, Heading} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Grid} from '@xds/core/Grid';
+import {AspectRatio} from '@xds/core/AspectRatio';
+import {Card} from '@xds/core/Card';
+import {Icon} from '@xds/core/Icon';
 import {ArrowRightIcon} from '@heroicons/react/24/outline';
 import * as stylex from '@stylexjs/stylex';
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
-// The only custom CSS is the image fill — there is no XDSImage primitive to
-// fill the XDSAspectRatio box with `object-fit` (#2582).
+// The only custom CSS is the image fill — there is no Image primitive to
+// fill the AspectRatio box with `object-fit` (#2582).
 
 const styles = stylex.create({
   image: {
@@ -97,27 +97,26 @@ const fmt = (n: number) => `$${n.toFixed(2)}`;
 
 function ProductCard({product}: {product: Product}) {
   return (
-    <XDSVStack gap={3}>
-      <XDSCard padding={0}>
-        <XDSAspectRatio ratio={1}>
+    <VStack gap={3}>
+      <Card padding={0}>
+        <AspectRatio ratio={1}>
           <img
             src={product.image}
             alt={product.name}
             {...stylex.props(styles.image)}
           />
-        </XDSAspectRatio>
-      </XDSCard>
-
-      <XDSVStack gap={1}>
-        <XDSHeading level={2}>{product.name}</XDSHeading>
-        <XDSText type="body" color="secondary" maxLines={2}>
+        </AspectRatio>
+      </Card>
+      <VStack gap={1}>
+        <Heading level={2}>{product.name}</Heading>
+        <Text type="body" color="secondary" maxLines={2}>
           {product.description}
-        </XDSText>
-        <XDSText type="large" weight="bold">
+        </Text>
+        <Text type="large" weight="bold">
           {fmt(product.price)}
-        </XDSText>
-      </XDSVStack>
-    </XDSVStack>
+        </Text>
+      </VStack>
+    </VStack>
   );
 }
 
@@ -125,41 +124,41 @@ function ProductCard({product}: {product: Product}) {
 
 export default function ProductGalleryTemplate() {
   return (
-    <XDSLayout
+    <Layout
       height="auto"
       contentWidth={1200}
       content={
-        <XDSLayoutContent padding={6}>
-          <XDSVStack gap={6}>
-            {/* Header — XDSGrid handles responsive stacking */}
-            <XDSGrid columns={{minWidth: 280}} gap={4} align="start">
-              <XDSHeading level={1}>
+        <LayoutContent padding={6}>
+          <VStack gap={6}>
+            {/* Header — Grid handles responsive stacking */}
+            <Grid columns={{minWidth: 280}} gap={4} align="start">
+              <Heading level={1}>
                 Make every day a little more delightful, one small detail at a
                 time.
-              </XDSHeading>
-              <XDSVStack gap={3} hAlign="start">
-                <XDSText type="body">
+              </Heading>
+              <VStack gap={3} hAlign="start">
+                <Text type="body">
                   We believe the smallest details are the ones that matter most.
                   A little color, a thoughtful touch, a moment that catches your
                   eye and makes you pause; that&apos;s what turns an ordinary
                   day into something worth remembering.
-                </XDSText>
-                <XDSButton
+                </Text>
+                <Button
                   label="Get started"
                   variant="primary"
-                  endContent={<XDSIcon icon={ArrowRightIcon} color="inherit" />}
+                  endContent={<Icon icon={ArrowRightIcon} color="inherit" />}
                 />
-              </XDSVStack>
-            </XDSGrid>
+              </VStack>
+            </Grid>
 
             {/* Product Grid — reflows 3 → 2 → 1 columns as width narrows */}
-            <XDSGrid columns={{minWidth: 300}} gap={6}>
+            <Grid columns={{minWidth: 300}} gap={6}>
               {PRODUCTS.map(product => (
                 <ProductCard key={product.id} product={product} />
               ))}
-            </XDSGrid>
-          </XDSVStack>
-        </XDSLayoutContent>
+            </Grid>
+          </VStack>
+        </LayoutContent>
       }
     />
   );

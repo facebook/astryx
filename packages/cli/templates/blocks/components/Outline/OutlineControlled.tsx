@@ -3,11 +3,11 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSOutline} from '@xds/core/Outline';
+import {Outline} from '@xds/core/Outline';
 import type {OutlineItem} from '@xds/core/Outline';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText} from '@xds/core/Text';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Button} from '@xds/core/Button';
+import {Text} from '@xds/core/Text';
 
 const items: OutlineItem[] = [
   {id: 'ctrl-summary', label: 'Summary', level: 2},
@@ -26,29 +26,29 @@ export default function OutlineControlled() {
   };
 
   return (
-    <XDSVStack gap={4} style={{width: 240}}>
-      <XDSOutline
+    <VStack gap={4} style={{width: 240}}>
+      <Outline
         items={items}
         activeId={activeId}
         onActiveIdChange={setActiveId}
       />
-      <XDSHStack gap={2}>
-        <XDSButton
+      <HStack gap={2}>
+        <Button
           variant="secondary"
           size="sm"
           label="Previous"
           onClick={() => goTo(index - 1)}
         />
-        <XDSButton
+        <Button
           variant="secondary"
           size="sm"
           label="Next"
           onClick={() => goTo(index + 1)}
         />
-      </XDSHStack>
-      <XDSText type="supporting" color="secondary">
+      </HStack>
+      <Text type="supporting" color="secondary">
         Active section: {items[index]?.label}
-      </XDSText>
-    </XDSVStack>
+      </Text>
+    </VStack>
   );
 }

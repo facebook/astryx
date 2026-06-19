@@ -22,10 +22,10 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'Metadata items (XDSMetadataListItem components).',
+      description: 'Metadata items (MetadataListItem components).',
       slotElements: [
         {
-          __element: 'XDSMetadataListItem',
+          __element: 'MetadataListItem',
           props: {
             label: 'Key',
           },
@@ -69,7 +69,7 @@ export const docs = {
     },
   ],
   components: [
-    {name: 'XDSMetadataListItem'},
+    {name: 'MetadataListItem'},
   ],
   usage: {
     description:

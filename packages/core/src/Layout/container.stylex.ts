@@ -4,24 +4,29 @@
  * @file container.stylex.ts
  * @input Uses @stylexjs/stylex, spacing from theme
  * @output StyleX utility for layout container styling
- * @position Layout utility; used by XDSCard, XDSSection components
+ * @position Layout utility; used by Card, Section components
  *
  * ## Public API for themes
  *
  * Themes set `padding` on container component overrides. The theme build
- * pipeline expands this to component-scoped CSS custom properties:
+ * pipeline expands this to component-scoped CSS custom properties. As part of
+ * the XDS-prefix migration (P2380608025), the pipeline now emits the rebranded
+ * `--astryx-*` tokens, while the component reads them via an inverted fallback
+ * chain so a legacy `--xds-*` override set by existing consumer code still wins
+ * during the compat window:
  *
- *   --xds-card-padding            (shorthand — all sides)
- *   --xds-card-padding-inline     (horizontal)
- *   --xds-card-padding-block-start
- *   --xds-card-padding-block-end
+ *   --astryx-card-padding            (shorthand — all sides; emitted)
+ *   --astryx-card-padding-inline     (horizontal)
+ *   --astryx-card-padding-block-start
+ *   --astryx-card-padding-block-end
  *
- * Same pattern for section (--xds-section-padding-*) and dialog
- * (--xds-dialog-padding-*).
+ * Read order per level: `var(--xds-…, var(--astryx-…, <next level>))` — legacy
+ * `--xds-*` wins, then `--astryx-*`, terminating at `--spacing-4`. Same pattern
+ * for section and dialog.
  *
  * ```ts
  * components: {
- *   card: { base: { padding: '20px' } },          // → --xds-card-padding: 20px
+ *   card: { base: { padding: '20px' } },          // → --astryx-card-padding: 20px
  *   section: { base: { padding: '12px 20px' } },  // → directional tokens
  *   dialog: { base: { padding: '16px' } },
  * }
@@ -70,14 +75,16 @@ const baseStyles = stylex.create({
  * Component-scoped padding tokens.
  *
  * Each container component (card, section, dialog) has public CSS custom
- * properties that themes can set:
+ * properties that themes can set. The pipeline emits the rebranded `--astryx-*`
+ * names; the component reads `var(--xds-…, var(--astryx-…, …))` so legacy
+ * `--xds-*` overrides still win during the compat window (P2380608025):
  *
- *   --xds-card-padding          (shorthand — all sides)
- *   --xds-card-padding-inline
- *   --xds-card-padding-inline-start
- *   --xds-card-padding-inline-end
- *   --xds-card-padding-block-start
- *   --xds-card-padding-block-end
+ *   --astryx-card-padding          (shorthand — all sides)
+ *   --astryx-card-padding-inline
+ *   --astryx-card-padding-inline-start
+ *   --astryx-card-padding-inline-end
+ *   --astryx-card-padding-block-start
+ *   --astryx-card-padding-block-end
  *
  * The theme build pipeline maps `padding: '20px'` on a container component
  * to these tokens. The component reads them with var() fallbacks to --spacing-4.
@@ -88,84 +95,119 @@ const baseStyles = stylex.create({
  * the theme CSS sets the token value and the component picks it up via
  * CSS custom property cascade — no layer competition.
  */
+const SP4 = spacingVars['--spacing-4'];
+
+// Card padding chains (XDS-prefix migration P2380608025): legacy --xds-* wins,
+// then --astryx-*, then the next specificity level, terminating at --spacing-4.
+// Built as chained const strings (no function calls) so StyleX can statically
+// analyze them; see naming.ts for the prefix policy.
+const cardShorthand = `var(--xds-card-padding, var(--astryx-card-padding, ${SP4}))`;
+const cardInline = `var(--xds-card-padding-inline, var(--astryx-card-padding-inline, ${cardShorthand}))`;
+const cardInlineStart = `var(--xds-card-padding-inline-start, var(--astryx-card-padding-inline-start, ${cardInline}))`;
+const cardInlineEnd = `var(--xds-card-padding-inline-end, var(--astryx-card-padding-inline-end, ${cardInline}))`;
+const cardBlockStart = `var(--xds-card-padding-block-start, var(--astryx-card-padding-block-start, ${cardShorthand}))`;
+const cardBlockEnd = `var(--xds-card-padding-block-end, var(--astryx-card-padding-block-end, ${cardShorthand}))`;
+
+// Section padding chains (XDS-prefix migration P2380608025): legacy --xds-* wins,
+// then --astryx-*, then the next specificity level, terminating at --spacing-4.
+// Built as chained const strings (no function calls) so StyleX can statically
+// analyze them; see naming.ts for the prefix policy.
+const sectionShorthand = `var(--xds-section-padding, var(--astryx-section-padding, ${SP4}))`;
+const sectionInline = `var(--xds-section-padding-inline, var(--astryx-section-padding-inline, ${sectionShorthand}))`;
+const sectionInlineStart = `var(--xds-section-padding-inline-start, var(--astryx-section-padding-inline-start, ${sectionInline}))`;
+const sectionInlineEnd = `var(--xds-section-padding-inline-end, var(--astryx-section-padding-inline-end, ${sectionInline}))`;
+const sectionBlockStart = `var(--xds-section-padding-block-start, var(--astryx-section-padding-block-start, ${sectionShorthand}))`;
+const sectionBlockEnd = `var(--xds-section-padding-block-end, var(--astryx-section-padding-block-end, ${sectionShorthand}))`;
+
+// Dialog padding chains (XDS-prefix migration P2380608025): legacy --xds-* wins,
+// then --astryx-*, then the next specificity level, terminating at --spacing-4.
+// Built as chained const strings (no function calls) so StyleX can statically
+// analyze them; see naming.ts for the prefix policy.
+const dialogShorthand = `var(--xds-dialog-padding, var(--astryx-dialog-padding, ${SP4}))`;
+const dialogInline = `var(--xds-dialog-padding-inline, var(--astryx-dialog-padding-inline, ${dialogShorthand}))`;
+const dialogInlineStart = `var(--xds-dialog-padding-inline-start, var(--astryx-dialog-padding-inline-start, ${dialogInline}))`;
+const dialogInlineEnd = `var(--xds-dialog-padding-inline-end, var(--astryx-dialog-padding-inline-end, ${dialogInline}))`;
+const dialogBlockStart = `var(--xds-dialog-padding-block-start, var(--astryx-dialog-padding-block-start, ${dialogShorthand}))`;
+const dialogBlockEnd = `var(--xds-dialog-padding-block-end, var(--astryx-dialog-padding-block-end, ${dialogShorthand}))`;
+
 const cardDefaultPaddingStyles = stylex.create({
   containerPaddingInlineStart: {
-    '--container-padding-inline-start': `var(--xds-card-padding-inline-start, var(--xds-card-padding-inline, var(--xds-card-padding, ${spacingVars['--spacing-4']})))`,
+    '--container-padding-inline-start': cardInlineStart,
   },
   containerPaddingInlineEnd: {
-    '--container-padding-inline-end': `var(--xds-card-padding-inline-end, var(--xds-card-padding-inline, var(--xds-card-padding, ${spacingVars['--spacing-4']})))`,
+    '--container-padding-inline-end': cardInlineEnd,
   },
   containerPaddingBlockStart: {
-    '--container-padding-block-start': `var(--xds-card-padding-block-start, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
+    '--container-padding-block-start': cardBlockStart,
   },
   containerPaddingBlockEnd: {
-    '--container-padding-block-end': `var(--xds-card-padding-block-end, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
+    '--container-padding-block-end': cardBlockEnd,
   },
   layoutPaddingOuterX: {
-    '--layout-padding-outer-x': `var(--xds-card-padding-inline-start, var(--xds-card-padding-inline, var(--xds-card-padding, ${spacingVars['--spacing-4']})))`,
+    '--layout-padding-outer-x': cardInlineStart,
   },
   layoutPaddingOuterY: {
-    '--layout-padding-outer-y': `var(--xds-card-padding-block-start, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
+    '--layout-padding-outer-y': cardBlockStart,
   },
   layoutPaddingInnerX: {
-    '--layout-padding-inner-x': `var(--xds-card-padding-inline-start, var(--xds-card-padding-inline, var(--xds-card-padding, ${spacingVars['--spacing-4']})))`,
+    '--layout-padding-inner-x': cardInlineStart,
   },
   layoutPaddingInnerY: {
-    '--layout-padding-inner-y': `var(--xds-card-padding-block-start, var(--xds-card-padding, ${spacingVars['--spacing-4']}))`,
+    '--layout-padding-inner-y': cardBlockStart,
   },
 });
 
 const sectionDefaultPaddingStyles = stylex.create({
   containerPaddingInlineStart: {
-    '--container-padding-inline-start': `var(--xds-section-padding-inline-start, var(--xds-section-padding-inline, var(--xds-section-padding, ${spacingVars['--spacing-4']})))`,
+    '--container-padding-inline-start': sectionInlineStart,
   },
   containerPaddingInlineEnd: {
-    '--container-padding-inline-end': `var(--xds-section-padding-inline-end, var(--xds-section-padding-inline, var(--xds-section-padding, ${spacingVars['--spacing-4']})))`,
+    '--container-padding-inline-end': sectionInlineEnd,
   },
   containerPaddingBlockStart: {
-    '--container-padding-block-start': `var(--xds-section-padding-block-start, var(--xds-section-padding, ${spacingVars['--spacing-4']}))`,
+    '--container-padding-block-start': sectionBlockStart,
   },
   containerPaddingBlockEnd: {
-    '--container-padding-block-end': `var(--xds-section-padding-block-end, var(--xds-section-padding, ${spacingVars['--spacing-4']}))`,
+    '--container-padding-block-end': sectionBlockEnd,
   },
   layoutPaddingOuterX: {
-    '--layout-padding-outer-x': `var(--xds-section-padding-inline-start, var(--xds-section-padding-inline, var(--xds-section-padding, ${spacingVars['--spacing-4']})))`,
+    '--layout-padding-outer-x': sectionInlineStart,
   },
   layoutPaddingOuterY: {
-    '--layout-padding-outer-y': `var(--xds-section-padding-block-start, var(--xds-section-padding, ${spacingVars['--spacing-4']}))`,
+    '--layout-padding-outer-y': sectionBlockStart,
   },
   layoutPaddingInnerX: {
-    '--layout-padding-inner-x': `var(--xds-section-padding-inline-start, var(--xds-section-padding-inline, var(--xds-section-padding, ${spacingVars['--spacing-4']})))`,
+    '--layout-padding-inner-x': sectionInlineStart,
   },
   layoutPaddingInnerY: {
-    '--layout-padding-inner-y': `var(--xds-section-padding-block-start, var(--xds-section-padding, ${spacingVars['--spacing-4']}))`,
+    '--layout-padding-inner-y': sectionBlockStart,
   },
 });
 
 const dialogDefaultPaddingStyles = stylex.create({
   containerPaddingInlineStart: {
-    '--container-padding-inline-start': `var(--xds-dialog-padding-inline-start, var(--xds-dialog-padding-inline, var(--xds-dialog-padding, ${spacingVars['--spacing-4']})))`,
+    '--container-padding-inline-start': dialogInlineStart,
   },
   containerPaddingInlineEnd: {
-    '--container-padding-inline-end': `var(--xds-dialog-padding-inline-end, var(--xds-dialog-padding-inline, var(--xds-dialog-padding, ${spacingVars['--spacing-4']})))`,
+    '--container-padding-inline-end': dialogInlineEnd,
   },
   containerPaddingBlockStart: {
-    '--container-padding-block-start': `var(--xds-dialog-padding-block-start, var(--xds-dialog-padding, ${spacingVars['--spacing-4']}))`,
+    '--container-padding-block-start': dialogBlockStart,
   },
   containerPaddingBlockEnd: {
-    '--container-padding-block-end': `var(--xds-dialog-padding-block-end, var(--xds-dialog-padding, ${spacingVars['--spacing-4']}))`,
+    '--container-padding-block-end': dialogBlockEnd,
   },
   layoutPaddingOuterX: {
-    '--layout-padding-outer-x': `var(--xds-dialog-padding-inline-start, var(--xds-dialog-padding-inline, var(--xds-dialog-padding, ${spacingVars['--spacing-4']})))`,
+    '--layout-padding-outer-x': dialogInlineStart,
   },
   layoutPaddingOuterY: {
-    '--layout-padding-outer-y': `var(--xds-dialog-padding-block-start, var(--xds-dialog-padding, ${spacingVars['--spacing-4']}))`,
+    '--layout-padding-outer-y': dialogBlockStart,
   },
   layoutPaddingInnerX: {
-    '--layout-padding-inner-x': `var(--xds-dialog-padding-inline-start, var(--xds-dialog-padding-inline, var(--xds-dialog-padding, ${spacingVars['--spacing-4']})))`,
+    '--layout-padding-inner-x': dialogInlineStart,
   },
   layoutPaddingInnerY: {
-    '--layout-padding-inner-y': `var(--xds-dialog-padding-block-start, var(--xds-dialog-padding, ${spacingVars['--spacing-4']}))`,
+    '--layout-padding-inner-y': dialogBlockStart,
   },
 });
 
@@ -399,7 +441,7 @@ export interface ContainerOptions {
 
   /**
    * Maximum height constraint for the container.
-   * Sets --container-max-height CSS variable that XDSLayout reads
+   * Sets --container-max-height CSS variable that Layout reads
    * to enable scroll containment in fill mode.
    * Accepts CSS length values (e.g., '75vh', '500px').
    */
@@ -426,12 +468,12 @@ export interface ContainerOptions {
  *
  * // Card container with default padding (theme-overridable via padding shorthand)
  * <div {...stylex.props(...container({ useThemeDefault: 'card' }))}>
- *   <XDSLayout ... />
+ *   <Layout ... />
  * </div>
  *
  * // Uniform padding
  * <div {...stylex.props(...container({ padding: 'spacing3' }))}>
- *   <XDSLayout ... />
+ *   <Layout ... />
  * </div>
  *
  * // Asymmetric — padding as base, paddingOuterY overrides vertical
@@ -439,7 +481,7 @@ export interface ContainerOptions {
  *   ...container({ padding: 'spacing3', paddingOuterY: 'spacing2' }),
  *   customStyles.card
  * )}>
- *   <XDSLayout ... />
+ *   <Layout ... />
  * </div>
  * ```
  */

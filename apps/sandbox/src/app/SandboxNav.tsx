@@ -5,9 +5,9 @@
 import * as stylex from '@stylexjs/stylex';
 import {usePathname} from 'next/navigation';
 import Link from 'next/link';
-import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
-import {XDSText} from '@xds/core/Text';
+import {SideNav, SideNavItem, SideNavSection} from '@xds/core/SideNav';
+import {DropdownMenu} from '@xds/core/DropdownMenu';
+import {Text} from '@xds/core/Text';
 import {useThemeControls, SANDBOX_THEMES} from './providers';
 import type {ThemeMode} from '@xds/core/theme';
 import {categories} from './sandboxPages';
@@ -66,11 +66,11 @@ function SandboxHeader() {
 
   return (
     <div {...stylex.props(styles.header)}>
-      <XDSText type="body" weight="bold">
+      <Text type="body" weight="bold">
         Sandbox
-      </XDSText>
+      </Text>
       <div {...stylex.props(styles.controls)}>
-        <XDSDropdownMenu
+        <DropdownMenu
           button={{
             label: 'Theme',
 
@@ -89,7 +89,7 @@ function SandboxHeader() {
           menuWidth={160}
           items={themeItems}
         />
-        <XDSDropdownMenu
+        <DropdownMenu
           button={{
             label: mode === 'dark' ? 'Dark mode' : 'Light mode',
 
@@ -124,31 +124,31 @@ export function SandboxNav() {
   const pathname = usePathname();
 
   return (
-    <XDSSideNav header={<SandboxHeader />}>
-      <XDSSideNavSection title="Home" isHeaderHidden>
-        <XDSSideNavItem
+    <SideNav header={<SandboxHeader />}>
+      <SideNavSection title="Home" isHeaderHidden>
+        <SideNavItem
           label="Home"
           href="/"
           isSelected={pathname === '/'}
           as={Link}
           icon={HomeIcon}
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Official Templates"
           href="/templates/"
           isSelected={pathname === '/templates/'}
           as={Link}
           icon={AppWindowIcon}
         />
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Projects">
+      </SideNavSection>
+      <SideNavSection title="Projects">
         {categories
           .filter(c => c.slug !== 'templates')
           .map(category => {
             const isActive = pathname === `/${category.slug}/`;
             const IconComponent = categoryIcons[category.slug];
             return (
-              <XDSSideNavItem
+              <SideNavItem
                 key={category.slug}
                 label={category.label}
                 href={`/${category.slug}/`}
@@ -158,7 +158,7 @@ export function SandboxNav() {
               />
             );
           })}
-      </XDSSideNavSection>
-    </XDSSideNav>
+      </SideNavSection>
+    </SideNav>
   );
 }

@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSSelectableCard} from '@xds/core/SelectableCard';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
+import {SelectableCard} from '@xds/core/SelectableCard';
+import {Stack} from '@xds/core/Layout';
+import {Text, Heading} from '@xds/core/Text';
 
 const plans = [
   {id: 'basic', name: 'Basic', price: '$9/mo', desc: 'For individuals'},
@@ -22,25 +22,25 @@ export default function SelectableCardShowcase() {
   const [selected, setSelected] = useState<string | null>('pro');
 
   return (
-    <XDSStack direction="horizontal" gap={3}>
+    <Stack direction="horizontal" gap={3}>
       {plans.map(plan => (
-        <XDSSelectableCard
+        <SelectableCard
           key={plan.id}
           label={plan.name}
           isSelected={selected === plan.id}
           onChange={() => setSelected(plan.id)}
           width={180}>
-          <XDSStack direction="vertical" gap={1}>
-            <XDSHeading level={4}>{plan.name}</XDSHeading>
-            <XDSText type="large" weight="bold">
+          <Stack direction="vertical" gap={1}>
+            <Heading level={4}>{plan.name}</Heading>
+            <Text type="large" weight="bold">
               {plan.price}
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
+            </Text>
+            <Text type="supporting" color="secondary">
               {plan.desc}
-            </XDSText>
-          </XDSStack>
-        </XDSSelectableCard>
+            </Text>
+          </Stack>
+        </SelectableCard>
       ))}
-    </XDSStack>
+    </Stack>
   );
 }

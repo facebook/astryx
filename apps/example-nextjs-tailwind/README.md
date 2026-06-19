@@ -35,12 +35,12 @@ Without this declaration, XDS layers are created *after* Tailwind's declared lay
 
 ```tsx
 <main className="flex min-h-screen items-center p-8">
-  <XDSCard className="max-w-md">
-    <XDSVStack gap={4}>
-      <XDSHeading level={2}>Dashboard</XDSHeading>
-      <XDSButton label="Save" variant="primary" />
-    </XDSVStack>
-  </XDSCard>
+  <Card className="max-w-md">
+    <VStack gap={4}>
+      <Heading level={2}>Dashboard</Heading>
+      <Button label="Save" variant="primary" />
+    </VStack>
+  </Card>
 </main>
 ```
 
@@ -79,8 +79,8 @@ If you need a token the bridge doesn't cover, you can still use Tailwind's brack
 All XDS components accept `className`. Tailwind utilities in the `utilities` layer override XDS component styles in `xds-base`:
 
 ```tsx
-<XDSButton label="Custom" variant="primary" className="rounded-full shadow-xl" />
-<XDSText type="body" className="text-blue-600 italic">Custom styled text</XDSText>
+<Button label="Custom" variant="primary" className="rounded-full shadow-xl" />
+<Text type="body" className="text-blue-600 italic">Custom styled text</Text>
 ```
 
 ### Mixing XDS and Tailwind components
@@ -89,7 +89,7 @@ Shadcn-style Tailwind components render correctly alongside XDS. Both resets are
 
 ```tsx
 <div className="grid grid-cols-2 gap-6">
-  <XDSCard>...</XDSCard>
+  <Card>...</Card>
   <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">...</div>
 </div>
 ```

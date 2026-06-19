@@ -2,16 +2,16 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSMobileNav} from '@xds/core/MobileNav';
+import {MobileNav} from '@xds/core/MobileNav';
 import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
+  SideNav,
+  SideNavHeading,
+  SideNavItem,
+  SideNavSection,
 } from '@xds/core/SideNav';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSNavIcon} from '@xds/core/NavIcon';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
+import {NavIcon} from '@xds/core/NavIcon';
 import {useMediaQuery} from '@xds/core/hooks';
 import {
   HomeIcon,
@@ -30,9 +30,9 @@ import {
 // Meta
 // =============================================================================
 
-const meta: Meta<typeof XDSMobileNav> = {
+const meta: Meta<typeof MobileNav> = {
   title: 'Core/MobileNav',
-  component: XDSMobileNav,
+  component: MobileNav,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
@@ -40,7 +40,7 @@ const meta: Meta<typeof XDSMobileNav> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSMobileNav>;
+type Story = StoryObj<typeof MobileNav>;
 
 // =============================================================================
 // Default
@@ -51,46 +51,46 @@ export const Default: Story = {
     const [isOpen, setIsOpen] = useState(false);
     return (
       <>
-        <XDSButton
+        <Button
           label="Open Navigation"
-          icon={<XDSIcon icon="menu" color="inherit" />}
+          icon={<Icon icon="menu" color="inherit" />}
           variant="ghost"
           onClick={() => setIsOpen(true)}
           isIconOnly
         />
-        <XDSMobileNav
+        <MobileNav
           isOpen={isOpen}
           onOpenChange={open => setIsOpen(open)}
           header="Navigation">
-          <XDSSideNavSection title="Main">
-            <XDSSideNavItem
+          <SideNavSection title="Main">
+            <SideNavItem
               label="Dashboard"
               icon={HomeIcon}
               selectedIcon={HomeIconSolid}
               isSelected
               href="/dashboard"
             />
-            <XDSSideNavItem
+            <SideNavItem
               label="Projects"
               icon={FolderIcon}
               selectedIcon={FolderIconSolid}
               href="/projects"
             />
-            <XDSSideNavItem
+            <SideNavItem
               label="Analytics"
               icon={ChartBarIcon}
               href="/analytics"
             />
-          </XDSSideNavSection>
-          <XDSSideNavSection title="Settings">
-            <XDSSideNavItem
+          </SideNavSection>
+          <SideNavSection title="Settings">
+            <SideNavItem
               label="General"
               icon={Cog6ToothIcon}
               href="/settings"
             />
-            <XDSSideNavItem label="Team" icon={UserGroupIcon} href="/team" />
-          </XDSSideNavSection>
-        </XDSMobileNav>
+            <SideNavItem label="Team" icon={UserGroupIcon} href="/team" />
+          </SideNavSection>
+        </MobileNav>
       </>
     );
   },
@@ -107,45 +107,45 @@ export const WithSideNavChildren: Story = {
 
     const navSections = (
       <>
-        <XDSSideNavSection title="Main">
-          <XDSSideNavItem
+        <SideNavSection title="Main">
+          <SideNavItem
             label="Dashboard"
             icon={HomeIcon}
             selectedIcon={HomeIconSolid}
             isSelected
             href="/dashboard"
           />
-          <XDSSideNavItem
+          <SideNavItem
             label="Projects"
             icon={FolderIcon}
             selectedIcon={FolderIconSolid}
             href="/projects"
           />
-          <XDSSideNavItem
+          <SideNavItem
             label="Analytics"
             icon={ChartBarIcon}
             href="/analytics"
           />
-        </XDSSideNavSection>
-        <XDSSideNavSection title="Settings">
-          <XDSSideNavItem
+        </SideNavSection>
+        <SideNavSection title="Settings">
+          <SideNavItem
             label="General"
             icon={Cog6ToothIcon}
             href="/settings"
           />
-        </XDSSideNavSection>
+        </SideNavSection>
       </>
     );
 
     return (
       <>
-        <XDSButton label="Open Drawer" onClick={() => setIsOpen(true)} />
-        <XDSMobileNav
+        <Button label="Open Drawer" onClick={() => setIsOpen(true)} />
+        <MobileNav
           isOpen={isOpen}
           onOpenChange={open => setIsOpen(open)}
           header="My App">
           {navSections}
-        </XDSMobileNav>
+        </MobileNav>
       </>
     );
   },
@@ -163,64 +163,64 @@ export const ResponsivePattern: Story = {
 
     const navSections = (
       <>
-        <XDSSideNavSection title="Main">
-          <XDSSideNavItem
+        <SideNavSection title="Main">
+          <SideNavItem
             label="Dashboard"
             icon={HomeIcon}
             selectedIcon={HomeIconSolid}
             isSelected
             href="/"
           />
-          <XDSSideNavItem
+          <SideNavItem
             label="Projects"
             icon={FolderIcon}
             selectedIcon={FolderIconSolid}
             href="/projects"
           />
-          <XDSSideNavItem
+          <SideNavItem
             label="Analytics"
             icon={ChartBarIcon}
             href="/analytics"
           />
-        </XDSSideNavSection>
-        <XDSSideNavSection title="Settings">
-          <XDSSideNavItem
+        </SideNavSection>
+        <SideNavSection title="Settings">
+          <SideNavItem
             label="General"
             icon={Cog6ToothIcon}
             href="/settings"
           />
-          <XDSSideNavItem label="Team" icon={UserGroupIcon} href="/team" />
-        </XDSSideNavSection>
+          <SideNavItem label="Team" icon={UserGroupIcon} href="/team" />
+        </SideNavSection>
       </>
     );
 
     if (isMobile) {
       return (
         <>
-          <XDSButton
+          <Button
             label="Menu"
-            icon={<XDSIcon icon="menu" color="inherit" />}
+            icon={<Icon icon="menu" color="inherit" />}
             variant="ghost"
             onClick={() => setDrawerOpen(true)}
             isIconOnly
           />
-          <XDSMobileNav
+          <MobileNav
             isOpen={drawerOpen}
             onOpenChange={open => setDrawerOpen(open)}
             header="My App">
             {navSections}
-          </XDSMobileNav>
+          </MobileNav>
         </>
       );
     }
 
     return (
       <div style={{width: 280, height: 600, border: '1px solid #e5e7eb'}}>
-        <XDSSideNav
+        <SideNav
           header={
-            <XDSSideNavHeading
+            <SideNavHeading
               icon={
-                <XDSNavIcon
+                <NavIcon
                   icon={<CubeIcon style={{width: 16, height: 16}} />}
                 />
               }
@@ -229,7 +229,7 @@ export const ResponsivePattern: Story = {
             />
           }>
           {navSections}
-        </XDSSideNav>
+        </SideNav>
       </div>
     );
   },
@@ -245,21 +245,21 @@ export const EndSide: Story = {
     const [isOpen, setIsOpen] = useState(false);
     return (
       <>
-        <XDSButton label="Open from Right" onClick={() => setIsOpen(true)} />
-        <XDSMobileNav
+        <Button label="Open from Right" onClick={() => setIsOpen(true)} />
+        <MobileNav
           isOpen={isOpen}
           onOpenChange={open => setIsOpen(open)}
           header="Settings"
           side="end">
-          <XDSSideNavSection title="Settings">
-            <XDSSideNavItem
+          <SideNavSection title="Settings">
+            <SideNavItem
               label="General"
               icon={Cog6ToothIcon}
               href="/settings"
             />
-            <XDSSideNavItem label="Team" icon={UserGroupIcon} href="/team" />
-          </XDSSideNavSection>
-        </XDSMobileNav>
+            <SideNavItem label="Team" icon={UserGroupIcon} href="/team" />
+          </SideNavSection>
+        </MobileNav>
       </>
     );
   },
@@ -275,27 +275,27 @@ export const CustomWidth: Story = {
     const [isOpen, setIsOpen] = useState(false);
     return (
       <>
-        <XDSButton label="Open Wide Drawer" onClick={() => setIsOpen(true)} />
-        <XDSMobileNav
+        <Button label="Open Wide Drawer" onClick={() => setIsOpen(true)} />
+        <MobileNav
           isOpen={isOpen}
           onOpenChange={open => setIsOpen(open)}
           header="Wide Navigation"
           width={360}>
-          <XDSSideNavSection title="Main">
-            <XDSSideNavItem
+          <SideNavSection title="Main">
+            <SideNavItem
               label="Dashboard"
               icon={HomeIcon}
               selectedIcon={HomeIconSolid}
               isSelected
               href="/dashboard"
             />
-            <XDSSideNavItem
+            <SideNavItem
               label="Projects"
               icon={FolderIcon}
               href="/projects"
             />
-          </XDSSideNavSection>
-        </XDSMobileNav>
+          </SideNavSection>
+        </MobileNav>
       </>
     );
   },
@@ -311,28 +311,28 @@ export const WithoutTitle: Story = {
     const [isOpen, setIsOpen] = useState(false);
     return (
       <>
-        <XDSButton
+        <Button
           label="Open Navigation"
-          icon={<XDSIcon icon="menu" color="inherit" />}
+          icon={<Icon icon="menu" color="inherit" />}
           variant="ghost"
           onClick={() => setIsOpen(true)}
           isIconOnly
         />
-        <XDSMobileNav isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
-          <XDSSideNavSection title="Main">
-            <XDSSideNavItem
+        <MobileNav isOpen={isOpen} onOpenChange={open => setIsOpen(open)}>
+          <SideNavSection title="Main">
+            <SideNavItem
               label="Dashboard"
               icon={HomeIcon}
               isSelected
               href="/dashboard"
             />
-            <XDSSideNavItem
+            <SideNavItem
               label="Projects"
               icon={FolderIcon}
               href="/projects"
             />
-          </XDSSideNavSection>
-        </XDSMobileNav>
+          </SideNavSection>
+        </MobileNav>
       </>
     );
   },

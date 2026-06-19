@@ -4,17 +4,17 @@
 
 import {useState} from 'react';
 import {
-  XDSChatComposer,
-  XDSChatComposerDrawer,
-  XDSChatComposerInput,
+  ChatComposer,
+  ChatComposerDrawer,
+  ChatComposerInput,
 } from '@xds/core/Chat';
-import {XDSToken} from '@xds/core/Token';
-import {XDSButton} from '@xds/core/Button';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSProgressBar} from '@xds/core/ProgressBar';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Token} from '@xds/core/Token';
+import {Button} from '@xds/core/Button';
+import {DropdownMenu} from '@xds/core/DropdownMenu';
+import {Icon} from '@xds/core/Icon';
+import {ProgressBar} from '@xds/core/ProgressBar';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 import {
   AtSymbolIcon,
   Cog6ToothIcon,
@@ -27,14 +27,14 @@ export default function ChatComposerFullFeatured() {
   const [isStreaming, setIsStreaming] = useState(false);
 
   return (
-    <XDSStack
+    <Stack
       direction="vertical"
       gap={4}
       style={{width: '100%', maxWidth: 450}}>
-      <XDSText type="supporting" color="secondary">
+      <Text type="supporting" color="secondary">
         All slots populated
-      </XDSText>
-      <XDSChatComposer
+      </Text>
+      <ChatComposer
         onSubmit={value => {
           console.log('Sent:', value);
           setIsStreaming(true);
@@ -43,45 +43,45 @@ export default function ChatComposerFullFeatured() {
         isStopShown={isStreaming}
         onStop={() => setIsStreaming(false)}
         placeholder="Ask me anything..."
-        input={<XDSChatComposerInput style={{minHeight: 44}} />}
+        input={<ChatComposerInput style={{minHeight: 44}} />}
         drawer={
-          <XDSChatComposerDrawer count={5}>
-            <XDSToken label="design-spec.pdf" onRemove={() => {}} />
-            <XDSToken label="requirements.docx" onRemove={() => {}} />
-            <XDSToken label="wireframes.fig" onRemove={() => {}} />
-            <XDSToken label="api-spec.yaml" onRemove={() => {}} />
-            <XDSToken label="user-research.csv" onRemove={() => {}} />
-          </XDSChatComposerDrawer>
+          <ChatComposerDrawer count={5}>
+            <Token label="design-spec.pdf" onRemove={() => {}} />
+            <Token label="requirements.docx" onRemove={() => {}} />
+            <Token label="wireframes.fig" onRemove={() => {}} />
+            <Token label="api-spec.yaml" onRemove={() => {}} />
+            <Token label="user-research.csv" onRemove={() => {}} />
+          </ChatComposerDrawer>
         }
         headerActions={
           <>
-            <XDSButton
+            <Button
               label="Mention"
               variant="ghost"
               size="sm"
-              icon={<XDSIcon icon={AtSymbolIcon} />}
+              icon={<Icon icon={AtSymbolIcon} />}
               isIconOnly
             />
-            <XDSButton
+            <Button
               label="Attach file"
               variant="ghost"
               size="sm"
-              icon={<XDSIcon icon={PaperClipIcon} />}
+              icon={<Icon icon={PaperClipIcon} />}
               isIconOnly
             />
           </>
         }
         headerContext={
-          <XDSProgressBar label="Context window" value={50} isLabelHidden />
+          <ProgressBar label="Context window" value={50} isLabelHidden />
         }
         footerActions={
           <>
-            <XDSDropdownMenu
+            <DropdownMenu
               button={{
                 label: 'Auto',
                 variant: 'ghost',
                 size: 'md',
-                icon: <XDSIcon icon={SparklesIcon} size="sm" />,
+                icon: <Icon icon={SparklesIcon} size="sm" />,
                 children: 'Auto',
               }}
               menuWidth={200}
@@ -92,12 +92,12 @@ export default function ChatComposerFullFeatured() {
                 {label: 'Model C', onClick: () => {}},
               ]}
             />
-            <XDSDropdownMenu
+            <DropdownMenu
               button={{
                 label: 'Settings',
                 variant: 'ghost',
                 size: 'md',
-                icon: <XDSIcon icon={Cog6ToothIcon} size="sm" />,
+                icon: <Icon icon={Cog6ToothIcon} size="sm" />,
                 children: 'Settings',
               }}
               menuWidth={200}
@@ -110,15 +110,15 @@ export default function ChatComposerFullFeatured() {
           </>
         }
         sendActions={
-          <XDSButton
+          <Button
             label="Microphone"
             variant="ghost"
             size="md"
-            icon={<XDSIcon icon={MicrophoneIcon} />}
+            icon={<Icon icon={MicrophoneIcon} />}
             isIconOnly
           />
         }
       />
-    </XDSStack>
+    </Stack>
   );
 }

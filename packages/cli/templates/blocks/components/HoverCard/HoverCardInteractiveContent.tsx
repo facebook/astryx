@@ -3,10 +3,10 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSHoverCard} from '@xds/core/HoverCard';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {HoverCard} from '@xds/core/HoverCard';
+import {Icon} from '@xds/core/Icon';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 import {LinkIcon} from '@heroicons/react/24/outline';
 
 const styles = stylex.create({
@@ -15,30 +15,28 @@ const styles = stylex.create({
 
 export default function HoverCardInteractiveContent() {
   return (
-    <XDSText type="body">
-      Read more in the{' '}
-      <XDSHoverCard
+    <Text type="body">Read more in the{' '}
+      <HoverCard
         placement="below"
         content={
-          <XDSVStack gap={2} xstyle={styles.content}>
-            <XDSHStack gap={2} vAlign="start">
-              <XDSIcon icon={LinkIcon} size="sm" color="secondary" />
-              <XDSVStack gap={1}>
-                <XDSText type="label">Getting Started Guide</XDSText>
-                <XDSText type="body" color="secondary">
+          <VStack gap={2} xstyle={styles.content}>
+            <HStack gap={2} vAlign="start">
+              <Icon icon={LinkIcon} size="sm" color="secondary" />
+              <VStack gap={1}>
+                <Text type="label">Getting Started Guide</Text>
+                <Text type="body" color="secondary">
                   Learn how to set up your first project, invite team members,
                   and configure your workspace.
-                </XDSText>
-                <XDSText type="supporting" color="secondary">
+                </Text>
+                <Text type="supporting" color="secondary">
                   docs.example.com/getting-started
-                </XDSText>
-              </XDSVStack>
-            </XDSHStack>
-          </XDSVStack>
+                </Text>
+              </VStack>
+            </HStack>
+          </VStack>
         }>
         Getting Started Guide
-      </XDSHoverCard>
-      .
-    </XDSText>
+      </HoverCard>.
+          </Text>
   );
 }

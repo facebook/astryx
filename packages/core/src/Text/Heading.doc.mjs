@@ -6,12 +6,12 @@ export const docs = {
   name: 'Heading',
   subComponentOf: 'Text',
   displayName: 'Heading',
-  description: 'Semantic heading component that renders h1–h6 elements with themed styling, themed sizing via type scale tokens, and line-clamp truncation.',
+  description: 'Semantic heading component that renders h1-h6 elements with themed styling, themed sizing via type scale tokens, and line-clamp truncation.',
   props: [
     {
       name: 'level',
       type: '1 | 2 | 3 | 4 | 5 | 6',
-      description: 'Heading level. Determines the semantic HTML element (h1–h6) and the visual styling from the theme (unless `type` is set).',
+      description: 'Heading level. Determines the semantic HTML element (h1-h6) and the visual styling from the theme (unless `type` is set).',
       required: true,
     },
     {
@@ -50,8 +50,8 @@ export const docs = {
     },
     {
       name: 'hasTruncateTooltip',
-      type: 'boolean | LayerPlacement',
-      description: 'Controls tooltip behavior for truncated text. true shows the tooltip at the default position, false disables it, or a LayerPlacement string sets a specific position.',
+      type: "boolean | 'above' | 'below' | 'start' | 'end'",
+      description: "Controls tooltip behavior for truncated text. true shows the tooltip at the default position, false disables it, or a placement string ('above' | 'below' | 'start' | 'end') sets a specific position.",
       default: 'true',
     },
     {
@@ -131,8 +131,8 @@ export const docsZh = {
     },
     {
       name: 'hasTruncateTooltip',
-      type: 'boolean | LayerPlacement',
-      description: '控制截断文本的工具提示行为。true 在默认位置显示工具提示，false 禁用它，或者 LayerPlacement 字符串设置特定位置。',
+      type: "boolean | 'above' | 'below' | 'start' | 'end'",
+      description: "控制截断文本的工具提示行为。true 在默认位置显示工具提示，false 禁用它，或者放置字符串 ('above' | 'below' | 'start' | 'end') 设置特定位置。",
       default: 'true',
     },
     {
@@ -177,7 +177,7 @@ export const docsDense = {
     color: 'Text color.',
     display: "Display type; overridden to 'block' when maxLines>0 or hasCapsize.",
     maxLines: 'Max lines before truncation; 0=none. Shows tooltip if truncated.',
-    hasTruncateTooltip: 'Tooltip for truncated text; true=default position, false=disabled, or LayerPlacement.',
+    hasTruncateTooltip: "Tooltip for truncated text; true=default position, false=disabled, or a placement ('above' | 'below' | 'start' | 'end').",
     wordBreak: "Word break behavior; defaults 'break-all' for single-line, 'break-word' otherwise.",
     textWrap: 'Text wrapping behavior.',
     hasCapsize: 'Optical alignment via text-box-trim; forces block display.',

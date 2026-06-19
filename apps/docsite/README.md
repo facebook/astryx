@@ -31,6 +31,7 @@ from the monorepo and writes typed TypeScript registries to `src/generated/`.
 | `blockRegistry.ts`     | CLI `templates/blocks/`           | Showcase and example blocks with metadata                     |
 | `templateRegistry.ts`  | CLI `templates/pages/`            | Page-level templates (e.g. dashboard, settings)               |
 | `docsRegistry.ts`      | CLI `docs/`                       | Long-form guide and foundation topics                         |
+| `blogRegistry.ts`      | `src/content/blog/posts/`         | Human-authored blog posts (frontmatter validated)             |
 | `themeRegistry.ts`     | Installed `@xds/theme-*` packages | Built theme objects, keyed by package name                    |
 | `showcaseRegistry.ts`  | Blocks with `isShowcase`          | Copied showcase source files                                  |
 | `exampleRegistry.ts`   | Blocks with `exampleFor`          | Copied example blocks per component                           |
@@ -82,6 +83,24 @@ The package appears in the sidebar, the libraries section, and gets its own
 `/docs/<name>` detail page. If the package contains `.doc.mjs` files,
 its components are extracted into `componentRegistry.ts` as well.
 
+## Adding a Blog Post
+
+The blog lives at `/blog` and `/blog/<slug>`. Posts are human-authored Markdown
+files with YAML frontmatter under `src/content/blog/posts/`. Adding a post is
+close to dropping in one file — discovery, validation, and sorting are automatic.
+
+See **[`src/content/blog/README.md`](src/content/blog/README.md)** for the full
+guide: frontmatter reference, post types, the author registry, cover images, and
+local preview. In short:
+
+1. Create `src/content/blog/posts/<slug>.md` with required frontmatter
+   (`title`, `description`, `date`, `type`, `authors`, `tags`).
+2. If you are a new author, add yourself to `src/content/blog/authors.ts`.
+3. Run `pnpm generate && pnpm test && pnpm typecheck`, then `pnpm dev` to preview.
+
+Required frontmatter is validated at build time; drafts (`draft: true`) are
+excluded from production output.
+
 ## Project Structure
 
 ```
@@ -93,10 +112,13 @@ apps/docsite/
 │   ├── app/
 │   │   ├── globals.css       # CSS imports (reset, xds base, theme stylesheets)
 │   │   ├── layout.tsx        # Root layout
-│   │   ├── providers.tsx     # XDSTheme + client providers
+│   │   ├── providers.tsx     # Theme + client providers
 │   │   ├── (docs)/           # Main docs routes (components, packages, docs)
+│   │   ├── blog/             # Blog index + post detail (no sidebar)
 │   │   └── craft/            # Craft landing (templates, themes, showcases)
-│   └── components/           # Shared UI components
+│   ├── components/           # Shared UI components
+│   ├── content/blog/         # Blog posts (MD + frontmatter) + authors.ts
+│   └── lib/blog/             # Blog discovery, validation, and types
 ├── package.json
 └── .gitignore                # Excludes src/generated/
 ```

@@ -2,14 +2,14 @@
 
 import {useState, useEffect, useCallback} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSMarkdown} from '@xds/core/Markdown';
-import {XDSButton} from '@xds/core/Button';
-import {XDSLink} from '@xds/core/Link';
-import {XDSText} from '@xds/core/Text';
+import {Markdown} from '@xds/core/Markdown';
+import {Button} from '@xds/core/Button';
+import {Link} from '@xds/core/Link';
+import {Text} from '@xds/core/Text';
 
-const meta: Meta<typeof XDSMarkdown> = {
+const meta: Meta<typeof Markdown> = {
   title: 'Core/Markdown',
-  component: XDSMarkdown,
+  component: Markdown,
   tags: ['autodocs'],
   argTypes: {
     density: {
@@ -29,10 +29,10 @@ const meta: Meta<typeof XDSMarkdown> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSMarkdown>;
+type Story = StoryObj<typeof Markdown>;
 
 const SAMPLE_MD = [
-  '# XDSMarkdown Demo',
+  '# Markdown Demo',
   '',
   'Renders **markdown** with *design-system-consistent* styling.',
   '',
@@ -64,8 +64,8 @@ const SAMPLE_MD = [
   '',
   '| Component | Status | Tests |',
   '|:----------|:------:|------:|',
-  '| XDSMarkdown | Active | 73 |',
-  '| XDSCodeBlock | Active | 44 |',
+  '| Markdown | Active | 73 |',
+  '| CodeBlock | Active | 44 |',
   '',
   '### Task List',
   '',
@@ -190,13 +190,13 @@ export const InlineDisplay: Story = {
   name: 'Inline Display',
   render: () => (
     <div style={{maxWidth: 680, display: 'grid', gap: 16}}>
-      <XDSText type="large" display="block">
-        <XDSMarkdown display="inline">
+      <Text type="large" display="block">
+        <Markdown display="inline">
           {
             'Use `value` with **controlled state** and [read the docs](https://example.com) without creating block wrappers.'
           }
-        </XDSMarkdown>
-      </XDSText>
+        </Markdown>
+      </Text>
 
       <div
         style={{
@@ -206,16 +206,16 @@ export const InlineDisplay: Story = {
           display: 'grid',
           gap: 6,
         }}>
-        <XDSText type="body" weight="bold" display="block">
+        <Text type="body" weight="bold" display="block">
           Prop description
-        </XDSText>
-        <XDSText type="body" color="secondary" display="block">
-          <XDSMarkdown display="inline">
+        </Text>
+        <Text type="body" color="secondary" display="block">
+          <Markdown display="inline">
             {
               'Accepts an action item `{label, onClick?, icon?}`, a divider `{type: "divider"}`, or a section `{type: "section", items: [...]}`.'
             }
-          </XDSMarkdown>
-        </XDSText>
+          </Markdown>
+        </Text>
       </div>
     </div>
   ),
@@ -275,7 +275,7 @@ export const Streaming: Story = {
             gap: 8,
             alignItems: 'center',
           }}>
-          <XDSButton
+          <Button
             label="Replay"
             variant="secondary"
             size="sm"
@@ -288,13 +288,13 @@ export const Streaming: Story = {
               : 'Complete'}
           </span>
         </div>
-        <XDSMarkdown
+        <Markdown
           key={key}
           isStreaming={isStreaming}
           density="compact"
           headingLevelStart={3}>
           {text.slice(0, charIndex)}
-        </XDSMarkdown>
+        </Markdown>
       </div>
     );
   },
@@ -304,7 +304,7 @@ export const WithImages: Story = {
   name: 'With Images',
   render: () => (
     <div style={{maxWidth: 800}}>
-      <XDSMarkdown>{`
+      <Markdown>{`
 Here is some text before the image.
 
 ![A landscape photo](https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=680&h=400&fit=crop&auto=format)
@@ -318,7 +318,7 @@ And here's a really wide one:
 ![Wide panoramic shot](https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1200&h=300&fit=crop&auto=format)
 
 Final paragraph after all images.
-`}</XDSMarkdown>
+`}</Markdown>
     </div>
   ),
 };
@@ -356,9 +356,9 @@ export const ContentAlignStart: Story = {
   name: 'Content Align: Start',
   render: () => (
     <div style={{maxWidth: 900, border: '1px dashed #ccc', padding: 16}}>
-      <XDSMarkdown contentWidth={580} contentAlign="start">
+      <Markdown contentWidth={580} contentAlign="start">
         {CONTENT_ALIGN_TEXT}
-      </XDSMarkdown>
+      </Markdown>
     </div>
   ),
 };
@@ -367,9 +367,9 @@ export const ContentAlignCenter: Story = {
   name: 'Content Align: Center',
   render: () => (
     <div style={{maxWidth: 900, border: '1px dashed #ccc', padding: 16}}>
-      <XDSMarkdown contentWidth={580} contentAlign="center">
+      <Markdown contentWidth={580} contentAlign="center">
         {CONTENT_ALIGN_TEXT}
-      </XDSMarkdown>
+      </Markdown>
     </div>
   ),
 };
@@ -382,26 +382,26 @@ export const InlinePlugins: Story = {
         // JIRA-style ticket references: PROJ-123, BUG-456, etc.
         pattern: /\b([A-Z][A-Z0-9]+-\d+)\b/g,
         render: (match: RegExpMatchArray, key: string) => (
-          <XDSLink
+          <Link
             key={key}
             href={`https://issues.example.com/browse/${match[1]}`}
             isExternalLink
             weight="semibold">
             {match[0]}
-          </XDSLink>
+          </Link>
         ),
       },
       {
         // GitHub-style issue references: #123, #456, etc.
         pattern: /#(\d+)/g,
         render: (match: RegExpMatchArray, key: string) => (
-          <XDSLink
+          <Link
             key={key}
             href={`https://github.com/org/repo/issues/${match[1]}`}
             isExternalLink
             weight="semibold">
             {match[0]}
-          </XDSLink>
+          </Link>
         ),
       },
     ];
@@ -435,12 +435,12 @@ export const InlinePlugins: Story = {
 
     return (
       <div style={{maxWidth: 680}}>
-        <XDSMarkdown
+        <Markdown
           inlinePlugins={inlinePlugins}
           density="compact"
           headingLevelStart={2}>
           {markdown}
-        </XDSMarkdown>
+        </Markdown>
       </div>
     );
   },

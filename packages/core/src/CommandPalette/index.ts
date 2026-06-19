@@ -11,26 +11,55 @@
  * SYNC: When modified, update this header
  */
 
-export {XDSCommandPalette} from './XDSCommandPalette';
-export type {XDSCommandPaletteProps} from './XDSCommandPalette';
+export {CommandPalette} from './CommandPalette';
+export type {CommandPaletteProps} from './CommandPalette';
 
-export {XDSCommandPaletteInput} from './XDSCommandPaletteInput';
-export type {XDSCommandPaletteInputProps} from './XDSCommandPaletteInput';
+export {CommandPaletteInput} from './CommandPaletteInput';
+export type {CommandPaletteInputProps} from './CommandPaletteInput';
 
-export {XDSCommandPaletteList} from './XDSCommandPaletteList';
-export type {XDSCommandPaletteListProps} from './XDSCommandPaletteList';
+export {CommandPaletteList} from './CommandPaletteList';
+export type {CommandPaletteListProps} from './CommandPaletteList';
 
-export {XDSCommandPaletteItem} from './XDSCommandPaletteItem';
-export type {XDSCommandPaletteItemProps} from './XDSCommandPaletteItem';
+export {CommandPaletteItem} from './CommandPaletteItem';
+export type {CommandPaletteItemProps} from './CommandPaletteItem';
 
-export {XDSCommandPaletteGroup} from './XDSCommandPaletteGroup';
-export type {XDSCommandPaletteGroupProps} from './XDSCommandPaletteGroup';
+export {CommandPaletteGroup} from './CommandPaletteGroup';
+export type {CommandPaletteGroupProps} from './CommandPaletteGroup';
 
-export {XDSCommandPaletteFooter} from './XDSCommandPaletteFooter';
-export type {XDSCommandPaletteFooterProps} from './XDSCommandPaletteFooter';
+export {CommandPaletteFooter} from './CommandPaletteFooter';
+export type {CommandPaletteFooterProps} from './CommandPaletteFooter';
 
-export {XDSCommandPaletteEmpty} from './XDSCommandPaletteEmpty';
-export type {XDSCommandPaletteEmptyProps} from './XDSCommandPaletteEmpty';
+export {CommandPaletteEmpty} from './CommandPaletteEmpty';
+export type {CommandPaletteEmptyProps} from './CommandPaletteEmpty';
 
 export {useCommandPaletteContext} from './CommandPaletteContext';
 export type {CommandPaletteContextValue} from './CommandPaletteContext';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  CommandPalette as XDSCommandPalette,
+  CommandPaletteEmpty as XDSCommandPaletteEmpty,
+  CommandPaletteFooter as XDSCommandPaletteFooter,
+  CommandPaletteGroup as XDSCommandPaletteGroup,
+  CommandPaletteInput as XDSCommandPaletteInput,
+  CommandPaletteItem as XDSCommandPaletteItem,
+  CommandPaletteList as XDSCommandPaletteList,
+  useCommandPaletteContext as useXDSCommandPaletteContext,
+} from '.';
+export type {
+  CommandPaletteContextValue as XDSCommandPaletteContextValue,
+  CommandPaletteEmptyProps as XDSCommandPaletteEmptyProps,
+  CommandPaletteFooterProps as XDSCommandPaletteFooterProps,
+  CommandPaletteGroupProps as XDSCommandPaletteGroupProps,
+  CommandPaletteInputProps as XDSCommandPaletteInputProps,
+  CommandPaletteItemProps as XDSCommandPaletteItemProps,
+  CommandPaletteListProps as XDSCommandPaletteListProps,
+  CommandPaletteProps as XDSCommandPaletteProps,
+} from '.';
+// <compat-aliases:end>

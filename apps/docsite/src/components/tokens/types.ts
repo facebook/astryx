@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import type {UseXDSThemeReturn} from '@xds/core/theme';
+import type {UseThemeReturn} from '@xds/core/theme';
 
 export interface TokenTableProps {
-  theme: UseXDSThemeReturn;
+  theme: UseThemeReturn;
 }

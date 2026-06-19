@@ -2,12 +2,12 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSTypeahead} from '@xds/core/Typeahead';
-import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
+import {Typeahead} from '@xds/core/Typeahead';
+import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
 // Sample data
-const fruits: XDSSearchableItem[] = [
+const fruits: SearchableItem[] = [
   {id: '1', label: 'Apple'},
   {id: '2', label: 'Banana'},
   {id: '3', label: 'Cherry'},
@@ -18,15 +18,15 @@ const fruits: XDSSearchableItem[] = [
   {id: '8', label: 'Honeydew'},
 ];
 
-const fruitSource: XDSSearchSource = {
+const fruitSource: SearchSource = {
   search: (query: string) =>
     fruits.filter(f => f.label.toLowerCase().includes(query.toLowerCase())),
   bootstrap: () => fruits.slice(0, 5),
 };
 
-const meta: Meta<typeof XDSTypeahead> = {
+const meta: Meta<typeof Typeahead> = {
   title: 'Core/Typeahead',
-  component: XDSTypeahead,
+  component: Typeahead,
   tags: ['autodocs'],
   argTypes: {
     label: {control: 'text'},
@@ -53,13 +53,13 @@ const meta: Meta<typeof XDSTypeahead> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSTypeahead>;
+type Story = StoryObj<typeof Typeahead>;
 
 export const Default: Story = {
   render: args => {
-    const [value, setValue] = useState<XDSSearchableItem | null>(null);
+    const [value, setValue] = useState<SearchableItem | null>(null);
     return (
-      <XDSTypeahead
+      <Typeahead
         {...args}
         searchSource={fruitSource}
         value={value}
@@ -159,12 +159,12 @@ export const LimitedResults: Story = {
 
 export const SizeVariants: Story = {
   render: () => {
-    const [sm, setSm] = useState<XDSSearchableItem | null>(null);
-    const [md, setMd] = useState<XDSSearchableItem | null>(null);
-    const [lg, setLg] = useState<XDSSearchableItem | null>(null);
+    const [sm, setSm] = useState<SearchableItem | null>(null);
+    const [md, setMd] = useState<SearchableItem | null>(null);
+    const [lg, setLg] = useState<SearchableItem | null>(null);
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
-        <XDSTypeahead
+        <Typeahead
           label="Small (28px)"
           searchSource={fruitSource}
           value={sm}
@@ -172,7 +172,7 @@ export const SizeVariants: Story = {
           placeholder="Small size"
           size="sm"
         />
-        <XDSTypeahead
+        <Typeahead
           label="Medium (32px)"
           searchSource={fruitSource}
           value={md}
@@ -180,7 +180,7 @@ export const SizeVariants: Story = {
           placeholder="Medium size (default)"
           size="md"
         />
-        <XDSTypeahead
+        <Typeahead
           label="Large (36px)"
           searchSource={fruitSource}
           value={lg}

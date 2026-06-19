@@ -4,16 +4,16 @@
 
 import {useMemo} from 'react';
 import {
-  XDSCommandPalette,
-  XDSCommandPaletteList,
-  XDSCommandPaletteItem,
+  CommandPalette,
+  CommandPaletteList,
+  CommandPaletteItem,
 } from '@xds/core/CommandPalette';
-import {XDSText} from '@xds/core/Text';
-import {XDSKbd} from '@xds/core/Kbd';
-import {XDSIcon} from '@xds/core/Icon';
+import {Text} from '@xds/core/Text';
+import {Kbd} from '@xds/core/Kbd';
+import {Icon} from '@xds/core/Icon';
 import {createStaticSource} from '@xds/core/Typeahead';
-import {XDSStack} from '@xds/core/Layout';
-import type {XDSSearchableItem} from '@xds/core/Typeahead';
+import {Stack} from '@xds/core/Layout';
+import type {SearchableItem} from '@xds/core/Typeahead';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
@@ -22,7 +22,7 @@ const styles = stylex.create({
   },
 });
 
-type CommandItem = XDSSearchableItem<{shortcut?: string}>;
+type CommandItem = SearchableItem<{shortcut?: string}>;
 
 const commands: CommandItem[] = [
   {id: 'save', label: 'Save File', auxiliaryData: {shortcut: 'mod+s'}},
@@ -36,51 +36,50 @@ export default function CommandPaletteItemShowcase() {
   const source = useMemo(() => createStaticSource(commands), []);
 
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Custom renderItem with keyboard shortcuts
-        </XDSText>
-        <XDSCommandPalette
+        </Text>
+        <CommandPalette
           isOpen
           isInline
           onOpenChange={() => {}}
           searchSource={source}
           renderItem={(item: CommandItem) => (
             <>
-              <XDSText type="body" xstyle={styles.itemLabel}>
+              <Text type="body" xstyle={styles.itemLabel}>
                 {item.label}
-              </XDSText>
+              </Text>
               {item.auxiliaryData?.shortcut && (
-                <XDSKbd keys={item.auxiliaryData.shortcut} />
+                <Kbd keys={item.auxiliaryData.shortcut} />
               )}
             </>
           )}
         />
-      </XDSStack>
-
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+      </Stack>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Composed items with icons and states
-        </XDSText>
-        <XDSCommandPaletteList>
-          <XDSCommandPaletteItem value="home" onSelect={() => {}}>
-            <XDSIcon icon="externalLink" size="sm" />
-            <XDSText type="body" xstyle={styles.itemLabel}>Home</XDSText>
-          </XDSCommandPaletteItem>
-          <XDSCommandPaletteItem value="search" isHighlighted onSelect={() => {}}>
-            <XDSIcon icon="search" size="sm" />
-            <XDSText type="body" xstyle={styles.itemLabel}>Search (highlighted)</XDSText>
-          </XDSCommandPaletteItem>
-          <XDSCommandPaletteItem value="selected" isSelected onSelect={() => {}}>
-            <XDSIcon icon="check" size="sm" />
-            <XDSText type="body" xstyle={styles.itemLabel}>Selected item</XDSText>
-          </XDSCommandPaletteItem>
-          <XDSCommandPaletteItem value="disabled" isDisabled>
-            <XDSText type="body" xstyle={styles.itemLabel}>Disabled item</XDSText>
-          </XDSCommandPaletteItem>
-        </XDSCommandPaletteList>
-      </XDSStack>
-    </XDSStack>
+        </Text>
+        <CommandPaletteList>
+          <CommandPaletteItem value="home" onSelect={() => {}}>
+            <Icon icon="externalLink" size="sm" />
+            <Text type="body" xstyle={styles.itemLabel}>Home</Text>
+          </CommandPaletteItem>
+          <CommandPaletteItem value="search" isHighlighted onSelect={() => {}}>
+            <Icon icon="search" size="sm" />
+            <Text type="body" xstyle={styles.itemLabel}>Search (highlighted)</Text>
+          </CommandPaletteItem>
+          <CommandPaletteItem value="selected" isSelected onSelect={() => {}}>
+            <Icon icon="check" size="sm" />
+            <Text type="body" xstyle={styles.itemLabel}>Selected item</Text>
+          </CommandPaletteItem>
+          <CommandPaletteItem value="disabled" isDisabled>
+            <Text type="body" xstyle={styles.itemLabel}>Disabled item</Text>
+          </CommandPaletteItem>
+        </CommandPaletteList>
+      </Stack>
+    </Stack>
   );
 }

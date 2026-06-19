@@ -19,5 +19,5 @@ export type {
   ColumnWidth,
   ProportionalWidth,
   PixelWidth,
-  XDSTableColumn,
+  TableColumn,
 } from './types';

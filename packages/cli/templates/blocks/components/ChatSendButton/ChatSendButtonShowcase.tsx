@@ -2,21 +2,21 @@
 
 'use client';
 
-import {XDSChatSendButton} from '@xds/core/Chat';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSStack} from '@xds/core/Layout';
+import {ChatSendButton} from '@xds/core/Chat';
+import {Icon} from '@xds/core/Icon';
+import {Stack} from '@xds/core/Layout';
 import {SparklesIcon} from '@heroicons/react/24/solid';
 
 export default function ChatSendButtonShowcase() {
   return (
-    <XDSStack direction="horizontal" gap={3} vAlign="center">
-      <XDSChatSendButton isDisabled={false} onSend={() => {}} />
-      <XDSChatSendButton
+    <Stack direction="horizontal" gap={3} vAlign="center">
+      <ChatSendButton isDisabled={false} onSend={() => {}} />
+      <ChatSendButton
         isDisabled={false}
         onSend={() => {}}
-        sendIcon={<XDSIcon icon={SparklesIcon} size="sm" />}
+        sendIcon={<Icon icon={SparklesIcon} size="sm" />}
       />
-      <XDSChatSendButton isStopShown onStop={() => {}} />
-    </XDSStack>
+      <ChatSendButton isStopShown onStop={() => {}} />
+    </Stack>
   );
 }

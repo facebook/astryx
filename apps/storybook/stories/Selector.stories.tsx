@@ -2,12 +2,12 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {XDSSelector, XDSSelectorOption} from '@xds/core/Selector';
+import {Selector, SelectorOption} from '@xds/core/Selector';
 import {UserIcon, CogIcon, BellIcon} from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSSelector> = {
+const meta: Meta<typeof Selector> = {
   title: 'Core/Selector',
-  component: XDSSelector,
+  component: Selector,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
@@ -68,10 +68,10 @@ const meta: Meta<typeof XDSSelector> = {
       control: 'boolean',
       description: 'Whether the field is required',
     },
-    children: {
+    renderOption: {
       description: 'Optional render function for custom option rendering',
       table: {
-        type: {summary: '(item: XDSSelectorOptionData) => ReactNode'},
+        type: {summary: '(option: SelectorOptionData) => ReactNode'},
       },
     },
     'data-testid': {
@@ -82,7 +82,7 @@ const meta: Meta<typeof XDSSelector> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSSelector>;
+type Story = StoryObj<typeof Selector>;
 
 // Basic with strings
 export const Default: Story = {
@@ -96,7 +96,7 @@ export const Default: Story = {
     } = args;
     const [value, setValue] = useState(argsValue ?? undefined);
     return (
-      <XDSSelector
+      <Selector
         {...rest}
         label={args.label ?? 'Fruit'}
         options={
@@ -124,7 +124,7 @@ export const HiddenLabel: Story = {
     } = args;
     const [value, setValue] = useState(argsValue ?? undefined);
     return (
-      <XDSSelector
+      <Selector
         {...rest}
         label="Fruit"
         isLabelHidden
@@ -149,7 +149,7 @@ export const WithDescription: Story = {
     } = args;
     const [value, setValue] = useState(argsValue ?? undefined);
     return (
-      <XDSSelector
+      <Selector
         {...rest}
         label="Fruit"
         description="Choose your favorite fruit from the list"
@@ -174,7 +174,7 @@ export const WithObjects: Story = {
     } = args;
     const [value, setValue] = useState(argsValue ?? undefined);
     return (
-      <XDSSelector
+      <Selector
         {...rest}
         label="Fruit"
         options={[
@@ -205,7 +205,7 @@ export const WithIcons: Story = {
     } = args;
     const [value, setValue] = useState(argsValue ?? undefined);
     return (
-      <XDSSelector
+      <Selector
         {...rest}
         label="Settings"
         options={[
@@ -235,7 +235,7 @@ export const WithSections: Story = {
     } = args;
     const [value, setValue] = useState(argsValue ?? undefined);
     return (
-      <XDSSelector
+      <Selector
         {...rest}
         label="Fruit"
         options={[
@@ -286,21 +286,21 @@ export const CustomRender: Story = {
       {value: 'user3', label: 'Carol White', email: 'carol@example.com'},
     ];
     return (
-      <XDSSelector
+      <Selector
         {...rest}
         label="User"
         options={users}
         value={value}
         onChange={v => setValue(v)}
-        placeholder="Select a user...">
-        {user => (
-          <XDSSelectorOption
+        placeholder="Select a user..."
+        renderOption={user => (
+          <SelectorOption
             icon={UserIcon}
             label={user.label}
             description={(user as (typeof users)[number]).email}
           />
         )}
-      </XDSSelector>
+      />
     );
   },
 };
@@ -314,7 +314,7 @@ export const SizeVariants: Story = {
     return (
       <div
         style={{display: 'flex', flexDirection: 'column', gap: 16, width: 250}}>
-        <XDSSelector
+        <Selector
           label="Small"
           size="sm"
           options={['Apple', 'Banana', 'Orange']}
@@ -322,7 +322,7 @@ export const SizeVariants: Story = {
           onChange={setValue1}
           placeholder="Small size (28px)"
         />
-        <XDSSelector
+        <Selector
           label="Medium"
           size="md"
           options={['Apple', 'Banana', 'Orange']}
@@ -330,7 +330,7 @@ export const SizeVariants: Story = {
           onChange={setValue2}
           placeholder="Medium size (32px)"
         />
-        <XDSSelector
+        <Selector
           label="Large"
           size="lg"
           options={['Apple', 'Banana', 'Orange']}
@@ -353,7 +353,7 @@ export const WithStatus: Story = {
     return (
       <div
         style={{display: 'flex', flexDirection: 'column', gap: 16, width: 250}}>
-        <XDSSelector
+        <Selector
           label="Error status"
           options={[
             {value: 'apple', label: 'Apple'},
@@ -364,7 +364,7 @@ export const WithStatus: Story = {
           placeholder="Select a fruit..."
           status={{type: 'error', message: 'Please select a fruit'}}
         />
-        <XDSSelector
+        <Selector
           label="Warning status"
           options={[
             {value: 'apple', label: 'Apple'},
@@ -374,7 +374,7 @@ export const WithStatus: Story = {
           onChange={setValue2}
           status={{type: 'warning', message: 'Banana is out of season'}}
         />
-        <XDSSelector
+        <Selector
           label="Success status"
           options={[
             {value: 'apple', label: 'Apple'},
@@ -398,7 +398,7 @@ export const OptionalRequired: Story = {
     return (
       <div
         style={{display: 'flex', flexDirection: 'column', gap: 16, width: 250}}>
-        <XDSSelector
+        <Selector
           label="Optional field"
           isOptional
           options={['Apple', 'Banana', 'Orange']}
@@ -406,7 +406,7 @@ export const OptionalRequired: Story = {
           onChange={setValue1}
           placeholder="Select a fruit..."
         />
-        <XDSSelector
+        <Selector
           label="Required field"
           isRequired
           options={['Apple', 'Banana', 'Orange']}
@@ -443,7 +443,7 @@ export const PreSelected: Story = {
     } = args;
     const [value, setValue] = useState('Banana');
     return (
-      <XDSSelector
+      <Selector
         {...rest}
         label="Fruit"
         options={['Apple', 'Banana', 'Orange', 'Mango']}
@@ -469,14 +469,14 @@ export const AllVariations: Story = {
           gap: '16px',
           width: '250px',
         }}>
-        <XDSSelector
+        <Selector
           label="Default"
           options={['Apple', 'Banana', 'Orange']}
           value={value1}
           onChange={setValue1}
           placeholder="Select..."
         />
-        <XDSSelector
+        <Selector
           label="Pre-selected"
           options={[
             {value: 'apple', label: 'Apple'},
@@ -485,7 +485,7 @@ export const AllVariations: Story = {
           value={value2}
           onChange={setValue2}
         />
-        <XDSSelector
+        <Selector
           label="With disabled option"
           options={[
             {value: 'apple', label: 'Apple', disabled: true},
@@ -495,7 +495,7 @@ export const AllVariations: Story = {
           onChange={setValue3}
           placeholder="Select..."
         />
-        <XDSSelector
+        <Selector
           label="Disabled selector"
           options={['Apple', 'Banana']}
           value={value4}
@@ -520,7 +520,7 @@ export const Clearable: Story = {
     } = args;
     const [value, setValue] = useState<string | null>('Banana');
     return (
-      <XDSSelector
+      <Selector
         {...rest}
         options={['Apple', 'Banana', 'Cherry', 'Date']}
         value={value}
@@ -546,7 +546,7 @@ export const ClearableWithStatus: Story = {
     } = args;
     const [value, setValue] = useState<string | null>('Banana');
     return (
-      <XDSSelector
+      <Selector
         {...rest}
         options={['Apple', 'Banana', 'Cherry']}
         value={value}
@@ -572,7 +572,7 @@ export const PlacementAbove: Story = {
     } = args;
     const [value, setValue] = useState(argsValue ?? 'Banana');
     return (
-      <XDSSelector
+      <Selector
         {...rest}
         label="Bottom toolbar selector"
         options={['Apple', 'Banana', 'Cherry', 'Date']}

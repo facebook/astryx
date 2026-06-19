@@ -106,7 +106,7 @@ export type TextWeightOverrides = Partial<
  * //   Airy/editorial:   { base: 16, ratio: 1.25 }
  * ```
  */
-export interface XDSTypeScaleConfig {
+export interface TypeScaleConfig {
   /** Base font size in px. Anchored to h4 and body text. */
   base: number;
   /** Scaling ratio for the geometric progression. */
@@ -287,7 +287,7 @@ function computeLeading(fontSize: number): number {
  * // tokens['--text-body-leading'] === '1.4286'
  * ```
  */
-export function expandTypeScale(config: XDSTypeScaleConfig): TypeScaleTokens {
+export function expandTypeScale(config: TypeScaleConfig): TypeScaleTokens {
   const {base, ratio, weights} = config;
   const tokens: TypeScaleTokens = {};
 
@@ -355,7 +355,7 @@ const TEXT_FONT_FAMILIES: Record<string, string> = {
  * Generate component style overrides for heading and text components.
  */
 export function generateTypeScaleComponents(
-  _config: XDSTypeScaleConfig,
+  _config: TypeScaleConfig,
 ): Record<string, Record<string, Record<string, string>>> {
   const components: Record<string, Record<string, Record<string, string>>> = {};
 

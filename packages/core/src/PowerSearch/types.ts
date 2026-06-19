@@ -11,7 +11,7 @@
  */
 
 import type {ComponentType, ReactNode} from 'react';
-import type {XDSSearchSource, XDSSearchableItem} from '../Typeahead/types';
+import type {SearchSource, SearchableItem} from '../Typeahead/types';
 
 // =============================================================================
 // Operator Value Types — define what kind of editor to show
@@ -24,7 +24,7 @@ export interface EmptyOperatorValue {
 export interface StringOperatorValue {
   readonly type: 'string';
   /** When provided, shows a typeahead instead of a plain text input. */
-  readonly searchSource?: XDSSearchSource;
+  readonly searchSource?: SearchSource;
   /** Allow arbitrary strings not in the search source. @default false */
   readonly isArbitraryStringAllowed?: boolean;
 }
@@ -32,7 +32,7 @@ export interface StringOperatorValue {
 export interface StringListOperatorValue {
   readonly type: 'string_list';
   /** When provided, shows a tokenizer with search. */
-  readonly searchSource?: XDSSearchSource;
+  readonly searchSource?: SearchSource;
   /** Allow arbitrary strings not in the search source. @default false */
   readonly isArbitraryStringAllowed?: boolean;
   /** Tokenization config for paste behavior. */
@@ -76,9 +76,9 @@ export interface DateRelativeOperatorValue {
 export interface DateRangeOperatorValue {
   readonly type: 'date_range';
   /** Preset date ranges (e.g. "Last 7 days"). */
-  readonly intervalDatePresets?: ReadonlyArray<DateRangePreset>;
+  readonly intervalDatePresets?: ReadonlyArray<DateRangeFilterPreset>;
   /** Preset relative dates. */
-  readonly relativeDatePresets?: ReadonlyArray<RelativeDatePreset>;
+  readonly relativeDatePresets?: ReadonlyArray<RelativeDateFilterPreset>;
 }
 
 export interface EnumItem {
@@ -100,13 +100,13 @@ export interface EnumListOperatorValue {
 export interface EntityListOperatorValue {
   readonly type: 'entity_list';
   /** Search source for entities. */
-  readonly searchSource?: XDSSearchSource;
+  readonly searchSource?: SearchSource;
   /** Allow arbitrary strings not in the search source. @default false */
   readonly isArbitraryStringAllowed?: boolean;
   /** Tokenization config for paste behavior. */
   readonly tokenization?: OperatorTokenizationConfig;
   /** Custom renderer for items in the search dropdown. */
-  readonly renderItem?: (item: XDSSearchableItem) => ReactNode;
+  readonly renderItem?: (item: SearchableItem) => ReactNode;
 }
 
 export interface CustomOperatorValue {
@@ -271,12 +271,12 @@ export interface DateTimeRange {
   readonly end: DateTimeRangePart;
 }
 
-export interface DateRangePreset {
+export interface DateRangeFilterPreset {
   readonly label: string;
   readonly value: DateTimeRange;
 }
 
-export interface RelativeDatePreset {
+export interface RelativeDateFilterPreset {
   readonly label: string;
   readonly value: string;
 }
@@ -343,7 +343,7 @@ export interface PartialFilter {
 
 export type PowerSearchChangeType = 'add' | 'edit' | 'remove';
 
-export interface XDSPowerSearchHandle {
+export interface PowerSearchHandle {
   /** Focus the typeahead input. */
   focusTypeahead(): void;
   /** Blur the typeahead input. */
@@ -362,7 +362,7 @@ export interface PowerSearchAuxData {
   readonly filterIndex?: number;
 }
 
-export type PowerSearchItem = XDSSearchableItem<PowerSearchAuxData>;
+export type PowerSearchItem = SearchableItem<PowerSearchAuxData>;
 
 // =============================================================================
 // Components Map — per-type overrides for token and editor rendering
@@ -405,6 +405,6 @@ export interface PowerSearchComponentOverride {
   readonly Editor?: ComponentType<PowerSearchEditorProps>;
 }
 
-export type XDSPowerSearchComponents = Partial<
+export type PowerSearchComponents = Partial<
   Record<OperatorValue['type'], PowerSearchComponentOverride>
 >;

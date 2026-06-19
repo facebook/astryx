@@ -3,12 +3,12 @@
 'use client';
 
 import {
-  XDSTopNav,
-  XDSTopNavHeading,
-  XDSTopNavItem,
-  XDSTopNavMenu,
+  TopNav,
+  TopNavHeading,
+  TopNavItem,
+  TopNavMenu,
 } from '@xds/core/TopNav';
-import {XDSButton} from '@xds/core/Button';
+import {Button} from '@xds/core/Button';
 import {
   ChartBarIcon,
   Cog6ToothIcon,
@@ -18,14 +18,14 @@ import {
 
 export default function TopNavMenuShowcase() {
   return (
-    <XDSTopNav
+    <TopNav
       style={{width: 600}}
       label="Menu demo"
-      heading={<XDSTopNavHeading heading="Platform" />}
+      heading={<TopNavHeading heading="Platform" />}
       startContent={
         <>
-          <XDSTopNavItem label="Home" href="#" isSelected />
-          <XDSTopNavMenu
+          <TopNavItem label="Home" href="#" isSelected />
+          <TopNavMenu
             label="Tools"
             items={[
               {
@@ -51,7 +51,7 @@ export default function TopNavMenuShowcase() {
         </>
       }
       endContent={
-        <XDSButton
+        <Button
           label="Search"
           variant="ghost"
           icon={<MagnifyingGlassIcon />}

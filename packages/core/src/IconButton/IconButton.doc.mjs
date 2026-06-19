@@ -22,7 +22,7 @@ export const docs = {
       type: 'ReactNode',
       description: 'Icon element rendered inside the button.',
       required: true,
-      slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
+      slotElements: [{__element: 'Icon', props: {icon: 'check', size: 'sm'}}],
     },
     {
       name: 'variant',
@@ -91,8 +91,8 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    label: 'accessible label; used as aria-label (not rendered as visible text) **(required)**',
-    icon: 'icon element rendered inside button **(required)**',
+    label: 'accessible label; used as aria-label, not rendered as visible text',
+    icon: 'icon element rendered inside button',
     variant: 'visual style variant',
     size: 'size variant',
     isLoading: 'shows loading spinner + disables interaction',

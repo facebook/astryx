@@ -10,9 +10,9 @@ export const docs = {
   keywords: ["layout","container","content","flex","box","wrapper","scaffold","page","shell"],
   playground: {
     defaults: {
-      header: {__element: 'XDSLayoutHeader', props: {}, children: {__element: 'XDSHeading', props: {level: 3}, children: 'Page Title'}},
-      content: {__element: 'XDSLayoutContent', props: {}, children: {__element: 'XDSText', props: {type: 'body', color: 'secondary'}, children: 'Main content area. This is the scrollable center section of the layout.'}},
-      footer: {__element: 'XDSLayoutFooter', props: {}, children: {__element: 'XDSText', props: {type: 'supporting', color: 'secondary'}, children: 'Footer: status bar or actions'}},
+      header: {__element: 'LayoutHeader', props: {}, children: {__element: 'Heading', props: {level: 3}, children: 'Page Title'}},
+      content: {__element: 'LayoutContent', props: {}, children: {__element: 'Text', props: {type: 'body', color: 'secondary'}, children: 'Main content area. This is the scrollable center section of the layout.'}},
+      footer: {__element: 'LayoutFooter', props: {}, children: {__element: 'Text', props: {type: 'supporting', color: 'secondary'}, children: 'Footer: status bar or actions'}},
     },
   },
   theming: {
@@ -32,7 +32,7 @@ export const docs = {
       description: 'Main content area (center).',
       slotElements: [
         {
-          __element: 'XDSLayoutContent',
+          __element: 'LayoutContent',
           props: {},
           children: 'Content',
         },
@@ -44,7 +44,7 @@ export const docs = {
       description: 'Header slot.',
       slotElements: [
         {
-          __element: 'XDSLayoutHeader',
+          __element: 'LayoutHeader',
           props: {},
           children: 'Header',
         },
@@ -56,7 +56,7 @@ export const docs = {
       description: 'Footer slot.',
       slotElements: [
         {
-          __element: 'XDSLayoutFooter',
+          __element: 'LayoutFooter',
           props: {},
           children: 'Footer',
         },
@@ -68,7 +68,7 @@ export const docs = {
       description: 'Start panel (left in LTR).',
       slotElements: [
         {
-          __element: 'XDSLayoutPanel',
+          __element: 'LayoutPanel',
           props: {},
           children: 'Panel',
         },
@@ -80,7 +80,7 @@ export const docs = {
       description: 'End panel (right in LTR).',
       slotElements: [
         {
-          __element: 'XDSLayoutPanel',
+          __element: 'LayoutPanel',
           props: {},
           children: 'Panel',
         },
@@ -89,26 +89,26 @@ export const docs = {
     {
       name: 'height',
       type: "'fill' | 'auto'",
-      description: 'Height behavior — fill the container or grow with content.',
+      description: 'Height behavior: fill the container or grow with content.',
       default: "'fill'",
     },
   ],
   components: [
-    {name: 'XDSLayoutHeader'},
-    {name: 'XDSLayoutContent'},
-    {name: 'XDSLayoutFooter'},
-    {name: 'XDSLayoutPanel'},
-    {name: 'XDSCard'},
-    {name: 'XDSSection'},
+    {name: 'LayoutHeader'},
+    {name: 'LayoutContent'},
+    {name: 'LayoutFooter'},
+    {name: 'LayoutPanel'},
+    {name: 'Card'},
+    {name: 'Section'},
   ],
   usage: {
     description:
-      'Layout provides composable components for building structured page shells with header, sidebar, content, and footer slots. Use XDSLayout for full app layouts and XDSHStack/XDSVStack for simple directional stacking.',
+      'Layout provides composable components for building structured page shells with header, sidebar, content, and footer slots. Use Layout for full app layouts and HStack/VStack for simple directional stacking.',
     bestPractices: [
-      { guidance: true, description: 'Use XDSLayout for page shells that need distinct zones like header, sidebar(s), content, and footer.' },
-      { guidance: true, description: 'Use XDSHStack and XDSVStack for simple directional stacking within a content area.' },
-      { guidance: false, description: 'Use XDSLayout for simple stacking layouts; use XDSHStack or XDSVStack instead.' },
-      { guidance: false, description: 'Nest multiple XDSLayout components; use one per page shell and compose content within its slots.' },
+      { guidance: true, description: 'Use Layout for page shells that need distinct zones like header, sidebar(s), content, and footer.' },
+      { guidance: true, description: 'Use HStack and VStack for simple directional stacking within a content area.' },
+      { guidance: false, description: 'Use Layout for simple stacking layouts; use HStack or VStack instead.' },
+      { guidance: false, description: 'Nest multiple Layout components; use one per page shell and compose content within its slots.' },
     ],
   },
 };
@@ -117,12 +117,12 @@ export const docs = {
 export const docsZh = {
   usage: {
     description:
-      'Layout provides composable components for building structured page shells with header, sidebar, content, and footer slots. Use XDSLayout for full app layouts and XDSHStack/XDSVStack for simple directional stacking.',
+      'Layout provides composable components for building structured page shells with header, sidebar, content, and footer slots. Use Layout for full app layouts and HStack/VStack for simple directional stacking.',
     bestPractices: [
-      { guidance: true, description: 'Use XDSLayout for page shells that need distinct zones like header, sidebar(s), content, and footer.' },
-      { guidance: true, description: 'Use XDSHStack and XDSVStack for simple directional stacking within a content area.' },
-      { guidance: false, description: 'Use XDSLayout for simple stacking layouts; use XDSHStack or XDSVStack instead.' },
-      { guidance: false, description: 'Nest multiple XDSLayout components; use one per page shell and compose content within its slots.' },
+      { guidance: true, description: 'Use Layout for page shells that need distinct zones like header, sidebar(s), content, and footer.' },
+      { guidance: true, description: 'Use HStack and VStack for simple directional stacking within a content area.' },
+      { guidance: false, description: 'Use Layout for simple stacking layouts; use HStack or VStack instead.' },
+      { guidance: false, description: 'Nest multiple Layout components; use one per page shell and compose content within its slots.' },
     ],
   },
 };
@@ -133,12 +133,12 @@ export const docsDense = {
     'Composable utilities + components for structured layouts w/ container/content separation pattern.',
   usage: {
     description:
-      'Layout provides composable components for building structured page shells with header, sidebar, content, and footer slots. Use XDSLayout for full app layouts and XDSHStack/XDSVStack for simple directional stacking.',
+      'Layout provides composable components for building structured page shells with header, sidebar, content, and footer slots. Use Layout for full app layouts and HStack/VStack for simple directional stacking.',
     bestPractices: [
-      { guidance: true, description: 'Use XDSLayout for page shells that need distinct zones like header, sidebar(s), content, and footer.' },
-      { guidance: true, description: 'Use XDSHStack and XDSVStack for simple directional stacking within a content area.' },
-      { guidance: false, description: 'Use XDSLayout for simple stacking layouts; use XDSHStack or XDSVStack instead.' },
-      { guidance: false, description: 'Nest multiple XDSLayout components; use one per page shell and compose content within its slots.' },
+      { guidance: true, description: 'Use Layout for page shells that need distinct zones like header, sidebar(s), content, and footer.' },
+      { guidance: true, description: 'Use HStack and VStack for simple directional stacking within a content area.' },
+      { guidance: false, description: 'Use Layout for simple stacking layouts; use HStack or VStack instead.' },
+      { guidance: false, description: 'Nest multiple Layout components; use one per page shell and compose content within its slots.' },
     ],
   },
 };

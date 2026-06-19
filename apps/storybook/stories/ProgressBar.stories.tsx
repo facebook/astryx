@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSProgressBar} from '@xds/core/ProgressBar';
+import {ProgressBar} from '@xds/core/ProgressBar';
 
-const meta: Meta<typeof XDSProgressBar> = {
+const meta: Meta<typeof ProgressBar> = {
   title: 'Core/ProgressBar',
-  component: XDSProgressBar,
+  component: ProgressBar,
   tags: ['autodocs'],
   argTypes: {
     value: {
@@ -41,7 +41,7 @@ const meta: Meta<typeof XDSProgressBar> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSProgressBar>;
+type Story = StoryObj<typeof ProgressBar>;
 
 export const Default: Story = {
   args: {
@@ -77,26 +77,26 @@ export const Variants: Story = {
         gap: '16px',
         width: '300px',
       }}>
-      <XDSProgressBar
+      <ProgressBar
         value={60}
         label="Accent"
         variant="accent"
         hasValueLabel
       />
-      <XDSProgressBar
+      <ProgressBar
         value={80}
         label="Success"
         variant="success"
         hasValueLabel
       />
-      <XDSProgressBar
+      <ProgressBar
         value={50}
         label="Warning"
         variant="warning"
         hasValueLabel
       />
-      <XDSProgressBar value={92} label="Error" variant="error" hasValueLabel />
-      <XDSProgressBar
+      <ProgressBar value={92} label="Error" variant="error" hasValueLabel />
+      <ProgressBar
         value={35}
         label="Neutral"
         variant="neutral"
@@ -115,13 +115,13 @@ export const Disabled: Story = {
         gap: '16px',
         width: '300px',
       }}>
-      <XDSProgressBar
+      <ProgressBar
         value={30}
         label="Upload canceled"
         isDisabled
         hasValueLabel
       />
-      <XDSProgressBar isIndeterminate label="Processing disabled" isDisabled />
+      <ProgressBar isIndeterminate label="Processing disabled" isDisabled />
     </div>
   ),
 };
@@ -130,7 +130,7 @@ export const ComposedWithDescription: Story = {
   name: 'Composed: with description',
   render: () => (
     <div style={{width: '300px'}}>
-      <XDSProgressBar
+      <ProgressBar
         value={40}
         max={100}
         label="Download progress"
@@ -206,11 +206,11 @@ export const IndeterminateVariants: Story = {
         gap: '16px',
         width: '300px',
       }}>
-      <XDSProgressBar isIndeterminate label="Accent" variant="accent" />
-      <XDSProgressBar isIndeterminate label="Success" variant="success" />
-      <XDSProgressBar isIndeterminate label="Warning" variant="warning" />
-      <XDSProgressBar isIndeterminate label="Error" variant="error" />
-      <XDSProgressBar isIndeterminate label="Neutral" variant="neutral" />
+      <ProgressBar isIndeterminate label="Accent" variant="accent" />
+      <ProgressBar isIndeterminate label="Success" variant="success" />
+      <ProgressBar isIndeterminate label="Warning" variant="warning" />
+      <ProgressBar isIndeterminate label="Error" variant="error" />
+      <ProgressBar isIndeterminate label="Neutral" variant="neutral" />
     </div>
   ),
 };

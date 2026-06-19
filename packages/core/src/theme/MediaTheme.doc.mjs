@@ -23,7 +23,7 @@ export const docs = {
     defaults: {
       mode: 'dark',
       children: {
-        __element: 'XDSSection',
+        __element: 'Section',
         props: {
           variant: 'transparent',
           padding: 4,
@@ -34,21 +34,21 @@ export const docs = {
           },
         },
         children: {
-          __element: 'XDSVStack',
+          __element: 'VStack',
           props: {gap: 2},
           children: [
             {
-              __element: 'XDSText',
+              __element: 'Text',
               props: {type: 'body', weight: 'bold'},
               children: 'Media overlay',
             },
             {
-              __element: 'XDSText',
+              __element: 'Text',
               props: {type: 'supporting', color: 'secondary'},
               children: 'Text and actions adapt to the dark media surface.',
             },
             {
-              __element: 'XDSButton',
+              __element: 'Button',
               props: {label: 'Watch now', variant: 'secondary', size: 'sm'},
             },
           ],
@@ -68,7 +68,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Pair with a background color — MediaTheme flips the token context but does not add a background. Set backgroundColor on the parent element.',
+          'Pair with a background color: MediaTheme flips the token context but does not add a background. Set backgroundColor on the parent element.',
       },
       {
         guidance: true,
@@ -78,7 +78,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Use MediaTheme for app-level dark mode — use XDSTheme with mode="dark" or mode="system" instead. MediaTheme is for local surface inversions, not page-wide color scheme.',
+          'Use MediaTheme for app-level dark mode: use Theme with mode="dark" or mode="system" instead. MediaTheme is for local surface inversions, not page-wide color scheme.',
       },
     ],
   },
@@ -88,7 +88,7 @@ export const docs = {
       type: "'dark' | 'light'",
       required: true,
       description:
-        'Surface luminance context — dark for content over dark backgrounds (light text, white-tinted interactions), light for content over light backgrounds (dark text, black-tinted interactions).',
+        'Surface luminance context: dark for content over dark backgrounds (light text, white-tinted interactions), light for content over light backgrounds (dark text, black-tinted interactions).',
     },
     {
       name: 'children',
@@ -114,7 +114,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Pair w/ background color — MediaTheme flips token context but does NOT add background. Set backgroundColor on parent element.',
+          'Pair w/ background color: MediaTheme flips token context but does NOT add background. Set backgroundColor on parent element.',
       },
       {
         guidance: true,
@@ -124,11 +124,11 @@ export const docsDense = {
       {
         guidance: false,
         description:
-          'Use MediaTheme for app-level dark mode — use XDSTheme w/ mode="dark"/mode="system" instead. MediaTheme is for local surface inversions, not page-wide color scheme.',
+          'Use MediaTheme for app-level dark mode: use Theme w/ mode="dark"/mode="system" instead. MediaTheme is for local surface inversions, not page-wide color scheme.',
       },
     ],
   },
   propDescriptions: {
-    mode: 'surface luminance context: dark for content over dark backgrounds (light text, white-tinted interactions), light for content over light backgrounds (dark text, black-tinted interactions). **(required)**',
+    mode: 'surface luminance context: dark for content over dark backgrounds (light text, white-tinted interactions), light for content over light backgrounds (dark text, black-tinted interactions)',
   },
 };

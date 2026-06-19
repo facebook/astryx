@@ -93,7 +93,7 @@ export const docs = {
     },
     {
       name: 'labelIcon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: 'Icon to display before the label text. See `npx xds docs icons` for valid semantic names.',
     },
     {
@@ -161,7 +161,7 @@ export const docsZh = {
     {name: 'size', type: "'sm' | 'md'", description: '复选框尺寸。sm 用于紧凑布局，md 为默认。', default: "'md'"},
     {name: 'onFocus', type: '(e: FocusEvent<HTMLInputElement>) => void', description: '复选框获得焦点时触发的回调。'},
     {name: 'onBlur', type: '(e: FocusEvent<HTMLInputElement>) => void', description: '复选框失去焦点时触发的回调。'},
-    {name: 'labelIcon', type: 'XDSIconType', description: '标签文本前显示的图标。'},
+    {name: 'labelIcon', type: 'IconType', description: '标签文本前显示的图标。'},
     {
       name: 'status',
       type: "{ type: 'error' | 'warning' | 'success', message: string }",

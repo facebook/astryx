@@ -8,7 +8,7 @@ export const docs = {
   group: 'Typeahead',
   category: 'Data Input',
   keywords: ["typeahead","autocomplete","combobox","searchbox","autosuggest","select","dropdown","lookup","searchable","suggestion","picker"],
-  description: 'Styled typeahead with label, description, validation, and all field features. Wraps XDSBaseTypeahead with XDSField for the primary use case.',
+  description: 'Styled typeahead with label, description, validation, and all field features. Wraps BaseTypeahead with Field for the primary use case.',
   props: [
     {
       name: 'label',
@@ -18,7 +18,7 @@ export const docs = {
     },
     {
       name: 'searchSource',
-      type: 'XDSSearchSource<T>',
+      type: 'SearchSource<T>',
       description: 'Data source providing search and bootstrap methods for populating the dropdown.',
       required: true,
     },
@@ -65,13 +65,13 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'XDSInputStatus',
+      type: 'InputStatus',
       description: 'Validation status object with type and message for error/warning/success states.',
     },
     {
       name: 'renderItem',
       type: '(item: T) => ReactNode',
-      description: 'Custom render function for dropdown items. Default renders XDSTypeaheadItem.',
+      description: 'Custom render function for dropdown items. Default renders TypeaheadItem.',
     },
     {
       name: 'isLabelHidden',
@@ -138,12 +138,12 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
   components: [
-    {name: 'XDSBaseTypeahead'},
-    {name: 'XDSTypeaheadItem'},
+    {name: 'BaseTypeahead'},
+    {name: 'TypeaheadItem'},
   ],
   theming: {
     targets: [

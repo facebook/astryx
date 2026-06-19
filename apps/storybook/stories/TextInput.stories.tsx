@@ -2,16 +2,16 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSTextInput} from '@xds/core/TextInput';
+import {TextInput} from '@xds/core/TextInput';
 import {
   MagnifyingGlassIcon,
   EnvelopeIcon,
   UserIcon,
 } from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSTextInput> = {
+const meta: Meta<typeof TextInput> = {
   title: 'Core/TextInput',
-  component: XDSTextInput,
+  component: TextInput,
   tags: ['autodocs'],
   argTypes: {
     label: {
@@ -68,12 +68,12 @@ const meta: Meta<typeof XDSTextInput> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSTextInput>;
+type Story = StoryObj<typeof TextInput>;
 
 export const Default: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+    return <TextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Name',
@@ -84,7 +84,7 @@ export const Default: Story = {
 export const WithDescription: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+    return <TextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Email',
@@ -96,7 +96,7 @@ export const WithDescription: Story = {
 export const WithHiddenLabel: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+    return <TextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Search',
@@ -108,7 +108,7 @@ export const WithHiddenLabel: Story = {
 export const WithValue: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? 'Hello, world!');
-    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+    return <TextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Greeting',
@@ -134,42 +134,42 @@ export const AllVariations: Story = {
           gap: '16px',
           maxWidth: '300px',
         }}>
-        <XDSTextInput
+        <TextInput
           label="Visible label"
           value={value1}
           onChange={setValue1}
           placeholder="Enter text..."
         />
-        <XDSTextInput
+        <TextInput
           label="With description"
           description="Helpful description text"
           value={value4}
           onChange={setValue4}
           placeholder="Enter text..."
         />
-        <XDSTextInput
+        <TextInput
           label="Hidden label"
           isLabelHidden
           value={value2}
           onChange={setValue2}
           placeholder="Hidden label input"
         />
-        <XDSTextInput label="With value" value={value3} onChange={setValue3} />
-        <XDSTextInput
+        <TextInput label="With value" value={value3} onChange={setValue3} />
+        <TextInput
           label="Optional field"
           isOptional
           value={value5}
           onChange={setValue5}
           placeholder="Optional..."
         />
-        <XDSTextInput
+        <TextInput
           label="Required field"
           isRequired
           value={value6}
           onChange={setValue6}
           placeholder="Required..."
         />
-        <XDSTextInput
+        <TextInput
           label="Description with optional"
           description="Enter your nickname"
           isOptional
@@ -177,7 +177,7 @@ export const AllVariations: Story = {
           onChange={setValue7}
           placeholder="Nickname..."
         />
-        <XDSTextInput
+        <TextInput
           label="Disabled field"
           isDisabled
           value={value8}
@@ -191,7 +191,7 @@ export const AllVariations: Story = {
 export const OptionalField: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+    return <TextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Nickname',
@@ -203,7 +203,7 @@ export const OptionalField: Story = {
 export const RequiredField: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+    return <TextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Username',
@@ -215,7 +215,7 @@ export const RequiredField: Story = {
 export const DescriptionWithOptional: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+    return <TextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Bio',
@@ -228,7 +228,7 @@ export const DescriptionWithOptional: Story = {
 export const Disabled: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? 'Cannot edit this');
-    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+    return <TextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Locked Field',
@@ -240,7 +240,7 @@ export const Disabled: Story = {
 export const WithStartIcon: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+    return <TextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Search',
@@ -252,7 +252,7 @@ export const WithStartIcon: Story = {
 export const WithStartIconAndSmallSize: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+    return <TextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Search',
@@ -275,21 +275,21 @@ export const SizeVariants: Story = {
           gap: '16px',
           maxWidth: '300px',
         }}>
-        <XDSTextInput
+        <TextInput
           label="Small (28px)"
           value={sm}
           onChange={setSm}
           placeholder="Small size"
           size="sm"
         />
-        <XDSTextInput
+        <TextInput
           label="Medium (32px)"
           value={md}
           onChange={setMd}
           placeholder="Medium size (default)"
           size="md"
         />
-        <XDSTextInput
+        <TextInput
           label="Large (36px)"
           value={lg}
           onChange={setLg}
@@ -314,21 +314,21 @@ export const StartIconVariations: Story = {
           gap: '16px',
           maxWidth: '300px',
         }}>
-        <XDSTextInput
+        <TextInput
           label="Search"
           value={search}
           onChange={setSearch}
           placeholder="Search..."
           startIcon={MagnifyingGlassIcon}
         />
-        <XDSTextInput
+        <TextInput
           label="Email"
           value={email}
           onChange={setEmail}
           placeholder="Enter your email"
           startIcon={EnvelopeIcon}
         />
-        <XDSTextInput
+        <TextInput
           label="Username"
           value={username}
           onChange={setUsername}
@@ -343,7 +343,7 @@ export const StartIconVariations: Story = {
 export const ErrorStatus: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? 'invalid@');
-    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+    return <TextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Email',
@@ -355,7 +355,7 @@ export const ErrorStatus: Story = {
 export const WarningStatus: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? 'user123');
-    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+    return <TextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Username',
@@ -367,7 +367,7 @@ export const WarningStatus: Story = {
 export const SuccessStatus: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? 'validuser');
-    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+    return <TextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Username',
@@ -379,7 +379,7 @@ export const SuccessStatus: Story = {
 export const StatusWithoutMessage: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? 'test');
-    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+    return <TextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Field',
@@ -402,25 +402,25 @@ export const StatusVariations: Story = {
           gap: '16px',
           maxWidth: '300px',
         }}>
-        <XDSTextInput
+        <TextInput
           label="Error with message"
           value={error}
           onChange={setError}
           status={{type: 'error', message: 'Please enter a valid email'}}
         />
-        <XDSTextInput
+        <TextInput
           label="Warning with message"
           value={warning}
           onChange={setWarning}
           status={{type: 'warning', message: 'This username may be taken'}}
         />
-        <XDSTextInput
+        <TextInput
           label="Success with message"
           value={success}
           onChange={setSuccess}
           status={{type: 'success', message: 'Username is available'}}
         />
-        <XDSTextInput
+        <TextInput
           label="Error without message"
           value={errorNoMsg}
           onChange={setErrorNoMsg}
@@ -434,7 +434,7 @@ export const StatusVariations: Story = {
 export const WithTooltip: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+    return <TextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'API Key',
@@ -446,7 +446,7 @@ export const WithTooltip: Story = {
 export const Password: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+    return <TextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     type: 'password',
@@ -458,7 +458,7 @@ export const Password: Story = {
 export const TooltipWithOptional: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? '');
-    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+    return <TextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Webhook URL',
@@ -471,7 +471,7 @@ export const TooltipWithOptional: Story = {
 export const Clearable: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? 'Hello world');
-    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+    return <TextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Search',
@@ -483,7 +483,7 @@ export const Clearable: Story = {
 export const ClearableWithStatus: Story = {
   render: args => {
     const [value, setValue] = useState(args.value ?? 'invalid-email');
-    return <XDSTextInput {...args} value={value} onChange={setValue} />;
+    return <TextInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Email',

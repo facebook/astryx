@@ -4,22 +4,22 @@
 
 import {useMemo} from 'react';
 import {
-  XDSVStack,
-  XDSHStack,
-  XDSStackItem,
-  XDSLayout,
-  XDSLayoutContent,
-  XDSLayoutHeader,
+  VStack,
+  HStack,
+  StackItem,
+  Layout,
+  LayoutContent,
+  LayoutHeader,
 } from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIconButton} from '@xds/core/IconButton';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSLink} from '@xds/core/Link';
-import {XDSTable, proportional, pixel} from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
+import {Text, Heading} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {IconButton} from '@xds/core/IconButton';
+import {Icon} from '@xds/core/Icon';
+import {Avatar} from '@xds/core/Avatar';
+import {Badge} from '@xds/core/Badge';
+import {Link} from '@xds/core/Link';
+import {Table, proportional, pixel} from '@xds/core/Table';
+import type {TableColumn} from '@xds/core/Table';
 import {XDSChart, XDSChartAxis, XDSChartHeatmapGL} from '@xds/lab';
 import {
   FunnelIcon,
@@ -323,15 +323,15 @@ const statusVariant: Record<string, 'error' | 'warning' | 'info' | 'success'> =
     resolved: 'success',
   };
 
-const columns: XDSTableColumn<IncidentRow>[] = [
+const columns: TableColumn<IncidentRow>[] = [
   {
     key: 'id',
     header: 'Incident',
     width: pixel(110),
     renderCell: (item: IncidentRow) => (
-      <XDSLink href="#" isStandalone>
+      <Link href="#" isStandalone>
         {item.id}
-      </XDSLink>
+      </Link>
     ),
   },
   {
@@ -339,7 +339,7 @@ const columns: XDSTableColumn<IncidentRow>[] = [
     header: 'Product',
     width: proportional(2),
     renderCell: (item: IncidentRow) => (
-      <XDSText type="body">{item.product}</XDSText>
+      <Text type="body">{item.product}</Text>
     ),
   },
   {
@@ -347,7 +347,7 @@ const columns: XDSTableColumn<IncidentRow>[] = [
     header: 'Description',
     width: proportional(5),
     renderCell: (item: IncidentRow) => (
-      <XDSText type="body">{item.title}</XDSText>
+      <Text type="body">{item.title}</Text>
     ),
   },
   {
@@ -355,7 +355,7 @@ const columns: XDSTableColumn<IncidentRow>[] = [
     header: 'Started',
     width: pixel(80),
     renderCell: (item: IncidentRow) => (
-      <XDSText type="body">{item.startTime}</XDSText>
+      <Text type="body">{item.startTime}</Text>
     ),
   },
   {
@@ -363,7 +363,7 @@ const columns: XDSTableColumn<IncidentRow>[] = [
     header: 'Duration',
     width: pixel(100),
     renderCell: (item: IncidentRow) => (
-      <XDSText type="body">{item.duration}</XDSText>
+      <Text type="body">{item.duration}</Text>
     ),
   },
   {
@@ -371,14 +371,14 @@ const columns: XDSTableColumn<IncidentRow>[] = [
     header: 'On-call',
     width: proportional(2),
     renderCell: (item: IncidentRow) => (
-      <XDSHStack gap={2} vAlign="center">
-        <XDSAvatar
+      <HStack gap={2} vAlign="center">
+        <Avatar
           name={item.oncall}
           src={ONCALL_AVATARS[item.oncall]}
           size="xsmall"
         />
-        <XDSText type="body">{item.oncall}</XDSText>
-      </XDSHStack>
+        <Text type="body">{item.oncall}</Text>
+      </HStack>
     ),
   },
   {
@@ -386,7 +386,7 @@ const columns: XDSTableColumn<IncidentRow>[] = [
     header: 'Status',
     width: pixel(120),
     renderCell: (item: IncidentRow) => (
-      <XDSBadge
+      <Badge
         label={item.status.charAt(0).toUpperCase() + item.status.slice(1)}
         variant={statusVariant[item.status]}
       />
@@ -397,7 +397,7 @@ const columns: XDSTableColumn<IncidentRow>[] = [
     header: 'Date',
     width: pixel(110),
     renderCell: (item: IncidentRow) => (
-      <XDSText type="body">{item.date}</XDSText>
+      <Text type="body">{item.date}</Text>
     ),
   },
 ];
@@ -429,37 +429,37 @@ function OutageHeatmap() {
 
 export default function TablePageHeatmapStatusTemplate() {
   return (
-    <XDSLayout
+    <Layout
       height="auto"
       header={
-        <XDSLayoutHeader hasDivider>
-          <XDSHStack gap={2} vAlign="center">
-            <XDSStackItem size="fill">
-              <XDSHeading level={1}>Status</XDSHeading>
-            </XDSStackItem>
-            <XDSIconButton
+        <LayoutHeader hasDivider>
+          <HStack gap={2} vAlign="center">
+            <StackItem size="fill">
+              <Heading level={1}>Status</Heading>
+            </StackItem>
+            <IconButton
               label="Filter"
-              icon={<XDSIcon icon={FunnelIcon} size="sm" />}
+              icon={<Icon icon={FunnelIcon} size="sm" />}
               variant="ghost"
             />
-            <XDSIconButton
+            <IconButton
               label="Export"
-              icon={<XDSIcon icon={ArrowDownTrayIcon} size="sm" />}
+              icon={<Icon icon={ArrowDownTrayIcon} size="sm" />}
               variant="ghost"
             />
-            <XDSButton
+            <Button
               label="Refresh"
-              icon={<XDSIcon icon={ArrowPathIcon} size="sm" />}
+              icon={<Icon icon={ArrowPathIcon} size="sm" />}
             />
-          </XDSHStack>
-        </XDSLayoutHeader>
+          </HStack>
+        </LayoutHeader>
       }
       content={
-        <XDSLayoutContent padding={3}>
-          <XDSVStack gap={4}>
+        <LayoutContent padding={3}>
+          <VStack gap={4}>
             <OutageHeatmap />
 
-            <XDSTable<IncidentRow>
+            <Table<IncidentRow>
               data={incidents}
               columns={columns}
               idKey="id"
@@ -467,8 +467,8 @@ export default function TablePageHeatmapStatusTemplate() {
               dividers="rows"
               hasHover
             />
-          </XDSVStack>
-        </XDSLayoutContent>
+          </VStack>
+        </LayoutContent>
       }
     />
   );
