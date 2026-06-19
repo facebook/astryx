@@ -91,8 +91,8 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    label: 'accessible label; used as aria-label (not rendered as visible text) **(required)**',
-    icon: 'icon element rendered inside button **(required)**',
+    label: 'accessible label; used as aria-label, not rendered as visible text',
+    icon: 'icon element rendered inside button',
     variant: 'visual style variant',
     size: 'size variant',
     isLoading: 'shows loading spinner + disables interaction',

@@ -25,6 +25,6 @@ export const docsDense = {
     description: 'Wraps app to replace default <a> tag w/ framework-specific link component (e.g. Next.js Link) for client-side routing across all XDS components.',
   },
   propDescriptions: {
-    component: 'link component for all link elements in subtree (e.g. Next.js Link) **(required)**',
+    component: 'link component for all link elements in subtree (e.g. Next.js Link)',
   },
 };
