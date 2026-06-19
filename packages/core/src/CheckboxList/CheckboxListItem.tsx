@@ -72,7 +72,7 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
    * checkbox and blocks interaction on this item only.
    *
    * In collection mode, this is also driven automatically: when the parent
-   * `XDSCheckboxList` has a `changeAction`, the toggled item shows its
+   * `CheckboxList` has a `changeAction`, the toggled item shows its
    * spinner while that promise is pending.
    * @default false
    */

@@ -503,7 +503,7 @@ describe('TextInput', () => {
   describe('width prop (#2755)', () => {
     it('sizes the outer field, not just the input wrapper', () => {
       render(
-        <XDSTextInput label="Name" value="" onChange={() => {}} width="100%" />,
+        <TextInput label="Name" value="" onChange={() => {}} width="100%" />,
       );
       const input = screen.getByRole('textbox');
       const inputWrapper = input.parentElement!;
@@ -517,7 +517,7 @@ describe('TextInput', () => {
     });
 
     it('does not set width when the prop is omitted', () => {
-      render(<XDSTextInput label="Name" value="" onChange={() => {}} />);
+      render(<TextInput label="Name" value="" onChange={() => {}} />);
       const fieldRoot = screen
         .getByRole('textbox')
         .closest('.xds-field') as HTMLElement;

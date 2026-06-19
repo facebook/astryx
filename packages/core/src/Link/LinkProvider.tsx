@@ -56,4 +56,4 @@ export function LinkProvider({component, children}: LinkProviderProps) {
   return <LinkContext value={value}>{children}</LinkContext>;
 }
 
-XDSLinkProvider.displayName = 'XDSLinkProvider';
+LinkProvider.displayName = 'LinkProvider';

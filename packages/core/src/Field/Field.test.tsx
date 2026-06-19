@@ -269,13 +269,13 @@ describe('Field', () => {
   describe('width prop', () => {
     it('applies a string width to the outer field root', () => {
       render(
-        <XDSField
+        <Field
           label="Name"
           inputID="name-input"
           width="100%"
           data-testid="field">
           <input id="name-input" data-testid="control" />
-        </XDSField>,
+        </Field>,
       );
       const field = screen.getByTestId('field');
       // StyleX compiles the dynamic width to an inline CSS custom property.
@@ -285,13 +285,13 @@ describe('Field', () => {
 
     it('applies a numeric width (treated as pixels)', () => {
       render(
-        <XDSField
+        <Field
           label="Name"
           inputID="name-input"
           width={240}
           data-testid="field">
           <input id="name-input" />
-        </XDSField>,
+        </Field>,
       );
       const field = screen.getByTestId('field');
       expect(field.getAttribute('style')).toContain('240');
@@ -299,13 +299,13 @@ describe('Field', () => {
 
     it('does not size the inner control element', () => {
       render(
-        <XDSField
+        <Field
           label="Name"
           inputID="name-input"
           width="100%"
           data-testid="field">
           <input id="name-input" data-testid="control" />
-        </XDSField>,
+        </Field>,
       );
       const control = screen.getByTestId('control');
       // The width var lives on the field root, not the control itself.
@@ -314,9 +314,9 @@ describe('Field', () => {
 
     it('omits width styling when the prop is not provided', () => {
       render(
-        <XDSField label="Name" inputID="name-input" data-testid="field">
+        <Field label="Name" inputID="name-input" data-testid="field">
           <input id="name-input" />
-        </XDSField>,
+        </Field>,
       );
       const field = screen.getByTestId('field');
       expect(field.className).not.toContain('dynamicStyles.width');
