@@ -16,8 +16,8 @@
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
-    "@stylexjs/babel-plugin": "^0.18.3",
-    "@stylexjs/postcss-plugin": "^0.18.3",
+    "@stylexjs/babel-plugin": "^0.19.0",
+    "@stylexjs/postcss-plugin": "^0.19.0",
     "@babel/preset-react": "^7.29.7",
     "@babel/preset-typescript": "^7.29.7",
     "@types/react": "^19.2.17",

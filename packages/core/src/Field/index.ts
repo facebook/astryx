@@ -19,12 +19,12 @@ export type {
 } from './XDSField';
 export {XDSFieldLabel} from './XDSFieldLabel';
 export type {XDSFieldLabelProps} from './XDSFieldLabel';
-export {XDSFieldStatus} from './XDSFieldStatus';
+export {XDSFieldStatus} from '../FieldStatus';
 export type {
   XDSFieldStatusProps,
   XDSFieldStatusVariant,
   XDSFieldStatusVariantMap,
-} from './XDSFieldStatus';
+} from '../FieldStatus';
 
 // Shared input types
 export type {XDSInputStatus, XDSInputStatusType, XDSInputSize} from './types';

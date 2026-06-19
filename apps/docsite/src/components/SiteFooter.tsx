@@ -17,6 +17,10 @@ const styles = stylex.create({
 
 const links = [
   {
+    label: 'Blog',
+    href: '/blog',
+  },
+  {
     label: 'Terms of use',
     href: 'https://opensource.fb.com/legal/terms',
   },
@@ -37,7 +41,7 @@ export function SiteFooter() {
     <footer {...stylex.props(styles.footer)}>
       <XDSHStack gap={3} wrap="wrap" justify="center" align="center">
         <XDSText type="supporting" color="primary">
-          Copyright © {year} Meta Platforms Inc.
+          Copyright ©{year} Meta Platforms, Inc.
         </XDSText>
         {links.map(link => (
           <Fragment key={link.href}>

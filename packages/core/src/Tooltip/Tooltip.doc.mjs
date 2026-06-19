@@ -38,13 +38,13 @@ export const docs = {
         },
         {
           name: 'placement',
-          type: 'LayerPlacement',
+          type: "'above' | 'below' | 'start' | 'end'",
           description: 'Position relative to the anchor element.',
           default: "'above'",
         },
         {
           name: 'alignment',
-          type: 'LayerAlignment',
+          type: "'start' | 'center' | 'end'",
           description: 'Alignment along the placement axis.',
           default: "'center'",
         },
@@ -137,13 +137,13 @@ export const docsZh = {
         },
         {
           name: 'placement',
-          type: 'LayerPlacement',
+          type: "'above' | 'below' | 'start' | 'end'",
           description: '相对于锚点元素的位置。',
           default: "'above'",
         },
         {
           name: 'alignment',
-          type: 'LayerAlignment',
+          type: "'start' | 'center' | 'end'",
           description: '沿放置轴的对齐方式。',
           default: "'center'",
         },

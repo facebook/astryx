@@ -9,7 +9,8 @@
  * @position Theme hook; used by data viz, canvas, and non-CSS consumers
  *
  * Provides synchronous access to theme token values resolved for the
- * current color mode — no DOM reads, no double render.
+ * current color mode — no DOM reads, no double render. Token resolution
+ * is shared with the server-safe helpers in ./tokens.ts.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/theme/index.ts
@@ -17,8 +18,8 @@
 
 import {createContext, use, useMemo} from 'react';
 import type {ThemeMode} from './types';
-import type {XDSDefinedTheme, XDSTokenValue} from './defineTheme';
-import {xdsTokenDefaults} from './defineTheme';
+import type {XDSDefinedTheme} from './defineTheme';
+import {resolveXDSThemeTokens} from './tokens';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 
 // =============================================================================
@@ -83,65 +84,6 @@ export interface UseXDSThemeReturn {
 }
 
 // =============================================================================
-// Helpers
-// =============================================================================
-
-/**
- * Resolve a single token value for a given mode.
- * - [light, dark] tuple → picks the correct side
- * - string → if it's a light-dark() CSS function, parse and pick; otherwise pass through
- */
-function resolveValue(value: XDSTokenValue, mode: 'light' | 'dark'): string {
-  if (Array.isArray(value)) {
-    return mode === 'dark' ? value[1] : value[0];
-  }
-  // For string values, try to parse light-dark(a, b) from defaults
-  const match = value.match(/^light-dark\(([^,]+),([^)]+)\)$/);
-  if (match) {
-    return mode === 'dark' ? match[2].trim() : match[1].trim();
-  }
-  return value;
-}
-
-/**
- * Build the full resolved token map for a theme + mode.
- */
-function buildResolvedTokens(
-  theme: XDSDefinedTheme,
-  mode: 'light' | 'dark',
-): Record<string, string> {
-  const resolved = buildDefaultTokens(mode);
-
-  // Layer theme overrides on top
-  // Prefer __inputTokens (preserves tuples) over .tokens (already resolved to light-dark() strings)
-  if (theme.__inputTokens) {
-    for (const [key, value] of Object.entries(theme.__inputTokens)) {
-      if (value !== undefined) {
-        resolved[key] = resolveValue(value, mode);
-      }
-    }
-  } else {
-    // Fallback: parse light-dark() strings from .tokens
-    for (const [key, value] of Object.entries(theme.tokens)) {
-      resolved[key] = resolveValue(value, mode);
-    }
-  }
-
-  return resolved;
-}
-
-/**
- * Build the resolved token map from defaults only (no theme provider).
- */
-function buildDefaultTokens(mode: 'light' | 'dark'): Record<string, string> {
-  const resolved: Record<string, string> = {};
-  for (const [key, value] of Object.entries(xdsTokenDefaults)) {
-    resolved[key] = resolveValue(value, mode);
-  }
-  return resolved;
-}
-
-// =============================================================================
 // Hook
 // =============================================================================
 
@@ -153,7 +95,8 @@ function buildDefaultTokens(mode: 'light' | 'dark'): Record<string, string> {
  * (e.g. Vega, D3, Chart.js) that need concrete values rather than
  * CSS custom property references.
  *
- * Must be called inside an <XDSTheme> provider.
+ * When called outside an <XDSTheme> provider, returns the default theme
+ * tokens resolved against the current system color mode.
  *
  * @example
  * ```
@@ -182,10 +125,7 @@ export function useXDSTheme(): UseXDSThemeReturn {
 
   // Build the full resolved map, memoized on theme + effective mode
   const tokens = useMemo(
-    () =>
-      theme
-        ? buildResolvedTokens(theme, effectiveMode)
-        : buildDefaultTokens(effectiveMode),
+    () => resolveXDSThemeTokens(theme, {mode: effectiveMode}),
     [theme, effectiveMode],
   );
 

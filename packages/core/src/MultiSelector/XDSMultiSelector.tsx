@@ -64,9 +64,11 @@ import {
   getSelectableOptions,
 } from '../Selector/utils';
 import {useMultiCombobox} from './hooks';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // Sentinel value for the select-all item in keyboard navigation
 const SELECT_ALL_VALUE = '__xds_select_all__';
@@ -440,6 +442,12 @@ export interface XDSMultiSelectorProps<
   status?: XDSMultiSelectorStatus;
 
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
@@ -498,9 +506,9 @@ export interface XDSMultiSelectorProps<
 
   /**
    * Custom render function for options.
-   * Only called for selectable options (not dividers/sections).
+   * Only called for selectable options (not dividers/sections or the select-all row).
    */
-  children?: (option: XDSMultiSelectorOptionData) => ReactNode;
+  renderOption?: (option: XDSMultiSelectorOptionData) => ReactNode;
 
   /**
    * Whether the dropdown starts open on mount.
@@ -554,9 +562,10 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
   searchPlaceholder = 'Search...',
   triggerDisplay = 'count',
   maxBadges = 3,
-  children,
+  renderOption,
   isDefaultOpen = false,
   'data-testid': testId,
+  width,
   xstyle,
   className,
   style,
@@ -968,8 +977,8 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
               size={size === 'lg' ? 'md' : size}
             />
           </div>
-          {children && !isSelectAll ? (
-            children(item)
+          {renderOption && !isSelectAll ? (
+            renderOption(item)
           ) : (
             <span
               {...stylex.props(
@@ -983,7 +992,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
       );
     },
     [
-      children,
+      renderOption,
       highlightedIndex,
       optimisticValue,
       allEnabledSelected,
@@ -1106,7 +1115,8 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
             }
           : undefined
       }
-      labelTooltip={labelTooltip}>
+      labelTooltip={labelTooltip}
+      width={width}>
       <div
         ref={el => {
           popover.triggerRef(el);
@@ -1114,7 +1124,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
         onClick={onTriggerClick}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('multi-selector', {size, status: status?.type ?? null}),
+          xdsThemeProps('multi-selector', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             styles.triggerContainer,

@@ -16,8 +16,8 @@
 import type {ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export interface XDSGridSpanProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
@@ -34,28 +34,6 @@ export interface XDSGridSpanProps extends XDSBaseProps<HTMLDivElement> {
    * Sets `grid-row: span N`.
    */
   rows?: number;
-
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
 
   /**
    * Content to render inside the grid span.
@@ -111,7 +89,7 @@ export function XDSGridSpan({
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('grid-span'),
+        xdsThemeProps('grid-span'),
         stylex.props(baseStyles.span, xstyle),
         className,
         {...style, ...inlineStyle},

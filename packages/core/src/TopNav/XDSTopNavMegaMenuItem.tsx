@@ -30,9 +30,10 @@ import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Styles
@@ -220,7 +221,7 @@ export function XDSTopNavMegaMenuItem({
         onClick={handleDrawerClick}
         {...elementProps}
         {...mergeProps(
-          xdsClassName('top-nav-mega-menu-item', {mode: 'drawer'}),
+          xdsThemeProps('top-nav-mega-menu-item', {mode: 'drawer'}),
           stylex.props(navItemStyles.item, styles.drawerItem),
         )}>
         {icon && <div {...stylex.props(styles.drawerItemIcon)}>{icon}</div>}
@@ -247,7 +248,7 @@ export function XDSTopNavMegaMenuItem({
       onClick={onClick}
       tabIndex={tabIndex}
       {...mergeProps(
-        xdsClassName('top-nav-mega-menu-item'),
+        xdsThemeProps('top-nav-mega-menu-item'),
         stylex.props(styles.desktop),
       )}>
       {icon && <div {...stylex.props(styles.desktopIcon)}>{icon}</div>}

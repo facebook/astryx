@@ -135,6 +135,17 @@ function extractExamples(docPath) {
 
 // ── Formatting ───────────────────────────────────────────────────────
 
+function dataAttrForName(name) {
+  return `data-${name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()}`;
+}
+
+function getTargetDataAttributes(target) {
+  return [
+    ...(target.visualProps || []).map(dataAttrForName),
+    ...(target.states || []).map(dataAttrForName),
+  ];
+}
+
 function formatPropsTable(props) {
   if (!props?.length) return '';
   const lines = ['| Prop | Type | Default | Description |', '|------|------|---------|-------------|'];
@@ -194,12 +205,14 @@ function formatFull(docs, docPath) {
 
   if (docs.theming?.targets?.length) {
     s.push('## Theming\n');
-    s.push('| Class | Variants | States |');
-    s.push('|-------|----------|--------|');
+    s.push('| Component class | Preferred data attributes | Props | States |');
+    s.push('|-----------------|---------------------------|-------|--------|');
     for (const t of docs.theming.targets) {
+      const dataAttrs = getTargetDataAttributes(t);
+      const attrs = dataAttrs.length ? dataAttrs.map(attr => `\`${attr}\``).join(', ') : '—';
       const variants = t.visualProps?.join(', ') || '—';
       const states = t.states?.join(', ') || '—';
-      s.push(`| \`${t.className}\` | ${variants} | ${states} |`);
+      s.push(`| \`${t.className}\` | ${attrs} | ${variants} | ${states} |`);
     }
     s.push('');
     const publicVars = docs.theming.vars?.filter(v => !v.private && !v.derived) || [];

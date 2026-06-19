@@ -17,12 +17,13 @@
 import {Suspense, useCallback, useMemo, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '@xds/core';
-import {xdsClassName, mergeProps, plainDateFromInstant} from '@xds/core/utils';
+import {mergeProps, plainDateFromInstant} from '@xds/core/utils';
 import {eventOverlapsRange, getBrowserTimezoneID, sortEvents} from './dateMath';
 import {XDSScheduleContext} from './context';
 import {defaultXDSSchedulePlugins} from './plugins';
 import {styles} from './shared';
 import {createZonedDateTime} from './zonedDateTime';
+import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
 import type {
   CalendarEvent,
   Instant,
@@ -264,7 +265,7 @@ export function XDSSchedule({
     <div
       {...rest}
       {...mergeProps(
-        xdsClassName('schedule'),
+        xdsThemeProps('schedule'),
         stylex.props(styles.root, xstyle),
         className,
         style,

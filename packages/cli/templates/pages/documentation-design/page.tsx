@@ -115,7 +115,7 @@ const COMPONENT_CATEGORIES = [
         desc: 'DropdownMenu presents a list of actions or options in a floating overlay. It is triggered by a button and supports nested submenus.',
       },
       {
-        key: 'emptystate',
+        key: 'empty-state',
         name: 'EmptyState',
         desc: 'EmptyState provides a placeholder when there is no content to display. It guides users with a message, illustration, and optional call-to-action.',
       },

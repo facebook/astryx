@@ -20,13 +20,14 @@ import * as stylex from '@stylexjs/stylex';
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {useXDSMenuHover} from '../hooks/useXDSMenuHover';
 import {getIcon} from '../Icon/globalIconRegistry';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
 import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 import {
   colorVars,
   spacingVars,
@@ -422,7 +423,7 @@ export function XDSTopNavMenu({
         {...popover.triggerProps}
         {...triggerProps}
         {...mergeProps(
-          xdsClassName('top-nav-menu'),
+          xdsThemeProps('top-nav-menu'),
           stylex.props(styles.trigger, popover.isOpen && styles.triggerOpen),
         )}>
         {label}

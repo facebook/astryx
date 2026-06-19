@@ -8,7 +8,7 @@
  * prev/next arrows to move quickly between templates in the gallery's
  * display order. Arrow keys (←/→) also navigate; Escape closes.
  *
- * The header surfaces template metadata (category + name, description) on
+ * The header surfaces template metadata (name, description) on
  * the left. All controls cluster on the right of the header: a
  * copy-to-clipboard CLI scaffold command, an Open in Playground action,
  * and the close button.
@@ -28,6 +28,7 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSText, XDSHeading} from '@xds/core/Text';
+import {XDSCode} from '@xds/core/Code';
 import {
   XDSVStack,
   XDSHStack,
@@ -98,41 +99,6 @@ const styles = stylex.create({
     width: '100%',
     minWidth: 0,
   },
-  copyPill: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 'var(--spacing-2)',
-    backgroundColor: 'var(--color-background-card)',
-    borderRadius: 'var(--radius-element)',
-    paddingInline: 'var(--spacing-3)',
-    height: 'var(--size-element-lg, 36px)',
-    cursor: 'pointer',
-    borderWidth: 'var(--border-width, 1px)',
-    borderStyle: 'solid',
-    borderColor: 'var(--color-border)',
-    flex: '1 1 auto',
-    minWidth: 0,
-    overflow: 'hidden',
-    fontFamily: 'var(--font-family-mono, ui-monospace, monospace)',
-    fontSize: 'var(--font-size-sm, 13px)',
-    color: 'var(--color-text-primary)',
-    userSelect: 'none',
-    transitionProperty: 'background-color, border-color',
-    transitionDuration: 'var(--duration-fast-min, 130ms)',
-    transitionTimingFunction:
-      'var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
-  },
-  copyPillHover: {
-    backgroundColor: {
-      ':hover':
-        'var(--color-background-card-hover, var(--color-background-muted))',
-    },
-  },
-  copyPillText: {
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  },
   skeletonOverlay: {
     position: 'absolute',
     insetInline: '16px',
@@ -184,9 +150,7 @@ function TemplatePreviewHeader({
       xstyle={
         isFullscreen ? styles.mobileHeaderMeta : styles.desktopHeaderMeta
       }>
-      <XDSHeading level={2}>
-        {item.category ? `${item.category} ${item.name}` : item.name}
-      </XDSHeading>
+      <XDSHeading level={2}>{item.name}</XDSHeading>
       {item.description && (
         <XDSText type="body" color="secondary">
           {item.description}
@@ -196,16 +160,17 @@ function TemplatePreviewHeader({
   );
 
   const copyButton = (
-    <button
-      type="button"
-      onClick={onCopyCommand}
-      aria-label="Copy install command"
-      {...stylex.props(styles.copyPill, styles.copyPillHover)}>
-      <span {...stylex.props(styles.copyPillText)}>
-        {cmdCopied ? 'Copied!' : `npx xds template ${item.slug}`}
-      </span>
-      <XDSIcon icon={cmdCopied ? 'check' : 'copy'} size="sm" color="inherit" />
-    </button>
+    <XDSHStack gap={2} vAlign="center">
+      <XDSCode>{`npx xds template ${item.slug}`}</XDSCode>
+      <XDSButton
+        variant="ghost"
+        isIconOnly
+        size="lg"
+        label={cmdCopied ? 'Copied!' : 'Copy install command'}
+        icon={<XDSIcon icon={cmdCopied ? 'check' : 'copy'} color="inherit" />}
+        onClick={onCopyCommand}
+      />
+    </XDSHStack>
   );
 
   const playgroundButton = playgroundHref ? (

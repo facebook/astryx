@@ -31,7 +31,7 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {XDSIcon} from '../Icon';
 import {
   tokenize,
@@ -42,6 +42,7 @@ import {
 import type {Token, TokenLine} from './tokenizer';
 import {ensureHighlightStyles} from './highlightStyles';
 import {applyHighlightRangesChunked} from './highlightRanges';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -775,7 +776,7 @@ export function XDSCodeBlock({
     <pre
       ref={ref}
       {...mergeProps(
-        xdsClassName('codeblock', {size, language, container}),
+        xdsThemeProps('codeblock', {size, language, container}),
         stylex.props(
           styles.root,
           dynamicStyles.width(widthProp),

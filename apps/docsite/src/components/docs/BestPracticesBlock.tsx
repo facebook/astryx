@@ -5,6 +5,7 @@
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSCard} from '@xds/core/Card';
 import {XDSTable, pixel} from '@xds/core/Table';
+import {MarkdownText} from '../MarkdownText';
 
 interface BestPracticesItem {
   guidance: boolean;
@@ -33,7 +34,15 @@ export function BestPracticesBlock({items}: {items: BestPracticesItem[]}) {
               />
             ),
           },
-          {key: 'description', header: 'Practices'},
+          {
+            key: 'description',
+            header: 'Practices',
+            renderCell: (item: Record<string, unknown>) => (
+              <MarkdownText type="body">
+                {item.description as string}
+              </MarkdownText>
+            ),
+          },
         ]}
         density="spacious"
         dividers="rows"

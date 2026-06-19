@@ -48,7 +48,7 @@
     "is-glob": "^4.0.0"
   },
   "devDependencies": {
-    "esbuild": "^0.28.0"
+    "esbuild": "^0.28.1"
   },
   "peerDependenciesMeta": {
     "@stylexjs/unplugin": {

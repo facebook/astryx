@@ -22,7 +22,7 @@ export const docs = {
     { name: 'min', type: 'ISODateString', description: 'Minimum selectable date.' },
     { name: 'max', type: 'ISODateString', description: 'Maximum selectable date.' },
     { name: 'dateConstraints', type: 'Array<(date: Date) => boolean>', description: 'Custom constraint functions to disable specific dates.' },
-    { name: 'presets', type: 'Array<XDSDateRangePreset>', description: 'Preset ranges shown as quick-select options beside the calendar.' },
+    { name: 'presets', type: 'Array<DateRangePreset>', description: 'Preset ranges shown as quick-select options beside the calendar.' },
     { name: 'hasClear', type: 'boolean', description: 'Shows a clear button when a range is selected.', default: 'true' },
     { name: 'placeholder', type: 'string', description: 'Placeholder text when no range is selected.', default: "'Select date range'" },
     { name: 'size', type: "'sm' | 'md' | 'lg'", description: 'Size of the trigger.', default: "'md'" },

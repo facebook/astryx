@@ -25,13 +25,14 @@ import React, {
 } from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSPopover} from './useXDSPopover';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useXDSLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {XDSInteractiveRoleContext} from '../InteractiveRoleContext/XDSInteractiveRoleContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Helpers
@@ -471,7 +472,7 @@ export function XDSPopover({
           <div
             data-testid={testId}
             {...mergeProps(
-              xdsClassName('popover'),
+              xdsThemeProps('popover'),
               stylex.props(styles.contentPadding, xstyle),
               className,
               style,
@@ -507,7 +508,7 @@ export function XDSPopover({
           <div
             data-testid={testId}
             {...mergeProps(
-              xdsClassName('popover'),
+              xdsThemeProps('popover'),
               stylex.props(styles.contentPadding, xstyle),
               className,
               style,
@@ -536,7 +537,7 @@ export function XDSPopover({
         <div
           data-testid={testId}
           {...mergeProps(
-            xdsClassName('popover'),
+            xdsThemeProps('popover'),
             stylex.props(styles.contentPadding, xstyle),
             className,
             style,

@@ -6,6 +6,7 @@ import {XDSStepper, XDSStep} from '@xds/lab/Stepper';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
+import {XDSIcon} from '@xds/core/Icon';
 
 const meta: Meta<typeof XDSStepper> = {
   title: 'Lab/Stepper',
@@ -158,7 +159,11 @@ export const NumberedHorizontal: Story = {
 };
 
 // ============================================================
-// STATUS (always status icons — validation flows)
+// STATUS (semantic color + generic icons — validation flows)
+//
+// `status` controls color only (accent/success/warning/error). The
+// indicator accepts any icon, so validation flows pass an explicit
+// <XDSIcon /> rather than relying on a fixed status-driven icon set.
 // ============================================================
 
 export const StatusVertical: Story = {
@@ -175,43 +180,36 @@ export const StatusVertical: Story = {
             step={0}
             label="Email verified"
             description="ernesttien@meta.com"
-            indicator="status"
-            status={'completed'}
+            status="success"
+            icon={<XDSIcon icon="check" size="sm" />}
           />
           <XDSStep
             step={1}
             label="Phone verified"
             description="+1 (555) 012-3456"
-            indicator="status"
-            status={'completed'}
+            status="success"
+            icon={<XDSIcon icon="check" size="sm" />}
           />
           <XDSStep
             step={2}
             label="Identity document"
             description="Passport upload failed"
-            indicator="status"
-            status={'error'}
+            status="error"
+            icon={<XDSIcon icon="warning" size="sm" />}
           />
           <XDSStep
             step={3}
             label="Address verification"
             description="Pending review"
-            indicator="status"
-            status={'in-progress'}
+            status="accent"
           />
           <XDSStep
             step={4}
             label="Background check"
-            indicator="status"
             isOptional
-            status={'skipped'}
+            description="Skipped"
           />
-          <XDSStep
-            step={5}
-            label="Account activated"
-            indicator="status"
-            status={'not-started'}
-          />
+          <XDSStep step={5} label="Account activated" />
         </XDSStepper>
       </div>
     );
@@ -219,7 +217,7 @@ export const StatusVertical: Story = {
 };
 
 export const StatusAllStates: Story = {
-  name: 'Status — All States Reference',
+  name: 'Status — Semantic Colors Reference',
   render: () => {
     const [active, setActive] = useState(1);
     return (
@@ -230,45 +228,35 @@ export const StatusAllStates: Story = {
           onStepClick={setActive}>
           <XDSStep
             step={0}
-            label="Completed"
-            description="Finished successfully"
-            indicator="status"
-            status={'completed'}
+            label="Accent"
+            description="--color-accent"
+            status="accent"
           />
           <XDSStep
             step={1}
-            label="In Progress"
-            description="Currently active"
-            indicator="status"
-            status={'in-progress'}
+            label="Success"
+            description="--color-success"
+            status="success"
+            icon={<XDSIcon icon="check" size="sm" />}
           />
           <XDSStep
             step={2}
-            label="Not Started"
-            description="Pending"
-            indicator="status"
-            status={'not-started'}
+            label="Warning"
+            description="--color-warning"
+            status="warning"
+            icon={<XDSIcon icon="warning" size="sm" />}
           />
           <XDSStep
             step={3}
             label="Error"
-            description="Requires attention"
-            indicator="status"
-            status={'error'}
+            description="--color-error"
+            status="error"
+            icon={<XDSIcon icon="warning" size="sm" />}
           />
           <XDSStep
             step={4}
-            label="Warning"
-            description="Needs review"
-            indicator="status"
-            status={'warning'}
-          />
-          <XDSStep
-            step={5}
-            label="Skipped"
-            description="Intentionally bypassed"
-            indicator="status"
-            status={'skipped'}
+            label="Default (no status)"
+            description="progress-derived color"
           />
         </XDSStepper>
       </div>
@@ -378,16 +366,36 @@ export const IndicatorComparison: Story = {
           </XDSStepper>
         </div>
         <div style={{maxWidth: 280}}>
-          <XDSText type="label">Status</XDSText>
+          <XDSText type="label">Custom icon</XDSText>
           <XDSStepper
             activeStep={active}
             orientation="vertical"
             onStepClick={setActive}>
-            <XDSStep step={0} label="Account" indicator="status" />
-            <XDSStep step={1} label="Profile" indicator="status" />
-            <XDSStep step={2} label="Settings" indicator="status" />
-            <XDSStep step={3} label="Review" indicator="status" />
-            <XDSStep step={4} label="Done" indicator="status" />
+            <XDSStep
+              step={0}
+              label="Account"
+              icon={<XDSIcon icon="user" size="sm" />}
+            />
+            <XDSStep
+              step={1}
+              label="Profile"
+              icon={<XDSIcon icon="user" size="sm" />}
+            />
+            <XDSStep
+              step={2}
+              label="Settings"
+              icon={<XDSIcon icon="gear" size="sm" />}
+            />
+            <XDSStep
+              step={3}
+              label="Review"
+              icon={<XDSIcon icon="eye" size="sm" />}
+            />
+            <XDSStep
+              step={4}
+              label="Done"
+              icon={<XDSIcon icon="check" size="sm" />}
+            />
           </XDSStepper>
         </div>
         <div style={{maxWidth: 280}}>
@@ -635,7 +643,7 @@ export const OptionalSteps: Story = {
             step={1}
             label="Profile photo"
             isOptional
-            status={'skipped'}
+            description="Skipped"
           />
           <XDSStep step={2} label="Connect socials" isOptional />
           <XDSStep step={3} label="Preferences" />

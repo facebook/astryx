@@ -43,7 +43,7 @@ export const latestVersion = versions[versions.length - 1];
  */
 export async function getTransformsBetween(from, to) {
   const applicable = versions.filter(
-    (v) => semverCompare(v, from) > 0 && semverCompare(v, to) <= 0,
+    v => semverCompare(v, from) > 0 && semverCompare(v, to) <= 0,
   );
   const results = [];
 

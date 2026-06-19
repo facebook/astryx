@@ -8,7 +8,9 @@
  *
  * Typography sizing is driven by typography.scale, which auto-generates both
  * the token values (--text-heading-1-size, --text-body-size, etc.) and the
- * component override rules (.xds-heading.level-1 { font-size: ... }).
+ * component override rules (currently legacy class selectors such as
+ * .xds-heading.level-1 { font-size: ... }; components also emit matching
+ * data-level/data-type attributes for the selector migration).
  *
  * Only non-typography component overrides need to be specified manually.
  */

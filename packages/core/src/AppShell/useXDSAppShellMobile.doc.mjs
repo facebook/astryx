@@ -73,7 +73,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Prefer XDSMobileNavToggle for the standard hamburger trigger — use this hook when you need custom placement, styling, or extra behavior.',
+          'Prefer XDSMobileNavToggle for the standard hamburger trigger: use this hook when you need custom placement, styling, or extra behavior.',
       },
       {
         guidance: true,
@@ -83,7 +83,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Use as a general responsive primitive when the UI is not inside AppShell or does not need to align with AppShell mobile nav — use useMediaQuery instead.',
+          'Use as a general responsive primitive when the UI is not inside AppShell or does not need to align with AppShell mobile nav: use useMediaQuery instead.',
       },
       {
         guidance: false,
@@ -141,7 +141,7 @@ export const docsDense = {
       {
         guidance: false,
         description:
-          'Use as general responsive primitive when not inside AppShell / not aligning to AppShell mobile nav — use useMediaQuery instead.',
+          'Use as general responsive primitive when not inside AppShell / not aligning to AppShell mobile nav: use useMediaQuery instead.',
       },
       {
         guidance: false,

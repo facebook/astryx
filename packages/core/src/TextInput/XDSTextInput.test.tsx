@@ -499,4 +499,29 @@ describe('XDSTextInput', () => {
       expect(input).toHaveFocus();
     });
   });
+
+  describe('width prop (#2755)', () => {
+    it('sizes the outer field, not just the input wrapper', () => {
+      render(
+        <XDSTextInput label="Name" value="" onChange={() => {}} width="100%" />,
+      );
+      const input = screen.getByRole('textbox');
+      const inputWrapper = input.parentElement!;
+      // Field root is the labelled ancestor that owns the width.
+      const fieldRoot = input.closest('.xds-field') as HTMLElement;
+      expect(fieldRoot).toBeTruthy();
+      expect(fieldRoot.getAttribute('style')).toContain('100%');
+      // The inner control wrapper is not the element carrying the width.
+      expect(fieldRoot).not.toBe(inputWrapper);
+      expect(inputWrapper.getAttribute('style') ?? '').not.toContain('100%');
+    });
+
+    it('does not set width when the prop is omitted', () => {
+      render(<XDSTextInput label="Name" value="" onChange={() => {}} />);
+      const fieldRoot = screen
+        .getByRole('textbox')
+        .closest('.xds-field') as HTMLElement;
+      expect(fieldRoot.getAttribute('style') ?? '').not.toContain('100%');
+    });
+  });
 });

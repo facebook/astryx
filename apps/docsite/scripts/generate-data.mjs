@@ -133,11 +133,9 @@ function extractQuotedField(content, field) {
   return parseStringLiteral(content, openIdx).value;
 }
 
-/** Extract group/description/hidden from .doc.mjs via regex (no dynamic import) */
+/** Extract doc metadata from .doc.mjs source without dynamic import. */
 const GROUP_RE = /(?:^|\n) {0,4}group:\s*['"]([^'"]+)['"]/;
 const HIDDEN_RE = /(?:^|\n) {0,4}hidden:\s*true/;
-const NAME_RE = /(?:^|\n) {0,4}name:\s*['"]([^'"]+)['"]/;
-const DISPLAY_NAME_RE = /(?:^|\n) {0,4}displayName:\s*['"]([^'"]+)['"]/;
 const KEYWORDS_RE = /keywords:\s*\[([^\]]*)\]/;
 const CATEGORY_RE = /(?:^|\n) {0,4}category:\s*['"]([^'"]+)['"]/;
 const IS_HIDDEN_FROM_OVERVIEW_RE = /(?:^|\n) {0,4}isHiddenFromOverview:\s*true/;
@@ -147,8 +145,8 @@ function readDocMeta(docPath) {
     const content = fs.readFileSync(docPath, 'utf-8');
     const groupMatch = GROUP_RE.exec(content);
     const description = extractQuotedField(content, 'description');
-    const nameMatch = NAME_RE.exec(content);
-    const displayNameMatch = DISPLAY_NAME_RE.exec(content);
+    const name = extractQuotedField(content, 'name');
+    const displayName = extractQuotedField(content, 'displayName');
     const hidden = HIDDEN_RE.test(content);
     const kwMatch = KEYWORDS_RE.exec(content);
     const keywords = kwMatch
@@ -159,8 +157,8 @@ function readDocMeta(docPath) {
     return {
       group: groupMatch?.[1] ?? null,
       description: description ?? '',
-      name: nameMatch?.[1] ?? null,
-      displayName: displayNameMatch?.[1] ?? null,
+      name: name ?? null,
+      displayName: displayName ?? null,
       hidden,
       keywords,
       category: categoryMatch?.[1] ?? null,
@@ -350,16 +348,31 @@ async function generateComponentRegistry() {
       const docFiles = fs.readdirSync(dirPath).filter(f => f.endsWith('.doc.mjs'));
       if (docFiles.length === 0) continue;
 
-      // First pass: find the primary component doc name for this directory
-      // (used to parent standalone hook docs that share the directory)
+      // First pass: find the primary component doc for this directory. Used to
+      // (a) parent standalone hook docs that share the directory, and
+      // (b) let sibling sub-component docs (subComponentOf) inherit family
+      //     fields (group, category, keywords, theming, importPath, ...).
       let dirPrimaryDoc = null;
+      let dirPrimaryMeta = null;
       for (const df of docFiles) {
         const dfPath = path.join(dirPath, df);
         try {
           const mod = await import(pathToFileURL(dfPath).href);
           const d = mod.docs;
-          if (d && (d.components || d.props) && !d.params) {
+          if (d && (d.components || d.props) && !d.params && !d.subComponentOf) {
             dirPrimaryDoc = d.name || null;
+            dirPrimaryMeta = {
+              name: d.name || null,
+              group: d.group || null,
+              category: d.category || null,
+              keywords: d.keywords || [],
+              hidden: d.hidden ?? false,
+              isHiddenFromOverview: d.isHiddenFromOverview ?? false,
+              topDescription: d.usage?.description || d.description || '',
+              usage: d.usage ? sanitizeForJson(d.usage) : null,
+              theming: d.theming ? sanitizeForJson(d.theming) : null,
+              playground: d.playground ? sanitizeForJson(d.playground) : null,
+            };
             break;
           }
         } catch { /* ignore */ }
@@ -388,12 +401,125 @@ async function generateComponentRegistry() {
         const theming = doc.theming ? sanitizeForJson(doc.theming) : null;
         const playground = doc.playground ? sanitizeForJson(doc.playground) : null;
 
-        if (doc.components && doc.components.length > 0) {
+        if (doc.subComponentOf) {
+          // Extracted sub-component: lives in its parent's directory in its own
+          // .doc.mjs file. Inherits family fields (group, category, keywords,
+          // theming, playground, importPath) from the directory's primary doc
+          // unless the sub-component doc overrides them; owns its name,
+          // description, props, and usage. When no usage block is authored,
+          // use the sub-component description as the usage summary instead of
+          // inheriting parent prose. Produces a registry entry identical to the
+          // legacy inline `components[]` expansion.
+          const parentMeta = dirPrimaryMeta || {};
+          const subName = (doc.name || '').replace(/^XDS/, '');
+          if (subName) {
+            const isHookEntry =
+              subName.startsWith('use') ||
+              Array.isArray(doc.params) ||
+              Array.isArray(doc.returns);
+            pendingSubComponents.push({
+              name: subName,
+              displayName: requireDisplayName(
+                doc.displayName,
+                `${pkg.name}: subcomponent ${subName} (parent ${doc.subComponentOf})`,
+              ),
+              moduleName: subName.startsWith('use') ? subName : `XDS${subName}`,
+              directory: entry.name,
+              importPath: resolveImportPathForPkg(pkg.dir, entry.name),
+              group: parentMeta.group ?? group,
+              category: parentMeta.category ?? category,
+              isHiddenFromOverview:
+                doc.isHiddenFromOverview ?? parentMeta.isHiddenFromOverview ?? false,
+              description: doc.description || parentMeta.topDescription || '',
+              keywords: parentMeta.keywords ?? keywords,
+              hidden: parentMeta.hidden ?? hidden,
+              parentDoc: doc.subComponentOf,
+              props: isHookEntry
+                ? []
+                : Array.isArray(doc.props)
+                  ? sanitizeForJson(doc.props)
+                  : [],
+              usage: doc.usage
+                ? sanitizeForJson(doc.usage)
+                : doc.description
+                  ? {description: doc.description}
+                  : null,
+              theming: isHookEntry
+                ? null
+                : doc.theming
+                  ? sanitizeForJson(doc.theming)
+                  : parentMeta.theming ?? null,
+              params: isHookEntry
+                ? Array.isArray(doc.params)
+                  ? sanitizeForJson(doc.params)
+                  : Array.isArray(doc.props)
+                    ? sanitizeForJson(doc.props)
+                    : []
+                : null,
+              returns: isHookEntry
+                ? Array.isArray(doc.returns)
+                  ? sanitizeForJson(doc.returns)
+                  : []
+                : null,
+              relatedComponents: isHookEntry
+                ? doc.relatedComponents || [doc.subComponentOf]
+                : null,
+              relatedHooks: isHookEntry ? doc.relatedHooks || null : null,
+              playground: isHookEntry
+                ? null
+                : doc.playground
+                  ? sanitizeForJson(doc.playground)
+                  : parentMeta.playground ?? null,
+            });
+          }
+        } else if (doc.components && doc.components.length > 0) {
+          // A family parent that also documents its own component surface (it has
+          // top-level props) is emitted as its own entry. Abstract families with
+          // no top-level props (e.g. Chat) contribute only their sub-components.
+          if (Array.isArray(doc.props) && doc.props.length > 0) {
+            const name = doc.name || docFileName.replace('.doc.mjs', '').replace(/^XDS/, '');
+            standaloneNames.add(name);
+            components.push({
+              name,
+              displayName: requireDisplayName(
+                doc.displayName,
+                `${pkg.name}: component ${name}`,
+              ),
+              moduleName: name.startsWith('use') ? name : `XDS${name}`,
+              directory: entry.name,
+              importPath: resolveImportPathForPkg(pkg.dir, entry.name),
+              group,
+              category,
+              isHiddenFromOverview,
+              description: doc.description || topDescription,
+              keywords,
+              hidden,
+              parentDoc: name,
+              props: sanitizeForJson(doc.props),
+              usage,
+              theming,
+              params: null,
+              returns: null,
+              relatedComponents: null,
+              relatedHooks: null,
+              playground,
+            });
+          }
           for (const sub of doc.components) {
             const rawSubName = sub.name || '';
             const subName = rawSubName.replace(/^XDS/, '');
             if (!subName) continue;
-            const isHookEntry = rawSubName.startsWith('use') || subName.startsWith('use') || Array.isArray(sub.params);
+            const isHookEntry =
+              rawSubName.startsWith('use') ||
+              subName.startsWith('use') ||
+              Array.isArray(sub.params);
+            // Name-only entries are cross-link references to sub-components that
+            // have been extracted into their own sibling .doc.mjs files. Their
+            // content is emitted from those files (subComponentOf branch); skip
+            // here to avoid double emission.
+            const isNameOnlyRef =
+              Object.keys(sub).length === 1 && sub.name != null;
+            if (isNameOnlyRef) continue;
             // Sub-entries whose name differs from the doc name are
             // sub-components — hide them from the overview page.
             const isSubEntry = subName !== doc.name;
@@ -640,7 +766,11 @@ export interface ElementDescriptor {
 }
 
 export interface PlaygroundConfig {
-  defaults: Record<string, unknown>;
+  defaults?: Record<string, unknown>;
+  wrapper?: {
+    component: string;
+    props?: Record<string, unknown>;
+  };
 }
 
 export const components: Record<string, ComponentEntry[]> = ${JSON.stringify(allComponents, null, 2)};
@@ -1272,7 +1402,7 @@ function generateExampleRegistry() {
     if (!fs.existsSync(tsxSrc)) continue;
 
     // Read name and description from doc meta
-    const nameMatch = content.match(/name:\s*['"]([^'"]+)['"]/);
+    const name = extractQuotedField(content, 'name');
     const description = extractQuotedField(content, 'description');
 
     let source = '';
@@ -1285,7 +1415,7 @@ function generateExampleRegistry() {
       entries.push({
         exampleFor,
         basename,
-        name: nameMatch?.[1] || basename,
+        name: name || basename,
         description: description || '',
         source,
       });
@@ -1300,7 +1430,7 @@ function generateExampleRegistry() {
       entries.push({
         exampleFor: target,
         basename: aliasBasename,
-        name: nameMatch?.[1] || basename,
+        name: name || basename,
         description: description || `Example using ${target}.`,
         source,
       });
@@ -1343,6 +1473,47 @@ ${componentLines}
   return entries.length;
 }
 
+// ── 6. Blog Registry ───────────────────────────────────────────────────
+
+async function generateBlogRegistry() {
+  console.log('Generating blog registry...');
+
+  const POSTS_DIR = path.join(
+    DOCSITE_ROOT,
+    'src',
+    'content',
+    'blog',
+    'posts',
+  );
+
+  // Single source of truth for discovery + validation (shared with tests).
+  const {discoverPosts, collectTypes, collectTags} = await import(
+    pathToFileURL(
+      path.join(DOCSITE_ROOT, 'src', 'lib', 'blog', 'posts.mjs'),
+    ).href
+  );
+
+  // Exclude drafts from production output; include them only in dev.
+  const includeDrafts = process.env.NODE_ENV !== 'production';
+  const posts = discoverPosts(POSTS_DIR, {includeDrafts});
+  const types = collectTypes(posts);
+  const tags = collectTags(posts);
+
+  const content = `// Auto-generated by scripts/generate-data.mjs — do not edit
+import type {BlogPost, BlogPostType} from '../lib/blog/schema';
+
+export const blogPosts: BlogPost[] = ${JSON.stringify(posts, null, 2)};
+
+export const blogTypes: BlogPostType[] = ${JSON.stringify(types)};
+
+export const blogTags: string[] = ${JSON.stringify(tags)};
+
+export const blogPostCount = ${posts.length};
+`;
+  writeRegistry('blogRegistry.ts', content);
+  return {blogPostCount: posts.length, blogTypeCount: types.length};
+}
+
 async function main() {
   console.log('Generating docsite data...\n');
 
@@ -1353,6 +1524,7 @@ async function main() {
   const {blockCount, showcaseCount} = await generateBlockRegistry();
   const {templateCount} = await generateTemplateRegistry();
   const {docsCount} = await generateDocsRegistry();
+  const {blogPostCount} = await generateBlogRegistry();
   const showcaseCopied = generateShowcaseRegistry();
   const examplesCopied = generateExampleRegistry();
 
@@ -1362,6 +1534,7 @@ async function main() {
   console.log(`  ${blockCount} blocks (${showcaseCopied} showcases, ${examplesCopied} examples)`);
   console.log(`  ${templateCount} templates`);
   console.log(`  ${docsCount} doc topics`);
+  console.log(`  ${blogPostCount} blog posts`);
   console.log(`  ${themeCount} themes`);
   console.log('Done.');
 }

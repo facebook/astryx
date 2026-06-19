@@ -2,7 +2,11 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSChartV2 as XDSChart, bar, line, area} from '@xds/lab';
-import {XDSChartGrid, XDSChartAxis, currency} from '@xds/lab';
+import {
+  XDSChartV2Grid as XDSChartGrid,
+  XDSChartV2Axis as XDSChartAxis,
+  currency,
+} from '@xds/lab';
 
 const meta: Meta<typeof XDSChart> = {
   title: 'Lab/ChartV2',
@@ -37,11 +41,31 @@ export const SimpleBar: StoryObj = {
       title="Monthly Revenue"
       series={[bar('revenue', {color: '#3b82f6'})]}
       tooltip={true}
-      grid={<XDSChartGrid horizontal />}
+      grid={<XDSChartGrid />}
       axes={
         <>
           <XDSChartAxis position="bottom" />
           <XDSChartAxis position="left" tickFormat={currency()} />
+        </>
+      }
+      height={300}
+    />
+  ),
+};
+
+/** Simple line chart */
+export const SimpleLine: StoryObj = {
+  render: () => (
+    <XDSChart
+      data={monthlyData}
+      xKey="month"
+      series={[line('trend', {color: '#3b82f6'})]}
+      tooltip={true}
+      grid={<XDSChartGrid />}
+      axes={
+        <>
+          <XDSChartAxis position="bottom" />
+          <XDSChartAxis position="left" />
         </>
       }
       height={300}
@@ -62,7 +86,7 @@ export const StackedBars: StoryObj = {
         bar('costs', {color: '#ef4444', stack: 'totals', label: 'Costs'}),
       ]}
       legend={{position: 'bottom', alignment: 'center'}}
-      grid={<XDSChartGrid horizontal />}
+      grid={<XDSChartGrid />}
       axes={
         <>
           <XDSChartAxis position="bottom" />
@@ -86,7 +110,7 @@ export const GroupedBars: StoryObj = {
         bar('costs', {color: '#ef4444', group: 'compare', label: 'Costs'}),
       ]}
       legend={{position: 'top', alignment: 'end'}}
-      grid={<XDSChartGrid horizontal />}
+      grid={<XDSChartGrid />}
       axes={
         <>
           <XDSChartAxis position="bottom" />
@@ -120,7 +144,7 @@ export const GroupedStackedBars: StoryObj = {
         }),
         bar('costsB', {color: '#fca5a5', stack: 'stackB', group: 'comparison'}),
       ]}
-      grid={<XDSChartGrid horizontal />}
+      grid={<XDSChartGrid />}
       axes={
         <>
           <XDSChartAxis position="bottom" />
@@ -146,7 +170,7 @@ export const MixedMarks: StoryObj = {
       ]}
       tooltip={true}
       legend={{position: 'end', alignment: 'start'}}
-      grid={<XDSChartGrid horizontal />}
+      grid={<XDSChartGrid />}
       axes={
         <>
           <XDSChartAxis position="bottom" />
@@ -169,7 +193,7 @@ export const AreaGradient: StoryObj = {
         area('revenue', {color: '#3b82f6', gradient: true}),
         line('revenue', {color: '#3b82f6'}),
       ]}
-      grid={<XDSChartGrid horizontal />}
+      grid={<XDSChartGrid />}
       axes={
         <>
           <XDSChartAxis position="bottom" />
@@ -193,7 +217,7 @@ export const StackedAreas: StoryObj = {
         area('costs', {color: '#ef4444', stack: 'total', label: 'Costs'}),
       ]}
       legend={true}
-      grid={<XDSChartGrid horizontal />}
+      grid={<XDSChartGrid />}
       axes={
         <>
           <XDSChartAxis position="bottom" />
@@ -224,7 +248,7 @@ export const NegativeValues: StoryObj = {
         bar('profit', {color: '#3b82f6'}),
         line('trend', {color: '#f59e0b', dots: true, strokeWidth: 2}),
       ]}
-      grid={<XDSChartGrid horizontal />}
+      grid={<XDSChartGrid />}
       axes={
         <>
           <XDSChartAxis position="bottom" />

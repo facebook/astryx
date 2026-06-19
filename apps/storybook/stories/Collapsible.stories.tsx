@@ -171,7 +171,8 @@ export const WithoutCard: Story = {
     <XDSVStack gap={2}>
       <XDSCollapsible trigger="Show more details">
         <p {...stylex.props(styles.text)}>
-          XDSCollapsible works anywhere — it doesn't require a card wrapper.
+          
+          XDSCollapsible works anywhere; it doesn't require a card wrapper.
         </p>
       </XDSCollapsible>
       <XDSCollapsible trigger="Another section" defaultIsOpen={false}>

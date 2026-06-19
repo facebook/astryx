@@ -34,8 +34,9 @@ import type {XDSTabListSize} from './XDSTabListContext';
 import {tabScope} from './tab.markers.stylex';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export interface XDSTabProps extends XDSBaseProps<HTMLButtonElement> {
   /**
@@ -50,9 +51,16 @@ export interface XDSTabProps extends XDSBaseProps<HTMLButtonElement> {
    */
   value: string;
   /**
-   * Visible label text for this tab.
+   * Accessible label for this tab. Used as visible text by default, or
+   * as aria-label when isLabelHidden is true.
    */
   label: string;
+  /**
+   * Whether the label is visually hidden. When true, only the icon and
+   * endContent are displayed, and label is used as aria-label for accessibility.
+   * @default false
+   */
+  isLabelHidden?: boolean;
   /**
    * URL to navigate to. When provided, renders as an anchor element.
    */
@@ -218,6 +226,7 @@ export function XDSTab({
   ref,
   value,
   label,
+  isLabelHidden = false,
   href,
   icon,
   selectedIcon,
@@ -234,6 +243,7 @@ export function XDSTab({
   const size: XDSTabListSize = tabListCtx.size;
   const isFill = tabListCtx.layout === 'fill';
   const displayIcon = isSelected && selectedIcon ? selectedIcon : icon;
+  const hasVisibleLabel = !isLabelHidden && label !== '';
 
   const handleSelect = useCallback(() => {
     tabListCtx.onChange(value);
@@ -247,10 +257,11 @@ export function XDSTab({
 
   const sharedProps = {
     ...restProps,
+    ...(isLabelHidden ? {'aria-label': label} : {}),
     [EDGE_COMP_ATTR]: '',
     'aria-current': isSelected ? ('page' as const) : undefined,
     ...mergeProps(
-      xdsClassName('tab', {
+      xdsThemeProps('tab', {
         selected: isSelected ? 'selected' : null,
       }),
       stylex.props(
@@ -276,7 +287,7 @@ export function XDSTab({
   const indicatorElement = (
     <span
       {...mergeProps(
-        xdsClassName('tab-indicator', {
+        xdsThemeProps('tab-indicator', {
           selected: isSelected ? 'selected' : null,
         }),
         stylex.props(
@@ -287,14 +298,14 @@ export function XDSTab({
     />
   );
 
-  const labelElement = (
+  const labelElement = hasVisibleLabel ? (
     <span {...stylex.props(styles.labelContainer)}>
       <span {...stylex.props(styles.labelText)}>{label}</span>
       <span aria-hidden="true" {...stylex.props(styles.labelSizer)}>
         {label}
       </span>
     </span>
-  );
+  ) : null;
 
   const endContentElement = endContent ? (
     <span {...stylex.props(styles.endContentWrapper)}>{endContent}</span>

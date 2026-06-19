@@ -12,6 +12,17 @@ function targetKey(target) {
   return target.className.replace(/^xds-/, '');
 }
 
+function dataAttrForName(name) {
+  return `data-${name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()}`;
+}
+
+function getTargetDataAttributes(target) {
+  return [
+    ...(target.visualProps || []).map(dataAttrForName),
+    ...(target.states || []).map(dataAttrForName),
+  ];
+}
+
 function formatPropsTable(props) {
   if (!props || props.length === 0) return '';
   const lines = [];
@@ -23,6 +34,30 @@ function formatPropsTable(props) {
     lines.push(`| \`${p.name}\` | \`${p.type}\` | ${def} | ${p.description}${req} |`);
   }
   return lines.join('\n');
+}
+
+/**
+ * Render a sub-component block (the `### Name` sections under "## Components").
+ *
+ * Sub-components are sometimes declared as a bare reference, e.g.
+ * `{name: 'XDSRadioListItem'}`, with their description/props documented in
+ * their own `.doc.mjs`. Without guarding, `comp.description` is `undefined`
+ * and was being printed literally as the string "undefined". Emit the
+ * description only when present, and when there are no inline props point the
+ * reader at the sub-component's own docs instead of a blank/`undefined` block.
+ */
+function formatSubComponent(comp) {
+  const out = [`### ${comp.name}\n`];
+  if (comp.description) {
+    out.push(comp.description + '\n');
+  }
+  const table = formatPropsTable(comp.props);
+  if (table) {
+    out.push(table + '\n');
+  } else {
+    out.push(`See \`xds component ${comp.name}\` for props and usage.\n`);
+  }
+  return out;
 }
 
 /**
@@ -69,8 +104,8 @@ function formatTargetsTable(docs, themeData) {
   if (!docs.theming?.targets?.length) return '';
 
   const lines = [];
-  lines.push('| Class | Variants | States |');
-  lines.push('|-------|----------|--------|');
+  lines.push('| Component class | Preferred data attributes | Props | States |');
+  lines.push('|-----------------|---------------------------|-------|--------|');
 
   for (const target of docs.theming.targets) {
     const coreVariants = getTargetVariants(target, docs);
@@ -89,8 +124,13 @@ function formatTargetsTable(docs, themeData) {
 
     const variantsStr = variantParts.length > 0 ? variantParts.join(', ') : '—';
     const statesStr = states.length > 0 ? states.join(', ') : '—';
+    const dataAttrs = getTargetDataAttributes(target);
+    const dataAttrsStr =
+      dataAttrs.length > 0 ? dataAttrs.map(attr => `\`${attr}\``).join(', ') : '—';
 
-    lines.push(`| \`${target.className}\` | ${variantsStr} | ${statesStr} |`);
+    lines.push(
+      `| \`${target.className}\` | ${dataAttrsStr} | ${variantsStr} | ${statesStr} |`,
+    );
   }
 
   return lines.join('\n');
@@ -112,7 +152,7 @@ export function formatFull(docs, options = {}) {
   sections.push(desc + '\n');
 
   if (options.importHint) {
-    const displayName = docs.components?.[0]?.name || `XDS${docs.name}`;
+    const displayName = `XDS${docs.name}`;
     sections.push(`**Import:** \`import {${displayName}} from '${options.importHint}';\`\n`);
   }
 
@@ -146,9 +186,7 @@ export function formatFull(docs, options = {}) {
   if ('components' in docs) {
     sections.push('## Components\n');
     for (const comp of docs.components) {
-      sections.push(`### ${comp.name}\n`);
-      sections.push(comp.description + '\n');
-      sections.push(formatPropsTable(comp.props) + '\n');
+      sections.push(...formatSubComponent(comp));
       if (comp.examples?.length) {
         for (const ex of comp.examples) {
           if (ex.label) sections.push(`#### ${ex.label}\n`);
@@ -183,7 +221,7 @@ export function formatFull(docs, options = {}) {
         }
       }
 
-      // Generate defineTheme example with class targeting
+      // Generate defineTheme example with component selector targeting
       const exampleLines = ['Override in defineTheme:\n```ts\ncomponents: {'];
       const rootTarget = docs.theming.targets[0];
       const rootKey = targetKey(rootTarget);
@@ -301,9 +339,7 @@ export function formatCompact(docs, componentName, importHint) {
 
   if ('components' in docs) {
     for (const comp of docs.components) {
-      sections.push(`### ${comp.name}\n`);
-      sections.push(comp.description + '\n');
-      sections.push(formatPropsTable(comp.props) + '\n');
+      sections.push(...formatSubComponent(comp));
     }
   }
 
@@ -420,11 +456,13 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
     output.push(`  Derived: ${derivedNames}`);
   }
 
-// Theme targets (class names, variants, states) with theme variant merging
+// Theme targets (component class, preferred data attrs, props, states) with theme variant merging
   if (docs.theming?.targets?.length) {
     const { themeData = null } = options;
     const targetParts = docs.theming.targets.map(t => {
       const parts = [t.className];
+      const dataAttrs = getTargetDataAttributes(t);
+      if (dataAttrs.length) parts.push(`preferred attrs: ${dataAttrs.join(', ')}`);
       if (t.visualProps?.length) parts.push(`variants: ${t.visualProps.join(', ')}`);
       if (t.states?.length) parts.push(`states: ${t.states.join(', ')}`);
       // Merge theme variants

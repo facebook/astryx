@@ -35,7 +35,7 @@ const meta: Meta<typeof XDSSelectableCard> = {
       description: {
         component:
           'A card that toggles between selected and unselected states. ' +
-          'Shows an accent border when selected. Manage selection state externally — ' +
+          'Shows an accent border when selected. Manage selection state externally: ' +
           'single value for radio behavior, Set for multi-select.',
       },
     },

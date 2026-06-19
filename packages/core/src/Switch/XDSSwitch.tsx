@@ -35,13 +35,15 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {XDSFieldLabel} from '../Field/XDSFieldLabel';
-import {XDSFieldStatus} from '../Field/XDSFieldStatus';
+import {XDSFieldStatus} from '../FieldStatus/XDSFieldStatus';
 import type {XDSIconType} from '../Icon';
 import type {XDSInputStatus} from '../Field/types';
 import {XDSSpinner} from '../Spinner';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {switchScope} from './switch.markers.stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // Fixed dimensions: 40px width, 24px height, 16px thumb (off), 20px thumb (on)
 const SWITCH_WIDTH = 40;
@@ -258,6 +260,12 @@ export interface XDSSwitchProps extends Omit<XDSBaseProps, 'onChange'> {
    */
   labelIcon?: ReactNode | XDSIconType;
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
@@ -281,6 +289,11 @@ export interface XDSSwitchProps extends Omit<XDSBaseProps, 'onChange'> {
    */
   status?: XDSInputStatus;
 }
+
+// Dynamic field width (number -> px, string used as-is).
+const dynamicWidthStyles = stylex.create({
+  width: (width: SizeValue | null) => ({width}),
+});
 
 /**
  * A toggle switch component for boolean values.
@@ -318,6 +331,7 @@ export function XDSSwitch({
   labelPosition = 'end',
   labelSpacing = 'default',
   status,
+  width,
   xstyle,
   className,
   style,
@@ -382,7 +396,7 @@ export function XDSSwitch({
       <div
         aria-hidden="true"
         {...mergeProps(
-          xdsClassName('switch', {
+          xdsThemeProps('switch', {
             checked: isOn ? 'checked' : null,
             disabled: isDisabled ? 'disabled' : null,
           }),
@@ -396,7 +410,7 @@ export function XDSSwitch({
         )}>
         <div
           {...mergeProps(
-            xdsClassName('switch-thumb', {checked: isOn ? 'checked' : null}),
+            xdsThemeProps('switch-thumb', {checked: isOn ? 'checked' : null}),
             stylex.props(styles.thumb, isOn ? styles.thumbOn : styles.thumbOff),
           )}>
           {isBusy && <XDSSpinner size="sm" />}
@@ -430,11 +444,11 @@ export function XDSSwitch({
   return (
     <div
       {...mergeProps(
-        xdsClassName('switch-field', {
+        xdsThemeProps('switch-field', {
           labelPosition: labelPosition !== 'end' ? labelPosition : undefined,
           labelSpacing: labelSpacing !== 'default' ? labelSpacing : undefined,
         }),
-        stylex.props(xstyle),
+        stylex.props(width != null && dynamicWidthStyles.width(width), xstyle),
         className,
         style,
       )}>

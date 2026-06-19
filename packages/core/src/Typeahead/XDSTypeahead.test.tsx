@@ -147,6 +147,37 @@ describe('XDSBaseTypeahead', () => {
     // Component renders without error — anchor is wired up internally
     expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
+
+  it('does not select every result when items lack ids', async () => {
+    const idlessItems = [
+      {label: 'Alpha'},
+      {label: 'Beta'},
+    ] as unknown as XDSSearchableItem[];
+    const idlessSource: XDSSearchSource = {
+      search: () => idlessItems,
+      bootstrap: () => idlessItems,
+    };
+
+    render(
+      <XDSBaseTypeahead
+        searchSource={idlessSource}
+        value={idlessItems[0]}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+
+    fireEvent.focus(screen.getByRole('combobox'));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('option', {hidden: true})).toHaveLength(2);
+    });
+
+    const options = screen.getAllByRole('option', {hidden: true});
+    expect(options[0]).toHaveAttribute('aria-selected', 'true');
+    expect(options[1]).toHaveAttribute('aria-selected', 'false');
+  });
 });
 
 describe('XDSTypeahead', () => {

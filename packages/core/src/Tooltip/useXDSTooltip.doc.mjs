@@ -7,8 +7,8 @@ export const docs = {
   group: 'Tooltip',
   keywords: ['tooltip', 'hint', 'label', 'hover', 'info', 'title', 'floating'],
   params: [
-    {name: 'placement', type: 'LayerPlacement', description: 'Position relative to the trigger.', default: "'above'"},
-    {name: 'alignment', type: 'LayerAlignment', description: 'Alignment along the placement axis.', default: "'center'"},
+    {name: 'placement', type: "'above' | 'below' | 'start' | 'end'", description: 'Position relative to the trigger.', default: "'above'"},
+    {name: 'alignment', type: "'start' | 'center' | 'end'", description: 'Alignment along the placement axis.', default: "'center'"},
     {name: 'delay', type: 'number', description: 'Delay before showing on hover, in milliseconds.', default: '200'},
     {name: 'hideDelay', type: 'number', description: 'Delay before hiding after mouse or focus leaves, in milliseconds.', default: '0'},
     {name: 'focusTrigger', type: "'auto' | 'always' | 'never'", description: 'When focus should open the tooltip. auto only attaches focus listeners to naturally focusable elements.', default: "'auto'"},
@@ -31,7 +31,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Use for brief text labels that describe icon buttons, truncated text, abbreviations, or compact controls.'},
       {guidance: true, description: 'Prefer the XDSTooltip component for standard wrapping; use the hook when the trigger is not a simple child.'},
-      {guidance: false, description: 'Put interactive content inside tooltips — use Popover or HoverCard instead.'},
+      {guidance: false, description: 'Put interactive content inside tooltips: use Popover or HoverCard instead.'},
     ],
   },
   relatedComponents: ['Tooltip', 'HoverCard', 'Popover'],
@@ -68,7 +68,7 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Use for brief text labels describing icon buttons, truncated text, abbreviations, compact controls.'},
       {guidance: true, description: 'Prefer XDSTooltip for standard wrapping; use hook when trigger is not simple child.'},
-      {guidance: false, description: 'Put interactive content in tooltips — use Popover / HoverCard instead.'},
+      {guidance: false, description: 'Put interactive content in tooltips: use Popover / HoverCard instead.'},
     ],
   },
 };

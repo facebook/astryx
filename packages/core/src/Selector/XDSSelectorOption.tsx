@@ -5,7 +5,7 @@
  * @output Exports XDSSelectorOption component for custom option rendering
  * @position Sub-component; used by XDSSelector and consumers for custom options
  *
- * Composes XDSItem for the shared media + label + description + trailing layout.
+ * Composes XDSItem for the shared start content + label + description + end content layout.
  */
 
 import type {ReactNode} from 'react';
@@ -13,7 +13,8 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {renderIconSlot, type XDSIconType} from '../Icon';
 import {XDSItem} from '../Item';
-import {xdsClassName} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const embeddedStyles = stylex.create({
   root: {
@@ -42,7 +43,7 @@ export interface XDSSelectorOptionProps {
   /**
    * Additional content to render after the label/description.
    */
-  children?: ReactNode;
+  endContent?: ReactNode;
 
   /**
    * StyleX styles created via `stylex.create()`. Merged with the component's
@@ -70,7 +71,7 @@ export interface XDSSelectorOptionProps {
 /**
  * A helper component for rendering custom selector options with consistent styling.
  *
- * Use this inside the `children` render prop of XDSSelector to create
+ * Use this inside the `renderOption` prop of XDSSelector to create
  * custom option layouts while maintaining design system consistency.
  *
  * @example
@@ -79,41 +80,38 @@ export interface XDSSelectorOptionProps {
  *   label="User"
  *   options={users}
  *   value={value}
- *   onChange={setValue}>
- *   {option => (
+ *   onChange={setValue}
+ *   renderOption={option => (
  *     <XDSSelectorOption
  *       icon={UserIcon}
  *       label={option.label}
  *       description={option.email}
  *     />
  *   )}
- * </XDSSelector>
+ * />
  * ```
  */
 export function XDSSelectorOption({
   icon,
   label,
   description,
-  children,
+  endContent,
   xstyle,
   className,
   style,
 }: XDSSelectorOptionProps) {
   return (
     <XDSItem
-      media={
+      startContent={
         icon
           ? renderIconSlot(icon, {size: 'sm', color: 'secondary'})
           : undefined
       }
       label={label}
       description={description}
-      trailing={children}
+      endContent={endContent}
       xstyle={[embeddedStyles.root, xstyle]}
-      className={[xdsClassName('selector-option'), className]
-        .filter(Boolean)
-        .join(' ')}
-      style={style}
+      {...mergeProps(xdsThemeProps('selector-option'), {className, style})}
     />
   );
 }

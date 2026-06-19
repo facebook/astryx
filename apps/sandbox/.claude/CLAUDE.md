@@ -4,7 +4,7 @@ Project-specific guidance for AI coding agents.
 
 <!-- XDS:START -->
 
-XDS v0.0.14 — 166 components
+XDS v0.0.14 — 165 components
 
 Before writing any UI code:
 
@@ -22,7 +22,7 @@ If a component prop does what you need, use it — never replicate with CSS/styl
 No magic values — run `pnpm exec xds docs tokens` for spacing/color/radius.
 To change accent/brand colors: `pnpm exec xds theme` — never override --xds-color-\* in :root.
 
-pnpm exec xds component --list 166 components by category
+pnpm exec xds component --list 165 components by category
 pnpm exec xds component <Name> props, types, examples
 pnpm exec xds docs color Semantic color tokens for surfaces, text, icons...
 pnpm exec xds docs elevation Shadow tokens for visual elevation and inset st...

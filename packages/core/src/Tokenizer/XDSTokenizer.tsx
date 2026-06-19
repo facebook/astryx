@@ -26,6 +26,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
 import {XDSBaseTypeahead} from '../Typeahead/XDSBaseTypeahead';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {
@@ -48,7 +49,8 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {XDSSearchableItem, XDSSearchSource} from '../Typeahead/types';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // Re-export status types for convenience
 export type {
@@ -113,6 +115,12 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem> extends Omit<
    * Accepts a ReactNode (e.g. `<XDSIcon icon={SearchIcon} />`) or an SVG icon component directly.
    */
   startIcon?: ReactNode | XDSIconType;
+  /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
   /** Label tooltip. */
   labelTooltip?: string;
   /** Search source providing items. */
@@ -364,6 +372,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   onChangeQuery,
   onFocus,
   onBlur,
+  width,
   xstyle,
   className,
   style,
@@ -655,7 +664,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
       onBlurCapture={handleBlurCapture}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('tokenizer', {size, status: status?.type}),
+        xdsThemeProps('tokenizer', {size, status: status?.type}),
         stylex.props(
           inputWrapperStyles.base,
           styles.wrapper,
@@ -740,7 +749,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
           ref={placeholderRef}
           onClick={handleWrapperClick}
           {...mergeProps(
-            xdsClassName('tokenizer', {size, status: status?.type}),
+            xdsThemeProps('tokenizer', {size, status: status?.type}),
             stylex.props(
               inputWrapperStyles.base,
               styles.wrapper,
@@ -814,6 +823,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
           : undefined
       }
       labelTooltip={labelTooltip}
+      width={width}
       xstyle={xstyle}
       className={className}
       style={style}>

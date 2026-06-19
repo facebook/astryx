@@ -71,6 +71,26 @@ describe('XDSButton', () => {
     expect(button).toBeDisabled();
   });
 
+  it('renders the loading spinner with the inherit shade for every variant (#2717)', () => {
+    // The spinner must follow the button's resolved foreground color rather
+    // than a hardcoded white, so it keeps contrast on themed variants like the
+    // neutral theme's muted-red destructive button.
+    for (const variant of [
+      'primary',
+      'secondary',
+      'ghost',
+      'destructive',
+    ] as const) {
+      const {container, unmount} = render(
+        <XDSButton label="Submit" variant={variant} isLoading />,
+      );
+      const spinner = container.querySelector('.xds-spinner');
+      expect(spinner).not.toBeNull();
+      expect(spinner).toHaveAttribute('data-shade', 'inherit');
+      unmount();
+    }
+  });
+
   it('handles click events', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();
@@ -187,12 +207,14 @@ describe('XDSButton', () => {
     expect(button).toHaveAttribute('aria-busy', 'true');
   });
 
-  it('renders xds-* class names for theme targeting', () => {
+  it('renders xds-* classes and data attributes for theme targeting', () => {
     render(<XDSButton label="Test" variant="secondary" size="sm" />);
     const button = screen.getByRole('button');
     expect(button.className).toContain('xds-button');
     expect(button.className).toContain('secondary');
     expect(button.className).toContain('sm');
+    expect(button).toHaveAttribute('data-variant', 'secondary');
+    expect(button).toHaveAttribute('data-size', 'sm');
   });
 
   // P0: onClick fires before clickAction, clickAction respects preventDefault

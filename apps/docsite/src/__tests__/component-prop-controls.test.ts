@@ -1,7 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {getIconRegistry} from '@xds/core/Icon';
 import {describe, expect, it} from 'vitest';
-import {parsePropType} from '../components/component-detail/parsePropType';
+import {
+  coerceDefault,
+  coerceEnumOption,
+  parsePropType,
+} from '../components/component-detail/parsePropType';
 
 describe('component detail prop controls', () => {
   it('treats XDSInputStatus as an editable status object control', () => {
@@ -51,21 +56,48 @@ describe('component detail prop controls', () => {
     });
   });
 
-  it('uses valid semantic icon options for XDSIconType props', () => {
+  it('keeps input status props as status controls even if slot elements are present', () => {
+    expect(
+      parsePropType('XDSInputStatus', 'status', [
+        {
+          __element: 'XDSFieldStatus',
+          props: {type: 'error', message: 'Error'},
+        },
+      ]),
+    ).toEqual({
+      kind: 'input-status',
+      options: ['error', 'warning', 'success'],
+      allowEmpty: true,
+    });
+  });
+
+  it('expands mixed string-literal and boolean unions into enum options', () => {
+    const control = parsePropType("'auto' | boolean", 'hasHoverIndication');
+
+    expect(control).toMatchObject({
+      kind: 'enum',
+      options: ['auto', 'true', 'false'],
+      allowEmpty: false,
+    });
+    if (control.kind === 'enum') {
+      expect(coerceEnumOption(control, 'auto')).toBe('auto');
+      expect(coerceEnumOption(control, 'true')).toBe(true);
+      expect(coerceEnumOption(control, 'false')).toBe(false);
+      expect(coerceDefault('true', control)).toBe(true);
+      expect(coerceDefault('false', control)).toBe(false);
+      expect(coerceDefault("'auto'", control)).toBe('auto');
+    }
+  });
+
+  it('derives XDSIconType options from the canonical icon registry', () => {
     const control = parsePropType('XDSIconType', 'labelIcon');
 
     expect(control).toMatchObject({
       kind: 'enum',
       allowEmpty: true,
     });
-    expect(control).toEqual(
-      expect.objectContaining({
-        options: expect.arrayContaining(['info', 'success', 'error', 'search']),
-      }),
-    );
     if (control.kind === 'enum') {
-      expect(control.options).not.toContain('checkCircle');
-      expect(control.options).not.toContain('xCircle');
+      expect(control.options).toEqual(Object.keys(getIconRegistry()));
     }
   });
 });

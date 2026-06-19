@@ -12,17 +12,17 @@ export default function ItemBasicItem() {
       <XDSItem
         label="Quarterly planning"
         description="Agenda, notes, and action items"
-        trailing={<XDSText color="secondary">Today</XDSText>}
+        endContent={<XDSText color="secondary">Today</XDSText>}
       />
       <XDSItem
         label="Customer research"
         description="Interview notes from the latest study"
-        trailing={<XDSText color="secondary">Yesterday</XDSText>}
+        endContent={<XDSText color="secondary">Yesterday</XDSText>}
       />
       <XDSItem
         label="Launch checklist"
         description="Remaining tasks before release"
-        trailing={<XDSText color="secondary">Fri</XDSText>}
+        endContent={<XDSText color="secondary">Fri</XDSText>}
       />
     </XDSStack>
   );

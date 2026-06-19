@@ -36,6 +36,7 @@ import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSSection} from '@xds/core/Section';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
+import {getKey} from '@xds/core/utils';
 import {GITHUB_REPO} from '../../../constants';
 
 const WIKI_BASE = `${GITHUB_REPO}/wiki`;
@@ -566,7 +567,7 @@ function WallCard({contributors}: {contributors: ReadonlyArray<Contributor>}) {
   // remaining slots so the card always looks fully populated.
   const avatars = AVATAR_SLOTS.map((slot, i) => ({
     src: contributors[i]?.avatar_url ?? FALLBACK_AVATARS[i],
-    key: contributors[i]?.login ?? `fallback-${i}`,
+    key: getKey(contributors[i]?.login, i),
     slot,
   }));
 

@@ -90,6 +90,12 @@ const styles = stylex.create({
     width: '100%',
     overflowX: 'auto' as const,
   },
+  // Inset the table by --spacing-6 (the card is padding={0}) so its edge lines
+  // up with the header/filter row in every theme's spacing scale.
+  inventoryTableWrap: {
+    paddingInline: 'var(--spacing-6)',
+    paddingBlockEnd: 'var(--spacing-2)',
+  },
   searchInput: {
     flex: 1,
     minWidth: 0,
@@ -138,6 +144,12 @@ const styles = stylex.create({
     textAlign: 'center' as const,
     maxWidth: 560,
   },
+  // Hero headline painted with the theme's accent-text ink. XDSText has no
+  // 'accent' color value, so we set the dedicated --color-text-accent token
+  // directly (distinct from --color-accent / the 'active' color).
+  heroHeadline: {
+    color: 'var(--color-text-accent)',
+  },
   centerText: {
     textAlign: 'center',
   },
@@ -148,7 +160,10 @@ const styles = stylex.create({
     flex: 1,
   },
   quantityInput: {
-    width: 40,
+    // minWidth (not a hard width) so the field grows to fit the digit + the
+    // theme's input padding. A fixed 40px was too tight on themes with larger
+    // padding / bigger type scale (e.g. Matcha, Y2K), clipping the value.
+    minWidth: 64,
     flexShrink: 0,
   },
   cartButton: {
@@ -168,16 +183,16 @@ const inlineStyles: Record<string, CSSProperties> = {
     paddingBottom: 'var(--spacing-4)',
   },
   thumbnail: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     borderRadius: 'var(--radius-element)',
     objectFit: 'cover',
     display: 'block',
     flexShrink: 0,
   },
   thumbnailFallback: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     borderRadius: 'var(--radius-element)',
     backgroundColor: 'var(--color-background-muted)',
     color: 'var(--color-text-secondary)',
@@ -187,21 +202,6 @@ const inlineStyles: Record<string, CSSProperties> = {
     fontSize: 'var(--font-size-sm)',
     fontWeight: 600,
     flexShrink: 0,
-  },
-  sparkline: {
-    display: 'flex',
-    alignItems: 'flex-end',
-    justifyContent: 'space-around',
-    height: 120,
-    width: '100%',
-    gap: 8,
-  },
-  sparkLabels: {
-    display: 'flex',
-    justifyContent: 'space-around',
-    width: '100%',
-    color: 'var(--color-text-secondary)',
-    fontSize: 'var(--font-size-xs)',
   },
   kpiValue: {
     fontSize: 24,
@@ -248,50 +248,82 @@ const inlineStyles: Record<string, CSSProperties> = {
   },
 };
 
-// Sparkline bar — height is data-driven, so it's a function returning an
-// inline style object (same reasoning as inlineStyles above).
-const sparkBarStyle = (height: string): CSSProperties => ({
-  flex: 1,
-  minWidth: 0,
-  borderRadius: 'var(--radius-element)',
-  backgroundColor: 'var(--color-background-green)',
-  height,
-});
-
 const PRODUCT_IMAGE_KEYS = ['watch', 'headphones', 'backpack'];
 
-const PRODUCTS = [
+/** Categorical badge variants usable for showcase product/inventory tags. */
+export type ShowcaseBadgeVariant =
+  | 'blue'
+  | 'cyan'
+  | 'green'
+  | 'orange'
+  | 'pink'
+  | 'purple'
+  | 'red'
+  | 'teal'
+  | 'yellow';
+
+export interface ProductSpec {
+  name: string;
+  description: string;
+  badge: string;
+  badgeVariant: ShowcaseBadgeVariant;
+}
+
+const DEFAULT_PRODUCTS: ProductSpec[] = [
   {
     name: 'Minimalist Watch',
     description: 'Clean design meets everyday durability.',
     badge: 'New',
-    badgeVariant: 'blue' as const,
+    badgeVariant: 'blue',
   },
   {
     name: 'Wireless Headphones',
     description: 'Immersive sound, all-day comfort.',
     badge: 'Popular',
-    badgeVariant: 'green' as const,
+    badgeVariant: 'green',
   },
   {
     name: 'Canvas Backpack',
     description: 'Water-resistant canvas with a quiet, modern profile.',
     badge: 'Limited',
-    badgeVariant: 'yellow' as const,
+    badgeVariant: 'yellow',
   },
 ];
 
-const PREVIEW_IMAGES: Record<string, string> = {
-  watch: '/neutral/preview-watch.png',
-  headphones: '/neutral/preview-headphones.png',
-  backpack: '/neutral/preview-backpack.png',
-  wallet: '/neutral/preview-wallet.png',
-  mug: '/neutral/preview-mug.png',
-  throw_: '/neutral/preview-throw.png',
+// Neutral product photos, served from the shared xds_oss asset CDN so the
+// scaffolded template renders real imagery without needing local public assets.
+const NEUTRAL_CDN = 'https://lookaside.facebook.com/assets/xds_oss';
+const DEFAULT_IMAGES: Record<string, string> = {
+  watch: `${NEUTRAL_CDN}/Neutral-Watch.png`,
+  headphones: `${NEUTRAL_CDN}/Neutral-Headphones.png`,
+  backpack: `${NEUTRAL_CDN}/Neutral-Backpack.png`,
+  wallet: `${NEUTRAL_CDN}/Neutral-Wallet.png`,
+  tumbler: `${NEUTRAL_CDN}/Neutral-Tumbler.png`,
+  throw_: `${NEUTRAL_CDN}/Neutral-Blanket.png`,
 };
 
+export interface ThemeShowcaseProps {
+  /** Product card images keyed by slot (watch/headphones/backpack/…). */
+  images?: Record<string, string>;
+  /** The three hero product cards. Defaults to the neutral store products. */
+  products?: ProductSpec[];
+  /** Inventory table rows. Defaults to the neutral store inventory. */
+  inventory?: InventoryRow[];
+}
+
+// Default export is the route page (sandbox renders this as a Next.js page, so
+// it must take no props / satisfy PageProps). It renders the store with the
+// neutral defaults. Consumers that need per-theme content import the named
+// `ThemeShowcaseStore` below and pass images/products/inventory.
 export default function ThemeShowcase() {
-  const images: Record<string, string> = PREVIEW_IMAGES;
+  return <ThemeShowcaseStore />;
+}
+
+export function ThemeShowcaseStore({
+  images = DEFAULT_IMAGES,
+  products = DEFAULT_PRODUCTS,
+  inventory = DEFAULT_INVENTORY,
+}: ThemeShowcaseProps = {}) {
   const {isMobile} = useXDSAppShellMobile();
   return (
     <div
@@ -299,13 +331,17 @@ export default function ThemeShowcase() {
         minHeight: '100%',
         backgroundColor: 'var(--color-background-body)',
       }}>
-      <StorePreview images={images} isMobile={isMobile} />
+      <StorePreview images={images} products={products} isMobile={isMobile} />
       <div
         style={{
           padding: 'var(--spacing-6)',
           backgroundColor: 'var(--color-background-surface)',
         }}>
-        <CardShowcase images={images} isMobile={isMobile} />
+        <CardShowcase
+          images={images}
+          inventory={inventory}
+          isMobile={isMobile}
+        />
       </div>
     </div>
   );
@@ -313,9 +349,11 @@ export default function ThemeShowcase() {
 
 function CardShowcase({
   images,
+  inventory,
   isMobile,
 }: {
   images: Record<string, string>;
+  inventory: InventoryRow[];
   isMobile: boolean;
 }) {
   const columns = isMobile ? 1 : ({minWidth: 200, repeat: 'fit'} as const);
@@ -332,7 +370,7 @@ function CardShowcase({
       </XDSGrid>
       <XDSGrid columns={columns} gap={4}>
         <XDSGridSpan columns={isMobile ? 1 : 3}>
-          <InventoryCard images={images} />
+          <InventoryCard images={images} inventory={inventory} />
         </XDSGridSpan>
         <XDSGridSpan columns={1}>
           <LatestActivityCard isMobile={isMobile} />
@@ -344,9 +382,11 @@ function CardShowcase({
 
 function StorePreview({
   images,
+  products,
   isMobile,
 }: {
   images: Record<string, string>;
+  products: ProductSpec[];
   isMobile: boolean;
 }) {
   return (
@@ -402,7 +442,7 @@ function StorePreview({
           <XDSVStack gap={10} xstyle={[styles.content, styles.contentFluid]}>
             <XDSCenter>
               <XDSVStack gap={4} hAlign="center" xstyle={styles.heroText}>
-                <XDSText type="display-3">
+                <XDSText type="display-2" xstyle={styles.heroHeadline}>
                   Little joys,
                   <br />
                   everywhere you go
@@ -414,8 +454,8 @@ function StorePreview({
               </XDSVStack>
             </XDSCenter>
 
-            <XDSGrid columns={isMobile ? 1 : {minWidth: 200}} gap={4}>
-              {PRODUCTS.map((p, i) => (
+            <XDSGrid columns={isMobile ? 1 : {minWidth: 200, max: 3}} gap={4}>
+              {products.map((p, i) => (
                 <XDSCard key={p.name} padding={0} height="100%">
                   <XDSVStack gap={0} xstyle={styles.cardStack}>
                     <XDSAspectRatio ratio={1}>
@@ -456,6 +496,7 @@ function StorePreview({
                           <XDSButton
                             label="Add to cart"
                             variant="secondary"
+                            size="sm"
                             href="#"
                             xstyle={styles.cartButton}
                           />
@@ -717,7 +758,7 @@ function ChatCard() {
                   <XDSItem
                     label="Items"
                     description="Minimalist Watch · Linen Throw"
-                    trailing={
+                    endContent={
                       <XDSText type="body" weight="bold">
                         $248
                       </XDSText>
@@ -726,7 +767,7 @@ function ChatCard() {
                   <XDSItem
                     label="Shipping"
                     description="UPS Ground"
-                    trailing={
+                    endContent={
                       <XDSText type="body" weight="bold">
                         $12
                       </XDSText>
@@ -735,12 +776,12 @@ function ChatCard() {
                   <XDSItem
                     label="Estimated arrival"
                     description="Tomorrow by 8pm"
-                    trailing={<XDSBadge variant="green" label="On time" />}
+                    endContent={<XDSBadge variant="green" label="On time" />}
                   />
                   <XDSItem
                     label="Tracking"
                     description="UPS 1Z 999 AA1 0123 4567 84"
-                    trailing={<XDSLink href="#">Track →</XDSLink>}
+                    endContent={<XDSLink href="#">Track →</XDSLink>}
                   />
                 </XDSVStack>
               </XDSCard>
@@ -793,9 +834,6 @@ function ChatCard() {
     </XDSCard>
   );
 }
-
-const SPARKLINE_DATA = [55, 70, 92, 78, 60];
-const SPARKLINE_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May'];
 
 interface ActivityRow {
   id: string;
@@ -860,19 +898,6 @@ function LatestActivityCard({isMobile}: {isMobile: boolean}) {
       <XDSVStack gap={4} xstyle={styles.activityCardStack}>
         <XDSHeading level={2}>Revenue</XDSHeading>
 
-        <XDSVStack gap={2}>
-          <div style={inlineStyles.sparkline} aria-hidden="true">
-            {SPARKLINE_DATA.map((value, i) => (
-              <div key={i} style={sparkBarStyle(value + '%')} />
-            ))}
-          </div>
-          <div style={inlineStyles.sparkLabels} aria-hidden="true">
-            {SPARKLINE_LABELS.map(label => (
-              <span key={label}>{label}</span>
-            ))}
-          </div>
-        </XDSVStack>
-
         <XDSGrid columns={isMobile ? 1 : 2} gap={3}>
           <XDSVStack gap={0}>
             <span style={inlineStyles.kpiValue}>18K</span>
@@ -899,14 +924,14 @@ function LatestActivityCard({isMobile}: {isMobile: boolean}) {
           {ACTIVITY.map(item => (
             <XDSItem
               key={item.id}
-              media={
+              startContent={
                 <div style={inlineStyles.activityIcon} aria-hidden="true">
                   {item.icon}
                 </div>
               }
               label={item.label}
               description={item.detail}
-              trailing={
+              endContent={
                 <XDSText
                   type="body"
                   weight="bold"
@@ -923,9 +948,9 @@ function LatestActivityCard({isMobile}: {isMobile: boolean}) {
   );
 }
 
-type TagSpec = {label: string; variant: 'blue' | 'green' | 'orange' | 'yellow'};
+type TagSpec = {label: string; variant: ShowcaseBadgeVariant};
 
-interface InventoryRow extends Record<string, unknown> {
+export interface InventoryRow extends Record<string, unknown> {
   id: string;
   name: string;
   meta: string;
@@ -937,7 +962,7 @@ interface InventoryRow extends Record<string, unknown> {
   selected: boolean;
 }
 
-const INVENTORY: InventoryRow[] = [
+const DEFAULT_INVENTORY: InventoryRow[] = [
   {
     id: 'a',
     name: 'Minimalist Watch',
@@ -984,12 +1009,12 @@ const INVENTORY: InventoryRow[] = [
   },
   {
     id: 'e',
-    name: 'Travel Mug',
+    name: 'Travel Tumbler',
     meta: 'Vacuum insulated, 16oz',
     available: 87,
     location: 'Aisle 5',
     tags: [{label: 'Drinkware', variant: 'green'}],
-    imageKey: 'mug',
+    imageKey: 'tumbler',
     thumbnailFallback: 'T',
     selected: false,
   },
@@ -1007,9 +1032,6 @@ const INVENTORY: InventoryRow[] = [
 ];
 
 const LOW_STOCK_THRESHOLD = 25;
-const LOW_STOCK_COUNT = INVENTORY.filter(
-  row => row.available < LOW_STOCK_THRESHOLD,
-).length;
 
 function SelectCell({row}: {row: InventoryRow}) {
   return (
@@ -1065,6 +1087,7 @@ function ActionsCell() {
   return (
     <XDSMoreMenu
       label="Row actions"
+      size="sm"
       items={[
         {label: 'Edit'},
         {label: 'Duplicate'},
@@ -1076,7 +1099,16 @@ function ActionsCell() {
   );
 }
 
-function InventoryCard({images}: {images: Record<string, string>}) {
+function InventoryCard({
+  images,
+  inventory,
+}: {
+  images: Record<string, string>;
+  inventory: InventoryRow[];
+}) {
+  const lowStockCount = inventory.filter(
+    row => row.available < LOW_STOCK_THRESHOLD,
+  ).length;
   return (
     <XDSCard padding={0} xstyle={styles.inventoryCard}>
       <XDSHStack
@@ -1185,60 +1217,72 @@ function InventoryCard({images}: {images: Record<string, string>}) {
         </XDSHStack>
       </XDSHStack>
 
-      {LOW_STOCK_COUNT > 0 && (
+      {lowStockCount > 0 && (
         <div style={inlineStyles.inventoryBannerWrap}>
           <XDSBanner
             status="warning"
-            title={LOW_STOCK_COUNT + ' items are running low'}
+            title={lowStockCount + ' items are running low'}
           />
         </div>
       )}
 
-      <XDSTable<InventoryRow>
-        data={INVENTORY}
-        columns={[
-          {
-            key: 'select',
-            header: '',
-            width: pixel(48),
-            renderCell: row => <SelectCell row={row} />,
-          },
-          {
-            key: 'item',
-            header: 'Item',
-            width: proportional(3),
-            renderCell: row => <ItemCell row={row} images={images} />,
-          },
-          {
-            key: 'available',
-            header: 'Available',
-            width: pixel(100),
-            renderCell: row => <XDSText type="body">{row.available}</XDSText>,
-          },
-          {
-            key: 'location',
-            header: 'Location',
-            width: pixel(100),
-            renderCell: row => <XDSText type="body">{row.location}</XDSText>,
-          },
-          {
-            key: 'tags',
-            header: 'Tags',
-            width: proportional(2),
-            align: 'end',
-            renderCell: row => <TagsCell row={row} />,
-          },
-          {
-            key: 'actions',
-            header: '',
-            width: pixel(48),
-            renderCell: () => <ActionsCell />,
-          },
-        ]}
-        density="spacious"
-        dividers="rows"
-        hasHover
-      />
+      <div {...stylex.props(styles.inventoryTableWrap)}>
+        <XDSTable<InventoryRow>
+          data={inventory}
+          columns={[
+            {
+              key: 'select',
+              header: '',
+              // Wide enough that the control + the theme's cell padding (up to
+              // --spacing-4 = 16px/side on spacious density) fit inside the cell,
+              // so the control's hover background doesn't overflow toward the
+              // card's clipped (rounded) edge on larger-padding themes.
+              width: pixel(64),
+              renderCell: row => <SelectCell row={row} />,
+            },
+            {
+              key: 'item',
+              header: 'Item',
+              // Lower min-width (default 120) so the table fits its container on
+              // larger-spacing themes instead of overflowing the actions column.
+              width: proportional(3, {minWidth: 80}),
+              renderCell: row => <ItemCell row={row} images={images} />,
+            },
+            {
+              key: 'available',
+              header: 'Available',
+              width: pixel(100),
+              renderCell: row => <XDSText type="body">{row.available}</XDSText>,
+            },
+            {
+              key: 'location',
+              header: 'Location',
+              width: pixel(100),
+              renderCell: row => <XDSText type="body">{row.location}</XDSText>,
+            },
+            {
+              key: 'tags',
+              header: 'Tags',
+              width: proportional(2, {minWidth: 80}),
+              align: 'end',
+              renderCell: row => <TagsCell row={row} />,
+            },
+            {
+              key: 'actions',
+              header: '',
+              // Match the select column: fit the sm more-menu button + cell
+              // padding so its hover background stays clear of the card's
+              // clipped rounded edge across themes.
+              width: pixel(64),
+              align: 'end',
+              renderCell: () => <ActionsCell />,
+            },
+          ]}
+          density="spacious"
+          dividers="rows"
+          hasHover
+        />
+      </div>
     </XDSCard>
   );
 }

@@ -9,8 +9,8 @@
  * @position Context for XDSStepper <-> XDSStep communication
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Stepper/Stepper.doc.mjs
- * - /packages/core/src/Stepper/index.ts
+ * - /packages/lab/src/Stepper/Stepper.doc.mjs
+ * - /packages/lab/src/Stepper/index.ts
  */
 
 import {createContext, use} from 'react';

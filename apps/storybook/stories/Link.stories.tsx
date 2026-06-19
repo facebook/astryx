@@ -303,7 +303,7 @@ export const ButtonFallbackVariants: Story = {
     docs: {
       description: {
         story:
-          'Button fallback supports all visual variants (color, underline, tooltip, disabled) — ' +
+          'Button fallback supports all visual variants (color, underline, tooltip, disabled), ' +
           'visually indistinguishable from a regular link.',
       },
     },
@@ -322,7 +322,7 @@ export const ButtonFallbackInline: Story = {
       description: {
         story:
           'Button fallback works inline within text, just like a regular link. ' +
-          'Inspect the DOM — it renders a `<button>` not an `<a>`.',
+          'Inspect the DOM; it renders a `<button>` not an `<a>`.',
       },
     },
   },
@@ -371,7 +371,7 @@ export const LinkVsButtonComparison: Story = {
         </div>
       </div>
       <XDSText type="body" size="sm" color="secondary">
-        Both look the same — but inspect the DOM to see the semantic difference.
+        Both look the same, but inspect the DOM to see the semantic difference.
       </XDSText>
     </div>
   ),

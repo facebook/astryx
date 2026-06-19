@@ -6,6 +6,7 @@ import React from 'react';
 import {XDSTheme} from './XDSTheme';
 import {defineTheme} from './defineTheme';
 import {useXDSTheme} from './useXDSTheme';
+import {resolveXDSThemeTokens} from './tokens';
 
 // Mock useMediaQuery — default to light mode
 vi.mock('../hooks/useMediaQuery', () => ({
@@ -110,5 +111,15 @@ describe('useXDSTheme', () => {
     expect(tokens['--color-accent']).toBe('#AA0000');
     expect(tokens['--spacing-4']).toBe('20px');
     expect(tokens['--spacing-1']).toBe('4px');
+  });
+
+  it('uses the same token resolution as resolveXDSThemeTokens', () => {
+    const {result} = renderHook(() => useXDSTheme(), {
+      wrapper: ({children}) => wrapper({children, mode: 'dark'}),
+    });
+
+    expect(result.current.tokens).toEqual(
+      resolveXDSThemeTokens(testTheme, {mode: 'dark'}),
+    );
   });
 });

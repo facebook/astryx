@@ -8,14 +8,86 @@
  */
 
 import * as fs from 'node:fs';
+import * as path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {describe, it, expect} from 'vitest';
 import {packages} from '../generated/packageRegistry';
-import {components, componentCount} from '../generated/componentRegistry';
+import {
+  components,
+  componentCount,
+  type ComponentEntry,
+} from '../generated/componentRegistry';
 import {blocks, blockCount, showcaseCount} from '../generated/blockRegistry';
 import {templates, templateCount} from '../generated/templateRegistry';
 import {docTopics, docsCount} from '../generated/docsRegistry';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
 import {exampleRegistry} from '../generated/exampleRegistry';
+
+const REPO_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../../..',
+);
+const CORE_SRC_DIR = path.join(REPO_ROOT, 'packages/core/src');
+
+function findFiles(dir: string, predicate: (filePath: string) => boolean) {
+  const files: string[] = [];
+  for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...findFiles(fullPath, predicate));
+    } else if (predicate(fullPath)) {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
+
+function getCoreComponentsWithPublicProps() {
+  const names = new Set<string>();
+  for (const filePath of findFiles(CORE_SRC_DIR, file =>
+    file.endsWith('.tsx'),
+  )) {
+    const source = fs.readFileSync(filePath, 'utf-8');
+    for (const match of source.matchAll(
+      /export\s+(?:interface|type)\s+XDS([A-Z]\w*)Props\b/g,
+    )) {
+      names.add(match[1]);
+    }
+  }
+  return names;
+}
+
+function getComponentDocCompletenessIssues(
+  comp: ComponentEntry,
+  componentsWithPublicProps: Set<string>,
+) {
+  const issues: string[] = [];
+  if (comp.params != null || comp.hidden) {
+    return issues;
+  }
+  if (comp.description.trim() === '') {
+    issues.push('missing description');
+  }
+  const usageDescription = comp.usage?.description?.trim() ?? '';
+  if (usageDescription === '') {
+    issues.push('missing usage description');
+  }
+  if (componentsWithPublicProps.has(comp.name) && comp.props.length === 0) {
+    issues.push('missing props');
+  }
+  const incompleteProps = comp.props
+    .filter(
+      prop =>
+        prop.name.trim() === '' ||
+        prop.type.trim() === '' ||
+        prop.description.trim() === '',
+    )
+    .map(prop => prop.name || '<unnamed>');
+  if (incompleteProps.length > 0) {
+    issues.push(`incomplete props: ${incompleteProps.join(', ')}`);
+  }
+  return issues;
+}
 
 // ── Package Registry ───────────────────────────────────────────────────
 
@@ -163,6 +235,34 @@ describe('componentRegistry', () => {
     expect(dialogHeader!.description.toLowerCase()).toContain('header');
   });
 
+  it('extracted sub-components do not inherit parent usage prose', () => {
+    const core = components['@xds/core'];
+    const chatComposer = core.find(c => c.name === 'ChatComposer');
+    expect(chatComposer).toBeDefined();
+    expect(chatComposer!.parentDoc).toBe('Chat');
+    expect(chatComposer!.usage?.description).toContain(
+      'Layout shell for a chat composer',
+    );
+    expect(chatComposer!.usage?.description).not.toContain(
+      'XDSChatMessageList',
+    );
+    expect(chatComposer!.usage?.description).not.toContain(
+      'scrollable container for chat messages',
+    );
+  });
+
+  it('sub-components can override inherited playground defaults', () => {
+    const core = components['@xds/core'];
+    const avatarGroupOverflow = core.find(
+      c => c.name === 'AvatarGroupOverflow',
+    );
+    expect(avatarGroupOverflow).toBeDefined();
+    expect(avatarGroupOverflow!.playground?.defaults).toMatchObject({
+      count: 2,
+      children: '+2',
+    });
+  });
+
   it('Chat has many sub-components (standalone docs take priority over compound entries)', () => {
     const core = components['@xds/core'];
     // Chat compound doc has 14 sub-components, but ChatToolCalls and
@@ -187,6 +287,19 @@ describe('componentRegistry', () => {
     const button = core.find(c => c.name === 'Button');
     expect(button).toBeDefined();
     expect(button!.parentDoc).toBeNull();
+  });
+
+  it('keeps core component docs complete for generated component pages', () => {
+    const componentsWithPublicProps = getCoreComponentsWithPublicProps();
+    const incompleteDocs = components['@xds/core'].flatMap(comp => {
+      const issues = getComponentDocCompletenessIssues(
+        comp,
+        componentsWithPublicProps,
+      );
+      return issues.length > 0 ? [`${comp.name}: ${issues.join(', ')}`] : [];
+    });
+
+    expect(incompleteDocs).toEqual([]);
   });
 
   it('moduleName has XDS prefix for components, not for hooks', () => {
@@ -420,6 +533,14 @@ describe('blockRegistry', () => {
       expect(typeof block.source).toBe('string');
       expect(block.source.length).toBeGreaterThan(0);
     }
+  });
+
+  it('decodes unicode escapes in block titles', () => {
+    const block = blocks.find(b => b.dirName === 'TabListTabsWithBadge');
+    expect(block).toBeDefined();
+    expect(block!.name).toBe('TabList — With Badge');
+    expect(block!.displayName).toBe('TabList — With Badge');
+    expect(block!.name).not.toContain('\\u2014');
   });
 
   it('showcase sources contain valid JSX', () => {
@@ -661,6 +782,14 @@ describe('exampleRegistry', () => {
     expect(separators!.description).toContain('"/"');
     // Full sentence survives past the interior quote.
     expect(separators!.description).toMatch(/separator\.?$/i);
+  });
+
+  it('decodes unicode escapes in example titles', () => {
+    const tabList = exampleRegistry['TabList'] ?? [];
+    const withBadge = tabList.find(e => /With Badge/i.test(e.name));
+    expect(withBadge).toBeDefined();
+    expect(withBadge!.name).toBe('TabList — With Badge');
+    expect(withBadge!.name).not.toContain('\\u2014');
   });
 
   // Regression: long descriptions (>200 chars) must not be dropped.

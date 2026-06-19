@@ -246,7 +246,7 @@ export function registerInit(program) {
       humanLog('  Next steps:');
       humanLog("    1. Import components: import { XDSButton } from '@xds/core'");
       humanLog('    2. Optionally add a theme:');
-      humanLog("       import { defaultTheme } from '@xds/theme/default'");
+      humanLog("       import { defaultTheme } from '@xds/theme-default'");
       humanLog('       <XDSTheme theme={defaultTheme}>...</XDSTheme>');
       humanLog(`    3. ${run} xds --help for all commands`);
       humanLog('');

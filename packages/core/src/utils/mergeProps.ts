@@ -1,20 +1,21 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Merge xds-* class name, stylex.props result, and optional consumer className/style.
+ * Merge xds-* props, stylex.props result, and optional consumer className/style.
  *
- * stylex.props() returns { className, style }. This merges the xds-*
- * class name into the className string so both StyleX styles and the
- * stable theme-targeting class are applied.
+ * stylex.props() returns { className, style }. This merges the XDS stable
+ * class name plus any data-attribute reflection from `xdsThemeProps()` with the
+ * StyleX class name so both StyleX styles and the theme-targeting surface are
+ * applied.
  *
  * Consumer className is appended after StyleX classes.
  * Consumer style is spread after StyleX inline styles, so these values take priority.
  *
  * @example
  * ```tsx
- * // Root element with xdsClassName
+ * // Root element with xdsThemeProps
  * <div {...mergeProps(
- *   xdsClassName('button', { variant }),
+ *   xdsThemeProps('button', { variant }),
  *   stylex.props(styles.base, variants[variant]),
  *   className,
  *   style,
@@ -29,21 +30,48 @@
  */
 
 type StyleObject = React.CSSProperties;
+type PropsObject = {
+  className?: string;
+  style?: StyleObject;
+  [key: string]: unknown;
+};
+
+function mergeTwoProps(base: PropsObject, overrides: PropsObject): PropsObject {
+  const merged: PropsObject = {...base, ...overrides};
+
+  const cls = [base.className, overrides.className].filter(Boolean).join(' ');
+  if (cls) {
+    merged.className = cls;
+  } else {
+    delete merged.className;
+  }
+
+  const mergedStyle =
+    overrides.style && base.style
+      ? {...base.style, ...overrides.style}
+      : overrides.style || base.style;
+  if (mergedStyle) {
+    merged.style = mergedStyle;
+  } else {
+    delete merged.style;
+  }
+
+  return merged;
+}
 
 export function mergeProps(
-  xdsClassOrStylexResult: string | {className?: string; style?: StyleObject},
-  stylexResultOrClassName?: {className?: string; style?: StyleObject} | string,
+  xdsClassOrStylexResult: string | PropsObject,
+  stylexResultOrClassName?: PropsObject | string,
   classNameOrStyle?: string | React.CSSProperties,
   style?: React.CSSProperties,
-): {className: string; style?: StyleObject} {
+): PropsObject {
   // Disambiguate: first arg is string → (xdsClass, stylexResult, className?, style?)
-  // first arg is object → (stylexResult, overrides?, ...)
+  // first arg is object → merge arbitrary props (supports xdsThemeProps + data attrs).
   if (typeof xdsClassOrStylexResult === 'string') {
     const xdsClass = xdsClassOrStylexResult;
-    const stylexResult = (stylexResultOrClassName as {
-      className?: string;
-      style?: StyleObject;
-    }) ?? {className: ''};
+    const stylexResult = (stylexResultOrClassName as PropsObject) ?? {
+      className: '',
+    };
     const className = classNameOrStyle as string | undefined;
 
     let cls = stylexResult.className
@@ -58,26 +86,25 @@ export function mergeProps(
         ? {...stylexResult.style, ...style}
         : style || stylexResult.style;
 
-    return {className: cls, style: mergedStyle};
+    return {...stylexResult, className: cls, style: mergedStyle};
   }
 
-  // Object form: mergeProps(stylex.props(...), { style, className })
-  const base = xdsClassOrStylexResult;
-  const overrides =
-    (stylexResultOrClassName as {
-      className?: string;
-      style?: StyleObject;
-    }) ?? {};
+  const first = xdsClassOrStylexResult;
+  const second =
+    typeof stylexResultOrClassName === 'string'
+      ? {className: stylexResultOrClassName}
+      : (stylexResultOrClassName ?? {});
+  let merged = mergeTwoProps(first, second);
 
-  let cls = base.className ?? '';
-  if (overrides.className) {
-    cls = cls ? `${cls} ${overrides.className}` : overrides.className;
+  if (typeof classNameOrStyle === 'string') {
+    merged = mergeTwoProps(merged, {className: classNameOrStyle});
+  } else if (classNameOrStyle != null) {
+    merged = mergeTwoProps(merged, {style: classNameOrStyle});
   }
 
-  const mergedStyle =
-    overrides.style && base.style
-      ? {...base.style, ...overrides.style}
-      : overrides.style || base.style;
+  if (style != null) {
+    merged = mergeTwoProps(merged, {style});
+  }
 
-  return {className: cls, style: mergedStyle};
+  return merged;
 }

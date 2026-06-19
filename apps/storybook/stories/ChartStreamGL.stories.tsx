@@ -352,7 +352,8 @@ export const MultiSensorOverlay: StoryObj = {
       <XDSStack direction="vertical" gap={4}>
         <XDSHeading level={3}>Multi-Sensor Overlay</XDSHeading>
         <XDSText type="supporting" color="secondary">
-          Three streams sharing one chart — same xDomain, same yDomain=[0, 100].
+          
+          Three streams sharing one chart, same xDomain, same yDomain=[0, 100].
         </XDSText>
         <XDSChart
           data={[

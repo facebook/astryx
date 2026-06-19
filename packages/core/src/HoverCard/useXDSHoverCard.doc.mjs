@@ -7,8 +7,8 @@ export const docs = {
   group: 'HoverCard',
   keywords: ['hovercard', 'hover', 'preview', 'card', 'tooltip', 'popup', 'floating', 'anchor'],
   params: [
-    {name: 'placement', type: 'LayerPlacement', description: 'Position relative to the trigger.', default: "'above'"},
-    {name: 'alignment', type: 'LayerAlignment', description: 'Alignment along the placement axis.', default: "'center'"},
+    {name: 'placement', type: "'above' | 'below' | 'start' | 'end'", description: 'Position relative to the trigger.', default: "'above'"},
+    {name: 'alignment', type: "'start' | 'center' | 'end'", description: 'Alignment along the placement axis.', default: "'center'"},
     {name: 'delay', type: 'number', description: 'Delay before showing the hover card on hover, in milliseconds.', default: '300'},
     {name: 'hideDelay', type: 'number', description: 'Delay before hiding after mouse or focus leaves, in milliseconds.', default: '200'},
     {name: 'focusTrigger', type: "'auto' | 'always' | 'never'", description: 'When focus should open the hover card. auto only attaches focus listeners to naturally focusable elements.', default: "'auto'"},
@@ -33,7 +33,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Use for rich content previews such as user profiles, entity summaries, and link previews.'},
       {guidance: true, description: 'Prefer the XDSHoverCard component for standard trigger-content pairs; use the hook for custom trigger patterns.'},
-      {guidance: false, description: 'Use for simple text hints — use XDSTooltip or useXDSTooltip instead.'},
+      {guidance: false, description: 'Use for simple text hints: use XDSTooltip or useXDSTooltip instead.'},
     ],
   },
   relatedComponents: ['HoverCard', 'Tooltip', 'Popover'],
@@ -72,7 +72,7 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Use for rich previews: profiles, entity summaries, link previews.'},
       {guidance: true, description: 'Prefer XDSHoverCard for standard trigger-content pairs; use hook for custom trigger patterns.'},
-      {guidance: false, description: 'Use for simple text hints — use XDSTooltip / useXDSTooltip instead.'},
+      {guidance: false, description: 'Use for simple text hints: use XDSTooltip / useXDSTooltip instead.'},
     ],
   },
 };

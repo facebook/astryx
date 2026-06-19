@@ -2,14 +2,14 @@
 
 /**
  * Page type: playground (full-bleed tool)
- * Renders the interactive code playground full-screen with no marketing top
- * nav / footer chrome — a left editor panel and a right live-preview panel.
+ * The PlaygroundClient owns its XDSAppShell so its stateful side navigation
+ * can drive Code / Properties / Theme tabs and still get AppShell mobile nav.
  * Theme context is provided by the root <Providers> (app/providers.tsx), so
- * this layout only needs to establish a full-viewport, overflow-hidden frame.
+ * this route layout intentionally adds no extra chrome or scroll container.
  *
  * @input children — the PlaygroundClient tree
- * @output Full-height surface container
- * @position app/playground layout wrapper
+ * @output Children unchanged; PlaygroundClient provides the full-height shell
+ * @position app/playground route layout
  */
 
 export default function PlaygroundLayout({
@@ -17,14 +17,5 @@ export default function PlaygroundLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div
-      style={{
-        height: '100vh',
-        overflow: 'hidden',
-        backgroundColor: 'var(--color-background-surface)',
-      }}>
-      {children}
-    </div>
-  );
+  return children;
 }

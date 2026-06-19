@@ -3,7 +3,7 @@
 'use client';
 /**
  * @file XDSCommandPaletteItem.tsx
- * @input Uses React, StyleX, CommandPaletteContext
+ * @input Uses React, StyleX, CommandPaletteContext, DialogContext
  * @output Exports XDSCommandPaletteItem component
  * @position Sub-component; individual selectable item
  *
@@ -14,15 +14,17 @@
 import {useCallback, useEffect, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import {
   colorVars,
   spacingVars,
   radiusVars,
   typographyVars,
-  textSizeVars,
+  typeScaleVars,
 } from '../theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
+import {useDialogContext} from '../Dialog/DialogContext';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const HOVER_HOVER = '@media (hover: hover)';
 
@@ -36,7 +38,7 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-inner'],
     fontFamily: typographyVars['--font-family-body'],
-    fontSize: textSizeVars['--font-size-base'],
+    fontSize: typeScaleVars['--text-label-size'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
     border: 'none',
@@ -128,7 +130,10 @@ export function XDSCommandPaletteItem({
   ...props
 }: XDSCommandPaletteItemProps) {
   const ctx = useCommandPaletteContext();
+  const dialogContext = useDialogContext();
+  const isInlineDialog = dialogContext?.isInline === true;
   const itemRef = useRef<HTMLDivElement>(null);
+  const didMountRef = useRef(false);
 
   // Find this item's index in the flat selectable items list (DOM order).
   // This aligns with useCombobox's index-based navigation.
@@ -144,10 +149,21 @@ export function XDSCommandPaletteItem({
   const isSelected = controlledSelected ?? (ctx ? ctx.value === value : false);
 
   useEffect(() => {
+    // Inline dialogs are documentation/showcase previews. Avoid scrolling the
+    // surrounding page when picker mode auto-highlights its selected item on
+    // mount, while preserving scroll-into-view after user navigation.
+    const shouldSkipInitialInlineScroll =
+      isInlineDialog && !didMountRef.current;
+    didMountRef.current = true;
+
+    if (shouldSkipInitialInlineScroll) {
+      return;
+    }
+
     if (isHighlighted && itemRef.current) {
       itemRef.current.scrollIntoView?.({block: 'nearest'});
     }
-  }, [isHighlighted]);
+  }, [isHighlighted, isInlineDialog]);
 
   const handleClick = useCallback(() => {
     if (isDisabled) {
@@ -178,7 +194,7 @@ export function XDSCommandPaletteItem({
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       {...mergeProps(
-        xdsClassName('command-palette-item'),
+        xdsThemeProps('command-palette-item'),
         stylex.props(
           styles.item,
           !isDisabled && styles.itemHover,

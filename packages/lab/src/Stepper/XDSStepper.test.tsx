@@ -7,7 +7,7 @@ import {XDSStepper} from './XDSStepper';
 import {XDSStep} from './XDSStep';
 
 describe('XDSStepper', () => {
-  it('renders a navigation landmark with steps', () => {
+  it('renders an ordered list of steps (not a nav landmark)', () => {
     render(
       <XDSStepper activeStep={0}>
         <XDSStep step={0} label="Step 1" />
@@ -15,9 +15,10 @@ describe('XDSStepper', () => {
         <XDSStep step={2} label="Step 3" />
       </XDSStepper>,
     );
-    expect(
-      screen.getByRole('navigation', {name: 'Progress'}),
-    ).toBeInTheDocument();
+    // A stepper is a sequence/progress list, not a navigation landmark.
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    const list = screen.getByRole('list', {name: 'Progress'});
+    expect(list.tagName).toBe('OL');
     expect(screen.getByText('Step 1')).toBeInTheDocument();
     expect(screen.getByText('Step 2')).toBeInTheDocument();
     expect(screen.getByText('Step 3')).toBeInTheDocument();
@@ -68,7 +69,7 @@ describe('XDSStepper', () => {
       </XDSStepper>,
     );
     expect(
-      screen.getByRole('navigation', {name: 'Checkout progress'}),
+      screen.getByRole('list', {name: 'Checkout progress'}),
     ).toBeInTheDocument();
   });
 
@@ -79,8 +80,8 @@ describe('XDSStepper', () => {
         <XDSStep step={1} label="Step 2" />
       </XDSStepper>,
     );
-    const nav = screen.getByRole('navigation');
-    expect(nav).toBeInTheDocument();
+    const list = screen.getByRole('list');
+    expect(list).toHaveAttribute('data-orientation', 'vertical');
   });
 
   it('calls onStepClick when a completed step is clicked', async () => {
@@ -170,47 +171,58 @@ describe('XDSStepper', () => {
     expect(screen.queryAllByRole('button')).toHaveLength(0);
   });
 
-  it('supports status override with string literal', () => {
-    render(
-      <XDSStepper activeStep={0}>
-        <XDSStep step={0} label="Step 1" data-testid="step-0" />
-        <XDSStep
-          step={1}
-          label="Step 2"
-          status="completed"
-          data-testid="step-1"
-        />
-      </XDSStepper>,
-    );
-    const step1 = screen.getByTestId('step-1');
-    expect(step1).toBeInTheDocument();
-  });
-
-  it('supports error status string', () => {
+  it('applies a semantic color status (color only) via data attribute', () => {
     render(
       <XDSStepper activeStep={1}>
         <XDSStep step={0} label="Step 1" data-testid="step-0" />
         <XDSStep step={1} label="Step 2" status="error" data-testid="step-1" />
       </XDSStepper>,
     );
-    expect(screen.getByTestId('step-1').getAttribute('class') ?? '').toContain(
+    expect(screen.getByTestId('step-1')).toHaveAttribute(
+      'data-status',
+      'error',
+    );
+    // status is color-only — it must not change progress semantics.
+    expect(screen.getByTestId('step-1')).toHaveAttribute(
+      'aria-current',
+      'step',
+    );
+  });
+
+  it('reflects each global semantic status on the data attribute', () => {
+    render(
+      <XDSStepper activeStep={0}>
+        <XDSStep step={0} label="A" status="accent" data-testid="s-accent" />
+        <XDSStep step={1} label="B" status="success" data-testid="s-success" />
+        <XDSStep step={2} label="C" status="warning" data-testid="s-warning" />
+        <XDSStep step={3} label="D" status="error" data-testid="s-error" />
+      </XDSStepper>,
+    );
+    expect(screen.getByTestId('s-accent')).toHaveAttribute(
+      'data-status',
+      'accent',
+    );
+    expect(screen.getByTestId('s-success')).toHaveAttribute(
+      'data-status',
+      'success',
+    );
+    expect(screen.getByTestId('s-warning')).toHaveAttribute(
+      'data-status',
+      'warning',
+    );
+    expect(screen.getByTestId('s-error')).toHaveAttribute(
+      'data-status',
       'error',
     );
   });
 
-  it('prioritizes explicit status over auto-derived', () => {
+  it('does not set a status data attribute when status is unset', () => {
     render(
       <XDSStepper activeStep={0}>
-        <XDSStep
-          step={0}
-          label="Step 1"
-          status="completed"
-          data-testid="step-0"
-        />
+        <XDSStep step={0} label="Step 1" data-testid="step-0" />
       </XDSStepper>,
     );
-    const cls = screen.getByTestId('step-0').getAttribute('class') ?? '';
-    expect(cls).toContain('completed');
+    expect(screen.getByTestId('step-0')).not.toHaveAttribute('data-status');
   });
 
   it('handles zero active step correctly', () => {
@@ -227,7 +239,7 @@ describe('XDSStepper', () => {
     expect(screen.getByTestId('step-1')).not.toHaveAttribute('aria-current');
   });
 
-  it('renders listitem roles for each step', () => {
+  it('renders each step as a list item', () => {
     render(
       <XDSStepper activeStep={0}>
         <XDSStep step={0} label="Step 1" />
@@ -235,7 +247,9 @@ describe('XDSStepper', () => {
         <XDSStep step={2} label="Step 3" />
       </XDSStepper>,
     );
-    expect(screen.getAllByRole('listitem')).toHaveLength(3);
+    const items = screen.getAllByRole('listitem');
+    expect(items).toHaveLength(3);
+    expect(items[0].tagName).toBe('LI');
   });
 
   it('accepts a custom ReactNode as indicator', () => {
@@ -250,5 +264,18 @@ describe('XDSStepper', () => {
     );
     expect(screen.getByTestId('custom-icon')).toBeInTheDocument();
     expect(screen.getByText('★')).toBeInTheDocument();
+  });
+
+  it('accepts a generic icon via the icon prop', () => {
+    render(
+      <XDSStepper activeStep={1}>
+        <XDSStep
+          step={1}
+          label="Payment"
+          icon={<span data-testid="pay-icon">$</span>}
+        />
+      </XDSStepper>,
+    );
+    expect(screen.getByTestId('pay-icon')).toBeInTheDocument();
   });
 });

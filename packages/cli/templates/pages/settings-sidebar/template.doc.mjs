@@ -3,10 +3,10 @@
 /** @type {import('../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'page',
-  name: 'Sidebar',
-  displayName: 'Sidebar',
+  name: 'Settings Panels',
+  displayName: 'Settings Panels',
   description:
-    'Account settings with sidebar navigation, inline editing, and multi-section privacy controls',
+    'Account settings with nav-switched panels, inline row editing, and multi-section privacy controls',
   isReady: true,
-  category: 'Settings - Sidebar',
+  category: 'Settings - Panels',
 };

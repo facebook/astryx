@@ -18,13 +18,13 @@
 import {useMemo, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {
   XDSFormLayoutContext,
   type XDSFormLayoutDirection,
 } from './XDSFormLayoutContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Responsive breakpoint for horizontal-labels collapse
@@ -85,28 +85,6 @@ export interface XDSFormLayoutProps extends XDSBaseProps<HTMLDivElement> {
    * @default 'vertical'
    */
   direction?: XDSFormLayoutDirection;
-
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
 }
 
 // =============================================================================
@@ -147,7 +125,7 @@ export function XDSFormLayout({
       <div
         ref={ref}
         {...mergeProps(
-          xdsClassName('form-layout', {direction}),
+          xdsThemeProps('form-layout', {direction}),
           stylex.props(
             styles.base,
             direction === 'horizontal' && styles.horizontal,

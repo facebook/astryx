@@ -33,12 +33,13 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
-import {xdsClassName, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import {XDSCard} from '../Card/XDSCard';
 import type {XDSCardVariant} from '../Card/XDSCard';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 // =============================================================================
 // Styles — only the interactive layer, Card handles everything else
@@ -255,11 +256,10 @@ export function XDSClickableCard({
       maxWidth={maxWidth}
       padding={padding}
       variant={variant}
-      className={
-        classNameProp
-          ? `${xdsClassName('clickable-card', {variant})} ${classNameProp}`
-          : xdsClassName('clickable-card', {variant})
-      }
+      {...mergeProps(xdsThemeProps('clickable-card', {variant}), {
+        className: classNameProp,
+        style,
+      })}
       xstyle={
         [
           styles.interactive,
@@ -270,7 +270,6 @@ export function XDSClickableCard({
           xstyleProp,
         ] as unknown as StyleXStyles
       }
-      style={style}
       onClick={!isDisabled ? onClick : undefined}
       onMouseUp={!isDisabled ? handleMouseUp : undefined}
       {...props}>

@@ -143,7 +143,7 @@ export const docs = {
       {guidance: true, description: 'Add a clear button for search and filter inputs so users can quickly reset without selecting all text.'},
       {guidance: false, description: "Don't use placeholder text as a replacement for a label; placeholders disappear on focus and are not reliably read by screen readers."},
       {guidance: false, description: "Don't use TextInput for multi-line content like comments or descriptions; use TextArea instead."},
-      {guidance: false, description: "Don't mark every field as required; only flag truly mandatory fields so users are not overwhelmed by validation errors."},
+      {guidance: false, description: "Don't mark every field as required; only flag mandatory fields so users are not overwhelmed by validation errors."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text that identifies the field. Always rendered for accessibility even when visually hidden.'},
@@ -295,7 +295,7 @@ export const docsZh = {
       {guidance: true, description: 'Add a clear button for search and filter inputs so users can quickly reset without selecting all text.'},
       {guidance: false, description: "Don't use placeholder text as a replacement for a label; placeholders disappear on focus and are not reliably read by screen readers."},
       {guidance: false, description: "Don't use TextInput for multi-line content like comments or descriptions; use TextArea instead."},
-      {guidance: false, description: "Don't mark every field as required; only flag truly mandatory fields so users are not overwhelmed by validation errors."},
+      {guidance: false, description: "Don't mark every field as required; only flag mandatory fields so users are not overwhelmed by validation errors."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text that identifies the field. Always rendered for accessibility even when visually hidden.'},
@@ -322,7 +322,7 @@ export const docsDense = {
       {guidance: true, description: 'Add a clear button for search and filter inputs so users can quickly reset without selecting all text.'},
       {guidance: false, description: "Don't use placeholder text as a replacement for a label; placeholders disappear on focus and are not reliably read by screen readers."},
       {guidance: false, description: "Don't use TextInput for multi-line content like comments or descriptions; use TextArea instead."},
-      {guidance: false, description: "Don't mark every field as required; only flag truly mandatory fields so users are not overwhelmed by validation errors."},
+      {guidance: false, description: "Don't mark every field as required; only flag mandatory fields so users are not overwhelmed by validation errors."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text that identifies the field. Always rendered for accessibility even when visually hidden.'},

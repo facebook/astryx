@@ -60,19 +60,9 @@ const pageStyles = stylex.create({
   groupHeaderRow: {
     cursor: 'pointer',
     backgroundColor: 'var(--color-background-muted)',
-    borderBottomWidth: 1,
-    borderBottomStyle: 'solid',
-    borderBottomColor: 'var(--color-border)',
-  },
-  headerRow: {
-    paddingBottom: 'var(--spacing-4)',
   },
   groupHeaderCell: {
     padding: 'var(--spacing-3) var(--spacing-4)',
-  },
-  flexFill: {
-    flexGrow: 1,
-    minWidth: 0,
   },
 });
 
@@ -752,6 +742,9 @@ function TaskDetailPanel({
     return null;
   }
   return (
+    // Panel owns the separator (its full-height left border). The adjacent
+    // XDSResizeHandle is kept divider-less + isAlwaysVisible={false} so its
+    // always-on pill doesn't float above the panel as a stray stub.
     <XDSLayoutPanel
       hasDivider
       resizable={resizable}
@@ -997,9 +990,9 @@ export default function DataTableTemplate() {
                           }
                         }}
                         xstyle={[pageStyles.groupHeaderRow]}>
-                        <td
+                        <XDSTableCell
                           colSpan={COL_COUNT}
-                          {...stylex.props(pageStyles.groupHeaderCell)}>
+                          xstyle={pageStyles.groupHeaderCell}>
                           <XDSHStack gap={2} vAlign="center">
                             <XDSIcon
                               icon={
@@ -1016,7 +1009,7 @@ export default function DataTableTemplate() {
                               label={String(tasks.length)}
                             />
                           </XDSHStack>
-                        </td>
+                        </XDSTableCell>
                       </XDSTableRow>
                     )}
 
@@ -1141,7 +1134,11 @@ export default function DataTableTemplate() {
         end={
           selectedTask && (
             <>
-              <XDSResizeHandle resizable={detailPanel.props} isReversed />
+              <XDSResizeHandle
+                resizable={detailPanel.props}
+                isReversed
+                isAlwaysVisible={false}
+              />
               <TaskDetailPanel
                 task={selectedTask}
                 onClose={() => setSelectedTask(null)}

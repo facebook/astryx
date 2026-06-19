@@ -38,9 +38,10 @@ import {XDSSpinner} from '../Spinner';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {useXDSButtonGroup} from '../ButtonGroup/XDSButtonGroupContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 /**
  * Base button styles
@@ -380,8 +381,10 @@ export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
 }
 
 const loadingStyles = stylex.create({
-  loading: {
-    position: 'relative',
+  // Hide the button's own content while the spinner overlay is shown. Applied
+  // to the content wrapper (not the button) so the button keeps its variant
+  // foreground color, which the spinner inherits via shade="inherit" (#2717).
+  hiddenContent: {
     color: 'transparent',
   },
   spinnerOverlay: {
@@ -390,9 +393,8 @@ const loadingStyles = stylex.create({
     left: 0,
     right: 0,
     bottom: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    display: 'grid',
+    placeItems: 'center',
   },
 });
 
@@ -515,7 +517,6 @@ export function XDSButton({
   const isLoadingState = isLoading || isPending;
   const groupDisabled = buttonGroup?.isDisabled ?? false;
   const buttonDisabled = isDisabled || groupDisabled || isLoadingState;
-  const useLightSpinner = variant === 'primary' || variant === 'destructive';
   // isIconOnly prop is the source of truth for icon-only rendering.
   // When false (default), label is always rendered as visible text.
 
@@ -572,7 +573,6 @@ export function XDSButton({
     isIconOnly && styles.iconOnly,
     buttonDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
-    isLoadingState && loadingStyles.loading,
     renderAsLink && styles.link,
     !buttonGroup && styles.pressable,
     buttonGroup &&
@@ -588,7 +588,7 @@ export function XDSButton({
   );
 
   const sharedMergedProps = mergeProps(
-    xdsClassName('button', {variant, size}),
+    xdsThemeProps('button', {variant, size}),
     sharedStylexProps,
     className,
     style,
@@ -600,14 +600,14 @@ export function XDSButton({
         <span
           {...stylex.props(loadingStyles.spinnerOverlay)}
           aria-hidden="true">
-          <XDSSpinner
-            size="sm"
-            shade={useLightSpinner ? 'onMedia' : 'default'}
-          />
+          <XDSSpinner size="sm" shade="inherit" />
         </span>
       )}
       <span
-        {...stylex.props(styles.contentWrapper)}
+        {...stylex.props(
+          styles.contentWrapper,
+          isLoadingState && loadingStyles.hiddenContent,
+        )}
         aria-hidden={isLoadingState || undefined}>
         {icon && (
           <span {...stylex.props(styles.iconWrapper, iconSizeStyles[size])}>

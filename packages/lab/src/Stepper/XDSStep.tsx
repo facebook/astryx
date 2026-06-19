@@ -9,9 +9,9 @@
  * @position Individual step item; used inside XDSStepper
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Stepper/Stepper.doc.mjs
- * - /packages/core/src/Stepper/XDSStepper.test.tsx
- * - /packages/core/src/Stepper/index.ts
+ * - /packages/lab/src/Stepper/Stepper.doc.mjs
+ * - /packages/lab/src/Stepper/XDSStepper.test.tsx
+ * - /packages/lab/src/Stepper/index.ts
  * - /apps/storybook/stories/Stepper.stories.tsx
  * - /packages/cli/templates/blocks/components/Stepper/ (showcase blocks)
  */
@@ -28,47 +28,95 @@ import {
   durationVars,
   easeVars,
 } from '@xds/core/theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '@xds/core/utils';
+import {mergeProps} from '@xds/core/utils';
 import type {XDSBaseProps} from '@xds/core';
 import {useXDSStepperContext} from './XDSStepperContext';
+import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
 import type {XDSStepStatus} from './XDSStepStatus';
 
-export type XDSStepIndicatorPreset = 'auto' | 'status' | 'number' | 'none';
+/**
+ * Built-in indicator presets. Anything other than these strings passed to
+ * `indicator` is treated as a custom ReactNode (e.g. an `<XDSIcon />`).
+ * - 'auto': numbered badge for not-yet-reached steps, a check once completed
+ *   (default)
+ * - 'number': always a numbered badge
+ * - 'none': no indicator — just the progress bar and label
+ */
+export type XDSStepIndicatorPreset = 'auto' | 'number' | 'none';
 export type XDSStepDensity = 'compact' | 'balanced' | 'spacious';
 
 export interface XDSStepProps extends XDSBaseProps<HTMLDivElement> {
+  /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
+  /**
+   * Zero-based index of this step. Used to derive progress (completed /
+   * active / not-started) relative to the parent's `activeStep`.
+   */
   step: number;
+  /**
+   * Step label text.
+   */
   label: string;
+  /**
+   * Optional description shown below the label.
+   */
   description?: string;
+  /**
+   * Content rendered below the label and description. Useful in vertical
+   * steppers to show form fields or detailed content for each step.
+   */
   children?: ReactNode;
+  /**
+   * Custom icon rendered inside the indicator. Accepts any ReactNode (for
+   * example an `<XDSIcon />`). Equivalent to passing the node directly to
+   * `indicator`; takes precedence over the built-in number/check.
+   */
   icon?: ReactNode;
+  /**
+   * Semantic color for the step. Controls **color only** and maps to the
+   * global XDS semantic tokens (`accent`, `success`, `warning`, `error`).
+   * Leave unset to use the progress-derived default coloring.
+   */
   status?: XDSStepStatus;
+  /**
+   * Disable interaction for this step.
+   * @default false
+   */
   isDisabled?: boolean;
+  /**
+   * Marks the step as optional, appending an "Optional" affordance after the
+   * label.
+   * @default false
+   */
   isOptional?: boolean;
+  /**
+   * Trailing content rendered at the end of the label row (e.g. a timestamp
+   * or status chip).
+   */
   endContent?: ReactNode;
   /**
-   * What to show as the step indicator. Accepts a preset string or any ReactNode:
-   * - 'auto': number for not-started steps, status icon once there's a state (default)
-   * - 'status': always show status icons (check, dot, error, etc.)
-   * - 'number': always show numbered badge
-   * - 'none': no indicator, just bar + label
+   * What to show as the step indicator. Accepts a preset string or any
+   * ReactNode:
+   * - 'auto': numbered badge until completed, then a check (default)
+   * - 'number': always a numbered badge
+   * - 'none': no indicator, just the bar + label
    * - ReactNode: any custom icon or element to render as the indicator
    * @default 'auto'
    */
   indicator?: XDSStepIndicatorPreset | ReactNode;
   /**
-   * Controls vertical padding of the step.
+   * Controls vertical padding of the step. Falls back to the stepper-level
+   * density when unset.
    * - 'compact': minimal padding (4px block)
    * - 'balanced': default (8px block)
    * - 'spacious': generous (12px block, 12px inline)
-   * @default 'balanced'
    */
   density?: XDSStepDensity;
 }
 
-// --- Status icons (16px) ---
+// --- Default progress icons (16px) ---
 
+/** Filled check — shown for completed steps in 'auto' mode. */
 function CheckCircleIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -84,61 +132,12 @@ function CheckCircleIcon() {
   );
 }
 
+/** Filled dot in a ring — shown for the active step in 'auto' mode. */
 function CurrentIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="2" />
       <circle cx="8" cy="8" r="4" fill="currentColor" />
-    </svg>
-  );
-}
-
-function CircleOutlineIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  );
-}
-
-function ErrorIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <circle cx="8" cy="8" r="8" fill="currentColor" />
-      <path
-        d="M8 5v4M8 11h.01"
-        stroke="white"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function WarningIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <circle cx="8" cy="8" r="8" fill="currentColor" />
-      <path
-        d="M8 5v4M8 11h.01"
-        stroke="white"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function SkipIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="2" />
-      <path
-        d="M5.5 5.5l5 5M10.5 5.5l-5 5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
     </svg>
   );
 }
@@ -172,6 +171,19 @@ const styles = stylex.create({
   barIncomplete: {
     backgroundColor: colorVars['--color-border'],
   },
+  // Semantic status overrides for the bar — color only.
+  barAccent: {
+    backgroundColor: colorVars['--color-accent'],
+  },
+  barSuccess: {
+    backgroundColor: colorVars['--color-success'],
+  },
+  barWarning: {
+    backgroundColor: colorVars['--color-warning'],
+  },
+  barError: {
+    backgroundColor: colorVars['--color-error'],
+  },
 
   // Step body — the selectable area
   verticalBody: {
@@ -186,11 +198,11 @@ const styles = stylex.create({
     flexDirection: 'column',
     alignItems: 'flex-start',
     flex: 1,
-    // density padding applied via densityX styles below
+    // density padding applied via density styles below
   },
 
   // Full-width progress bar segment sitting above each horizontal step.
-  // Each step owns its own segment (filled from its derived status) so the
+  // Each step owns its own segment (filled from its derived progress) so the
   // parent never has to introspect children to build the bar.
   horizontalBar: {
     width: '100%',
@@ -210,7 +222,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
   },
 
-  // Status icon container
+  // Indicator icon container
   icon: {
     display: 'flex',
     alignItems: 'center',
@@ -220,7 +232,7 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   iconCompleted: {
-    color: colorVars['--color-success'],
+    color: colorVars['--color-accent'],
   },
   iconInProgress: {
     color: colorVars['--color-accent'],
@@ -228,18 +240,22 @@ const styles = stylex.create({
   iconNotStarted: {
     color: colorVars['--color-icon-secondary'],
   },
-  iconError: {
-    color: colorVars['--color-error'],
+  iconDisabled: {
+    color: colorVars['--color-icon-disabled'],
+    opacity: 0.5,
+  },
+  // Semantic status overrides for the icon — color only.
+  iconAccent: {
+    color: colorVars['--color-accent'],
+  },
+  iconSuccess: {
+    color: colorVars['--color-success'],
   },
   iconWarning: {
     color: colorVars['--color-warning'],
   },
-  iconSkipped: {
-    color: colorVars['--color-icon-secondary'],
-  },
-  iconDisabled: {
-    color: colorVars['--color-icon-disabled'],
-    opacity: 0.5,
+  iconError: {
+    color: colorVars['--color-error'],
   },
 
   // Number badge
@@ -270,18 +286,27 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-background-muted'],
     color: colorVars['--color-text-secondary'],
   },
-  numberError: {
-    backgroundColor: colorVars['--color-error'],
-    color: colorVars['--color-on-error'],
+  numberDisabled: {
+    backgroundColor: colorVars['--color-background-muted'],
+    color: colorVars['--color-text-disabled'],
+    opacity: 0.5,
+  },
+  // Semantic status overrides for the number badge — color only.
+  numberAccent: {
+    backgroundColor: colorVars['--color-accent'],
+    color: colorVars['--color-on-accent'],
+  },
+  numberSuccess: {
+    backgroundColor: colorVars['--color-success'],
+    color: colorVars['--color-on-success'],
   },
   numberWarning: {
     backgroundColor: colorVars['--color-warning'],
     color: colorVars['--color-on-warning'],
   },
-  numberDisabled: {
-    backgroundColor: colorVars['--color-background-muted'],
-    color: colorVars['--color-text-disabled'],
-    opacity: 0.5,
+  numberError: {
+    backgroundColor: colorVars['--color-error'],
+    color: colorVars['--color-on-error'],
   },
 
   // Label
@@ -299,9 +324,6 @@ const styles = stylex.create({
   },
   labelDisabled: {
     color: colorVars['--color-text-disabled'],
-  },
-  labelError: {
-    color: colorVars['--color-text-primary'],
   },
 
   // Optional tag
@@ -391,13 +413,34 @@ const styles = stylex.create({
   },
 });
 
+/**
+ * An individual step within an XDSStepper. Renders a 4px progress-bar segment,
+ * an indicator (numbered badge, check, or any custom icon), a label with
+ * optional description, and an optional content slot.
+ *
+ * Progress (completed / active / not-started) is derived from the parent's
+ * `activeStep` and this step's `step` prop. The optional `status` prop layers a
+ * semantic color (`accent` / `success` / `warning` / `error`) on top — color
+ * only; it does not change layout or iconography.
+ *
+ * @example
+ * ```
+ * <XDSStep step={0} label="Account details" description="Enter your email" />
+ * ```
+ *
+ * @example
+ * ```
+ * // Generic icon + semantic color
+ * <XDSStep step={1} label="Payment" status="error" icon={<XDSIcon icon="warning" />} />
+ * ```
+ */
 export function XDSStep({
   step,
   label,
   description,
   children,
   icon,
-  status: statusProp,
+  status,
   isDisabled = false,
   isOptional = false,
   endContent,
@@ -415,24 +458,24 @@ export function XDSStep({
 
   const density = densityProp ?? ctxDensity;
 
-  // Resolve indicator prop — may be a preset string or a custom ReactNode
+  // Resolve indicator prop — may be a preset string or a custom ReactNode.
   const isCustomIndicator =
     indicatorProp != null && typeof indicatorProp !== 'string';
   const indicator: XDSStepIndicatorPreset = isCustomIndicator
-    ? 'status'
+    ? 'auto'
     : ((indicatorProp as XDSStepIndicatorPreset | undefined) ?? 'auto');
 
-  // Resolve status. Priority: explicit `status` > auto-derived from activeStep.
-  const status: XDSStepStatus =
-    statusProp ??
-    (step === activeStep
+  // Internal progress, derived from the parent's activeStep. This is NOT the
+  // public `status` prop — `status` controls semantic color only.
+  const progress: 'completed' | 'in-progress' | 'not-started' =
+    step === activeStep
       ? 'in-progress'
       : step < activeStep
         ? 'completed'
-        : 'not-started');
+        : 'not-started';
 
   const isVertical = orientation === 'vertical';
-  const isSelected = status === 'in-progress';
+  const isActive = progress === 'in-progress';
   // Any non-disabled step is navigable when an onStepClick handler is provided,
   // including not-started steps (free navigation across the flow).
   const isClickable = !isDisabled && onStepClick != null;
@@ -443,34 +486,50 @@ export function XDSStep({
     }
   };
 
-  // Bar: purely progress-based
-  const isBarFilled = status === 'completed' || status === 'in-progress';
+  // Bar fill is purely progress-based; `status` recolors it when set.
+  const isBarFilled = progress === 'completed' || progress === 'in-progress';
+  const statusBarStyle =
+    status === 'accent'
+      ? styles.barAccent
+      : status === 'success'
+        ? styles.barSuccess
+        : status === 'warning'
+          ? styles.barWarning
+          : status === 'error'
+            ? styles.barError
+            : undefined;
 
   // --- Build indicator node ---
-  // 'auto': number for not-started, status icon for everything else
-  // 'number': always number badge (color reflects progress)
-  // 'status': always status icon
+  // 'auto': number for not-started, check/dot icon once reached
+  // 'number': always number badge
   // 'none': nothing
+  // custom ReactNode (or `icon` prop): render as-is
   let indicatorNode: ReactNode = null;
 
+  const customIcon = isCustomIndicator ? indicatorProp : (icon ?? null);
+
   if (indicator !== 'none') {
-    // Determine if we should show a number
     const showNumber =
-      indicator === 'number' ||
-      (indicator === 'auto' && status === 'not-started');
+      customIcon == null &&
+      (indicator === 'number' ||
+        (indicator === 'auto' && progress === 'not-started'));
 
     if (showNumber) {
       const numberColorStyle = isDisabled
         ? styles.numberDisabled
-        : status === 'completed'
-          ? styles.numberCompleted
-          : status === 'in-progress'
-            ? styles.numberInProgress
-            : status === 'error'
-              ? styles.numberError
-              : status === 'warning'
-                ? styles.numberWarning
-                : styles.numberNotStarted;
+        : status === 'accent'
+          ? styles.numberAccent
+          : status === 'success'
+            ? styles.numberSuccess
+            : status === 'warning'
+              ? styles.numberWarning
+              : status === 'error'
+                ? styles.numberError
+                : progress === 'completed'
+                  ? styles.numberCompleted
+                  : progress === 'in-progress'
+                    ? styles.numberInProgress
+                    : styles.numberNotStarted;
 
       indicatorNode = (
         <div
@@ -480,61 +539,56 @@ export function XDSStep({
         </div>
       );
     } else {
-      // Show status icon — custom indicator takes priority, then icon prop, then default
-      const statusIcon = isCustomIndicator ? (
-        indicatorProp
-      ) : icon != null ? (
-        icon
-      ) : status === 'completed' ? (
-        <CheckCircleIcon />
-      ) : status === 'in-progress' ? (
-        <CurrentIcon />
-      ) : status === 'error' ? (
-        <ErrorIcon />
-      ) : status === 'warning' ? (
-        <WarningIcon />
-      ) : status === 'skipped' ? (
-        <SkipIcon />
-      ) : (
-        <CircleOutlineIcon />
-      );
+      // Custom icon takes priority, otherwise the progress-derived default.
+      const iconContent =
+        customIcon != null ? (
+          customIcon
+        ) : progress === 'completed' ? (
+          <CheckCircleIcon />
+        ) : (
+          <CurrentIcon />
+        );
 
       const iconColorStyle = isDisabled
         ? styles.iconDisabled
-        : status === 'completed'
-          ? styles.iconCompleted
-          : status === 'in-progress'
-            ? styles.iconInProgress
-            : status === 'error'
-              ? styles.iconError
-              : status === 'warning'
-                ? styles.iconWarning
-                : status === 'skipped'
-                  ? styles.iconSkipped
-                  : styles.iconNotStarted;
+        : status === 'accent'
+          ? styles.iconAccent
+          : status === 'success'
+            ? styles.iconSuccess
+            : status === 'warning'
+              ? styles.iconWarning
+              : status === 'error'
+                ? styles.iconError
+                : progress === 'completed'
+                  ? styles.iconCompleted
+                  : progress === 'in-progress'
+                    ? styles.iconInProgress
+                    : styles.iconNotStarted;
 
       indicatorNode = (
         <div aria-hidden="true" {...stylex.props(styles.icon, iconColorStyle)}>
-          {statusIcon}
+          {iconContent}
         </div>
       );
     }
   }
 
   const hasIndicator = indicator !== 'none';
-  const isNumber = indicator === 'number';
+  const isNumber =
+    hasIndicator &&
+    customIcon == null &&
+    (indicator === 'number' ||
+      (indicator === 'auto' && progress === 'not-started'));
 
   const labelColorStyle = isDisabled
     ? styles.labelDisabled
-    : status === 'error'
-      ? styles.labelError
-      : status === 'not-started'
-        ? styles.labelNotStarted
-        : status === 'in-progress'
-          ? styles.labelInProgress
-          : undefined;
+    : progress === 'not-started'
+      ? styles.labelNotStarted
+      : isActive
+        ? styles.labelInProgress
+        : undefined;
 
-  // Icon/Number + Label row
+  // Indicator + Label row
   const iconLabelNode = (
     <div {...stylex.props(styles.iconLabelRow)}>
       {indicatorNode}
@@ -577,30 +631,37 @@ export function XDSStep({
       </div>
     ) : null;
 
+  // Theme data attributes reflect progress + optional semantic status.
+  const themeProps = xdsThemeProps('step', {
+    progress,
+    status: status ?? undefined,
+  });
+
   // ======= VERTICAL =======
   if (isVertical) {
     return (
-      <div
+      <li
         ref={ref}
         {...mergeProps(
-          xdsClassName('step', {status}),
+          themeProps,
           stylex.props(styles.verticalRoot, xstyle),
           className,
           style,
         )}
-        aria-current={isSelected ? 'step' : undefined}
+        aria-current={isActive ? 'step' : undefined}
         data-testid={dataTestId}
-        role="listitem"
         {...rest}>
         {/* 4px progress bar */}
         <div
           {...mergeProps(
-            xdsClassName('step-bar'),
+            xdsThemeProps('step-bar'),
             stylex.props(
               styles.verticalBar,
-              isBarFilled ? styles.barCompleted : styles.barIncomplete,
+              statusBarStyle ??
+                (isBarFilled ? styles.barCompleted : styles.barIncomplete),
             ),
           )}
+          aria-hidden="true"
         />
         {/* Body: button wraps only label area, children render outside */}
         <div {...stylex.props(styles.verticalBody)}>
@@ -632,31 +693,31 @@ export function XDSStep({
           )}
           {contentNode}
         </div>
-      </div>
+      </li>
     );
   }
 
   // ======= HORIZONTAL =======
   return (
-    <div
+    <li
       ref={ref}
       {...mergeProps(
-        xdsClassName('step', {status}),
+        themeProps,
         stylex.props(styles.horizontalStep, xstyle),
         className,
         style,
       )}
-      aria-current={isSelected ? 'step' : undefined}
+      aria-current={isActive ? 'step' : undefined}
       data-testid={dataTestId}
-      role="listitem"
       {...rest}>
       {/* 4px progress bar segment for this step */}
       <div
         {...mergeProps(
-          xdsClassName('step-bar'),
+          xdsThemeProps('step-bar'),
           stylex.props(
             styles.horizontalBar,
-            isBarFilled ? styles.barCompleted : styles.barIncomplete,
+            statusBarStyle ??
+              (isBarFilled ? styles.barCompleted : styles.barIncomplete),
           ),
         )}
         aria-hidden="true"
@@ -688,7 +749,7 @@ export function XDSStep({
         </div>
       )}
       {contentNode}
-    </div>
+    </li>
   );
 }
 

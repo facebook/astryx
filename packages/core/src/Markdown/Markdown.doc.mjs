@@ -25,6 +25,13 @@ export const docs = {
       required: true,
     },
     {
+      name: 'display',
+      type: "'block' | 'inline'",
+      description:
+        "Display type. Markdown defaults to block. Use 'inline' for markdown spans embedded inside text.",
+      default: "'block'",
+    },
+    {
       name: 'density',
       type: "\'default\' | \'compact\'",
       description: 'Controls spacing between block-level elements.',
@@ -83,6 +90,12 @@ export const docs = {
         'Transforms regex matches in parsed text nodes into custom inline React elements. Use for issue refs, diff refs, mentions, and other shorthand patterns. Inline code and fenced code blocks are unaffected.',
     },
     {
+      name: 'autolink',
+      type: "'gfm'",
+      description:
+        "Opt-in autolinking of bare URLs and emails. 'gfm' applies GitHub-Flavored Markdown autolink-literal rules: bare https?://..., www...., <scheme:url>, <email>, and user@host all become links. Trailing sentence punctuation and unbalanced trailing close-parens are excluded; matches inside code spans, code blocks, existing links, and image alt text are skipped. Default behavior (option unset) is unchanged.",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -128,6 +141,27 @@ export const docs = {
   },
   examples: [
     {
+      label: 'Inline display',
+      code: `
+import {XDSText} from '@xds/core/Text';
+
+<XDSText>
+  This description includes{' '}
+  <XDSMarkdown display="inline">{'\`inline code\` and **bold text**'}</XDSMarkdown>
+  .
+</XDSText>;
+`,
+    },
+    {
+      label: 'GFM autolinks',
+      code: `
+<XDSMarkdown autolink="gfm">
+  {'Visit https://example.com or email contact@example.com. ' +
+    'You can also bracket links: <https://docs.example.com>.'}
+</XDSMarkdown>;
+`,
+    },
+    {
       label: 'Inline Plugins',
       code: `
 import {XDSLink} from '@xds/core/Link';
@@ -160,6 +194,13 @@ export const docsZh = {
       type: 'string',
       description: '要渲染的 Markdown 字符串。',
       required: true,
+    },
+    {
+      name: 'display',
+      type: "'block' | 'inline'",
+      description:
+        "显示类型。Markdown 默认为 block。使用 'inline' 可在文本内嵌入 Markdown 片段。",
+      default: "'block'",
     },
     {
       name: 'density',
@@ -219,6 +260,12 @@ export const docsZh = {
         '将已解析文本节点中的正则匹配转换为自定义内联 React 元素。适用于 issue 引用、diff 引用、用户提及等简写模式。内联代码和围栏代码块不受影响。',
     },
     {
+      name: 'autolink',
+      type: "'gfm'",
+      description:
+        "可选的裸 URL 和电子邮箱自动链接。设为 'gfm' 启用 GitHub Flavored Markdown 自动链接规则：裸 https?://、www.、<scheme:url>、<email> 以及 user@host 都会变成链接。末尾句末标点和不平衡的末尾右括号会被排除；代码块、现有链接和图片替代文本内部的匹配会被跳过。默认为关闭。",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -271,7 +318,7 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    children: 'Markdown string. **(required)**',
+    children: 'markdown string',
     density: "Block spacing. 'default'|'compact'. Default: 'default'.",
     headingLevelStart: 'Maps # to this heading level (1-6). Clamped to h6. Default: 1.',
     isStreaming: 'Incremental parse + fade-in for streamed chunks. Default: false.',
@@ -281,6 +328,7 @@ export const docsDense = {
     contentWidth: 'number|string. Max width for prose (headings, paragraphs, lists). Tables/code unconstrained.',
     contentAlign: "'start'|'center'. Prose alignment when contentWidth < container. Default: 'start'.",
     inlinePlugins: 'MarkdownInlinePlugin[]. Regex matches in text nodes -> custom inline React elements. Skips inline/fenced code.',
+    autolink: "'gfm'. Opt-in GFM autolinking: bare URLs (https?://, www.), <scheme:url>, <email>, user@host. Skips code, code blocks, existing links. Default: off.",
     xstyle: 'stylex.create() for layout (margins, sizing).',
     className: 'CSS class. Prefer xstyle.',
     style: 'Inline styles. Prefer xstyle.',

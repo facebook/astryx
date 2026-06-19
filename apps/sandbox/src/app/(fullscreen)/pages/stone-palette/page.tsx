@@ -101,11 +101,11 @@ export default function StonePalettePage() {
     <ThemePalettePreview
       theme={stoneTheme}
       title="Stone Theme Palette"
-      subtitle="A warm, earthy neutral theme inspired by natural stone and sandstone. Light mode uses pastel T90 surfaces with T30 text; dark mode uses T35 surfaces with T90 text — same hex as the light-mode pastel, clean palette symmetry. Montserrat for headings and display, Figtree for body, JetBrains Mono for code."
+      subtitle="A warm, earthy neutral theme inspired by natural stone and sandstone. Light mode uses pastel T90 surfaces with T30 text; dark mode uses T35 surfaces with T90 text, same hex as the light-mode pastel, clean palette symmetry. Montserrat for headings and display, Figtree for body, JetBrains Mono for code."
       tonalColors={TONAL_COLORS}
       coreSwatches={CORE}
       leadingExtras={<DisplayTextSection />}
-      shadowDescription="Three shadow levels — warm, low-alpha drop shadow stack using Stone 900. Plain drops in both modes (no inset bezel); dark surfaces lift via a slightly lighter card token rather than a shadow rim."
+      shadowDescription="Three shadow levels: warm, low-alpha drop shadow stack using Stone 900. Plain drops in both modes (no inset bezel); dark surfaces lift via a slightly lighter card token rather than a shadow rim."
     />
   );
 }

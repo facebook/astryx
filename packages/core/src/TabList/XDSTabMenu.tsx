@@ -35,8 +35,9 @@ import {useListFocus} from '../hooks/useListFocus';
 import {useXDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
 import {tabScope} from './tab.markers.stylex';
-import {xdsClassName, mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 export interface XDSTabMenuOption {
   value: string;
@@ -307,7 +308,7 @@ export function XDSTabMenu({
         aria-controls={menuId}
         onClick={handleToggle}
         {...mergeProps(
-          xdsClassName('tab-menu'),
+          xdsThemeProps('tab-menu'),
           stylex.props(
             styles.trigger,
             sizeStyles[size],
@@ -339,7 +340,7 @@ export function XDSTabMenu({
         {hasSelectedOption && (
           <span
             {...mergeProps(
-              xdsClassName('tab-indicator', {selected: 'selected'}),
+              xdsThemeProps('tab-indicator', {selected: 'selected'}),
               stylex.props(styles.indicator, styles.indicatorSelected),
             )}
           />
@@ -353,7 +354,7 @@ export function XDSTabMenu({
           aria-label={label}
           onKeyDown={handleListKeyDown}
           {...mergeProps(
-            xdsClassName('tab-menu-dropdown'),
+            xdsThemeProps('tab-menu-dropdown'),
             stylex.props(styles.dropdown),
           )}>
           <span role="presentation" {...stylex.props(styles.menuHeading)}>
@@ -375,7 +376,7 @@ export function XDSTabMenu({
                   }
                 }}
                 {...mergeProps(
-                  xdsClassName('tab-menu-item'),
+                  xdsThemeProps('tab-menu-item'),
                   stylex.props(
                     styles.menuItem,
                     isSelected && styles.menuItemSelected,

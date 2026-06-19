@@ -51,6 +51,11 @@
       "types": "./src/tailwind-theme.css.d.ts",
       "default": "./src/tailwind-theme.css"
     },
+    "./theme/tokens": {
+      "source": "./src/theme/tokens.ts",
+      "types": "./dist/theme/tokens.d.ts",
+      "default": "./dist/theme/tokens.js"
+    },
     "./theme/tokens.stylex": {
       "source": "./src/theme/tokens.stylex.ts",
       "types": "./dist/theme/tokens.stylex.d.ts",
@@ -227,6 +232,11 @@
       "source": "./src/Field/index.ts",
       "types": "./dist/Field/index.d.ts",
       "default": "./dist/Field/index.js"
+    },
+    "./FieldStatus": {
+      "source": "./src/FieldStatus/index.ts",
+      "types": "./dist/FieldStatus/index.d.ts",
+      "default": "./dist/FieldStatus/index.js"
     },
     "./FileInput": {
       "source": "./src/FileInput/index.ts",
@@ -626,7 +636,7 @@
     "@babel/core": "^7.29.7",
     "@babel/preset-react": "^7.29.7",
     "@babel/preset-typescript": "^7.29.7",
-    "@stylexjs/babel-plugin": "^0.18.3",
+    "@stylexjs/babel-plugin": "^0.19.0",
     "@testing-library/dom": "^10.0.0",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.3.2"

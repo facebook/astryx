@@ -73,9 +73,10 @@ export interface PropDoc {
 }
 
 /**
- * A theming target — a stable CSS class name that `defineTheme` can target
- * via `@scope` selectors. Each component renders one or more class names
- * via `xdsClassName()`, and themes can override styles for each.
+ * A theming target — a stable selector surface that `defineTheme` can target
+ * via `@scope` selectors. Each component renders one or more stable `xds-*`
+ * class names and reflects visual props/states as `data-*` attributes via
+ * `xdsThemeProps()`, so themes and external CSS have an explicit prop-aware selector surface.
  *
  * @example
  * ```
@@ -89,16 +90,19 @@ export interface ThemingTarget {
    *  Always starts with `xds-`.
    *  e.g. `"xds-button"`, `"xds-avatar-status-dot"`, `"xds-card"` */
   className: string;
-  /** Visual prop names that produce variant classes on this element.
-   *  These are the props passed to `xdsClassName()` as the second argument.
-   *  Themes can target specific variants via `.xds-button.secondary`.
-   *  Omit if the component has no visual props (class name only). */
+  /** Visual prop names reflected on this element.
+   *  These are the props passed to `xdsThemeProps()` as the second argument.
+   *  Use these names to derive preferred data selectors: `variant` →
+   *  `[data-variant="secondary"]`, `level` → `[data-level="2"]`. Legacy bare
+   *  classes are still emitted for compatibility but should not be the primary
+   *  documentation surface. Omit if the component has no visual props (class
+   *  name only). */
   visualProps?: string[];
-  /** State class names that appear on this element based on component state.
+  /** State names that appear on this element based on component state.
    *  Unlike visualProps (driven by props), these reflect runtime state
-   *  (checked, selected, today, on, expanded, etc.).
-   *  Themes target them the same way as variants: `.xds-radio.checked { ... }`
-   *  Omit if the element has no state-driven classes. */
+   *  (checked, selected, today, on, expanded, etc.). Use these names to derive preferred data selectors such as
+   *  `[data-checked="checked"]`. Legacy state classes are still emitted for
+   *  compatibility. Omit if the element has no state-driven selectors. */
   states?: string[];
 }
 
@@ -385,7 +389,24 @@ export interface ElementDescriptor {
 export interface PlaygroundConfig {
   /** Initial prop values for the playground preview.
    *  Keys are prop names. Values are primitives or ElementDescriptors. */
-  defaults: Record<string, unknown>;
+  defaults?: Record<string, unknown>;
+  /** Required parent wrapper for sub-components that depend on a parent
+   *  context provider (e.g. `XDSTab` calls `useXDSTabListContext()` and throws
+   *  standalone). The preview wraps the component in this parent before
+   *  rendering, injecting it as `children`. Provide any props the wrapper
+   *  requires (e.g. a matching `value`).
+   *
+   *  @example
+   *  ```
+   *  playground: {wrapper: {component: 'XDSTabList', props: {value: 'tab-1'}}}
+   *  ```
+   */
+  wrapper?: {
+    /** Parent component name as exported from `@xds/core`, e.g. `'XDSTabList'`. */
+    component: string;
+    /** Props for the wrapper. The previewed sub-component becomes its `children`. */
+    props?: Record<string, unknown>;
+  };
 }
 
 /**
@@ -462,9 +483,9 @@ interface BaseDoc {
    *  only make sense within a parent (e.g. BreadcrumbItem, DialogHeader)
    *  or internal primitives that shouldn't appear in the gallery. */
   isHiddenFromOverview?: boolean;
-  /** Theming configuration. Documents the stable CSS class names
-   *  rendered by this component that themes can target via `@scope`
-   *  selectors in `defineTheme`. */
+  /** Theming configuration. Documents the stable selector surface rendered
+   *  by this component: `xds-*` classes plus data-attribute reflections that
+   *  themes can target via `@scope` selectors in `defineTheme`. */
   theming?: {
     /** Whether this component is a container whose `padding` properties
      *  should be mapped to container tokens by the theme pipeline.
@@ -472,8 +493,8 @@ interface BaseDoc {
      *  component overrides are expanded to `--container-padding-*` and
      *  `--layout-padding-*` tokens instead of emitting raw CSS. */
     container?: boolean;
-    /** CSS class targets rendered by this component.
-     *  Each entry corresponds to an `xdsClassName()` call in the source. */
+    /** Selector targets rendered by this component.
+     *  Each entry corresponds to an `xdsThemeProps()` call in the source. */
     targets: ThemingTarget[];
     /** CSS custom properties exposed for theming. */
     vars?: ComponentVar[];
@@ -508,15 +529,59 @@ export interface SingleComponentDoc extends BaseDoc {
 }
 
 /**
+ * A cross-link reference to a sub-component that lives in its own sibling
+ * `{Name}.doc.mjs` file (see {@link SubComponentDoc}). The parent's
+ * `components` array lists these names so the family stays discoverable;
+ * the entry's content is emitted from the sub-component's own file, not here.
+ */
+export interface ComponentRef {
+  /** Full export name including XDS prefix, e.g. `"XDSChatComposer"`. Must
+   *  match the `name` field of the referenced sub-component's own doc. */
+  name: string;
+}
+
+/**
  * Documentation for a directory that exports multiple public components.
  * Props live on each entry in `components`.
  *
  * Use this when the directory has multiple `XDS*.tsx` files
  * (e.g. Table, Dialog, TabList, TopNav, Layout).
+ *
+ * Each `components` entry is either a full {@link ComponentEntry} (inline
+ * sub-component) or a name-only {@link ComponentRef} pointing at a sibling
+ * `{Name}.doc.mjs` file. The two styles can be mixed during migration.
  */
 export interface MultiComponentDoc extends BaseDoc {
-  /** Each public component/hook exported from this directory. */
-  components: ComponentEntry[];
+  /** Each public component/hook exported from this directory — either an
+   *  inline entry or a name-only reference to a sibling sub-component doc. */
+  components: (ComponentEntry | ComponentRef)[];
+}
+
+/**
+ * Documentation for a single sub-component that lives in its own
+ * `{Name}.doc.mjs` file inside its parent's directory. Identified by the
+ * `subComponentOf` field, which names the parent component.
+ *
+ * A sub-component owns its `description`, `props`, and (optionally) its own
+ * `usage`. Family-level fields (`group`, `category`, `keywords`, `theming`,
+ * `playground`) are inherited from the directory's primary doc unless
+ * overridden here. The generated registry entry is identical to the legacy
+ * inline `components[]` expansion — this is purely a file-structure change.
+ */
+export interface SubComponentDoc extends Omit<BaseDoc, 'usage'> {
+  /** Name of the parent component this sub-component belongs to, matching the
+   *  parent doc's `name` (e.g. `"Chat"`). Marks this file as a sub-component
+   *  doc so the pipeline parents and inherits family fields correctly. */
+  subComponentOf: string;
+  /** One-sentence description of what this sub-component does and its role
+   *  within the parent composition. */
+  description: string;
+  /** All public props for this sub-component. */
+  props: PropDoc[];
+  /** Usage is optional for sub-components — when omitted, generated surfaces
+   *  should use the sub-component's own description as the concise usage
+   *  summary (not inherited from the parent, which was the #2602 bug). */
+  usage?: UsageDoc;
 }
 
 /**
@@ -529,8 +594,13 @@ export interface MultiComponentDoc extends BaseDoc {
  *
  * Use SingleComponentDoc (with `props`) for single-component directories.
  * Use MultiComponentDoc (with `components`) for multi-component directories.
+ * Use SubComponentDoc (with `subComponentOf`) for a sub-component that lives
+ * in its own file inside its parent's directory.
  */
-export type ComponentDoc = SingleComponentDoc | MultiComponentDoc;
+export type ComponentDoc =
+  | SingleComponentDoc
+  | MultiComponentDoc
+  | SubComponentDoc;
 
 /**
  * Translation overlay for component documentation.
@@ -766,6 +836,8 @@ export type TemplateCategory =
   | 'Settings'
   | 'Settings - Dialog'
   | 'Settings - Sidebar'
+  | 'Settings - Panels'
+  | 'Settings - Form'
   // Login
   | 'Login - Basic'
   | 'Login - Card'

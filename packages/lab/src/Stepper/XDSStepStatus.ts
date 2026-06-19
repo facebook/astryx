@@ -4,29 +4,23 @@
  * @file XDSStepStatus.ts
  * @input None
  * @output Exports XDSStepStatus type
- * @position Shared type used by XDSStep, XDSStepGroup, and context
+ * @position Shared type used by XDSStep and the stepper docs
  */
 
 /**
- * The status for a given step.
+ * Semantic color status for a step. Controls **color only** — it maps directly
+ * onto the XDS global semantic color tokens and does not change layout,
+ * iconography, or behavior.
  *
- * Uses plain string values aligned with XDS semantic tokens:
- * - 'not-started': Step has not been started yet
- * - 'in-progress': Step is currently in progress (active)
- * - 'completed': Step has been completed successfully
- * - 'skipped': Step was deliberately skipped
- * - 'warning': Step has a warning that needs attention
- * - 'error': Step has an error that must be resolved
+ * Plain string values aligned with the global token semantics:
+ * - 'accent'  → `--color-accent`  (default emphasis / in-progress)
+ * - 'success' → `--color-success` (a positively-resolved step)
+ * - 'warning' → `--color-warning` (needs attention)
+ * - 'error'   → `--color-error`   (must be resolved)
  *
- * When not explicitly set, status is auto-derived from the parent's activeStep:
- * - step < activeStep → 'completed'
- * - step === activeStep → 'in-progress'
- * - step > activeStep → 'not-started'
+ * `status` is intentionally NOT a lifecycle enum (completed/active/etc.) — the
+ * step's progress is derived from the parent's `activeStep`. Use `status` only
+ * when you want to tint a step with a specific semantic color, e.g.
+ * `status="error"`.
  */
-export type XDSStepStatus =
-  | 'not-started'
-  | 'in-progress'
-  | 'completed'
-  | 'skipped'
-  | 'warning'
-  | 'error';
+export type XDSStepStatus = 'accent' | 'success' | 'warning' | 'error';
