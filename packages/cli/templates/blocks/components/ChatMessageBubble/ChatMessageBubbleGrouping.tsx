@@ -3,62 +3,61 @@
 'use client';
 
 import {
-  XDSChatMessageList,
-  XDSChatMessage,
-  XDSChatMessageBubble,
-  XDSChatMessageMetadata,
+  ChatMessageList,
+  ChatMessage,
+  ChatMessageBubble,
+  ChatMessageMetadata,
 } from '@xds/core/Chat';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSTimestamp} from '@xds/core/Timestamp';
-import {XDSText} from '@xds/core/Text';
+import {Avatar} from '@xds/core/Avatar';
+import {Timestamp} from '@xds/core/Timestamp';
+import {Text} from '@xds/core/Text';
 
 export default function ChatMessageBubbleGrouping() {
   return (
-    <XDSChatMessageList style={{maxWidth: 500}}>
-      <XDSChatMessage
+    <ChatMessageList style={{maxWidth: 500}}>
+      <ChatMessage
         sender="assistant"
-        avatar={<XDSAvatar name="Agent" size="small" />}>
-        <XDSChatMessageBubble
+        avatar={<Avatar name="Agent" size="small" />}>
+        <ChatMessageBubble
           group="first"
           name={
-            <XDSText type="supporting" weight="semibold" color="secondary">
+            <Text type="supporting" weight="semibold" color="secondary">
               Agent
-            </XDSText>
+            </Text>
           }>
           I reviewed the three files you shared.
-        </XDSChatMessageBubble>
-        <XDSChatMessageBubble group="middle">
+        </ChatMessageBubble>
+        <ChatMessageBubble group="middle">
           The data model looks solid, but the API handler has a race condition
           on concurrent writes.
-        </XDSChatMessageBubble>
-        <XDSChatMessageBubble
+        </ChatMessageBubble>
+        <ChatMessageBubble
           group="last"
           metadata={
-            <XDSChatMessageMetadata
+            <ChatMessageMetadata
               timestamp={
-                <XDSTimestamp value="2026-04-10T10:45:00" format="time" />
+                <Timestamp value="2026-04-10T10:45:00" format="time" />
               }
             />
           }>
           I can draft a fix if you want.
-        </XDSChatMessageBubble>
-      </XDSChatMessage>
-
-      <XDSChatMessage sender="user">
-        <XDSChatMessageBubble group="first">Yes please!</XDSChatMessageBubble>
-        <XDSChatMessageBubble
+        </ChatMessageBubble>
+      </ChatMessage>
+      <ChatMessage sender="user">
+        <ChatMessageBubble group="first">Yes please!</ChatMessageBubble>
+        <ChatMessageBubble
           group="last"
           metadata={
-            <XDSChatMessageMetadata
+            <ChatMessageMetadata
               timestamp={
-                <XDSTimestamp value="2026-04-10T10:46:00" format="time" />
+                <Timestamp value="2026-04-10T10:46:00" format="time" />
               }
               status="delivered"
             />
           }>
           Also add a test for the concurrent case.
-        </XDSChatMessageBubble>
-      </XDSChatMessage>
-    </XDSChatMessageList>
+        </ChatMessageBubble>
+      </ChatMessage>
+    </ChatMessageList>
   );
 }

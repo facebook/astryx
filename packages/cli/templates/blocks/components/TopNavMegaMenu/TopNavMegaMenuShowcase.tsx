@@ -3,12 +3,12 @@
 'use client';
 
 import {
-  XDSTopNav,
-  XDSTopNavHeading,
-  XDSTopNavItem,
-  XDSTopNavMegaMenu,
-  XDSTopNavMegaMenuItem,
-  XDSTopNavMegaMenuFeaturedCard,
+  TopNav,
+  TopNavHeading,
+  TopNavItem,
+  TopNavMegaMenu,
+  TopNavMegaMenuItem,
+  TopNavMegaMenuFeaturedCard,
 } from '@xds/core/TopNav';
 import {
   RocketLaunchIcon,
@@ -20,36 +20,36 @@ import {
 
 export default function TopNavMegaMenuShowcase() {
   return (
-    <XDSTopNav
+    <TopNav
       style={{width: 600}}
       label="Mega menu demo"
-      heading={<XDSTopNavHeading heading="DevTools" />}
+      heading={<TopNavHeading heading="DevTools" />}
       startContent={
         <>
-          <XDSTopNavItem label="Overview" href="#" isSelected />
-          <XDSTopNavMegaMenu
+          <TopNavItem label="Overview" href="#" isSelected />
+          <TopNavMegaMenu
             label="Products"
             items={
               <>
-                <XDSTopNavMegaMenuItem
+                <TopNavMegaMenuItem
                   title="Deploy"
                   description="Ship to production in seconds"
                   icon={<RocketLaunchIcon width={20} height={20} />}
                   href="#deploy"
                 />
-                <XDSTopNavMegaMenuItem
+                <TopNavMegaMenuItem
                   title="Documentation"
                   description="Guides, references, and tutorials"
                   icon={<BookOpenIcon width={20} height={20} />}
                   href="#docs"
                 />
-                <XDSTopNavMegaMenuItem
+                <TopNavMegaMenuItem
                   title="API"
                   description="Programmatic access to all features"
                   icon={<CodeBracketIcon width={20} height={20} />}
                   href="#api"
                 />
-                <XDSTopNavMegaMenuItem
+                <TopNavMegaMenuItem
                   title="Security"
                   description="Enterprise-grade protection"
                   icon={<ShieldCheckIcon width={20} height={20} />}
@@ -58,7 +58,7 @@ export default function TopNavMegaMenuShowcase() {
               </>
             }
             featured={
-              <XDSTopNavMegaMenuFeaturedCard
+              <TopNavMegaMenuFeaturedCard
                 title="What's New"
                 description="Check out our latest features and improvements in the Q2 release."
                 linkLabel="Read the changelog"

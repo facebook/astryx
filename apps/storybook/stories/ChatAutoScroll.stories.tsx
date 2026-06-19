@@ -6,7 +6,7 @@
  *
  * Issue: https://github.com/facebookexperimental/xds/issues/2282
  *
- * The auto-scroll system (useXDSChatStreamScroll + useXDSChatNewMessages)
+ * The auto-scroll system (useChatStreamScroll + useChatNewMessages)
  * relies on ResizeObserver detecting content height changes. This story
  * isolates three scenarios:
  *
@@ -17,18 +17,18 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSChatLayout,
-  XDSChatMessageList,
-  XDSChatMessage,
-  XDSChatToolCalls,
-  XDSChatComposer,
-  type XDSChatToolCallItem,
+  ChatLayout,
+  ChatMessageList,
+  ChatMessage,
+  ChatToolCalls,
+  ChatComposer,
+  type ChatToolCallItem,
 } from '@xds/core/Chat';
-import {XDSMarkdown} from '@xds/core/Markdown';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText} from '@xds/core/Text';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
-import {XDSBadge} from '@xds/core/Badge';
+import {Markdown} from '@xds/core/Markdown';
+import {Button} from '@xds/core/Button';
+import {Text} from '@xds/core/Text';
+import {CodeBlock} from '@xds/core/CodeBlock';
+import {Badge} from '@xds/core/Badge';
 import {useState, useCallback, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
@@ -94,24 +94,24 @@ The project uses a **monorepo** structure with the following key directories:
 
 Looking at the architecture more closely, the system follows a **plugin-based pattern** where components are composed through a unified swizzle system. This means any internal primitive can be overridden at any level.
 
-The auto-scroll system uses \`useXDSChatStreamScroll\` which provides spring-based scroll-to-bottom with lock/unlock behavior:
+The auto-scroll system uses \`useChatStreamScroll\` which provides spring-based scroll-to-bottom with lock/unlock behavior:
 
 \`\`\`tsx
-const scroll = useXDSChatStreamScroll({scrollRef});
+const scroll = useChatStreamScroll({scrollRef});
 // scroll.isLocked — auto-following content
 // scroll.scrollIfLocked() — call on resize
 \`\`\`
 
-This is paired with \`useXDSChatNewMessages\` which observes the content element via ResizeObserver and calls \`scrollIfLocked()\` on every height change.
+This is paired with \`useChatNewMessages\` which observes the content element via ResizeObserver and calls \`scrollIfLocked()\` on every height change.
 
 The key question is: **does the ResizeObserver fire reliably for all types of content additions?**`;
 
-const TOOL_CALLS_SEQUENCE: XDSChatToolCallItem[][] = [
+const TOOL_CALLS_SEQUENCE: ChatToolCallItem[][] = [
   [
     {
       key: '1',
       name: 'read',
-      target: 'packages/core/src/Chat/useXDSChatStreamScroll.ts',
+      target: 'packages/core/src/Chat/useChatStreamScroll.ts',
       status: 'complete',
       duration: '42ms',
       node: 'xds',
@@ -131,14 +131,14 @@ const TOOL_CALLS_SEQUENCE: XDSChatToolCallItem[][] = [
     {
       key: '3',
       name: 'edit',
-      target: 'XDSChatLayout.tsx',
+      target: 'ChatLayout.tsx',
       status: 'complete',
       duration: '95ms',
       node: 'xds',
       additions: 12,
       deletions: 3,
       resultDetail: (
-        <XDSCodeBlock
+        <CodeBlock
           code={`// Added MutationObserver supplement\nconst observer = new MutationObserver(() => {\n  scrollIfLocked();\n});\nobserver.observe(contentEl, { childList: true, subtree: true });`}
           language="typescript"
         />
@@ -154,7 +154,7 @@ const TOOL_CALLS_SEQUENCE: XDSChatToolCallItem[][] = [
       duration: '8.1s',
       node: 'xds',
       resultDetail: (
-        <XDSCodeBlock
+        <CodeBlock
           code={`$ yarn test\n✓ 142 tests passed (18 suites)\n\nTest Suites: 18 passed, 18 total\nTests:       142 passed, 142 total\nTime:        8.1s`}
           language="bash"
         />
@@ -165,7 +165,7 @@ const TOOL_CALLS_SEQUENCE: XDSChatToolCallItem[][] = [
     {
       key: '5',
       name: 'read',
-      target: 'packages/core/src/Chat/useXDSChatNewMessages.ts',
+      target: 'packages/core/src/Chat/useChatNewMessages.ts',
       status: 'complete',
       duration: '38ms',
       node: 'xds',
@@ -181,7 +181,7 @@ type DemoMessage = {
   id: number;
   role: 'user' | 'assistant';
   text: string;
-  toolCalls?: XDSChatToolCallItem[];
+  toolCalls?: ChatToolCallItem[];
   customElement?: React.ReactNode;
   isStreaming?: boolean;
 };
@@ -209,7 +209,7 @@ export const ScrollBehaviorComparison: StoryObj = {
       {
         id: 2,
         role: 'assistant',
-        text: "Sure, I'll look into the auto-scroll behavior. Let me start by reading the relevant files.\n\nThe scroll system uses `useXDSChatStreamScroll` for spring-based scroll tracking and `useXDSChatNewMessages` for content observation.",
+        text: "Sure, I'll look into the auto-scroll behavior. Let me start by reading the relevant files.\n\nThe scroll system uses `useChatStreamScroll` for spring-based scroll tracking and `useChatNewMessages` for content observation.",
       },
       {id: 3, role: 'user', text: 'Great, show me what you find.'},
     ]);
@@ -310,16 +310,16 @@ export const ScrollBehaviorComparison: StoryObj = {
           text: '',
           customElement: (
             <div {...stylex.props(styles.customElement)}>
-              <XDSText type="label" weight="bold">
+              <Text type="label" weight="bold">
                 Architecture Diagram
-              </XDSText>
+              </Text>
               <div {...stylex.props(styles.customElementInner)}>
-                <XDSText type="body" color="secondary">
+                <Text type="body" color="secondary">
                   📊 Embedded visualization (200px tall custom element)
-                </XDSText>
+                </Text>
               </div>
-              <XDSCodeBlock
-                code={`┌─────────────────────┐\n│  useXDSChatStream   │\n│      Scroll         │\n├─────────────────────┤\n│ ResizeObserver ──►  │──► scrollIfLocked()\n│ (content height)    │\n└─────────────────────┘\n         ▲\n         │ fires on height change\n         │\n┌─────────────────────┐\n│ useXDSChatNew       │\n│     Messages        │\n├─────────────────────┤\n│ observeResize() ──► │──► onResize callback\n│ (shared observer)   │\n└─────────────────────┘`}
+              <CodeBlock
+                code={`┌─────────────────────┐\n│  useChatStream   │\n│      Scroll         │\n├─────────────────────┤\n│ ResizeObserver ──►  │──► scrollIfLocked()\n│ (content height)    │\n└─────────────────────┘\n         ▲\n         │ fires on height change\n         │\n┌─────────────────────┐\n│ useChatNew       │\n│     Messages        │\n├─────────────────────┤\n│ observeResize() ──► │──► onResize callback\n│ (shared observer)   │\n└─────────────────────┘`}
                 language="text"
               />
             </div>
@@ -342,7 +342,7 @@ export const ScrollBehaviorComparison: StoryObj = {
         {
           id: 2,
           role: 'assistant',
-          text: "Sure, I'll look into the auto-scroll behavior. Let me start by reading the relevant files.\n\nThe scroll system uses `useXDSChatStreamScroll` for spring-based scroll tracking and `useXDSChatNewMessages` for content observation.",
+          text: "Sure, I'll look into the auto-scroll behavior. Let me start by reading the relevant files.\n\nThe scroll system uses `useChatStreamScroll` for spring-based scroll tracking and `useChatNewMessages` for content observation.",
         },
         {id: 3, role: 'user', text: 'Great, show me what you find.'},
       ]);
@@ -352,67 +352,67 @@ export const ScrollBehaviorComparison: StoryObj = {
       <div {...stylex.props(styles.wrapper)}>
         {/* Control bar */}
         <div {...stylex.props(styles.controls)}>
-          <XDSButton
+          <Button
             label="Stream Text (works ✓)"
             variant="primary"
             size="sm"
             onClick={handleStreamText}
             isDisabled={isStreaming}
           />
-          <XDSButton
+          <Button
             label="Add Tool Call (may fail ✗)"
             variant="secondary"
             size="sm"
             onClick={handleAddToolCall}
           />
-          <XDSButton
+          <Button
             label="Batch Tool Calls (likely fails ✗)"
             variant="secondary"
             size="sm"
             onClick={handleBatchToolCalls}
           />
-          <XDSButton
+          <Button
             label="Add Custom Element (may fail ✗)"
             variant="secondary"
             size="sm"
             onClick={handleAddCustomElement}
           />
-          <XDSButton
+          <Button
             label="Reset"
             variant="ghost"
             size="sm"
             onClick={handleReset}
           />
           <div {...stylex.props(styles.statusPill)}>
-            <XDSBadge
+            <Badge
               variant={isStreaming ? 'green' : 'neutral'}
               label={isStreaming ? 'Streaming' : 'Idle'}
             />
           </div>
         </div>
         {/* Chat area */}
-        <XDSChatLayout
+        <ChatLayout
           composer={
-            <XDSChatComposer
+            <ChatComposer
               onSubmit={() => {}}
               placeholder="Observe auto-scroll behavior above..."
               isStopShown={isStreaming}
             />
           }>
-          <XDSChatMessageList>
+          <ChatMessageList>
             {messages.map(msg => (
-              <XDSChatMessage key={msg.id} sender={msg.role}>
+              <ChatMessage key={msg.id} sender={msg.role}>
                 {msg.text && (
-                  <XDSMarkdown density="compact">{msg.text}</XDSMarkdown>
+                  <Markdown density="compact">{msg.text}</Markdown>
                 )}
                 {msg.toolCalls && msg.toolCalls.length > 0 && (
-                  <XDSChatToolCalls calls={msg.toolCalls} />
+                  <ChatToolCalls calls={msg.toolCalls} />
                 )}
                 {msg.customElement}
-              </XDSChatMessage>
+              </ChatMessage>
             ))}
-          </XDSChatMessageList>
-        </XDSChatLayout>
+          </ChatMessageList>
+        </ChatLayout>
       </div>
     );
   },
@@ -451,9 +451,9 @@ export const RapidToolCalls: StoryObj = {
         const msgId = Date.now() + counterRef.current;
         const toolNames = ['read', 'bash', 'edit', 'ipython', 'show'];
         const targets = [
-          'XDSButton.test.tsx',
+          'Button.test.tsx',
           'yarn test --filter=Button',
-          'XDSButton.tsx +8 -2',
+          'Button.tsx +8 -2',
           'analyze_coverage()',
           'coverage-report.html',
         ];
@@ -523,28 +523,28 @@ export const RapidToolCalls: StoryObj = {
     return (
       <div {...stylex.props(styles.wrapper)}>
         <div {...stylex.props(styles.controls)}>
-          <XDSButton
+          <Button
             label={isRunning ? 'Running...' : 'Start Rapid Tool Calls'}
             variant="primary"
             size="sm"
             onClick={handleStart}
             isDisabled={isRunning}
           />
-          <XDSButton
+          <Button
             label="Stop"
             variant="destructive"
             size="sm"
             onClick={handleStop}
             isDisabled={!isRunning}
           />
-          <XDSButton
+          <Button
             label="Reset"
             variant="ghost"
             size="sm"
             onClick={handleReset}
           />
           <div {...stylex.props(styles.statusPill)}>
-            <XDSBadge
+            <Badge
               variant={isRunning ? 'yellow' : 'neutral'}
               label={
                 isRunning
@@ -555,26 +555,26 @@ export const RapidToolCalls: StoryObj = {
           </div>
         </div>
 
-        <XDSChatLayout
+        <ChatLayout
           composer={
-            <XDSChatComposer
+            <ChatComposer
               onSubmit={() => {}}
               placeholder="Watch scroll behavior..."
             />
           }>
-          <XDSChatMessageList>
+          <ChatMessageList>
             {messages.map(msg => (
-              <XDSChatMessage key={msg.id} sender={msg.role}>
+              <ChatMessage key={msg.id} sender={msg.role}>
                 {msg.text && (
-                  <XDSMarkdown density="compact">{msg.text}</XDSMarkdown>
+                  <Markdown density="compact">{msg.text}</Markdown>
                 )}
                 {msg.toolCalls && msg.toolCalls.length > 0 && (
-                  <XDSChatToolCalls calls={msg.toolCalls} />
+                  <ChatToolCalls calls={msg.toolCalls} />
                 )}
-              </XDSChatMessage>
+              </ChatMessage>
             ))}
-          </XDSChatMessageList>
-        </XDSChatLayout>
+          </ChatMessageList>
+        </ChatLayout>
       </div>
     );
   },
@@ -631,7 +631,7 @@ export const MixedStreamAndTools: StoryObj = {
                   {
                     key: '1',
                     name: 'edit',
-                    target: 'XDSButton.tsx',
+                    target: 'Button.tsx',
                     status: 'running',
                     node: 'xds',
                   },
@@ -649,14 +649,14 @@ export const MixedStreamAndTools: StoryObj = {
                           {
                             key: '1',
                             name: 'edit',
-                            target: 'XDSButton.tsx',
+                            target: 'Button.tsx',
                             status: 'complete',
                             duration: '92ms',
                             node: 'xds',
                             additions: 4,
                             deletions: 2,
                             resultDetail: (
-                              <XDSCodeBlock
+                              <CodeBlock
                                 code={`- outline: 2px solid blue;\n+ outline: 2px solid var(--color-ring-focus);\n+ outline-offset: 2px;`}
                                 language="diff"
                               />
@@ -704,7 +704,7 @@ export const MixedStreamAndTools: StoryObj = {
                                 duration: '3.8s',
                                 node: 'xds',
                                 resultDetail: (
-                                  <XDSCodeBlock
+                                  <CodeBlock
                                     code={`✓ 24 tests passed\n\nTest Suites: 3 passed, 3 total\nTests:       24 passed, 24 total`}
                                     language="bash"
                                   />
@@ -781,21 +781,21 @@ export const MixedStreamAndTools: StoryObj = {
     return (
       <div {...stylex.props(styles.wrapper)}>
         <div {...stylex.props(styles.controls)}>
-          <XDSButton
+          <Button
             label="Run Full Sequence"
             variant="primary"
             size="sm"
             onClick={handleRun}
             isDisabled={phase !== 'idle' && phase !== 'done'}
           />
-          <XDSButton
+          <Button
             label="Reset"
             variant="ghost"
             size="sm"
             onClick={handleReset}
           />
           <div {...stylex.props(styles.statusPill)}>
-            <XDSBadge
+            <Badge
               variant={
                 phase === 'streaming'
                   ? 'green'
@@ -816,26 +816,26 @@ export const MixedStreamAndTools: StoryObj = {
           </div>
         </div>
 
-        <XDSChatLayout
+        <ChatLayout
           composer={
-            <XDSChatComposer
+            <ChatComposer
               onSubmit={() => {}}
               placeholder="Watch the transition from streaming → tool calls..."
             />
           }>
-          <XDSChatMessageList>
+          <ChatMessageList>
             {messages.map(msg => (
-              <XDSChatMessage key={msg.id} sender={msg.role}>
+              <ChatMessage key={msg.id} sender={msg.role}>
                 {msg.text && (
-                  <XDSMarkdown density="compact">{msg.text}</XDSMarkdown>
+                  <Markdown density="compact">{msg.text}</Markdown>
                 )}
                 {msg.toolCalls && msg.toolCalls.length > 0 && (
-                  <XDSChatToolCalls calls={msg.toolCalls} />
+                  <ChatToolCalls calls={msg.toolCalls} />
                 )}
-              </XDSChatMessage>
+              </ChatMessage>
             ))}
-          </XDSChatMessageList>
-        </XDSChatLayout>
+          </ChatMessageList>
+        </ChatLayout>
       </div>
     );
   },

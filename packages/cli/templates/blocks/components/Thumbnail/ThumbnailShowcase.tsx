@@ -2,11 +2,11 @@
 
 'use client';
 
-import {XDSThumbnail} from '@xds/core/Thumbnail';
+import {Thumbnail} from '@xds/core/Thumbnail';
 
 export default function ThumbnailShowcase() {
   return (
-    <XDSThumbnail
+    <Thumbnail
       src="https://lookaside.facebook.com/assets/xds_oss/moody-scene-vertical-2.png"
       alt="Sample image"
       label="photo.jpg"

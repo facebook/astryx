@@ -4,11 +4,11 @@
 
 import type {ComponentProps} from 'react';
 import {
-  XDSSideNav,
-  XDSSideNavCollapseButton,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
+  SideNav,
+  SideNavCollapseButton,
+  SideNavHeading,
+  SideNavItem,
+  SideNavSection,
 } from '@xds/core/SideNav';
 
 function HomeIcon(props: ComponentProps<'svg'>) {
@@ -29,15 +29,15 @@ function FolderIcon(props: ComponentProps<'svg'>) {
 
 export default function SideNavCollapseButtonShowcase() {
   return (
-    <XDSSideNav
+    <SideNav
       collapsible={{hasButton: false}}
-      header={<XDSSideNavHeading heading="Workspace" />}
-      footerIcons={<XDSSideNavCollapseButton />}
+      header={<SideNavHeading heading="Workspace" />}
+      footerIcons={<SideNavCollapseButton />}
     >
-      <XDSSideNavSection title="Main">
-        <XDSSideNavItem label="Home" icon={HomeIcon} isSelected href="#" />
-        <XDSSideNavItem label="Projects" icon={FolderIcon} href="#" />
-      </XDSSideNavSection>
-    </XDSSideNav>
+      <SideNavSection title="Main">
+        <SideNavItem label="Home" icon={HomeIcon} isSelected href="#" />
+        <SideNavItem label="Projects" icon={FolderIcon} href="#" />
+      </SideNavSection>
+    </SideNav>
   );
 }

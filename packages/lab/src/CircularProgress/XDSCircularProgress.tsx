@@ -28,7 +28,7 @@ import {
   typeScaleVars,
 } from '@xds/core/theme/tokens.stylex';
 import {mergeProps} from '@xds/core/utils';
-import type {XDSBaseProps} from '@xds/core';
+import type {BaseProps} from '@xds/core';
 import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
 
 /**
@@ -62,7 +62,7 @@ const SIZE_CONFIG = {
   lg: {diameter: 64, strokeWidth: 5},
 } as const;
 
-export interface XDSCircularProgressProps extends XDSBaseProps<HTMLDivElement> {
+export interface XDSCircularProgressProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /**

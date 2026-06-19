@@ -2,10 +2,10 @@
 
 'use client';
 
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
-import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
+import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
+import {NavIcon} from '@xds/core/NavIcon';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
 import {
   CubeIcon,
   HomeIcon,
@@ -15,45 +15,45 @@ import {
 
 export default function TopNavEnterpriseDashboard() {
   return (
-    <XDSTopNav
+    <TopNav
       label="Main navigation"
       heading={
-        <XDSTopNavHeading
+        <TopNavHeading
           heading="My App"
-          logo={<XDSNavIcon icon={<XDSIcon icon={CubeIcon} size="sm" />} />}
+          logo={<NavIcon icon={<Icon icon={CubeIcon} size="sm" />} />}
           href="#"
         />
       }
       startContent={
         <>
-          <XDSTopNavItem
+          <TopNavItem
             label="Dashboard"
             href="#"
             isSelected
-            icon={<XDSIcon icon={HomeIcon} size="sm" />}
+            icon={<Icon icon={HomeIcon} size="sm" />}
           />
-          <XDSTopNavItem
+          <TopNavItem
             label="Reports"
             href="#"
-            icon={<XDSIcon icon={DocumentTextIcon} size="sm" />}
+            icon={<Icon icon={DocumentTextIcon} size="sm" />}
           />
         </>
       }
       endContent={
         <>
-          <XDSButton
+          <Button
             label="Search"
             variant="ghost"
-            icon={<XDSIcon icon="search" color="inherit" />}
+            icon={<Icon icon="search" color="inherit" />}
             isIconOnly
           />
-          <XDSButton
+          <Button
             label="Notifications"
             variant="ghost"
-            icon={<XDSIcon icon={BellIcon} />}
+            icon={<Icon icon={BellIcon} />}
             isIconOnly
           />
-          <XDSButton label="Upgrade" variant="primary" />
+          <Button label="Upgrade" variant="primary" />
         </>
       }
     />

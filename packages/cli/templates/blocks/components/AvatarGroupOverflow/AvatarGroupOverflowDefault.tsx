@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 'use client';
 
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSAvatarGroup, XDSAvatarGroupOverflow} from '@xds/core/AvatarGroup';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Avatar} from '@xds/core/Avatar';
+import {AvatarGroup, AvatarGroupOverflow} from '@xds/core/AvatarGroup';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const REVIEWERS = [
   {
@@ -23,20 +23,20 @@ const REVIEWERS = [
 
 export default function AvatarGroupOverflowDefault() {
   return (
-    <XDSStack direction="vertical" gap={3}>
-      <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={3}>
+      <Text type="supporting" color="secondary">
         Reviewers
-      </XDSText>
-      <XDSAvatarGroup size="medium">
+      </Text>
+      <AvatarGroup size="medium">
         {REVIEWERS.map(reviewer => (
-          <XDSAvatar
+          <Avatar
             key={reviewer.name}
             src={reviewer.src}
             name={reviewer.name}
           />
         ))}
-        <XDSAvatarGroupOverflow count={2} />
-      </XDSAvatarGroup>
-    </XDSStack>
+        <AvatarGroupOverflow count={2} />
+      </AvatarGroup>
+    </Stack>
   );
 }

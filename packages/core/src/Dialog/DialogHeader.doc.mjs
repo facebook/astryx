@@ -30,7 +30,7 @@ export const docs = {
       description: 'Content before the title (e.g., a back button).',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',
@@ -44,14 +44,14 @@ export const docs = {
       description: 'Content after the title, before close button.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'chevronDown',
             size: 'sm',
           },
         },
         {
-          __element: 'XDSBadge',
+          __element: 'Badge',
           props: {
             label: '3',
           },

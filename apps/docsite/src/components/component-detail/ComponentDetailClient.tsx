@@ -5,13 +5,13 @@
 import * as stylex from '@stylexjs/stylex';
 import {Suspense} from 'react';
 import {useSearchParams, useRouter, usePathname} from 'next/navigation';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSSection} from '@xds/core/Section';
-import {XDSCard} from '@xds/core/Card';
-import {XDSDivider} from '@xds/core';
+import {Heading, Text} from '@xds/core/Text';
+import {VStack} from '@xds/core/Layout';
+import {Section} from '@xds/core/Section';
+import {Card} from '@xds/core/Card';
+import {Divider} from '@xds/core';
 import {CodeExampleBlock} from '../CodeExampleBlock';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {TabList, Tab} from '@xds/core/TabList';
 import {useMediaQuery} from '@xds/core/hooks';
 import {ShowcasePreview} from './ShowcasePreview';
 import {ComponentPreviewTheme} from './ComponentPreviewTheme';
@@ -56,20 +56,20 @@ function OverviewContent({
   const importPath = `import {${comp.moduleName}} from '${importFrom}'`;
 
   return (
-    <XDSVStack gap={8}>
+    <VStack gap={8}>
       {hasShowcase && (
         <ComponentPreviewTheme>
-          <XDSCard variant="muted" padding={0}>
+          <Card variant="muted" padding={0}>
             <ShowcasePreview name={comp.name} />
-          </XDSCard>
+          </Card>
         </ComponentPreviewTheme>
       )}
 
       {comp.usage && (
-        <XDSVStack gap={4}>
-          <XDSHeading level={2} type="display-3">
+        <VStack gap={4}>
+          <Heading level={2} type="display-3">
             Usage
-          </XDSHeading>
+          </Heading>
           <MarkdownText type="large" weight="normal">
             {comp.usage.description}
           </MarkdownText>
@@ -84,7 +84,7 @@ function OverviewContent({
           {comp.usage.bestPractices && comp.usage.bestPractices.length > 0 && (
             <BestPractices practices={comp.usage.bestPractices} />
           )}
-        </XDSVStack>
+        </VStack>
       )}
 
       {isHook && comp.params && comp.returns && (
@@ -93,23 +93,23 @@ function OverviewContent({
 
       {(exampleRegistry[comp.name] || []).length > 0 && (
         <>
-          <XDSDivider />
-          <XDSVStack gap={4}>
-            <XDSHeading level={2} type="display-3">
+          <Divider />
+          <VStack gap={4}>
+            <Heading level={2} type="display-3">
               Examples
-            </XDSHeading>
-            <XDSText type="large" weight="normal">
+            </Heading>
+            <Text type="large" weight="normal">
               Common configurations, variations, and states.
-            </XDSText>
-          </XDSVStack>
-          <XDSVStack gap={10}>
+            </Text>
+          </VStack>
+          <VStack gap={10}>
             {(exampleRegistry[comp.name] || []).map((entry, i) => (
               <ExampleBlock key={i} entry={entry} componentName={comp.name} />
             ))}
-          </XDSVStack>
+          </VStack>
         </>
       )}
-    </XDSVStack>
+    </VStack>
   );
 }
 
@@ -153,26 +153,26 @@ function ComponentDetailInner({
   );
 
   return (
-    <XDSSection
+    <Section
       maxWidth={960}
       padding={6}
       variant="transparent"
       xstyle={styles.section}>
-      <XDSVStack gap={4}>
-        <XDSVStack gap={2}>
-          <XDSText type="display-1">{comp.displayName}</XDSText>
-          <XDSText type="supporting" color="secondary">
+      <VStack gap={4}>
+        <VStack gap={2}>
+          <Text type="display-1">{comp.displayName}</Text>
+          <Text type="supporting" color="secondary">
             {pkg}
             {pkgVersion ? ` v${pkgVersion}` : ''} · {comp.moduleName}
-          </XDSText>
-        </XDSVStack>
+          </Text>
+        </VStack>
 
         {hasPlayground ? (
           <>
-            <XDSTabList value={tab} onChange={setTab} hasDivider>
-              <XDSTab value="overview" label="Overview" />
-              <XDSTab value="properties" label="Properties" />
-            </XDSTabList>
+            <TabList value={tab} onChange={setTab} hasDivider>
+              <Tab value="overview" label="Overview" />
+              <Tab value="properties" label="Properties" />
+            </TabList>
 
             {tab === 'overview' && (
               <OverviewContent
@@ -185,7 +185,7 @@ function ComponentDetailInner({
             )}
 
             {tab === 'properties' && (
-              <XDSVStack gap={4}>
+              <VStack gap={4}>
                 <div
                   style={{
                     position: 'sticky',
@@ -211,24 +211,24 @@ function ComponentDetailInner({
                 </div>
 
                 {comp.props.length > 0 && (
-                  <XDSSection>
-                    <XDSVStack gap={3}>
-                      <XDSHeading level={3}>Props</XDSHeading>
+                  <Section>
+                    <VStack gap={3}>
+                      <Heading level={3}>Props</Heading>
                       <PlaygroundPropsTable
                         props={comp.props}
                         knobs={knobs}
                         state={state}
                         onPropChange={setProp}
                       />
-                    </XDSVStack>
-                  </XDSSection>
+                    </VStack>
+                  </Section>
                 )}
-              </XDSVStack>
+              </VStack>
             )}
           </>
         ) : (
           <>
-            <XDSDivider />
+            <Divider />
             <OverviewContent
               comp={comp}
               pkg={pkg}
@@ -238,8 +238,8 @@ function ComponentDetailInner({
             />
           </>
         )}
-      </XDSVStack>
-    </XDSSection>
+      </VStack>
+    </Section>
   );
 }
 

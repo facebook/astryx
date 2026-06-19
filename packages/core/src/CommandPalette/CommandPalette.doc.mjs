@@ -42,18 +42,18 @@ export const docs = {
     },
     {
       name: 'searchSource',
-      type: 'XDSSearchSource<T>',
+      type: 'SearchSource<T>',
       description: 'Search source providing items via search(query) and bootstrap(). Use createStaticSource for static lists.',
       required: true,
     },
     {
       name: 'input',
       type: 'ReactNode',
-      description: 'Input slot. Defaults to XDSCommandPaletteInput with standard behavior.',
-      default: '<XDSCommandPaletteInput />',
+      description: 'Input slot. Defaults to CommandPaletteInput with standard behavior.',
+      default: '<CommandPaletteInput />',
       slotElements: [
         {
-          __element: 'XDSTextInput',
+          __element: 'TextInput',
           props: {
             label: 'Input',
             placeholder: 'Type here...',
@@ -64,11 +64,11 @@ export const docs = {
     {
       name: 'footer',
       type: 'ReactNode',
-      description: 'Footer slot. Defaults to XDSCommandPaletteFooter showing keyboard hints.',
-      default: '<XDSCommandPaletteFooter />',
+      description: 'Footer slot. Defaults to CommandPaletteFooter showing keyboard hints.',
+      default: '<CommandPaletteFooter />',
       slotElements: [
         {
-          __element: 'XDSText',
+          __element: 'Text',
           props: {
             type: 'body',
           },
@@ -129,12 +129,12 @@ export const docs = {
     },
   ],
   components: [
-    {name: 'XDSCommandPaletteInput'},
-    {name: 'XDSCommandPaletteList'},
-    {name: 'XDSCommandPaletteItem'},
-    {name: 'XDSCommandPaletteGroup'},
-    {name: 'XDSCommandPaletteFooter'},
-    {name: 'XDSCommandPaletteEmpty'},
+    {name: 'CommandPaletteInput'},
+    {name: 'CommandPaletteList'},
+    {name: 'CommandPaletteItem'},
+    {name: 'CommandPaletteGroup'},
+    {name: 'CommandPaletteFooter'},
+    {name: 'CommandPaletteEmpty'},
   ],
   theming: {
     targets: [
@@ -146,11 +146,11 @@ export const docs = {
     ],
   },
   usage: {
-    description: 'CommandPalette is a searchable dialog for quick access to commands, navigation, and actions. Use it as a keyboard-driven launcher powered by XDSSearchSource for filtering and selection.',
+    description: 'CommandPalette is a searchable dialog for quick access to commands, navigation, and actions. Use it as a keyboard-driven launcher powered by SearchSource for filtering and selection.',
     bestPractices: [
       { guidance: true, description: 'Provide a searchSource with bootstrap results so users see useful options before typing.' },
       { guidance: true, description: 'Use auxiliaryData.group on items to automatically organize results into labeled sections.' },
-      { guidance: false, description: 'Use CommandPalette for simple dropdowns or menus; use XDSMenu or XDSSelector for inline selections.' },
+      { guidance: false, description: 'Use CommandPalette for simple dropdowns or menus; use Menu or Selector for inline selections.' },
       { guidance: false, description: 'Add too many groups or items; curate results to keep the palette fast and scannable.' },
     ],
   },
@@ -159,11 +159,11 @@ export const docs = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
   usage: {
-    description: 'CommandPalette is a searchable dialog for quick access to commands, navigation, and actions. Use it as a keyboard-driven launcher powered by XDSSearchSource for filtering and selection.',
+    description: 'CommandPalette is a searchable dialog for quick access to commands, navigation, and actions. Use it as a keyboard-driven launcher powered by SearchSource for filtering and selection.',
     bestPractices: [
       { guidance: true, description: 'Provide a searchSource with bootstrap results so users see useful options before typing.' },
       { guidance: true, description: 'Use auxiliaryData.group on items to automatically organize results into labeled sections.' },
-      { guidance: false, description: 'Use CommandPalette for simple dropdowns or menus; use XDSMenu or XDSSelector for inline selections.' },
+      { guidance: false, description: 'Use CommandPalette for simple dropdowns or menus; use Menu or Selector for inline selections.' },
       { guidance: false, description: 'Add too many groups or items; curate results to keep the palette fast and scannable.' },
     ],
   },
@@ -172,13 +172,13 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'searchSource-driven command palette dialog; filtering, keyboard nav, grouping, selection; same XDSSearchSource interface as XDSTypeahead',
+    'searchSource-driven command palette dialog; filtering, keyboard nav, grouping, selection; same SearchSource interface as Typeahead',
   usage: {
-    description: 'CommandPalette is a searchable dialog for quick access to commands, navigation, and actions. Use it as a keyboard-driven launcher powered by XDSSearchSource for filtering and selection.',
+    description: 'CommandPalette is a searchable dialog for quick access to commands, navigation, and actions. Use it as a keyboard-driven launcher powered by SearchSource for filtering and selection.',
     bestPractices: [
       { guidance: true, description: 'Provide a searchSource with bootstrap results so users see useful options before typing.' },
       { guidance: true, description: 'Use auxiliaryData.group on items to automatically organize results into labeled sections.' },
-      { guidance: false, description: 'Use CommandPalette for simple dropdowns or menus; use XDSMenu or XDSSelector for inline selections.' },
+      { guidance: false, description: 'Use CommandPalette for simple dropdowns or menus; use Menu or Selector for inline selections.' },
       { guidance: false, description: 'Add too many groups or items; curate results to keep the palette fast and scannable.' },
     ],
   },

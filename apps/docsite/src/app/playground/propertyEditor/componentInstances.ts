@@ -7,7 +7,8 @@
  * @position Playground — backs the Properties popover knobs and preview targeting.
  *
  * Uses @babel/parser (bundled, browser-safe — NOT a CDN) to parse the code and
- * walk the AST for `<XDS*>` JSX opening elements. Each attribute's character
+ * walk the AST for XDS-namespace JSX opening elements (bare `<Button>` or
+ * legacy `<XDSButton>` — see isXdsComponent). Each attribute's character
  * offsets are captured so a prop edit splices a single span of the original
  * source — preserving the rest of the file's formatting and comments.
  *
@@ -17,6 +18,17 @@
  */
 
 import {parse} from '@babel/parser';
+import {getComponentByModule} from './componentLookup';
+
+/**
+ * True if a JSX identifier refers to an XDS-namespace component. Prefix-agnostic
+ * (XDS-prefix migration P2380608025): the playground now authors bare names
+ * (`<Button>`), but legacy/prefixed names (`<XDSButton>`) must still resolve.
+ * Falls back to the `XDS` prefix for components not yet in the registry.
+ */
+function isXdsComponent(name: string): boolean {
+  return getComponentByModule(name) != null || name.startsWith('XDS');
+}
 
 /** Literal value kinds we can round-trip through a knob. */
 type AttrValueKind =
@@ -37,7 +49,7 @@ export interface AttrInfo {
 }
 
 export interface InstanceInfo {
-  /** Component module name as written, e.g. `XDSButton`. */
+  /** Component module name as written, e.g. `Button`. */
   component: string;
   /** Start offset of the opening element (`<`). */
   openingStart: number;
@@ -45,9 +57,9 @@ export interface InstanceInfo {
    * Offset of the safe insertion point for new attributes — immediately after
    * the element name, or after an explicit JSX type argument when present.
    *
-   * For a generic call like `<XDSTable<Item> ...>` the name node ends right
-   * after `XDSTable`, but inserting there would split the `<Item>` type
-   * argument (`<XDSTable data-pg-id="…"<Item>`), producing invalid JSX. We
+   * For a generic call like `<Table<Item> ...>` the name node ends right
+   * after `Table`, but inserting there would split the `<Item>` type
+   * argument (`<Table data-pg-id="…"<Item>`), producing invalid JSX. We
    * advance past the type argument so attributes land after `<Item>`.
    */
   nameEnd: number;
@@ -61,7 +73,7 @@ function readAttrValue(attr: Node): {
   value?: string | number | boolean;
 } {
   const value = attr.value as Node | null | undefined;
-  // Boolean shorthand: `<XDSButton isDisabled />`
+  // Boolean shorthand: `<Button isDisabled />`
   if (value == null) {
     return {valueKind: 'boolean', value: true};
   }
@@ -100,7 +112,7 @@ function readAttrValue(attr: Node): {
 /**
  * Find the offset just past the element name where new attributes can be
  * safely spliced in. Normally this is the end of the name node, but a generic
- * JSX call carries an explicit type argument (`<XDSTable<Item> ...>`) that sits
+ * JSX call carries an explicit type argument (`<Table<Item> ...>`) that sits
  * between the name and the attribute list. Babel attaches it as
  * `typeArguments` (older builds: `typeParameters`); we advance past it so an
  * inserted attribute does not bisect `<Item>` and corrupt the JSX.
@@ -148,7 +160,7 @@ export function analyzeCode(code: string): InstanceInfo[] | null {
       const nameNode = n.name as Node;
       if (nameNode?.type === 'JSXIdentifier') {
         const component = nameNode.name as string;
-        if (component.startsWith('XDS')) {
+        if (isXdsComponent(component)) {
           const attrs: AttrInfo[] = [];
           const rawAttrs = (n.attributes as Node[]) ?? [];
           for (const attr of rawAttrs) {

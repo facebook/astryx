@@ -2,12 +2,11 @@
 
 'use client';
 
-import {XDSLink} from '@xds/core/Link';
+import {Link} from '@xds/core/Link';
 
 export default function LinkShowcase() {
   return (
-    <XDSLink href="#" isStandalone>
-      Documentation
-    </XDSLink>
+    <Link href="#" isStandalone>Documentation
+          </Link>
   );
 }

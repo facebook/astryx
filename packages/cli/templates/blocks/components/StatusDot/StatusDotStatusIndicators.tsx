@@ -2,9 +2,9 @@
 
 'use client';
 
-import {XDSStatusDot} from '@xds/core/StatusDot';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {StatusDot} from '@xds/core/StatusDot';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const statuses = [
   {variant: 'success', label: 'Online'},
@@ -15,13 +15,13 @@ const statuses = [
 
 export default function StatusDotStatusIndicators() {
   return (
-    <XDSVStack gap={2}>
+    <VStack gap={2}>
       {statuses.map(({variant, label}) => (
-        <XDSHStack key={variant} gap={2} vAlign="center">
-          <XDSStatusDot variant={variant} label={label} />
-          <XDSText type="body">{label}</XDSText>
-        </XDSHStack>
+        <HStack key={variant} gap={2} vAlign="center">
+          <StatusDot variant={variant} label={label} />
+          <Text type="body">{label}</Text>
+        </HStack>
       ))}
-    </XDSVStack>
+    </VStack>
   );
 }

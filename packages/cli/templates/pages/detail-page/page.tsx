@@ -5,30 +5,30 @@
 import {useState} from 'react';
 import {useMediaQuery} from '@xds/core/hooks';
 import {
-  XDSLayout,
-  XDSLayoutHeader,
-  XDSLayoutContent,
-  XDSLayoutPanel,
-  XDSVStack,
-  XDSHStack,
-  XDSStackItem,
-  XDSCard,
-  XDSSection,
+  Layout,
+  LayoutHeader,
+  LayoutContent,
+  LayoutPanel,
+  VStack,
+  HStack,
+  StackItem,
+  Card,
+  Section,
 } from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSButton} from '@xds/core/Button';
-import {XDSTabList, XDSTab, XDSTabMenu} from '@xds/core/TabList';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSLink} from '@xds/core/Link';
-import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
-import {XDSProgressBar} from '@xds/core/ProgressBar';
-import {XDSCollapsible} from '@xds/core/Collapsible';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSThumbnail} from '@xds/core/Thumbnail';
-import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
+import {Text, Heading} from '@xds/core/Text';
+import {Badge} from '@xds/core/Badge';
+import {Avatar} from '@xds/core/Avatar';
+import {Button} from '@xds/core/Button';
+import {TabList, Tab, TabMenu} from '@xds/core/TabList';
+import {Divider} from '@xds/core/Divider';
+import {Link} from '@xds/core/Link';
+import {List, ListItem} from '@xds/core/List';
+import {MetadataList, MetadataListItem} from '@xds/core/MetadataList';
+import {ProgressBar} from '@xds/core/ProgressBar';
+import {Collapsible} from '@xds/core/Collapsible';
+import {Icon} from '@xds/core/Icon';
+import {Thumbnail} from '@xds/core/Thumbnail';
+import {Dialog, DialogHeader} from '@xds/core/Dialog';
 import {
   CalendarIcon,
   FlagIcon,
@@ -44,19 +44,19 @@ import {
 import * as stylex from '@stylexjs/stylex';
 
 // The only custom CSS in this template is small optical-alignment negative
-// margins: XDSLayoutHeader/XDSTabList have no edge-dock prop (#2622) and XDSList
+// margins: LayoutHeader/TabList have no edge-dock prop (#2622) and List
 // has no "bleed to container edge" prop (#2626). Everything else uses props.
 const pageStyles = stylex.create({
   // Bleed the tab bar to the header's content edges so the active-tab underline
-  // meets the header divider. No edge-dock prop on XDSTabList (#2622).
+  // meets the header divider. No edge-dock prop on TabList (#2622).
   tabsRow: {
     marginInline: -12,
     marginBottom: -16,
     marginTop: 12,
   },
   // Pull the list items' inner padding back so their content optically aligns
-  // with the section heading above (XDSListItem insets content by ~8px). No
-  // edge/inset prop on XDSList (#2626).
+  // with the section heading above (ListItem insets content by ~8px). No
+  // edge/inset prop on List (#2626).
   itemsList: {
     marginInline: -8,
   },
@@ -157,9 +157,9 @@ const ACTIVITY = [
 // ─── Bullet separator ───────────────────────────────────────────────────────
 function Bullet() {
   return (
-    <XDSText type="supporting" color="secondary">
+    <Text type="supporting" color="secondary">
       {'・'}
-    </XDSText>
+    </Text>
   );
 }
 
@@ -178,337 +178,337 @@ function PageHeader({
   isNarrow: boolean;
 }) {
   return (
-    <XDSLayoutHeader hasDivider padding={4}>
-      <XDSVStack gap={3}>
-        <XDSHStack gap={4} vAlign="start">
-          <XDSStackItem size="fill">
-            <XDSVStack gap={0}>
-              <XDSLink href="#" color="secondary">
-                <XDSHStack gap={1} vAlign="center">
-                  <XDSIcon icon={ArrowLeftIcon} size="sm" color="inherit" />
+    <LayoutHeader hasDivider padding={4}>
+      <VStack gap={3}>
+        <HStack gap={4} vAlign="start">
+          <StackItem size="fill">
+            <VStack gap={0}>
+              <Link href="#" color="secondary">
+                <HStack gap={1} vAlign="center">
+                  <Icon icon={ArrowLeftIcon} size="sm" color="inherit" />
                   All orders
-                </XDSHStack>
-              </XDSLink>
-              <XDSVStack gap={0}>
-                <XDSHeading level={1} maxLines={1}>
+                </HStack>
+              </Link>
+              <VStack gap={0}>
+                <Heading level={1} maxLines={1}>
                   #1001
-                </XDSHeading>
+                </Heading>
                 {/* Metadata wraps to multiple lines on narrow screens (rather
                     than collapsing items behind a "+N more" overflow). */}
-                <XDSHStack gap={1} vAlign="center" wrap="wrap">
-                  <XDSText type="body" maxLines={1}>
+                <HStack gap={1} vAlign="center" wrap="wrap">
+                  <Text type="body" maxLines={1}>
                     {PRODUCTS.length} ordered items
-                  </XDSText>
-                  <XDSHStack gap={1} vAlign="center">
+                  </Text>
+                  <HStack gap={1} vAlign="center">
                     <Bullet />
-                    <XDSAvatar name="Jane Doe" size="xsmall" />
-                    <XDSText type="body" maxLines={1}>
+                    <Avatar name="Jane Doe" size="xsmall" />
+                    <Text type="body" maxLines={1}>
                       Jane Doe
-                    </XDSText>
-                  </XDSHStack>
-                  <XDSHStack gap={1} vAlign="center">
+                    </Text>
+                  </HStack>
+                  <HStack gap={1} vAlign="center">
                     <Bullet />
-                    <XDSBadge variant="warning" label="Unfulfilled" />
-                  </XDSHStack>
-                  <XDSHStack gap={1} vAlign="center">
+                    <Badge variant="warning" label="Unfulfilled" />
+                  </HStack>
+                  <HStack gap={1} vAlign="center">
                     <Bullet />
-                    <XDSIcon icon={CalendarIcon} size="sm" color="secondary" />
-                    <XDSText type="body" maxLines={1}>
+                    <Icon icon={CalendarIcon} size="sm" color="secondary" />
+                    <Text type="body" maxLines={1}>
                       02/23/2026
-                    </XDSText>
-                  </XDSHStack>
-                  <XDSHStack gap={1} vAlign="center">
+                    </Text>
+                  </HStack>
+                  <HStack gap={1} vAlign="center">
                     <Bullet />
-                    <XDSIcon icon={FlagIcon} size="sm" color="secondary" />
-                    <XDSText type="body" maxLines={1}>
+                    <Icon icon={FlagIcon} size="sm" color="secondary" />
+                    <Text type="body" maxLines={1}>
                       Needs attention
-                    </XDSText>
-                  </XDSHStack>
-                  <XDSHStack gap={1} vAlign="center">
+                    </Text>
+                  </HStack>
+                  <HStack gap={1} vAlign="center">
                     <Bullet />
-                    <XDSLink href="#" color="secondary">
+                    <Link href="#" color="secondary">
                       See all
-                    </XDSLink>
-                  </XDSHStack>
-                </XDSHStack>
-              </XDSVStack>
-            </XDSVStack>
-          </XDSStackItem>
+                    </Link>
+                  </HStack>
+                </HStack>
+              </VStack>
+            </VStack>
+          </StackItem>
           {!isNarrow && (
-            <XDSHStack gap={2}>
-              <XDSButton label="Restock" variant="secondary" />
-              <XDSButton label="Edit" variant="secondary" />
-            </XDSHStack>
+            <HStack gap={2}>
+              <Button label="Restock" variant="secondary" />
+              <Button label="Edit" variant="secondary" />
+            </HStack>
           )}
-        </XDSHStack>
+        </HStack>
 
         {/* Mobile: actions drop below the metadata as a full-width row. The
-            XDSVStack hAlign="stretch" wrapper is the full-width-button
-            workaround — XDSButton has no full-width prop (#2600). */}
+            VStack hAlign="stretch" wrapper is the full-width-button
+            workaround — Button has no full-width prop (#2600). */}
         {isNarrow && (
-          <XDSHStack gap={2}>
-            <XDSStackItem size="fill">
-              <XDSVStack hAlign="stretch">
-                <XDSButton label="Restock" variant="secondary" />
-              </XDSVStack>
-            </XDSStackItem>
-            <XDSStackItem size="fill">
-              <XDSVStack hAlign="stretch">
-                <XDSButton label="Edit" variant="secondary" />
-              </XDSVStack>
-            </XDSStackItem>
-          </XDSHStack>
+          <HStack gap={2}>
+            <StackItem size="fill">
+              <VStack hAlign="stretch">
+                <Button label="Restock" variant="secondary" />
+              </VStack>
+            </StackItem>
+            <StackItem size="fill">
+              <VStack hAlign="stretch">
+                <Button label="Edit" variant="secondary" />
+              </VStack>
+            </StackItem>
+          </HStack>
         )}
 
-        <XDSHStack vAlign="center" xstyle={pageStyles.tabsRow}>
-          <XDSStackItem size="fill">
-            <XDSTabList value={activeTab} onChange={onTabChange} size="lg">
-              <XDSTab value="details" label="Details" />
-              <XDSTab value="invoices" label="Invoices" />
-              <XDSTab value="timeline" label="Timeline" />
-              <XDSTabMenu
+        <HStack vAlign="center" xstyle={pageStyles.tabsRow}>
+          <StackItem size="fill">
+            <TabList value={activeTab} onChange={onTabChange} size="lg">
+              <Tab value="details" label="Details" />
+              <Tab value="invoices" label="Invoices" />
+              <Tab value="timeline" label="Timeline" />
+              <TabMenu
                 label="More"
                 options={[
                   {value: 'customer', label: 'Customer'},
                   {value: 'analysis', label: 'Analysis'},
                 ]}
               />
-            </XDSTabList>
-          </XDSStackItem>
-          <XDSButton
+            </TabList>
+          </StackItem>
+          <Button
             label={isPanelOpen ? 'Hide panel' : 'Show panel'}
             variant="ghost"
             size="md"
-            icon={<XDSIcon icon={ViewColumnsIcon} size="sm" />}
+            icon={<Icon icon={ViewColumnsIcon} size="sm" />}
             isIconOnly
             onClick={onTogglePanel}
           />
-        </XDSHStack>
-      </XDSVStack>
-    </XDSLayoutHeader>
+        </HStack>
+      </VStack>
+    </LayoutHeader>
   );
 }
 
 // ─── Items Card ─────────────────────────────────────────────────────────────
 function ItemsCard() {
   return (
-    <XDSSection>
-      <XDSVStack gap={4}>
-        <XDSHStack vAlign="center" gap={2} wrap="wrap">
-          <XDSStackItem size="fill">
-            <XDSHStack gap={2} vAlign="center">
-              <XDSHeading level={2}>Items</XDSHeading>
-              <XDSBadge variant="warning" label="Unfulfilled" />
-            </XDSHStack>
-          </XDSStackItem>
-          <XDSHStack gap={2}>
-            <XDSButton label="Fulfill item" variant="ghost" />
-            <XDSButton label="Create label" variant="secondary" />
-          </XDSHStack>
-        </XDSHStack>
+    <Section>
+      <VStack gap={4}>
+        <HStack vAlign="center" gap={2} wrap="wrap">
+          <StackItem size="fill">
+            <HStack gap={2} vAlign="center">
+              <Heading level={2}>Items</Heading>
+              <Badge variant="warning" label="Unfulfilled" />
+            </HStack>
+          </StackItem>
+          <HStack gap={2}>
+            <Button label="Fulfill item" variant="ghost" />
+            <Button label="Create label" variant="secondary" />
+          </HStack>
+        </HStack>
 
-        <XDSList density="spacious" xstyle={pageStyles.itemsList}>
+        <List density="spacious" xstyle={pageStyles.itemsList}>
           {PRODUCTS.map((product, i) => (
-            <XDSListItem
+            <ListItem
               key={i}
               label={product.name}
               description={
-                <XDSVStack gap={0}>
+                <VStack gap={0}>
                   {product.details.split('\n').map((line, j) => (
-                    <XDSText key={j} type="supporting" color="secondary">
+                    <Text key={j} type="supporting" color="secondary">
                       {line}
-                    </XDSText>
+                    </Text>
                   ))}
-                </XDSVStack>
+                </VStack>
               }
               onClick={() => {}}
               startContent={
-                <XDSThumbnail
+                <Thumbnail
                   src={product.image}
                   alt={product.name}
                   label={product.name}
                 />
               }
               endContent={
-                <XDSVStack gap={0} hAlign="end">
-                  <XDSText type="body" weight="bold" maxLines={1}>
+                <VStack gap={0} hAlign="end">
+                  <Text type="body" weight="bold" maxLines={1}>
                     {fmt(product.price * product.qty)}
-                  </XDSText>
-                  <XDSText type="supporting" color="secondary" maxLines={1}>
+                  </Text>
+                  <Text type="supporting" color="secondary" maxLines={1}>
                     {fmt(product.price)} {'×'} {product.qty}
-                  </XDSText>
-                </XDSVStack>
+                  </Text>
+                </VStack>
               }
             />
           ))}
-        </XDSList>
-      </XDSVStack>
-    </XDSSection>
+        </List>
+      </VStack>
+    </Section>
   );
 }
 
 // ─── Invoice Card ───────────────────────────────────────────────────────────
 function InvoiceCard() {
   return (
-    <XDSSection>
-      <XDSVStack gap={4}>
-        <XDSHStack vAlign="center" gap={2} wrap="wrap">
-          <XDSStackItem size="fill">
-            <XDSHStack gap={2} vAlign="center">
-              <XDSHeading level={2}>Invoice</XDSHeading>
-              <XDSBadge variant="success" label="Paid" />
-            </XDSHStack>
-          </XDSStackItem>
-          <XDSHStack gap={2}>
-            <XDSButton label="Refund" variant="ghost" />
-            <XDSButton label="Send Invoice" variant="secondary" />
-          </XDSHStack>
-        </XDSHStack>
+    <Section>
+      <VStack gap={4}>
+        <HStack vAlign="center" gap={2} wrap="wrap">
+          <StackItem size="fill">
+            <HStack gap={2} vAlign="center">
+              <Heading level={2}>Invoice</Heading>
+              <Badge variant="success" label="Paid" />
+            </HStack>
+          </StackItem>
+          <HStack gap={2}>
+            <Button label="Refund" variant="ghost" />
+            <Button label="Send Invoice" variant="secondary" />
+          </HStack>
+        </HStack>
 
-        <XDSMetadataList>
-          <XDSMetadataListItem label="Subtotal">
-            <XDSHStack>
-              <XDSStackItem size="fill">
-                <XDSText type="body">{PRODUCTS.length} items</XDSText>
-              </XDSStackItem>
-              <XDSText type="body">{fmt(SUBTOTAL)}</XDSText>
-            </XDSHStack>
-          </XDSMetadataListItem>
-          <XDSMetadataListItem label="Discount">
-            <XDSHStack>
-              <XDSStackItem size="fill">
-                <XDSText type="body">New customer code: NEW15</XDSText>
-              </XDSStackItem>
-              <XDSText type="body">– {fmt(DISCOUNT)}</XDSText>
-            </XDSHStack>
-          </XDSMetadataListItem>
-          <XDSMetadataListItem label="Shipping">
-            <XDSHStack>
-              <XDSStackItem size="fill">
-                <XDSText type="body">Free shipping (0.0lbs) USPS</XDSText>
-              </XDSStackItem>
-              <XDSText type="body">{fmt(SHIPPING)}</XDSText>
-            </XDSHStack>
-          </XDSMetadataListItem>
-          <XDSMetadataListItem label="Tax">
-            <XDSHStack>
-              <XDSStackItem size="fill">
-                <XDSText type="body">Sales tax (8.25%)</XDSText>
-              </XDSStackItem>
-              <XDSText type="body">{fmt(TAX)}</XDSText>
-            </XDSHStack>
-          </XDSMetadataListItem>
-          <XDSMetadataListItem label="Total">
-            <XDSHStack>
-              <XDSStackItem size="fill" />
-              <XDSText type="body" weight="bold">
+        <MetadataList>
+          <MetadataListItem label="Subtotal">
+            <HStack>
+              <StackItem size="fill">
+                <Text type="body">{PRODUCTS.length} items</Text>
+              </StackItem>
+              <Text type="body">{fmt(SUBTOTAL)}</Text>
+            </HStack>
+          </MetadataListItem>
+          <MetadataListItem label="Discount">
+            <HStack>
+              <StackItem size="fill">
+                <Text type="body">New customer code: NEW15</Text>
+              </StackItem>
+              <Text type="body">– {fmt(DISCOUNT)}</Text>
+            </HStack>
+          </MetadataListItem>
+          <MetadataListItem label="Shipping">
+            <HStack>
+              <StackItem size="fill">
+                <Text type="body">Free shipping (0.0lbs) USPS</Text>
+              </StackItem>
+              <Text type="body">{fmt(SHIPPING)}</Text>
+            </HStack>
+          </MetadataListItem>
+          <MetadataListItem label="Tax">
+            <HStack>
+              <StackItem size="fill">
+                <Text type="body">Sales tax (8.25%)</Text>
+              </StackItem>
+              <Text type="body">{fmt(TAX)}</Text>
+            </HStack>
+          </MetadataListItem>
+          <MetadataListItem label="Total">
+            <HStack>
+              <StackItem size="fill" />
+              <Text type="body" weight="bold">
                 {fmt(TOTAL)}
-              </XDSText>
-            </XDSHStack>
-          </XDSMetadataListItem>
-        </XDSMetadataList>
+              </Text>
+            </HStack>
+          </MetadataListItem>
+        </MetadataList>
 
-        <XDSDivider />
+        <Divider />
 
-        <XDSMetadataList>
-          <XDSMetadataListItem label="Paid by customer">
-            <XDSHStack>
-              <XDSStackItem size="fill">
-                <XDSText type="body">Visa ...7482</XDSText>
-              </XDSStackItem>
-              <XDSText type="body">{fmt(TOTAL)}</XDSText>
-            </XDSHStack>
-          </XDSMetadataListItem>
-        </XDSMetadataList>
-      </XDSVStack>
-    </XDSSection>
+        <MetadataList>
+          <MetadataListItem label="Paid by customer">
+            <HStack>
+              <StackItem size="fill">
+                <Text type="body">Visa ...7482</Text>
+              </StackItem>
+              <Text type="body">{fmt(TOTAL)}</Text>
+            </HStack>
+          </MetadataListItem>
+        </MetadataList>
+      </VStack>
+    </Section>
   );
 }
 
 // ─── Timeline ───────────────────────────────────────────────────────────────
 function TimelineSection() {
   return (
-    <XDSSection>
-      <XDSVStack gap={4}>
-        <XDSHStack vAlign="center">
-          <XDSStackItem size="fill">
-            <XDSHeading level={2}>Timeline</XDSHeading>
-          </XDSStackItem>
-          <XDSButton
+    <Section>
+      <VStack gap={4}>
+        <HStack vAlign="center">
+          <StackItem size="fill">
+            <Heading level={2}>Timeline</Heading>
+          </StackItem>
+          <Button
             label="Filters"
             variant="ghost"
-            icon={<XDSIcon icon={FunnelIcon} />}
+            icon={<Icon icon={FunnelIcon} />}
             isIconOnly
           />
-        </XDSHStack>
+        </HStack>
 
-        <XDSVStack gap={4}>
+        <VStack gap={4}>
           {ACTIVITY.map((item, i) => (
-            <XDSVStack key={i} gap={2}>
-              <XDSHStack gap={3} vAlign="start">
-                <XDSAvatar name={item.user} size="small" />
-                <XDSStackItem size="fill">
-                  <XDSVStack gap={2}>
-                    <XDSCard variant="muted" padding={3}>
-                      <XDSVStack gap={1}>
-                        <XDSText type="body" weight="bold">
+            <VStack key={i} gap={2}>
+              <HStack gap={3} vAlign="start">
+                <Avatar name={item.user} size="small" />
+                <StackItem size="fill">
+                  <VStack gap={2}>
+                    <Card variant="muted" padding={3}>
+                      <VStack gap={1}>
+                        <Text type="body" weight="bold">
                           {item.user}
-                        </XDSText>
-                        <XDSText type="body">{item.text}</XDSText>
+                        </Text>
+                        <Text type="body">{item.text}</Text>
                         {item.changes && (
-                          <XDSVStack gap={1}>
+                          <VStack gap={1}>
                             {item.changes.map((change, j) => (
-                              <XDSHStack key={j} gap={2} vAlign="center">
-                                <XDSIcon
+                              <HStack key={j} gap={2} vAlign="center">
+                                <Icon
                                   icon={PencilSquareIcon}
                                   size="sm"
                                   color="secondary"
                                 />
-                                <XDSText type="supporting" color="secondary">
+                                <Text type="supporting" color="secondary">
                                   {change}
-                                </XDSText>
-                              </XDSHStack>
+                                </Text>
+                              </HStack>
                             ))}
-                          </XDSVStack>
+                          </VStack>
                         )}
-                      </XDSVStack>
-                    </XDSCard>
-                    <XDSHStack gap={3} vAlign="center">
-                      <XDSHStack gap={1} vAlign="center">
-                        <XDSIcon
+                      </VStack>
+                    </Card>
+                    <HStack gap={3} vAlign="center">
+                      <HStack gap={1} vAlign="center">
+                        <Icon
                           icon={HandThumbUpIcon}
                           size="xsm"
                           color="secondary"
                         />
-                        <XDSIcon
+                        <Icon
                           icon={HeartIcon}
                           size="xsm"
                           color="secondary"
                         />
-                        <XDSText type="supporting" color="secondary">
+                        <Text type="supporting" color="secondary">
                           {item.reactions}
-                        </XDSText>
-                      </XDSHStack>
-                      <XDSText type="supporting" color="secondary">
+                        </Text>
+                      </HStack>
+                      <Text type="supporting" color="secondary">
                         Like
-                      </XDSText>
+                      </Text>
                       <Bullet />
-                      <XDSText type="supporting" color="secondary">
+                      <Text type="supporting" color="secondary">
                         Reply
-                      </XDSText>
+                      </Text>
                       <Bullet />
-                      <XDSText type="supporting" color="secondary">
+                      <Text type="supporting" color="secondary">
                         {item.time}
-                      </XDSText>
-                    </XDSHStack>
-                  </XDSVStack>
-                </XDSStackItem>
-              </XDSHStack>
-            </XDSVStack>
+                      </Text>
+                    </HStack>
+                  </VStack>
+                </StackItem>
+              </HStack>
+            </VStack>
           ))}
-        </XDSVStack>
-      </XDSVStack>
-    </XDSSection>
+        </VStack>
+      </VStack>
+    </Section>
   );
 }
 
@@ -517,60 +517,58 @@ function TimelineSection() {
 // on mobile (so it flows below the content instead of squishing beside it).
 function PanelContent() {
   return (
-    <XDSVStack gap={4}>
-      <XDSCollapsible trigger={<XDSHeading level={4}>Notes</XDSHeading>}>
-        <XDSText type="body">
+    <VStack gap={4}>
+      <Collapsible trigger={<Heading level={4}>Notes</Heading>}>
+        <Text type="body">
           Customer is a repeat buyer — 3rd order this quarter. Prefers snow and
           oat glazes. Requested gift wrapping for the mug set. Ships to a
           residential address in CA.{' '}
-          <XDSLink href="#" color="secondary">
+          <Link href="#" color="secondary">
             Show more
-          </XDSLink>
-        </XDSText>
-      </XDSCollapsible>
-
-      <XDSCollapsible trigger={<XDSHeading level={4}>Customer</XDSHeading>}>
-        <XDSMetadataList>
-          <XDSMetadataListItem label="Name">Jane Doe</XDSMetadataListItem>
-          <XDSMetadataListItem label="Address">
+          </Link>
+        </Text>
+      </Collapsible>
+      <Collapsible trigger={<Heading level={4}>Customer</Heading>}>
+        <MetadataList>
+          <MetadataListItem label="Name">Jane Doe</MetadataListItem>
+          <MetadataListItem label="Address">
             321 Smith Road, CA 38238
-          </XDSMetadataListItem>
-          <XDSMetadataListItem label="Phone">234-</XDSMetadataListItem>
-          <XDSMetadataListItem label="Email">
+          </MetadataListItem>
+          <MetadataListItem label="Phone">234-</MetadataListItem>
+          <MetadataListItem label="Email">
             janedoe@email.com
-          </XDSMetadataListItem>
-          <XDSMetadataListItem label="Billing Address">
+          </MetadataListItem>
+          <MetadataListItem label="Billing Address">
             Same as shipping address
-          </XDSMetadataListItem>
-        </XDSMetadataList>
-      </XDSCollapsible>
-
-      <XDSCollapsible
-        trigger={<XDSHeading level={4}>Fraud Analysis</XDSHeading>}>
-        <XDSVStack gap={1}>
-          <XDSProgressBar
+          </MetadataListItem>
+        </MetadataList>
+      </Collapsible>
+      <Collapsible
+        trigger={<Heading level={4}>Fraud Analysis</Heading>}>
+        <VStack gap={1}>
+          <ProgressBar
             label="Risk level"
             value={15}
             variant="success"
             isLabelHidden
           />
-          <XDSText type="body">Recommendation: Fulfill order</XDSText>
-          <XDSText type="body">
+          <Text type="body">Recommendation: Fulfill order</Text>
+          <Text type="body">
             There is a low chance that you will receive a chargeback on this
             order.
-          </XDSText>
-        </XDSVStack>
-      </XDSCollapsible>
-    </XDSVStack>
+          </Text>
+        </VStack>
+      </Collapsible>
+    </VStack>
   );
 }
 
 // Desktop: fixed-width side panel in the layout's `end` slot.
 function RightPanel() {
   return (
-    <XDSLayoutPanel width={320} padding={4} role="complementary">
+    <LayoutPanel width={320} padding={4} role="complementary">
       <PanelContent />
-    </XDSLayoutPanel>
+    </LayoutPanel>
   );
 }
 
@@ -592,7 +590,7 @@ export default function DetailPage2Template() {
 
   return (
     <>
-      <XDSLayout
+      <Layout
         height="fill"
         contentWidth={1000}
         defaultHasDividers
@@ -606,38 +604,37 @@ export default function DetailPage2Template() {
           />
         }
         content={
-          <XDSLayoutContent role="main">
-            <XDSVStack gap={4}>
+          <LayoutContent role="main">
+            <VStack gap={4}>
               <ItemsCard />
               <InvoiceCard />
               <TimelineSection />
-            </XDSVStack>
-          </XDSLayoutContent>
+            </VStack>
+          </LayoutContent>
         }
         end={!isNarrow && showSidePanel ? <RightPanel /> : undefined}
       />
-
       {/* Mobile: the side panel content opens as a full-screen dialog. (A
           side drawer/sheet would be more idiomatic, but XDS has no Drawer
           component yet — #2575 — so we use the fullscreen Dialog variant.) */}
-      <XDSDialog
+      <Dialog
         variant="fullscreen"
         isOpen={isNarrow && isPanelDialogOpen}
         onOpenChange={setPanelDialogOpen}>
-        <XDSLayout
+        <Layout
           header={
-            <XDSDialogHeader
+            <DialogHeader
               title="Order details"
               onOpenChange={setPanelDialogOpen}
             />
           }
           content={
-            <XDSLayoutContent padding={4}>
+            <LayoutContent padding={4}>
               <PanelContent />
-            </XDSLayoutContent>
+            </LayoutContent>
           }
         />
-      </XDSDialog>
+      </Dialog>
     </>
   );
 }

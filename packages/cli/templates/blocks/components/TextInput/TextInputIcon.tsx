@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSStack} from '@xds/core/Layout';
+import {TextInput} from '@xds/core/TextInput';
+import {Stack} from '@xds/core/Layout';
 import {
   EnvelopeIcon,
   LockClosedIcon,
@@ -18,15 +18,15 @@ export default function TextInputIcon() {
 
   return (
     <div style={{width: 300}}>
-      <XDSStack direction="vertical" gap={3}>
-        <XDSTextInput
+      <Stack direction="vertical" gap={3}>
+        <TextInput
           label="Full name"
           value={name}
           onChange={setName}
           placeholder="Sarah Chen"
           startIcon={UserIcon}
         />
-        <XDSTextInput
+        <TextInput
           type="email"
           label="Email"
           value={email}
@@ -34,7 +34,7 @@ export default function TextInputIcon() {
           placeholder="sarah@company.com"
           startIcon={EnvelopeIcon}
         />
-        <XDSTextInput
+        <TextInput
           type="password"
           label="Password"
           value={password}
@@ -42,7 +42,7 @@ export default function TextInputIcon() {
           placeholder="Enter your password"
           startIcon={LockClosedIcon}
         />
-      </XDSStack>
+      </Stack>
     </div>
   );
 }

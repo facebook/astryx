@@ -3,55 +3,55 @@
 'use client';
 
 import {
-  XDSLayout,
-  XDSLayoutHeader,
-  XDSLayoutContent,
-  XDSLayoutFooter,
-  XDSLayoutPanel,
-  XDSCard,
-  XDSHStack,
+  Layout,
+  LayoutHeader,
+  LayoutContent,
+  LayoutFooter,
+  LayoutPanel,
+  Card,
+  HStack,
 } from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSHeading} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
+import {Center} from '@xds/core/Center';
+import {Heading} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
 
 export default function LayoutHeaderShowcase() {
   return (
-    <XDSCenter width={400}>
-      <XDSLayout
+    <Center width={400}>
+      <Layout
         style={{width: '100%'}}
         height="fill"
         header={
-          <XDSLayoutHeader hasDivider>
-            <XDSHStack gap={2} vAlign="center" hAlign="between">
-              <XDSHeading level={4}>Dashboard</XDSHeading>
-              <XDSHStack gap={2}>
-                <XDSButton label="Export" variant="secondary">
+          <LayoutHeader hasDivider>
+            <HStack gap={2} vAlign="center" hAlign="between">
+              <Heading level={4}>Dashboard</Heading>
+              <HStack gap={2}>
+                <Button label="Export" variant="secondary">
                   Export
-                </XDSButton>
-                <XDSButton label="New Item" variant="primary">
+                </Button>
+                <Button label="New Item" variant="primary">
                   New Item
-                </XDSButton>
-              </XDSHStack>
-            </XDSHStack>
-          </XDSLayoutHeader>
+                </Button>
+              </HStack>
+            </HStack>
+          </LayoutHeader>
         }
         start={
-          <XDSLayoutPanel hasDivider width={140}>
-            <XDSCard variant="muted" />
-          </XDSLayoutPanel>
+          <LayoutPanel hasDivider width={140}>
+            <Card variant="muted" />
+          </LayoutPanel>
         }
         content={
-          <XDSLayoutContent>
-            <XDSCard variant="muted" />
-          </XDSLayoutContent>
+          <LayoutContent>
+            <Card variant="muted" />
+          </LayoutContent>
         }
         footer={
-          <XDSLayoutFooter hasDivider>
-            <XDSCard variant="muted" />
-          </XDSLayoutFooter>
+          <LayoutFooter hasDivider>
+            <Card variant="muted" />
+          </LayoutFooter>
         }
       />
-    </XDSCenter>
+    </Center>
   );
 }

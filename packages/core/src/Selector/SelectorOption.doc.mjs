@@ -8,7 +8,7 @@ export const docs = {
   displayName: 'Selector Option',
   isHiddenFromOverview: true,
   description:
-    'Helper component for custom item rendering inside an XDSSelector renderOption prop.',
+    'Helper component for custom item rendering inside an Selector renderOption prop.',
   props: [
     {
       name: 'label',
@@ -18,7 +18,7 @@ export const docs = {
     },
     {
       name: 'icon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description:
         'Icon displayed before the label. See `npx xds docs icons` for valid semantic names.',
     },
@@ -41,7 +41,7 @@ export const docsZh = {
   isHiddenFromOverview: true,
   displayName: 'Selector Option',
   description:
-    '用于在 XDSSelector 的 renderOption 渲染函数中自定义选项渲染的辅助组件。',
+    '用于在 Selector 的 renderOption 渲染函数中自定义选项渲染的辅助组件。',
   props: [
     {
       name: 'label',
@@ -51,7 +51,7 @@ export const docsZh = {
     },
     {
       name: 'icon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: '显示在标签前的图标。',
     },
     {
@@ -72,7 +72,7 @@ export const docsDense = {
   isHiddenFromOverview: true,
   displayName: 'Selector Option',
   description:
-    'Helper component for custom item rendering inside XDSSelector renderOption prop.',
+    'Helper component for custom item rendering inside Selector renderOption prop.',
   propDescriptions: {
     label: 'Primary label text for item.',
     icon: 'Icon displayed before label.',

@@ -3,11 +3,11 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  exampleFor: 'useXDSCollapsible',
-  name: 'useXDSCollapsible — Custom Disclosure',
-  displayName: 'useXDSCollapsible — Custom Disclosure',
+  exampleFor: 'useCollapsible',
+  name: 'useCollapsible — Custom Disclosure',
+  displayName: 'useCollapsible — Custom Disclosure',
   description:
-    'Custom disclosure UI built directly with useXDSCollapsible for headless open/close state.',
+    'Custom disclosure UI built directly with useCollapsible for headless open/close state.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Collapsible', 'Button', 'Card', 'Text', 'Layout'],

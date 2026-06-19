@@ -2,11 +2,11 @@
 
 'use client';
 
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSVStack} from '@xds/core/Stack';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
-import {XDSNavIcon} from '@xds/core/NavIcon';
+import {AppShell} from '@xds/core/AppShell';
+import {VStack} from '@xds/core/Stack';
+import {Heading, Text} from '@xds/core/Text';
+import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
+import {NavIcon} from '@xds/core/NavIcon';
 import {CubeIcon} from '@heroicons/react/24/outline';
 import stylex from '@stylexjs/stylex';
 
@@ -19,17 +19,17 @@ const styles = stylex.create({
 
 export default function AppShellTopNavOnly() {
   return (
-    <XDSAppShell
+    <AppShell
       contentPadding={6}
       xstyle={styles.fit}
       topNav={
-        <XDSTopNav
+        <TopNav
           label="Main navigation"
           heading={
-            <XDSTopNavHeading
+            <TopNavHeading
               heading="App Shell"
               logo={
-                <XDSNavIcon
+                <NavIcon
                   icon={<CubeIcon style={{width: 16, height: 16}} />}
                 />
               }
@@ -37,21 +37,21 @@ export default function AppShellTopNavOnly() {
           }
           startContent={
             <>
-              <XDSTopNavItem label="Home" href="#" isSelected />
-              <XDSTopNavItem label="Products" href="#" />
-              <XDSTopNavItem label="Docs" href="#" />
+              <TopNavItem label="Home" href="#" isSelected />
+              <TopNavItem label="Products" href="#" />
+              <TopNavItem label="Docs" href="#" />
             </>
           }
         />
       }>
-      <XDSVStack gap={4}>
-        <XDSHeading level={3}>Page Content</XDSHeading>
-        <XDSText type="body">
+      <VStack gap={4}>
+        <Heading level={3}>Page Content</Heading>
+        <Text type="body">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
           eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
           minim veniam, quis nostrud exercitation ullamco laboris.
-        </XDSText>
-      </XDSVStack>
-    </XDSAppShell>
+        </Text>
+      </VStack>
+    </AppShell>
   );
 }

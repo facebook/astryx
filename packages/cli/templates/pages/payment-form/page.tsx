@@ -5,33 +5,33 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
-  XDSVStack,
-  XDSHStack,
-  XDSStack,
-  XDSStackItem,
-  XDSLayout,
-  XDSLayoutContent,
+  VStack,
+  HStack,
+  Stack,
+  StackItem,
+  Layout,
+  LayoutContent,
 } from '@xds/core/Layout';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText} from '@xds/core/Text';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
-import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
-import {XDSLink} from '@xds/core/Link';
-import {XDSTextArea} from '@xds/core/TextArea';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSBanner} from '@xds/core/Banner';
-import {XDSCard} from '@xds/core/Card';
-import {XDSCollapsible} from '@xds/core/Collapsible';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSNumberInput} from '@xds/core/NumberInput';
+import {Grid} from '@xds/core/Grid';
+import {Button} from '@xds/core/Button';
+import {Text} from '@xds/core/Text';
+import {TextInput} from '@xds/core/TextInput';
+import {Selector} from '@xds/core/Selector';
+import {CheckboxInput} from '@xds/core/CheckboxInput';
+import {RadioList, RadioListItem} from '@xds/core/RadioList';
+import {Link} from '@xds/core/Link';
+import {TextArea} from '@xds/core/TextArea';
+import {Divider} from '@xds/core/Divider';
+import {Banner} from '@xds/core/Banner';
+import {Card} from '@xds/core/Card';
+import {Collapsible} from '@xds/core/Collapsible';
+import {Badge} from '@xds/core/Badge';
+import {NumberInput} from '@xds/core/NumberInput';
 import {useMediaQuery} from '@xds/core/hooks';
-import {XDSSection} from '@xds/core/Section';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSThumbnail} from '@xds/core/Thumbnail';
-import {XDSIcon} from '@xds/core/Icon';
+import {Section} from '@xds/core/Section';
+import {Center} from '@xds/core/Center';
+import {Thumbnail} from '@xds/core/Thumbnail';
+import {Icon} from '@xds/core/Icon';
 import {ShieldCheckIcon} from '@heroicons/react/24/outline';
 import {LockClosedIcon} from '@heroicons/react/24/outline';
 import {CheckCircleIcon} from '@heroicons/react/24/outline';
@@ -159,7 +159,7 @@ const fmt = (n: number) => `$${n.toFixed(2)}`;
 
 const styles = stylex.create({
   fullWidth: {width: '100%'},
-  // XDSLayoutContent clips overflow by default, which traps position:sticky
+  // LayoutContent clips overflow by default, which traps position:sticky
   // children (the sticky order summary). With height="auto" the page scrolls
   // at the window, so let overflow be visible here so sticky can pin.
   visibleOverflow: {overflow: 'visible'},
@@ -275,64 +275,64 @@ export default function PaymentFormPage() {
     : {};
 
   return (
-    <XDSLayout
+    <Layout
       height="auto"
       content={
-        <XDSLayoutContent padding={0} xstyle={styles.visibleOverflow}>
-          <XDSCenter axis="horizontal">
-            <XDSSection
+        <LayoutContent padding={0} xstyle={styles.visibleOverflow}>
+          <Center axis="horizontal">
+            <Section
               variant="transparent"
               maxWidth={1100}
               width="100%"
               padding={6}>
-              <XDSVStack gap={5}>
+              <VStack gap={5}>
                 {/* Page header */}
-                <XDSVStack gap={6}>
-                  <XDSVStack gap={2}>
-                    <XDSText type="display-1" as="h1">
+                <VStack gap={6}>
+                  <VStack gap={2}>
+                    <Text type="display-1" as="h1">
                       Payment Request
-                    </XDSText>
-                    <XDSText type="body" color="secondary">
+                    </Text>
+                    <Text type="body" color="secondary">
                       Review your order and complete your purchase. All
                       transactions are secured with 256-bit SSL encryption.
-                    </XDSText>
-                  </XDSVStack>
-                  <XDSDivider />
-                </XDSVStack>
+                    </Text>
+                  </VStack>
+                  <Divider />
+                </VStack>
 
-                <XDSStack
+                <Stack
                   direction={isMobile ? 'vertical' : 'horizontal'}
                   gap={8}
                   vAlign="start">
-                  <XDSStackItem
+                  <StackItem
                     size="fill"
                     xstyle={isMobile ? undefined : styles.formColBasis}>
-                    <XDSVStack gap={8}>
+                    <VStack gap={8}>
                       {/* Sign in */}
-                      <XDSVStack gap={1}>
-                        <XDSHStack gap={2} hAlign="between" vAlign="center">
-                          <XDSText type="large" weight="bold">
+                      <VStack gap={1}>
+                        <HStack gap={2} hAlign="between" vAlign="center">
+                          <Text type="large" weight="bold">
                             Sign in to check out
-                          </XDSText>
-                          <XDSButton
+                          </Text>
+                          <Button
                             label="Sign In"
                             variant="secondary"
                             size="sm"
                             onClick={() => {}}
                           />
-                        </XDSHStack>
-                        <XDSText type="supporting" color="secondary">
+                        </HStack>
+                        <Text type="supporting" color="secondary">
                           Sign in to track your order and save your information
                           for faster checkout.
-                        </XDSText>
-                      </XDSVStack>
+                        </Text>
+                      </VStack>
 
                       {/* Contact Information */}
-                      <XDSVStack gap={3}>
-                        <XDSText type="large" weight="bold">
+                      <VStack gap={3}>
+                        <Text type="large" weight="bold">
                           Contact Information
-                        </XDSText>
-                        <XDSTextInput
+                        </Text>
+                        <TextInput
                           size="lg"
                           label="Email"
                           placeholder="you@example.com"
@@ -344,20 +344,20 @@ export default function PaymentFormPage() {
                               : undefined
                           }
                         />
-                        <XDSCheckboxInput
+                        <CheckboxInput
                           label="Email me with news and offers"
                           value={emailOffers}
                           onChange={setEmailOffers}
                         />
-                      </XDSVStack>
+                      </VStack>
 
                       {/* Shipping Information */}
-                      <XDSVStack gap={3}>
-                        <XDSText type="large" weight="bold">
+                      <VStack gap={3}>
+                        <Text type="large" weight="bold">
                           Shipping Information
-                        </XDSText>
-                        <XDSGrid columns={2} gap={3}>
-                          <XDSTextInput
+                        </Text>
+                        <Grid columns={2} gap={3}>
+                          <TextInput
                             size="lg"
                             label="First Name"
                             placeholder="John"
@@ -369,7 +369,7 @@ export default function PaymentFormPage() {
                                 : undefined
                             }
                           />
-                          <XDSTextInput
+                          <TextInput
                             size="lg"
                             label="Last Name"
                             placeholder="Doe"
@@ -381,8 +381,8 @@ export default function PaymentFormPage() {
                                 : undefined
                             }
                           />
-                        </XDSGrid>
-                        <XDSTextInput
+                        </Grid>
+                        <TextInput
                           size="lg"
                           label="Address"
                           placeholder="123 Main Street"
@@ -394,8 +394,8 @@ export default function PaymentFormPage() {
                               : undefined
                           }
                         />
-                        <XDSGrid columns={2} gap={3}>
-                          <XDSTextInput
+                        <Grid columns={2} gap={3}>
+                          <TextInput
                             size="lg"
                             label="City"
                             placeholder="New York"
@@ -407,7 +407,7 @@ export default function PaymentFormPage() {
                                 : undefined
                             }
                           />
-                          <XDSTextInput
+                          <TextInput
                             size="lg"
                             label="ZIP Code"
                             placeholder="10001"
@@ -419,8 +419,8 @@ export default function PaymentFormPage() {
                                 : undefined
                             }
                           />
-                        </XDSGrid>
-                        <XDSSelector
+                        </Grid>
+                        <Selector
                           size="lg"
                           label="State"
                           placeholder="Select state"
@@ -433,7 +433,7 @@ export default function PaymentFormPage() {
                               : undefined
                           }
                         />
-                        <XDSTextInput
+                        <TextInput
                           size="lg"
                           label="Phone Number"
                           placeholder="+1 (555) 123-4567"
@@ -446,65 +446,65 @@ export default function PaymentFormPage() {
                               : undefined
                           }
                         />
-                        <XDSCheckboxInput
+                        <CheckboxInput
                           label="Save my information for a faster checkout"
                           value={saveInfo}
                           onChange={setSaveInfo}
                         />
-                      </XDSVStack>
+                      </VStack>
 
                       {/* Delivery */}
-                      <XDSVStack gap={3}>
-                        <XDSVStack gap={1}>
-                          <XDSText type="large" weight="bold">
+                      <VStack gap={3}>
+                        <VStack gap={1}>
+                          <Text type="large" weight="bold">
                             Delivery
-                          </XDSText>
-                          <XDSText type="supporting" color="secondary">
+                          </Text>
+                          <Text type="supporting" color="secondary">
                             Please allow 1–3 business days processing time
                             before your order ships.
-                          </XDSText>
-                        </XDSVStack>
-                        <XDSRadioList
+                          </Text>
+                        </VStack>
+                        <RadioList
                           label="Delivery method"
                           value={deliveryMethod}
                           onChange={setDeliveryMethod}>
-                          <XDSRadioListItem
+                          <RadioListItem
                             value="standard"
                             label="Standard (3–7 business days)"
                             endContent={
-                              <XDSText type="body" weight="medium">
+                              <Text type="body" weight="medium">
                                 $4.95
-                              </XDSText>
+                              </Text>
                             }
                           />
-                          <XDSRadioListItem
+                          <RadioListItem
                             value="expedited"
                             label="Expedited (1–2 business days)"
                             endContent={
-                              <XDSText type="body" weight="medium">
+                              <Text type="body" weight="medium">
                                 $9.95
-                              </XDSText>
+                              </Text>
                             }
                           />
-                        </XDSRadioList>
-                      </XDSVStack>
+                        </RadioList>
+                      </VStack>
 
                       {/* Payment Method */}
-                      <XDSVStack gap={3}>
-                        <XDSVStack gap={1}>
-                          <XDSText type="large" weight="bold">
+                      <VStack gap={3}>
+                        <VStack gap={1}>
+                          <Text type="large" weight="bold">
                             Payment Method
-                          </XDSText>
-                          <XDSText type="supporting" color="secondary">
+                          </Text>
+                          <Text type="supporting" color="secondary">
                             All transactions are secure and encrypted.
-                          </XDSText>
-                        </XDSVStack>
+                          </Text>
+                        </VStack>
 
                         {/* Express checkout */}
-                        <XDSVStack gap={3}>
-                          <XDSGrid columns={2} gap={3}>
+                        <VStack gap={3}>
+                          <Grid columns={2} gap={3}>
                             {/* PayPal */}
-                            <XDSButton
+                            <Button
                               label="PayPal"
                               variant="primary"
                               size="lg"
@@ -515,9 +515,9 @@ export default function PaymentFormPage() {
                                 alt="PayPal"
                                 {...stylex.props(styles.paypalLogo)}
                               />
-                            </XDSButton>
+                            </Button>
                             {/* Google Pay */}
-                            <XDSButton
+                            <Button
                               label="Google Pay"
                               variant="primary"
                               size="lg"
@@ -528,27 +528,27 @@ export default function PaymentFormPage() {
                                 alt="Google Pay"
                                 {...stylex.props(styles.gpayLogo)}
                               />
-                            </XDSButton>
-                          </XDSGrid>
-                        </XDSVStack>
+                            </Button>
+                          </Grid>
+                        </VStack>
 
                         {/* OR divider */}
-                        <XDSHStack gap={3} vAlign="center">
-                          <XDSStackItem size="fill">
-                            <XDSDivider />
-                          </XDSStackItem>
-                          <XDSText type="supporting" color="secondary">
+                        <HStack gap={3} vAlign="center">
+                          <StackItem size="fill">
+                            <Divider />
+                          </StackItem>
+                          <Text type="supporting" color="secondary">
                             OR
-                          </XDSText>
-                          <XDSStackItem size="fill">
-                            <XDSDivider />
-                          </XDSStackItem>
-                        </XDSHStack>
+                          </Text>
+                          <StackItem size="fill">
+                            <Divider />
+                          </StackItem>
+                        </HStack>
 
                         {/* Credit card fields */}
-                        <XDSVStack gap={3}>
+                        <VStack gap={3}>
                           {/* Card type icons */}
-                          <XDSHStack gap={1.5} vAlign="center">
+                          <HStack gap={1.5} vAlign="center">
                             <img
                               src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/visa.svg"
                               alt="Visa"
@@ -564,8 +564,8 @@ export default function PaymentFormPage() {
                               alt="Amex"
                               {...stylex.props(styles.cardLogo)}
                             />
-                          </XDSHStack>
-                          <XDSTextInput
+                          </HStack>
+                          <TextInput
                             size="lg"
                             label="Card Number"
                             placeholder="1234 5678 9012 3456"
@@ -577,8 +577,8 @@ export default function PaymentFormPage() {
                                 : undefined
                             }
                           />
-                          <XDSGrid columns={3} gap={3}>
-                            <XDSSelector
+                          <Grid columns={3} gap={3}>
+                            <Selector
                               size="lg"
                               label="Expiry Month"
                               placeholder="MM"
@@ -591,7 +591,7 @@ export default function PaymentFormPage() {
                                   : undefined
                               }
                             />
-                            <XDSSelector
+                            <Selector
                               size="lg"
                               label="Expiry Year"
                               placeholder="YY"
@@ -604,7 +604,7 @@ export default function PaymentFormPage() {
                                   : undefined
                               }
                             />
-                            <XDSTextInput
+                            <TextInput
                               size="lg"
                               label="CVC"
                               placeholder="123"
@@ -617,8 +617,8 @@ export default function PaymentFormPage() {
                                   : undefined
                               }
                             />
-                          </XDSGrid>
-                          <XDSTextInput
+                          </Grid>
+                          <TextInput
                             size="lg"
                             label="Name on Card"
                             placeholder="John Doe"
@@ -630,14 +630,14 @@ export default function PaymentFormPage() {
                                 : undefined
                             }
                           />
-                          <XDSCheckboxInput
+                          <CheckboxInput
                             label="Use shipping address as billing address"
                             value={billingMatchesShipping}
                             onChange={setBillingMatchesShipping}
                           />
                           {!billingMatchesShipping && (
-                            <XDSVStack gap={3}>
-                              <XDSTextInput
+                            <VStack gap={3}>
+                              <TextInput
                                 size="lg"
                                 label="Address"
                                 placeholder="123 Main Street"
@@ -652,8 +652,8 @@ export default function PaymentFormPage() {
                                     : undefined
                                 }
                               />
-                              <XDSGrid columns={2} gap={3}>
-                                <XDSTextInput
+                              <Grid columns={2} gap={3}>
+                                <TextInput
                                   size="lg"
                                   label="City"
                                   placeholder="New York"
@@ -668,7 +668,7 @@ export default function PaymentFormPage() {
                                       : undefined
                                   }
                                 />
-                                <XDSTextInput
+                                <TextInput
                                   size="lg"
                                   label="ZIP Code"
                                   placeholder="10001"
@@ -683,8 +683,8 @@ export default function PaymentFormPage() {
                                       : undefined
                                   }
                                 />
-                              </XDSGrid>
-                              <XDSSelector
+                              </Grid>
+                              <Selector
                                 size="lg"
                                 label="State"
                                 placeholder="Select state"
@@ -700,19 +700,19 @@ export default function PaymentFormPage() {
                                     : undefined
                                 }
                               />
-                            </XDSVStack>
+                            </VStack>
                           )}
-                        </XDSVStack>
-                      </XDSVStack>
+                        </VStack>
+                      </VStack>
 
                       {/* Promo Code */}
-                      <XDSVStack gap={3}>
-                        <XDSText type="large" weight="bold">
+                      <VStack gap={3}>
+                        <Text type="large" weight="bold">
                           Promo Code
-                        </XDSText>
-                        <XDSHStack gap={2} vAlign="center">
-                          <XDSStackItem size="fill">
-                            <XDSTextInput
+                        </Text>
+                        <HStack gap={2} vAlign="center">
+                          <StackItem size="fill">
+                            <TextInput
                               size="lg"
                               label="Promo code"
                               isLabelHidden
@@ -721,30 +721,30 @@ export default function PaymentFormPage() {
                               onChange={setPromo}
                               xstyle={styles.fullWidth}
                             />
-                          </XDSStackItem>
-                          <XDSButton
+                          </StackItem>
+                          <Button
                             label="Apply"
                             variant="secondary"
                             size="lg"
                             onClick={() => {}}
                           />
-                        </XDSHStack>
-                      </XDSVStack>
+                        </HStack>
+                      </VStack>
 
                       {/* Gift Options */}
-                      <XDSVStack gap={3}>
-                        <XDSText type="large" weight="bold">
+                      <VStack gap={3}>
+                        <Text type="large" weight="bold">
                           Gift Options
-                        </XDSText>
-                        <XDSCheckboxInput
+                        </Text>
+                        <CheckboxInput
                           label="Add a gift message"
                           value={addGiftMessage}
                           onChange={setAddGiftMessage}
                         />
                         {addGiftMessage && (
-                          <XDSVStack gap={3}>
-                            <XDSGrid columns={2} gap={3}>
-                              <XDSTextInput
+                          <VStack gap={3}>
+                            <Grid columns={2} gap={3}>
+                              <TextInput
                                 size="lg"
                                 label="To"
                                 isLabelHidden
@@ -752,7 +752,7 @@ export default function PaymentFormPage() {
                                 value={giftTo}
                                 onChange={setGiftTo}
                               />
-                              <XDSTextInput
+                              <TextInput
                                 size="lg"
                                 label="From"
                                 isLabelHidden
@@ -760,137 +760,137 @@ export default function PaymentFormPage() {
                                 value={giftFrom}
                                 onChange={setGiftFrom}
                               />
-                            </XDSGrid>
-                            <XDSTextArea
+                            </Grid>
+                            <TextArea
                               label="Gift message"
                               isLabelHidden
                               placeholder="Write something here"
                               value={giftMessage}
                               onChange={setGiftMessage}
                             />
-                          </XDSVStack>
+                          </VStack>
                         )}
-                      </XDSVStack>
+                      </VStack>
 
                       {/* Trust bar + CTAs + policy links */}
-                      <XDSVStack gap={4}>
-                        <XDSHStack gap={5} hAlign="center" wrap="wrap">
-                          <XDSHStack gap={1} vAlign="center">
-                            <XDSIcon
+                      <VStack gap={4}>
+                        <HStack gap={5} hAlign="center" wrap="wrap">
+                          <HStack gap={1} vAlign="center">
+                            <Icon
                               icon={ShieldCheckIcon}
                               size="sm"
                               color="secondary"
                             />
-                            <XDSText type="supporting" color="secondary">
+                            <Text type="supporting" color="secondary">
                               Secure Payment
-                            </XDSText>
-                          </XDSHStack>
-                          <XDSHStack gap={1} vAlign="center">
-                            <XDSIcon
+                            </Text>
+                          </HStack>
+                          <HStack gap={1} vAlign="center">
+                            <Icon
                               icon={LockClosedIcon}
                               size="sm"
                               color="secondary"
                             />
-                            <XDSText type="supporting" color="secondary">
+                            <Text type="supporting" color="secondary">
                               SSL Encrypted
-                            </XDSText>
-                          </XDSHStack>
-                          <XDSHStack gap={1} vAlign="center">
-                            <XDSIcon
+                            </Text>
+                          </HStack>
+                          <HStack gap={1} vAlign="center">
+                            <Icon
                               icon={CheckCircleIcon}
                               size="sm"
                               color="secondary"
                             />
-                            <XDSText type="supporting" color="secondary">
+                            <Text type="supporting" color="secondary">
                               Free Returns
-                            </XDSText>
-                          </XDSHStack>
-                        </XDSHStack>
-                        <XDSVStack gap={2}>
-                          <XDSButton
+                            </Text>
+                          </HStack>
+                        </HStack>
+                        <VStack gap={2}>
+                          <Button
                             label="Place Order"
                             variant="primary"
                             size="lg"
                             xstyle={styles.fullWidth}
                             onClick={() => setSubmitted(true)}
                           />
-                          <XDSButton
+                          <Button
                             label="Continue Shopping"
                             variant="secondary"
                             size="lg"
                             xstyle={styles.fullWidth}
                             onClick={() => {}}
                           />
-                        </XDSVStack>
-                        <XDSDivider />
-                        <XDSHStack gap={4} vAlign="center">
-                          <XDSLink href="#" type="supporting">
+                        </VStack>
+                        <Divider />
+                        <HStack gap={4} vAlign="center">
+                          <Link href="#" type="supporting">
                             Refund policy
-                          </XDSLink>
-                          <XDSLink href="#" type="supporting">
+                          </Link>
+                          <Link href="#" type="supporting">
                             Privacy policy
-                          </XDSLink>
-                          <XDSLink href="#" type="supporting">
+                          </Link>
+                          <Link href="#" type="supporting">
                             Terms of service
-                          </XDSLink>
-                          <XDSLink href="#" type="supporting">
+                          </Link>
+                          <Link href="#" type="supporting">
                             Cancellations
-                          </XDSLink>
-                        </XDSHStack>
-                      </XDSVStack>
-                    </XDSVStack>
-                  </XDSStackItem>
+                          </Link>
+                        </HStack>
+                      </VStack>
+                    </VStack>
+                  </StackItem>
 
-                  <XDSStackItem
+                  <StackItem
                     size="fill"
                     xstyle={
                       isMobile
                         ? styles.summaryMobileOrder
                         : styles.summarySticky
                     }>
-                    <XDSCard padding={5}>
-                      <XDSVStack gap={4}>
+                    <Card padding={5}>
+                      <VStack gap={4}>
                         {/* Accordion header — clickable on mobile only */}
-                        <XDSCollapsible
+                        <Collapsible
                           trigger="Order Summary"
                           defaultIsOpen={true}>
-                          <XDSVStack gap={4} xstyle={styles.summaryContent}>
+                          <VStack gap={4} xstyle={styles.summaryContent}>
                             {/* Line items */}
                             {ORDER_ITEMS.map(item => (
-                              <XDSVStack key={item.id} gap={3}>
-                                <XDSHStack gap={3} vAlign="start">
-                                  <XDSThumbnail
+                              <VStack key={item.id} gap={3}>
+                                <HStack gap={3} vAlign="start">
+                                  <Thumbnail
                                     src={ITEM_IMAGES[item.id].src}
                                     alt={item.name}
                                   />
-                                  <XDSStackItem size="fill">
-                                    <XDSVStack gap={1}>
-                                      <XDSHStack
+                                  <StackItem size="fill">
+                                    <VStack gap={1}>
+                                      <HStack
                                         gap={2}
                                         hAlign="between"
                                         vAlign="start">
-                                        <XDSHStack gap={2} vAlign="center">
-                                          <XDSText type="body" weight="medium">
+                                        <HStack gap={2} vAlign="center">
+                                          <Text type="body" weight="medium">
                                             {item.name}
-                                          </XDSText>
+                                          </Text>
                                           {item.limited && (
-                                            <XDSBadge
+                                            <Badge
                                               variant="green"
                                               label="LIMITED EDITION"
                                             />
                                           )}
-                                        </XDSHStack>
-                                        <XDSText type="body" weight="bold">
+                                        </HStack>
+                                        <Text type="body" weight="bold">
                                           {fmt(item.price)}
-                                        </XDSText>
-                                      </XDSHStack>
-                                      <XDSText
+                                        </Text>
+                                      </HStack>
+                                      <Text
                                         type="supporting"
                                         color="secondary">
                                         {item.variant}
-                                      </XDSText>
-                                      <XDSHStack gap={2} vAlign="center">
-                                        <XDSNumberInput
+                                      </Text>
+                                      <HStack gap={2} vAlign="center">
+                                        <NumberInput
                                           label="Qty"
                                           isLabelHidden
                                           value={
@@ -906,57 +906,57 @@ export default function PaymentFormPage() {
                                           max={10}
                                           isIntegerOnly
                                         />
-                                        <XDSLink href="#" type="supporting">
+                                        <Link href="#" type="supporting">
                                           Remove
-                                        </XDSLink>
-                                        <XDSLink href="#" type="supporting">
+                                        </Link>
+                                        <Link href="#" type="supporting">
                                           Save
-                                        </XDSLink>
-                                      </XDSHStack>
-                                    </XDSVStack>
-                                  </XDSStackItem>
-                                </XDSHStack>
-                                <XDSDivider />
-                              </XDSVStack>
+                                        </Link>
+                                      </HStack>
+                                    </VStack>
+                                  </StackItem>
+                                </HStack>
+                                <Divider />
+                              </VStack>
                             ))}
 
                             {/* Order total subsection */}
-                            <XDSVStack gap={3}>
-                              <XDSText type="large" weight="bold">
+                            <VStack gap={3}>
+                              <Text type="large" weight="bold">
                                 Order Total
-                              </XDSText>
-                              <XDSVStack gap={2}>
-                                <XDSHStack hAlign="between" vAlign="center">
-                                  <XDSText type="body" color="secondary">
+                              </Text>
+                              <VStack gap={2}>
+                                <HStack hAlign="between" vAlign="center">
+                                  <Text type="body" color="secondary">
                                     Subtotal
-                                  </XDSText>
-                                  <XDSText type="body">{fmt(SUBTOTAL)}</XDSText>
-                                </XDSHStack>
-                                <XDSHStack hAlign="between" vAlign="center">
-                                  <XDSText type="body" color="secondary">
+                                  </Text>
+                                  <Text type="body">{fmt(SUBTOTAL)}</Text>
+                                </HStack>
+                                <HStack hAlign="between" vAlign="center">
+                                  <Text type="body" color="secondary">
                                     Shipping
-                                  </XDSText>
-                                  <XDSText type="body">
+                                  </Text>
+                                  <Text type="body">
                                     {fmt(
                                       deliveryMethod === 'expedited'
                                         ? 9.95
                                         : 4.95,
                                     )}
-                                  </XDSText>
-                                </XDSHStack>
-                                <XDSHStack hAlign="between" vAlign="center">
-                                  <XDSText type="body" color="secondary">
+                                  </Text>
+                                </HStack>
+                                <HStack hAlign="between" vAlign="center">
+                                  <Text type="body" color="secondary">
                                     Tax
-                                  </XDSText>
-                                  <XDSText type="body">{fmt(TAX)}</XDSText>
-                                </XDSHStack>
-                              </XDSVStack>
-                              <XDSDivider />
-                              <XDSHStack hAlign="between" vAlign="center">
-                                <XDSText type="large" weight="bold">
+                                  </Text>
+                                  <Text type="body">{fmt(TAX)}</Text>
+                                </HStack>
+                              </VStack>
+                              <Divider />
+                              <HStack hAlign="between" vAlign="center">
+                                <Text type="large" weight="bold">
                                   Total
-                                </XDSText>
-                                <XDSText type="large" weight="bold">
+                                </Text>
+                                <Text type="large" weight="bold">
                                   {fmt(
                                     SUBTOTAL +
                                       (deliveryMethod === 'expedited'
@@ -964,25 +964,25 @@ export default function PaymentFormPage() {
                                         : 4.95) +
                                       TAX,
                                   )}
-                                </XDSText>
-                              </XDSHStack>
-                              <XDSBanner
+                                </Text>
+                              </HStack>
+                              <Banner
                                 status="info"
-                                icon={<XDSIcon icon={TruckIcon} size="sm" />}
+                                icon={<Icon icon={TruckIcon} size="sm" />}
                                 title="Free shipping on orders over $300"
                               />
-                            </XDSVStack>
-                          </XDSVStack>
-                        </XDSCollapsible>
-                      </XDSVStack>
-                      {/* end outer card XDSVStack gap={4} */}
-                    </XDSCard>
-                  </XDSStackItem>
-                </XDSStack>
-              </XDSVStack>
-            </XDSSection>
-          </XDSCenter>
-        </XDSLayoutContent>
+                            </VStack>
+                          </VStack>
+                        </Collapsible>
+                      </VStack>
+                      {/* end outer card VStack gap={4} */}
+                    </Card>
+                  </StackItem>
+                </Stack>
+              </VStack>
+            </Section>
+          </Center>
+        </LayoutContent>
       }
     />
   );

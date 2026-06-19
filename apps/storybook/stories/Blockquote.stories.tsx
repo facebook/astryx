@@ -1,15 +1,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSBlockquote} from '@xds/core/Blockquote';
-import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Blockquote} from '@xds/core/Blockquote';
+import {Card} from '@xds/core/Card';
+import {Section} from '@xds/core/Section';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
-const meta: Meta<typeof XDSBlockquote> = {
+const meta: Meta<typeof Blockquote> = {
   title: 'Core/Blockquote',
-  component: XDSBlockquote,
+  component: Blockquote,
   tags: ['autodocs'],
   argTypes: {
     cite: {
@@ -20,7 +20,7 @@ const meta: Meta<typeof XDSBlockquote> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSBlockquote>;
+type Story = StoryObj<typeof Blockquote>;
 
 export const Default: Story = {
   args: {
@@ -28,80 +28,80 @@ export const Default: Story = {
       'Design is not just what it looks like and feels like. Design is how it works.',
   },
   render: args => (
-    <XDSSection variant="muted">
-      <XDSCard>
-        <XDSBlockquote {...args} />
-      </XDSCard>
-    </XDSSection>
+    <Section variant="muted">
+      <Card>
+        <Blockquote {...args} />
+      </Card>
+    </Section>
   ),
 };
 
 export const WithCitation: Story = {
   render: () => (
-    <XDSSection variant="muted">
-      <XDSCard>
-        <XDSBlockquote cite="Steve Jobs">
+    <Section variant="muted">
+      <Card>
+        <Blockquote cite="Steve Jobs">
           Design is not just what it looks like and feels like. Design is how it
           works.
-        </XDSBlockquote>
-      </XDSCard>
-    </XDSSection>
+        </Blockquote>
+      </Card>
+    </Section>
   ),
 };
 
 export const InContent: Story = {
   render: () => (
-    <XDSSection variant="muted">
-      <XDSCard>
-        <XDSVStack gap={3}>
-          <XDSText type="body">
+    <Section variant="muted">
+      <Card>
+        <VStack gap={3}>
+          <Text type="body">
             In a 2003 interview, the importance of design thinking was
             emphasized:
-          </XDSText>
-          <XDSBlockquote cite="Steve Jobs">
+          </Text>
+          <Blockquote cite="Steve Jobs">
             Design is not just what it looks like and feels like. Design is how
             it works.
-          </XDSBlockquote>
-          <XDSText type="body">
+          </Blockquote>
+          <Text type="body">
             This philosophy has guided product development for decades.
-          </XDSText>
-        </XDSVStack>
-      </XDSCard>
-    </XDSSection>
+          </Text>
+        </VStack>
+      </Card>
+    </Section>
   ),
 };
 
 export const NestedContent: Story = {
   render: () => (
-    <XDSSection variant="muted">
-      <XDSCard>
-        <XDSBlockquote>
-          <XDSText type="body">
+    <Section variant="muted">
+      <Card>
+        <Blockquote>
+          <Text type="body">
             The best way to predict the future is to invent it.
-          </XDSText>
-          <XDSText type="supporting">From a talk at PARC in 1971.</XDSText>
-        </XDSBlockquote>
-      </XDSCard>
-    </XDSSection>
+          </Text>
+          <Text type="supporting">From a talk at PARC in 1971.</Text>
+        </Blockquote>
+      </Card>
+    </Section>
   ),
 };
 
 export const MultipleParagraphs: Story = {
   render: () => (
-    <XDSSection variant="muted">
-      <XDSCard>
-        <XDSBlockquote cite="Alan Kay">
-          <XDSVStack gap={2}>
-            <XDSText type="body">
+    <Section variant="muted">
+      <Card>
+        <Blockquote cite="Alan Kay">
+          <VStack gap={2}>
+            <Text type="body">
               The best way to predict the future is to invent it.
-            </XDSText>
-            <XDSText type="body">
+            </Text>
+            <Text type="body">
               People who are really serious about software should make their own
               hardware.
-            </XDSText>
-          </XDSVStack>
-        </XDSBlockquote>
-      </XDSCard>
-    </XDSSection>
+            </Text>
+          </VStack>
+        </Blockquote>
+      </Card>
+    </Section>
   ),
 };

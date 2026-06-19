@@ -2,18 +2,18 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
+  SideNav,
+  SideNavHeading,
+  SideNavItem,
+  SideNavSection,
 } from '@xds/core/SideNav';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSListItem} from '@xds/core/List';
-import {XDSMoreMenu} from '@xds/core/MoreMenu';
-import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSText} from '@xds/core/Text';
+import {Badge} from '@xds/core/Badge';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
+import {ListItem} from '@xds/core/List';
+import {MoreMenu} from '@xds/core/MoreMenu';
+import {NavIcon} from '@xds/core/NavIcon';
+import {Text} from '@xds/core/Text';
 import {
   HomeIcon,
   FolderIcon,
@@ -30,9 +30,9 @@ import {
   FolderIcon as FolderIconSolid,
 } from '@heroicons/react/24/solid';
 
-const meta: Meta<typeof XDSSideNav> = {
+const meta: Meta<typeof SideNav> = {
   title: 'Core/SideNav',
-  component: XDSSideNav,
+  component: SideNav,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
@@ -47,7 +47,7 @@ const meta: Meta<typeof XDSSideNav> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSSideNav>;
+type Story = StoryObj<typeof SideNav>;
 
 // =============================================================================
 // Basic
@@ -55,46 +55,46 @@ type Story = StoryObj<typeof XDSSideNav>;
 
 export const Default: Story = {
   render: () => (
-    <XDSSideNav
+    <SideNav
       header={
-        <XDSSideNavHeading
+        <SideNavHeading
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
           heading="My App"
           headingHref="/"
         />
       }>
-      <XDSSideNavSection title="Main">
-        <XDSSideNavItem
+      <SideNavSection title="Main">
+        <SideNavItem
           label="Dashboard"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
           isSelected
           href="/dashboard"
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Projects"
           icon={FolderIcon}
           selectedIcon={FolderIconSolid}
           href="/projects"
-          endContent={<XDSBadge label="3" />}
+          endContent={<Badge label="3" />}
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Analytics"
           icon={ChartBarIcon}
           href="/analytics"
         />
-        <XDSSideNavItem label="Team" icon={UserGroupIcon} href="/team" />
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Documents">
-        <XDSSideNavItem
+        <SideNavItem label="Team" icon={UserGroupIcon} href="/team" />
+      </SideNavSection>
+      <SideNavSection title="Documents">
+        <SideNavItem
           label="All Documents"
           icon={DocumentTextIcon}
           href="/documents"
         />
-      </XDSSideNavSection>
-    </XDSSideNav>
+      </SideNavSection>
+    </SideNav>
   ),
 };
 
@@ -105,28 +105,28 @@ export const Default: Story = {
 export const TitleWithoutIcon: Story = {
   name: 'Title Without Icon',
   render: () => (
-    <XDSSideNav header={<XDSSideNavHeading heading="My App" headingHref="/" />}>
-      <XDSSideNavSection title="Main">
-        <XDSSideNavItem
+    <SideNav header={<SideNavHeading heading="My App" headingHref="/" />}>
+      <SideNavSection title="Main">
+        <SideNavItem
           label="Dashboard"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
           isSelected
           href="/dashboard"
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Projects"
           icon={FolderIcon}
           selectedIcon={FolderIconSolid}
           href="/projects"
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Analytics"
           icon={ChartBarIcon}
           href="/analytics"
         />
-      </XDSSideNavSection>
-    </XDSSideNav>
+      </SideNavSection>
+    </SideNav>
   ),
 };
 
@@ -137,34 +137,34 @@ export const TitleWithoutIcon: Story = {
 export const WithHeaderMenu: Story = {
   name: 'Header with Menu',
   render: () => (
-    <XDSSideNav
+    <SideNav
       header={
-        <XDSSideNavHeading
+        <SideNavHeading
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
           heading="Product Name"
           subheading="Business Account"
           menu={
             <>
-              <XDSListItem label="Personal Account" href="#" />
-              <XDSListItem label="Acme Corp" href="#" />
-              <XDSListItem label="Add account" href="#" />
-              <XDSListItem label="Sign out" href="#" />
+              <ListItem label="Personal Account" href="#" />
+              <ListItem label="Acme Corp" href="#" />
+              <ListItem label="Add account" href="#" />
+              <ListItem label="Sign out" href="#" />
             </>
           }
         />
       }>
-      <XDSSideNavSection title="Navigation">
-        <XDSSideNavItem
+      <SideNavSection title="Navigation">
+        <SideNavItem
           label="Dashboard"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
           isSelected
         />
-        <XDSSideNavItem label="Settings" icon={Cog6ToothIcon} />
-      </XDSSideNavSection>
-    </XDSSideNav>
+        <SideNavItem label="Settings" icon={Cog6ToothIcon} />
+      </SideNavSection>
+    </SideNav>
   ),
 };
 
@@ -175,11 +175,11 @@ export const WithHeaderMenu: Story = {
 export const SuiteHeader: Story = {
   name: 'Suite with Independent Links',
   render: () => (
-    <XDSSideNav
+    <SideNav
       header={
-        <XDSSideNavHeading
+        <SideNavHeading
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
           superheading="Suite Name"
           superheadingHref="/suite"
@@ -187,23 +187,23 @@ export const SuiteHeader: Story = {
           headingHref="/product"
           menu={
             <>
-              <XDSListItem label="Analytics" href="#" />
-              <XDSListItem label="Commerce" href="#" />
-              <XDSListItem label="Team Hub" href="#" />
+              <ListItem label="Analytics" href="#" />
+              <ListItem label="Commerce" href="#" />
+              <ListItem label="Team Hub" href="#" />
             </>
           }
         />
       }>
-      <XDSSideNavSection title="Main">
-        <XDSSideNavItem
+      <SideNavSection title="Main">
+        <SideNavItem
           label="Dashboard"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
           isSelected
         />
-        <XDSSideNavItem label="Projects" icon={FolderIcon} />
-      </XDSSideNavSection>
-    </XDSSideNav>
+        <SideNavItem label="Projects" icon={FolderIcon} />
+      </SideNavSection>
+    </SideNav>
   ),
 };
 
@@ -214,32 +214,32 @@ export const SuiteHeader: Story = {
 export const NestedItems: Story = {
   name: 'Nested Items',
   render: () => (
-    <XDSSideNav
+    <SideNav
       header={
-        <XDSSideNavHeading
+        <SideNavHeading
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
           heading="My App"
         />
       }>
-      <XDSSideNavSection title="Main">
-        <XDSSideNavItem
+      <SideNavSection title="Main">
+        <SideNavItem
           label="Dashboard"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
           isSelected
         />
-        <XDSSideNavItem label="Settings" icon={Cog6ToothIcon}>
-          <XDSSideNavItem label="General" href="/settings/general" />
-          <XDSSideNavItem label="Security" href="/settings/security" />
-          <XDSSideNavItem
+        <SideNavItem label="Settings" icon={Cog6ToothIcon}>
+          <SideNavItem label="General" href="/settings/general" />
+          <SideNavItem label="Security" href="/settings/security" />
+          <SideNavItem
             label="Notifications"
             href="/settings/notifications"
           />
-        </XDSSideNavItem>
-      </XDSSideNavSection>
-    </XDSSideNav>
+        </SideNavItem>
+      </SideNavSection>
+    </SideNav>
   ),
 };
 
@@ -250,43 +250,43 @@ export const NestedItems: Story = {
 export const WithFooter: Story = {
   name: 'With Footer Icons',
   render: () => (
-    <XDSSideNav
+    <SideNav
       header={
-        <XDSSideNavHeading
+        <SideNavHeading
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
           heading="My App"
         />
       }
       footerIcons={
         <>
-          <XDSButton
+          <Button
             label="Help"
-            icon={<XDSIcon icon={QuestionMarkCircleIcon} size="md" />}
+            icon={<Icon icon={QuestionMarkCircleIcon} size="md" />}
             variant="ghost"
             size="sm"
             isIconOnly
           />
-          <XDSButton
+          <Button
             label="Notifications"
-            icon={<XDSIcon icon={BellIcon} size="md" />}
+            icon={<Icon icon={BellIcon} size="md" />}
             variant="ghost"
             size="sm"
             isIconOnly
           />
         </>
       }>
-      <XDSSideNavSection title="Main">
-        <XDSSideNavItem
+      <SideNavSection title="Main">
+        <SideNavItem
           label="Dashboard"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
           isSelected
         />
-        <XDSSideNavItem label="Projects" icon={FolderIcon} />
-      </XDSSideNavSection>
-    </XDSSideNav>
+        <SideNavItem label="Projects" icon={FolderIcon} />
+      </SideNavSection>
+    </SideNav>
   ),
 };
 
@@ -297,30 +297,30 @@ export const WithFooter: Story = {
 export const DisabledItem: Story = {
   name: 'Disabled Items',
   render: () => (
-    <XDSSideNav
+    <SideNav
       header={
-        <XDSSideNavHeading
+        <SideNavHeading
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
           heading="My App"
         />
       }>
-      <XDSSideNavSection title="Main">
-        <XDSSideNavItem
+      <SideNavSection title="Main">
+        <SideNavItem
           label="Dashboard"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
           isSelected
         />
-        <XDSSideNavItem label="Projects" icon={FolderIcon} />
-        <XDSSideNavItem
+        <SideNavItem label="Projects" icon={FolderIcon} />
+        <SideNavItem
           label="Analytics (Coming Soon)"
           icon={ChartBarIcon}
           isDisabled
         />
-      </XDSSideNavSection>
-    </XDSSideNav>
+      </SideNavSection>
+    </SideNav>
   ),
 };
 
@@ -331,26 +331,26 @@ export const DisabledItem: Story = {
 export const HiddenSectionHeader: Story = {
   name: 'Hidden Section Header',
   render: () => (
-    <XDSSideNav
+    <SideNav
       header={
-        <XDSSideNavHeading
+        <SideNavHeading
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
           heading="My App"
         />
       }>
-      <XDSSideNavSection title="Main navigation" isHeaderHidden>
-        <XDSSideNavItem
+      <SideNavSection title="Main navigation" isHeaderHidden>
+        <SideNavItem
           label="Dashboard"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
           isSelected
         />
-        <XDSSideNavItem label="Projects" icon={FolderIcon} />
-        <XDSSideNavItem label="Analytics" icon={ChartBarIcon} />
-      </XDSSideNavSection>
-    </XDSSideNav>
+        <SideNavItem label="Projects" icon={FolderIcon} />
+        <SideNavItem label="Analytics" icon={ChartBarIcon} />
+      </SideNavSection>
+    </SideNav>
   ),
 };
 
@@ -361,25 +361,25 @@ export const HiddenSectionHeader: Story = {
 export const EndContent: Story = {
   name: 'End Content (Badges & Menus)',
   render: () => (
-    <XDSSideNav
+    <SideNav
       header={
-        <XDSSideNavHeading
+        <SideNavHeading
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
           heading="My App"
           headingHref="/"
         />
       }>
-      <XDSSideNavSection title="Navigation" isHeaderHidden>
-        <XDSSideNavItem
+      <SideNavSection title="Navigation" isHeaderHidden>
+        <SideNavItem
           label="Dashboard"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
           isSelected
           href="/dashboard"
           endContent={
-            <XDSMoreMenu
+            <MoreMenu
               size="sm"
               items={[
                 {label: 'Pin to top', onClick: () => {}},
@@ -389,37 +389,37 @@ export const EndContent: Story = {
             />
           }
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Projects"
           icon={FolderIcon}
           href="/projects"
-          endContent={<XDSBadge label={12} />}
+          endContent={<Badge label={12} />}
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Analytics"
           icon={ChartBarIcon}
           href="/analytics"
-          endContent={<XDSBadge label="New" />}
+          endContent={<Badge label="New" />}
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Team"
           icon={UserGroupIcon}
           href="/team"
           endContent={
-            <XDSText type="supporting" color="secondary">
+            <Text type="supporting" color="secondary">
               8 members
-            </XDSText>
+            </Text>
           }
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Notifications"
           icon={BellIcon}
           href="/notifications"
           endContent={
-            <XDSButton
+            <Button
               label="Settings"
               icon={
-                <XDSIcon icon={Cog6ToothIcon} size="sm" color="secondary" />
+                <Icon icon={Cog6ToothIcon} size="sm" color="secondary" />
               }
               variant="ghost"
               size="sm"
@@ -427,34 +427,34 @@ export const EndContent: Story = {
             />
           }
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Documents"
           icon={DocumentTextIcon}
           href="/documents"
           endContent={
-            <XDSText type="supporting" color="secondary">
+            <Text type="supporting" color="secondary">
               ⌘D
-            </XDSText>
+            </Text>
           }
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Settings"
           icon={Cog6ToothIcon}
           href="/settings"
           endContent={
-            <XDSText type="supporting" color="secondary">
+            <Text type="supporting" color="secondary">
               3 pending
-            </XDSText>
+            </Text>
           }
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="A very long navigation label that should truncate with ellipsis"
           icon={DocumentTextIcon}
           href="/long"
-          endContent={<XDSBadge label={99} />}
+          endContent={<Badge label={99} />}
         />
-      </XDSSideNavSection>
-    </XDSSideNav>
+      </SideNavSection>
+    </SideNav>
   ),
 };
 
@@ -465,27 +465,27 @@ export const EndContent: Story = {
 export const HeaderEndContent: Story = {
   name: 'Header End Content',
   render: () => (
-    <XDSSideNav
+    <SideNav
       header={
-        <XDSSideNavHeading
+        <SideNavHeading
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
           heading="My App"
           headingHref="/"
-          headerEndContent={<XDSBadge label="3" variant="error" />}
+          headerEndContent={<Badge label="3" variant="error" />}
         />
       }>
-      <XDSSideNavSection title="Main">
-        <XDSSideNavItem
+      <SideNavSection title="Main">
+        <SideNavItem
           label="Dashboard"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
           isSelected
         />
-        <XDSSideNavItem label="Projects" icon={FolderIcon} />
-      </XDSSideNavSection>
-    </XDSSideNav>
+        <SideNavItem label="Projects" icon={FolderIcon} />
+      </SideNavSection>
+    </SideNav>
   ),
 };
 
@@ -496,32 +496,32 @@ export const HeaderEndContent: Story = {
 export const HeaderEndContentWithMenu: Story = {
   name: 'Header End Content + Menu',
   render: () => (
-    <XDSSideNav
+    <SideNav
       header={
-        <XDSSideNavHeading
+        <SideNavHeading
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
           heading="Product Name"
           subheading="Business Account"
-          headerEndContent={<XDSBadge label="New" variant="info" />}
+          headerEndContent={<Badge label="New" variant="info" />}
           menu={
             <>
-              <XDSListItem label="Switch Account" href="#" />
-              <XDSListItem label="Sign Out" href="#" />
+              <ListItem label="Switch Account" href="#" />
+              <ListItem label="Sign Out" href="#" />
             </>
           }
         />
       }>
-      <XDSSideNavSection title="Main">
-        <XDSSideNavItem
+      <SideNavSection title="Main">
+        <SideNavItem
           label="Dashboard"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
           isSelected
         />
-      </XDSSideNavSection>
-    </XDSSideNav>
+      </SideNavSection>
+    </SideNav>
   ),
 };
 
@@ -532,69 +532,69 @@ export const HeaderEndContentWithMenu: Story = {
 export const CollapsibleItems: Story = {
   name: 'Collapsible Items',
   render: () => (
-    <XDSSideNav
+    <SideNav
       header={
-        <XDSSideNavHeading
+        <SideNavHeading
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
           heading="My App"
         />
       }>
-      <XDSSideNavSection title="Collapsible (no href)">
-        <XDSSideNavItem label="Settings" icon={Cog6ToothIcon} collapsible>
-          <XDSSideNavItem label="General" href="/settings/general" />
-          <XDSSideNavItem label="Security" href="/settings/security" />
-          <XDSSideNavItem
+      <SideNavSection title="Collapsible (no href)">
+        <SideNavItem label="Settings" icon={Cog6ToothIcon} collapsible>
+          <SideNavItem label="General" href="/settings/general" />
+          <SideNavItem label="Security" href="/settings/security" />
+          <SideNavItem
             label="Notifications"
             href="/settings/notifications"
           />
-        </XDSSideNavItem>
-        <XDSSideNavItem
+        </SideNavItem>
+        <SideNavItem
           label="Documents"
           icon={DocumentTextIcon}
           collapsible={{defaultIsCollapsed: true}}>
-          <XDSSideNavItem label="Drafts" href="/documents/drafts" />
-          <XDSSideNavItem label="Published" href="/documents/published" />
-        </XDSSideNavItem>
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Collapsible + href">
-        <XDSSideNavItem
+          <SideNavItem label="Drafts" href="/documents/drafts" />
+          <SideNavItem label="Published" href="/documents/published" />
+        </SideNavItem>
+      </SideNavSection>
+      <SideNavSection title="Collapsible + href">
+        <SideNavItem
           label="Settings"
           icon={Cog6ToothIcon}
           href="/settings"
           collapsible>
-          <XDSSideNavItem label="General" href="/settings/general" />
-          <XDSSideNavItem label="Security" href="/settings/security" />
-          <XDSSideNavItem
+          <SideNavItem label="General" href="/settings/general" />
+          <SideNavItem label="Security" href="/settings/security" />
+          <SideNavItem
             label="Notifications"
             href="/settings/notifications"
           />
-        </XDSSideNavItem>
-        <XDSSideNavItem
+        </SideNavItem>
+        <SideNavItem
           label="Documents"
           icon={DocumentTextIcon}
           href="/documents"
           collapsible={{defaultIsCollapsed: true}}>
-          <XDSSideNavItem label="Drafts" href="/documents/drafts" />
-          <XDSSideNavItem label="Published" href="/documents/published" />
-        </XDSSideNavItem>
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Collapsible + onClick">
-        <XDSSideNavItem
+          <SideNavItem label="Drafts" href="/documents/drafts" />
+          <SideNavItem label="Published" href="/documents/published" />
+        </SideNavItem>
+      </SideNavSection>
+      <SideNavSection title="Collapsible + onClick">
+        <SideNavItem
           label="Settings"
           icon={Cog6ToothIcon}
           onClick={() => alert('Settings clicked')}
           collapsible>
-          <XDSSideNavItem label="General" href="/settings/general" />
-          <XDSSideNavItem label="Security" href="/settings/security" />
-          <XDSSideNavItem
+          <SideNavItem label="General" href="/settings/general" />
+          <SideNavItem label="Security" href="/settings/security" />
+          <SideNavItem
             label="Notifications"
             href="/settings/notifications"
           />
-        </XDSSideNavItem>
-      </XDSSideNavSection>
-    </XDSSideNav>
+        </SideNavItem>
+      </SideNavSection>
+    </SideNav>
   ),
 };
 
@@ -605,12 +605,12 @@ export const CollapsibleItems: Story = {
 export const CollapsibleSidebar: Story = {
   name: 'Collapsible Sidebar',
   render: () => (
-    <XDSSideNav
+    <SideNav
       collapsible
       header={
-        <XDSSideNavHeading
+        <SideNavHeading
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
           heading="My App"
           headingHref="/"
@@ -618,60 +618,60 @@ export const CollapsibleSidebar: Story = {
       }
       footerIcons={
         <>
-          <XDSButton
+          <Button
             label="Help"
-            icon={<XDSIcon icon={QuestionMarkCircleIcon} size="md" />}
+            icon={<Icon icon={QuestionMarkCircleIcon} size="md" />}
             variant="ghost"
             size="sm"
             isIconOnly
           />
-          <XDSButton
+          <Button
             label="Notifications"
-            icon={<XDSIcon icon={BellIcon} size="md" />}
+            icon={<Icon icon={BellIcon} size="md" />}
             variant="ghost"
             size="sm"
             isIconOnly
           />
         </>
       }>
-      <XDSSideNavSection title="Main">
-        <XDSSideNavItem
+      <SideNavSection title="Main">
+        <SideNavItem
           label="Dashboard"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
           isSelected
           href="/dashboard"
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Projects"
           icon={FolderIcon}
           selectedIcon={FolderIconSolid}
           href="/projects"
-          endContent={<XDSBadge label="3" />}
+          endContent={<Badge label="3" />}
         />
-        <XDSSideNavItem
+        <SideNavItem
           label="Analytics"
           icon={ChartBarIcon}
           href="/analytics"
         />
-        <XDSSideNavItem label="Team" icon={UserGroupIcon} href="/team" />
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Settings">
-        <XDSSideNavItem label="Settings" icon={Cog6ToothIcon} collapsible>
-          <XDSSideNavItem label="General" href="/settings/general" />
-          <XDSSideNavItem label="Security" href="/settings/security" />
-          <XDSSideNavItem
+        <SideNavItem label="Team" icon={UserGroupIcon} href="/team" />
+      </SideNavSection>
+      <SideNavSection title="Settings">
+        <SideNavItem label="Settings" icon={Cog6ToothIcon} collapsible>
+          <SideNavItem label="General" href="/settings/general" />
+          <SideNavItem label="Security" href="/settings/security" />
+          <SideNavItem
             label="Notifications"
             href="/settings/notifications"
           />
-        </XDSSideNavItem>
-        <XDSSideNavItem
+        </SideNavItem>
+        <SideNavItem
           label="Documents"
           icon={DocumentTextIcon}
           href="/documents"
         />
-      </XDSSideNavSection>
-    </XDSSideNav>
+      </SideNavSection>
+    </SideNav>
   ),
 };
 
@@ -682,42 +682,42 @@ export const CollapsibleSidebar: Story = {
 export const IconlessNestedItems: Story = {
   name: 'Iconless Nested Items',
   render: () => (
-    <XDSSideNav
+    <SideNav
       header={
-        <XDSSideNavHeading
+        <SideNavHeading
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
           }
           heading="My App"
         />
       }>
-      <XDSSideNavSection title="Main">
-        <XDSSideNavItem
+      <SideNavSection title="Main">
+        <SideNavItem
           label="Dashboard"
           icon={HomeIcon}
           selectedIcon={HomeIconSolid}
           isSelected
           href="/dashboard"
         />
-        <XDSSideNavItem label="Settings" icon={Cog6ToothIcon} collapsible>
-          <XDSSideNavItem label="General" href="/settings/general" />
-          <XDSSideNavItem label="Security" href="/settings/security" />
-          <XDSSideNavItem
+        <SideNavItem label="Settings" icon={Cog6ToothIcon} collapsible>
+          <SideNavItem label="General" href="/settings/general" />
+          <SideNavItem label="Security" href="/settings/security" />
+          <SideNavItem
             label="Notifications"
             href="/settings/notifications"
           />
-        </XDSSideNavItem>
-        <XDSSideNavItem label="Reports" collapsible>
-          <XDSSideNavItem label="Monthly" href="/reports/monthly" />
-          <XDSSideNavItem label="Quarterly" href="/reports/quarterly" />
-          <XDSSideNavItem label="Annual" href="/reports/annual" />
-        </XDSSideNavItem>
-        <XDSSideNavItem
+        </SideNavItem>
+        <SideNavItem label="Reports" collapsible>
+          <SideNavItem label="Monthly" href="/reports/monthly" />
+          <SideNavItem label="Quarterly" href="/reports/quarterly" />
+          <SideNavItem label="Annual" href="/reports/annual" />
+        </SideNavItem>
+        <SideNavItem
           label="Analytics"
           icon={ChartBarIcon}
           href="/analytics"
         />
-      </XDSSideNavSection>
-    </XDSSideNav>
+      </SideNavSection>
+    </SideNav>
   ),
 };

@@ -1,0 +1,576 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file Typeahead.test.tsx
+ * @input Uses vitest, @testing-library/react, Typeahead, BaseTypeahead
+ * @output Unit tests for Typeahead components
+ * @position Testing; validates Typeahead.tsx and BaseTypeahead.tsx
+ *
+ * SYNC: When Typeahead components change, update tests to match
+ */
+
+import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {Typeahead} from './Typeahead';
+import {BaseTypeahead} from './BaseTypeahead';
+import type {SearchSource, SearchableItem} from './types';
+
+// Store original matches to restore later
+const originalMatches = HTMLElement.prototype.matches;
+
+// Track popover open state per element
+const popoverOpenState = new WeakMap<HTMLElement, boolean>();
+
+// Mock Popover API for jsdom
+beforeAll(() => {
+  HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+    popoverOpenState.set(this, true);
+    const event = new Event('toggle');
+    Object.defineProperty(event, 'newState', {value: 'open'});
+    this.dispatchEvent(event);
+  });
+  HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+    popoverOpenState.set(this, false);
+    const event = new Event('toggle');
+    Object.defineProperty(event, 'newState', {value: 'closed'});
+    this.dispatchEvent(event);
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = function (
+    selector: string,
+  ): boolean {
+    if (selector === ':popover-open') {
+      return popoverOpenState.get(this) ?? false;
+    }
+    return originalMatches.call(this, selector);
+  };
+});
+
+afterAll(() => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = originalMatches;
+});
+
+// Test data
+const fruits: SearchableItem[] = [
+  {id: '1', label: 'Apple'},
+  {id: '2', label: 'Banana'},
+  {id: '3', label: 'Cherry'},
+  {id: '4', label: 'Date'},
+  {id: '5', label: 'Elderberry'},
+];
+
+const fruitSource: SearchSource = {
+  search: (query: string) =>
+    fruits.filter(f => f.label.toLowerCase().includes(query.toLowerCase())),
+  bootstrap: () => fruits.slice(0, 3),
+};
+
+describe('BaseTypeahead', () => {
+  it('renders input with combobox role', () => {
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
+  });
+
+  it('renders placeholder text', () => {
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        placeholder="Pick a fruit..."
+      />,
+    );
+    expect(screen.getByPlaceholderText('Pick a fruit...')).toBeInTheDocument();
+  });
+
+  it('sets aria-expanded=false initially', () => {
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  it('shows results on input change', async () => {
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'App'}});
+
+    await waitFor(() => {
+      expect(screen.getByRole('listbox', {hidden: true})).toBeInTheDocument();
+    });
+  });
+
+  it('disables input when isDisabled', () => {
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        isDisabled
+      />,
+    );
+    expect(screen.getByRole('combobox')).toBeDisabled();
+  });
+
+  it('uses anchorRef for dropdown positioning', () => {
+    const anchorRef = {current: document.createElement('div')};
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        anchorRef={anchorRef}
+      />,
+    );
+    // Component renders without error — anchor is wired up internally
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
+  });
+
+  it('does not select every result when items lack ids', async () => {
+    const idlessItems = [
+      {label: 'Alpha'},
+      {label: 'Beta'},
+    ] as unknown as SearchableItem[];
+    const idlessSource: SearchSource = {
+      search: () => idlessItems,
+      bootstrap: () => idlessItems,
+    };
+
+    render(
+      <BaseTypeahead
+        searchSource={idlessSource}
+        value={idlessItems[0]}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+
+    fireEvent.focus(screen.getByRole('combobox'));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('option', {hidden: true})).toHaveLength(2);
+    });
+
+    const options = screen.getAllByRole('option', {hidden: true});
+    expect(options[0]).toHaveAttribute('aria-selected', 'true');
+    expect(options[1]).toHaveAttribute('aria-selected', 'false');
+  });
+});
+
+describe('Typeahead', () => {
+  it('renders with label', () => {
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByLabelText('Fruit')).toBeInTheDocument();
+  });
+
+  it('renders description text', () => {
+    render(
+      <Typeahead
+        label="Fruit"
+        description="Pick your favorite fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByText('Pick your favorite fruit')).toBeInTheDocument();
+  });
+
+  it('shows required indicator', () => {
+    render(
+      <Typeahead
+        label="Fruit"
+        isRequired
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByText(/Required/)).toBeInTheDocument();
+  });
+
+  it('renders error status message', () => {
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Selection required'}}
+      />,
+    );
+    expect(screen.getByText('Selection required')).toBeInTheDocument();
+  });
+
+  it('shows selected value as a token', () => {
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByText(fruits[0].label)).toBeInTheDocument();
+  });
+
+  it('shows clear button when hasClear and value is selected', () => {
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+        hasClear
+      />,
+    );
+    expect(
+      screen.getByRole('button', {name: 'Clear selection'}),
+    ).toBeInTheDocument();
+  });
+
+  it('does not show clear button when hasClear is false', () => {
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+        hasClear={false}
+      />,
+    );
+    expect(
+      screen.queryByRole('button', {name: 'Clear selection'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('calls onChange with null when clear button is clicked', () => {
+    const onChange = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={onChange}
+        hasClear
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Clear selection'}));
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it('renders with data-testid', () => {
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        data-testid="my-typeahead"
+      />,
+    );
+    expect(screen.getByTestId('my-typeahead')).toBeInTheDocument();
+  });
+});
+
+describe('Typeahead size', () => {
+  it('renders with size="lg"', () => {
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        size="lg"
+      />,
+    );
+    expect(screen.getByLabelText('Fruit')).toBeInTheDocument();
+  });
+});
+
+describe('BaseTypeahead hasEntriesOnFocus', () => {
+  it('shows bootstrap results on mouse click', async () => {
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // Simulate full mouse click sequence (pointerdown → focus → pointerup → click)
+    fireEvent.pointerDown(input);
+    fireEvent.focus(input);
+    fireEvent.pointerUp(input);
+    fireEvent.click(input);
+
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+
+  it('shows bootstrap results on keyboard focus', async () => {
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // Keyboard focus — no pointer events
+    fireEvent.focus(input);
+
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+
+  it('re-shows results on refocus when results already exist', async () => {
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // Initial focus to load bootstrap results
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    // Blur to close, then refocus
+    fireEvent.blur(input);
+    fireEvent.focus(input);
+
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+});
+
+describe('BaseTypeahead hasSearched reset', () => {
+  it('does not show "No results found" after selecting an item and re-entering', async () => {
+    const onChange = vi.fn();
+    const {rerender} = render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={onChange}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // Type a query that returns results
+    fireEvent.change(input, {target: {value: 'Apple'}});
+    await waitFor(() => {
+      expect(screen.getByText('Apple')).toBeInTheDocument();
+    });
+
+    // Select the item
+    fireEvent.click(screen.getByText('Apple'));
+    expect(onChange).toHaveBeenCalledWith(fruits[0]);
+
+    // Re-render with the selected value
+    rerender(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={onChange}
+        debounceMs={0}
+      />,
+    );
+
+    // Focus the input again — "No results found" should NOT appear
+    fireEvent.focus(input);
+
+    // The empty state text should not be visible since hasSearched was reset
+    expect(screen.queryByText('No results found')).not.toBeInTheDocument();
+  });
+
+  it('resets hasSearched when query is cleared without hasEntriesOnFocus', async () => {
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // Type a query that returns no results
+    fireEvent.change(input, {target: {value: 'xyz'}});
+    await waitFor(() => {
+      expect(screen.getByText('No results found')).toBeInTheDocument();
+    });
+
+    // Clear the query
+    fireEvent.change(input, {target: {value: ''}});
+
+    // "No results found" should disappear since hasSearched is reset
+    expect(screen.queryByText('No results found')).not.toBeInTheDocument();
+  });
+});
+
+describe('BaseTypeahead popover after selection', () => {
+  it('does not show an empty popover after selecting an item with hasEntriesOnFocus', async () => {
+    const onChange = vi.fn();
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={onChange}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // Focus to open bootstrap results
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    // Select an item — popover should close
+    fireEvent.click(screen.getByText('Apple'));
+    expect(onChange).toHaveBeenCalledWith(fruits[0]);
+
+    // After selection, input is refocused but popover should NOT reopen
+    // with an empty menu. The handleFocus handler should be suppressed.
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+});
+
+describe('Typeahead edit mode', () => {
+  it('enters edit mode on token container click', () => {
+    const onChange = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={onChange}
+      />,
+    );
+    screen.getByRole('combobox');
+
+    // Click the token text to enter edit mode
+    const tokenText = screen.getByText(fruits[0].label);
+    const tokenContainer = tokenText.closest('div')!;
+    fireEvent.click(tokenContainer);
+
+    // onChange should NOT have been called (value is preserved for restore)
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('restores token on blur without action', async () => {
+    const onChange = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={onChange}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // Enter edit mode
+    const tokenText = screen.getByText(fruits[0].label);
+    fireEvent.click(tokenText.closest('div')!);
+
+    // Blur without selecting anything
+    fireEvent.blur(input);
+
+    // onChange should not have been called — value restored
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('BaseTypeahead paste behavior', () => {
+  it('pasting text triggers search results like typing', async () => {
+    const user = userEvent.setup();
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+    await user.click(input);
+    await user.paste('App');
+
+    await waitFor(() => {
+      expect(screen.getByText('Apple')).toBeInTheDocument();
+    });
+  });
+
+  it('pasting non-matching text shows no results', async () => {
+    const user = userEvent.setup();
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+    await user.click(input);
+    await user.paste('xyz');
+
+    await waitFor(() => {
+      expect(screen.getByText('No results found')).toBeInTheDocument();
+    });
+  });
+});

@@ -3,10 +3,10 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSStepper, XDSStep} from '@xds/lab/Stepper';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText} from '@xds/core/Text';
-import {XDSIcon} from '@xds/core/Icon';
+import {TextInput} from '@xds/core/TextInput';
+import {Button} from '@xds/core/Button';
+import {Text} from '@xds/core/Text';
+import {Icon} from '@xds/core/Icon';
 
 const meta: Meta<typeof XDSStepper> = {
   title: 'Lab/Stepper',
@@ -163,7 +163,7 @@ export const NumberedHorizontal: Story = {
 //
 // `status` controls color only (accent/success/warning/error). The
 // indicator accepts any icon, so validation flows pass an explicit
-// <XDSIcon /> rather than relying on a fixed status-driven icon set.
+// <Icon /> rather than relying on a fixed status-driven icon set.
 // ============================================================
 
 export const StatusVertical: Story = {
@@ -181,21 +181,21 @@ export const StatusVertical: Story = {
             label="Email verified"
             description="ernesttien@meta.com"
             status="success"
-            icon={<XDSIcon icon="check" size="sm" />}
+            icon={<Icon icon="check" size="sm" />}
           />
           <XDSStep
             step={1}
             label="Phone verified"
             description="+1 (555) 012-3456"
             status="success"
-            icon={<XDSIcon icon="check" size="sm" />}
+            icon={<Icon icon="check" size="sm" />}
           />
           <XDSStep
             step={2}
             label="Identity document"
             description="Passport upload failed"
             status="error"
-            icon={<XDSIcon icon="warning" size="sm" />}
+            icon={<Icon icon="warning" size="sm" />}
           />
           <XDSStep
             step={3}
@@ -237,21 +237,21 @@ export const StatusAllStates: Story = {
             label="Success"
             description="--color-success"
             status="success"
-            icon={<XDSIcon icon="check" size="sm" />}
+            icon={<Icon icon="check" size="sm" />}
           />
           <XDSStep
             step={2}
             label="Warning"
             description="--color-warning"
             status="warning"
-            icon={<XDSIcon icon="warning" size="sm" />}
+            icon={<Icon icon="warning" size="sm" />}
           />
           <XDSStep
             step={3}
             label="Error"
             description="--color-error"
             status="error"
-            icon={<XDSIcon icon="warning" size="sm" />}
+            icon={<Icon icon="warning" size="sm" />}
           />
           <XDSStep
             step={4}
@@ -340,7 +340,7 @@ export const IndicatorComparison: Story = {
     return (
       <div style={{display: 'flex', gap: 48}}>
         <div style={{maxWidth: 280}}>
-          <XDSText type="label">Auto (default)</XDSText>
+          <Text type="label">Auto (default)</Text>
           <XDSStepper
             activeStep={active}
             orientation="vertical"
@@ -353,7 +353,7 @@ export const IndicatorComparison: Story = {
           </XDSStepper>
         </div>
         <div style={{maxWidth: 280}}>
-          <XDSText type="label">Number</XDSText>
+          <Text type="label">Number</Text>
           <XDSStepper
             activeStep={active}
             orientation="vertical"
@@ -366,7 +366,7 @@ export const IndicatorComparison: Story = {
           </XDSStepper>
         </div>
         <div style={{maxWidth: 280}}>
-          <XDSText type="label">Custom icon</XDSText>
+          <Text type="label">Custom icon</Text>
           <XDSStepper
             activeStep={active}
             orientation="vertical"
@@ -374,32 +374,32 @@ export const IndicatorComparison: Story = {
             <XDSStep
               step={0}
               label="Account"
-              icon={<XDSIcon icon="info" size="sm" />}
+              icon={<Icon icon="info" size="sm" />}
             />
             <XDSStep
               step={1}
               label="Profile"
-              icon={<XDSIcon icon="search" size="sm" />}
+              icon={<Icon icon="search" size="sm" />}
             />
             <XDSStep
               step={2}
               label="Settings"
-              icon={<XDSIcon icon="wrench" size="sm" />}
+              icon={<Icon icon="wrench" size="sm" />}
             />
             <XDSStep
               step={3}
               label="Review"
-              icon={<XDSIcon icon="clock" size="sm" />}
+              icon={<Icon icon="clock" size="sm" />}
             />
             <XDSStep
               step={4}
               label="Done"
-              icon={<XDSIcon icon="check" size="sm" />}
+              icon={<Icon icon="check" size="sm" />}
             />
           </XDSStepper>
         </div>
         <div style={{maxWidth: 280}}>
-          <XDSText type="label">None</XDSText>
+          <Text type="label">None</Text>
           <XDSStepper
             activeStep={active}
             orientation="vertical"
@@ -433,18 +433,18 @@ export const WithContentSlot: Story = {
           <XDSStep step={0} label="Project details" indicator="number">
             {active === 0 && (
               <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-                <XDSTextInput
+                <TextInput
                   label="Project name"
                   placeholder="My awesome project"
                   value=""
                 />
-                <XDSTextInput
+                <TextInput
                   label="Repository URL"
                   placeholder="https://github.com/..."
                   value=""
                 />
                 <div>
-                  <XDSButton
+                  <Button
                     label="Continue"
                     variant="primary"
                     onClick={() => setActive(1)}
@@ -456,19 +456,19 @@ export const WithContentSlot: Story = {
           <XDSStep step={1} label="Environment" indicator="number">
             {active === 1 && (
               <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-                <XDSTextInput label="Node version" placeholder="20" value="" />
-                <XDSTextInput
+                <TextInput label="Node version" placeholder="20" value="" />
+                <TextInput
                   label="Build command"
                   placeholder="npm run build"
                   value=""
                 />
                 <div style={{display: 'flex', gap: 8}}>
-                  <XDSButton
+                  <Button
                     label="Back"
                     variant="secondary"
                     onClick={() => setActive(0)}
                   />
-                  <XDSButton
+                  <Button
                     label="Continue"
                     variant="primary"
                     onClick={() => setActive(2)}
@@ -480,17 +480,17 @@ export const WithContentSlot: Story = {
           <XDSStep step={2} label="Deploy" indicator="number">
             {active === 2 && (
               <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-                <XDSText type="body">
+                <Text type="body">
                   Ready to deploy. This will create a production build and push
                   to your configured hosting.
-                </XDSText>
+                </Text>
                 <div style={{display: 'flex', gap: 8}}>
-                  <XDSButton
+                  <Button
                     label="Back"
                     variant="secondary"
                     onClick={() => setActive(1)}
                   />
-                  <XDSButton
+                  <Button
                     label="Deploy now"
                     variant="primary"
                     onClick={() => setActive(3)}
@@ -517,7 +517,7 @@ export const DensityComparison: Story = {
     return (
       <div style={{display: 'flex', gap: 48}}>
         <div style={{maxWidth: 250}}>
-          <XDSText type="label">Compact</XDSText>
+          <Text type="label">Compact</Text>
           <XDSStepper
             activeStep={active}
             orientation="vertical"
@@ -530,7 +530,7 @@ export const DensityComparison: Story = {
           </XDSStepper>
         </div>
         <div style={{maxWidth: 250}}>
-          <XDSText type="label">Balanced</XDSText>
+          <Text type="label">Balanced</Text>
           <XDSStepper
             activeStep={active}
             orientation="vertical"
@@ -543,7 +543,7 @@ export const DensityComparison: Story = {
           </XDSStepper>
         </div>
         <div style={{maxWidth: 250}}>
-          <XDSText type="label">Spacious</XDSText>
+          <Text type="label">Spacious</Text>
           <XDSStepper
             activeStep={active}
             orientation="vertical"

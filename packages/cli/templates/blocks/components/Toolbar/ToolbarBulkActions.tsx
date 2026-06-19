@@ -3,13 +3,13 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSToolbar} from '@xds/core/Toolbar';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSTable} from '@xds/core/Table';
-import {useXDSTableSelection, useXDSTableSelectionState} from '@xds/core/Table';
-import {XDSStack} from '@xds/core/Layout';
+import {Toolbar} from '@xds/core/Toolbar';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
+import {Badge} from '@xds/core/Badge';
+import {Table} from '@xds/core/Table';
+import {useTableSelection, useTableSelectionState} from '@xds/core/Table';
+import {Stack} from '@xds/core/Layout';
 import {TrashIcon, ArchiveBoxIcon} from '@heroicons/react/24/outline';
 
 const DATA = [
@@ -25,42 +25,42 @@ export default function ToolbarBulkActions() {
     () => new Set(['1', '3', '5']),
   );
 
-  const {selectionConfig} = useXDSTableSelectionState({
+  const {selectionConfig} = useTableSelectionState({
     data: DATA,
     idKey: 'id',
     selectedKeys,
     setSelectedKeys,
   });
 
-  const selectionPlugin = useXDSTableSelection(selectionConfig);
+  const selectionPlugin = useTableSelection(selectionConfig);
 
   return (
-    <XDSStack direction="vertical">
+    <Stack direction="vertical">
       {selectedKeys.size > 0 && (
-        <XDSToolbar
+        <Toolbar
           label="Bulk actions"
           size="sm"
           variant="muted"
           dividers={['bottom']}
           startContent={
             <>
-              <XDSBadge label={`${selectedKeys.size} selected`} />
-              <XDSButton
+              <Badge label={`${selectedKeys.size} selected`} />
+              <Button
                 label="Delete"
                 variant="ghost"
-                icon={<XDSIcon icon={TrashIcon} />}
+                icon={<Icon icon={TrashIcon} />}
                 isIconOnly
               />
-              <XDSButton
+              <Button
                 label="Archive"
                 variant="ghost"
-                icon={<XDSIcon icon={ArchiveBoxIcon} />}
+                icon={<Icon icon={ArchiveBoxIcon} />}
                 isIconOnly
               />
             </>
           }
           endContent={
-            <XDSButton
+            <Button
               label="Deselect all"
               variant="ghost"
               onClick={() => setSelectedKeys(new Set())}
@@ -68,7 +68,7 @@ export default function ToolbarBulkActions() {
           }
         />
       )}
-      <XDSTable
+      <Table
         idKey="id"
         columns={[
           {key: 'name', header: 'Name'},
@@ -78,6 +78,6 @@ export default function ToolbarBulkActions() {
         data={DATA}
         plugins={{selection: selectionPlugin}}
       />
-    </XDSStack>
+    </Stack>
   );
 }

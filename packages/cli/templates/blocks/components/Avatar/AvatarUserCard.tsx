@@ -2,9 +2,9 @@
 
 'use client';
 
-import {XDSAvatar, XDSAvatarStatusDot} from '@xds/core/Avatar';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Avatar, AvatarStatusDot} from '@xds/core/Avatar';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const USERS = [
   {
@@ -29,31 +29,31 @@ const USERS = [
 
 export default function AvatarUserCard() {
   return (
-    <XDSStack direction="vertical" gap={4}>
+    <Stack direction="vertical" gap={4}>
       {USERS.map(user => (
-        <XDSStack
+        <Stack
           key={user.name}
           direction="horizontal"
           gap={3}
           vAlign="center">
-          <XDSAvatar
+          <Avatar
             src={user.src}
             name={user.name}
             size="medium"
             status={
-              <XDSAvatarStatusDot variant={user.variant} label={user.variant} />
+              <AvatarStatusDot variant={user.variant} label={user.variant} />
             }
           />
-          <XDSStack direction="vertical" gap={0}>
-            <XDSText type="body" weight="bold">
+          <Stack direction="vertical" gap={0}>
+            <Text type="body" weight="bold">
               {user.name}
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
+            </Text>
+            <Text type="supporting" color="secondary">
               {user.role}
-            </XDSText>
-          </XDSStack>
-        </XDSStack>
+            </Text>
+          </Stack>
+        </Stack>
       ))}
-    </XDSStack>
+    </Stack>
   );
 }

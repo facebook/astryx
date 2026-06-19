@@ -3,43 +3,43 @@
 'use client';
 
 import {
-  XDSDialog,
-  XDSDialogHeader,
-  useXDSImperativeDialog,
+  Dialog,
+  DialogHeader,
+  useImperativeDialog,
 } from '@xds/core/Dialog';
 import {
-  XDSLayout,
-  XDSLayoutContent,
-  XDSLayoutFooter,
-  XDSHStack,
+  Layout,
+  LayoutContent,
+  LayoutFooter,
+  HStack,
 } from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Text} from '@xds/core/Text';
 
 function Content({onClose}: {onClose: () => void}) {
   return (
-    <XDSLayout
+    <Layout
       header={
-        <XDSDialogHeader
+        <DialogHeader
           title="Transfer project ownership"
           subtitle="This action requires confirmation from the new owner"
         />
       }
       content={
-        <XDSLayoutContent>
-          <XDSText type="body">
+        <LayoutContent>
+          <Text type="body">
             You are about to transfer &quot;Marketing Dashboard&quot; to Sarah
             Chen. Once accepted, you will lose admin access.
-          </XDSText>
-        </XDSLayoutContent>
+          </Text>
+        </LayoutContent>
       }
       footer={
-        <XDSLayoutFooter>
-          <XDSHStack gap={2} hAlign="end">
-            <XDSButton label="Cancel" variant="secondary" onClick={onClose} />
-            <XDSButton label="Transfer" variant="primary" onClick={onClose} />
-          </XDSHStack>
-        </XDSLayoutFooter>
+        <LayoutFooter>
+          <HStack gap={2} hAlign="end">
+            <Button label="Cancel" variant="secondary" onClick={onClose} />
+            <Button label="Transfer" variant="primary" onClick={onClose} />
+          </HStack>
+        </LayoutFooter>
       }
     />
   );
@@ -47,15 +47,15 @@ function Content({onClose}: {onClose: () => void}) {
 
 // Remove isInline for production — dialogs should be modal.
 export default function DialogWithSubtitle() {
-  const dialog = useXDSImperativeDialog({purpose: 'required'});
+  const dialog = useImperativeDialog({purpose: 'required'});
 
   return (
     <>
-      <XDSDialog isOpen isInline onOpenChange={() => {}} purpose="required">
+      <Dialog isOpen isInline onOpenChange={() => {}} purpose="required">
         <Content
           onClose={() => dialog.show(<Content onClose={() => dialog.hide()} />)}
         />
-      </XDSDialog>
+      </Dialog>
       {dialog.element}
     </>
   );

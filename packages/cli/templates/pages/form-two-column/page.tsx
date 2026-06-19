@@ -4,20 +4,20 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSSection} from '@xds/core/Section';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSButton} from '@xds/core/Button';
-import {XDSText} from '@xds/core/Text';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSToken} from '@xds/core/Token';
-import {XDSTextArea} from '@xds/core/TextArea';
-import {XDSLink} from '@xds/core/Link';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSCard} from '@xds/core/Card';
-import {XDSSelector} from '@xds/core/Selector';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Center} from '@xds/core/Center';
+import {Section} from '@xds/core/Section';
+import {Grid} from '@xds/core/Grid';
+import {AspectRatio} from '@xds/core/AspectRatio';
+import {Button} from '@xds/core/Button';
+import {Text} from '@xds/core/Text';
+import {TextInput} from '@xds/core/TextInput';
+import {Token} from '@xds/core/Token';
+import {TextArea} from '@xds/core/TextArea';
+import {Link} from '@xds/core/Link';
+import {Divider} from '@xds/core/Divider';
+import {Card} from '@xds/core/Card';
+import {Selector} from '@xds/core/Selector';
 
 const ILLUSTRATION_URL =
   'https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-1.png';
@@ -55,9 +55,9 @@ const CONTACT_COLUMNS = [
 // Styles
 // ─────────────────────────────────────────────────────────────
 
-// The only custom styling is fitting the illustration inside its XDSAspectRatio
+// The only custom styling is fitting the illustration inside its AspectRatio
 // box without distortion (contain, not cover — it's line art, don't crop it).
-// No objectFit prop on XDSAspectRatio, and there's no XDSImage primitive (#2582).
+// No objectFit prop on AspectRatio, and there's no Image primitive (#2582).
 const styles = stylex.create({
   page: {
     minHeight: '100%',
@@ -104,40 +104,40 @@ export default function FormTwoColumnPage() {
   const handleSubmit = () => setSubmitted(true);
 
   return (
-    <XDSCenter xstyle={styles.page}>
-      <XDSSection
+    <Center xstyle={styles.page}>
+      <Section
         maxWidth={1100}
         width="100%"
         padding={10}
         variant="transparent">
-        <XDSVStack gap={10}>
+        <VStack gap={10}>
           {/* ── Top: two-column, stacks to one column below ~520px ── */}
-          <XDSGrid columns={{minWidth: 320}} align="center" gap={10}>
+          <Grid columns={{minWidth: 320}} align="center" gap={10}>
             {/* Left: headline + description + illustration */}
-            <XDSVStack gap={6}>
-              <XDSVStack gap={3}>
-                <XDSText type="display-1" as="h1">
+            <VStack gap={6}>
+              <VStack gap={3}>
+                <Text type="display-1" as="h1">
                   Let&apos;s work together
-                </XDSText>
-                <XDSText type="body" color="secondary">
+                </Text>
+                <Text type="body" color="secondary">
                   Tell us what you&apos;re working on and we&apos;ll help you
                   figure out the best path forward.
-                </XDSText>
-              </XDSVStack>
-              <XDSAspectRatio ratio={4 / 3}>
+                </Text>
+              </VStack>
+              <AspectRatio ratio={4 / 3}>
                 <img
                   src={ILLUSTRATION_URL}
                   alt="Person with a laptop and a lightbulb idea"
                   {...stylex.props(styles.illustrationImg)}
                 />
-              </XDSAspectRatio>
-            </XDSVStack>
+              </AspectRatio>
+            </VStack>
 
             {/* Right: form on a card */}
-            <XDSCard padding={8}>
-              <XDSVStack gap={4}>
-                <XDSText type="label">Your details</XDSText>
-                <XDSTextInput
+            <Card padding={8}>
+              <VStack gap={4}>
+                <Text type="label">Your details</Text>
+                <TextInput
                   label="Full name"
                   isLabelHidden
                   placeholder="Full name*"
@@ -149,8 +149,8 @@ export default function FormTwoColumnPage() {
                       : undefined
                   }
                 />
-                <XDSGrid columns={{minWidth: 180}} gap={3}>
-                  <XDSTextInput
+                <Grid columns={{minWidth: 180}} gap={3}>
+                  <TextInput
                     label="Email"
                     isLabelHidden
                     placeholder="Email*"
@@ -162,38 +162,38 @@ export default function FormTwoColumnPage() {
                         : undefined
                     }
                   />
-                  <XDSTextInput
+                  <TextInput
                     label="Company name"
                     isLabelHidden
                     placeholder="Company name"
                     value={company}
                     onChange={setCompany}
                   />
-                </XDSGrid>
-                <XDSGrid columns={{minWidth: 180}} gap={3}>
-                  <XDSTextInput
+                </Grid>
+                <Grid columns={{minWidth: 180}} gap={3}>
+                  <TextInput
                     label="Job title"
                     isLabelHidden
                     placeholder="Job title"
                     value={jobTitle}
                     onChange={setJobTitle}
                   />
-                  <XDSTextInput
+                  <TextInput
                     label="Phone number"
                     isLabelHidden
                     placeholder="Phone number"
                     value={phone}
                     onChange={setPhone}
                   />
-                </XDSGrid>
+                </Grid>
 
-                <XDSVStack gap={2}>
-                  <XDSText type="label">
+                <VStack gap={2}>
+                  <Text type="label">
                     What are you reaching out about?
-                  </XDSText>
-                  <XDSHStack gap={2} wrap="wrap">
+                  </Text>
+                  <HStack gap={2} wrap="wrap">
                     {INQUIRY_REASONS.map(reason => (
-                      <XDSToken
+                      <Token
                         key={reason}
                         label={reason}
                         color={inquiryReason === reason ? 'blue' : 'default'}
@@ -204,16 +204,16 @@ export default function FormTwoColumnPage() {
                         }
                       />
                     ))}
-                  </XDSHStack>
-                </XDSVStack>
-                <XDSSelector
+                  </HStack>
+                </VStack>
+                <Selector
                   label="Budget range"
                   options={BUDGET_OPTIONS}
                   value={budget}
                   onChange={setBudget}
                   placeholder="Select a budget range..."
                 />
-                <XDSTextArea
+                <TextArea
                   label="Project details"
                   isLabelHidden
                   placeholder="Project details*"
@@ -225,37 +225,37 @@ export default function FormTwoColumnPage() {
                       : undefined
                   }
                 />
-                {/* hAlign="stretch" = full-width button workaround; XDSButton
+                {/* hAlign="stretch" = full-width button workaround; Button
                     has no full-width prop (#2600). */}
-                <XDSVStack hAlign="stretch">
-                  <XDSButton
+                <VStack hAlign="stretch">
+                  <Button
                     label="Let's connect"
                     variant="primary"
                     onClick={handleSubmit}
                   />
-                </XDSVStack>
-              </XDSVStack>
-            </XDSCard>
-          </XDSGrid>
+                </VStack>
+              </VStack>
+            </Card>
+          </Grid>
 
           {/* ── Bottom: contact strip (stacks below ~440px) ── */}
-          <XDSVStack gap={6}>
-            <XDSDivider />
-            <XDSGrid columns={{minWidth: 200}} gap={6}>
+          <VStack gap={6}>
+            <Divider />
+            <Grid columns={{minWidth: 200}} gap={6}>
               {CONTACT_COLUMNS.map(col => (
-                <XDSVStack key={col.label} gap={1} hAlign="center">
-                  <XDSText type="supporting" color="secondary">
+                <VStack key={col.label} gap={1} hAlign="center">
+                  <Text type="supporting" color="secondary">
                     {col.label}
-                  </XDSText>
-                  <XDSLink href={`mailto:${col.email}`} type="body" size="sm">
+                  </Text>
+                  <Link href={`mailto:${col.email}`} type="body" size="sm">
                     {col.email}
-                  </XDSLink>
-                </XDSVStack>
+                  </Link>
+                </VStack>
               ))}
-            </XDSGrid>
-          </XDSVStack>
-        </XDSVStack>
-      </XDSSection>
-    </XDSCenter>
+            </Grid>
+          </VStack>
+        </VStack>
+      </Section>
+    </Center>
   );
 }

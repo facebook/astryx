@@ -2,15 +2,15 @@
 
 'use client';
 
-import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
+import {MetadataList, MetadataListItem} from '@xds/core/MetadataList';
 
 export default function MetadataListHorizontalMetadata() {
   return (
-    <XDSMetadataList orientation="horizontal">
-      <XDSMetadataListItem label="Status">Active</XDSMetadataListItem>
-      <XDSMetadataListItem label="Type">Premium</XDSMetadataListItem>
-      <XDSMetadataListItem label="Owner">Joey</XDSMetadataListItem>
-      <XDSMetadataListItem label="Created">Jan 15, 2026</XDSMetadataListItem>
-    </XDSMetadataList>
+    <MetadataList orientation="horizontal">
+      <MetadataListItem label="Status">Active</MetadataListItem>
+      <MetadataListItem label="Type">Premium</MetadataListItem>
+      <MetadataListItem label="Owner">Joey</MetadataListItem>
+      <MetadataListItem label="Created">Jan 15, 2026</MetadataListItem>
+    </MetadataList>
   );
 }

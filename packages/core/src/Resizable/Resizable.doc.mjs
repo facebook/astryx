@@ -20,20 +20,20 @@ export const docs = {
   ],
   usage: {
     description:
-      'Hook-based resizable panel system. useXDSResizable() manages size state ' +
-      'and XDSResizeHandle provides the interactive pill-grip separator. ' +
+      'Hook-based resizable panel system. useResizable() manages size state ' +
+      'and ResizeHandle provides the interactive pill-grip separator. ' +
       'Pass resize props to existing layout components via their resizable prop.',
     bestPractices: [
       {
         guidance: true,
         description:
-          'Use useXDSResizable() with existing XDS layout components. ' +
-          'Pass the returned props to the resizable prop on XDSLayoutPanel or XDSSideNav.',
+          'Use useResizable() with existing XDS layout components. ' +
+          'Pass the returned props to the resizable prop on LayoutPanel or SideNav.',
       },
       {
         guidance: true,
         description:
-          'Provide an accessible label on each XDSResizeHandle when multiple ' +
+          'Provide an accessible label on each ResizeHandle when multiple ' +
           'handles exist (e.g. "Resize sidebar", "Resize terminal").',
       },
       {
@@ -52,8 +52,8 @@ export const docs = {
   },
   components: [
     {
-      name: 'useXDSResizable',
-      displayName: 'useXDSResizable',
+      name: 'useResizable',
+      displayName: 'useResizable',
       description:
         'Hook that manages resize state for one or more panel regions. ' +
         'Returns size, isCollapsed, collapse/expand/resize methods, and props to pass to handles.',
@@ -109,7 +109,7 @@ export const docs = {
       ],
     },
     {
-      name: 'XDSResizeHandle',
+      name: 'ResizeHandle',
       displayName: 'Resize Handle',
       description:
         'Draggable separator between panels. Pill-grip design: invisible at rest, ' +
@@ -168,7 +168,7 @@ export const docs = {
           name: 'resizable',
           type: 'ResizableProps',
           description:
-            'Resize props from useXDSResizable: connects handle to panel.',
+            'Resize props from useResizable: connects handle to panel.',
           required: true,
         },
         {
@@ -190,19 +190,19 @@ export const docs = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'Hook-based resizable panel system. useXDSResizable() manages size state; XDSResizeHandle provides interactive pill-grip separator.',
+  description: 'Hook-based resizable panel system. useResizable() manages size state; ResizeHandle provides interactive pill-grip separator.',
   usage: {
     description:
-      'Hook-based resizable panel system. useXDSResizable() manages size state; XDSResizeHandle provides interactive pill-grip separator. Pass resize props to existing layout components via their resizable prop.',
+      'Hook-based resizable panel system. useResizable() manages size state; ResizeHandle provides interactive pill-grip separator. Pass resize props to existing layout components via their resizable prop.',
     bestPractices: [
-      {guidance: true, description: 'Use useXDSResizable() w/ existing XDS layout components. Pass returned props to resizable prop on XDSLayoutPanel or XDSSideNav.'},
-      {guidance: true, description: 'Provide accessible label on each XDSResizeHandle when multiple handles exist (e.g. "Resize sidebar", "Resize terminal").'},
+      {guidance: true, description: 'Use useResizable() w/ existing XDS layout components. Pass returned props to resizable prop on LayoutPanel or SideNav.'},
+      {guidance: true, description: 'Provide accessible label on each ResizeHandle when multiple handles exist (e.g. "Resize sidebar", "Resize terminal").'},
       {guidance: false, description: 'Wrap panels in extra container components for resize. Hook-first architecture avoids extra DOM; use it directly on existing components.'},
     ],
   },
   components: [
     {
-      name: 'useXDSResizable',
+      name: 'useResizable',
       description: 'Hook managing resize state for one or more panel regions. Returns size, isCollapsed, collapse/expand/resize methods, + props to pass to handles.',
       propDescriptions: {
         defaultSize: 'initial size in px or % string (e.g. "20%")',
@@ -216,7 +216,7 @@ export const docsDense = {
       },
     },
     {
-      name: 'XDSResizeHandle',
+      name: 'ResizeHandle',
       description: 'Draggable separator between panels. Pill-grip: invisible at rest, visible on hover (0.6 opacity), fully opaque during drag (1.0). Keyboard-accessible.',
       propDescriptions: {
         direction: 'layout direction: determines cursor + indicator orientation',
@@ -226,7 +226,7 @@ export const docsDense = {
         isAlwaysVisible: 'show pill grip at rest instead of only on hover. Use when discoverability important',
         pillPlacement: 'which side of divider pill sits on. auto = content side (derived from isReversed), flips when collapsed; start = left/top, end = right/bottom, center = centered on divider',
         label: 'accessible label for separator',
-        resizable: 'resize props from useXDSResizable: connects handle to panel **(required)**',
+        resizable: 'resize props from useResizable: connects handle to panel **(required)**',
       },
     },
   ],

@@ -11,7 +11,7 @@ export const docs = {
   props: [
     {
       name: 'icon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: 'Icon to display before the label. See `npx xds docs icons` for valid semantic names.',
     },
     {
@@ -45,7 +45,7 @@ export const docsZh = {
   props: [
     {
       name: 'icon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: '显示在标签前的图标。',
     },
     {

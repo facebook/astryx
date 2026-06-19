@@ -5,35 +5,64 @@
 /**
  * @file index.ts
  * @input Imports SideNav components and types
- * @output Exports XDSSideNav, XDSSideNavHeading, XDSSideNavItem, XDSSideNavSection
+ * @output Exports SideNav, SideNavHeading, SideNavItem, SideNavSection
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
  * SYNC: When modified, update this header and /packages/core/src/SideNav/SideNav.doc.mjs
  */
 
-export {XDSSideNav} from './XDSSideNav';
-export type {XDSSideNavProps} from './XDSSideNav';
+export {SideNav} from './SideNav';
+export type {SideNavProps} from './SideNav';
 
-export {XDSSideNavHeading} from './XDSSideNavHeading';
-export type {XDSSideNavHeadingProps} from './XDSSideNavHeading';
+export {SideNavHeading} from './SideNavHeading';
+export type {SideNavHeadingProps} from './SideNavHeading';
 
-export {XDSSideNavItem} from './XDSSideNavItem';
-export type {XDSSideNavItemProps} from './XDSSideNavItem';
+export {SideNavItem} from './SideNavItem';
+export type {SideNavItemProps} from './SideNavItem';
 
-export {XDSSideNavSection} from './XDSSideNavSection';
-export type {XDSSideNavSectionProps} from './XDSSideNavSection';
+export {SideNavSection} from './SideNavSection';
+export type {SideNavSectionProps} from './SideNavSection';
 
-export {XDSSideNavCollapseButton} from './XDSSideNavCollapseButton';
-export type {XDSSideNavCollapseButtonProps} from './XDSSideNavCollapseButton';
+export {SideNavCollapseButton} from './SideNavCollapseButton';
+export type {SideNavCollapseButtonProps} from './SideNavCollapseButton';
 
-export {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
+export {useSideNavCollapse} from './SideNavCollapseContext';
 export type {
-  XDSSideNavCollapseState,
-  XDSSideNavImperativeCollapseHandle,
-} from './XDSSideNavCollapseContext';
+  SideNavCollapseState,
+  SideNavImperativeCollapseHandle,
+} from './SideNavCollapseContext';
 
 export {
-  XDSSideNavRenderContext,
-  useXDSSideNavRenderMode,
-} from './XDSSideNavRenderContext';
-export type {XDSSideNavRenderMode} from './XDSSideNavRenderContext';
+  SideNavRenderContext,
+  useSideNavRenderMode,
+} from './SideNavRenderContext';
+export type {SideNavRenderMode} from './SideNavRenderContext';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  SideNav as XDSSideNav,
+  SideNavCollapseButton as XDSSideNavCollapseButton,
+  SideNavHeading as XDSSideNavHeading,
+  SideNavItem as XDSSideNavItem,
+  SideNavRenderContext as XDSSideNavRenderContext,
+  SideNavSection as XDSSideNavSection,
+  useSideNavCollapse as useXDSSideNavCollapse,
+  useSideNavRenderMode as useXDSSideNavRenderMode,
+} from '.';
+export type {
+  SideNavCollapseButtonProps as XDSSideNavCollapseButtonProps,
+  SideNavCollapseState as XDSSideNavCollapseState,
+  SideNavHeadingProps as XDSSideNavHeadingProps,
+  SideNavImperativeCollapseHandle as XDSSideNavImperativeCollapseHandle,
+  SideNavItemProps as XDSSideNavItemProps,
+  SideNavProps as XDSSideNavProps,
+  SideNavRenderMode as XDSSideNavRenderMode,
+  SideNavSectionProps as XDSSideNavSectionProps,
+} from '.';
+// <compat-aliases:end>

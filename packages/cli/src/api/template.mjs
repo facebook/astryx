@@ -247,9 +247,19 @@ const UBIQUITOUS = new Set([
 
 function extractComponents(pagePath) {
   const src = fs.readFileSync(pagePath, 'utf-8');
+  // Match JSX opening tags, e.g. `<Section` or the legacy `<XDSSection`.
+  // Templates author bare component names post un-prefix migration
+  // (P2380608025), so the `XDS` prefix is optional. Anchoring on the `<`
+  // JSX-tag boundary keeps this precise (avoids matching imports/comments/
+  // identifiers) while remaining prefix-agnostic.
+  const tagRegex = /<(XDS)?([A-Z]\w+)/g;
+  const matches = [];
+  let m;
+  while ((m = tagRegex.exec(src)) !== null) {
+    matches.push(m[2]);
+  }
   return [...new Set(
-    (src.match(/XDS[A-Z]\w+/g) || [])
-      .map(n => n.replace(/^XDS/, ''))
+    matches
       .filter(n => !['Theme', 'ThemeProvider'].includes(n))
       .filter(n => !UBIQUITOUS.has(n))
       .map(n => n.replace(/(Item|Section|Header|Content|Footer|Panel|Heading|CollapseButton|Column|Sortable|Selection|Group|Source)$/, ''))
@@ -284,9 +294,14 @@ function extractSkeleton(source) {
       continue;
     }
 
-    const openMatch = t.match(/^<(XDS\w+)/);
+    // Match a JSX opening tag, e.g. `<Section` or the legacy `<XDSSection`.
+    // The `XDS` prefix is optional (templates author bare names post
+    // un-prefix migration P2380608025). `tagName` is the full authored name
+    // (used for the self-closing lookahead); `comp` is the bare display name.
+    const openMatch = t.match(/^<((XDS)?([A-Z]\w+))/);
     if (openMatch && !t.startsWith('</')) {
-      const comp = openMatch[1].replace(/^XDS/, '');
+      const tagName = openMatch[1];
+      const comp = openMatch[3];
       let tagText = '';
       for (let j = i; j < Math.min(i + 12, lines.length); j++) {
         tagText += ' ' + lines[j];
@@ -306,7 +321,7 @@ function extractSkeleton(source) {
       const hasSpatialProps = props.length > 0;
       const propStr = hasSpatialProps ? ' ' + props.join(' ') : '';
       const isVStack = comp === 'VStack' || comp === 'HStack';
-      const isSelfClosing = tagText.match(new RegExp('<' + openMatch[1] + '[^>]*/>', 's'));
+      const isSelfClosing = tagText.match(new RegExp('<' + tagName + '[^>]*/>', 's'));
 
       if (isVStack && !hasSpatialProps) continue;
 
@@ -322,9 +337,9 @@ function extractSkeleton(source) {
       continue;
     }
 
-    const closeMatch = t.match(/^<\/(XDS\w+)>/);
+    const closeMatch = t.match(/^<\/(XDS)?([A-Z]\w+)>/);
     if (closeMatch) {
-      const comp = closeMatch[1].replace(/^XDS/, '');
+      const comp = closeMatch[2];
       if (depthStack.length > 0 && depthStack[depthStack.length - 1] === comp) {
         depthStack.pop();
         depth = Math.max(0, depth - 1);

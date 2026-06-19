@@ -1,14 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {useState} from 'react';
-import {XDSLightbox} from '@xds/core/Lightbox';
+import {Lightbox} from '@xds/core/Lightbox';
 
 export default function LightboxShowcase() {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <>
       <button onClick={() => setIsOpen(true)}>View image</button>
-      <XDSLightbox
+      <Lightbox
         isOpen={isOpen}
         onOpenChange={setIsOpen}
         media={{

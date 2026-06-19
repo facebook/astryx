@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSStack} from '@xds/core/Layout';
+import {Divider} from '@xds/core/Divider';
+import {Stack} from '@xds/core/Layout';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
@@ -14,10 +14,10 @@ const styles = stylex.create({
 
 export default function DividerShowcase() {
   return (
-    <XDSStack direction="vertical" gap={4} xstyle={styles.root}>
-      <XDSDivider variant="subtle" />
-      <XDSDivider variant="strong" />
-      <XDSDivider label="or" />
-    </XDSStack>
+    <Stack direction="vertical" gap={4} xstyle={styles.root}>
+      <Divider variant="subtle" />
+      <Divider variant="strong" />
+      <Divider label="or" />
+    </Stack>
   );
 }

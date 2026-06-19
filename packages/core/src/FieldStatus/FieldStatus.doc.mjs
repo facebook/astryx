@@ -42,7 +42,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'FieldStatus renders validation feedback for fields and field-like controls. Use it directly for custom controls that need the same error, warning, or success presentation as XDSField.',
+      'FieldStatus renders validation feedback for fields and field-like controls. Use it directly for custom controls that need the same error, warning, or success presentation as Field.',
     bestPractices: [
       {
         guidance: true,

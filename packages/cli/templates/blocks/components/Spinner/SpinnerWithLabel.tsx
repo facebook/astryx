@@ -2,28 +2,28 @@
 
 'use client';
 
-import {XDSSpinner} from '@xds/core/Spinner';
-import {XDSText} from '@xds/core/Text';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {Spinner} from '@xds/core/Spinner';
+import {Text} from '@xds/core/Text';
+import {HStack, VStack} from '@xds/core/Layout';
 
 export default function SpinnerWithLabel() {
   return (
-    <XDSHStack gap={8} vAlign="start">
-      <XDSSpinner size="lg" label="Loading..." />
-      <XDSSpinner
+    <HStack gap={8} vAlign="start">
+      <Spinner size="lg" label="Loading..." />
+      <Spinner
         size="lg"
         label={
-          <XDSVStack gap={0} hAlign="center">
-            <XDSText type="body" weight="bold">
+          <VStack gap={0} hAlign="center">
+            <Text type="body" weight="bold">
               Fetching data
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
+            </Text>
+            <Text type="supporting" color="secondary">
               This may take a moment
-            </XDSText>
-          </XDSVStack>
+            </Text>
+          </VStack>
         }
         aria-label="Fetching data"
       />
-    </XDSHStack>
+    </HStack>
   );
 }

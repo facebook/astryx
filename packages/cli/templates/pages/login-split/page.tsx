@@ -4,19 +4,19 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Layout';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
-import {XDSText} from '@xds/core/Text';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSEmptyState} from '@xds/core/EmptyState';
+import {VStack, HStack, StackItem} from '@xds/core/Layout';
+import {Grid} from '@xds/core/Grid';
+import {Center} from '@xds/core/Center';
+import {Card} from '@xds/core/Card';
+import {Section} from '@xds/core/Section';
+import {Text} from '@xds/core/Text';
+import {Icon} from '@xds/core/Icon';
+import {EmptyState} from '@xds/core/EmptyState';
 import {SquaresPlusIcon, CheckCircleIcon} from '@heroicons/react/24/outline';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSButton} from '@xds/core/Button';
-import {XDSLink} from '@xds/core/Link';
-import {XDSDivider} from '@xds/core/Divider';
+import {TextInput} from '@xds/core/TextInput';
+import {Button} from '@xds/core/Button';
+import {Link} from '@xds/core/Link';
+import {Divider} from '@xds/core/Divider';
 import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 
 // light-working-vertical-1 from xds_oss asset set
@@ -29,7 +29,7 @@ const APPLE_LOGO_URL =
 const GOOGLE_LOGO_URL =
   'https://lookaside.facebook.com/assets/xds_oss/GoogleLogo.png';
 
-// XDSGrid emits minmax(MIN, 1fr) where MIN is a hard floor, so MIN plus the
+// Grid emits minmax(MIN, 1fr) where MIN is a hard floor, so MIN plus the
 // grid inset and page padding must fit the narrowest phone or the column is
 // clipped. 320 − 2×24 (page) − 2×16 (stacked inset) = 240.
 const COLUMN_MIN_WIDTH = 240;
@@ -52,7 +52,7 @@ const styles = stylex.create({
     maxWidth: 1000,
     marginInline: 'auto',
   },
-  // Pad the grid, not the XDSCard: the form's XDSSection escapes XDSCard's
+  // Pad the grid, not the Card: the form's Section escapes Card's
   // --container-padding-* vars, which would cancel the inset on the form side.
   // containerType makes this the query container for STACK_QUERY.
   splitGrid: {
@@ -64,7 +64,7 @@ const styles = stylex.create({
     },
   },
   imageCell: {
-    // Fill the track: the image's XDSCard is content-width by default.
+    // Fill the track: the image's Card is content-width by default.
     width: '100%',
     // order:-1 moves the image above the form when stacked.
     order: {
@@ -100,46 +100,46 @@ export default function LoginTwoColumn() {
   };
 
   return (
-    <XDSCenter axis="both" xstyle={styles.page}>
-      <XDSVStack gap={4} width="100%">
+    <Center axis="both" xstyle={styles.page}>
+      <VStack gap={4} width="100%">
         <div {...stylex.props(styles.cardWrap)}>
-          <XDSCard padding={0} width="100%">
-            <XDSGrid
+          <Card padding={0} width="100%">
+            <Grid
               columns={{minWidth: COLUMN_MIN_WIDTH, repeat: 'fit'}}
               gap={8}
               align="stretch"
               xstyle={styles.splitGrid}>
               {/* Form */}
-              <XDSSection variant="transparent" padding={0} height="100%">
-                <XDSVStack gap={4} height="100%">
-                  <XDSHStack gap={2} vAlign="center">
-                    <XDSIcon icon={SquaresPlusIcon} />
-                    <XDSText type="body" weight="bold">
+              <Section variant="transparent" padding={0} height="100%">
+                <VStack gap={4} height="100%">
+                  <HStack gap={2} vAlign="center">
+                    <Icon icon={SquaresPlusIcon} />
+                    <Text type="body" weight="bold">
                       Product Inc.
-                    </XDSText>
-                  </XDSHStack>
+                    </Text>
+                  </HStack>
 
-                  <XDSStackItem size="fill">
-                    <XDSCenter axis="vertical" height="100%">
+                  <StackItem size="fill">
+                    <Center axis="vertical" height="100%">
                       {isSuccess ? (
-                        <XDSEmptyState
+                        <EmptyState
                           title="You're signed in"
                           description="Redirecting to your dashboard…"
-                          icon={<XDSIcon icon={CheckCircleIcon} size="lg" />}
+                          icon={<Icon icon={CheckCircleIcon} size="lg" />}
                         />
                       ) : (
-                        <XDSVStack gap={4} hAlign="stretch" width="100%">
-                          <XDSVStack gap={1}>
-                            <XDSText type="display-1" as="h2">
+                        <VStack gap={4} hAlign="stretch" width="100%">
+                          <VStack gap={1}>
+                            <Text type="display-1" as="h2">
                               Welcome back
-                            </XDSText>
-                            <XDSText type="body" color="secondary" size="sm">
+                            </Text>
+                            <Text type="body" color="secondary" size="sm">
                               Login to your Product Inc. account
-                            </XDSText>
-                          </XDSVStack>
+                            </Text>
+                          </VStack>
 
-                          <XDSVStack gap={2}>
-                            <XDSTextInput
+                          <VStack gap={2}>
+                            <TextInput
                               label="Email"
                               isLabelHidden
                               type="email"
@@ -148,8 +148,8 @@ export default function LoginTwoColumn() {
                               onChange={setEmail}
                               size="lg"
                             />
-                            <XDSVStack gap={1}>
-                              <XDSTextInput
+                            <VStack gap={1}>
+                              <TextInput
                                 label="Password"
                                 isLabelHidden
                                 placeholder="Enter your password"
@@ -171,20 +171,20 @@ export default function LoginTwoColumn() {
                                 }
                               />
                               {loginFailed && (
-                                <XDSVStack hAlign="end">
-                                  <XDSLink
+                                <VStack hAlign="end">
+                                  <Link
                                     href="#"
                                     size="sm"
                                     color="secondary"
                                     type="supporting">
                                     Forgot your password?
-                                  </XDSLink>
-                                </XDSVStack>
+                                  </Link>
+                                </VStack>
                               )}
-                            </XDSVStack>
-                          </XDSVStack>
+                            </VStack>
+                          </VStack>
 
-                          <XDSButton
+                          <Button
                             label="Login"
                             variant="primary"
                             size="lg"
@@ -192,10 +192,10 @@ export default function LoginTwoColumn() {
                             onClick={handleLogin}
                           />
 
-                          <XDSDivider label="Or continue with" />
+                          <Divider label="Or continue with" />
 
-                          <XDSGrid columns={2} gap={3} justify="stretch">
-                            <XDSButton
+                          <Grid columns={2} gap={3} justify="stretch">
+                            <Button
                               label="Apple"
                               variant="secondary"
                               icon={
@@ -208,7 +208,7 @@ export default function LoginTwoColumn() {
                               }
                               size="lg"
                             />
-                            <XDSButton
+                            <Button
                               label="Google"
                               variant="secondary"
                               icon={
@@ -221,27 +221,27 @@ export default function LoginTwoColumn() {
                               }
                               size="lg"
                             />
-                          </XDSGrid>
-                        </XDSVStack>
+                          </Grid>
+                        </VStack>
                       )}
-                    </XDSCenter>
-                  </XDSStackItem>
+                    </Center>
+                  </StackItem>
 
                   {!isSuccess && (
-                    <XDSText type="supporting" color="secondary">
+                    <Text type="supporting" color="secondary">
                       Don&apos;t have an account?{' '}
-                      <XDSLink href="#" type="supporting">
+                      <Link href="#" type="supporting">
                         Sign up
-                      </XDSLink>
-                    </XDSText>
+                      </Link>
+                    </Text>
                   )}
-                </XDSVStack>
-              </XDSSection>
+                </VStack>
+              </Section>
 
-              {/* Cover image — the transparent XDSCard clips it to rounded
+              {/* Cover image — the transparent Card clips it to rounded
                   corners (overflow:clip + radius), so the image needs no radius. */}
               <div {...stylex.props(styles.imageCell)}>
-                <XDSCard
+                <Card
                   variant="transparent"
                   padding={0}
                   width="100%"
@@ -251,26 +251,26 @@ export default function LoginTwoColumn() {
                     src={COVER_IMAGE_URL}
                     alt="Two people working at a desk"
                   />
-                </XDSCard>
+                </Card>
               </div>
-            </XDSGrid>
-          </XDSCard>
+            </Grid>
+          </Card>
         </div>
 
-        <XDSVStack hAlign="center">
-          <XDSText type="supporting" color="secondary">
+        <VStack hAlign="center">
+          <Text type="supporting" color="secondary">
             By clicking continue, you agree to our{' '}
-            <XDSLink href="#" type="supporting">
+            <Link href="#" type="supporting">
               Terms of Service
-            </XDSLink>{' '}
+            </Link>{' '}
             and{' '}
-            <XDSLink href="#" type="supporting">
+            <Link href="#" type="supporting">
               Privacy Policy
-            </XDSLink>
+            </Link>
             .
-          </XDSText>
-        </XDSVStack>
-      </XDSVStack>
-    </XDSCenter>
+          </Text>
+        </VStack>
+      </VStack>
+    </Center>
   );
 }

@@ -15,7 +15,7 @@
 'use client';
 
 import {useEffect, useLayoutEffect, useRef, useCallback, useState} from 'react';
-import type {XDSBaseProps} from '@xds/core';
+import type {BaseProps} from '@xds/core';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -120,7 +120,7 @@ const styles = stylex.create({
 // ---------------------------------------------------------------------------
 
 export interface XDSCodeEditorProps extends Omit<
-  XDSBaseProps<HTMLDivElement>,
+  BaseProps<HTMLDivElement>,
   'onChange'
 > {
   /** Ref forwarded to the root element */

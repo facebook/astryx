@@ -4,21 +4,13 @@
 
 import {createContext, use} from 'react';
 
-export type XDSTopNavSlot = 'start' | 'center' | 'end';
+export type TopNavSlot = 'start' | 'center' | 'end';
 
-/**
- * @deprecated Use XDSTopNavSlotContext instead.
- */
-export type TopNavSlot = XDSTopNavSlot;
 
-export const XDSTopNavSlotContext = createContext<XDSTopNavSlot>('start');
-XDSTopNavSlotContext.displayName = 'XDSTopNavSlotContext';
+export const TopNavSlotContext = createContext<TopNavSlot>('start');
+TopNavSlotContext.displayName = 'TopNavSlotContext';
 
-/**
- * @deprecated Use XDSTopNavSlotContext instead.
- */
-export const TopNavSlotContext = XDSTopNavSlotContext;
 
-export function useTopNavSlot(): XDSTopNavSlot {
-  return use(XDSTopNavSlotContext);
+export function useTopNavSlot(): TopNavSlot {
+  return use(TopNavSlotContext);
 }

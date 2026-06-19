@@ -2,14 +2,14 @@
 
 'use client';
 
-import {XDSTheme, defineTheme} from '@xds/core/theme';
-import {XDSCard} from '@xds/core/Card';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSSection} from '@xds/core/Section';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSBadge} from '@xds/core/Badge';
+import {Theme, defineTheme} from '@xds/core/theme';
+import {Card} from '@xds/core/Card';
+import {Grid} from '@xds/core/Grid';
+import {Section} from '@xds/core/Section';
+import {Stack} from '@xds/core/Layout';
+import {Heading, Text} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Badge} from '@xds/core/Badge';
 
 const warmTheme = defineTheme({
   name: 'warm-docs',
@@ -39,37 +39,37 @@ const forestTheme = defineTheme({
 
 function ThemeCard({label}: {label: string}) {
   return (
-    <XDSCard padding={4} width="100%">
-      <XDSStack direction="vertical" gap={3}>
-        <XDSStack direction="horizontal" gap={2} vAlign="center">
-          <XDSHeading level={4}>{label}</XDSHeading>
-          <XDSBadge label="Active" variant="success" />
-        </XDSStack>
-        <XDSText type="body" color="secondary">
+    <Card padding={4} width="100%">
+      <Stack direction="vertical" gap={3}>
+        <Stack direction="horizontal" gap={2} vAlign="center">
+          <Heading level={4}>{label}</Heading>
+          <Badge label="Active" variant="success" />
+        </Stack>
+        <Text type="body" color="secondary">
           The same content inherits this provider's colors, typography, radius,
           and component treatment.
-        </XDSText>
-        <XDSStack direction="horizontal" gap={2} wrap="wrap">
-          <XDSButton label="Primary" variant="primary" size="sm" />
-          <XDSButton label="Secondary" variant="secondary" size="sm" />
-          <XDSButton label="Ghost" variant="ghost" size="sm" />
-        </XDSStack>
-      </XDSStack>
-    </XDSCard>
+        </Text>
+        <Stack direction="horizontal" gap={2} wrap="wrap">
+          <Button label="Primary" variant="primary" size="sm" />
+          <Button label="Secondary" variant="secondary" size="sm" />
+          <Button label="Ghost" variant="ghost" size="sm" />
+        </Stack>
+      </Stack>
+    </Card>
   );
 }
 
 export default function ThemeShowcase() {
   return (
-    <XDSSection variant="muted" padding={4} maxWidth={600}>
-      <XDSGrid columns={{minWidth: 240, repeat: 'fit'}} gap={3} width="100%">
-        <XDSTheme theme={warmTheme}>
+    <Section variant="muted" padding={4} maxWidth={600}>
+      <Grid columns={{minWidth: 240, repeat: 'fit'}} gap={3} width="100%">
+        <Theme theme={warmTheme}>
           <ThemeCard label="Warm" />
-        </XDSTheme>
-        <XDSTheme theme={forestTheme}>
+        </Theme>
+        <Theme theme={forestTheme}>
           <ThemeCard label="Forest" />
-        </XDSTheme>
-      </XDSGrid>
-    </XDSSection>
+        </Theme>
+      </Grid>
+    </Section>
   );
 }

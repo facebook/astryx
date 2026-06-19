@@ -3,14 +3,14 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import React, {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSOverlay, useXDSOverlay} from '@xds/core/Overlay';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSCard} from '@xds/core/Card';
-import {XDSButton} from '@xds/core/Button';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSVStack, XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
-import {XDSSpinner} from '@xds/core/Spinner';
-import {XDSGrid} from '@xds/core/Grid';
+import {Overlay, useOverlay} from '@xds/core/Overlay';
+import {AspectRatio} from '@xds/core/AspectRatio';
+import {Card} from '@xds/core/Card';
+import {Button} from '@xds/core/Button';
+import {Heading, Text} from '@xds/core/Text';
+import {VStack, Layout, LayoutContent} from '@xds/core/Layout';
+import {Spinner} from '@xds/core/Spinner';
+import {Grid} from '@xds/core/Grid';
 import {
   colorVars,
   spacingVars,
@@ -64,9 +64,9 @@ const SAMPLE_IMAGE_2 = 'https://picsum.photos/seed/xds-overlay-2/800/450';
 const SAMPLE_IMAGE_3 = 'https://picsum.photos/seed/xds-overlay-3/800/450';
 const SAMPLE_HERO = 'https://picsum.photos/seed/xds-hero/1200/600';
 
-const meta: Meta<typeof XDSOverlay> = {
+const meta: Meta<typeof Overlay> = {
   title: 'Core/Overlay',
-  component: XDSOverlay,
+  component: Overlay,
   tags: ['autodocs'],
   decorators: [
     Story => (
@@ -78,24 +78,24 @@ const meta: Meta<typeof XDSOverlay> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSOverlay>;
+type Story = StoryObj<typeof Overlay>;
 
 /** Basic hover overlay on an image. */
 export const HoverOnImage: Story = {
   render: () => (
     <div style={{width: 400}}>
-      <XDSOverlay
+      <Overlay
         showOn="hover"
         align="center"
-        content={<XDSButton label="Quick view" variant="ghost" />}>
-        <XDSAspectRatio ratio={16 / 9}>
+        content={<Button label="Quick view" variant="ghost" />}>
+        <AspectRatio ratio={16 / 9}>
           <img
             src={SAMPLE_IMAGE}
             alt="Product"
             {...stylex.props(styles.image)}
           />
-        </XDSAspectRatio>
-      </XDSOverlay>
+        </AspectRatio>
+      </Overlay>
     </div>
   ),
 };
@@ -104,21 +104,21 @@ export const HoverOnImage: Story = {
 export const BottomStrip: Story = {
   render: () => (
     <div style={{width: 600}}>
-      <XDSOverlay
+      <Overlay
         position="bottom"
         align="start"
         content={
-          <XDSVStack gap={1}>
-            <XDSHeading level={3}>Gallery Collection</XDSHeading>
-            <XDSText type="supporting" color="secondary">
+          <VStack gap={1}>
+            <Heading level={3}>Gallery Collection</Heading>
+            <Text type="supporting" color="secondary">
               24 items · Updated today
-            </XDSText>
-          </XDSVStack>
+            </Text>
+          </VStack>
         }>
-        <XDSAspectRatio ratio={2}>
+        <AspectRatio ratio={2}>
           <img src={SAMPLE_HERO} alt="Hero" {...stylex.props(styles.image)} />
-        </XDSAspectRatio>
-      </XDSOverlay>
+        </AspectRatio>
+      </Overlay>
     </div>
   ),
 };
@@ -126,29 +126,29 @@ export const BottomStrip: Story = {
 /** Full overlay wrapping a Card. */
 export const CardOverlay: Story = {
   render: () => (
-    <XDSOverlay
+    <Overlay
       showOn="hover"
       align="center"
-      content={<XDSButton label="View Details" variant="ghost" />}>
-      <XDSCard width={360}>
-        <XDSLayout
+      content={<Button label="View Details" variant="ghost" />}>
+      <Card width={360}>
+        <Layout
           content={
-            <XDSLayoutContent>
-              <XDSVStack gap={2}>
-                <XDSHeading level={3}>Project Alpha</XDSHeading>
-                <XDSText>
+            <LayoutContent>
+              <VStack gap={2}>
+                <Heading level={3}>Project Alpha</Heading>
+                <Text>
                   A comprehensive design system for building internal tools with
                   consistent, accessible interfaces.
-                </XDSText>
-                <XDSText type="supporting" color="secondary">
+                </Text>
+                <Text type="supporting" color="secondary">
                   Updated 2 hours ago · 12 contributors
-                </XDSText>
-              </XDSVStack>
-            </XDSLayoutContent>
+                </Text>
+              </VStack>
+            </LayoutContent>
           }
         />
-      </XDSCard>
-    </XDSOverlay>
+      </Card>
+    </Overlay>
   ),
 };
 
@@ -156,18 +156,18 @@ export const CardOverlay: Story = {
 export const HoverOrFocus: Story = {
   render: () => (
     <div style={{width: 400}}>
-      <XDSOverlay
+      <Overlay
         showOn="hover-or-focus"
         align="center"
-        content={<XDSButton label="Edit" variant="ghost" />}>
-        <XDSAspectRatio ratio={16 / 9}>
+        content={<Button label="Edit" variant="ghost" />}>
+        <AspectRatio ratio={16 / 9}>
           <img
             src={SAMPLE_IMAGE_2}
             alt="Photo"
             {...stylex.props(styles.image)}
           />
-        </XDSAspectRatio>
-      </XDSOverlay>
+        </AspectRatio>
+      </Overlay>
     </div>
   ),
 };
@@ -177,30 +177,30 @@ export const LoadingOverlay: Story = {
   render: function LoadingOverlayStory() {
     const [isUploading, setIsUploading] = useState(false);
     return (
-      <XDSVStack gap={4} style={{width: 300}}>
-        <XDSButton
+      <VStack gap={4} style={{width: 300}}>
+        <Button
           label={isUploading ? 'Cancel upload' : 'Simulate upload'}
           onClick={() => setIsUploading(v => !v)}
         />
-        <XDSOverlay
+        <Overlay
           isOpen={isUploading}
           scrim="light"
           align="center"
           content={
-            <XDSVStack gap={2} hAlign="center">
-              <XDSSpinner size="md" />
-              <XDSText weight="bold">Uploading...</XDSText>
-            </XDSVStack>
+            <VStack gap={2} hAlign="center">
+              <Spinner size="md" />
+              <Text weight="bold">Uploading...</Text>
+            </VStack>
           }>
-          <XDSAspectRatio ratio={1}>
+          <AspectRatio ratio={1}>
             <img
               src={SAMPLE_IMAGE_3}
               alt="Upload"
               {...stylex.props(styles.image)}
             />
-          </XDSAspectRatio>
-        </XDSOverlay>
-      </XDSVStack>
+          </AspectRatio>
+        </Overlay>
+      </VStack>
     );
   },
 };
@@ -217,24 +217,24 @@ export const GalleryGrid: Story = {
       {src: 'https://picsum.photos/seed/g6/400/400', title: 'Snowy Peaks'},
     ];
     return (
-      <XDSGrid columns={3} gap={4}>
+      <Grid columns={3} gap={4}>
         {images.map(img => (
-          <XDSOverlay
+          <Overlay
             key={img.title}
             showOn="hover"
             position="bottom"
             align="start"
-            content={<XDSText weight="bold">{img.title}</XDSText>}>
-            <XDSAspectRatio ratio={1}>
+            content={<Text weight="bold">{img.title}</Text>}>
+            <AspectRatio ratio={1}>
               <img
                 src={img.src}
                 alt={img.title}
                 {...stylex.props(styles.image)}
               />
-            </XDSAspectRatio>
-          </XDSOverlay>
+            </AspectRatio>
+          </Overlay>
         ))}
-      </XDSGrid>
+      </Grid>
     );
   },
 };
@@ -243,59 +243,59 @@ export const GalleryGrid: Story = {
 export const VideoThumbnail: Story = {
   render: () => (
     <div style={{width: 400}}>
-      <XDSOverlay
+      <Overlay
         showOn="hover"
         align="center"
         content={
-          <XDSVStack gap={2} hAlign="center">
-            <XDSText weight="bold" size="lg">
+          <VStack gap={2} hAlign="center">
+            <Text weight="bold" size="lg">
               ▶
-            </XDSText>
-            <XDSText weight="bold">Introduction to XDS</XDSText>
-          </XDSVStack>
+            </Text>
+            <Text weight="bold">Introduction to XDS</Text>
+          </VStack>
         }>
-        <XDSAspectRatio ratio={16 / 9}>
+        <AspectRatio ratio={16 / 9}>
           <img src={SAMPLE_IMAGE} alt="Video" {...stylex.props(styles.image)} />
-        </XDSAspectRatio>
-      </XDSOverlay>
+        </AspectRatio>
+      </Overlay>
     </div>
   ),
 };
 
-/** Disconnected hover — useXDSOverlay hook on Card. Hover Card reveals overlay on image. */
+/** Disconnected hover — useOverlay hook on Card. Hover Card reveals overlay on image. */
 export const DisconnectedHover: Story = {
   render: function DisconnectedHoverStory() {
-    const overlay = useXDSOverlay({
+    const overlay = useOverlay({
       showOn: 'hover',
       position: 'bottom',
       align: 'start',
-      content: <XDSHeading level={4}>Featured Article</XDSHeading>,
+      content: <Heading level={4}>Featured Article</Heading>,
     });
 
     return (
-      <XDSCard
+      <Card
         width={360}
         ref={overlay.containerRef as React.RefObject<HTMLDivElement>}
         {...overlay.containerProps}>
         <div {...stylex.props(styles.imageSection)}>
-          <XDSAspectRatio ratio={16 / 9}>
+          <AspectRatio ratio={16 / 9}>
             <img
               src={SAMPLE_IMAGE_2}
               alt="Article"
               {...stylex.props(styles.image)}
             />
-          </XDSAspectRatio>
+          </AspectRatio>
           {overlay.element}
         </div>
-        <XDSVStack gap={1} xstyle={styles.metadata}>
-          <XDSText type="supporting" color="secondary">
+        <VStack gap={1} xstyle={styles.metadata}>
+          <Text type="supporting" color="secondary">
             Jan 15, 2026 · 5 min read
-          </XDSText>
-          <XDSText type="supporting" color="secondary">
+          </Text>
+          <Text type="supporting" color="secondary">
             By Jane Author
-          </XDSText>
-        </XDSVStack>
-      </XDSCard>
+          </Text>
+        </VStack>
+      </Card>
     );
   },
 };
@@ -305,28 +305,28 @@ export const DragAndDrop: Story = {
   render: function DragAndDropStory() {
     const [isDragOver, setIsDragOver] = useState(false);
     return (
-      <XDSVStack gap={4} style={{width: 400}}>
-        <XDSButton
+      <VStack gap={4} style={{width: 400}}>
+        <Button
           label={isDragOver ? 'Simulate drag leave' : 'Simulate drag enter'}
           variant="secondary"
           onClick={() => setIsDragOver(v => !v)}
         />
-        <XDSOverlay
+        <Overlay
           isOpen={isDragOver}
           align="center"
           content={
-            <XDSVStack gap={2} hAlign="center">
-              <XDSText size="lg">📁</XDSText>
-              <XDSText weight="bold">Drop files here</XDSText>
-            </XDSVStack>
+            <VStack gap={2} hAlign="center">
+              <Text size="lg">📁</Text>
+              <Text weight="bold">Drop files here</Text>
+            </VStack>
           }>
           <div {...stylex.props(styles.dropZone)}>
             <p {...stylex.props(styles.dropZoneText)}>
               Drop files here or click to browse
             </p>
           </div>
-        </XDSOverlay>
-      </XDSVStack>
+        </Overlay>
+      </VStack>
     );
   },
 };
@@ -335,19 +335,19 @@ export const DragAndDrop: Story = {
 export const NoScrim: Story = {
   render: () => (
     <div style={{width: 300}}>
-      <XDSOverlay
+      <Overlay
         showOn="hover"
         scrim={false}
         align="center"
-        content={<XDSButton label="♡" variant="ghost" />}>
-        <XDSAspectRatio ratio={1}>
+        content={<Button label="♡" variant="ghost" />}>
+        <AspectRatio ratio={1}>
           <img
             src={SAMPLE_IMAGE_3}
             alt="Selected"
             {...stylex.props(styles.image)}
           />
-        </XDSAspectRatio>
-      </XDSOverlay>
+        </AspectRatio>
+      </Overlay>
     </div>
   ),
 };

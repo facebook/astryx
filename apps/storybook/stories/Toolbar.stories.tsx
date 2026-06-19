@@ -2,20 +2,20 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSToolbar} from '@xds/core/Toolbar';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
-import {XDSButton} from '@xds/core/Button';
-import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
-import {XDSText} from '@xds/core/Text';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSTable} from '@xds/core/Table';
-import {XDSLayout} from '@xds/core/Layout';
-import {XDSLayoutHeader} from '@xds/core/Layout';
-import {XDSLayoutContent} from '@xds/core/Layout';
-import {XDSMoreMenu} from '@xds/core/MoreMenu';
-import {XDSHeading} from '@xds/core/Text';
+import {Toolbar} from '@xds/core/Toolbar';
+import {TabList, Tab} from '@xds/core/TabList';
+import {Button} from '@xds/core/Button';
+import {Card} from '@xds/core/Card';
+import {Section} from '@xds/core/Section';
+import {Text} from '@xds/core/Text';
+import {TextInput} from '@xds/core/TextInput';
+import {Badge} from '@xds/core/Badge';
+import {Table} from '@xds/core/Table';
+import {Layout} from '@xds/core/Layout';
+import {LayoutHeader} from '@xds/core/Layout';
+import {LayoutContent} from '@xds/core/Layout';
+import {MoreMenu} from '@xds/core/MoreMenu';
+import {Heading} from '@xds/core/Text';
 import {
   Cog6ToothIcon,
   FunnelIcon,
@@ -27,9 +27,9 @@ import {
   ArchiveBoxIcon,
 } from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSToolbar> = {
+const meta: Meta<typeof Toolbar> = {
   title: 'Core/Toolbar',
-  component: XDSToolbar,
+  component: Toolbar,
   tags: ['autodocs'],
   parameters: {
     layout: 'padded',
@@ -44,7 +44,7 @@ const meta: Meta<typeof XDSToolbar> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSToolbar>;
+type Story = StoryObj<typeof Toolbar>;
 
 // ---------------------------------------------------------------------------
 // Basic slot patterns
@@ -56,13 +56,13 @@ export const Default: Story = {
     label: 'Actions',
     startContent: (
       <>
-        <XDSButton label="Cut" variant="ghost" />
-        <XDSButton label="Copy" variant="ghost" />
-        <XDSButton label="Paste" variant="ghost" />
+        <Button label="Cut" variant="ghost" />
+        <Button label="Copy" variant="ghost" />
+        <Button label="Paste" variant="ghost" />
       </>
     ),
     endContent: (
-      <XDSButton
+      <Button
         label="Settings"
         variant="ghost"
         icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
@@ -75,21 +75,21 @@ export const Default: Story = {
 /** Three-slot layout: CSS grid 1fr auto 1fr. Center content stays centered regardless of start/end width. */
 export const ThreeSlot: Story = {
   render: () => (
-    <XDSToolbar
+    <Toolbar
       label="Document toolbar"
       startContent={
-        <XDSButton
+        <Button
           label="Back"
           variant="ghost"
           icon={<ArrowLeftIcon style={{width: 16, height: 16}} />}
           isIconOnly
         />
       }
-      centerContent={<XDSHeading level={4}>Q1 Planning Document</XDSHeading>}
+      centerContent={<Heading level={4}>Q1 Planning Document</Heading>}
       endContent={
         <>
-          <XDSButton label="Discard" variant="secondary" />
-          <XDSButton label="Save" />
+          <Button label="Discard" variant="secondary" />
+          <Button label="Save" />
         </>
       }
     />
@@ -102,9 +102,9 @@ export const StartOnly: Story = {
     size: 'sm',
     startContent: (
       <>
-        <XDSBadge label="3 selected" />
-        <XDSButton label="Delete" variant="ghost" />
-        <XDSButton label="Archive" variant="ghost" />
+        <Badge label="3 selected" />
+        <Button label="Delete" variant="ghost" />
+        <Button label="Archive" variant="ghost" />
       </>
     ),
   },
@@ -115,8 +115,8 @@ export const EndOnly: Story = {
     label: 'Page actions',
     endContent: (
       <>
-        <XDSButton label="Cancel" variant="ghost" />
-        <XDSButton label="Save" />
+        <Button label="Cancel" variant="ghost" />
+        <Button label="Save" />
       </>
     ),
   },
@@ -128,13 +128,13 @@ export const Compact: Story = {
     size: 'sm',
     startContent: (
       <>
-        <XDSButton label="Cut" variant="ghost" />
-        <XDSButton label="Copy" variant="ghost" />
-        <XDSButton label="Paste" variant="ghost" />
+        <Button label="Cut" variant="ghost" />
+        <Button label="Copy" variant="ghost" />
+        <Button label="Paste" variant="ghost" />
       </>
     ),
     endContent: (
-      <XDSButton
+      <Button
         label="Settings"
         variant="ghost"
         icon={<Cog6ToothIcon style={{width: 14, height: 14}} />}
@@ -148,11 +148,11 @@ export const WashVariant: Story = {
   args: {
     label: 'Highlighted toolbar',
     variant: 'muted',
-    startContent: <XDSText type="body">3 items selected</XDSText>,
+    startContent: <Text type="body">3 items selected</Text>,
     endContent: (
       <>
-        <XDSButton label="Delete" variant="ghost" />
-        <XDSButton label="Move" variant="ghost" />
+        <Button label="Delete" variant="ghost" />
+        <Button label="Move" variant="ghost" />
       </>
     ),
   },
@@ -166,21 +166,21 @@ export const WashVariant: Story = {
 export const InsideCard: Story = {
   name: 'Composition: Card Header',
   render: () => (
-    <XDSCard width={600}>
-      <XDSToolbar
+    <Card width={600}>
+      <Toolbar
         label="User list actions"
         size="sm"
         dividers={['bottom']}
-        startContent={<XDSHeading level={4}>Users</XDSHeading>}
+        startContent={<Heading level={4}>Users</Heading>}
         endContent={
           <>
-            <XDSButton
+            <Button
               label="Filter"
               variant="ghost"
               icon={<FunnelIcon style={{width: 16, height: 16}} />}
               isIconOnly
             />
-            <XDSButton
+            <Button
               label="Add user"
               icon={<PlusIcon style={{width: 16, height: 16}} />}
               isIconOnly
@@ -188,10 +188,10 @@ export const InsideCard: Story = {
           </>
         }
       />
-      <XDSSection>
-        <XDSText type="body">Table rows go here...</XDSText>
-      </XDSSection>
-    </XDSCard>
+      <Section>
+        <Text type="body">Table rows go here...</Text>
+      </Section>
+    </Card>
   ),
 };
 
@@ -200,25 +200,25 @@ export const TableToolbar: Story = {
   name: 'Composition: Table Toolbar',
   render: () => (
     <div style={{width: 700}}>
-      <XDSToolbar
+      <Toolbar
         label="Table filters"
         size="sm"
         startContent={
           <>
-            <XDSTextInput
+            <TextInput
               label="Search"
               isLabelHidden
               placeholder="Search..."
               value=""
               onChange={() => {}}
             />
-            <XDSButton label="Status" variant="secondary" />
-            <XDSButton label="Priority" variant="secondary" />
-            <XDSButton label="Assignee" variant="secondary" />
+            <Button label="Status" variant="secondary" />
+            <Button label="Priority" variant="secondary" />
+            <Button label="Assignee" variant="secondary" />
           </>
         }
         endContent={
-          <XDSMoreMenu
+          <MoreMenu
             items={[
               {label: 'Compact view'},
               {label: 'Comfortable view'},
@@ -227,7 +227,7 @@ export const TableToolbar: Story = {
           />
         }
       />
-      <XDSTable
+      <Table
         columns={[
           {key: 'name', header: 'Name'},
           {key: 'status', header: 'Status'},
@@ -247,30 +247,30 @@ export const TableToolbar: Story = {
 export const PageHeader: Story = {
   name: 'Composition: Page Header',
   render: () => (
-    <XDSCard>
-      <XDSToolbar
+    <Card>
+      <Toolbar
         label="Page navigation"
         dividers={['bottom']}
         startContent={
-          <XDSButton
+          <Button
             label="Back to projects"
             variant="ghost"
             icon={<ArrowLeftIcon style={{width: 16, height: 16}} />}
             isIconOnly
           />
         }
-        centerContent={<XDSHeading level={3}>Project Settings</XDSHeading>}
+        centerContent={<Heading level={3}>Project Settings</Heading>}
         endContent={
           <>
-            <XDSButton label="Reset" variant="ghost" />
-            <XDSButton label="Save changes" />
+            <Button label="Reset" variant="ghost" />
+            <Button label="Save changes" />
           </>
         }
       />
-      <XDSSection>
-        <XDSText type="body">Settings form content...</XDSText>
-      </XDSSection>
-    </XDSCard>
+      <Section>
+        <Text type="body">Settings form content...</Text>
+      </Section>
+    </Card>
   ),
 };
 
@@ -278,20 +278,20 @@ export const PageHeader: Story = {
 export const BulkActions: Story = {
   name: 'Composition: Bulk Selection',
   render: () => (
-    <XDSToolbar
+    <Toolbar
       label="Bulk actions"
       size="sm"
       variant="muted"
       startContent={
         <>
-          <XDSBadge label="5 selected" />
-          <XDSButton
+          <Badge label="5 selected" />
+          <Button
             label="Delete"
             variant="ghost"
             icon={<TrashIcon style={{width: 16, height: 16}} />}
             isIconOnly
           />
-          <XDSButton
+          <Button
             label="Archive"
             variant="ghost"
             icon={<ArchiveBoxIcon style={{width: 16, height: 16}} />}
@@ -299,7 +299,7 @@ export const BulkActions: Story = {
           />
         </>
       }
-      endContent={<XDSButton label="Deselect all" variant="ghost" />}
+      endContent={<Button label="Deselect all" variant="ghost" />}
     />
   ),
 };
@@ -308,54 +308,54 @@ export const BulkActions: Story = {
 export const StackedToolbars: Story = {
   name: 'Composition: Stacked Toolbars',
   render: () => (
-    <XDSCard width={700}>
-      <XDSToolbar
+    <Card width={700}>
+      <Toolbar
         label="Primary actions"
         size="sm"
         dividers={['bottom']}
-        startContent={<XDSHeading level={4}>Orders</XDSHeading>}
+        startContent={<Heading level={4}>Orders</Heading>}
         endContent={
           <>
-            <XDSButton
+            <Button
               label="Refresh"
               variant="ghost"
               icon={<ArrowPathIcon style={{width: 16, height: 16}} />}
               isIconOnly
             />
-            <XDSButton
+            <Button
               label="Export"
               variant="ghost"
               icon={<ArrowDownTrayIcon style={{width: 16, height: 16}} />}
               isIconOnly
             />
-            <XDSButton label="New order" />
+            <Button label="New order" />
           </>
         }
       />
-      <XDSToolbar
+      <Toolbar
         label="Filters"
         size="sm"
         variant="muted"
         startContent={
           <>
-            <XDSTextInput
+            <TextInput
               label="Search orders"
               isLabelHidden
               placeholder="Search orders..."
               value=""
               onChange={() => {}}
             />
-            <XDSButton label="Status" variant="secondary" />
-            <XDSButton label="Date range" variant="secondary" />
-            <XDSButton label="Customer" variant="secondary" />
+            <Button label="Status" variant="secondary" />
+            <Button label="Date range" variant="secondary" />
+            <Button label="Customer" variant="secondary" />
           </>
         }
-        endContent={<XDSButton label="Clear filters" variant="ghost" />}
+        endContent={<Button label="Clear filters" variant="ghost" />}
       />
-      <XDSSection>
-        <XDSText type="body">Order table rows...</XDSText>
-      </XDSSection>
-    </XDSCard>
+      <Section>
+        <Text type="body">Order table rows...</Text>
+      </Section>
+    </Card>
   ),
 };
 
@@ -364,21 +364,21 @@ export const InsideLayout: Story = {
   name: 'Composition: Inside Layout',
   render: () => (
     <div style={{height: 300, border: '1px solid #e0e0e0', borderRadius: 8}}>
-      <XDSLayout
+      <Layout
         header={
-          <XDSLayoutHeader hasDivider padding={0}>
-            <XDSToolbar
+          <LayoutHeader hasDivider padding={0}>
+            <Toolbar
               label="App toolbar"
               startContent={
                 <>
-                  <XDSHeading level={4}>Dashboard</XDSHeading>
-                  <XDSBadge label="Beta" variant="info" />
+                  <Heading level={4}>Dashboard</Heading>
+                  <Badge label="Beta" variant="info" />
                 </>
               }
               endContent={
                 <>
-                  <XDSButton label="Notifications" variant="ghost" />
-                  <XDSMoreMenu
+                  <Button label="Notifications" variant="ghost" />
+                  <MoreMenu
                     items={[
                       {label: 'Profile'},
                       {label: 'Settings'},
@@ -388,12 +388,12 @@ export const InsideLayout: Story = {
                 </>
               }
             />
-          </XDSLayoutHeader>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent>
-            <XDSText type="body">Dashboard content...</XDSText>
-          </XDSLayoutContent>
+          <LayoutContent>
+            <Text type="body">Dashboard content...</Text>
+          </LayoutContent>
         }
       />
     </div>
@@ -408,34 +408,34 @@ export const WithTabNavigation: Story = {
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>
         {(['sm', 'md', 'lg'] as const).map(size => (
-          <XDSCard key={size}>
-            <XDSToolbar
+          <Card key={size}>
+            <Toolbar
               label={`Tab navigation (${size})`}
               size={size}
               dividers={['bottom']}
               startContent={
-                <XDSTabList value={tab} onChange={setTab}>
-                  <XDSTab value="overview" label="Overview" />
-                  <XDSTab value="analytics" label="Analytics" />
-                  <XDSTab value="settings" label="Settings" />
-                </XDSTabList>
+                <TabList value={tab} onChange={setTab}>
+                  <Tab value="overview" label="Overview" />
+                  <Tab value="analytics" label="Analytics" />
+                  <Tab value="settings" label="Settings" />
+                </TabList>
               }
               endContent={
                 <>
-                  <XDSButton
+                  <Button
                     label="Export"
                     variant="ghost"
                     icon={<ArrowDownTrayIcon style={{width: 16, height: 16}} />}
                     isIconOnly
                   />
-                  <XDSButton label="New item" />
+                  <Button label="New item" />
                 </>
               }
             />
-            <XDSSection>
-              <XDSText type="body">Content for {size} size variant</XDSText>
-            </XDSSection>
-          </XDSCard>
+            <Section>
+              <Text type="body">Content for {size} size variant</Text>
+            </Section>
+          </Card>
         ))}
       </div>
     );

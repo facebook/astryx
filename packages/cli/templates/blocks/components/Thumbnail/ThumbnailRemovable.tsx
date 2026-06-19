@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSThumbnail} from '@xds/core/Thumbnail';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Thumbnail} from '@xds/core/Thumbnail';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const IMAGES = [
   {id: 1, src: 'https://lookaside.facebook.com/assets/xds_oss/moody-scene-vertical-1.png', alt: 'Dark cityscape at night', label: 'dark-city.jpg'},
@@ -17,13 +17,13 @@ export default function ThumbnailRemovable() {
   const [items, setItems] = useState(IMAGES);
 
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Text type="supporting" color="secondary">
         Remove button adapts contrast to image luminance
-      </XDSText>
-      <XDSStack direction="horizontal" gap={3} vAlign="center">
+      </Text>
+      <Stack direction="horizontal" gap={3} vAlign="center">
         {items.map(item => (
-          <XDSThumbnail
+          <Thumbnail
             key={item.id}
             src={item.src}
             alt={item.alt}
@@ -34,11 +34,11 @@ export default function ThumbnailRemovable() {
           />
         ))}
         {items.length === 0 && (
-          <XDSText type="supporting" color="secondary">
+          <Text type="supporting" color="secondary">
             All removed.
-          </XDSText>
+          </Text>
         )}
-      </XDSStack>
-    </XDSStack>
+      </Stack>
+    </Stack>
   );
 }

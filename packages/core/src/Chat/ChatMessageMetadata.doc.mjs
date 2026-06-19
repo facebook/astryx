@@ -11,10 +11,10 @@ export const docs = {
     {
       name: 'timestamp',
       type: 'ReactNode',
-      description: 'Timestamp content: a string or XDSTimestamp component.',
+      description: 'Timestamp content: a string or Timestamp component.',
       slotElements: [
         {
-          __element: 'XDSText',
+          __element: 'Text',
           props: {
             type: 'body',
           },
@@ -28,7 +28,7 @@ export const docs = {
       description: 'Footer content: model info, reaction buttons, copy button.',
       slotElements: [
         {
-          __element: 'XDSText',
+          __element: 'Text',
           props: {
             type: 'body',
           },
@@ -49,7 +49,7 @@ export const docsZh = {
   displayName: 'Chat Message Metadata',
   description: '可组合的消息元数据行。渲染时间戳、页脚内容和发送状态。用户消息方向反转。',
   propDescriptions: {
-    timestamp: '时间戳内容 — 字符串或 XDSTimestamp 组件。',
+    timestamp: '时间戳内容 — 字符串或 Timestamp 组件。',
     footer: '页脚内容 — 模型信息、反应按钮、复制按钮。',
     status: '消息发送状态。显示图标和标签。',
   },
@@ -60,7 +60,7 @@ export const docsDense = {
   displayName: 'Chat Message Metadata',
   description: 'composable metadata row; renders timestamp · footer · status; reverses for user sender',
   propDescriptions: {
-    timestamp: 'timestamp content; string or XDSTimestamp',
+    timestamp: 'timestamp content; string or Timestamp',
     footer: 'footer content; model info, reaction btns, copy btn',
     status: 'delivery status; shows icon+label',
   },

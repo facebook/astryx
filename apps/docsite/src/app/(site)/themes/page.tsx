@@ -16,7 +16,7 @@
  */
 
 import {notFound} from 'next/navigation';
-import {XDSSection} from '@xds/core/Section';
+import {Section} from '@xds/core/Section';
 import {packages} from '../../../generated/packageRegistry';
 import {themeObjects} from '../../../generated/themeRegistry';
 import {ThemePackagePage} from '../../../components/ThemePackagePage';
@@ -72,8 +72,8 @@ export default async function ThemesPage({
   }
 
   return (
-    <XDSSection maxWidth="lg" padding={6}>
+    <Section maxWidth="lg" padding={6}>
       <ThemePackagePage packageName={seedPkg.name} theme={seedTheme} />
-    </XDSSection>
+    </Section>
   );
 }

@@ -3,7 +3,7 @@
 /**
  * @file onMediaTokens.ts
  * @input Theme token values from defineTheme
- * @output Default on-dark / on-light token overrides for XDSMediaTheme
+ * @output Default on-dark / on-light token overrides for MediaTheme
  * @position Theme system utility; consumed by defineTheme and generateThemeRules
  *
  * Generates semantic token overrides for content rendered on inverted surfaces.
@@ -20,7 +20,7 @@
  * `onDark`/`onLight` fields in `defineTheme()`.
  */
 
-import type {XDSTokenValue, XDSComponentStyleMap} from './defineTheme';
+import type {TokenValue, ComponentStyleMap} from './defineTheme';
 
 /**
  * On-media theme overrides — same shape as the main theme but scoped
@@ -28,20 +28,20 @@ import type {XDSTokenValue, XDSComponentStyleMap} from './defineTheme';
  */
 export interface OnMediaOverrides {
   /** Token overrides for this surface context */
-  tokens?: Partial<Record<string, XDSTokenValue>>;
+  tokens?: Partial<Record<string, TokenValue>>;
   /** Component style overrides for this surface context */
-  components?: XDSComponentStyleMap;
+  components?: ComponentStyleMap;
 }
 
 /**
- * Resolved on-media overrides stored on XDSDefinedTheme.
+ * Resolved on-media overrides stored on DefinedTheme.
  * @internal
  */
 export interface ResolvedOnMedia {
   /** Resolved token CSS values */
   tokens: Record<string, string>;
   /** Component style overrides (passthrough from input) */
-  components?: XDSComponentStyleMap;
+  components?: ComponentStyleMap;
 }
 
 /**
@@ -79,7 +79,7 @@ export const defaultOnLightTokens: Record<string, string> = {
 /**
  * Resolve a token value to a CSS string.
  */
-function resolveValue(value: XDSTokenValue): string {
+function resolveValue(value: TokenValue): string {
   if (Array.isArray(value)) {
     return `light-dark(${value[0]}, ${value[1]})`;
   }

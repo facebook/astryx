@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSSwitch} from '@xds/core/Switch';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
+import {Switch} from '@xds/core/Switch';
+import {VStack} from '@xds/core/Layout';
+import {Center} from '@xds/core/Center';
 
 export default function SwitchWithStatus() {
   const [terms, setTerms] = useState(false);
@@ -13,9 +13,9 @@ export default function SwitchWithStatus() {
   const [twoFactor, setTwoFactor] = useState(true);
 
   return (
-    <XDSCenter width={400}>
-      <XDSVStack gap={6} width="100%" style={{maxWidth: 400}}>
-        <XDSSwitch
+    <Center width={400}>
+      <VStack gap={6} width="100%" style={{maxWidth: 400}}>
+        <Switch
           label="Accept terms and conditions"
           value={terms}
           onChange={setTerms}
@@ -25,7 +25,7 @@ export default function SwitchWithStatus() {
             message: 'You must accept the terms to continue',
           }}
         />
-        <XDSSwitch
+        <Switch
           label="Share usage data"
           description="Help us improve by sharing anonymous usage statistics"
           value={sharing}
@@ -35,13 +35,13 @@ export default function SwitchWithStatus() {
             message: 'This data may be shared with partners',
           }}
         />
-        <XDSSwitch
+        <Switch
           label="Two-factor authentication"
           value={twoFactor}
           onChange={setTwoFactor}
           status={{type: 'success', message: 'Your account is now more secure'}}
         />
-      </XDSVStack>
-    </XDSCenter>
+      </VStack>
+    </Center>
   );
 }

@@ -3,11 +3,11 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSPowerSearch, usePowerSearchConfig} from '@xds/core/PowerSearch';
+import {PowerSearch, usePowerSearchConfig} from '@xds/core/PowerSearch';
 import type {PowerSearchFilter} from '@xds/core/PowerSearch';
-import {XDSTable, pixel, proportional} from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
-import {XDSVStack} from '@xds/core/Layout';
+import {Table, pixel, proportional} from '@xds/core/Table';
+import type {TableColumn} from '@xds/core/Table';
+import {VStack} from '@xds/core/Layout';
 
 const genreValues = [
   {value: 'sci-fi', label: 'Science Fiction'},
@@ -70,7 +70,7 @@ const books: Book[] = [
   },
 ];
 
-const columns: XDSTableColumn<Book>[] = [
+const columns: TableColumn<Book>[] = [
   {key: 'title', header: 'Title', width: proportional(2)},
   {key: 'author', header: 'Author', width: proportional(2)},
   {key: 'year', header: 'Year', width: pixel(100)},
@@ -89,15 +89,15 @@ export default function PowerSearchSearchWithTable() {
   const filteredBooks = applyFilters(filters, books);
 
   return (
-    <XDSVStack gap={4} width="100%" style={{maxWidth: 500}}>
-      <XDSPowerSearch
+    <VStack gap={4} width="100%" style={{maxWidth: 500}}>
+      <PowerSearch
         config={config}
         filters={filters}
         onChange={newFilters => setFilters([...newFilters])}
         placeholder="Filter books by title, author, year, genre..."
         resultCount={filteredBooks.length}
       />
-      <XDSTable data={filteredBooks} columns={columns} idKey="id" hasHover />
-    </XDSVStack>
+      <Table data={filteredBooks} columns={columns} idKey="id" hasHover />
+    </VStack>
   );
 }

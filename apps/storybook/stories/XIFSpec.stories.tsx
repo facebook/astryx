@@ -8,8 +8,8 @@ import {
   type SVGIconDef,
   type IconShape,
 } from '@xds/lab';
-import {XDSStack, XDSText, XDSDivider} from '@xds/core';
-import {XDSHeading} from '@xds/core/Text';
+import {Stack, Text, Divider} from '@xds/core';
+import {Heading} from '@xds/core/Text';
 import type {
   XIFIcon,
   XIFPath,
@@ -75,14 +75,14 @@ const VARIATIONS: SVGIconVariation[] = [
 
 export const SpecExamples: StoryObj = {
   render: () => (
-    <XDSStack direction="vertical" gap={3}>
-      <XDSHeading level={3}>XIF Spec Examples</XDSHeading>
-      <XDSText type="supporting">
+    <Stack direction="vertical" gap={3}>
+      <Heading level={3}>XIF Spec Examples</Heading>
+      <Text type="supporting">
         Icons defined using the XDS Icon Format specification. Each demonstrates
         a different capability: stroke-only, two-layer knockout, composable
         slots, animation declarations, personality overrides, and bold geometry
         overrides.
-      </XDSText>
+      </Text>
 
       <div
         style={{
@@ -93,12 +93,12 @@ export const SpecExamples: StoryObj = {
         }}>
         <div />
         {VARIATIONS.map(v => (
-          <XDSText
+          <Text
             key={v}
             type="label"
             style={{textAlign: 'center', fontSize: 10}}>
             {v}
-          </XDSText>
+          </Text>
         ))}
 
         {xifExamples.map(xif => {
@@ -123,15 +123,15 @@ export const SpecExamples: StoryObj = {
           return (
             <Fragment key={xif.name}>
               <div>
-                <XDSText type="label" style={{fontSize: 11}}>
+                <Text type="label" style={{fontSize: 11}}>
                   {xif.name}
-                </XDSText>
+                </Text>
                 {features.length > 0 && (
-                  <XDSText
+                  <Text
                     type="supporting"
                     style={{fontSize: 9, marginTop: 2}}>
                     {features.join(' ')}
-                  </XDSText>
+                  </Text>
                 )}
               </div>
               {VARIATIONS.map(v => (
@@ -145,7 +145,7 @@ export const SpecExamples: StoryObj = {
           );
         })}
       </div>
-    </XDSStack>
+    </Stack>
   ),
 };
 
@@ -202,14 +202,14 @@ export const CompositionSlots: StoryObj = {
     };
 
     return (
-      <XDSStack direction="vertical" gap={3}>
-        <XDSHeading level={3}>Composition via Slots</XDSHeading>
-        <XDSText type="supporting">
+      <Stack direction="vertical" gap={3}>
+        <Heading level={3}>Composition via Slots</Heading>
+        <Text type="supporting">
           Icons with <code>slots</code> accept sub-icons. One shield base +
           different badges = many composed icons without extra path data.
-        </XDSText>
+        </Text>
 
-        <XDSStack direction="horizontal" gap={4}>
+        <Stack direction="horizontal" gap={4}>
           {[
             {label: 'shield (base)', def: shieldDef},
             {label: 'shield-check', def: composedShieldCheck},
@@ -217,22 +217,22 @@ export const CompositionSlots: StoryObj = {
             {label: 'file (base)', def: fileDef},
             {label: 'file-text', def: composedFileText},
           ].map(({label, def}) => (
-            <XDSStack key={label} direction="vertical" gap={1} hAlign="center">
-              <XDSStack direction="horizontal" gap={2}>
+            <Stack key={label} direction="vertical" gap={1} hAlign="center">
+              <Stack direction="horizontal" gap={2}>
                 <XDSSVGIcon icon={def} variation="linear" size="lg" />
                 <XDSSVGIcon icon={def} variation="bold" size="lg" />
-              </XDSStack>
-              <XDSText type="supporting" style={{fontSize: 10}}>
+              </Stack>
+              <Text type="supporting" style={{fontSize: 10}}>
                 {label}
-              </XDSText>
-            </XDSStack>
+              </Text>
+            </Stack>
           ))}
-        </XDSStack>
+        </Stack>
 
-        <XDSDivider />
+        <Divider />
 
-        <XDSHeading level={4}>Slot Definition</XDSHeading>
-        <XDSText type="supporting">
+        <Heading level={4}>Slot Definition</Heading>
+        <Text type="supporting">
           The shield icon defines:{' '}
           <code>
             slots: [&#123; name: &apos;badge&apos;, position:
@@ -241,8 +241,8 @@ export const CompositionSlots: StoryObj = {
           . At render time, the component scales and positions the badge icon
           into the slot. The badge inherits the parent&apos;s variation and
           color.
-        </XDSText>
-      </XDSStack>
+        </Text>
+      </Stack>
     );
   },
 };
@@ -266,14 +266,14 @@ export const PersonalityAxes: StoryObj = {
     ];
 
     return (
-      <XDSStack direction="vertical" gap={3}>
-        <XDSHeading level={3}>Personality Axes (Conceptual)</XDSHeading>
-        <XDSText type="supporting">
+      <Stack direction="vertical" gap={3}>
+        <Heading level={3}>Personality Axes (Conceptual)</Heading>
+        <Text type="supporting">
           Shape personality parameters adjust the <em>feel</em> of icons without
           changing their structure. All adjustments are relative, preserving the
           artist&apos;s hierarchy of sharp vs soft. These icons show the
           concept; path manipulation is not yet implemented.
-        </XDSText>
+        </Text>
 
         <div
           style={{
@@ -284,14 +284,14 @@ export const PersonalityAxes: StoryObj = {
           }}>
           <div />
           {presets.map(p => (
-            <XDSStack key={p.name} direction="vertical" gap={0} hAlign="center">
-              <XDSText type="label" style={{fontSize: 10}}>
+            <Stack key={p.name} direction="vertical" gap={0} hAlign="center">
+              <Text type="label" style={{fontSize: 10}}>
                 {p.name}
-              </XDSText>
-              <XDSText type="supporting" style={{fontSize: 8}}>
+              </Text>
+              <Text type="supporting" style={{fontSize: 8}}>
                 {p.desc}
-              </XDSText>
-            </XDSStack>
+              </Text>
+            </Stack>
           ))}
 
           {[
@@ -300,9 +300,9 @@ export const PersonalityAxes: StoryObj = {
             {name: 'bell', def: bellDef},
           ].map(({name, def}) => (
             <Fragment key={name}>
-              <XDSText type="label" style={{fontSize: 11}}>
+              <Text type="label" style={{fontSize: 11}}>
                 {name}
-              </XDSText>
+              </Text>
               {presets.map((p, i) => (
                 <div
                   key={p.name}
@@ -323,13 +323,13 @@ export const PersonalityAxes: StoryObj = {
           ))}
         </div>
 
-        <XDSText type="supporting">
+        <Text type="supporting">
           Note: opacity/stroke-width are used as visual placeholders here. The
           real implementation will modify path geometry, rounding corners,
           bowing segments, adjusting curve tension, all at build time via the
           theme pipeline.
-        </XDSText>
-      </XDSStack>
+        </Text>
+      </Stack>
     );
   },
 };
@@ -392,13 +392,13 @@ export const AnimationIntent: StoryObj = {
     ];
 
     return (
-      <XDSStack direction="vertical" gap={3}>
+      <Stack direction="vertical" gap={3}>
         <style dangerouslySetInnerHTML={{__html: animStyles}} />
-        <XDSHeading level={3}>Animation Types (Live)</XDSHeading>
-        <XDSText type="supporting">
+        <Heading level={3}>Animation Types (Live)</Heading>
+        <Text type="supporting">
           Icons declare animation intent per path. The theme resolves timing.
           Each demo loops on page load.
-        </XDSText>
+        </Text>
 
         <div
           style={{
@@ -407,7 +407,7 @@ export const AnimationIntent: StoryObj = {
             gap: 24,
           }}>
           {demos.map(demo => (
-            <XDSStack
+            <Stack
               key={demo.name}
               direction="vertical"
               gap={1}
@@ -428,18 +428,18 @@ export const AnimationIntent: StoryObj = {
                   <path key={i} d={d} />
                 ))}
               </svg>
-              <XDSText type="label" style={{fontSize: 12, marginTop: 8}}>
+              <Text type="label" style={{fontSize: 12, marginTop: 8}}>
                 {demo.name}
-              </XDSText>
-              <XDSText
+              </Text>
+              <Text
                 type="supporting"
                 style={{fontSize: 10, textAlign: 'center'}}>
                 {demo.desc}
-              </XDSText>
-            </XDSStack>
+              </Text>
+            </Stack>
           ))}
         </div>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -483,20 +483,20 @@ export const PathTransformPlayground: StoryObj = {
     const shapes = Object.entries(testShapes);
 
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Path Transform Playground</XDSHeading>
-        <XDSText type="supporting">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Path Transform Playground</Heading>
+        <Text type="supporting">
           Live path manipulation with sagitta-corrected corner rounding. Sharp
           corners (like star tips) round less aggressively than gentle corners,
           achieving equal <em>perceived</em> roundness at all angles.
-        </XDSText>
+        </Text>
 
         {/* Corner Rounding */}
-        <XDSHeading level={4}>Corner Rounding (sagitta-corrected)</XDSHeading>
-        <XDSText type="supporting">
+        <Heading level={4}>Corner Rounding (sagitta-corrected)</Heading>
+        <Text type="supporting">
           Same cornerRounding value across all shapes. Sharp corners get less
           radius, gentle corners get more, visually balanced.
-        </XDSText>
+        </Text>
         <div
           style={{
             display: 'grid',
@@ -506,18 +506,18 @@ export const PathTransformPlayground: StoryObj = {
           }}>
           <div />
           {roundingLevels.map(r => (
-            <XDSText
+            <Text
               key={r}
               type="label"
               style={{textAlign: 'center', fontSize: 10}}>
               {r}
-            </XDSText>
+            </Text>
           ))}
           {shapes.map(([name, d]) => (
             <Fragment key={name}>
-              <XDSText type="label" style={{fontSize: 11}}>
+              <Text type="label" style={{fontSize: 11}}>
                 {name}
-              </XDSText>
+              </Text>
               {roundingLevels.map(r => (
                 <div
                   key={r}
@@ -539,14 +539,14 @@ export const PathTransformPlayground: StoryObj = {
           ))}
         </div>
 
-        <XDSDivider />
+        <Divider />
 
         {/* Segment Curvature */}
-        <XDSHeading level={4}>Segment Curvature</XDSHeading>
-        <XDSText type="supporting">
+        <Heading level={4}>Segment Curvature</Heading>
+        <Text type="supporting">
           Straight line segments gain a perpendicular bow. Subtle at low values,
           pronounced at high.
-        </XDSText>
+        </Text>
         <div
           style={{
             display: 'grid',
@@ -556,18 +556,18 @@ export const PathTransformPlayground: StoryObj = {
           }}>
           <div />
           {curvatureLevels.map(c => (
-            <XDSText
+            <Text
               key={c}
               type="label"
               style={{textAlign: 'center', fontSize: 10}}>
               {c}
-            </XDSText>
+            </Text>
           ))}
           {shapes.slice(0, 5).map(([name, d]) => (
             <Fragment key={name}>
-              <XDSText type="label" style={{fontSize: 11}}>
+              <Text type="label" style={{fontSize: 11}}>
                 {name}
-              </XDSText>
+              </Text>
               {curvatureLevels.map(c => (
                 <div
                   key={c}
@@ -589,12 +589,12 @@ export const PathTransformPlayground: StoryObj = {
           ))}
         </div>
 
-        <XDSDivider />
+        <Divider />
 
         {/* Combined: Rounding + Curvature presets */}
-        <XDSHeading level={4}>
+        <Heading level={4}>
           Personality Presets (combined transforms)
-        </XDSHeading>
+        </Heading>
         <div
           style={{
             display: 'grid',
@@ -610,24 +610,24 @@ export const PathTransformPlayground: StoryObj = {
             {label: 'Friendly', r: 0.5, c: 0.15},
             {label: 'Playful', r: 0.8, c: 0.3},
           ].map(p => (
-            <XDSStack
+            <Stack
               key={p.label}
               direction="vertical"
               hAlign="center"
               gap={0}>
-              <XDSText type="label" style={{fontSize: 10}}>
+              <Text type="label" style={{fontSize: 10}}>
                 {p.label}
-              </XDSText>
-              <XDSText type="supporting" style={{fontSize: 8}}>
+              </Text>
+              <Text type="supporting" style={{fontSize: 8}}>
                 r:{p.r} c:{p.c}
-              </XDSText>
-            </XDSStack>
+              </Text>
+            </Stack>
           ))}
           {shapes.map(([name, d]) => (
             <Fragment key={name}>
-              <XDSText type="label" style={{fontSize: 11}}>
+              <Text type="label" style={{fontSize: 11}}>
                 {name}
-              </XDSText>
+              </Text>
               {[
                 {r: 0, c: 0},
                 {r: 0.1, c: 0},
@@ -660,7 +660,7 @@ export const PathTransformPlayground: StoryObj = {
             </Fragment>
           ))}
         </div>
-      </XDSStack>
+      </Stack>
     );
   },
 };

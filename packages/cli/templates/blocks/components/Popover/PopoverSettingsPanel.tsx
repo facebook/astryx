@@ -3,47 +3,47 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSPopover} from '@xds/core/Popover';
-import {XDSButton} from '@xds/core/Button';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSHeading} from '@xds/core/Text';
-import {XDSSwitch} from '@xds/core/Switch';
-import {XDSDivider} from '@xds/core/Divider';
+import {Popover} from '@xds/core/Popover';
+import {Button} from '@xds/core/Button';
+import {VStack} from '@xds/core/Layout';
+import {Heading} from '@xds/core/Text';
+import {Switch} from '@xds/core/Switch';
+import {Divider} from '@xds/core/Divider';
 export default function PopoverSettingsPanel() {
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [sounds, setSounds] = useState(true);
 
   return (
-    <XDSPopover
+    <Popover
       placement="below"
       label="Settings"
       width={280}
       content={
-        <XDSVStack gap={3}>
-          <XDSHeading level={4}>Settings</XDSHeading>
-          <XDSDivider />
-          <XDSSwitch
+        <VStack gap={3}>
+          <Heading level={4}>Settings</Heading>
+          <Divider />
+          <Switch
             label="Notifications"
             description="Receive push notifications"
             value={notifications}
             onChange={setNotifications}
           />
-          <XDSSwitch
+          <Switch
             label="Dark mode"
             description="Use dark color theme"
             value={darkMode}
             onChange={setDarkMode}
           />
-          <XDSSwitch
+          <Switch
             label="Sounds"
             description="Play sounds for actions"
             value={sounds}
             onChange={setSounds}
           />
-        </XDSVStack>
+        </VStack>
       }>
-      <XDSButton label="Settings">Settings</XDSButton>
-    </XDSPopover>
+      <Button label="Settings">Settings</Button>
+    </Popover>
   );
 }

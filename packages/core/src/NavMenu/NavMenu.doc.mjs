@@ -13,9 +13,9 @@ export const docs = {
   usage: {
     description:
       'Accessible menu container and items for nav heading popovers. ' +
-      'XDSNavHeadingMenu provides role="menu" with keyboard navigation; ' +
-      'XDSNavHeadingMenuItem renders individual selectable items. ' +
-      'Pass as the menu prop of XDSSideNavHeading or XDSTopNavHeading.',
+      'NavHeadingMenu provides role="menu" with keyboard navigation; ' +
+      'NavHeadingMenuItem renders individual selectable items. ' +
+      'Pass as the menu prop of SideNavHeading or TopNavHeading.',
   },
   props: [
     {name: 'children', type: 'ReactNode', required: true, description: 'Menu items.'},
@@ -27,10 +27,10 @@ export const docs = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'Accessible menu container + items for nav heading popovers. XDSNavHeadingMenu = role="menu" w/ keyboard nav; XDSNavHeadingMenuItem renders selectable items.',
+  description: 'Accessible menu container + items for nav heading popovers. NavHeadingMenu = role="menu" w/ keyboard nav; NavHeadingMenuItem renders selectable items.',
   usage: {
     description:
-      'Accessible menu container + items for nav heading popovers. XDSNavHeadingMenu provides role="menu" w/ keyboard navigation; XDSNavHeadingMenuItem renders individual selectable items. Pass as menu prop of XDSSideNavHeading or XDSTopNavHeading.',
+      'Accessible menu container + items for nav heading popovers. NavHeadingMenu provides role="menu" w/ keyboard navigation; NavHeadingMenuItem renders individual selectable items. Pass as menu prop of SideNavHeading or TopNavHeading.',
   },
   propDescriptions: {
     size: 'controls min-width + item padding',

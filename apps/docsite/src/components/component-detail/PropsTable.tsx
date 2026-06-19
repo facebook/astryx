@@ -2,11 +2,11 @@
 
 'use client';
 
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSSection} from '@xds/core/Section';
-import {XDSTable, pixel} from '@xds/core/Table';
-import {XDSBadge} from '@xds/core/Badge';
+import {Heading, Text} from '@xds/core/Text';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Section} from '@xds/core/Section';
+import {Table, pixel} from '@xds/core/Table';
+import {Badge} from '@xds/core/Badge';
 import type {PropDoc} from '../../generated/componentRegistry';
 import {MarkdownText} from '../MarkdownText';
 
@@ -39,10 +39,10 @@ export function PropsTable({props, heading}: PropsTableProps) {
   })) as Record<string, unknown>[];
 
   return (
-    <XDSSection>
-      <XDSVStack gap={2}>
-        {heading && <XDSHeading level={4}>{heading}</XDSHeading>}
-        <XDSTable
+    <Section>
+      <VStack gap={2}>
+        {heading && <Heading level={4}>{heading}</Heading>}
+        <Table
           data={data}
           columns={[
             {
@@ -50,14 +50,14 @@ export function PropsTable({props, heading}: PropsTableProps) {
               header: 'Prop',
               width: pixel(180),
               renderCell: (item: Record<string, unknown>) => (
-                <XDSHStack gap={1} vAlign="center">
-                  <XDSText type="code" weight="bold">
+                <HStack gap={1} vAlign="center">
+                  <Text type="code" weight="bold">
                     {item.name as string}
-                  </XDSText>
+                  </Text>
                   {item.required === true && (
-                    <XDSBadge label="required" variant="info" />
+                    <Badge label="required" variant="info" />
                   )}
-                </XDSHStack>
+                </HStack>
               ),
             },
             {
@@ -65,9 +65,9 @@ export function PropsTable({props, heading}: PropsTableProps) {
               header: 'Type',
               width: pixel(240),
               renderCell: (item: Record<string, unknown>) => (
-                <XDSText type="code" color="secondary">
+                <Text type="code" color="secondary">
                   {item.type as string}
-                </XDSText>
+                </Text>
               ),
             },
             {
@@ -83,7 +83,7 @@ export function PropsTable({props, heading}: PropsTableProps) {
           density="spacious"
           dividers="rows"
         />
-      </XDSVStack>
-    </XDSSection>
+      </VStack>
+    </Section>
   );
 }

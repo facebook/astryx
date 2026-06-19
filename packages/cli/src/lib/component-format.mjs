@@ -40,7 +40,7 @@ function formatPropsTable(props) {
  * Render a sub-component block (the `### Name` sections under "## Components").
  *
  * Sub-components are sometimes declared as a bare reference, e.g.
- * `{name: 'XDSRadioListItem'}`, with their description/props documented in
+ * `{name: 'RadioListItem'}`, with their description/props documented in
  * their own `.doc.mjs`. Without guarding, `comp.description` is `undefined`
  * and was being printed literally as the string "undefined". Emit the
  * description only when present, and when there are no inline props point the
@@ -152,7 +152,11 @@ export function formatFull(docs, options = {}) {
   sections.push(desc + '\n');
 
   if (options.importHint) {
-    const displayName = `XDS${docs.name}`;
+    // Use the primary export (docs.name) for the import hint, not the first
+    // sub-component (docs.components[0].name). Showing a sub-component caused
+    // agents to conflate the primary with a sub-component and hallucinate props
+    // (origin/main #2860). Bare name per the un-prefix migration (P5a).
+    const displayName = docs.name;
     sections.push(`**Import:** \`import {${displayName}} from '${options.importHint}';\`\n`);
   }
 
@@ -300,9 +304,11 @@ export function formatFull(docs, options = {}) {
  * Includes: import, best practices, props, theming.
  */
 export function formatCompact(docs, componentName, importHint) {
+  // Bare name (un-prefix migration P5a): the CLI now presents component names
+  // without the XDS prefix. componentName is already bare post-P4.
   const displayName = componentName.startsWith('XDS')
-    ? componentName
-    : `XDS${componentName}`;
+    ? componentName.slice(3)
+    : componentName;
 
   const sections = [];
 
@@ -380,8 +386,8 @@ export function formatCompact(docs, componentName, importHint) {
  */
 export function formatBrief(docs, componentName, importHint, options = {}) {
   const displayName = componentName.startsWith('XDS')
-    ? componentName
-    : `XDS${componentName}`;
+    ? componentName.slice(3)
+    : componentName;
 
   // Find the right props and examples for this component
   let props = [];
@@ -530,7 +536,7 @@ export async function formatBriefAll(coreDir, {zh = false, lang, themeData = nul
         const importPath = resolveImportPath(coreDir, comp);
         output.push(formatBrief(docs, comp, importPath, { themeData }));
       } else {
-        output.push(`XDS${comp}\n  (no docs)\n`);
+        output.push(`${comp}\n  (no docs)\n`);
       }
     }
   }

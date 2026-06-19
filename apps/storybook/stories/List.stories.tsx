@@ -2,12 +2,12 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSSwitch} from '@xds/core/Switch';
-import {XDSText} from '@xds/core/Text';
+import {List, ListItem} from '@xds/core/List';
+import {Avatar} from '@xds/core/Avatar';
+import {Badge} from '@xds/core/Badge';
+import {Icon} from '@xds/core/Icon';
+import {Switch} from '@xds/core/Switch';
+import {Text} from '@xds/core/Text';
 import {
   Cog6ToothIcon,
   BellIcon,
@@ -18,9 +18,9 @@ import {
   DocumentIcon,
 } from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSList> = {
+const meta: Meta<typeof List> = {
   title: 'Core/List',
-  component: XDSList,
+  component: List,
   tags: ['autodocs'],
   argTypes: {
     density: {
@@ -41,192 +41,192 @@ const meta: Meta<typeof XDSList> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSList>;
+type Story = StoryObj<typeof List>;
 
 export const Basic: Story = {
   render: args => (
-    <XDSList {...args}>
-      <XDSListItem label="Notifications" description="Manage your alerts" />
-      <XDSListItem label="Privacy" description="Control your data" />
-      <XDSListItem label="Security" description="Password and 2FA" />
-    </XDSList>
+    <List {...args}>
+      <ListItem label="Notifications" description="Manage your alerts" />
+      <ListItem label="Privacy" description="Control your data" />
+      <ListItem label="Security" description="Password and 2FA" />
+    </List>
   ),
 };
 
 export const WithDividers: Story = {
   render: args => (
-    <XDSList hasDividers header={<strong>Settings</strong>} {...args}>
-      <XDSListItem
+    <List hasDividers header={<strong>Settings</strong>} {...args}>
+      <ListItem
         label="Notifications"
         description="Manage your alerts"
-        startContent={<XDSIcon icon={BellIcon} />}
+        startContent={<Icon icon={BellIcon} />}
       />
-      <XDSListItem
+      <ListItem
         label="Privacy"
         description="Control your data"
-        startContent={<XDSIcon icon={ShieldCheckIcon} />}
+        startContent={<Icon icon={ShieldCheckIcon} />}
       />
-      <XDSListItem
+      <ListItem
         label="General"
         description="App preferences"
-        startContent={<XDSIcon icon={Cog6ToothIcon} />}
+        startContent={<Icon icon={Cog6ToothIcon} />}
       />
-    </XDSList>
+    </List>
   ),
 };
 
 export const Compact: Story = {
   render: args => (
-    <XDSList density="compact" hasDividers {...args}>
-      <XDSListItem
+    <List density="compact" hasDividers {...args}>
+      <ListItem
         label="Notifications"
         onClick={() => {}}
-        endContent={<XDSBadge label="3" />}
+        endContent={<Badge label="3" />}
       />
-      <XDSListItem
+      <ListItem
         label="Messages"
         onClick={() => {}}
-        endContent={<XDSBadge label="12" />}
+        endContent={<Badge label="12" />}
       />
-      <XDSListItem label="Settings" onClick={() => {}} />
-    </XDSList>
+      <ListItem label="Settings" onClick={() => {}} />
+    </List>
   ),
 };
 
 export const Spacious: Story = {
   render: args => (
-    <XDSList density="spacious" {...args}>
-      <XDSListItem
+    <List density="spacious" {...args}>
+      <ListItem
         label="Getting Started"
         description="Learn the basics of our platform"
       />
-      <XDSListItem
+      <ListItem
         label="Advanced Topics"
         description="Deep dive into advanced features"
       />
-      <XDSListItem
+      <ListItem
         label="API Reference"
         description="Complete API documentation"
       />
-    </XDSList>
+    </List>
   ),
 };
 
 export const Interactive: Story = {
   render: args => (
-    <XDSList {...args}>
-      <XDSListItem
+    <List {...args}>
+      <ListItem
         label="Inbox"
         isSelected
         onClick={() => {}}
-        startContent={<XDSIcon icon={InboxIcon} />}
-        endContent={<XDSIcon icon={ChevronRightIcon} />}
+        startContent={<Icon icon={InboxIcon} />}
+        endContent={<Icon icon={ChevronRightIcon} />}
       />
-      <XDSListItem
+      <ListItem
         label="Sent"
         onClick={() => {}}
-        startContent={<XDSIcon icon={PaperAirplaneIcon} />}
-        endContent={<XDSIcon icon={ChevronRightIcon} />}
+        startContent={<Icon icon={PaperAirplaneIcon} />}
+        endContent={<Icon icon={ChevronRightIcon} />}
       />
-      <XDSListItem
+      <ListItem
         label="Drafts"
         onClick={() => {}}
-        startContent={<XDSIcon icon={DocumentIcon} />}
-        endContent={<XDSIcon icon={ChevronRightIcon} />}
+        startContent={<Icon icon={DocumentIcon} />}
+        endContent={<Icon icon={ChevronRightIcon} />}
       />
-    </XDSList>
+    </List>
   ),
 };
 
 export const Links: Story = {
   render: args => (
-    <XDSList {...args}>
-      <XDSListItem label="Documentation" href="/docs" />
-      <XDSListItem
+    <List {...args}>
+      <ListItem label="Documentation" href="/docs" />
+      <ListItem
         label="GitHub"
         href="https://github.com"
         target="_blank"
         description="View source code"
       />
-      <XDSListItem
+      <ListItem
         label="Storybook"
         href="/storybook"
         description="Component playground"
       />
-    </XDSList>
+    </List>
   ),
 };
 
 export const OrderedList: Story = {
   render: args => (
-    <XDSList listStyle="decimal" {...args}>
-      <XDSListItem
+    <List listStyle="decimal" {...args}>
+      <ListItem
         label="Install the package"
         description="npm install @xds/core"
       />
-      <XDSListItem
+      <ListItem
         label="Import components"
-        description="import { XDSList } from '@xds/core'"
+        description="import { List } from '@xds/core'"
       />
-      <XDSListItem
+      <ListItem
         label="Start building"
         description="Use components in your app"
       />
-    </XDSList>
+    </List>
   ),
 };
 
 export const BulletedList: Story = {
   render: args => (
-    <XDSList listStyle="disc" {...args}>
-      <XDSListItem label="Accessible by default" />
-      <XDSListItem label="Themeable with StyleX" />
-      <XDSListItem label="Composable and extensible" />
-    </XDSList>
+    <List listStyle="disc" {...args}>
+      <ListItem label="Accessible by default" />
+      <ListItem label="Themeable with StyleX" />
+      <ListItem label="Composable and extensible" />
+    </List>
   ),
 };
 
 export const DisabledItems: Story = {
   render: args => (
-    <XDSList {...args}>
-      <XDSListItem label="Available" onClick={() => {}} />
-      <XDSListItem label="Unavailable" onClick={() => {}} isDisabled />
-      <XDSListItem label="Also Available" onClick={() => {}} />
-    </XDSList>
+    <List {...args}>
+      <ListItem label="Available" onClick={() => {}} />
+      <ListItem label="Unavailable" onClick={() => {}} isDisabled />
+      <ListItem label="Also Available" onClick={() => {}} />
+    </List>
   ),
 };
 
 export const WithMedia: Story = {
   render: args => (
-    <XDSList hasDividers {...args}>
-      <XDSListItem
+    <List hasDividers {...args}>
+      <ListItem
         label="Alex Johnson"
         description="Hey, are we still on for lunch tomorrow?"
-        startContent={<XDSAvatar name="Alex Johnson" size={40} />}
+        startContent={<Avatar name="Alex Johnson" size={40} />}
         onClick={() => {}}
-        endContent={<XDSBadge label="2" />}
+        endContent={<Badge label="2" />}
       />
-      <XDSListItem
+      <ListItem
         label="Sam Rivera"
         description="I pushed the latest changes to the repo"
-        startContent={<XDSAvatar name="Sam Rivera" size={40} />}
+        startContent={<Avatar name="Sam Rivera" size={40} />}
         onClick={() => {}}
       />
-      <XDSListItem
+      <ListItem
         label="Jordan Lee"
         description="Can you review the design spec when you get a chance?"
-        startContent={<XDSAvatar name="Jordan Lee" size={40} />}
+        startContent={<Avatar name="Jordan Lee" size={40} />}
         onClick={() => {}}
-        endContent={<XDSBadge label="5" />}
+        endContent={<Badge label="5" />}
       />
-    </XDSList>
+    </List>
   ),
 };
 
 function ToggleHeaderDemo() {
   const [showArchived, setShowArchived] = useState(false);
   return (
-    <XDSList
+    <List
       hasDividers
       header={
         <div
@@ -235,34 +235,34 @@ function ToggleHeaderDemo() {
             alignItems: 'center',
             justifyContent: 'space-between',
           }}>
-          <XDSText type="label" size="lg">
+          <Text type="label" size="lg">
             Notifications
-          </XDSText>
-          <XDSSwitch
+          </Text>
+          <Switch
             label="Show archived"
             value={showArchived}
             onChange={checked => setShowArchived(checked)}
           />
         </div>
       }>
-      <XDSListItem
+      <ListItem
         label="New deployment succeeded"
         description="Production v2.4.1 deployed"
-        startContent={<XDSIcon icon={BellIcon} />}
+        startContent={<Icon icon={BellIcon} />}
       />
-      <XDSListItem
+      <ListItem
         label="Security alert"
         description="Unusual login detected"
-        startContent={<XDSIcon icon={ShieldCheckIcon} />}
+        startContent={<Icon icon={ShieldCheckIcon} />}
       />
       {showArchived && (
-        <XDSListItem
+        <ListItem
           label="Archived: Build completed"
           description="CI pipeline finished"
-          startContent={<XDSIcon icon={Cog6ToothIcon} />}
+          startContent={<Icon icon={Cog6ToothIcon} />}
         />
       )}
-    </XDSList>
+    </List>
   );
 }
 
@@ -289,9 +289,9 @@ export const HeaderInFlexParent: Story = {
         padding: 16,
       }}>
       <div style={{flex: 1}}>
-        <XDSText type="label" size="lg">
+        <Text type="label" size="lg">
           Sidebar
-        </XDSText>
+        </Text>
       </div>
       <div style={{flex: 2}}>
         <ToggleHeaderDemo />

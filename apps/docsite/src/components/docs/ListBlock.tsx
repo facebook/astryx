@@ -2,9 +2,9 @@
 
 'use client';
 
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSTable} from '@xds/core/Table';
-import {XDSList, XDSListItem} from '@xds/core/List';
+import {Badge} from '@xds/core/Badge';
+import {Table} from '@xds/core/Table';
+import {List, ListItem} from '@xds/core/List';
 import {renderInlineCode} from './renderInlineCode';
 
 export function ListBlock({
@@ -26,14 +26,14 @@ export function ListBlock({
     });
 
     return (
-      <XDSTable
+      <Table
         data={data as Record<string, unknown>[]}
         columns={[
           {
             key: 'guidance',
             header: 'Guidance',
             renderCell: (item: Record<string, unknown>) => (
-              <XDSBadge
+              <Badge
                 label={item.guidance as string}
                 variant={(item.isDo as boolean) ? 'success' : 'error'}
               />
@@ -60,10 +60,10 @@ export function ListBlock({
         : 'none';
 
   return (
-    <XDSList density="compact" listStyle={xdsListStyle}>
+    <List density="compact" listStyle={xdsListStyle}>
       {items.map((item, i) => (
-        <XDSListItem key={i} label={renderInlineCode(item)} />
+        <ListItem key={i} label={renderInlineCode(item)} />
       ))}
-    </XDSList>
+    </List>
   );
 }

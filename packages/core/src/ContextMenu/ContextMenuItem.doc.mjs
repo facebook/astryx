@@ -7,11 +7,11 @@ export const docs = {
   subComponentOf: 'ContextMenu',
   displayName: 'Context Menu Item',
   isHiddenFromOverview: true,
-  description: 'Menu item component for compound mode. Re-exported from XDSDropdownMenuItem for discoverability.',
+  description: 'Menu item component for compound mode. Re-exported from DropdownMenuItem for discoverability.',
   props: [
     {
       name: 'icon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: 'Icon to display before the label.',
     },
     {
@@ -41,11 +41,11 @@ export const docsZh = {
   name: 'ContextMenuItem',
   isHiddenFromOverview: true,
   displayName: 'Context Menu Item',
-  description: '复合模式的菜单项组件。从 XDSDropdownMenuItem 重新导出以便发现。',
+  description: '复合模式的菜单项组件。从 DropdownMenuItem 重新导出以便发现。',
   props: [
     {
       name: 'icon',
-      type: 'XDSIconType',
+      type: 'IconType',
       description: '显示在标签前的图标。',
     },
     {
@@ -75,7 +75,7 @@ export const docsDense = {
   name: 'ContextMenuItem',
   isHiddenFromOverview: true,
   displayName: 'Context Menu Item',
-  description: 're-exported XDSDropdownMenuItem for compound mode',
+  description: 're-exported DropdownMenuItem for compound mode',
   propDescriptions: {
     icon: 'icon before label',
     label: 'primary label text',

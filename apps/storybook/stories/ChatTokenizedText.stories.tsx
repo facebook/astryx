@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSChatTokenizedText} from '@xds/core/Chat';
-import {XDSChatMessage, XDSChatMessageBubble} from '@xds/core/Chat';
+import {ChatTokenizedText} from '@xds/core/Chat';
+import {ChatMessage, ChatMessageBubble} from '@xds/core/Chat';
 
-const meta: Meta<typeof XDSChatTokenizedText> = {
+const meta: Meta<typeof ChatTokenizedText> = {
   title: 'Core/ChatTokenizedText',
-  component: XDSChatTokenizedText,
+  component: ChatTokenizedText,
   tags: ['autodocs'],
   parameters: {layout: 'centered'},
   decorators: [
@@ -19,7 +19,7 @@ const meta: Meta<typeof XDSChatTokenizedText> = {
 };
 export default meta;
 
-type Story = StoryObj<typeof XDSChatTokenizedText>;
+type Story = StoryObj<typeof ChatTokenizedText>;
 
 const mentionTokens = [
   {value: '@cindy', label: '@Cindy Zhang', variant: 'blue' as const},
@@ -30,69 +30,69 @@ const mentionTokens = [
 /** Single mention token */
 export const SingleToken: Story = {
   render: () => (
-    <XDSChatMessage sender="user">
-      <XDSChatMessageBubble>
-        <XDSChatTokenizedText tokens={mentionTokens}>
+    <ChatMessage sender="user">
+      <ChatMessageBubble>
+        <ChatTokenizedText tokens={mentionTokens}>
           Hey @cindy can you review this?
-        </XDSChatTokenizedText>
-      </XDSChatMessageBubble>
-    </XDSChatMessage>
+        </ChatTokenizedText>
+      </ChatMessageBubble>
+    </ChatMessage>
   ),
 };
 
 /** Multiple mentions in one message */
 export const MultipleTokens: Story = {
   render: () => (
-    <XDSChatMessage sender="user">
-      <XDSChatMessageBubble>
-        <XDSChatTokenizedText tokens={mentionTokens}>
+    <ChatMessage sender="user">
+      <ChatMessageBubble>
+        <ChatTokenizedText tokens={mentionTokens}>
           @cindy and @alex can @navi help with the review?
-        </XDSChatTokenizedText>
-      </XDSChatMessageBubble>
-    </XDSChatMessage>
+        </ChatTokenizedText>
+      </ChatMessageBubble>
+    </ChatMessage>
   ),
 };
 
 /** No tokens — renders as plain text */
 export const PlainText: Story = {
   render: () => (
-    <XDSChatMessage sender="user">
-      <XDSChatMessageBubble>
-        <XDSChatTokenizedText>
+    <ChatMessage sender="user">
+      <ChatMessageBubble>
+        <ChatTokenizedText>
           Just a regular message with no mentions.
-        </XDSChatTokenizedText>
-      </XDSChatMessageBubble>
-    </XDSChatMessage>
+        </ChatTokenizedText>
+      </ChatMessageBubble>
+    </ChatMessage>
   ),
 };
 
 /** Tokens with different variants */
 export const MixedVariants: Story = {
   render: () => (
-    <XDSChatMessage sender="user">
-      <XDSChatMessageBubble>
-        <XDSChatTokenizedText
+    <ChatMessage sender="user">
+      <ChatMessageBubble>
+        <ChatTokenizedText
           tokens={[
             {value: '@cindy', label: '@Cindy', variant: 'blue'},
             {value: '#bug', label: '#bug', variant: 'red'},
             {value: '#feat', label: '#feature', variant: 'green'},
           ]}>
           @cindy filed #bug and #feat for the sprint
-        </XDSChatTokenizedText>
-      </XDSChatMessageBubble>
-    </XDSChatMessage>
+        </ChatTokenizedText>
+      </ChatMessageBubble>
+    </ChatMessage>
   ),
 };
 
 /** Token at start and end of message */
 export const TokensAtEdges: Story = {
   render: () => (
-    <XDSChatMessage sender="user">
-      <XDSChatMessageBubble>
-        <XDSChatTokenizedText tokens={mentionTokens}>
+    <ChatMessage sender="user">
+      <ChatMessageBubble>
+        <ChatTokenizedText tokens={mentionTokens}>
           @cindy this is for @navi
-        </XDSChatTokenizedText>
-      </XDSChatMessageBubble>
-    </XDSChatMessage>
+        </ChatTokenizedText>
+      </ChatMessageBubble>
+    </ChatMessage>
   ),
 };

@@ -2,12 +2,12 @@
 
 'use client';
 
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSVStack} from '@xds/core/Stack';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
-import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
+import {AppShell} from '@xds/core/AppShell';
+import {VStack} from '@xds/core/Stack';
+import {Heading, Text} from '@xds/core/Text';
+import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
+import {NavIcon} from '@xds/core/NavIcon';
+import {SideNav, SideNavItem, SideNavSection} from '@xds/core/SideNav';
 import {
   ChartBarIcon,
   FolderIcon,
@@ -27,17 +27,17 @@ const styles = stylex.create({
 
 export default function AppShellTopNavWithSideNav() {
   return (
-    <XDSAppShell
+    <AppShell
       contentPadding={6}
       xstyle={styles.fit}
       topNav={
-        <XDSTopNav
+        <TopNav
           label="Main navigation"
           heading={
-            <XDSTopNavHeading
+            <TopNavHeading
               heading="App Shell"
               logo={
-                <XDSNavIcon
+                <NavIcon
                   icon={<CubeIcon style={{width: 16, height: 16}} />}
                 />
               }
@@ -45,39 +45,39 @@ export default function AppShellTopNavWithSideNav() {
           }
           startContent={
             <>
-              <XDSTopNavItem label="Home" href="#" isSelected />
-              <XDSTopNavItem label="Products" href="#" />
-              <XDSTopNavItem label="Docs" href="#" />
+              <TopNavItem label="Home" href="#" isSelected />
+              <TopNavItem label="Products" href="#" />
+              <TopNavItem label="Docs" href="#" />
             </>
           }
         />
       }
       sideNav={
-        <XDSSideNav>
-          <XDSSideNavSection title="Main" isHeaderHidden>
-            <XDSSideNavItem
+        <SideNav>
+          <SideNavSection title="Main" isHeaderHidden>
+            <SideNavItem
               label="Dashboard"
               icon={HomeIcon}
               isSelected
               href="#"
             />
-            <XDSSideNavItem label="Analytics" icon={ChartBarIcon} href="#" />
-            <XDSSideNavItem label="Projects" icon={FolderIcon} href="#" />
-          </XDSSideNavSection>
-          <XDSSideNavSection title="Organization">
-            <XDSSideNavItem label="Team" icon={UsersIcon} href="#" />
-            <XDSSideNavItem label="Settings" icon={Cog6ToothIcon} href="#" />
-          </XDSSideNavSection>
-        </XDSSideNav>
+            <SideNavItem label="Analytics" icon={ChartBarIcon} href="#" />
+            <SideNavItem label="Projects" icon={FolderIcon} href="#" />
+          </SideNavSection>
+          <SideNavSection title="Organization">
+            <SideNavItem label="Team" icon={UsersIcon} href="#" />
+            <SideNavItem label="Settings" icon={Cog6ToothIcon} href="#" />
+          </SideNavSection>
+        </SideNav>
       }>
-      <XDSVStack gap={4}>
-        <XDSHeading level={3}>Page Content</XDSHeading>
-        <XDSText type="body">
+      <VStack gap={4}>
+        <Heading level={3}>Page Content</Heading>
+        <Text type="body">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
           eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
           minim veniam, quis nostrud exercitation ullamco laboris.
-        </XDSText>
-      </XDSVStack>
-    </XDSAppShell>
+        </Text>
+      </VStack>
+    </AppShell>
   );
 }

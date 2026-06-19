@@ -41,20 +41,20 @@ import './globals.css';
 // src/app/providers.tsx
 'use client';
 import Link from 'next/link';
-import {XDSTheme} from '@xds/core/theme';
-import {XDSLinkProvider} from '@xds/core/Link';
+import {Theme} from '@xds/core/theme';
+import {LinkProvider} from '@xds/core/Link';
 import {defaultTheme} from '@xds/theme-default/built';
 
 export function Providers({children}) {
   return (
-    <XDSTheme theme={defaultTheme}>
-      <XDSLinkProvider component={Link}>{children}</XDSLinkProvider>
-    </XDSTheme>
+    <Theme theme={defaultTheme}>
+      <LinkProvider component={Link}>{children}</LinkProvider>
+    </Theme>
   );
 }
 ```
 
-`XDSLinkProvider` wires up Next.js client-side navigation for all XDS link-based components (Link, Button with href, TopNav, SideNav, Breadcrumbs, TabList).
+`LinkProvider` wires up Next.js client-side navigation for all XDS link-based components (Link, Button with href, TopNav, SideNav, Breadcrumbs, TabList).
 
 ## Gotchas
 

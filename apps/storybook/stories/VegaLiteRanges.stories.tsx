@@ -3,7 +3,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSVegaChart, buildVegaLiteConfig} from '@xds/vega';
 import type {AnySpec} from '@xds/vega';
-import {useXDSTheme} from '@xds/core';
+import {useTheme} from '@xds/core';
 
 // ---------------------------------------------------------------------------
 // Stocks dataset URL from vega-datasets
@@ -303,7 +303,7 @@ const weatherHeatmapSpec: AnySpec = {
 // ---------------------------------------------------------------------------
 
 function ThemedVegaChart(props: React.ComponentProps<typeof XDSVegaChart>) {
-  const {token} = useXDSTheme();
+  const {token} = useTheme();
   const config = buildVegaLiteConfig(token);
   return <XDSVegaChart {...props} compileOptions={{config}} />;
 }

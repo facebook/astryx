@@ -3,30 +3,30 @@
 import type {ReactNode} from 'react';
 
 /** Toast status type. Controls color scheme. */
-export type XDSToastType = 'info' | 'error';
+export type ToastType = 'info' | 'error';
 
 /** Position for the toast stack relative to the viewport. */
-export type XDSToastPosition =
+export type ToastPosition =
   | 'topEnd'
   | 'topStart'
   | 'bottomEnd'
   | 'bottomStart';
 
 /** Behavior when a toast with the same uniqueID already exists. */
-export type XDSToastCollisionBehavior = 'overwrite' | 'ignore';
+export type ToastCollisionBehavior = 'overwrite' | 'ignore';
 
 /** Reason why a toast was dismissed. */
-export type XDSToastDismissReason = 'auto' | 'manual';
+export type ToastDismissReason = 'auto' | 'manual';
 
 /** Options for showing a toast. */
-export interface XDSToastOptions {
+export interface ToastOptions {
   /** Primary message content. */
   body: ReactNode;
   /**
    * Toast type controlling color.
    * @default 'info'
    */
-  type?: XDSToastType;
+  type?: ToastType;
   /**
    * Whether the toast auto-dismisses.
    * Defaults to true for info, false for error.
@@ -46,20 +46,20 @@ export interface XDSToastOptions {
    * Behavior when a toast with matching uniqueID already exists.
    * @default 'overwrite'
    */
-  collisionBehavior?: XDSToastCollisionBehavior;
+  collisionBehavior?: ToastCollisionBehavior;
   /** Callback fired when the toast is removed. */
-  onHide?: (reason: XDSToastDismissReason) => void;
+  onHide?: (reason: ToastDismissReason) => void;
 }
 
 /** Function to programmatically dismiss a toast. */
-export type XDSToastDismissFn = () => void;
+export type ToastDismissFn = () => void;
 
-/** Function returned by useXDSToast to show toasts. */
-export type XDSShowToastFn = (options: XDSToastOptions) => XDSToastDismissFn;
+/** Function returned by useToast to show toasts. */
+export type ShowToastFn = (options: ToastOptions) => ToastDismissFn;
 
 /** Internal toast state with ID and metadata. */
-export interface XDSToastEntry {
+export interface ToastEntry {
   id: string;
-  options: XDSToastOptions;
+  options: ToastOptions;
   createdAt: number;
 }

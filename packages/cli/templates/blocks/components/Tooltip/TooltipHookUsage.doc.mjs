@@ -4,12 +4,12 @@
 export const doc = {
   type: 'block',
   exampleFor: 'Tooltip',
-  alsoExampleFor: ['useXDSTooltip'],
-  alsoShowcaseFor: ['useXDSTooltip'],
+  alsoExampleFor: ['useTooltip'],
+  alsoShowcaseFor: ['useTooltip'],
   name: 'Tooltip — Hook Usage',
   displayName: 'Tooltip — Hook Usage',
   description:
-    'Tooltip using the useXDSTooltip hook for programmatic control.',
+    'Tooltip using the useTooltip hook for programmatic control.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Tooltip', 'Button', 'Center'],

@@ -3,12 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSSlider} from '@xds/core/Slider';
+import {Slider} from '@xds/core/Slider';
 
 export default function SliderWithMarks() {
   const [value, setValue] = useState(50);
   return (
-    <XDSSlider
+    <Slider
       style={{width: 300}}
       label="Volume"
       value={value}

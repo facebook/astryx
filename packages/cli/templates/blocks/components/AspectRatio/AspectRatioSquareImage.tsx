@@ -2,13 +2,13 @@
 
 'use client';
 
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSCenter} from '@xds/core/Center';
+import {AspectRatio} from '@xds/core/AspectRatio';
+import {Center} from '@xds/core/Center';
 
 export default function AspectRatioSquareImage() {
   return (
-    <XDSCenter width={300}>
-      <XDSAspectRatio ratio={1}>
+    <Center width={300}>
+      <AspectRatio ratio={1}>
         <img
           src="https://lookaside.facebook.com/assets/xds_oss/light-home-square-1.png"
           alt="1:1 square"
@@ -18,7 +18,7 @@ export default function AspectRatioSquareImage() {
             objectFit: 'cover',
           }}
         />
-      </XDSAspectRatio>
-    </XDSCenter>
+      </AspectRatio>
+    </Center>
   );
 }

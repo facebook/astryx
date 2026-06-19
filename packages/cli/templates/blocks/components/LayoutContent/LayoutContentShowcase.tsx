@@ -3,54 +3,54 @@
 'use client';
 
 import {
-  XDSLayout,
-  XDSLayoutContent,
-  XDSLayoutHeader,
-  XDSLayoutFooter,
-  XDSLayoutPanel,
-  XDSCard,
-  XDSVStack,
+  Layout,
+  LayoutContent,
+  LayoutHeader,
+  LayoutFooter,
+  LayoutPanel,
+  Card,
+  VStack,
 } from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSText, XDSHeading} from '@xds/core/Text';
+import {Center} from '@xds/core/Center';
+import {Text, Heading} from '@xds/core/Text';
 
 export default function LayoutContentShowcase() {
   return (
-    <XDSCenter width={500}>
-      <XDSLayout
+    <Center width={500}>
+      <Layout
         style={{width: '100%'}}
         height="fill"
         header={
-          <XDSLayoutHeader hasDivider>
-            <XDSCard variant="muted" />
-          </XDSLayoutHeader>
+          <LayoutHeader hasDivider>
+            <Card variant="muted" />
+          </LayoutHeader>
         }
         start={
-          <XDSLayoutPanel hasDivider width={140}>
-            <XDSCard variant="muted" />
-          </XDSLayoutPanel>
+          <LayoutPanel hasDivider width={140}>
+            <Card variant="muted" />
+          </LayoutPanel>
         }
         content={
-          <XDSLayoutContent role="main">
-            <XDSVStack gap={3}>
-              <XDSHeading level={5}>Main Content Area</XDSHeading>
-              <XDSText type="body" color="secondary">
+          <LayoutContent role="main">
+            <VStack gap={3}>
+              <Heading level={5}>Main Content Area</Heading>
+              <Text type="body" color="secondary">
                 LayoutContent provides automatic padding and scroll containment.
                 It fills the remaining space between the header and footer.
-              </XDSText>
-              <XDSText type="body" color="secondary">
+              </Text>
+              <Text type="body" color="secondary">
                 Content that overflows will scroll within this area while the
                 header and footer remain fixed.
-              </XDSText>
-            </XDSVStack>
-          </XDSLayoutContent>
+              </Text>
+            </VStack>
+          </LayoutContent>
         }
         footer={
-          <XDSLayoutFooter hasDivider>
-            <XDSCard variant="muted" />
-          </XDSLayoutFooter>
+          <LayoutFooter hasDivider>
+            <Card variant="muted" />
+          </LayoutFooter>
         }
       />
-    </XDSCenter>
+    </Center>
   );
 }

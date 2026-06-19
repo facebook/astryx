@@ -4,18 +4,18 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSText} from '@xds/core/Text';
-import {XDSVStack, XDSHStack} from '@xds/core/Stack';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSNumberInput} from '@xds/core/NumberInput';
-import {XDSSwitch} from '@xds/core/Switch';
-import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
-import {XDSTooltip} from '@xds/core/Tooltip';
-import {XDSIcon} from '@xds/core/Icon';
+import {Text} from '@xds/core/Text';
+import {VStack, HStack} from '@xds/core/Stack';
+import {Grid} from '@xds/core/Grid';
+import {Selector} from '@xds/core/Selector';
+import {NumberInput} from '@xds/core/NumberInput';
+import {Switch} from '@xds/core/Switch';
+import {ToggleButton, ToggleButtonGroup} from '@xds/core/ToggleButton';
+import {Tooltip} from '@xds/core/Tooltip';
+import {Icon} from '@xds/core/Icon';
 import {expandRadiusScale, expandTypeScale} from '@xds/core/theme';
 import {ColorSwatch} from './ColorSwatch';
-import {XDSSelectableCard} from '@xds/core/SelectableCard';
+import {SelectableCard} from '@xds/core/SelectableCard';
 import {FONT_OPTIONS, RATIO_OPTIONS, UNIFIED_PRESETS} from './constants';
 
 const styles = stylex.create({
@@ -69,17 +69,17 @@ function ScaleControl({
   units,
 }: ScaleControlProps) {
   return (
-    <XDSVStack gap={1}>
-      <XDSHStack gap={1} vAlign="center">
-        <XDSText type="label" color="secondary">
+    <VStack gap={1}>
+      <HStack gap={1} vAlign="center">
+        <Text type="label" color="secondary">
           {label}
-        </XDSText>
-        <XDSTooltip content={tooltip}>
-          <XDSIcon icon="info" size="sm" color="secondary" />
-        </XDSTooltip>
-      </XDSHStack>
-      <XDSHStack gap={2} vAlign="center" justify="between">
-        <XDSToggleButtonGroup
+        </Text>
+        <Tooltip content={tooltip}>
+          <Icon icon="info" size="sm" color="secondary" />
+        </Tooltip>
+      </HStack>
+      <HStack gap={2} vAlign="center" justify="between">
+        <ToggleButtonGroup
           label={`${controlLabel} preset`}
           type="single"
           size="sm"
@@ -90,10 +90,10 @@ function ScaleControl({
             }
           }}>
           {options.map(o => (
-            <XDSToggleButton key={o.value} label={o.label} value={o.value} />
+            <ToggleButton key={o.value} label={o.label} value={o.value} />
           ))}
-        </XDSToggleButtonGroup>
-        <XDSNumberInput
+        </ToggleButtonGroup>
+        <NumberInput
           label={controlLabel}
           isLabelHidden
           value={numberValue}
@@ -105,20 +105,20 @@ function ScaleControl({
           units={units}
           size="sm"
         />
-      </XDSHStack>
-    </XDSVStack>
+      </HStack>
+    </VStack>
   );
 }
 
 /** Label-over-field pairing used by the typography selectors. */
 function LabeledField({label, children}: {label: string; children: ReactNode}) {
   return (
-    <XDSVStack gap={1}>
-      <XDSText type="label" color="secondary">
+    <VStack gap={1}>
+      <Text type="label" color="secondary">
         {label}
-      </XDSText>
+      </Text>
       {children}
-    </XDSVStack>
+    </VStack>
   );
 }
 
@@ -271,17 +271,17 @@ export function BaseStylesPanel({
   })();
 
   return (
-    <XDSVStack gap={5}>
+    <VStack gap={5}>
       {/* Color */}
-      <XDSVStack gap={3}>
-        <XDSHStack
+      <VStack gap={3}>
+        <HStack
           vAlign="center"
           justify="between"
           xstyle={styles.headerSpace}>
-          <XDSText type="label" color="secondary">
+          <Text type="label" color="secondary">
             Create from accent
-          </XDSText>
-          <XDSSwitch
+          </Text>
+          <Switch
             label="Create from accent"
             isLabelHidden
             value={autoPickColors}
@@ -299,8 +299,8 @@ export function BaseStylesPanel({
               }
             }}
           />
-        </XDSHStack>
-        <XDSVStack gap={0}>
+        </HStack>
+        <VStack gap={0}>
           <ColorSwatch
             tokenName="--color-accent"
             value={tokens['--color-accent'] || ''}
@@ -333,15 +333,15 @@ export function BaseStylesPanel({
                 mode={mode}
               />
             ))}
-        </XDSVStack>
-      </XDSVStack>
+        </VStack>
+      </VStack>
 
       {/* Presets */}
-      <XDSVStack gap={3}>
-        <XDSText type="label" color="secondary">
+      <VStack gap={3}>
+        <Text type="label" color="secondary">
           Preset
-        </XDSText>
-        <XDSGrid columns={4} gap={2}>
+        </Text>
+        <Grid columns={4} gap={2}>
           {Object.keys(UNIFIED_PRESETS).map(key => {
             const isSelected = activePreset === key;
             const gap =
@@ -365,13 +365,13 @@ export function BaseStylesPanel({
               : 'var(--color-text-disabled)';
             const title = key.charAt(0).toUpperCase() + key.slice(1);
             return (
-              <XDSSelectableCard
+              <SelectableCard
                 key={key}
                 label={`${title} preset`}
                 isSelected={isSelected}
                 onChange={() => onApplyUnifiedPreset(key)}
                 padding={2}>
-                <XDSVStack gap={1.5} hAlign="center">
+                <VStack gap={1.5} hAlign="center">
                   <svg width={32} height={32} viewBox="0 0 32 32">
                     <rect
                       x={0}
@@ -409,27 +409,27 @@ export function BaseStylesPanel({
                       opacity={0.7}
                     />
                   </svg>
-                  <XDSText
+                  <Text
                     type="supporting"
                     color={isSelected ? 'primary' : 'secondary'}>
                     {title}
-                  </XDSText>
-                </XDSVStack>
-              </XDSSelectableCard>
+                  </Text>
+                </VStack>
+              </SelectableCard>
             );
           })}
-        </XDSGrid>
-      </XDSVStack>
+        </Grid>
+      </VStack>
 
       {/* Typography */}
-      <XDSVStack gap={4}>
-        <XDSVStack gap={3}>
+      <VStack gap={4}>
+        <VStack gap={3}>
           {[
             {token: '--font-family-heading', label: 'Heading Font'},
             {token: '--font-family-body', label: 'Body Font'},
           ].map(({token, label}) => (
             <LabeledField key={token} label={label}>
-              <XDSSelector
+              <Selector
                 label={label}
                 isLabelHidden
                 size="sm"
@@ -442,7 +442,7 @@ export function BaseStylesPanel({
             </LabeledField>
           ))}
           <LabeledField label="Type Scale">
-            <XDSSelector
+            <Selector
               label="Type Scale"
               isLabelHidden
               size="sm"
@@ -476,7 +476,7 @@ export function BaseStylesPanel({
               }}
             />
           </LabeledField>
-        </XDSVStack>
+        </VStack>
         <ScaleControl
           label="Type Size"
           tooltip={`Geometric scale: size = round(base × ratio^step). Base = ${typeSizeMatch ?? typeScaleBase}px, ratio = ${typeScaleRatio.toFixed(3)}.`}
@@ -496,10 +496,10 @@ export function BaseStylesPanel({
           step={1}
           units="px"
         />
-      </XDSVStack>
+      </VStack>
 
       {/* Shape & Layout */}
-      <XDSVStack gap={4}>
+      <VStack gap={4}>
         <ScaleControl
           label="Corner Radius"
           tooltip={`Linear scale: inner = ${radiusMatch ?? radiusBase}px, element = ${(radiusMatch ?? radiusBase) * 2}px, container = ${(radiusMatch ?? radiusBase) * 3}px, page = ${Math.round((radiusMatch ?? radiusBase) * 7)}px.`}
@@ -557,7 +557,7 @@ export function BaseStylesPanel({
           step={2}
           units="px"
         />
-      </XDSVStack>
+      </VStack>
 
       {/* Motion */}
       <ScaleControl
@@ -579,6 +579,6 @@ export function BaseStylesPanel({
         step={0.1}
         units="×"
       />
-    </XDSVStack>
+    </VStack>
   );
 }

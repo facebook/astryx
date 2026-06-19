@@ -4,13 +4,13 @@
 
 import {useState} from 'react';
 import {
-  XDSTable,
-  useXDSTablePagination,
+  Table,
+  useTablePagination,
   paginateData,
   proportional,
 } from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
-import {XDSSection} from '@xds/core/Section';
+import type {TableColumn} from '@xds/core/Table';
+import {Section} from '@xds/core/Section';
 
 interface User extends Record<string, unknown> {
   id: string;
@@ -51,7 +51,7 @@ const users: User[] = names.map((name, i) => ({
   role: roles[i % roles.length],
 }));
 
-const columns: XDSTableColumn<User>[] = [
+const columns: TableColumn<User>[] = [
   {key: 'name', header: 'Name', width: proportional(1)},
   {key: 'email', header: 'Email', width: proportional(2)},
   {key: 'role', header: 'Role', width: proportional(1)},
@@ -61,7 +61,7 @@ export default function TablePaginatedTable() {
   const [page, setPage] = useState(1);
   const pageSize = 5;
 
-  const plugin = useXDSTablePagination<User>({
+  const plugin = useTablePagination<User>({
     page,
     onPageChange: setPage,
     totalItems: users.length,
@@ -69,13 +69,13 @@ export default function TablePaginatedTable() {
   });
 
   return (
-    <XDSSection>
-      <XDSTable
+    <Section>
+      <Table
         data={paginateData(users, page, pageSize)}
         columns={columns}
         idKey="id"
         plugins={{pagination: plugin}}
       />
-    </XDSSection>
+    </Section>
   );
 }

@@ -3,15 +3,15 @@
 'use client';
 
 import {
-  XDSVStack,
-  XDSHStack,
-  XDSLayout,
-  XDSLayoutContent,
+  VStack,
+  HStack,
+  Layout,
+  LayoutContent,
 } from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSCard} from '@xds/core/Card';
-import {XDSButton} from '@xds/core/Button';
-import {XDSProgressBar} from '@xds/core/ProgressBar';
+import {Text, Heading} from '@xds/core/Text';
+import {Card} from '@xds/core/Card';
+import {Button} from '@xds/core/Button';
+import {ProgressBar} from '@xds/core/ProgressBar';
 import {
   BarChart,
   Bar,
@@ -23,12 +23,12 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSTable, proportional, pixel} from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSLink} from '@xds/core/Link';
-import {XDSIcon} from '@xds/core/Icon';
+import {Grid} from '@xds/core/Grid';
+import {Table, proportional, pixel} from '@xds/core/Table';
+import type {TableColumn} from '@xds/core/Table';
+import {Divider} from '@xds/core/Divider';
+import {Link} from '@xds/core/Link';
+import {Icon} from '@xds/core/Icon';
 
 // ============= ICONS =============
 
@@ -363,22 +363,22 @@ const topPagesData: PageRow[] = [
 
 const topPagesMaxViews = Math.max(...topPagesData.map(d => d.views));
 
-const topPagesColumns: XDSTableColumn<PageRow>[] = [
+const topPagesColumns: TableColumn<PageRow>[] = [
   {key: 'page', header: 'Page', width: pixel(160)},
   {
     key: 'views',
     header: 'Views',
     width: proportional(1),
     renderCell: (item: PageRow) => (
-      <XDSVStack gap={1}>
-        <XDSProgressBar
+      <VStack gap={1}>
+        <ProgressBar
           value={item.views}
           max={topPagesMaxViews}
           label={`${item.page} views`}
           isLabelHidden
         />
-        <XDSText type="supporting">{item.views.toLocaleString()} views</XDSText>
-      </XDSVStack>
+        <Text type="supporting">{item.views.toLocaleString()} views</Text>
+      </VStack>
     ),
   },
   {key: 'newUsers', header: 'New Users', width: pixel(120)},
@@ -409,22 +409,22 @@ const topEventsData: EventRow[] = [
 
 const topEventsMaxCount = Math.max(...topEventsData.map(d => d.count));
 
-const topEventsColumns: XDSTableColumn<EventRow>[] = [
+const topEventsColumns: TableColumn<EventRow>[] = [
   {key: 'event', header: 'Event', width: pixel(160)},
   {
     key: 'count',
     header: 'Count',
     width: proportional(1),
     renderCell: (item: EventRow) => (
-      <XDSVStack gap={1}>
-        <XDSProgressBar
+      <VStack gap={1}>
+        <ProgressBar
           value={item.count}
           max={topEventsMaxCount}
           label={`${item.count}`}
           isLabelHidden
         />
-        <XDSText type="supporting">{item.count.toLocaleString()}</XDSText>
-      </XDSVStack>
+        <Text type="supporting">{item.count.toLocaleString()}</Text>
+      </VStack>
     ),
   },
   {
@@ -452,12 +452,12 @@ const chartColors = {
 
 function ChartLegendItem({color, label}: {color: string; label: string}) {
   return (
-    <XDSHStack gap={2} vAlign="center">
-      <XDSIcon icon={StopIcon} size="xsm" style={{color}} />
-      <XDSText type="supporting" color="secondary">
+    <HStack gap={2} vAlign="center">
+      <Icon icon={StopIcon} size="xsm" style={{color}} />
+      <Text type="supporting" color="secondary">
         {label}
-      </XDSText>
-    </XDSHStack>
+      </Text>
+    </HStack>
   );
 }
 
@@ -475,27 +475,27 @@ function ChartTooltip({
   }
   const point = activeUsersData.find(d => d.hour === label);
   return (
-    <XDSCard padding={3}>
-      <XDSVStack gap={1}>
-        <XDSText type="supporting" color="secondary">
+    <Card padding={3}>
+      <VStack gap={1}>
+        <Text type="supporting" color="secondary">
           {point?.label ?? ''}
-        </XDSText>
+        </Text>
         {payload.map(entry => (
-          <XDSHStack key={entry.name} gap={2} vAlign="center">
-            <XDSIcon icon={StopIcon} size="xsm" style={{color: entry.color}} />
-            <XDSText type="supporting">
+          <HStack key={entry.name} gap={2} vAlign="center">
+            <Icon icon={StopIcon} size="xsm" style={{color: entry.color}} />
+            <Text type="supporting">
               {entry.name}: {entry.value}
-            </XDSText>
-          </XDSHStack>
+            </Text>
+          </HStack>
         ))}
-      </XDSVStack>
-    </XDSCard>
+      </VStack>
+    </Card>
   );
 }
 
 function ActiveUsersChart() {
   return (
-    <XDSVStack gap={3}>
+    <VStack gap={3}>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart
           data={activeUsersData}
@@ -559,12 +559,12 @@ function ActiveUsersChart() {
           />
         </LineChart>
       </ResponsiveContainer>
-      <XDSHStack gap={6} vAlign="center">
+      <HStack gap={6} vAlign="center">
         <ChartLegendItem color={chartColors.allUsers} label="All Users" />
         <ChartLegendItem color={chartColors.desktop} label="Desktop" />
         <ChartLegendItem color={chartColors.mobile} label="Mobile" />
-      </XDSHStack>
-    </XDSVStack>
+      </HStack>
+    </VStack>
   );
 }
 
@@ -602,28 +602,28 @@ function MetricCard({
   sparkline: number[];
 }) {
   return (
-    <XDSCard>
-      <XDSVStack gap={2}>
-        <XDSHeading level={4}>{label}</XDSHeading>
-        <XDSHStack gap={2} vAlign="center">
-          <XDSHeading level={2}>{value}</XDSHeading>
-          <XDSHStack gap={1} vAlign="center">
+    <Card>
+      <VStack gap={2}>
+        <Heading level={4}>{label}</Heading>
+        <HStack gap={2} vAlign="center">
+          <Heading level={2}>{value}</Heading>
+          <HStack gap={1} vAlign="center">
             {positive ? (
-              <XDSIcon icon={ArrowUpIcon} size="xsm" color="success" />
+              <Icon icon={ArrowUpIcon} size="xsm" color="success" />
             ) : (
-              <XDSIcon icon={ArrowDownIcon} size="xsm" color="error" />
+              <Icon icon={ArrowDownIcon} size="xsm" color="error" />
             )}
-            <XDSText type="body" color="secondary">
+            <Text type="body" color="secondary">
               {change}
-            </XDSText>
-          </XDSHStack>
-        </XDSHStack>
-        <XDSText type="supporting" color="secondary">
+            </Text>
+          </HStack>
+        </HStack>
+        <Text type="supporting" color="secondary">
           Last 30 days vs. Previous
-        </XDSText>
+        </Text>
         <Sparkline data={sparkline} />
-      </XDSVStack>
-    </XDSCard>
+      </VStack>
+    </Card>
   );
 }
 
@@ -639,9 +639,9 @@ function StackedBarCard({
   const chartData = [Object.fromEntries(data.map(d => [d.label, d.value]))];
 
   return (
-    <XDSCard>
-      <XDSVStack gap={4}>
-        <XDSHeading level={4}>{title}</XDSHeading>
+    <Card>
+      <VStack gap={4}>
+        <Heading level={4}>{title}</Heading>
         <ResponsiveContainer width="100%" height={24}>
           <BarChart
             data={chartData}
@@ -669,21 +669,21 @@ function StackedBarCard({
           </BarChart>
         </ResponsiveContainer>
         {/* Legend */}
-        <XDSHStack gap={4} wrap="wrap">
+        <HStack gap={4} wrap="wrap">
           {data.map(d => (
-            <XDSVStack key={d.label} gap={0}>
-              <XDSHStack gap={2} vAlign="center">
-                <XDSIcon icon={StopIcon} size="xsm" style={{color: d.color}} />
-                <XDSText type="supporting">{d.label}</XDSText>
-              </XDSHStack>
-              <XDSText type="supporting" color="secondary">
+            <VStack key={d.label} gap={0}>
+              <HStack gap={2} vAlign="center">
+                <Icon icon={StopIcon} size="xsm" style={{color: d.color}} />
+                <Text type="supporting">{d.label}</Text>
+              </HStack>
+              <Text type="supporting" color="secondary">
                 {d.value} - {((d.value / total) * 100).toFixed(2)}%
-              </XDSText>
-            </XDSVStack>
+              </Text>
+            </VStack>
           ))}
-        </XDSHStack>
-      </XDSVStack>
-    </XDSCard>
+        </HStack>
+      </VStack>
+    </Card>
   );
 }
 
@@ -700,16 +700,16 @@ function TableCard<T extends {id: string}>({
   linkLabel: string;
   linkHref: string;
   data: T[];
-  columns: XDSTableColumn<T>[];
+  columns: TableColumn<T>[];
 }) {
   return (
-    <XDSCard>
-      <XDSVStack gap={6}>
-        <XDSHStack hAlign="between" vAlign="center">
-          <XDSHeading level={4}>{title}</XDSHeading>
-          <XDSLink href={linkHref}>{linkLabel}</XDSLink>
-        </XDSHStack>
-        <XDSTable<T>
+    <Card>
+      <VStack gap={6}>
+        <HStack hAlign="between" vAlign="center">
+          <Heading level={4}>{title}</Heading>
+          <Link href={linkHref}>{linkLabel}</Link>
+        </HStack>
+        <Table<T>
           data={data}
           columns={columns}
           idKey="id"
@@ -717,8 +717,8 @@ function TableCard<T extends {id: string}>({
           dividers="rows"
           hasHover
         />
-      </XDSVStack>
-    </XDSCard>
+      </VStack>
+    </Card>
   );
 }
 
@@ -728,29 +728,29 @@ function TableCard<T extends {id: string}>({
 
 export default function DashboardTemplate() {
   return (
-    <XDSLayout
+    <Layout
       height="auto"
       content={
-        <XDSLayoutContent padding={6}>
-          <XDSVStack gap={6}>
+        <LayoutContent padding={6}>
+          <VStack gap={6}>
             {/* Active Users Chart */}
-            <XDSVStack gap={6}>
-              <XDSHStack hAlign="between" vAlign="center">
-                <XDSHeading level={3}>Active users</XDSHeading>
-                <XDSButton
+            <VStack gap={6}>
+              <HStack hAlign="between" vAlign="center">
+                <Heading level={3}>Active users</Heading>
+                <Button
                   label="Reload"
                   variant="secondary"
                   size="md"
-                  icon={<XDSIcon icon={ArrowPathIcon} size="sm" />}
+                  icon={<Icon icon={ArrowPathIcon} size="sm" />}
                 />
-              </XDSHStack>
+              </HStack>
               <ActiveUsersChart />
-            </XDSVStack>
+            </VStack>
 
             {/* Metric Cards */}
-            <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
+            <Grid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
               {[0, 2].map(start => (
-                <XDSGrid
+                <Grid
                   key={start}
                   columns={{minWidth: 240, repeat: 'fit'}}
                   gap={4}>
@@ -761,30 +761,30 @@ export default function DashboardTemplate() {
                       sparkline={sparklines[start + i]}
                     />
                   ))}
-                </XDSGrid>
+                </Grid>
               ))}
-            </XDSGrid>
+            </Grid>
 
-            <XDSDivider />
+            <Divider />
 
             {/* Demographics */}
-            <XDSHStack hAlign="between" vAlign="center">
-              <XDSHeading level={3}>Demographics</XDSHeading>
-              <XDSButton label="View more" variant="secondary" size="md" />
-            </XDSHStack>
-            <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
+            <HStack hAlign="between" vAlign="center">
+              <Heading level={3}>Demographics</Heading>
+              <Button label="View more" variant="secondary" size="md" />
+            </HStack>
+            <Grid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
               <StackedBarCard title="Region" data={regionData} />
               <StackedBarCard title="Role" data={roleData} />
-            </XDSGrid>
+            </Grid>
 
-            <XDSDivider />
+            <Divider />
 
             {/* Engagement */}
-            <XDSHStack hAlign="between" vAlign="center">
-              <XDSHeading level={3}>Engagement</XDSHeading>
-              <XDSButton label="View more" variant="secondary" size="md" />
-            </XDSHStack>
-            <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
+            <HStack hAlign="between" vAlign="center">
+              <Heading level={3}>Engagement</Heading>
+              <Button label="View more" variant="secondary" size="md" />
+            </HStack>
+            <Grid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
               <TableCard
                 title="Top pages"
                 linkLabel="All pages"
@@ -799,9 +799,9 @@ export default function DashboardTemplate() {
                 data={topEventsData}
                 columns={topEventsColumns}
               />
-            </XDSGrid>
-          </XDSVStack>
-        </XDSLayoutContent>
+            </Grid>
+          </VStack>
+        </LayoutContent>
       }
     />
   );

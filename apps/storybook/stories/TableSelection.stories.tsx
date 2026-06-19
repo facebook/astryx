@@ -3,11 +3,11 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSTable,
-  useXDSTableSelection,
-  useXDSTableSelectionState,
+  Table,
+  useTableSelection,
+  useTableSelectionState,
 } from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
+import type {TableColumn} from '@xds/core/Table';
 
 // =============================================================================
 // Sample Data
@@ -59,7 +59,7 @@ const users: User[] = [
   },
 ];
 
-const columns: XDSTableColumn<User>[] = [
+const columns: TableColumn<User>[] = [
   {key: 'name', header: 'Name'},
   {key: 'email', header: 'Email'},
   {key: 'role', header: 'Role'},
@@ -81,20 +81,20 @@ export const Default: Story = {
   render: () => {
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-    const {selectionConfig} = useXDSTableSelectionState<User>({
+    const {selectionConfig} = useTableSelectionState<User>({
       data: users,
       idKey: 'id',
       selectedKeys,
       setSelectedKeys,
     });
-    const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
+    const selectionPlugin = useTableSelection<User>(selectionConfig);
 
     return (
       <div style={{maxWidth: 600}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
           Selected: {selectedKeys.size} of {users.length}
         </p>
-        <XDSTable
+        <Table
           data={users}
           columns={columns}
           idKey="id"
@@ -111,20 +111,20 @@ export const WithPreselection: Story = {
       new Set(['1', '3']),
     );
 
-    const {selectionConfig} = useXDSTableSelectionState<User>({
+    const {selectionConfig} = useTableSelectionState<User>({
       data: users,
       idKey: 'id',
       selectedKeys,
       setSelectedKeys,
     });
-    const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
+    const selectionPlugin = useTableSelection<User>(selectionConfig);
 
     return (
       <div style={{maxWidth: 600}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
           Selected: {[...selectedKeys].join(', ') || 'none'}
         </p>
-        <XDSTable
+        <Table
           data={users}
           columns={columns}
           idKey="id"
@@ -139,21 +139,21 @@ export const NonSelectableRows: Story = {
   render: () => {
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-    const {selectionConfig} = useXDSTableSelectionState<User>({
+    const {selectionConfig} = useTableSelectionState<User>({
       data: users,
       idKey: 'id',
       selectedKeys,
       setSelectedKeys,
       getIsItemSelectable: item => item.role !== 'Admin',
     });
-    const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
+    const selectionPlugin = useTableSelection<User>(selectionConfig);
 
     return (
       <div style={{maxWidth: 600}}>
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
           Admin rows have no checkbox. Selected: {selectedKeys.size}
         </p>
-        <XDSTable
+        <Table
           data={users}
           columns={columns}
           idKey="id"
@@ -168,14 +168,14 @@ export const DisabledRows: Story = {
   render: () => {
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-    const {selectionConfig} = useXDSTableSelectionState<User>({
+    const {selectionConfig} = useTableSelectionState<User>({
       data: users,
       idKey: 'id',
       selectedKeys,
       setSelectedKeys,
       getIsItemEnabled: item => !item.isLocked,
     });
-    const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
+    const selectionPlugin = useTableSelection<User>(selectionConfig);
 
     return (
       <div style={{maxWidth: 600}}>
@@ -183,7 +183,7 @@ export const DisabledRows: Story = {
           Locked rows (Diana) have a disabled checkbox. Select-all skips them.
           Selected: {selectedKeys.size}
         </p>
-        <XDSTable
+        <Table
           data={users}
           columns={columns}
           idKey="id"
@@ -198,17 +198,17 @@ export const Compact: Story = {
   render: () => {
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-    const {selectionConfig} = useXDSTableSelectionState<User>({
+    const {selectionConfig} = useTableSelectionState<User>({
       data: users,
       idKey: 'id',
       selectedKeys,
       setSelectedKeys,
     });
-    const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
+    const selectionPlugin = useTableSelection<User>(selectionConfig);
 
     return (
       <div style={{maxWidth: 600}}>
-        <XDSTable
+        <Table
           data={users}
           columns={columns}
           idKey="id"
@@ -224,17 +224,17 @@ export const Spacious: Story = {
   render: () => {
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-    const {selectionConfig} = useXDSTableSelectionState<User>({
+    const {selectionConfig} = useTableSelectionState<User>({
       data: users,
       idKey: 'id',
       selectedKeys,
       setSelectedKeys,
     });
-    const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
+    const selectionPlugin = useTableSelection<User>(selectionConfig);
 
     return (
       <div style={{maxWidth: 600}}>
-        <XDSTable
+        <Table
           data={users}
           columns={columns}
           idKey="id"
@@ -251,17 +251,17 @@ export const WithStripedRows: Story = {
   render: () => {
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-    const {selectionConfig} = useXDSTableSelectionState<User>({
+    const {selectionConfig} = useTableSelectionState<User>({
       data: users,
       idKey: 'id',
       selectedKeys,
       setSelectedKeys,
     });
-    const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
+    const selectionPlugin = useTableSelection<User>(selectionConfig);
 
     return (
       <div style={{maxWidth: 600}}>
-        <XDSTable
+        <Table
           data={users}
           columns={columns}
           idKey="id"

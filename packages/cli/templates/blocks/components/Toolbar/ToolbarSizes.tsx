@@ -2,12 +2,12 @@
 
 'use client';
 
-import {XDSToolbar} from '@xds/core/Toolbar';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSHeading} from '@xds/core/Text';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSCard} from '@xds/core/Card';
+import {Toolbar} from '@xds/core/Toolbar';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
+import {Heading} from '@xds/core/Text';
+import {Stack} from '@xds/core/Layout';
+import {Card} from '@xds/core/Card';
 import {FunnelIcon, PlusIcon} from '@heroicons/react/24/outline';
 import * as stylex from '@stylexjs/stylex';
 
@@ -25,27 +25,27 @@ const SIZES = [
 
 export default function ToolbarSizes() {
   return (
-    <XDSStack direction="vertical" gap={4} xstyle={styles.container}>
+    <Stack direction="vertical" gap={4} xstyle={styles.container}>
       {SIZES.map(({size, label}) => (
-        <XDSCard key={size}>
-          <XDSToolbar
+        <Card key={size}>
+          <Toolbar
             label={`${label} toolbar`}
             size={size}
-            startContent={<XDSHeading level={4}>{label}</XDSHeading>}
+            startContent={<Heading level={4}>{label}</Heading>}
             endContent={
               <>
-                <XDSButton
+                <Button
                   label="Filter"
                   variant="ghost"
-                  icon={<XDSIcon icon={FunnelIcon} />}
+                  icon={<Icon icon={FunnelIcon} />}
                   isIconOnly
                 />
-                <XDSButton label="Add" icon={<XDSIcon icon={PlusIcon} />} />
+                <Button label="Add" icon={<Icon icon={PlusIcon} />} />
               </>
             }
           />
-        </XDSCard>
+        </Card>
       ))}
-    </XDSStack>
+    </Stack>
   );
 }

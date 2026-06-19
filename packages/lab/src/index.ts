@@ -17,7 +17,7 @@ export {
   tokenize,
   tokenizeAsync,
   SYNC_TOKENIZE_THRESHOLD,
-  type Token,
+  type SyntaxToken,
 } from '@xds/core/CodeBlock';
 
 // Chat — experimental reasoning display

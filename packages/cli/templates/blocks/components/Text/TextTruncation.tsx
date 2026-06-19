@@ -2,7 +2,7 @@
 
 'use client';
 
-import {XDSText} from '@xds/core/Text';
+import {Text} from '@xds/core/Text';
 
 const LONG_TEXT =
   'The design system provides a consistent set of typography tokens, spacing scales, and color palettes that ensure every surface in the product feels cohesive regardless of which team built it.';
@@ -24,13 +24,13 @@ export default function TextTruncation() {
       }}>
       {LINES.map(({maxLines, label}) => (
         <div key={maxLines}>
-          <XDSText type="supporting" color="secondary" display="block">
+          <Text type="supporting" color="secondary" display="block">
             {label}
-          </XDSText>
+          </Text>
           <div style={{border: '1px solid #ccc', padding: 8}}>
-            <XDSText type="body" maxLines={maxLines}>
+            <Text type="body" maxLines={maxLines}>
               {LONG_TEXT}
-            </XDSText>
+            </Text>
           </div>
         </div>
       ))}

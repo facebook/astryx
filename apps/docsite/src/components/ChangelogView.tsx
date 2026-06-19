@@ -4,12 +4,12 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSMarkdown} from '@xds/core/Markdown';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSSection} from '@xds/core/Section';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
-import {XDSCarousel} from '@xds/core/Carousel';
+import {Markdown} from '@xds/core/Markdown';
+import {Text, Heading} from '@xds/core/Text';
+import {VStack} from '@xds/core/Layout';
+import {Section} from '@xds/core/Section';
+import {TabList, Tab} from '@xds/core/TabList';
+import {Carousel} from '@xds/core/Carousel';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {GITHUB_REPO} from '../constants';
 
@@ -73,42 +73,42 @@ export function ChangelogView({
   const active = changelogs.find(c => c.pkg === activeTab);
 
   return (
-    <XDSSection maxWidth={800} padding={6} xstyle={styles.section}>
-      <XDSVStack gap={8}>
-        <XDSVStack gap={4}>
-          <XDSHeading level={1} type="display-1">
+    <Section maxWidth={800} padding={6} xstyle={styles.section}>
+      <VStack gap={8}>
+        <VStack gap={4}>
+          <Heading level={1} type="display-1">
             What&apos;s New
-          </XDSHeading>
-          <XDSText type="large" weight="normal" color="secondary">
+          </Heading>
+          <Text type="large" weight="normal" color="secondary">
             Release notes and changelog for all packages.
-          </XDSText>
-        </XDSVStack>
+          </Text>
+        </VStack>
 
         {changelogs.length > 0 ? (
           <>
-            <XDSTabList value={activeTab} onChange={setActiveTab} hasDivider>
-              <XDSCarousel gap={0.5} hasSnap={false}>
+            <TabList value={activeTab} onChange={setActiveTab} hasDivider>
+              <Carousel gap={0.5} hasSnap={false}>
                 {changelogs.map(c => (
-                  <XDSTab key={c.pkg} value={c.pkg} label={c.pkg} />
+                  <Tab key={c.pkg} value={c.pkg} label={c.pkg} />
                 ))}
-              </XDSCarousel>
-            </XDSTabList>
+              </Carousel>
+            </TabList>
 
             {active != null && (
-              <XDSMarkdown headingLevelStart={2}>
+              <Markdown headingLevelStart={2}>
                 {linkifyComponents(
                   linkifyPRs(stripTitle(active.content)),
                   componentNames,
                 )}
-              </XDSMarkdown>
+              </Markdown>
             )}
           </>
         ) : (
-          <XDSText type="body" color="secondary">
+          <Text type="body" color="secondary">
             Changelogs could not be loaded.
-          </XDSText>
+          </Text>
         )}
-      </XDSVStack>
-    </XDSSection>
+      </VStack>
+    </Section>
   );
 }

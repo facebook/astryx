@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSDateTimeInput} from '@xds/core/DateTimeInput';
+import {DateTimeInput} from '@xds/core/DateTimeInput';
 import type {ISODateTimeString} from '@xds/core/DateTimeInput';
-import {XDSStack} from '@xds/core/Layout';
+import {Stack} from '@xds/core/Layout';
 
 export default function DateTimeInputShowcase() {
   const [dateTime, setDateTime] = useState<ISODateTimeString | undefined>(
@@ -13,14 +13,14 @@ export default function DateTimeInputShowcase() {
   );
 
   return (
-    <XDSStack direction="vertical" width="100%" style={{maxWidth: 400}}>
-      <XDSDateTimeInput
+    <Stack direction="vertical" width="100%" style={{maxWidth: 400}}>
+      <DateTimeInput
         label="Meeting time"
         placeholder="Select a date"
         value={dateTime}
         onChange={setDateTime}
         hasClear
       />
-    </XDSStack>
+    </Stack>
   );
 }

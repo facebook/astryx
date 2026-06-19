@@ -20,16 +20,16 @@
 
 import {useEffect, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSLayout, XDSLayoutContent, XDSLayoutFooter} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSSwitch} from '@xds/core/Switch';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSNumberInput} from '@xds/core/NumberInput';
-import {XDSEmptyState} from '@xds/core/EmptyState';
-import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSButton} from '@xds/core/Button';
+import {Layout, LayoutContent, LayoutFooter} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {Selector} from '@xds/core/Selector';
+import {Switch} from '@xds/core/Switch';
+import {TextInput} from '@xds/core/TextInput';
+import {NumberInput} from '@xds/core/NumberInput';
+import {EmptyState} from '@xds/core/EmptyState';
+import {List, ListItem} from '@xds/core/List';
+import {Center} from '@xds/core/Center';
+import {Button} from '@xds/core/Button';
 import {
   coerceDefault,
   coerceEnumOption,
@@ -164,16 +164,16 @@ function PropRow({prop, instance, code, onCodeChange}: PropRowProps) {
   let controlEl: React.ReactNode;
   if (!editable) {
     controlEl = (
-      <XDSText type="supporting" color={attr ? 'secondary' : 'disabled'}>
+      <Text type="supporting" color={attr ? 'secondary' : 'disabled'}>
         {attr ? 'set in code' : '—'}
-      </XDSText>
+      </Text>
     );
   } else if (control.kind === 'boolean') {
     const checked = attr
       ? attr.value === true
       : coerceDefault(prop.default, control) === true;
     controlEl = (
-      <XDSSwitch
+      <Switch
         label={prop.name}
         isLabelHidden
         value={!!checked}
@@ -184,7 +184,7 @@ function PropRow({prop, instance, code, onCodeChange}: PropRowProps) {
     const def = coerceDefault(prop.default, control) as string | undefined;
     const value = String(attr?.value ?? def ?? control.options[0]);
     controlEl = (
-      <XDSSelector
+      <Selector
         label={prop.name}
         isLabelHidden
         size="sm"
@@ -197,7 +197,7 @@ function PropRow({prop, instance, code, onCodeChange}: PropRowProps) {
   } else if (control.kind === 'string') {
     const value = typeof attr?.value === 'string' ? attr.value : '';
     controlEl = (
-      <XDSTextInput
+      <TextInput
         label={prop.name}
         isLabelHidden
         placeholder="value"
@@ -210,7 +210,7 @@ function PropRow({prop, instance, code, onCodeChange}: PropRowProps) {
     const def = coerceDefault(prop.default, control) as number | undefined;
     const value = typeof attr?.value === 'number' ? attr.value : (def ?? 0);
     controlEl = (
-      <XDSNumberInput
+      <NumberInput
         label={prop.name}
         isLabelHidden
         value={value}
@@ -221,11 +221,11 @@ function PropRow({prop, instance, code, onCodeChange}: PropRowProps) {
   }
 
   return (
-    <XDSListItem
+    <ListItem
       label={
-        <XDSText type="body" weight="bold">
+        <Text type="body" weight="bold">
           {prop.name}
-        </XDSText>
+        </Text>
       }
       endContent={controlEl}
     />
@@ -288,13 +288,13 @@ export function PropertyEditor({
 
   if (instances.length === 0) {
     return (
-      <XDSCenter xstyle={s.emptyWrap}>
-        <XDSEmptyState
+      <Center xstyle={s.emptyWrap}>
+        <EmptyState
           title="No components detected"
           description="Add a component in the Code tab to view properties."
           isCompact
         />
-      </XDSCenter>
+      </Center>
     );
   }
 
@@ -309,21 +309,21 @@ export function PropertyEditor({
   let body: React.ReactNode;
   if (!entry) {
     body = (
-      <XDSText type="supporting" color="secondary">
+      <Text type="supporting" color="secondary">
         {selected} is not part of @xds/core — no editable props.
-      </XDSText>
+      </Text>
     );
   } else if (editableProps.length === 0) {
     body = (
-      <XDSText type="supporting" color="secondary">
+      <Text type="supporting" color="secondary">
         {entry.displayName} has no editable props.
-      </XDSText>
+      </Text>
     );
   } else if (targetInstance == null) {
     body = null;
   } else {
     body = (
-      <XDSList>
+      <List>
         {[...required, ...optional].map(prop => (
           <PropRow
             key={prop.name}
@@ -333,28 +333,28 @@ export function PropertyEditor({
             onCodeChange={setDraft}
           />
         ))}
-      </XDSList>
+      </List>
     );
   }
 
   return (
-    <XDSLayout
+    <Layout
       height="auto"
       content={
-        <XDSLayoutContent padding={3} xstyle={s.contentScroll}>
+        <LayoutContent padding={3} xstyle={s.contentScroll}>
           {body}
-        </XDSLayoutContent>
+        </LayoutContent>
       }
       footer={
-        <XDSLayoutFooter hasDivider padding={3}>
-          <XDSButton
+        <LayoutFooter hasDivider padding={3}>
+          <Button
             label="Apply"
             variant="primary"
             isDisabled={!isDirty}
             onClick={applyChanges}
             xstyle={s.applyBtn}
           />
-        </XDSLayoutFooter>
+        </LayoutFooter>
       }
     />
   );

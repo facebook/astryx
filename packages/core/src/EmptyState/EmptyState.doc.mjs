@@ -26,14 +26,14 @@ export const docs = {
       type: 'ReactNode',
       description:
         'Optional icon or illustration displayed above the title; rendered as decorative (aria-hidden="true").',
-      slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
+      slotElements: [{__element: 'Icon', props: {icon: 'check', size: 'sm'}}],
     },
     {
       name: 'actions',
       type: 'ReactNode',
       description:
         'Optional action buttons displayed below the description, laid out horizontally by default and stacked vertically when isCompact is true.',
-      slotElements: [{__element: 'XDSButton', props: {label: 'Action', variant: 'secondary'}}],
+      slotElements: [{__element: 'Button', props: {label: 'Action', variant: 'secondary'}}],
     },
     {
       name: 'headingLevel',
@@ -60,7 +60,7 @@ export const docs = {
     defaults: {
       title: 'No results found',
       description: 'Try adjusting your search or filter criteria.',
-      actions: {__element: 'XDSButton', props: {label: 'Clear filters', variant: 'secondary'}},
+      actions: {__element: 'Button', props: {label: 'Clear filters', variant: 'secondary'}},
     },
   },
   theming: {

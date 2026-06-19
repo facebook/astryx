@@ -20,7 +20,7 @@ import {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {mergeProps} from '@xds/core/utils';
-import type {XDSBaseProps} from '@xds/core';
+import type {BaseProps} from '@xds/core';
 import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
 import {
   XDSStepperContext,
@@ -28,7 +28,7 @@ import {
   type XDSStepperContextValue,
 } from './XDSStepperContext';
 
-export interface XDSStepperProps extends XDSBaseProps<HTMLOListElement> {
+export interface XDSStepperProps extends BaseProps<HTMLOListElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLOListElement>;
   /**

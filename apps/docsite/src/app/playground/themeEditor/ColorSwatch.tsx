@@ -3,7 +3,7 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSTextInput} from '@xds/core/TextInput';
+import {TextInput} from '@xds/core/TextInput';
 import {TokenRow} from './TokenRow';
 import {
   parseLightDark,
@@ -98,7 +98,7 @@ export function ColorSwatch({
         </div>
       }
       input={
-        <XDSTextInput
+        <TextInput
           label={tokenName}
           isLabelHidden
           size="sm"

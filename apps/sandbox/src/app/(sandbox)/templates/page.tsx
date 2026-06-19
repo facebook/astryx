@@ -3,26 +3,26 @@
 'use client';
 
 import {useState, useCallback, useMemo, Suspense} from 'react';
-import Link from 'next/link';
+import NextLink from 'next/link';
 import {useSearchParams, useRouter} from 'next/navigation';
-import {XDSHeading} from '@xds/core/Text';
-import {XDSLayout, XDSLayoutHeader, XDSLayoutContent} from '@xds/core/Layout';
+import {Heading} from '@xds/core/Text';
+import {Layout, LayoutHeader, LayoutContent} from '@xds/core/Layout';
 import {
-  XDSTable,
-  useXDSTableSortableState,
-  useXDSTableSortable,
-  useXDSTableColumnResize,
-  useXDSTableFiltering,
+  Table,
+  useTableSortableState,
+  useTableSortable,
+  useTableColumnResize,
+  useTableFiltering,
   toSearchFilters,
   pixel,
 } from '@xds/core/Table';
-import type {XDSTableColumn, XDSTableSortState} from '@xds/core/Table';
-import type {XDSTableFilterState, XDSTableFilterValue} from '@xds/core/Table';
+import type {TableColumn, TableSortState} from '@xds/core/Table';
+import type {TableFilterState, TableFilterValue} from '@xds/core/Table';
 import {usePowerSearchConfig} from '@xds/core/PowerSearch';
 import type {PowerSearchFilter} from '@xds/core/PowerSearch';
-import {XDSLink} from '@xds/core/Link';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSButton} from '@xds/core/Button';
+import {Link} from '@xds/core/Link';
+import {Badge} from '@xds/core/Badge';
+import {Button} from '@xds/core/Button';
 import {CopyIcon} from '../../icons';
 import {templates} from '../../../generated/templateRegistry';
 import {blocks} from '../../../generated/blockRegistry';
@@ -71,7 +71,7 @@ const FILTER_PREFIX = 'filter.';
 
 function parseSortFromParams(
   params: URLSearchParams,
-): XDSTableSortState | undefined {
+): TableSortState | undefined {
   const raw = params.get('sort');
   if (!raw) {
     return undefined;
@@ -83,7 +83,7 @@ function parseSortFromParams(
   return [{sortKey, direction: dir === 'asc' ? 'ascending' : 'descending'}];
 }
 
-function serializeSort(sort: XDSTableSortState): string | null {
+function serializeSort(sort: TableSortState): string | null {
   if (sort.length === 0) {
     return null;
   }
@@ -91,8 +91,8 @@ function serializeSort(sort: XDSTableSortState): string | null {
   return `${sortKey}:${direction === 'ascending' ? 'asc' : 'desc'}`;
 }
 
-function parseFiltersFromParams(params: URLSearchParams): XDSTableFilterState {
-  const filters: XDSTableFilterState = {};
+function parseFiltersFromParams(params: URLSearchParams): TableFilterState {
+  const filters: TableFilterState = {};
   params.forEach((value, key) => {
     if (key.startsWith(FILTER_PREFIX)) {
       filters[key.slice(FILTER_PREFIX.length)] = value;
@@ -102,8 +102,8 @@ function parseFiltersFromParams(params: URLSearchParams): XDSTableFilterState {
 }
 
 function buildSearchParams(
-  sort: XDSTableSortState,
-  filters: XDSTableFilterState,
+  sort: TableSortState,
+  filters: TableFilterState,
 ): string {
   const params = new URLSearchParams();
   const sortStr = serializeSort(sort);
@@ -137,19 +137,19 @@ function useTableSearchParams() {
   );
 
   const updateURL = useCallback(
-    (newSort: XDSTableSortState, newFilters: XDSTableFilterState) => {
+    (newSort: TableSortState, newFilters: TableFilterState) => {
       router.replace(buildSearchParams(newSort, newFilters), {scroll: false});
     },
     [router],
   );
 
   const onSortChange = useCallback(
-    (newSort: XDSTableSortState) => updateURL(newSort, filters),
+    (newSort: TableSortState) => updateURL(newSort, filters),
     [updateURL, filters],
   );
 
   const onFilterChange = useCallback(
-    (key: string, value: XDSTableFilterValue | null) => {
+    (key: string, value: TableFilterValue | null) => {
       const next = {...filters};
       if (value == null) {
         delete next[key];
@@ -166,7 +166,7 @@ function useTableSearchParams() {
 
 function CopyPath({path, label}: {path: string; label: string}) {
   return (
-    <XDSButton
+    <Button
       label={label}
       icon={<CopyIcon />}
       variant="ghost"
@@ -203,7 +203,7 @@ const fieldDefs = [
   {key: 'isShowcase', type: 'boolean', label: 'Showcase'},
 ] as const;
 
-const columns: XDSTableColumn<TemplateRow>[] = [
+const columns: TableColumn<TemplateRow>[] = [
   {
     key: 'type',
     header: 'Type',
@@ -211,7 +211,7 @@ const columns: XDSTableColumn<TemplateRow>[] = [
     filter: 'type',
     width: pixel(100),
     renderCell: (row: TemplateRow) => (
-      <XDSBadge
+      <Badge
         label={row.type}
         variant={row.type === 'Page' ? 'info' : 'neutral'}
       />
@@ -224,9 +224,9 @@ const columns: XDSTableColumn<TemplateRow>[] = [
     filter: 'name',
     width: pixel(250),
     renderCell: (row: TemplateRow) => (
-      <XDSLink href={row.href} as={Link} target="_blank">
+      <Link href={row.href} as={NextLink} target="_blank">
         {row.name}
-      </XDSLink>
+      </Link>
     ),
   },
   {
@@ -243,7 +243,7 @@ const columns: XDSTableColumn<TemplateRow>[] = [
     filter: 'isShowcase',
     width: pixel(100),
     renderCell: (row: TemplateRow) =>
-      row.isShowcase ? <XDSBadge label="Showcase" variant="info" /> : null,
+      row.isShowcase ? <Badge label="Showcase" variant="info" /> : null,
   },
   {
     key: 'description',
@@ -280,7 +280,7 @@ function TemplatesPageInner() {
   const {sort, onSortChange, filters, onFilterChange} = useTableSearchParams();
 
   const {config, applyFilters} = usePowerSearchConfig(fieldDefs);
-  const filterPlugin = useXDSTableFiltering<TemplateRow>({
+  const filterPlugin = useTableFiltering<TemplateRow>({
     filters,
     onFilterChange,
     searchConfig: config,
@@ -291,31 +291,31 @@ function TemplatesPageInner() {
     rows,
   );
 
-  const {sortedData, sortConfig} = useXDSTableSortableState({
+  const {sortedData, sortConfig} = useTableSortableState({
     data: filteredData,
     sort,
     onSortChange,
   });
-  const sortPlugin = useXDSTableSortable<TemplateRow>(sortConfig);
+  const sortPlugin = useTableSortable<TemplateRow>(sortConfig);
 
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
-  const resizePlugin = useXDSTableColumnResize<TemplateRow>({
+  const resizePlugin = useTableColumnResize<TemplateRow>({
     columnWidths,
-    columns: columns as XDSTableColumn<Record<string, unknown>>[],
+    columns: columns as TableColumn<Record<string, unknown>>[],
     onColumnResizeEnd: updates =>
       setColumnWidths(prev => ({...prev, ...updates})),
   });
 
   return (
-    <XDSLayout
+    <Layout
       header={
-        <XDSLayoutHeader hasDivider padding={6}>
-          <XDSHeading level={1}>Official Templates</XDSHeading>
-        </XDSLayoutHeader>
+        <LayoutHeader hasDivider padding={6}>
+          <Heading level={1}>Official Templates</Heading>
+        </LayoutHeader>
       }
       content={
-        <XDSLayoutContent padding={6}>
-          <XDSTable
+        <LayoutContent padding={6}>
+          <Table
             data={sortedData}
             columns={columns}
             idKey="id"
@@ -326,7 +326,7 @@ function TemplatesPageInner() {
               resize: resizePlugin,
             }}
           />
-        </XDSLayoutContent>
+        </LayoutContent>
       }
     />
   );

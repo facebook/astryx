@@ -4,16 +4,16 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {
-  XDSChatMessageList,
-  XDSChatMessage,
-  XDSChatMessageBubble,
-  XDSChatMessageMetadata,
+  ChatMessageList,
+  ChatMessage,
+  ChatMessageBubble,
+  ChatMessageMetadata,
 } from '@xds/core/Chat';
-import {XDSTimestamp} from '@xds/core/Timestamp';
-import {XDSText} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {Timestamp} from '@xds/core/Timestamp';
+import {Text} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
+import {HStack, VStack} from '@xds/core/Layout';
 import {
   ClipboardDocumentIcon,
   ArrowPathIcon,
@@ -29,101 +29,101 @@ const styles = stylex.create({
 
 export default function ChatMessageMetadataShowcase() {
   return (
-    <XDSVStack xstyle={styles.container}>
-      <XDSChatMessageList>
-        <XDSChatMessage sender="assistant">
-          <XDSChatMessageBubble
+    <VStack xstyle={styles.container}>
+      <ChatMessageList>
+        <ChatMessage sender="assistant">
+          <ChatMessageBubble
             metadata={
-              <XDSChatMessageMetadata
+              <ChatMessageMetadata
                 timestamp={
-                  <XDSTimestamp value="2026-03-15T14:30:00" format="time" />
+                  <Timestamp value="2026-03-15T14:30:00" format="time" />
                 }
                 status="error"
                 footer={
-                  <XDSHStack gap={1}>
-                    <XDSButton
+                  <HStack gap={1}>
+                    <Button
                       label="Retry"
                       variant="ghost"
                       size="sm"
-                      icon={<XDSIcon icon={ArrowPathIcon} size="sm" />}
+                      icon={<Icon icon={ArrowPathIcon} size="sm" />}
                       isIconOnly
                       onClick={() => {}}
                     />
-                  </XDSHStack>
+                  </HStack>
                 }
               />
             }>
             Sorry, something went wrong on my end.
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
+          </ChatMessageBubble>
+        </ChatMessage>
 
-        <XDSChatMessage sender="user">
-          <XDSChatMessageBubble
+        <ChatMessage sender="user">
+          <ChatMessageBubble
             metadata={
-              <XDSChatMessageMetadata
+              <ChatMessageMetadata
                 timestamp={
-                  <XDSTimestamp value="2026-03-15T14:31:00" format="time" />
+                  <Timestamp value="2026-03-15T14:31:00" format="time" />
                 }
                 status="read"
               />
             }>
             No worries — try again with just the last 24 hours of logs.
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
+          </ChatMessageBubble>
+        </ChatMessage>
 
-        <XDSChatMessage sender="assistant">
-          <XDSChatMessageBubble
+        <ChatMessage sender="assistant">
+          <ChatMessageBubble
             metadata={
-              <XDSChatMessageMetadata
+              <ChatMessageMetadata
                 timestamp={
-                  <XDSTimestamp value="2026-03-15T14:32:00" format="time" />
+                  <Timestamp value="2026-03-15T14:32:00" format="time" />
                 }
                 footer={
-                  <XDSHStack gap={1}>
-                    <XDSButton
+                  <HStack gap={1}>
+                    <Button
                       label="Copy"
                       variant="ghost"
                       size="sm"
-                      icon={<XDSIcon icon={ClipboardDocumentIcon} size="sm" />}
+                      icon={<Icon icon={ClipboardDocumentIcon} size="sm" />}
                       isIconOnly
                       onClick={() => {}}
                     />
-                    <XDSButton
+                    <Button
                       label="Retry"
                       variant="ghost"
                       size="sm"
-                      icon={<XDSIcon icon={ArrowPathIcon} size="sm" />}
+                      icon={<Icon icon={ArrowPathIcon} size="sm" />}
                       isIconOnly
                       onClick={() => {}}
                     />
-                    <XDSButton
+                    <Button
                       label="Good response"
                       variant="ghost"
                       size="sm"
-                      icon={<XDSIcon icon={HandThumbUpIcon} size="sm" />}
+                      icon={<Icon icon={HandThumbUpIcon} size="sm" />}
                       isIconOnly
                       onClick={() => {}}
                     />
-                    <XDSButton
+                    <Button
                       label="Bad response"
                       variant="ghost"
                       size="sm"
-                      icon={<XDSIcon icon={HandThumbDownIcon} size="sm" />}
+                      icon={<Icon icon={HandThumbDownIcon} size="sm" />}
                       isIconOnly
                       onClick={() => {}}
                     />
-                    <XDSText type="supporting" color="secondary">
+                    <Text type="supporting" color="secondary">
                       Claude Opus 4.6
-                    </XDSText>
-                  </XDSHStack>
+                    </Text>
+                  </HStack>
                 }
               />
             }>
             The canary at 11:42 AM caused a memory spike. Rolled back
             at 11:58 AM.
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-      </XDSChatMessageList>
-    </XDSVStack>
+          </ChatMessageBubble>
+        </ChatMessage>
+      </ChatMessageList>
+    </VStack>
   );
 }

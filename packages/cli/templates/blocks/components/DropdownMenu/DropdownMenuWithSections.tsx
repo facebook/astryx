@@ -3,16 +3,16 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {DropdownMenu} from '@xds/core/DropdownMenu';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function DropdownMenuWithSections() {
   const [lastAction, setLastAction] = useState<string | null>(null);
 
   return (
-    <XDSVStack gap={3}>
-      <XDSDropdownMenu
+    <VStack gap={3}>
+      <DropdownMenu
         button={{label: 'File', variant: 'ghost'}}
         items={[
           {
@@ -42,10 +42,10 @@ export default function DropdownMenuWithSections() {
         ]}
       />
       {lastAction && (
-        <XDSText type="supporting" color="secondary">
+        <Text type="supporting" color="secondary">
           Selected: {lastAction}
-        </XDSText>
+        </Text>
       )}
-    </XDSVStack>
+    </VStack>
   );
 }

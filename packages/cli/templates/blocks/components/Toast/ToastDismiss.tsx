@@ -1,21 +1,21 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-// In production, use useXDSToast() hook for proper positioning, stacking, and lifecycle.
+// In production, use useToast() hook for proper positioning, stacking, and lifecycle.
 'use client';
 
 import {useRef} from 'react';
-import {XDSToast} from '@xds/core/Toast';
-import {useXDSToast} from '@xds/core/Toast';
-import {XDSButton} from '@xds/core/Button';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {Toast} from '@xds/core/Toast';
+import {useToast} from '@xds/core/Toast';
+import {Button} from '@xds/core/Button';
+import {VStack, HStack} from '@xds/core/Layout';
 
 export default function ToastDismiss() {
-  const toast = useXDSToast();
+  const toast = useToast();
   const dismissRef = useRef<(() => void) | null>(null);
 
   return (
-    <XDSVStack gap={3}>
-      <XDSToast
+    <VStack gap={3}>
+      <Toast
         type="info"
         body="Uploading file…"
         isAutoHide={false}
@@ -23,8 +23,8 @@ export default function ToastDismiss() {
         isExiting={false}
         onDismiss={() => {}}
       />
-      <XDSHStack gap={3} vAlign="center">
-        <XDSButton
+      <HStack gap={3} vAlign="center">
+        <Button
           label="Show toast"
           variant="secondary"
           size="sm"
@@ -35,7 +35,7 @@ export default function ToastDismiss() {
             });
           }}
         />
-        <XDSButton
+        <Button
           label="Dismiss via code"
           variant="ghost"
           size="sm"
@@ -44,7 +44,7 @@ export default function ToastDismiss() {
             dismissRef.current = null;
           }}
         />
-      </XDSHStack>
-    </XDSVStack>
+      </HStack>
+    </VStack>
   );
 }

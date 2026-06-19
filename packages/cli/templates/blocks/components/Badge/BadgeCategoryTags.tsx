@@ -2,36 +2,36 @@
 
 'use client';
 
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Badge} from '@xds/core/Badge';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function BadgeCategoryTags() {
   return (
-    <XDSStack direction="vertical" gap={6}>
-      <XDSStack direction="vertical" gap={2}>
-        <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={6}>
+      <Stack direction="vertical" gap={2}>
+        <Text type="supporting" color="secondary">
           Teams
-        </XDSText>
-        <XDSStack direction="horizontal" gap={2} style={{flexWrap: 'wrap'}}>
-          <XDSBadge variant="blue" label="Design" />
-          <XDSBadge variant="cyan" label="DevOps" />
-          <XDSBadge variant="green" label="Backend" />
-          <XDSBadge variant="pink" label="Marketing" />
-          <XDSBadge variant="purple" label="Engineering" />
-          <XDSBadge variant="teal" label="Research" />
-        </XDSStack>
-      </XDSStack>
-      <XDSStack direction="vertical" gap={2}>
-        <XDSText type="supporting" color="secondary">
+        </Text>
+        <Stack direction="horizontal" gap={2} style={{flexWrap: 'wrap'}}>
+          <Badge variant="blue" label="Design" />
+          <Badge variant="cyan" label="DevOps" />
+          <Badge variant="green" label="Backend" />
+          <Badge variant="pink" label="Marketing" />
+          <Badge variant="purple" label="Engineering" />
+          <Badge variant="teal" label="Research" />
+        </Stack>
+      </Stack>
+      <Stack direction="vertical" gap={2}>
+        <Text type="supporting" color="secondary">
           Priority
-        </XDSText>
-        <XDSStack direction="horizontal" gap={2}>
-          <XDSBadge variant="orange" label="Urgent" />
-          <XDSBadge variant="red" label="Critical" />
-          <XDSBadge variant="yellow" label="Review" />
-        </XDSStack>
-      </XDSStack>
-    </XDSStack>
+        </Text>
+        <Stack direction="horizontal" gap={2}>
+          <Badge variant="orange" label="Urgent" />
+          <Badge variant="red" label="Critical" />
+          <Badge variant="yellow" label="Review" />
+        </Stack>
+      </Stack>
+    </Stack>
   );
 }

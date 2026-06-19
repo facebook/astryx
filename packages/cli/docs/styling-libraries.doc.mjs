@@ -73,7 +73,7 @@ export const docs = {
           style: 'do',
           items: [
             'Map by semantic intent: text, surface, border, accent, status, radius, spacing, typography.',
-            'Let the system own color mode. The root XDSTheme syncs `data-theme="light|dark"` and `data-xds-theme` to `<html>` for portals and first-level theme scope.',
+            'Let the system own color mode. The root Theme syncs `data-theme="light|dark"` and `data-xds-theme` to `<html>` for portals and first-level theme scope.',
             'Prefer CSS variables for runtime theme switching and nested themes.',
           ],
         },
@@ -82,7 +82,7 @@ export const docs = {
           style: 'dont',
           items: [
             'Copy raw hex/px values into a second theme object when a `var(...)` reference would work.',
-            'Run a second unsynchronized dark-mode provider that disagrees with XDSTheme.',
+            'Run a second unsynchronized dark-mode provider that disagrees with Theme.',
             'Make another library\'s CSS variables the source of truth for the system. Some consumers need token values outside the DOM.',
           ],
         },
@@ -175,7 +175,7 @@ const styles = stylex.create({
           lang: 'tsx',
           label: 'Tailwind classes backed by system tokens',
           code: `<section className="rounded-lg border border-border bg-surface p-4 text-primary shadow-md">
-  <XDSButton label="Save" variant="primary" />
+  <Button label="Save" variant="primary" />
 </section>`,
         },
         {
@@ -236,7 +236,7 @@ tokens: {
         },
         {
           type: 'prose',
-          text: 'If a semantic-token library needs to generate its own light/dark CSS from raw values, align its mode selector with XDSTheme (`data-theme="light|dark"`) and generate that adapter from system theme data. Otherwise it can drift from nested or runtime themes.',
+          text: 'If a semantic-token library needs to generate its own light/dark CSS from raw values, align its mode selector with Theme (`data-theme="light|dark"`) and generate that adapter from system theme data. Otherwise it can drift from nested or runtime themes.',
         },
       ],
     },
@@ -288,7 +288,7 @@ tokens: {
         },
         {
           type: 'prose',
-          text: 'If MUI owns color mode in an app, generate the light and dark palette values from system theme data and keep XDSTheme mode synchronized. If XDSTheme owns color mode, keep both MUI schemes pointing at the same system CSS variables.',
+          text: 'If MUI owns color mode in an app, generate the light and dark palette values from system theme data and keep Theme mode synchronized. If Theme owns color mode, keep both MUI schemes pointing at the same system CSS variables.',
         },
       ],
     },
@@ -367,7 +367,7 @@ tokens: {
       content: [
         {
           type: 'prose',
-          text: 'Use `resolveXDSThemeTokens()` or `resolveXDSThemeToken()` when code outside React needs token values for a known theme and mode. Use `useXDSTheme()` inside client components when the values should come from the nearest XDSTheme and active mode.',
+          text: 'Use `resolveXDSThemeTokens()` or `resolveXDSThemeToken()` when code outside React needs token values for a known theme and mode. Use `useTheme()` inside client components when the values should come from the nearest Theme and active mode.',
         },
         {
           type: 'code',
@@ -392,14 +392,14 @@ const chartOptions = {
         {
           type: 'code',
           lang: 'tsx',
-          label: 'Resolve tokens from the nearest XDSTheme',
+          label: 'Resolve tokens from the nearest Theme',
           code: `'use client';
 
 import {useMemo} from 'react';
-import {useXDSTheme} from '@xds/core/theme';
+import {useTheme} from '@xds/core/theme';
 
 function RevenueChart({data}: {data: Array<{x: string; y: number}>}) {
-  const {mode, tokens} = useXDSTheme();
+  const {mode, tokens} = useTheme();
 
   const chartOptions = useMemo(
     () => ({
@@ -453,7 +453,7 @@ function RevenueChart({data}: {data: Array<{x: string; y: number}>}) {
           style: 'ordered',
           items: [
             'Import the reset/base CSS and a theme CSS file early enough for first paint. For production SSR, prefer built themes from `npx xds theme build` or published `/built` theme imports plus `theme.css`.',
-            'Choose one owner for color mode. XDSTheme uses `data-theme="light|dark"` and `color-scheme` to resolve `light-dark()` tokens.',
+            'Choose one owner for color mode. Theme uses `data-theme="light|dark"` and `color-scheme` to resolve `light-dark()` tokens.',
             'Map the external library\'s semantic layer to system variables by intent, not by exact naming. For example, MUI `background.paper` maps to `--color-background-surface`.',
             'Use `npx xds docs tokens` and focused token docs when building mappings. Keep mappings small at first: text, surface/body/card/popover, border, accent, status, spacing, radius, typography, shadow.',
             'Use token resolver APIs only for non-CSS APIs that need resolved values.',

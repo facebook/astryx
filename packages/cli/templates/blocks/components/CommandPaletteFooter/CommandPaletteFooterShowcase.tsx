@@ -4,10 +4,10 @@
 
 import {useMemo} from 'react';
 import {
-  XDSCommandPalette,
-  XDSCommandPaletteFooter,
+  CommandPalette,
+  CommandPaletteFooter,
 } from '@xds/core/CommandPalette';
-import {XDSText} from '@xds/core/Text';
+import {Text} from '@xds/core/Text';
 import {createStaticSource} from '@xds/core/Typeahead';
 
 export default function CommandPaletteFooterShowcase() {
@@ -22,17 +22,17 @@ export default function CommandPaletteFooterShowcase() {
   );
 
   return (
-    <XDSCommandPalette
+    <CommandPalette
       isOpen
       isInline
       onOpenChange={() => {}}
       searchSource={source}
       footer={
-        <XDSCommandPaletteFooter>
-          <XDSText type="supporting" color="secondary">
+        <CommandPaletteFooter>
+          <Text type="supporting" color="secondary">
             Tip: Press ⌘K anywhere to open the command palette
-          </XDSText>
-        </XDSCommandPaletteFooter>
+          </Text>
+        </CommandPaletteFooter>
       }
     />
   );

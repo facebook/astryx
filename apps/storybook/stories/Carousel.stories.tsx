@@ -3,9 +3,9 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSCarousel} from '@xds/core/Carousel';
-import {XDSThumbnail} from '@xds/core/Thumbnail';
-import {XDSCard} from '@xds/core/Card';
+import {Carousel} from '@xds/core/Carousel';
+import {Thumbnail} from '@xds/core/Thumbnail';
+import {Card} from '@xds/core/Card';
 import {
   colorVars,
   spacingVars,
@@ -67,9 +67,9 @@ const IMAGES = [
   {id: 8, src: 'https://picsum.photos/id/1069/200/200', label: 'forest.jpg'},
 ];
 
-const meta: Meta<typeof XDSCarousel> = {
+const meta: Meta<typeof Carousel> = {
   title: 'Core/Carousel',
-  component: XDSCarousel,
+  component: Carousel,
   tags: ['autodocs'],
   argTypes: {
     gap: {
@@ -96,22 +96,22 @@ const meta: Meta<typeof XDSCarousel> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSCarousel>;
+type Story = StoryObj<typeof Carousel>;
 
 export const Default: Story = {
   render: () => (
     <div {...stylex.props(styles.constrainedWidth)}>
       <p {...stylex.props(styles.label)}>Scroll or hover for arrows →</p>
-      <XDSCarousel gap={1} aria-label="Photo thumbnails">
+      <Carousel gap={1} aria-label="Photo thumbnails">
         {IMAGES.map(img => (
-          <XDSThumbnail
+          <Thumbnail
             key={img.id}
             src={img.src}
             alt={img.label}
             label={img.label}
           />
         ))}
-      </XDSCarousel>
+      </Carousel>
     </div>
   ),
 };
@@ -123,9 +123,9 @@ export const WithRemove: Story = {
     return (
       <div {...stylex.props(styles.constrainedWidth)}>
         <p {...stylex.props(styles.label)}>{items.length} attachments</p>
-        <XDSCarousel gap={1} aria-label="Attached files">
+        <Carousel gap={1} aria-label="Attached files">
           {items.map(img => (
-            <XDSThumbnail
+            <Thumbnail
               key={img.id}
               src={img.src}
               alt={img.label}
@@ -135,7 +135,7 @@ export const WithRemove: Story = {
               }
             />
           ))}
-        </XDSCarousel>
+        </Carousel>
         {items.length === 0 && (
           <p {...stylex.props(styles.label)}>
             All removed. <button onClick={() => setItems(IMAGES)}>Reset</button>
@@ -151,16 +151,16 @@ export const FewItems: Story = {
   render: () => (
     <div {...stylex.props(styles.constrainedWidth)}>
       <p {...stylex.props(styles.label)}>No overflow — no fade, no buttons</p>
-      <XDSCarousel gap={1} aria-label="Small gallery">
+      <Carousel gap={1} aria-label="Small gallery">
         {IMAGES.slice(0, 3).map(img => (
-          <XDSThumbnail
+          <Thumbnail
             key={img.id}
             src={img.src}
             alt={img.label}
             label={img.label}
           />
         ))}
-      </XDSCarousel>
+      </Carousel>
     </div>
   ),
 };
@@ -179,16 +179,16 @@ export const Cards: Story = {
     return (
       <div style={{maxWidth: 500}}>
         <p {...stylex.props(styles.label)}>Cards in a carousel</p>
-        <XDSCarousel gap={2} hasSnap aria-label="Feature cards">
+        <Carousel gap={2} hasSnap aria-label="Feature cards">
           {cards.map(card => (
-            <XDSCard key={card.id} xstyle={styles.card}>
+            <Card key={card.id} xstyle={styles.card}>
               <div {...stylex.props(styles.cardInner)}>
                 <p {...stylex.props(styles.cardTitle)}>{card.title}</p>
                 <p {...stylex.props(styles.cardDesc)}>{card.desc}</p>
               </div>
-            </XDSCard>
+            </Card>
           ))}
-        </XDSCarousel>
+        </Carousel>
       </div>
     );
   },
@@ -199,16 +199,16 @@ export const NoButtons: Story = {
   render: () => (
     <div {...stylex.props(styles.constrainedWidth)}>
       <p {...stylex.props(styles.label)}>Scroll only — no arrow buttons</p>
-      <XDSCarousel gap={1} hasButtons={false} aria-label="Scroll-only gallery">
+      <Carousel gap={1} hasButtons={false} aria-label="Scroll-only gallery">
         {IMAGES.map(img => (
-          <XDSThumbnail
+          <Thumbnail
             key={img.id}
             src={img.src}
             alt={img.label}
             label={img.label}
           />
         ))}
-      </XDSCarousel>
+      </Carousel>
     </div>
   ),
 };
@@ -218,16 +218,16 @@ export const WithSnap: Story = {
   render: () => (
     <div {...stylex.props(styles.constrainedWidth)}>
       <p {...stylex.props(styles.label)}>Snaps to items on scroll</p>
-      <XDSCarousel gap={2} hasSnap aria-label="Snapping gallery">
+      <Carousel gap={2} hasSnap aria-label="Snapping gallery">
         {IMAGES.map(img => (
-          <XDSThumbnail
+          <Thumbnail
             key={img.id}
             src={img.src}
             alt={img.label}
             label={img.label}
           />
         ))}
-      </XDSCarousel>
+      </Carousel>
     </div>
   ),
 };
@@ -237,16 +237,16 @@ export const LargeGap: Story = {
   render: () => (
     <div {...stylex.props(styles.constrainedWidth)}>
       <p {...stylex.props(styles.label)}>gap=4 (16px)</p>
-      <XDSCarousel gap={4} aria-label="Spaced gallery">
+      <Carousel gap={4} aria-label="Spaced gallery">
         {IMAGES.map(img => (
-          <XDSThumbnail
+          <Thumbnail
             key={img.id}
             src={img.src}
             alt={img.label}
             label={img.label}
           />
         ))}
-      </XDSCarousel>
+      </Carousel>
     </div>
   ),
 };
@@ -271,7 +271,7 @@ export const ColorSwatches: Story = {
     return (
       <div style={{maxWidth: 360}}>
         <p {...stylex.props(styles.label)}>Any content works as children</p>
-        <XDSCarousel gap={1.5} aria-label="Color swatches">
+        <Carousel gap={1.5} aria-label="Color swatches">
           {colors.map(color => (
             <div
               key={color}
@@ -280,7 +280,7 @@ export const ColorSwatches: Story = {
               title={color}
             />
           ))}
-        </XDSCarousel>
+        </Carousel>
       </div>
     );
   },

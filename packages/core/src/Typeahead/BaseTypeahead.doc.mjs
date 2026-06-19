@@ -7,11 +7,11 @@ export const docs = {
   subComponentOf: 'Typeahead',
   displayName: 'Base Typeahead',
   isHiddenFromOverview: true,
-  description: 'Unstyled combobox engine providing input, search, keyboard navigation, and dropdown. No wrapper div, no border styling, no token rendering. Used by XDSTypeahead and XDSTokenizer for custom compositions.',
+  description: 'Unstyled combobox engine providing input, search, keyboard navigation, and dropdown. No wrapper div, no border styling, no token rendering. Used by Typeahead and Tokenizer for custom compositions.',
   props: [
     {
       name: 'searchSource',
-      type: 'XDSSearchSource<T>',
+      type: 'SearchSource<T>',
       description: 'Data source providing search and bootstrap methods.',
       required: true,
     },
@@ -116,11 +116,11 @@ export const docsZh = {
   name: 'BaseTypeahead',
   isHiddenFromOverview: true,
   displayName: 'Base Typeahead',
-  description: '无样式的组合框引擎，提供输入、搜索、键盘导航和下拉列表。无包装 div，无边框样式，无标记渲染。由 XDSTypeahead 和 XDSTokenizer 用于自定义组合。',
+  description: '无样式的组合框引擎，提供输入、搜索、键盘导航和下拉列表。无包装 div，无边框样式，无标记渲染。由 Typeahead 和 Tokenizer 用于自定义组合。',
   props: [
     {
       name: 'searchSource',
-      type: 'XDSSearchSource<T>',
+      type: 'SearchSource<T>',
       description: '提供搜索和引导方法的数据源。',
       required: true,
     },
@@ -225,7 +225,7 @@ export const docsDense = {
   name: 'BaseTypeahead',
   isHiddenFromOverview: true,
   displayName: 'Base Typeahead',
-  description: 'Unstyled combobox engine; input+search+keyboard nav+dropdown. No wrapper/border/token. Used by XDSTypeahead+XDSTokenizer.',
+  description: 'Unstyled combobox engine; input+search+keyboard nav+dropdown. No wrapper/border/token. Used by Typeahead+Tokenizer.',
   propDescriptions: {
     searchSource: 'Data source w/ search+bootstrap methods.',
     value: 'Currently selected item.',

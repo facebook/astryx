@@ -8,94 +8,94 @@
  * SYNC: When modified, update /packages/core/src/index.ts
  */
 
-export {XDSChatComposer} from './XDSChatComposer';
+export {ChatComposer} from './ChatComposer';
 export type {
-  XDSChatComposerProps,
-  XDSChatComposerStatus,
-  XDSChatComposerDensity,
-} from './XDSChatComposer';
+  ChatComposerProps,
+  ChatComposerStatus,
+  ChatComposerDensity,
+} from './ChatComposer';
 
-export {XDSChatSendButton} from './XDSChatSendButton';
-export type {XDSChatSendButtonProps} from './XDSChatSendButton';
+export {ChatSendButton} from './ChatSendButton';
+export type {ChatSendButtonProps} from './ChatSendButton';
 
-export {XDSChatComposerDrawer} from './XDSChatComposerDrawer';
-export type {XDSChatComposerDrawerProps} from './XDSChatComposerDrawer';
+export {ChatComposerDrawer} from './ChatComposerDrawer';
+export type {ChatComposerDrawerProps} from './ChatComposerDrawer';
 
 export {
-  XDSChatComposerInput,
-  XDSChatComposerTokenElement,
-} from './XDSChatComposerInput';
+  ChatComposerInput,
+  ChatComposerTokenElement,
+} from './ChatComposerInput';
 export type {
-  XDSChatComposerInputProps,
-  XDSChatComposerInputHandle,
-  XDSChatComposerToken,
-  XDSChatComposerTrigger,
-  XDSChatComposerTriggerItem,
-} from './XDSChatComposerInput';
+  ChatComposerInputProps,
+  ChatComposerInputHandle,
+  ChatComposerToken,
+  ChatComposerTrigger,
+  ChatComposerTriggerItem,
+} from './ChatComposerInput';
 
-export {XDSChatTokenizedText} from './XDSChatTokenizedText';
-export type {XDSChatTokenizedTextProps} from './XDSChatTokenizedText';
+export {ChatTokenizedText} from './ChatTokenizedText';
+export type {ChatTokenizedTextProps} from './ChatTokenizedText';
 
-export {XDSChatMessageList} from './XDSChatMessageList';
-export type {XDSChatMessageListProps} from './XDSChatMessageList';
+export {ChatMessageList} from './ChatMessageList';
+export type {ChatMessageListProps} from './ChatMessageList';
 
-export {XDSChatMessage} from './XDSChatMessage';
-export type {XDSChatMessageProps} from './XDSChatMessage';
+export {ChatMessage} from './ChatMessage';
+export type {ChatMessageProps} from './ChatMessage';
 
-export {XDSChatMessageBubble} from './XDSChatMessageBubble';
+export {ChatMessageBubble} from './ChatMessageBubble';
 export type {
-  XDSChatMessageBubbleProps,
-  XDSChatMessageBubbleVariant,
-} from './XDSChatMessageBubble';
+  ChatMessageBubbleProps,
+  ChatMessageBubbleVariant,
+} from './ChatMessageBubble';
 
-export {XDSChatMessageMetadata} from './XDSChatMessageMetadata';
+export {ChatMessageMetadata} from './ChatMessageMetadata';
 export type {
-  XDSChatMessageMetadataProps,
-  XDSChatMessageStatus,
-} from './XDSChatMessageMetadata';
+  ChatMessageMetadataProps,
+  ChatMessageStatus,
+} from './ChatMessageMetadata';
 
-export {XDSChatSystemMessage} from './XDSChatSystemMessage';
+export {ChatSystemMessage} from './ChatSystemMessage';
 export type {
-  XDSChatSystemMessageProps,
-  XDSChatSystemMessageVariant,
-} from './XDSChatSystemMessage';
+  ChatSystemMessageProps,
+  ChatSystemMessageVariant,
+} from './ChatSystemMessage';
 
-export {useXDSChatStreamScroll} from './useXDSChatStreamScroll';
+export {useChatStreamScroll} from './useChatStreamScroll';
 export type {
-  UseXDSChatStreamScrollOptions,
-  UseXDSChatStreamScrollReturn,
-} from './useXDSChatStreamScroll';
-export {useXDSChatNewMessages} from './useXDSChatNewMessages';
+  UseChatStreamScrollOptions,
+  UseChatStreamScrollReturn,
+} from './useChatStreamScroll';
+export {useChatNewMessages} from './useChatNewMessages';
 export type {
-  UseXDSChatNewMessagesOptions,
-  UseXDSChatNewMessagesReturn,
-} from './useXDSChatNewMessages';
+  UseChatNewMessagesOptions,
+  UseChatNewMessagesReturn,
+} from './useChatNewMessages';
 
-export {useXDSChatPasteAsToken} from './useXDSChatPasteAsToken';
+export {useChatPasteAsToken} from './useChatPasteAsToken';
 export type {
-  UseXDSChatPasteAsTokenOptions,
-  UseXDSChatPasteAsTokenReturn,
-} from './useXDSChatPasteAsToken';
-export {useXDSChatComposerTokens} from './useXDSChatComposerTokens';
+  UseChatPasteAsTokenOptions,
+  UseChatPasteAsTokenReturn,
+} from './useChatPasteAsToken';
+export {useChatComposerTokens} from './useChatComposerTokens';
 export type {
-  UseXDSChatComposerTokensOptions,
-  UseXDSChatComposerTokensReturn,
+  UseChatComposerTokensOptions,
+  UseChatComposerTokensReturn,
   TokenPortal,
-} from './useXDSChatComposerTokens';
-export type {XDSChatMessageSender, XDSChatDensity} from './XDSChatContext';
-export {useXDSChatLayoutContext} from './XDSChatContext';
+} from './useChatComposerTokens';
+export type {ChatMessageSender, ChatDensity} from './ChatContext';
+export {useChatLayoutContext} from './ChatContext';
 
-export {XDSChatToolCalls} from './XDSChatToolCalls';
+export {ChatToolCalls} from './ChatToolCalls';
 export type {
-  XDSChatToolCallsProps,
-  XDSChatToolCallItem,
-  XDSChatToolCallStatus,
-} from './XDSChatToolCalls';
+  ChatToolCallsProps,
+  ChatToolCallItem,
+  ChatToolCallStatus,
+} from './ChatToolCalls';
 
-export {XDSChatLayout} from './XDSChatLayout';
-export {XDSChatLayoutScrollButton} from './XDSChatLayoutScrollButton';
-export type {XDSChatLayoutScrollButtonProps} from './XDSChatLayoutScrollButton';
-export type {XDSChatLayoutProps} from './XDSChatLayout';
+export {ChatLayout} from './ChatLayout';
+export {ChatLayoutScrollButton} from './ChatLayoutScrollButton';
+export type {ChatLayoutScrollButtonProps} from './ChatLayoutScrollButton';
+export type {ChatLayoutProps} from './ChatLayout';
 
 export {useSpeechRecognition} from './useSpeechRecognition';
 export type {
@@ -103,11 +103,86 @@ export type {
   UseSpeechRecognitionReturn,
 } from './useSpeechRecognition';
 
-export {useXDSChatDictation} from './useXDSChatDictation';
+export {useChatDictation} from './useChatDictation';
 export type {
-  UseXDSChatDictationOptions,
-  UseXDSChatDictationReturn,
-} from './useXDSChatDictation';
+  UseChatDictationOptions,
+  UseChatDictationReturn,
+} from './useChatDictation';
 
-export {XDSChatDictationButton} from './XDSChatDictationButton';
-export type {XDSChatDictationButtonProps} from './XDSChatDictationButton';
+export {ChatDictationButton} from './ChatDictationButton';
+export type {ChatDictationButtonProps} from './ChatDictationButton';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  ChatComposer as XDSChatComposer,
+  ChatComposerDrawer as XDSChatComposerDrawer,
+  ChatComposerInput as XDSChatComposerInput,
+  ChatComposerTokenElement as XDSChatComposerTokenElement,
+  ChatDictationButton as XDSChatDictationButton,
+  ChatLayout as XDSChatLayout,
+  ChatLayoutScrollButton as XDSChatLayoutScrollButton,
+  ChatMessage as XDSChatMessage,
+  ChatMessageBubble as XDSChatMessageBubble,
+  ChatMessageList as XDSChatMessageList,
+  ChatMessageMetadata as XDSChatMessageMetadata,
+  ChatSendButton as XDSChatSendButton,
+  ChatSystemMessage as XDSChatSystemMessage,
+  ChatTokenizedText as XDSChatTokenizedText,
+  ChatToolCalls as XDSChatToolCalls,
+  useChatComposerTokens as useXDSChatComposerTokens,
+  useChatDictation as useXDSChatDictation,
+  useChatLayoutContext as useXDSChatLayoutContext,
+  useChatNewMessages as useXDSChatNewMessages,
+  useChatPasteAsToken as useXDSChatPasteAsToken,
+  useChatStreamScroll as useXDSChatStreamScroll,
+  useSpeechRecognition as useXDSSpeechRecognition,
+} from '.';
+export type {
+  ChatComposerDensity as XDSChatComposerDensity,
+  ChatComposerDrawerProps as XDSChatComposerDrawerProps,
+  ChatComposerInputHandle as XDSChatComposerInputHandle,
+  ChatComposerInputProps as XDSChatComposerInputProps,
+  ChatComposerProps as XDSChatComposerProps,
+  ChatComposerStatus as XDSChatComposerStatus,
+  ChatComposerToken as XDSChatComposerToken,
+  ChatComposerTrigger as XDSChatComposerTrigger,
+  ChatComposerTriggerItem as XDSChatComposerTriggerItem,
+  ChatDensity as XDSChatDensity,
+  ChatDictationButtonProps as XDSChatDictationButtonProps,
+  ChatLayoutProps as XDSChatLayoutProps,
+  ChatLayoutScrollButtonProps as XDSChatLayoutScrollButtonProps,
+  ChatMessageBubbleProps as XDSChatMessageBubbleProps,
+  ChatMessageBubbleVariant as XDSChatMessageBubbleVariant,
+  ChatMessageListProps as XDSChatMessageListProps,
+  ChatMessageMetadataProps as XDSChatMessageMetadataProps,
+  ChatMessageProps as XDSChatMessageProps,
+  ChatMessageSender as XDSChatMessageSender,
+  ChatMessageStatus as XDSChatMessageStatus,
+  ChatSendButtonProps as XDSChatSendButtonProps,
+  ChatSystemMessageProps as XDSChatSystemMessageProps,
+  ChatSystemMessageVariant as XDSChatSystemMessageVariant,
+  ChatTokenizedTextProps as XDSChatTokenizedTextProps,
+  ChatToolCallItem as XDSChatToolCallItem,
+  ChatToolCallStatus as XDSChatToolCallStatus,
+  ChatToolCallsProps as XDSChatToolCallsProps,
+  TokenPortal as XDSTokenPortal,
+  UseChatComposerTokensOptions as XDSUseChatComposerTokensOptions,
+  UseChatComposerTokensReturn as XDSUseChatComposerTokensReturn,
+  UseChatDictationOptions as XDSUseChatDictationOptions,
+  UseChatDictationReturn as XDSUseChatDictationReturn,
+  UseChatNewMessagesOptions as XDSUseChatNewMessagesOptions,
+  UseChatNewMessagesReturn as XDSUseChatNewMessagesReturn,
+  UseChatPasteAsTokenOptions as XDSUseChatPasteAsTokenOptions,
+  UseChatPasteAsTokenReturn as XDSUseChatPasteAsTokenReturn,
+  UseChatStreamScrollOptions as XDSUseChatStreamScrollOptions,
+  UseChatStreamScrollReturn as XDSUseChatStreamScrollReturn,
+  UseSpeechRecognitionOptions as XDSUseSpeechRecognitionOptions,
+  UseSpeechRecognitionReturn as XDSUseSpeechRecognitionReturn,
+} from '.';
+// <compat-aliases:end>

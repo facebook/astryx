@@ -2,16 +2,16 @@
 
 'use client';
 
-import {XDSLayout, XDSLayoutContent} from '@xds/core';
-import {XDSText} from '@xds/core';
+import {Layout, LayoutContent} from '@xds/core';
+import {Text} from '@xds/core';
 
 export default function Page() {
   return (
-    <XDSLayout
+    <Layout
       content={
-        <XDSLayoutContent>
-          <XDSText type="large">New Page</XDSText>
-        </XDSLayoutContent>
+        <LayoutContent>
+          <Text type="large">New Page</Text>
+        </LayoutContent>
       }
     />
   );

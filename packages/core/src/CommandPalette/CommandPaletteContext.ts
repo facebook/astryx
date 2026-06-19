@@ -9,7 +9,7 @@
  */
 
 import {createContext, use} from 'react';
-import type {XDSSearchableItem} from '../Typeahead';
+import type {SearchableItem} from '../Typeahead';
 
 export interface CommandPaletteContextValue {
   /** Current search query. */
@@ -31,7 +31,7 @@ export interface CommandPaletteContextValue {
   /** Flat list of selectable items in DOM order (after grouping/filtering). */
   selectableItems: {value: string; label?: string; disabled?: boolean}[];
   /** The search result items (typed). */
-  searchResults: XDSSearchableItem[];
+  searchResults: SearchableItem[];
   /** Select an item by value and close. */
   selectItem: (value: string) => void;
   /** Keyboard handler from useCombobox — attach to the input. */

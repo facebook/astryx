@@ -2,11 +2,11 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as React from 'react';
-import {XDSTheme, defineTheme, useXDSTheme} from '@xds/core/theme';
-import {XDSCard} from '@xds/core/Card';
-import {XDSStack} from '@xds/core/Stack';
-import {XDSHeading} from '@xds/core/Text';
-import {XDSBadge} from '@xds/core/Badge';
+import {Theme, defineTheme, useTheme} from '@xds/core/theme';
+import {Card} from '@xds/core/Card';
+import {Stack} from '@xds/core/Stack';
+import {Heading} from '@xds/core/Text';
+import {Badge} from '@xds/core/Badge';
 import {defaultTheme} from '@xds/theme-default';
 
 // =============================================================================
@@ -31,11 +31,11 @@ const MULTI_SERIES = [
 ];
 
 // =============================================================================
-// Chart component using useXDSTheme
+// Chart component using useTheme
 // =============================================================================
 
 /**
- * A simple SVG bar chart that reads theme tokens via useXDSTheme.
+ * A simple SVG bar chart that reads theme tokens via useTheme.
  * Demonstrates how data viz components can use raw token values
  * without CSS custom properties or DOM reads.
  */
@@ -48,7 +48,7 @@ function ThemeAwareBarChart({
   width?: number;
   height?: number;
 }) {
-  const {token} = useXDSTheme();
+  const {token} = useTheme();
 
   const maxValue = Math.max(...data.map(d => d.value));
   const barWidth = (width - 60) / data.length - 8;
@@ -124,7 +124,7 @@ function ThemeAwareGroupedChart({
   width?: number;
   height?: number;
 }) {
-  const {token} = useXDSTheme();
+  const {token} = useTheme();
 
   const seriesColors = [
     token('--color-accent'),
@@ -229,7 +229,7 @@ function ThemeAwareGroupedChart({
  * Displays the raw token values for inspection.
  */
 function TokenInspector() {
-  const {token, mode, name} = useXDSTheme();
+  const {token, mode, name} = useTheme();
 
   const inspectedTokens = [
     '--color-accent',
@@ -245,16 +245,16 @@ function TokenInspector() {
   ];
 
   return (
-    <XDSCard>
-      <XDSStack direction="vertical" gap={2}>
-        <XDSStack direction="horizontal" gap={2} vAlign="center">
-          <XDSHeading level={4}>Token Inspector</XDSHeading>
-          <XDSBadge label={name} />
-          <XDSBadge
+    <Card>
+      <Stack direction="vertical" gap={2}>
+        <Stack direction="horizontal" gap={2} vAlign="center">
+          <Heading level={4}>Token Inspector</Heading>
+          <Badge label={name} />
+          <Badge
             variant={mode === 'dark' ? 'neutral' : 'info'}
             label={mode}
           />
-        </XDSStack>
+        </Stack>
         <div
           style={{
             display: 'grid',
@@ -286,8 +286,8 @@ function TokenInspector() {
             </React.Fragment>
           ))}
         </div>
-      </XDSStack>
-    </XDSCard>
+      </Stack>
+    </Card>
   );
 }
 
@@ -314,14 +314,14 @@ const oceanTheme = defineTheme({
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Core/XDSTheme',
+  title: 'Core/Theme',
   parameters: {
     docs: {
       description: {
         component:
-          '`XDSTheme` applies a theme to its children via CSS custom properties and ' +
-          'provides programmatic token access through `useXDSTheme()`.\n\n' +
-          '`useXDSTheme()` returns resolved token values for the current color mode, ' +
+          '`Theme` applies a theme to its children via CSS custom properties and ' +
+          'provides programmatic token access through `useTheme()`.\n\n' +
+          '`useTheme()` returns resolved token values for the current color mode, ' +
           'designed for non-CSS consumers like data visualization libraries, canvas rendering, ' +
           'and SVG charts that need concrete values (hex colors, px values) rather than ' +
           'CSS custom property references.\n\n' +
@@ -335,19 +335,19 @@ const meta: Meta = {
 export default meta;
 
 /**
- * A simple bar chart using `useXDSTheme` to read token values.
+ * A simple bar chart using `useTheme` to read token values.
  * The chart colors, text, and grid lines all come from the theme.
  */
 export const BarChart: StoryObj = {
   render: () => (
-    <XDSTheme theme={defaultTheme} mode="light">
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Weekly Activity</XDSHeading>
-        <XDSCard>
+    <Theme theme={defaultTheme} mode="light">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Weekly Activity</Heading>
+        <Card>
           <ThemeAwareBarChart data={CHART_DATA} />
-        </XDSCard>
-      </XDSStack>
-    </XDSTheme>
+        </Card>
+      </Stack>
+    </Theme>
   ),
 };
 
@@ -357,14 +357,14 @@ export const BarChart: StoryObj = {
  */
 export const BarChartDark: StoryObj = {
   render: () => (
-    <XDSTheme theme={defaultTheme} mode="dark">
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Weekly Activity</XDSHeading>
-        <XDSCard>
+    <Theme theme={defaultTheme} mode="dark">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Weekly Activity</Heading>
+        <Card>
           <ThemeAwareBarChart data={CHART_DATA} />
-        </XDSCard>
-      </XDSStack>
-    </XDSTheme>
+        </Card>
+      </Stack>
+    </Theme>
   ),
 };
 
@@ -374,14 +374,14 @@ export const BarChartDark: StoryObj = {
  */
 export const GroupedChart: StoryObj = {
   render: () => (
-    <XDSTheme theme={defaultTheme} mode="light">
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Quarterly Metrics</XDSHeading>
-        <XDSCard>
+    <Theme theme={defaultTheme} mode="light">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Quarterly Metrics</Heading>
+        <Card>
           <ThemeAwareGroupedChart data={MULTI_SERIES} />
-        </XDSCard>
-      </XDSStack>
-    </XDSTheme>
+        </Card>
+      </Stack>
+    </Theme>
   ),
 };
 
@@ -392,22 +392,22 @@ export const GroupedChart: StoryObj = {
 export const ThemeComparison: StoryObj = {
   render: () => (
     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
-      <XDSTheme theme={defaultTheme} mode="light">
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={4}>Default Theme</XDSHeading>
-          <XDSCard>
+      <Theme theme={defaultTheme} mode="light">
+        <Stack direction="vertical" gap={2}>
+          <Heading level={4}>Default Theme</Heading>
+          <Card>
             <ThemeAwareGroupedChart data={MULTI_SERIES} width={360} />
-          </XDSCard>
-        </XDSStack>
-      </XDSTheme>
-      <XDSTheme theme={oceanTheme} mode="light">
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={4}>Ocean Theme</XDSHeading>
-          <XDSCard>
+          </Card>
+        </Stack>
+      </Theme>
+      <Theme theme={oceanTheme} mode="light">
+        <Stack direction="vertical" gap={2}>
+          <Heading level={4}>Ocean Theme</Heading>
+          <Card>
             <ThemeAwareGroupedChart data={MULTI_SERIES} width={360} />
-          </XDSCard>
-        </XDSStack>
-      </XDSTheme>
+          </Card>
+        </Stack>
+      </Theme>
     </div>
   ),
 };
@@ -420,12 +420,12 @@ export const TokenInspectorStory: StoryObj = {
   name: 'Token Inspector',
   render: () => (
     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
-      <XDSTheme theme={defaultTheme} mode="light">
+      <Theme theme={defaultTheme} mode="light">
         <TokenInspector />
-      </XDSTheme>
-      <XDSTheme theme={oceanTheme} mode="dark">
+      </Theme>
+      <Theme theme={oceanTheme} mode="dark">
         <TokenInspector />
-      </XDSTheme>
+      </Theme>
     </div>
   ),
 };

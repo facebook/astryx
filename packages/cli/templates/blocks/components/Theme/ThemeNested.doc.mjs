@@ -7,7 +7,7 @@ export const doc = {
   name: 'Theme — Nested Theme',
   displayName: 'Theme — Nested Theme',
   description:
-    'Nested XDSTheme providers let a local region use a different theme without affecting the rest of the page.',
+    'Nested Theme providers let a local region use a different theme without affecting the rest of the page.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Theme', 'Card', 'Button', 'Section', 'Layout', 'Text'],
