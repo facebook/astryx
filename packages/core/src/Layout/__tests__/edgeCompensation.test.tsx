@@ -4,7 +4,7 @@
  * @file edgeCompensation.test.tsx
  * @input Uses vitest, @testing-library/react
  * @output Unit tests for container-driven edge compensation pattern
- * @position Testing; validates data-xds-edge-comp attribute on components
+ * @position Testing; validates data-astryx-edge-comp attribute on components
  *   and container-driven compensation via :has() selectors
  */
 

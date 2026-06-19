@@ -36,6 +36,7 @@
 import * as React from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from './tokens.stylex';
+import {dataAttr, legacyDataAttr} from '../naming';
 
 const styles = stylex.create({
   root: {
@@ -66,8 +67,14 @@ export function XDSMediaTheme({
   mode,
   children,
 }: XDSMediaThemeProps): React.ReactElement {
+  // Dual-emit new (astryx) + legacy (xds) media attrs during the compat
+  // window (XDS-prefix migration P2380608025); generated theme CSS and
+  // reset.css match either form.
   return (
-    <div data-xds-media={mode} {...stylex.props(styles.root)}>
+    <div
+      {...{[legacyDataAttr('media')]: mode, [dataAttr('media')]: mode}}
+      {...stylex.props(styles.root)}
+    >
       {children}
     </div>
   );

@@ -14,10 +14,10 @@
  *
  * The solution is fully container-driven:
  *
- * 1. **Components** mark themselves with `data-xds-edge-comp` (a passive
+ * 1. **Components** mark themselves with `data-astryx-edge-comp` (a passive
  *    data attribute — no styles attached).
- * 2. **Containers** use `:has(> [data-xds-edge-comp]:first-child)` and
- *    `:has(> [data-xds-edge-comp]:last-child)` to detect edge-adjacent
+ * 2. **Containers** use `:has(> [data-astryx-edge-comp]:first-child)` and
+ *    `:has(> [data-astryx-edge-comp]:last-child)` to detect edge-adjacent
  *    compensatable items and apply negative margin to their slot wrappers.
  *
  * The container owns both the detection and the adjustment. Components
@@ -33,7 +33,7 @@ import * as stylex from '@stylexjs/stylex';
  * Ghost buttons, tabs, and other transparent-padding components
  * render this attribute so containers can detect them via `:has()`.
  */
-export const EDGE_COMP_ATTR = 'data-xds-edge-comp';
+export const EDGE_COMP_ATTR = 'data-astryx-edge-comp';
 
 /**
  * Container-side edge compensation styles.

@@ -285,7 +285,7 @@ describe('XDSChatComposerInput', () => {
         },
       });
 
-      expect(textbox.querySelector('[data-xds-token]')).toBeInTheDocument();
+      expect(textbox.querySelector('[data-astryx-token]')).toBeInTheDocument();
     });
 
     it('imperative insertToken works after a focus() with no selection range', () => {
@@ -308,7 +308,7 @@ describe('XDSChatComposerInput', () => {
         variant: 'blue' as const,
       });
 
-      expect(textbox.querySelector('[data-xds-token]')).toBeInTheDocument();
+      expect(textbox.querySelector('[data-astryx-token]')).toBeInTheDocument();
     });
 
     it('imperative insertText works after a focus() with no selection range', () => {
@@ -345,7 +345,7 @@ describe('XDSChatComposerInput', () => {
         },
       });
 
-      expect(textbox.querySelector('[data-xds-token]')).not.toBeInTheDocument();
+      expect(textbox.querySelector('[data-astryx-token]')).not.toBeInTheDocument();
       expect(textbox.textContent).toBe(long);
     });
   });
@@ -496,7 +496,7 @@ describe('XDSChatComposerInput', () => {
       fireEvent.input(textbox);
 
       // The DOM should have a token span + trailing NBSP
-      const tokenSpan = textbox.querySelector('[data-xds-token]');
+      const tokenSpan = textbox.querySelector('[data-astryx-token]');
       expect(tokenSpan).toBeInTheDocument();
 
       const nbsp = tokenSpan!.nextSibling;
@@ -514,7 +514,7 @@ describe('XDSChatComposerInput', () => {
       fireEvent.keyDown(textbox, {key: 'Backspace'});
 
       // Both the NBSP and the token should be removed
-      expect(textbox.querySelector('[data-xds-token]')).toBeNull();
+      expect(textbox.querySelector('[data-astryx-token]')).toBeNull();
     });
 
     it('serializes to empty after token backspace', () => {
@@ -546,7 +546,7 @@ describe('XDSChatComposerInput', () => {
       });
       fireEvent.input(textbox);
 
-      const tokenSpan = textbox.querySelector('[data-xds-token]')!;
+      const tokenSpan = textbox.querySelector('[data-astryx-token]')!;
       const nbsp = tokenSpan.nextSibling!;
 
       // Position cursor in the NBSP
@@ -583,7 +583,7 @@ describe('XDSChatComposerInput', () => {
     // 3. selectItem cleans up properly — trigger text is fully replaced
     // 4. No orphaned spans on document.body after menu dismiss
 
-    const BODY_ANCHOR_SELECTOR = 'span[data-xds-trigger-anchor]';
+    const BODY_ANCHOR_SELECTOR = 'span[data-astryx-trigger-anchor]';
 
     function setupTriggerInput(triggers: XDSChatComposerTrigger[]) {
       const onChange = vi.fn();

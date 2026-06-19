@@ -265,8 +265,8 @@ function serialize(node: Node): string {
     if (child.nodeType === Node.TEXT_NODE) {
       result += child.textContent ?? '';
     } else if (child instanceof HTMLElement) {
-      if (child.hasAttribute('data-xds-token')) {
-        result += child.getAttribute('data-xds-token-value') ?? '';
+      if (child.hasAttribute('data-astryx-token')) {
+        result += child.getAttribute('data-astryx-token-value') ?? '';
       } else if (child.tagName === 'BR') {
         result += '\n';
       } else {
@@ -400,7 +400,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
     // which serializes to "\n". Treat whitespace-only as empty.
     const hasTokens =
       editableRef.current.querySelector(
-        '[data-xds-token], [data-xds-dictation-interim]',
+        '[data-astryx-token], [data-astryx-dictation-interim]',
       ) != null;
     const trimmedEmpty = text.trim().length === 0 && !hasTokens;
     const nextValue = trimmedEmpty ? '' : text;
@@ -473,7 +473,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
             startContainer.nodeType === Node.TEXT_NODE &&
             startOffset === 0 &&
             startContainer.previousSibling instanceof HTMLElement &&
-            startContainer.previousSibling.hasAttribute('data-xds-token')
+            startContainer.previousSibling.hasAttribute('data-astryx-token')
           ) {
             // Cursor is at start of text node right after a token — let
             // the browser handle it normally (it will select/delete the token)
@@ -482,7 +482,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
             startContainer.textContent === ' ' &&
             startOffset <= 1 &&
             startContainer.previousSibling instanceof HTMLElement &&
-            startContainer.previousSibling.hasAttribute('data-xds-token')
+            startContainer.previousSibling.hasAttribute('data-astryx-token')
           ) {
             // Cursor is in or after the trailing NBSP — remove the NBSP
             // and the token in one action
@@ -687,8 +687,8 @@ export function XDSChatComposerTokenElement({
 }) {
   return (
     <span
-      data-xds-token=""
-      data-xds-token-value={token.value}
+      data-astryx-token=""
+      data-astryx-token-value={token.value}
       contentEditable={false}
       style={{display: 'inline-flex', verticalAlign: 'baseline'}}>
       {isCustomToken(token) ? (

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {legacyStableClassName} from '../naming';
+import {stableClassName, legacyStableClassName} from '../naming';
 
 export type XDSClassValue = string | number | undefined | null;
 export type XDSClassProps = Record<string, XDSClassValue>;
@@ -41,22 +41,25 @@ function classTokenForPropValue(prop: string, value: string): string {
  *
  * @param component - Component name in lowercase (e.g. 'button', 'card')
  * @param props - Visual prop values to include as legacy variant classes
- * @returns Class name string (e.g. "xds-button secondary sm")
+ * @returns Class name string (e.g. "astryx-button xds-button secondary sm")
  *
  * @example
  * ```ts
- * legacyClassName('button', { variant: 'secondary', size: 'sm' })
- * // → "xds-button secondary sm"
+ * dualClassName('button', { variant: 'secondary', size: 'sm' })
+ * // → "astryx-button xds-button secondary sm"
  *
- * legacyClassName('heading', { level: 1 })
- * // → "xds-heading level-1"
+ * dualClassName('heading', { level: 1 })
+ * // → "astryx-heading xds-heading level-1"
  *
- * legacyClassName('card')
- * // → "xds-card"
+ * dualClassName('card')
+ * // → "astryx-card xds-card"
  * ```
  */
-function legacyClassName(component: string, props?: XDSClassProps): string {
-  const classes = [legacyStableClassName(component)];
+function dualClassName(component: string, props?: XDSClassProps): string {
+  // Dual-emit both the new (astryx-*) and legacy (xds-*) base class so existing
+  // consumer CSS selectors keep matching during the compat window. The new
+  // prefix is listed first; legacy stays until the final cutover (P10).
+  const classes = [stableClassName(component), legacyStableClassName(component)];
 
   if (props) {
     for (const [prop, value] of Object.entries(props)) {
@@ -103,7 +106,7 @@ export function xdsThemeDataAttributes(
  *
  * ```ts
  * xdsThemeProps('button', { variant: 'primary', size: 'sm' })
- * // → { className: 'xds-button primary sm', data-variant: 'primary', data-size: 'sm' }
+ * // → { className: 'astryx-button xds-button primary sm', data-variant: 'primary', data-size: 'sm' }
  * ```
  */
 export function xdsThemeProps(
@@ -111,7 +114,7 @@ export function xdsThemeProps(
   props?: XDSClassProps,
 ): XDSThemeProps {
   return {
-    className: legacyClassName(component, props),
+    className: dualClassName(component, props),
     ...xdsThemeDataAttributes(props),
   };
 }
