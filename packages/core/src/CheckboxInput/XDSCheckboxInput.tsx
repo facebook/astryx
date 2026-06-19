@@ -102,6 +102,9 @@ const styles = stylex.create({
   },
   // State-dependent colors with ancestor hover behavior
   checkboxUnchecked: {
+    // Foreground for the inherit-shade loading spinner (reads currentColor):
+    // brand accent on the light surface fill.
+    color: colorVars['--color-accent'],
     borderColor: {
       default: colorVars['--color-border-emphasized'],
       [stylex.when.ancestor(':hover', checkboxScope)]: {
@@ -116,6 +119,9 @@ const styles = stylex.create({
     },
   },
   checkboxChecked: {
+    // Foreground for the inherit-shade loading spinner (reads currentColor):
+    // on-accent color against the accent fill.
+    color: colorVars['--color-on-accent'],
     borderColor: {
       default: colorVars['--color-accent'],
       [stylex.when.ancestor(':hover', checkboxScope)]: {
@@ -454,10 +460,7 @@ export function XDSCheckboxInput({
               ),
             )}>
             {isBusy ? (
-              <XDSSpinner
-                size="sm"
-                shade={isCheckedOrIndeterminate ? 'onMedia' : 'default'}
-              />
+              <XDSSpinner size="sm" shade="inherit" />
             ) : (
               <>
                 <svg
