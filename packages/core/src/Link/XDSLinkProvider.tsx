@@ -55,3 +55,5 @@ export function XDSLinkProvider({component, children}: XDSLinkProviderProps) {
   const value = useMemo(() => ({component}), [component]);
   return <XDSLinkContext value={value}>{children}</XDSLinkContext>;
 }
+
+XDSLinkProvider.displayName = 'XDSLinkProvider';
