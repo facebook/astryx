@@ -6,230 +6,679 @@ import {XDSStepper, XDSStep} from '@xds/lab/Stepper';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
+import {XDSIcon} from '@xds/core/Icon';
 
 const meta: Meta<typeof XDSStepper> = {
   title: 'Lab/Stepper',
   component: XDSStepper,
   tags: ['autodocs'],
   argTypes: {
-    activeStep: {
-      control: {type: 'number', min: 0, max: 4},
-      description: 'Zero-based index of the active step',
-    },
-    orientation: {
-      control: 'select',
-      options: ['horizontal', 'vertical'],
-      description: 'Layout direction',
-    },
+    activeStep: {control: {type: 'number', min: 0, max: 5}},
+    orientation: {control: 'select', options: ['horizontal', 'vertical']},
+    density: {control: 'select', options: ['compact', 'balanced', 'spacious']},
   },
 };
 
 export default meta;
 type Story = StoryObj<typeof XDSStepper>;
 
+// ============================================================
+// DEFAULT (auto indicator)
+// ============================================================
+
 export const Default: Story = {
-  args: {activeStep: 1},
-  render: args => (
-    <XDSStepper activeStep={args.activeStep} orientation={args.orientation}>
-      <XDSStep step={0} label="Account" />
-      <XDSStep step={1} label="Profile" />
-      <XDSStep step={2} label="Review" />
-    </XDSStepper>
-  ),
-};
-
-export const AllCompleted: Story = {
-  render: () => (
-    <XDSStepper activeStep={3}>
-      <XDSStep step={0} label="Account" />
-      <XDSStep step={1} label="Profile" />
-      <XDSStep step={2} label="Review" />
-    </XDSStepper>
-  ),
-};
-
-export const FirstStep: Story = {
-  render: () => (
-    <XDSStepper activeStep={0}>
-      <XDSStep step={0} label="Account" />
-      <XDSStep step={1} label="Profile" />
-      <XDSStep step={2} label="Review" />
-    </XDSStepper>
-  ),
-};
-
-export const WithDescriptions: Story = {
-  render: () => (
-    <XDSStepper activeStep={1}>
-      <XDSStep step={0} label="Account" description="Create your account" />
-      <XDSStep step={1} label="Profile" description="Set up your profile" />
-      <XDSStep step={2} label="Review" description="Review and confirm" />
-    </XDSStepper>
-  ),
-};
-
-export const Vertical: Story = {
-  render: () => (
-    <div style={{maxWidth: 400}}>
-      <XDSStepper activeStep={1} orientation="vertical">
-        <XDSStep step={0} label="Account" description="Create your account" />
-        <XDSStep step={1} label="Profile" description="Set up your profile" />
-        <XDSStep step={2} label="Review" description="Review and confirm" />
-      </XDSStepper>
-    </div>
-  ),
-};
-
-export const NonLinear: Story = {
-  name: 'Non-Linear (Clickable)',
+  name: 'Default',
   render: () => {
-    const [activeStep, setActiveStep] = useState(1);
-    return (
-      <XDSStepper activeStep={activeStep} onStepClick={setActiveStep}>
-        <XDSStep step={0} label="Account" />
-        <XDSStep step={1} label="Profile" />
-        <XDSStep step={2} label="Review" />
-      </XDSStepper>
-    );
-  },
-};
-
-export const WithError: Story = {
-  render: () => (
-    <XDSStepper activeStep={1}>
-      <XDSStep step={0} label="Account" />
-      <XDSStep step={1} label="Profile" hasError />
-      <XDSStep step={2} label="Review" />
-    </XDSStepper>
-  ),
-};
-
-export const WithDisabled: Story = {
-  render: () => (
-    <XDSStepper activeStep={1}>
-      <XDSStep step={0} label="Account" />
-      <XDSStep step={1} label="Profile" />
-      <XDSStep step={2} label="Review" isDisabled />
-    </XDSStepper>
-  ),
-};
-
-export const FiveSteps: Story = {
-  render: () => (
-    <XDSStepper activeStep={2}>
-      <XDSStep step={0} label="Cart" />
-      <XDSStep step={1} label="Shipping" />
-      <XDSStep step={2} label="Payment" />
-      <XDSStep step={3} label="Review" />
-      <XDSStep step={4} label="Confirm" />
-    </XDSStepper>
-  ),
-};
-
-export const VerticalNonLinear: Story = {
-  name: 'Vertical Non-Linear',
-  render: () => {
-    const [activeStep, setActiveStep] = useState(2);
+    const [active, setActive] = useState(2);
     return (
       <div style={{maxWidth: 400}}>
         <XDSStepper
-          activeStep={activeStep}
+          activeStep={active}
           orientation="vertical"
-          onStepClick={setActiveStep}>
-          <XDSStep step={0} label="Account" description="Create your account" />
-          <XDSStep step={1} label="Profile" description="Set up your profile" />
-          <XDSStep step={2} label="Review" description="Review and confirm" />
-          <XDSStep step={3} label="Done" description="All finished!" />
+          onStepClick={setActive}>
+          <XDSStep
+            step={0}
+            label="Create workspace"
+            description="Name and configure your workspace"
+          />
+          <XDSStep
+            step={1}
+            label="Invite team members"
+            description="Add collaborators by email"
+          />
+          <XDSStep
+            step={2}
+            label="Set up integrations"
+            description="Connect Slack, GitHub, Jira"
+          />
+          <XDSStep
+            step={3}
+            label="Import data"
+            description="Bring in existing projects"
+          />
+          <XDSStep
+            step={4}
+            label="Launch"
+            description="Go live with your team"
+          />
         </XDSStepper>
       </div>
     );
   },
 };
 
-export const VerticalWithContent: Story = {
-  name: 'Vertical with Content',
+export const DefaultHorizontal: Story = {
+  name: 'Default — Horizontal',
   render: () => {
-    const [activeStep, setActiveStep] = useState(1);
+    const [active, setActive] = useState(1);
+    return (
+      <div style={{maxWidth: 700}}>
+        <XDSStepper
+          activeStep={active}
+          orientation="horizontal"
+          onStepClick={setActive}>
+          <XDSStep step={0} label="Workspace" />
+          <XDSStep step={1} label="Team" />
+          <XDSStep step={2} label="Integrations" />
+          <XDSStep step={3} label="Import" />
+          <XDSStep step={4} label="Launch" />
+        </XDSStepper>
+      </div>
+    );
+  },
+};
+
+// ============================================================
+// NUMBERED (always number — procedural flows)
+// ============================================================
+
+export const NumberedVertical: Story = {
+  name: 'Numbered — Deploy Pipeline',
+  render: () => {
+    const [active, setActive] = useState(2);
+    return (
+      <div style={{maxWidth: 400}}>
+        <XDSStepper
+          activeStep={active}
+          orientation="vertical"
+          onStepClick={setActive}>
+          <XDSStep
+            step={0}
+            label="Push to main"
+            description="Merge your pull request"
+            indicator="number"
+          />
+          <XDSStep
+            step={1}
+            label="Run CI checks"
+            description="Lint, type-check, test"
+            indicator="number"
+          />
+          <XDSStep
+            step={2}
+            label="Build container"
+            description="Docker image to registry"
+            indicator="number"
+          />
+          <XDSStep
+            step={3}
+            label="Deploy to staging"
+            description="Verify in staging environment"
+            indicator="number"
+          />
+          <XDSStep
+            step={4}
+            label="Promote to production"
+            description="Canary → full rollout"
+            indicator="number"
+          />
+        </XDSStepper>
+      </div>
+    );
+  },
+};
+
+export const NumberedHorizontal: Story = {
+  name: 'Numbered — Horizontal Checkout',
+  render: () => {
+    const [active, setActive] = useState(1);
+    return (
+      <div style={{maxWidth: 600}}>
+        <XDSStepper
+          activeStep={active}
+          orientation="horizontal"
+          onStepClick={setActive}>
+          <XDSStep step={0} label="Cart" indicator="number" />
+          <XDSStep step={1} label="Shipping" indicator="number" />
+          <XDSStep step={2} label="Payment" indicator="number" />
+          <XDSStep step={3} label="Confirm" indicator="number" />
+        </XDSStepper>
+      </div>
+    );
+  },
+};
+
+// ============================================================
+// STATUS (semantic color + generic icons — validation flows)
+//
+// `status` controls color only (accent/success/warning/error). The
+// indicator accepts any icon, so validation flows pass an explicit
+// <XDSIcon /> rather than relying on a fixed status-driven icon set.
+// ============================================================
+
+export const StatusVertical: Story = {
+  name: 'Status — Account Verification',
+  render: () => {
+    const [active, setActive] = useState(3);
+    return (
+      <div style={{maxWidth: 400}}>
+        <XDSStepper
+          activeStep={active}
+          orientation="vertical"
+          onStepClick={setActive}>
+          <XDSStep
+            step={0}
+            label="Email verified"
+            description="ernesttien@meta.com"
+            status="success"
+            icon={<XDSIcon icon="check" size="sm" />}
+          />
+          <XDSStep
+            step={1}
+            label="Phone verified"
+            description="+1 (555) 012-3456"
+            status="success"
+            icon={<XDSIcon icon="check" size="sm" />}
+          />
+          <XDSStep
+            step={2}
+            label="Identity document"
+            description="Passport upload failed"
+            status="error"
+            icon={<XDSIcon icon="warning" size="sm" />}
+          />
+          <XDSStep
+            step={3}
+            label="Address verification"
+            description="Pending review"
+            status="accent"
+          />
+          <XDSStep
+            step={4}
+            label="Background check"
+            isOptional
+            description="Skipped"
+          />
+          <XDSStep step={5} label="Account activated" />
+        </XDSStepper>
+      </div>
+    );
+  },
+};
+
+export const StatusAllStates: Story = {
+  name: 'Status — Semantic Colors Reference',
+  render: () => {
+    const [active, setActive] = useState(1);
+    return (
+      <div style={{maxWidth: 400}}>
+        <XDSStepper
+          activeStep={active}
+          orientation="vertical"
+          onStepClick={setActive}>
+          <XDSStep
+            step={0}
+            label="Accent"
+            description="--color-accent"
+            status="accent"
+          />
+          <XDSStep
+            step={1}
+            label="Success"
+            description="--color-success"
+            status="success"
+            icon={<XDSIcon icon="check" size="sm" />}
+          />
+          <XDSStep
+            step={2}
+            label="Warning"
+            description="--color-warning"
+            status="warning"
+            icon={<XDSIcon icon="warning" size="sm" />}
+          />
+          <XDSStep
+            step={3}
+            label="Error"
+            description="--color-error"
+            status="error"
+            icon={<XDSIcon icon="warning" size="sm" />}
+          />
+          <XDSStep
+            step={4}
+            label="Default (no status)"
+            description="progress-derived color"
+          />
+        </XDSStepper>
+      </div>
+    );
+  },
+};
+
+// ============================================================
+// MINIMAL (no indicator — content-focused)
+// ============================================================
+
+export const MinimalVertical: Story = {
+  name: 'Minimal — Interview Process',
+  render: () => {
+    const [active, setActive] = useState(2);
+    return (
+      <div style={{maxWidth: 400}}>
+        <XDSStepper
+          activeStep={active}
+          orientation="vertical"
+          onStepClick={setActive}>
+          <XDSStep
+            step={0}
+            label="Phone screen"
+            description="30 min with recruiter"
+            indicator="none"
+          />
+          <XDSStep
+            step={1}
+            label="Technical interview"
+            description="1 hour coding session"
+            indicator="none"
+          />
+          <XDSStep
+            step={2}
+            label="System design"
+            description="45 min whiteboard"
+            indicator="none"
+          />
+          <XDSStep
+            step={3}
+            label="Team match"
+            description="Meet potential teammates"
+            indicator="none"
+          />
+          <XDSStep step={4} label="Offer" indicator="none" />
+        </XDSStepper>
+      </div>
+    );
+  },
+};
+
+export const MinimalHorizontal: Story = {
+  name: 'Minimal — Video Upload',
+  render: () => {
+    const [active, setActive] = useState(1);
+    return (
+      <div style={{maxWidth: 500}}>
+        <XDSStepper
+          activeStep={active}
+          orientation="horizontal"
+          onStepClick={setActive}>
+          <XDSStep step={0} label="Upload" indicator="none" />
+          <XDSStep step={1} label="Details" indicator="none" />
+          <XDSStep step={2} label="Audience" indicator="none" />
+          <XDSStep step={3} label="Publish" indicator="none" />
+        </XDSStepper>
+      </div>
+    );
+  },
+};
+
+// ============================================================
+// INDICATOR COMPARISON
+// ============================================================
+
+export const IndicatorComparison: Story = {
+  name: 'Indicator Modes — Side by Side',
+  render: () => {
+    const [active, setActive] = useState(2);
+    return (
+      <div style={{display: 'flex', gap: 48}}>
+        <div style={{maxWidth: 280}}>
+          <XDSText type="label">Auto (default)</XDSText>
+          <XDSStepper
+            activeStep={active}
+            orientation="vertical"
+            onStepClick={setActive}>
+            <XDSStep step={0} label="Account" />
+            <XDSStep step={1} label="Profile" />
+            <XDSStep step={2} label="Settings" />
+            <XDSStep step={3} label="Review" />
+            <XDSStep step={4} label="Done" />
+          </XDSStepper>
+        </div>
+        <div style={{maxWidth: 280}}>
+          <XDSText type="label">Number</XDSText>
+          <XDSStepper
+            activeStep={active}
+            orientation="vertical"
+            onStepClick={setActive}>
+            <XDSStep step={0} label="Account" indicator="number" />
+            <XDSStep step={1} label="Profile" indicator="number" />
+            <XDSStep step={2} label="Settings" indicator="number" />
+            <XDSStep step={3} label="Review" indicator="number" />
+            <XDSStep step={4} label="Done" indicator="number" />
+          </XDSStepper>
+        </div>
+        <div style={{maxWidth: 280}}>
+          <XDSText type="label">Custom icon</XDSText>
+          <XDSStepper
+            activeStep={active}
+            orientation="vertical"
+            onStepClick={setActive}>
+            <XDSStep
+              step={0}
+              label="Account"
+              icon={<XDSIcon icon="info" size="sm" />}
+            />
+            <XDSStep
+              step={1}
+              label="Profile"
+              icon={<XDSIcon icon="search" size="sm" />}
+            />
+            <XDSStep
+              step={2}
+              label="Settings"
+              icon={<XDSIcon icon="wrench" size="sm" />}
+            />
+            <XDSStep
+              step={3}
+              label="Review"
+              icon={<XDSIcon icon="clock" size="sm" />}
+            />
+            <XDSStep
+              step={4}
+              label="Done"
+              icon={<XDSIcon icon="check" size="sm" />}
+            />
+          </XDSStepper>
+        </div>
+        <div style={{maxWidth: 280}}>
+          <XDSText type="label">None</XDSText>
+          <XDSStepper
+            activeStep={active}
+            orientation="vertical"
+            onStepClick={setActive}>
+            <XDSStep step={0} label="Account" indicator="none" />
+            <XDSStep step={1} label="Profile" indicator="none" />
+            <XDSStep step={2} label="Settings" indicator="none" />
+            <XDSStep step={3} label="Review" indicator="none" />
+            <XDSStep step={4} label="Done" indicator="none" />
+          </XDSStepper>
+        </div>
+      </div>
+    );
+  },
+};
+
+// ============================================================
+// WITH CONTENT SLOT
+// ============================================================
+
+export const WithContentSlot: Story = {
+  name: 'With Content — Multi-Step Form',
+  render: () => {
+    const [active, setActive] = useState(0);
     return (
       <div style={{maxWidth: 480}}>
-        <XDSStepper activeStep={activeStep} orientation="vertical">
-          <XDSStep step={0} label="Account" description="Create your account">
-            {activeStep === 0 && (
+        <XDSStepper
+          activeStep={active}
+          orientation="vertical"
+          onStepClick={setActive}>
+          <XDSStep step={0} label="Project details" indicator="number">
+            {active === 0 && (
               <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
                 <XDSTextInput
-                  label="Email"
-                  placeholder="you@example.com"
+                  label="Project name"
+                  placeholder="My awesome project"
                   value=""
                 />
                 <XDSTextInput
-                  label="Password"
-                  placeholder="••••••••"
+                  label="Repository URL"
+                  placeholder="https://github.com/..."
                   value=""
                 />
                 <div>
                   <XDSButton
                     label="Continue"
                     variant="primary"
-                    onClick={() => setActiveStep(1)}
+                    onClick={() => setActive(1)}
                   />
                 </div>
               </div>
             )}
           </XDSStep>
-          <XDSStep
-            step={1}
-            label="Profile"
-            description="Tell us about yourself">
-            {activeStep === 1 && (
+          <XDSStep step={1} label="Environment" indicator="number">
+            {active === 1 && (
               <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+                <XDSTextInput label="Node version" placeholder="20" value="" />
                 <XDSTextInput
-                  label="Full name"
-                  placeholder="Jane Doe"
+                  label="Build command"
+                  placeholder="npm run build"
                   value=""
                 />
-                <XDSTextInput
-                  label="Company"
-                  placeholder="Acme Inc."
-                  value=""
-                />
-                <XDSTextInput label="Role" placeholder="Engineer" value="" />
                 <div style={{display: 'flex', gap: 8}}>
                   <XDSButton
                     label="Back"
                     variant="secondary"
-                    onClick={() => setActiveStep(0)}
+                    onClick={() => setActive(0)}
                   />
                   <XDSButton
                     label="Continue"
                     variant="primary"
-                    onClick={() => setActiveStep(2)}
+                    onClick={() => setActive(2)}
                   />
                 </div>
               </div>
             )}
           </XDSStep>
-          <XDSStep step={2} label="Review" description="Confirm your details">
-            {activeStep === 2 && (
+          <XDSStep step={2} label="Deploy" indicator="number">
+            {active === 2 && (
               <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
                 <XDSText type="body">
-                  Review your account details and click Finish to complete
-                  setup.
+                  Ready to deploy. This will create a production build and push
+                  to your configured hosting.
                 </XDSText>
                 <div style={{display: 'flex', gap: 8}}>
                   <XDSButton
                     label="Back"
                     variant="secondary"
-                    onClick={() => setActiveStep(1)}
+                    onClick={() => setActive(1)}
                   />
                   <XDSButton
-                    label="Finish"
+                    label="Deploy now"
                     variant="primary"
-                    onClick={() => setActiveStep(3)}
+                    onClick={() => setActive(3)}
                   />
                 </div>
               </div>
             )}
           </XDSStep>
+          <XDSStep step={3} label="Done" indicator="number" />
+        </XDSStepper>
+      </div>
+    );
+  },
+};
+
+// ============================================================
+// DENSITY
+// ============================================================
+
+export const DensityComparison: Story = {
+  name: 'Density — Compact / Balanced / Spacious',
+  render: () => {
+    const [active, setActive] = useState(1);
+    return (
+      <div style={{display: 'flex', gap: 48}}>
+        <div style={{maxWidth: 250}}>
+          <XDSText type="label">Compact</XDSText>
+          <XDSStepper
+            activeStep={active}
+            orientation="vertical"
+            onStepClick={setActive}
+            density="compact">
+            <XDSStep step={0} label="Account" indicator="number" />
+            <XDSStep step={1} label="Profile" indicator="number" />
+            <XDSStep step={2} label="Payment" indicator="number" />
+            <XDSStep step={3} label="Review" indicator="number" />
+          </XDSStepper>
+        </div>
+        <div style={{maxWidth: 250}}>
+          <XDSText type="label">Balanced</XDSText>
+          <XDSStepper
+            activeStep={active}
+            orientation="vertical"
+            onStepClick={setActive}
+            density="balanced">
+            <XDSStep step={0} label="Account" indicator="number" />
+            <XDSStep step={1} label="Profile" indicator="number" />
+            <XDSStep step={2} label="Payment" indicator="number" />
+            <XDSStep step={3} label="Review" indicator="number" />
+          </XDSStepper>
+        </div>
+        <div style={{maxWidth: 250}}>
+          <XDSText type="label">Spacious</XDSText>
+          <XDSStepper
+            activeStep={active}
+            orientation="vertical"
+            onStepClick={setActive}
+            density="spacious">
+            <XDSStep step={0} label="Account" indicator="number" />
+            <XDSStep step={1} label="Profile" indicator="number" />
+            <XDSStep step={2} label="Payment" indicator="number" />
+            <XDSStep step={3} label="Review" indicator="number" />
+          </XDSStepper>
+        </div>
+      </div>
+    );
+  },
+};
+
+// ============================================================
+// EDGE CASES
+// ============================================================
+
+export const TwoSteps: Story = {
+  name: 'Edge — Two Steps',
+  render: () => {
+    const [active, setActive] = useState(0);
+    return (
+      <div style={{maxWidth: 400}}>
+        <XDSStepper
+          activeStep={active}
+          orientation="horizontal"
+          onStepClick={setActive}>
+          <XDSStep step={0} label="Before" />
+          <XDSStep step={1} label="After" />
+        </XDSStepper>
+      </div>
+    );
+  },
+};
+
+export const ManySteps: Story = {
+  name: 'Edge — Seven Steps (Horizontal)',
+  render: () => {
+    const [active, setActive] = useState(3);
+    return (
+      <XDSStepper
+        activeStep={active}
+        orientation="horizontal"
+        onStepClick={setActive}>
+        <XDSStep step={0} label="Idea" indicator="number" />
+        <XDSStep step={1} label="Design" indicator="number" />
+        <XDSStep step={2} label="Build" indicator="number" />
+        <XDSStep step={3} label="Test" indicator="number" />
+        <XDSStep step={4} label="Review" indicator="number" />
+        <XDSStep step={5} label="Deploy" indicator="number" />
+        <XDSStep step={6} label="Monitor" indicator="number" />
+      </XDSStepper>
+    );
+  },
+};
+
+export const DisabledSteps: Story = {
+  name: 'Edge — Disabled Steps',
+  render: () => {
+    const [active, setActive] = useState(1);
+    return (
+      <div style={{maxWidth: 400}}>
+        <XDSStepper
+          activeStep={active}
+          orientation="vertical"
+          onStepClick={setActive}>
+          <XDSStep step={0} label="Basic info" />
+          <XDSStep step={1} label="Permissions" />
+          <XDSStep
+            step={2}
+            label="Admin settings"
+            description="Requires admin role"
+            isDisabled
+          />
+          <XDSStep step={3} label="Confirm" />
+        </XDSStepper>
+      </div>
+    );
+  },
+};
+
+export const OptionalSteps: Story = {
+  name: 'Edge — Optional + Skipped',
+  render: () => {
+    const [active, setActive] = useState(3);
+    return (
+      <div style={{maxWidth: 400}}>
+        <XDSStepper
+          activeStep={active}
+          orientation="vertical"
+          onStepClick={setActive}>
+          <XDSStep step={0} label="Basic profile" />
+          <XDSStep
+            step={1}
+            label="Profile photo"
+            isOptional
+            description="Skipped"
+          />
+          <XDSStep step={2} label="Connect socials" isOptional />
+          <XDSStep step={3} label="Preferences" />
+          <XDSStep step={4} label="All done" />
+        </XDSStepper>
+      </div>
+    );
+  },
+};
+
+export const LongLabels: Story = {
+  name: 'Edge — Long Labels & Descriptions',
+  render: () => {
+    const [active, setActive] = useState(1);
+    return (
+      <div style={{maxWidth: 400}}>
+        <XDSStepper
+          activeStep={active}
+          orientation="vertical"
+          onStepClick={setActive}>
+          <XDSStep
+            step={0}
+            label="Configure your development environment"
+            description="Install dependencies, set up local database, configure environment variables"
+          />
+          <XDSStep
+            step={1}
+            label="Create initial data migration"
+            description="Define schema, seed data, and run migrations against staging"
+          />
+          <XDSStep
+            step={2}
+            label="Submit for code review"
+            description="Open pull request and address reviewer feedback"
+          />
         </XDSStepper>
       </div>
     );
