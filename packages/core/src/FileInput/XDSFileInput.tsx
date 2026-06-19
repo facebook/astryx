@@ -51,6 +51,7 @@ export type {
 } from '../Field';
 import {mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
 import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 function formatFileSize(bytes: number): string {
@@ -355,6 +356,12 @@ export interface XDSFileInputProps extends Omit<
    */
   isOptional?: boolean;
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
@@ -387,6 +394,7 @@ export function XDSFileInput({
   mode = 'input',
   isOptional = false,
   labelTooltip,
+  width,
   xstyle,
   className,
   style,
@@ -655,7 +663,8 @@ export function XDSFileInput({
             }
           : undefined
       }
-      labelTooltip={labelTooltip}>
+      labelTooltip={labelTooltip}
+      width={width}>
       <div
         role="button"
         tabIndex={isDisabled ? -1 : 0}

@@ -19,6 +19,7 @@
 import {type ReactNode, use} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
 import {XDSFieldLabel} from './XDSFieldLabel';
 import {XDSFieldStatus} from '../FieldStatus/XDSFieldStatus';
 import {spacingVars, borderVars} from '../theme/tokens.stylex';
@@ -51,6 +52,14 @@ const styles = stylex.create({
     isolation: 'isolate',
   },
 });
+
+// Dynamic style for the consumer-controlled field width. Numbers are treated
+// as pixels by StyleX; strings (e.g. '100%') are used as-is.
+const dynamicStyles = stylex.create({
+  width: (width: SizeValue | null) => ({width}),
+});
+
+export type {SizeValue} from '../utils/types';
 
 export type XDSFieldStatusType = 'warning' | 'error' | 'success';
 
@@ -133,6 +142,14 @@ export interface XDSFieldProps extends Omit<
    */
   statusVariant?: 'attached' | 'detached';
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field — label, control, and status — so
+   * the control and its surrounding chrome stay aligned. Prefer this over
+   * setting `width` via `xstyle`/`className`/`style`, which only size the inner
+   * control box and leave the label and status at their natural width.
+   */
+  width?: SizeValue;
+  /**
    * The input or control to render inside the field.
    */
   children: ReactNode;
@@ -163,6 +180,7 @@ export function XDSField({
   status,
   labelTooltip,
   statusVariant = 'attached',
+  width,
   xstyle,
   children,
   className,
@@ -250,6 +268,7 @@ export function XDSField({
         stylex.props(
           styles.container,
           !isLabelHidden && styles.containerGap,
+          width != null && dynamicStyles.width(width),
           xstyle,
         ),
         className,

@@ -64,6 +64,7 @@ import {XDSSelectorOption} from './XDSSelectorOption';
 import {mergeProps} from '../utils';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
 import {xdsThemeProps} from '../utils/xdsThemeProps';
 
 const styles = stylex.create({
@@ -405,6 +406,12 @@ interface XDSSelectorPropsBase<
   status?: XDSSelectorStatus;
 
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
@@ -539,6 +546,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     placement,
     isDefaultOpen = false,
     'data-testid': testId,
+    width,
     xstyle,
     className,
     style,
@@ -856,7 +864,8 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
             }
           : undefined
       }
-      labelTooltip={labelTooltip}>
+      labelTooltip={labelTooltip}
+      width={width}>
       <div
         ref={el => {
           popover.triggerRef(el);

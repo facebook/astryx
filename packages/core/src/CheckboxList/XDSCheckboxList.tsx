@@ -25,6 +25,7 @@ import {
   type ReactNode,
 } from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
 import {XDSField} from '../Field/XDSField';
 import type {XDSInputStatus} from '../Field/types';
 import {XDSList} from '../List/XDSList';
@@ -106,6 +107,12 @@ export interface XDSCheckboxListProps extends Omit<
    */
   isReadOnly?: boolean;
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * Checkbox list items to render.
    */
   children: ReactNode;
@@ -144,6 +151,7 @@ export function XDSCheckboxList({
   isReadOnly = false,
   children,
   ref,
+  width,
   xstyle,
   className,
   style,
@@ -210,6 +218,7 @@ export function XDSCheckboxList({
           : undefined
       }
       statusVariant="detached"
+      width={width}
       xstyle={xstyle}
       {...mergeProps(xdsThemeProps('checkbox-list'), {className, style})}>
       <XDSCheckboxListContext value={contextValue}>

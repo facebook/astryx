@@ -66,6 +66,7 @@ import {
 import {useMultiCombobox} from './hooks';
 import {mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {xdsThemeProps} from '../utils/xdsThemeProps';
 
@@ -441,6 +442,12 @@ export interface XDSMultiSelectorProps<
   status?: XDSMultiSelectorStatus;
 
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
@@ -558,6 +565,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
   renderOption,
   isDefaultOpen = false,
   'data-testid': testId,
+  width,
   xstyle,
   className,
   style,
@@ -1107,7 +1115,8 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
             }
           : undefined
       }
-      labelTooltip={labelTooltip}>
+      labelTooltip={labelTooltip}
+      width={width}>
       <div
         ref={el => {
           popover.triggerRef(el);
