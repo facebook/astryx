@@ -44,12 +44,9 @@ const PRIMARY_MUTED =
 // point any accent token at it). Dark mode uses a lighter blue (#3D87FF) so the
 // logo stays legible on the dark body. Exported so the hero can reference the
 // exact brand value instead of hardcoding it.
+// Also exposed to the UI as the custom CSS variable --color-brand, so consumers
+// can reference the brand blue via var(--color-brand).
 export const BRAND_BLUE = 'light-dark(#225BFF, #3D87FF)';
-
-// The Astryx brand color as a flat token value, exposed to the UI as a custom
-// CSS variable (--color-brand). Unlike BRAND_BLUE (mode-aware, logo-only), this
-// is a single fixed brand color consumers can reference via var(--color-brand).
-const BRAND = '#225BFF';
 
 export const astryxTheme = defineTheme({
   name: 'astryx',
@@ -106,7 +103,7 @@ export const astryxTheme = defineTheme({
     // Not a core XDS token, so it's spread in with a cast to allow the extra
     // key while keeping the standard tokens above type-checked. Exposed to the
     // UI as var(--color-brand).
-    ...({'--color-brand': BRAND} as Record<string, XDSTokenValue>),
+    ...({'--color-brand': BRAND_BLUE} as Record<string, XDSTokenValue>),
   },
 
   typography: {
