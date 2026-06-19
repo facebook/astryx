@@ -51,7 +51,7 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    label: 'accessibility label **(required)**',
+    label: 'accessibility label',
     onClick: 'click handler: fires on card surface only',
     href: 'navigation URL',
     target: 'link target',
