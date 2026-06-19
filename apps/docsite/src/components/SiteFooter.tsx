@@ -19,9 +19,6 @@ import {
 } from './logos';
 
 const styles = stylex.create({
-  inner: {
-    width: '100%',
-  },
   footerLinks: {
     width: '100%',
     paddingInline: spacingVars['--spacing-2'],
