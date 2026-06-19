@@ -11,7 +11,7 @@ import {
   Component,
   type ReactNode,
 } from 'react';
-import {getXDSComponent, resolveValue} from './resolveElements';
+import {getComponent, resolveValue} from './resolveElements';
 import {Button} from '@xds/core/Button';
 import {Card} from '@xds/core/Card';
 import {Center} from '@xds/core/Center';
@@ -203,7 +203,7 @@ export function InteractivePreviewStage({
   canControlOpenState?: boolean;
 }) {
   const [showCode, setShowCode] = useState(false);
-  const Component = getXDSComponent(name);
+  const Component = getComponent(name);
   const runtimeState = useMemo(
     () =>
       resolveValue(
@@ -218,7 +218,7 @@ export function InteractivePreviewStage({
   // Sub-components that need a parent context provider declare it via
   // `playground.wrapper`; wrap the previewed component in that parent.
   const wrapper = playground?.wrapper ?? null;
-  const WrapperComponent = wrapper ? getXDSComponent(wrapper.component) : null;
+  const WrapperComponent = wrapper ? getComponent(wrapper.component) : null;
   const wrapperProps = useMemo(() => {
     const resolved = wrapper?.props
       ? (resolveValue(wrapper.props) as Record<string, unknown>)
