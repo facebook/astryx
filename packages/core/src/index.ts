@@ -90,6 +90,7 @@ export * from './Dialog';
 export * from './ContextMenu';
 export * from './DropdownMenu';
 export * from './MoreMenu';
+export * from './InteractiveRoleContext';
 export * from './SizeContext';
 export * from './Toolbar';
 export * from './TopNav';
