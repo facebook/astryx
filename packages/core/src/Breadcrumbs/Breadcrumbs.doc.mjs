@@ -86,6 +86,7 @@ export const docs = {
   components: [
     {
       name: 'XDSBreadcrumbItem',
+      displayName: 'Breadcrumb Item',
       description: 'Individual breadcrumb item. Renders as a link when href is provided, or as plain text for the current page.',
       props: [
         {
