@@ -103,6 +103,11 @@ export const docs = {
       default: "'attached'",
     },
     {
+      name: 'width',
+      type: 'SizeValue',
+      description: 'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field — label, control, and status — so they stay aligned. Prefer this over setting width via xstyle/className/style, which only size the inner control box.',
+    },
+    {
       name: 'ref',
       type: 'React.Ref<HTMLDivElement>',
       description: 'Ref forwarded to the root element.',

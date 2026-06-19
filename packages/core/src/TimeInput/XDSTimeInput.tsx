@@ -60,6 +60,7 @@ import {
   mergeRefs,
 } from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SizeValue} from '../utils/types';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {xdsThemeProps} from '../utils/xdsThemeProps';
@@ -268,6 +269,12 @@ export interface XDSTimeInputProps extends Omit<
   status?: XDSInputStatus;
 
   /**
+   * Width of the field. Numbers are treated as pixels, strings are used as-is
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   */
+  width?: SizeValue;
+  /**
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
@@ -309,6 +316,7 @@ export function XDSTimeInput({
   size: sizeProp,
   status,
   labelTooltip,
+  width,
   xstyle,
   className,
   style,
@@ -520,7 +528,8 @@ export function XDSTimeInput({
             }
           : undefined
       }
-      labelTooltip={labelTooltip}>
+      labelTooltip={labelTooltip}
+      width={width}>
       <div
         ref={containerRef}
         onClick={handleWrapperClick}
