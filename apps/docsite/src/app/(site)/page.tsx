@@ -80,11 +80,8 @@ const styles = stylex.create({
   },
   // Reserves the hero's height in flow (heroContent is fixed/out of flow).
   // Narrow: the measured --hero-content-height (per-tier constants are the
-  // fallback), capped at 100lvh so the pinned hero band never reserves more
-  // than one large-viewport-height of scroll on phones/tablets — the showcase
-  // then scrolls up to cover the rest of the (decorative) collage instead of
-  // forcing the user to scroll the full stacked height before reaching content.
-  // Desktop (≥1024px): the fixed band, unaffected.
+  // fallback), capped at 100lvh so the pinned band never reserves more than one
+  // viewport of scroll on phones/tablets. Desktop (≥1024px): the fixed band.
   heroSpacer: {
     height: {
       default: `min(var(--hero-content-height, ${HERO_BAND_HEIGHT_2COL}px), 100lvh)`,

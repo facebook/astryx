@@ -443,6 +443,20 @@ const styles = stylex.create({
       gap: 'var(--spacing-3)',
     },
   },
+  // Page heading sizing. ThemeHeading renders in the desktop sidebar (260px
+  // column, where display-3 keeps "Themes" from wrapping) and in the mobile
+  // context block. Base stays display-3; only the narrow layout bumps to
+  // display-2 to match /templates and /components.
+  themeHeading: {
+    fontSize: {
+      default: 'var(--text-display-3-size)',
+      [SIDEBAR_BREAKPOINT]: 'var(--text-display-2-size)',
+    },
+    lineHeight: {
+      default: 'var(--text-display-3-leading)',
+      [SIDEBAR_BREAKPOINT]: 'var(--text-display-2-leading)',
+    },
+  },
 });
 
 // Per-theme override registry for the picker cards. Themes without
@@ -483,7 +497,11 @@ function ThemeHeading({align = 'start'}: {align?: 'start' | 'center'}) {
 
   return (
     <XDSVStack gap={2} hAlign={isCentered ? 'center' : undefined}>
-      <XDSHeading level={1} type="display-2" justify={align}>
+      <XDSHeading
+        level={1}
+        type="display-3"
+        justify={align}
+        xstyle={styles.themeHeading}>
         Themes
       </XDSHeading>
       <XDSText
@@ -508,27 +526,19 @@ interface ThemePackagePageProps {
 }
 
 export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
-  // The docsite's resolved color mode (light/dark). The preview seeds from and
-  // follows this so opening /themes in dark mode shows the demos in dark mode
-  // (initializing to light was jarring against a dark docsite). Once the user
-  // flips the preview's own mode toggle, `isModeManual` latches and the preview
-  // stops tracking the docsite — mirrors the manual-override pattern in
-  // providers.tsx so an explicit choice isn't clobbered by a later sync.
-  const {mode: docsiteMode} = useThemeMode();
-  const [mode, setMode] = useState<'light' | 'dark'>(docsiteMode);
-  const [isModeManual, setIsModeManual] = useState(false);
-
-  useEffect(() => {
-    if (isModeManual) {
-      return;
-    }
-    setMode(docsiteMode);
-  }, [docsiteMode, isModeManual]);
+  // Preview color mode. `siteMode` is the docsite's already-resolved concrete
+  // light/dark — the provider maps its default `system` to the OS preference
+  // (falling back to light on the first paint), so the preview never sees
+  // `system`. `localMode` is null until the user toggles the preview's own
+  // control; the effective mode falls through to `siteMode` until then, so
+  // opening /themes in dark mode shows the demos in dark mode without an effect.
+  const {mode: siteMode} = useThemeMode();
+  const [localMode, setLocalMode] = useState<'light' | 'dark' | null>(null);
+  const mode: 'light' | 'dark' = localMode ?? siteMode;
 
   const handleToggleMode = useCallback(() => {
-    setIsModeManual(true);
-    setMode(m => (m === 'light' ? 'dark' : 'light'));
-  }, []);
+    setLocalMode(mode === 'light' ? 'dark' : 'light');
+  }, [mode]);
   // Selected theme — seeded once from the parent's `packageName`
   // prop (the /themes page resolves it from the `?theme=<slug>`
   // query param, or Neutral if absent), then user-mutable via the
@@ -672,11 +682,9 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
         <XDSCard variant="default" padding={0} xstyle={styles.sidebarCard}>
           <XDSVStack gap={4}>
             {/* Hero block — page-level heading + description + CTAs.
-                Heading uses display-2 to match the other site pages
-                (/templates, /components); "Themes" is a single short
-                word so it doesn't wrap in the 260px sidebar column.
-                CTAs stack vertically + full-width because the
-                side-by-side hero treatment doesn't fit in 260px. */}
+                Heading is display-3 here (display-2 wraps in the 260px
+                sidebar); the mobile layout bumps it to display-2 via
+                styles.themeHeading. CTAs stack full-width. */}
             <XDSVStack gap={3}>
               <ThemeHeading />
               {/* Action row — primary CTA takes the leading flex
@@ -714,8 +722,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                       item: selectedPkgName,
                       value: next,
                     });
-                    setIsModeManual(true);
-                    setMode(next);
+                    setLocalMode(next);
                   }}
                 />
               </XDSHStack>
@@ -865,8 +872,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                   item: selectedPkgName,
                   value: next,
                 });
-                setIsModeManual(true);
-                setMode(next);
+                setLocalMode(next);
               }}
             />
           </XDSHStack>
