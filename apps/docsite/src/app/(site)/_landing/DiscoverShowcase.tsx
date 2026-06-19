@@ -10,6 +10,7 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import {AstryxLogo} from '../../../components/logos';
 import {components} from '../../../generated/componentRegistry';
 
 // Count of public @xds/core components (excluding hooks and hidden entries),
@@ -144,9 +145,10 @@ const styles = stylex.create({
   inlineWordmark: {
     display: 'inline-block',
     verticalAlign: 'baseline',
-    height: '.625em',
+    height: '.75em',
     width: 'auto',
     marginInline: spacingVars['--spacing-4'],
+    color: 'var(--color-brand)',
   },
   // CTA body copy + buttons cap. maxWidth: 560 is a reading
   // measure for the body paragraph, not a spacing-scale value.
@@ -258,15 +260,9 @@ export function DiscoverShowcase() {
             <XDSVStack gap={6} align="center">
               <XDSHeading level={2} type="display-1" color="primary">
                 Discover the full
-                {/* Inline wordmark <img> baked into the heading as
-                    a visual word substitute. Raw <img> because no
-                    XDS Image primitive exists, and we need the
-                    image to inherit the heading's font-size
-                    cadence (sized in `em` via inlineWordmark
-                    xstyle) so it scales with the heading. */}
-                <img
-                  src="/astryx-logo.svg"
-                  alt="Astryx"
+                <AstryxLogo
+                  role="img"
+                  aria-label="Astryx"
                   {...stylex.props(styles.inlineWordmark)}
                 />
                 design system

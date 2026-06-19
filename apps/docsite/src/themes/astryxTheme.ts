@@ -24,7 +24,7 @@
  * thin brand layer of primary + accent + body on top of the design system.
  */
 
-import {defineTheme} from '@xds/core/theme';
+import {defineTheme, type XDSTokenValue} from '@xds/core/theme';
 
 // === PRIMARY (high-emphasis foreground ink — drives accent too) ==============
 // Warm near-black that harmonizes with the cream body (light) and a warm
@@ -45,6 +45,11 @@ const PRIMARY_MUTED =
 // logo stays legible on the dark body. Exported so the hero can reference the
 // exact brand value instead of hardcoding it.
 export const BRAND_BLUE = 'light-dark(#225BFF, #3D87FF)';
+
+// The Astryx brand color as a flat token value, exposed to the UI as a custom
+// CSS variable (--color-brand). Unlike BRAND_BLUE (mode-aware, logo-only), this
+// is a single fixed brand color consumers can reference via var(--color-brand).
+const BRAND = '#225BFF';
 
 export const astryxTheme = defineTheme({
   name: 'astryx',
@@ -96,6 +101,12 @@ export const astryxTheme = defineTheme({
     '--radius-element': '12px',
     '--radius-container': '16px',
     '--radius-page': '32px',
+
+    // --- Custom brand color token ---
+    // Not a core XDS token, so it's spread in with a cast to allow the extra
+    // key while keeping the standard tokens above type-checked. Exposed to the
+    // UI as var(--color-brand).
+    ...({'--color-brand': BRAND} as Record<string, XDSTokenValue>),
   },
 
   typography: {

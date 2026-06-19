@@ -9,7 +9,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSHStack} from '@xds/core/Layout';
 import {Search, HeartHandshake, Sun, Moon} from 'lucide-react';
 import {GITHUB_REPO} from '../constants';
-import {BRAND_ICON} from './XDSWordmark';
+import {AstryxIcon} from './logos';
 import {SearchPalette} from './SearchPalette';
 import {components} from '../generated/componentRegistry';
 import {packages} from '../generated/packageRegistry';
@@ -68,7 +68,20 @@ export function SharedTopNav() {
     <>
       <XDSTopNav
         label="Astryx navigation"
-        heading={<XDSTopNavHeading logo={BRAND_ICON} headingHref="/" />}
+        heading={
+          <XDSTopNavHeading
+            logo={
+              <AstryxIcon
+                width={24}
+                height={24}
+                role="img"
+                aria-label="Astryx"
+                style={{display: 'block', color: 'var(--color-brand)'}}
+              />
+            }
+            headingHref="/"
+          />
+        }
         centerContent={
           <>
             <XDSTopNavItem
