@@ -4,16 +4,16 @@
 
 import {useState} from 'react';
 import {
-  XDSTable,
-  useXDSTableColumnSettings,
-  useXDSTableColumnSettingsState,
+  Table,
+  useTableColumnSettings,
+  useTableColumnSettingsState,
   proportional,
 } from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
-import {XDSMultiSelector} from '@xds/core/MultiSelector';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSToolbar} from '@xds/core/Toolbar';
-import {XDSText} from '@xds/core/Text';
+import type {TableColumn} from '@xds/core/Table';
+import {MultiSelector} from '@xds/core/MultiSelector';
+import {VStack} from '@xds/core/Layout';
+import {Toolbar} from '@xds/core/Toolbar';
+import {Text} from '@xds/core/Text';
 
 interface User extends Record<string, unknown> {
   id: string;
@@ -67,7 +67,7 @@ const users: User[] = [
   },
 ];
 
-const allColumns: XDSTableColumn<User>[] = [
+const allColumns: TableColumn<User>[] = [
   {key: 'name', header: 'Name', width: proportional(1)},
   {key: 'email', header: 'Email', width: proportional(2)},
   {key: 'role', header: 'Role', width: proportional(1)},
@@ -88,13 +88,13 @@ const allKeys: string[] = ['name', 'email', 'role', 'department', 'status'];
 export default function TableColumnSettingsTable() {
   const [activeKeys, setActiveKeys] = useState<string[]>(allKeys);
 
-  const state = useXDSTableColumnSettingsState({
+  const state = useTableColumnSettingsState({
     columns: columnOptions,
     activeColumnKeys: activeKeys,
     onChangeActiveColumnKeys: keys => setActiveKeys([...keys]),
   });
 
-  const plugin = useXDSTableColumnSettings<User>(state.columnSettingsConfig);
+  const plugin = useTableColumnSettings<User>(state.columnSettingsConfig);
 
   const selectorOptions = columnOptions.map(c => ({
     value: c.key,
@@ -103,12 +103,12 @@ export default function TableColumnSettingsTable() {
   }));
 
   return (
-    <XDSVStack gap={3} width="100%">
-      <XDSToolbar
+    <VStack gap={3} width="100%">
+      <Toolbar
         label="Table actions"
-        startContent={<XDSText type="label">Team</XDSText>}
+        startContent={<Text type="label">Team</Text>}
         endContent={
-          <XDSMultiSelector
+          <MultiSelector
             label="Columns"
             isLabelHidden
             options={selectorOptions}
@@ -117,13 +117,13 @@ export default function TableColumnSettingsTable() {
           />
         }
       />
-      <XDSTable
+      <Table
         data={users}
         columns={allColumns}
         idKey="id"
         hasHover
         plugins={{columnSettings: plugin}}
       />
-    </XDSVStack>
+    </VStack>
   );
 }

@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {XDSTypeahead} from '@xds/core/Typeahead';
-import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
+import {Typeahead} from '@xds/core/Typeahead';
+import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
 
-const fruits: XDSSearchableItem[] = [
+const fruits: SearchableItem[] = [
   {id: '1', label: 'Apple'},
   {id: '2', label: 'Banana'},
   {id: '3', label: 'Cherry'},
@@ -14,7 +14,7 @@ const fruits: XDSSearchableItem[] = [
   {id: '8', label: 'Honeydew'},
 ];
 
-const fruitSource: XDSSearchSource = {
+const fruitSource: SearchSource = {
   search: (query: string) =>
     fruits.filter(f => f.label.toLowerCase().includes(query.toLowerCase())),
   bootstrap: () => fruits.slice(0, 5),
@@ -23,7 +23,7 @@ const fruitSource: XDSSearchSource = {
 export default function TypeaheadShowcase() {
   return (
     <div style={{width: 320}}>
-      <XDSTypeahead
+      <Typeahead
         label="Fruit"
         placeholder="Search fruits..."
         searchSource={fruitSource}

@@ -2,20 +2,20 @@
 
 import React from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSPopover} from '@xds/core/Popover';
+import {Popover} from '@xds/core/Popover';
 import type {PopoverTriggerRenderProps} from '@xds/core/Popover';
-import {XDSButton} from '@xds/core/Button';
-import {XDSToken} from '@xds/core/Token';
-import {XDSLink} from '@xds/core/Link';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSSwitch} from '@xds/core/Switch';
-import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
-import {XDSDivider} from '@xds/core/Divider';
+import {Button} from '@xds/core/Button';
+import {Token} from '@xds/core/Token';
+import {Link} from '@xds/core/Link';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Text, Heading} from '@xds/core/Text';
+import {Switch} from '@xds/core/Switch';
+import {CheckboxInput} from '@xds/core/CheckboxInput';
+import {Divider} from '@xds/core/Divider';
 
-const meta: Meta<typeof XDSPopover> = {
+const meta: Meta<typeof Popover> = {
   title: 'Core/Popover',
-  component: XDSPopover,
+  component: Popover,
   tags: ['autodocs'],
   argTypes: {
     placement: {
@@ -36,7 +36,7 @@ const meta: Meta<typeof XDSPopover> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSPopover>;
+type Story = StoryObj<typeof Popover>;
 
 // =============================================================================
 // Settings Panel
@@ -48,30 +48,30 @@ function SettingsContent() {
   const [sounds, setSounds] = React.useState(true);
 
   return (
-    <XDSVStack gap={3}>
-      <XDSHeading level={4} tabIndex={-1}>
+    <VStack gap={3}>
+      <Heading level={4} tabIndex={-1}>
         Settings
-      </XDSHeading>
-      <XDSDivider />
-      <XDSSwitch
+      </Heading>
+      <Divider />
+      <Switch
         label="Notifications"
         description="Receive push notifications"
         value={notifications}
         onChange={setNotifications}
       />
-      <XDSSwitch
+      <Switch
         label="Dark mode"
         description="Use dark color theme"
         value={darkMode}
         onChange={setDarkMode}
       />
-      <XDSSwitch
+      <Switch
         label="Sounds"
         description="Play sounds for actions"
         value={sounds}
         onChange={setSounds}
       />
-    </XDSVStack>
+    </VStack>
   );
 }
 
@@ -81,7 +81,7 @@ export const Default: Story = {
     label: 'Settings',
     width: 280,
     content: <SettingsContent />,
-    children: <XDSButton label="Settings">Settings</XDSButton>,
+    children: <Button label="Settings">Settings</Button>,
   },
 };
 
@@ -101,37 +101,37 @@ function FilterContent({onApply}: {onApply?: () => void}) {
     setFilters(prev => ({...prev, [key]: !prev[key]}));
 
   return (
-    <XDSVStack gap={3}>
-      <XDSHeading level={4} tabIndex={-1}>
+    <VStack gap={3}>
+      <Heading level={4} tabIndex={-1}>
         Filter by status
-      </XDSHeading>
-      <XDSDivider />
-      <XDSCheckboxInput
+      </Heading>
+      <Divider />
+      <CheckboxInput
         label="Active"
         value={filters.active}
         onChange={() => toggle('active')}
       />
-      <XDSCheckboxInput
+      <CheckboxInput
         label="Archived"
         value={filters.archived}
         onChange={() => toggle('archived')}
       />
-      <XDSCheckboxInput
+      <CheckboxInput
         label="Drafts"
         value={filters.drafts}
         onChange={() => toggle('drafts')}
       />
-      <XDSCheckboxInput
+      <CheckboxInput
         label="Shared with me"
         value={filters.shared}
         onChange={() => toggle('shared')}
       />
-      <XDSDivider />
-      <XDSHStack gap={2} hAlign="end">
-        <XDSButton label="Apply" variant="primary" onClick={onApply}>
+      <Divider />
+      <HStack gap={2} hAlign="end">
+        <Button label="Apply" variant="primary" onClick={onApply}>
           Apply
-        </XDSButton>
-        <XDSButton
+        </Button>
+        <Button
           label="Reset"
           variant="ghost"
           onClick={() =>
@@ -143,9 +143,9 @@ function FilterContent({onApply}: {onApply?: () => void}) {
             })
           }>
           Reset
-        </XDSButton>
-      </XDSHStack>
-    </XDSVStack>
+        </Button>
+      </HStack>
+    </VStack>
   );
 }
 
@@ -153,15 +153,15 @@ export const FilterPanel: Story = {
   render: function FilterPanelStory() {
     const [isOpen, setIsOpen] = React.useState(false);
     return (
-      <XDSPopover
+      <Popover
         placement="below"
         label="Filter"
         width={240}
         isOpen={isOpen}
         onOpenChange={setIsOpen}
         content={<FilterContent onApply={() => setIsOpen(false)} />}>
-        <XDSButton label="Filter">Filter</XDSButton>
-      </XDSPopover>
+        <Button label="Filter">Filter</Button>
+      </Popover>
     );
   },
 };
@@ -178,23 +178,23 @@ function ConfirmContent({
   onCancel?: () => void;
 }) {
   return (
-    <XDSVStack gap={3}>
-      <XDSHeading level={4} tabIndex={-1}>
+    <VStack gap={3}>
+      <Heading level={4} tabIndex={-1}>
         Delete project?
-      </XDSHeading>
-      <XDSText type="body">
+      </Heading>
+      <Text type="body">
         This will permanently delete the project and all its data. This action
         cannot be undone.
-      </XDSText>
-      <XDSHStack gap={2} hAlign="end">
-        <XDSButton label="Delete" variant="destructive" onClick={onConfirm}>
+      </Text>
+      <HStack gap={2} hAlign="end">
+        <Button label="Delete" variant="destructive" onClick={onConfirm}>
           Delete
-        </XDSButton>
-        <XDSButton label="Cancel" variant="ghost" onClick={onCancel}>
+        </Button>
+        <Button label="Cancel" variant="ghost" onClick={onCancel}>
           Cancel
-        </XDSButton>
-      </XDSHStack>
-    </XDSVStack>
+        </Button>
+      </HStack>
+    </VStack>
   );
 }
 
@@ -202,7 +202,7 @@ export const Confirmation: Story = {
   render: function ConfirmationStory() {
     const [isOpen, setIsOpen] = React.useState(false);
     return (
-      <XDSPopover
+      <Popover
         placement="below"
         label="Confirm deletion"
         width={300}
@@ -214,10 +214,10 @@ export const Confirmation: Story = {
             onCancel={() => setIsOpen(false)}
           />
         }>
-        <XDSButton label="Delete project" variant="destructive">
+        <Button label="Delete project" variant="destructive">
           Delete project
-        </XDSButton>
-      </XDSPopover>
+        </Button>
+      </Popover>
     );
   },
 };
@@ -231,24 +231,24 @@ export const AnchorRef: Story = {
     const buttonRef = React.useRef<HTMLButtonElement>(null);
     return (
       <>
-        <XDSButton ref={buttonRef} label="Anchor button">
+        <Button ref={buttonRef} label="Anchor button">
           Anchor button
-        </XDSButton>
-        <XDSPopover
+        </Button>
+        <Popover
           anchorRef={buttonRef as React.RefObject<HTMLElement>}
           label="Sibling popover"
           width={260}
           placement="below"
           content={
-            <XDSVStack gap={2}>
-              <XDSHeading level={4} tabIndex={-1}>
+            <VStack gap={2}>
+              <Heading level={4} tabIndex={-1}>
                 Sibling mode
-              </XDSHeading>
-              <XDSText type="body">
+              </Heading>
+              <Text type="body">
                 This popover uses anchorRef to attach to the button as a
                 sibling, without wrapping it.
-              </XDSText>
-            </XDSVStack>
+              </Text>
+            </VStack>
           }
         />
       </>
@@ -263,38 +263,38 @@ export const AnchorRef: Story = {
 export const Above: Story = {
   render: () => (
     <div style={{paddingTop: 200}}>
-      <XDSPopover
+      <Popover
         placement="above"
         label="Info"
         width={260}
         content={
-          <XDSVStack gap={2}>
-            <XDSHeading level={4} tabIndex={-1}>
+          <VStack gap={2}>
+            <Heading level={4} tabIndex={-1}>
               Keyboard shortcuts
-            </XDSHeading>
-            <XDSDivider />
-            <XDSHStack gap={3}>
-              <XDSText type="body" weight="bold">
+            </Heading>
+            <Divider />
+            <HStack gap={3}>
+              <Text type="body" weight="bold">
                 ⌘K
-              </XDSText>
-              <XDSText type="body">Command palette</XDSText>
-            </XDSHStack>
-            <XDSHStack gap={3}>
-              <XDSText type="body" weight="bold">
+              </Text>
+              <Text type="body">Command palette</Text>
+            </HStack>
+            <HStack gap={3}>
+              <Text type="body" weight="bold">
                 ⌘/
-              </XDSText>
-              <XDSText type="body">Toggle sidebar</XDSText>
-            </XDSHStack>
-            <XDSHStack gap={3}>
-              <XDSText type="body" weight="bold">
+              </Text>
+              <Text type="body">Toggle sidebar</Text>
+            </HStack>
+            <HStack gap={3}>
+              <Text type="body" weight="bold">
                 ⌘.
-              </XDSText>
-              <XDSText type="body">Quick actions</XDSText>
-            </XDSHStack>
-          </XDSVStack>
+              </Text>
+              <Text type="body">Quick actions</Text>
+            </HStack>
+          </VStack>
         }>
-        <XDSButton label="Shortcuts">Shortcuts</XDSButton>
-      </XDSPopover>
+        <Button label="Shortcuts">Shortcuts</Button>
+      </Popover>
     </div>
   ),
 };
@@ -308,34 +308,34 @@ export const Disabled: Story = {
     placement: 'below',
     label: 'Disabled popover',
     isEnabled: false,
-    content: <XDSText type="body">This should not appear.</XDSText>,
-    children: <XDSButton label="Disabled popover">Disabled</XDSButton>,
+    content: <Text type="body">This should not appear.</Text>,
+    children: <Button label="Disabled popover">Disabled</Button>,
   },
 };
 
 // =============================================================================
-// Token as Popover Trigger (via XDSInteractiveRoleContext)
+// Token as Popover Trigger (via InteractiveRoleContext)
 // =============================================================================
 
 export const TokenTrigger: Story = {
   render: () => (
-    <XDSPopover
+    <Popover
       placement="below"
       label="Token options"
       width={220}
       content={
-        <XDSVStack gap={2}>
-          <XDSHeading level={4} tabIndex={-1}>
+        <VStack gap={2}>
+          <Heading level={4} tabIndex={-1}>
             Filter options
-          </XDSHeading>
-          <XDSDivider />
-          <XDSText type="body">
+          </Heading>
+          <Divider />
+          <Text type="body">
             The token automatically renders as a button via context.
-          </XDSText>
-        </XDSVStack>
+          </Text>
+        </VStack>
       }>
-      <XDSToken label="Status: Active" icon="filter" />
-    </XDSPopover>
+      <Token label="Status: Active" icon="filter" />
+    </Popover>
   ),
 };
 
@@ -345,23 +345,23 @@ export const TokenTrigger: Story = {
 
 export const LinkTrigger: Story = {
   render: () => (
-    <XDSPopover
+    <Popover
       placement="below"
       label="Link actions"
       width={220}
       content={
-        <XDSVStack gap={2}>
-          <XDSHeading level={4} tabIndex={-1}>
+        <VStack gap={2}>
+          <Heading level={4} tabIndex={-1}>
             Quick actions
-          </XDSHeading>
-          <XDSDivider />
-          <XDSText type="body">
-            XDSLink without href renders as a button, suitable for triggers.
-          </XDSText>
-        </XDSVStack>
+          </Heading>
+          <Divider />
+          <Text type="body">
+            Link without href renders as a button, suitable for triggers.
+          </Text>
+        </VStack>
       }>
-      <XDSLink>More options</XDSLink>
-    </XDSPopover>
+      <Link>More options</Link>
+    </Popover>
   ),
 };
 
@@ -371,20 +371,20 @@ export const LinkTrigger: Story = {
 
 export const RenderProp: Story = {
   render: () => (
-    <XDSPopover
+    <Popover
       placement="below"
       label="Custom trigger"
       width={260}
       content={
-        <XDSVStack gap={2}>
-          <XDSHeading level={4} tabIndex={-1}>
+        <VStack gap={2}>
+          <Heading level={4} tabIndex={-1}>
             Custom trigger
-          </XDSHeading>
-          <XDSDivider />
-          <XDSText type="body">
+          </Heading>
+          <Divider />
+          <Text type="body">
             The render prop gives full control over the trigger element.
-          </XDSText>
-        </XDSVStack>
+          </Text>
+        </VStack>
       }>
       {(triggerProps: PopoverTriggerRenderProps) => (
         <button
@@ -403,6 +403,6 @@ export const RenderProp: Story = {
           Custom trigger element
         </button>
       )}
-    </XDSPopover>
+    </Popover>
   ),
 };

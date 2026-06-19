@@ -4,40 +4,40 @@
 
 import {useState} from 'react';
 import {
-  XDSSegmentedControl,
-  XDSSegmentedControlItem,
+  SegmentedControl,
+  SegmentedControlItem,
 } from '@xds/core/SegmentedControl';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSIcon} from '@xds/core/Icon';
+import {Center} from '@xds/core/Center';
+import {Icon} from '@xds/core/Icon';
 
 export default function SegmentedControlItemShowcase() {
   const [view, setView] = useState('board');
 
   return (
-    <XDSCenter>
-      <XDSSegmentedControl value={view} onChange={setView} label="View mode">
-        <XDSSegmentedControlItem
+    <Center>
+      <SegmentedControl value={view} onChange={setView} label="View mode">
+        <SegmentedControlItem
           value="board"
           label="Board"
-          icon={<XDSIcon icon="viewColumns" />}
+          icon={<Icon icon="viewColumns" />}
         />
-        <XDSSegmentedControlItem
+        <SegmentedControlItem
           value="list"
           label="List"
-          icon={<XDSIcon icon="menu" />}
+          icon={<Icon icon="menu" />}
         />
-        <XDSSegmentedControlItem
+        <SegmentedControlItem
           value="timeline"
           label="Timeline"
-          icon={<XDSIcon icon="calendar" />}
+          icon={<Icon icon="calendar" />}
         />
-        <XDSSegmentedControlItem
+        <SegmentedControlItem
           value="chart"
           label="Chart"
-          icon={<XDSIcon icon="arrowsUpDown" />}
+          icon={<Icon icon="arrowsUpDown" />}
           isDisabled
         />
-      </XDSSegmentedControl>
-    </XDSCenter>
+      </SegmentedControl>
+    </Center>
   );
 }

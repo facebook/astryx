@@ -2,12 +2,12 @@
 
 'use client';
 
-import {XDSFileInput} from '@xds/core/FileInput';
+import {FileInput} from '@xds/core/FileInput';
 
 export default function FileInputShowcase() {
   return (
     <div style={{width: 350}}>
-      <XDSFileInput
+      <FileInput
         label="Upload file"
         value={null}
         onChange={() => {}}

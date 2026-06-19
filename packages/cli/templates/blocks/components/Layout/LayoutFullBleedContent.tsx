@@ -3,47 +3,47 @@
 'use client';
 
 import {
-  XDSLayout,
-  XDSLayoutHeader,
-  XDSLayoutContent,
-  XDSLayoutFooter,
-  XDSHStack,
+  Layout,
+  LayoutHeader,
+  LayoutContent,
+  LayoutFooter,
+  HStack,
 } from '@xds/core/Layout';
-import {XDSCard} from '@xds/core/Card';
-import {XDSButton} from '@xds/core/Button';
-import {XDSSection} from '@xds/core/Section';
-import {XDSHeading, XDSText} from '@xds/core/Text';
+import {Card} from '@xds/core/Card';
+import {Button} from '@xds/core/Button';
+import {Section} from '@xds/core/Section';
+import {Heading, Text} from '@xds/core/Text';
 
 export default function LayoutFullBleedContent() {
   return (
-    <XDSCard width="100%" style={{maxWidth: 400}}>
-      <XDSLayout
+    <Card width="100%" style={{maxWidth: 400}}>
+      <Layout
         header={
-          <XDSLayoutHeader hasDivider>
-            <XDSHeading level={4}>Full Bleed Example</XDSHeading>
-          </XDSLayoutHeader>
+          <LayoutHeader hasDivider>
+            <Heading level={4}>Full Bleed Example</Heading>
+          </LayoutHeader>
         }
         content={
-          <XDSLayoutContent padding={0}>
-            <XDSSection variant="muted">
-              <XDSText type="body">
-                XDSSection automatically escapes the parent container padding to
+          <LayoutContent padding={0}>
+            <Section variant="muted">
+              <Text type="body">
+                Section automatically escapes the parent container padding to
                 fill edge-to-edge. Useful for wash backgrounds, tables, or
                 images that need to span the full width.
-              </XDSText>
-            </XDSSection>
-          </XDSLayoutContent>
+              </Text>
+            </Section>
+          </LayoutContent>
         }
         footer={
-          <XDSLayoutFooter hasDivider>
-            <XDSHStack gap={2} hAlign="end">
-              <XDSButton label="Close" variant="secondary">
+          <LayoutFooter hasDivider>
+            <HStack gap={2} hAlign="end">
+              <Button label="Close" variant="secondary">
                 Close
-              </XDSButton>
-            </XDSHStack>
-          </XDSLayoutFooter>
+              </Button>
+            </HStack>
+          </LayoutFooter>
         }
       />
-    </XDSCard>
+    </Card>
   );
 }

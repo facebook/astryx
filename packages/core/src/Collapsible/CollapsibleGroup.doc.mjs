@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Collapsible',
   displayName: 'Collapsible Group',
   isHiddenFromOverview: true,
-  description: 'Coordinates multiple XDSCollapsible instances so only one (single mode) or any number (multiple mode) can be open at a time. Renders no wrapper DOM element.',
+  description: 'Coordinates multiple Collapsible instances so only one (single mode) or any number (multiple mode) can be open at a time. Renders no wrapper DOM element.',
   props: [
     {
       name: 'type',
@@ -33,11 +33,11 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'XDSCollapsible instances to coordinate.',
+      description: 'Collapsible instances to coordinate.',
       required: true,
       slotElements: [
         {
-          __element: 'XDSCollapsible',
+          __element: 'Collapsible',
           props: {
             trigger: 'Section',
           },
@@ -52,7 +52,7 @@ export const docsZh = {
   name: 'CollapsibleGroup',
   isHiddenFromOverview: true,
   displayName: 'Collapsible Group',
-  description: '协调多个 XDSCollapsible 实例，使同一时间只有一个（single 模式）或任意数量（multiple 模式）可以展开。不渲染包裹 DOM 元素。',
+  description: '协调多个 Collapsible 实例，使同一时间只有一个（single 模式）或任意数量（multiple 模式）可以展开。不渲染包裹 DOM 元素。',
   props: [
     {
       name: 'type',
@@ -78,7 +78,7 @@ export const docsZh = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: '需要协调的 XDSCollapsible 实例。',
+      description: '需要协调的 Collapsible 实例。',
       required: true,
     },
   ],
@@ -88,12 +88,12 @@ export const docsDense = {
   name: 'CollapsibleGroup',
   isHiddenFromOverview: true,
   displayName: 'Collapsible Group',
-  description: 'coordinates multiple XDSCollapsible instances; single or multiple open. no wrapper DOM.',
+  description: 'coordinates multiple Collapsible instances; single or multiple open. no wrapper DOM.',
   propDescriptions: {
     type: 'one or many items open simultaneously',
     defaultValue: 'default open item(s) (uncontrolled); string for single, array for multiple',
     value: 'controlled open item(s)',
     onChange: 'callback on open items change',
-    children: 'XDSCollapsible instances to coordinate',
+    children: 'Collapsible instances to coordinate',
   },
 };

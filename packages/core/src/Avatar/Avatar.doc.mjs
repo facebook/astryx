@@ -55,7 +55,7 @@ export const docs = {
     },
     {
       name: 'size',
-      type: 'XDSAvatarSize',
+      type: 'AvatarSize',
       description: 'Avatar size (named or numeric pixel value).',
       default: "'small'",
     },
@@ -65,7 +65,7 @@ export const docs = {
       description: 'Corner content for status indicators.',
       slotElements: [
         {
-          __element: 'XDSStatusDot',
+          __element: 'StatusDot',
           props: {
             variant: 'online',
           },
@@ -74,7 +74,7 @@ export const docs = {
     },
   ],
   components: [
-    {name: 'XDSAvatarStatusDot'},
+    {name: 'AvatarStatusDot'},
   ],
 };
 
@@ -85,7 +85,7 @@ export const docsZh = {
       'Avatar displays a user or entity\'s profile picture with automatic fallback to initials or a default icon. Use it alongside user information to visually represent people, teams, or entities throughout the interface.',
     bestPractices: [
       {guidance: true, description: 'Always provide a name prop so the component can generate meaningful initials and alt text when the image fails to load.'},
-      {guidance: true, description: 'Use the status slot with XDSAvatarStatusDot to indicate online presence or availability when relevant to the context.'},
+      {guidance: true, description: 'Use the status slot with AvatarStatusDot to indicate online presence or availability when relevant to the context.'},
       {guidance: false, description: 'Use Avatar for decorative images or logos that aren\'t representing a person or entity. Use an image or icon component instead.'},
       {guidance: false, description: 'Override the circular shape. Avatars are always round to maintain visual consistency across the system.'},
     ],

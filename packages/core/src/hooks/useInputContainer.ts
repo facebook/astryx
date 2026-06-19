@@ -54,8 +54,8 @@ export interface UseInputContainerOptions {
  * Nested interactive elements (clear buttons, links) are handled safely
  * via useClickableContainer — clicking them does NOT steal focus.
  *
- * @compositionHint Use inside input wrapper components (XDSTextInput,
- * XDSNumberInput, XDSTimeInput, XDSTextArea, etc.).
+ * @compositionHint Use inside input wrapper components (TextInput,
+ * NumberInput, TimeInput, TextArea, etc.).
  *
  * @example
  * ```
@@ -67,7 +67,7 @@ export interface UseInputContainerOptions {
  * });
  * return (
  *   <div ref={containerRef} onClick={onClick} onMouseUp={onMouseUp}>
- *     <XDSIcon icon="search" />
+ *     <Icon icon="search" />
  *     <input ref={inputRef} />
  *   </div>
  * );

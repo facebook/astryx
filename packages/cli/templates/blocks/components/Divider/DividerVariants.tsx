@@ -2,36 +2,36 @@
 
 'use client';
 
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Divider} from '@xds/core/Divider';
+import {Card} from '@xds/core/Card';
+import {Section} from '@xds/core/Section';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function DividerVariants() {
   return (
-    <XDSSection variant="transparent" width="100%">
-      <XDSCard width={400}>
-        <XDSVStack gap={3}>
-          <XDSVStack gap={1}>
-            <XDSText type="label">Sign in with email</XDSText>
-            <XDSText type="body">
+    <Section variant="transparent" width="100%">
+      <Card width={400}>
+        <VStack gap={3}>
+          <VStack gap={1}>
+            <Text type="label">Sign in with email</Text>
+            <Text type="body">
               Enter your email and password to access your account.
-            </XDSText>
-          </XDSVStack>
-          <XDSDivider label="or" />
-          <XDSVStack gap={1}>
-            <XDSText type="label">Sign in with SSO</XDSText>
-            <XDSText type="body">
+            </Text>
+          </VStack>
+          <Divider label="or" />
+          <VStack gap={1}>
+            <Text type="label">Sign in with SSO</Text>
+            <Text type="body">
               Use your company credentials to sign in automatically.
-            </XDSText>
-          </XDSVStack>
-          <XDSDivider variant="strong" />
-          <XDSText type="supporting" color="secondary">
+            </Text>
+          </VStack>
+          <Divider variant="strong" />
+          <Text type="supporting" color="secondary">
             By signing in, you agree to our Terms of Service and Privacy Policy.
-          </XDSText>
-        </XDSVStack>
-      </XDSCard>
-    </XDSSection>
+          </Text>
+        </VStack>
+      </Card>
+    </Section>
   );
 }

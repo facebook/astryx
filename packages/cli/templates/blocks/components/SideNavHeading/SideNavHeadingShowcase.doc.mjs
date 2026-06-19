@@ -6,7 +6,7 @@ export const doc = {
   exampleFor: 'SideNavHeading',
   name: 'SideNavHeading',
   displayName: 'Side Nav Heading',
-  description: 'Demonstrates XDSSideNavHeading with an app name, logo icon, superheading, and subheading.',
+  description: 'Demonstrates SideNavHeading with an app name, logo icon, superheading, and subheading.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 4 / 3,

@@ -26,7 +26,7 @@ export const docs = {
       description: 'Content rendered before the label area (e.g. icon, avatar).',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',
@@ -40,14 +40,14 @@ export const docs = {
       description: 'Content rendered after the label area (e.g. badge, chevron).',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'chevronDown',
             size: 'sm',
           },
         },
         {
-          __element: 'XDSBadge',
+          __element: 'Badge',
           props: {
             label: '3',
           },

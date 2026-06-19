@@ -3,12 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSSlider} from '@xds/core/Slider';
+import {Slider} from '@xds/core/Slider';
 
 export default function SliderRangeSlider() {
   const [value, setValue] = useState<[number, number]>([20, 80]);
   return (
-    <XDSSlider
+    <Slider
       label="Price range"
       value={value}
       onChange={setValue}

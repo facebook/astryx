@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSTreeList} from '@xds/core/TreeList';
-import type {XDSTreeListItemData} from '@xds/core/TreeList';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSBadge} from '@xds/core/Badge';
+import {TreeList} from '@xds/core/TreeList';
+import type {TreeListItemData} from '@xds/core/TreeList';
+import {Icon} from '@xds/core/Icon';
+import {Badge} from '@xds/core/Badge';
 import {
   FolderIcon,
   DocumentIcon,
@@ -14,9 +14,9 @@ import {
 
 const noop = () => {};
 
-const meta: Meta<typeof XDSTreeList> = {
+const meta: Meta<typeof TreeList> = {
   title: 'Core/TreeList',
-  component: XDSTreeList,
+  component: TreeList,
   tags: ['autodocs'],
   argTypes: {
     density: {
@@ -28,9 +28,9 @@ const meta: Meta<typeof XDSTreeList> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSTreeList>;
+type Story = StoryObj<typeof TreeList>;
 
-const fileTreeItems: XDSTreeListItemData[] = [
+const fileTreeItems: TreeListItemData[] = [
   {
     id: 'src',
     label: 'src',
@@ -111,19 +111,19 @@ export const WithIcons: Story = {
         id: 'src',
         label: 'src',
         isExpanded: true,
-        startContent: <XDSIcon icon={FolderIcon} />,
+        startContent: <Icon icon={FolderIcon} />,
         children: [
           {
             id: 'app',
             label: 'App.tsx',
             onClick: noop,
-            startContent: <XDSIcon icon={DocumentIcon} />,
+            startContent: <Icon icon={DocumentIcon} />,
           },
           {
             id: 'index',
             label: 'index.tsx',
             onClick: noop,
-            startContent: <XDSIcon icon={DocumentIcon} />,
+            startContent: <Icon icon={DocumentIcon} />,
           },
         ],
       },
@@ -131,7 +131,7 @@ export const WithIcons: Story = {
         id: 'pkg',
         label: 'package.json',
         onClick: noop,
-        startContent: <XDSIcon icon={DocumentIcon} />,
+        startContent: <Icon icon={DocumentIcon} />,
       },
     ],
   },
@@ -231,7 +231,7 @@ export const Interactive: Story = {
         id: 'settings',
         label: 'Settings',
         isExpanded: true,
-        startContent: <XDSIcon icon={Cog6ToothIcon} />,
+        startContent: <Icon icon={Cog6ToothIcon} />,
         onClick: () => alert('Settings'),
         children: [
           {
@@ -250,7 +250,7 @@ export const Interactive: Story = {
         id: 'docs',
         label: 'Documentation',
         href: '#',
-        endContent: <XDSIcon icon={ChevronRightIcon} />,
+        endContent: <Icon icon={ChevronRightIcon} />,
       },
     ],
   },
@@ -263,14 +263,14 @@ export const WithEndContent: Story = {
         id: 'inbox',
         label: 'Inbox',
         isExpanded: true,
-        endContent: <XDSBadge label="3" />,
+        endContent: <Badge label="3" />,
         children: [
-          {id: 'unread', label: 'Unread', onClick: noop, endContent: <XDSBadge label="3" />},
+          {id: 'unread', label: 'Unread', onClick: noop, endContent: <Badge label="3" />},
           {id: 'starred', label: 'Starred', onClick: noop},
         ],
       },
       {id: 'sent', label: 'Sent', onClick: noop},
-      {id: 'drafts', label: 'Drafts', onClick: noop, endContent: <XDSBadge label="1" />},
+      {id: 'drafts', label: 'Drafts', onClick: noop, endContent: <Badge label="1" />},
     ],
   },
 };

@@ -17,7 +17,7 @@
  */
 
 // Core layer hook (remains in Layer)
-export {useXDSLayer} from './useXDSLayer';
+export {useLayer} from './useLayer';
 export type {
   LayerAlignment,
   LayerPlacement,
@@ -27,39 +27,84 @@ export type {
   FixedLayerOptions,
   ContextLayerReturn,
   FixedLayerReturn,
-} from './useXDSLayer';
+} from './useLayer';
 
 // Layer provider
-export {XDSLayerProvider} from './XDSLayerProvider';
-export type {XDSLayerProviderProps} from './XDSLayerProvider';
-export {XDSLayerContext, useXDSLayerContext} from './XDSLayerContext';
-export type {XDSLayerContextValue, LayerToastConfig} from './XDSLayerContext';
+export {LayerProvider} from './LayerProvider';
+export type {LayerProviderProps} from './LayerProvider';
+export {LayerContext, useLayerContext} from './LayerContext';
+export type {LayerContextValue, LayerToastConfig} from './LayerContext';
 
 // Shared entry animation styles for layer-based components
 export {layerAnimations} from './layerAnimations.stylex';
 
 // Re-export Popover from new location (backward compat)
-export {useXDSPopover, XDSPopover} from '../Popover';
+export {usePopover, Popover} from '../Popover';
 export type {
-  UseXDSPopoverOptions,
-  UseXDSPopoverReturn,
-  XDSPopoverProps,
+  UsePopoverOptions,
+  UsePopoverReturn,
+  PopoverProps,
 } from '../Popover';
 
 // Re-export HoverCard from new location (backward compat)
-export {useXDSHoverCard, XDSHoverCard} from '../HoverCard';
+export {useHoverCard, HoverCard} from '../HoverCard';
 export type {
   HoverCardFocusTrigger,
-  XDSHoverCardOptions,
-  XDSHoverCardReturn,
-  XDSHoverCardProps,
+  HoverCardOptions,
+  HoverCardReturn,
+  HoverCardProps,
 } from '../HoverCard';
 
 // Re-export Tooltip from new location (backward compat)
-export {useXDSTooltip, XDSTooltip} from '../Tooltip';
+export {useTooltip, Tooltip} from '../Tooltip';
 export type {
   TooltipFocusTrigger,
-  XDSTooltipOptions,
-  XDSTooltipReturn,
-  XDSTooltipProps,
+  TooltipOptions,
+  TooltipReturn,
+  TooltipProps,
 } from '../Tooltip';
+
+
+// <compat-aliases:start> — generated, do not edit by hand
+// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
+// Bare names above are canonical + module-augmentation targets.
+// These prefixed re-exports reference the SAME values/types and remain
+// augmentable (consumer `declare module` augmentations of XDS* flow through).
+// Regenerate: node scripts/generate-compat-aliases.mjs
+export {
+  HoverCard as XDSHoverCard,
+  LayerContext as XDSLayerContext,
+  LayerProvider as XDSLayerProvider,
+  Popover as XDSPopover,
+  Tooltip as XDSTooltip,
+  useHoverCard as useXDSHoverCard,
+  useLayer as useXDSLayer,
+  useLayerContext as useXDSLayerContext,
+  usePopover as useXDSPopover,
+  useTooltip as useXDSTooltip,
+} from '.';
+export type {
+  ContextLayerOptions as XDSContextLayerOptions,
+  ContextLayerReturn as XDSContextLayerReturn,
+  ContextRenderProps as XDSContextRenderProps,
+  FixedLayerOptions as XDSFixedLayerOptions,
+  FixedLayerReturn as XDSFixedLayerReturn,
+  FixedRenderProps as XDSFixedRenderProps,
+  HoverCardFocusTrigger as XDSHoverCardFocusTrigger,
+  HoverCardOptions as XDSHoverCardOptions,
+  HoverCardProps as XDSHoverCardProps,
+  HoverCardReturn as XDSHoverCardReturn,
+  LayerAlignment as XDSLayerAlignment,
+  LayerContextValue as XDSLayerContextValue,
+  LayerPlacement as XDSLayerPlacement,
+  LayerProviderProps as XDSLayerProviderProps,
+  LayerToastConfig as XDSLayerToastConfig,
+  PopoverProps as XDSPopoverProps,
+  TooltipFocusTrigger as XDSTooltipFocusTrigger,
+  TooltipOptions as XDSTooltipOptions,
+  TooltipProps as XDSTooltipProps,
+  TooltipReturn as XDSTooltipReturn,
+  UsePopoverOptions as XDSUsePopoverOptions,
+  UsePopoverReturn as XDSUsePopoverReturn,
+} from '.';
+// <compat-aliases:end>

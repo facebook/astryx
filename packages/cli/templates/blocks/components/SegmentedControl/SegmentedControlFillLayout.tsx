@@ -4,23 +4,23 @@
 
 import {useState} from 'react';
 import {
-  XDSSegmentedControl,
-  XDSSegmentedControlItem,
+  SegmentedControl,
+  SegmentedControlItem,
 } from '@xds/core/SegmentedControl';
 
 export default function SegmentedControlFillLayout() {
   const [value, setValue] = useState('weekly');
   return (
     <div style={{width: 400}}>
-      <XDSSegmentedControl
+      <SegmentedControl
         value={value}
         onChange={setValue}
         label="Time range"
         layout="fill">
-        <XDSSegmentedControlItem value="daily" label="Daily" />
-        <XDSSegmentedControlItem value="weekly" label="Weekly" />
-        <XDSSegmentedControlItem value="monthly" label="Monthly" />
-      </XDSSegmentedControl>
+        <SegmentedControlItem value="daily" label="Daily" />
+        <SegmentedControlItem value="weekly" label="Weekly" />
+        <SegmentedControlItem value="monthly" label="Monthly" />
+      </SegmentedControl>
     </div>
   );
 }

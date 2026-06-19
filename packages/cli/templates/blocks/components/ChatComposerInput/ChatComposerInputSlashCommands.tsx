@@ -3,16 +3,16 @@
 'use client';
 
 import {
-  XDSChatComposer,
-  XDSChatComposerInput,
-  type XDSChatComposerTrigger,
+  ChatComposer,
+  ChatComposerInput,
+  type ChatComposerTrigger,
 } from '@xds/core/Chat';
 import {createStaticSource} from '@xds/core/Typeahead';
-import {XDSTypeaheadItem} from '@xds/core/Typeahead';
-import type {XDSSearchableItem} from '@xds/core/Typeahead';
-import {XDSStack} from '@xds/core/Layout';
+import {TypeaheadItem} from '@xds/core/Typeahead';
+import type {SearchableItem} from '@xds/core/Typeahead';
+import {Stack} from '@xds/core/Layout';
 
-const COMMANDS: XDSSearchableItem<{description: string}>[] = [
+const COMMANDS: SearchableItem<{description: string}>[] = [
   {id: 'summarize', label: 'summarize', auxiliaryData: {description: 'Summarize the conversation'}},
   {id: 'translate', label: 'translate', auxiliaryData: {description: 'Translate text to another language'}},
   {id: 'search', label: 'search', auxiliaryData: {description: 'Search the web or documents'}},
@@ -23,11 +23,11 @@ const COMMANDS: XDSSearchableItem<{description: string}>[] = [
 const commandSource = createStaticSource(COMMANDS);
 
 export default function ChatComposerInputSlashCommands() {
-  const commandTrigger: XDSChatComposerTrigger = {
+  const commandTrigger: ChatComposerTrigger = {
     character: '/',
     searchSource: commandSource,
     renderItem: item => (
-      <XDSTypeaheadItem
+      <TypeaheadItem
         item={item}
         description={(item.auxiliaryData as {description: string})?.description}
       />
@@ -40,16 +40,16 @@ export default function ChatComposerInputSlashCommands() {
   };
 
   return (
-    <XDSStack direction="vertical" style={{width: '100%', maxWidth: 450}}>
-      <XDSChatComposer
+    <Stack direction="vertical" style={{width: '100%', maxWidth: 450}}>
+      <ChatComposer
         onSubmit={() => {}}
         input={
-          <XDSChatComposerInput
+          <ChatComposerInput
             triggers={[commandTrigger]}
             placeholder="Type / for commands..."
           />
         }
       />
-    </XDSStack>
+    </Stack>
   );
 }

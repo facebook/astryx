@@ -393,15 +393,16 @@
      =========================================================================== */
 
   /*
-   * color-scheme flip for [data-xds-media] — makes light-dark() base
+   * color-scheme flip for [data-*-media] — makes light-dark() base
    * tokens resolve correctly on inverted surfaces without a theme.
    * Token overrides (text/icon/accent) are theme-level (generateOnMediaCSS).
+   * Dual-prefix (astryx + legacy xds) during the compat window.
    */
-  :where([data-xds-media="dark"]) {
+  :where([data-astryx-media="dark"], [data-xds-media="dark"]) {
     color-scheme: dark;
   }
 
-  :where([data-xds-media="light"]) {
+  :where([data-astryx-media="light"], [data-xds-media="light"]) {
     color-scheme: light;
   }
 }

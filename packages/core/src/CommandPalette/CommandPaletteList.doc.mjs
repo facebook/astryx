@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'CommandPalette',
   displayName: 'Command Palette List',
   isHiddenFromOverview: true,
-  description: 'Scrollable results container. Renders as a listbox for ARIA. Contains XDSCommandPaletteItem and XDSCommandPaletteGroup children.',
+  description: 'Scrollable results container. Renders as a listbox for ARIA. Contains CommandPaletteItem and CommandPaletteGroup children.',
   props: [
     {
       name: 'children',

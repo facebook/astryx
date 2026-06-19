@@ -2,12 +2,12 @@
 
 'use client';
 
-import {XDSMediaTheme} from '@xds/core/theme';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSButton} from '@xds/core/Button';
-import {XDSSection} from '@xds/core/Section';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {MediaTheme} from '@xds/core/theme';
+import {AspectRatio} from '@xds/core/AspectRatio';
+import {Button} from '@xds/core/Button';
+import {Section} from '@xds/core/Section';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 // light-scene-horizontal-1 from xds_oss asset set
 const LANDSCAPE_IMAGE_URL =
@@ -15,7 +15,7 @@ const LANDSCAPE_IMAGE_URL =
 
 export default function MediaThemeImageOverlay() {
   return (
-    <XDSAspectRatio
+    <AspectRatio
       ratio={16 / 9}
       style={{
         width: 360,
@@ -27,7 +27,7 @@ export default function MediaThemeImageOverlay() {
         alt="Landscape"
         style={{width: '100%', height: '100%', objectFit: 'cover'}}
       />
-      <XDSSection
+      <Section
         variant="transparent"
         padding={4}
         style={{
@@ -37,22 +37,22 @@ export default function MediaThemeImageOverlay() {
           background:
             'linear-gradient(180deg, transparent, rgba(10,19,23,0.78))',
         }}>
-        <XDSMediaTheme mode="dark">
-          <XDSStack direction="vertical" gap={2}>
-            <XDSText type="body" weight="bold">
+        <MediaTheme mode="dark">
+          <Stack direction="vertical" gap={2}>
+            <Text type="body" weight="bold">
               Product launch livestream
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
+            </Text>
+            <Text type="supporting" color="secondary">
               MediaTheme keeps overlay text and controls readable without
               hard-coded color overrides.
-            </XDSText>
-            <XDSStack direction="horizontal" gap={2} wrap="wrap">
-              <XDSButton label="Watch" size="sm" />
-              <XDSButton label="Details" variant="secondary" size="sm" />
-            </XDSStack>
-          </XDSStack>
-        </XDSMediaTheme>
-      </XDSSection>
-    </XDSAspectRatio>
+            </Text>
+            <Stack direction="horizontal" gap={2} wrap="wrap">
+              <Button label="Watch" size="sm" />
+              <Button label="Details" variant="secondary" size="sm" />
+            </Stack>
+          </Stack>
+        </MediaTheme>
+      </Section>
+    </AspectRatio>
   );
 }

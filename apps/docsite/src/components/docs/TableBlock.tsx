@@ -2,9 +2,9 @@
 
 'use client';
 
-import {XDSText} from '@xds/core/Text';
-import {XDSTable} from '@xds/core/Table';
-import {XDSCard} from '@xds/core/Card';
+import {Text} from '@xds/core/Text';
+import {Table} from '@xds/core/Table';
+import {Card} from '@xds/core/Card';
 import {renderInlineCode} from './renderInlineCode';
 
 export function TableBlock({
@@ -26,19 +26,19 @@ export function TableBlock({
     key: h,
     header: h,
     renderCell: (item: Record<string, unknown>) => (
-      <XDSText>{renderInlineCode(item[h] as string)}</XDSText>
+      <Text>{renderInlineCode(item[h] as string)}</Text>
     ),
   }));
 
   return (
-    <XDSCard>
-      <XDSTable
+    <Card>
+      <Table
         data={data}
         columns={columns}
         density="spacious"
         dividers="rows"
         hasHover
       />
-    </XDSCard>
+    </Card>
   );
 }

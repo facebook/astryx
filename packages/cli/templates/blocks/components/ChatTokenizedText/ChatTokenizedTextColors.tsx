@@ -3,10 +3,10 @@
 'use client';
 
 import {
-  XDSChatTokenizedText,
-  XDSChatMessage,
-  XDSChatMessageBubble,
-  XDSChatMessageList,
+  ChatTokenizedText,
+  ChatMessage,
+  ChatMessageBubble,
+  ChatMessageList,
 } from '@xds/core/Chat';
 
 const mixedTokens = [
@@ -17,14 +17,14 @@ const mixedTokens = [
 
 export default function ChatTokenizedTextColors() {
   return (
-    <XDSChatMessageList>
-      <XDSChatMessage sender="system">
-        <XDSChatMessageBubble>
-          <XDSChatTokenizedText tokens={mixedTokens}>
+    <ChatMessageList>
+      <ChatMessage sender="system">
+        <ChatMessageBubble>
+          <ChatTokenizedText tokens={mixedTokens}>
             @cindy filed #bug and #feat for the sprint
-          </XDSChatTokenizedText>
-        </XDSChatMessageBubble>
-      </XDSChatMessage>
-    </XDSChatMessageList>
+          </ChatTokenizedText>
+        </ChatMessageBubble>
+      </ChatMessage>
+    </ChatMessageList>
   );
 }

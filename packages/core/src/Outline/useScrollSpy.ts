@@ -6,9 +6,9 @@
  * @file useScrollSpy.ts
  * @input Uses React, IntersectionObserver, OutlineItem type
  * @output Exports internal useScrollSpy hook
- * @position Internal behavior hook; consumed by XDSOutline.tsx
+ * @position Internal behavior hook; consumed by Outline.tsx
  *
- * SYNC: When modified, update /packages/core/src/Outline/XDSOutline.tsx
+ * SYNC: When modified, update /packages/core/src/Outline/Outline.tsx
  */
 
 import {useEffect, useRef, useState} from 'react';

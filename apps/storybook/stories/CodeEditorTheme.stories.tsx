@@ -4,7 +4,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
 import {XDSCodeEditor} from '@xds/lab';
 import {
-  XDSSyntaxTheme as SyntaxThemeProvider,
+  SyntaxTheme as SyntaxThemeProvider,
   defineSyntaxTheme,
 } from '@xds/core/theme/syntax';
 import {
@@ -90,7 +90,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          'Syntax theme showcase for XDSCodeEditor. All themes from XDSSyntaxTheme ' +
+          'Syntax theme showcase for XDSCodeEditor. All themes from SyntaxTheme ' +
           'work identically on both CodeBlock and CodeEditor.',
       },
     },

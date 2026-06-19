@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSField} from '@xds/core/Field';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSStack} from '@xds/core/Layout';
+import {Field} from '@xds/core/Field';
+import {TextInput} from '@xds/core/TextInput';
+import {Stack} from '@xds/core/Layout';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
@@ -23,21 +23,21 @@ export default function FieldShowcase() {
       : undefined;
 
   return (
-    <XDSStack direction="vertical" gap={3} xstyle={styles.root}>
-      <XDSField
+    <Stack direction="vertical" gap={3} xstyle={styles.root}>
+      <Field
         label="Email"
         inputID="field-email"
         description="We will never share your email."
         isRequired
         status={status}>
-        <XDSTextInput
+        <TextInput
           label="Email"
           isLabelHidden
           value={email}
           onChange={setEmail}
           placeholder="you@example.com"
         />
-      </XDSField>
-    </XDSStack>
+      </Field>
+    </Stack>
   );
 }

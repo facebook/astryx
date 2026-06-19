@@ -2,13 +2,13 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
-import {XDSText} from '@xds/core/Text';
-import {XDSLink} from '@xds/core/Link';
-import {XDSButton} from '@xds/core/Button';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
-import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
-import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
+import {Text} from '@xds/core/Text';
+import {Link} from '@xds/core/Link';
+import {Button} from '@xds/core/Button';
+import {HStack, VStack} from '@xds/core/Layout';
+import {Grid, GridSpan} from '@xds/core/Grid';
+import {Card} from '@xds/core/Card';
+import {Section} from '@xds/core/Section';
 import {GITHUB_REPO} from '../constants';
 import {
   AstryxLogo,
@@ -76,18 +76,18 @@ export function SiteFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <XDSSection role="contentinfo" padding={4}>
-      <XDSVStack gap={4}>
-        <XDSGrid columns={5} xstyle={styles.footerLinks} align="center">
+    <Section role="contentinfo" padding={4}>
+      <VStack gap={4}>
+        <Grid columns={5} xstyle={styles.footerLinks} align="center">
           <AstryxLogo
             role="img"
             aria-label="Astryx"
             {...stylex.props(styles.logo)}
           />
-          <XDSGridSpan columns={3}>
-            <XDSHStack gap={4} align="center" hAlign="center">
+          <GridSpan columns={3}>
+            <HStack gap={4} align="center" hAlign="center">
               {FOOTER_LINKS.map(item => (
-                <XDSLink
+                <Link
                   key={item.label}
                   href={item.href}
                   type="supporting"
@@ -95,13 +95,13 @@ export function SiteFooter() {
                   isStandalone
                   target={item.isExternal ? '_blank' : undefined}>
                   {item.label}
-                </XDSLink>
+                </Link>
               ))}
-            </XDSHStack>
-          </XDSGridSpan>
-          <XDSHStack gap={2} align="center" justify="end">
+            </HStack>
+          </GridSpan>
+          <HStack gap={2} align="center" justify="end">
             {SOCIAL_LINKS.map(social => (
-              <XDSButton
+              <Button
                 key={social.label}
                 label={social.label}
                 tooltip={social.label}
@@ -116,12 +116,12 @@ export function SiteFooter() {
                 href={social.href}
               />
             ))}
-          </XDSHStack>
-        </XDSGrid>
+          </HStack>
+        </Grid>
 
-        <XDSCard variant="muted">
-          <XDSGrid columns={4} align="center">
-            <XDSLink
+        <Card variant="muted">
+          <Grid columns={4} align="center">
+            <Link
               href="https://opensource.fb.com"
               label="Meta Open Source"
               target="_blank">
@@ -129,11 +129,11 @@ export function SiteFooter() {
                 aria-hidden="true"
                 {...stylex.props(styles.metaOpenSourceLogo)}
               />
-            </XDSLink>
-            <XDSGridSpan columns={2}>
-              <XDSHStack gap={4} align="center" hAlign="center" width="100%">
+            </Link>
+            <GridSpan columns={2}>
+              <HStack gap={4} align="center" hAlign="center" width="100%">
                 {LEGAL_LINKS.map(link => (
-                  <XDSLink
+                  <Link
                     key={link.label}
                     href={link.href}
                     type="supporting"
@@ -141,16 +141,16 @@ export function SiteFooter() {
                     isStandalone
                     target="_blank">
                     {link.label}
-                  </XDSLink>
+                  </Link>
                 ))}
-              </XDSHStack>
-            </XDSGridSpan>
-            <XDSText type="supporting" color="secondary" justify="end">
+              </HStack>
+            </GridSpan>
+            <Text type="supporting" color="secondary" justify="end">
               &copy; {year} Meta Platforms, Inc.
-            </XDSText>
-          </XDSGrid>
-        </XDSCard>
-      </XDSVStack>
-    </XDSSection>
+            </Text>
+          </Grid>
+        </Card>
+      </VStack>
+    </Section>
   );
 }

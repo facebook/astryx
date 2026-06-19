@@ -2,12 +2,12 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSNumberInput} from '@xds/core/NumberInput';
+import {NumberInput} from '@xds/core/NumberInput';
 import {HashtagIcon, CurrencyDollarIcon} from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSNumberInput> = {
+const meta: Meta<typeof NumberInput> = {
   title: 'Core/NumberInput',
-  component: XDSNumberInput,
+  component: NumberInput,
   tags: ['autodocs'],
   argTypes: {
     label: {
@@ -89,12 +89,12 @@ const meta: Meta<typeof XDSNumberInput> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSNumberInput>;
+type Story = StoryObj<typeof NumberInput>;
 
 export const Default: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? null);
-    return <XDSNumberInput {...args} value={value} onChange={setValue} />;
+    return <NumberInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Quantity',
@@ -105,7 +105,7 @@ export const Default: Story = {
 export const WithDescription: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? null);
-    return <XDSNumberInput {...args} value={value} onChange={setValue} />;
+    return <NumberInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Age',
@@ -117,7 +117,7 @@ export const WithDescription: Story = {
 export const WithMinMax: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? null);
-    return <XDSNumberInput {...args} value={value} onChange={setValue} />;
+    return <NumberInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Rating',
@@ -131,7 +131,7 @@ export const WithMinMax: Story = {
 export const WithStep: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? null);
-    return <XDSNumberInput {...args} value={value} onChange={setValue} />;
+    return <NumberInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Price',
@@ -145,7 +145,7 @@ export const WithStep: Story = {
 export const WithUnits: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? 50);
-    return <XDSNumberInput {...args} value={value} onChange={setValue} />;
+    return <NumberInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Discount',
@@ -159,7 +159,7 @@ export const WithUnits: Story = {
 export const WithUnitsGB: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? 128);
-    return <XDSNumberInput {...args} value={value} onChange={setValue} />;
+    return <NumberInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Storage',
@@ -172,7 +172,7 @@ export const WithUnitsGB: Story = {
 export const IntegerOnly: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? null);
-    return <XDSNumberInput {...args} value={value} onChange={setValue} />;
+    return <NumberInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Count',
@@ -185,7 +185,7 @@ export const IntegerOnly: Story = {
 export const WithValue: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? 42);
-    return <XDSNumberInput {...args} value={value} onChange={setValue} />;
+    return <NumberInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Quantity',
@@ -212,46 +212,46 @@ export const AllVariations: Story = {
           gap: '16px',
           maxWidth: '300px',
         }}>
-        <XDSNumberInput
+        <NumberInput
           label="Visible label"
           value={value1}
           onChange={setValue1}
           placeholder="Enter number..."
         />
-        <XDSNumberInput
+        <NumberInput
           label="With description"
           description="Helpful description text"
           value={value4}
           onChange={setValue4}
           placeholder="Enter number..."
         />
-        <XDSNumberInput
+        <NumberInput
           label="Hidden label"
           isLabelHidden
           value={value2}
           onChange={setValue2}
           placeholder="Hidden label input"
         />
-        <XDSNumberInput
+        <NumberInput
           label="With value"
           value={value3}
           onChange={setValue3}
         />
-        <XDSNumberInput
+        <NumberInput
           label="Optional field"
           isOptional
           value={value5}
           onChange={setValue5}
           placeholder="Optional..."
         />
-        <XDSNumberInput
+        <NumberInput
           label="Required field"
           isRequired
           value={value6}
           onChange={setValue6}
           placeholder="Required..."
         />
-        <XDSNumberInput
+        <NumberInput
           label="With min/max"
           description="Enter a value between 1 and 10"
           min={1}
@@ -260,13 +260,13 @@ export const AllVariations: Story = {
           onChange={setValue7}
           placeholder="1-10"
         />
-        <XDSNumberInput
+        <NumberInput
           label="Disabled field"
           isDisabled
           value={value8}
           onChange={setValue8}
         />
-        <XDSNumberInput
+        <NumberInput
           label="With units"
           value={value9}
           onChange={setValue9}
@@ -280,7 +280,7 @@ export const AllVariations: Story = {
 export const OptionalField: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? null);
-    return <XDSNumberInput {...args} value={value} onChange={setValue} />;
+    return <NumberInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Phone Extension',
@@ -292,7 +292,7 @@ export const OptionalField: Story = {
 export const RequiredField: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? null);
-    return <XDSNumberInput {...args} value={value} onChange={setValue} />;
+    return <NumberInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Quantity',
@@ -304,7 +304,7 @@ export const RequiredField: Story = {
 export const Disabled: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? 100);
-    return <XDSNumberInput {...args} value={value} onChange={setValue} />;
+    return <NumberInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Locked Amount',
@@ -316,7 +316,7 @@ export const Disabled: Story = {
 export const WithStartIcon: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? null);
-    return <XDSNumberInput {...args} value={value} onChange={setValue} />;
+    return <NumberInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Count',
@@ -338,21 +338,21 @@ export const SizeVariants: Story = {
           gap: '16px',
           maxWidth: '300px',
         }}>
-        <XDSNumberInput
+        <NumberInput
           label="Small (28px)"
           value={sm}
           onChange={setSm}
           placeholder="Small size"
           size="sm"
         />
-        <XDSNumberInput
+        <NumberInput
           label="Medium (32px)"
           value={md}
           onChange={setMd}
           placeholder="Medium size (default)"
           size="md"
         />
-        <XDSNumberInput
+        <NumberInput
           label="Large (36px)"
           value={lg}
           onChange={setLg}
@@ -367,7 +367,7 @@ export const SizeVariants: Story = {
 export const ErrorStatus: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? -5);
-    return <XDSNumberInput {...args} value={value} onChange={setValue} />;
+    return <NumberInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Age',
@@ -380,7 +380,7 @@ export const ErrorStatus: Story = {
 export const WarningStatus: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? 150);
-    return <XDSNumberInput {...args} value={value} onChange={setValue} />;
+    return <NumberInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Age',
@@ -392,7 +392,7 @@ export const WarningStatus: Story = {
 export const SuccessStatus: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? 25);
-    return <XDSNumberInput {...args} value={value} onChange={setValue} />;
+    return <NumberInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Age',
@@ -415,25 +415,25 @@ export const StatusVariations: Story = {
           gap: '16px',
           maxWidth: '300px',
         }}>
-        <XDSNumberInput
+        <NumberInput
           label="Error with message"
           value={error}
           onChange={setError}
           status={{type: 'error', message: 'Must be positive'}}
         />
-        <XDSNumberInput
+        <NumberInput
           label="Warning with message"
           value={warning}
           onChange={setWarning}
           status={{type: 'warning', message: 'Value seems high'}}
         />
-        <XDSNumberInput
+        <NumberInput
           label="Success with message"
           value={success}
           onChange={setSuccess}
           status={{type: 'success', message: 'Looks good'}}
         />
-        <XDSNumberInput
+        <NumberInput
           label="Error without message"
           value={errorNoMsg}
           onChange={setErrorNoMsg}
@@ -447,7 +447,7 @@ export const StatusVariations: Story = {
 export const WithTooltip: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? null);
-    return <XDSNumberInput {...args} value={value} onChange={setValue} />;
+    return <NumberInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'API Rate Limit',
@@ -459,7 +459,7 @@ export const WithTooltip: Story = {
 export const DecimalInput: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? null);
-    return <XDSNumberInput {...args} value={value} onChange={setValue} />;
+    return <NumberInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Price',
@@ -482,7 +482,7 @@ export const WithEventHandlers: Story = {
 
     return (
       <div style={{maxWidth: '300px'}}>
-        <XDSNumberInput
+        <NumberInput
           label={args.label}
           placeholder={args.placeholder}
           description={args.description}
@@ -517,7 +517,7 @@ export const Clearable: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? 42);
     return (
-      <XDSNumberInput {...args} value={value} onChange={setValue} hasClear />
+      <NumberInput {...args} value={value} onChange={setValue} hasClear />
     );
   },
   args: {
@@ -530,7 +530,7 @@ export const ClearableWithUnits: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? 75);
     return (
-      <XDSNumberInput {...args} value={value} onChange={setValue} hasClear />
+      <NumberInput {...args} value={value} onChange={setValue} hasClear />
     );
   },
   args: {

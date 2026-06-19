@@ -3,8 +3,8 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 import {CodeExampleBlock} from '../CodeExampleBlock';
 
 const styles = stylex.create({
@@ -21,11 +21,11 @@ export function CodeBlockRenderer({
   label?: string;
 }) {
   return (
-    <XDSVStack gap={1}>
+    <VStack gap={1}>
       {label && (
-        <XDSText type="supporting" color="secondary">
+        <Text type="supporting" color="secondary">
           {label}
-        </XDSText>
+        </Text>
       )}
       <CodeExampleBlock
         code={code}
@@ -33,6 +33,6 @@ export function CodeBlockRenderer({
         hasCopyButton
         xstyle={styles.root}
       />
-    </XDSVStack>
+    </VStack>
   );
 }

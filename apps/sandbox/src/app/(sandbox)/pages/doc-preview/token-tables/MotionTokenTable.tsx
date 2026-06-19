@@ -4,9 +4,9 @@
 
 import {useState, useEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSTable} from '@xds/core/Table';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Text, Heading} from '@xds/core/Text';
+import {Table} from '@xds/core/Table';
 import type {TokenTableProps} from './types';
 import {resolveToken, getTokensByPrefix} from './helpers';
 
@@ -170,7 +170,7 @@ function EasingCurve({value}: {value: string}) {
   const pad = 0.12;
 
   return (
-    <XDSHStack gap={2} align="center">
+    <HStack gap={2} align="center">
       <svg
         width={32}
         height={24}
@@ -204,7 +204,7 @@ function EasingCurve({value}: {value: string}) {
           style={{left: `${easedY * 100}%`}}
         />
       </div>
-    </XDSHStack>
+    </HStack>
   );
 }
 
@@ -220,7 +220,7 @@ export function DurationTokenTable({theme}: TokenTableProps) {
   }));
 
   return (
-    <XDSTable
+    <Table
       data={data as Record<string, unknown>[]}
       columns={[
         {key: 'tokenName', header: 'Token'},
@@ -228,12 +228,12 @@ export function DurationTokenTable({theme}: TokenTableProps) {
           key: 'value',
           header: 'Value',
           renderCell: (item: Record<string, unknown>) => (
-            <XDSHStack gap={2} align="center">
+            <HStack gap={2} align="center">
               <DurationBar value={item.value as string} />
-              <XDSText type="code" color="secondary">
+              <Text type="code" color="secondary">
                 {item.value as string}
-              </XDSText>
-            </XDSHStack>
+              </Text>
+            </HStack>
           ),
         },
       ]}
@@ -256,7 +256,7 @@ export function EasingTokenTable({theme}: TokenTableProps) {
   }));
 
   return (
-    <XDSTable
+    <Table
       data={data as Record<string, unknown>[]}
       columns={[
         {key: 'tokenName', header: 'Token'},
@@ -264,12 +264,12 @@ export function EasingTokenTable({theme}: TokenTableProps) {
           key: 'value',
           header: 'Value',
           renderCell: (item: Record<string, unknown>) => (
-            <XDSHStack gap={2} align="center">
+            <HStack gap={2} align="center">
               <EasingCurve value={item.value as string} />
-              <XDSText type="code" color="secondary">
+              <Text type="code" color="secondary">
                 {item.value as string}
-              </XDSText>
-            </XDSHStack>
+              </Text>
+            </HStack>
           ),
         },
       ]}
@@ -286,15 +286,15 @@ export function EasingTokenTable({theme}: TokenTableProps) {
 
 export function MotionTokenTable({theme}: TokenTableProps) {
   return (
-    <XDSVStack gap={6}>
-      <XDSVStack gap={3}>
-        <XDSHeading level={3}>Duration</XDSHeading>
+    <VStack gap={6}>
+      <VStack gap={3}>
+        <Heading level={3}>Duration</Heading>
         <DurationTokenTable theme={theme} />
-      </XDSVStack>
-      <XDSVStack gap={3}>
-        <XDSHeading level={3}>Easing</XDSHeading>
+      </VStack>
+      <VStack gap={3}>
+        <Heading level={3}>Easing</Heading>
         <EasingTokenTable theme={theme} />
-      </XDSVStack>
-    </XDSVStack>
+      </VStack>
+    </VStack>
   );
 }

@@ -4,17 +4,17 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
+  SideNav,
+  SideNavHeading,
+  SideNavItem,
+  SideNavSection,
 } from '@xds/core/SideNav';
-import {XDSText} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSCard} from '@xds/core/Card';
-import {XDSHStack, XDSVStack, XDSStackItem} from '@xds/core/Stack';
-import {XDSLayout, XDSLayoutContent, XDSLayoutPanel} from '@xds/core/Layout';
-import {XDSGrid} from '@xds/core/Grid';
+import {Text} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Card} from '@xds/core/Card';
+import {HStack, VStack, StackItem} from '@xds/core/Stack';
+import {Layout, LayoutContent, LayoutPanel} from '@xds/core/Layout';
+import {Grid} from '@xds/core/Grid';
 import {radiusVars} from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
@@ -212,79 +212,79 @@ const COMPONENT_CATEGORIES = [
 
 export default function DocumentationOverviewPage() {
   return (
-    <XDSLayout
+    <Layout
       height="fill"
       contentWidth={1200}
       start={
-        <XDSLayoutPanel hasDivider padding={0}>
-          <XDSSideNav header={<XDSSideNavHeading heading="Product Name" />}>
-            <XDSSideNavSection title="Navigation" isHeaderHidden>
-              <XDSSideNavItem label="Home" isSelected />
-              <XDSSideNavItem label="Getting started" />
-            </XDSSideNavSection>
+        <LayoutPanel hasDivider padding={0}>
+          <SideNav header={<SideNavHeading heading="Product Name" />}>
+            <SideNavSection title="Navigation" isHeaderHidden>
+              <SideNavItem label="Home" isSelected />
+              <SideNavItem label="Getting started" />
+            </SideNavSection>
 
             {COMPONENT_CATEGORIES.map(category => (
-              <XDSSideNavSection key={category.label} title={category.label}>
+              <SideNavSection key={category.label} title={category.label}>
                 {category.items.map(item => (
-                  <XDSSideNavItem key={item.key} label={item.name} />
+                  <SideNavItem key={item.key} label={item.name} />
                 ))}
-              </XDSSideNavSection>
+              </SideNavSection>
             ))}
-          </XDSSideNav>
-        </XDSLayoutPanel>
+          </SideNav>
+        </LayoutPanel>
       }
       content={
-        <XDSLayoutContent padding={8}>
-          <XDSVStack gap={10}>
-            <XDSCard variant="cyan" padding={10}>
-              <XDSHStack gap={8} vAlign="center">
-                <XDSStackItem size="fill">
-                  <XDSVStack gap={4}>
-                    <XDSText type="display-1">Web overview</XDSText>
-                    <XDSText type="large" weight="normal" color="secondary">
+        <LayoutContent padding={8}>
+          <VStack gap={10}>
+            <Card variant="cyan" padding={10}>
+              <HStack gap={8} vAlign="center">
+                <StackItem size="fill">
+                  <VStack gap={4}>
+                    <Text type="display-1">Web overview</Text>
+                    <Text type="large" weight="normal" color="secondary">
                       An open-source UI library to help developers quickly build
                       beautiful, accessible products.
-                    </XDSText>
-                    <XDSHStack>
-                      <XDSButton
+                    </Text>
+                    <HStack>
+                      <Button
                         label="Get started"
                         variant="primary"
                         size="lg"
                       />
-                    </XDSHStack>
-                  </XDSVStack>
-                </XDSStackItem>
-                <XDSStackItem size="fill" />
-              </XDSHStack>
-            </XDSCard>
+                    </HStack>
+                  </VStack>
+                </StackItem>
+                <StackItem size="fill" />
+              </HStack>
+            </Card>
 
             {COMPONENT_CATEGORIES.map(category => (
-              <XDSVStack key={category.label} gap={4}>
-                <XDSText type="display-2">{category.label}</XDSText>
-                <XDSGrid columns={{minWidth: 260}} gap={8}>
+              <VStack key={category.label} gap={4}>
+                <Text type="display-2">{category.label}</Text>
+                <Grid columns={{minWidth: 260}} gap={8}>
                   {category.items.map(item => (
-                    <XDSVStack key={item.key} gap={3}>
-                      <XDSCard
+                    <VStack key={item.key} gap={3}>
+                      <Card
                         variant="muted"
                         padding={0}
                         minHeight={160}
                         xstyle={styles.previewCard}
                       />
-                      <XDSVStack gap={0.5}>
-                        <XDSText type="body" weight="bold">
+                      <VStack gap={0.5}>
+                        <Text type="body" weight="bold">
                           {item.name}
-                        </XDSText>
-                        <XDSText type="body" color="secondary">
+                        </Text>
+                        <Text type="body" color="secondary">
                           {item.desc}
-                        </XDSText>
-                      </XDSVStack>
-                    </XDSVStack>
+                        </Text>
+                      </VStack>
+                    </VStack>
                   ))}
-                </XDSGrid>
-              </XDSVStack>
+                </Grid>
+              </VStack>
             ))}
-          </XDSVStack>
-        </XDSLayoutContent>
+          </VStack>
+        </LayoutContent>
       }
     />
   );

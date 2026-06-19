@@ -2,22 +2,22 @@
 
 'use client';
 
-import {XDSToken} from '@xds/core/Token';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Token} from '@xds/core/Token';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function TokenClickable() {
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Text type="supporting" color="secondary">
         Click a token to view details
-      </XDSText>
-      <XDSStack direction="horizontal" gap={2} wrap="wrap">
-        <XDSToken label="Bug" color="red" onClick={() => {}} />
-        <XDSToken label="Feature" color="blue" onClick={() => {}} />
-        <XDSToken label="Enhancement" color="green" onClick={() => {}} />
-        <XDSToken label="Documentation" color="gray" onClick={() => {}} />
-      </XDSStack>
-    </XDSStack>
+      </Text>
+      <Stack direction="horizontal" gap={2} wrap="wrap">
+        <Token label="Bug" color="red" onClick={() => {}} />
+        <Token label="Feature" color="blue" onClick={() => {}} />
+        <Token label="Enhancement" color="green" onClick={() => {}} />
+        <Token label="Documentation" color="gray" onClick={() => {}} />
+      </Stack>
+    </Stack>
   );
 }

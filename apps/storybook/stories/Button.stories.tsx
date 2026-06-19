@@ -2,8 +2,8 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSButton} from '@xds/core/Button';
-import {XDSBadge} from '@xds/core/Badge';
+import {Button} from '@xds/core/Button';
+import {Badge} from '@xds/core/Badge';
 import {Cog6ToothIcon, TrashIcon} from '@heroicons/react/24/outline';
 
 const buttonStoryStyles = stylex.create({
@@ -12,9 +12,9 @@ const buttonStoryStyles = stylex.create({
   },
 });
 
-const meta: Meta<typeof XDSButton> = {
+const meta: Meta<typeof Button> = {
   title: 'Core/Button',
-  component: XDSButton,
+  component: Button,
   tags: ['autodocs'],
   argTypes: {
     label: {
@@ -47,7 +47,7 @@ const meta: Meta<typeof XDSButton> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSButton>;
+type Story = StoryObj<typeof Button>;
 
 export const Primary: Story = {
   args: {
@@ -96,9 +96,9 @@ export const Disabled: Story = {
 export const SizeVariants: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
-      <XDSButton label="Small" variant="primary" size="sm" />
-      <XDSButton label="Medium" variant="primary" size="md" />
-      <XDSButton label="Large" variant="primary" size="lg" />
+      <Button label="Small" variant="primary" size="sm" />
+      <Button label="Medium" variant="primary" size="md" />
+      <Button label="Large" variant="primary" size="lg" />
     </div>
   ),
 };
@@ -106,13 +106,13 @@ export const SizeVariants: Story = {
 export const IconOnly: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '12px'}}>
-      <XDSButton
+      <Button
         label="Settings"
         variant="ghost"
         icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
         isIconOnly
       />
-      <XDSButton
+      <Button
         label="Delete"
         variant="destructive"
         icon={<TrashIcon style={{width: 16, height: 16}} />}
@@ -125,12 +125,12 @@ export const IconOnly: Story = {
 export const IconWithText: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '12px'}}>
-      <XDSButton
+      <Button
         label="Settings"
         variant="secondary"
         icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
       />
-      <XDSButton
+      <Button
         label="Delete"
         variant="destructive"
         icon={<TrashIcon style={{width: 16, height: 16}} />}
@@ -142,15 +142,15 @@ export const IconWithText: Story = {
 export const WithEndSlot: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
-      <XDSButton
+      <Button
         label="Messages"
         variant="primary"
-        endContent={<XDSBadge variant="info" label={3} />}
+        endContent={<Badge variant="info" label={3} />}
       />
-      <XDSButton
+      <Button
         label="Notifications"
         variant="secondary"
-        endContent={<XDSBadge variant="neutral" label="New" />}
+        endContent={<Badge variant="neutral" label="New" />}
       />
     </div>
   ),
@@ -159,17 +159,17 @@ export const WithEndSlot: Story = {
 export const IconAndEndSlot: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
-      <XDSButton
+      <Button
         label="Settings"
         variant="secondary"
         icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
-        endContent={<XDSBadge variant="info" label="New" />}
+        endContent={<Badge variant="info" label="New" />}
       />
-      <XDSButton
+      <Button
         label="Delete"
         variant="destructive"
         icon={<TrashIcon style={{width: 16, height: 16}} />}
-        endContent={<XDSBadge variant="error" label={5} />}
+        endContent={<Badge variant="error" label={5} />}
       />
     </div>
   ),
@@ -185,36 +185,36 @@ export const AllVariants: Story = {
         maxWidth: '600px',
       }}>
       <div style={{display: 'flex', gap: '12px'}}>
-        <XDSButton label="Primary" variant="primary" />
-        <XDSButton label="Secondary" variant="secondary" />
-        <XDSButton label="Ghost" variant="ghost" />
-        <XDSButton label="Destructive" variant="destructive" />
+        <Button label="Primary" variant="primary" />
+        <Button label="Secondary" variant="secondary" />
+        <Button label="Ghost" variant="ghost" />
+        <Button label="Destructive" variant="destructive" />
       </div>
       <div style={{display: 'flex', gap: '12px'}}>
-        <XDSButton label="Loading..." variant="primary" isLoading />
-        <XDSButton label="Loading..." variant="secondary" isLoading />
-        <XDSButton label="Loading..." variant="ghost" isLoading />
-        <XDSButton label="Loading..." variant="destructive" isLoading />
+        <Button label="Loading..." variant="primary" isLoading />
+        <Button label="Loading..." variant="secondary" isLoading />
+        <Button label="Loading..." variant="ghost" isLoading />
+        <Button label="Loading..." variant="destructive" isLoading />
       </div>
       <div style={{display: 'flex', gap: '12px'}}>
-        <XDSButton label="Disabled" variant="primary" isDisabled />
-        <XDSButton label="Disabled" variant="secondary" isDisabled />
-        <XDSButton label="Disabled" variant="ghost" isDisabled />
-        <XDSButton label="Disabled" variant="destructive" isDisabled />
+        <Button label="Disabled" variant="primary" isDisabled />
+        <Button label="Disabled" variant="secondary" isDisabled />
+        <Button label="Disabled" variant="ghost" isDisabled />
+        <Button label="Disabled" variant="destructive" isDisabled />
       </div>
       <div style={{display: 'flex', gap: '12px'}}>
-        <XDSButton
+        <Button
           label="Settings"
           variant="ghost"
           icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
           isIconOnly
         />
-        <XDSButton
+        <Button
           label="Settings"
           variant="secondary"
           icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
         />
-        <XDSButton
+        <Button
           label="Delete"
           variant="destructive"
           icon={<TrashIcon style={{width: 16, height: 16}} />}
@@ -222,28 +222,28 @@ export const AllVariants: Story = {
         />
       </div>
       <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
-        <XDSButton label="Small" variant="primary" size="sm" />
-        <XDSButton label="Medium" variant="primary" size="md" />
-        <XDSButton label="Large" variant="primary" size="lg" />
+        <Button label="Small" variant="primary" size="sm" />
+        <Button label="Medium" variant="primary" size="md" />
+        <Button label="Large" variant="primary" size="lg" />
       </div>
       <div style={{display: 'flex', gap: '12px'}}>
-        <XDSButton
+        <Button
           label="With Badge"
           variant="primary"
-          endContent={<XDSBadge variant="info" label={3} />}
+          endContent={<Badge variant="info" label={3} />}
         />
-        <XDSButton
+        <Button
           label="With Badge"
           variant="secondary"
-          endContent={<XDSBadge variant="neutral" label="New" />}
+          endContent={<Badge variant="neutral" label="New" />}
         />
-        <XDSButton
+        <Button
           label="Icon + Badge"
           variant="ghost"
           icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
-          endContent={<XDSBadge variant="info" label={5} />}>
+          endContent={<Badge variant="info" label={5} />}>
           Settings
-        </XDSButton>
+        </Button>
       </div>
     </div>
   ),
@@ -258,32 +258,32 @@ export const LinkButton: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
       <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
-        <XDSButton
+        <Button
           label="Visit Example"
           href="https://example.com"
           variant="primary"
         />
-        <XDSButton
+        <Button
           label="Open in new tab"
           href="https://example.com"
           target="_blank"
           rel="noopener noreferrer"
           variant="secondary"
         />
-        <XDSButton
+        <Button
           label="Ghost link"
           href="https://example.com"
           variant="ghost"
         />
       </div>
       <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
-        <XDSButton
+        <Button
           label="Disabled link"
           href="https://example.com"
           variant="primary"
           isDisabled
         />
-        <XDSButton
+        <Button
           label="Loading link"
           href="https://example.com"
           variant="primary"
@@ -291,13 +291,13 @@ export const LinkButton: Story = {
         />
       </div>
       <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
-        <XDSButton
+        <Button
           label="Settings"
           href="https://example.com"
           variant="secondary"
           icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
         />
-        <XDSButton
+        <Button
           label="Icon-only link"
           href="https://example.com"
           variant="ghost"
@@ -322,7 +322,7 @@ export const Truncation: Story = {
           200px container — label truncates with ellipsis
         </p>
         <div style={{width: 200, border: '1px dashed #ccc', padding: 4}}>
-          <XDSButton
+          <Button
             label="A very long button label that overflows"
             variant="primary"
             icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
@@ -336,20 +336,20 @@ export const Truncation: Story = {
         </p>
         <div style={{display: 'flex', gap: 8, maxWidth: 320}}>
           <div style={{flex: 1, minWidth: 0}}>
-            <XDSButton
+            <Button
               label="Submit this extremely long form action"
               variant="primary"
               xstyle={buttonStoryStyles.fullWidth}
             />
           </div>
-          <XDSButton label="Cancel" variant="secondary" />
+          <Button label="Cancel" variant="secondary" />
         </div>
       </div>
       <div>
         <p style={{fontSize: 12, color: '#666', marginBottom: 8}}>
           Unconstrained — renders at natural width
         </p>
-        <XDSButton
+        <Button
           label="A very long button label that shows fully"
           variant="primary"
           icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}

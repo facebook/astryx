@@ -2,16 +2,16 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSChatComposer,
-  XDSChatComposerDrawer,
-  XDSChatSendButton,
+  ChatComposer,
+  ChatComposerDrawer,
+  ChatSendButton,
 } from '@xds/core/Chat';
-import {XDSToken} from '@xds/core/Token';
-import {XDSButton} from '@xds/core/Button';
-import {XDSProgressBar} from '@xds/core/ProgressBar';
-import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSText} from '@xds/core/Text';
-import {XDSBadge} from '@xds/core/Badge';
+import {Token} from '@xds/core/Token';
+import {Button} from '@xds/core/Button';
+import {ProgressBar} from '@xds/core/ProgressBar';
+import {List, ListItem} from '@xds/core/List';
+import {Text} from '@xds/core/Text';
+import {Badge} from '@xds/core/Badge';
 import {useState} from 'react';
 
 // Inline icons for story demos (not in the default icon registry)
@@ -58,9 +58,9 @@ const MicIcon = (
   </svg>
 );
 
-const meta: Meta<typeof XDSChatComposer> = {
+const meta: Meta<typeof ChatComposer> = {
   title: 'Core/ChatComposer',
-  component: XDSChatComposer,
+  component: ChatComposer,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
@@ -75,7 +75,7 @@ const meta: Meta<typeof XDSChatComposer> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSChatComposer>;
+type Story = StoryObj<typeof ChatComposer>;
 
 // =============================================================================
 // Stories
@@ -84,7 +84,7 @@ type Story = StoryObj<typeof XDSChatComposer>;
 /** Simplest usage — just onSubmit */
 export const Simplest: Story = {
   render: () => (
-    <XDSChatComposer
+    <ChatComposer
       onSubmit={value => {
         console.log('Submit:', value);
         alert(`Sent: ${value}`);
@@ -98,7 +98,7 @@ export const WithStreaming: Story = {
   render: () => {
     const [isStreaming, setIsStreaming] = useState(true);
     return (
-      <XDSChatComposer
+      <ChatComposer
         onSubmit={value => {
           console.log('Submit:', value);
           setIsStreaming(true);
@@ -116,11 +116,11 @@ export const WithStreaming: Story = {
 /** With footer actions (model selector) and mic button */
 export const WithFooterActions: Story = {
   render: () => (
-    <XDSChatComposer
+    <ChatComposer
       onSubmit={value => console.log('Submit:', value)}
-      footerActions={<XDSButton label="GPT-4" variant="ghost" size="md" />}
+      footerActions={<Button label="GPT-4" variant="ghost" size="md" />}
       sendActions={
-        <XDSButton
+        <Button
           label="Microphone"
           variant="ghost"
           size="md"
@@ -135,16 +135,16 @@ export const WithFooterActions: Story = {
 /** With attachment chips and a context toolbar */
 export const WithAttachments: Story = {
   render: () => (
-    <XDSChatComposer
+    <ChatComposer
       onSubmit={value => console.log('Submit:', value)}
       drawer={
-        <XDSChatComposerDrawer>
-          <XDSToken label="report.pdf" onRemove={() => {}} />
-          <XDSToken label="data.csv" onRemove={() => {}} />
-        </XDSChatComposerDrawer>
+        <ChatComposerDrawer>
+          <Token label="report.pdf" onRemove={() => {}} />
+          <Token label="data.csv" onRemove={() => {}} />
+        </ChatComposerDrawer>
       }
       headerActions={
-        <XDSButton
+        <Button
           label="Attach file"
           variant="ghost"
           size="sm"
@@ -153,7 +153,7 @@ export const WithAttachments: Story = {
         />
       }
       headerContext={
-        <XDSProgressBar label="Context window" value={3} isLabelHidden />
+        <ProgressBar label="Context window" value={3} isLabelHidden />
       }
     />
   ),
@@ -164,7 +164,7 @@ export const FullFeatured: Story = {
   render: () => {
     const [isStreaming, setIsStreaming] = useState(false);
     return (
-      <XDSChatComposer
+      <ChatComposer
         onSubmit={value => {
           console.log('Submit:', value);
           setIsStreaming(true);
@@ -174,20 +174,20 @@ export const FullFeatured: Story = {
         onStop={() => setIsStreaming(false)}
         placeholder="Ask me anything..."
         drawer={
-          <XDSChatComposerDrawer>
-            <XDSToken label="design-spec.pdf" onRemove={() => {}} />
-          </XDSChatComposerDrawer>
+          <ChatComposerDrawer>
+            <Token label="design-spec.pdf" onRemove={() => {}} />
+          </ChatComposerDrawer>
         }
         headerActions={
           <>
-            <XDSButton
+            <Button
               label="Mention"
               variant="ghost"
               size="sm"
               icon={AtSignIcon}
               isIconOnly
             />
-            <XDSButton
+            <Button
               label="Attach file"
               variant="ghost"
               size="sm"
@@ -197,16 +197,16 @@ export const FullFeatured: Story = {
           </>
         }
         headerContext={
-          <XDSProgressBar label="Context window" value={3} isLabelHidden />
+          <ProgressBar label="Context window" value={3} isLabelHidden />
         }
         footerActions={
           <>
-            <XDSButton label="Auto" variant="ghost" size="md" />
-            <XDSButton label="Settings" variant="ghost" size="md" />
+            <Button label="Auto" variant="ghost" size="md" />
+            <Button label="Settings" variant="ghost" size="md" />
           </>
         }
         sendActions={
-          <XDSButton
+          <Button
             label="Microphone"
             variant="ghost"
             size="md"
@@ -222,7 +222,7 @@ export const FullFeatured: Story = {
 /** Disabled state */
 export const Disabled: Story = {
   render: () => (
-    <XDSChatComposer
+    <ChatComposer
       onSubmit={() => {}}
       isDisabled
       placeholder="Composer is disabled"
@@ -233,17 +233,17 @@ export const Disabled: Story = {
 /** With many attachments and collapsible drawer */
 export const WithManyAttachments: Story = {
   render: () => (
-    <XDSChatComposer
+    <ChatComposer
       onSubmit={value => console.log('Submit:', value)}
       drawer={
-        <XDSChatComposerDrawer count={6}>
-          <XDSToken label="new_feature_prd.docx" onRemove={() => {}} />
-          <XDSToken label="2026_roadmap.docx" onRemove={() => {}} />
-          <XDSToken label="user_flow.pdf" onRemove={() => {}} />
-          <XDSToken label="launch_plan.docx" onRemove={() => {}} />
-          <XDSToken label="user_feedback.csv" onRemove={() => {}} />
-          <XDSToken label="kpis.csv" onRemove={() => {}} />
-        </XDSChatComposerDrawer>
+        <ChatComposerDrawer count={6}>
+          <Token label="new_feature_prd.docx" onRemove={() => {}} />
+          <Token label="2026_roadmap.docx" onRemove={() => {}} />
+          <Token label="user_flow.pdf" onRemove={() => {}} />
+          <Token label="launch_plan.docx" onRemove={() => {}} />
+          <Token label="user_feedback.csv" onRemove={() => {}} />
+          <Token label="kpis.csv" onRemove={() => {}} />
+        </ChatComposerDrawer>
       }
     />
   ),
@@ -252,7 +252,7 @@ export const WithManyAttachments: Story = {
 /** With error status */
 export const WithError: Story = {
   render: () => (
-    <XDSChatComposer
+    <ChatComposer
       onSubmit={value => console.log('Submit:', value)}
       status={{
         type: 'error',
@@ -265,7 +265,7 @@ export const WithError: Story = {
 /** With status on top */
 export const WithStatusTop: Story = {
   render: () => (
-    <XDSChatComposer
+    <ChatComposer
       onSubmit={value => console.log('Submit:', value)}
       statusPosition="top"
       status={{
@@ -279,7 +279,7 @@ export const WithStatusTop: Story = {
 /** With status on bottom */
 export const WithStatusBottom: Story = {
   render: () => (
-    <XDSChatComposer
+    <ChatComposer
       onSubmit={value => console.log('Submit:', value)}
       status={{
         type: 'error',
@@ -292,7 +292,7 @@ export const WithStatusBottom: Story = {
 /** Default send button — reads from composer context automatically */
 export const DefaultSendButton: Story = {
   render: () => (
-    <XDSChatComposer
+    <ChatComposer
       onSubmit={value => {
         console.log('Submit:', value);
         alert(`Sent: ${value}`);
@@ -305,10 +305,10 @@ export const DefaultSendButton: Story = {
 /** Custom send button via sendButton slot */
 export const CustomSendButton: Story = {
   render: () => (
-    <XDSChatComposer
+    <ChatComposer
       onSubmit={value => console.log('Submit:', value)}
       sendButton={
-        <XDSChatSendButton size="sm" onSend={() => alert('Custom send!')} />
+        <ChatSendButton size="sm" onSend={() => alert('Custom send!')} />
       }
     />
   ),
@@ -319,7 +319,7 @@ export const SendStopToggle: Story = {
   render: () => {
     const [isStreaming, setIsStreaming] = useState(false);
     return (
-      <XDSChatComposer
+      <ChatComposer
         onSubmit={value => {
           console.log('Submit:', value);
           setIsStreaming(true);
@@ -351,26 +351,26 @@ export const Feedback: Story = {
     const [selected, setSelected] = useState<string | null>(null);
 
     return (
-      <XDSChatComposer
+      <ChatComposer
         onSubmit={value => {
           console.log('Submit:', value, '| Answer:', selected);
           alert(`Sent: "${value}"\nAnswer: ${selected}`);
         }}
         drawer={
-          <XDSChatComposerDrawer count={1} label="User feedback requested">
+          <ChatComposerDrawer count={1} label="User feedback requested">
             <div style={{width: '100%'}}>
-              <XDSList>
-                <XDSListItem
+              <List>
+                <ListItem
                   label={
-                    <XDSText weight="bold">Do you want to proceed?</XDSText>
+                    <Text weight="bold">Do you want to proceed?</Text>
                   }
                 />
                 {options.map(opt => (
-                  <XDSListItem
+                  <ListItem
                     key={opt.key}
                     label={opt.label}
                     startContent={
-                      <XDSBadge
+                      <Badge
                         variant={selected === opt.key ? 'info' : 'neutral'}
                         label={opt.key}
                       />
@@ -379,9 +379,9 @@ export const Feedback: Story = {
                     onClick={() => setSelected(opt.key)}
                   />
                 ))}
-              </XDSList>
+              </List>
             </div>
-          </XDSChatComposerDrawer>
+          </ChatComposerDrawer>
         }
       />
     );

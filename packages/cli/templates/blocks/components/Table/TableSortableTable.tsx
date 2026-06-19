@@ -3,13 +3,13 @@
 'use client';
 
 import {
-  XDSTable,
-  useXDSTableSortable,
-  useXDSTableSortableState,
+  Table,
+  useTableSortable,
+  useTableSortableState,
   proportional,
   pixel,
 } from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
+import type {TableColumn} from '@xds/core/Table';
 
 interface Employee extends Record<string, unknown> {
   id: string;
@@ -45,7 +45,7 @@ const employees: Employee[] = [
   {id: '5', name: 'Eve', email: 'eve@example.com', role: 'Admin', age: 29},
 ];
 
-const columns: XDSTableColumn<Employee>[] = [
+const columns: TableColumn<Employee>[] = [
   {key: 'name', header: 'Name', width: proportional(1), sortable: true},
   {key: 'email', header: 'Email', width: proportional(2), sortable: true},
   {key: 'role', header: 'Role', width: proportional(1), sortable: true},
@@ -53,15 +53,15 @@ const columns: XDSTableColumn<Employee>[] = [
 ];
 
 export default function TableSortableTable() {
-  const {sortedData, sortConfig} = useXDSTableSortableState<Employee>({
+  const {sortedData, sortConfig} = useTableSortableState<Employee>({
     data: employees,
     defaultSort: [{sortKey: 'name', direction: 'ascending'}],
   });
 
-  const sortablePlugin = useXDSTableSortable<Employee>(sortConfig);
+  const sortablePlugin = useTableSortable<Employee>(sortConfig);
 
   return (
-    <XDSTable
+    <Table
       data={sortedData}
       columns={columns}
       idKey="id"

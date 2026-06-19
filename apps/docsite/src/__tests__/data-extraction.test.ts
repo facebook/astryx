@@ -305,13 +305,13 @@ describe('componentRegistry', () => {
   it('moduleName has XDS prefix for components, not for hooks', () => {
     const core = components['@xds/core'];
     const button = core.find(c => c.name === 'Button');
-    expect(button?.moduleName).toBe('XDSButton');
+    expect(button?.moduleName).toBe('Button');
 
     const hookComp = core.find(c => c.name === 'useClickableContainer');
     expect(hookComp?.moduleName).toBe('useClickableContainer');
 
     // Sub-component hooks also keep their name
-    const tableHook = core.find(c => c.name === 'useXDSTableSelection');
+    const tableHook = core.find(c => c.name === 'useTableSelection');
     if (tableHook) {
       expect(tableHook.moduleName).toMatch(/^use/);
     }
@@ -328,11 +328,20 @@ describe('componentRegistry', () => {
     }
   });
 
-  it('renders useXDS hook pages as hook docs with examples', () => {
+  it('renders hook pages as hook docs with examples', () => {
     const core = components['@xds/core'];
-    const hooks = core.filter(c => c.name.startsWith('useXDS'));
+    // Public hooks (useTheme, useToast, useTableSortable, …) ship example
+    // blocks; internal utility hooks (useFocusTrap, useScrollLock, …) do not.
+    // Post un-prefix migration (P2380608025) the doc `name` is bare for both,
+    // so the public set is identified by having an example-registry entry
+    // rather than by a name prefix.
+    const hooks = core.filter(
+      c =>
+        /^use[A-Z]/.test(c.name) &&
+        (exampleRegistry[c.name]?.length ?? 0) > 0,
+    );
     expect(hooks.length).toBeGreaterThan(15);
-    expect(hooks.map(h => h.name)).toContain('useXDSTheme');
+    expect(hooks.map(h => h.name)).toContain('useTheme');
 
     for (const hook of hooks) {
       expect(hook.params).not.toBeNull();
@@ -372,7 +381,7 @@ describe('componentRegistry', () => {
     const names = core.map(c => c.name);
     // These are parent doc names that should NOT appear as component names
     // because they were expanded into sub-components
-    // (unless the sub-component itself is named the same, like Table → XDSTable → Table)
+    // (unless the sub-component itself is named the same, like Table → Table → Table)
     // Verify the sub-components exist instead
     expect(names).toContain('DialogHeader'); // from Dialog compound doc
     expect(names).toContain('SideNavItem'); // from SideNav compound doc

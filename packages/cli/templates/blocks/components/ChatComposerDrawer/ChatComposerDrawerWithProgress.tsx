@@ -2,52 +2,52 @@
 
 'use client';
 
-import {XDSChatComposer, XDSChatComposerDrawer} from '@xds/core/Chat';
-import {XDSToken} from '@xds/core/Token';
-import {XDSProgressBar} from '@xds/core/ProgressBar';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
+import {ChatComposer, ChatComposerDrawer} from '@xds/core/Chat';
+import {Token} from '@xds/core/Token';
+import {ProgressBar} from '@xds/core/ProgressBar';
+import {Stack} from '@xds/core/Layout';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
 import {PaperClipIcon, AtSymbolIcon} from '@heroicons/react/24/outline';
 
 export default function ChatComposerDrawerWithProgress() {
   return (
-    <XDSStack direction="vertical" gap={4} width={480}>
-      <XDSChatComposer
+    <Stack direction="vertical" gap={4} width={480}>
+      <ChatComposer
         onSubmit={() => {}}
         drawer={
-          <XDSChatComposerDrawer count={3} label="Attachments">
-            <XDSToken label="design-spec.pdf" onRemove={() => {}} />
-            <XDSToken label="api-schema.json" onRemove={() => {}} />
-            <XDSToken label="screenshot.png" onRemove={() => {}} />
-          </XDSChatComposerDrawer>
+          <ChatComposerDrawer count={3} label="Attachments">
+            <Token label="design-spec.pdf" onRemove={() => {}} />
+            <Token label="api-schema.json" onRemove={() => {}} />
+            <Token label="screenshot.png" onRemove={() => {}} />
+          </ChatComposerDrawer>
         }
         headerActions={
           <>
-            <XDSButton
+            <Button
               label="Mention"
               variant="ghost"
               size="sm"
-              icon={<XDSIcon icon={AtSymbolIcon} size="sm" />}
+              icon={<Icon icon={AtSymbolIcon} size="sm" />}
               isIconOnly
               onClick={() => {}}
             />
-            <XDSButton
+            <Button
               label="Attach"
               variant="ghost"
               size="sm"
-              icon={<XDSIcon icon={PaperClipIcon} size="sm" />}
+              icon={<Icon icon={PaperClipIcon} size="sm" />}
               isIconOnly
               onClick={() => {}}
             />
           </>
         }
         headerContext={
-          <XDSStack direction="horizontal" gap={2} vAlign="center">
-            <XDSProgressBar value={42} label="Context usage" isLabelHidden hasValueLabel />
-          </XDSStack>
+          <Stack direction="horizontal" gap={2} vAlign="center">
+            <ProgressBar value={42} label="Context usage" isLabelHidden hasValueLabel />
+          </Stack>
         }
       />
-    </XDSStack>
+    </Stack>
   );
 }

@@ -166,8 +166,10 @@ describe('generateThemeRules', () => {
   it('generateThemeCSS returns prose and component blocks with @scope', () => {
     const {prose, component} = generateThemeCSS(theme);
     const combined = prose + component;
-    expect(combined).toContain('@scope ([data-xds-theme="default"])');
-    expect(combined).toContain('to ([data-xds-theme])');
+    expect(combined).toContain(
+      '@scope ([data-astryx-theme="default"], [data-xds-theme="default"])',
+    );
+    expect(combined).toContain('to ([data-astryx-theme], [data-xds-theme])');
     // Every rule from generateThemeRules should appear in one of the blocks
     for (const rule of rules) {
       expect(combined).toContain(rule);
@@ -321,8 +323,8 @@ describe('derived var expansion', () => {
     const rules = generateThemeRules(theme);
     const rule = rules.find(r => r.includes('.xds-card'));
     expect(rule).toBeDefined();
-    // Container expansion emits --xds-card-padding token
-    expect(rule).toContain('--xds-card-padding: 20px');
+    // Container expansion emits --astryx-card-padding token
+    expect(rule).toContain('--astryx-card-padding: 20px');
   });
 
   it('handles variant-specific derived vars', () => {
@@ -372,7 +374,7 @@ describe('brutalist-style derived expansion', () => {
     const rules = generateThemeRules(theme);
     const rule = rules.find(r => r.includes('.xds-card'));
     expect(rule).toBeDefined();
-    expect(rule).toContain('--xds-card-padding: 24px');
+    expect(rule).toContain('--astryx-card-padding: 24px');
   });
 
   it('dropdown-menu borderRadius + padding emit both derived vars', () => {

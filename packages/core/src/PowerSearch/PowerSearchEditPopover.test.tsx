@@ -12,7 +12,7 @@ import {
 } from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import React, {useState} from 'react';
-import {XDSPowerSearch} from './XDSPowerSearch';
+import {PowerSearch} from './PowerSearch';
 import type {PowerSearchConfig, PowerSearchFilter} from './types';
 
 // =============================================================================
@@ -111,7 +111,7 @@ function getEditPopoverText(container: HTMLElement): string {
 // Tests
 // =============================================================================
 
-describe('XDSPowerSearch', () => {
+describe('PowerSearch', () => {
   it('edit popover resets state when switching between filter tokens', () => {
     const filters: PowerSearchFilter[] = [
       {field: 'status', operator: 'is', value: {type: 'string', value: 'open'}},
@@ -125,7 +125,7 @@ describe('XDSPowerSearch', () => {
     function Harness() {
       const [currentFilters, setCurrentFilters] = useState(filters);
       return (
-        <XDSPowerSearch
+        <PowerSearch
           config={testConfig}
           filters={currentFilters}
           onChange={newFilters => setCurrentFilters([...newFilters])}
@@ -179,7 +179,7 @@ describe('XDSPowerSearch', () => {
     function Harness() {
       const [currentFilters, setCurrentFilters] = useState(filters);
       return (
-        <XDSPowerSearch
+        <PowerSearch
           config={testConfig}
           filters={currentFilters}
           onChange={newFilters => setCurrentFilters([...newFilters])}

@@ -1,13 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSTooltip, useXDSTooltip} from '@xds/core/Tooltip';
-import {XDSButton} from '@xds/core/Button';
-import {XDSHStack} from '@xds/core/Layout';
+import {Tooltip, useTooltip} from '@xds/core/Tooltip';
+import {Button} from '@xds/core/Button';
+import {HStack} from '@xds/core/Layout';
 
-const meta: Meta<typeof XDSTooltip> = {
+const meta: Meta<typeof Tooltip> = {
   title: 'Core/Tooltip',
-  component: XDSTooltip,
+  component: Tooltip,
   tags: ['autodocs'],
   argTypes: {
     placement: {
@@ -36,13 +36,13 @@ const meta: Meta<typeof XDSTooltip> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSTooltip>;
+type Story = StoryObj<typeof Tooltip>;
 
 export const Default: Story = {
   args: {
     placement: 'above',
     content: 'This is a helpful tooltip',
-    children: <XDSButton label="Hover me">Hover me</XDSButton>,
+    children: <Button label="Hover me">Hover me</Button>,
   },
 };
 
@@ -50,7 +50,7 @@ export const Below: Story = {
   args: {
     placement: 'below',
     content: 'Tooltip appears below',
-    children: <XDSButton label="Hover me">Hover me</XDSButton>,
+    children: <Button label="Hover me">Hover me</Button>,
   },
 };
 
@@ -58,7 +58,7 @@ export const Start: Story = {
   args: {
     placement: 'start',
     content: 'Tooltip on start',
-    children: <XDSButton label="Hover me">Hover me</XDSButton>,
+    children: <Button label="Hover me">Hover me</Button>,
   },
 };
 
@@ -66,7 +66,7 @@ export const End: Story = {
   args: {
     placement: 'end',
     content: 'Tooltip on end',
-    children: <XDSButton label="Hover me">Hover me</XDSButton>,
+    children: <Button label="Hover me">Hover me</Button>,
   },
 };
 
@@ -75,7 +75,7 @@ export const CustomDelay: Story = {
     placement: 'above',
     delay: 500,
     content: 'Slower tooltip (500ms delay)',
-    children: <XDSButton label="Slow tooltip">Slow tooltip</XDSButton>,
+    children: <Button label="Slow tooltip">Slow tooltip</Button>,
   },
 };
 
@@ -85,7 +85,7 @@ export const Disabled: Story = {
     placement: 'above',
     isEnabled: false,
     content: 'You should not see this',
-    children: <XDSButton label="Hover me">Hover me</XDSButton>,
+    children: <Button label="Hover me">Hover me</Button>,
   },
   parameters: {
     docs: {
@@ -100,37 +100,37 @@ export const Disabled: Story = {
 export const AllPlacements: Story = {
   render: () => (
     <div style={{padding: 100, display: 'flex', gap: 24, flexWrap: 'wrap'}}>
-      <XDSTooltip content="Above" placement="above">
-        <XDSButton label="Above">Above</XDSButton>
-      </XDSTooltip>
-      <XDSTooltip content="Below" placement="below">
-        <XDSButton label="Below">Below</XDSButton>
-      </XDSTooltip>
-      <XDSTooltip content="Start" placement="start">
-        <XDSButton label="Start">Start</XDSButton>
-      </XDSTooltip>
-      <XDSTooltip content="End" placement="end">
-        <XDSButton label="End">End</XDSButton>
-      </XDSTooltip>
+      <Tooltip content="Above" placement="above">
+        <Button label="Above">Above</Button>
+      </Tooltip>
+      <Tooltip content="Below" placement="below">
+        <Button label="Below">Below</Button>
+      </Tooltip>
+      <Tooltip content="Start" placement="start">
+        <Button label="Start">Start</Button>
+      </Tooltip>
+      <Tooltip content="End" placement="end">
+        <Button label="End">End</Button>
+      </Tooltip>
     </div>
   ),
 };
 
 export const WithHook: Story = {
   render: function HookExample() {
-    const tooltip = useXDSTooltip({
+    const tooltip = useTooltip({
       placement: 'above',
       delay: 100,
     });
 
     return (
       <div style={{padding: 100}}>
-        <XDSButton
+        <Button
           label="Using hook directly"
           ref={tooltip.ref}
           aria-describedby={tooltip.describedBy}>
           Using hook directly
-        </XDSButton>
+        </Button>
         {tooltip.renderTooltip('Tooltip via hook')}
       </div>
     );
@@ -143,7 +143,7 @@ export const LongContent: Story = {
     content:
       'This is a longer tooltip that contains more detailed information about the element.',
     children: (
-      <XDSButton label="Hover for more info">Hover for more info</XDSButton>
+      <Button label="Hover for more info">Hover for more info</Button>
     ),
   },
 };
@@ -151,19 +151,19 @@ export const LongContent: Story = {
 export const MultipleTooltips: Story = {
   render: () => (
     <div style={{padding: 100}}>
-      <XDSHStack gap={4}>
-        <XDSTooltip content="Save your changes" placement="above">
-          <XDSButton label="Save">Save</XDSButton>
-        </XDSTooltip>
-        <XDSTooltip content="Discard changes" placement="above">
-          <XDSButton label="Cancel">Cancel</XDSButton>
-        </XDSTooltip>
-        <XDSTooltip content="Delete permanently" placement="above">
-          <XDSButton label="Delete" variant="destructive">
+      <HStack gap={4}>
+        <Tooltip content="Save your changes" placement="above">
+          <Button label="Save">Save</Button>
+        </Tooltip>
+        <Tooltip content="Discard changes" placement="above">
+          <Button label="Cancel">Cancel</Button>
+        </Tooltip>
+        <Tooltip content="Delete permanently" placement="above">
+          <Button label="Delete" variant="destructive">
             Delete
-          </XDSButton>
-        </XDSTooltip>
-      </XDSHStack>
+          </Button>
+        </Tooltip>
+      </HStack>
     </div>
   ),
 };
@@ -173,9 +173,9 @@ export const TextNode: Story = {
     <div style={{padding: 100}}>
       <p>
         This paragraph contains a{' '}
-        <XDSTooltip content="Tooltip on inline text!" placement="above">
+        <Tooltip content="Tooltip on inline text!" placement="above">
           hover-able term
-        </XDSTooltip>{' '}
+        </Tooltip>{' '}
         that explains what something means.
       </p>
     </div>
@@ -187,15 +187,15 @@ export const TextNodeInline: Story = {
     <div style={{padding: 100}}>
       <p>
         Learn more about our{' '}
-        <XDSTooltip
+        <Tooltip
           content="Your data is encrypted and never shared"
           placement="above">
           privacy policy
-        </XDSTooltip>{' '}
+        </Tooltip>{' '}
         and{' '}
-        <XDSTooltip content="Standard 30-day agreement" placement="above">
+        <Tooltip content="Standard 30-day agreement" placement="above">
           terms of service
-        </XDSTooltip>
+        </Tooltip>
         .
       </p>
     </div>

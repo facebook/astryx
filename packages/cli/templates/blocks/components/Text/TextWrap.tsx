@@ -2,7 +2,7 @@
 
 'use client';
 
-import {XDSText} from '@xds/core/Text';
+import {Text} from '@xds/core/Text';
 
 export default function TextWrap() {
   return (
@@ -14,20 +14,20 @@ export default function TextWrap() {
         maxWidth: 400,
       }}>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           Wrap (default)
-        </XDSText>
+        </Text>
         <div style={{border: '1px solid #ccc', padding: 8, width: 200}}>
-          <XDSText type="body" textWrap="wrap">
+          <Text type="body" textWrap="wrap">
             This text wraps normally at word boundaries when it reaches the
             edge.
-          </XDSText>
+          </Text>
         </div>
       </div>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           Nowrap
-        </XDSText>
+        </Text>
         <div
           style={{
             border: '1px solid #ccc',
@@ -35,30 +35,30 @@ export default function TextWrap() {
             width: 200,
             overflow: 'hidden',
           }}>
-          <XDSText type="body" textWrap="nowrap">
+          <Text type="body" textWrap="nowrap">
             This text does not wrap and will overflow its container.
-          </XDSText>
+          </Text>
         </div>
       </div>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           Balance
-        </XDSText>
+        </Text>
         <div style={{border: '1px solid #ccc', padding: 8, width: 200}}>
-          <XDSText type="body" textWrap="balance">
+          <Text type="body" textWrap="balance">
             This text is balanced for better visual appearance across lines.
-          </XDSText>
+          </Text>
         </div>
       </div>
       <div>
-        <XDSText type="label" display="block">
+        <Text type="label" display="block">
           Pretty
-        </XDSText>
+        </Text>
         <div style={{border: '1px solid #ccc', padding: 8, width: 200}}>
-          <XDSText type="body" textWrap="pretty">
+          <Text type="body" textWrap="pretty">
             This text uses pretty wrap to avoid orphans at the end of
             paragraphs.
-          </XDSText>
+          </Text>
         </div>
       </div>
     </div>

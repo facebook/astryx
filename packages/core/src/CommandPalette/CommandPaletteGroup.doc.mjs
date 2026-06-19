@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'CommandPalette',
   displayName: 'Command Palette Group',
   isHiddenFromOverview: true,
-  description: 'Visual grouping with a heading label. Place inside XDSCommandPaletteList.',
+  description: 'Visual grouping with a heading label. Place inside CommandPaletteList.',
   props: [
     {
       name: 'heading',
@@ -18,7 +18,7 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'XDSCommandPaletteItem children.',
+      description: 'CommandPaletteItem children.',
       required: true,
     },
     {
@@ -33,10 +33,10 @@ export const docsZh = {
   name: 'CommandPaletteGroup',
   isHiddenFromOverview: true,
   displayName: 'Command Palette Group',
-  description: '带标题标签的视觉分组。放置在 XDSCommandPaletteList 内。',
+  description: '带标题标签的视觉分组。放置在 CommandPaletteList 内。',
   propDescriptions: {
     heading: '分组标题文本。',
-    children: 'XDSCommandPaletteItem 子元素。',
+    children: 'CommandPaletteItem 子元素。',
     xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。',
   },
 };
@@ -45,10 +45,10 @@ export const docsDense = {
   name: 'CommandPaletteGroup',
   isHiddenFromOverview: true,
   displayName: 'Command Palette Group',
-  description: 'group w/ heading label; inside XDSCommandPaletteList',
+  description: 'group w/ heading label; inside CommandPaletteList',
   propDescriptions: {
     heading: 'group heading text',
-    children: 'XDSCommandPaletteItem children',
+    children: 'CommandPaletteItem children',
     xstyle: 'StyleX layout styles; must be stylex.create() value',
   },
 };

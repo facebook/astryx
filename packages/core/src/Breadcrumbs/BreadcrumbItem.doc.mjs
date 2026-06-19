@@ -37,7 +37,7 @@ export const docs = {
       description: 'Icon rendered before the item label.',
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'check',
             size: 'sm',
@@ -47,8 +47,8 @@ export const docs = {
     },
     {
       name: 'as',
-      type: 'XDSLinkComponentType',
-      description: 'Custom link component to render instead of <a>. Overrides the provider-level default from XDSLinkProvider. Only applies to non-current items.',
+      type: 'LinkComponentType',
+      description: 'Custom link component to render instead of <a>. Overrides the provider-level default from LinkProvider. Only applies to non-current items.',
     },
   ],
 };
@@ -88,8 +88,8 @@ export const docsZh = {
     },
     {
       name: 'as',
-      type: 'XDSLinkComponentType',
-      description: '自定义链接组件，代替 <a> 渲染。覆盖 XDSLinkProvider 设置的默认值。仅适用于非当前项。',
+      type: 'LinkComponentType',
+      description: '自定义链接组件，代替 <a> 渲染。覆盖 LinkProvider 设置的默认值。仅适用于非当前项。',
     },
   ],
 };
@@ -105,6 +105,6 @@ export const docsDense = {
     onClick: 'click handler',
     isCurrent: 'marks current page w/ aria-current="page"',
     startIcon: 'icon before label',
-    as: 'custom link component; overrides XDSLinkProvider default',
+    as: 'custom link component; overrides LinkProvider default',
   },
 };

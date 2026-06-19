@@ -4,9 +4,9 @@
 
 import Link from 'next/link';
 import * as stylex from '@stylexjs/stylex';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSCard} from '@xds/core/Card';
-import {XDSVStack} from '@xds/core/Stack';
+import {Heading, Text} from '@xds/core/Text';
+import {Card} from '@xds/core/Card';
+import {VStack} from '@xds/core/Stack';
 import {shadowVars} from '@xds/core/theme/tokens.stylex';
 import type {SandboxPage} from './sandboxPages';
 
@@ -29,16 +29,16 @@ const styles = stylex.create({
 export function ProjectCard({page}: {page: SandboxPage}) {
   return (
     <Link href={page.href} {...stylex.props(styles.link)}>
-      <XDSCard xstyle={styles.cardStyles}>
-        <XDSVStack gap={1}>
-          <XDSHeading level={3} maxLines={1}>
+      <Card xstyle={styles.cardStyles}>
+        <VStack gap={1}>
+          <Heading level={3} maxLines={1}>
             {page.name}
-          </XDSHeading>
-          <XDSText type="body" size="sm" color="secondary" maxLines={2}>
+          </Heading>
+          <Text type="body" size="sm" color="secondary" maxLines={2}>
             {page.description}
-          </XDSText>
-        </XDSVStack>
-      </XDSCard>
+          </Text>
+        </VStack>
+      </Card>
     </Link>
   );
 }

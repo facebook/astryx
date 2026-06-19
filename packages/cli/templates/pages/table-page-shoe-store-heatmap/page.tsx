@@ -3,22 +3,22 @@
 'use client';
 
 import {
-  XDSVStack,
-  XDSHStack,
-  XDSStackItem,
-  XDSLayout,
-  XDSLayoutContent,
-  XDSLayoutHeader,
+  VStack,
+  HStack,
+  StackItem,
+  Layout,
+  LayoutContent,
+  LayoutHeader,
 } from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIconButton} from '@xds/core/IconButton';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSLink} from '@xds/core/Link';
-import {XDSThumbnail} from '@xds/core/Thumbnail';
-import {XDSTable, proportional, pixel} from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
+import {Text, Heading} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {IconButton} from '@xds/core/IconButton';
+import {Icon} from '@xds/core/Icon';
+import {Badge} from '@xds/core/Badge';
+import {Link} from '@xds/core/Link';
+import {Thumbnail} from '@xds/core/Thumbnail';
+import {Table, proportional, pixel} from '@xds/core/Table';
+import type {TableColumn} from '@xds/core/Table';
 import {
   XDSChartV2 as XDSChart,
   XDSChartGrid,
@@ -803,15 +803,15 @@ const statusColor: Record<string, 'green' | 'blue' | 'orange' | 'red'> = {
   refunded: 'red',
 };
 
-const columns: XDSTableColumn<OrderRow>[] = [
+const columns: TableColumn<OrderRow>[] = [
   {
     key: 'id',
     header: 'Order',
     width: pixel(110),
     renderCell: (item: OrderRow) => (
-      <XDSLink href="#" isStandalone>
+      <Link href="#" isStandalone>
         {item.id}
-      </XDSLink>
+      </Link>
     ),
   },
   {
@@ -819,20 +819,20 @@ const columns: XDSTableColumn<OrderRow>[] = [
     header: 'Product',
     width: proportional(3),
     renderCell: (item: OrderRow) => (
-      <XDSHStack gap={3} vAlign="center">
-        <XDSThumbnail
+      <HStack gap={3} vAlign="center">
+        <Thumbnail
           src={PRODUCTS[item.imageIndex].image}
           alt={item.product}
           label={item.product}
           style={{width: 36, height: 36, flexShrink: 0}}
         />
-        <XDSVStack gap={0}>
-          <XDSText type="body">{item.product}</XDSText>
-          <XDSText type="supporting" color="secondary">
+        <VStack gap={0}>
+          <Text type="body">{item.product}</Text>
+          <Text type="supporting" color="secondary">
             {item.category}
-          </XDSText>
-        </XDSVStack>
-      </XDSHStack>
+          </Text>
+        </VStack>
+      </HStack>
     ),
   },
   {
@@ -840,7 +840,7 @@ const columns: XDSTableColumn<OrderRow>[] = [
     header: 'Amount',
     width: pixel(90),
     renderCell: (item: OrderRow) => (
-      <XDSText type="body">${item.amount}</XDSText>
+      <Text type="body">${item.amount}</Text>
     ),
   },
   {
@@ -848,21 +848,21 @@ const columns: XDSTableColumn<OrderRow>[] = [
     header: 'Customer',
     width: proportional(2),
     renderCell: (item: OrderRow) => (
-      <XDSText type="body">{item.customer}</XDSText>
+      <Text type="body">{item.customer}</Text>
     ),
   },
   {
     key: 'email',
     header: 'Email',
     width: proportional(2),
-    renderCell: (item: OrderRow) => <XDSText type="body">{item.email}</XDSText>,
+    renderCell: (item: OrderRow) => <Text type="body">{item.email}</Text>,
   },
   {
     key: 'status',
     header: 'Status',
     width: pixel(120),
     renderCell: (item: OrderRow) => (
-      <XDSBadge
+      <Badge
         label={item.status.charAt(0).toUpperCase() + item.status.slice(1)}
         variant={statusColor[item.status]}
       />
@@ -872,7 +872,7 @@ const columns: XDSTableColumn<OrderRow>[] = [
     key: 'date',
     header: 'Date',
     width: pixel(110),
-    renderCell: (item: OrderRow) => <XDSText type="body">{item.date}</XDSText>,
+    renderCell: (item: OrderRow) => <Text type="body">{item.date}</Text>,
   },
 ];
 
@@ -880,34 +880,34 @@ const columns: XDSTableColumn<OrderRow>[] = [
 
 export default function TablePageShoeStoreHeatmapTemplate() {
   return (
-    <XDSLayout
+    <Layout
       height="auto"
       header={
-        <XDSLayoutHeader hasDivider>
-          <XDSHStack gap={2} vAlign="center">
-            <XDSStackItem size="fill">
-              <XDSHeading level={1}>Sales</XDSHeading>
-            </XDSStackItem>
-            <XDSIconButton
+        <LayoutHeader hasDivider>
+          <HStack gap={2} vAlign="center">
+            <StackItem size="fill">
+              <Heading level={1}>Sales</Heading>
+            </StackItem>
+            <IconButton
               label="Filter"
-              icon={<XDSIcon icon={FunnelIcon} size="sm" />}
+              icon={<Icon icon={FunnelIcon} size="sm" />}
               variant="ghost"
             />
-            <XDSIconButton
+            <IconButton
               label="Export"
-              icon={<XDSIcon icon={ArrowDownTrayIcon} size="sm" />}
+              icon={<Icon icon={ArrowDownTrayIcon} size="sm" />}
               variant="ghost"
             />
-            <XDSButton
+            <Button
               label="New order"
-              icon={<XDSIcon icon={PlusIcon} size="sm" />}
+              icon={<Icon icon={PlusIcon} size="sm" />}
             />
-          </XDSHStack>
-        </XDSLayoutHeader>
+          </HStack>
+        </LayoutHeader>
       }
       content={
-        <XDSLayoutContent padding={3}>
-          <XDSVStack gap={4}>
+        <LayoutContent padding={3}>
+          <VStack gap={4}>
             <XDSChart
               data={revenueData}
               xKey="date"
@@ -929,7 +929,7 @@ export default function TablePageShoeStoreHeatmapTemplate() {
               margin={{left: 40, right: 10, top: 10, bottom: 30}}
             />
 
-            <XDSTable<OrderRow>
+            <Table<OrderRow>
               data={orders}
               columns={columns}
               idKey="id"
@@ -937,8 +937,8 @@ export default function TablePageShoeStoreHeatmapTemplate() {
               dividers="rows"
               hasHover
             />
-          </XDSVStack>
-        </XDSLayoutContent>
+          </VStack>
+        </LayoutContent>
       }
     />
   );

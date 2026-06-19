@@ -95,7 +95,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'XDSInputStatus',
+      type: 'InputStatus',
       description:
         'Status indicator object for error, warning, or success states with a message.',
     },
@@ -188,7 +188,7 @@ export const docsZh = {
     {name: 'dateConstraints', type: 'Array<(date: Date) => boolean>', description: '自定义约束函数数组，用于禁用特定日期。'},
     {name: 'placeholder', type: 'string', description: '文本输入框中显示的占位符文本。', default: "'Select a date'"},
     {name: 'size', type: "'sm' | 'md' | 'lg'", description: '输入控件的尺寸。', default: "'md'"},
-    {name: 'status', type: 'XDSInputStatus', description: '错误、警告或成功状态的状态指示对象，附带消息。'},
+    {name: 'status', type: 'InputStatus', description: '错误、警告或成功状态的状态指示对象，附带消息。'},
     {name: 'labelTooltip', type: 'string', description: '通过标签末尾的信息图标显示的提示文本。'},
     {name: 'numberOfMonths', type: '1 | 2', description: '日历弹出层中同时显示的月份数量。', default: '1'},
     {

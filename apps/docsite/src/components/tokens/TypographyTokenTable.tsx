@@ -3,11 +3,11 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSTable, proportional, pixel} from '@xds/core/Table';
-import type {XDSTextType} from '@xds/core';
-import type {XDSHeadingLevel} from '@xds/core/Text';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {Table, proportional, pixel} from '@xds/core/Table';
+import type {TextType} from '@xds/core';
+import type {HeadingLevel} from '@xds/core/Text';
 import type {TokenTableProps} from './types';
 import {resolveToken} from './helpers';
 
@@ -20,8 +20,8 @@ const styles = stylex.create({
   },
 });
 
-const HEADING_LEVELS: XDSHeadingLevel[] = [1, 2, 3, 4, 5, 6];
-const TEXT_TYPES: XDSTextType[] = [
+const HEADING_LEVELS: HeadingLevel[] = [1, 2, 3, 4, 5, 6];
+const TEXT_TYPES: TextType[] = [
   'display-1',
   'display-2',
   'display-3',
@@ -117,7 +117,7 @@ export function TypographyTokenTable({theme}: TokenTableProps) {
   });
 
   return (
-    <XDSTable
+    <Table
       data={data as Record<string, unknown>[]}
       columns={[
         {
@@ -142,15 +142,15 @@ export function TypographyTokenTable({theme}: TokenTableProps) {
           header: 'Tokens',
           width: proportional(1, {minWidth: 280}),
           renderCell: (item: Record<string, unknown>) => (
-            <XDSVStack gap={1}>
-              <XDSText type="code" color="secondary">
+            <VStack gap={1}>
+              <Text type="code" color="secondary">
                 {item.fontSize as string} ·{' '}
                 {(item.fontFamily as string)?.split(',')[0]?.trim()}
-              </XDSText>
-              <XDSText type="code" color="secondary">
+              </Text>
+              <Text type="code" color="secondary">
                 {item.fontWeight as string} · {item.leading as string}
-              </XDSText>
-            </XDSVStack>
+              </Text>
+            </VStack>
           ),
         },
       ]}

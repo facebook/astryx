@@ -2,7 +2,7 @@
 
 'use client';
 
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {CodeBlock} from '@xds/core/CodeBlock';
 
 const code = `{
   "name": "@xds/core",
@@ -19,7 +19,7 @@ const code = `{
 
 export default function CodeBlockJSONConfig() {
   return (
-    <XDSCodeBlock
+    <CodeBlock
       code={code}
       language="json"
       title="package.json"

@@ -10,10 +10,10 @@
  * curated theme list/order (REEL_THEMES) and per-theme aurora/wordmark/mode.
  */
 
-import type {XDSDefinedTheme} from '@xds/core/theme';
+import type {DefinedTheme} from '@xds/core/theme';
 import {packages} from '@/generated/packageRegistry';
 import {themeObjects} from '@/generated/themeRegistry';
-// Built theme (__built:true) so the hero reel's <XDSTheme> slide uses pre-built
+// Built theme (__built:true) so the hero reel's <Theme> slide uses pre-built
 // CSS and skips runtime injection. BRAND_BLUE (logo-only) lives in @/constants.
 import {astryxTheme} from '@/themes/astryx';
 import {BRAND_BLUE} from '@/constants';
@@ -69,8 +69,8 @@ export interface HeroThemeSlide {
   name: string;
   /** Human-readable label, e.g. 'Matcha'. */
   label: string;
-  /** Resolved theme object passed to <XDSTheme>. */
-  theme: XDSDefinedTheme;
+  /** Resolved theme object passed to <Theme>. */
+  theme: DefinedTheme;
   /** Per-theme content for the floating cards. */
   content: HeroThemeContent;
   /** Soft pastel palette feeding the blurred aurora background blobs. */
@@ -290,7 +290,7 @@ function labelFor(name: string): string {
 
 // Resolve a slide's theme object (Astryx is local; others from the registry).
 // Returns null for an uninstalled package so the reel skips it.
-function themeFor(name: string): XDSDefinedTheme | null {
+function themeFor(name: string): DefinedTheme | null {
   if (name === ASTRYX) {
     return astryxTheme;
   }

@@ -3,12 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSSelector} from '@xds/core/Selector';
+import {Selector} from '@xds/core/Selector';
 
 export default function SelectorWithSections() {
   const [value, setValue] = useState<string | undefined>();
   return (
-    <XDSSelector
+    <Selector
       style={{width: 300}}
       label="Office"
       options={[

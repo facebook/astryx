@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import type {XDSDefinedTheme} from '@xds/core/theme';
+import type {DefinedTheme} from '@xds/core/theme';
 
 export interface TokenTableProps {
   /** The theme to display tokens for */
-  theme: XDSDefinedTheme;
+  theme: DefinedTheme;
 }

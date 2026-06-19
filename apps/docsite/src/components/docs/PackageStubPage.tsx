@@ -2,10 +2,10 @@
 
 'use client';
 
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
-import {XDSMarkdown} from '@xds/core/Markdown';
-import {XDSDivider} from '@xds/core/Divider';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
+import {Markdown} from '@xds/core/Markdown';
+import {Divider} from '@xds/core/Divider';
 import {DocPageLayout} from './DocPageLayout';
 import {PackageActions, type InstallStep} from './PackageActions';
 
@@ -58,24 +58,24 @@ export function PackageStubPage({
 
   return (
     <DocPageLayout title={name} description={description}>
-      <XDSVStack gap={10}>
+      <VStack gap={10}>
         <PackageActions
           packageName={name}
           version={version}
           installSteps={installSteps}
           cta={cta}
         />
-        <XDSDivider />
+        <Divider />
         {body ? (
-          <XDSMarkdown headingLevelStart={3} contentWidth={800}>
+          <Markdown headingLevelStart={3} contentWidth={800}>
             {body}
-          </XDSMarkdown>
+          </Markdown>
         ) : (
-          <XDSText type="body" color="secondary">
+          <Text type="body" color="secondary">
             No README available.
-          </XDSText>
+          </Text>
         )}
-      </XDSVStack>
+      </VStack>
     </DocPageLayout>
   );
 }

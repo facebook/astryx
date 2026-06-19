@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSFormLayout} from '@xds/core/FormLayout';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSSelector} from '@xds/core/Selector';
-import {XDSCheckboxList, XDSCheckboxListItem} from '@xds/core/CheckboxList';
+import {FormLayout} from '@xds/core/FormLayout';
+import {TextInput} from '@xds/core/TextInput';
+import {Selector} from '@xds/core/Selector';
+import {CheckboxList, CheckboxListItem} from '@xds/core/CheckboxList';
 
 export default function FormLayoutMixedControls() {
   const [name, setName] = useState('Maya Torres');
@@ -14,9 +14,9 @@ export default function FormLayoutMixedControls() {
   const [notifications, setNotifications] = useState(['email', 'push']);
 
   return (
-    <XDSFormLayout>
-      <XDSTextInput label="Full Name" value={name} onChange={setName} />
-      <XDSSelector
+    <FormLayout>
+      <TextInput label="Full Name" value={name} onChange={setName} />
+      <Selector
         label="Role"
         value={role}
         onChange={v => setRole(v as string)}
@@ -26,14 +26,14 @@ export default function FormLayoutMixedControls() {
           {label: 'Admin', value: 'admin'},
         ]}
       />
-      <XDSCheckboxList
+      <CheckboxList
         label="Notifications"
         value={notifications}
         onChange={setNotifications}>
-        <XDSCheckboxListItem label="Email" value="email" />
-        <XDSCheckboxListItem label="SMS" value="sms" />
-        <XDSCheckboxListItem label="Push" value="push" />
-      </XDSCheckboxList>
-    </XDSFormLayout>
+        <CheckboxListItem label="Email" value="email" />
+        <CheckboxListItem label="SMS" value="sms" />
+        <CheckboxListItem label="Push" value="push" />
+      </CheckboxList>
+    </FormLayout>
   );
 }

@@ -342,8 +342,24 @@ function parsePadding(props) {
   return result;
 }
 
+// Dual-prefix theme @scope selector helpers (XDS-prefix migration
+// P2380608025). Keep the `astryx` literal in sync with
+// packages/core/src/naming.ts (NAMESPACE) and generateThemeRules.ts.
+// XDSTheme dual-emits both data-astryx-theme and data-xds-theme during the
+// compat window, so the static build path must scope to either form too.
+const themeScopeStart = name =>
+  `[data-astryx-theme="${name}"], [data-xds-theme="${name}"]`;
+const THEME_SCOPE_TO = `[data-astryx-theme], [data-xds-theme]`;
+const componentClassSelector = (component, suffix) =>
+  `.astryx-${component}${suffix}, .xds-${component}${suffix}`;
+
 function expandContainerPadding(component, parsed) {
-  const prefix = `--xds-${component}-padding`;
+  // Emit the rebranded --astryx-<component>-padding tokens. The component reads
+  // them via an inverted fallback (var(--xds-*, var(--astryx-*, default))) so a
+  // legacy --xds-* override still wins during compat (XDS-prefix migration
+  // P2380608025). Keep the `astryx` literal in sync with packages/core/src/naming.ts
+  // (NAMESPACE) and the primary path in generateThemeRules.ts.
+  const prefix = `--astryx-${component}-padding`;
   const tokens = [];
 
   // Resolve effective inline values (inlineStart/End override inline)
@@ -446,7 +462,7 @@ const PROSE_COMPONENT_MAP = {
  */
 function generateCSS(themeDef, {prose = true} = {}) {
   const parts = [];
-  const scopeSelector = `[data-xds-theme="${themeDef.name}"]`;
+  const scopeSelector = themeScopeStart(themeDef.name);
 
   // Token overrides — applied to the scope root
   if (themeDef.tokens && Object.keys(themeDef.tokens).length > 0) {
@@ -477,7 +493,7 @@ function generateCSS(themeDef, {prose = true} = {}) {
           }
 
           // Build selector — co-select HTML elements for prose-related components
-          const xdsSelector = `.xds-${component}${suffix}`;
+          const xdsSelector = componentClassSelector(component, suffix);
           let baseSelector = `  ${xdsSelector}`;
 
           if (prose) {
@@ -529,7 +545,7 @@ function generateCSS(themeDef, {prose = true} = {}) {
   if (parts.length === 0) return '';
 
   const inner = parts.join('\n\n');
-  return `@scope (${scopeSelector}) to ([data-xds-theme]) {\n${inner}\n}`;
+  return `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${inner}\n}`;
 }
 
 // =============================================================================
@@ -545,7 +561,7 @@ function generateCSS(themeDef, {prose = true} = {}) {
  * the same class as its XDS counterpart.
  */
 function generateProseCSS(themeDef) {
-  const scopeSelector = `[data-xds-theme="${themeDef.name}"]`;
+  const scopeSelector = themeScopeStart(themeDef.name);
 
   // Each mapping becomes: h1 { /* same styles as .xds-heading.level-1 */ }
   // Since we can't @extend in plain CSS, we use the component's CSS custom
@@ -591,7 +607,7 @@ function generateProseCSS(themeDef) {
   parts.push(`  hr {\n    border: none;\n    border-top: 1px solid var(--color-border);\n    margin: 0;\n  }`);
 
   const inner = parts.join('\n\n');
-  return `@scope (${scopeSelector}) to ([data-xds-theme]) {\n${inner}\n}`;
+  return `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${inner}\n}`;
 }
 
 /**
@@ -1027,8 +1043,8 @@ export function registerTheme(program) {
             components: themeDef.components,
           });
         }
-        const scopeSelector = `[data-xds-theme="${themeDef.name}"]`;
-        const scopeTo = `[data-xds-theme]`;
+        const scopeSelector = themeScopeStart(themeDef.name);
+        const scopeTo = THEME_SCOPE_TO;
 
         if (_generateThemeRulesSplit) {
           const {component, prose} = _generateThemeRulesSplit(resolvedTheme);

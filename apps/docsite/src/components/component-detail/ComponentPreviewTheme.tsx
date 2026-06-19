@@ -12,7 +12,7 @@
  */
 
 import {type ReactNode} from 'react';
-import {XDSTheme} from '@xds/core/theme';
+import {Theme} from '@xds/core/theme';
 import {neutralTheme} from '@xds/theme-neutral/built';
 import {useThemeMode} from '../../app/providers';
 
@@ -20,8 +20,8 @@ export function ComponentPreviewTheme({children}: {children: ReactNode}) {
   const {mode} = useThemeMode();
 
   return (
-    <XDSTheme theme={neutralTheme} mode={mode}>
+    <Theme theme={neutralTheme} mode={mode}>
       {children}
-    </XDSTheme>
+    </Theme>
   );
 }

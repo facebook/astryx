@@ -3,16 +3,16 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSMobileNav, XDSMobileNavToggle} from '@xds/core/MobileNav';
-import {XDSAppShellMobileContext} from '@xds/core/AppShell';
-import {XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
-import {XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {MobileNav, MobileNavToggle} from '@xds/core/MobileNav';
+import {AppShellMobileContext} from '@xds/core/AppShell';
+import {SideNavItem, SideNavSection} from '@xds/core/SideNav';
+import {HStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function MobileNavToggleShowcase() {
   const [isOpen, setIsOpen] = useState(false);
   return (
-    <XDSAppShellMobileContext.Provider
+    <AppShellMobileContext.Provider
       value={{
         isMobile: true,
         isMobileNavOpen: isOpen,
@@ -22,21 +22,21 @@ export default function MobileNavToggleShowcase() {
         isMobileNavEnabled: true,
         hasAutoToggle: false,
       }}>
-      <XDSHStack gap={3} vAlign="center">
-        <XDSMobileNavToggle />
-        <XDSText type="body" weight="bold">
+      <HStack gap={3} vAlign="center">
+        <MobileNavToggle />
+        <Text type="body" weight="bold">
           Page title
-        </XDSText>
-      </XDSHStack>
-      <XDSMobileNav
+        </Text>
+      </HStack>
+      <MobileNav
         isOpen={isOpen}
         onOpenChange={setIsOpen}
         header="Navigation">
-        <XDSSideNavSection title="Pages">
-          <XDSSideNavItem label="Home" isSelected href="#" />
-          <XDSSideNavItem label="Settings" href="#" />
-        </XDSSideNavSection>
-      </XDSMobileNav>
-    </XDSAppShellMobileContext.Provider>
+        <SideNavSection title="Pages">
+          <SideNavItem label="Home" isSelected href="#" />
+          <SideNavItem label="Settings" href="#" />
+        </SideNavSection>
+      </MobileNav>
+    </AppShellMobileContext.Provider>
   );
 }

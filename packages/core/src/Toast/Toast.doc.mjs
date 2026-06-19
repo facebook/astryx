@@ -16,7 +16,7 @@ export const docs = {
       type: 'ReactNode',
       description: 'Primary message content.',
       required: true,
-      slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Toast message'}],
+      slotElements: [{__element: 'Text', props: {type: 'body'}, children: 'Toast message'}],
     },
     {
       name: 'type',
@@ -40,8 +40,8 @@ export const docs = {
       type: 'ReactNode',
       description: 'Content rendered at the trailing end (e.g. Undo button, link).',
       slotElements: [
-        {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
-        {__element: 'XDSBadge', props: {label: '3'}},
+        {__element: 'Icon', props: {icon: 'chevronDown', size: 'sm'}},
+        {__element: 'Badge', props: {label: '3'}},
       ],
     },
     {
@@ -68,7 +68,7 @@ export const docs = {
 
   usage: {
     description:
-      'Toast shows a brief, non-blocking notification to confirm an action or present temporary information. Use it for scenarios where the user needs feedback but not a decision, such as saving, deleting, or changing a status.\n\nFor production use, prefer the `useXDSToast()` hook; it handles positioning, stacking, auto-dismiss, and deduplication via `XDSToastViewport`. The `XDSToast` component renders the visual toast element inline and is useful for previews, documentation, and static showcases where the viewport lifecycle is not needed.',
+      'Toast shows a brief, non-blocking notification to confirm an action or present temporary information. Use it for scenarios where the user needs feedback but not a decision, such as saving, deleting, or changing a status.\n\nFor production use, prefer the `useToast()` hook; it handles positioning, stacking, auto-dismiss, and deduplication via `ToastViewport`. The `Toast` component renders the visual toast element inline and is useful for previews, documentation, and static showcases where the viewport lifecycle is not needed.',
     bestPractices: [
       {guidance: true, description: 'Keep messages short: only a few words that tell the user what happened, like "Changes saved" or "Message sent".'},
       {guidance: true, description: 'Add an undo action in the endContent slot for reversible operations like deleting an item, so the user can recover without navigating away.'},
@@ -106,7 +106,7 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Toast 显示简短的非阻塞通知，用于确认操作或呈现临时信息。适用于用户需要反馈但不需要做决定的场景，如保存、删除或状态变更。\n\n生产环境中推荐使用 `useXDSToast()` hook，它通过 `XDSToastViewport` 处理定位、堆叠、自动关闭和去重。`XDSToast` 组件以内联方式渲染 toast 视觉元素，适用于预览、文档和静态展示。',
+      'Toast 显示简短的非阻塞通知，用于确认操作或呈现临时信息。适用于用户需要反馈但不需要做决定的场景，如保存、删除或状态变更。\n\n生产环境中推荐使用 `useToast()` hook，它通过 `ToastViewport` 处理定位、堆叠、自动关闭和去重。`Toast` 组件以内联方式渲染 toast 视觉元素，适用于预览、文档和静态展示。',
     bestPractices: [
       {guidance: true, description: '保持消息简短，只需几个词告诉用户发生了什么，如"更改已保存"或"消息已发送"。'},
       {guidance: true, description: '在 endContent 插槽中添加撤销操作，用于可逆操作如删除项目，让用户无需导航即可恢复。'},
@@ -127,10 +127,10 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'toast notification w/ auto-dismiss, stacking, dedup, smooth animations; XDSMediaTheme inverted surface',
+    'toast notification w/ auto-dismiss, stacking, dedup, smooth animations; MediaTheme inverted surface',
   usage: {
     description:
-      'Brief non-blocking notification for action confirmations and temporary info. Use where user needs feedback not decisions: saves, deletes, status changes. useXDSToast() hook for production (positioning, stacking, auto-dismiss, dedup via XDSToastViewport). XDSToast renders inline for previews/docs/static showcases.',
+      'Brief non-blocking notification for action confirmations and temporary info. Use where user needs feedback not decisions: saves, deletes, status changes. useToast() hook for production (positioning, stacking, auto-dismiss, dedup via ToastViewport). Toast renders inline for previews/docs/static showcases.',
     bestPractices: [
       {guidance: true, description: 'Short messages, a few words: "Changes saved", "Message sent".'},
       {guidance: true, description: 'Undo action in endContent for reversible ops like deletes.'},

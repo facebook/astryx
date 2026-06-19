@@ -2,9 +2,9 @@
 
 'use client';
 
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Icon} from '@xds/core/Icon';
+import {HStack, VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const colors = [
   'blue',
@@ -21,13 +21,13 @@ const colors = [
 
 export default function IconNonSemanticColors() {
   return (
-    <XDSHStack gap={4} wrap="wrap">
+    <HStack gap={4} wrap="wrap">
       {colors.map((color) => (
-        <XDSVStack key={color} gap={1} hAlign="center">
-          <XDSIcon icon="search" color={color} />
-          <XDSText type="supporting">{color}</XDSText>
-        </XDSVStack>
+        <VStack key={color} gap={1} hAlign="center">
+          <Icon icon="search" color={color} />
+          <Text type="supporting">{color}</Text>
+        </VStack>
       ))}
-    </XDSHStack>
+    </HStack>
   );
 }

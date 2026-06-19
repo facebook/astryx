@@ -2,30 +2,30 @@
 
 'use client';
 
-import {XDSBanner} from '@xds/core/Banner';
-import {XDSButton} from '@xds/core/Button';
-import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Banner} from '@xds/core/Banner';
+import {Button} from '@xds/core/Button';
+import {List, ListItem} from '@xds/core/List';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function BannerCollapsibleContent() {
   return (
-    <XDSBanner
+    <Banner
       status="warning"
       title="Configuration changes detected"
       description="Review the changes before they take effect."
-      endContent={<XDSButton label="Review" variant="secondary" size="sm" />}
+      endContent={<Button label="Review" variant="secondary" size="sm" />}
       isDismissable
       defaultIsExpanded>
-      <XDSStack direction="vertical" gap={2}>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={2}>
+        <Text type="supporting" color="secondary">
           Changed settings:
-        </XDSText>
-        <XDSList density="compact">
-          <XDSListItem label="Authentication method updated" />
-          <XDSListItem label="Rate limits modified" />
-        </XDSList>
-      </XDSStack>
-    </XDSBanner>
+        </Text>
+        <List density="compact">
+          <ListItem label="Authentication method updated" />
+          <ListItem label="Rate limits modified" />
+        </List>
+      </Stack>
+    </Banner>
   );
 }

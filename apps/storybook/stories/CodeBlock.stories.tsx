@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {CodeBlock} from '@xds/core/CodeBlock';
 
-const meta: Meta<typeof XDSCodeBlock> = {
+const meta: Meta<typeof CodeBlock> = {
   title: 'Core/CodeBlock',
-  component: XDSCodeBlock,
+  component: CodeBlock,
   tags: ['autodocs'],
   argTypes: {
     language: {
@@ -47,7 +47,7 @@ const meta: Meta<typeof XDSCodeBlock> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSCodeBlock>;
+type Story = StoryObj<typeof CodeBlock>;
 
 const tsExample = `import {useState, useEffect} from 'react';
 

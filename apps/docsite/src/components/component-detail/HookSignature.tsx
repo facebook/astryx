@@ -2,12 +2,12 @@
 
 'use client';
 
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSSection} from '@xds/core/Section';
-import {XDSTable, pixel} from '@xds/core/Table';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSDivider} from '@xds/core';
+import {Heading, Text} from '@xds/core/Text';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Section} from '@xds/core/Section';
+import {Table, pixel} from '@xds/core/Table';
+import {Badge} from '@xds/core/Badge';
+import {Divider} from '@xds/core';
 import {useMediaQuery} from '@xds/core/hooks';
 import type {
   HookParamDoc,
@@ -29,40 +29,40 @@ function formatParamType(type: string, defaultValue?: string): string {
 
 function ParamRowMobile({param}: {param: HookParamDoc}) {
   return (
-    <XDSVStack gap={1} style={{paddingBlock: 8}}>
-      <XDSHStack gap={1} vAlign="center">
-        <XDSText type="code" weight="bold">
+    <VStack gap={1} style={{paddingBlock: 8}}>
+      <HStack gap={1} vAlign="center">
+        <Text type="code" weight="bold">
           {param.name}
-        </XDSText>
-        {param.required && <XDSBadge label="required" variant="info" />}
-      </XDSHStack>
-      <XDSText type="code" color="secondary">
+        </Text>
+        {param.required && <Badge label="required" variant="info" />}
+      </HStack>
+      <Text type="code" color="secondary">
         {formatParamType(param.type, param.default)}
-      </XDSText>
+      </Text>
       {param.description && (
         <MarkdownText type="body" color="secondary">
           {param.description}
         </MarkdownText>
       )}
-    </XDSVStack>
+    </VStack>
   );
 }
 
 function ReturnRowMobile({ret}: {ret: HookReturnDoc}) {
   return (
-    <XDSVStack gap={1} style={{paddingBlock: 8}}>
-      <XDSText type="code" weight="bold">
+    <VStack gap={1} style={{paddingBlock: 8}}>
+      <Text type="code" weight="bold">
         {ret.name}
-      </XDSText>
-      <XDSText type="code" color="secondary">
+      </Text>
+      <Text type="code" color="secondary">
         {ret.type}
-      </XDSText>
+      </Text>
       {ret.description && (
         <MarkdownText type="body" color="secondary">
           {ret.description}
         </MarkdownText>
       )}
-    </XDSVStack>
+    </VStack>
   );
 }
 
@@ -83,20 +83,20 @@ export function HookSignature({params, returns}: HookSignatureProps) {
   })) as Record<string, unknown>[];
 
   return (
-    <XDSVStack gap={6}>
+    <VStack gap={6}>
       {params.length > 0 && (
-        <XDSSection>
-          <XDSVStack gap={2}>
-            <XDSHeading level={3}>Parameters</XDSHeading>
+        <Section>
+          <VStack gap={2}>
+            <Heading level={3}>Parameters</Heading>
             {isMobile ? (
               params.map(p => (
                 <div key={p.name}>
-                  <XDSDivider />
+                  <Divider />
                   <ParamRowMobile param={p} />
                 </div>
               ))
             ) : (
-              <XDSTable
+              <Table
                 data={paramData}
                 columns={[
                   {
@@ -104,17 +104,17 @@ export function HookSignature({params, returns}: HookSignatureProps) {
                     header: 'Param',
                     width: pixel(240),
                     renderCell: (item: Record<string, unknown>) => (
-                      <XDSHStack
+                      <HStack
                         gap={1}
                         vAlign="center"
                         style={{whiteSpace: 'nowrap'}}>
-                        <XDSText type="code" weight="bold">
+                        <Text type="code" weight="bold">
                           {item.name as string}
-                        </XDSText>
+                        </Text>
                         {item.required === true && (
-                          <XDSBadge label="required" variant="info" />
+                          <Badge label="required" variant="info" />
                         )}
-                      </XDSHStack>
+                      </HStack>
                     ),
                   },
                   {
@@ -122,9 +122,9 @@ export function HookSignature({params, returns}: HookSignatureProps) {
                     header: 'Type',
                     width: pixel(240),
                     renderCell: (item: Record<string, unknown>) => (
-                      <XDSText type="code" color="secondary">
+                      <Text type="code" color="secondary">
                         {item.type as string}
-                      </XDSText>
+                      </Text>
                     ),
                   },
                   {
@@ -141,22 +141,22 @@ export function HookSignature({params, returns}: HookSignatureProps) {
                 dividers="rows"
               />
             )}
-          </XDSVStack>
-        </XDSSection>
+          </VStack>
+        </Section>
       )}
       {returns.length > 0 && (
-        <XDSSection>
-          <XDSVStack gap={2}>
-            <XDSHeading level={3}>Returns</XDSHeading>
+        <Section>
+          <VStack gap={2}>
+            <Heading level={3}>Returns</Heading>
             {isMobile ? (
               returns.map(r => (
                 <div key={r.name}>
-                  <XDSDivider />
+                  <Divider />
                   <ReturnRowMobile ret={r} />
                 </div>
               ))
             ) : (
-              <XDSTable
+              <Table
                 data={returnData}
                 columns={[
                   {
@@ -164,12 +164,12 @@ export function HookSignature({params, returns}: HookSignatureProps) {
                     header: 'Field',
                     width: pixel(220),
                     renderCell: (item: Record<string, unknown>) => (
-                      <XDSText
+                      <Text
                         type="code"
                         weight="bold"
                         style={{whiteSpace: 'nowrap'}}>
                         {item.name as string}
-                      </XDSText>
+                      </Text>
                     ),
                   },
                   {
@@ -177,9 +177,9 @@ export function HookSignature({params, returns}: HookSignatureProps) {
                     header: 'Type',
                     width: pixel(240),
                     renderCell: (item: Record<string, unknown>) => (
-                      <XDSText type="code" color="secondary">
+                      <Text type="code" color="secondary">
                         {item.type as string}
-                      </XDSText>
+                      </Text>
                     ),
                   },
                   {
@@ -196,9 +196,9 @@ export function HookSignature({params, returns}: HookSignatureProps) {
                 dividers="rows"
               />
             )}
-          </XDSVStack>
-        </XDSSection>
+          </VStack>
+        </Section>
       )}
-    </XDSVStack>
+    </VStack>
   );
 }

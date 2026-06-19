@@ -67,7 +67,7 @@ export const docs = {
       'Makes a container element clickable while preserving nested interactive element behavior. Solves the "nested interactive elements" problem: when a card is clickable but contains buttons/links, clicking those should NOT trigger the card\'s action. Detects interactive ancestors between the click target and the container, and ignores text selections. Supports href navigation (including middle-click and Ctrl/Cmd+click for new tabs).',
     bestPractices: [
       { guidance: true, description: 'Attach both onClick and onMouseUp to the container element for full click handling including middle-click.' },
-      { guidance: true, description: 'Use inside XDSClickableCard or XDSSelectableCard for the standard card interaction pattern.' },
+      { guidance: true, description: 'Use inside ClickableCard or SelectableCard for the standard card interaction pattern.' },
       { guidance: false, description: 'Use when the entire container is a single interactive element; just use a <button> or <a> directly.' },
     ],
   },
@@ -99,7 +99,7 @@ export const docsDense = {
       'Makes container element clickable while preserving nested interactive element behavior. Solves "nested interactive elements" problem: when card is clickable but contains buttons/links, clicking those must NOT trigger card\'s action. Detects interactive ancestors between click target + container, ignores text selections. Supports href navigation (incl. middle-click + Ctrl/Cmd+click for new tabs).',
     bestPractices: [
       { guidance: true, description: 'Attach both onClick + onMouseUp to container element for full click handling incl. middle-click.' },
-      { guidance: true, description: 'Use inside XDSClickableCard / XDSSelectableCard for standard card interaction pattern.' },
+      { guidance: true, description: 'Use inside ClickableCard / SelectableCard for standard card interaction pattern.' },
       { guidance: false, description: 'Use when entire container is single interactive element; just use <button> / <a> directly.' },
     ],
   },

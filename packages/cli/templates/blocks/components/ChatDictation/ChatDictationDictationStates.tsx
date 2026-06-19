@@ -2,10 +2,10 @@
 
 'use client';
 
-import {XDSChatDictationButton} from '@xds/core/Chat';
+import {ChatDictationButton} from '@xds/core/Chat';
 import type {UseSpeechRecognitionReturn} from '@xds/core/Chat';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const noop = () => {};
 
@@ -53,30 +53,30 @@ const speaking: UseSpeechRecognitionReturn = {
 
 export default function ChatDictationDictationStates() {
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Text type="supporting" color="secondary">
         Three states of a dictation interaction
-      </XDSText>
-      <XDSStack direction="horizontal" gap={6} hAlign="center">
-        <XDSStack direction="vertical" gap={1} hAlign="center">
-          <XDSChatDictationButton dictation={idle} />
-          <XDSText type="supporting" color="secondary">
+      </Text>
+      <Stack direction="horizontal" gap={6} hAlign="center">
+        <Stack direction="vertical" gap={1} hAlign="center">
+          <ChatDictationButton dictation={idle} />
+          <Text type="supporting" color="secondary">
             Idle
-          </XDSText>
-        </XDSStack>
-        <XDSStack direction="vertical" gap={1} hAlign="center">
-          <XDSChatDictationButton dictation={listening} />
-          <XDSText type="supporting" color="secondary">
+          </Text>
+        </Stack>
+        <Stack direction="vertical" gap={1} hAlign="center">
+          <ChatDictationButton dictation={listening} />
+          <Text type="supporting" color="secondary">
             Listening
-          </XDSText>
-        </XDSStack>
-        <XDSStack direction="vertical" gap={1} hAlign="center">
-          <XDSChatDictationButton dictation={speaking} />
-          <XDSText type="supporting" color="secondary">
+          </Text>
+        </Stack>
+        <Stack direction="vertical" gap={1} hAlign="center">
+          <ChatDictationButton dictation={speaking} />
+          <Text type="supporting" color="secondary">
             Speaking
-          </XDSText>
-        </XDSStack>
-      </XDSStack>
-    </XDSStack>
+          </Text>
+        </Stack>
+      </Stack>
+    </Stack>
   );
 }

@@ -2,19 +2,19 @@
 
 'use client';
 
-import {XDSTreeList} from '@xds/core/TreeList';
-import {XDSIcon} from '@xds/core/Icon';
+import {TreeList} from '@xds/core/TreeList';
+import {Icon} from '@xds/core/Icon';
 import {Cog6ToothIcon, ChevronRightIcon} from '@heroicons/react/24/outline';
 
 export default function TreeListInteractiveSettings() {
   return (
-    <XDSTreeList
+    <TreeList
       items={[
         {
           id: 'settings',
           label: 'Settings',
           isExpanded: true,
-          startContent: <XDSIcon icon={Cog6ToothIcon} size="sm" />,
+          startContent: <Icon icon={Cog6ToothIcon} size="sm" />,
           children: [
             {
               id: 'general',
@@ -32,7 +32,7 @@ export default function TreeListInteractiveSettings() {
           id: 'docs',
           label: 'Documentation',
           href: '#',
-          endContent: <XDSIcon icon={ChevronRightIcon} size="sm" />,
+          endContent: <Icon icon={ChevronRightIcon} size="sm" />,
         },
       ]}
     />

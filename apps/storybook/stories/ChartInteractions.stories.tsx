@@ -16,8 +16,8 @@ import {
   XDSChartReferenceLine,
   useXDSChartColors,
 } from '@xds/lab';
-import {XDSStack, XDSText} from '@xds/core';
-import {XDSHeading} from '@xds/core/Text';
+import {Stack, Text} from '@xds/core';
+import {Heading} from '@xds/core/Text';
 import {useDataset} from './useDataset';
 
 const meta: Meta = {title: 'Lab/Chart Interactions', tags: ['autodocs']};
@@ -46,11 +46,11 @@ export const BrushBars: StoryObj = {
     const colors = useXDSChartColors();
     const [selected, setSelected] = useState<string | null>(null);
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>1D Brush — Bar Chart</XDSHeading>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>1D Brush — Bar Chart</Heading>
+        <Text type="supporting" color="secondary">
           Drag to select a range. {selected ?? 'Click to clear.'}
-        </XDSText>
+        </Text>
         <XDSChart
           data={monthlyData}
           xKey="month"
@@ -65,7 +65,7 @@ export const BrushBars: StoryObj = {
             onClear={() => setSelected(null)}
           />
         </XDSChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -76,11 +76,11 @@ export const BrushLine: StoryObj = {
     const colors = useXDSChartColors();
     const [selected, setSelected] = useState<string | null>(null);
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>1D Brush — Line Chart</XDSHeading>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>1D Brush — Line Chart</Heading>
+        <Text type="supporting" color="secondary">
           Drag to select a range. {selected ?? 'Click to clear.'}
-        </XDSText>
+        </Text>
         <XDSChart
           data={monthlyData}
           xKey="month"
@@ -104,7 +104,7 @@ export const BrushLine: StoryObj = {
             onClear={() => setSelected(null)}
           />
         </XDSChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -123,15 +123,15 @@ export const Brush2D: StoryObj = {
       [raw],
     );
     if (!data.length) {
-      return <XDSText type="supporting">Loading…</XDSText>;
+      return <Text type="supporting">Loading…</Text>;
     }
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>2D Brush — Scatter Plot</XDSHeading>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>2D Brush — Scatter Plot</Heading>
+        <Text type="supporting" color="secondary">
           Drag a rectangle to select.{' '}
           {count != null ? `${count} points selected.` : 'Click to clear.'}
-        </XDSText>
+        </Text>
         <XDSChart
           data={data}
           xKey="hp"
@@ -152,7 +152,7 @@ export const Brush2D: StoryObj = {
             onClear={() => setCount(null)}
           />
         </XDSChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -170,11 +170,11 @@ export const Crosshair: StoryObj = {
       [raw],
     );
     if (!data.length) {
-      return <XDSText type="supporting">Loading…</XDSText>;
+      return <Text type="supporting">Loading…</Text>;
     }
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Crosshair</XDSHeading>
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Crosshair</Heading>
         <XDSChart
           data={data}
           xKey="hp"
@@ -196,7 +196,7 @@ export const Crosshair: StoryObj = {
             yFormat={v => `${Math.round(v)} mpg`}
           />
         </XDSChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -216,15 +216,15 @@ export const ZoomPan: StoryObj = {
     const [xDomain, setXDomain] = useState<[number, number]>([40, 230]);
     const [yDomain, setYDomain] = useState<[number, number]>([8, 47]);
     if (!data.length) {
-      return <XDSText type="supporting">Loading…</XDSText>;
+      return <Text type="supporting">Loading…</Text>;
     }
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Zoom & Pan</XDSHeading>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Zoom & Pan</Heading>
+        <Text type="supporting" color="secondary">
           Scroll to zoom, drag to pan. x: [{Math.round(xDomain[0])},{' '}
           {Math.round(xDomain[1])}]
-        </XDSText>
+        </Text>
         <XDSChart
           data={data}
           xKey="hp"
@@ -245,7 +245,7 @@ export const ZoomPan: StoryObj = {
             onYDomainChange={setYDomain}
           />
         </XDSChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -264,14 +264,14 @@ export const ClickSelect: StoryObj = {
     );
     const [selected, setSelected] = useState<number[]>([]);
     if (!data.length) {
-      return <XDSText type="supporting">Loading…</XDSText>;
+      return <Text type="supporting">Loading…</Text>;
     }
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Click to Select</XDSHeading>
-        <XDSText type="supporting" color="secondary">
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Click to Select</Heading>
+        <Text type="supporting" color="secondary">
           Click a point. Shift-click for multi. {selected.length} selected.
-        </XDSText>
+        </Text>
         <XDSChart
           data={data}
           xKey="hp"
@@ -288,7 +288,7 @@ export const ClickSelect: StoryObj = {
           />
           <XDSChartSelect selected={selected} onSelectionChange={setSelected} />
         </XDSChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };
@@ -298,8 +298,8 @@ export const ReferenceLines: StoryObj = {
   render: () => {
     const colors = useXDSChartColors();
     return (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSHeading level={3}>Reference Lines</XDSHeading>
+      <Stack direction="vertical" gap={4}>
+        <Heading level={3}>Reference Lines</Heading>
         <XDSChart
           data={monthlyData}
           xKey="month"
@@ -320,7 +320,7 @@ export const ReferenceLines: StoryObj = {
             color={colors.semantic.neutral}
           />
         </XDSChart>
-      </XDSStack>
+      </Stack>
     );
   },
 };

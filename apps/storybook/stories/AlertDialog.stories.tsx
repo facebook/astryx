@@ -3,14 +3,14 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSAlertDialog,
-  useXDSImperativeAlertDialog,
+  AlertDialog,
+  useImperativeAlertDialog,
 } from '@xds/core/AlertDialog';
-import {XDSButton} from '@xds/core/Button';
+import {Button} from '@xds/core/Button';
 
-const meta: Meta<typeof XDSAlertDialog> = {
+const meta: Meta<typeof AlertDialog> = {
   title: 'Core/AlertDialog',
-  component: XDSAlertDialog,
+  component: AlertDialog,
   tags: ['autodocs'],
   argTypes: {
     isOpen: {control: 'boolean'},
@@ -23,7 +23,7 @@ const meta: Meta<typeof XDSAlertDialog> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSAlertDialog>;
+type Story = StoryObj<typeof AlertDialog>;
 
 /**
  * Delete confirmation — the most common alert dialog pattern.
@@ -33,12 +33,12 @@ export const Delete: Story = {
     const [isOpen, setIsOpen] = useState(false);
     return (
       <>
-        <XDSButton
+        <Button
           label="Delete item"
           variant="destructive"
           onClick={() => setIsOpen(true)}
         />
-        <XDSAlertDialog
+        <AlertDialog
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           title="Delete item?"
@@ -61,12 +61,12 @@ export const Async: Story = {
 
     return (
       <>
-        <XDSButton
+        <Button
           label="Revoke access"
           variant="destructive"
           onClick={() => setIsOpen(true)}
         />
-        <XDSAlertDialog
+        <AlertDialog
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           title="Revoke access?"
@@ -93,12 +93,12 @@ export const Informational: Story = {
     const [isOpen, setIsOpen] = useState(false);
     return (
       <>
-        <XDSButton
+        <Button
           label="Show notice"
           variant="secondary"
           onClick={() => setIsOpen(true)}
         />
-        <XDSAlertDialog
+        <AlertDialog
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           title="Session expired"
@@ -117,10 +117,10 @@ export const Informational: Story = {
  */
 export const Imperative: Story = {
   render: () => {
-    const alert = useXDSImperativeAlertDialog();
+    const alert = useImperativeAlertDialog();
     return (
       <>
-        <XDSButton
+        <Button
           label="Delete item"
           variant="destructive"
           onClick={() =>

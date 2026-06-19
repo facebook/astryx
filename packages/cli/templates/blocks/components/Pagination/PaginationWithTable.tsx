@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSPagination} from '@xds/core/Pagination';
-import {XDSTable} from '@xds/core/Table';
-import {XDSStack} from '@xds/core/Layout';
+import {Pagination} from '@xds/core/Pagination';
+import {Table} from '@xds/core/Table';
+import {Stack} from '@xds/core/Layout';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
@@ -42,8 +42,8 @@ export default function PaginationWithTable() {
   const pageData = ALL_DATA.slice(start, start + PAGE_SIZE);
 
   return (
-    <XDSStack direction="vertical" xstyle={styles.root}>
-      <XDSTable
+    <Stack direction="vertical" xstyle={styles.root}>
+      <Table
         idKey="id"
         columns={[
           {key: 'name', header: 'Name'},
@@ -52,7 +52,7 @@ export default function PaginationWithTable() {
         ]}
         data={pageData}
       />
-      <XDSPagination
+      <Pagination
         page={page}
         onChange={setPage}
         totalItems={ALL_DATA.length}
@@ -61,6 +61,6 @@ export default function PaginationWithTable() {
         size="sm"
         xstyle={styles.pagination}
       />
-    </XDSStack>
+    </Stack>
   );
 }

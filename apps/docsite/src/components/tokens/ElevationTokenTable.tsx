@@ -3,7 +3,7 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSTable, pixel} from '@xds/core/Table';
+import {Table, pixel} from '@xds/core/Table';
 import type {TokenTableProps} from './types';
 import {resolveToken, getTokensByPrefix} from './helpers';
 
@@ -26,7 +26,7 @@ export function ElevationTokenTable({theme}: TokenTableProps) {
   }));
 
   return (
-    <XDSTable
+    <Table
       data={data as Record<string, unknown>[]}
       columns={[
         {key: 'tokenName', header: 'Token', width: pixel(220)},

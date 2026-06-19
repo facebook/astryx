@@ -4,7 +4,7 @@
 export const doc = {
   type: 'block',
   exampleFor: 'HoverCard',
-  alsoShowcaseFor: ['useXDSHoverCard'],
+  alsoShowcaseFor: ['useHoverCard'],
   name: 'HoverCard',
   displayName: 'Hover Card',
   description:

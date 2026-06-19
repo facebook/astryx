@@ -10,13 +10,13 @@ export const docs = {
   playground: {
     defaults: {
       content: 'Helpful tooltip text',
-      children: {__element: 'XDSButton', props: {label: 'Hover me', variant: 'secondary'}},
+      children: {__element: 'Button', props: {label: 'Hover me', variant: 'secondary'}},
     },
   },
   keywords: ["tooltip","hint","infotip","title","hover","flyout","balloon","helpertext"],
   components: [
     {
-      name: 'XDSTooltip',
+      name: 'Tooltip',
       displayName: 'Tooltip',
       description:
         'Component wrapper for tooltip display triggered on hover or focus.',      props: [
@@ -34,7 +34,7 @@ export const docs = {
           name: 'content',
           type: 'ReactNode',
           description: 'Tooltip content, typically short text.',
-          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Content text'}],
+          slotElements: [{__element: 'Text', props: {type: 'body'}, children: 'Content text'}],
         },
         {
           name: 'placement',
@@ -115,7 +115,7 @@ export const docsZh = {
   displayName: 'Tooltip',
   components: [
     {
-      name: 'XDSTooltip',
+      name: 'Tooltip',
       displayName: 'Tooltip',
       description:
         '工具提示显示的组件包装器，通过悬停或聚焦触发。',
@@ -223,7 +223,7 @@ export const docsDense = {
   },
   components: [
     {
-      name: 'XDSTooltip',
+      name: 'Tooltip',
       displayName: 'Tooltip',
       description: 'Component wrapper for tooltip display on hover/focus.',
       propDescriptions: {

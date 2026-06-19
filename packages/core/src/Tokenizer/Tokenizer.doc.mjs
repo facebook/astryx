@@ -16,7 +16,7 @@ export const docs = {
     },
     {
       name: 'searchSource',
-      type: 'XDSSearchSource<T>',
+      type: 'SearchSource<T>',
       description:
         'Data source providing search and bootstrap methods for populating the dropdown.',
       required: true,
@@ -29,7 +29,7 @@ export const docs = {
     },
     {
       name: 'onChange',
-      type: '(items: T[], change: XDSTokenizerChange<T>) => void',
+      type: '(items: T[], change: TokenizerChange<T>) => void',
       description:
         "Called when selection changes. The change argument includes the affected item and type ('add' | 'create' | 'remove' | 'reorder').",
       required: true,
@@ -56,13 +56,13 @@ export const docs = {
       name: 'renderToken',
       type: '(item: T, onRemove: () => void) => ReactNode',
       description:
-        'Custom render function for selected tokens. Default renders XDSToken with label and onRemove.',
+        'Custom render function for selected tokens. Default renders Token with label and onRemove.',
     },
     {
       name: 'renderItem',
       type: '(item: T) => ReactNode',
       description:
-        'Custom render function for dropdown items. Default renders XDSTypeaheadItem.',
+        'Custom render function for dropdown items. Default renders TypeaheadItem.',
     },
     {
       name: 'isDisabled',
@@ -72,7 +72,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'XDSInputStatus',
+      type: 'InputStatus',
       description:
         'Validation status object with type and message for error/warning/success states.',
     },
@@ -159,13 +159,13 @@ export const docs = {
       description:
         'Content to display at the end of the input row. Useful for buttons, result counts, or other controls.',
       slotElements: [
-        {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
-        {__element: 'XDSBadge', props: {label: '3'}},
+        {__element: 'Icon', props: {icon: 'chevronDown', size: 'sm'}},
+        {__element: 'Badge', props: {label: '3'}},
       ],
     },
     {
       name: 'handleRef',
-      type: 'React.Ref<XDSTokenizerHandle>',
+      type: 'React.Ref<TokenizerHandle>',
       description: 'Imperative handle for focus() and blur() control.',
     },
     {
@@ -216,7 +216,7 @@ export const docsZh = {
     },
     {
       name: 'searchSource',
-      type: 'XDSSearchSource<T>',
+      type: 'SearchSource<T>',
       description:
         '\u63d0\u4f9b\u641c\u7d22\u548c\u5f15\u5bfc\u65b9\u6cd5\u7684\u6570\u636e\u6e90\uff0c\u7528\u4e8e\u586b\u5145\u4e0b\u62c9\u5217\u8868\u3002',
       required: true,
@@ -229,7 +229,7 @@ export const docsZh = {
     },
     {
       name: 'onChange',
-      type: '(items: T[], change: XDSTokenizerChange<T>) => void',
+      type: '(items: T[], change: TokenizerChange<T>) => void',
       description:
         "\u9009\u62e9\u53d8\u66f4\u65f6\u8c03\u7528\u3002change \u53c2\u6570\u5305\u542b\u53d7\u5f71\u54cd\u7684\u9879\u76ee\u548c\u7c7b\u578b\uff08'add' | 'create' | 'remove' | 'reorder'\uff09\u3002",
       required: true,
@@ -256,13 +256,13 @@ export const docsZh = {
       name: 'renderToken',
       type: '(item: T, onRemove: () => void) => ReactNode',
       description:
-        '\u5df2\u9009\u6807\u8bb0\u7684\u81ea\u5b9a\u4e49\u6e32\u67d3\u51fd\u6570\u3002\u9ed8\u8ba4\u6e32\u67d3\u5e26\u6709 label \u548c onRemove \u7684 XDSToken\u3002',
+        '\u5df2\u9009\u6807\u8bb0\u7684\u81ea\u5b9a\u4e49\u6e32\u67d3\u51fd\u6570\u3002\u9ed8\u8ba4\u6e32\u67d3\u5e26\u6709 label \u548c onRemove \u7684 Token\u3002',
     },
     {
       name: 'renderItem',
       type: '(item: T) => ReactNode',
       description:
-        '\u4e0b\u62c9\u5217\u8868\u9879\u7684\u81ea\u5b9a\u4e49\u6e32\u67d3\u51fd\u6570\u3002\u9ed8\u8ba4\u6e32\u67d3 XDSTypeaheadItem\u3002',
+        '\u4e0b\u62c9\u5217\u8868\u9879\u7684\u81ea\u5b9a\u4e49\u6e32\u67d3\u51fd\u6570\u3002\u9ed8\u8ba4\u6e32\u67d3 TypeaheadItem\u3002',
     },
     {
       name: 'isDisabled',
@@ -272,7 +272,7 @@ export const docsZh = {
     },
     {
       name: 'status',
-      type: 'XDSInputStatus',
+      type: 'InputStatus',
       description:
         '\u9a8c\u8bc1\u72b6\u6001\u5bf9\u8c61\uff0c\u5305\u542b\u7c7b\u578b\u548c\u6d88\u606f\uff0c\u7528\u4e8e\u9519\u8bef/\u8b66\u544a/\u6210\u529f\u72b6\u6001\u3002',
     },
@@ -354,7 +354,7 @@ export const docsZh = {
     },
     {
       name: 'handleRef',
-      type: 'React.Ref<XDSTokenizerHandle>',
+      type: 'React.Ref<TokenizerHandle>',
       description: '用于 focus() 和 blur() 控制的命令式句柄。',
     },
     {
@@ -394,7 +394,7 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'Multi-select typeahead w/ token chips for selected items. Composes XDSBaseTypeahead for search+XDSToken for chips.',
+  description: 'Multi-select typeahead w/ token chips for selected items. Composes BaseTypeahead for search+Token for chips.',
   usage: {
     description:
       'Multi-select input for searching and selecting multiple items as removable chips. Use for team members, tags, filters, or any set built from a searchable source.',
@@ -417,8 +417,8 @@ export const docsDense = {
     placeholder: 'Input placeholder. Only shown when no tokens selected.',
     maxEntries: 'Max selections allowed. Input hidden at limit.',
     hasClear: 'Clear-all button for bulk removal.',
-    renderToken: 'Custom token render. Default renders XDSToken w/ label+onRemove.',
-    renderItem: 'Custom dropdown item render. Default renders XDSTypeaheadItem.',
+    renderToken: 'Custom token render. Default renders Token w/ label+onRemove.',
+    renderItem: 'Custom dropdown item render. Default renders TypeaheadItem.',
     isDisabled: 'Disables input+all token interactions.',
     status: 'Validation status w/ type+message for error/warning/success.',
     isLabelHidden: 'Visually hides label; keeps a11y.',

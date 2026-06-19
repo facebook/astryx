@@ -3,13 +3,13 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSTable,
-  useXDSTableColumnResize,
-  useXDSTableSelection,
-  useXDSTableSelectionState,
+  Table,
+  useTableColumnResize,
+  useTableSelection,
+  useTableSelectionState,
   pixel,
 } from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
+import type {TableColumn} from '@xds/core/Table';
 
 // =============================================================================
 // Sample Data
@@ -61,7 +61,7 @@ const users: User[] = [
   },
 ];
 
-const columns: XDSTableColumn<User>[] = [
+const columns: TableColumn<User>[] = [
   {key: 'name', header: 'Name'},
   {key: 'email', header: 'Email'},
   {key: 'role', header: 'Role'},
@@ -85,9 +85,9 @@ export const Default: Story = {
       {},
     );
 
-    const resizePlugin = useXDSTableColumnResize<User>({
+    const resizePlugin = useTableColumnResize<User>({
       columnWidths,
-      columns: columns as XDSTableColumn<Record<string, unknown>>[],
+      columns: columns as TableColumn<Record<string, unknown>>[],
       onColumnResizeEnd: updates => {
         setColumnWidths(prev => ({...prev, ...updates}));
       },
@@ -99,7 +99,7 @@ export const Default: Story = {
           Drag the right edge of any column header to resize. The last
           proportional column has no handle; it flexes to fill remaining space.
         </p>
-        <XDSTable
+        <Table
           data={users}
           columns={columns}
           idKey="id"
@@ -116,12 +116,12 @@ export const WithMinMaxConstraints: Story = {
       {},
     );
 
-    const resizePlugin = useXDSTableColumnResize<User>({
+    const resizePlugin = useTableColumnResize<User>({
       columnWidths,
       onColumnResizeEnd: updates => {
         setColumnWidths(prev => ({...prev, ...updates}));
       },
-      columns: columns as XDSTableColumn<Record<string, unknown>>[],
+      columns: columns as TableColumn<Record<string, unknown>>[],
       minWidth: 80,
       maxWidth: 300,
     });
@@ -131,7 +131,7 @@ export const WithMinMaxConstraints: Story = {
         <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
           Columns are constrained between 80px and 300px.
         </p>
-        <XDSTable
+        <Table
           data={users}
           columns={columns}
           idKey="id"
@@ -148,9 +148,9 @@ export const PersistingWidths: Story = {
       {},
     );
 
-    const resizePlugin = useXDSTableColumnResize<User>({
+    const resizePlugin = useTableColumnResize<User>({
       columnWidths,
-      columns: columns as XDSTableColumn<Record<string, unknown>>[],
+      columns: columns as TableColumn<Record<string, unknown>>[],
       onColumnResizeEnd: updates => {
         setColumnWidths(prev => ({...prev, ...updates}));
       },
@@ -171,7 +171,7 @@ export const PersistingWidths: Story = {
           style={{marginBottom: 8, fontSize: 14}}>
           Reset all widths
         </button>
-        <XDSTable
+        <Table
           data={users}
           columns={columns}
           idKey="id"
@@ -188,9 +188,9 @@ export const KeyboardResize: Story = {
       {},
     );
 
-    const resizePlugin = useXDSTableColumnResize<User>({
+    const resizePlugin = useTableColumnResize<User>({
       columnWidths,
-      columns: columns as XDSTableColumn<Record<string, unknown>>[],
+      columns: columns as TableColumn<Record<string, unknown>>[],
       onColumnResizeEnd: updates => {
         setColumnWidths(prev => ({...prev, ...updates}));
       },
@@ -202,7 +202,7 @@ export const KeyboardResize: Story = {
           Tab to a resize handle, press Enter to activate, use Arrow keys to
           resize (Shift for larger steps), Enter to commit, Escape to cancel.
         </p>
-        <XDSTable
+        <Table
           data={users}
           columns={columns}
           idKey="id"
@@ -220,17 +220,17 @@ export const WithSelectionAndResize: Story = {
       {},
     );
 
-    const {selectionConfig} = useXDSTableSelectionState<User>({
+    const {selectionConfig} = useTableSelectionState<User>({
       data: users,
       idKey: 'id',
       selectedKeys,
       setSelectedKeys,
     });
-    const selectionPlugin = useXDSTableSelection<User>(selectionConfig);
+    const selectionPlugin = useTableSelection<User>(selectionConfig);
 
-    const resizePlugin = useXDSTableColumnResize<User>({
+    const resizePlugin = useTableColumnResize<User>({
       columnWidths,
-      columns: columns as XDSTableColumn<Record<string, unknown>>[],
+      columns: columns as TableColumn<Record<string, unknown>>[],
       onColumnResizeEnd: updates => {
         setColumnWidths(prev => ({...prev, ...updates}));
       },
@@ -242,7 +242,7 @@ export const WithSelectionAndResize: Story = {
           Selection and column resize plugins composed together. Selected:{' '}
           {selectedKeys.size} of {users.length}
         </p>
-        <XDSTable
+        <Table
           data={users}
           columns={columns}
           idKey="id"
@@ -253,7 +253,7 @@ export const WithSelectionAndResize: Story = {
   },
 };
 
-const pixelColumns: XDSTableColumn<User>[] = [
+const pixelColumns: TableColumn<User>[] = [
   {key: 'name', header: 'Name', width: pixel(200)},
   {key: 'email', header: 'Email', width: pixel(250)},
   {key: 'role', header: 'Role', width: pixel(150)},
@@ -265,9 +265,9 @@ export const AllPixelColumns: Story = {
       {},
     );
 
-    const resizePlugin = useXDSTableColumnResize<User>({
+    const resizePlugin = useTableColumnResize<User>({
       columnWidths,
-      columns: pixelColumns as XDSTableColumn<Record<string, unknown>>[],
+      columns: pixelColumns as TableColumn<Record<string, unknown>>[],
       onColumnResizeEnd: updates => {
         setColumnWidths(prev => ({...prev, ...updates}));
       },
@@ -280,7 +280,7 @@ export const AllPixelColumns: Story = {
           including the last one. Min width defaults to the column&apos;s
           declared pixel value.
         </p>
-        <XDSTable
+        <Table
           data={users}
           columns={pixelColumns}
           idKey="id"

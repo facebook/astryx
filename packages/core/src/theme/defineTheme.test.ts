@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
-import type {XDSIconRegistry} from '../Icon/globalIconRegistry';
+import type {IconRegistry} from '../Icon/globalIconRegistry';
 import {
   defineTheme,
   generateThemeCSS,
@@ -80,7 +80,7 @@ describe('defineTheme', () => {
   });
 
   it('includes icons in the theme', () => {
-    const icons = {close: 'X'} as Partial<XDSIconRegistry>;
+    const icons = {close: 'X'} as Partial<IconRegistry>;
     const theme = defineTheme({name: 'icons', icons});
     expect(theme.icons).toBe(icons);
   });
@@ -825,10 +825,10 @@ describe('container padding mapping', () => {
     // Should NOT emit raw padding property (only the scoped token)
     expect(css).not.toMatch(/[^-]padding: 20px/);
     // Should emit component-scoped shorthand token
-    expect(css).toContain('--xds-card-padding: 20px');
+    expect(css).toContain('--astryx-card-padding: 20px');
     // Should NOT emit directional tokens (shorthand covers all sides)
-    expect(css).not.toContain('--xds-card-padding-inline');
-    expect(css).not.toContain('--xds-card-padding-block-start');
+    expect(css).not.toContain('--astryx-card-padding-inline');
+    expect(css).not.toContain('--astryx-card-padding-block-start');
   });
 
   it('maps asymmetric padding to directional tokens', () => {
@@ -841,11 +841,11 @@ describe('container padding mapping', () => {
       },
     });
     const css = generateThemeCSSFlat(theme);
-    expect(css).toContain('--xds-card-padding-inline: 20px');
-    expect(css).toContain('--xds-card-padding-block-start: 16px');
-    expect(css).toContain('--xds-card-padding-block-end: 16px');
+    expect(css).toContain('--astryx-card-padding-inline: 20px');
+    expect(css).toContain('--astryx-card-padding-block-start: 16px');
+    expect(css).toContain('--astryx-card-padding-block-end: 16px');
     // Should NOT emit shorthand (sides differ)
-    expect(css).not.toMatch(/--xds-card-padding:[^-]/);
+    expect(css).not.toMatch(/--astryx-card-padding:[^-]/);
   });
 
   it('maps paddingBlock and paddingInline separately', () => {
@@ -858,9 +858,9 @@ describe('container padding mapping', () => {
       },
     });
     const css = generateThemeCSSFlat(theme);
-    expect(css).toContain('--xds-card-padding-inline: 16px');
-    expect(css).toContain('--xds-card-padding-block-start: 24px');
-    expect(css).toContain('--xds-card-padding-block-end: 24px');
+    expect(css).toContain('--astryx-card-padding-inline: 16px');
+    expect(css).toContain('--astryx-card-padding-block-start: 24px');
+    expect(css).toContain('--astryx-card-padding-block-end: 24px');
   });
 
   it('works for section and dialog too', () => {
@@ -877,10 +877,10 @@ describe('container padding mapping', () => {
     });
     const css = generateThemeCSSFlat(theme);
     // Section — uniform → shorthand
-    expect(css).toContain('--xds-section-padding: 12px');
+    expect(css).toContain('--astryx-section-padding: 12px');
     // Dialog — asymmetric → directional
-    expect(css).toContain('--xds-dialog-padding-inline: 32px');
-    expect(css).toContain('--xds-dialog-padding-block-start: 24px');
+    expect(css).toContain('--astryx-dialog-padding-inline: 32px');
+    expect(css).toContain('--astryx-dialog-padding-block-start: 24px');
   });
 
   it('does NOT map padding on non-container components', () => {
@@ -916,7 +916,7 @@ describe('container padding mapping', () => {
     expect(css).toContain('--_card-radius: 16px');
     expect(css).toContain('background-color: white');
     // Padding is mapped to component-scoped token
-    expect(css).toContain('--xds-card-padding: 20px');
+    expect(css).toContain('--astryx-card-padding: 20px');
     expect(css).not.toMatch(/[^-]padding: 20px/);
   });
 
@@ -930,9 +930,9 @@ describe('container padding mapping', () => {
       },
     });
     const css = generateThemeCSSFlat(theme);
-    expect(css).toContain('--xds-card-padding-block-start: 16px');
-    expect(css).toContain('--xds-card-padding-block-end: 12px');
-    expect(css).toContain('--xds-card-padding-inline: 20px');
+    expect(css).toContain('--astryx-card-padding-block-start: 16px');
+    expect(css).toContain('--astryx-card-padding-block-end: 12px');
+    expect(css).toContain('--astryx-card-padding-inline: 20px');
   });
 
   it('maps paddingBlock shorthand with two values', () => {
@@ -945,8 +945,8 @@ describe('container padding mapping', () => {
       },
     });
     const css = generateThemeCSSFlat(theme);
-    expect(css).toContain('--xds-card-padding-block-start: 16px');
-    expect(css).toContain('--xds-card-padding-block-end: 24px');
+    expect(css).toContain('--astryx-card-padding-block-start: 16px');
+    expect(css).toContain('--astryx-card-padding-block-end: 24px');
   });
 
   it('maps paddingInline shorthand with two values', () => {
@@ -959,8 +959,8 @@ describe('container padding mapping', () => {
       },
     });
     const css = generateThemeCSSFlat(theme);
-    expect(css).toContain('--xds-card-padding-inline-start: 12px');
-    expect(css).toContain('--xds-card-padding-inline-end: 20px');
+    expect(css).toContain('--astryx-card-padding-inline-start: 12px');
+    expect(css).toContain('--astryx-card-padding-inline-end: 20px');
   });
 
   it('maps paddingBlockStart alone', () => {
@@ -973,9 +973,9 @@ describe('container padding mapping', () => {
       },
     });
     const css = generateThemeCSSFlat(theme);
-    expect(css).toContain('--xds-card-padding-block-start: 32px');
-    expect(css).not.toContain('--xds-card-padding-block-end');
-    expect(css).not.toContain('--xds-card-padding-inline');
+    expect(css).toContain('--astryx-card-padding-block-start: 32px');
+    expect(css).not.toContain('--astryx-card-padding-block-end');
+    expect(css).not.toContain('--astryx-card-padding-inline');
   });
 
   it('maps paddingInlineStart and paddingInlineEnd separately', () => {
@@ -988,8 +988,8 @@ describe('container padding mapping', () => {
       },
     });
     const css = generateThemeCSSFlat(theme);
-    expect(css).toContain('--xds-card-padding-inline-start: 8px');
-    expect(css).toContain('--xds-card-padding-inline-end: 24px');
+    expect(css).toContain('--astryx-card-padding-inline-start: 8px');
+    expect(css).toContain('--astryx-card-padding-inline-end: 24px');
   });
 });
 
@@ -1072,8 +1072,8 @@ describe('defineTheme extends', () => {
   });
 
   it('merges icons — child overrides base', () => {
-    const baseIcons = {close: 'X', menu: 'M'} as Partial<XDSIconRegistry>;
-    const childIcons = {close: 'Y'} as Partial<XDSIconRegistry>;
+    const baseIcons = {close: 'X', menu: 'M'} as Partial<IconRegistry>;
+    const childIcons = {close: 'Y'} as Partial<IconRegistry>;
     const base = defineTheme({name: 'base', icons: baseIcons});
     const child = defineTheme({
       name: 'child',
@@ -1085,7 +1085,7 @@ describe('defineTheme extends', () => {
   });
 
   it('inherits icons when child has none', () => {
-    const baseIcons = {close: 'X'} as Partial<XDSIconRegistry>;
+    const baseIcons = {close: 'X'} as Partial<IconRegistry>;
     const base = defineTheme({name: 'base', icons: baseIcons});
     const child = defineTheme({name: 'child', extends: base});
     expect(child.icons?.close).toBe('X');

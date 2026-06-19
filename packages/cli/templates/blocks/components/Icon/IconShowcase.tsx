@@ -2,8 +2,8 @@
 
 'use client';
 
-import {XDSIcon} from '@xds/core/Icon';
+import {Icon} from '@xds/core/Icon';
 
 export default function IconShowcase() {
-  return <XDSIcon icon="search" color="primary" size="md" />;
+  return <Icon icon="search" color="primary" size="md" />;
 }

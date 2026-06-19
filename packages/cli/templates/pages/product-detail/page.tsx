@@ -4,30 +4,30 @@
 
 import {useState} from 'react';
 import {
-  XDSVStack,
-  XDSHStack,
-  XDSLayout,
-  XDSLayoutContent,
+  VStack,
+  HStack,
+  Layout,
+  LayoutContent,
 } from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSNumberInput} from '@xds/core/NumberInput';
-import {XDSIcon} from '@xds/core/Icon';
+import {Center} from '@xds/core/Center';
+import {Grid} from '@xds/core/Grid';
+import {Text, Heading} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {NumberInput} from '@xds/core/NumberInput';
+import {Icon} from '@xds/core/Icon';
 import {
-  XDSSegmentedControl,
-  XDSSegmentedControlItem,
+  SegmentedControl,
+  SegmentedControlItem,
 } from '@xds/core/SegmentedControl';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSSelectableCard} from '@xds/core/SelectableCard';
+import {Badge} from '@xds/core/Badge';
+import {Divider} from '@xds/core/Divider';
+import {Collapsible, CollapsibleGroup} from '@xds/core/Collapsible';
+import {AspectRatio} from '@xds/core/AspectRatio';
+import {SelectableCard} from '@xds/core/SelectableCard';
 import * as stylex from '@stylexjs/stylex';
 
 // Custom CSS here is limited to what XDS components can't express today:
-// - image fill + corner radius (no XDSImage primitive — #2582)
+// - image fill + corner radius (no Image primitive — #2582)
 // - the sticky info column (no sticky prop on XDS layout primitives — #2613)
 const pageStyles = stylex.create({
   // Keeps the info column in view while the gallery scrolls. No sticky prop on
@@ -37,8 +37,8 @@ const pageStyles = stylex.create({
     top: 'var(--spacing-8)',
     alignSelf: 'start',
   },
-  // Fills the XDSAspectRatio box + rounds corners. No objectFit/radius props on
-  // XDSAspectRatio (#2582).
+  // Fills the AspectRatio box + rounds corners. No objectFit/radius props on
+  // AspectRatio (#2582).
   heroImage: {
     width: '100%',
     height: '100%',
@@ -46,7 +46,7 @@ const pageStyles = stylex.create({
     borderRadius: 'var(--radius-container)',
   },
   // Fills the thumbnail card. Corner radius + selection ring come from
-  // XDSSelectableCard; the image only needs to fill and cover (#2582).
+  // SelectableCard; the image only needs to fill and cover (#2582).
   thumbImage: {
     width: '100%',
     height: '100%',
@@ -64,17 +64,17 @@ function StarRating({rating, count}: {rating: number; count: number}) {
   const empty = 5 - filled;
 
   return (
-    <XDSHStack gap={1} vAlign="center">
+    <HStack gap={1} vAlign="center">
       {Array.from({length: filled}, (_, i) => (
-        <XDSIcon key={`full-${i}`} icon={StarIconSolid} size="sm" />
+        <Icon key={`full-${i}`} icon={StarIconSolid} size="sm" />
       ))}
       {Array.from({length: empty}, (_, i) => (
-        <XDSIcon key={`empty-${i}`} icon={StarIcon} size="sm" />
+        <Icon key={`empty-${i}`} icon={StarIcon} size="sm" />
       ))}
-      <XDSText type="body" color="secondary">
+      <Text type="body" color="secondary">
         {rating} ({count})
-      </XDSText>
-    </XDSHStack>
+      </Text>
+    </HStack>
   );
 }
 
@@ -140,18 +140,18 @@ function ImageGallery({
   const thumbnails = IMAGES.slice(1);
 
   return (
-    <XDSVStack gap={3}>
-      <XDSAspectRatio ratio={4 / 5}>
+    <VStack gap={3}>
+      <AspectRatio ratio={4 / 5}>
         <img
           {...stylex.props(pageStyles.heroImage)}
           src={heroSrc}
           alt={PRODUCT.name}
         />
-      </XDSAspectRatio>
-      <XDSGrid columns={3} gap={2}>
+      </AspectRatio>
+      <Grid columns={3} gap={2}>
         {thumbnails.map((src, i) => (
-          <XDSAspectRatio key={i} ratio={1}>
-            <XDSSelectableCard
+          <AspectRatio key={i} ratio={1}>
+            <SelectableCard
               label={`Product image ${i + 1}`}
               isSelected={selected === i}
               onChange={() => onSelect(i)}
@@ -164,11 +164,11 @@ function ImageGallery({
                 src={src}
                 alt={`Product image ${i + 1}`}
               />
-            </XDSSelectableCard>
-          </XDSAspectRatio>
+            </SelectableCard>
+          </AspectRatio>
         ))}
-      </XDSGrid>
-    </XDSVStack>
+      </Grid>
+    </VStack>
   );
 }
 
@@ -182,73 +182,69 @@ function ProductInfo() {
   const increment = () => setQuantity(q => Math.min(10, (q ?? 1) + 1));
 
   return (
-    <XDSVStack gap={5}>
-      <XDSVStack gap={2}>
-        <XDSText type="display-2" as="h1">
+    <VStack gap={5}>
+      <VStack gap={2}>
+        <Text type="display-2" as="h1">
           {PRODUCT.name}
-        </XDSText>
+        </Text>
         <StarRating rating={4.3} count={128} />
-        <XDSHStack gap={2} vAlign="center">
-          <XDSText type="large" weight="bold">
+        <HStack gap={2} vAlign="center">
+          <Text type="large" weight="bold">
             {fmt(PRODUCT.price)}
-          </XDSText>
-          <XDSText type="body" color="secondary" hasStrikethrough>
+          </Text>
+          <Text type="body" color="secondary" hasStrikethrough>
             {fmt(PRODUCT.originalPrice)}
-          </XDSText>
-          <XDSBadge variant="error" label="Sale" />
-        </XDSHStack>
-      </XDSVStack>
-
-      <XDSText type="large" weight="normal">
+          </Text>
+          <Badge variant="error" label="Sale" />
+        </HStack>
+      </VStack>
+      <Text type="large" weight="normal">
         {PRODUCT.description}
-      </XDSText>
-
-      <XDSVStack gap={2}>
-        <XDSText type="label">Glaze</XDSText>
-        <XDSVStack hAlign="start">
-          <XDSSegmentedControl value={color} onChange={setColor} label="Glaze">
+      </Text>
+      <VStack gap={2}>
+        <Text type="label">Glaze</Text>
+        <VStack hAlign="start">
+          <SegmentedControl value={color} onChange={setColor} label="Glaze">
             {COLORS.map(c => (
-              <XDSSegmentedControlItem
+              <SegmentedControlItem
                 key={c.value}
                 value={c.value}
                 label={c.label}
               />
             ))}
-          </XDSSegmentedControl>
-        </XDSVStack>
-      </XDSVStack>
-
-      <XDSVStack gap={2}>
-        <XDSText type="label">Finish</XDSText>
-        <XDSVStack hAlign="start">
-          <XDSSegmentedControl
+          </SegmentedControl>
+        </VStack>
+      </VStack>
+      <VStack gap={2}>
+        <Text type="label">Finish</Text>
+        <VStack hAlign="start">
+          <SegmentedControl
             value={finish}
             onChange={setFinish}
             label="Finish">
             {FINISHES.map(f => (
-              <XDSSegmentedControlItem
+              <SegmentedControlItem
                 key={f.value}
                 value={f.value}
                 label={f.label}
               />
             ))}
-          </XDSSegmentedControl>
-        </XDSVStack>
-      </XDSVStack>
-
-      <XDSVStack gap={2}>
-        <XDSText type="label">Quantity</XDSText>
-        <XDSHStack gap={1} vAlign="center">
-          <XDSButton
+          </SegmentedControl>
+        </VStack>
+      </VStack>
+      <VStack gap={2}>
+        <Text type="label">Quantity</Text>
+        <HStack gap={1} vAlign="center">
+          <Button
             label="Decrease quantity"
             variant="ghost"
-            icon={<XDSIcon icon={MinusIcon} size="sm" />}
+            icon={<Icon icon={MinusIcon} size="sm" />}
             clickAction={decrement}
             isDisabled={(quantity ?? 1) <= 1}
             isIconOnly
           />
-          <XDSCenter width={100}>
-            <XDSNumberInput
+          <Center width={100}>
+            <NumberInput
               label="Quantity"
               isLabelHidden
               value={quantity}
@@ -257,47 +253,45 @@ function ProductInfo() {
               max={10}
               isIntegerOnly
             />
-          </XDSCenter>
-          <XDSButton
+          </Center>
+          <Button
             label="Increase quantity"
             variant="ghost"
-            icon={<XDSIcon icon={PlusIcon} size="sm" />}
+            icon={<Icon icon={PlusIcon} size="sm" />}
             clickAction={increment}
             isDisabled={(quantity ?? 1) >= 10}
             isIconOnly
           />
-        </XDSHStack>
-      </XDSVStack>
-
-      <XDSVStack gap={2}>
-        <XDSButton label="Add to Cart" variant="primary" size="lg" />
-        <XDSButton label="Buy it now" size="lg" />
-      </XDSVStack>
-
-      <XDSCollapsibleGroup type="multiple" defaultValue={['composition']}>
-        <XDSDivider />
-        <XDSCollapsible
+        </HStack>
+      </VStack>
+      <VStack gap={2}>
+        <Button label="Add to Cart" variant="primary" size="lg" />
+        <Button label="Buy it now" size="lg" />
+      </VStack>
+      <CollapsibleGroup type="multiple" defaultValue={['composition']}>
+        <Divider />
+        <Collapsible
           value="composition"
-          trigger={<XDSHeading level={3}>Composition</XDSHeading>}>
-          <XDSText type="body">{PRODUCT.composition}</XDSText>
-        </XDSCollapsible>
-        <XDSDivider />
-        <XDSCollapsible
+          trigger={<Heading level={3}>Composition</Heading>}>
+          <Text type="body">{PRODUCT.composition}</Text>
+        </Collapsible>
+        <Divider />
+        <Collapsible
           value="delivery"
           defaultIsOpen={false}
-          trigger={<XDSHeading level={3}>Delivery &amp; Returns</XDSHeading>}>
-          <XDSText type="body">{PRODUCT.deliveryReturns}</XDSText>
-        </XDSCollapsible>
-        <XDSDivider />
-        <XDSCollapsible
+          trigger={<Heading level={3}>Delivery &amp; Returns</Heading>}>
+          <Text type="body">{PRODUCT.deliveryReturns}</Text>
+        </Collapsible>
+        <Divider />
+        <Collapsible
           value="dimensions"
           defaultIsOpen={false}
-          trigger={<XDSHeading level={3}>Dimensions</XDSHeading>}>
-          <XDSText type="body">{PRODUCT.dimensions}</XDSText>
-        </XDSCollapsible>
-        <XDSDivider />
-      </XDSCollapsibleGroup>
-    </XDSVStack>
+          trigger={<Heading level={3}>Dimensions</Heading>}>
+          <Text type="body">{PRODUCT.dimensions}</Text>
+        </Collapsible>
+        <Divider />
+      </CollapsibleGroup>
+    </VStack>
   );
 }
 
@@ -306,21 +300,21 @@ export default function ProductDetailTemplate() {
   const [selectedThumb, setSelectedThumb] = useState(0);
 
   return (
-    <XDSLayout
+    <Layout
       height="auto"
       contentWidth={1200}
       content={
-        <XDSLayoutContent padding={6}>
-          <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={5}>
+        <LayoutContent padding={6}>
+          <Grid columns={{minWidth: 320, repeat: 'fit'}} gap={5}>
             <ImageGallery
               selected={selectedThumb}
               onSelect={setSelectedThumb}
             />
-            <XDSVStack gap={0} xstyle={pageStyles.stickyInfo}>
+            <VStack gap={0} xstyle={pageStyles.stickyInfo}>
               <ProductInfo />
-            </XDSVStack>
-          </XDSGrid>
-        </XDSLayoutContent>
+            </VStack>
+          </Grid>
+        </LayoutContent>
       }
     />
   );

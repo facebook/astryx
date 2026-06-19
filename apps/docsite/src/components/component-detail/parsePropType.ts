@@ -72,7 +72,9 @@ function isInputStatusType(typeStr: string, propName?: string): boolean {
     return false;
   }
 
-  if (/\bXDS(?:InputStatus|FieldStatus)\b/.test(typeStr)) {
+  // Prefix-agnostic (XDS-prefix migration P2380608025): match both the legacy
+  // prefixed names (XDSInputStatus/XDSFieldStatus) and the bare forms.
+  if (/\b(?:XDS)?(?:InputStatus|FieldStatus)\b/.test(typeStr)) {
     return true;
   }
 
@@ -177,20 +179,20 @@ export function parsePropType(
   if (t === 'SizeValue') {
     return {kind: 'number'};
   }
-  if (t === 'XDSDefinedTheme') {
+  if (t === 'DefinedTheme') {
     return {kind: 'theme'};
   }
   if (t === 'SyntaxTheme') {
     return {kind: 'syntax-theme'};
   }
-  if (t === 'XDSIconType' || t === 'XDSIconName') {
+  if (t === 'IconType' || t === 'IconName') {
     return {
       kind: 'enum',
       options: Object.keys(getIconRegistry()),
       allowEmpty: true,
     };
   }
-  if (t === 'XDSAppShellBreakpoint') {
+  if (t === 'AppShellBreakpoint') {
     return {
       kind: 'enum',
       options: ['sm', 'md', 'lg', 'none'],
@@ -219,7 +221,7 @@ export function parsePropType(
     if (isIconProp) {
       return {
         kind: 'element',
-        options: [{label: 'Icon', componentName: 'XDSIcon'}],
+        options: [{label: 'Icon', componentName: 'Icon'}],
       };
     }
     return {kind: 'string'};

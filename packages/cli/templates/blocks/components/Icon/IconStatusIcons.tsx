@@ -2,9 +2,9 @@
 
 'use client';
 
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Icon} from '@xds/core/Icon';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const statuses = [
   {icon: 'success' as const, color: 'success' as const, label: 'Deployed successfully'},
@@ -15,13 +15,13 @@ const statuses = [
 
 export default function IconStatusIcons() {
   return (
-    <XDSVStack gap={3}>
+    <VStack gap={3}>
       {statuses.map((status) => (
-        <XDSHStack key={status.label} gap={2} vAlign="center">
-          <XDSIcon icon={status.icon} color={status.color} size="sm" />
-          <XDSText type="body">{status.label}</XDSText>
-        </XDSHStack>
+        <HStack key={status.label} gap={2} vAlign="center">
+          <Icon icon={status.icon} color={status.color} size="sm" />
+          <Text type="body">{status.label}</Text>
+        </HStack>
       ))}
-    </XDSVStack>
+    </VStack>
   );
 }

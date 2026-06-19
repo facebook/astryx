@@ -6,7 +6,7 @@
  * @file useImageMode.ts
  * @input Image source URL
  * @output Detected mode luminance: 'dark' | 'light' | null
- * @position Hook; used alongside XDSMediaTheme for auto-detection
+ * @position Hook; used alongside MediaTheme for auto-detection
  *
  * Detects whether an image is predominantly dark or light by sampling
  * its pixels via OffscreenCanvas. Runs entirely off the paint path —
@@ -25,9 +25,9 @@
  *   const mode = useImageMode(src);
  *   return (
  *     <div style={{ backgroundImage: `url(${src})` }}>
- *       <XDSMediaTheme mode={mode ?? 'dark'}>
- *         <XDSText>Auto-detected text color</XDSText>
- *       </XDSMediaTheme>
+ *       <MediaTheme mode={mode ?? 'dark'}>
+ *         <Text>Auto-detected text color</Text>
+ *       </MediaTheme>
  *     </div>
  *   );
  * }

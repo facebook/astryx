@@ -6,7 +6,7 @@
  * @file useListFocus.ts
  * @input Uses React useCallback, useRef
  * @output Exports useListFocus hook for linear list keyboard navigation
- * @position Core hook; used by XDSTabMenu for dropdown menu navigation, XDSToolbar for roving tabindex
+ * @position Core hook; used by TabMenu for dropdown menu navigation, Toolbar for roving tabindex
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts

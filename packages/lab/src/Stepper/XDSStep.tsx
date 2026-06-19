@@ -29,7 +29,7 @@ import {
   easeVars,
 } from '@xds/core/theme/tokens.stylex';
 import {mergeProps} from '@xds/core/utils';
-import type {XDSBaseProps} from '@xds/core';
+import type {BaseProps} from '@xds/core';
 import {useXDSStepperContext} from './XDSStepperContext';
 import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
 import type {XDSStepStatus} from './XDSStepStatus';
@@ -45,7 +45,7 @@ import type {XDSStepStatus} from './XDSStepStatus';
 export type XDSStepIndicatorPreset = 'auto' | 'number' | 'none';
 export type XDSStepDensity = 'compact' | 'balanced' | 'spacious';
 
-export interface XDSStepProps extends XDSBaseProps<HTMLLIElement> {
+export interface XDSStepProps extends BaseProps<HTMLLIElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLLIElement>;
   /**

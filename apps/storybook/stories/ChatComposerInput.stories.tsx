@@ -2,19 +2,19 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSChatComposer,
-  XDSChatComposerInput,
-  type XDSChatComposerTrigger,
+  ChatComposer,
+  ChatComposerInput,
+  type ChatComposerTrigger,
 } from '@xds/core/Chat';
 import {createStaticSource} from '@xds/core/Typeahead';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSTypeaheadItem} from '@xds/core/Typeahead';
-import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
+import {Badge} from '@xds/core/Badge';
+import {TypeaheadItem} from '@xds/core/Typeahead';
+import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
 import {useState} from 'react';
 
 const meta: Meta = {
   title: 'Core/ChatComposerInput',
-  component: XDSChatComposerInput,
+  component: ChatComposerInput,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
@@ -35,7 +35,7 @@ type Story = StoryObj;
 // Mock data
 // =============================================================================
 
-const USERS: XDSSearchableItem<{role: string}>[] = [
+const USERS: SearchableItem<{role: string}>[] = [
   {id: 'cindy', label: 'Cindy Zhang', auxiliaryData: {role: 'Design Systems'}},
   {id: 'alex', label: 'Alex Johnson', auxiliaryData: {role: 'Frontend'}},
   {id: 'sam', label: 'Sam Rivera', auxiliaryData: {role: 'Backend'}},
@@ -44,7 +44,7 @@ const USERS: XDSSearchableItem<{role: string}>[] = [
   {id: 'morgan', label: 'Morgan Chen', auxiliaryData: {role: 'Infrastructure'}},
 ];
 
-const COMMANDS: XDSSearchableItem<{description: string}>[] = [
+const COMMANDS: SearchableItem<{description: string}>[] = [
   {
     id: 'summarize',
     label: 'summarize',
@@ -75,7 +75,7 @@ const COMMANDS: XDSSearchableItem<{description: string}>[] = [
 const userSource = createStaticSource(USERS);
 const commandSource = createStaticSource(COMMANDS);
 
-const asyncUserSource: XDSSearchSource = {
+const asyncUserSource: SearchSource = {
   search(query: string) {
     return new Promise(resolve => {
       setTimeout(() => {
@@ -99,7 +99,7 @@ export const Controlled: Story = {
     const [value, setValue] = useState('');
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-        <XDSChatComposer
+        <ChatComposer
           onSubmit={v => {
             alert(`Submitted: ${v}`);
             setValue('');
@@ -107,7 +107,7 @@ export const Controlled: Story = {
           value={value}
           onChange={setValue}
           input={
-            <XDSChatComposerInput
+            <ChatComposerInput
               value={value}
               onChange={setValue}
               placeholder="Type a message..."
@@ -125,10 +125,10 @@ export const Controlled: Story = {
 /** Custom placeholder */
 export const CustomPlaceholder: Story = {
   render: () => (
-    <XDSChatComposer
+    <ChatComposer
       onSubmit={v => alert(v)}
       input={
-        <XDSChatComposerInput placeholder="Ask me anything about XDS..." />
+        <ChatComposerInput placeholder="Ask me anything about XDS..." />
       }
     />
   ),
@@ -137,11 +137,11 @@ export const CustomPlaceholder: Story = {
 /** Disabled state */
 export const Disabled: Story = {
   render: () => (
-    <XDSChatComposer
+    <ChatComposer
       onSubmit={() => {}}
       isDisabled
       input={
-        <XDSChatComposerInput isDisabled placeholder="Input is disabled" />
+        <ChatComposerInput isDisabled placeholder="Input is disabled" />
       }
     />
   ),
@@ -150,10 +150,10 @@ export const Disabled: Story = {
 /** Max rows — scrolls after 3 lines */
 export const MaxRows: Story = {
   render: () => (
-    <XDSChatComposer
+    <ChatComposer
       onSubmit={v => alert(v)}
       input={
-        <XDSChatComposerInput
+        <ChatComposerInput
           maxRows={3}
           placeholder="Type a long message — scrolls after 3 lines..."
         />
@@ -168,10 +168,10 @@ export const MessageHistory: Story = {
     const [log, setLog] = useState<string[]>([]);
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-        <XDSChatComposer
+        <ChatComposer
           onSubmit={v => setLog(prev => [...prev, v])}
           input={
-            <XDSChatComposerInput placeholder="Submit messages, then ArrowUp to recall..." />
+            <ChatComposerInput placeholder="Submit messages, then ArrowUp to recall..." />
           }
         />
         {log.length > 0 && (
@@ -192,10 +192,10 @@ export const FilePaste: Story = {
     const [files, setFiles] = useState<string[]>([]);
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-        <XDSChatComposer
+        <ChatComposer
           onSubmit={v => alert(v)}
           input={
-            <XDSChatComposerInput
+            <ChatComposerInput
               onFiles={f => setFiles(prev => [...prev, ...f.map(x => x.name)])}
               placeholder="Paste files here (Ctrl+V)..."
             />
@@ -220,11 +220,11 @@ export const MentionTrigger: Story = {
   render: () => {
     const [value, setValue] = useState('');
     const [log, setLog] = useState<string[]>([]);
-    const mentionTrigger: XDSChatComposerTrigger = {
+    const mentionTrigger: ChatComposerTrigger = {
       character: '@',
       searchSource: userSource,
       renderItem: item => (
-        <XDSTypeaheadItem
+        <TypeaheadItem
           item={item}
           description={(item.auxiliaryData as {role: string})?.role}
         />
@@ -238,13 +238,13 @@ export const MentionTrigger: Story = {
 
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
-        <XDSChatComposer
+        <ChatComposer
           onSubmit={v => {
             setLog(prev => [...prev, v]);
             setValue('');
           }}
           input={
-            <XDSChatComposerInput
+            <ChatComposerInput
               value={value}
               onChange={setValue}
               triggers={[mentionTrigger]}
@@ -270,11 +270,11 @@ export const MentionTrigger: Story = {
 /** Static / commands — type / to see commands */
 export const SlashCommands: Story = {
   render: () => {
-    const commandTrigger: XDSChatComposerTrigger = {
+    const commandTrigger: ChatComposerTrigger = {
       character: '/',
       searchSource: commandSource,
       renderItem: item => (
-        <XDSTypeaheadItem
+        <TypeaheadItem
           item={item}
           description={
             (item.auxiliaryData as {description: string})?.description
@@ -289,10 +289,10 @@ export const SlashCommands: Story = {
     };
 
     return (
-      <XDSChatComposer
+      <ChatComposer
         onSubmit={value => alert(`Sent: ${value}`)}
         input={
-          <XDSChatComposerInput
+          <ChatComposerInput
             triggers={[commandTrigger]}
             placeholder="Type / for commands..."
           />
@@ -305,7 +305,7 @@ export const SlashCommands: Story = {
 /** Async search source — type @ to trigger a simulated API search */
 export const AsyncSearch: Story = {
   render: () => {
-    const asyncTrigger: XDSChatComposerTrigger = {
+    const asyncTrigger: ChatComposerTrigger = {
       character: '@',
       searchSource: asyncUserSource,
       onSelect: item => ({
@@ -318,10 +318,10 @@ export const AsyncSearch: Story = {
     };
 
     return (
-      <XDSChatComposer
+      <ChatComposer
         onSubmit={value => alert(`Sent: ${value}`)}
         input={
-          <XDSChatComposerInput
+          <ChatComposerInput
             triggers={[asyncTrigger]}
             placeholder="Type @ for async user search (300ms delay)..."
           />
@@ -335,7 +335,7 @@ export const AsyncSearch: Story = {
 export const MultipleTriggers: Story = {
   render: () => {
     const [value, setValue] = useState('');
-    const mentionTrigger: XDSChatComposerTrigger = {
+    const mentionTrigger: ChatComposerTrigger = {
       character: '@',
       searchSource: userSource,
       onSelect: item => ({
@@ -344,7 +344,7 @@ export const MultipleTriggers: Story = {
         variant: 'blue' as const,
       }),
     };
-    const commandTrigger: XDSChatComposerTrigger = {
+    const commandTrigger: ChatComposerTrigger = {
       character: '/',
       searchSource: commandSource,
       onSelect: item => ({
@@ -356,13 +356,13 @@ export const MultipleTriggers: Story = {
 
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-        <XDSChatComposer
+        <ChatComposer
           onSubmit={v => {
             alert(`Sent: ${v}`);
             setValue('');
           }}
           input={
-            <XDSChatComposerInput
+            <ChatComposerInput
               value={value}
               onChange={setValue}
               triggers={[mentionTrigger, commandTrigger]}
@@ -381,11 +381,11 @@ export const MultipleTriggers: Story = {
 /** Custom item rendering in the trigger menu */
 export const CustomRenderItem: Story = {
   render: () => {
-    const mentionTrigger: XDSChatComposerTrigger = {
+    const mentionTrigger: ChatComposerTrigger = {
       character: '@',
       searchSource: userSource,
       renderItem: item => (
-        <XDSTypeaheadItem
+        <TypeaheadItem
           item={item}
           description={(item.auxiliaryData as {role: string})?.role}
           icon={
@@ -432,10 +432,10 @@ export const CustomRenderItem: Story = {
     };
 
     return (
-      <XDSChatComposer
+      <ChatComposer
         onSubmit={value => alert(`Sent: ${value}`)}
         input={
-          <XDSChatComposerInput
+          <ChatComposerInput
             triggers={[mentionTrigger]}
             placeholder="Type @ — tokens have icons via badge config..."
           />
@@ -448,7 +448,7 @@ export const CustomRenderItem: Story = {
 /** Token color variants — different badge colors per trigger */
 export const TokenVariants: Story = {
   render: () => {
-    const mentionTrigger: XDSChatComposerTrigger = {
+    const mentionTrigger: ChatComposerTrigger = {
       character: '@',
       searchSource: userSource,
       onSelect: item => ({
@@ -457,7 +457,7 @@ export const TokenVariants: Story = {
         variant: 'blue' as const,
       }),
     };
-    const commandTrigger: XDSChatComposerTrigger = {
+    const commandTrigger: ChatComposerTrigger = {
       character: '/',
       searchSource: commandSource,
       onSelect: item => ({
@@ -468,10 +468,10 @@ export const TokenVariants: Story = {
     };
 
     return (
-      <XDSChatComposer
+      <ChatComposer
         onSubmit={value => alert(`Sent: ${value}`)}
         input={
-          <XDSChatComposerInput
+          <ChatComposerInput
             triggers={[mentionTrigger, commandTrigger]}
             placeholder="@ for blue mentions, / for purple commands..."
           />
@@ -484,7 +484,7 @@ export const TokenVariants: Story = {
 /** Custom render — full control via render() for rich token content */
 export const CustomRender: Story = {
   render: () => {
-    const mentionTrigger: XDSChatComposerTrigger = {
+    const mentionTrigger: ChatComposerTrigger = {
       character: '@',
       searchSource: userSource,
       renderItem: item => (
@@ -513,7 +513,7 @@ export const CustomRender: Story = {
             title={`Click to view ${item.label}'s profile`}
             style={{cursor: 'pointer'}}
             onClick={() => alert(`Profile: ${item.label}`)}>
-            <XDSBadge
+            <Badge
               variant="blue"
               label={item.label}
               icon={
@@ -539,10 +539,10 @@ export const CustomRender: Story = {
     };
 
     return (
-      <XDSChatComposer
+      <ChatComposer
         onSubmit={value => alert(`Sent: ${value}`)}
         input={
-          <XDSChatComposerInput
+          <ChatComposerInput
             triggers={[mentionTrigger]}
             placeholder="Type @ — tokens are clickable with avatars..."
           />
@@ -586,13 +586,13 @@ export const GroupedItems: Story = {
         label: 'Jordan Lee',
         auxiliaryData: {group: 'Product', role: 'Product Manager'},
       },
-    ] as XDSSearchableItem[]);
+    ] as SearchableItem[]);
 
-    const mentionTrigger: XDSChatComposerTrigger = {
+    const mentionTrigger: ChatComposerTrigger = {
       character: '@',
       searchSource: groupedUsers,
       renderItem: item => (
-        <XDSTypeaheadItem
+        <TypeaheadItem
           item={item}
           description={(item.auxiliaryData as {role?: string})?.role}
         />
@@ -605,10 +605,10 @@ export const GroupedItems: Story = {
     };
 
     return (
-      <XDSChatComposer
+      <ChatComposer
         onSubmit={value => alert(`Sent: ${value}`)}
         input={
-          <XDSChatComposerInput
+          <ChatComposerInput
             triggers={[mentionTrigger]}
             placeholder="Type @ to see grouped mentions..."
           />

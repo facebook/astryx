@@ -4,19 +4,19 @@
 
 import {useRef} from 'react';
 import {
-  XDSChatDictationButton,
-  XDSChatComposer,
-  XDSChatComposerInput,
-  useXDSChatDictation,
+  ChatDictationButton,
+  ChatComposer,
+  ChatComposerInput,
+  useChatDictation,
 } from '@xds/core/Chat';
-import type {XDSChatComposerInputHandle} from '@xds/core/Chat';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import type {ChatComposerInputHandle} from '@xds/core/Chat';
+import {HStack, VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 export default function ChatDictationButtonShowcase() {
-  const inputRef = useRef<XDSChatComposerInputHandle>(null);
+  const inputRef = useRef<ChatComposerInputHandle>(null);
 
-  const dictation = useXDSChatDictation({
+  const dictation = useChatDictation({
     inputRef,
     hasSounds: true,
     onResult: (text) => {
@@ -25,23 +25,21 @@ export default function ChatDictationButtonShowcase() {
   });
 
   return (
-    <XDSVStack gap={4}>
-      <XDSText type="supporting" color="secondary">
+    <VStack gap={4}>
+      <Text type="supporting" color="secondary">
         Click the microphone to start dictating. Speech is transcribed into the
         input.
-      </XDSText>
-
-      <XDSChatComposer
+      </Text>
+      <ChatComposer
         onSubmit={(v) => console.log('Submit:', v)}
-        input={<XDSChatComposerInput handleRef={inputRef} />}
-        sendActions={<XDSChatDictationButton dictation={dictation} />}
+        input={<ChatComposerInput handleRef={inputRef} />}
+        sendActions={<ChatDictationButton dictation={dictation} />}
       />
-
       {dictation.isListening && (
-        <XDSHStack gap={2} vAlign="center">
-          <XDSText type="supporting" color="secondary">
+        <HStack gap={2} vAlign="center">
+          <Text type="supporting" color="secondary">
             {dictation.isSpeaking ? 'Speaking detected' : 'Listening...'}
-          </XDSText>
+          </Text>
           <div
             style={{
               width: 80,
@@ -62,14 +60,13 @@ export default function ChatDictationButtonShowcase() {
               }}
             />
           </div>
-        </XDSHStack>
+        </HStack>
       )}
-
       {!dictation.isSupported && (
-        <XDSText type="supporting" color="active">
+        <Text type="supporting" color="active">
           SpeechRecognition is not supported in this browser.
-        </XDSText>
+        </Text>
       )}
-    </XDSVStack>
+    </VStack>
   );
 }

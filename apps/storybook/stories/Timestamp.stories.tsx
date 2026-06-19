@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSTimestamp} from '@xds/core/Timestamp';
-import {XDSText} from '@xds/core/Text';
+import {Timestamp} from '@xds/core/Timestamp';
+import {Text} from '@xds/core/Text';
 
-const meta: Meta<typeof XDSTimestamp> = {
+const meta: Meta<typeof Timestamp> = {
   title: 'Core/Timestamp',
-  component: XDSTimestamp,
+  component: Timestamp,
   tags: ['autodocs'],
   argTypes: {
     format: {
@@ -35,7 +35,7 @@ const meta: Meta<typeof XDSTimestamp> = {
         'display-2',
         'display-3',
       ],
-      description: 'Semantic text type (from XDSText)',
+      description: 'Semantic text type (from Text)',
     },
     size: {
       control: 'select',
@@ -87,7 +87,7 @@ const meta: Meta<typeof XDSTimestamp> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSTimestamp>;
+type Story = StoryObj<typeof Timestamp>;
 
 export const Default: Story = {
   args: {
@@ -104,13 +104,13 @@ export const RelativeFormat: Story = {
         gap: '8px',
         alignItems: 'flex-start',
       }}>
-      <XDSTimestamp value={Date.now() / 1000 - 5} format="relative" />
-      <XDSTimestamp value={Date.now() / 1000 - 120} format="relative" />
-      <XDSTimestamp value={Date.now() / 1000 - 3600} format="relative" />
-      <XDSTimestamp value={Date.now() / 1000 - 86400} format="relative" />
-      <XDSTimestamp value={Date.now() / 1000 - 259200} format="relative" />
-      <XDSTimestamp value={Date.now() / 1000 - 90 * 86400} format="relative" />
-      <XDSTimestamp value={Date.now() / 1000 - 730 * 86400} format="relative" />
+      <Timestamp value={Date.now() / 1000 - 5} format="relative" />
+      <Timestamp value={Date.now() / 1000 - 120} format="relative" />
+      <Timestamp value={Date.now() / 1000 - 3600} format="relative" />
+      <Timestamp value={Date.now() / 1000 - 86400} format="relative" />
+      <Timestamp value={Date.now() / 1000 - 259200} format="relative" />
+      <Timestamp value={Date.now() / 1000 - 90 * 86400} format="relative" />
+      <Timestamp value={Date.now() / 1000 - 730 * 86400} format="relative" />
     </div>
   ),
 };
@@ -148,30 +148,30 @@ export const SystemFormats: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
       <div>
-        <XDSText type="label" color="secondary">
+        <Text type="label" color="secondary">
           system_date:{' '}
-        </XDSText>
-        <XDSTimestamp
+        </Text>
+        <Timestamp
           value="2026-02-19T17:00:00Z"
           format="system_date"
           type="code"
         />
       </div>
       <div>
-        <XDSText type="label" color="secondary">
+        <Text type="label" color="secondary">
           system_date_time:{' '}
-        </XDSText>
-        <XDSTimestamp
+        </Text>
+        <Timestamp
           value="2026-02-19T17:00:00Z"
           format="system_date_time"
           type="code"
         />
       </div>
       <div>
-        <XDSText type="label" color="secondary">
+        <Text type="label" color="secondary">
           system_time:{' '}
-        </XDSText>
-        <XDSTimestamp
+        </Text>
+        <Timestamp
           value="2026-02-19T17:00:00Z"
           format="system_time"
           type="code"
@@ -187,46 +187,46 @@ export const AllFormats: Story = {
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
         <div>
-          <XDSText type="label" color="secondary">
+          <Text type="label" color="secondary">
             relative:{' '}
-          </XDSText>
-          <XDSTimestamp value={Date.now() / 1000 - 3600} format="relative" />
+          </Text>
+          <Timestamp value={Date.now() / 1000 - 3600} format="relative" />
         </div>
         <div>
-          <XDSText type="label" color="secondary">
+          <Text type="label" color="secondary">
             date:{' '}
-          </XDSText>
-          <XDSTimestamp value={date} format="date" />
+          </Text>
+          <Timestamp value={date} format="date" />
         </div>
         <div>
-          <XDSText type="label" color="secondary">
+          <Text type="label" color="secondary">
             date_time:{' '}
-          </XDSText>
-          <XDSTimestamp value={date} format="date_time" />
+          </Text>
+          <Timestamp value={date} format="date_time" />
         </div>
         <div>
-          <XDSText type="label" color="secondary">
+          <Text type="label" color="secondary">
             time:{' '}
-          </XDSText>
-          <XDSTimestamp value={date} format="time" />
+          </Text>
+          <Timestamp value={date} format="time" />
         </div>
         <div>
-          <XDSText type="label" color="secondary">
+          <Text type="label" color="secondary">
             system_date:{' '}
-          </XDSText>
-          <XDSTimestamp value={date} format="system_date" type="code" />
+          </Text>
+          <Timestamp value={date} format="system_date" type="code" />
         </div>
         <div>
-          <XDSText type="label" color="secondary">
+          <Text type="label" color="secondary">
             system_date_time:{' '}
-          </XDSText>
-          <XDSTimestamp value={date} format="system_date_time" type="code" />
+          </Text>
+          <Timestamp value={date} format="system_date_time" type="code" />
         </div>
         <div>
-          <XDSText type="label" color="secondary">
+          <Text type="label" color="secondary">
             system_time:{' '}
-          </XDSText>
-          <XDSTimestamp value={date} format="system_time" type="code" />
+          </Text>
+          <Timestamp value={date} format="system_time" type="code" />
         </div>
       </div>
     );
@@ -244,22 +244,22 @@ export const LiveUpdating: Story = {
 export const TextTypes: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-      <XDSTimestamp
+      <Timestamp
         value="2026-02-19T17:00:00Z"
         format="date_time"
         type="supporting"
       />
-      <XDSTimestamp
+      <Timestamp
         value="2026-02-19T17:00:00Z"
         format="date_time"
         type="body"
       />
-      <XDSTimestamp
+      <Timestamp
         value="2026-02-19T17:00:00Z"
         format="date_time"
         type="large"
       />
-      <XDSTimestamp
+      <Timestamp
         value="2026-02-19T17:00:00Z"
         format="date_time"
         type="label"
@@ -272,22 +272,22 @@ export const TextTypes: Story = {
 export const Colors: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-      <XDSTimestamp
+      <Timestamp
         value="2026-02-19T17:00:00Z"
         format="date_time"
         color="primary"
       />
-      <XDSTimestamp
+      <Timestamp
         value="2026-02-19T17:00:00Z"
         format="date_time"
         color="secondary"
       />
-      <XDSTimestamp
+      <Timestamp
         value="2026-02-19T17:00:00Z"
         format="date_time"
         color="disabled"
       />
-      <XDSTimestamp
+      <Timestamp
         value="2026-02-19T17:00:00Z"
         format="date_time"
         color="active"
@@ -300,16 +300,16 @@ export const AutoFormat: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
       <div>
-        <XDSText type="label" color="secondary">
+        <Text type="label" color="secondary">
           Recent (relative):{' '}
-        </XDSText>
-        <XDSTimestamp value={Date.now() / 1000 - 3600} format="auto" />
+        </Text>
+        <Timestamp value={Date.now() / 1000 - 3600} format="auto" />
       </div>
       <div>
-        <XDSText type="label" color="secondary">
+        <Text type="label" color="secondary">
           Old (date_time):{' '}
-        </XDSText>
-        <XDSTimestamp value="2025-01-01T12:00:00Z" format="auto" />
+        </Text>
+        <Timestamp value="2025-01-01T12:00:00Z" format="auto" />
       </div>
     </div>
   ),
@@ -324,9 +324,9 @@ export const FutureDates: Story = {
         gap: '8px',
         alignItems: 'flex-start',
       }}>
-      <XDSTimestamp value={Date.now() / 1000 + 60} format="relative" />
-      <XDSTimestamp value={Date.now() / 1000 + 3600} format="relative" />
-      <XDSTimestamp value={Date.now() / 1000 + 86400} format="relative" />
+      <Timestamp value={Date.now() / 1000 + 60} format="relative" />
+      <Timestamp value={Date.now() / 1000 + 3600} format="relative" />
+      <Timestamp value={Date.now() / 1000 + 86400} format="relative" />
     </div>
   ),
 };

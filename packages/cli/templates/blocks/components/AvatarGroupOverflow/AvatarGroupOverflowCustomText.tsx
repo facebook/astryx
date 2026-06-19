@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 'use client';
 
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSAvatarGroup, XDSAvatarGroupOverflow} from '@xds/core/AvatarGroup';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Avatar} from '@xds/core/Avatar';
+import {AvatarGroup, AvatarGroupOverflow} from '@xds/core/AvatarGroup';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const TEAM = [
   {
@@ -23,16 +23,16 @@ const TEAM = [
 
 export default function AvatarGroupOverflowCustomText() {
   return (
-    <XDSStack direction="vertical" gap={3}>
-      <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={3}>
+      <Text type="supporting" color="secondary">
         Team members
-      </XDSText>
-      <XDSAvatarGroup size="medium">
+      </Text>
+      <AvatarGroup size="medium">
         {TEAM.map(member => (
-          <XDSAvatar key={member.name} src={member.src} name={member.name} />
+          <Avatar key={member.name} src={member.src} name={member.name} />
         ))}
-        <XDSAvatarGroupOverflow count={12}>12+</XDSAvatarGroupOverflow>
-      </XDSAvatarGroup>
-    </XDSStack>
+        <AvatarGroupOverflow count={12}>12+</AvatarGroupOverflow>
+      </AvatarGroup>
+    </Stack>
   );
 }

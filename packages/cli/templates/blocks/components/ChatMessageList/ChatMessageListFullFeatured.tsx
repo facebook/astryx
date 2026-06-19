@@ -3,18 +3,18 @@
 'use client';
 
 import {
-  XDSChatMessageList,
-  XDSChatMessage,
-  XDSChatMessageBubble,
-  XDSChatMessageMetadata,
-  XDSChatSystemMessage,
+  ChatMessageList,
+  ChatMessage,
+  ChatMessageBubble,
+  ChatMessageMetadata,
+  ChatSystemMessage,
 } from '@xds/core/Chat';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSMarkdown} from '@xds/core/Markdown';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
-import {XDSTimestamp} from '@xds/core/Timestamp';
-import {XDSToken} from '@xds/core/Token';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Avatar} from '@xds/core/Avatar';
+import {Markdown} from '@xds/core/Markdown';
+import {CodeBlock} from '@xds/core/CodeBlock';
+import {Timestamp} from '@xds/core/Timestamp';
+import {Token} from '@xds/core/Token';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
@@ -26,52 +26,52 @@ const styles = stylex.create({
 
 export default function ChatMessageListFullFeatured() {
   return (
-    <XDSVStack xstyle={styles.container}>
-      <XDSChatMessageList>
-        <XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>
+    <VStack xstyle={styles.container}>
+      <ChatMessageList>
+        <ChatSystemMessage variant="divider">Today</ChatSystemMessage>
 
-        <XDSChatMessage sender="user">
-          <XDSHStack gap={2} wrap="wrap">
-            <XDSToken label="useReducer.ts" />
-            <XDSToken label="formState.ts" />
-          </XDSHStack>
-          <XDSChatMessageBubble
+        <ChatMessage sender="user">
+          <HStack gap={2} wrap="wrap">
+            <Token label="useReducer.ts" />
+            <Token label="formState.ts" />
+          </HStack>
+          <ChatMessageBubble
             metadata={
-              <XDSChatMessageMetadata
+              <ChatMessageMetadata
                 timestamp={
-                  <XDSTimestamp value="2026-03-15T14:30:00" format="time" />
+                  <Timestamp value="2026-03-15T14:30:00" format="time" />
                 }
                 status="read"
               />
             }>
             Can you review these files?
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
+          </ChatMessageBubble>
+        </ChatMessage>
 
-        <XDSChatMessage
+        <ChatMessage
           sender="assistant"
-          avatar={<XDSAvatar name="Agent" size="small" />}>
-          <XDSChatMessageBubble group="first">
-            <XDSMarkdown density="compact">
+          avatar={<Avatar name="Agent" size="small" />}>
+          <ChatMessageBubble group="first">
+            <Markdown density="compact">
               {`Sure! Here's the key pattern from **useReducer.ts**:`}
-            </XDSMarkdown>
-          </XDSChatMessageBubble>
-          <XDSChatMessageBubble group="last">
-            <XDSMarkdown density="compact">
+            </Markdown>
+          </ChatMessageBubble>
+          <ChatMessageBubble group="last">
+            <Markdown density="compact">
               {`The reducer is **pure and easy to test** — pass in state and action, assert on the output.`}
-            </XDSMarkdown>
-          </XDSChatMessageBubble>
-          <XDSChatMessageBubble
+            </Markdown>
+          </ChatMessageBubble>
+          <ChatMessageBubble
             variant="ghost"
             group="middle"
             metadata={
-              <XDSChatMessageMetadata
+              <ChatMessageMetadata
                 timestamp={
-                  <XDSTimestamp value="2026-03-15T14:30:30" format="time" />
+                  <Timestamp value="2026-03-15T14:30:30" format="time" />
                 }
               />
             }>
-            <XDSCodeBlock
+            <CodeBlock
               code={`const [state, dispatch] = useReducer(
   (state, action) => ({
     ...state,
@@ -81,25 +81,25 @@ export default function ChatMessageListFullFeatured() {
 );`}
               language="tsx"
             />
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
+          </ChatMessageBubble>
+        </ChatMessage>
 
-        <XDSChatSystemMessage>Agent shared a code snippet</XDSChatSystemMessage>
+        <ChatSystemMessage>Agent shared a code snippet</ChatSystemMessage>
 
-        <XDSChatMessage sender="user">
-          <XDSChatMessageBubble
+        <ChatMessage sender="user">
+          <ChatMessageBubble
             metadata={
-              <XDSChatMessageMetadata
+              <ChatMessageMetadata
                 timestamp={
-                  <XDSTimestamp value="2026-03-15T14:31:00" format="time" />
+                  <Timestamp value="2026-03-15T14:31:00" format="time" />
                 }
                 status="delivered"
               />
             }>
             That's clean, thanks!
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-      </XDSChatMessageList>
-    </XDSVStack>
+          </ChatMessageBubble>
+        </ChatMessage>
+      </ChatMessageList>
+    </VStack>
   );
 }

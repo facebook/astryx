@@ -38,10 +38,10 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'XDSBreadcrumbItem elements to render inside the breadcrumb trail.',
+      description: 'BreadcrumbItem elements to render inside the breadcrumb trail.',
       slotElements: [
         {
-          __element: 'XDSBreadcrumbItem',
+          __element: 'BreadcrumbItem',
           props: {
             href: '#',
           },
@@ -57,7 +57,7 @@ export const docs = {
       default: "'/'",
       slotElements: [
         {
-          __element: 'XDSIcon',
+          __element: 'Icon',
           props: {
             icon: 'chevronRight',
             size: 'sm',
@@ -85,7 +85,7 @@ export const docs = {
   ],
   components: [
     {
-      name: 'XDSBreadcrumbItem',
+      name: 'BreadcrumbItem',
       displayName: 'Breadcrumb Item',
       description: 'Individual breadcrumb item. Renders as a link when href is provided, or as plain text for the current page.',
       props: [
@@ -118,8 +118,8 @@ export const docs = {
         },
         {
           name: 'as',
-          type: 'XDSLinkComponentType',
-          description: 'Custom link component to render instead of <a>. Overrides the provider-level default from XDSLinkProvider. Only applies to non-current items.',
+          type: 'LinkComponentType',
+          description: 'Custom link component to render instead of <a>. Overrides the provider-level default from LinkProvider. Only applies to non-current items.',
         },
       ],
     },

@@ -99,15 +99,20 @@ async function main() {
   const combinedCSS = stylexBabelPlugin.processStylexRules(allRules, false);
 
   const combinedPath = path.resolve(CORE_DIST, 'xds.css');
-  await fs.writeFile(
-    combinedPath,
-    `/* XDS Pre-compiled StyleX CSS — all components */\n/* Auto-generated. Do not edit manually. */\n\n@layer xds-base {\n${combinedCSS
-      .split('\n')
-      .map(line => '  ' + line)
-      .join('\n')}\n}\n`,
-    'utf8',
-  );
+  const combinedFileContents = `/* XDS Pre-compiled StyleX CSS — all components */\n/* Auto-generated. Do not edit manually. */\n\n@layer xds-base {\n${combinedCSS
+    .split('\n')
+    .map(line => '  ' + line)
+    .join('\n')}\n}\n`;
+  await fs.writeFile(combinedPath, combinedFileContents, 'utf8');
   console.log(`xds.css: ${(combinedCSS.length / 1024).toFixed(1)} KB`);
+
+  // Emit a sibling astryx.css with identical content (XDS-prefix migration
+  // P2380608025). Gives consumers a forward-named import path
+  // ('@xds/core/astryx.css') during the compat window; the layer name stays
+  // xds-base until the final cutover (P10). Both files are kept in lockstep.
+  const astryxPath = path.resolve(CORE_DIST, 'astryx.css');
+  await fs.writeFile(astryxPath, combinedFileContents, 'utf8');
+  console.log(`astryx.css: ${(combinedCSS.length / 1024).toFixed(1)} KB (sibling of xds.css)`);
 }
 
 main().catch(err => {

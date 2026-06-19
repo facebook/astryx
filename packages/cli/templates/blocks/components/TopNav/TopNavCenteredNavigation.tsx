@@ -2,39 +2,39 @@
 
 'use client';
 
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
-import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
+import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
+import {NavIcon} from '@xds/core/NavIcon';
+import {Button} from '@xds/core/Button';
+import {Icon} from '@xds/core/Icon';
 import {CubeIcon, UserCircleIcon} from '@heroicons/react/24/outline';
 
 export default function TopNavCenteredNavigation() {
   return (
-    <XDSTopNav
+    <TopNav
       label="Main navigation"
       heading={
-        <XDSTopNavHeading
+        <TopNavHeading
           heading="My App"
-          logo={<XDSNavIcon icon={<XDSIcon icon={CubeIcon} size="sm" />} />}
+          logo={<NavIcon icon={<Icon icon={CubeIcon} size="sm" />} />}
           href="#"
         />
       }
       centerContent={
         <>
-          <XDSTopNavItem label="Home" href="#" isSelected />
-          <XDSTopNavItem label="Products" href="#" />
-          <XDSTopNavItem label="About" href="#" />
+          <TopNavItem label="Home" href="#" isSelected />
+          <TopNavItem label="Products" href="#" />
+          <TopNavItem label="About" href="#" />
         </>
       }
       endContent={
         <>
-          <XDSButton
+          <Button
             label="Search"
             variant="ghost"
-            icon={<XDSIcon icon="search" color="inherit" />}
+            icon={<Icon icon="search" color="inherit" />}
             isIconOnly
           />
-          <XDSButton
+          <Button
             label="Profile"
             variant="ghost"
             icon={<UserCircleIcon />}

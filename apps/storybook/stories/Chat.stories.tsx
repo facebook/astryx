@@ -2,25 +2,25 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSChatMessageList,
-  XDSChatMessage,
-  XDSChatMessageBubble,
-  XDSChatMessageMetadata,
-  XDSChatSystemMessage,
+  ChatMessageList,
+  ChatMessage,
+  ChatMessageBubble,
+  ChatMessageMetadata,
+  ChatSystemMessage,
 } from '@xds/core/Chat';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSMarkdown} from '@xds/core/Markdown';
-import {XDSToken} from '@xds/core/Token';
-import {XDSHStack} from '@xds/core/Stack';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
-import {XDSButton} from '@xds/core/Button';
-import {XDSTimestamp} from '@xds/core/Timestamp';
+import {Avatar} from '@xds/core/Avatar';
+import {Markdown} from '@xds/core/Markdown';
+import {Token} from '@xds/core/Token';
+import {HStack} from '@xds/core/Stack';
+import {CodeBlock} from '@xds/core/CodeBlock';
+import {Button} from '@xds/core/Button';
+import {Timestamp} from '@xds/core/Timestamp';
 import {HandThumbUpIcon, HandThumbDownIcon} from '@heroicons/react/24/outline';
 import {ClipboardDocumentIcon} from '@heroicons/react/24/outline';
 
-const meta: Meta<typeof XDSChatMessageList> = {
+const meta: Meta<typeof ChatMessageList> = {
   title: 'Core/Chat',
-  component: XDSChatMessageList,
+  component: ChatMessageList,
   tags: ['autodocs'],
 };
 export default meta;
@@ -29,22 +29,22 @@ export const Default: StoryObj = {
   name: 'Default',
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column'}}>
-      <XDSChatMessageList>
-        <XDSChatMessage sender="user">
-          <XDSChatMessageBubble
+      <ChatMessageList>
+        <ChatMessage sender="user">
+          <ChatMessageBubble
             metadata={
-              <XDSChatMessageMetadata
+              <ChatMessageMetadata
                 timestamp={
-                  <XDSTimestamp value="2026-03-15T14:30:00" format="time" />
+                  <Timestamp value="2026-03-15T14:30:00" format="time" />
                 }
                 status="read"
               />
             }>
             How should I handle state management in a React app?
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-        <XDSChatMessage sender="assistant">
-          <XDSMarkdown density="compact">{`For most cases, **React's built-in state** is sufficient:
+          </ChatMessageBubble>
+        </ChatMessage>
+        <ChatMessage sender="assistant">
+          <Markdown density="compact">{`For most cases, **React's built-in state** is sufficient:
 
 - \`useState\` for local component state
 - \`useReducer\` for complex state logic
@@ -52,30 +52,30 @@ export const Default: StoryObj = {
 
 For **server state**, use a library like **TanStack Query** or **SWR** — they handle caching, revalidation, and loading states out of the box.
 
-Avoid global state managers unless you have a genuine need for cross-cutting state. Most apps are over-engineered in this area.`}</XDSMarkdown>
-          <XDSChatMessageMetadata
+Avoid global state managers unless you have a genuine need for cross-cutting state. Most apps are over-engineered in this area.`}</Markdown>
+          <ChatMessageMetadata
             timestamp={
-              <XDSTimestamp value="2026-03-15T14:30:30" format="time" />
+              <Timestamp value="2026-03-15T14:30:30" format="time" />
             }
             footer={
               <>
                 <span>Claude Opus 4.6</span>
                 <span>·</span>
-                <XDSButton
+                <Button
                   label="Thumbs up"
                   icon={<HandThumbUpIcon style={{width: 14, height: 14}} />}
                   variant="ghost"
                   size="sm"
                   isIconOnly
                 />
-                <XDSButton
+                <Button
                   label="Thumbs down"
                   icon={<HandThumbDownIcon style={{width: 14, height: 14}} />}
                   variant="ghost"
                   size="sm"
                   isIconOnly
                 />
-                <XDSButton
+                <Button
                   label="Copy"
                   icon={
                     <ClipboardDocumentIcon style={{width: 14, height: 14}} />
@@ -87,25 +87,25 @@ Avoid global state managers unless you have a genuine need for cross-cutting sta
               </>
             }
           />
-        </XDSChatMessage>
-        <XDSChatMessage sender="user">
-          <XDSChatMessageBubble
+        </ChatMessage>
+        <ChatMessage sender="user">
+          <ChatMessageBubble
             metadata={
-              <XDSChatMessageMetadata
+              <ChatMessageMetadata
                 timestamp={
-                  <XDSTimestamp value="2026-03-15T14:31:00" format="time" />
+                  <Timestamp value="2026-03-15T14:31:00" format="time" />
                 }
                 status="read"
               />
             }>
             Can you show me a useReducer example?
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-        <XDSChatMessage sender="assistant">
-          <XDSMarkdown density="compact">
+          </ChatMessageBubble>
+        </ChatMessage>
+        <ChatMessage sender="assistant">
+          <Markdown density="compact">
             Here's a common pattern for form state:
-          </XDSMarkdown>
-          <XDSCodeBlock
+          </Markdown>
+          <CodeBlock
             code={`const reducer = (state, action) => {
   switch (action.type) {
     case 'SET_FIELD':
@@ -120,7 +120,7 @@ Avoid global state managers unless you have a genuine need for cross-cutting sta
 const [state, dispatch] = useReducer(reducer, initialState);`}
             language="tsx"
           />
-          <XDSMarkdown density="compact">{`This keeps all your form logic in one place. The reducer is pure and easy to test — just pass in state and action, assert on the output.
+          <Markdown density="compact">{`This keeps all your form logic in one place. The reducer is pure and easy to test — just pass in state and action, assert on the output.
 
 | Hook | Use case | Re-renders | Complexity | Best for |
 |------|----------|------------|------------|----------|
@@ -128,30 +128,30 @@ const [state, dispatch] = useReducer(reducer, initialState);`}
 | \`useReducer\` | Complex state logic | On dispatch | Medium | Forms, multi-field state |
 | \`useContext\` | Shared subtree state | All consumers | Low | Theme, auth, locale |
 | \`useSyncExternalStore\` | External stores | On snapshot change | High | Redux, Zustand, signals |
-| \`useRef\` | Mutable values | Never | Low | DOM refs, timers, previous values |`}</XDSMarkdown>
-          <XDSChatMessageMetadata
+| \`useRef\` | Mutable values | Never | Low | DOM refs, timers, previous values |`}</Markdown>
+          <ChatMessageMetadata
             timestamp={
-              <XDSTimestamp value="2026-03-15T14:31:30" format="time" />
+              <Timestamp value="2026-03-15T14:31:30" format="time" />
             }
             footer={
               <>
                 <span>Claude Opus 4.6</span>
                 <span>·</span>
-                <XDSButton
+                <Button
                   label="Thumbs up"
                   icon={<HandThumbUpIcon style={{width: 14, height: 14}} />}
                   variant="ghost"
                   size="sm"
                   isIconOnly
                 />
-                <XDSButton
+                <Button
                   label="Thumbs down"
                   icon={<HandThumbDownIcon style={{width: 14, height: 14}} />}
                   variant="ghost"
                   size="sm"
                   isIconOnly
                 />
-                <XDSButton
+                <Button
                   label="Copy"
                   icon={
                     <ClipboardDocumentIcon style={{width: 14, height: 14}} />
@@ -163,8 +163,8 @@ const [state, dispatch] = useReducer(reducer, initialState);`}
               </>
             }
           />
-        </XDSChatMessage>
-      </XDSChatMessageList>
+        </ChatMessage>
+      </ChatMessageList>
     </div>
   ),
 };
@@ -173,56 +173,56 @@ export const MixedContent: StoryObj = {
   name: 'Mixed Content',
   render: () => (
     <div style={{height: 600, display: 'flex', flexDirection: 'column'}}>
-      <XDSChatMessageList>
-        <XDSChatMessage sender="user">
-          <XDSChatMessageBubble>
+      <ChatMessageList>
+        <ChatMessage sender="user">
+          <ChatMessageBubble>
             Show me the component files and explain the architecture
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
+          </ChatMessageBubble>
+        </ChatMessage>
 
-        <XDSChatMessage sender="assistant">
-          <XDSChatMessageBubble>
+        <ChatMessage sender="assistant">
+          <ChatMessageBubble>
             Sure! Here's an overview of the component architecture.
-          </XDSChatMessageBubble>
-          <XDSChatMessageBubble variant="ghost">
-            <XDSMarkdown density="compact">{`The system uses a **compound component** pattern with three layers:
+          </ChatMessageBubble>
+          <ChatMessageBubble variant="ghost">
+            <Markdown density="compact">{`The system uses a **compound component** pattern with three layers:
 
 1. **MessageList** — scrollable container with auto-scroll
 2. **Message** — layout wrapper with sender context
-3. **Bubble** — styled content container`}</XDSMarkdown>
-          </XDSChatMessageBubble>
-          <XDSChatMessageBubble variant="ghost">
-            <XDSMarkdown density="compact">Here are the files:</XDSMarkdown>
-            <XDSHStack gap={2} wrap="wrap">
-              <XDSToken label="Button.tsx" />
-              <XDSToken label="Card.tsx" />
-              <XDSToken label="Dialog.tsx" />
-            </XDSHStack>
-            <XDSCodeBlock
+3. **Bubble** — styled content container`}</Markdown>
+          </ChatMessageBubble>
+          <ChatMessageBubble variant="ghost">
+            <Markdown density="compact">Here are the files:</Markdown>
+            <HStack gap={2} wrap="wrap">
+              <Token label="Button.tsx" />
+              <Token label="Card.tsx" />
+              <Token label="Dialog.tsx" />
+            </HStack>
+            <CodeBlock
               code={
                 "export * from './Button';\nexport * from './Card';\nexport * from './Dialog';"
               }
               language="typescript"
             />
-          </XDSChatMessageBubble>
-          <XDSChatMessageBubble>
+          </ChatMessageBubble>
+          <ChatMessageBubble>
             Let me know which one to open — I can walk through the
             implementation.
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
+          </ChatMessageBubble>
+        </ChatMessage>
 
-        <XDSChatMessage sender="user">
-          <XDSChatMessageBubble>Open Button.tsx</XDSChatMessageBubble>
-        </XDSChatMessage>
+        <ChatMessage sender="user">
+          <ChatMessageBubble>Open Button.tsx</ChatMessageBubble>
+        </ChatMessage>
 
-        <XDSChatSystemMessage>Navi opened Button.tsx</XDSChatSystemMessage>
+        <ChatSystemMessage>Navi opened Button.tsx</ChatSystemMessage>
 
-        <XDSChatMessage sender="assistant">
-          <XDSChatMessageBubble variant="ghost">
-            <XDSCodeBlock
+        <ChatMessage sender="assistant">
+          <ChatMessageBubble variant="ghost">
+            <CodeBlock
               code={`import * as stylex from '@stylexjs/stylex';
 
-export function XDSButton({ label, variant = 'primary' }) {
+export function Button({ label, variant = 'primary' }) {
   return (
     <button {...stylex.props(styles.base, styles[variant])}>
       {label}
@@ -231,10 +231,10 @@ export function XDSButton({ label, variant = 'primary' }) {
 }`}
               language="tsx"
             />
-            <XDSMarkdown density="compact">{`The Button uses StyleX for styles and reads variant from props.`}</XDSMarkdown>
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-      </XDSChatMessageList>
+            <Markdown density="compact">{`The Button uses StyleX for styles and reads variant from props.`}</Markdown>
+          </ChatMessageBubble>
+        </ChatMessage>
+      </ChatMessageList>
     </div>
   ),
 };
@@ -250,83 +250,83 @@ export const ChatConversation: StoryObj = {
     };
     return (
       <div style={{height: 500, display: 'flex', flexDirection: 'column'}}>
-        <XDSChatMessageList>
-          <XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>
-          <XDSChatMessage
+        <ChatMessageList>
+          <ChatSystemMessage variant="divider">Today</ChatSystemMessage>
+          <ChatMessage
             sender="assistant"
-            avatar={<XDSAvatar name="Navi" size="small" />}>
-            <XDSChatMessageBubble
+            avatar={<Avatar name="Navi" size="small" />}>
+            <ChatMessageBubble
               name={<span style={nameStyle}>Navi</span>}
               metadata={
-                <XDSChatMessageMetadata
+                <ChatMessageMetadata
                   timestamp={
-                    <XDSTimestamp value="2026-03-15T14:30:00" format="time" />
+                    <Timestamp value="2026-03-15T14:30:00" format="time" />
                   }
                 />
               }>
               Hey! I looked at the PR and left a few comments on the density
               styles.
-            </XDSChatMessageBubble>
-          </XDSChatMessage>
+            </ChatMessageBubble>
+          </ChatMessage>
 
-          <XDSChatMessage
+          <ChatMessage
             sender="user"
-            avatar={<XDSAvatar name="Cindy" size="small" />}>
-            <XDSChatMessageBubble
+            avatar={<Avatar name="Cindy" size="small" />}>
+            <ChatMessageBubble
               group="first"
               name={<span style={nameStyle}>Cindy</span>}>
               Thanks! I'll take a look.
-            </XDSChatMessageBubble>
-            <XDSChatMessageBubble
+            </ChatMessageBubble>
+            <ChatMessageBubble
               group="last"
               metadata={
-                <XDSChatMessageMetadata
+                <ChatMessageMetadata
                   timestamp={
-                    <XDSTimestamp value="2026-03-15T14:31:00" format="time" />
+                    <Timestamp value="2026-03-15T14:31:00" format="time" />
                   }
                   status="read"
                 />
               }>
               Should be quick to fix.
-            </XDSChatMessageBubble>
-          </XDSChatMessage>
+            </ChatMessageBubble>
+          </ChatMessage>
 
-          <XDSChatMessage
+          <ChatMessage
             sender="assistant"
-            avatar={<XDSAvatar name="Navi" size="small" />}>
-            <XDSChatMessageBubble
+            avatar={<Avatar name="Navi" size="small" />}>
+            <ChatMessageBubble
               name={<span style={nameStyle}>Navi</span>}
               metadata={
-                <XDSChatMessageMetadata
+                <ChatMessageMetadata
                   timestamp={
-                    <XDSTimestamp value="2026-03-15T14:32:00" format="time" />
+                    <Timestamp value="2026-03-15T14:32:00" format="time" />
                   }
                 />
               }>
               Sounds good. The main thing is the compact radius — it should use
               the container token, not the page token.
-            </XDSChatMessageBubble>
-          </XDSChatMessage>
+            </ChatMessageBubble>
+          </ChatMessage>
 
-          <XDSChatMessage
+          <ChatMessage
             sender="user"
-            avatar={<XDSAvatar name="Cindy" size="small" />}>
-            <XDSChatMessageBubble
+            avatar={<Avatar name="Cindy" size="small" />}>
+            <ChatMessageBubble
               name={<span style={nameStyle}>Cindy</span>}
               metadata={
-                <XDSChatMessageMetadata
+                <ChatMessageMetadata
                   timestamp={
-                    <XDSTimestamp value="2026-03-15T14:33:00" format="time" />
+                    <Timestamp value="2026-03-15T14:33:00" format="time" />
                   }
                   status="delivered"
                 />
               }>
               Good catch, fixed and pushed.
-            </XDSChatMessageBubble>
-          </XDSChatMessage>
+            </ChatMessageBubble>
+          </ChatMessage>
 
-          <XDSChatSystemMessage>Cindy liked a message</XDSChatSystemMessage>
-        </XDSChatMessageList>
+          <ChatSystemMessage>Cindy liked a message</ChatSystemMessage>
+        </ChatMessageList>
       </div>
     );
   },
@@ -368,16 +368,16 @@ export const DensityComparison: StoryObj = {
             flexDirection: 'column',
             minHeight: 0,
           }}>
-          <XDSChatMessageList density={density}>
-            <XDSChatMessage sender="user">
-              <XDSChatMessageBubble>
+          <ChatMessageList density={density}>
+            <ChatMessage sender="user">
+              <ChatMessageBubble>
                 How does the density system work?
-              </XDSChatMessageBubble>
-            </XDSChatMessage>
-            <XDSChatMessage
+              </ChatMessageBubble>
+            </ChatMessage>
+            <ChatMessage
               sender="assistant"
-              avatar={<XDSAvatar name="Navi" size={avatarSize[density]} />}>
-              <XDSMarkdown density="compact">{`Density controls **spacing** at every level:
+              avatar={<Avatar name="Navi" size={avatarSize[density]} />}>
+              <Markdown density="compact">{`Density controls **spacing** at every level:
 
 - **Default gap** between messages
 - **Padding** inside bubbles
@@ -385,12 +385,12 @@ export const DensityComparison: StoryObj = {
 
 Use gap when top-level rows need different spacing from density.
 
-This is the **${density}** density. ${density === 'compact' ? 'Great for sidebars and panels where space is limited.' : density === 'spacious' ? 'Ideal for long-form reading where breathing room helps comprehension.' : 'The default — works well for most full-page chat interfaces.'}`}</XDSMarkdown>
-            </XDSChatMessage>
-            <XDSChatMessage sender="user">
-              <XDSChatMessageBubble>Makes sense, thanks!</XDSChatMessageBubble>
-            </XDSChatMessage>
-          </XDSChatMessageList>
+This is the **${density}** density. ${density === 'compact' ? 'Great for sidebars and panels where space is limited.' : density === 'spacious' ? 'Ideal for long-form reading where breathing room helps comprehension.' : 'The default — works well for most full-page chat interfaces.'}`}</Markdown>
+            </ChatMessage>
+            <ChatMessage sender="user">
+              <ChatMessageBubble>Makes sense, thanks!</ChatMessageBubble>
+            </ChatMessage>
+          </ChatMessageList>
         </div>
       </div>
     );
@@ -408,29 +408,29 @@ export const GapOverride: StoryObj = {
   name: 'Message Gap Override',
   render: () => (
     <div style={{height: 420, display: 'flex', flexDirection: 'column'}}>
-      <XDSChatMessageList density="compact" gap={5}>
-        <XDSChatMessage sender="assistant">
-          <XDSChatMessageBubble name="Clio">
+      <ChatMessageList density="compact" gap={5}>
+        <ChatMessage sender="assistant">
+          <ChatMessageBubble name="Clio">
             Starting the requested change.
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-        <XDSChatMessage sender="assistant">
-          <XDSChatMessageBubble variant="ghost">
+          </ChatMessageBubble>
+        </ChatMessage>
+        <ChatMessage sender="assistant">
+          <ChatMessageBubble variant="ghost">
             Reading repository context and relevant files...
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-        <XDSChatMessage sender="assistant">
-          <XDSChatMessageBubble variant="ghost">
+          </ChatMessageBubble>
+        </ChatMessage>
+        <ChatMessage sender="assistant">
+          <ChatMessageBubble variant="ghost">
             Running tests for the updated package.
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-        <XDSChatMessage sender="assistant">
-          <XDSChatMessageBubble
-            metadata={<XDSChatMessageMetadata footer="Done" />}>
+          </ChatMessageBubble>
+        </ChatMessage>
+        <ChatMessage sender="assistant">
+          <ChatMessageBubble
+            metadata={<ChatMessageMetadata footer="Done" />}>
             The patch is ready for review.
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-      </XDSChatMessageList>
+          </ChatMessageBubble>
+        </ChatMessage>
+      </ChatMessageList>
     </div>
   ),
 };
@@ -438,22 +438,22 @@ export const SystemMessages: StoryObj = {
   name: 'System Messages',
   render: () => (
     <div style={{height: 400, display: 'flex', flexDirection: 'column'}}>
-      <XDSChatMessageList>
-        <XDSChatSystemMessage variant="divider">
+      <ChatMessageList>
+        <ChatSystemMessage variant="divider">
           March 15, 2026
-        </XDSChatSystemMessage>
-        <XDSChatMessage
+        </ChatSystemMessage>
+        <ChatMessage
           sender="assistant"
-          avatar={<XDSAvatar name="Navi" size="small" />}>
-          <XDSMarkdown density="compact">Good morning!</XDSMarkdown>
-        </XDSChatMessage>
-        <XDSChatSystemMessage>Conversation started</XDSChatSystemMessage>
-        <XDSChatMessage sender="user">
-          <XDSChatMessageBubble>Hey Navi</XDSChatMessageBubble>
-        </XDSChatMessage>
-        <XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>
-        <XDSChatSystemMessage>Cindy shared a file</XDSChatSystemMessage>
-      </XDSChatMessageList>
+          avatar={<Avatar name="Navi" size="small" />}>
+          <Markdown density="compact">Good morning!</Markdown>
+        </ChatMessage>
+        <ChatSystemMessage>Conversation started</ChatSystemMessage>
+        <ChatMessage sender="user">
+          <ChatMessageBubble>Hey Navi</ChatMessageBubble>
+        </ChatMessage>
+        <ChatSystemMessage variant="divider">Today</ChatSystemMessage>
+        <ChatSystemMessage>Cindy shared a file</ChatSystemMessage>
+      </ChatMessageList>
     </div>
   ),
 };
@@ -461,38 +461,38 @@ export const MessageStatus: StoryObj = {
   name: 'Message Status',
   render: () => (
     <div style={{height: 400, display: 'flex', flexDirection: 'column'}}>
-      <XDSChatMessageList>
-        <XDSChatMessage sender="user">
-          <XDSChatMessageBubble
-            metadata={<XDSChatMessageMetadata status="sending" />}>
+      <ChatMessageList>
+        <ChatMessage sender="user">
+          <ChatMessageBubble
+            metadata={<ChatMessageMetadata status="sending" />}>
             Sending...
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-        <XDSChatMessage sender="user">
-          <XDSChatMessageBubble
-            metadata={<XDSChatMessageMetadata status="sent" />}>
+          </ChatMessageBubble>
+        </ChatMessage>
+        <ChatMessage sender="user">
+          <ChatMessageBubble
+            metadata={<ChatMessageMetadata status="sent" />}>
             Sent
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-        <XDSChatMessage sender="user">
-          <XDSChatMessageBubble
-            metadata={<XDSChatMessageMetadata status="delivered" />}>
+          </ChatMessageBubble>
+        </ChatMessage>
+        <ChatMessage sender="user">
+          <ChatMessageBubble
+            metadata={<ChatMessageMetadata status="delivered" />}>
             Delivered
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-        <XDSChatMessage sender="user">
-          <XDSChatMessageBubble
-            metadata={<XDSChatMessageMetadata status="read" />}>
+          </ChatMessageBubble>
+        </ChatMessage>
+        <ChatMessage sender="user">
+          <ChatMessageBubble
+            metadata={<ChatMessageMetadata status="read" />}>
             Read
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-        <XDSChatMessage sender="user">
-          <XDSChatMessageBubble
-            metadata={<XDSChatMessageMetadata status="error" />}>
+          </ChatMessageBubble>
+        </ChatMessage>
+        <ChatMessage sender="user">
+          <ChatMessageBubble
+            metadata={<ChatMessageMetadata status="error" />}>
             Failed to send
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-      </XDSChatMessageList>
+          </ChatMessageBubble>
+        </ChatMessage>
+      </ChatMessageList>
     </div>
   ),
 };
@@ -500,63 +500,63 @@ export const MultiBubble: StoryObj = {
   name: 'Multi-Bubble Grouping',
   render: () => (
     <div style={{height: 500, display: 'flex', flexDirection: 'column'}}>
-      <XDSChatMessageList>
-        <XDSChatMessage sender="user">
-          <XDSChatMessageBubble group="first">
+      <ChatMessageList>
+        <ChatMessage sender="user">
+          <ChatMessageBubble group="first">
             Hey, can you review my PR?
-          </XDSChatMessageBubble>
-          <XDSChatMessageBubble group="middle">
+          </ChatMessageBubble>
+          <ChatMessageBubble group="middle">
             It's the one for the chat components
-          </XDSChatMessageBubble>
-          <XDSChatMessageBubble
+          </ChatMessageBubble>
+          <ChatMessageBubble
             group="last"
             metadata={
-              <XDSChatMessageMetadata
+              <ChatMessageMetadata
                 timestamp={
-                  <XDSTimestamp value="2026-03-15T14:31:00" format="time" />
+                  <Timestamp value="2026-03-15T14:31:00" format="time" />
                 }
                 status="delivered"
               />
             }>
             Link: github.com/xds/pull/1180
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-        <XDSChatMessage
+          </ChatMessageBubble>
+        </ChatMessage>
+        <ChatMessage
           sender="assistant"
-          avatar={<XDSAvatar name="Navi" size="small" />}>
-          <XDSChatMessageBubble group="first">
+          avatar={<Avatar name="Navi" size="small" />}>
+          <ChatMessageBubble group="first">
             Sure, looking at it now!
-          </XDSChatMessageBubble>
-          <XDSChatMessageBubble group="middle">
+          </ChatMessageBubble>
+          <ChatMessageBubble group="middle">
             The compound pattern looks solid. A few minor comments on the
             density styles.
-          </XDSChatMessageBubble>
-          <XDSChatMessageBubble
+          </ChatMessageBubble>
+          <ChatMessageBubble
             group="last"
             metadata={
-              <XDSChatMessageMetadata
+              <ChatMessageMetadata
                 timestamp={
-                  <XDSTimestamp value="2026-03-15T14:33:00" format="time" />
+                  <Timestamp value="2026-03-15T14:33:00" format="time" />
                 }
               />
             }>
             I'll leave them as review comments.
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-        <XDSChatMessage sender="user">
-          <XDSChatMessageBubble
+          </ChatMessageBubble>
+        </ChatMessage>
+        <ChatMessage sender="user">
+          <ChatMessageBubble
             metadata={
-              <XDSChatMessageMetadata
+              <ChatMessageMetadata
                 timestamp={
-                  <XDSTimestamp value="2026-03-15T14:34:00" format="time" />
+                  <Timestamp value="2026-03-15T14:34:00" format="time" />
                 }
                 status="sending"
               />
             }>
             Thanks, will address those
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-      </XDSChatMessageList>
+          </ChatMessageBubble>
+        </ChatMessage>
+      </ChatMessageList>
     </div>
   ),
 };

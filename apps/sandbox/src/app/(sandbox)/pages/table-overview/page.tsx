@@ -4,22 +4,22 @@
 
 import {useState, useMemo} from 'react';
 
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSCard} from '@xds/core/Card';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Text, Heading} from '@xds/core/Text';
+import {TextInput} from '@xds/core/TextInput';
+import {Card} from '@xds/core/Card';
 import {
-  XDSTable,
-  useXDSTableSelection,
+  Table,
+  useTableSelection,
   proportional,
   pixel,
 } from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSBadge} from '@xds/core/Badge';
-import type {XDSBadgeVariant} from '@xds/core/Badge';
-import {XDSStatusDot} from '@xds/core/StatusDot';
-import {XDSCollapsible} from '@xds/core/Collapsible';
+import type {TableColumn} from '@xds/core/Table';
+import {Avatar} from '@xds/core/Avatar';
+import {Badge} from '@xds/core/Badge';
+import type {BadgeVariant} from '@xds/core/Badge';
+import {StatusDot} from '@xds/core/StatusDot';
+import {Collapsible} from '@xds/core/Collapsible';
 import * as stylex from '@stylexjs/stylex';
 
 // =============================================================================
@@ -79,7 +79,7 @@ const waitingForAWhile: ReviewRow[] = [
 const needsCodeReview: ReviewRow[] = [
   {
     id: '3',
-    title: '[xds][Avatar] Add XDSAvatarStatusDot size scaling',
+    title: '[xds][Avatar] Add AvatarStatusDot size scaling',
     prId: 'PR-1055',
     lines: 128,
     reviewTime: '~8min review',
@@ -138,7 +138,7 @@ const needsCodeReview: ReviewRow[] = [
   },
   {
     id: '7',
-    title: '[xds][Layout] Support sticky header in XDSLayoutHeader',
+    title: '[xds][Layout] Support sticky header in LayoutHeader',
     prId: 'PR-1070',
     lines: 89,
     reviewTime: '~5min review',
@@ -190,7 +190,7 @@ const acceptedAndReady: ReviewRow[] = [
 // Helpers
 // =============================================================================
 
-const STATUS_VARIANT_MAP: Record<ReviewRow['status'], XDSBadgeVariant> = {
+const STATUS_VARIANT_MAP: Record<ReviewRow['status'], BadgeVariant> = {
   'Needs review': 'info',
   'Waiting on author': 'warning',
   'Changes planned': 'warning',
@@ -211,17 +211,17 @@ function StatCard({
   emoji?: string;
 }) {
   return (
-    <XDSCard>
+    <Card>
       <div {...stylex.props(styles.statCard)}>
-        <XDSText type="supporting" color="secondary">
+        <Text type="supporting" color="secondary">
           {emoji ? `${emoji} ` : ''}
           {label}
-        </XDSText>
-        <XDSText type="large" weight="bold">
+        </Text>
+        <Text type="large" weight="bold">
           {String(value)}
-        </XDSText>
+        </Text>
       </div>
-    </XDSCard>
+    </Card>
   );
 }
 
@@ -229,29 +229,29 @@ function StatCard({
 // Columns (defined outside component for stable identity)
 // =============================================================================
 
-const columns: XDSTableColumn<ReviewRow>[] = [
+const columns: TableColumn<ReviewRow>[] = [
   {
     key: 'author',
     header: 'Author',
     width: proportional(4),
     renderCell: (item: ReviewRow) => (
-      <XDSHStack gap={3} vAlign="center">
-        <XDSAvatar
+      <HStack gap={3} vAlign="center">
+        <Avatar
           src={item.authorAvatar}
           name={item.authorName}
           size="small"
         />
         <div {...stylex.props(styles.authorInfo)}>
-          <XDSVStack gap={1}>
+          <VStack gap={1}>
             <span {...stylex.props(styles.titleLink)}>{item.title}</span>
             <span {...stylex.props(styles.supportingLine)}>
-              <XDSText type="supporting" color="secondary">
+              <Text type="supporting" color="secondary">
                 {item.prId} · {item.lines} lines {item.reviewTime}
-              </XDSText>
+              </Text>
             </span>
-          </XDSVStack>
+          </VStack>
         </div>
-      </XDSHStack>
+      </HStack>
     ),
   },
   {
@@ -268,7 +268,7 @@ const columns: XDSTableColumn<ReviewRow>[] = [
               marginLeft: i > 0 ? -8 : 0,
               zIndex: item.reviewerAvatars.length - i,
             }}>
-            <XDSAvatar src={src} name={`Reviewer ${i + 1}`} size="xsmall" />
+            <Avatar src={src} name={`Reviewer ${i + 1}`} size="xsmall" />
           </div>
         ))}
       </div>
@@ -279,15 +279,15 @@ const columns: XDSTableColumn<ReviewRow>[] = [
     header: 'Testing',
     width: pixel(110),
     renderCell: (item: ReviewRow) => (
-      <XDSHStack gap={2} vAlign="center">
-        <XDSStatusDot
+      <HStack gap={2} vAlign="center">
+        <StatusDot
           variant={item.testStatus === 'passed' ? 'success' : 'error'}
           label={item.testStatus === 'passed' ? 'Passed' : 'Failed'}
         />
-        <XDSText type="supporting">
+        <Text type="supporting">
           {item.testStatus === 'passed' ? 'Passed' : 'Failed'}
-        </XDSText>
-      </XDSHStack>
+        </Text>
+      </HStack>
     ),
   },
   {
@@ -295,9 +295,9 @@ const columns: XDSTableColumn<ReviewRow>[] = [
     header: 'Created',
     width: pixel(130),
     renderCell: (item: ReviewRow) => (
-      <XDSText type="supporting" color="secondary">
+      <Text type="supporting" color="secondary">
         {item.created}
-      </XDSText>
+      </Text>
     ),
   },
   {
@@ -305,7 +305,7 @@ const columns: XDSTableColumn<ReviewRow>[] = [
     header: 'Status',
     width: pixel(160),
     renderCell: (item: ReviewRow) => (
-      <XDSBadge variant={STATUS_VARIANT_MAP[item.status]} label={item.status} />
+      <Badge variant={STATUS_VARIANT_MAP[item.status]} label={item.status} />
     ),
   },
 ];
@@ -372,7 +372,7 @@ function SectionTable({
   selectedKeys: Set<string>;
   setSelectedKeys: React.Dispatch<React.SetStateAction<Set<string>>>;
 }) {
-  const selectionPlugin = useXDSTableSelection<ReviewRow>({
+  const selectionPlugin = useTableSelection<ReviewRow>({
     getIsItemSelected: (item: ReviewRow) => selectedKeys.has(item.id),
     onSelectItem: ({
       item,
@@ -415,7 +415,7 @@ function SectionTable({
   );
 
   return (
-    <XDSTable<ReviewRow>
+    <Table<ReviewRow>
       data={data}
       columns={columns}
       idKey="id"
@@ -454,17 +454,17 @@ export default function TableOverviewPage() {
 
   return (
     <div {...stylex.props(styles.container)}>
-      <XDSVStack gap={6}>
-        <XDSVStack gap={2}>
-          <XDSHeading level={1}>Table Overview</XDSHeading>
-          <XDSText type="body" color="secondary">
-            A code review dashboard demonstrating XDSTable with selection,
+      <VStack gap={6}>
+        <VStack gap={2}>
+          <Heading level={1}>Table Overview</Heading>
+          <Text type="body" color="secondary">
+            A code review dashboard demonstrating Table with selection,
             badges, avatars, and collapsible sections.
-          </XDSText>
-        </XDSVStack>
+          </Text>
+        </VStack>
 
         {/* Search */}
-        <XDSTextInput
+        <TextInput
           label="Search"
           isLabelHidden
           placeholder="Search..."
@@ -482,53 +482,53 @@ export default function TableOverviewPage() {
         </div>
 
         {/* Grouped Tables */}
-        <XDSVStack gap={4}>
+        <VStack gap={4}>
           {filteredWaiting.length > 0 && (
-            <XDSCollapsible
+            <Collapsible
               trigger={
-                <XDSText type="body" weight="bold">
+                <Text type="body" weight="bold">
                   Waiting for a while ({filteredWaiting.length})
-                </XDSText>
+                </Text>
               }>
               <SectionTable
                 data={filteredWaiting}
                 selectedKeys={selectedKeys}
                 setSelectedKeys={setSelectedKeys}
               />
-            </XDSCollapsible>
+            </Collapsible>
           )}
 
           {filteredNeeds.length > 0 && (
-            <XDSCollapsible
+            <Collapsible
               trigger={
-                <XDSText type="body" weight="bold">
+                <Text type="body" weight="bold">
                   Needs code review ({filteredNeeds.length})
-                </XDSText>
+                </Text>
               }>
               <SectionTable
                 data={filteredNeeds}
                 selectedKeys={selectedKeys}
                 setSelectedKeys={setSelectedKeys}
               />
-            </XDSCollapsible>
+            </Collapsible>
           )}
 
           {filteredAccepted.length > 0 && (
-            <XDSCollapsible
+            <Collapsible
               trigger={
-                <XDSText type="body" weight="bold">
+                <Text type="body" weight="bold">
                   Accepted and ready to land ({filteredAccepted.length})
-                </XDSText>
+                </Text>
               }>
               <SectionTable
                 data={filteredAccepted}
                 selectedKeys={selectedKeys}
                 setSelectedKeys={setSelectedKeys}
               />
-            </XDSCollapsible>
+            </Collapsible>
           )}
-        </XDSVStack>
-      </XDSVStack>
+        </VStack>
+      </VStack>
     </div>
   );
 }

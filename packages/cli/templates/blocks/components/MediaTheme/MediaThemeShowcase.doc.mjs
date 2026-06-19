@@ -7,7 +7,7 @@ export const doc = {
   name: 'MediaTheme — Media Overlay',
   displayName: 'MediaTheme — Media Overlay',
   description:
-    'A compact media overlay showing XDSMediaTheme adapting text, icons, badges, and button variants over an image-backed dark surface.',
+    'A compact media overlay showing MediaTheme adapting text, icons, badges, and button variants over an image-backed dark surface.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 4 / 3,

@@ -3,19 +3,19 @@
 'use client';
 
 import type {ComponentProps} from 'react';
-import {XDSMarkdown} from '@xds/core/Markdown';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Markdown} from '@xds/core/Markdown';
+import {VStack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
-type XDSTextProps = ComponentProps<typeof XDSText>;
+type TextProps = ComponentProps<typeof Text>;
 
 interface MarkdownTextProps {
   children: string;
-  type?: XDSTextProps['type'];
-  color?: XDSTextProps['color'];
-  weight?: XDSTextProps['weight'];
-  display?: XDSTextProps['display'];
-  style?: XDSTextProps['style'];
+  type?: TextProps['type'];
+  color?: TextProps['color'];
+  weight?: TextProps['weight'];
+  display?: TextProps['display'];
+  style?: TextProps['style'];
 }
 
 export function MarkdownText({
@@ -34,31 +34,31 @@ export function MarkdownText({
 
   if (paragraphs.length === 1) {
     return (
-      <XDSText
+      <Text
         type={type}
         color={color}
         weight={weight}
         display={display}
         style={style}>
-        <XDSMarkdown display="inline">{paragraphs[0]}</XDSMarkdown>
-      </XDSText>
+        <Markdown display="inline">{paragraphs[0]}</Markdown>
+      </Text>
     );
   }
 
   return (
-    <XDSVStack gap={2} style={style}>
+    <VStack gap={2} style={style}>
       {paragraphs.map((paragraph, index) => (
-        <XDSText
+        <Text
           key={index}
           as="p"
           type={type}
           color={color}
           weight={weight}
           display="block">
-          <XDSMarkdown display="inline">{paragraph}</XDSMarkdown>
-        </XDSText>
+          <Markdown display="inline">{paragraph}</Markdown>
+        </Text>
       ))}
-    </XDSVStack>
+    </VStack>
   );
 }
 

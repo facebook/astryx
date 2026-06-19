@@ -7,7 +7,7 @@ export const doc = {
   name: 'DropdownMenuItem',
   displayName: 'Dropdown Menu Item',
   description:
-    'Dropdown menu with custom-rendered items using XDSDropdownMenuItem for icons and descriptions.',
+    'Dropdown menu with custom-rendered items using DropdownMenuItem for icons and descriptions.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

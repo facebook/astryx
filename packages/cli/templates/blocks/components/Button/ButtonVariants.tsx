@@ -2,9 +2,9 @@
 
 'use client';
 
-import {XDSButton} from '@xds/core/Button';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {Button} from '@xds/core/Button';
+import {Stack} from '@xds/core/Layout';
+import {Text} from '@xds/core/Text';
 
 const VARIANTS = [
   {variant: 'primary' as const, label: 'Primary'},
@@ -15,47 +15,47 @@ const VARIANTS = [
 
 export default function ButtonVariants() {
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+    <Stack direction="vertical" gap={4}>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Default
-        </XDSText>
-        <XDSStack direction="horizontal" gap={3} vAlign="center">
+        </Text>
+        <Stack direction="horizontal" gap={3} vAlign="center">
           {VARIANTS.map(({variant, label}) => (
-            <XDSButton key={variant} label={label} variant={variant} />
+            <Button key={variant} label={label} variant={variant} />
           ))}
-        </XDSStack>
-      </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+        </Stack>
+      </Stack>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Disabled
-        </XDSText>
-        <XDSStack direction="horizontal" gap={3} vAlign="center">
+        </Text>
+        <Stack direction="horizontal" gap={3} vAlign="center">
           {VARIANTS.map(({variant, label}) => (
-            <XDSButton
+            <Button
               key={variant}
               label={label}
               variant={variant}
               isDisabled
             />
           ))}
-        </XDSStack>
-      </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
+        </Stack>
+      </Stack>
+      <Stack direction="vertical" gap={1}>
+        <Text type="supporting" color="secondary">
           Loading
-        </XDSText>
-        <XDSStack direction="horizontal" gap={3} vAlign="center">
+        </Text>
+        <Stack direction="horizontal" gap={3} vAlign="center">
           {VARIANTS.map(({variant, label}) => (
-            <XDSButton
+            <Button
               key={variant}
               label={label}
               variant={variant}
               isLoading
             />
           ))}
-        </XDSStack>
-      </XDSStack>
-    </XDSStack>
+        </Stack>
+      </Stack>
+    </Stack>
   );
 }

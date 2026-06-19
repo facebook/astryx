@@ -2,12 +2,12 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSChatDictationButton,
-  XDSChatComposer,
-  useXDSChatDictation,
-  XDSChatComposerInput,
+  ChatDictationButton,
+  ChatComposer,
+  useChatDictation,
+  ChatComposerInput,
 } from '@xds/core/Chat';
-import type {XDSChatComposerInputHandle} from '@xds/core/Chat';
+import type {ChatComposerInputHandle} from '@xds/core/Chat';
 import type {UseSpeechRecognitionReturn} from '@xds/core/Chat';
 import {useRef} from 'react';
 
@@ -75,9 +75,9 @@ const unsupportedDictation: UseSpeechRecognitionReturn = {
 // Meta
 // =============================================================================
 
-const meta: Meta<typeof XDSChatDictationButton> = {
+const meta: Meta<typeof ChatDictationButton> = {
   title: 'Core/ChatDictation',
-  component: XDSChatDictationButton,
+  component: ChatDictationButton,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
@@ -92,7 +92,7 @@ const meta: Meta<typeof XDSChatDictationButton> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSChatDictationButton>;
+type Story = StoryObj<typeof ChatDictationButton>;
 
 // =============================================================================
 // Stories
@@ -100,17 +100,17 @@ type Story = StoryObj<typeof XDSChatDictationButton>;
 
 /** Idle state — microphone icon, ready to start dictation */
 export const Idle: Story = {
-  render: () => <XDSChatDictationButton dictation={idleDictation} />,
+  render: () => <ChatDictationButton dictation={idleDictation} />,
 };
 
 /** Listening state — pulsing red record indicator */
 export const Listening: Story = {
-  render: () => <XDSChatDictationButton dictation={listeningDictation} />,
+  render: () => <ChatDictationButton dictation={listeningDictation} />,
 };
 
 /** Speaking state — more intense pulse while speech is detected */
 export const Speaking: Story = {
-  render: () => <XDSChatDictationButton dictation={speakingDictation} />,
+  render: () => <ChatDictationButton dictation={speakingDictation} />,
 };
 
 /** Unsupported browser — button hidden by default */
@@ -120,7 +120,7 @@ export const Unsupported: Story = {
       <p style={{marginBottom: 8}}>
         Button is hidden when unsupported (nothing below):
       </p>
-      <XDSChatDictationButton dictation={unsupportedDictation} />
+      <ChatDictationButton dictation={unsupportedDictation} />
     </div>
   ),
 };
@@ -128,19 +128,19 @@ export const Unsupported: Story = {
 /** Unsupported browser — button visible when isHiddenWhenUnsupported is false */
 export const UnsupportedVisible: Story = {
   render: () => (
-    <XDSChatDictationButton
+    <ChatDictationButton
       dictation={unsupportedDictation}
       isHiddenWhenUnsupported={false}
     />
   ),
 };
 
-/** Dictation button in sendActions slot of XDSChatComposer */
+/** Dictation button in sendActions slot of ChatComposer */
 export const InSendActions: Story = {
   render: () => (
-    <XDSChatComposer
+    <ChatComposer
       onSubmit={value => console.log('Submit:', value)}
-      sendActions={<XDSChatDictationButton dictation={idleDictation} />}
+      sendActions={<ChatDictationButton dictation={idleDictation} />}
     />
   ),
 };
@@ -148,9 +148,9 @@ export const InSendActions: Story = {
 /** Dictation button replacing the send button */
 export const AsSendButton: Story = {
   render: () => (
-    <XDSChatComposer
+    <ChatComposer
       onSubmit={value => console.log('Submit:', value)}
-      sendButton={<XDSChatDictationButton dictation={listeningDictation} />}
+      sendButton={<ChatDictationButton dictation={listeningDictation} />}
     />
   ),
 };
@@ -163,9 +163,9 @@ export const AsSendButton: Story = {
  */
 export const Interactive: Story = {
   render: () => {
-    const inputRef = useRef<XDSChatComposerInputHandle>(null);
+    const inputRef = useRef<ChatComposerInputHandle>(null);
 
-    const dictation = useXDSChatDictation({
+    const dictation = useChatDictation({
       inputRef,
       hasSounds: true,
       onResult: text => {
@@ -175,12 +175,12 @@ export const Interactive: Story = {
 
     return (
       <div>
-        <XDSChatComposer
+        <ChatComposer
           onSubmit={v => {
             console.log('Submit:', v);
           }}
-          input={<XDSChatComposerInput handleRef={inputRef} />}
-          sendActions={<XDSChatDictationButton dictation={dictation} />}
+          input={<ChatComposerInput handleRef={inputRef} />}
+          sendActions={<ChatDictationButton dictation={dictation} />}
         />
         {dictation.isListening && (
           <div

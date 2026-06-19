@@ -26,7 +26,8 @@
   ],
   "type": "module",
   "bin": {
-    "xds": "./bin/xds.mjs"
+    "xds": "./bin/xds.mjs",
+    "astryx": "./bin/xds.mjs"
   },
   "exports": {
     ".": "./bin/xds.mjs",

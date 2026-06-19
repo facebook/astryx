@@ -39,7 +39,7 @@ export const docs = {
     },
     {
       name: 'columns',
-      type: 'XDSTableColumn<T>[]',
+      type: 'TableColumn<T>[]',
       description: 'Column definitions: each column has {key, header, width?, align?, renderCell?}. The `header` field sets the column heading text. If omitted, columns are auto-generated from data object keys.',
     },
     {
@@ -79,7 +79,7 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'Children mode: render XDSTableRow/XDSTableCell directly instead of using data-driven rendering.',
+      description: 'Children mode: render TableRow/TableCell directly instead of using data-driven rendering.',
     },
     {
       name: 'xstyle',
@@ -88,23 +88,23 @@ export const docs = {
     },
   ],
   components: [
-    {name: 'XDSTableRow'},
-    {name: 'XDSTableCell'},
-    {name: 'XDSTableHeaderCell'},
-    {name: 'useXDSTableSelection'},
-    {name: 'useXDSTableSelectionState'},
-    {name: 'useXDSTableSortable'},
-    {name: 'useXDSTablePagination'},
-    {name: 'useXDSTableColumnSettings'},
-    {name: 'useXDSTableFiltering'},
-    {name: 'useXDSTableFilterState'},
+    {name: 'TableRow'},
+    {name: 'TableCell'},
+    {name: 'TableHeaderCell'},
+    {name: 'useTableSelection'},
+    {name: 'useTableSelectionState'},
+    {name: 'useTableSortable'},
+    {name: 'useTablePagination'},
+    {name: 'useTableColumnSettings'},
+    {name: 'useTableFiltering'},
+    {name: 'useTableFilterState'},
   ],
   usage: {
     description:
       'Table displays structured data in rows and columns with consistent dimensionality. It supports rich cell content, sorting, selection, pagination, and column management through a composable plugin system. Use Table for data sets with uniform structure; for simpler or inconsistent data, consider a list or card layout instead.',
     bestPractices: [
       { guidance: true, description: 'Use density and divider variants to match the information density and scanning needs of your data.' },
-      { guidance: true, description: 'Compose rich cell content with XDS components like XDSBadge, XDSStatusDot, and XDSAvatar via renderCell.' },
+      { guidance: true, description: 'Compose rich cell content with XDS components like Badge, StatusDot, and Avatar via renderCell.' },
       { guidance: true, description: 'Set explicit width on every column using proportional() or pixel(). proportional(1) gives equal flex distribution with a 120px minimum that prevents columns from collapsing on narrow viewports. Omitting width skips the minimum.' },
       { guidance: false, description: 'Use a table for data without consistent columns. Use a list or card layout for heterogeneous content.' },
       { guidance: false, description: 'Enable every plugin at once. Add only the features your use case requires to keep the interface focused.' },
@@ -128,7 +128,7 @@ export const docsZh = {
       'Table displays structured data in rows and columns with consistent dimensionality. It supports rich cell content, sorting, selection, pagination, and column management through a composable plugin system. Use Table for data sets with uniform structure; for simpler or inconsistent data, consider a list or card layout instead.',
     bestPractices: [
       { guidance: true, description: 'Use density and divider variants to match the information density and scanning needs of your data.' },
-      { guidance: true, description: 'Compose rich cell content with XDS components like XDSBadge, XDSStatusDot, and XDSAvatar via renderCell.' },
+      { guidance: true, description: 'Compose rich cell content with XDS components like Badge, StatusDot, and Avatar via renderCell.' },
       { guidance: false, description: 'Use a table for data without consistent columns. Use a list or card layout for heterogeneous content.' },
       { guidance: false, description: 'Enable every plugin at once. Add only the features your use case requires to keep the interface focused.' },
     ],
@@ -145,13 +145,13 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'Data-driven table w/ rich cell content via renderCell. Compose cells w/ XDSBadge, XDSStatusDot, XDSText, XDSAvatar, layout primitives. XDSBaseTable provides unstyled structural core w/ composable plugin pipeline.',
+  description: 'Data-driven table w/ rich cell content via renderCell. Compose cells w/ Badge, StatusDot, Text, Avatar, layout primitives. BaseTable provides unstyled structural core w/ composable plugin pipeline.',
   usage: {
     description:
       'Table displays structured data in rows and columns with consistent dimensionality. It supports rich cell content, sorting, selection, pagination, and column management through a composable plugin system. Use Table for data sets with uniform structure; for simpler or inconsistent data, consider a list or card layout instead.',
     bestPractices: [
       { guidance: true, description: 'Use density and divider variants to match the information density and scanning needs of your data.' },
-      { guidance: true, description: 'Compose rich cell content with XDS components like XDSBadge, XDSStatusDot, and XDSAvatar via renderCell.' },
+      { guidance: true, description: 'Compose rich cell content with XDS components like Badge, StatusDot, and Avatar via renderCell.' },
       { guidance: true, description: 'Set explicit width on every column via proportional() or pixel(). proportional(1) = equal flex w/ 120px min preventing collapse on narrow viewports. Omitting width skips the minimum.' },
       { guidance: false, description: 'Use a table for data without consistent columns. Use a list or card layout for heterogeneous content.' },
       { guidance: false, description: 'Enable every plugin at once. Add only the features your use case requires to keep the interface focused.' },
