@@ -2,6 +2,16 @@
 
 'use client';
 
+/**
+ * @file NavHeadingMenu.tsx
+ * @input Uses React, StyleX, useListFocus, NavMenuContext
+ * @output Exports NavHeadingMenu component and NavHeadingMenuProps type
+ * @position Core implementation; consumed by index.ts
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/NavMenu/index.ts
+ */
+
 import React, {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';

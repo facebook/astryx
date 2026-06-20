@@ -2,6 +2,16 @@
 
 'use client';
 
+/**
+ * @file NavHeadingMenuItem.tsx
+ * @input Uses React, StyleX, Icon, Text, NavMenuContext, useLinkComponent
+ * @output Exports NavHeadingMenuItem component and NavHeadingMenuItemProps type
+ * @position Core implementation; consumed by index.ts
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/NavMenu/index.ts
+ */
+
 import React, {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {renderIconSlot, type IconType} from '../Icon';
@@ -33,7 +43,9 @@ const styles = stylex.create({
     backgroundColor: {
       default: 'transparent',
       ':focus': colorVars['--color-overlay-hover'],
-      ':hover': colorVars['--color-overlay-hover'],
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
+      },
     },
     border: 'none',
     cursor: 'pointer',
