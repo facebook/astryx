@@ -76,7 +76,7 @@ const BREAKPOINT_VALUES: Record<AppShellBreakpoint, number> = {
   none: 0,
 };
 
-const MAIN_CONTENT_ID = 'xds-app-shell-main';
+const MAIN_CONTENT_ID = 'astryx-app-shell-main';
 
 // =============================================================================
 // Types
@@ -645,9 +645,7 @@ export function AppShell({
   const topNavContent = hasTopNav ? (
     isBelowBreakpoint && !mobileNavDisabled && mobileNavReactNode == null ? (
       <TopNavMobileContentContext value={mobileContentValue}>
-        <TopNavRenderContext value="mobile-bar">
-          {topNav}
-        </TopNavRenderContext>
+        <TopNavRenderContext value="mobile-bar">{topNav}</TopNavRenderContext>
       </TopNavMobileContentContext>
     ) : (
       topNav

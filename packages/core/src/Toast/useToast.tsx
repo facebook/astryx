@@ -102,7 +102,7 @@ function getFallbackContext(): ToastContextValue {
 
 let toastIdCounter = 0;
 function generateToastId(): string {
-  return `xds-toast-${++toastIdCounter}`;
+  return `astryx-toast-${++toastIdCounter}`;
 }
 
 /**

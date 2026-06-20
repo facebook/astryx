@@ -57,7 +57,7 @@ const styles = stylex.create({
     minHeight: spacingVars['--spacing-8'],
     paddingInlineStart: {
       default: spacingVars['--spacing-2'],
-      ':has(.xds-navicon)': 0,
+      ':has(.astryx-navicon)': 0,
     },
     paddingInlineEnd: spacingVars['--spacing-2'],
     paddingBlock: 0,
@@ -198,7 +198,7 @@ const styles = stylex.create({
     minHeight: spacingVars['--spacing-8'],
     paddingInlineStart: {
       default: spacingVars['--spacing-2'],
-      ':has(.xds-navicon)': 0,
+      ':has(.astryx-navicon)': 0,
     },
     paddingInlineEnd: spacingVars['--spacing-2'],
     paddingBlock: 0,

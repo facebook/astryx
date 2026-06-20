@@ -208,7 +208,7 @@ export function useChatStreamScroll({
     if (!container) {
       return;
     }
-    const messages = container.getElementsByClassName('xds-chat-message');
+    const messages = container.getElementsByClassName('astryx-chat-message');
     const last = messages[messages.length - 1];
     if (last instanceof HTMLElement) {
       scrollToMessage(last);

@@ -44,14 +44,16 @@ const styles = stylex.create({
     paddingBlockStart: {
       default: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
       // When header has no divider, collapse top padding for seamless visual flow
-      [stylex.when.ancestor(':has(> .xds-layout-header:not([data-divider]))')]:
-        0,
+      [stylex.when.ancestor(
+        ':has(> .astryx-layout-header:not([data-divider]))',
+      )]: 0,
     },
     paddingBlockEnd: {
       default: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
       // When footer has no divider, collapse bottom padding for seamless visual flow
-      [stylex.when.ancestor(':has(> .xds-layout-footer:not([data-divider]))')]:
-        0,
+      [stylex.when.ancestor(
+        ':has(> .astryx-layout-footer:not([data-divider]))',
+      )]: 0,
     },
     // Publish container padding vars for bleed children (Table, Divider, etc.)
     '--container-padding-inline-start': `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,

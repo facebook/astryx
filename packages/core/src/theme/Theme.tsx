@@ -114,7 +114,7 @@ function useThemeStyleInjection(theme: DefinedTheme): void {
       return;
     }
 
-    const themeKey = `xds-theme-${theme.name}`;
+    const themeKey = `astryx-theme-${theme.name}`;
     if (injectedThemes.has(themeKey)) {
       return;
     }

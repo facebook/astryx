@@ -203,11 +203,7 @@ describe('SideNavHeading', () => {
 
   it('uses custom link component from as prop', () => {
     render(
-      <SideNavHeading
-        heading="My App"
-        headingHref="/home"
-        as={CustomLink}
-      />,
+      <SideNavHeading heading="My App" headingHref="/home" as={CustomLink} />,
     );
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('data-custom-link');
@@ -239,9 +235,7 @@ describe('SideNavHeading', () => {
   });
 
   it('shows chevron when menu is provided', () => {
-    render(
-      <SideNavHeading heading="My App" menu={<div>Menu content</div>} />,
-    );
+    render(<SideNavHeading heading="My App" menu={<div>Menu content</div>} />);
     // The chevron SVG should be rendered
     const button = screen.getByRole('button');
     expect(button).toBeInTheDocument();
@@ -584,9 +578,7 @@ describe('SideNavItem', () => {
   });
 
   it('renders custom component when as and href are provided', () => {
-    render(
-      <SideNavItem label="Dashboard" href="/dashboard" as={CustomLink} />,
-    );
+    render(<SideNavItem label="Dashboard" href="/dashboard" as={CustomLink} />);
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('data-custom-link');
     expect(link).toHaveAttribute('href', '/dashboard');
@@ -703,13 +695,15 @@ describe('SideNavSection', () => {
 describe('SideNav resizable', () => {
   it('renders drag handle when resizable', () => {
     render(<SideNav resizable>Content</SideNav>);
-    expect(screen.getByTestId('xds-sidenav-resize-handle')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('astryx-sidenav-resize-handle'),
+    ).toBeInTheDocument();
   });
 
   it('does not render drag handle without resizable', () => {
     render(<SideNav>Content</SideNav>);
     expect(
-      screen.queryByTestId('xds-sidenav-resize-handle'),
+      screen.queryByTestId('astryx-sidenav-resize-handle'),
     ).not.toBeInTheDocument();
   });
 
@@ -722,18 +716,16 @@ describe('SideNav resizable', () => {
       </SideNav>,
     );
     expect(
-      screen.queryByTestId('xds-sidenav-resize-handle'),
+      screen.queryByTestId('astryx-sidenav-resize-handle'),
     ).not.toBeInTheDocument();
   });
 
   it('calls onWidthChange after drag', () => {
     const handleWidthChange = vi.fn();
     render(
-      <SideNav resizable={{onWidthChange: handleWidthChange}}>
-        Content
-      </SideNav>,
+      <SideNav resizable={{onWidthChange: handleWidthChange}}>Content</SideNav>,
     );
-    const handle = screen.getByTestId('xds-sidenav-resize-handle');
+    const handle = screen.getByTestId('astryx-sidenav-resize-handle');
     // The pointer event handler is on the hit area child inside the handle.
     const hitArea = handle.firstElementChild as HTMLElement;
 
@@ -819,9 +811,7 @@ function renderExpanded(ui: React.ReactElement) {
 
 describe('SideNavItem (collapsed)', () => {
   it('hides items without icons when collapsed', () => {
-    const {container} = renderCollapsed(
-      <SideNavItem label="No Icon Item" />,
-    );
+    const {container} = renderCollapsed(<SideNavItem label="No Icon Item" />);
     expect(screen.queryByText('No Icon Item')).not.toBeInTheDocument();
     expect(container.querySelector('[data-xds="side-nav-item"]')).toBeNull();
   });

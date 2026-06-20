@@ -56,9 +56,7 @@ function TestSideNav({children}: {children?: React.ReactNode}) {
   return (
     <SideNav>
       <SideNavSection title="Test" isHeaderHidden>
-        <SideNavItem
-          label={typeof children === 'string' ? children : 'Nav'}
-        />
+        <SideNavItem label={typeof children === 'string' ? children : 'Nav'} />
       </SideNavSection>
     </SideNav>
   );
@@ -193,7 +191,7 @@ describe('AppShell', () => {
     );
     const skipLink = screen.getByTestId('skip-to-content');
     expect(skipLink).toBeInTheDocument();
-    expect(skipLink).toHaveAttribute('href', '#xds-app-shell-main');
+    expect(skipLink).toHaveAttribute('href', '#astryx-app-shell-main');
     expect(skipLink.textContent).toBe('Skip to content');
   });
 
@@ -204,7 +202,7 @@ describe('AppShell', () => {
       </AppShell>,
     );
     const main = screen.getByRole('main');
-    expect(main).toHaveAttribute('id', 'xds-app-shell-main');
+    expect(main).toHaveAttribute('id', 'astryx-app-shell-main');
   });
 
   // ===========================================================================
@@ -309,9 +307,7 @@ describe('AppShell', () => {
     render(
       <AppShell
         topNav={
-          <TopNav
-            label="Navigation"
-            heading={<TopNavHeading heading="App" />}>
+          <TopNav label="Navigation" heading={<TopNavHeading heading="App" />}>
             <TopNavItem label="Home" href="/" />
           </TopNav>
         }
@@ -458,9 +454,7 @@ describe('AppShell', () => {
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
 
     const {container} = render(
-      <AppShell
-        sideNav={<TestSideNav />}
-        mobileNav={{defaultIsMobile: true}}>
+      <AppShell sideNav={<TestSideNav />} mobileNav={{defaultIsMobile: true}}>
         <div>Content</div>
       </AppShell>,
     );

@@ -345,7 +345,7 @@ export function useChatDictation(
       return active as HTMLDivElement;
     }
     return document.querySelector<HTMLDivElement>(
-      '.xds-chat-composer-input [contenteditable="true"], [role="textbox"][contenteditable="true"]',
+      '.astryx-chat-composer-input [contenteditable="true"], [role="textbox"][contenteditable="true"]',
     );
   }, []);
 

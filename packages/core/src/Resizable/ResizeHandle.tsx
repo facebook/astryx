@@ -155,7 +155,7 @@ const styles = stylex.create({
     cursor: 'row-resize',
   },
 
-  // Pill base — themes target .xds-resize-handle-pill for size/shape.
+  // Pill base — themes target .astryx-resize-handle-pill for size/shape.
   pill: {
     position: 'absolute',
     zIndex: 2,
@@ -289,7 +289,7 @@ export interface ResizeHandleProps extends Omit<
  * divider line with a wider invisible hit area and optional pill grip indicator.
  * Supports keyboard resizing via arrow keys and WAI-ARIA separator role.
  *
- * The pill element uses class `xds-resize-handle-pill` for theme targeting.
+ * The pill element uses class `astryx-resize-handle-pill` for theme targeting.
  *
  * @example
  * ```
@@ -528,7 +528,7 @@ export function ResizeHandle({
         }}
         onKeyDown={handleKeyDown}
       />
-      {/* Pill grip indicator — themed via .xds-resize-handle-pill */}
+      {/* Pill grip indicator — themed via .astryx-resize-handle-pill */}
       {children ?? (
         <div
           {...mergeProps(
