@@ -220,35 +220,17 @@ export const Disabled: Story = {
 };
 
 export const Loading: Story = {
-  render: args => {
-    const [value, setValue] = useState<string[]>(['email']);
-    const {value: _value, onChange: _onChange, ...restArgs} = args;
-    return (
-      <XDSCheckboxList {...restArgs} value={value} onChange={setValue}>
-        <XDSCheckboxListItem label="Email" value="email" />
-        <XDSCheckboxListItem label="SMS" value="sms" />
-        <XDSCheckboxListItem label="Push notification" value="push" />
-      </XDSCheckboxList>
-    );
-  },
-  args: {
-    label: 'Notification preferences',
-    isLoading: true,
-  },
-};
-
-export const Loading: Story = {
   render: () => {
     const [value, setValue] = useState<string[]>(['email']);
     return (
-      <XDSCheckboxList
+      <CheckboxList
         label="Notification preferences"
         value={value}
         onChange={setValue}>
-        <XDSCheckboxListItem label="Email" value="email" />
-        <XDSCheckboxListItem label="SMS" value="sms" isLoading />
-        <XDSCheckboxListItem label="Push notification" value="push" />
-      </XDSCheckboxList>
+        <CheckboxListItem label="Email" value="email" />
+        <CheckboxListItem label="SMS" value="sms" isLoading />
+        <CheckboxListItem label="Push notification" value="push" />
+      </CheckboxList>
     );
   },
 };
@@ -267,16 +249,16 @@ export const ChangeAction: Story = {
         }, 1500);
       });
     return (
-      <XDSCheckboxList
+      <CheckboxList
         label="Notification preferences"
         description="Toggle an option — it spins while saving"
         value={value}
         changeAction={persist}
         hasDividers>
-        <XDSCheckboxListItem label="Email" value="email" />
-        <XDSCheckboxListItem label="SMS" value="sms" />
-        <XDSCheckboxListItem label="Push notification" value="push" />
-      </XDSCheckboxList>
+        <CheckboxListItem label="Email" value="email" />
+        <CheckboxListItem label="SMS" value="sms" />
+        <CheckboxListItem label="Push notification" value="push" />
+      </CheckboxList>
     );
   },
 };

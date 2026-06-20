@@ -30,7 +30,7 @@ import {Pagination} from '@xds/core/Pagination';
 import {useMediaQuery} from '@xds/core/hooks';
 import {useThemeMode} from '../../../providers';
 import {HERO_THEME_SLIDES, type HeroThemeSlide} from './heroThemeContent';
-import {AstryxWordmark} from './AstryxWordmark';
+import {AstryxLogo} from '../../../../components/logos';
 import {HeroFloatingCards} from './HeroFloatingCards';
 
 // How long each theme stays on screen before auto-advancing (ms).
@@ -272,7 +272,11 @@ export function HeroReelWordmark() {
           styles.wordmarkWrap,
           dynamic.wordmarkColor('var(--color-text-accent)'),
         )}>
-        <AstryxWordmark className={stylex.props(styles.wordmark).className} />
+        <AstryxLogo
+          role="img"
+          aria-label="Astryx"
+          className={stylex.props(styles.wordmark).className}
+        />
       </div>
     );
   }
@@ -285,7 +289,11 @@ export function HeroReelWordmark() {
           styles.wordmarkWrap,
           dynamic.wordmarkColor(active.wordmarkColor),
         )}>
-        <AstryxWordmark className={stylex.props(styles.wordmark).className} />
+        <AstryxLogo
+          role="img"
+          aria-label="Astryx"
+          className={stylex.props(styles.wordmark).className}
+        />
       </div>
     </Theme>
   );

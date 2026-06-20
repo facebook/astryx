@@ -5,7 +5,7 @@
 import * as stylex from '@stylexjs/stylex';
 import {VStack} from '@xds/core/Layout';
 import {Text} from '@xds/core/Text';
-import {CodeBlock} from '@xds/core/CodeBlock';
+import {CodeBlock as CoreCodeBlock} from '@xds/core/CodeBlock';
 import {Card} from '@xds/core/Card';
 
 const styles = stylex.create({
@@ -31,7 +31,7 @@ export function CodeBlock({
         </Text>
       )}
       <Card variant="muted" xstyle={styles.root}>
-        <CodeBlock
+        <CoreCodeBlock
           code={code}
           language={lang}
           hasCopyButton

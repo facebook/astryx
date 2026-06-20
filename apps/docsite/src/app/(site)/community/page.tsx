@@ -37,6 +37,7 @@ import {Section} from '@xds/core/Section';
 import {Heading, Text} from '@xds/core/Text';
 import {Button} from '@xds/core/Button';
 import {getKey} from '@xds/core/utils';
+import {AstryxLogo} from '../../../components/logos';
 import {GITHUB_REPO} from '../../../constants';
 
 const WIKI_BASE = `${GITHUB_REPO}/wiki`;
@@ -254,6 +255,9 @@ const styles = stylex.create({
     display: 'block',
     position: 'relative',
     zIndex: 1,
+    // AstryxLogo paints with currentColor, so the brand mark renders
+    // in the brand blue.
+    color: 'var(--color-brand)',
   },
   // The "See contributors" anchor link below the wordmark.
   // Only positioning lives here (zIndex:1 keeps the link above
@@ -593,9 +597,9 @@ function WallCard({contributors}: {contributors: ReadonlyArray<Contributor>}) {
         ))}
       </div>
       <div {...stylex.props(styles.wallCardCenter)}>
-        <img
-          src="/astryx-logo.svg"
-          alt="Astryx"
+        <AstryxLogo
+          role="img"
+          aria-label="Astryx"
           {...stylex.props(styles.wallWordmark)}
         />
         <Text type="body" color="primary" xstyle={styles.wallDescription}>

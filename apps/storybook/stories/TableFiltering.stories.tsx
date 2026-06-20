@@ -15,7 +15,7 @@ import {
 } from '@xds/core/Table';
 import type {TableColumn} from '@xds/core/Table';
 import {usePowerSearchConfig} from '@xds/core/PowerSearch';
-import {EmptyState} from '@xds/core/EmptyState';
+import {EmptyState as EmptyStateComponent} from '@xds/core/EmptyState';
 import type {PowerSearchFilter} from '@xds/core/PowerSearch';
 
 interface Employee extends Record<string, unknown> {
@@ -544,7 +544,7 @@ export const EmptyState: Story = {
           idKey="name"
           plugins={{filter: filterPlugin}}
           emptyState={
-            <EmptyState
+            <EmptyStateComponent
               title="No results"
               description="Try adjusting your filters to find what you're looking for."
               isCompact

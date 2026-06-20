@@ -58,20 +58,21 @@ ${FALLBACK_TOKENS}
 .xds-codeeditor code::highlight(xds-variable)    { color: var(--color-syntax-variable); }
 
 /* Span-based fallback classes — used when highlightMode='spans' or
-   when the CSS Custom Highlight API is not available. */
-.xds-token-keyword     { color: var(--color-syntax-keyword); }
-.xds-token-string      { color: var(--color-syntax-string); }
-.xds-token-comment     { color: var(--color-syntax-comment); }
-.xds-token-number      { color: var(--color-syntax-number); }
-.xds-token-function    { color: var(--color-syntax-function); }
-.xds-token-type        { color: var(--color-syntax-type); }
-.xds-token-tag         { color: var(--color-syntax-tag); }
-.xds-token-attribute   { color: var(--color-syntax-attribute); }
-.xds-token-property    { color: var(--color-syntax-property); }
-.xds-token-operator    { color: var(--color-syntax-operator); }
-.xds-token-constant    { color: var(--color-syntax-constant); }
-.xds-token-punctuation { color: var(--color-syntax-punctuation); }
-.xds-token-variable    { color: var(--color-syntax-variable); }
+   when the CSS Custom Highlight API is not available.
+   Dual-emit: both astryx-token-* and xds-token-* match (compat window). */
+.astryx-token-keyword, .xds-token-keyword         { color: var(--color-syntax-keyword); }
+.astryx-token-string, .xds-token-string           { color: var(--color-syntax-string); }
+.astryx-token-comment, .xds-token-comment         { color: var(--color-syntax-comment); }
+.astryx-token-number, .xds-token-number           { color: var(--color-syntax-number); }
+.astryx-token-function, .xds-token-function       { color: var(--color-syntax-function); }
+.astryx-token-type, .xds-token-type               { color: var(--color-syntax-type); }
+.astryx-token-tag, .xds-token-tag                 { color: var(--color-syntax-tag); }
+.astryx-token-attribute, .xds-token-attribute     { color: var(--color-syntax-attribute); }
+.astryx-token-property, .xds-token-property       { color: var(--color-syntax-property); }
+.astryx-token-operator, .xds-token-operator       { color: var(--color-syntax-operator); }
+.astryx-token-constant, .xds-token-constant       { color: var(--color-syntax-constant); }
+.astryx-token-punctuation, .xds-token-punctuation { color: var(--color-syntax-punctuation); }
+.astryx-token-variable, .xds-token-variable       { color: var(--color-syntax-variable); }
 `;
 
 let inserted = false;

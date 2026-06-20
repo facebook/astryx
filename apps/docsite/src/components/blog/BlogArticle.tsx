@@ -5,7 +5,7 @@
  *
  * Article layout matching the docs page typography: a centered, readable column
  * (maxWidth 800) with a display-1 title, large regular-weight dek, byline, a
- * neutral cover placeholder, the prose body (rendered via XDSMarkdown), optional
+ * neutral cover placeholder, the prose body (rendered via Markdown), optional
  * curated related-doc links, and a link back to the blog index. No sidebar.
  *
  * @input  post (BlogPost)
@@ -14,14 +14,14 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSMarkdown} from '@xds/core/Markdown';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSSection} from '@xds/core/Section';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSLink} from '@xds/core/Link';
-import {XDSClickableCard} from '@xds/core/ClickableCard';
+import {Markdown} from '@xds/core/Markdown';
+import {Text, Heading} from '@xds/core/Text';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Section} from '@xds/core/Section';
+import {Badge} from '@xds/core/Badge';
+import {Divider} from '@xds/core/Divider';
+import {Link} from '@xds/core/Link';
+import {ClickableCard} from '@xds/core/ClickableCard';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import type {BlogPost} from '../../lib/blog/schema';
 import {POST_TYPE_LABELS} from '../../lib/blog/schema';
@@ -58,22 +58,22 @@ export interface BlogArticleProps {
 
 export function BlogArticle({post}: BlogArticleProps) {
   return (
-    <XDSSection maxWidth={800} padding={6} xstyle={styles.section}>
-      <XDSVStack gap={10}>
+    <Section maxWidth={800} padding={6} xstyle={styles.section}>
+      <VStack gap={10}>
         {/* Header — matches the docs page treatment */}
-        <XDSVStack gap={4}>
-          <XDSLink href="/blog" label="Back to blog">
+        <VStack gap={4}>
+          <Link href="/blog" label="Back to blog">
             ← Blog
-          </XDSLink>
-          <XDSHStack gap={1} align="center" xstyle={styles.tagRow}>
-            <XDSBadge label={POST_TYPE_LABELS[post.type]} variant="neutral" />
-          </XDSHStack>
-          <XDSHeading level={1} type="display-1">
+          </Link>
+          <HStack gap={1} align="center" xstyle={styles.tagRow}>
+            <Badge label={POST_TYPE_LABELS[post.type]} variant="neutral" />
+          </HStack>
+          <Heading level={1} type="display-1">
             {post.title}
-          </XDSHeading>
-          <XDSText type="large" weight="normal" color="secondary">
+          </Heading>
+          <Text type="large" weight="normal" color="secondary">
             {post.description}
-          </XDSText>
+          </Text>
           <AuthorByline
             authors={post.authors}
             date={post.date}
@@ -81,8 +81,8 @@ export function BlogArticle({post}: BlogArticleProps) {
             readingTimeMinutes={post.readingTimeMinutes}
             variant="full"
           />
-          <XDSDivider />
-        </XDSVStack>
+          <Divider />
+        </VStack>
 
         {/* Cover — custom image when provided, else a neutral placeholder */}
         {post.coverImage ? (
@@ -96,44 +96,44 @@ export function BlogArticle({post}: BlogArticleProps) {
         )}
 
         {/* Body */}
-        <XDSMarkdown headingLevelStart={2}>{post.body}</XDSMarkdown>
+        <Markdown headingLevelStart={2}>{post.body}</Markdown>
 
         {post.tags.length > 0 ? (
-          <XDSHStack gap={1} xstyle={styles.tagRow}>
+          <HStack gap={1} xstyle={styles.tagRow}>
             {post.tags.map(tag => (
-              <XDSBadge key={tag} label={tag} variant="neutral" />
+              <Badge key={tag} label={tag} variant="neutral" />
             ))}
-          </XDSHStack>
+          </HStack>
         ) : null}
 
         {/* Related docs — clickable cards, not styled links */}
         {post.relatedDocs && post.relatedDocs.length > 0 ? (
-          <XDSVStack gap={4}>
-            <XDSDivider />
-            <XDSHeading level={2} type="display-3">
+          <VStack gap={4}>
+            <Divider />
+            <Heading level={2} type="display-3">
               Related
-            </XDSHeading>
-            <XDSVStack gap={2}>
+            </Heading>
+            <VStack gap={2}>
               {post.relatedDocs.map(doc => (
-                <XDSClickableCard
+                <ClickableCard
                   key={doc.href}
                   href={doc.href}
                   label={doc.title}
                   variant="muted">
-                  <XDSText type="body" weight="medium">
+                  <Text type="body" weight="medium">
                     {doc.title}
-                  </XDSText>
-                </XDSClickableCard>
+                  </Text>
+                </ClickableCard>
               ))}
-            </XDSVStack>
-          </XDSVStack>
+            </VStack>
+          </VStack>
         ) : null}
 
-        <XDSDivider />
-        <XDSLink href="/blog" label="Back to all posts">
+        <Divider />
+        <Link href="/blog" label="Back to all posts">
           ← Back to all posts
-        </XDSLink>
-      </XDSVStack>
-    </XDSSection>
+        </Link>
+      </VStack>
+    </Section>
   );
 }

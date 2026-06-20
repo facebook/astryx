@@ -30,7 +30,7 @@ const USERS = [
   },
 ];
 
-export default function AvatarGroup() {
+export default function AvatarGroupBlock() {
   return (
     <Stack direction="vertical" gap={8}>
       <Stack direction="vertical" gap={3}>

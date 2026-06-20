@@ -24,7 +24,12 @@
  * thin brand layer of primary + accent + body on top of the design system.
  */
 
-import {defineTheme} from '@xds/core/theme';
+import {defineTheme, type TokenValue} from '@xds/core/theme';
+
+// Relative import (not the `@/` alias) because this theme file is also loaded
+// in isolation by the `xds theme build` CLI via jiti, which does not resolve
+// the `@/*` tsconfig path alias.
+import {BRAND_BLUE} from '../constants';
 
 // === PRIMARY (high-emphasis foreground ink — drives accent too) ==============
 // Warm near-black that harmonizes with the cream body (light) and a warm
@@ -40,7 +45,9 @@ const PRIMARY_MUTED =
 
 // BRAND_BLUE (logo/wordmark only) lives in `@/constants` — kept out of this
 // source theme so consumers can read it without importing the unbuilt theme
-// object (which would re-trigger runtime style injection).
+// object (which would re-trigger runtime style injection). It is also exposed
+// to the UI here as the custom CSS variable --color-brand (see the token block
+// below), so consumers can reference the brand blue via var(--color-brand).
 
 export const astryxTheme = defineTheme({
   name: 'astryx',
@@ -92,6 +99,12 @@ export const astryxTheme = defineTheme({
     '--radius-element': '12px',
     '--radius-container': '16px',
     '--radius-page': '32px',
+
+    // --- Custom brand color token ---
+    // Not a core XDS token, so it's spread in with a cast to allow the extra
+    // key while keeping the standard tokens above type-checked. Exposed to the
+    // UI as var(--color-brand).
+    ...({'--color-brand': BRAND_BLUE} as Record<string, TokenValue>),
   },
 
   typography: {

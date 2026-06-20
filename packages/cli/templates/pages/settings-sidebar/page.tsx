@@ -3,6 +3,7 @@
 'use client';
 
 import {useState} from 'react';
+import {useMediaQuery} from '@xds/core/hooks';
 import * as stylex from '@stylexjs/stylex';
 import {
   VStack,
@@ -13,6 +14,7 @@ import {
   LayoutPanel,
 } from '@xds/core/Layout';
 import {List, ListItem} from '@xds/core/List';
+import {Toolbar} from '@xds/core/Toolbar';
 import {Text, Heading} from '@xds/core/Text';
 import {Link} from '@xds/core/Link';
 import {Button} from '@xds/core/Button';
@@ -43,9 +45,17 @@ import {
   ComputerDesktopIcon,
   PencilSquareIcon,
   ShareIcon,
+  ArrowLeftIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 
 const styles = stylex.create({
+  // Anchor the page to the viewport height so the sidebar + content fill the
+  // screen. Layout height="fill" is min-height:100% which collapses when the
+  // host container is content-sized; Layout has no viewport-height prop.
+  fillViewport: {
+    minHeight: '100dvh',
+  },
   iconBox: {
     borderRadius: radiusVars['--radius-container'],
     backgroundColor: colorVars['--color-background-surface'],
@@ -53,9 +63,6 @@ const styles = stylex.create({
   },
   rowPadding: {
     paddingBlock: spacingVars['--spacing-4'],
-  },
-  cardContentPadding: {
-    paddingInline: spacingVars['--spacing-4'],
   },
   sideNavPadding: {
     paddingBlock: spacingVars['--spacing-4'],
@@ -76,6 +83,15 @@ const NAV_ITEMS = [
   {label: 'Languages & currency', icon: GlobeAltIcon},
   {label: 'Travel for work', icon: BriefcaseIcon},
 ];
+
+// Section title shown beside the mobile back button (matches each section's
+// in-content heading, which is hidden on mobile to avoid a duplicate).
+const SECTION_TITLES: Record<string, string> = {
+  'Personal information': 'Personal info',
+  'Login & security': 'Login & security',
+  Privacy: 'Privacy',
+  'Languages & currency': 'Languages & currency',
+};
 
 interface InfoRow {
   label: string;
@@ -213,6 +229,10 @@ const TIMEZONES = [
 ];
 
 export default function SettingsSecurityTemplate() {
+  const isNarrow = useMediaQuery('(max-width: 768px)');
+  // Mobile is a master→detail drill-down: 'nav' shows the menu, 'detail' shows
+  // the selected section with a back button. Desktop shows both side-by-side.
+  const [mobileView, setMobileView] = useState<'nav' | 'detail'>('nav');
   const [activeNav, setActiveNav] = useState('Personal information');
   const [activeTab, setActiveTab] = useState('login');
   const [readReceipts, setReadReceipts] = useState(true);
@@ -236,44 +256,100 @@ export default function SettingsSecurityTemplate() {
   const [mailingAddress, setMailingAddress] = useState('');
   const [emergencyContact, setEmergencyContact] = useState('Provided');
 
+  // Selecting a nav item also drills into the detail view on mobile.
+  const selectNav = (label: string) => {
+    setActiveNav(label);
+    setMobileView('detail');
+  };
+
+  const navList = (
+    <VStack gap={4} xstyle={styles.sideNavPadding}>
+      <Heading level={2} xstyle={styles.sideNavHeading}>
+        Account settings
+      </Heading>
+      <List density="spacious">
+        {NAV_ITEMS.map(item => (
+          <ListItem
+            key={item.label}
+            label={item.label}
+            startContent={<Icon icon={item.icon} />}
+            endContent={
+              isNarrow ? (
+                <Icon icon={ChevronRightIcon} size="sm" color="secondary" />
+              ) : undefined
+            }
+            isSelected={!isNarrow && activeNav === item.label}
+            onClick={() => selectNav(item.label)}
+          />
+        ))}
+      </List>
+      <Divider />
+      <List density="spacious">
+        <ListItem
+          label="Professional hosting tools"
+          startContent={<Icon icon={WrenchScrewdriverIcon} />}
+          onClick={() => {}}
+        />
+      </List>
+    </VStack>
+  );
+
+  // Mobile, nav view: show only the menu (full width, no sidebar slot).
+  if (isNarrow && mobileView === 'nav') {
+    return (
+      <Layout
+        height="fill"
+        xstyle={styles.fillViewport}
+        content={<LayoutContent padding={2}>{navList}</LayoutContent>}
+      />
+    );
+  }
+
   return (
     <Layout
       height="fill"
-      contentWidth={700}
+      contentWidth={1200}
+      xstyle={styles.fillViewport}
       start={
-        <LayoutPanel hasDivider padding={0}>
-          <VStack gap={4} xstyle={styles.sideNavPadding}>
-            <Heading level={2} xstyle={styles.sideNavHeading}>
-              Account settings
-            </Heading>
-            <List density="spacious">
-              {NAV_ITEMS.map(item => (
-                <ListItem
-                  key={item.label}
-                  label={item.label}
-                  startContent={<Icon icon={item.icon} />}
-                  isSelected={activeNav === item.label}
-                  onClick={() => setActiveNav(item.label)}
-                />
-              ))}
-            </List>
-            <Divider />
-            <List density="spacious">
-              <ListItem
-                label="Professional hosting tools"
-                startContent={<Icon icon={WrenchScrewdriverIcon} />}
-                onClick={() => {}}
-              />
-            </List>
-          </VStack>
-        </LayoutPanel>
+        isNarrow ? undefined : (
+          <LayoutPanel hasDivider padding={0}>
+            {navList}
+          </LayoutPanel>
+        )
       }
       content={
         <LayoutContent padding={4}>
           <VStack gap={0}>
+            {/* Mobile detail view: a back button sits beside the section title
+                (the per-section headings below are hidden on mobile). Toolbar's
+                start slot edge-compensates the ghost button so its icon aligns
+                flush with the content edge. */}
+            {isNarrow && (
+              <Toolbar
+                label={`Back to Account settings — ${SECTION_TITLES[activeNav]}`}
+                gap={2}
+                startContent={
+                  <>
+                    <Button
+                      label="Back to Account settings"
+                      variant="ghost"
+                      size="sm"
+                      isIconOnly
+                      icon={<Icon icon={ArrowLeftIcon} size="sm" />}
+                      onClick={() => setMobileView('nav')}
+                    />
+                    <Heading level={2}>
+                      {SECTION_TITLES[activeNav]}
+                    </Heading>
+                  </>
+                }
+              />
+            )}
             {activeNav === 'Login & security' && (
               <VStack gap={6}>
-                <Heading level={2}>Login &amp; security</Heading>
+                {!isNarrow && (
+                  <Heading level={2}>Login &amp; security</Heading>
+                )}
 
                 <TabList
                   value={activeTab}
@@ -406,7 +482,9 @@ export default function SettingsSecurityTemplate() {
 
             {activeNav === 'Languages & currency' && (
               <VStack gap={6}>
-                <Heading level={2}>Languages &amp; currency</Heading>
+                {!isNarrow && (
+                  <Heading level={2}>Languages &amp; currency</Heading>
+                )}
                 <VStack gap={0}>
                   <ExpandableRow
                     label="Preferred language"
@@ -471,7 +549,7 @@ export default function SettingsSecurityTemplate() {
 
             {activeNav === 'Personal information' && (
               <VStack gap={6}>
-                <Heading level={2}>Personal info</Heading>
+                {!isNarrow && <Heading level={2}>Personal info</Heading>}
                 <VStack gap={0}>
                   <ExpandableRow
                     label="Legal name"
@@ -578,12 +656,9 @@ export default function SettingsSecurityTemplate() {
                   </ExpandableRow>
                 </VStack>
 
-                <Card padding={0}>
-                  <VStack gap={0} xstyle={styles.cardContentPadding}>
-                    <HStack
-                      gap={3}
-                      vAlign="start"
-                      xstyle={styles.rowPadding}>
+                <Card padding={4}>
+                  <VStack gap={4}>
+                    <HStack gap={3} vAlign="start">
                       <Center width={48} height={48} xstyle={styles.iconBox}>
                         <Icon icon={LockClosedIcon} />
                       </Center>
@@ -601,10 +676,7 @@ export default function SettingsSecurityTemplate() {
                       </VStack>
                     </HStack>
                     <Divider />
-                    <HStack
-                      gap={3}
-                      vAlign="start"
-                      xstyle={styles.rowPadding}>
+                    <HStack gap={3} vAlign="start">
                       <Center width={48} height={48} xstyle={styles.iconBox}>
                         <Icon icon={PencilSquareIcon} />
                       </Center>
@@ -624,10 +696,7 @@ export default function SettingsSecurityTemplate() {
                       </VStack>
                     </HStack>
                     <Divider />
-                    <HStack
-                      gap={3}
-                      vAlign="start"
-                      xstyle={styles.rowPadding}>
+                    <HStack gap={3} vAlign="start">
                       <Center width={48} height={48} xstyle={styles.iconBox}>
                         <Icon icon={ShareIcon} />
                       </Center>
@@ -651,7 +720,7 @@ export default function SettingsSecurityTemplate() {
 
             {activeNav === 'Privacy' && (
               <VStack gap={6}>
-                <Heading level={2}>Privacy</Heading>
+                {!isNarrow && <Heading level={2}>Privacy</Heading>}
 
                 <VStack gap={8}>
                   <VStack gap={0}>

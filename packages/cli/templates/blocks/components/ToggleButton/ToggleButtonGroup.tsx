@@ -10,7 +10,7 @@ import {Icon} from '@xds/core/Icon';
 import {ListBulletIcon, Squares2X2Icon, TableCellsIcon} from '@heroicons/react/24/outline';
 import {BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon} from '@heroicons/react/24/outline';
 
-export default function ToggleButtonGroup() {
+export default function ToggleButtonGroupBlock() {
   const [view, setView] = useState<string | null>('list');
   const [formats, setFormats] = useState<string[]>(['bold']);
 

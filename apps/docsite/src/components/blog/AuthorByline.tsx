@@ -13,9 +13,9 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSText} from '@xds/core/Text';
-import {XDSHStack} from '@xds/core/Layout';
+import {Avatar} from '@xds/core/Avatar';
+import {Text} from '@xds/core/Text';
+import {HStack} from '@xds/core/Layout';
 import {resolveAuthor} from '../../content/blog/authors';
 
 export function formatDate(iso: string): string {
@@ -62,48 +62,48 @@ export function AuthorByline({
   const names = resolved.map(a => a.name).join(', ');
 
   return (
-    <XDSHStack gap={2} align="center">
-      <XDSHStack gap={0} align="center">
+    <HStack gap={2} align="center">
+      <HStack gap={0} align="center">
         {resolved.map(author => (
-          <XDSAvatar
+          <Avatar
             key={author.key}
             src={author.avatar}
             name={author.name}
             size={avatarSize}
           />
         ))}
-      </XDSHStack>
-      <XDSHStack gap={1} align="center">
-        <XDSText type="supporting" color="secondary">
+      </HStack>
+      <HStack gap={1} align="center">
+        <Text type="supporting" color="secondary">
           {names}
-        </XDSText>
-        <XDSText type="supporting" color="secondary" xstyle={styles.dot}>
+        </Text>
+        <Text type="supporting" color="secondary" xstyle={styles.dot}>
           ·
-        </XDSText>
-        <XDSText type="supporting" color="secondary">
+        </Text>
+        <Text type="supporting" color="secondary">
           {formatDate(date)}
-        </XDSText>
+        </Text>
         {variant === 'full' && updatedAt ? (
           <>
-            <XDSText type="supporting" color="secondary" xstyle={styles.dot}>
+            <Text type="supporting" color="secondary" xstyle={styles.dot}>
               ·
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
+            </Text>
+            <Text type="supporting" color="secondary">
               Updated {formatDate(updatedAt)}
-            </XDSText>
+            </Text>
           </>
         ) : null}
         {readingTimeMinutes ? (
           <>
-            <XDSText type="supporting" color="secondary" xstyle={styles.dot}>
+            <Text type="supporting" color="secondary" xstyle={styles.dot}>
               ·
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
+            </Text>
+            <Text type="supporting" color="secondary">
               {readingTimeMinutes} min read
-            </XDSText>
+            </Text>
           </>
         ) : null}
-      </XDSHStack>
-    </XDSHStack>
+      </HStack>
+    </HStack>
   );
 }

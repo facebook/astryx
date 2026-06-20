@@ -22,7 +22,7 @@ import {
   GlobeAltIcon,
 } from '@heroicons/react/24/outline';
 
-export default function TopNavMegaMenu() {
+export default function TopNavMegaMenuBlock() {
   return (
     <TopNav
       label="Marketing navigation"

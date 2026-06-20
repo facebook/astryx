@@ -16,7 +16,7 @@
  */
 
 import {useState, useCallback, type ReactNode} from 'react';
-import type {XDSBaseProps} from '@xds/core';
+import type {BaseProps} from '@xds/core';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -34,7 +34,7 @@ import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
 // Types
 // =============================================================================
 
-export interface XDSChatReasoningProps extends XDSBaseProps<HTMLDivElement> {
+export interface XDSChatReasoningProps extends BaseProps<HTMLDivElement> {
   /** Reasoning content. String renders as plain text; ReactNode for XDSMarkdown etc. */
   children: ReactNode;
   /** Header label. @default 'Thinking' */

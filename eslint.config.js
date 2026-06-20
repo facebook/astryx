@@ -150,9 +150,9 @@ export default tseslint.config(
       // Tracked: OverflowList, MetadataList, Carousel need data-driven APIs.
       '@xds/no-react-introspection': ['error', {
         allowFiles: [
-          'OverflowList/XDSOverflowList',
-          'MetadataList/XDSMetadataList',
-          'Carousel/XDSCarousel',
+          'OverflowList/OverflowList',
+          'MetadataList/MetadataList',
+          'Carousel/Carousel',
         ],
       }],
     },

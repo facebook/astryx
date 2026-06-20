@@ -1,15 +1,5 @@
 /* Copyright (c) Meta Platforms, Inc. and affiliates. */
 
-/* Make the marketing-site (site)-group layout a flex column so the
-   <SiteFooter /> sticks to the bottom of the viewport when page
-   content is shorter than one screen. Without this, short pages
-   like /themes leave a visible gap between the footer and the
-   bottom of the viewport.
-
-   The min-height subtracts the AppShell header height (set as a CSS
-   var by the AppShell once it measures the rendered header,
-   falling back to 64px on first paint per the convention used in
-   globals.css for #xds-app-shell-main scroll-padding-top). */
 .shell {
   display: flex;
   flex-direction: column;
@@ -17,14 +7,13 @@
   width: 100%;
 }
 
-/* Stretch the main content area so the footer pins to the bottom on
-   short pages. Critically, this is NOT a flex container — making it
-   a flex container interacts poorly with XDSSection's outer wrapper
-   (which uses negative inline margins to break out of container
-   padding) and ends up squishing the section to its min-content
-   width. The simple `flex: 1` on a non-flex block is enough to push
-   <SiteFooter /> to the bottom of .shell. */
 .main {
   flex: 1 0 auto;
   width: 100%;
+}
+
+.footer {
+  position: relative;
+  z-index: 1;
+  background-color: var(--color-background-surface);
 }

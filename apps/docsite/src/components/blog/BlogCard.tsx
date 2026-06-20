@@ -3,7 +3,7 @@
 /**
  * @file BlogCard.tsx
  *
- * A blog index card built on XDSClickableCard: a neutral
+ * A blog index card built on ClickableCard: a neutral
  * cover placeholder on top, then type badge, title, description excerpt,
  * byline, and tag chips. The whole card navigates to the post; nested elements
  * (tags, author links) remain independently interactive.
@@ -17,10 +17,10 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSClickableCard} from '@xds/core/ClickableCard';
+import {Text, Heading} from '@xds/core/Text';
+import {VStack, HStack} from '@xds/core/Layout';
+import {Badge} from '@xds/core/Badge';
+import {ClickableCard} from '@xds/core/ClickableCard';
 import type {BlogPost} from '../../lib/blog/schema';
 import {POST_TYPE_LABELS} from '../../lib/blog/schema';
 import {AuthorByline} from './AuthorByline';
@@ -65,12 +65,12 @@ export interface BlogCardProps {
 
 export function BlogCard({post, feature = false}: BlogCardProps) {
   return (
-    <XDSClickableCard
+    <ClickableCard
       href={`/blog/${post.slug}`}
       label={post.title}
       padding={4}
       xstyle={styles.card}>
-      <XDSVStack gap={3} xstyle={styles.inner}>
+      <VStack gap={3} xstyle={styles.inner}>
         {post.coverImage ? (
           <img
             src={post.coverImage}
@@ -80,16 +80,16 @@ export function BlogCard({post, feature = false}: BlogCardProps) {
         ) : (
           <div {...stylex.props(styles.cover(feature))} aria-hidden="true" />
         )}
-        <XDSVStack gap={2}>
-          <XDSHStack gap={1} align="center" xstyle={styles.tagRow}>
-            <XDSBadge label={POST_TYPE_LABELS[post.type]} variant="neutral" />
-          </XDSHStack>
-          <XDSVStack gap={1}>
-            <XDSHeading level={feature ? 2 : 3}>{post.title}</XDSHeading>
-            <XDSText type="body" color="secondary" xstyle={styles.excerpt}>
+        <VStack gap={2}>
+          <HStack gap={1} align="center" xstyle={styles.tagRow}>
+            <Badge label={POST_TYPE_LABELS[post.type]} variant="neutral" />
+          </HStack>
+          <VStack gap={1}>
+            <Heading level={feature ? 2 : 3}>{post.title}</Heading>
+            <Text type="body" color="secondary" xstyle={styles.excerpt}>
               {post.description}
-            </XDSText>
-          </XDSVStack>
+            </Text>
+          </VStack>
           <AuthorByline
             authors={post.authors}
             date={post.date}
@@ -97,14 +97,14 @@ export function BlogCard({post, feature = false}: BlogCardProps) {
             variant="compact"
           />
           {post.tags.length > 0 ? (
-            <XDSHStack gap={1} xstyle={styles.tagRow}>
+            <HStack gap={1} xstyle={styles.tagRow}>
               {post.tags.map(tag => (
-                <XDSBadge key={tag} label={tag} variant="neutral" />
+                <Badge key={tag} label={tag} variant="neutral" />
               ))}
-            </XDSHStack>
+            </HStack>
           ) : null}
-        </XDSVStack>
-      </XDSVStack>
-    </XDSClickableCard>
+        </VStack>
+      </VStack>
+    </ClickableCard>
   );
 }

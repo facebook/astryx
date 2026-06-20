@@ -485,7 +485,7 @@ function buildSpanLine(lineText: string, tokens: SyntaxToken[]): React.ReactNode
     parts.push(
       <span
         key={`${token.start}-${token.type}`}
-        className={`xds-token-${token.type}`}>
+        className={`astryx-token-${token.type} xds-token-${token.type}`}>
         {lineText.slice(token.start, end)}
       </span>,
     );

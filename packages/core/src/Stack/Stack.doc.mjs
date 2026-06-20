@@ -26,7 +26,7 @@ export const docs = {
           name: 'gap',
           type: 'SpacingStep',
           description:
-            'Numeric spacing step controlling the gap between items: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
+            'Spacing step (number literal): 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10. Pass as a JSX number expression e.g. gap={4}, NOT a string like gap="4".',
         },
         {
           name: 'width',
@@ -94,7 +94,7 @@ export const docs = {
           name: 'gap',
           type: 'SpacingStep',
           description:
-            'Numeric spacing step controlling the gap between items: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
+            'Spacing step (number literal): 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10. Pass as a JSX number expression e.g. gap={4}, NOT a string like gap="4".',
         },
         {
           name: 'width',
@@ -214,7 +214,7 @@ export const docsZh = {
           name: 'gap',
           type: 'SpacingStep',
           description:
-            '控制元素间距的数值间距步进：0、0.5、1、1.5、2、3、4、5、6、8、10。',
+            '间距步进（数字字面量）：0、0.5、1、1.5、2、3、4、5、6、8、10。在 JSX 中使用数字表达式 e.g. gap={4}，不要使用字符串 gap="4"。',
         },
         {
           name: 'width',
@@ -283,7 +283,7 @@ export const docsZh = {
           name: 'gap',
           type: 'SpacingStep',
           description:
-            '控制元素间距的数值间距步进：0、0.5、1、1.5、2、3、4、5、6、8、10。',
+            '间距步进（数字字面量）：0、0.5、1、1.5、2、3、4、5、6、8、10。在 JSX 中使用数字表达式 e.g. gap={4}，不要使用字符串 gap="4"。',
         },
         {
           name: 'width',
@@ -399,7 +399,7 @@ export const docsDense = {
       displayName: 'H Stack',
       description: 'Horizontal stack; left-to-right, polymorphic rendering.',
       propDescriptions: {
-        gap: 'Numeric spacing step for gap: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
+        gap: 'Number literal spacing step: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10. Use gap={4} not gap="4".',
         width: "Width of container. Numbers=pixels, strings=as-is (e.g. '100%').",
         height: "Height of container. Numbers=pixels, strings=as-is (e.g. '100%').",
         hAlign: 'Horizontal (main-axis) alignment.',
@@ -418,7 +418,7 @@ export const docsDense = {
       displayName: 'V Stack',
       description: 'Vertical stack; top-to-bottom, polymorphic rendering.',
       propDescriptions: {
-        gap: 'Numeric spacing step for gap: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
+        gap: 'Number literal spacing step: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10. Use gap={4} not gap="4".',
         width: "Width of container. Numbers=pixels, strings=as-is (e.g. '100%').",
         height: "Height of container. Numbers=pixels, strings=as-is (e.g. '100%').",
         hAlign: 'Horizontal (cross-axis) alignment.',

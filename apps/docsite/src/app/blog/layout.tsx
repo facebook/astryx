@@ -7,7 +7,7 @@
  */
 
 import {headers} from 'next/headers';
-import {XDSAppShell} from '@xds/core/AppShell';
+import {AppShell} from '@xds/core/AppShell';
 import {SharedTopNav} from '../../components/SharedTopNav';
 import {SiteFooter} from '../../components/SiteFooter';
 
@@ -21,13 +21,13 @@ export default async function BlogLayout({
   const defaultIsMobile = /mobile|android|iphone|ipad/i.test(ua);
 
   return (
-    <XDSAppShell
+    <AppShell
       variant="surface"
       height="auto"
       mobileNav={{defaultIsMobile}}
       topNav={<SharedTopNav />}>
       {children}
       <SiteFooter />
-    </XDSAppShell>
+    </AppShell>
   );
 }

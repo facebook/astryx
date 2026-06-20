@@ -19,12 +19,12 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSSection} from '@xds/core/Section';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSCarousel} from '@xds/core/Carousel';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {Text, Heading} from '@xds/core/Text';
+import {VStack} from '@xds/core/Layout';
+import {Section} from '@xds/core/Section';
+import {Grid} from '@xds/core/Grid';
+import {Carousel} from '@xds/core/Carousel';
+import {TabList, Tab} from '@xds/core/TabList';
 import type {BlogPost, BlogPostType} from '../../lib/blog/schema';
 import {POST_TYPE_LABELS} from '../../lib/blog/schema';
 import {BlogCard} from './BlogCard';
@@ -72,63 +72,63 @@ export function BlogIndex({posts, availableTypes}: BlogIndexProps) {
   const restPosts = showFeature ? filtered.slice(1) : filtered;
 
   return (
-    <XDSSection maxWidth={1100} padding={6}>
-      <XDSVStack gap={6}>
-        <XDSVStack gap={4} xstyle={styles.header}>
-          <XDSHeading level={1} type="display-1">
+    <Section maxWidth={1100} padding={6}>
+      <VStack gap={6}>
+        <VStack gap={4} xstyle={styles.header}>
+          <Heading level={1} type="display-1">
             Blog
-          </XDSHeading>
-          <XDSText type="large" weight="normal" color="secondary">
+          </Heading>
+          <Text type="large" weight="normal" color="secondary">
             Notes on building Astryx — releases, guides, stories, and
             perspectives on designing a system for humans and agents.
-          </XDSText>
-        </XDSVStack>
+          </Text>
+        </VStack>
 
         {availableTypes.length > 1 ? (
-          <XDSCarousel gap={0}>
-            <XDSTabList
+          <Carousel gap={0}>
+            <TabList
               value={activeType}
               onChange={v => setActiveType(v as 'all' | BlogPostType)}
               size="md"
               xstyle={styles.filterRow}>
-              <XDSTab value="all" label={`All (${counts.all})`} />
+              <Tab value="all" label={`All (${counts.all})`} />
               {availableTypes.map(t => (
-                <XDSTab
+                <Tab
                   key={t}
                   value={t}
                   label={`${POST_TYPE_LABELS[t]} (${counts[t]})`}
                 />
               ))}
-            </XDSTabList>
-          </XDSCarousel>
+            </TabList>
+          </Carousel>
         ) : null}
 
         {filtered.length === 0 ? (
           <div {...stylex.props(styles.empty)}>
-            <XDSText type="body" color="secondary">
+            <Text type="body" color="secondary">
               No posts yet. Check back soon.
-            </XDSText>
+            </Text>
           </div>
         ) : (
-          <XDSVStack gap={6}>
+          <VStack gap={6}>
             {featurePost ? (
-              <XDSGrid columns={1} gap={4}>
+              <Grid columns={1} gap={4}>
                 <BlogCard post={featurePost} feature />
-              </XDSGrid>
+              </Grid>
             ) : null}
             {restPosts.length > 0 ? (
-              <XDSGrid
+              <Grid
                 columns={{minWidth: 320, repeat: 'fill'}}
                 gap={4}
                 rowGap={6}>
                 {restPosts.map(post => (
                   <BlogCard key={post.slug} post={post} />
                 ))}
-              </XDSGrid>
+              </Grid>
             ) : null}
-          </XDSVStack>
+          </VStack>
         )}
-      </XDSVStack>
-    </XDSSection>
+      </VStack>
+    </Section>
   );
 }

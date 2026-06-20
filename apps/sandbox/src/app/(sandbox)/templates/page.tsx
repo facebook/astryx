@@ -3,7 +3,7 @@
 'use client';
 
 import {useState, useCallback, useMemo, Suspense} from 'react';
-import Link from 'next/link';
+import NextLink from 'next/link';
 import {useSearchParams, useRouter} from 'next/navigation';
 import {Heading} from '@xds/core/Text';
 import {Layout, LayoutHeader, LayoutContent} from '@xds/core/Layout';
@@ -224,7 +224,7 @@ const columns: TableColumn<TemplateRow>[] = [
     filter: 'name',
     width: pixel(250),
     renderCell: (row: TemplateRow) => (
-      <Link href={row.href} as={Link} target="_blank">
+      <Link href={row.href} as={NextLink} target="_blank">
         {row.name}
       </Link>
     ),
