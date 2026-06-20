@@ -208,10 +208,12 @@ jobs:
         uses: actions/cache@v5
         with:
           path: apps/sandbox/.next/cache
+          # No restore-keys fallback — see deploy.yml for the full rationale.
+          # The Next.js module cache bakes in @xds/core's resolved export graph,
+          # so a loose fallback can restore a cache built against a different
+          # export shape and silently produce wrong builds (broke #2941's
+          # post-merge deploy). A changed key yields a cold (safe) rebuild.
           key: nextjs-sandbox-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('packages/core/dist/**') }}
-          restore-keys: |
-            nextjs-sandbox-${{ hashFiles('pnpm-lock.yaml') }}-
-            nextjs-sandbox-
 
       - name: Build Storybook
         if: needs.check-scope.outputs.docsite_only != 'true'

@@ -98,10 +98,20 @@ jobs:
         uses: actions/cache@v5
         with:
           path: apps/sandbox/.next/cache
+          # IMPORTANT: no restore-keys fallback. The key is pinned to the
+          # @xds/core dist hash because the Next.js module cache bakes in the
+          # resolved export graph of @xds/core. A loose restore-keys fallback
+          # (e.g. "nextjs-sandbox-<lock>-") would let a build restore a cache
+          # produced against a DIFFERENT export shape. That is exactly what
+          # broke the post-merge deploy of the XDS un-prefix migration (#2941):
+          # the migration changed core's exports (bare names, new subpaths), the
+          # exact key missed, and restore-keys fell back to a pre-migration
+          # cache whose compiled modules still expected XDS*-prefixed exports —
+          # producing "'Text' is not exported from '@xds/core/Text'" and
+          # "Element type is invalid ... undefined" prerender failures.
+          # A changed key now yields a COLD cache (safe rebuild) instead of a
+          # poisoned warm one.
           key: nextjs-sandbox-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('packages/core/dist/**') }}
-          restore-keys: |
-            nextjs-sandbox-${{ hashFiles('pnpm-lock.yaml') }}-
-            nextjs-sandbox-
 
       - name: Build Sandbox
         run: pnpm -F @xds/sandbox build
