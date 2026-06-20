@@ -80,11 +80,12 @@ const styles = stylex.create({
   },
   // Reserves the hero's height in flow (heroContent is fixed/out of flow).
   // Narrow: the measured --hero-content-height (per-tier constants are the
-  // fallback). Desktop: the fixed band.
+  // fallback), capped at 100lvh so the pinned band never reserves more than one
+  // viewport of scroll on phones/tablets. Desktop (≥1024px): the fixed band.
   heroSpacer: {
     height: {
-      default: `var(--hero-content-height, ${HERO_BAND_HEIGHT_2COL}px)`,
-      '@media (min-width: 768px)': `var(--hero-content-height, ${HERO_BAND_HEIGHT_NARROW}px)`,
+      default: `min(var(--hero-content-height, ${HERO_BAND_HEIGHT_2COL}px), 100lvh)`,
+      '@media (min-width: 768px)': `min(var(--hero-content-height, ${HERO_BAND_HEIGHT_NARROW}px), 100lvh)`,
       '@media (min-width: 1024px)': HERO_BAND_HEIGHT,
     },
   },

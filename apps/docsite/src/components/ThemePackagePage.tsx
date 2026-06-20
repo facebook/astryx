@@ -18,6 +18,7 @@ import {Link} from '@xds/core/Link';
 import {SelectableCard} from '@xds/core/SelectableCard';
 import {Selector} from '@xds/core/Selector';
 import {Divider} from '@xds/core/Divider';
+import {useMediaQuery} from '@xds/core/hooks';
 import {ThemeShowcaseStore} from '../../../../packages/cli/templates/pages/theme-showcase/page';
 import {getThemeShowcaseContent} from './themeShowcaseContent';
 import {buildPlaygroundHref} from './playgroundLink';
@@ -25,6 +26,7 @@ import {packages} from '../generated/packageRegistry';
 import {themeObjects} from '../generated/themeRegistry';
 import {templates} from '../generated/templateRegistry';
 import {trackOpenPlayground, trackToggle} from '../lib/analytics';
+import {useThemeMode} from '../app/providers';
 
 // Raw source of the theme-showcase page template (embedded as a string in
 // the generated template registry). Used to prepopulate the playground's
@@ -81,7 +83,8 @@ function packageNameToSlug(packageName: string): string {
 // sidebar is hidden via @media at the same breakpoint so the two
 // surfaces don't double-render. Picked so the right pane keeps
 // enough horizontal room for the themed preview's product grid.
-const SIDEBAR_BREAKPOINT = '@media (max-width: 900px)';
+const SIDEBAR_QUERY = '(max-width: 900px)';
+const SIDEBAR_BREAKPOINT = `@media ${SIDEBAR_QUERY}`;
 
 // Fixed sidebar width — compact enough that the right pane gets the
 // lion's share of horizontal space, wide enough to fit the longest
@@ -477,12 +480,25 @@ const PICKER_OVERRIDES: Record<
   },
 };
 
-function ThemeHeading({align = 'start'}: {align?: 'start' | 'center'}) {
+function ThemeHeading({
+  align = 'start',
+  isMobile = false,
+}: {
+  align?: 'start' | 'center';
+  isMobile?: boolean;
+}) {
   const isCentered = align === 'center';
 
   return (
     <VStack gap={2} hAlign={isCentered ? 'center' : undefined}>
-      <Heading level={1} type="display-3" justify={align}>
+      {/* display-3 in the desktop sidebar (display-2 wraps in the 260px
+          column); display-2 in the narrow layout to match /templates and
+          /components. Driven by the same SIDEBAR_QUERY mobile check the rest
+          of the component uses, not a separate CSS breakpoint. */}
+      <Heading
+        level={1}
+        type={isMobile ? 'display-2' : 'display-3'}
+        justify={align}>
         Themes
       </Heading>
       <Text
@@ -507,7 +523,19 @@ interface ThemePackagePageProps {
 }
 
 export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
-  const [mode, setMode] = useState<'light' | 'dark'>('light');
+  // Preview color mode. `siteMode` is the docsite's already-resolved concrete
+  // light/dark — the provider maps its default `system` to the OS preference
+  // (falling back to light on the first paint), so the preview never sees
+  // `system`. `localMode` is null until the user toggles the preview's own
+  // control; the effective mode falls through to `siteMode` until then, so
+  // opening /themes in dark mode shows the demos in dark mode without an effect.
+  const {mode: siteMode} = useThemeMode();
+  const [localMode, setLocalMode] = useState<'light' | 'dark' | null>(null);
+  const mode: 'light' | 'dark' = localMode ?? siteMode;
+
+  const handleToggleMode = useCallback(() => {
+    setLocalMode(mode === 'light' ? 'dark' : 'light');
+  }, [mode]);
   // Selected theme — seeded once from the parent's `packageName`
   // prop (the /themes page resolves it from the `?theme=<slug>`
   // query param, or Neutral if absent), then user-mutable via the
@@ -524,6 +552,12 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
   // to toggle the floating toolbar visibility.
   const carouselRef = useRef<HTMLDivElement>(null);
   const [showMobileBar, setShowMobileBar] = useState(false);
+
+  // Narrow-viewport check — the same SIDEBAR_QUERY breakpoint that hides the
+  // sidebar and shows the mobile context block. Drives the heading's type so
+  // the JS render matches the layout swap (no parallel CSS breakpoint). Server
+  // default is desktop (false), matching the sidebar shown on first paint.
+  const isMobile = useMediaQuery(SIDEBAR_QUERY);
 
   // Show the floating toolbar when the carousel scrolls out of view.
   useEffect(() => {
@@ -651,12 +685,11 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
         <Card variant="default" padding={0} xstyle={styles.sidebarCard}>
           <VStack gap={4}>
             {/* Hero block — page-level heading + description + CTAs.
-                Heading uses display-3 instead of display-2 because
-                the narrow sidebar column would wrap display-2 mid-
-                word; CTAs stack vertically + full-width because the
-                side-by-side hero treatment doesn't fit in 260px. */}
+                Heading is display-3 in this sidebar (display-2 wraps in the
+                260px column); the narrow layout uses display-2 (see isMobile).
+                CTAs stack full-width. */}
             <VStack gap={3}>
-              <ThemeHeading />
+              <ThemeHeading isMobile={isMobile} />
               {/* Action row — primary CTA takes the leading flex
                   space, mode toggle (icon-only) sits on the trailing
                   edge. Both belong here because they're page-level
@@ -692,7 +725,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                       item: selectedPkgName,
                       value: next,
                     });
-                    setMode(next);
+                    setLocalMode(next);
                   }}
                 />
               </HStack>
@@ -803,7 +836,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
             label={modeToggleLabel}
             tooltip={modeToggleLabel}
             icon={modeToggleIcon}
-            onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
+            onClick={handleToggleMode}
           />
         </div>
 
@@ -811,7 +844,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
             Mirrors the sidebar's hero: heading, description, and
             action buttons (Open in Playground + mode toggle). */}
         <div {...stylex.props(styles.mobileContext)}>
-          <ThemeHeading align="center" />
+          <ThemeHeading align="center" isMobile={isMobile} />
           <HStack gap={2} vAlign="center">
             <Button
               variant="primary"
@@ -842,7 +875,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                   item: selectedPkgName,
                   value: next,
                 });
-                setMode(next);
+                setLocalMode(next);
               }}
             />
           </HStack>
