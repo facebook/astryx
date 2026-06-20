@@ -100,7 +100,7 @@ export const docs = {
       name: 'startIcon',
       type: 'IconType',
       description:
-        'SVG icon component displayed at the start of the input. See `npx xds docs icons` for valid semantic names.',
+        'SVG icon component displayed at the start of the input. See `npx astryx docs icons` for valid semantic names.',
     },
     {
       name: 'status',

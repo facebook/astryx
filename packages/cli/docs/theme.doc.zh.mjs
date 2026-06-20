@@ -10,7 +10,7 @@ export const docsZh = {
     { title: 'XDSTheme 属性', content: [null] },
     { title: '创建自定义主题', content: [{ type: 'prose', text: '使用 CLI 向导（推荐）或手动 defineTheme。只覆盖与默认值不同的令牌。' }, null] },
     { title: 'defineTheme', content: [{ type: 'prose', text: '支持比例配置（typography、radius、motion）+ 显式令牌覆盖 + 组件覆盖。' }, null, null] },
-    { title: '生产构建', content: [{ type: 'prose', text: 'npx xds theme build 将 defineTheme 编译为静态 CSS。输出 .css + .js（__built:true）+ .d.ts。' }, null, null, null, null] },
+    { title: '生产构建', content: [{ type: 'prose', text: 'npx astryx theme build 将 defineTheme 编译为静态 CSS。输出 .css + .js（__built:true）+ .d.ts。' }, null, null, null, null] },
     { title: '运行时 vs 构建', content: [{ type: 'prose', text: '运行时：useInsertionEffect 在客户端注入样式。构建：静态 CSS 在首次渲染时就存在。SSR 应用请使用 /built + theme.css。' }, null, null, null] },
     { title: '亮/暗模式', content: [{ type: 'prose', text: "令牌值使用 [light, dark] 元组实现自动模式切换。XDSTheme 上 mode='system'（默认）跟随系统偏好。" }, null, null] },
     { title: '嵌套主题', content: [{ type: 'prose', text: '将不同部分包裹在独立的 <XDSTheme> 提供者中。' }, null] },

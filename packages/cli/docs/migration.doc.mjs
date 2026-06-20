@@ -53,18 +53,18 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Migration-oriented CLI pass',
-          code: `npm run xds -- docs migration
-npm run xds -- docs theme
-npm run xds -- docs styling
-npm run xds -- template --list --type block
-npm run xds -- template AppShellTopNavWithSideNav --skeleton
-npm run xds -- template PopoverSettingsPanel --skeleton
-npm run xds -- component AppShell
-npm run xds -- component SideNav
-npm run xds -- component TopNav
-npm run xds -- component CommandPalette
-npm run xds -- component Button
-npm run xds -- component TextInput`,
+          code: `npx astryx docs migration
+npx astryx docs theme
+npx astryx docs styling
+npx astryx template --list --type block
+npx astryx template AppShellTopNavWithSideNav --skeleton
+npx astryx template PopoverSettingsPanel --skeleton
+npx astryx component AppShell
+npx astryx component SideNav
+npx astryx component TopNav
+npx astryx component CommandPalette
+npx astryx component Button
+npx astryx component TextInput`,
         },
         {
           type: 'prose',
@@ -74,8 +74,8 @@ npm run xds -- component TextInput`,
           type: 'code',
           lang: 'bash',
           label: 'Dense and JSON modes',
-          code: `npm run xds -- docs migration --dense
-npm run xds -- component Button --json`,
+          code: `npx astryx docs migration --dense
+npx astryx component Button --json`,
         },
       ],
     },
@@ -237,10 +237,10 @@ export function AppRoot({children}: {children: React.ReactNode}) {
           code: `We are migrating this existing Tailwind/shadcn app to XDS incrementally.
 
 First run:
-- npm run xds -- docs migration --dense
-- npm run xds -- docs theme --dense
-- npm run xds -- docs styling --dense
-- npm run xds -- template AppShellTopNavWithSideNav --skeleton
+- npx astryx docs migration --dense
+- npx astryx docs theme --dense
+- npx astryx docs styling --dense
+- npx astryx template AppShellTopNavWithSideNav --skeleton
 
 Then migrate one route or shell surface at a time. Keep business logic and routing intact. Replace shadcn/Radix/Tailwind primitives with XDS components, remove hardcoded colors, verify light and dark mode, and take screenshots before moving to the next surface.`,
         },

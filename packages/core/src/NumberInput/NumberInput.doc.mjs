@@ -76,12 +76,12 @@ export const docs = {
     {
       name: 'startIcon',
       type: 'IconType',
-      description: 'Icon to display at the start of the input. See `npx xds docs icons` for valid semantic names.',
+      description: 'Icon to display at the start of the input. See `npx astryx docs icons` for valid semantic names.',
     },
     {
       name: 'labelIcon',
       type: 'IconType',
-      description: 'Icon to display before the label text. See `npx xds docs icons` for valid semantic names.',
+      description: 'Icon to display before the label text. See `npx astryx docs icons` for valid semantic names.',
     },
     {
       name: 'status',

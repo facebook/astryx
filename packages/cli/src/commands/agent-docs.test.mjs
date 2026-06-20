@@ -38,29 +38,29 @@ describe('generateCompressedIndex', () => {
 
   it('includes theme nudge rule', () => {
     const result = generateCompressedIndex('1.0.0');
-    expect(result).toMatch(/xds theme/);
+    expect(result).toMatch(/astryx theme/);
     expect(result).toMatch(/never override --astryx-color/);
   });
 
   it('includes upgrade command and migration rule', () => {
     const result = generateCompressedIndex('1.0.0');
-    expect(result).toContain('xds upgrade');
-    expect(result).toContain('xds upgrade --apply');
-    expect(result).toMatch(/always run .+ xds upgrade --apply/);
+    expect(result).toContain('astryx upgrade');
+    expect(result).toContain('astryx upgrade --apply');
+    expect(result).toMatch(/always run .+ astryx upgrade --apply/);
   });
 
   it('uses custom runPrefix when provided', () => {
     const result = generateCompressedIndex('1.0.0', {runPrefix: 'yarn'});
-    expect(result).toContain('yarn xds component <Name>');
-    expect(result).toContain('yarn xds upgrade --apply');
-    expect(result).toContain('after @xds/core bump, always run yarn xds upgrade --apply');
-    expect(result).not.toContain('npx xds');
+    expect(result).toContain('yarn astryx component <Name>');
+    expect(result).toContain('yarn astryx upgrade --apply');
+    expect(result).toContain('after @xds/core bump, always run yarn astryx upgrade --apply');
+    expect(result).not.toContain('npx astryx');
   });
 
   it('uses pnpm exec prefix', () => {
     const result = generateCompressedIndex('1.0.0', {runPrefix: 'pnpm exec'});
-    expect(result).toContain('pnpm exec xds component <Name>');
-    expect(result).not.toContain('npx xds');
+    expect(result).toContain('pnpm exec astryx component <Name>');
+    expect(result).not.toContain('npx astryx');
   });
 });
 

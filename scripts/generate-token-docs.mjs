@@ -232,7 +232,7 @@ const styles = stylex.create({
     },
     {
       type: 'prose',
-      text: "See `npx xds docs styling` for how to apply tokens via xstyle, className, and compound component patterns. See `npx xds docs theme` for overriding tokens with defineTheme.",
+      text: "See `npx astryx docs styling` for how to apply tokens via xstyle, className, and compound component patterns. See `npx astryx docs theme` for overriding tokens with defineTheme.",
     },
   ],
 });

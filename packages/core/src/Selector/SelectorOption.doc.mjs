@@ -20,7 +20,7 @@ export const docs = {
       name: 'icon',
       type: 'IconType',
       description:
-        'Icon displayed before the label. See `npx xds docs icons` for valid semantic names.',
+        'Icon displayed before the label. See `npx astryx docs icons` for valid semantic names.',
     },
     {
       name: 'description',

@@ -98,7 +98,7 @@ export function resolveAgentPaths(targetDir, agent) {
  * "look at reference code" reflex before writing any UI.
  */
 export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPrefix()} = {}) {
-  const run = `${runPrefix} xds`;
+  const run = `${runPrefix} astryx`;
   const lines = [XDS_MARKER_START];
 
   // Component count from live discovery
@@ -466,7 +466,7 @@ export function registerAgentDocs(program) {
       }
 
       const runPrefix = getRunPrefix(targetDir);
-      const run = `${runPrefix} xds`;
+      const run = `${runPrefix} astryx`;
 
       for (const t of targets) {
         humanLog(`✓ ${t}`);

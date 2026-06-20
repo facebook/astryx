@@ -110,7 +110,7 @@ export const docs = {
       name: 'startIcon',
       type: 'IconType',
       description:
-        'Icon component rendered inside the leading edge of the textarea wrapper. See `npx xds docs icons` for valid semantic names.',
+        'Icon component rendered inside the leading edge of the textarea wrapper. See `npx astryx docs icons` for valid semantic names.',
     },
     {
       name: 'hasSpellCheck',
