@@ -114,7 +114,7 @@ function App() {
           type: 'code',
           lang: 'bash',
           label: 'Scaffold with CLI',
-          code: 'npx xds theme',
+          code: 'npx astryx theme',
         },
       ],
     },
@@ -227,7 +227,7 @@ const brandTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: 'The `components` field in defineTheme uses semantic component keys and style keys — not raw CSS selectors. Use `base` for all instances, `variant:value` or `stateName` for specific props/states, and let the theme pipeline choose the underlying selector. For raw external CSS escape hatches, prefer the data-attribute selector surface documented in `xds docs styling`.',
+          text: 'The `components` field in defineTheme uses semantic component keys and style keys — not raw CSS selectors. Use `base` for all instances, `variant:value` or `stateName` for specific props/states, and let the theme pipeline choose the underlying selector. For raw external CSS escape hatches, prefer the data-attribute selector surface documented in `astryx docs styling`.',
         },
         {
           type: 'code',
@@ -253,7 +253,7 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'Run `npx xds component <Name>` to see a component\'s theming targets, public CSS variables, and which standard CSS properties are supported.',
+          text: 'Run `npx astryx component <Name>` to see a component\'s theming targets, public CSS variables, and which standard CSS properties are supported.',
         },
         {
           type: 'list',
@@ -267,7 +267,7 @@ const brandTheme = defineTheme({
           type: 'list',
           style: 'dont',
           items: [
-            'Set private CSS vars (prefixed --_) directly. Use standard CSS properties instead. `xds theme build` will error.',
+            'Set private CSS vars (prefixed --_) directly. Use standard CSS properties instead. `astryx theme build` will error.',
           ],
         },
       ],
@@ -278,7 +278,7 @@ const brandTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: 'Themes can add new prop values to any component. Any `prop:value` key where the value isn\'t a built-in gets treated as a new variant. Use `xds theme build` to generate TypeScript augmentations for type safety.',
+          text: 'Themes can add new prop values to any component. Any `prop:value` key where the value isn\'t a built-in gets treated as a new variant. Use `astryx theme build` to generate TypeScript augmentations for type safety.',
         },
         {
           type: 'code',
@@ -311,7 +311,7 @@ const brandTheme = defineTheme({
           type: 'code',
           lang: 'tsx',
           label: 'Using custom variants',
-          code: `// TypeScript knows about 'primary-muted' after xds theme build
+          code: `// TypeScript knows about 'primary-muted' after astryx theme build
 <Button variant="primary-muted" label="Save draft" />
 <Banner status="neutral" title="Note" />`,
         },
@@ -327,13 +327,13 @@ const brandTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: '`npx xds theme build` compiles a defineTheme file into production-ready artifacts. Recommended for SSR apps (Next.js, Remix) where styles must be present on first paint.',
+          text: '`npx astryx theme build` compiles a defineTheme file into production-ready artifacts. Recommended for SSR apps (Next.js, Remix) where styles must be present on first paint.',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Build a theme',
-          code: 'npx xds theme build ./src/themes/ocean.ts',
+          code: 'npx astryx theme build ./src/themes/ocean.ts',
         },
         {
           type: 'prose',
@@ -398,7 +398,7 @@ import './themes/ocean.css';
             [
               'Import (custom theme)',
               'defineTheme() directly',
-              "Built .js + .css from `npx xds theme build`",
+              "Built .js + .css from `npx astryx theme build`",
             ],
             [
               'How it works',
@@ -428,7 +428,7 @@ import './themes/ocean.css';
           items: [
             'Use the /built subpath + theme.css for production SSR apps.',
             'Use runtime themes during development for fast iteration.',
-            'Run `npx xds theme build` for custom themes to get the built artifacts.',
+            'Run `npx astryx theme build` for custom themes to get the built artifacts.',
           ],
         },
         {
@@ -576,7 +576,7 @@ function ChartConfig() {
         },
         {
           type: 'prose',
-          text: 'See `npx xds docs styling-libraries` for styling-library interop and `npx xds docs tokens` for the full token reference.',
+          text: 'See `npx astryx docs styling-libraries` for styling-library interop and `npx astryx docs tokens` for the full token reference.',
         },
       ],
     },
