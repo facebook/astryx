@@ -38,6 +38,10 @@ import dropXdsPrefixImports, {
   meta as dropXdsPrefixImportsMeta,
 } from './drop-xds-prefix-imports.mjs';
 
+import dropXdsMetaPrefix, {
+  meta as dropXdsMetaPrefixMeta,
+} from './drop-xds-meta-prefix.mjs';
+
 export default [
   {
     name: 'rename-date-picker-to-input',
@@ -82,6 +86,15 @@ export default [
     name: 'drop-xds-prefix-imports',
     transform: dropXdsPrefixImports,
     meta: dropXdsPrefixImportsMeta,
+    optional: true,
+  },
+  {
+    // @nest/xds-meta un-prefix migration. Optional + not tied to a version
+    // bump: consumers run it explicitly during their migration, e.g.
+    //   xds upgrade --codemod drop-xds-meta-prefix --codemod-only --apply
+    name: 'drop-xds-meta-prefix',
+    transform: dropXdsMetaPrefix,
+    meta: dropXdsMetaPrefixMeta,
     optional: true,
   },
 ];
