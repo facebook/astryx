@@ -53,7 +53,7 @@
     "typecheck:json-api": "tsc --project tsconfig.json-api.json && tsc --project tsconfig.api-contract.json"
   },
   "dependencies": {
-    "@clack/prompts": "^1.5.1",
+    "@clack/prompts": "^1.6.0",
     "commander": "^12.1.0",
     "jiti": "^2.7.0"
   },

@@ -8,7 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
-    "@stylexjs/stylex": "^0.18.3",
+    "@stylexjs/stylex": "^0.19.0",
     "@xds/core": "*",
     "@xds/theme-default": "*",
     "next": "^15.5.16",

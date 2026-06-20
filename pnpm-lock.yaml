@@ -105,8 +105,8 @@ importers:
         specifier: ^4.7.0
         version: 4.7.0(monaco-editor@0.55.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@stylexjs/stylex':
-        specifier: ^0.18.3
-        version: 0.18.3
+        specifier: ^0.19.0
+        version: 0.19.0
       '@vercel/analytics':
         specifier: ^2.0.1
         version: 2.0.1(next@15.5.18(@babel/core@7.29.7)(@playwright/test@1.61.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
@@ -141,8 +141,8 @@ importers:
         specifier: ^0.8.2
         version: 0.8.3
       lucide-react:
-        specifier: ^1.18.0
-        version: 1.18.0(react@19.2.7)
+        specifier: ^1.21.0
+        version: 1.21.0(react@19.2.7)
       lz-string:
         specifier: ^1.5.0
         version: 1.5.0
@@ -227,8 +227,8 @@ importers:
   apps/example-nextjs-source:
     dependencies:
       '@stylexjs/stylex':
-        specifier: ^0.18.3
-        version: 0.18.3
+        specifier: ^0.19.0
+        version: 0.19.0
       '@xds/core':
         specifier: '*'
         version: link:../../packages/core
@@ -276,8 +276,8 @@ importers:
   apps/example-nextjs-stylex:
     dependencies:
       '@stylexjs/stylex':
-        specifier: ^0.18.3
-        version: 0.18.3
+        specifier: ^0.19.0
+        version: 0.19.0
       '@xds/core':
         specifier: '*'
         version: link:../../packages/core
@@ -356,8 +356,8 @@ importers:
   apps/example-vite:
     dependencies:
       '@stylexjs/stylex':
-        specifier: ^0.18.3
-        version: 0.18.3
+        specifier: ^0.19.0
+        version: 0.19.0
       '@xds/core':
         specifier: '*'
         version: link:../../packages/core
@@ -439,8 +439,8 @@ importers:
         specifier: ^2.2.0
         version: 2.2.0(react@19.2.7)
       '@stylexjs/stylex':
-        specifier: ^0.18.3
-        version: 0.18.3
+        specifier: ^0.19.0
+        version: 0.19.0
       '@xds/cli':
         specifier: '*'
         version: link:../../packages/cli
@@ -673,8 +673,8 @@ importers:
         specifier: ^1.0.0
         version: 1.1.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       lucide-react:
-        specifier: ^1.18.0
-        version: 1.18.0(react@19.2.7)
+        specifier: ^1.21.0
+        version: 1.21.0(react@19.2.7)
       postcss:
         specifier: ^8.5.10
         version: 8.5.15
@@ -719,8 +719,8 @@ importers:
   packages/cli:
     dependencies:
       '@clack/prompts':
-        specifier: ^1.5.1
-        version: 1.5.1
+        specifier: ^1.6.0
+        version: 1.6.0
       commander:
         specifier: ^12.1.0
         version: 12.1.0
@@ -744,8 +744,8 @@ importers:
   packages/core:
     dependencies:
       '@stylexjs/stylex':
-        specifier: ^0.18.3
-        version: 0.18.3
+        specifier: ^0.19.0
+        version: 0.19.0
       react:
         specifier: '>=19.0.0'
         version: 19.2.7
@@ -828,8 +828,8 @@ importers:
         specifier: 0.0.14
         version: link:../../core
       lucide-react:
-        specifier: ^1.18.0
-        version: 1.18.0(react@19.2.7)
+        specifier: ^1.21.0
+        version: 1.21.0(react@19.2.7)
       react:
         specifier: '>=19'
         version: 19.2.7
@@ -844,8 +844,8 @@ importers:
         specifier: 0.0.14
         version: link:../../core
       lucide-react:
-        specifier: ^1.18.0
-        version: 1.18.0(react@19.2.7)
+        specifier: ^1.21.0
+        version: 1.21.0(react@19.2.7)
       react:
         specifier: '>=19'
         version: 19.2.7
@@ -860,8 +860,8 @@ importers:
         specifier: 0.0.14
         version: link:../../core
       lucide-react:
-        specifier: ^1.18.0
-        version: 1.18.0(react@19.2.7)
+        specifier: ^1.21.0
+        version: 1.21.0(react@19.2.7)
       react:
         specifier: '>=19'
         version: 19.2.7
@@ -892,8 +892,8 @@ importers:
         specifier: 0.0.14
         version: link:../../core
       lucide-react:
-        specifier: ^1.18.0
-        version: 1.18.0(react@19.2.7)
+        specifier: ^1.21.0
+        version: 1.21.0(react@19.2.7)
       react:
         specifier: '>=19'
         version: 19.2.7
@@ -908,8 +908,8 @@ importers:
         specifier: 0.0.14
         version: link:../../core
       lucide-react:
-        specifier: ^1.18.0
-        version: 1.18.0(react@19.2.7)
+        specifier: ^1.21.0
+        version: 1.21.0(react@19.2.7)
       react:
         specifier: '>=19'
         version: 19.2.7
@@ -924,8 +924,8 @@ importers:
         specifier: 0.0.14
         version: link:../../core
       lucide-react:
-        specifier: ^1.18.0
-        version: 1.18.0(react@19.2.7)
+        specifier: ^1.21.0
+        version: 1.21.0(react@19.2.7)
       react:
         specifier: '>=19'
         version: 19.2.7
@@ -940,8 +940,8 @@ importers:
         specifier: 0.0.14
         version: link:../../core
       lucide-react:
-        specifier: ^1.18.0
-        version: 1.18.0(react@19.2.7)
+        specifier: ^1.21.0
+        version: 1.21.0(react@19.2.7)
       react:
         specifier: '>=19'
         version: 19.2.7
@@ -956,8 +956,8 @@ importers:
         specifier: 0.0.14
         version: link:../../core
       lucide-react:
-        specifier: ^1.18.0
-        version: 1.18.0(react@19.2.7)
+        specifier: ^1.21.0
+        version: 1.21.0(react@19.2.7)
       react:
         specifier: '>=19'
         version: 19.2.7
@@ -1390,12 +1390,12 @@ packages:
   '@changesets/write@0.4.0':
     resolution: {integrity: sha512-CdTLvIOPiCNuH71pyDu3rA+Q0n65cmAbXnwWH84rKGiFumFzkmHNT8KHTMEchcxN+Kl8I54xGUhJ7l3E7X396Q==}
 
-  '@clack/core@1.4.1':
-    resolution: {integrity: sha512-FILJa1gGKEFTGZAJE9RpVhrjKz3c3h4ar60dSv6cGuDqufQ84YEIS3GAGvZiN+H6yaLbbvTFNejjCC4tXpZEuw==}
+  '@clack/core@1.4.2':
+    resolution: {integrity: sha512-0Ty/1Gfm+Kb07sXcuESjyKfwEhSy4Ns1AgeEisHb/bDY5fWme0tTeTkU14T1Gmcs17YIjB/teiDe4uaCghbYqQ==}
     engines: {node: '>= 20.12.0'}
 
-  '@clack/prompts@1.5.1':
-    resolution: {integrity: sha512-zccHj2z2oCCO4yrDiRSlFOxWerGqRiysP7a5jPK6uoI9URKAquwY42Dd/iUP8JWHxEzdRe4TlbvZCo8z1/mhrw==}
+  '@clack/prompts@1.6.0':
+    resolution: {integrity: sha512-EYlRokl8szrP9Z25qT5aepMdBjzBvHF9ZEhzIiUBc9guz/T31EqRgvD0QSgZcpE93xiwrr+OkB4nz0BZyF6fSA==}
     engines: {node: '>= 20.12.0'}
 
   '@csstools/color-helpers@6.0.2':
@@ -4816,8 +4816,8 @@ packages:
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
 
-  lucide-react@1.18.0:
-    resolution: {integrity: sha512-LZDb7H/0YfM+RJncD0hDQRCAu+vSGODqpe35TuVI8EuXaRjkczbsx7p8dY4J87F/MUSj6bpYqeI8nw8qXaAdmA==}
+  lucide-react@1.21.0:
+    resolution: {integrity: sha512-reEZMXq8Qdd5jg5XYkQ5TR1fB/GiQ7ih4vcrthYDtgjSDwh0i6/YLiGjsWsIwgN49gpAnd4J2elSNzncMEEUUQ==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
@@ -6735,14 +6735,14 @@ snapshots:
       human-id: 4.1.3
       prettier: 3.8.4
 
-  '@clack/core@1.4.1':
+  '@clack/core@1.4.2':
     dependencies:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
-  '@clack/prompts@1.5.1':
+  '@clack/prompts@1.6.0':
     dependencies:
-      '@clack/core': 1.4.1
+      '@clack/core': 1.4.2
       fast-string-width: 3.0.2
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
@@ -10033,7 +10033,7 @@ snapshots:
     dependencies:
       yallist: 3.1.1
 
-  lucide-react@1.18.0(react@19.2.7):
+  lucide-react@1.21.0(react@19.2.7):
     dependencies:
       react: 19.2.7
 
