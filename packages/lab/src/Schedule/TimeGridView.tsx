@@ -19,8 +19,8 @@ import {
   plainDateToISO,
   type PlainDate,
 } from '@xds/core/utils';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {useXDSScheduleContext} from './context';
+import {Heading, Text} from '@xds/core/Text';
+import {useScheduleContext} from './context';
 import {eventOccursOnDate, isDayEvent} from './dateMath';
 import {
   clamp,
@@ -45,7 +45,7 @@ import type {
   CalendarDayEvent,
   CalendarEvent,
   CalendarInstantEvent,
-  XDSScheduleCategory,
+  ScheduleCategory,
 } from './types';
 
 export function TimeGridView({
@@ -65,7 +65,7 @@ export function TimeGridView({
   maxHour: number;
   hourHeight: number;
 }) {
-  const {categories} = useXDSScheduleContext();
+  const {categories} = useScheduleContext();
   const normalizedMinHour = Math.max(0, Math.min(23, Math.floor(minHour)));
   const normalizedMaxHour = Math.max(
     normalizedMinHour + 1,
@@ -113,7 +113,7 @@ export function TimeGridView({
                 styles.timeGridHeaderCell,
                 index === days.length - 1 && styles.timeGridHeaderCellLast,
               )}>
-              <XDSHeading
+              <Heading
                 level={4}
                 color="secondary"
                 display="block"
@@ -129,14 +129,14 @@ export function TimeGridView({
                     {formatDayNumber(day, timezoneID)}
                   </span>
                 </span>
-              </XDSHeading>
+              </Heading>
             </div>
           ))}
         </div>
         <div {...stylex.props(styles.allDayLabel)}>
-          <XDSText type="supporting" color="secondary" weight="bold">
+          <Text type="supporting" color="secondary" weight="bold">
             {timezoneLabel}
-          </XDSText>
+          </Text>
         </div>
         <div {...stylex.props(styles.allDayRow)}>
           <div
@@ -242,19 +242,19 @@ export function TimeGridView({
                             ? eventPastSurfaceColorStyle(category.color)
                             : eventSurfaceColorStyle(category.color),
                         )}>
-                        <XDSText
+                        <Text
                           type="supporting"
                           color="inherit"
                           weight="bold"
                           xstyle={styles.eventTitle}>
                           {event.title}
-                        </XDSText>
-                        <XDSText
+                        </Text>
+                        <Text
                           type="supporting"
                           color="inherit"
                           xstyle={styles.eventTime}>
                           {timeLabel}
-                        </XDSText>
+                        </Text>
                       </div>
                     );
                   })}
@@ -288,7 +288,7 @@ function TimeGridAccessibilityGrid({
   timezoneLabel,
 }: {
   allDayEvents: ReadonlyArray<CalendarDayEvent>;
-  categories: ReadonlyArray<XDSScheduleCategory>;
+  categories: ReadonlyArray<ScheduleCategory>;
   days: ReadonlyArray<PlainDate>;
   events: ReadonlyArray<CalendarInstantEvent>;
   focusDate: PlainDate;
@@ -381,7 +381,7 @@ function formatTimeGridAccessibilityCellLabel({
   label,
   timezoneID,
 }: {
-  categories: ReadonlyArray<XDSScheduleCategory>;
+  categories: ReadonlyArray<ScheduleCategory>;
   day: PlainDate;
   events: ReadonlyArray<CalendarEvent>;
   label: string;

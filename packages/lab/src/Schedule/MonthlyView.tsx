@@ -4,9 +4,9 @@
 
 /**
  * @file MonthlyView.tsx
- * @input XDSSchedule context and monthly view options
+ * @input Schedule context and monthly view options
  * @output Month grid schedule view factory
- * @position Concrete schedule view; exported as createXDSScheduleMonthlyView
+ * @position Concrete schedule view; exported as createScheduleMonthlyView
  */
 
 import * as stylex from '@stylexjs/stylex';
@@ -23,13 +23,13 @@ import {
   plainDateToISO,
   type PlainDate,
 } from '@xds/core/utils';
-import {XDSHeading, XDSText} from '@xds/core/Text';
+import {Heading, Text} from '@xds/core/Text';
 import {
   enumerateDates,
   getScheduleRangeFromDates,
   isDayEvent,
 } from './dateMath';
-import {useXDSScheduleContext} from './context';
+import {useScheduleContext} from './context';
 import {
   formatDayNumber,
   formatEventAccessibilityLabel,
@@ -46,19 +46,19 @@ import {useCurrentTime} from './useCurrentTime';
 import {scheduleRangeToZonedDateTimeRange} from './zonedDateTime';
 import type {
   CalendarEvent,
-  XDSScheduleView,
-  XDSScheduleViewComponentProps,
+  ScheduleView,
+  ScheduleViewComponentProps,
 } from './types';
 
-export interface XDSScheduleMonthlyViewOptions {
+export interface ScheduleMonthlyViewOptions {
   weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
 }
 
-function XDSScheduleMonthlyView(
-  _props: XDSScheduleViewComponentProps<XDSScheduleMonthlyViewOptions>,
+function ScheduleMonthlyView(
+  _props: ScheduleViewComponentProps<ScheduleMonthlyViewOptions>,
 ) {
   const {events, categories, date, focusDate, timezoneID, range, isLoading} =
-    useXDSScheduleContext();
+    useScheduleContext();
   const rangeDate = date.toPlainDate();
   const highlightedDate = focusDate.toPlainDate();
   const currentTime = useCurrentTime();
@@ -85,13 +85,13 @@ function XDSScheduleMonthlyView(
               aria-label={formatWeekday(day, timezoneID, 'long')}
               aria-colindex={index + 1}
               {...stylex.props(styles.weekdayLabel)}>
-              <XDSHeading
+              <Heading
                 level={4}
                 color="secondary"
                 display="block"
                 xstyle={styles.weekdayHeading}>
                 {formatWeekday(day, timezoneID, 'short')}
-              </XDSHeading>
+              </Heading>
             </div>
           ))}
         </div>
@@ -130,13 +130,13 @@ function XDSScheduleMonthlyView(
                           plainDateIsEqual(day, highlightedDate) &&
                             styles.currentDayPill,
                         )}>
-                        <XDSText
+                        <Text
                           type="supporting"
                           color="inherit"
                           weight="medium"
                           hasTabularNumbers>
                           {formatDayNumber(day, timezoneID)}
-                        </XDSText>
+                        </Text>
                       </div>
                       {dayEvents.length > 0 && (
                         <ul {...stylex.props(styles.visuallyHidden)}>
@@ -340,11 +340,11 @@ function getAvailableLevel(levels: number[], columnStart: number): number {
   return level >= 0 ? level : levels.length;
 }
 
-export function createXDSScheduleMonthlyView({
+export function createScheduleMonthlyView({
   weekStartsOn = 0,
-}: XDSScheduleMonthlyViewOptions = {}): XDSScheduleView<XDSScheduleMonthlyViewOptions> {
+}: ScheduleMonthlyViewOptions = {}): ScheduleView<ScheduleMonthlyViewOptions> {
   return {
-    component: XDSScheduleMonthlyView,
+    component: ScheduleMonthlyView,
     options: {weekStartsOn},
     getDateRange: date => {
       const range = getMonthDateRange({

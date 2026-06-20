@@ -4,9 +4,9 @@
 
 /**
  * @file ListView.tsx
- * @input XDSSchedule context and list view options
+ * @input Schedule context and list view options
  * @output Event-list schedule view factory
- * @position Concrete schedule view; exported as createXDSScheduleListView
+ * @position Concrete schedule view; exported as createScheduleListView
  */
 
 import * as stylex from '@stylexjs/stylex';
@@ -17,14 +17,14 @@ import {
   plainDateToISO,
   type PlainDate,
 } from '@xds/core/utils';
-import {XDSHeading} from '@xds/core/Text';
+import {Heading} from '@xds/core/Text';
 import {
   enumerateDates,
   eventOccursOnDate,
   getScheduleRangeFromDates,
   isDayEvent,
 } from './dateMath';
-import {useXDSScheduleContext} from './context';
+import {useScheduleContext} from './context';
 import {
   formatDayNumber,
   formatFullDate,
@@ -41,18 +41,18 @@ import {scheduleRangeToZonedDateTimeRange} from './zonedDateTime';
 import type {
   CalendarEvent,
   Instant,
-  XDSScheduleView,
-  XDSScheduleViewComponentProps,
+  ScheduleView,
+  ScheduleViewComponentProps,
 } from './types';
 
-export interface XDSScheduleListViewOptions {
+export interface ScheduleListViewOptions {
   days?: number;
 }
 
-function XDSScheduleListView(
-  _props: XDSScheduleViewComponentProps<XDSScheduleListViewOptions>,
+function ScheduleListView(
+  _props: ScheduleViewComponentProps<ScheduleListViewOptions>,
 ) {
-  const {events, timezoneID, range, isLoading} = useXDSScheduleContext();
+  const {events, timezoneID, range, isLoading} = useScheduleContext();
   const days = enumerateDates(range.startDate, range.endDate);
   const currentTime = useCurrentTime();
   const currentPlainDate = plainDateFromInstant(currentTime, timezoneID);
@@ -123,7 +123,7 @@ function ListDayHeading({
   timezoneID: string;
 }) {
   return (
-    <XDSHeading
+    <Heading
       level={4}
       color="secondary"
       display="block"
@@ -140,7 +140,7 @@ function ListDayHeading({
         </span>
       </span>
       {formatWeekday(day, timezoneID, 'short')}
-    </XDSHeading>
+    </Heading>
   );
 }
 
@@ -180,11 +180,11 @@ function renderListRows({
   return [...rows.slice(0, insertIndex), marker, ...rows.slice(insertIndex)];
 }
 
-export function createXDSScheduleListView({
+export function createScheduleListView({
   days: listDays = 7,
-}: XDSScheduleListViewOptions = {}): XDSScheduleView<XDSScheduleListViewOptions> {
+}: ScheduleListViewOptions = {}): ScheduleView<ScheduleListViewOptions> {
   return {
-    component: XDSScheduleListView,
+    component: ScheduleListView,
     options: {days: listDays},
     getDateRange: date => {
       const range = getListDateRange({

@@ -3,31 +3,31 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useMemo} from 'react';
 import {
-  XDSChart,
-  XDSChartAxis,
-  XDSChartGrid,
-  XDSChartBar,
-  XDSChartLine,
-  XDSChartDot,
-  XDSChartArea,
-  XDSChartTooltip,
-  XDSChartLegend,
-  XDSChartDotGL,
-  XDSChartHeatmapGL,
-  useXDSChartColors,
+  Chart,
+  ChartAxis,
+  ChartGrid,
+  ChartBar,
+  ChartLine,
+  ChartDot,
+  ChartArea,
+  ChartTooltip,
+  ChartLegend,
+  ChartDotGL,
+  ChartHeatmapGL,
+  useChartColors,
 } from '@xds/lab';
 import {Stack, Text} from '@xds/core';
 import {useDataset} from './useDataset';
 
 /**
- * `XDSChart` — composable chart system built on d3. All marks share a single
+ * `Chart` — composable chart system built on d3. All marks share a single
  * coordinate space via React context.
  *
  * Datasets from [vega-datasets](https://github.com/vega/vega-datasets) (CDN).
  */
-const meta: Meta<typeof XDSChart> = {
+const meta: Meta<typeof Chart> = {
   title: 'Lab/Chart',
-  component: XDSChart,
+  component: Chart,
   tags: ['autodocs'],
 };
 
@@ -43,7 +43,7 @@ type Gapminder = {country: string; year: number; life_expect: number};
 /** Iowa barley yields — average by variety (barley.json) */
 export const BarChart: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
+    const colors = useChartColors();
     const [raw, loading] = useDataset<Barley>('barley.json');
     const data = useMemo(() => {
       if (!raw.length) {
@@ -68,13 +68,13 @@ export const BarChart: StoryObj = {
       return <Text type="supporting">Loading…</Text>;
     }
     return (
-      <XDSChart data={data} xKey="variety" yKeys={['avgYield']} height={300}>
-        <XDSChartGrid horizontal />
-        <XDSChartAxis position="bottom" />
-        <XDSChartAxis position="left" />
-        <XDSChartBar dataKey="avgYield" color={colors.categorical(1)[0]} />
-        <XDSChartTooltip />
-      </XDSChart>
+      <Chart data={data} xKey="variety" yKeys={['avgYield']} height={300}>
+        <ChartGrid horizontal />
+        <ChartAxis position="bottom" />
+        <ChartAxis position="left" />
+        <ChartBar dataKey="avgYield" color={colors.categorical(1)[0]} />
+        <ChartTooltip />
+      </Chart>
     );
   },
 };
@@ -82,7 +82,7 @@ export const BarChart: StoryObj = {
 /** AAPL vs GOOG monthly prices (stocks.csv) */
 export const LineChart: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
+    const colors = useChartColors();
     const [raw, loading] = useDataset<Stock>('stocks.csv');
     const data = useMemo(() => {
       if (!raw.length) {
@@ -106,25 +106,25 @@ export const LineChart: StoryObj = {
     }
     const c = colors.categorical(2);
     return (
-      <XDSChart
+      <Chart
         data={data}
         xKey="date"
         yKeys={['AAPL', 'GOOG']}
         yBaseline="data"
         height={300}>
-        <XDSChartGrid horizontal />
-        <XDSChartAxis position="bottom" />
-        <XDSChartAxis position="left" />
-        <XDSChartLine dataKey="AAPL" color={c[0]} dots />
-        <XDSChartLine dataKey="GOOG" color={c[1]} dots />
-        <XDSChartLegend
+        <ChartGrid horizontal />
+        <ChartAxis position="bottom" />
+        <ChartAxis position="left" />
+        <ChartLine dataKey="AAPL" color={c[0]} dots />
+        <ChartLine dataKey="GOOG" color={c[1]} dots />
+        <ChartLegend
           items={[
             {label: 'AAPL', color: c[0]},
             {label: 'GOOG', color: c[1]},
           ]}
         />
-        <XDSChartTooltip />
-      </XDSChart>
+        <ChartTooltip />
+      </Chart>
     );
   },
 };
@@ -132,7 +132,7 @@ export const LineChart: StoryObj = {
 /** Horsepower vs MPG — 406 cars (cars.json) */
 export const ScatterPlot: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
+    const colors = useChartColors();
     const [raw, loading] = useDataset<Car>('cars.json');
     const data = useMemo(() => {
       return raw
@@ -143,22 +143,22 @@ export const ScatterPlot: StoryObj = {
       return <Text type="supporting">Loading…</Text>;
     }
     return (
-      <XDSChart
+      <Chart
         data={data}
         xKey="hp"
         yKeys={['mpg']}
         yBaseline="data"
         height={350}>
-        <XDSChartGrid horizontal vertical />
-        <XDSChartAxis position="bottom" />
-        <XDSChartAxis position="left" />
-        <XDSChartDot
+        <ChartGrid horizontal vertical />
+        <ChartAxis position="bottom" />
+        <ChartAxis position="left" />
+        <ChartDot
           dataKey="mpg"
           color={colors.categorical(1)[0]}
           radius={3}
         />
-        <XDSChartTooltip crosshair="xy" />
-      </XDSChart>
+        <ChartTooltip crosshair="xy" />
+      </Chart>
     );
   },
 };
@@ -166,7 +166,7 @@ export const ScatterPlot: StoryObj = {
 /** Flight delay vs distance — 10k points via WebGL (flights-10k.json) */
 export const WebGLScatter: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
+    const colors = useChartColors();
     const [raw, loading] = useDataset<Flight>('flights-10k.json');
     const data = useMemo(() => {
       return raw
@@ -181,22 +181,22 @@ export const WebGLScatter: StoryObj = {
         <Text type="supporting" color="secondary">
           {data.length.toLocaleString()} flights
         </Text>
-        <XDSChart
+        <Chart
           data={data}
           xKey="distance"
           yKeys={['delay']}
           yBaseline="zero"
           height={400}>
-          <XDSChartGrid horizontal />
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
-          <XDSChartDotGL
+          <ChartGrid horizontal />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
+          <ChartDotGL
             dataKey="delay"
             color={colors.categorical(1)[0]}
             size={3}
             opacity={0.3}
           />
-        </XDSChart>
+        </Chart>
       </Stack>
     );
   },
@@ -205,7 +205,7 @@ export const WebGLScatter: StoryObj = {
 /** Seattle temperature range — monthly avg min/max band (seattle-weather.csv) */
 export const ConfidenceBand: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
+    const colors = useChartColors();
     const [raw, loading] = useDataset<Weather>('seattle-weather.csv');
     const data = useMemo(() => {
       if (!raw.length) {
@@ -237,24 +237,24 @@ export const ConfidenceBand: StoryObj = {
       return <Text type="supporting">Loading…</Text>;
     }
     return (
-      <XDSChart
+      <Chart
         data={data}
         xKey="month"
         yKeys={['avgMax', 'avgMin']}
         yBaseline="data"
         height={300}>
-        <XDSChartGrid horizontal />
-        <XDSChartAxis position="bottom" />
-        <XDSChartAxis position="left" />
-        <XDSChartArea
+        <ChartGrid horizontal />
+        <ChartAxis position="bottom" />
+        <ChartAxis position="left" />
+        <ChartArea
           yUpper="avgMax"
           yLower="avgMin"
           color={colors.categorical(1)[0]}
           opacity={0.15}
         />
-        <XDSChartLine dataKey="avgMid" color={colors.categorical(1)[0]} dots />
-        <XDSChartTooltip />
-      </XDSChart>
+        <ChartLine dataKey="avgMid" color={colors.categorical(1)[0]} dots />
+        <ChartTooltip />
+      </Chart>
     );
   },
 };
@@ -262,7 +262,7 @@ export const ConfidenceBand: StoryObj = {
 /** Life expectancy by country × decade (gapminder.json) */
 export const Heatmap: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
+    const colors = useChartColors();
     const [raw, loading] = useDataset<Gapminder>('gapminder.json');
     const data = useMemo(() => {
       if (!raw.length) {
@@ -295,20 +295,20 @@ export const Heatmap: StoryObj = {
       return <Text type="supporting">Loading…</Text>;
     }
     return (
-      <XDSChart data={data} xKey="year" yKeys={['lifeExp']} height={300}>
-        <XDSChartAxis position="bottom" />
-        <XDSChartHeatmapGL
+      <Chart data={data} xKey="year" yKeys={['lifeExp']} height={300}>
+        <ChartAxis position="bottom" />
+        <ChartHeatmapGL
           xKey="year"
           yKey="country"
           valueKey="lifeExp"
           colorRange={colors.sequential.blue(5)}
         />
-        <XDSChartLegend
+        <ChartLegend
           gradient={colors.sequential.blue(5)}
           domain={[30, 85]}
           label="Life Expectancy"
         />
-      </XDSChart>
+      </Chart>
     );
   },
 };

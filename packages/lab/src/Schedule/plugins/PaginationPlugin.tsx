@@ -4,62 +4,62 @@
 
 /**
  * @file PaginationPlugin.tsx
- * @input Schedule date navigation callbacks from XDSSchedule context
+ * @input Schedule date navigation callbacks from Schedule context
  * @output Hook and default plugin that render previous, today, and next controls
- * @position Built-in XDSSchedule plugin; re-exported from plugins.tsx
+ * @position Built-in Schedule plugin; re-exported from plugins.tsx
  */
 
 import {useMemo, type ReactNode} from 'react';
-import {XDSButton} from '@xds/core/Button';
-import {XDSButtonGroup} from '@xds/core/ButtonGroup';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSIconButton} from '@xds/core/IconButton';
-import {useXDSScheduleContext} from '../context';
+import {Button} from '@xds/core/Button';
+import {ButtonGroup} from '@xds/core/ButtonGroup';
+import {Icon} from '@xds/core/Icon';
+import {IconButton} from '@xds/core/IconButton';
+import {useScheduleContext} from '../context';
 import type {
-  XDSScheduleHeaderContent,
-  XDSSchedulePlugin,
-  XDSSchedulePluginPosition,
+  ScheduleHeaderContent,
+  SchedulePlugin,
+  SchedulePluginPosition,
 } from '../types';
 
-export interface XDSSchedulePaginationPluginOptions {
-  position?: XDSSchedulePluginPosition;
+export interface SchedulePaginationPluginOptions {
+  position?: SchedulePluginPosition;
 }
 
-function XDSSchedulePaginationControls() {
+function SchedulePaginationControls() {
   const {
     onPreviousDate,
     previousDateLabel,
     onToday,
     onNextDate,
     nextDateLabel,
-  } = useXDSScheduleContext();
+  } = useScheduleContext();
   return (
-    <XDSButtonGroup label="Schedule pagination" size="sm">
-      <XDSIconButton
+    <ButtonGroup label="Schedule pagination" size="sm">
+      <IconButton
         label={previousDateLabel}
-        icon={<XDSIcon icon="chevronLeft" size="sm" color="inherit" />}
+        icon={<Icon icon="chevronLeft" size="sm" color="inherit" />}
         onClick={onPreviousDate}
       />
-      <XDSButton label="Today" size="sm" onClick={onToday} />
-      <XDSIconButton
+      <Button label="Today" size="sm" onClick={onToday} />
+      <IconButton
         label={nextDateLabel}
-        icon={<XDSIcon icon="chevronRight" size="sm" color="inherit" />}
+        icon={<Icon icon="chevronRight" size="sm" color="inherit" />}
         onClick={onNextDate}
       />
-    </XDSButtonGroup>
+    </ButtonGroup>
   );
 }
 
-function createXDSSchedulePaginationPlugin({
+function createSchedulePaginationPlugin({
   position = 'start',
-}: XDSSchedulePaginationPluginOptions = {}): XDSSchedulePlugin {
+}: SchedulePaginationPluginOptions = {}): SchedulePlugin {
   return {
     renderHeader(
       startContent: ReactNode,
       centerContent: ReactNode,
       endContent: ReactNode,
-    ): XDSScheduleHeaderContent {
-      const controls = <XDSSchedulePaginationControls />;
+    ): ScheduleHeaderContent {
+      const controls = <SchedulePaginationControls />;
       return position === 'start'
         ? {
             startContent: (
@@ -85,14 +85,14 @@ function createXDSSchedulePaginationPlugin({
   };
 }
 
-export const defaultXDSSchedulePaginationPlugin =
-  createXDSSchedulePaginationPlugin();
+export const defaultSchedulePaginationPlugin =
+  createSchedulePaginationPlugin();
 
-export function useXDSSchedulePaginationPlugin({
+export function useSchedulePaginationPlugin({
   position = 'start',
-}: XDSSchedulePaginationPluginOptions = {}): XDSSchedulePlugin {
+}: SchedulePaginationPluginOptions = {}): SchedulePlugin {
   return useMemo(
-    () => createXDSSchedulePaginationPlugin({position}),
+    () => createSchedulePaginationPlugin({position}),
     [position],
   );
 }

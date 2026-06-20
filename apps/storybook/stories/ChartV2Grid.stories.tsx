@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSChartV2 as XDSChart, bar} from '@xds/lab';
+import {ChartV2 as Chart, bar} from '@xds/lab';
 import {
-  XDSChartV2Grid as XDSChartGrid,
-  XDSChartV2Axis as XDSChartAxis,
+  ChartV2Grid as ChartGrid,
+  ChartV2Axis as ChartAxis,
 } from '@xds/lab';
 
 interface AxesAndGridsArgs {
@@ -21,7 +21,7 @@ interface AxesAndGridsArgs {
 }
 
 const meta: Meta<AxesAndGridsArgs> = {
-  title: 'Lab/XDSChart v2/Primitives/Axes & Grids',
+  title: 'Lab/Chart v2/Primitives/Axes & Grids',
   argTypes: {
     horizontalGrid: {control: 'boolean'},
     verticalGrid: {control: 'boolean'},
@@ -60,24 +60,24 @@ const monthlyData = [
 export const AxesAndGrids: StoryObj<AxesAndGridsArgs> = {
   name: 'Axes & Grids',
   render: args => (
-    <XDSChart
+    <Chart
       data={monthlyData}
       xKey="month"
       series={[bar('revenue', {color: '#3b82f6'})]}
       grid={
-        <XDSChartGrid
+        <ChartGrid
           horizontal={args.horizontalGrid}
           vertical={args.verticalGrid}
         />
       }
       axes={
         <>
-          <XDSChartAxis
+          <ChartAxis
             position="bottom"
             showAxisLine={args.bottomAxisLine}
             showTicks={args.showTicks}
           />
-          <XDSChartAxis
+          <ChartAxis
             position="left"
             showAxisLine={args.leftAxisLine}
             showTicks={args.showTicks}

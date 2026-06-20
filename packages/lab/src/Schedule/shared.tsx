@@ -20,9 +20,9 @@ import {
   typographyVars,
   typeScaleVars,
 } from '@xds/core/theme/tokens.stylex';
-import {XDSSpinner} from '@xds/core/Spinner';
-import {XDSHStack} from '@xds/core/Stack';
-import {XDSHeading, XDSText} from '@xds/core/Text';
+import {Spinner} from '@xds/core/Spinner';
+import {HStack} from '@xds/core/Stack';
+import {Heading, Text} from '@xds/core/Text';
 import {
   plainDateFromInstant,
   plainDateIsAfter,
@@ -31,17 +31,17 @@ import {
   type PlainDate,
 } from '@xds/core/utils';
 import {isDayEvent} from './dateMath';
-import {useXDSScheduleContext} from './context';
+import {useScheduleContext} from './context';
 import type {
   CalendarEvent,
   CalendarInstantEvent,
   Instant,
-  XDSScheduleCategory,
-  XDSScheduleHeaderContent,
-  XDSScheduleEventColor,
+  ScheduleCategory,
+  ScheduleHeaderContent,
+  ScheduleEventColor,
 } from './types';
 
-const DEFAULT_EVENT_CATEGORY: XDSScheduleCategory = {
+const DEFAULT_EVENT_CATEGORY: ScheduleCategory = {
   label: 'Event',
   color: 'blue',
 };
@@ -57,18 +57,18 @@ export function ScheduleFrame({
   isLoading: boolean;
   children: ReactNode;
 }) {
-  const {plugins} = useXDSScheduleContext();
-  const initialHeader: XDSScheduleHeaderContent = {
+  const {plugins} = useScheduleContext();
+  const initialHeader: ScheduleHeaderContent = {
     startContent: null,
     centerContent: (
       <span {...stylex.props(styles.headerTitleContent)}>
-        <XDSHeading level={2}>{title}</XDSHeading>
+        <Heading level={2}>{title}</Heading>
         <span
           {...stylex.props(
             styles.loadingSpinner,
             !isLoading && styles.loadingSpinnerHidden,
           )}>
-          <XDSSpinner size="md" aria-label="Loading events" />
+          <Spinner size="md" aria-label="Loading events" />
         </span>
       </span>
     ),
@@ -87,19 +87,19 @@ export function ScheduleFrame({
   return (
     <section {...stylex.props(styles.frame)} aria-label={titleLabel}>
       <div {...stylex.props(styles.header)}>
-        <XDSHStack gap={8} align="center" xstyle={styles.headerControls}>
+        <HStack gap={8} align="center" xstyle={styles.headerControls}>
           {header.startContent}
-        </XDSHStack>
-        <XDSHStack gap={8} align="center" xstyle={styles.headerTitle}>
+        </HStack>
+        <HStack gap={8} align="center" xstyle={styles.headerTitle}>
           {header.centerContent}
-        </XDSHStack>
-        <XDSHStack
+        </HStack>
+        <HStack
           gap={8}
           align="center"
           justify="end"
           xstyle={styles.headerStatus}>
           {header.endContent}
-        </XDSHStack>
+        </HStack>
       </div>
       {children}
     </section>
@@ -164,7 +164,7 @@ export function EventPill({
   timezoneID?: string;
   isPast?: boolean;
 }) {
-  const {categories} = useXDSScheduleContext();
+  const {categories} = useScheduleContext();
   const category = getEventCategory(event, categories);
   const timeLabel =
     day != null && timezoneID != null && !isDayEvent(event)
@@ -179,17 +179,17 @@ export function EventPill({
           : eventSurfaceColorStyle(category.color),
       )}>
       {timeLabel != null && (
-        <XDSText type="supporting" color="inherit" xstyle={styles.eventTime}>
+        <Text type="supporting" color="inherit" xstyle={styles.eventTime}>
           {timeLabel}
-        </XDSText>
+        </Text>
       )}
-      <XDSText
+      <Text
         type="supporting"
         color="inherit"
         weight="bold"
         xstyle={styles.eventTitle}>
         {event.title}
-      </XDSText>
+      </Text>
     </span>
   );
 }
@@ -203,7 +203,7 @@ export function MonthEventPill({
   timezoneID: string;
   isPast?: boolean;
 }) {
-  const {categories} = useXDSScheduleContext();
+  const {categories} = useScheduleContext();
   const category = getEventCategory(event, categories);
   const timeLabel = isDayEvent(event)
     ? null
@@ -217,17 +217,17 @@ export function MonthEventPill({
           : eventSurfaceColorStyle(category.color),
       )}>
       {timeLabel != null && (
-        <XDSText type="supporting" color="inherit" xstyle={styles.eventTime}>
+        <Text type="supporting" color="inherit" xstyle={styles.eventTime}>
           {timeLabel}
-        </XDSText>
+        </Text>
       )}
-      <XDSText
+      <Text
         type="supporting"
         color="inherit"
         weight="bold"
         xstyle={styles.eventTitle}>
         {event.title}
-      </XDSText>
+      </Text>
     </span>
   );
 }
@@ -241,7 +241,7 @@ export function ListEventRow({
   timezoneID: string;
   isPast?: boolean;
 }) {
-  const {categories} = useXDSScheduleContext();
+  const {categories} = useScheduleContext();
   const category = getEventCategory(event, categories);
   return (
     <div {...stylex.props(styles.listEventRow, isPast && styles.listEventPast)}>
@@ -264,8 +264,8 @@ export function ListEventRow({
 
 export function getEventCategory(
   event: CalendarEvent,
-  categories: ReadonlyArray<XDSScheduleCategory>,
-): XDSScheduleCategory {
+  categories: ReadonlyArray<ScheduleCategory>,
+): ScheduleCategory {
   return (
     categories.find(category => category.label === event.category) ??
     (event.category != null
@@ -274,7 +274,7 @@ export function getEventCategory(
   );
 }
 
-export function eventColorStyle(color: XDSScheduleEventColor | undefined) {
+export function eventColorStyle(color: ScheduleEventColor | undefined) {
   switch (color) {
     case 'cyan':
       return styles.eventCyan;
@@ -300,7 +300,7 @@ export function eventColorStyle(color: XDSScheduleEventColor | undefined) {
   }
 }
 
-export function eventDotColorStyle(color: XDSScheduleEventColor | undefined) {
+export function eventDotColorStyle(color: ScheduleEventColor | undefined) {
   switch (color) {
     case 'cyan':
       return styles.eventDotCyan;
@@ -327,7 +327,7 @@ export function eventDotColorStyle(color: XDSScheduleEventColor | undefined) {
 }
 
 export function eventSurfaceColorStyle(
-  color: XDSScheduleEventColor | undefined,
+  color: ScheduleEventColor | undefined,
 ) {
   switch (color) {
     case 'cyan':
@@ -355,7 +355,7 @@ export function eventSurfaceColorStyle(
 }
 
 export function eventPastSurfaceColorStyle(
-  color: XDSScheduleEventColor | undefined,
+  color: ScheduleEventColor | undefined,
 ) {
   switch (color) {
     case 'cyan':
@@ -518,7 +518,7 @@ export function formatEventAccessibilityLabel(
   event: CalendarEvent,
   day: PlainDate,
   timezoneID: string,
-  categories: ReadonlyArray<XDSScheduleCategory>,
+  categories: ReadonlyArray<ScheduleCategory>,
 ): string {
   const category = getEventCategory(event, categories);
   const timeLabel = isDayEvent(event)

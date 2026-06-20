@@ -3,15 +3,15 @@
 /**
  * @file layout.ts
  * @output Pure layout algorithm — computes node and link positions
- * @position Core logic; consumed by XDSSankeyChart during render
+ * @position Core logic; consumed by SankeyChart during render
  *
  * Accepts columns as either string[][] (simple) or SankeyColumnDef[]
  * (with labels). Reserves margin for labels and column headers.
  */
 
 import type {
-  SankeyNode,
-  SankeyLink,
+  SankeyNodeDatum,
+  SankeyLinkDatum,
   SankeyColumn,
   SankeyColumnDef,
   SankeyNodeLayout,
@@ -45,8 +45,8 @@ function normalizeColumns(cols: SankeyColumn[]): SankeyColumnDef[] {
 }
 
 function autoColumns(
-  nodes: SankeyNode[],
-  links: SankeyLink[],
+  nodes: SankeyNodeDatum[],
+  links: SankeyLinkDatum[],
 ): SankeyColumnDef[] {
   const inDegree = new Map<string, number>();
   const outEdges = new Map<string, string[]>();
@@ -103,8 +103,8 @@ export interface LayoutResult {
 }
 
 export function computeLayout(
-  nodes: SankeyNode[],
-  links: SankeyLink[],
+  nodes: SankeyNodeDatum[],
+  links: SankeyLinkDatum[],
   options: LayoutOptions,
 ): LayoutResult {
   const {
@@ -122,7 +122,7 @@ export function computeLayout(
   const hasHeaders = colDefs.some(c => c.label);
   const headerMargin = hasHeaders ? 20 : 0;
 
-  const nodeMap = new Map<string, SankeyNode>();
+  const nodeMap = new Map<string, SankeyNodeDatum>();
   nodes.forEach(n => nodeMap.set(n.id, n));
 
   // Usable height after reserving space for labels and headers

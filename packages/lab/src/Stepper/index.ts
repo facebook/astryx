@@ -2,13 +2,13 @@
 
 'use client';
 
-export {XDSStepper} from './XDSStepper';
-export type {XDSStepperProps} from './XDSStepper';
+export {Stepper} from './Stepper';
+export type {StepperProps} from './Stepper';
 
-export {XDSStep} from './XDSStep';
-export type {XDSStepProps, XDSStepIndicatorPreset} from './XDSStep';
+export {Step} from './Step';
+export type {StepProps, StepIndicatorPreset} from './Step';
 
-export type {XDSStepStatus} from './XDSStepStatus';
+export type {StepStatus} from './StepStatus';
 
-export {useXDSStepperContext} from './XDSStepperContext';
-export type {XDSStepperOrientation} from './XDSStepperContext';
+export {useStepperContext} from './StepperContext';
+export type {StepperOrientation} from './StepperContext';

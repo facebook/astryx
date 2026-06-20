@@ -6,5 +6,5 @@
  * This re-export exists for backwards compatibility.
  */
 
-export {XDSCodeBlock} from '@xds/core/CodeBlock';
-export type {XDSCodeBlockProps} from '@xds/core/CodeBlock';
+export {CodeBlock} from '@xds/core/CodeBlock';
+export type {CodeBlockProps} from '@xds/core/CodeBlock';

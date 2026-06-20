@@ -3,7 +3,7 @@
 /**
  * @file zonedDateTime.ts
  * @input Instant epoch milliseconds and IANA timezone IDs
- * @output Lightweight ZonedDateTime helpers used by XDSSchedule views
+ * @output Lightweight ZonedDateTime helpers used by Schedule views
  * @position Internal timezone-aware date bridge between schedule shell and views
  */
 
@@ -13,7 +13,7 @@ import {
   plainDateToInstant,
   type PlainDate,
 } from '@xds/core/utils';
-import type {Instant, ScheduleRange, XDSScheduleDate} from './types';
+import type {Instant, ScheduleRange, ScheduleDate} from './types';
 
 export interface ZonedDateTime {
   instant: Instant;
@@ -26,7 +26,7 @@ export interface ZonedDateTime {
 export type ZonedDateTimeRange = [ZonedDateTime, ZonedDateTime];
 
 export function createZonedDateTime(
-  date: XDSScheduleDate,
+  date: ScheduleDate,
   timezoneID: string,
 ): ZonedDateTime {
   return zonedDateTimeFromInstant(date as Instant, timezoneID);

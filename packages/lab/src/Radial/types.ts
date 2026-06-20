@@ -9,7 +9,7 @@
 /** Radial chart mode */
 export type RadialMode = 'spider' | 'pie';
 
-/** Radial context provided by XDSRadialChart to children */
+/** Radial context provided by RadialChart to children */
 export interface RadialContext {
   /** Center x pixel position */
   cx: number;

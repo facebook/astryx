@@ -213,7 +213,7 @@ function StreamGLCanvas({
  * // Push data points in a rAF loop or event handler:
  * streamRef.current?.push(Date.now(), value);
  *
- * <XDSChart series={[streamGL({color: '#10b981', handleRef: streamRef})]} />
+ * <Chart series={[streamGL({color: '#10b981', handleRef: streamRef})]} />
  * ```
  */
 export function streamGL(options: StreamGLOptions): SeriesDef {

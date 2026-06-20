@@ -64,12 +64,12 @@ export const docs = {
   },
   usage: {
     description:
-      'A circular progress indicator that shows completion as a ring or arc. Use it for upload progress, score displays, dashboard gauges, or compact progress where horizontal space is limited. Complements XDSProgressBar for radial layouts.',
+      'A circular progress indicator that shows completion as a ring or arc. Use it for upload progress, score displays, dashboard gauges, or compact progress where horizontal space is limited. Complements ProgressBar for radial layouts.',
     bestPractices: [
       { guidance: true, description: 'Pass a value for determinate progress; omit value for an indeterminate spinner.' },
       { guidance: true, description: 'Provide center content (children) to give context: a percentage, icon, or short label.' },
       { guidance: true, description: 'Always provide a label, even though it is visually hidden by default; screen readers need it.' },
-      { guidance: false, description: 'Use circular progress for long text labels; use XDSProgressBar instead, which has more room for label and value display.' },
+      { guidance: false, description: 'Use circular progress for long text labels; use ProgressBar instead, which has more room for label and value display.' },
       { guidance: false, description: 'Stack multiple circular progress indicators for the same operation; use one with a value label.' },
     ],
   },
@@ -135,12 +135,12 @@ export const docsZh = {
   },
   usage: {
     description:
-      'A circular progress indicator that shows completion as a ring or arc. Use it for upload progress, score displays, dashboard gauges, or compact progress where horizontal space is limited. Complements XDSProgressBar for radial layouts.',
+      'A circular progress indicator that shows completion as a ring or arc. Use it for upload progress, score displays, dashboard gauges, or compact progress where horizontal space is limited. Complements ProgressBar for radial layouts.',
     bestPractices: [
       { guidance: true, description: 'Pass a value for determinate progress; omit value for an indeterminate spinner.' },
       { guidance: true, description: 'Provide center content (children) to give context: a percentage, icon, or short label.' },
       { guidance: true, description: 'Always provide a label, even though it is visually hidden by default; screen readers need it.' },
-      { guidance: false, description: 'Use circular progress for long text labels; use XDSProgressBar instead, which has more room for label and value display.' },
+      { guidance: false, description: 'Use circular progress for long text labels; use ProgressBar instead, which has more room for label and value display.' },
       { guidance: false, description: 'Stack multiple circular progress indicators for the same operation; use one with a value label.' },
     ],
   },
@@ -152,12 +152,12 @@ export const docsDense = {
     'Circular/radial progress indicator showing completion as a ring arc.',
   usage: {
     description:
-      'A circular progress indicator that shows completion as a ring or arc. Use it for upload progress, score displays, dashboard gauges, or compact progress where horizontal space is limited. Complements XDSProgressBar for radial layouts.',
+      'A circular progress indicator that shows completion as a ring or arc. Use it for upload progress, score displays, dashboard gauges, or compact progress where horizontal space is limited. Complements ProgressBar for radial layouts.',
     bestPractices: [
       { guidance: true, description: 'Pass a value for determinate progress; omit value for an indeterminate spinner.' },
       { guidance: true, description: 'Provide center content (children) to give context: a percentage, icon, or short label.' },
       { guidance: true, description: 'Always provide a label, even though it is visually hidden by default; screen readers need it.' },
-      { guidance: false, description: 'Use circular progress for long text labels; use XDSProgressBar instead, which has more room for label and value display.' },
+      { guidance: false, description: 'Use circular progress for long text labels; use ProgressBar instead, which has more room for label and value display.' },
       { guidance: false, description: 'Stack multiple circular progress indicators for the same operation; use one with a value label.' },
     ],
   },

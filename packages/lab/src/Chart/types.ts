@@ -34,7 +34,7 @@ export interface DataPoint {
   py: number;
 }
 
-/** Scale context provided by XDSChart to children */
+/** Scale context provided by Chart to children */
 export interface ChartContext {
   /** Inner width (SVG width minus margins) */
   width: number;

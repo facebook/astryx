@@ -2,40 +2,40 @@
 
 /**
  * @file index.ts
- * @input XDSSchedule implementation and public schedule types
+ * @input Schedule implementation and public schedule types
  * @output Public exports for @xds/lab Schedule
  * @position Component entry point; re-exported by packages/lab/src/index.ts
  */
 
-export {XDSSchedule, type XDSScheduleProps} from './XDSSchedule';
+export {Schedule, type ScheduleProps} from './Schedule';
 export {createEventFromISO} from './CalendarEvent';
 export {
-  createXDSScheduleMonthlyView,
-  type XDSScheduleMonthlyViewOptions,
+  createScheduleMonthlyView,
+  type ScheduleMonthlyViewOptions,
 } from './MonthlyView';
 export {
-  createXDSScheduleWeeklyView,
-  type XDSScheduleWeeklyViewOptions,
+  createScheduleWeeklyView,
+  type ScheduleWeeklyViewOptions,
 } from './WeeklyView';
 export {
-  createXDSScheduleDayView,
-  type XDSScheduleDayViewOptions,
+  createScheduleDayView,
+  type ScheduleDayViewOptions,
 } from './DayView';
 export {
-  createXDSScheduleListView,
-  type XDSScheduleListViewOptions,
+  createScheduleListView,
+  type ScheduleListViewOptions,
 } from './ListView';
-export {XDSScheduleContext, useXDSScheduleContext} from './context';
+export {ScheduleContext, useScheduleContext} from './context';
 export {
-  defaultXDSSchedulePlugins,
-  useXDSSchedulePaginationPlugin,
-  useXDSScheduleViewSelectorPlugin,
+  defaultSchedulePlugins,
+  useSchedulePaginationPlugin,
+  useScheduleViewSelectorPlugin,
 } from './plugins';
-export type {XDSScheduleContextValue} from './context';
-export type {XDSSchedulePaginationPluginOptions} from './plugins/PaginationPlugin';
+export type {ScheduleContextValue} from './context';
+export type {SchedulePaginationPluginOptions} from './plugins/PaginationPlugin';
 export type {
-  XDSScheduleViewSelectorOption,
-  XDSScheduleViewSelectorPluginOptions,
+  ScheduleViewSelectorOption,
+  ScheduleViewSelectorPluginOptions,
 } from './plugins/ViewSelectorPlugin';
 
 export type {
@@ -48,14 +48,14 @@ export type {
   ScheduleRange,
   ZonedDateTime,
   ZonedDateTimeRange,
-  XDSScheduleCategory,
-  XDSScheduleDate,
-  XDSScheduleEventColor,
-  XDSScheduleEventSource,
-  XDSScheduleHeaderContent,
-  XDSSchedulePlugin,
-  XDSSchedulePluginPosition,
-  XDSScheduleView,
-  XDSScheduleViewBase,
-  XDSScheduleViewOptions,
+  ScheduleCategory,
+  ScheduleDate,
+  ScheduleEventColor,
+  ScheduleEventSource,
+  ScheduleHeaderContent,
+  SchedulePlugin,
+  SchedulePluginPosition,
+  ScheduleView,
+  ScheduleViewBase,
+  ScheduleViewOptions,
 } from './types';

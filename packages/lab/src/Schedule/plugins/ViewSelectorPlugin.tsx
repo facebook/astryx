@@ -5,48 +5,48 @@
 /**
  * @file ViewSelectorPlugin.tsx
  * @input Schedule view options and caller-provided view change callback
- * @output Hook that renders an XDSDropdownMenu plugin for caller-provided views
- * @position Built-in XDSSchedule plugin; re-exported from plugins.tsx
+ * @output Hook that renders an DropdownMenu plugin for caller-provided views
+ * @position Built-in Schedule plugin; re-exported from plugins.tsx
  */
 
 import {useMemo, type ReactNode} from 'react';
-import {XDSDropdownMenu, XDSDropdownMenuItem} from '@xds/core/DropdownMenu';
-import {XDSIcon} from '@xds/core/Icon';
-import {useXDSScheduleContext} from '../context';
+import {DropdownMenu, DropdownMenuItem} from '@xds/core/DropdownMenu';
+import {Icon} from '@xds/core/Icon';
+import {useScheduleContext} from '../context';
 import type {
-  XDSScheduleHeaderContent,
-  XDSSchedulePlugin,
-  XDSSchedulePluginPosition,
-  XDSScheduleView,
-  XDSScheduleViewBase,
+  ScheduleHeaderContent,
+  SchedulePlugin,
+  SchedulePluginPosition,
+  ScheduleView,
+  ScheduleViewBase,
 } from '../types';
 
-export interface XDSScheduleViewSelectorOption<
-  View extends XDSScheduleViewBase = XDSScheduleView,
+export interface ScheduleViewSelectorOption<
+  View extends ScheduleViewBase = ScheduleView,
 > {
   view: View;
   label: string;
 }
 
-export interface XDSScheduleViewSelectorPluginOptions<
-  View extends XDSScheduleViewBase = XDSScheduleView,
+export interface ScheduleViewSelectorPluginOptions<
+  View extends ScheduleViewBase = ScheduleView,
 > {
   onChangeView?: (view: View) => void;
-  position?: XDSSchedulePluginPosition;
+  position?: SchedulePluginPosition;
 }
 
-function XDSScheduleViewSelectorControl<View extends XDSScheduleViewBase>({
+function ScheduleViewSelectorControl<View extends ScheduleViewBase>({
   onChangeView,
   options,
 }: {
   onChangeView?: (view: View) => void;
-  options: ReadonlyArray<XDSScheduleViewSelectorOption<View>>;
+  options: ReadonlyArray<ScheduleViewSelectorOption<View>>;
 }) {
-  const {view} = useXDSScheduleContext();
+  const {view} = useScheduleContext();
   const selectedIndex = options.findIndex(option => option.view === view);
   const selectedLabel = options[selectedIndex]?.label ?? 'View';
   return (
-    <XDSDropdownMenu
+    <DropdownMenu
       button={{
         label: selectedLabel,
         size: 'sm',
@@ -54,36 +54,36 @@ function XDSScheduleViewSelectorControl<View extends XDSScheduleViewBase>({
       }}
       menuWidth={160}>
       {options.map((option, index) => (
-        <XDSDropdownMenuItem
+        <DropdownMenuItem
           key={option.label}
           label={option.label}
           onClick={() => onChangeView?.(option.view)}
           endContent={
             index === selectedIndex ? (
-              <XDSIcon icon="check" size="sm" color="primary" />
+              <Icon icon="check" size="sm" color="primary" />
             ) : null
           }
         />
       ))}
-    </XDSDropdownMenu>
+    </DropdownMenu>
   );
 }
 
-function createXDSScheduleViewSelectorPlugin<View extends XDSScheduleViewBase>(
-  options: ReadonlyArray<XDSScheduleViewSelectorOption<View>>,
+function createScheduleViewSelectorPlugin<View extends ScheduleViewBase>(
+  options: ReadonlyArray<ScheduleViewSelectorOption<View>>,
   {
     onChangeView,
     position = 'end',
-  }: XDSScheduleViewSelectorPluginOptions<View> = {},
-): XDSSchedulePlugin {
+  }: ScheduleViewSelectorPluginOptions<View> = {},
+): SchedulePlugin {
   return {
     renderHeader(
       startContent: ReactNode,
       centerContent: ReactNode,
       endContent: ReactNode,
-    ): XDSScheduleHeaderContent {
+    ): ScheduleHeaderContent {
       const control = (
-        <XDSScheduleViewSelectorControl
+        <ScheduleViewSelectorControl
           onChangeView={onChangeView}
           options={options}
         />
@@ -113,16 +113,16 @@ function createXDSScheduleViewSelectorPlugin<View extends XDSScheduleViewBase>(
   };
 }
 
-export function useXDSScheduleViewSelectorPlugin<
-  View extends XDSScheduleViewBase,
+export function useScheduleViewSelectorPlugin<
+  View extends ScheduleViewBase,
 >(
-  options: ReadonlyArray<XDSScheduleViewSelectorOption<View>>,
-  pluginOptions: XDSScheduleViewSelectorPluginOptions<View> = {},
-): XDSSchedulePlugin {
+  options: ReadonlyArray<ScheduleViewSelectorOption<View>>,
+  pluginOptions: ScheduleViewSelectorPluginOptions<View> = {},
+): SchedulePlugin {
   const {onChangeView, position = 'end'} = pluginOptions;
   return useMemo(
     () =>
-      createXDSScheduleViewSelectorPlugin(options, {onChangeView, position}),
+      createScheduleViewSelectorPlugin(options, {onChangeView, position}),
     [onChangeView, options, position],
   );
 }

@@ -12,11 +12,11 @@ const ThreeDCtx = createContext<ThreeDContext | null>(null);
 
 export const ThreeDProvider = ThreeDCtx.Provider;
 
-/** Access the 3D chart context. Throws if used outside XDS3DChart. */
+/** Access the 3D chart context. Throws if used outside ThreeDChart. */
 export function use3D(): ThreeDContext {
   const ctx = useContext(ThreeDCtx);
   if (!ctx) {
-    throw new Error('3D components must be used inside <XDS3DChart>');
+    throw new Error('3D components must be used inside <ThreeDChart>');
   }
   return ctx;
 }

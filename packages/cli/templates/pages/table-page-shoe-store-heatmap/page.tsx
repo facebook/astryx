@@ -20,9 +20,9 @@ import {Thumbnail} from '@xds/core/Thumbnail';
 import {Table, proportional, pixel} from '@xds/core/Table';
 import type {TableColumn} from '@xds/core/Table';
 import {
-  XDSChartV2 as XDSChart,
-  XDSChartGrid,
-  XDSChartAxis,
+  ChartV2 as Chart,
+  ChartGrid,
+  ChartAxis,
   area,
   line,
 } from '@xds/lab';
@@ -908,18 +908,18 @@ export default function TablePageShoeStoreHeatmapTemplate() {
       content={
         <LayoutContent padding={3}>
           <VStack gap={4}>
-            <XDSChart
+            <Chart
               data={revenueData}
               xKey="date"
               series={[
                 area('revenue', {color: '#3b82f6', gradient: true}),
                 line('revenue', {color: '#3b82f6'}),
               ]}
-              grid={<XDSChartGrid horizontal />}
+              grid={<ChartGrid horizontal />}
               axes={
                 <>
-                  <XDSChartAxis position="bottom" />
-                  <XDSChartAxis
+                  <ChartAxis position="bottom" />
+                  <ChartAxis
                     position="left"
                     tickFormat={(v: unknown) => `$${Number(v) / 1000}k`}
                   />

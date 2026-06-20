@@ -2,15 +2,15 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSStepper, XDSStep} from '@xds/lab/Stepper';
+import {Stepper, Step} from '@xds/lab/Stepper';
 import {TextInput} from '@xds/core/TextInput';
 import {Button} from '@xds/core/Button';
 import {Text} from '@xds/core/Text';
 import {Icon} from '@xds/core/Icon';
 
-const meta: Meta<typeof XDSStepper> = {
+const meta: Meta<typeof Stepper> = {
   title: 'Lab/Stepper',
-  component: XDSStepper,
+  component: Stepper,
   tags: ['autodocs'],
   argTypes: {
     activeStep: {control: {type: 'number', min: 0, max: 5}},
@@ -20,7 +20,7 @@ const meta: Meta<typeof XDSStepper> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSStepper>;
+type Story = StoryObj<typeof Stepper>;
 
 // ============================================================
 // DEFAULT (auto indicator)
@@ -32,36 +32,36 @@ export const Default: Story = {
     const [active, setActive] = useState(2);
     return (
       <div style={{maxWidth: 400}}>
-        <XDSStepper
+        <Stepper
           activeStep={active}
           orientation="vertical"
           onStepClick={setActive}>
-          <XDSStep
+          <Step
             step={0}
             label="Create workspace"
             description="Name and configure your workspace"
           />
-          <XDSStep
+          <Step
             step={1}
             label="Invite team members"
             description="Add collaborators by email"
           />
-          <XDSStep
+          <Step
             step={2}
             label="Set up integrations"
             description="Connect Slack, GitHub, Jira"
           />
-          <XDSStep
+          <Step
             step={3}
             label="Import data"
             description="Bring in existing projects"
           />
-          <XDSStep
+          <Step
             step={4}
             label="Launch"
             description="Go live with your team"
           />
-        </XDSStepper>
+        </Stepper>
       </div>
     );
   },
@@ -73,16 +73,16 @@ export const DefaultHorizontal: Story = {
     const [active, setActive] = useState(1);
     return (
       <div style={{maxWidth: 700}}>
-        <XDSStepper
+        <Stepper
           activeStep={active}
           orientation="horizontal"
           onStepClick={setActive}>
-          <XDSStep step={0} label="Workspace" />
-          <XDSStep step={1} label="Team" />
-          <XDSStep step={2} label="Integrations" />
-          <XDSStep step={3} label="Import" />
-          <XDSStep step={4} label="Launch" />
-        </XDSStepper>
+          <Step step={0} label="Workspace" />
+          <Step step={1} label="Team" />
+          <Step step={2} label="Integrations" />
+          <Step step={3} label="Import" />
+          <Step step={4} label="Launch" />
+        </Stepper>
       </div>
     );
   },
@@ -98,41 +98,41 @@ export const NumberedVertical: Story = {
     const [active, setActive] = useState(2);
     return (
       <div style={{maxWidth: 400}}>
-        <XDSStepper
+        <Stepper
           activeStep={active}
           orientation="vertical"
           onStepClick={setActive}>
-          <XDSStep
+          <Step
             step={0}
             label="Push to main"
             description="Merge your pull request"
             indicator="number"
           />
-          <XDSStep
+          <Step
             step={1}
             label="Run CI checks"
             description="Lint, type-check, test"
             indicator="number"
           />
-          <XDSStep
+          <Step
             step={2}
             label="Build container"
             description="Docker image to registry"
             indicator="number"
           />
-          <XDSStep
+          <Step
             step={3}
             label="Deploy to staging"
             description="Verify in staging environment"
             indicator="number"
           />
-          <XDSStep
+          <Step
             step={4}
             label="Promote to production"
             description="Canary → full rollout"
             indicator="number"
           />
-        </XDSStepper>
+        </Stepper>
       </div>
     );
   },
@@ -144,15 +144,15 @@ export const NumberedHorizontal: Story = {
     const [active, setActive] = useState(1);
     return (
       <div style={{maxWidth: 600}}>
-        <XDSStepper
+        <Stepper
           activeStep={active}
           orientation="horizontal"
           onStepClick={setActive}>
-          <XDSStep step={0} label="Cart" indicator="number" />
-          <XDSStep step={1} label="Shipping" indicator="number" />
-          <XDSStep step={2} label="Payment" indicator="number" />
-          <XDSStep step={3} label="Confirm" indicator="number" />
-        </XDSStepper>
+          <Step step={0} label="Cart" indicator="number" />
+          <Step step={1} label="Shipping" indicator="number" />
+          <Step step={2} label="Payment" indicator="number" />
+          <Step step={3} label="Confirm" indicator="number" />
+        </Stepper>
       </div>
     );
   },
@@ -172,45 +172,45 @@ export const StatusVertical: Story = {
     const [active, setActive] = useState(3);
     return (
       <div style={{maxWidth: 400}}>
-        <XDSStepper
+        <Stepper
           activeStep={active}
           orientation="vertical"
           onStepClick={setActive}>
-          <XDSStep
+          <Step
             step={0}
             label="Email verified"
             description="ernesttien@meta.com"
             status="success"
             icon={<Icon icon="check" size="sm" />}
           />
-          <XDSStep
+          <Step
             step={1}
             label="Phone verified"
             description="+1 (555) 012-3456"
             status="success"
             icon={<Icon icon="check" size="sm" />}
           />
-          <XDSStep
+          <Step
             step={2}
             label="Identity document"
             description="Passport upload failed"
             status="error"
             icon={<Icon icon="warning" size="sm" />}
           />
-          <XDSStep
+          <Step
             step={3}
             label="Address verification"
             description="Pending review"
             status="accent"
           />
-          <XDSStep
+          <Step
             step={4}
             label="Background check"
             isOptional
             description="Skipped"
           />
-          <XDSStep step={5} label="Account activated" />
-        </XDSStepper>
+          <Step step={5} label="Account activated" />
+        </Stepper>
       </div>
     );
   },
@@ -222,43 +222,43 @@ export const StatusAllStates: Story = {
     const [active, setActive] = useState(1);
     return (
       <div style={{maxWidth: 400}}>
-        <XDSStepper
+        <Stepper
           activeStep={active}
           orientation="vertical"
           onStepClick={setActive}>
-          <XDSStep
+          <Step
             step={0}
             label="Accent"
             description="--color-accent"
             status="accent"
           />
-          <XDSStep
+          <Step
             step={1}
             label="Success"
             description="--color-success"
             status="success"
             icon={<Icon icon="check" size="sm" />}
           />
-          <XDSStep
+          <Step
             step={2}
             label="Warning"
             description="--color-warning"
             status="warning"
             icon={<Icon icon="warning" size="sm" />}
           />
-          <XDSStep
+          <Step
             step={3}
             label="Error"
             description="--color-error"
             status="error"
             icon={<Icon icon="warning" size="sm" />}
           />
-          <XDSStep
+          <Step
             step={4}
             label="Default (no status)"
             description="progress-derived color"
           />
-        </XDSStepper>
+        </Stepper>
       </div>
     );
   },
@@ -274,36 +274,36 @@ export const MinimalVertical: Story = {
     const [active, setActive] = useState(2);
     return (
       <div style={{maxWidth: 400}}>
-        <XDSStepper
+        <Stepper
           activeStep={active}
           orientation="vertical"
           onStepClick={setActive}>
-          <XDSStep
+          <Step
             step={0}
             label="Phone screen"
             description="30 min with recruiter"
             indicator="none"
           />
-          <XDSStep
+          <Step
             step={1}
             label="Technical interview"
             description="1 hour coding session"
             indicator="none"
           />
-          <XDSStep
+          <Step
             step={2}
             label="System design"
             description="45 min whiteboard"
             indicator="none"
           />
-          <XDSStep
+          <Step
             step={3}
             label="Team match"
             description="Meet potential teammates"
             indicator="none"
           />
-          <XDSStep step={4} label="Offer" indicator="none" />
-        </XDSStepper>
+          <Step step={4} label="Offer" indicator="none" />
+        </Stepper>
       </div>
     );
   },
@@ -315,15 +315,15 @@ export const MinimalHorizontal: Story = {
     const [active, setActive] = useState(1);
     return (
       <div style={{maxWidth: 500}}>
-        <XDSStepper
+        <Stepper
           activeStep={active}
           orientation="horizontal"
           onStepClick={setActive}>
-          <XDSStep step={0} label="Upload" indicator="none" />
-          <XDSStep step={1} label="Details" indicator="none" />
-          <XDSStep step={2} label="Audience" indicator="none" />
-          <XDSStep step={3} label="Publish" indicator="none" />
-        </XDSStepper>
+          <Step step={0} label="Upload" indicator="none" />
+          <Step step={1} label="Details" indicator="none" />
+          <Step step={2} label="Audience" indicator="none" />
+          <Step step={3} label="Publish" indicator="none" />
+        </Stepper>
       </div>
     );
   },
@@ -341,75 +341,75 @@ export const IndicatorComparison: Story = {
       <div style={{display: 'flex', gap: 48}}>
         <div style={{maxWidth: 280}}>
           <Text type="label">Auto (default)</Text>
-          <XDSStepper
+          <Stepper
             activeStep={active}
             orientation="vertical"
             onStepClick={setActive}>
-            <XDSStep step={0} label="Account" />
-            <XDSStep step={1} label="Profile" />
-            <XDSStep step={2} label="Settings" />
-            <XDSStep step={3} label="Review" />
-            <XDSStep step={4} label="Done" />
-          </XDSStepper>
+            <Step step={0} label="Account" />
+            <Step step={1} label="Profile" />
+            <Step step={2} label="Settings" />
+            <Step step={3} label="Review" />
+            <Step step={4} label="Done" />
+          </Stepper>
         </div>
         <div style={{maxWidth: 280}}>
           <Text type="label">Number</Text>
-          <XDSStepper
+          <Stepper
             activeStep={active}
             orientation="vertical"
             onStepClick={setActive}>
-            <XDSStep step={0} label="Account" indicator="number" />
-            <XDSStep step={1} label="Profile" indicator="number" />
-            <XDSStep step={2} label="Settings" indicator="number" />
-            <XDSStep step={3} label="Review" indicator="number" />
-            <XDSStep step={4} label="Done" indicator="number" />
-          </XDSStepper>
+            <Step step={0} label="Account" indicator="number" />
+            <Step step={1} label="Profile" indicator="number" />
+            <Step step={2} label="Settings" indicator="number" />
+            <Step step={3} label="Review" indicator="number" />
+            <Step step={4} label="Done" indicator="number" />
+          </Stepper>
         </div>
         <div style={{maxWidth: 280}}>
           <Text type="label">Custom icon</Text>
-          <XDSStepper
+          <Stepper
             activeStep={active}
             orientation="vertical"
             onStepClick={setActive}>
-            <XDSStep
+            <Step
               step={0}
               label="Account"
               icon={<Icon icon="info" size="sm" />}
             />
-            <XDSStep
+            <Step
               step={1}
               label="Profile"
               icon={<Icon icon="search" size="sm" />}
             />
-            <XDSStep
+            <Step
               step={2}
               label="Settings"
               icon={<Icon icon="wrench" size="sm" />}
             />
-            <XDSStep
+            <Step
               step={3}
               label="Review"
               icon={<Icon icon="clock" size="sm" />}
             />
-            <XDSStep
+            <Step
               step={4}
               label="Done"
               icon={<Icon icon="check" size="sm" />}
             />
-          </XDSStepper>
+          </Stepper>
         </div>
         <div style={{maxWidth: 280}}>
           <Text type="label">None</Text>
-          <XDSStepper
+          <Stepper
             activeStep={active}
             orientation="vertical"
             onStepClick={setActive}>
-            <XDSStep step={0} label="Account" indicator="none" />
-            <XDSStep step={1} label="Profile" indicator="none" />
-            <XDSStep step={2} label="Settings" indicator="none" />
-            <XDSStep step={3} label="Review" indicator="none" />
-            <XDSStep step={4} label="Done" indicator="none" />
-          </XDSStepper>
+            <Step step={0} label="Account" indicator="none" />
+            <Step step={1} label="Profile" indicator="none" />
+            <Step step={2} label="Settings" indicator="none" />
+            <Step step={3} label="Review" indicator="none" />
+            <Step step={4} label="Done" indicator="none" />
+          </Stepper>
         </div>
       </div>
     );
@@ -426,11 +426,11 @@ export const WithContentSlot: Story = {
     const [active, setActive] = useState(0);
     return (
       <div style={{maxWidth: 480}}>
-        <XDSStepper
+        <Stepper
           activeStep={active}
           orientation="vertical"
           onStepClick={setActive}>
-          <XDSStep step={0} label="Project details" indicator="number">
+          <Step step={0} label="Project details" indicator="number">
             {active === 0 && (
               <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
                 <TextInput
@@ -452,8 +452,8 @@ export const WithContentSlot: Story = {
                 </div>
               </div>
             )}
-          </XDSStep>
-          <XDSStep step={1} label="Environment" indicator="number">
+          </Step>
+          <Step step={1} label="Environment" indicator="number">
             {active === 1 && (
               <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
                 <TextInput label="Node version" placeholder="20" value="" />
@@ -476,8 +476,8 @@ export const WithContentSlot: Story = {
                 </div>
               </div>
             )}
-          </XDSStep>
-          <XDSStep step={2} label="Deploy" indicator="number">
+          </Step>
+          <Step step={2} label="Deploy" indicator="number">
             {active === 2 && (
               <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
                 <Text type="body">
@@ -498,9 +498,9 @@ export const WithContentSlot: Story = {
                 </div>
               </div>
             )}
-          </XDSStep>
-          <XDSStep step={3} label="Done" indicator="number" />
-        </XDSStepper>
+          </Step>
+          <Step step={3} label="Done" indicator="number" />
+        </Stepper>
       </div>
     );
   },
@@ -518,42 +518,42 @@ export const DensityComparison: Story = {
       <div style={{display: 'flex', gap: 48}}>
         <div style={{maxWidth: 250}}>
           <Text type="label">Compact</Text>
-          <XDSStepper
+          <Stepper
             activeStep={active}
             orientation="vertical"
             onStepClick={setActive}
             density="compact">
-            <XDSStep step={0} label="Account" indicator="number" />
-            <XDSStep step={1} label="Profile" indicator="number" />
-            <XDSStep step={2} label="Payment" indicator="number" />
-            <XDSStep step={3} label="Review" indicator="number" />
-          </XDSStepper>
+            <Step step={0} label="Account" indicator="number" />
+            <Step step={1} label="Profile" indicator="number" />
+            <Step step={2} label="Payment" indicator="number" />
+            <Step step={3} label="Review" indicator="number" />
+          </Stepper>
         </div>
         <div style={{maxWidth: 250}}>
           <Text type="label">Balanced</Text>
-          <XDSStepper
+          <Stepper
             activeStep={active}
             orientation="vertical"
             onStepClick={setActive}
             density="balanced">
-            <XDSStep step={0} label="Account" indicator="number" />
-            <XDSStep step={1} label="Profile" indicator="number" />
-            <XDSStep step={2} label="Payment" indicator="number" />
-            <XDSStep step={3} label="Review" indicator="number" />
-          </XDSStepper>
+            <Step step={0} label="Account" indicator="number" />
+            <Step step={1} label="Profile" indicator="number" />
+            <Step step={2} label="Payment" indicator="number" />
+            <Step step={3} label="Review" indicator="number" />
+          </Stepper>
         </div>
         <div style={{maxWidth: 250}}>
           <Text type="label">Spacious</Text>
-          <XDSStepper
+          <Stepper
             activeStep={active}
             orientation="vertical"
             onStepClick={setActive}
             density="spacious">
-            <XDSStep step={0} label="Account" indicator="number" />
-            <XDSStep step={1} label="Profile" indicator="number" />
-            <XDSStep step={2} label="Payment" indicator="number" />
-            <XDSStep step={3} label="Review" indicator="number" />
-          </XDSStepper>
+            <Step step={0} label="Account" indicator="number" />
+            <Step step={1} label="Profile" indicator="number" />
+            <Step step={2} label="Payment" indicator="number" />
+            <Step step={3} label="Review" indicator="number" />
+          </Stepper>
         </div>
       </div>
     );
@@ -570,13 +570,13 @@ export const TwoSteps: Story = {
     const [active, setActive] = useState(0);
     return (
       <div style={{maxWidth: 400}}>
-        <XDSStepper
+        <Stepper
           activeStep={active}
           orientation="horizontal"
           onStepClick={setActive}>
-          <XDSStep step={0} label="Before" />
-          <XDSStep step={1} label="After" />
-        </XDSStepper>
+          <Step step={0} label="Before" />
+          <Step step={1} label="After" />
+        </Stepper>
       </div>
     );
   },
@@ -587,18 +587,18 @@ export const ManySteps: Story = {
   render: () => {
     const [active, setActive] = useState(3);
     return (
-      <XDSStepper
+      <Stepper
         activeStep={active}
         orientation="horizontal"
         onStepClick={setActive}>
-        <XDSStep step={0} label="Idea" indicator="number" />
-        <XDSStep step={1} label="Design" indicator="number" />
-        <XDSStep step={2} label="Build" indicator="number" />
-        <XDSStep step={3} label="Test" indicator="number" />
-        <XDSStep step={4} label="Review" indicator="number" />
-        <XDSStep step={5} label="Deploy" indicator="number" />
-        <XDSStep step={6} label="Monitor" indicator="number" />
-      </XDSStepper>
+        <Step step={0} label="Idea" indicator="number" />
+        <Step step={1} label="Design" indicator="number" />
+        <Step step={2} label="Build" indicator="number" />
+        <Step step={3} label="Test" indicator="number" />
+        <Step step={4} label="Review" indicator="number" />
+        <Step step={5} label="Deploy" indicator="number" />
+        <Step step={6} label="Monitor" indicator="number" />
+      </Stepper>
     );
   },
 };
@@ -609,20 +609,20 @@ export const DisabledSteps: Story = {
     const [active, setActive] = useState(1);
     return (
       <div style={{maxWidth: 400}}>
-        <XDSStepper
+        <Stepper
           activeStep={active}
           orientation="vertical"
           onStepClick={setActive}>
-          <XDSStep step={0} label="Basic info" />
-          <XDSStep step={1} label="Permissions" />
-          <XDSStep
+          <Step step={0} label="Basic info" />
+          <Step step={1} label="Permissions" />
+          <Step
             step={2}
             label="Admin settings"
             description="Requires admin role"
             isDisabled
           />
-          <XDSStep step={3} label="Confirm" />
-        </XDSStepper>
+          <Step step={3} label="Confirm" />
+        </Stepper>
       </div>
     );
   },
@@ -634,21 +634,21 @@ export const OptionalSteps: Story = {
     const [active, setActive] = useState(3);
     return (
       <div style={{maxWidth: 400}}>
-        <XDSStepper
+        <Stepper
           activeStep={active}
           orientation="vertical"
           onStepClick={setActive}>
-          <XDSStep step={0} label="Basic profile" />
-          <XDSStep
+          <Step step={0} label="Basic profile" />
+          <Step
             step={1}
             label="Profile photo"
             isOptional
             description="Skipped"
           />
-          <XDSStep step={2} label="Connect socials" isOptional />
-          <XDSStep step={3} label="Preferences" />
-          <XDSStep step={4} label="All done" />
-        </XDSStepper>
+          <Step step={2} label="Connect socials" isOptional />
+          <Step step={3} label="Preferences" />
+          <Step step={4} label="All done" />
+        </Stepper>
       </div>
     );
   },
@@ -660,26 +660,26 @@ export const LongLabels: Story = {
     const [active, setActive] = useState(1);
     return (
       <div style={{maxWidth: 400}}>
-        <XDSStepper
+        <Stepper
           activeStep={active}
           orientation="vertical"
           onStepClick={setActive}>
-          <XDSStep
+          <Step
             step={0}
             label="Configure your development environment"
             description="Install dependencies, set up local database, configure environment variables"
           />
-          <XDSStep
+          <Step
             step={1}
             label="Create initial data migration"
             description="Define schema, seed data, and run migrations against staging"
           />
-          <XDSStep
+          <Step
             step={2}
             label="Submit for code review"
             description="Open pull request and address reviewer feedback"
           />
-        </XDSStepper>
+        </Stepper>
       </div>
     );
   },

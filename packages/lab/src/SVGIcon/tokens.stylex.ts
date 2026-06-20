@@ -4,7 +4,7 @@
  * @file tokens.stylex.ts
  * @input XDS design token system
  * @output CSS custom properties for SVG icon rendering
- * @position Token definitions consumed by XDSSVGIcon and variation presets
+ * @position Token definitions consumed by SVGIcon and variation presets
  *
  * Two-layer system (primary/secondary) with per-role rendering (fill vs stroke).
  * Bold mode uses mask-based gap subtraction controlled by --icon-gap tokens.

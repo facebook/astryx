@@ -9,16 +9,16 @@
  * @position Entry point for the lab SVG icon system
  */
 
-export {XDSSVGIcon} from './XDSSVGIcon';
+export {SVGIcon} from './SVGIcon';
 export type {
-  XDSSVGIconProps,
+  SVGIconProps,
   SVGIconVariation,
   SVGIconSize,
   SVGIconColor,
   SVGIconDef,
   IconShape,
   IconShapeRole,
-} from './XDSSVGIcon';
+} from './SVGIcon';
 
 export {variations, opticalSize} from './variations.stylex';
 export {iconVars} from './tokens.stylex';

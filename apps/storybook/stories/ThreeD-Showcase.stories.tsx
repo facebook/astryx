@@ -3,9 +3,9 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useMemo} from 'react';
 import {
-  XDS3DChart,
-  XDS3DScatter,
-  XDS3DScatterGL,
+  ThreeDChart,
+  ThreeDScatter,
+  ThreeDScatterGL,
 } from '@xds/lab';
 import {MediaTheme} from '@xds/core/theme';
 
@@ -193,7 +193,7 @@ function Cell({
           flexDirection: 'column',
         }}>
         <div style={{flex: 1, padding: 4}}>
-          <XDS3DChart
+          <ThreeDChart
             data={data}
             xKey="x"
             yKey="y"
@@ -203,12 +203,12 @@ function Cell({
             elevation={elevation}
             interactive
             autoRotate={0.3}>
-            <XDS3DScatterGL
+            <ThreeDScatterGL
               color={mediaMode === 'dark' ? '#DFE2E5' : '#0A1317'}
               size={1.5}
               opacity={0.6}
             />
-          </XDS3DChart>
+          </ThreeDChart>
         </div>
         <div
           style={{
@@ -361,9 +361,9 @@ export const SVGvsWebGL: StoryObj = {
                 letterSpacing: '0.05em',
                 textTransform: 'uppercase',
               }}>
-              SVG (XDS3DScatter)
+              SVG (ThreeDScatter)
             </div>
-            <XDS3DChart
+            <ThreeDChart
               data={data}
               xKey="x"
               yKey="y"
@@ -373,8 +373,8 @@ export const SVGvsWebGL: StoryObj = {
               elevation={20}
               interactive
               autoRotate={0.3}>
-              <XDS3DScatter color="#DFE2E5" radius={1.5} opacity={0.85} />
-            </XDS3DChart>
+              <ThreeDScatter color="#DFE2E5" radius={1.5} opacity={0.85} />
+            </ThreeDChart>
           </MediaTheme>
         </div>
         <div
@@ -390,9 +390,9 @@ export const SVGvsWebGL: StoryObj = {
                 letterSpacing: '0.05em',
                 textTransform: 'uppercase',
               }}>
-              WebGL (XDS3DScatterGL)
+              WebGL (ThreeDScatterGL)
             </div>
-            <XDS3DChart
+            <ThreeDChart
               data={data}
               xKey="x"
               yKey="y"
@@ -402,8 +402,8 @@ export const SVGvsWebGL: StoryObj = {
               elevation={20}
               interactive
               autoRotate={0.3}>
-              <XDS3DScatterGL color="#DFE2E5" size={3} opacity={0.85} />
-            </XDS3DChart>
+              <ThreeDScatterGL color="#DFE2E5" size={3} opacity={0.85} />
+            </ThreeDChart>
           </MediaTheme>
         </div>
       </div>
@@ -452,7 +452,7 @@ export const DebugProjection: StoryObj = {
             }}>
             SVG
           </div>
-          <XDS3DChart
+          <ThreeDChart
             data={debugData}
             xKey="x"
             yKey="y"
@@ -460,8 +460,8 @@ export const DebugProjection: StoryObj = {
             height={300}
             azimuth={35}
             elevation={25}>
-            <XDS3DScatter color="#E3193B" radius={6} opacity={1} />
-          </XDS3DChart>
+            <ThreeDScatter color="#E3193B" radius={6} opacity={1} />
+          </ThreeDChart>
         </div>
         <div
           style={{
@@ -478,7 +478,7 @@ export const DebugProjection: StoryObj = {
             }}>
             WebGL
           </div>
-          <XDS3DChart
+          <ThreeDChart
             data={debugData}
             xKey="x"
             yKey="y"
@@ -486,8 +486,8 @@ export const DebugProjection: StoryObj = {
             height={300}
             azimuth={35}
             elevation={25}>
-            <XDS3DScatterGL color="#0064E0" size={12} opacity={1} />
-          </XDS3DChart>
+            <ThreeDScatterGL color="#0064E0" size={12} opacity={1} />
+          </ThreeDChart>
         </div>
       </div>
     );
@@ -515,7 +515,7 @@ export const DebugOverlay: StoryObj = {
         <div style={{padding: '4px 8px', fontSize: 11}}>
           Red = SVG, Blue = WebGL. If Tier 1 holds, they overlap perfectly.
         </div>
-        <XDS3DChart
+        <ThreeDChart
           data={debugData}
           xKey="x"
           yKey="y"
@@ -523,9 +523,9 @@ export const DebugOverlay: StoryObj = {
           height={400}
           azimuth={35}
           elevation={25}>
-          <XDS3DScatter color="#E3193B" radius={8} opacity={0.8} />
-          <XDS3DScatterGL color="#0064E0" size={8} opacity={0.8} />
-        </XDS3DChart>
+          <ThreeDScatter color="#E3193B" radius={8} opacity={0.8} />
+          <ThreeDScatterGL color="#0064E0" size={8} opacity={0.8} />
+        </ThreeDChart>
       </div>
     );
   },
@@ -555,7 +555,7 @@ export const DebugSizeOpacity: StoryObj = {
               textAlign: 'center',
             }}>
             <div style={{fontSize: 9, color: '#ccc'}}>SVG 16</div>
-            <XDS3DChart
+            <ThreeDChart
               data={pt}
               xKey="x"
               yKey="y"
@@ -563,8 +563,8 @@ export const DebugSizeOpacity: StoryObj = {
               height={120}
               azimuth={0}
               elevation={0}>
-              <XDS3DScatter color="#E3193B" radius={8} opacity={1} />
-            </XDS3DChart>
+              <ThreeDScatter color="#E3193B" radius={8} opacity={1} />
+            </ThreeDChart>
           </div>
           <div
             style={{
@@ -574,7 +574,7 @@ export const DebugSizeOpacity: StoryObj = {
               textAlign: 'center',
             }}>
             <div style={{fontSize: 9, color: '#ccc'}}>GL 16</div>
-            <XDS3DChart
+            <ThreeDChart
               data={pt}
               xKey="x"
               yKey="y"
@@ -582,8 +582,8 @@ export const DebugSizeOpacity: StoryObj = {
               height={120}
               azimuth={0}
               elevation={0}>
-              <XDS3DScatterGL color="#0064E0" size={16} opacity={1} />
-            </XDS3DChart>
+              <ThreeDScatterGL color="#0064E0" size={16} opacity={1} />
+            </ThreeDChart>
           </div>
           <div
             style={{
@@ -593,7 +593,7 @@ export const DebugSizeOpacity: StoryObj = {
               textAlign: 'center',
             }}>
             <div style={{fontSize: 9, color: '#ccc'}}>SVG on GL</div>
-            <XDS3DChart
+            <ThreeDChart
               data={pt}
               xKey="x"
               yKey="y"
@@ -601,9 +601,9 @@ export const DebugSizeOpacity: StoryObj = {
               height={120}
               azimuth={0}
               elevation={0}>
-              <XDS3DScatterGL color="#0064E0" size={16} opacity={1} />
-              <XDS3DScatter color="#E3193B" radius={8} opacity={1} />
-            </XDS3DChart>
+              <ThreeDScatterGL color="#0064E0" size={16} opacity={1} />
+              <ThreeDScatter color="#E3193B" radius={8} opacity={1} />
+            </ThreeDChart>
           </div>
           <div
             style={{
@@ -613,7 +613,7 @@ export const DebugSizeOpacity: StoryObj = {
               textAlign: 'center',
             }}>
             <div style={{fontSize: 9, color: '#ccc'}}>GL on SVG</div>
-            <XDS3DChart
+            <ThreeDChart
               data={pt}
               xKey="x"
               yKey="y"
@@ -621,9 +621,9 @@ export const DebugSizeOpacity: StoryObj = {
               height={120}
               azimuth={0}
               elevation={0}>
-              <XDS3DScatter color="#E3193B" radius={8} opacity={1} />
-              <XDS3DScatterGL color="#0064E0" size={16} opacity={1} />
-            </XDS3DChart>
+              <ThreeDScatter color="#E3193B" radius={8} opacity={1} />
+              <ThreeDScatterGL color="#0064E0" size={16} opacity={1} />
+            </ThreeDChart>
           </div>
         </div>
         <div style={{fontSize: 11, fontWeight: 500}}>Size 16, \u03b1=0.5</div>
@@ -636,7 +636,7 @@ export const DebugSizeOpacity: StoryObj = {
               textAlign: 'center',
             }}>
             <div style={{fontSize: 9, color: '#ccc'}}>SVG on GL</div>
-            <XDS3DChart
+            <ThreeDChart
               data={pt}
               xKey="x"
               yKey="y"
@@ -644,9 +644,9 @@ export const DebugSizeOpacity: StoryObj = {
               height={120}
               azimuth={0}
               elevation={0}>
-              <XDS3DScatterGL color="#0064E0" size={16} opacity={0.5} />
-              <XDS3DScatter color="#E3193B" radius={8} opacity={0.5} />
-            </XDS3DChart>
+              <ThreeDScatterGL color="#0064E0" size={16} opacity={0.5} />
+              <ThreeDScatter color="#E3193B" radius={8} opacity={0.5} />
+            </ThreeDChart>
           </div>
           <div
             style={{
@@ -656,7 +656,7 @@ export const DebugSizeOpacity: StoryObj = {
               textAlign: 'center',
             }}>
             <div style={{fontSize: 9, color: '#ccc'}}>GL on SVG</div>
-            <XDS3DChart
+            <ThreeDChart
               data={pt}
               xKey="x"
               yKey="y"
@@ -664,9 +664,9 @@ export const DebugSizeOpacity: StoryObj = {
               height={120}
               azimuth={0}
               elevation={0}>
-              <XDS3DScatter color="#E3193B" radius={8} opacity={0.5} />
-              <XDS3DScatterGL color="#0064E0" size={16} opacity={0.5} />
-            </XDS3DChart>
+              <ThreeDScatter color="#E3193B" radius={8} opacity={0.5} />
+              <ThreeDScatterGL color="#0064E0" size={16} opacity={0.5} />
+            </ThreeDChart>
           </div>
         </div>
       </div>

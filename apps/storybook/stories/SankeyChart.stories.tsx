@@ -2,13 +2,13 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSSankeyChart,
-  XDSSankeyLink,
-  XDSSankeyNode,
-  XDSSankeyLabel,
-  XDSSankeyGrid,
-  type SankeyNode,
-  type SankeyLink,
+  SankeyChart,
+  SankeyLink,
+  SankeyNode,
+  SankeyLabel,
+  SankeyGrid,
+  type SankeyNodeDatum,
+  type SankeyLinkDatum,
 } from '@xds/lab';
 import {Stack, Text} from '@xds/core';
 import {Heading} from '@xds/core/Text';
@@ -23,7 +23,7 @@ type Story = StoryObj;
 
 // --- Data ---
 
-const funnelNodes: SankeyNode[] = [
+const funnelNodes: SankeyNodeDatum[] = [
   {id: 'visitors', label: 'Visitors', value: 52000, color: [0.65, 0.2, 270]},
   {id: 'signups', label: 'Sign Ups', value: 28000, color: [0.6, 0.17, 235]},
   {id: 'bounced', label: 'Bounced', value: 24000, color: [0.55, 0.14, 350]},
@@ -38,7 +38,7 @@ const funnelNodes: SankeyNode[] = [
   {id: 'churned', label: 'Churned', value: 7100, color: [0.54, 0.15, 20]},
 ];
 
-const funnelLinks: SankeyLink[] = [
+const funnelLinks: SankeyLinkDatum[] = [
   {source: 'visitors', target: 'signups', value: 28000},
   {source: 'visitors', target: 'bounced', value: 24000},
   {source: 'signups', target: 'activated', value: 19500},
@@ -62,23 +62,23 @@ export const ConversionFunnel: Story = {
       <Text type="body" color="secondary">
         User journey · Last 30 days
       </Text>
-      <XDSSankeyChart
+      <SankeyChart
         nodes={funnelNodes}
         links={funnelLinks}
         columns={funnelColumns}
         height={360}>
-        <XDSSankeyGrid />
-        <XDSSankeyLink />
-        <XDSSankeyNode />
-        <XDSSankeyLabel />
-      </XDSSankeyChart>
+        <SankeyGrid />
+        <SankeyLink />
+        <SankeyNode />
+        <SankeyLabel />
+      </SankeyChart>
     </Stack>
   ),
 };
 
 // --- Revenue Sources (converging) ---
 
-const revenueNodes: SankeyNode[] = [
+const revenueNodes: SankeyNodeDatum[] = [
   {id: 'organic', label: 'Organic', value: 18000, color: [0.62, 0.17, 155]},
   {id: 'paid', label: 'Paid Ads', value: 22000, color: [0.6, 0.18, 240]},
   {id: 'referral', label: 'Referral', value: 12000, color: [0.58, 0.15, 40]},
@@ -96,7 +96,7 @@ const revenueNodes: SankeyNode[] = [
   },
 ];
 
-const revenueLinks: SankeyLink[] = [
+const revenueLinks: SankeyLinkDatum[] = [
   {source: 'organic', target: 'web', value: 12000},
   {source: 'organic', target: 'mobile', value: 6000},
   {source: 'paid', target: 'web', value: 14000},
@@ -131,16 +131,16 @@ export const RevenueFlow: Story = {
       <Text type="body" color="secondary">
         Channel attribution · March 2026
       </Text>
-      <XDSSankeyChart
+      <SankeyChart
         nodes={revenueNodes}
         links={revenueLinks}
         columns={revenueColumns}
         height={420}>
-        <XDSSankeyGrid />
-        <XDSSankeyLink opacity={0.65} tension={0.55} />
-        <XDSSankeyNode />
-        <XDSSankeyLabel />
-      </XDSSankeyChart>
+        <SankeyGrid />
+        <SankeyLink opacity={0.65} tension={0.55} />
+        <SankeyNode />
+        <SankeyLabel />
+      </SankeyChart>
     </Stack>
   ),
 };
@@ -148,14 +148,14 @@ export const RevenueFlow: Story = {
 /** Minimal — auto-detected columns, no grid */
 export const AutoColumns: Story = {
   render: () => {
-    const nodes: SankeyNode[] = [
+    const nodes: SankeyNodeDatum[] = [
       {id: 'a', label: 'Source A', value: 100},
       {id: 'b', label: 'Source B', value: 80},
       {id: 'mid', label: 'Middle', value: 180},
       {id: 'out1', label: 'Output 1', value: 120},
       {id: 'out2', label: 'Output 2', value: 60},
     ];
-    const links: SankeyLink[] = [
+    const links: SankeyLinkDatum[] = [
       {source: 'a', target: 'mid', value: 100},
       {source: 'b', target: 'mid', value: 80},
       {source: 'mid', target: 'out1', value: 120},
@@ -168,11 +168,11 @@ export const AutoColumns: Story = {
         <Text type="body" color="secondary">
           No explicit columns — topologically sorted
         </Text>
-        <XDSSankeyChart nodes={nodes} links={links} height={280}>
-          <XDSSankeyLink tension={0.6} />
-          <XDSSankeyNode />
-          <XDSSankeyLabel showPercent={false} />
-        </XDSSankeyChart>
+        <SankeyChart nodes={nodes} links={links} height={280}>
+          <SankeyLink tension={0.6} />
+          <SankeyNode />
+          <SankeyLabel showPercent={false} />
+        </SankeyChart>
       </Stack>
     );
   },
@@ -181,7 +181,7 @@ export const AutoColumns: Story = {
 /** Many columns — demonstrates horizontal scroll with minColumnWidth */
 export const ManyColumns: Story = {
   render: () => {
-    const nodes: SankeyNode[] = [
+    const nodes: SankeyNodeDatum[] = [
       {id: 'awareness', label: 'Awareness', value: 100000},
       {id: 'interest', label: 'Interest', value: 68000},
       {id: 'dropped1', label: 'Dropped', value: 32000, color: [0.5, 0.12, 350]},
@@ -209,7 +209,7 @@ export const ManyColumns: Story = {
       },
       {id: 'dropped5', label: 'Rejected', value: 6000, color: [0.5, 0.12, 350]},
     ];
-    const links: SankeyLink[] = [
+    const links: SankeyLinkDatum[] = [
       {source: 'awareness', target: 'interest', value: 68000},
       {source: 'awareness', target: 'dropped1', value: 32000},
       {source: 'interest', target: 'consideration', value: 45000},
@@ -243,17 +243,17 @@ export const ManyColumns: Story = {
             borderRadius: 12,
             overflow: 'hidden',
           }}>
-          <XDSSankeyChart
+          <SankeyChart
             nodes={nodes}
             links={links}
             columns={columns}
             height={360}
             minColumnWidth={160}>
-            <XDSSankeyGrid />
-            <XDSSankeyLink />
-            <XDSSankeyNode />
-            <XDSSankeyLabel />
-          </XDSSankeyChart>
+            <SankeyGrid />
+            <SankeyLink />
+            <SankeyNode />
+            <SankeyLabel />
+          </SankeyChart>
         </div>
       </Stack>
     );
@@ -268,7 +268,7 @@ export const ManyColumns: Story = {
 // gray-4: #5D6C7B ≈ oklch(0.50 0.02 240)
 // gray-3: #AFB9C4 ≈ oklch(0.77 0.02 240)
 
-const bizNodes: SankeyNode[] = [
+const bizNodes: SankeyNodeDatum[] = [
   {id: 'visitors', label: 'Visitors', value: 84200, color: [0.55, 0.19, 255]},
   {id: 'signups', label: 'Signed Up', value: 42100, color: [0.58, 0.18, 255]},
   {id: 'bounce', label: 'Bounced', value: 42100, color: [0.5, 0.02, 240]},
@@ -280,7 +280,7 @@ const bizNodes: SankeyNode[] = [
   {id: 'free', label: 'Free Tier', value: 6300, color: [0.5, 0.02, 240]},
 ];
 
-const bizLinks: SankeyLink[] = [
+const bizLinks: SankeyLinkDatum[] = [
   {source: 'visitors', target: 'signups', value: 42100},
   {source: 'visitors', target: 'bounce', value: 42100},
   {source: 'signups', target: 'onboarded', value: 28700},
@@ -310,23 +310,23 @@ export const BusinessFunnel: Story = {
       <Text type="body" color="secondary">
         Blue = progression · Gray = drop-off
       </Text>
-      <XDSSankeyChart
+      <SankeyChart
         nodes={bizNodes}
         links={bizLinks}
         columns={bizColumns}
         height={380}>
-        <XDSSankeyGrid />
-        <XDSSankeyLink opacity={0.6} />
-        <XDSSankeyNode />
-        <XDSSankeyLabel />
-      </XDSSankeyChart>
+        <SankeyGrid />
+        <SankeyLink opacity={0.6} />
+        <SankeyNode />
+        <SankeyLabel />
+      </SankeyChart>
     </Stack>
   ),
 };
 
 // --- Art Deco style: wider bars with rotated labels + column headers ---
 
-const demoNodes: SankeyNode[] = [
+const demoNodes: SankeyNodeDatum[] = [
   {id: 'single', label: 'Single', value: 48, color: [0.62, 0.16, 30]},
   {id: 'married', label: 'Married', value: 35, color: [0.58, 0.14, 180]},
   {id: 'divorced', label: 'Divorced', value: 17, color: [0.55, 0.12, 300]},
@@ -336,7 +336,7 @@ const demoNodes: SankeyNode[] = [
   {id: 'unhappy', label: 'Unhappy', value: 38, color: [0.52, 0.14, 25]},
 ];
 
-const demoLinks: SankeyLink[] = [
+const demoLinks: SankeyLinkDatum[] = [
   {source: 'single', target: 'male', value: 26},
   {source: 'single', target: 'female', value: 22},
   {source: 'married', target: 'male', value: 20},
@@ -363,17 +363,17 @@ export const WideBarStyle: Story = {
       <Text type="body" color="secondary">
         Wider node bars with rotated text labels
       </Text>
-      <XDSSankeyChart
+      <SankeyChart
         nodes={demoNodes}
         links={demoLinks}
         columns={demoColumns}
         height={380}
         nodeGap={8}>
-        <XDSSankeyGrid />
-        <XDSSankeyLink opacity={0.5} tension={0.5} />
-        <XDSSankeyNode />
-        <XDSSankeyLabel />
-      </XDSSankeyChart>
+        <SankeyGrid />
+        <SankeyLink opacity={0.5} tension={0.5} />
+        <SankeyNode />
+        <SankeyLabel />
+      </SankeyChart>
     </Stack>
   ),
 };
@@ -382,7 +382,7 @@ export const WideBarStyle: Story = {
 // Source: vega-datasets budget.json — FY2020 federal receipts
 // Revenue sources → receiving agencies (values in $thousands)
 
-const budgetNodes: SankeyNode[] = [
+const budgetNodes: SankeyNodeDatum[] = [
   {
     id: 'income_tax',
     label: 'Income Tax',
@@ -468,7 +468,7 @@ const budgetNodes: SankeyNode[] = [
   {id: 'opm', label: 'OPM', value: 5026000, color: [0.48, 0.08, 340]},
 ];
 
-const budgetLinks: SankeyLink[] = [
+const budgetLinks: SankeyLinkDatum[] = [
   {source: 'income_tax', target: 'general_fund', value: 2118406000},
   {source: 'payroll_tax', target: 'social_security', value: 968357000},
   {source: 'corp_tax', target: 'general_fund', value: 511220000},
@@ -542,16 +542,16 @@ export const USFederalBudget: Story = {
       <Text type="body" color="secondary">
         Revenue sources → receiving agencies (vega-datasets/budget.json)
       </Text>
-      <XDSSankeyChart
+      <SankeyChart
         nodes={budgetNodes}
         links={budgetLinks}
         columns={budgetColumns}
         height={480}>
-        <XDSSankeyGrid />
-        <XDSSankeyLink opacity={0.6} tension={0.5} />
-        <XDSSankeyNode />
-        <XDSSankeyLabel formatValue={formatBudget} />
-      </XDSSankeyChart>
+        <SankeyGrid />
+        <SankeyLink opacity={0.6} tension={0.5} />
+        <SankeyNode />
+        <SankeyLabel formatValue={formatBudget} />
+      </SankeyChart>
     </Stack>
   ),
 };
@@ -566,16 +566,16 @@ export const Monochrome: Story = {
       <Text type="body" color="secondary">
         Monochrome — flat color, no gradients
       </Text>
-      <XDSSankeyChart
+      <SankeyChart
         nodes={funnelNodes}
         links={funnelLinks}
         columns={funnelColumns}
         height={340}
         nodeColor="#1a1a1e">
-        <XDSSankeyLink color="#1a1a1e" opacity={0.75} />
-        <XDSSankeyNode glow={false} />
-        <XDSSankeyLabel />
-      </XDSSankeyChart>
+        <SankeyLink color="#1a1a1e" opacity={0.75} />
+        <SankeyNode glow={false} />
+        <SankeyLabel />
+      </SankeyChart>
     </Stack>
   ),
 };
@@ -588,16 +588,16 @@ export const SourceColored: Story = {
       <Text type="body" color="secondary">
         Each ribbon matches its source node
       </Text>
-      <XDSSankeyChart
+      <SankeyChart
         nodes={funnelNodes}
         links={funnelLinks}
         columns={funnelColumns}
         height={340}>
-        <XDSSankeyGrid />
-        <XDSSankeyLink color="source" />
-        <XDSSankeyNode />
-        <XDSSankeyLabel />
-      </XDSSankeyChart>
+        <SankeyGrid />
+        <SankeyLink color="source" />
+        <SankeyNode />
+        <SankeyLabel />
+      </SankeyChart>
     </Stack>
   ),
 };
@@ -610,16 +610,16 @@ export const TargetColored: Story = {
       <Text type="body" color="secondary">
         Each ribbon matches its destination node
       </Text>
-      <XDSSankeyChart
+      <SankeyChart
         nodes={funnelNodes}
         links={funnelLinks}
         columns={funnelColumns}
         height={340}>
-        <XDSSankeyGrid />
-        <XDSSankeyLink color="target" />
-        <XDSSankeyNode />
-        <XDSSankeyLabel />
-      </XDSSankeyChart>
+        <SankeyGrid />
+        <SankeyLink color="target" />
+        <SankeyNode />
+        <SankeyLabel />
+      </SankeyChart>
     </Stack>
   ),
 };
@@ -632,16 +632,16 @@ export const LeanedSourceGradient: Story = {
       <Text type="body" color="secondary">
         bias=0.2 — holds source color, transitions near target
       </Text>
-      <XDSSankeyChart
+      <SankeyChart
         nodes={funnelNodes}
         links={funnelLinks}
         columns={funnelColumns}
         height={340}>
-        <XDSSankeyGrid />
-        <XDSSankeyLink color={{gradient: 0.2}} />
-        <XDSSankeyNode />
-        <XDSSankeyLabel />
-      </XDSSankeyChart>
+        <SankeyGrid />
+        <SankeyLink color={{gradient: 0.2}} />
+        <SankeyNode />
+        <SankeyLabel />
+      </SankeyChart>
     </Stack>
   ),
 };
@@ -654,16 +654,16 @@ export const LeanedTargetGradient: Story = {
       <Text type="body" color="secondary">
         bias=0.8 — transitions early, holds target color
       </Text>
-      <XDSSankeyChart
+      <SankeyChart
         nodes={funnelNodes}
         links={funnelLinks}
         columns={funnelColumns}
         height={340}>
-        <XDSSankeyGrid />
-        <XDSSankeyLink color={{gradient: 0.8}} />
-        <XDSSankeyNode />
-        <XDSSankeyLabel />
-      </XDSSankeyChart>
+        <SankeyGrid />
+        <SankeyLink color={{gradient: 0.8}} />
+        <SankeyNode />
+        <SankeyLabel />
+      </SankeyChart>
     </Stack>
   ),
 };

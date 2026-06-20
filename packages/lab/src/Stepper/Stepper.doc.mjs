@@ -35,7 +35,7 @@ export const docs = {
   },
   components: [
     {
-      name: 'XDSStepper',
+      name: 'Stepper',
       displayName: 'Stepper',
       description:
         'Container component that manages step state and renders steps in horizontal or vertical orientation as an ordered list.',
@@ -49,7 +49,7 @@ export const docs = {
         {
           name: 'children',
           type: 'ReactNode',
-          description: 'XDSStep elements to render in the stepper.',
+          description: 'Step elements to render in the stepper.',
           required: true,
         },
         {
@@ -83,7 +83,7 @@ export const docs = {
       ],
     },
     {
-      name: 'XDSStep',
+      name: 'Step',
       displayName: 'Step',
       description:
         'Individual step within a stepper. Renders a progress-bar segment, an indicator, and a label with optional description.',
@@ -113,8 +113,8 @@ export const docs = {
         {
           name: 'icon',
           type: 'ReactNode',
-          description: 'Custom icon rendered inside the indicator. Accepts any node (e.g. an XDSIcon). Takes precedence over the built-in number/check.',
-          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
+          description: 'Custom icon rendered inside the indicator. Accepts any node (e.g. an Icon). Takes precedence over the built-in number/check.',
+          slotElements: [{__element: 'Icon', props: {icon: 'check', size: 'sm'}}],
         },
         {
           name: 'status',
@@ -173,12 +173,12 @@ export const docsDense = {
   },
   components: [
     {
-      name: 'XDSStepper',
+      name: 'Stepper',
       displayName: 'Stepper',
       description: 'container managing step state w/ horizontal/vertical layout',
       propDescriptions: {
         activeStep: 'zero-based active step index',
-        children: 'XDSStep elements',
+        children: 'Step elements',
         orientation: 'horizontal or vertical layout',
         onStepClick: 'enables non-linear navigation',
         label: 'ordered-list aria-label',
@@ -187,7 +187,7 @@ export const docsDense = {
       },
     },
     {
-      name: 'XDSStep',
+      name: 'Step',
       displayName: 'Step',
       description: 'individual step w/ progress bar, indicator, label',
       propDescriptions: {
@@ -231,12 +231,12 @@ export const docsZh = {
   },
   components: [
     {
-      name: 'XDSStepper',
+      name: 'Stepper',
       displayName: 'Stepper',
       description: '容器组件，管理步骤状态并以水平或垂直方向渲染步骤。',
       props: [
         {name: 'activeStep', type: 'number', description: '当前活动步骤的从零开始的索引。', required: true},
-        {name: 'children', type: 'ReactNode', description: '要在步骤器中渲染的 XDSStep 元素。', required: true},
+        {name: 'children', type: 'ReactNode', description: '要在步骤器中渲染的 Step 元素。', required: true},
         {name: 'orientation', type: "'horizontal' | 'vertical'", description: '步骤器的布局方向。', default: "'horizontal'"},
         {name: 'onStepClick', type: '(index: number) => void', description: '点击步骤时调用。启用非线性导航。'},
         {name: 'label', type: 'string', description: '有序列表的无障碍标签。', default: "'Progress'"},
@@ -245,7 +245,7 @@ export const docsZh = {
       ],
     },
     {
-      name: 'XDSStep',
+      name: 'Step',
       displayName: 'Step',
       description: '步骤器中的单个步骤。渲染进度条、指示器和带可选描述的标签。',
       props: [

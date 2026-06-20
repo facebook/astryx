@@ -5,16 +5,16 @@
 /**
  * @file plugins.tsx
  * @input Built-in schedule plugin hooks and stable defaults
- * @output Default XDSSchedule plugin list and plugin hook re-exports
+ * @output Default Schedule plugin list and plugin hook re-exports
  * @position Plugin barrel; plugin implementations live in separate files
  */
 
-import {defaultXDSSchedulePaginationPlugin} from './PaginationPlugin';
-import type {XDSSchedulePlugin} from '../types';
+import {defaultSchedulePaginationPlugin} from './PaginationPlugin';
+import type {SchedulePlugin} from '../types';
 
-export {useXDSSchedulePaginationPlugin} from './PaginationPlugin';
-export {useXDSScheduleViewSelectorPlugin} from './ViewSelectorPlugin';
+export {useSchedulePaginationPlugin} from './PaginationPlugin';
+export {useScheduleViewSelectorPlugin} from './ViewSelectorPlugin';
 
-export const defaultXDSSchedulePlugins: ReadonlyArray<XDSSchedulePlugin> = [
-  defaultXDSSchedulePaginationPlugin,
+export const defaultSchedulePlugins: ReadonlyArray<SchedulePlugin> = [
+  defaultSchedulePaginationPlugin,
 ];

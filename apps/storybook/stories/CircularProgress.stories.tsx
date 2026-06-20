@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSCircularProgress} from '@xds/lab/CircularProgress';
+import {CircularProgress} from '@xds/lab/CircularProgress';
 import {Text} from '@xds/core/Text';
 
-const meta: Meta<typeof XDSCircularProgress> = {
+const meta: Meta<typeof CircularProgress> = {
   title: 'Lab/CircularProgress',
-  component: XDSCircularProgress,
+  component: CircularProgress,
   tags: ['autodocs'],
   argTypes: {
     value: {
@@ -39,7 +39,7 @@ const meta: Meta<typeof XDSCircularProgress> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSCircularProgress>;
+type Story = StoryObj<typeof CircularProgress>;
 
 export const Default: Story = {
   args: {
@@ -60,9 +60,9 @@ export const WithCenterLabel: Story = {
 export const Sizes: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '24px', alignItems: 'center'}}>
-      <XDSCircularProgress value={60} size="sm" label="Small" />
-      <XDSCircularProgress value={60} size="md" label="Medium" />
-      <XDSCircularProgress value={60} size="lg" label="Large" />
+      <CircularProgress value={60} size="sm" label="Small" />
+      <CircularProgress value={60} size="md" label="Medium" />
+      <CircularProgress value={60} size="lg" label="Large" />
     </div>
   ),
 };
@@ -70,19 +70,19 @@ export const Sizes: Story = {
 export const SizesWithLabels: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '24px', alignItems: 'center'}}>
-      <XDSCircularProgress value={60} size="sm" label="Small">
+      <CircularProgress value={60} size="sm" label="Small">
         <Text type="supporting" style={{fontSize: 8}}>
           60%
         </Text>
-      </XDSCircularProgress>
-      <XDSCircularProgress value={60} size="md" label="Medium">
+      </CircularProgress>
+      <CircularProgress value={60} size="md" label="Medium">
         <Text type="supporting" style={{fontSize: 11}}>
           60%
         </Text>
-      </XDSCircularProgress>
-      <XDSCircularProgress value={60} size="lg" label="Large">
+      </CircularProgress>
+      <CircularProgress value={60} size="lg" label="Large">
         <Text type="body">60%</Text>
-      </XDSCircularProgress>
+      </CircularProgress>
     </div>
   ),
 };
@@ -90,11 +90,11 @@ export const SizesWithLabels: Story = {
 export const Variants: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '24px', alignItems: 'center'}}>
-      <XDSCircularProgress value={60} label="Accent" variant="accent" />
-      <XDSCircularProgress value={80} label="Positive" variant="success" />
-      <XDSCircularProgress value={50} label="Warning" variant="warning" />
-      <XDSCircularProgress value={92} label="Negative" variant="error" />
-      <XDSCircularProgress value={35} label="Neutral" variant="neutral" />
+      <CircularProgress value={60} label="Accent" variant="accent" />
+      <CircularProgress value={80} label="Positive" variant="success" />
+      <CircularProgress value={50} label="Warning" variant="warning" />
+      <CircularProgress value={92} label="Negative" variant="error" />
+      <CircularProgress value={35} label="Neutral" variant="neutral" />
     </div>
   ),
 };
@@ -125,9 +125,9 @@ export const Indeterminate: Story = {
 export const IndeterminateSizes: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '24px', alignItems: 'center'}}>
-      <XDSCircularProgress size="sm" label="Loading small" />
-      <XDSCircularProgress size="md" label="Loading medium" />
-      <XDSCircularProgress size="lg" label="Loading large" />
+      <CircularProgress size="sm" label="Loading small" />
+      <CircularProgress size="md" label="Loading medium" />
+      <CircularProgress size="lg" label="Loading large" />
     </div>
   ),
 };
@@ -135,10 +135,10 @@ export const IndeterminateSizes: Story = {
 export const IndeterminateVariants: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '24px', alignItems: 'center'}}>
-      <XDSCircularProgress label="Accent" variant="accent" />
-      <XDSCircularProgress label="Positive" variant="success" />
-      <XDSCircularProgress label="Warning" variant="warning" />
-      <XDSCircularProgress label="Negative" variant="error" />
+      <CircularProgress label="Accent" variant="accent" />
+      <CircularProgress label="Positive" variant="success" />
+      <CircularProgress label="Warning" variant="warning" />
+      <CircularProgress label="Negative" variant="error" />
     </div>
   ),
 };

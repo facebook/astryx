@@ -3,7 +3,7 @@
 /**
  * @file layout.ts
  * @output Computes scales, stacking, grouping, then delegates to each series.resolve()
- * @position Called by XDSChart root — the single layout pass
+ * @position Called by Chart root — the single layout pass
  *
  * The layout engine does NOT know about specific mark types.
  * It handles cross-series coordination (scales, stacking, grouping)

@@ -1,14 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-export {XDSRadialChart, type XDSRadialChartProps} from './XDSRadialChart';
-export {XDSRadialGrid, type XDSRadialGridProps} from './XDSRadialGrid';
-export {XDSRadialArea, type XDSRadialAreaProps} from './XDSRadialArea';
-export {XDSRadialAxis, type XDSRadialAxisProps} from './XDSRadialAxis';
-export {XDSRadialSlice, type XDSRadialSliceProps} from './XDSRadialSlice';
+export {RadialChart, type RadialChartProps} from './RadialChart';
+export {RadialGrid, type RadialGridProps} from './RadialGrid';
+export {RadialArea, type RadialAreaProps} from './RadialArea';
+export {RadialAxis, type RadialAxisProps} from './RadialAxis';
+export {RadialSlice, type RadialSliceProps} from './RadialSlice';
 export {
-  XDSRadialTooltip,
-  type XDSRadialTooltipProps,
+  RadialTooltip,
+  type RadialTooltipProps,
   type RadialTooltipDatum,
-} from './XDSRadialTooltip';
+} from './RadialTooltip';
 export {useRadial} from './RadialContext';
 export type {RadialContext, RadialMode} from './types';

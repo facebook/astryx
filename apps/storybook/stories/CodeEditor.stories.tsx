@@ -2,11 +2,11 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {XDSCodeEditor} from '@xds/lab';
+import {CodeEditor} from '@xds/lab';
 
-const meta: Meta<typeof XDSCodeEditor> = {
+const meta: Meta<typeof CodeEditor> = {
   title: 'Lab/CodeEditor',
-  component: XDSCodeEditor,
+  component: CodeEditor,
   tags: ['autodocs'],
   argTypes: {
     language: {
@@ -33,7 +33,7 @@ const meta: Meta<typeof XDSCodeEditor> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSCodeEditor>;
+type Story = StoryObj<typeof CodeEditor>;
 
 const defaultCode = `function greet(name: string): string {
   const message = \`Hello, \${name}!\`;
@@ -42,11 +42,11 @@ const defaultCode = `function greet(name: string): string {
 }`;
 
 function ControlledEditor(
-  props: Partial<React.ComponentProps<typeof XDSCodeEditor>>,
+  props: Partial<React.ComponentProps<typeof CodeEditor>>,
 ) {
   const [value, setValue] = useState(props.value ?? defaultCode);
   return (
-    <XDSCodeEditor
+    <CodeEditor
       language="typescript"
       hasLineNumbers
       {...props}

@@ -1,0 +1,348 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file Chart.tsx (v2)
+ * @output Root chart — coordinates layout, rendering, and events
+ * @position Top-level; delegates everything to series configs and interaction slots
+ *
+ * The chart root has ZERO knowledge of mark types. It:
+ *   1. Runs the layout engine (scales + stacking + grouping)
+ *   2. Calls each series' resolve() and render() methods
+ *   3. Provides a single event layer for interaction children
+ */
+
+import {
+  type ReactNode,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+  useLayoutEffect,
+} from 'react';
+import type {SeriesDef} from './types';
+import type {ChartV2Context, ChartMargin, ChartPointerEvent} from './types';
+import {computeLayout} from './layout';
+import {ChartV2Provider} from './ChartV2Context';
+import {ChartProvider} from '../Chart/ChartContext';
+import {Text} from '@xds/core';
+import {VStack, HStack} from '@xds/core';
+import * as stylex from '@stylexjs/stylex';
+import {ChartLegend, type ChartLegendProps} from './ChartLegend';
+import {deriveLegendItems} from './legend';
+import {ChartTooltip, type ChartTooltipProps} from './ChartTooltip';
+
+export interface ChartProps {
+  data: Record<string, unknown>[];
+  xKey: string;
+  series: SeriesDef[];
+  height?: number;
+  margin?: Partial<ChartMargin>;
+  grid?: ReactNode;
+  axes?: ReactNode;
+  legend?: boolean | ChartLegendProps;
+  tooltip?: boolean | Omit<ChartTooltipProps, 'series'>;
+  interactions?: ReactNode;
+  children?: ReactNode;
+  title?: string;
+  subtitle?: string;
+}
+
+const DEFAULT_MARGIN: ChartMargin = {top: 24, right: 24, bottom: 32, left: 48};
+
+const styles = stylex.create({
+  container: {
+    width: '100%',
+  },
+  title: {
+    marginBottom: 16,
+  },
+  chartArea: {
+    flex: 1,
+    minWidth: 0,
+    overflow: 'hidden',
+  },
+});
+
+export function Chart({
+  data,
+  xKey,
+  series,
+  height = 300,
+  margin: marginOverride,
+  grid,
+  axes,
+  legend,
+  tooltip,
+  interactions,
+  children,
+  title,
+  subtitle,
+}: ChartProps) {
+  const chartId = useId();
+  const descId = `${chartId}-desc`;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const pointerHandlers = useRef<Set<(e: ChartPointerEvent) => void>>(
+    new Set(),
+  );
+
+  useLayoutEffect(() => {
+    if (!containerRef.current) {
+      return;
+    }
+    const observer = new ResizeObserver(entries => {
+      const entry = entries[0];
+      if (entry) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const margin = useMemo(
+    () => ({...DEFAULT_MARGIN, ...marginOverride}),
+    [marginOverride],
+  );
+  const innerWidth = Math.max(0, containerWidth - margin.left - margin.right);
+  const innerHeight = Math.max(0, height - margin.top - margin.bottom);
+
+  // ─── Layout pass ──────────────────────────────────────────────────────
+  const layout = useMemo(
+    () =>
+      computeLayout({
+        data,
+        xKey,
+        series,
+        width: innerWidth,
+        height: innerHeight,
+      }),
+    [data, xKey, series, innerWidth, innerHeight],
+  );
+
+  const seriesCtx = useMemo(
+    () => ({
+      data,
+      xKey,
+      xScale: layout.xScale,
+      yScale: layout.yScale,
+      width: innerWidth,
+      height: innerHeight,
+    }),
+    [data, xKey, layout, innerWidth, innerHeight],
+  );
+
+  // ─── Event dispatch ───────────────────────────────────────────────────
+  const onPointer = useCallback((handler: (e: ChartPointerEvent) => void) => {
+    pointerHandlers.current.add(handler);
+    return () => {
+      pointerHandlers.current.delete(handler);
+    };
+  }, []);
+
+  const dispatch = useCallback((e: ChartPointerEvent) => {
+    for (const handler of pointerHandlers.current) {
+      handler(e);
+    }
+  }, []);
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<SVGRectElement>) => {
+      const svg = svgRef.current;
+      if (!svg) {
+        return;
+      }
+      const point = svg.createSVGPoint();
+      point.x = e.clientX;
+      point.y = e.clientY;
+      const ctm = e.currentTarget.getScreenCTM()?.inverse();
+      if (!ctm) {
+        return;
+      }
+      const cursor = point.matrixTransform(ctm);
+
+      // Find nearest point by x-distance only (full vertical column is the hover zone)
+      let nearest: ChartPointerEvent['nearest'] = null;
+      let bestXDist = Infinity;
+      for (const [seriesKey, points] of layout.resolved) {
+        for (const p of points) {
+          const xDist = Math.abs(p.px - cursor.x);
+          if (xDist < bestXDist) {
+            bestXDist = xDist;
+            nearest = {...p, seriesKey};
+          }
+        }
+      }
+      dispatch({x: cursor.x, y: cursor.y, nearest, active: e.buttons > 0});
+    },
+    [layout.resolved, dispatch],
+  );
+
+  const handlePointerLeave = useCallback(() => {
+    dispatch({x: -1, y: -1, nearest: null, active: false});
+  }, [dispatch]);
+
+  // ─── Context for interactions + v1 chrome ─────────────────────────────
+  const ctx: ChartV2Context = useMemo(
+    () => ({
+      width: innerWidth,
+      height: innerHeight,
+      margin,
+      data,
+      xKey,
+      xScale: layout.xScale,
+      yScale: layout.yScale,
+      resolved: layout.resolved,
+      onPointer,
+      svgRef,
+    }),
+    [innerWidth, innerHeight, margin, data, xKey, layout, onPointer],
+  );
+
+  // Bridge v1 context for ChartGrid/Axis compatibility
+  const v1Ctx = useMemo(
+    () => ({
+      width: innerWidth,
+      height: innerHeight,
+      margin,
+      xKey,
+      data,
+      xScale: layout.xScale,
+      yScale: layout.yScale,
+      svgRef,
+      pointerToData: () => ({
+        x: null as string | number | null,
+        y: 0,
+        px: 0,
+        py: 0,
+      }),
+      pixelToData: (px: number, py: number) => ({
+        x: null as string | number | null,
+        y: 0,
+        px,
+        py,
+      }),
+    }),
+    [innerWidth, innerHeight, margin, xKey, data, layout, svgRef],
+  );
+
+  // ─── Legend ────────────────────────────────────────────────────────────
+  const legendConfig = legend === true ? {} : legend || null;
+
+  const legendElement = legendConfig ? (
+    <ChartLegend
+      items={legendConfig.items ?? deriveLegendItems(series)}
+      position={legendConfig.position}
+      alignment={legendConfig.alignment}
+    />
+  ) : null;
+
+  const legendPosition = legendConfig?.position ?? 'bottom';
+  const isLegendHorizontal =
+    legendPosition === 'start' || legendPosition === 'end';
+
+  // ─── Render ───────────────────────────────────────────────────────────
+  if (containerWidth === 0) {
+    return (
+      <div
+        ref={containerRef}
+        {...stylex.props(styles.container)}
+        style={{height}}
+      />
+    );
+  }
+
+  return (
+    <div ref={containerRef} {...stylex.props(styles.container)}>
+      {(title || subtitle) && (
+        <div {...stylex.props(styles.title)}>
+          {title && (
+            <Text type="body" weight="semibold" display="block">
+              {title}
+            </Text>
+          )}
+          {subtitle && (
+            <Text type="supporting" display="block">
+              {subtitle}
+            </Text>
+          )}
+        </div>
+      )}
+      <ChartV2Provider value={ctx}>
+        <ChartProvider value={v1Ctx}>
+          {legendConfig == null ? (
+            renderSvg()
+          ) : isLegendHorizontal ? (
+            <HStack gap={4}>
+              {legendPosition === 'start' && legendElement}
+              <div {...stylex.props(styles.chartArea)}>{renderSvg()}</div>
+              {legendPosition === 'end' && legendElement}
+            </HStack>
+          ) : (
+            <VStack gap={4}>
+              {legendPosition === 'top' && legendElement}
+              {renderSvg()}
+              {legendPosition === 'bottom' && legendElement}
+            </VStack>
+          )}
+        </ChartProvider>
+      </ChartV2Provider>
+    </div>
+  );
+
+  function renderSvg() {
+    return (
+      <svg
+        ref={svgRef}
+        width="100%"
+        height={height}
+        aria-label={title ?? undefined}
+        aria-describedby={subtitle ? descId : undefined}>
+        {title && <title>{title}</title>}
+        {subtitle && <desc id={descId}>{subtitle}</desc>}
+        <g transform={`translate(${margin.left},${margin.top})`}>
+          {/* 1. Grid */}
+          {grid}
+
+          {/* 2. Marks — each series renders itself */}
+          {series.map(s => {
+            const resolved = layout.resolved.get(s.key);
+            if (!resolved) {
+              return null;
+            }
+            return <g key={s.key}>{s.render(resolved, seriesCtx)}</g>;
+          })}
+
+          {/* 3. Axes */}
+          {axes}
+
+          {/* 4. Event capture + interactions */}
+          <rect
+            x={0}
+            y={0}
+            width={innerWidth}
+            height={innerHeight}
+            fill="transparent"
+            onPointerMove={handlePointerMove}
+            onPointerLeave={handlePointerLeave}
+          />
+          {interactions}
+
+          {/* 5. Tooltip — declarative shortcut. For full control, render
+              <ChartTooltip> directly via the `children` slot. */}
+          {tooltip && (
+            <ChartTooltip
+              series={series}
+              {...(tooltip === true ? {} : tooltip)}
+            />
+          )}
+
+          {/* 6. Escape hatch */}
+          {children}
+        </g>
+      </svg>
+    );
+  }
+}

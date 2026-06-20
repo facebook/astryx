@@ -4,5 +4,5 @@
  * @file CodeEditor component barrel export
  */
 
-export {XDSCodeEditor} from './XDSCodeEditor';
-export type {XDSCodeEditorProps} from './XDSCodeEditor';
+export {CodeEditor} from './CodeEditor';
+export type {CodeEditorProps} from './CodeEditor';
