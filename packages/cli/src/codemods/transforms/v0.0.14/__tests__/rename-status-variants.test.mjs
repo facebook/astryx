@@ -95,16 +95,19 @@ const args = { variant: 'positive' };`;
     expect(output).not.toContain("'positive'");
   });
 
-  it('renames Storybook argType options arrays', async () => {
+  it('renames unambiguous values in Storybook argType options arrays but leaves ambiguous "info"', async () => {
     const input = `import { XDSStatusDot } from '@xds/core/StatusDot';
 const meta = { argTypes: { variant: { options: ['positive', 'negative', 'warning', 'info', 'neutral'] } } };`;
     const output = await applyTransform(input);
     expect(output).toContain("'success'");
     expect(output).toContain("'error'");
-    expect(output).toContain("'accent'");
     expect(output).not.toContain("'positive'");
     expect(output).not.toContain("'negative'");
-    expect(output).not.toContain("'info'");
+    // 'info' is ambiguous (valid on Badge etc.) and this is a context-blind
+    // path — the codemod cannot tell which component the options describe, so
+    // it is left for human review rather than risk rewriting a valid value.
+    expect(output).toContain("'info'");
+    expect(output).not.toContain("'accent'");
     // warning and neutral are unchanged
     expect(output).toContain("'warning'");
     expect(output).toContain("'neutral'");
@@ -115,6 +118,44 @@ const meta = { argTypes: { variant: { options: ['positive', 'negative', 'warning
     const output = await applyTransform(input);
     // XDSBadge is not in the target list
     expect(output).toContain('info');
+  });
+
+  it('does not rewrite Badge config "info" in a file that also imports a target (Icon)', async () => {
+    // Regression: a file may import a target component (e.g. XDSIcon) AND
+    // declare a typed config object for a NON-target component (Badge, whose
+    // BadgeVariantMap still has `info`). The context-blind object-property path
+    // must NOT rewrite that `info` to `accent` just because the file imports a
+    // target — `accent` is not a valid Badge variant. positive/negative stay
+    // renamed (no component keeps them), but info is preserved.
+    const input = `import { XDSIcon } from '@xds/core/Icon';
+import { XDSBadge, type XDSBadgeVariant } from '@xds/core/Badge';
+const PROGRESS_CONFIG: Record<string, {label: string; variant: XDSBadgeVariant}> = {
+  OPEN: {label: 'Open', variant: 'info'},
+  DONE: {label: 'Done', variant: 'positive'},
+  BLOCKED: {label: 'Blocked', variant: 'negative'},
+};`;
+    const output = await applyTransform(input);
+    // Ambiguous 'info' on a Badge config is left intact.
+    expect(output).toContain("variant: 'info'");
+    expect(output).not.toContain("'accent'");
+    // Unambiguous values are still migrated (no component retains them).
+    expect(output).toContain("variant: 'success'");
+    expect(output).toContain("variant: 'error'");
+    expect(output).not.toContain("'positive'");
+    expect(output).not.toContain("'negative'");
+  });
+
+  it('still renames "info" to "accent" on a direct target JSX attribute', async () => {
+    // The precise path (component is known) keeps the full mapping, including
+    // the ambiguous info -> accent, even when other components are imported.
+    const input = `import { XDSStatusDot } from '@xds/core/StatusDot';
+import { XDSBadge } from '@xds/core/Badge';
+const a = <XDSStatusDot variant="info" label="Status" />;
+const b = <XDSBadge variant="info" label="New" />;`;
+    const output = await applyTransform(input);
+    // StatusDot's info -> accent (precise), Badge's info stays.
+    expect(output).toContain("<XDSStatusDot variant='accent'");
+    expect(output).toContain('<XDSBadge variant="info"');
   });
 
   it('does not touch unrelated props on target components', async () => {
