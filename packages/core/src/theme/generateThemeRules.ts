@@ -18,7 +18,13 @@
 import type {DefinedTheme} from './defineTheme';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {getDerivedVars} from './derivedVarRegistry';
-import {cssVar, classPrefix, legacyClassPrefix, dataAttrNamespace, legacyDataAttrNamespace} from '../naming';
+import {
+  cssVar,
+  classPrefix,
+  legacyClassPrefix,
+  dataAttrNamespace,
+  legacyDataAttrNamespace,
+} from '../naming';
 
 /**
  * Dual-prefix theme @scope selectors (XDS-prefix migration P2380608025).
@@ -456,13 +462,19 @@ function generateColorOverrides(
   if (touchesText || touchesHeading || touchesLink) {
     for (const [colorName, colorValue] of Object.entries(TEXT_COLOR_MAP)) {
       if (touchesText) {
-        parts.push(`  .xds-text.${colorName} { color: ${colorValue}; }`);
+        parts.push(
+          `  ${componentClassSelector('text', `.${colorName}`)} { color: ${colorValue}; }`,
+        );
       }
       if (touchesHeading) {
-        parts.push(`  .xds-heading.${colorName} { color: ${colorValue}; }`);
+        parts.push(
+          `  ${componentClassSelector('heading', `.${colorName}`)} { color: ${colorValue}; }`,
+        );
       }
       if (touchesLink) {
-        parts.push(`  .xds-link.${colorName} { color: ${colorValue}; }`);
+        parts.push(
+          `  ${componentClassSelector('link', `.${colorName}`)} { color: ${colorValue}; }`,
+        );
       }
     }
   }
@@ -478,9 +490,7 @@ function generateColorOverrides(
  * Component rules (tokens, .xds-* overrides) are intentional theme overrides
  * that need to beat StyleX — they stay in xds-theme (above StyleX layers).
  */
-export function generateThemeRulesSplit(
-  theme: DefinedTheme,
-): ThemeRulesSplit {
+export function generateThemeRulesSplit(theme: DefinedTheme): ThemeRulesSplit {
   const allRules = generateThemeRules(theme);
 
   const prose: string[] = [];

@@ -64,10 +64,10 @@ function ensureDynamicHighlightType(tokenType: string): void {
     }
   }
 
-  const name = `xds-${tokenType}`;
+  const name = `astryx-${tokenType}`;
   const colorVar = `var(--color-syntax-${tokenType}, currentColor)`;
   dynamicStyleSheet.insertRule(
-    `.xds-codeblock code::highlight(${name}), .xds-codeeditor code::highlight(${name}) { color: ${colorVar}; }`,
+    `.astryx-codeblock code::highlight(${name}), .xds-codeblock code::highlight(${name}), .astryx-codeeditor code::highlight(${name}), .xds-codeeditor code::highlight(${name}) { color: ${colorVar}; }`,
   );
 }
 
@@ -90,7 +90,7 @@ function createHighlightResolver(): (tokenType: string) => Highlight {
 
     ensureDynamicHighlightType(tokenType);
 
-    const name = `xds-${tokenType}`;
+    const name = `astryx-${tokenType}`;
     highlight = CSS.highlights.get(name);
     if (!highlight) {
       highlight = new Highlight();

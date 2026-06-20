@@ -111,7 +111,7 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
 
 const styles = stylex.create({
   withCounter: {
-    counterIncrement: 'xds-list',
+    counterIncrement: 'astryx-list',
   },
   withDivider: {
     borderBlockEndWidth: borderVars['--border-width'],
@@ -164,7 +164,7 @@ const markerStyles = stylex.create({
     lineHeight: typeScaleVars['--text-body-leading'],
     width: spacingVars['--spacing-4'],
     '::before': {
-      content: 'counter(xds-list) "."',
+      content: 'counter(astryx-list) "."',
     },
   },
 });

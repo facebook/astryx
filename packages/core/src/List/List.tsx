@@ -105,7 +105,7 @@ const styles = stylex.create({
     gap: 0,
   },
   withCounter: {
-    counterReset: 'xds-list',
+    counterReset: 'astryx-list',
   },
   header: {
     marginBottom: spacingVars['--spacing-2'],
@@ -114,7 +114,7 @@ const styles = stylex.create({
 
 const dynamicStyles = stylex.create({
   counterStart: (value: number) => ({
-    counterReset: `xds-list ${value}`,
+    counterReset: `astryx-list ${value}`,
   }),
 });
 

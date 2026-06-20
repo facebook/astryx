@@ -559,7 +559,7 @@ export function SideNav({
     <div {...stylex.props(styles.resizableContainer)}>
       {navElement}
       <ResizeHandle
-        data-testid="xds-sidenav-resize-handle"
+        data-testid="astryx-sidenav-resize-handle"
         direction="horizontal"
         position="overlay"
         pillPlacement="end"
