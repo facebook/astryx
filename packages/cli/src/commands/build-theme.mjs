@@ -1221,18 +1221,18 @@ Install in your app:
   import { ${exportName} } from '${importPrefix}${baseName}';
   import '${importPrefix}${baseName}.css';
 
-  <XDSTheme theme={${exportName}}>
+  <Theme theme={${exportName}}>
     <App />
-  </XDSTheme>
+  </Theme>
 
 Or with a <link> tag:
 
   import { ${exportName} } from '${importPrefix}${baseName}';
 
   <link rel="stylesheet" href="${importPrefix}${baseName}.css" />
-  <XDSTheme theme={${exportName}}>
+  <Theme theme={${exportName}}>
     <App />
-  </XDSTheme>
+  </Theme>
 `);
 
       // Print font declaration warnings (derived from typography roles)
