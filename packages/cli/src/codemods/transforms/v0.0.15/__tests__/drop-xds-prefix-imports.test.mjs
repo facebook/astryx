@@ -54,6 +54,19 @@ describe('drop-xds-prefix-imports', () => {
     expect(output).not.toContain('XDSButtonProps');
   });
 
+  it('renames type references in generic type-argument positions', async () => {
+    const input = [
+      `import {XDSTableColumn} from '@xds/core/Table';`,
+      `const cols = useMemo<XDSTableColumn<Issue>[]>(() => [], []);`,
+    ].join('\n');
+    const output = await applyTransform(input);
+    expect(output).toContain(`import {TableColumn} from '@xds/core/Table';`);
+    expect(output).toContain('useMemo<TableColumn<Issue>[]>');
+    // The unrelated generic argument `Issue` must be left alone.
+    expect(output).toContain('<Issue>');
+    expect(output).not.toContain('XDSTableColumn');
+  });
+
   it('rewrites the imported name but keeps a custom local alias', async () => {
     const input = [
       `import {XDSButton as Btn} from '@xds/core';`,
