@@ -194,7 +194,9 @@ describe('generateOnMediaCSS', () => {
       },
     });
     const css = generateOnMediaCSS(theme);
-    expect(css).toContain(':is(.astryx-button, .xds-button):hover');
+    expect(css).toContain(
+      ':is([data-astryx-media="dark"], [data-xds-media="dark"]) :is(.astryx-button, .xds-button):hover',
+    );
     expect(css).toContain('color: rgba(255,255,255,0.8)');
   });
 });
