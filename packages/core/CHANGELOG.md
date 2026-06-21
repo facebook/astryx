@@ -56,11 +56,8 @@ Thanks to everyone who contributed to this release:
 - @josephfarina
 - @kentonquatman
 - @lexs
-- @marie-lucas
 - @nynexman4464
 - @rubyycheung
-- @thedjpetersen
-- @zurfyx
 
 ---
 

@@ -42,12 +42,8 @@ Thanks to everyone who contributed to this release:
 - @imdreamrunner
 - @josephfarina
 - @kentonquatman
-- @lexs
-- @marie-lucas
-- @nynexman4464
 - @rubyycheung
 - @thedjpetersen
-- @zurfyx
 
 ---
 
