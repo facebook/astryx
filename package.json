@@ -76,10 +76,14 @@
       "micromatch>picomatch": "^2.3.2",
       "anymatch>picomatch": "^2.3.2",
       "minimatch": "^9.0.7",
-      "dompurify": "^3.3.2",
-      "vite": "^6.4.2",
+      "dompurify": "^3.4.11",
+      "vite": "^6.4.3",
       "tmp": ">=0.2.6",
-      "esbuild": ">=0.28.1"
+      "esbuild": ">=0.28.1",
+      "hono": ">=4.12.25",
+      "ws": ">=8.21.0",
+      "@changesets/parse>js-yaml": "^4.2.0",
+      "@babel/core": ">=7.29.6"
     },
     "onlyBuiltDependencies": [
       "esbuild",
