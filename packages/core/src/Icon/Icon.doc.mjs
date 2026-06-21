@@ -11,7 +11,7 @@ export const docs = {
     {
       name: 'icon',
       type: 'IconName | ComponentType<SVGProps>',
-      description: 'Semantic icon name or SVG component. Run `npx astryx docs icons` for valid names. Note: this prop is called `icon`, not `name`.',
+      description: 'Semantic icon name or SVG component. Valid semantic names: close, chevronDown, chevronLeft, chevronRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone. For any icon not in this list, pass an SVG component directly (e.g. import from lucide-react or @heroicons/react). Note: this prop is called `icon`, not `name`.',
       required: true,
     },
     {
@@ -56,7 +56,7 @@ export const docsZh = {
     {
       name: 'icon',
       type: 'IconName | ComponentType<SVGProps>',
-      description: '语义图标名称或 SVG 组件。运行 `npx astryx docs icons` 查看可用名称。',
+      description: '语义图标名称或 SVG 组件。有效语义名称：close, chevronDown, chevronLeft, chevronRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone。列表之外的图标请直接传入 SVG 组件。',
       required: true,
     },
     {
@@ -112,7 +112,7 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    icon: 'Semantic icon name or SVG component. See `npx astryx docs icons`.',
+    icon: 'Semantic icon name or SVG component. Valid names: close, chevronDown, chevronLeft, chevronRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone. For others, pass an SVG component.',
     color: 'Color variant mapped to XDS icon color tokens.',
     size: 'Icon size.',
   },
