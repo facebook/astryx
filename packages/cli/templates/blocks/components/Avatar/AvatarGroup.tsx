@@ -10,23 +10,18 @@ import {Text} from '@xds/core/Text';
 const USERS = [
   {
     name: 'Alex Daniels',
-    src: 'https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-05.jpg',
   },
   {
     name: 'Ann Smith',
-    src: 'https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-30.jpg',
   },
   {
     name: 'Carol Davis',
-    src: 'https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-60.jpg',
   },
   {
     name: 'Gina Wilson',
-    src: 'https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-98.jpg',
   },
   {
     name: 'Eve Park',
-    src: 'https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-125.jpg',
   },
 ];
 
@@ -39,7 +34,7 @@ export default function AvatarGroupBlock() {
         </Text>
         <AvatarGroup size="medium">
           {USERS.map(user => (
-            <Avatar key={user.name} src={user.src} name={user.name} />
+            <Avatar key={user.name} name={user.name} />
           ))}
           <AvatarGroupOverflow count={3} />
         </AvatarGroup>
@@ -50,7 +45,7 @@ export default function AvatarGroupBlock() {
         </Text>
         <AvatarGroup size="medium">
           {USERS.slice(0, 3).map(user => (
-            <Avatar key={user.name} src={user.src} name={user.name} />
+            <Avatar key={user.name} name={user.name} />
           ))}
           <AvatarGroupOverflow count={8} />
         </AvatarGroup>

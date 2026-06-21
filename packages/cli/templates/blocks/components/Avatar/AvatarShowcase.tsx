@@ -11,14 +11,9 @@ export default function AvatarShowcase() {
       <Avatar
         name="Ann Smith"
         size="large"
-        src="https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-30.jpg"
         status={<AvatarStatusDot variant="success" label="Online" />}
       />
-      <Avatar
-        name="Alex Daniels"
-        size="large"
-        src="https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-05.jpg"
-      />
+      <Avatar name="Alex Daniels" size="large" />
       <Avatar name="Sam Chen" size="large" />
       <Avatar
         name="Taylor Nguyen"

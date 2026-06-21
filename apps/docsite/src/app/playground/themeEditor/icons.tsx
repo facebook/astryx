@@ -2,7 +2,7 @@
 
 /**
  * Icon shim for the theme playground. The tool was authored against internal
- * `@nest/*` icon packages; the OSS docsite uses Lucide. Each export keeps the
+ * icon packages; the OSS docsite uses Lucide. Each export keeps the
  * original icon name (aliased to the closest Lucide icon) and renders at the
  * 16px size the editor expects, so the ported component code stays unchanged.
  */
