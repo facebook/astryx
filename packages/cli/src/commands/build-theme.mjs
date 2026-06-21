@@ -353,6 +353,27 @@ const THEME_SCOPE_TO = `[data-astryx-theme], [data-xds-theme]`;
 const componentClassSelector = (component, suffix) =>
   `.astryx-${component}${suffix}, .xds-${component}${suffix}`;
 
+function appendPseudoToSelectorList(selector, pseudo) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+
+  for (let i = 0; i < selector.length; i++) {
+    const char = selector[i];
+    if (char === '(') {
+      depth++;
+    } else if (char === ')') {
+      depth = Math.max(0, depth - 1);
+    } else if (char === ',' && depth === 0) {
+      parts.push(selector.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+  parts.push(selector.slice(start).trim());
+
+  return parts.map(part => `${part}${pseudo}`).join(', ');
+}
+
 function expandContainerPadding(component, parsed) {
   // Emit the rebranded --astryx-<component>-padding tokens. The component reads
   // them via an inverted fallback (var(--xds-*, var(--astryx-*, default))) so a
@@ -531,9 +552,12 @@ function generateCSS(themeDef, {prose = true} = {}) {
               const declarations = pseudoEntries
                 .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
                 .join('\n');
-              // Pseudo-class rules only on xds selector, not prose co-selection
+              // Pseudo-class rules only on the component selector, not prose
+              // co-selection. Distribute the pseudo across both compat
+              // prefixes; CSS does not do that automatically for selector
+              // lists.
               parts.push(
-                `  ${xdsSelector}${pseudo} {\n${declarations}\n  }`,
+                `  ${appendPseudoToSelectorList(xdsSelector, pseudo)} {\n${declarations}\n  }`,
               );
             }
           }
@@ -577,34 +601,77 @@ function generateProseCSS(themeDef) {
   // This is a thin layer — just structural resets + token references.
   const parts = [];
 
-  // Heading resets — all heading elements get the base heading treatment
-  parts.push(`  :is(h1, h2, h3, h4, h5, h6) {\n    font-family: var(--font-family-heading);\n    font-weight: var(--font-weight-semibold);\n    color: var(--color-text-primary);\n    margin: 0;\n  }`);
+  // Heading + text element defaults. This fallback mirrors the shared core
+  // generator (generateThemeRules.generateProseRules) so the two paths emit
+  // identical prose CSS. Crucially:
+  //   • the rules are :where()-wrapped (zero specificity) and the call site
+  //     puts them in @layer reset, so component/Markdown StyleX classes in
+  //     @layer xds-base always win;
+  //   • NO margins are emitted — reset.css zeroes raw element margins and the
+  //     Markdown/Heading/Text components supply their own block spacing. The
+  //     previous fallback set `margin: 0` here AND emitted into @layer xds-theme,
+  //     which outranked Markdown's StyleX margins and collapsed heading spacing.
+  parts.push(
+    `  :where(h1, h2, h3, h4, h5, h6) {\n    font-family: var(--font-family-heading);\n    color: var(--color-text-primary);\n  }`,
+  );
 
-  // Per-level heading sizes
-  const headingSizes = {
-    h1: {fontSize: 'var(--font-size-2xl)', lineHeight: '1.2'},
-    h2: {fontSize: 'var(--font-size-xl)', lineHeight: '1.333'},
-    h3: {fontSize: 'var(--font-size-lg)', lineHeight: '1.25'},
-    h4: {fontSize: 'var(--font-size-base)', lineHeight: 'var(--leading-base)'},
-    h5: {fontSize: 'var(--font-size-base)', lineHeight: 'var(--leading-base)'},
-    h6: {fontSize: 'var(--font-size-xs)', lineHeight: '1.333'},
+  // Per-level heading type (size / weight / line-height) — no margins.
+  const headingRules = {
+    h1: {
+      fontSize: 'var(--text-heading-1-size)',
+      fontWeight: 'var(--text-heading-1-weight)',
+      lineHeight: 'var(--text-heading-1-leading)',
+    },
+    h2: {
+      fontSize: 'var(--text-heading-2-size)',
+      fontWeight: 'var(--text-heading-2-weight)',
+      lineHeight: 'var(--text-heading-2-leading)',
+    },
+    h3: {
+      fontSize: 'var(--text-heading-3-size)',
+      fontWeight: 'var(--text-heading-3-weight)',
+      lineHeight: 'var(--text-heading-3-leading)',
+    },
+    h4: {
+      fontSize: 'var(--text-heading-4-size)',
+      fontWeight: 'var(--text-heading-4-weight)',
+      lineHeight: 'var(--text-heading-4-leading)',
+    },
+    h5: {
+      fontSize: 'var(--text-heading-5-size)',
+      fontWeight: 'var(--text-heading-5-weight)',
+      lineHeight: 'var(--text-heading-5-leading)',
+    },
+    h6: {
+      fontSize: 'var(--text-heading-6-size)',
+      fontWeight: 'var(--text-heading-6-weight)',
+      lineHeight: 'var(--text-heading-6-leading)',
+    },
   };
 
-  for (const [el, styles] of Object.entries(headingSizes)) {
+  for (const [el, styles] of Object.entries(headingRules)) {
     const declarations = Object.entries(styles)
       .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
       .join('\n');
-    parts.push(`  ${el} {\n${declarations}\n  }`);
+    parts.push(`  :where(${el}) {\n${declarations}\n  }`);
   }
 
-  // Text element resets
-  parts.push(`  p {\n    font-family: var(--font-family-heading);\n    color: var(--color-text-primary);\n    margin: 0;\n    font-size: var(--font-size-base);\n    line-height: var(--leading-base);\n  }`);
+  // Text element defaults — body font on paragraphs, no margins.
+  parts.push(
+    `  :where(p) {\n    font-family: var(--font-family-body);\n    font-size: var(--text-body-size);\n    font-weight: var(--text-body-weight);\n    line-height: var(--text-body-leading);\n    color: var(--color-text-primary);\n  }`,
+  );
 
-  parts.push(`  small {\n    font-size: var(--font-size-xs);\n    line-height: 1.333;\n    color: var(--color-text-secondary);\n  }`);
+  parts.push(
+    `  :where(small) {\n    font-size: var(--text-supporting-size);\n    font-weight: var(--text-supporting-weight);\n    line-height: var(--text-supporting-leading);\n    color: var(--color-text-secondary);\n  }`,
+  );
 
-  parts.push(`  code, pre {\n    font-family: var(--font-family-code);\n    font-size: var(--font-size-base);\n    line-height: var(--leading-base);\n  }`);
+  parts.push(
+    `  :where(code, pre) {\n    font-family: var(--font-family-code);\n    font-size: var(--text-code-size);\n    line-height: var(--text-code-leading);\n  }`,
+  );
 
-  parts.push(`  hr {\n    border: none;\n    border-top: 1px solid var(--color-border);\n    margin: 0;\n  }`);
+  parts.push(
+    `  :where(hr) {\n    border: none;\n    border-top: 1px solid var(--color-border);\n  }`,
+  );
 
   const inner = parts.join('\n\n');
   return `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${inner}\n}`;
@@ -1088,23 +1155,26 @@ export function registerTheme(program) {
           }
         }
       } else {
-        // Legacy fallback when core isn't built yet
-        const scopeBlocks = [];
+        // Legacy fallback when core isn't built yet. Keep prose in the reset
+        // layer even here; raw HTML defaults must not outrank component or
+        // Markdown StyleX classes.
+        const cssParts = [];
         if (options.prose !== false) {
           const proseCss = generateProseCSS(themeDef);
-          if (proseCss) scopeBlocks.push(proseCss);
+          if (proseCss) cssParts.push(`@layer reset {\n${proseCss}\n}`);
         }
-        const mainCss = generateCSS(themeDef);
-        if (mainCss) scopeBlocks.push(mainCss);
-        if (scopeBlocks.length === 0) {
+        const mainCss = generateCSS(themeDef, {prose: false});
+        if (mainCss) {
+          const colorSchemeDecl = mainCss.includes('light-dark(')
+            ? '  :root { color-scheme: light dark; }\n\n'
+            : '';
+          cssParts.push(`@layer xds-theme {\n${colorSchemeDecl}${mainCss}\n}`);
+        }
+        if (cssParts.length === 0) {
           if (!json) humanLog('No overrides found — nothing to build.');
           return;
         }
-        const joined = scopeBlocks.join('\n\n');
-        const colorSchemeDecl = joined.includes('light-dark(')
-          ? '  :root { color-scheme: light dark; }\n\n'
-          : '';
-        css = `@layer xds-theme {\n${colorSchemeDecl}${joined}\n}\n`;
+        css = cssParts.join('\n\n') + '\n';
       }
 
       // Source path relative to cwd — used in @generated headers

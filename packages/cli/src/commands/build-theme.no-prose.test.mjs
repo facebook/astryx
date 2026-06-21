@@ -76,13 +76,20 @@ describe('theme build --no-prose', () => {
     expect(fs.existsSync(cssPath)).toBe(true);
     const css = fs.readFileSync(cssPath, 'utf-8');
 
-    // Prose markers — at least one heading reset and the reset layer
-    // should be present in the default build.
-    const hasProse =
-      /h1\s*,\s*h2/.test(css) ||
-      /:is\(h1, h2/.test(css) ||
-      /@layer reset/.test(css);
-    expect(hasProse).toBe(true);
+    // Prose markers — raw HTML defaults live in @layer reset (zero-specificity
+    // :where()), NOT @layer xds-theme, so Markdown/component StyleX always wins.
+    // No raw element margins are emitted: reset.css zeroes them and the
+    // components own their block spacing.
+    expect(css).toMatch(/@layer reset/);
+    expect(css).toMatch(/:where\(h1, h2, h3, h4, h5, h6\)/);
+    expect(css).toMatch(/font-family: var\(--font-family-body\)/);
+    const resetIndex = css.indexOf('@layer reset');
+    const themeIndex = css.indexOf('@layer xds-theme');
+    expect(resetIndex).toBeGreaterThanOrEqual(0);
+    expect(themeIndex).toBeGreaterThan(resetIndex);
+    // The prose block must sit in the reset layer, not xds-theme — the
+    // :where(p) rule comes before the xds-theme layer opens.
+    expect(css.indexOf(':where(p)')).toBeLessThan(themeIndex);
   });
 
   it('omits prose mappings when --no-prose is passed', () => {

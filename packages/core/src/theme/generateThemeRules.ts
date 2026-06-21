@@ -18,7 +18,13 @@
 import type {DefinedTheme} from './defineTheme';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {getDerivedVars} from './derivedVarRegistry';
-import {cssVar, classPrefix, legacyClassPrefix, dataAttrNamespace, legacyDataAttrNamespace} from '../naming';
+import {
+  cssVar,
+  classPrefix,
+  legacyClassPrefix,
+  dataAttrNamespace,
+  legacyDataAttrNamespace,
+} from '../naming';
 
 /**
  * Dual-prefix theme @scope selectors (XDS-prefix migration P2380608025).
@@ -47,6 +53,35 @@ function mediaSelector(surface: string): string {
 /** Component base-class selector matching either prefix, e.g. '.astryx-button, .xds-button'. */
 function componentClassSelector(component: string, suffix: string): string {
   return `.${classPrefix}-${component}${suffix}, .${legacyClassPrefix}-${component}${suffix}`;
+}
+
+/**
+ * Append a pseudo-class to every selector in a comma-separated selector list.
+ *
+ * The compat selector helpers emit lists such as
+ * `.astryx-button.secondary, .xds-button.secondary`. CSS does not distribute a
+ * trailing pseudo over selector lists, so `${list}:hover` only targets the
+ * final legacy selector. Keep pseudo rules dual-prefix by rewriting each item.
+ */
+function appendPseudoToSelectorList(selector: string, pseudo: string): string {
+  const parts: string[] = [];
+  let depth = 0;
+  let start = 0;
+
+  for (let i = 0; i < selector.length; i++) {
+    const char = selector[i];
+    if (char === '(') {
+      depth++;
+    } else if (char === ')') {
+      depth = Math.max(0, depth - 1);
+    } else if (char === ',' && depth === 0) {
+      parts.push(selector.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+  parts.push(selector.slice(start).trim());
+
+  return parts.map(part => `${part}${pseudo}`).join(', ');
 }
 
 // =============================================================================
@@ -375,7 +410,9 @@ function generateComponentRules(
           const declarations = pseudoEntries
             .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
             .join('\n');
-          parts.push(`  ${baseSelector}${pseudo} {\n${declarations}\n  }`);
+          parts.push(
+            `  ${appendPseudoToSelectorList(baseSelector, pseudo)} {\n${declarations}\n  }`,
+          );
         }
       }
     }
@@ -407,7 +444,7 @@ function generateProseRules(
   }
 
   parts.push(`  :where(p) {
-    font-family: var(--font-family-heading);
+    font-family: var(--font-family-body);
     font-size: ${val('--text-body-size')};
     font-weight: ${val('--text-body-weight')};
     line-height: ${val('--text-body-leading')};
@@ -478,9 +515,7 @@ function generateColorOverrides(
  * Component rules (tokens, .xds-* overrides) are intentional theme overrides
  * that need to beat StyleX — they stay in xds-theme (above StyleX layers).
  */
-export function generateThemeRulesSplit(
-  theme: DefinedTheme,
-): ThemeRulesSplit {
+export function generateThemeRulesSplit(theme: DefinedTheme): ThemeRulesSplit {
   const allRules = generateThemeRules(theme);
 
   const prose: string[] = [];
@@ -565,7 +600,9 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
               const declarations = pseudoEntries
                 .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
                 .join('\n');
-              parts.push(`  ${baseSelector}${pseudo} {\n${declarations}\n  }`);
+              parts.push(
+                `  ${appendPseudoToSelectorList(baseSelector, pseudo)} {\n${declarations}\n  }`,
+              );
             }
           }
         }

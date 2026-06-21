@@ -26,6 +26,19 @@ module.exports = function addExtensions() {
         const source = path.node.source;
         if (!source) return;
         const value = source.value;
+
+        // Compat alias barrels self-re-export from `'.'` in source. Node ESM
+        // does not support directory imports in built output, so make the self
+        // reference explicit (`./index.js`) during compilation.
+        if (value === '.') {
+          source.value = './index.js';
+          return;
+        }
+        if (value === '..') {
+          source.value = '../index.js';
+          return;
+        }
+
         if (!value.startsWith('./') && !value.startsWith('../')) return;
         if (SKIP.test(value)) return;
 

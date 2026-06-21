@@ -124,6 +124,25 @@ describe('generateThemeRules', () => {
     expect(buttonRule).toContain('light-dark(rgba(5, 54, 89, 0.1)');
   });
 
+  it('applies pseudo-class suffixes to both compat selector prefixes', () => {
+    const pseudoTheme = defineTheme({
+      name: 'pseudo-compat',
+      components: {
+        button: {
+          base: {
+            ':hover': {color: 'red'},
+          },
+        },
+      },
+    });
+    const pseudoRules = generateThemeRules(pseudoTheme);
+    expect(
+      pseudoRules.some(rule =>
+        rule.includes('.astryx-button:hover, .xds-button:hover'),
+      ),
+    ).toBe(true);
+  });
+
   // --- Prose rules ---
 
   it('includes prose heading rules with computed values', () => {
@@ -134,6 +153,12 @@ describe('generateThemeRules', () => {
     // Prose rules use val() helper which resolves to the token value (now a var ref)
     expect(h1Rule).toContain('var(--font-size-2xl)');
     expect(h1Rule).toContain('var(--font-weight-semibold)');
+    // Prose defaults intentionally carry NO block margins: reset.css zeroes
+    // raw element margins and the Markdown/Heading components own their spacing
+    // via StyleX (@layer xds-base). Emitting margins here would re-introduce
+    // the regression where prose defaults fought component spacing.
+    expect(h1Rule).not.toContain('margin-block-start');
+    expect(h1Rule).not.toContain('margin-block-end');
   });
 
   it('includes prose p rule with computed values', () => {
@@ -142,7 +167,10 @@ describe('generateThemeRules', () => {
     );
     expect(pRule).toBeDefined();
     expect(pRule).toContain('var(--font-size-base)');
+    expect(pRule).toContain('font-family: var(--font-family-body)');
     expect(pRule).toContain('var(--color-text-primary)');
+    // No margins on the prose paragraph default (see heading rule note).
+    expect(pRule).not.toContain('margin-block-start');
   });
 
   it('includes prose small, code, hr rules', () => {
@@ -208,7 +236,6 @@ describe('generateThemeRules with weight overrides', () => {
     expect(h3Rule).toContain('var(--font-weight-bold)');
   });
 });
-
 
 // =============================================================================
 // Derived var expansion
@@ -343,7 +370,6 @@ describe('derived var expansion', () => {
     expect(rule).toContain('--_card-radius: 16px');
   });
 });
-
 
 describe('brutalist-style derived expansion', () => {
   it('button borderRadius emits --_button-radius for pill shape', () => {
