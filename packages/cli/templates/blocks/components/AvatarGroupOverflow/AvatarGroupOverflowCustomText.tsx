@@ -9,15 +9,12 @@ import {Text} from '@xds/core/Text';
 const TEAM = [
   {
     name: 'Alex Daniels',
-    src: 'https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-05.jpg',
   },
   {
     name: 'Ann Smith',
-    src: 'https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-30.jpg',
   },
   {
     name: 'Carol Davis',
-    src: 'https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-60.jpg',
   },
 ];
 
@@ -29,7 +26,7 @@ export default function AvatarGroupOverflowCustomText() {
       </Text>
       <AvatarGroup size="medium">
         {TEAM.map(member => (
-          <Avatar key={member.name} src={member.src} name={member.name} />
+          <Avatar key={member.name} name={member.name} />
         ))}
         <AvatarGroupOverflow count={12}>12+</AvatarGroupOverflow>
       </AvatarGroup>

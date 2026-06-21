@@ -55,13 +55,13 @@ export default function ShowcaseHeaderPage() {
       <div {...stylex.props(styles.content)}>
         <div {...stylex.props(styles.badgeRow)}>
           <Badge label="Open Source" variant="info" />
-          <Badge label="Nest" variant="success" />
+          <Badge label="Astryx" variant="success" />
         </div>
 
         <div {...stylex.props(styles.titleRow)}>
           <Heading level={1}>XDS</Heading>
           <div {...stylex.props(styles.connector)} />
-          <Heading level={1}>Nest</Heading>
+          <Heading level={1}>Astryx</Heading>
         </div>
 
         <div {...stylex.props(styles.subtitle)}>

@@ -50,7 +50,7 @@ export default function ShowcaseComponentsPage() {
           <VStack gap={4}>
             <Heading level={2}>Build with XDS</Heading>
             <Text type="body" color="secondary">
-              Open source components for Nest and beyond
+              Open source components for the web and beyond
             </Text>
           </VStack>
           <HStack gap={2}>

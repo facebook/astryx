@@ -89,8 +89,8 @@ describe('migrate-selector-children-to-render-option', () => {
     expect(output).toBe(input);
   });
 
-  it('does not touch legacy @nest/xds selector item children', async () => {
-    const input = `import {XDSSelector, XDSSelectorItem} from '@nest/xds';
+  it('does not touch legacy @acme/legacy selector item children', async () => {
+    const input = `import {XDSSelector, XDSSelectorItem} from '@acme/legacy';
 <XDSSelector label="Role" value={value} onChange={setValue}>
   <XDSSelectorItem label="Admin" value="admin" />
 </XDSSelector>`;
