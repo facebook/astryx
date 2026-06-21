@@ -1,31 +1,23 @@
 # @xds/lab
 
-## 0.0.15
+# 0.0.15
 
-### Patch Changes
+#### Breaking Changes
 
-- Updated dependencies [cd9cbaa]
-- Updated dependencies [d44d7a4]
-- Updated dependencies [5c05933]
-- Updated dependencies [4ee10a0]
-- Updated dependencies [dc27845]
-- Updated dependencies [e719bab]
-- Updated dependencies [3d5f70e]
-- Updated dependencies [74c7e46]
-- Updated dependencies [04396d3]
-- Updated dependencies [c998661]
-- Updated dependencies [dacadbe]
-- Updated dependencies [b6ce626]
-- Updated dependencies [e96843b]
-- Updated dependencies [7bc3ede]
-- Updated dependencies [b64f1fc]
-- Updated dependencies [2d2cbbd]
-- Updated dependencies [a066869]
-- Updated dependencies [23df22b]
-- Updated dependencies [93020b5]
-- Updated dependencies [d0deec3]
-- Updated dependencies [52ae8f5]
-  - @xds/core@0.0.15
+- **Fully unprefixed** — `@xds/lab` drops the `XDS*` prefix entirely (no compat aliases): import `Stepper`, `Step`, `ChartV2`, `Schedule`, etc. directly. (#2954)
+
+#### New Components
+
+- **Stepper / Step** — Moved here from `@xds/core` for an API rework; visual overhaul with a segmented bar, indicator modes, and density. (#2335, #2308)
+- **Schedule** — New scheduling component. (#2366)
+
+#### New Features
+
+- **ChartV2** — New v2 axis + grid with composable styling, plus tooltip, axis formatters, and tick controls. (#2287, #2189)
+
+#### Fixes
+
+- Adopt `handleRef` for imperative component handles, and rebrand internal SVG ids `xds-` → `astryx-`. (#2363, #2952)
 
 # 0.0.13
 
