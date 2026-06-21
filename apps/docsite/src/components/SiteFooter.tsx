@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+'use client';
+
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {Text} from '@xds/core/Text';
@@ -9,7 +11,8 @@ import {HStack, VStack} from '@xds/core/Layout';
 import {Grid, GridSpan} from '@xds/core/Grid';
 import {Card} from '@xds/core/Card';
 import {Section} from '@xds/core/Section';
-import {GITHUB_REPO} from '../constants';
+import {useAppShellMobile} from '@xds/core/AppShell';
+import {GITHUB_REPO, GITHUB_PAGES} from '../constants';
 import {
   AstryxLogo,
   GitHubLogo,
@@ -55,6 +58,7 @@ const FOOTER_LINKS: ReadonlyArray<{
   {label: 'Templates', href: '/templates'},
   {label: 'Themes', href: '/themes'},
   {label: 'Playground', href: '/playground'},
+  {label: 'GitHub Pages', href: GITHUB_PAGES, isExternal: true},
 ];
 
 const SOCIAL_LINKS: ReadonlyArray<{
@@ -72,81 +76,151 @@ const LEGAL_LINKS: ReadonlyArray<{label: string; href: string}> = [
   {label: 'Privacy policy', href: 'https://opensource.fb.com/legal/privacy'},
 ];
 
+function NavLinks() {
+  return (
+    <>
+      {FOOTER_LINKS.map(item => (
+        <Link
+          key={item.label}
+          href={item.href}
+          type="supporting"
+          color="secondary"
+          isStandalone
+          target={item.isExternal ? '_blank' : undefined}>
+          {item.label}
+        </Link>
+      ))}
+    </>
+  );
+}
+
+function SocialButtons() {
+  return (
+    <>
+      {SOCIAL_LINKS.map(social => (
+        <Button
+          key={social.label}
+          label={social.label}
+          tooltip={social.label}
+          variant="secondary"
+          isIconOnly
+          icon={
+            <social.Icon
+              aria-hidden="true"
+              {...stylex.props(styles.socialIcon)}
+            />
+          }
+          href={social.href}
+        />
+      ))}
+    </>
+  );
+}
+
+function LegalLinks() {
+  return (
+    <>
+      {LEGAL_LINKS.map(link => (
+        <Link
+          key={link.label}
+          href={link.href}
+          type="supporting"
+          color="secondary"
+          isStandalone
+          target="_blank">
+          {link.label}
+        </Link>
+      ))}
+    </>
+  );
+}
+
 export function SiteFooter() {
+  const {isMobile} = useAppShellMobile();
   const year = new Date().getFullYear();
+
+  // The regex compliance check requires the year to immediately follow the
+  // copyright mark — `©{year}`, no separating space. See PR description.
+  const copyright = `\u00A9${year} Meta Platforms, Inc.`;
+
+  const astryxLogo = (
+    <AstryxLogo role="img" aria-label="Astryx" {...stylex.props(styles.logo)} />
+  );
+
+  const metaOpenSourceLink = (
+    <Link
+      href="https://opensource.fb.com"
+      label="Meta Open Source"
+      target="_blank">
+      <MetaOpenSourceLogo
+        aria-hidden="true"
+        {...stylex.props(styles.metaOpenSourceLogo)}
+      />
+    </Link>
+  );
+
+  if (isMobile) {
+    // On narrow viewports the horizontal rows can't fit side by side, so we
+    // stack the three regions vertically and let the link lists wrap.
+    return (
+      <Section role="contentinfo" padding={4}>
+        <VStack gap={4}>
+          <VStack gap={3} hAlign="start" xstyle={styles.footerLinks}>
+            {astryxLogo}
+            <HStack gap={4} wrap="wrap" align="center">
+              <NavLinks />
+            </HStack>
+            <HStack gap={2} wrap="wrap" align="center">
+              <SocialButtons />
+            </HStack>
+          </VStack>
+
+          <Card variant="muted">
+            <VStack gap={3} hAlign="start">
+              {metaOpenSourceLink}
+              <VStack gap={2} hAlign="start">
+                <LegalLinks />
+              </VStack>
+              <Text type="supporting" color="secondary">
+                {copyright}
+              </Text>
+            </VStack>
+          </Card>
+        </VStack>
+      </Section>
+    );
+  }
 
   return (
     <Section role="contentinfo" padding={4}>
       <VStack gap={4}>
         <Grid columns={5} xstyle={styles.footerLinks} align="center">
-          <AstryxLogo
-            role="img"
-            aria-label="Astryx"
-            {...stylex.props(styles.logo)}
-          />
+          {astryxLogo}
           <GridSpan columns={3}>
-            <HStack gap={4} align="center" hAlign="center">
-              {FOOTER_LINKS.map(item => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  type="supporting"
-                  color="secondary"
-                  isStandalone
-                  target={item.isExternal ? '_blank' : undefined}>
-                  {item.label}
-                </Link>
-              ))}
+            <HStack gap={4} wrap="wrap" align="center" hAlign="center">
+              <NavLinks />
             </HStack>
           </GridSpan>
           <HStack gap={2} align="center" justify="end">
-            {SOCIAL_LINKS.map(social => (
-              <Button
-                key={social.label}
-                label={social.label}
-                tooltip={social.label}
-                variant="secondary"
-                isIconOnly
-                icon={
-                  <social.Icon
-                    aria-hidden="true"
-                    {...stylex.props(styles.socialIcon)}
-                  />
-                }
-                href={social.href}
-              />
-            ))}
+            <SocialButtons />
           </HStack>
         </Grid>
 
         <Card variant="muted">
           <Grid columns={4} align="center">
-            <Link
-              href="https://opensource.fb.com"
-              label="Meta Open Source"
-              target="_blank">
-              <MetaOpenSourceLogo
-                aria-hidden="true"
-                {...stylex.props(styles.metaOpenSourceLogo)}
-              />
-            </Link>
+            {metaOpenSourceLink}
             <GridSpan columns={2}>
-              <HStack gap={4} align="center" hAlign="center" width="100%">
-                {LEGAL_LINKS.map(link => (
-                  <Link
-                    key={link.label}
-                    href={link.href}
-                    type="supporting"
-                    color="secondary"
-                    isStandalone
-                    target="_blank">
-                    {link.label}
-                  </Link>
-                ))}
+              <HStack
+                gap={4}
+                wrap="wrap"
+                align="center"
+                hAlign="center"
+                width="100%">
+                <LegalLinks />
               </HStack>
             </GridSpan>
             <Text type="supporting" color="secondary" justify="end">
-              &copy; {year} Meta Platforms, Inc.
+              {copyright}
             </Text>
           </Grid>
         </Card>
