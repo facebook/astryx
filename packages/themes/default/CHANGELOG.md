@@ -1,5 +1,11 @@
 # @xds/theme-default
 
+# 0.0.15
+
+#### Changes
+
+- Tracks `@xds/core@0.0.15` — components now also emit `data-*` attributes (e.g. `data-level`, `data-type`) alongside legacy class selectors, giving theme override rules a stable selector surface.
+
 # 0.0.13
 
 #### Changes

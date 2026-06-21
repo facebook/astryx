@@ -1,6 +1,6 @@
 {
   "name": "@xds/build",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "Build plugins for XDS source builds — babel, PostCSS, and Vite integrations",
   "author": "Meta Open Source",
   "license": "MIT",

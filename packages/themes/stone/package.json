@@ -1,6 +1,6 @@
 {
   "name": "@xds/theme-stone",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "displayName": "Stone Theme",
   "private": false,
   "description": "Warm stone and slate, earthy and understated, with just enough character to feel handcrafted.",
@@ -52,11 +52,11 @@
     "lucide-react": "^1.18.0"
   },
   "peerDependencies": {
-    "@xds/core": "0.0.14",
+    "@xds/core": "0.0.15",
     "react": ">=19"
   },
   "devDependencies": {
-    "@xds/cli": "0.0.14"
+    "@xds/cli": "0.0.15"
   },
   "module": "./dist/source.mjs"
 }
