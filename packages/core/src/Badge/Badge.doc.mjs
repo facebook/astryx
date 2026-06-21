@@ -52,6 +52,7 @@ export const docs = {
       {guidance: false, description: 'Use semantic status variants (success, warning, error, info) for categories or informational content. These are visually loud and should only indicate system state.'},
       {guidance: false, description: 'Repeat the same badge in every row of a table or list. If the same value appears in most rows, it\'s not adding information; use plain text for common states and reserve badges for the exceptional ones.'},
       {guidance: false, description: 'Make badges clickable; they are read-only indicators. Use a button or link if the user needs to take action.'},
+      {guidance: false, description: "Use variant='accent', variant='primary', or variant='danger' \u2014 these don't exist. For emphasis/highlight, use 'info' or a color variant like 'blue'. For errors, use 'error'. Valid variants: neutral, info, success, warning, error, blue, cyan, green, orange, pink, purple, red, teal, yellow."},
     ],
     anatomy: [
       {name: 'Icon', required: false, description: 'An optional leading icon that helps identify the badge type at a glance.'},
@@ -78,6 +79,7 @@ export const docsZh = {
       {guidance: false, description: 'Use semantic status variants (success, warning, error, info) for categories or informational content. These are visually loud and should only indicate system state.'},
       {guidance: false, description: 'Repeat the same badge in every row of a table or list. If the same value appears in most rows, it\'s not adding information; use plain text for common states and reserve badges for the exceptional ones.'},
       {guidance: false, description: 'Make badges clickable; they are read-only indicators. Use a button or link if the user needs to take action.'},
+      {guidance: false, description: "Use variant='accent', variant='primary', or variant='danger' \u2014 these don't exist. For emphasis/highlight, use 'info' or a color variant like 'blue'. For errors, use 'error'. Valid variants: neutral, info, success, warning, error, blue, cyan, green, orange, pink, purple, red, teal, yellow."},
     ],
     anatomy: [
       {name: 'Icon', required: false, description: 'An optional leading icon that helps identify the badge type at a glance.'},
@@ -124,6 +126,7 @@ export const docsDense = {
       {guidance: false, description: 'Use status variants for non-status info. "6h window", "12 types", category names are NOT statuses.'},
       {guidance: false, description: 'Repeat loud badges in every row. Common/default states should be plain text; reserve badges for the exceptional.'},
       {guidance: false, description: 'Make badges clickable; they are read-only. Use a button or link for actions.'},
+      {guidance: false, description: "variant='accent'/'primary'/'danger' \u2014 don't exist. Use 'info'/'blue' for emphasis, 'error' for errors. Valid: neutral, info, success, warning, error, + color names."},
     ],
     anatomy: [
       {name: 'Icon', required: false, description: 'Optional leading icon.'},
