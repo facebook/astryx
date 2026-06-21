@@ -175,7 +175,7 @@ const defaultColorByType: Record<string, TextColor> = {
 /**
  * Resolve the StyleX style key for a text type.
  * Custom (theme-defined) types fall back to 'body' for baseline StyleX styles;
- * their visual treatment comes from theme CSS overrides (.xds-text.<type>).
+ * their visual treatment comes from theme CSS overrides (.astryx-text.<type>).
  */
 function resolveStyleType(type: TextType): BuiltinTextType {
   if (type in sizeByTypeStyles) {

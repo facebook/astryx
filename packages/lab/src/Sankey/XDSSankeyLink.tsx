@@ -116,7 +116,7 @@ export function XDSSankeyLink({
         } else if (mode.type === 'target') {
           fill = oklch(link.target.color, opacity);
         } else {
-          fill = `url(#xds-sankey-grad-${i})`;
+          fill = `url(#astryx-sankey-grad-${i})`;
         }
 
         return <path key={i} d={d} fill={fill} opacity={pathOpacity} />;
@@ -144,7 +144,7 @@ function GradientDef({
 
   return (
     <linearGradient
-      id={`xds-sankey-grad-${index}`}
+      id={`astryx-sankey-grad-${index}`}
       x1={sx}
       x2={tx}
       y1={0}

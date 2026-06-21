@@ -280,15 +280,15 @@ export const paddingBlockStyles = stylex.create({
  * useThemeDefault inherit the parent's padding instead of the theme default.
  */
 export const sectionPaddingPropagationStyles = stylex.create({
-  0: {'--xds-section-padding': spacingVars['--spacing-0']},
-  0.5: {'--xds-section-padding': spacingVars['--spacing-0-5']},
-  1: {'--xds-section-padding': spacingVars['--spacing-1']},
-  1.5: {'--xds-section-padding': spacingVars['--spacing-1-5']},
-  2: {'--xds-section-padding': spacingVars['--spacing-2']},
-  3: {'--xds-section-padding': spacingVars['--spacing-3']},
-  4: {'--xds-section-padding': spacingVars['--spacing-4']},
-  5: {'--xds-section-padding': spacingVars['--spacing-5']},
-  6: {'--xds-section-padding': spacingVars['--spacing-6']},
-  8: {'--xds-section-padding': spacingVars['--spacing-8']},
-  10: {'--xds-section-padding': spacingVars['--spacing-10']},
+  0: {'--astryx-section-padding': spacingVars['--spacing-0']},
+  0.5: {'--astryx-section-padding': spacingVars['--spacing-0-5']},
+  1: {'--astryx-section-padding': spacingVars['--spacing-1']},
+  1.5: {'--astryx-section-padding': spacingVars['--spacing-1-5']},
+  2: {'--astryx-section-padding': spacingVars['--spacing-2']},
+  3: {'--astryx-section-padding': spacingVars['--spacing-3']},
+  4: {'--astryx-section-padding': spacingVars['--spacing-4']},
+  5: {'--astryx-section-padding': spacingVars['--spacing-5']},
+  6: {'--astryx-section-padding': spacingVars['--spacing-6']},
+  8: {'--astryx-section-padding': spacingVars['--spacing-8']},
+  10: {'--astryx-section-padding': spacingVars['--spacing-10']},
 });

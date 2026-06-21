@@ -59,7 +59,7 @@ describe('applyHighlightRangesChunked', () => {
 
     const cleanup = applyHighlightRangesChunked(codeEl, tokenLines);
 
-    const kwHighlight = mockHighlightsMap.get('xds-keyword');
+    const kwHighlight = mockHighlightsMap.get('astryx-keyword');
     expect(kwHighlight).toBeDefined();
     expect(kwHighlight!.size).toBe(2);
 
@@ -77,7 +77,7 @@ describe('applyHighlightRangesChunked', () => {
 
     const cleanup = applyHighlightRangesChunked(codeEl, tokenLines);
 
-    const kwHighlight = mockHighlightsMap.get('xds-keyword');
+    const kwHighlight = mockHighlightsMap.get('astryx-keyword');
     expect(kwHighlight).toBeDefined();
     expect(kwHighlight!.size).toBe(1);
 
@@ -99,8 +99,8 @@ describe('applyHighlightRangesChunked', () => {
 
     const cleanup = applyHighlightRangesChunked(codeEl, tokenLines);
 
-    const kwHighlight = mockHighlightsMap.get('xds-keyword');
-    const numHighlight = mockHighlightsMap.get('xds-number');
+    const kwHighlight = mockHighlightsMap.get('astryx-keyword');
+    const numHighlight = mockHighlightsMap.get('astryx-number');
     expect(kwHighlight!.size).toBe(1);
     expect(numHighlight!.size).toBe(1);
 

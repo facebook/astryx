@@ -39,8 +39,8 @@ export const docs = {
           style: 'ordered',
           items: [
             'Use components for everything they cover',
-            'StyleX or Tailwind for custom styling; both are first-class (see \`npx xds docs styling\`)',
-            'Semantic tokens, not hardcoded values (see \`npx xds docs tokens\`)',
+            'StyleX or Tailwind for custom styling; both are first-class (see \`npx astryx docs styling\`)',
+            'Semantic tokens, not hardcoded values (see \`npx astryx docs tokens\`)',
             'CSS custom properties for colors, not hex values',
             'Form inputs are controlled (value + onChange)',
             'Use useLinkComponent() for navigation so consumers can plug in their framework router via LinkProvider',
@@ -58,7 +58,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'See \`npx xds docs styling\` for the complete guide with examples.',
+          text: 'See \`npx astryx docs styling\` for the complete guide with examples.',
         },
       ],
     },
@@ -85,7 +85,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'The design system provides semantic design tokens for spacing, color, radius, shadow, typography, and size. Tokens adapt to the active theme and color mode. Run \`npx xds docs tokens\` for the full reference with all values.',
+          text: 'The design system provides semantic design tokens for spacing, color, radius, shadow, typography, and size. Tokens adapt to the active theme and color mode. Run \`npx astryx docs tokens\` for the full reference with all values.',
         },
       ],
     },

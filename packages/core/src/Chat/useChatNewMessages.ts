@@ -9,7 +9,7 @@
  * @position Utility hook — used by ChatLayout, also usable standalone
  *
  * Observes a content element via ResizeObserver and tracks the last
- * .xds-chat-message element. When a new message appears (last element
+ * .astryx-chat-message element. When a new message appears (last element
  * changes), flags hasNewMessages if the scroll is unlocked.
  *
  * Also calls onResize on every content height change so the scroll
@@ -83,7 +83,7 @@ export function useChatNewMessages({
     observeResize(el, () => {
       onResizeRef.current?.();
 
-      const messages = el.getElementsByClassName('xds-chat-message');
+      const messages = el.getElementsByClassName('astryx-chat-message');
       const last = messages.length > 0 ? messages[messages.length - 1] : null;
 
       if (last && last !== lastMessageRef.current) {

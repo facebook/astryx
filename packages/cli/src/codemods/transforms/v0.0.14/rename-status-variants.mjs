@@ -23,7 +23,11 @@ export const meta = {
   title: 'Rename status variants positive/negative → success/error',
   description:
     'Renames `positive` to `success`, `negative` to `error`, and `info` to `accent` ' +
-    'on StatusDot, AvatarStatusDot, Icon, SVGIcon, and ProgressBar to align with token naming.',
+    'on StatusDot, AvatarStatusDot, Icon, SVGIcon, and ProgressBar to align with token naming. ' +
+    'The `info` -> `accent` rename is only applied to direct JSX attributes on these ' +
+    'components (where the component is known); in context-blind locations (object ' +
+    'properties, type unions) `info` is left untouched because it is a valid variant on ' +
+    'other components such as Badge.',
   pr: '#996',
 };
 
@@ -33,6 +37,21 @@ const RENAMES = new Map([
   ['negative', 'error'],
   ['info', 'accent'],
 ]);
+
+/**
+ * Ambiguous renames that are only safe when the target component is known.
+ *
+ * `info` is a VALID variant on non-target components (notably XDSBadge, whose
+ * BadgeVariantMap still has `info`). `positive`/`negative` are not retained by
+ * any component post-migration, so renaming them is always safe. Therefore the
+ * context-blind heuristic paths (object properties, type unions, and suffixed
+ * props on wrapper components) must NOT rewrite `info` — only the precise path,
+ * a direct JSX attribute on a known target component, may. Otherwise a
+ * `variant: 'info'` on an unrelated Badge config in a file that merely also
+ * imports e.g. XDSIcon gets wrongly rewritten to the invalid `accent`.
+ */
+const AMBIGUOUS_VALUES = new Set(['info']);
+
 
 /**
  * Components and which props are affected.
@@ -77,7 +96,7 @@ export default function transformer(file, api) {
    * Unwraps TSAsExpression (e.g. 'positive' as const) to reach the literal.
    * @returns {boolean} whether a rename occurred
    */
-  function renameValue(node) {
+  function renameValue(node, {precise = false} = {}) {
     if (!node) return false;
 
     // Unwrap TSAsExpression (e.g. 'positive' as const → StringLiteral)
@@ -90,6 +109,12 @@ export default function transformer(file, api) {
     const replacement = RENAMES.get(target.value);
     if (!replacement) return false;
 
+    // Ambiguous values (e.g. `info`) are only renamed in a precise context
+    // where the target component is known (a direct JSX attribute on a target).
+    // In context-blind paths they may belong to a component that legitimately
+    // keeps the value (e.g. Badge's `info`), so leave them untouched.
+    if (!precise && AMBIGUOUS_VALUES.has(target.value)) return false;
+
     target.value = replacement;
     if (target.raw) target.raw = undefined;
     return true;
@@ -98,12 +123,12 @@ export default function transformer(file, api) {
   /**
    * Rename elements in an array (handles TSAsExpression wrapping).
    */
-  function renameArrayElements(node) {
+  function renameArrayElements(node, {precise = false} = {}) {
     let arrayNode = node;
     if (arrayNode.type === 'TSAsExpression') arrayNode = arrayNode.expression;
     if (arrayNode.type !== 'ArrayExpression') return;
     arrayNode.elements.forEach((el) => {
-      if (renameValue(el)) hasChanges = true;
+      if (renameValue(el, {precise})) hasChanges = true;
     });
   }
 
@@ -137,10 +162,15 @@ export default function transformer(file, api) {
         if (!matchesPropName(attrName) || TARGET_PROP_NAMES.has(attrName)) return;
       }
 
+      // Only a direct JSX attribute on a target component is a precise context
+      // where the component (and thus the validity of `info`) is known. The
+      // wrapper/suffixed-prop case is a heuristic and must not touch ambiguous
+      // values.
+      const precise = isDirectTarget;
       const value = attr.value;
 
       // variant="positive" (string literal)
-      if (renameValue(value)) {
+      if (renameValue(value, {precise})) {
         hasChanges = true;
         return;
       }
@@ -151,15 +181,17 @@ export default function transformer(file, api) {
         value.type === 'JSXExpressionContainer' &&
         value.expression
       ) {
-        if (renameValue(value.expression)) {
+        if (renameValue(value.expression, {precise})) {
           hasChanges = true;
           return;
         }
 
         // variant={condition ? 'positive' : 'negative'} (ternary)
         if (value.expression.type === 'ConditionalExpression') {
-          if (renameValue(value.expression.consequent)) hasChanges = true;
-          if (renameValue(value.expression.alternate)) hasChanges = true;
+          if (renameValue(value.expression.consequent, {precise}))
+            hasChanges = true;
+          if (renameValue(value.expression.alternate, {precise}))
+            hasChanges = true;
         }
       }
     });

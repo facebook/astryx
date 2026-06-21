@@ -106,7 +106,11 @@ export interface ResizableProps {
 
 const DEFAULT_MIN = 50;
 const DEFAULT_COLLAPSED_SIZE = 40;
-const STORAGE_PREFIX = 'xds-resizable:';
+const STORAGE_PREFIX = 'astryx-resizable:';
+// Legacy key prefix read during the compat window so persisted panel sizes
+// survive the xds -> astryx rename. Read-only fallback; we always write the
+// new prefix. Removed at final cutover.
+const LEGACY_STORAGE_PREFIX = 'xds-resizable:';
 
 // =============================================================================
 // Helpers
@@ -143,7 +147,9 @@ function loadPersistedSize(key: string): number | null {
     return null;
   }
   try {
-    const raw = localStorage.getItem(STORAGE_PREFIX + key);
+    const raw =
+      localStorage.getItem(STORAGE_PREFIX + key) ??
+      localStorage.getItem(LEGACY_STORAGE_PREFIX + key);
     if (raw != null) {
       const parsed = JSON.parse(raw);
       if (typeof parsed === 'number') {
@@ -188,9 +194,7 @@ function resolveDefaultSize(defaultSize: number | string | undefined): number {
 // Single-region hook
 // =============================================================================
 
-function useSingleResizable(
-  config: UseResizableSingleConfig,
-): ResizableRegion {
+function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   const {
     defaultSize,
     minSizePx = DEFAULT_MIN,
@@ -365,9 +369,7 @@ function useMultiResizable(
 // Public API
 // =============================================================================
 
-export function useResizable(
-  config: UseResizableSingleConfig,
-): ResizableRegion;
+export function useResizable(config: UseResizableSingleConfig): ResizableRegion;
 export function useResizable(
   config: UseResizableMultiConfig,
 ): Record<string, ResizableRegion>;

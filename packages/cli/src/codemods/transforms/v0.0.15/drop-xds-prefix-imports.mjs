@@ -20,7 +20,9 @@
  * Handles:
  * 1. Named import specifiers:   import {XDSButton} from '@xds/core'
  *    -> import {Button} from '@xds/core'   (and aliased imports)
- * 2. All references to the imported binding (JSX, type positions, values)
+ * 2. All references to the imported binding (JSX, type positions, values),
+ *    including type references in generic type-argument positions such as
+ *    `useMemo<XDSTableColumn<Issue>[]>(...)`
  * 3. Re-exports from @xds/core: export {XDSButton} from '@xds/core/Button'
  *
  * Does NOT touch:
@@ -165,6 +167,60 @@ export default function transformer(file, api) {
       hasChanges = true;
     }
   });
+
+  // 4. Rename TS type references in generic type-argument positions.
+  //
+  // `j.find(j.Identifier)` (and `j.find(j.TSTypeReference)`) do NOT visit
+  // identifiers nested inside generic type arguments with the tsx/babel parser
+  // -- e.g. the `XDSTableColumn` in `useMemo<XDSTableColumn<Issue>[]>(...)`.
+  // ast-types' traversal doesn't descend through the
+  // `TSTypeParameterInstantiation` / `TSArrayType` field path here, so those
+  // type references slip past steps 1-3 and produce dangling prefixed names.
+  //
+  // To cover every type-reference position regardless of how the parser nests
+  // it, walk the raw AST and rename any `TSTypeReference` whose `typeName` is a
+  // renamed binding. Renaming already-bare names is a no-op, so re-visiting a
+  // node the earlier passes handled is harmless.
+  const seenTypeNodes = new Set();
+  const renameTypeReferences = node => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      for (const child of node) renameTypeReferences(child);
+      return;
+    }
+    if (seenTypeNodes.has(node)) return;
+    seenTypeNodes.add(node);
+
+    if (
+      node.type === 'TSTypeReference' &&
+      node.typeName &&
+      node.typeName.type === 'Identifier'
+    ) {
+      const newName = localRenames.get(node.typeName.name);
+      if (newName && node.typeName.name !== newName) {
+        node.typeName.name = newName;
+        hasChanges = true;
+      }
+    }
+
+    for (const key of Object.keys(node)) {
+      // Skip position/metadata fields to avoid wasted traversal.
+      if (
+        key === 'loc' ||
+        key === 'start' ||
+        key === 'end' ||
+        key === 'range' ||
+        key === 'comments' ||
+        key === 'leadingComments' ||
+        key === 'trailingComments' ||
+        key === 'tokens'
+      ) {
+        continue;
+      }
+      renameTypeReferences(node[key]);
+    }
+  };
+  renameTypeReferences(root.get().node);
 
   return hasChanges ? root.toSource() : undefined;
 }

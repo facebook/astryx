@@ -278,7 +278,7 @@ export function useLayer(
 ): ContextLayerReturn | FixedLayerReturn {
   const {mode, onShow, onHide, lightDismiss = false} = options;
   const id = useId();
-  const anchorId = `--xds-layer-${id.replace(/:/g, '')}`;
+  const anchorId = `--astryx-layer-${id.replace(/:/g, '')}`;
 
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef<HTMLElement | null>(null);

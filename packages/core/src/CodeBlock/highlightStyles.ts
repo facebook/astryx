@@ -30,32 +30,58 @@ const FALLBACK_TOKENS = `:root {\n${Object.entries(syntaxTokenDefaults)
 const HIGHLIGHT_STYLES = `
 ${FALLBACK_TOKENS}
 
-.xds-codeblock code::highlight(xds-keyword),
-.xds-codeeditor code::highlight(xds-keyword)     { color: var(--color-syntax-keyword); }
-.xds-codeblock code::highlight(xds-string),
-.xds-codeeditor code::highlight(xds-string)      { color: var(--color-syntax-string); }
-.xds-codeblock code::highlight(xds-comment),
-.xds-codeeditor code::highlight(xds-comment)     { color: var(--color-syntax-comment); }
-.xds-codeblock code::highlight(xds-number),
-.xds-codeeditor code::highlight(xds-number)      { color: var(--color-syntax-number); }
-.xds-codeblock code::highlight(xds-function),
-.xds-codeeditor code::highlight(xds-function)    { color: var(--color-syntax-function); }
-.xds-codeblock code::highlight(xds-type),
-.xds-codeeditor code::highlight(xds-type)        { color: var(--color-syntax-type); }
-.xds-codeblock code::highlight(xds-tag),
-.xds-codeeditor code::highlight(xds-tag)         { color: var(--color-syntax-tag); }
-.xds-codeblock code::highlight(xds-attribute),
-.xds-codeeditor code::highlight(xds-attribute)   { color: var(--color-syntax-attribute); }
-.xds-codeblock code::highlight(xds-property),
-.xds-codeeditor code::highlight(xds-property)    { color: var(--color-syntax-property); }
-.xds-codeblock code::highlight(xds-operator),
-.xds-codeeditor code::highlight(xds-operator)    { color: var(--color-syntax-operator); }
-.xds-codeblock code::highlight(xds-constant),
-.xds-codeeditor code::highlight(xds-constant)    { color: var(--color-syntax-constant); }
-.xds-codeblock code::highlight(xds-punctuation),
-.xds-codeeditor code::highlight(xds-punctuation) { color: var(--color-syntax-punctuation); }
-.xds-codeblock code::highlight(xds-variable),
-.xds-codeeditor code::highlight(xds-variable)    { color: var(--color-syntax-variable); }
+.astryx-codeblock code::highlight(astryx-keyword),
+.xds-codeblock code::highlight(astryx-keyword),
+.astryx-codeeditor code::highlight(astryx-keyword),
+.xds-codeeditor code::highlight(astryx-keyword) { color: var(--color-syntax-keyword); }
+.astryx-codeblock code::highlight(astryx-string),
+.xds-codeblock code::highlight(astryx-string),
+.astryx-codeeditor code::highlight(astryx-string),
+.xds-codeeditor code::highlight(astryx-string) { color: var(--color-syntax-string); }
+.astryx-codeblock code::highlight(astryx-comment),
+.xds-codeblock code::highlight(astryx-comment),
+.astryx-codeeditor code::highlight(astryx-comment),
+.xds-codeeditor code::highlight(astryx-comment) { color: var(--color-syntax-comment); }
+.astryx-codeblock code::highlight(astryx-number),
+.xds-codeblock code::highlight(astryx-number),
+.astryx-codeeditor code::highlight(astryx-number),
+.xds-codeeditor code::highlight(astryx-number) { color: var(--color-syntax-number); }
+.astryx-codeblock code::highlight(astryx-function),
+.xds-codeblock code::highlight(astryx-function),
+.astryx-codeeditor code::highlight(astryx-function),
+.xds-codeeditor code::highlight(astryx-function) { color: var(--color-syntax-function); }
+.astryx-codeblock code::highlight(astryx-type),
+.xds-codeblock code::highlight(astryx-type),
+.astryx-codeeditor code::highlight(astryx-type),
+.xds-codeeditor code::highlight(astryx-type) { color: var(--color-syntax-type); }
+.astryx-codeblock code::highlight(astryx-tag),
+.xds-codeblock code::highlight(astryx-tag),
+.astryx-codeeditor code::highlight(astryx-tag),
+.xds-codeeditor code::highlight(astryx-tag) { color: var(--color-syntax-tag); }
+.astryx-codeblock code::highlight(astryx-attribute),
+.xds-codeblock code::highlight(astryx-attribute),
+.astryx-codeeditor code::highlight(astryx-attribute),
+.xds-codeeditor code::highlight(astryx-attribute) { color: var(--color-syntax-attribute); }
+.astryx-codeblock code::highlight(astryx-property),
+.xds-codeblock code::highlight(astryx-property),
+.astryx-codeeditor code::highlight(astryx-property),
+.xds-codeeditor code::highlight(astryx-property) { color: var(--color-syntax-property); }
+.astryx-codeblock code::highlight(astryx-operator),
+.xds-codeblock code::highlight(astryx-operator),
+.astryx-codeeditor code::highlight(astryx-operator),
+.xds-codeeditor code::highlight(astryx-operator) { color: var(--color-syntax-operator); }
+.astryx-codeblock code::highlight(astryx-constant),
+.xds-codeblock code::highlight(astryx-constant),
+.astryx-codeeditor code::highlight(astryx-constant),
+.xds-codeeditor code::highlight(astryx-constant) { color: var(--color-syntax-constant); }
+.astryx-codeblock code::highlight(astryx-punctuation),
+.xds-codeblock code::highlight(astryx-punctuation),
+.astryx-codeeditor code::highlight(astryx-punctuation),
+.xds-codeeditor code::highlight(astryx-punctuation) { color: var(--color-syntax-punctuation); }
+.astryx-codeblock code::highlight(astryx-variable),
+.xds-codeblock code::highlight(astryx-variable),
+.astryx-codeeditor code::highlight(astryx-variable),
+.xds-codeeditor code::highlight(astryx-variable) { color: var(--color-syntax-variable); }
 
 /* Span-based fallback classes — used when highlightMode='spans' or
    when the CSS Custom Highlight API is not available.
@@ -98,7 +124,7 @@ export function ensureHighlightStyles(): void {
 
 /**
  * Token types that map to highlight names.
- * Used to create CSS.highlights entries with `xds-` prefix.
+ * Used to create CSS.highlights entries with the `astryx-` prefix.
  */
 export const TOKEN_TYPES = [
   'keyword',

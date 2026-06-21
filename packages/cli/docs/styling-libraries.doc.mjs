@@ -24,7 +24,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'For available token names and values, run `npx xds docs tokens`. Focused references are also available with `npx xds docs color`, `npx xds docs spacing`, `npx xds docs shape`, `npx xds docs typography`, `npx xds docs elevation`, and `npx xds docs motion`.',
+          text: 'For available token names and values, run `npx astryx docs tokens`. Focused references are also available with `npx astryx docs color`, `npx astryx docs spacing`, `npx astryx docs shape`, `npx astryx docs typography`, `npx astryx docs elevation`, and `npx astryx docs motion`.',
         },
       ],
     },
@@ -452,10 +452,10 @@ function RevenueChart({data}: {data: Array<{x: string; y: number}>}) {
           type: 'list',
           style: 'ordered',
           items: [
-            'Import the reset/base CSS and a theme CSS file early enough for first paint. For production SSR, prefer built themes from `npx xds theme build` or published `/built` theme imports plus `theme.css`.',
+            'Import the reset/base CSS and a theme CSS file early enough for first paint. For production SSR, prefer built themes from `npx astryx theme build` or published `/built` theme imports plus `theme.css`.',
             'Choose one owner for color mode. Theme uses `data-theme="light|dark"` and `color-scheme` to resolve `light-dark()` tokens.',
             'Map the external library\'s semantic layer to system variables by intent, not by exact naming. For example, MUI `background.paper` maps to `--color-background-surface`.',
-            'Use `npx xds docs tokens` and focused token docs when building mappings. Keep mappings small at first: text, surface/body/card/popover, border, accent, status, spacing, radius, typography, shadow.',
+            'Use `npx astryx docs tokens` and focused token docs when building mappings. Keep mappings small at first: text, surface/body/card/popover, border, accent, status, spacing, radius, typography, shadow.',
             'Use token resolver APIs only for non-CSS APIs that need resolved values.',
           ],
         },

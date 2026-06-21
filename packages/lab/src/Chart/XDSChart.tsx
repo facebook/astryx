@@ -298,7 +298,7 @@ export function XDSChart({
           height={height}
           style={interactive ? {touchAction: 'none'} : undefined}>
           <defs>
-            <clipPath id="xds-chart-plot">
+            <clipPath id="astryx-chart-plot">
               <rect x={0} y={0} width={innerWidth} height={innerHeight} />
             </clipPath>
           </defs>

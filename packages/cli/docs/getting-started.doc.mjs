@@ -21,7 +21,7 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Paste this into your AI',
-          code: 'Install @xds/core, @xds/theme-default, and @xds/cli in this project. Run `npx xds init` to set up agent docs. Read the generated files to learn the conventions.',
+          code: 'Install @xds/core, @xds/theme-default, and @xds/cli in this project. Run `npx astryx init` to set up agent docs. Read the generated files to learn the conventions.',
         },
       ],
     },
@@ -46,7 +46,7 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Terminal',
-          code: `npx xds init`,
+          code: `npx astryx init`,
         },
       ],
     },
@@ -67,7 +67,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Available themes: @xds/theme-default (blue accent), @xds/theme-neutral (grayscale), @xds/theme-brutalist (zero radius, monospace). See `npx xds docs theme` for the full theming guide.',
+          text: 'Available themes: @xds/theme-default (blue accent), @xds/theme-neutral (grayscale), @xds/theme-brutalist (zero radius, monospace). See `npx astryx docs theme` for the full theming guide.',
         },
       ],
     },
@@ -168,11 +168,11 @@ pnpm dev`,
           type: 'code',
           lang: 'bash',
           label: 'Terminal',
-          code: `npm run xds -- component          # list all components
-npm run xds -- component Button   # props, usage, theming for Button
-npm run xds -- docs               # list all doc topics
-npm run xds -- template --list    # available page templates
-npm run xds -- docs tokens        # spacing, color, radius reference`,
+          code: `npx astryx component          # list all components
+npx astryx component Button   # props, usage, theming for Button
+npx astryx docs               # list all doc topics
+npx astryx template --list    # available page templates
+npx astryx docs tokens        # spacing, color, radius reference`,
         },
       ],
     },

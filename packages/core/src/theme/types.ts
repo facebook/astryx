@@ -112,7 +112,7 @@ export type BuiltinTextType =
  *
  * Themes can define custom text types via component overrides in defineTheme.
  * Custom types render with `body` baseline styles and receive their visual
- * treatment from theme CSS (`.xds-text.<custom-type> { ... }`).
+ * treatment from theme CSS (`.astryx-text.<custom-type> { ... }`).
  *
  * To add type-safe custom types, use module augmentation:
  * ```ts
@@ -130,9 +130,7 @@ export type BuiltinTextType =
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface CustomTextTypes {}
 
-export type TextType =
-  | BuiltinTextType
-  | (keyof CustomTextTypes & string);
+export type TextType = BuiltinTextType | (keyof CustomTextTypes & string);
 
 /**
  * Text size scale for Text size prop override
