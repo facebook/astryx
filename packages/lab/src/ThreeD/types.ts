@@ -33,7 +33,7 @@ export interface Camera {
   distance?: number;
 }
 
-/** 3D context provided by XDS3DChart to children */
+/** 3D context provided by ThreeDChart to children */
 export interface ThreeDContext {
   /** Inner width in pixels */
   width: number;

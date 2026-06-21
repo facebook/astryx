@@ -3,9 +3,9 @@
 /**
  * @file tooltip.ts
  * @output Tooltip types + series-value derivation
- * @position Used by XDSChart to bridge series + hovered datum → tooltip rows.
+ * @position Used by Chart to bridge series + hovered datum → tooltip rows.
  *           Mirrors the legend.ts split: data shaping lives here, presentation
- *           lives in XDSChartTooltip.tsx.
+ *           lives in ChartTooltip.tsx.
  */
 
 import {isUtilityMarkType, type SeriesDef} from './types';

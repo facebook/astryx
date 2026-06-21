@@ -3,7 +3,7 @@
 /**
  * @file formatters.ts
  * @output Built-in tick format utilities for common data types
- * @position Utility; consumed by XDSChartAxis via tickFormat prop
+ * @position Utility; consumed by ChartAxis via tickFormat prop
  */
 
 /**
@@ -31,9 +31,9 @@ export function compactNumber(value: unknown): string {
  *
  * @example
  * ```
- * <XDSChartAxis tickFormat={currency()} />       // $1.5K
- * <XDSChartAxis tickFormat={currency('€')} />    // €1.5K
- * <XDSChartAxis tickFormat={currency('¥')} />    // ¥1.5K
+ * <ChartAxis tickFormat={currency()} />       // $1.5K
+ * <ChartAxis tickFormat={currency('€')} />    // €1.5K
+ * <ChartAxis tickFormat={currency('¥')} />    // ¥1.5K
  * ```
  */
 export function currency(symbol = '$'): (value: unknown) => string {

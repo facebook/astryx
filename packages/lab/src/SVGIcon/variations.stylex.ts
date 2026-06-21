@@ -4,7 +4,7 @@
  * @file variations.stylex.ts
  * @input Icon token vars
  * @output StyleX styles for each icon variation preset
- * @position Consumed by XDSSVGIcon to apply variation-specific token overrides
+ * @position Consumed by SVGIcon to apply variation-specific token overrides
  *
  * Each variation sets tokens for both fill-role and stroke-role elements
  * per the path role system. Stroke-role elements (lines, detail strokes)

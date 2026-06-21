@@ -3,7 +3,7 @@
 /**
  * @file legend.ts
  * @output Legend utility — derives legend items from series definitions
- * @position Used by XDSChart to bridge series → legend items
+ * @position Used by Chart to bridge series → legend items
  */
 
 import {isUtilityMarkType, type SeriesDef} from './types';

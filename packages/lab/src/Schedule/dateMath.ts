@@ -4,7 +4,7 @@
  * @file dateMath.ts
  * @input PlainDate records, Instant epoch milliseconds, IANA timezone IDs
  * @output Pure range, conversion, formatting, and event-overlap utilities
- * @position Shared schedule utility layer; consumed by XDSSchedule and tests
+ * @position Shared schedule utility layer; consumed by Schedule and tests
  */
 
 import {

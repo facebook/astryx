@@ -12,11 +12,11 @@ const RadialCtx = createContext<RadialContext | null>(null);
 
 export const RadialProvider = RadialCtx.Provider;
 
-/** Access the radial chart context. Throws if used outside XDSRadialChart. */
+/** Access the radial chart context. Throws if used outside RadialChart. */
 export function useRadial(): RadialContext {
   const ctx = useContext(RadialCtx);
   if (!ctx) {
-    throw new Error('Radial components must be used inside <XDSRadialChart>');
+    throw new Error('Radial components must be used inside <RadialChart>');
   }
   return ctx;
 }

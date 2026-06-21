@@ -4,7 +4,7 @@
  * @file CalendarEvent.ts
  * @input ISO event definitions and PlainDate/Instant primitives
  * @output Calendar event types and event construction helpers
- * @position Public schedule event model; consumed by XDSSchedule and views
+ * @position Public schedule event model; consumed by Schedule and views
  */
 
 import {
@@ -12,16 +12,16 @@ import {
   type ISODateString,
   type PlainDate,
 } from '@xds/core/utils';
-import type {XDSTokenColor} from '@xds/core/Token';
+import type {TokenColor} from '@xds/core/Token';
 import type {Instant} from './types';
 
 const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-export type XDSScheduleEventColor = Exclude<XDSTokenColor, 'default'>;
+export type ScheduleEventColor = Exclude<TokenColor, 'default'>;
 
-export interface XDSScheduleCategory {
+export interface ScheduleCategory {
   label: string;
-  color: XDSScheduleEventColor;
+  color: ScheduleEventColor;
 }
 
 export interface CalendarEventBase {

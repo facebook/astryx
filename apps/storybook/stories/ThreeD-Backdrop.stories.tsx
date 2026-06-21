@@ -2,7 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useMemo} from 'react';
-import {XDS3DChart, use3D} from '@xds/lab';
+import {ThreeDChart, use3D} from '@xds/lab';
 
 const meta: Meta = {title: 'Lab/3DChart/Backdrop'};
 export default meta;
@@ -147,7 +147,7 @@ export const SplitDarkLight: StoryObj = {
     const data = useMemo(() => sphere(2000), []);
     return (
       <div style={{borderRadius: 16, overflow: 'hidden', maxWidth: 600}}>
-        <XDS3DChart
+        <ThreeDChart
           data={data}
           xKey="x"
           yKey="y"
@@ -161,7 +161,7 @@ export const SplitDarkLight: StoryObj = {
             leftDot="#DFE2E5"
             rightDot="#0A1317"
           />
-        </XDS3DChart>
+        </ThreeDChart>
       </div>
     );
   },
@@ -173,7 +173,7 @@ export const SplitBoldColors: StoryObj = {
     const data = useMemo(() => torusKnot(2500), []);
     return (
       <div style={{borderRadius: 16, overflow: 'hidden', maxWidth: 600}}>
-        <XDS3DChart
+        <ThreeDChart
           data={data}
           xKey="x"
           yKey="y"
@@ -187,7 +187,7 @@ export const SplitBoldColors: StoryObj = {
             leftDot="#FFFFFF"
             rightDot="#FFFFFF"
           />
-        </XDS3DChart>
+        </ThreeDChart>
       </div>
     );
   },
@@ -262,7 +262,7 @@ export const QuadSplit: StoryObj = {
     const data = useMemo(() => sphere(2500), []);
     return (
       <div style={{borderRadius: 16, overflow: 'hidden', maxWidth: 600}}>
-        <XDS3DChart
+        <ThreeDChart
           data={data}
           xKey="x"
           yKey="y"
@@ -271,7 +271,7 @@ export const QuadSplit: StoryObj = {
           interactive
           autoRotate={0.15}>
           <QuadBackdropInner />
-        </XDS3DChart>
+        </ThreeDChart>
       </div>
     );
   },

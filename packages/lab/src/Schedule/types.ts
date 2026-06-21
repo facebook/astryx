@@ -2,8 +2,8 @@
 
 /**
  * @file types.ts
- * @input Public XDSSchedule API concepts
- * @output Event, view, date, loader, and context types for XDSSchedule
+ * @input Public Schedule API concepts
+ * @output Event, view, date, loader, and context types for Schedule
  * @position Public type surface; consumed by Schedule implementation and exports
  */
 
@@ -18,19 +18,19 @@ export type {
   CalendarEvent,
   CalendarEventBase,
   CalendarInstantEvent,
-  XDSScheduleCategory,
-  XDSScheduleEventColor,
+  ScheduleCategory,
+  ScheduleEventColor,
 } from './CalendarEvent';
 export type {ZonedDateTime, ZonedDateTimeRange} from './zonedDateTime';
 
 /** Unix epoch milliseconds. */
 export type Instant = number;
 
-export type XDSScheduleEventSource =
+export type ScheduleEventSource =
   | ReadonlyArray<CalendarEvent>
   | ((start: Instant, end: Instant) => Promise<ReadonlyArray<CalendarEvent>>);
 
-export type XDSScheduleDate = Instant;
+export type ScheduleDate = Instant;
 
 export interface ScheduleRange {
   startDate: PlainDate;
@@ -39,48 +39,48 @@ export interface ScheduleRange {
   end: Instant;
 }
 
-export type XDSScheduleViewOptions = object;
+export type ScheduleViewOptions = object;
 
-export interface XDSScheduleViewComponentProps<
-  Options extends XDSScheduleViewOptions = XDSScheduleViewOptions,
+export interface ScheduleViewComponentProps<
+  Options extends ScheduleViewOptions = ScheduleViewOptions,
 > {
   options: Options;
 }
 
-export interface XDSScheduleNavigationRange {
+export interface ScheduleNavigationRange {
   label: string;
   range: ZonedDateTimeRange;
 }
 
-export type XDSScheduleViewComponent<
-  Options extends XDSScheduleViewOptions = XDSScheduleViewOptions,
-> = (props: XDSScheduleViewComponentProps<Options>) => ReactNode;
+export type ScheduleViewComponent<
+  Options extends ScheduleViewOptions = ScheduleViewOptions,
+> = (props: ScheduleViewComponentProps<Options>) => ReactNode;
 
-export interface XDSScheduleViewBase {
+export interface ScheduleViewBase {
   getDateRange: (date: ZonedDateTime) => ZonedDateTimeRange;
-  getPreviousDateRange: (date: ZonedDateTime) => XDSScheduleNavigationRange;
-  getNextDateRange: (date: ZonedDateTime) => XDSScheduleNavigationRange;
+  getPreviousDateRange: (date: ZonedDateTime) => ScheduleNavigationRange;
+  getNextDateRange: (date: ZonedDateTime) => ScheduleNavigationRange;
 }
 
-export interface XDSScheduleView<
-  Options extends XDSScheduleViewOptions = XDSScheduleViewOptions,
-> extends XDSScheduleViewBase {
-  component: XDSScheduleViewComponent<Options>;
+export interface ScheduleView<
+  Options extends ScheduleViewOptions = ScheduleViewOptions,
+> extends ScheduleViewBase {
+  component: ScheduleViewComponent<Options>;
   options: Options;
 }
 
-export interface XDSScheduleHeaderContent {
+export interface ScheduleHeaderContent {
   startContent: ReactNode;
   centerContent: ReactNode;
   endContent: ReactNode;
 }
 
-export type XDSSchedulePluginPosition = 'start' | 'end';
+export type SchedulePluginPosition = 'start' | 'end';
 
-export interface XDSSchedulePlugin {
+export interface SchedulePlugin {
   renderHeader?: (
     startContent: ReactNode,
     centerContent: ReactNode,
     endContent: ReactNode,
-  ) => XDSScheduleHeaderContent;
+  ) => ScheduleHeaderContent;
 }

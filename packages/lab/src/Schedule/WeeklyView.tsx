@@ -4,14 +4,14 @@
 
 /**
  * @file WeeklyView.tsx
- * @input XDSSchedule context and weekly view options
+ * @input Schedule context and weekly view options
  * @output Week time-grid schedule view factory
- * @position Concrete schedule view; exported as createXDSScheduleWeeklyView
+ * @position Concrete schedule view; exported as createScheduleWeeklyView
  */
 
 import {plainDateAddDays, plainDateSetStartOfWeek} from '@xds/core/utils';
 import {enumerateDates, getScheduleRangeFromDates} from './dateMath';
-import {useXDSScheduleContext} from './context';
+import {useScheduleContext} from './context';
 import {
   formatWeekTitle,
   ScheduleFrame,
@@ -21,22 +21,22 @@ import {TimeGridView} from './TimeGridView';
 import {scheduleRangeToZonedDateTimeRange} from './zonedDateTime';
 import type {
   PlainDate,
-  XDSScheduleView,
-  XDSScheduleViewComponentProps,
+  ScheduleView,
+  ScheduleViewComponentProps,
 } from './types';
 
-export interface XDSScheduleWeeklyViewOptions {
+export interface ScheduleWeeklyViewOptions {
   weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   minHour?: number;
   maxHour?: number;
   hourHeight?: number;
 }
 
-function XDSScheduleWeeklyView({
+function ScheduleWeeklyView({
   options,
-}: XDSScheduleViewComponentProps<XDSScheduleWeeklyViewOptions>) {
+}: ScheduleViewComponentProps<ScheduleWeeklyViewOptions>) {
   const {events, focusDate, timezoneID, range, isLoading} =
-    useXDSScheduleContext();
+    useScheduleContext();
   const {minHour = 0, maxHour = 24, hourHeight = 100} = options;
   const days = enumerateDates(range.startDate, range.endDate);
   const highlightedDate = focusDate.toPlainDate();
@@ -70,14 +70,14 @@ function XDSScheduleWeeklyView({
   );
 }
 
-export function createXDSScheduleWeeklyView({
+export function createScheduleWeeklyView({
   weekStartsOn = 0,
   minHour = 0,
   maxHour = 24,
   hourHeight = 100,
-}: XDSScheduleWeeklyViewOptions = {}): XDSScheduleView<XDSScheduleWeeklyViewOptions> {
+}: ScheduleWeeklyViewOptions = {}): ScheduleView<ScheduleWeeklyViewOptions> {
   return {
-    component: XDSScheduleWeeklyView,
+    component: ScheduleWeeklyView,
     options: {weekStartsOn, minHour, maxHour, hourHeight},
     getDateRange: date => {
       const range = getWeekDateRange({

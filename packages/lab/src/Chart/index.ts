@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-export {XDSChart, type XDSChartProps, type YBaseline} from './XDSChart';
-export {XDSChartAxis, type XDSChartAxisProps} from './XDSChartAxis';
+export {Chart, type ChartProps, type YBaseline} from './Chart';
+export {ChartAxis, type ChartAxisProps} from './ChartAxis';
 export {
   compactNumber,
   currency,
@@ -9,57 +9,57 @@ export {
   shortDate,
   monthYear,
 } from './formatters';
-export {XDSChartGrid, type XDSChartGridProps} from './XDSChartGrid';
-export {XDSChartBar, type XDSChartBarProps} from './XDSChartBar';
-export {XDSChartLine, type XDSChartLineProps} from './XDSChartLine';
-export {XDSChartArea, type XDSChartAreaProps} from './XDSChartArea';
-export {XDSChartErrorBar, type XDSChartErrorBarProps} from './XDSChartErrorBar';
+export {ChartGrid, type ChartGridProps} from './ChartGrid';
+export {ChartBar, type ChartBarProps} from './ChartBar';
+export {ChartLine, type ChartLineProps} from './ChartLine';
+export {ChartArea, type ChartAreaProps} from './ChartArea';
+export {ChartErrorBar, type ChartErrorBarProps} from './ChartErrorBar';
 export {
-  XDSChartCandlestick,
-  type XDSChartCandlestickProps,
-} from './XDSChartCandlestick';
-export {XDSChartDot, type XDSChartDotProps} from './XDSChartDot';
-export {XDSChartDotGL, type XDSChartDotGLProps} from './XDSChartDotGL';
+  ChartCandlestick,
+  type ChartCandlestickProps,
+} from './ChartCandlestick';
+export {ChartDot, type ChartDotProps} from './ChartDot';
+export {ChartDotGL, type ChartDotGLProps} from './ChartDotGL';
 export {
-  XDSChartDotGLInteractive,
-  type XDSChartDotGLInteractiveProps,
-} from './XDSChartDotGLInteractive';
+  ChartDotGLInteractive,
+  type ChartDotGLInteractiveProps,
+} from './ChartDotGLInteractive';
 export {
-  XDSChartHeatmapGL,
-  type XDSChartHeatmapGLProps,
-} from './XDSChartHeatmapGL';
+  ChartHeatmapGL,
+  type ChartHeatmapGLProps,
+} from './ChartHeatmapGL';
 export {
-  XDSChartStreamGL,
-  type XDSChartStreamGLProps,
-  type XDSChartStreamGLHandle,
-} from './XDSChartStreamGL';
+  ChartStreamGL,
+  type ChartStreamGLProps,
+  type ChartStreamGLHandle,
+} from './ChartStreamGL';
 export {
-  XDSChartTooltip,
-  type XDSChartTooltipProps,
+  ChartTooltip,
+  type ChartTooltipProps,
   type ChartCrosshairMode,
-} from './XDSChartTooltip';
+} from './ChartTooltip';
 export {
-  XDSChartLegend,
-  type XDSChartLegendProps,
-  type XDSChartLegendItem,
-} from './XDSChartLegend';
+  ChartLegend,
+  type ChartLegendProps,
+  type ChartLegendItem,
+} from './ChartLegend';
 export {useChart} from './ChartContext';
 export type {ChartContext, ChartMargin, ChartScale, DataPoint} from './types';
 export {m4Reduce, type M4Point} from './m4';
 export {isBandScale, xPixel} from './utils';
-export {useXDSChartColors} from './useXDSChartColors';
+export {useChartColors} from './useChartColors';
 export {
-  getXDSChartColors,
-  getXDSChartColorsFromResolver,
-  type XDSChartColorsAPI,
+  getChartColors,
+  getChartColorsFromResolver,
+  type ChartColorsAPI,
   type SequentialHue,
   type TokenResolver,
-} from './getXDSChartColors';
+} from './getChartColors';
 export {
-  useXDSChartRange,
-  type UseXDSChartRangeOptions,
-  type UseXDSChartRangeReturn,
-} from './useXDSChartRange';
+  useChartRange,
+  type UseChartRangeOptions,
+  type UseChartRangeReturn,
+} from './useChartRange';
 export {
   hexToGL,
   getCanvasDPR,
@@ -73,18 +73,18 @@ export {
   POINT_SIZE_COMPENSATION,
 } from './webgl';
 export {
-  XDSChartBrush,
-  type XDSChartBrushProps,
+  ChartBrush,
+  type ChartBrushProps,
   type BrushMode,
   type BrushRange,
-} from './XDSChartBrush';
+} from './ChartBrush';
 export {
-  XDSChartZoom,
-  type XDSChartZoomProps,
+  ChartZoom,
+  type ChartZoomProps,
   type ZoomToolbarPosition,
-} from './XDSChartZoom';
-export {XDSChartSelect, type XDSChartSelectProps} from './XDSChartSelect';
+} from './ChartZoom';
+export {ChartSelect, type ChartSelectProps} from './ChartSelect';
 export {
-  XDSChartReferenceLine,
-  type XDSChartReferenceLineProps,
-} from './XDSChartReferenceLine';
+  ChartReferenceLine,
+  type ChartReferenceLineProps,
+} from './ChartReferenceLine';

@@ -2,7 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {XDSCodeEditor} from '@xds/lab';
+import {CodeEditor} from '@xds/lab';
 import {
   SyntaxTheme as SyntaxThemeProvider,
   defineSyntaxTheme,
@@ -74,7 +74,7 @@ function ThemedEditor({
   const [value, setValue] = useState(initialCode);
   return (
     <SyntaxThemeProvider theme={theme}>
-      <XDSCodeEditor
+      <CodeEditor
         value={value}
         onChange={setValue}
         language="typescript"
@@ -90,7 +90,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          'Syntax theme showcase for XDSCodeEditor. All themes from SyntaxTheme ' +
+          'Syntax theme showcase for CodeEditor. All themes from SyntaxTheme ' +
           'work identically on both CodeBlock and CodeEditor.',
       },
     },
@@ -184,7 +184,7 @@ function GalleryEditor({
           }}>
           {theme.name}
         </div>
-        <XDSCodeEditor
+        <CodeEditor
           value={value}
           onChange={setValue}
           language="typescript"

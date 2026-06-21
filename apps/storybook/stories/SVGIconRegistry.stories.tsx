@@ -9,7 +9,7 @@ import {
   isValidElement,
 } from 'react';
 import {
-  XDSSVGIcon,
+  SVGIcon,
   type SVGIconVariation,
   type SVGIconDef,
   type IconShape,
@@ -286,7 +286,7 @@ export const DefaultRegistryIcons: StoryObj = {
                 <div
                   key={`${name}-${v}`}
                   style={{display: 'flex', justifyContent: 'center'}}>
-                  <XDSSVGIcon icon={def} variation={v} size="lg" />
+                  <SVGIcon icon={def} variation={v} size="lg" />
                 </div>
               ))}
             </Fragment>

@@ -2,13 +2,13 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDS3DChart,
-  XDS3DScatter,
-  XDS3DBar,
-  XDS3DGrid,
-  XDS3DAxis,
-  XDS3DSurface,
-  useXDSChartColors,
+  ThreeDChart,
+  ThreeDScatter,
+  ThreeDBar,
+  ThreeDGrid,
+  ThreeDAxis,
+  ThreeDSurface,
+  useChartColors,
 } from '@xds/lab';
 import {Stack, Text} from '@xds/core';
 import {Heading} from '@xds/core/Text';
@@ -30,24 +30,24 @@ const scatterData = Array.from({length: 200}, () => ({
 /** 3D scatter plot — drag to rotate */
 export const Scatter3D: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
+    const colors = useChartColors();
     return (
       <Stack direction="vertical" gap={4}>
         <Heading level={3}>3D Scatter Plot</Heading>
         <Text type="supporting" color="secondary">
           200 points. Drag to rotate. Depth encoded via size and opacity.
         </Text>
-        <XDS3DChart
+        <ThreeDChart
           data={scatterData}
           xKey="x"
           yKey="y"
           zKey="z"
           height={400}
           interactive>
-          <XDS3DGrid />
-          <XDS3DAxis />
-          <XDS3DScatter color={colors.categorical(1)[0]} radius={4} />
-        </XDS3DChart>
+          <ThreeDGrid />
+          <ThreeDAxis />
+          <ThreeDScatter color={colors.categorical(1)[0]} radius={4} />
+        </ThreeDChart>
       </Stack>
     );
   },
@@ -69,28 +69,28 @@ const barData = [
 /** 3D bar chart — drag to rotate */
 export const Bar3D: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
+    const colors = useChartColors();
     return (
       <Stack direction="vertical" gap={4}>
         <Heading level={3}>3D Bar Chart</Heading>
         <Text type="supporting" color="secondary">
           Sales by product x region. Drag to rotate.
         </Text>
-        <XDS3DChart
+        <ThreeDChart
           data={barData}
           xKey="product"
           yKey="sales"
           zKey="region"
           height={400}
           interactive>
-          <XDS3DGrid divisions={3} />
-          <XDS3DAxis />
-          <XDS3DBar
+          <ThreeDGrid divisions={3} />
+          <ThreeDAxis />
+          <ThreeDBar
             color={colors.categorical(1)[0]}
             barWidth={0.12}
             barDepth={0.12}
           />
-        </XDS3DChart>
+        </ThreeDChart>
       </Stack>
     );
   },
@@ -110,24 +110,24 @@ for (let x = 0; x <= 20; x++) {
 /** 3D surface — height-colored mesh */
 export const Surface3D: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
+    const colors = useChartColors();
     return (
       <Stack direction="vertical" gap={4}>
         <Heading level={3}>3D Surface</Heading>
         <Text type="supporting" color="secondary">
           sin(x) * cos(z) surface. Drag to rotate. Color maps to height.
         </Text>
-        <XDS3DChart
+        <ThreeDChart
           data={surfaceData}
           xKey="x"
           yKey="y"
           zKey="z"
           height={450}
           interactive>
-          <XDS3DGrid />
-          <XDS3DAxis />
-          <XDS3DSurface colorRange={colors.sequential.blue(5)} />
-        </XDS3DChart>
+          <ThreeDGrid />
+          <ThreeDAxis />
+          <ThreeDSurface colorRange={colors.sequential.blue(5)} />
+        </ThreeDChart>
       </Stack>
     );
   },
@@ -136,20 +136,20 @@ export const Surface3D: StoryObj = {
 /** 3D surface wireframe */
 export const Wireframe3D: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
+    const colors = useChartColors();
     return (
       <Stack direction="vertical" gap={4}>
         <Heading level={3}>3D Wireframe</Heading>
-        <XDS3DChart
+        <ThreeDChart
           data={surfaceData}
           xKey="x"
           yKey="y"
           zKey="z"
           height={450}
           interactive>
-          <XDS3DGrid />
-          <XDS3DSurface colorRange={colors.sequential.teal(5)} wireframe />
-        </XDS3DChart>
+          <ThreeDGrid />
+          <ThreeDSurface colorRange={colors.sequential.teal(5)} wireframe />
+        </ThreeDChart>
       </Stack>
     );
   },

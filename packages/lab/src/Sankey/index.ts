@@ -1,18 +1,18 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-export {XDSSankeyChart, type XDSSankeyChartProps} from './XDSSankeyChart';
+export {SankeyChart, type SankeyChartProps} from './SankeyChart';
 export {
-  XDSSankeyLink,
-  type XDSSankeyLinkProps,
+  SankeyLink,
+  type SankeyLinkProps,
   type SankeyLinkColor,
-} from './XDSSankeyLink';
-export {XDSSankeyNode, type XDSSankeyNodeProps} from './XDSSankeyNode';
-export {XDSSankeyLabel, type XDSSankeyLabelProps} from './XDSSankeyLabel';
-export {XDSSankeyGrid, type XDSSankeyGridProps} from './XDSSankeyGrid';
+} from './SankeyLink';
+export {SankeyNode, type SankeyNodeProps} from './SankeyNode';
+export {SankeyLabel, type SankeyLabelProps} from './SankeyLabel';
+export {SankeyGrid, type SankeyGridProps} from './SankeyGrid';
 export {useSankey} from './SankeyContext';
 export type {
-  SankeyNode,
-  SankeyLink,
+  SankeyNodeDatum,
+  SankeyLinkDatum,
   SankeyColumn,
   SankeyColumnDef,
   SankeyNodeLayout,

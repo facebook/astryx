@@ -6,14 +6,14 @@ import {
   ChatMessage,
   ChatMessageBubble,
 } from '@xds/core/Chat';
-import {XDSChatReasoning} from '@xds/lab';
+import {ChatReasoning} from '@xds/lab';
 import {Avatar} from '@xds/core/Avatar';
 import {Markdown} from '@xds/core/Markdown';
 import {useState, useEffect} from 'react';
 
 const meta: Meta = {
   title: 'Lab/ChatReasoning',
-  component: XDSChatReasoning,
+  component: ChatReasoning,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
@@ -31,25 +31,25 @@ export default meta;
 /** Collapsed (default) — shows label, duration, and ellipsis preview */
 export const Collapsed: StoryObj = {
   render: () => (
-    <XDSChatReasoning duration="12s">
+    <ChatReasoning duration="12s">
       Let me work through the constraints systematically. The farmer has 3
       fields and rotates wheat, corn, soy. No same crop in adjacent fields and
       no same crop in the same field two years in a row...
-    </XDSChatReasoning>
+    </ChatReasoning>
   ),
 };
 
 /** Expanded — shows full reasoning content */
 export const Expanded: StoryObj = {
   render: () => (
-    <XDSChatReasoning duration="8s" defaultIsExpanded>
+    <ChatReasoning duration="8s" defaultIsExpanded>
       <Markdown density="compact">{`First, I need to understand the constraints:
 1. Three fields, three crops (wheat, corn, soy)
 2. No adjacent fields can have the same crop
 3. No field can repeat its crop from the previous year
 
 For **Year 1**: 3 \u00d7 2 \u00d7 2 = 12 arrangements...`}</Markdown>
-    </XDSChatReasoning>
+    </ChatReasoning>
   ),
 };
 
@@ -63,9 +63,9 @@ export const Streaming: StoryObj = {
     }, []);
     return (
       <div>
-        <XDSChatReasoning isStreaming={streaming} label="Thinking">
+        <ChatReasoning isStreaming={streaming} label="Thinking">
           Working through the combinatorial constraints...
-        </XDSChatReasoning>
+        </ChatReasoning>
         {!streaming && (
           <p style={{marginTop: 8, fontSize: 13, color: '#888'}}>
             (Shimmer stopped after 5s)
@@ -79,9 +79,9 @@ export const Streaming: StoryObj = {
 /** Custom label */
 export const CustomLabel: StoryObj = {
   render: () => (
-    <XDSChatReasoning label="Analyzing" duration="3s">
+    <ChatReasoning label="Analyzing" duration="3s">
       Checking the codebase for similar patterns...
-    </XDSChatReasoning>
+    </ChatReasoning>
   ),
 };
 
@@ -97,9 +97,9 @@ export const InMessage: StoryObj = {
       <ChatMessage
         sender="assistant"
         avatar={<Avatar name="AI" size="small" />}>
-        <XDSChatReasoning duration="12s">
+        <ChatReasoning duration="12s">
           Let me work through the constraints systematically...
-        </XDSChatReasoning>
+        </ChatReasoning>
         <Markdown density="compact">{`There are **42** valid planting arrangements over 3 years.`}</Markdown>
       </ChatMessage>
     </ChatMessageList>

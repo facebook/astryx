@@ -3,25 +3,25 @@
 import {useMemo, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSSchedule,
-  createXDSScheduleDayView,
-  createXDSScheduleListView,
-  createXDSScheduleMonthlyView,
-  createXDSScheduleWeeklyView,
+  Schedule,
+  createScheduleDayView,
+  createScheduleListView,
+  createScheduleMonthlyView,
+  createScheduleWeeklyView,
   createEventFromISO,
   type CalendarEvent,
   type Instant,
-  type XDSScheduleCategory,
-  type XDSScheduleViewSelectorOption,
-  useXDSSchedulePaginationPlugin,
-  useXDSScheduleViewSelectorPlugin,
+  type ScheduleCategory,
+  type ScheduleViewSelectorOption,
+  useSchedulePaginationPlugin,
+  useScheduleViewSelectorPlugin,
 } from '@xds/lab';
 
 const storyNow = new Date();
 const focusDate = storyNow.getTime() as Instant;
 const currentWeekStart = startOfWeek(storyNow);
 
-const categories: XDSScheduleCategory[] = [
+const categories: ScheduleCategory[] = [
   {label: 'Company', color: 'blue'},
   {label: 'Design', color: 'purple'},
   {label: 'Launch', color: 'green'},
@@ -105,9 +105,9 @@ const events: CalendarEvent[] = [
   }),
 ];
 
-const meta: Meta<typeof XDSSchedule> = {
+const meta: Meta<typeof Schedule> = {
   title: 'Lab/Schedule',
-  component: XDSSchedule,
+  component: Schedule,
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
@@ -123,7 +123,7 @@ const meta: Meta<typeof XDSSchedule> = {
 
 export default meta;
 
-type Story = StoryObj<typeof XDSSchedule>;
+type Story = StoryObj<typeof Schedule>;
 
 function addDays(date: Date, days: number): Date {
   const nextDate = new Date(date);
@@ -215,10 +215,10 @@ function createAsyncEvents(start: Instant, end: Instant): CalendarEvent[] {
 export const Monthly: Story = {
   render: () => {
     const [date, setDate] = useState<Instant>(focusDate);
-    const view = useMemo(() => createXDSScheduleMonthlyView(), []);
+    const view = useMemo(() => createScheduleMonthlyView(), []);
 
     return (
-      <XDSSchedule
+      <Schedule
         view={view}
         events={events}
         categories={categories}
@@ -235,12 +235,12 @@ export const Weekly: Story = {
   render: () => {
     const [date, setDate] = useState<Instant>(focusDate);
     const view = useMemo(
-      () => createXDSScheduleWeeklyView({minHour: 7, maxHour: 19}),
+      () => createScheduleWeeklyView({minHour: 7, maxHour: 19}),
       [],
     );
 
     return (
-      <XDSSchedule
+      <Schedule
         view={view}
         events={events}
         categories={categories}
@@ -256,13 +256,13 @@ export const WeeklyFixedHeight: Story = {
   render: () => {
     const [date, setDate] = useState<Instant>(focusDate);
     const view = useMemo(
-      () => createXDSScheduleWeeklyView({minHour: 7, maxHour: 19}),
+      () => createScheduleWeeklyView({minHour: 7, maxHour: 19}),
       [],
     );
 
     return (
       <div style={{height: 520}}>
-        <XDSSchedule
+        <Schedule
           view={view}
           events={events}
           categories={categories}
@@ -279,10 +279,10 @@ export const WeeklyFixedHeight: Story = {
 export const Day: Story = {
   render: () => {
     const [date, setDate] = useState<Instant>(focusDate);
-    const view = useMemo(() => createXDSScheduleDayView(), []);
+    const view = useMemo(() => createScheduleDayView(), []);
 
     return (
-      <XDSSchedule
+      <Schedule
         view={view}
         events={events}
         categories={categories}
@@ -298,10 +298,10 @@ export const Day: Story = {
 export const List: Story = {
   render: () => {
     const [date, setDate] = useState<Instant>(focusDate);
-    const view = useMemo(() => createXDSScheduleListView(), []);
+    const view = useMemo(() => createScheduleListView(), []);
 
     return (
-      <XDSSchedule
+      <Schedule
         view={view}
         events={events}
         categories={categories}
@@ -318,7 +318,7 @@ export const AsyncLoader: Story = {
   render: () => {
     const [date, setDate] = useState<Instant>(focusDate);
     const view = useMemo(
-      () => createXDSScheduleWeeklyView({minHour: 7, maxHour: 19}),
+      () => createScheduleWeeklyView({minHour: 7, maxHour: 19}),
       [],
     );
     const loadEvents = async (
@@ -330,7 +330,7 @@ export const AsyncLoader: Story = {
     };
 
     return (
-      <XDSSchedule
+      <Schedule
         view={view}
         events={loadEvents}
         categories={categories}
@@ -347,10 +347,10 @@ export const ViewSelectorPlugin: Story = {
   render: () => {
     const views = useMemo(
       () => ({
-        month: createXDSScheduleMonthlyView(),
-        week: createXDSScheduleWeeklyView({minHour: 7, maxHour: 19}),
-        day: createXDSScheduleDayView({minHour: 8, maxHour: 18}),
-        list: createXDSScheduleListView(),
+        month: createScheduleMonthlyView(),
+        week: createScheduleWeeklyView({minHour: 7, maxHour: 19}),
+        day: createScheduleDayView({minHour: 8, maxHour: 18}),
+        list: createScheduleListView(),
       }),
       [],
     );
@@ -358,7 +358,7 @@ export const ViewSelectorPlugin: Story = {
     const [view, setView] = useState<StoryScheduleView>(() => views.week);
     const [date, setDate] = useState<Instant>(focusDate);
     const viewOptions = useMemo<
-      ReadonlyArray<XDSScheduleViewSelectorOption<StoryScheduleView>>
+      ReadonlyArray<ScheduleViewSelectorOption<StoryScheduleView>>
     >(
       () => [
         {view: views.month, label: 'Month'},
@@ -368,8 +368,8 @@ export const ViewSelectorPlugin: Story = {
       ],
       [views],
     );
-    const paginationPlugin = useXDSSchedulePaginationPlugin();
-    const viewSelectorPlugin = useXDSScheduleViewSelectorPlugin(viewOptions, {
+    const paginationPlugin = useSchedulePaginationPlugin();
+    const viewSelectorPlugin = useScheduleViewSelectorPlugin(viewOptions, {
       onChangeView: setView,
     });
     const plugins = useMemo(
@@ -378,7 +378,7 @@ export const ViewSelectorPlugin: Story = {
     );
 
     return (
-      <XDSSchedule
+      <Schedule
         view={view}
         events={events}
         categories={categories}

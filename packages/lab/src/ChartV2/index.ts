@@ -1,26 +1,26 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-export {XDSChart, type XDSChartProps} from './XDSChart';
-export {XDSChartAxis, type XDSChartAxisProps} from './XDSChartAxis';
-export {XDSChartGrid, type XDSChartGridProps} from './XDSChartGrid';
+export {Chart, type ChartProps} from './Chart';
+export {ChartAxis, type ChartAxisProps} from './ChartAxis';
+export {ChartGrid, type ChartGridProps} from './ChartGrid';
 export {
-  XDSChartLegend,
-  type XDSChartLegendProps,
+  ChartLegend,
+  type ChartLegendProps,
   type LegendPosition,
   type LegendAlignment,
-} from './XDSChartLegend';
+} from './ChartLegend';
 export {type LegendItem} from './legend';
 export {
-  XDSChartSwatch,
+  ChartSwatch,
   swatchVariantForType,
-  type XDSChartSwatchProps,
-  type XDSChartSwatchVariant,
-} from './XDSChartSwatch';
+  type ChartSwatchProps,
+  type ChartSwatchVariant,
+} from './ChartSwatch';
 export {
-  XDSChartTooltip,
-  type XDSChartTooltipProps,
-  type XDSChartTooltipPlacement,
-} from './XDSChartTooltip';
+  ChartTooltip,
+  type ChartTooltipProps,
+  type ChartTooltipPlacement,
+} from './ChartTooltip';
 export {type TooltipSeriesValue} from './tooltip';
 export {
   bar,

@@ -7,7 +7,7 @@
  */
 
 /** A node in the Sankey diagram */
-export interface SankeyNode {
+export interface SankeyNodeDatum {
   /** Unique identifier */
   id: string;
   /** Display label */
@@ -19,7 +19,7 @@ export interface SankeyNode {
 }
 
 /** A link (flow) between two nodes */
-export interface SankeyLink {
+export interface SankeyLinkDatum {
   /** Source node ID */
   source: string;
   /** Target node ID */
@@ -78,7 +78,7 @@ export interface SankeyColumnLayout {
   ids: string[];
 }
 
-/** Context provided by XDSSankeyChart to children */
+/** Context provided by SankeyChart to children */
 export interface SankeyContext {
   nodes: SankeyNodeLayout[];
   links: SankeyLinkLayout[];

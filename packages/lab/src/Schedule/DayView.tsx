@@ -4,9 +4,9 @@
 
 /**
  * @file DayView.tsx
- * @input XDSSchedule context and day view options
+ * @input Schedule context and day view options
  * @output Single-day time-grid schedule view factory
- * @position Concrete schedule view; exported as createXDSScheduleDayView
+ * @position Concrete schedule view; exported as createScheduleDayView
  */
 
 import {
@@ -15,27 +15,27 @@ import {
   plainDateFormat,
 } from '@xds/core/utils';
 import {enumerateDates, getScheduleRangeFromDates} from './dateMath';
-import {useXDSScheduleContext} from './context';
+import {useScheduleContext} from './context';
 import {ScheduleMonthTitle, ScheduleFrame} from './shared';
 import {TimeGridView} from './TimeGridView';
 import {scheduleRangeToZonedDateTimeRange} from './zonedDateTime';
 import type {
   PlainDate,
-  XDSScheduleView,
-  XDSScheduleViewComponentProps,
+  ScheduleView,
+  ScheduleViewComponentProps,
 } from './types';
 
-export interface XDSScheduleDayViewOptions {
+export interface ScheduleDayViewOptions {
   minHour?: number;
   maxHour?: number;
   hourHeight?: number;
 }
 
-function XDSScheduleDayView({
+function ScheduleDayView({
   options,
-}: XDSScheduleViewComponentProps<XDSScheduleDayViewOptions>) {
+}: ScheduleViewComponentProps<ScheduleDayViewOptions>) {
   const {events, date, focusDate, timezoneID, range, isLoading} =
-    useXDSScheduleContext();
+    useScheduleContext();
   const {minHour = 0, maxHour = 24, hourHeight = 100} = options;
   const rangeDate = date.toPlainDate();
   const days = enumerateDates(range.startDate, range.endDate);
@@ -59,13 +59,13 @@ function XDSScheduleDayView({
   );
 }
 
-export function createXDSScheduleDayView({
+export function createScheduleDayView({
   minHour = 0,
   maxHour = 24,
   hourHeight = 100,
-}: XDSScheduleDayViewOptions = {}): XDSScheduleView<XDSScheduleDayViewOptions> {
+}: ScheduleDayViewOptions = {}): ScheduleView<ScheduleDayViewOptions> {
   return {
-    component: XDSScheduleDayView,
+    component: ScheduleDayView,
     options: {minHour, maxHour, hourHeight},
     getDateRange: date => {
       const range = getDayDateRange({

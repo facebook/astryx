@@ -3,7 +3,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {Fragment} from 'react';
 import {
-  XDSSVGIcon,
+  SVGIcon,
   type SVGIconVariation,
   type SVGIconSize,
   type SVGIconColor,
@@ -20,9 +20,9 @@ import {
 import {Stack, Text, Divider} from '@xds/core';
 import {Heading} from '@xds/core/Text';
 
-const meta: Meta<typeof XDSSVGIcon> = {
+const meta: Meta<typeof SVGIcon> = {
   title: 'Lab/SVGIcon',
-  component: XDSSVGIcon,
+  component: SVGIcon,
   argTypes: {
     variation: {
       control: 'select',
@@ -56,7 +56,7 @@ const meta: Meta<typeof XDSSVGIcon> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSSVGIcon>;
+type Story = StoryObj<typeof SVGIcon>;
 
 // =============================================================================
 // Basic
@@ -119,7 +119,7 @@ export const VariationMatrix: Story = {
               <div
                 key={`${icon.name}-${v}`}
                 style={{display: 'flex', justifyContent: 'center'}}>
-                <XDSSVGIcon icon={icon} variation={v} size="lg" />
+                <SVGIcon icon={icon} variation={v} size="lg" />
               </div>
             ))}
           </Fragment>
@@ -150,7 +150,7 @@ export const RoleBehavior: Story = {
         <Stack direction="horizontal" gap={3}>
           {VARIATIONS.map(v => (
             <Stack direction="vertical" key={v} gap={0.5} hAlign="center">
-              <XDSSVGIcon icon={menuIcon} variation={v} size="lg" />
+              <SVGIcon icon={menuIcon} variation={v} size="lg" />
               <Text type="label" color="secondary">
                 {v}
               </Text>
@@ -166,7 +166,7 @@ export const RoleBehavior: Story = {
         <Stack direction="horizontal" gap={3}>
           {VARIATIONS.map(v => (
             <Stack direction="vertical" key={v} gap={0.5} hAlign="center">
-              <XDSSVGIcon icon={homeIcon} variation={v} size="lg" />
+              <SVGIcon icon={homeIcon} variation={v} size="lg" />
               <Text type="label" color="secondary">
                 {v}
               </Text>
@@ -182,7 +182,7 @@ export const RoleBehavior: Story = {
         <Stack direction="horizontal" gap={3}>
           {VARIATIONS.map(v => (
             <Stack direction="vertical" key={v} gap={0.5} hAlign="center">
-              <XDSSVGIcon icon={settingsIcon} variation={v} size="lg" />
+              <SVGIcon icon={settingsIcon} variation={v} size="lg" />
               <Text type="label" color="secondary">
                 {v}
               </Text>
@@ -210,7 +210,7 @@ export const SizeScale: Story = {
       <Stack direction="horizontal" gap={3} vAlign="end">
         {SIZES.map(size => (
           <Stack direction="vertical" key={size} gap={1} hAlign="center">
-            <XDSSVGIcon icon={settingsIcon} variation="linear" size={size} />
+            <SVGIcon icon={settingsIcon} variation="linear" size={size} />
             <Text type="label" color="secondary">
               {size}
             </Text>
@@ -242,7 +242,7 @@ export const Colors: Story = {
       <Stack direction="horizontal" gap={3}>
         {COLORS.map(c => (
           <Stack direction="vertical" key={c} gap={1} hAlign="center">
-            <XDSSVGIcon
+            <SVGIcon
               icon={bellIcon}
               variation="linear"
               size="lg"
@@ -303,7 +303,7 @@ export const MaskGaps: Story = {
               gap: 16,
             }}>
             {MASK_GAP_ICONS.map(icon => (
-              <XDSSVGIcon
+              <SVGIcon
                 key={icon.name}
                 icon={icon}
                 variation="bold"
@@ -368,7 +368,7 @@ export const StrokeWidthRange: Story = {
               <div
                 key={`${icon.name}-${w}`}
                 style={{display: 'flex', justifyContent: 'center'}}>
-                <XDSSVGIcon
+                <SVGIcon
                   icon={icon}
                   variation="linear"
                   size="lg"
@@ -423,7 +423,7 @@ export const StructuralDiversity: Story = {
               <div
                 key={`${icon.name}-${v}`}
                 style={{display: 'flex', justifyContent: 'center'}}>
-                <XDSSVGIcon icon={icon} variation={v} size="lg" />
+                <SVGIcon icon={icon} variation={v} size="lg" />
               </div>
             ))}
           </Fragment>

@@ -6,10 +6,10 @@
  * @file CircularProgress component barrel export
  */
 
-export {XDSCircularProgress} from './XDSCircularProgress';
+export {CircularProgress} from './CircularProgress';
 export type {
-  XDSCircularProgressProps,
-  XDSCircularProgressSize,
-  XDSCircularProgressVariant,
-  XDSCircularProgressVariantMap,
-} from './XDSCircularProgress';
+  CircularProgressProps,
+  CircularProgressSize,
+  CircularProgressVariant,
+  CircularProgressVariantMap,
+} from './CircularProgress';

@@ -2,11 +2,11 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSChart,
-  XDSChartAxis,
-  XDSChartHeatmapGL,
-  XDSChartLegend,
-  useXDSChartColors,
+  Chart,
+  ChartAxis,
+  ChartHeatmapGL,
+  ChartLegend,
+  useChartColors,
   type SequentialHue,
 } from '@xds/lab';
 import {Stack, Text} from '@xds/core';
@@ -38,31 +38,31 @@ const gridData = days.flatMap((day, di) =>
 );
 
 function ActivityGridDemo() {
-  const colors = useXDSChartColors();
+  const colors = useChartColors();
   return (
     <Stack direction="vertical" gap={4}>
       <Heading level={3}>Heatmap \u2014 Activity by Day x Hour</Heading>
-      <XDSChart data={gridData} xKey="hour" yKeys={['activity']} height={280}>
-        <XDSChartAxis position="bottom" />
-        <XDSChartHeatmapGL
+      <Chart data={gridData} xKey="hour" yKeys={['activity']} height={280}>
+        <ChartAxis position="bottom" />
+        <ChartHeatmapGL
           xKey="hour"
           yKey="day"
           valueKey="activity"
           colorRange={colors.sequential.blue(5)}
         />
-        <XDSChartLegend
+        <ChartLegend
           gradient={colors.sequential.blue(5)}
           domain={[0, 100]}
           label="Activity"
         />
-      </XDSChart>
+      </Chart>
     </Stack>
   );
 }
 export const ActivityGrid: StoryObj = {render: () => <ActivityGridDemo />};
 
 function ColorRampsDemo() {
-  const colors = useXDSChartColors();
+  const colors = useChartColors();
   const hues: SequentialHue[] = ['blue', 'shamrock', 'orange', 'purple', 'red'];
   return (
     <Stack direction="vertical" gap={6}>
@@ -70,19 +70,19 @@ function ColorRampsDemo() {
       {hues.map(hue => (
         <Stack key={hue} direction="vertical" gap={1}>
           <Text type="label">sequential.{hue}(5)</Text>
-          <XDSChart
+          <Chart
             data={gridData}
             xKey="hour"
             yKeys={['activity']}
             height={200}>
-            <XDSChartAxis position="bottom" />
-            <XDSChartHeatmapGL
+            <ChartAxis position="bottom" />
+            <ChartHeatmapGL
               xKey="hour"
               yKey="day"
               valueKey="activity"
               colorRange={colors.sequential[hue](5)}
             />
-          </XDSChart>
+          </Chart>
         </Stack>
       ))}
     </Stack>
@@ -103,24 +103,24 @@ const bigGrid = bigRows.flatMap(row =>
 );
 
 function LargeGridDemo() {
-  const colors = useXDSChartColors();
+  const colors = useChartColors();
   return (
     <Stack direction="vertical" gap={4}>
       <Heading level={3}>Heatmap \u2014 50x50 Grid</Heading>
-      <XDSChart data={bigGrid} xKey="col" yKeys={['value']} height={400}>
-        <XDSChartHeatmapGL
+      <Chart data={bigGrid} xKey="col" yKeys={['value']} height={400}>
+        <ChartHeatmapGL
           xKey="col"
           yKey="row"
           valueKey="value"
           colorRange={colors.sequential.red(5)}
           cellGap={0}
         />
-        <XDSChartLegend
+        <ChartLegend
           gradient={colors.sequential.red(5)}
           domain={[0, 100]}
           label="Intensity"
         />
-      </XDSChart>
+      </Chart>
     </Stack>
   );
 }

@@ -3,7 +3,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useMemo, useRef, useEffect, type MutableRefObject} from 'react';
 import {
-  XDSChartV2 as XDSChart,
+  ChartV2 as Chart,
   bar,
   line,
   band,
@@ -16,13 +16,13 @@ import {
   type StreamGLHandle,
 } from '@xds/lab';
 import {
-  XDSChartV2Grid as XDSChartGrid,
-  XDSChartV2Axis as XDSChartAxis,
+  ChartV2Grid as ChartGrid,
+  ChartV2Axis as ChartAxis,
 } from '@xds/lab';
 
-const meta: Meta<typeof XDSChart> = {
+const meta: Meta<typeof Chart> = {
   title: 'Lab/ChartV2Advanced',
-  component: XDSChart,
+  component: Chart,
 };
 export default meta;
 
@@ -92,7 +92,7 @@ for (const day of days) {
 /** Candlestick chart */
 export const Candlestick: StoryObj = {
   render: () => (
-    <XDSChart
+    <Chart
       data={stockData}
       xKey="day"
       series={[
@@ -105,11 +105,11 @@ export const Candlestick: StoryObj = {
           downColor: '#ef4444',
         }),
       ]}
-      grid={<XDSChartGrid />}
+      grid={<ChartGrid />}
       axes={
         <>
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
         </>
       }
       height={350}
@@ -142,7 +142,7 @@ export const FinancialComposite: StoryObj = {
       });
     }, []);
     return (
-      <XDSChart
+      <Chart
         data={data}
         xKey="day"
         series={[
@@ -157,11 +157,11 @@ export const FinancialComposite: StoryObj = {
           line('ma5', {color: '#f59e0b', strokeWidth: 1.5}),
           bar('volume', {color: '#94a3b8', opacity: 0.3}),
         ]}
-        grid={<XDSChartGrid />}
+        grid={<ChartGrid />}
         axes={
           <>
-            <XDSChartAxis position="bottom" />
-            <XDSChartAxis position="left" />
+            <ChartAxis position="bottom" />
+            <ChartAxis position="left" />
           </>
         }
         height={400}
@@ -173,7 +173,7 @@ export const FinancialComposite: StoryObj = {
 /** Confidence bands (80% + 95%) */
 export const ConfidenceBands: StoryObj = {
   render: () => (
-    <XDSChart
+    <Chart
       data={predictionData}
       xKey="x"
       series={[
@@ -191,11 +191,11 @@ export const ConfidenceBands: StoryObj = {
         }),
         line('mean', {color: '#3b82f6', strokeWidth: 2}),
       ]}
-      grid={<XDSChartGrid />}
+      grid={<ChartGrid />}
       axes={
         <>
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
         </>
       }
       height={300}
@@ -207,7 +207,7 @@ export const ConfidenceBands: StoryObj = {
 export const ErrorBarsWithTarget: StoryObj = {
   name: 'Error Bars + Reference Line',
   render: () => (
-    <XDSChart
+    <Chart
       data={salesData}
       xKey="month"
       series={[
@@ -222,11 +222,11 @@ export const ErrorBarsWithTarget: StoryObj = {
           bandOpacity: 0.1,
         }),
       ]}
-      grid={<XDSChartGrid />}
+      grid={<ChartGrid />}
       axes={
         <>
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
         </>
       }
       height={300}
@@ -238,15 +238,15 @@ export const ErrorBarsWithTarget: StoryObj = {
 export const WebGLScatter: StoryObj = {
   name: 'WebGL Scatter (dotGL)',
   render: () => (
-    <XDSChart
+    <Chart
       data={scatterData}
       xKey="x"
       series={[dotGL('y', {color: '#3b82f6', size: 4})]}
-      grid={<XDSChartGrid horizontal vertical />}
+      grid={<ChartGrid horizontal vertical />}
       axes={
         <>
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
         </>
       }
       height={400}
@@ -258,7 +258,7 @@ export const WebGLScatter: StoryObj = {
 export const WebGLHeatmap: StoryObj = {
   name: 'WebGL Heatmap',
   render: () => (
-    <XDSChart
+    <Chart
       data={heatmapData}
       xKey="hour"
       series={[
@@ -271,8 +271,8 @@ export const WebGLHeatmap: StoryObj = {
       ]}
       axes={
         <>
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
         </>
       }
       height={280}
@@ -300,15 +300,15 @@ export const StreamingLine: StoryObj = {
     }, []);
 
     return (
-      <XDSChart
+      <Chart
         data={[]}
         xKey="x"
         series={[streamGL({handleRef, color: '#3b82f6'})]}
-        grid={<XDSChartGrid />}
+        grid={<ChartGrid />}
         axes={
           <>
-            <XDSChartAxis position="bottom" />
-            <XDSChartAxis position="left" />
+            <ChartAxis position="bottom" />
+            <ChartAxis position="left" />
           </>
         }
         height={300}
@@ -339,7 +339,7 @@ export const KitchenSink: StoryObj = {
         ) / 10,
     }));
     return (
-      <XDSChart
+      <Chart
         data={data}
         xKey="month"
         series={[
@@ -355,11 +355,11 @@ export const KitchenSink: StoryObj = {
           errorBar({high: 'errorHigh', low: 'errorLow', color: '#1e3a5f'}),
           line('runAvg', {color: '#f59e0b', strokeWidth: 2}),
         ]}
-        grid={<XDSChartGrid />}
+        grid={<ChartGrid />}
         axes={
           <>
-            <XDSChartAxis position="bottom" />
-            <XDSChartAxis position="left" />
+            <ChartAxis position="bottom" />
+            <ChartAxis position="left" />
           </>
         }
         height={400}

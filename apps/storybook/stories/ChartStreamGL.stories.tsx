@@ -3,12 +3,12 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useRef, useEffect, useState} from 'react';
 import {
-  XDSChart,
-  XDSChartAxis,
-  XDSChartGrid,
-  XDSChartStreamGL,
-  useXDSChartColors,
-  type XDSChartStreamGLHandle,
+  Chart,
+  ChartAxis,
+  ChartGrid,
+  ChartStreamGL,
+  useChartColors,
+  type ChartStreamGLHandle,
 } from '@xds/lab';
 import {Stack, Text} from '@xds/core';
 import {Heading} from '@xds/core/Text';
@@ -26,8 +26,8 @@ export default meta;
 /** Simulated stock price — GBM with drift and volatility */
 export const StockPrice: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
-    const streamRef = useRef<XDSChartStreamGLHandle>(null);
+    const colors = useChartColors();
+    const streamRef = useRef<ChartStreamGLHandle>(null);
     const priceRef = useRef(150);
     const tRef = useRef(0);
     const [price, setPrice] = useState(150);
@@ -58,7 +58,7 @@ export const StockPrice: StoryObj = {
           <Text type="label">ACME Corp</Text>
           <Text type="body">${price.toFixed(2)}</Text>
         </Stack>
-        <XDSChart
+        <Chart
           data={[
             {t: 0, v: 130},
             {t: 1, v: 170},
@@ -69,16 +69,16 @@ export const StockPrice: StoryObj = {
           xDomain={xDomain}
           yBaseline="data"
           height={220}>
-          <XDSChartGrid horizontal />
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
-          <XDSChartStreamGL
+          <ChartGrid horizontal />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
+          <ChartStreamGL
             handleRef={streamRef}
             color={colors.categorical(1)[0]}
             bufferSize={400}
             lineWidth={1.5}
           />
-        </XDSChart>
+        </Chart>
       </Stack>
     );
   },
@@ -89,7 +89,7 @@ export const StockPrice: StoryObj = {
 // =============================================================================
 
 function useMetricStream(
-  ref: React.RefObject<XDSChartStreamGLHandle | null>,
+  ref: React.RefObject<ChartStreamGLHandle | null>,
   setXDomain: (d: [number, number]) => void,
   config: {
     base: number;
@@ -135,10 +135,10 @@ function useMetricStream(
 /** Server dashboard — CPU, Memory, and Network at 30fps */
 export const ServerDashboard: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
-    const cpuRef = useRef<XDSChartStreamGLHandle>(null);
-    const memRef = useRef<XDSChartStreamGLHandle>(null);
-    const netRef = useRef<XDSChartStreamGLHandle>(null);
+    const colors = useChartColors();
+    const cpuRef = useRef<ChartStreamGLHandle>(null);
+    const memRef = useRef<ChartStreamGLHandle>(null);
+    const netRef = useRef<ChartStreamGLHandle>(null);
     const [cpuX, setCpuX] = useState<[number, number]>([0, 300]);
     const [memX, setMemX] = useState<[number, number]>([0, 300]);
     const [netX, setNetX] = useState<[number, number]>([0, 300]);
@@ -187,45 +187,45 @@ export const ServerDashboard: StoryObj = {
         <Heading level={3}>Server Metrics Dashboard</Heading>
         <Stack direction="vertical" gap={1}>
           <Text type="label">CPU Usage (%)</Text>
-          <XDSChart {...chartProps} xDomain={cpuX}>
-            <XDSChartGrid horizontal />
-            <XDSChartAxis position="bottom" />
-            <XDSChartAxis position="left" />
-            <XDSChartStreamGL
+          <Chart {...chartProps} xDomain={cpuX}>
+            <ChartGrid horizontal />
+            <ChartAxis position="bottom" />
+            <ChartAxis position="left" />
+            <ChartStreamGL
               handleRef={cpuRef}
               color={colors.categorical(3)[0]}
               bufferSize={300}
               lineWidth={1.5}
             />
-          </XDSChart>
+          </Chart>
         </Stack>
         <Stack direction="vertical" gap={1}>
           <Text type="label">Memory Usage (%)</Text>
-          <XDSChart {...chartProps} xDomain={memX}>
-            <XDSChartGrid horizontal />
-            <XDSChartAxis position="bottom" />
-            <XDSChartAxis position="left" />
-            <XDSChartStreamGL
+          <Chart {...chartProps} xDomain={memX}>
+            <ChartGrid horizontal />
+            <ChartAxis position="bottom" />
+            <ChartAxis position="left" />
+            <ChartStreamGL
               handleRef={memRef}
               color={colors.categorical(3)[1]}
               bufferSize={300}
               lineWidth={1.5}
             />
-          </XDSChart>
+          </Chart>
         </Stack>
         <Stack direction="vertical" gap={1}>
           <Text type="label">Network I/O (Mbps)</Text>
-          <XDSChart {...chartProps} xDomain={netX}>
-            <XDSChartGrid horizontal />
-            <XDSChartAxis position="bottom" />
-            <XDSChartAxis position="left" />
-            <XDSChartStreamGL
+          <Chart {...chartProps} xDomain={netX}>
+            <ChartGrid horizontal />
+            <ChartAxis position="bottom" />
+            <ChartAxis position="left" />
+            <ChartStreamGL
               handleRef={netRef}
               color={colors.categorical(3)[2]}
               bufferSize={300}
               lineWidth={1.5}
             />
-          </XDSChart>
+          </Chart>
         </Stack>
       </Stack>
     );
@@ -239,8 +239,8 @@ export const ServerDashboard: StoryObj = {
 /** Seismograph — zero-centered with x-axis */
 export const SeismographDemo: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
-    const streamRef = useRef<XDSChartStreamGLHandle>(null);
+    const colors = useChartColors();
+    const streamRef = useRef<ChartStreamGLHandle>(null);
     const tRef = useRef(0);
     const quakeRef = useRef(0);
     const [xDomain, setXDomain] = useState<[number, number]>([0, 600]);
@@ -277,7 +277,7 @@ export const SeismographDemo: StoryObj = {
           yBaseline=&quot;zero&quot; anchors 0 to center. Both axes from chart
           context.
         </Text>
-        <XDSChart
+        <Chart
           data={[
             {t: 0, v: -80},
             {t: 1, v: 80},
@@ -288,17 +288,17 @@ export const SeismographDemo: StoryObj = {
           xDomain={xDomain}
           yBaseline="zero"
           height={220}>
-          <XDSChartGrid horizontal />
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
-          <XDSChartStreamGL
+          <ChartGrid horizontal />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
+          <ChartStreamGL
             handleRef={streamRef}
             color={colors.categorical(5)[3]}
             bufferSize={600}
             lineWidth={1}
             opacity={0.9}
           />
-        </XDSChart>
+        </Chart>
       </Stack>
     );
   },
@@ -311,10 +311,10 @@ export const SeismographDemo: StoryObj = {
 /** Three streams on one chart sharing xDomain and yDomain */
 export const MultiSensorOverlay: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
-    const s1Ref = useRef<XDSChartStreamGLHandle>(null);
-    const s2Ref = useRef<XDSChartStreamGLHandle>(null);
-    const s3Ref = useRef<XDSChartStreamGLHandle>(null);
+    const colors = useChartColors();
+    const s1Ref = useRef<ChartStreamGLHandle>(null);
+    const s2Ref = useRef<ChartStreamGLHandle>(null);
+    const s3Ref = useRef<ChartStreamGLHandle>(null);
     const tRef = useRef(0);
     const [xDomain, setXDomain] = useState<[number, number]>([0, 400]);
 
@@ -355,7 +355,7 @@ export const MultiSensorOverlay: StoryObj = {
           
           Three streams sharing one chart, same xDomain, same yDomain=[0, 100].
         </Text>
-        <XDSChart
+        <Chart
           data={[
             {t: 0, v: 0},
             {t: 1, v: 100},
@@ -365,31 +365,31 @@ export const MultiSensorOverlay: StoryObj = {
           yDomain={[0, 100]}
           xDomain={xDomain}
           height={280}>
-          <XDSChartGrid horizontal />
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
-          <XDSChartStreamGL
+          <ChartGrid horizontal />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
+          <ChartStreamGL
             handleRef={s1Ref}
             color={colors.categorical(3)[0]}
             bufferSize={400}
             lineWidth={1.5}
             opacity={0.8}
           />
-          <XDSChartStreamGL
+          <ChartStreamGL
             handleRef={s2Ref}
             color={colors.categorical(3)[1]}
             bufferSize={400}
             lineWidth={1.5}
             opacity={0.8}
           />
-          <XDSChartStreamGL
+          <ChartStreamGL
             handleRef={s3Ref}
             color={colors.categorical(3)[2]}
             bufferSize={400}
             lineWidth={1.5}
             opacity={0.8}
           />
-        </XDSChart>
+        </Chart>
       </Stack>
     );
   },

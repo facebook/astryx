@@ -13,7 +13,7 @@
  * The role defaults to "fill" if omitted.
  */
 
-import type {SVGIconDef} from './XDSSVGIcon';
+import type {SVGIconDef} from './SVGIcon';
 
 /** Simple stroke-only: X / Close — both lines are stroke-role */
 export const xIcon: SVGIconDef = {

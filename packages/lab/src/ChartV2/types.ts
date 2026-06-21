@@ -98,7 +98,7 @@ export interface ChartPointerEvent {
   active: boolean;
 }
 
-/** Context provided by XDSChart to interaction children */
+/** Context provided by Chart to interaction children */
 export interface ChartV2Context {
   width: number;
   height: number;

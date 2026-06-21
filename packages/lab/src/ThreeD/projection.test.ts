@@ -3,15 +3,15 @@
 import {describe, it, expect} from 'vitest';
 
 /**
- * Verifies that the XDS3DScatterGL shader projection produces identical
- * output to XDS3DChart's project() function. This is a Tier 1 guarantee —
+ * Verifies that the ThreeDScatterGL shader projection produces identical
+ * output to ThreeDChart's project() function. This is a Tier 1 guarantee —
  * SVG and WebGL marks must agree on pixel positions.
  *
  * The shader's rotation math is replicated here in JS. If someone changes
  * project() or the shader without updating the other, this test fails.
  */
 
-// JS implementation of project() from XDS3DChart
+// JS implementation of project() from ThreeDChart
 function projectJS(
   nx: number,
   ny: number,

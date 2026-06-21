@@ -4,9 +4,9 @@
 
 /**
  * @file context.tsx
- * @input Resolved XDSSchedule events, range, timezone, and active date
+ * @input Resolved Schedule events, range, timezone, and active date
  * @output Schedule context object and hook used by view components
- * @position Internal context bridge between generic XDSSchedule and concrete views
+ * @position Internal context bridge between generic Schedule and concrete views
  */
 
 import {createContext, useContext} from 'react';
@@ -14,14 +14,14 @@ import type {
   CalendarEvent,
   ScheduleRange,
   ZonedDateTime,
-  XDSScheduleCategory,
-  XDSSchedulePlugin,
-  XDSScheduleViewBase,
+  ScheduleCategory,
+  SchedulePlugin,
+  ScheduleViewBase,
 } from './types';
 
-export interface XDSScheduleContextValue {
+export interface ScheduleContextValue {
   events: ReadonlyArray<CalendarEvent>;
-  categories: ReadonlyArray<XDSScheduleCategory>;
+  categories: ReadonlyArray<ScheduleCategory>;
   date: ZonedDateTime;
   focusDate: ZonedDateTime;
   timezoneID: string;
@@ -32,18 +32,18 @@ export interface XDSScheduleContextValue {
   onToday: () => void;
   onNextDate: () => void;
   nextDateLabel: string;
-  view: XDSScheduleViewBase;
-  plugins: ReadonlyArray<XDSSchedulePlugin>;
+  view: ScheduleViewBase;
+  plugins: ReadonlyArray<SchedulePlugin>;
 }
 
-export const XDSScheduleContext = createContext<XDSScheduleContextValue | null>(
+export const ScheduleContext = createContext<ScheduleContextValue | null>(
   null,
 );
 
-export function useXDSScheduleContext(): XDSScheduleContextValue {
-  const context = useContext(XDSScheduleContext);
+export function useScheduleContext(): ScheduleContextValue {
+  const context = useContext(ScheduleContext);
   if (context == null) {
-    throw new Error('XDSSchedule views must be rendered inside XDSSchedule.');
+    throw new Error('Schedule views must be rendered inside Schedule.');
   }
   return context;
 }

@@ -3,7 +3,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {Fragment} from 'react';
 import {
-  XDSSVGIcon,
+  SVGIcon,
   type SVGIconVariation,
   type SVGIconDef,
   type IconShape,
@@ -24,7 +24,7 @@ import {
 } from '../../../packages/lab/src/SVGIcon/xif-examples';
 
 // =============================================================================
-// Adapter: XIFIcon → SVGIconDef (until XDSSVGIcon natively reads XIF)
+// Adapter: XIFIcon → SVGIconDef (until SVGIcon natively reads XIF)
 // =============================================================================
 
 function xifToSvgIconDef(xif: XIFIcon): SVGIconDef {
@@ -138,7 +138,7 @@ export const SpecExamples: StoryObj = {
                 <div
                   key={`${xif.name}-${v}`}
                   style={{display: 'flex', justifyContent: 'center'}}>
-                  <XDSSVGIcon icon={def} variation={v} size="lg" />
+                  <SVGIcon icon={def} variation={v} size="lg" />
                 </div>
               ))}
             </Fragment>
@@ -219,8 +219,8 @@ export const CompositionSlots: StoryObj = {
           ].map(({label, def}) => (
             <Stack key={label} direction="vertical" gap={1} hAlign="center">
               <Stack direction="horizontal" gap={2}>
-                <XDSSVGIcon icon={def} variation="linear" size="lg" />
-                <XDSSVGIcon icon={def} variation="bold" size="lg" />
+                <SVGIcon icon={def} variation="linear" size="lg" />
+                <SVGIcon icon={def} variation="bold" size="lg" />
               </Stack>
               <Text type="supporting" style={{fontSize: 10}}>
                 {label}
@@ -311,7 +311,7 @@ export const PersonalityAxes: StoryObj = {
                     justifyContent: 'center',
                     opacity: 0.3 + i * 0.175,
                   }}>
-                  <XDSSVGIcon
+                  <SVGIcon
                     icon={def}
                     variation="linear"
                     size="lg"

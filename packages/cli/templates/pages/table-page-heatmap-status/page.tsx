@@ -20,7 +20,7 @@ import {Badge} from '@xds/core/Badge';
 import {Link} from '@xds/core/Link';
 import {Table, proportional, pixel} from '@xds/core/Table';
 import type {TableColumn} from '@xds/core/Table';
-import {XDSChart, XDSChartAxis, XDSChartHeatmapGL} from '@xds/lab';
+import {Chart, ChartAxis, ChartHeatmapGL} from '@xds/lab';
 import {
   FunnelIcon,
   ArrowDownTrayIcon,
@@ -408,20 +408,20 @@ function OutageHeatmap() {
   const heatmapData = useMemo(() => buildHeatmapData(incidents), []);
 
   return (
-    <XDSChart
+    <Chart
       data={heatmapData}
       xKey="day"
       yKeys={['incidents']}
       height={280}
       margin={{left: 0, right: 0, top: 0, bottom: 30}}>
-      <XDSChartAxis position="bottom" />
-      <XDSChartHeatmapGL
+      <ChartAxis position="bottom" />
+      <ChartHeatmapGL
         xKey="day"
         yKey="hour"
         valueKey="incidents"
         colorRange={['#dcfce7', '#fee2e2', '#fca5a5', '#ef4444', '#991b1b']}
       />
-    </XDSChart>
+    </Chart>
   );
 }
 

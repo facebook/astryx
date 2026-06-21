@@ -3,12 +3,12 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useRef, useEffect, useState} from 'react';
 import {
-  XDSChart,
-  XDSChartAxis,
-  XDSChartGrid,
-  XDSChartStreamGL,
-  useXDSChartColors,
-  type XDSChartStreamGLHandle,
+  Chart,
+  ChartAxis,
+  ChartGrid,
+  ChartStreamGL,
+  useChartColors,
+  type ChartStreamGLHandle,
 } from '@xds/lab';
 import {Stack, Text} from '@xds/core';
 import {Heading} from '@xds/core/Text';
@@ -25,8 +25,8 @@ export default meta;
  */
 export const XDomainUpdateCost: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
-    const streamRef = useRef<XDSChartStreamGLHandle>(null);
+    const colors = useChartColors();
+    const streamRef = useRef<ChartStreamGLHandle>(null);
     const tRef = useRef(0);
     const [xDomain, setXDomain] = useState<[number, number]>([0, 300]);
     const [fps, setFps] = useState(0);
@@ -80,7 +80,7 @@ export const XDomainUpdateCost: StoryObj = {
             xDomain updates via setState on every requestAnimationFrame
           </Text>
         </Stack>
-        <XDSChart
+        <Chart
           data={[
             {t: 0, v: 0},
             {t: 1, v: 100},
@@ -90,16 +90,16 @@ export const XDomainUpdateCost: StoryObj = {
           yDomain={[0, 100]}
           xDomain={xDomain}
           height={250}>
-          <XDSChartGrid horizontal />
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
-          <XDSChartStreamGL
+          <ChartGrid horizontal />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
+          <ChartStreamGL
             handleRef={streamRef}
             color={colors.categorical(1)[0]}
             bufferSize={300}
             lineWidth={1.5}
           />
-        </XDSChart>
+        </Chart>
       </Stack>
     );
   },
@@ -111,8 +111,8 @@ export const XDomainUpdateCost: StoryObj = {
  */
 export const ThrottledXDomain: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
-    const streamRef = useRef<XDSChartStreamGLHandle>(null);
+    const colors = useChartColors();
+    const streamRef = useRef<ChartStreamGLHandle>(null);
     const tRef = useRef(0);
     const [xDomain, setXDomain] = useState<[number, number]>([0, 300]);
     const [fps, setFps] = useState(0);
@@ -170,7 +170,7 @@ export const ThrottledXDomain: StoryObj = {
             xDomain updates every 500ms; WebGL draws every frame
           </Text>
         </Stack>
-        <XDSChart
+        <Chart
           data={[
             {t: 0, v: 0},
             {t: 1, v: 100},
@@ -180,16 +180,16 @@ export const ThrottledXDomain: StoryObj = {
           yDomain={[0, 100]}
           xDomain={xDomain}
           height={250}>
-          <XDSChartGrid horizontal />
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
-          <XDSChartStreamGL
+          <ChartGrid horizontal />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
+          <ChartStreamGL
             handleRef={streamRef}
             color={colors.categorical(1)[0]}
             bufferSize={300}
             lineWidth={1.5}
           />
-        </XDSChart>
+        </Chart>
       </Stack>
     );
   },
@@ -200,10 +200,10 @@ export const ThrottledXDomain: StoryObj = {
  */
 export const StressTest: StoryObj = {
   render: () => {
-    const colors = useXDSChartColors();
-    const s1 = useRef<XDSChartStreamGLHandle>(null);
-    const s2 = useRef<XDSChartStreamGLHandle>(null);
-    const s3 = useRef<XDSChartStreamGLHandle>(null);
+    const colors = useChartColors();
+    const s1 = useRef<ChartStreamGLHandle>(null);
+    const s2 = useRef<ChartStreamGLHandle>(null);
+    const s3 = useRef<ChartStreamGLHandle>(null);
     const tRef = useRef(0);
     const [xDomain, setXDomain] = useState<[number, number]>([0, 400]);
     const [fps, setFps] = useState(0);
@@ -263,7 +263,7 @@ export const StressTest: StoryObj = {
           Stress: 3 streams + axes + grid @ 60fps
         </Heading>
         <Text type="label">FPS: {fps}</Text>
-        <XDSChart
+        <Chart
           data={[
             {t: 0, v: 0},
             {t: 1, v: 100},
@@ -273,31 +273,31 @@ export const StressTest: StoryObj = {
           yDomain={[0, 100]}
           xDomain={xDomain}
           height={300}>
-          <XDSChartGrid horizontal />
-          <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
-          <XDSChartStreamGL
+          <ChartGrid horizontal />
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
+          <ChartStreamGL
             handleRef={s1}
             color={c[0]}
             bufferSize={400}
             lineWidth={1.5}
             opacity={0.8}
           />
-          <XDSChartStreamGL
+          <ChartStreamGL
             handleRef={s2}
             color={c[1]}
             bufferSize={400}
             lineWidth={1.5}
             opacity={0.8}
           />
-          <XDSChartStreamGL
+          <ChartStreamGL
             handleRef={s3}
             color={c[2]}
             bufferSize={400}
             lineWidth={1.5}
             opacity={0.8}
           />
-        </XDSChart>
+        </Chart>
       </Stack>
     );
   },
