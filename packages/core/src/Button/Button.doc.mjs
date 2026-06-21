@@ -18,7 +18,7 @@ export const docs = {
       {guidance: true, description: 'Write labels that describe the action ("Save changes", "Delete account", "Send invite"), not vague labels like "OK" or "Click here".'},
       {guidance: true, description: 'Show a loading state for actions that take time, like saving or submitting, so the user knows it is working.'},
       {guidance: true, description: 'Always provide a label for icon-only buttons so screen readers can announce what the button does. Add a tooltip for sighted users.'},
-      {guidance: true, description: 'For a dedicated icon-only button, use IconButton from \'@xds/core/IconButton\'. It is a separate component — not exported from \'@xds/core/Button\'.'},
+      {guidance: true, description: 'For a dedicated icon-only button, use IconButton from \'@xds/core/IconButton\'. It is a separate component, not exported from \'@xds/core/Button\'.'},
       {guidance: false, description: 'Place more than one primary button in the same view; this dilutes the visual hierarchy.'},
       {guidance: false, description: 'Use the destructive variant without a confirmation step for irreversible actions like deleting data.'},
       {guidance: false, description: 'Use a button for navigation. If it only takes the user to another page, use a link instead. Buttons are for actions like saving, deleting, or submitting.'},
@@ -102,7 +102,7 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        'Optional override for visible text. When provided, displayed instead of label — but label is still required (it provides the accessible name). For most cases, just use label alone: <Button label="Save" />.',
+        'Optional override for visible text. When provided, displayed instead of label, but label is still required (it provides the accessible name). For most cases, just use label alone: <Button label="Save" />.',
     },
     {
       name: 'endContent',
@@ -248,6 +248,7 @@ export const docsDense = {
       {guidance: true, description: 'Labels that describe the action: "Save changes" not "OK" or "Click here".'},
       {guidance: true, description: 'Show loading state for async actions so the user knows it is working.'},
       {guidance: true, description: 'Icon-only buttons need a label for screen readers and a tooltip for sighted users.'},
+      {guidance: true, description: 'For dedicated icon-only buttons, use IconButton from @xds/core/IconButton. Separate component, not exported from @xds/core/Button.'},
       {guidance: false, description: 'Multiple primary buttons in one view; dilutes hierarchy.'},
       {guidance: false, description: 'Destructive without confirmation for irreversible actions.'},
       {guidance: false, description: 'Button for navigation; use a link if it only takes the user to another page.'},

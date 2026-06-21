@@ -69,7 +69,7 @@ export const docsZh = {
   name: 'TopNavItem',
   isHiddenFromOverview: true,
   displayName: 'Top Nav Item',
-  description: '用于 TopNav startContent 的导航链接项 — 渲染为具有悬停和选中状态的锚点。',
+  description: '用于 TopNav startContent 的导航链接项，渲染为具有悬停和选中状态的锚点。',
   props: [
     {
       name: 'label',

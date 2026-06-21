@@ -113,8 +113,8 @@ export const docsZh = {
   displayName: 'Chat Layout',
   description: '完整聊天界面的布局外壳。消息在页面中自然流动，编写器固定在底部，带有毛玻璃效果。通过容器宽度自动适配密度。',
   propDescriptions: {
-    children: '消息内容 — 通常是 ChatMessageList。在页面中自然流动。',
-    composer: '编写器元素 — 通常是 ChatComposer。固定在底部，带有毛玻璃底座。',
+    children: '消息内容，通常是 ChatMessageList。在页面中自然流动。',
+    composer: '编写器元素，通常是 ChatComposer。固定在底部，带有毛玻璃底座。',
     emptyState: '子元素为空时显示的内容。',
     scrollButton: '编写器上方的滚动到底部按钮。默认使用 ChatLayoutScrollButton。传入 null 隐藏。',
     scrollRef: '外部滚动容器引用。提供时，自动滚动和滚动到底部将目标指向此元素。',

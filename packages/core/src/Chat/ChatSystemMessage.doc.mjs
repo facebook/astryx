@@ -42,8 +42,8 @@ export const docsZh = {
   displayName: 'Chat System Message',
   description: '居中的系统消息，用于日期分隔、成员变更和状态通知等非发送者内容。没有头像、对齐或气泡。使用 divider 变体做时间分隔，default 做内联状态更新。',
   propDescriptions: {
-    children: '系统消息内容 — 简短的事实性文本，如日期、加入/离开通知或状态变更。',
-    variant: "视觉变体。'default' 渲染居中文本。'divider' 通过 Divider 在两侧添加水平线 — 用于日期分隔和段落分隔。",
+    children: '系统消息内容，简短的事实性文本，如日期、加入/离开通知或状态变更。',
+    variant: "视觉变体。'default' 渲染居中文本。'divider' 通过 Divider 在两侧添加水平线，用于日期分隔和段落分隔。",
     icon: '增强消息类型辨识度的前置图标。使用 Icon 包裹以获得一致的尺寸。',
   },
 };

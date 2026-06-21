@@ -89,7 +89,7 @@ export const docsZh = {
   displayName: 'Chat Composer Input',
   description: '聊天编写器的富文本输入。支持触发菜单（输入 @ 或 / 打开 typeahead）、内联标记徽章、ArrowUp/Down 消息历史回溯、粘贴/拖放文件处理，并在触控设备上将字体大小保持至少 16px 以避免 iOS 输入缩放。当需要普通文本区域以外的功能时，传入 ChatComposer 的 input 插槽。',
   propDescriptions: {
-    handleRef: '命令式句柄，用于编程式控制 — insertToken、insertText、focus 和 getValue。',
+    handleRef: '命令式句柄，用于编程式控制：insertToken、insertText、focus 和 getValue。',
     value: '受控输入值。与 onChange 配对实现双向绑定。',
     onChange: '输入值变更时调用。序列化字符串包含标记占位符。',
     placeholder: '输入为空时显示的占位文本。',

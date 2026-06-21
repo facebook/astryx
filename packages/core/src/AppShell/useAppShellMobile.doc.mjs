@@ -16,7 +16,7 @@ export const docs = {
     'drawer state',
   ],
   params: [
-    // useAppShellMobile takes no arguments — it reads AppShell context.
+    // useAppShellMobile takes no arguments; it reads AppShell context.
   ],
   returns: [
     {

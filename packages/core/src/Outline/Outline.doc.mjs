@@ -115,7 +115,7 @@ import {Outline} from '@xds/core/Outline';
 function ControlledOutline() {
   const [activeId, setActiveId] = useState('overview');
 
-  // Providing activeId disables built-in scroll-spy — you own the active state.
+  // Providing activeId disables built-in scroll-spy; you own the active state.
   return (
     <Outline
       items={items}
