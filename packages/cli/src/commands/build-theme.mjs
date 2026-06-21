@@ -22,25 +22,27 @@ import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 
-// Import shared theme processing from core — ensures build and runtime
-// use the same logic for typography.scale expansion, prose, and component rules.
-// When available, these imports supersede all local fallback implementations
-// (parsePadding, expandContainerPadding, parseStyleKey, generateCSS, generateProseCSS).
+// Import shared theme processing from core. `xds theme build` MUST produce the
+// exact same CSS as the `<Theme>` runtime, so it has exactly one generation
+// path: core's generator. There is no in-CLI fallback implementation — if this
+// import fails, the build fails (see the ERR_CORE_NOT_FOUND guard in the theme
+// action). A built, resolvable `@xds/core` is a hard requirement.
 let _defineTheme = null;
-let _generateThemeRules = null;
 let _generateThemeRulesSplit = null;
 let _generateOnMediaCSS = null;
+let _coreImportError = null;
 try {
   const coreTheme = await import('@xds/core/theme');
   _defineTheme = coreTheme.defineTheme;
-  _generateThemeRules = coreTheme.generateThemeRules;
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
-} catch (_e) {
-  // Silent fallback. The theme command surfaces a clear error if it's actually
-  // invoked without core being available; emitting a stderr warning at module-
-  // load time would leak into every other command's output and break the
-  // clean-stderr contract under --json (and breaks tests that assert it).
+} catch (e) {
+  // Capture the reason so the theme action can surface a precise, actionable
+  // error. We don't throw here: this module is imported eagerly by the CLI
+  // entrypoint for every command, and a throw at load time would break
+  // unrelated commands (the entry wraps loads in try/catch and degrades the
+  // command to a stub). The hard failure happens when `theme build` runs.
+  _coreImportError = e;
 }
 
 /**
@@ -63,13 +65,6 @@ function generatedHeader(sourceFile, lang = 'js', command) {
     return `/*\n * ${body.join('\n * ')}\n */\n\n`;
   }
   return `/**\n * ${body.join('\n * ')}\n */\n\n`;
-}
-
-/**
- * Convert camelCase CSS property to kebab-case
- */
-function toKebabCase(str) {
-  return str.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
 }
 
 /**
@@ -162,7 +157,6 @@ async function getKnownValues(componentName) {
   return _knownValuesCache.get(componentName);
 }
 
-
 /**
  * Generate TypeScript declaration content with module augmentation for custom
  * component prop values found in the theme's `components` keys. Reads known
@@ -248,100 +242,6 @@ function resolveTokenValue(value) {
   return value;
 }
 
-/**
- * Parse a component style key into the legacy class selector suffix used by
- * built theme CSS today.
- * - `base` → ''
- * - `variant:secondary` → '.secondary'
- * - `level:1` → '.level-1' (digits get prefixed)
- * - `variant:destructive+size:sm` → '.destructive.sm'
- *
- * Runtime components also emit matching data-* prop reflections via xdsThemeProps()
- * (`data-variant="secondary"`, `data-level="1"`, etc.) for the data-attribute
- * selector migration. Keep the class output here until the generator migrates.
- *
- * <!-- SYNC: packages/core/src/utils/parseStyleKey.ts -->
- * <!-- SYNC: packages/core/src/utils/xdsThemeProps.ts -->
- * The digit-prefix and value-to-class logic must match across all three files.
- */
-
-// =============================================================================
-// Container padding mapping
-//
-// LEGACY FALLBACK: The functions below (parsePadding, expandContainerPadding,
-// parseStyleKey, generateCSS, generateProseCSS) duplicate logic from
-// @xds/core/theme (packages/core/src/theme/generateThemeRules.ts).
-//
-// When @xds/core is built, the CLI imports and uses the shared implementation
-// from core (see _generateThemeRules / _generateThemeRulesSplit at top of file).
-// These local copies exist only as a fallback for when core hasn't been built yet
-// (e.g., first-time bootstrap or CI environments where core builds after CLI).
-//
-// TODO: Remove this fallback once the monorepo build order guarantees core
-// is always available before CLI runs. Track in issue backlog.
-// =============================================================================
-
-const CONTAINER_COMPONENTS = new Set(['card', 'section', 'dialog']);
-const PADDING_PROPS = new Set([
-  'padding', 'paddingBlock', 'paddingInline',
-  'paddingBlockStart', 'paddingBlockEnd',
-  'paddingInlineStart', 'paddingInlineEnd',
-]);
-
-function parsePadding(props) {
-  const result = {};
-  for (const [prop, value] of props) {
-    switch (prop) {
-      case 'padding': {
-        const parts = value.trim().split(/\s+/);
-        if (parts.length === 1) {
-          result.blockStart = parts[0];
-          result.blockEnd = parts[0];
-          result.inline = parts[0];
-        } else if (parts.length === 2) {
-          result.blockStart = parts[0];
-          result.blockEnd = parts[0];
-          result.inline = parts[1];
-        } else if (parts.length >= 3) {
-          result.blockStart = parts[0];
-          result.inline = parts[1];
-          result.blockEnd = parts[2];
-        }
-        break;
-      }
-      case 'paddingBlock': {
-        const parts = value.trim().split(/\s+/);
-        result.blockStart = parts[0];
-        result.blockEnd = parts[1] ?? parts[0];
-        break;
-      }
-      case 'paddingInline': {
-        const parts = value.trim().split(/\s+/);
-        if (parts.length === 1) {
-          result.inline = parts[0];
-        } else {
-          result.inlineStart = parts[0];
-          result.inlineEnd = parts[1];
-        }
-        break;
-      }
-      case 'paddingBlockStart':
-        result.blockStart = value;
-        break;
-      case 'paddingBlockEnd':
-        result.blockEnd = value;
-        break;
-      case 'paddingInlineStart':
-        result.inlineStart = value;
-        break;
-      case 'paddingInlineEnd':
-        result.inlineEnd = value;
-        break;
-    }
-  }
-  return result;
-}
-
 // Dual-prefix theme @scope selector helpers (XDS-prefix migration
 // P2380608025). Keep the `astryx` literal in sync with
 // packages/core/src/naming.ts (NAMESPACE) and generateThemeRules.ts.
@@ -350,332 +250,6 @@ function parsePadding(props) {
 const themeScopeStart = name =>
   `[data-astryx-theme="${name}"], [data-xds-theme="${name}"]`;
 const THEME_SCOPE_TO = `[data-astryx-theme], [data-xds-theme]`;
-const componentClassSelector = (component, suffix) =>
-  `.astryx-${component}${suffix}, .xds-${component}${suffix}`;
-
-function appendPseudoToSelectorList(selector, pseudo) {
-  const parts = [];
-  let depth = 0;
-  let start = 0;
-
-  for (let i = 0; i < selector.length; i++) {
-    const char = selector[i];
-    if (char === '(') {
-      depth++;
-    } else if (char === ')') {
-      depth = Math.max(0, depth - 1);
-    } else if (char === ',' && depth === 0) {
-      parts.push(selector.slice(start, i).trim());
-      start = i + 1;
-    }
-  }
-  parts.push(selector.slice(start).trim());
-
-  return parts.map(part => `${part}${pseudo}`).join(', ');
-}
-
-function expandContainerPadding(component, parsed) {
-  // Emit the rebranded --astryx-<component>-padding tokens. The component reads
-  // them via an inverted fallback (var(--xds-*, var(--astryx-*, default))) so a
-  // legacy --xds-* override still wins during compat (XDS-prefix migration
-  // P2380608025). Keep the `astryx` literal in sync with packages/core/src/naming.ts
-  // (NAMESPACE) and the primary path in generateThemeRules.ts.
-  const prefix = `--astryx-${component}-padding`;
-  const tokens = [];
-
-  // Resolve effective inline values (inlineStart/End override inline)
-  const effectiveInlineStart = parsed.inlineStart ?? parsed.inline;
-  const effectiveInlineEnd = parsed.inlineEnd ?? parsed.inline;
-  const inlineSymmetric =
-    effectiveInlineStart != null &&
-    effectiveInlineEnd != null &&
-    effectiveInlineStart === effectiveInlineEnd;
-
-  // If all sides are the same, emit the shorthand token only
-  const allSame =
-    inlineSymmetric &&
-    parsed.blockStart != null &&
-    parsed.blockEnd != null &&
-    effectiveInlineStart === parsed.blockStart &&
-    parsed.blockStart === parsed.blockEnd;
-
-  if (allSame) {
-    tokens.push([prefix, effectiveInlineStart]);
-    return tokens;
-  }
-
-  // Directional tokens
-  if (parsed.inlineStart != null || parsed.inlineEnd != null) {
-    // Asymmetric inline — emit start and end separately
-    if (effectiveInlineStart != null) {
-      tokens.push([`${prefix}-inline-start`, effectiveInlineStart]);
-    }
-    if (effectiveInlineEnd != null) {
-      tokens.push([`${prefix}-inline-end`, effectiveInlineEnd]);
-    }
-  } else if (parsed.inline != null) {
-    tokens.push([`${prefix}-inline`, parsed.inline]);
-  }
-  if (parsed.blockStart != null) {
-    tokens.push([`${prefix}-block-start`, parsed.blockStart]);
-  }
-  if (parsed.blockEnd != null) {
-    tokens.push([`${prefix}-block-end`, parsed.blockEnd]);
-  }
-  return tokens;
-}
-
-function parseStyleKey(key) {
-  if (key === 'base') return '';
-  return key
-    .split('+')
-    .map(part => {
-      const [prop, value] = part.split(':');
-      // Bare state name (no colon) — e.g. 'checked', 'disabled', 'selected'
-      if (value === undefined) {
-        return `.${prop}`;
-      }
-      if (/^\d/.test(value)) {
-        return `.${prop}-${value}`;
-      }
-      return `.${value}`;
-    })
-    .join('');
-}
-
-/**
- * Maps component style keys to HTML elements for prose co-selection.
- *
- * When a theme overrides a prose-related component, the HTML element
- * counterpart should get the same styles. This map defines which
- * HTML elements correspond to which component + style key.
- *
- * 'base' overrides apply to all HTML counterparts.
- * Variant-specific overrides only apply to matching elements.
- */
-const PROSE_COMPONENT_MAP = {
-  heading: {
-    base: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
-  },
-  text: {
-    base: ['p', 'small'],
-    'type:code': ['code', 'pre'],
-    'type:supporting': ['small'],
-  },
-  kbd: {
-    base: ['kbd'],
-  },
-  link: {
-    base: ['a'],
-  },
-  divider: {
-    base: ['hr'],
-  },
-};
-
-/**
- * Generate CSS from a theme definition object.
- * @deprecated Legacy fallback — see generateThemeRules.ts in @xds/core.
- *
- * When prose is enabled, component overrides for prose-related components
- * (heading, text, kbd, link, divider) co-select their HTML element
- * counterparts so raw markup inherits the theme's component styling.
- */
-function generateCSS(themeDef, {prose = true} = {}) {
-  const parts = [];
-  const scopeSelector = themeScopeStart(themeDef.name);
-
-  // Token overrides — applied to the scope root
-  if (themeDef.tokens && Object.keys(themeDef.tokens).length > 0) {
-    const declarations = Object.entries(themeDef.tokens)
-      .map(([prop, value]) => `    ${prop}: ${resolveTokenValue(value)};`)
-      .join('\n');
-    parts.push(`  :scope {\n${declarations}\n  }`);
-  }
-
-  // Component overrides
-  if (themeDef.components) {
-    for (const [component, rules] of Object.entries(themeDef.components)) {
-      for (const [key, styles] of Object.entries(rules)) {
-        const entries = Object.entries(styles);
-        if (entries.length > 0) {
-          const suffix = parseStyleKey(key);
-
-          // Separate regular properties from pseudo-class overrides
-          const props = [];
-          const pseudos = [];
-
-          for (const [prop, value] of entries) {
-            if (prop.startsWith(':') && typeof value === 'object') {
-              pseudos.push([prop, value]);
-            } else {
-              props.push([prop, value]);
-            }
-          }
-
-          // Build selector — co-select HTML elements for prose-related components
-          const xdsSelector = componentClassSelector(component, suffix);
-          let baseSelector = `  ${xdsSelector}`;
-
-          if (prose) {
-            const htmlElements = PROSE_COMPONENT_MAP[component]?.[key];
-            if (htmlElements) {
-              const htmlSelector = htmlElements.map(el => `  ${el}`).join(',\n');
-              baseSelector = `  ${xdsSelector},\n${htmlSelector}`;
-            }
-          }
-
-          // Container padding mapping
-          let finalProps = props;
-          if (CONTAINER_COMPONENTS.has(component)) {
-            const paddingProps = props.filter(([p]) => PADDING_PROPS.has(p));
-            if (paddingProps.length > 0) {
-              const nonPaddingProps = props.filter(([p]) => !PADDING_PROPS.has(p));
-              const parsed = parsePadding(paddingProps);
-              const containerTokens = expandContainerPadding(component, parsed);
-              finalProps = [...nonPaddingProps, ...containerTokens];
-            }
-          }
-
-          // Emit base rule
-          if (finalProps.length > 0) {
-            const declarations = finalProps
-              .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
-              .join('\n');
-            parts.push(`${baseSelector} {\n${declarations}\n  }`);
-          }
-
-          // Emit pseudo-class rules
-          for (const [pseudo, pseudoStyles] of pseudos) {
-            const pseudoEntries = Object.entries(pseudoStyles);
-            if (pseudoEntries.length > 0) {
-              const declarations = pseudoEntries
-                .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
-                .join('\n');
-              // Pseudo-class rules only on the component selector, not prose
-              // co-selection. Distribute the pseudo across both compat
-              // prefixes; CSS does not do that automatically for selector
-              // lists.
-              parts.push(
-                `  ${appendPseudoToSelectorList(xdsSelector, pseudo)} {\n${declarations}\n  }`,
-              );
-            }
-          }
-        }
-      }
-    }
-  }
-
-  if (parts.length === 0) return '';
-
-  const inner = parts.join('\n\n');
-  return `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${inner}\n}`;
-}
-
-// =============================================================================
-// Prose CSS generation
-// =============================================================================
-
-/**
- * Generate prose CSS — aliases raw HTML elements to XDS component classes.
- *
- * The actual styles live in xds.base (component CSS). Prose just says
- * "inside this theme, an <h1> should look like .xds-heading.level-1".
- * This is done via CSS @extend-like pattern: each HTML element inherits
- * the same class as its XDS counterpart.
- */
-function generateProseCSS(themeDef) {
-  const scopeSelector = themeScopeStart(themeDef.name);
-
-  // Each mapping becomes: h1 { /* same styles as .xds-heading.level-1 */ }
-  // Since we can't @extend in plain CSS, we use the component's CSS custom
-  // properties which are already set by xds.base. The prose elements just
-  // need the same structural styles (font-family, margin reset, etc.)
-  // that the base heading/text components apply.
-  //
-  // For now, we co-select: the component overrides in generateCSS already
-  // target .xds-button, .xds-card, etc. Prose adds the HTML element as
-  // an additional selector for component overrides that have an HTML equivalent.
-  // CSS @extend isn't widely supported yet. Instead, generate rules that
-  // reference the same token-based custom properties the components use.
-  // This is a thin layer — just structural resets + token references.
-  const parts = [];
-
-  // Heading + text element defaults. This fallback mirrors the shared core
-  // generator (generateThemeRules.generateProseRules) so the two paths emit
-  // identical prose CSS. Crucially:
-  //   • the rules are :where()-wrapped (zero specificity) and the call site
-  //     puts them in @layer reset, so component/Markdown StyleX classes in
-  //     @layer xds-base always win;
-  //   • NO margins are emitted — reset.css zeroes raw element margins and the
-  //     Markdown/Heading/Text components supply their own block spacing. The
-  //     previous fallback set `margin: 0` here AND emitted into @layer xds-theme,
-  //     which outranked Markdown's StyleX margins and collapsed heading spacing.
-  parts.push(
-    `  :where(h1, h2, h3, h4, h5, h6) {\n    font-family: var(--font-family-heading);\n    color: var(--color-text-primary);\n  }`,
-  );
-
-  // Per-level heading type (size / weight / line-height) — no margins.
-  const headingRules = {
-    h1: {
-      fontSize: 'var(--text-heading-1-size)',
-      fontWeight: 'var(--text-heading-1-weight)',
-      lineHeight: 'var(--text-heading-1-leading)',
-    },
-    h2: {
-      fontSize: 'var(--text-heading-2-size)',
-      fontWeight: 'var(--text-heading-2-weight)',
-      lineHeight: 'var(--text-heading-2-leading)',
-    },
-    h3: {
-      fontSize: 'var(--text-heading-3-size)',
-      fontWeight: 'var(--text-heading-3-weight)',
-      lineHeight: 'var(--text-heading-3-leading)',
-    },
-    h4: {
-      fontSize: 'var(--text-heading-4-size)',
-      fontWeight: 'var(--text-heading-4-weight)',
-      lineHeight: 'var(--text-heading-4-leading)',
-    },
-    h5: {
-      fontSize: 'var(--text-heading-5-size)',
-      fontWeight: 'var(--text-heading-5-weight)',
-      lineHeight: 'var(--text-heading-5-leading)',
-    },
-    h6: {
-      fontSize: 'var(--text-heading-6-size)',
-      fontWeight: 'var(--text-heading-6-weight)',
-      lineHeight: 'var(--text-heading-6-leading)',
-    },
-  };
-
-  for (const [el, styles] of Object.entries(headingRules)) {
-    const declarations = Object.entries(styles)
-      .map(([prop, value]) => `    ${toKebabCase(prop)}: ${value};`)
-      .join('\n');
-    parts.push(`  :where(${el}) {\n${declarations}\n  }`);
-  }
-
-  // Text element defaults — body font on paragraphs, no margins.
-  parts.push(
-    `  :where(p) {\n    font-family: var(--font-family-body);\n    font-size: var(--text-body-size);\n    font-weight: var(--text-body-weight);\n    line-height: var(--text-body-leading);\n    color: var(--color-text-primary);\n  }`,
-  );
-
-  parts.push(
-    `  :where(small) {\n    font-size: var(--text-supporting-size);\n    font-weight: var(--text-supporting-weight);\n    line-height: var(--text-supporting-leading);\n    color: var(--color-text-secondary);\n  }`,
-  );
-
-  parts.push(
-    `  :where(code, pre) {\n    font-family: var(--font-family-code);\n    font-size: var(--text-code-size);\n    line-height: var(--text-code-leading);\n  }`,
-  );
-
-  parts.push(
-    `  :where(hr) {\n    border: none;\n    border-top: 1px solid var(--color-border);\n  }`,
-  );
-
-  const inner = parts.join('\n\n');
-  return `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${inner}\n}`;
-}
 
 /**
  * Import a theme module using jiti and find the defineTheme() result.
@@ -1091,13 +665,27 @@ export function registerTheme(program) {
         console.error(`\n  ${privateVarErrors.length} private var error(s). Use standard CSS properties instead.`);
       }
 
-      // Generate CSS using the shared generateThemeRules from core.
-      // This ensures build and runtime produce identical rule sets.
+      // Generate CSS via core's shared generator — the SINGLE source of truth.
+      // `xds theme build` and the `<Theme>` runtime MUST emit identical CSS, so
+      // there is exactly one generation path: @xds/core/theme. If core could not
+      // be imported, fail hard rather than silently producing divergent output.
+      if (!_defineTheme || !_generateThemeRulesSplit) {
+        cliError(
+          'Could not load @xds/core/theme — `xds theme build` requires a ' +
+            'built, resolvable @xds/core so it emits the same CSS as the ' +
+            'runtime <Theme>. Build @xds/core first (e.g. `pnpm -F @xds/core ' +
+            'build`)' +
+            (_coreImportError ? `.\n  Import error: ${_coreImportError.message}` : '.'),
+          {code: ERROR_CODES.ERR_CORE_NOT_FOUND},
+        );
+      }
+
       let css;
       let resolvedTheme;
-      if (_defineTheme && _generateThemeRules) {
+      {
         // jiti returns an already-resolved theme; legacy eval returns raw input.
-        const isAlreadyResolved = !themeDef.typography && !themeDef.motion && !themeDef.radius;
+        const isAlreadyResolved =
+          !themeDef.typography && !themeDef.motion && !themeDef.radius;
         if (isAlreadyResolved) {
           resolvedTheme = themeDef;
         } else {
@@ -1113,62 +701,30 @@ export function registerTheme(program) {
         const scopeSelector = themeScopeStart(themeDef.name);
         const scopeTo = THEME_SCOPE_TO;
 
-        if (_generateThemeRulesSplit) {
-          const {component, prose} = _generateThemeRulesSplit(resolvedTheme);
-          const cssParts = [];
-          if (options.prose !== false && prose.length > 0) {
-            const proseInner = prose.join('\n\n');
-            cssParts.push(`@layer reset {\n@scope (${scopeSelector}) to (${scopeTo}) {\n${proseInner}\n}\n}`);
-          }
-          if (component.length > 0) {
-            const componentInner = component.join('\n\n');
-            const componentScope = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
-            const colorSchemeDecl = componentScope.includes('light-dark(')
-              ? '  :root { color-scheme: light dark; }\n\n'
-              : '';
-            cssParts.push(`@layer xds-theme {\n${colorSchemeDecl}${componentScope}\n}`);
-          }
-          // On-media rules (XDSMediaTheme dark/light surface overrides)
-          if (_generateOnMediaCSS) {
-            const onMediaCss = _generateOnMediaCSS(resolvedTheme);
-            if (onMediaCss) {
-              cssParts.push(`@layer xds-theme {\n${onMediaCss}\n}`);
-            }
-          }
-          css = cssParts.join('\n\n') + '\n';
-        } else {
-          const rules = _generateThemeRules(resolvedTheme);
-          if (rules.length > 0) {
-            const inner = rules.join('\n\n');
-            const scopeBlock = `@scope (${scopeSelector}) to (${scopeTo}) {\n${inner}\n}`;
-            const colorSchemeDecl = scopeBlock.includes('light-dark(')
-              ? '  :root { color-scheme: light dark; }\n\n'
-              : '';
-            css = `@layer xds-theme {\n${colorSchemeDecl}${scopeBlock}\n}\n`;
-            // On-media rules (legacy path)
-            if (_generateOnMediaCSS) {
-              const onMediaCss = _generateOnMediaCSS(resolvedTheme);
-              if (onMediaCss) {
-                css += `\n@layer xds-theme {\n${onMediaCss}\n}\n`;
-              }
-            }
-          }
-        }
-      } else {
-        // Legacy fallback when core isn't built yet. Keep prose in the reset
-        // layer even here; raw HTML defaults must not outrank component or
-        // Markdown StyleX classes.
+        const {component, prose} = _generateThemeRulesSplit(resolvedTheme);
         const cssParts = [];
-        if (options.prose !== false) {
-          const proseCss = generateProseCSS(themeDef);
-          if (proseCss) cssParts.push(`@layer reset {\n${proseCss}\n}`);
+        if (options.prose !== false && prose.length > 0) {
+          const proseInner = prose.join('\n\n');
+          cssParts.push(
+            `@layer reset {\n@scope (${scopeSelector}) to (${scopeTo}) {\n${proseInner}\n}\n}`,
+          );
         }
-        const mainCss = generateCSS(themeDef, {prose: false});
-        if (mainCss) {
-          const colorSchemeDecl = mainCss.includes('light-dark(')
+        if (component.length > 0) {
+          const componentInner = component.join('\n\n');
+          const componentScope = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
+          const colorSchemeDecl = componentScope.includes('light-dark(')
             ? '  :root { color-scheme: light dark; }\n\n'
             : '';
-          cssParts.push(`@layer xds-theme {\n${colorSchemeDecl}${mainCss}\n}`);
+          cssParts.push(
+            `@layer xds-theme {\n${colorSchemeDecl}${componentScope}\n}`,
+          );
+        }
+        // On-media rules (MediaTheme dark/light surface overrides)
+        if (_generateOnMediaCSS) {
+          const onMediaCss = _generateOnMediaCSS(resolvedTheme);
+          if (onMediaCss) {
+            cssParts.push(`@layer xds-theme {\n${onMediaCss}\n}`);
+          }
         }
         if (cssParts.length === 0) {
           if (!json) humanLog('No overrides found — nothing to build.');

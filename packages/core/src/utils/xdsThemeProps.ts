@@ -4,10 +4,7 @@ import {stableClassName, legacyStableClassName} from '../naming';
 
 export type ClassValue = string | number | undefined | null;
 export type ClassProps = Record<string, ClassValue>;
-export type ThemeDataAttributes = Record<
-  `data-${string}`,
-  string | undefined
->;
+export type ThemeDataAttributes = Record<`data-${string}`, string | undefined>;
 export type ThemeProps = {className: string} & ThemeDataAttributes;
 
 function toDataAttributeName(prop: string): `data-${string}` {
@@ -32,7 +29,6 @@ function classTokenForPropValue(prop: string, value: string): string {
  * (`packages/core/src/naming.ts`) so the prefix migration flips in one place.
  *
  * <!-- SYNC: packages/core/src/naming.ts (namespace prefix source of truth) -->
- * <!-- SYNC: packages/cli/src/commands/build-theme.mjs (parseStyleKey + selector generation) -->
  * <!-- SYNC: packages/core/src/utils/parseStyleKey.ts -->
  *
  * Values starting with a digit get prefixed with the prop name since
@@ -59,7 +55,10 @@ function dualClassName(component: string, props?: ClassProps): string {
   // Dual-emit both the new (astryx-*) and legacy (xds-*) base class so existing
   // consumer CSS selectors keep matching during the compat window. The new
   // prefix is listed first; legacy stays until the final cutover (P10).
-  const classes = [stableClassName(component), legacyStableClassName(component)];
+  const classes = [
+    stableClassName(component),
+    legacyStableClassName(component),
+  ];
 
   if (props) {
     for (const [prop, value] of Object.entries(props)) {

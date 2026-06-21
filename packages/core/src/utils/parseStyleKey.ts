@@ -6,7 +6,6 @@
  * Used by both defineTheme (CSS generation) and components (class name rendering)
  * to ensure the same convention is applied consistently.
  *
- * <!-- SYNC: packages/cli/src/commands/build-theme.mjs (parseStyleKey) -->
  * <!-- SYNC: packages/core/src/utils/xdsThemeProps.ts -->
  *
  * Emits the legacy class-selector suffix used by defineTheme/component override
