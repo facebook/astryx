@@ -35,7 +35,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {colorVars} from '../theme/tokens.stylex';
+import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
 import {mergeProps, mergeRefs} from '../utils';
 import {Card} from '../Card/Card';
@@ -52,7 +52,9 @@ const styles = stylex.create({
   interactive: {
     position: 'relative',
     cursor: 'pointer',
-    transition: 'box-shadow 0.15s ease, border-color 0.15s ease',
+    transitionProperty: 'box-shadow, border-color',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     outlineOffset: '2px',
   },
   focusWithin: {
@@ -70,7 +72,9 @@ const styles = stylex.create({
       inset: 0,
       borderRadius: 'inherit',
       pointerEvents: 'none',
-      transition: 'background-color 0.15s ease',
+      transitionProperty: 'background-color',
+      transitionDuration: durationVars['--duration-fast'],
+      transitionTimingFunction: easeVars['--ease-standard'],
       backgroundColor: 'transparent',
     },
     ':active::after': {

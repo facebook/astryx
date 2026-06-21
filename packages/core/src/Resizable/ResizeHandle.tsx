@@ -213,7 +213,7 @@ const dynamicStyles = stylex.create({
 
 export interface ResizeHandleProps extends Omit<
   BaseProps<HTMLDivElement>,
-  'style' | 'className'
+  'style'
 > {
   ref?: React.Ref<HTMLDivElement>;
 
@@ -311,6 +311,7 @@ export function ResizeHandle({
   resizable,
   children,
   xstyle,
+  className,
   ref,
   ...props
 }: ResizeHandleProps) {
@@ -507,6 +508,7 @@ export function ResizeHandle({
           isDisabled && styles.disabled,
           xstyle,
         ),
+        className,
       )}
       {...props}>
       {/* Wider invisible hit area for pointer interaction */}
