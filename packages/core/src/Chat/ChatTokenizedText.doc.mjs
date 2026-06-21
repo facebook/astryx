@@ -30,7 +30,7 @@ export const docsZh = {
   description: '渲染带有标记模式的文本，将匹配的模式替换为内联 Badge 组件。在 ChatMessageBubble 内使用，将 @提及、#标签或 /命令显示为样式化徽章。未提供标记时以纯文本渲染，因此可以无条件使用。',
   propDescriptions: {
     children: '包含序列化标记值的纯文本消息。匹配标记值的模式将被替换为内联徽章组件。',
-    tokens: '标记定义 — 与触发器 onSelect 返回的类型相同。每个包含 value（匹配字符串）、label（显示文本）以及可选的 variant 和 icon。',
+    tokens: '标记定义，与触发器 onSelect 返回的类型相同。每个包含 value（匹配字符串）、label（显示文本）以及可选的 variant 和 icon。',
   },
 };
 

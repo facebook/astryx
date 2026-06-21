@@ -7,7 +7,7 @@ export const docs = {
   group: 'Toast',
   keywords: ['toast', 'notification', 'snackbar', 'alert', 'message', 'feedback', 'flash'],
   params: [
-    // useToast takes no arguments — returns a show function
+    // useToast takes no arguments; returns a show function
   ],
   returns: [
     {

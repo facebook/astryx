@@ -125,7 +125,7 @@ export const docsZh = {
     {
       name: 'href',
       type: 'string',
-      description: '已弃用 — 请使用 headingHref。点击时导航到的 URL。',
+      description: '已弃用，请使用 headingHref。点击时导航到的 URL。',
     },
     {
       name: 'superheading',

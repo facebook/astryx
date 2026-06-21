@@ -76,12 +76,12 @@ export const docsZh = {
     {
       name: 'items',
       type: 'ReactNode',
-      description: '菜单项插槽 — 通常为 TopNavMegaMenuItem 组件，但接受任何 ReactNode。',
+      description: '菜单项插槽，通常为 TopNavMegaMenuItem 组件，但接受任何 ReactNode。',
     },
     {
       name: 'featured',
       type: 'ReactNode',
-      description: '特色内容插槽 — 桌面端显示在右侧面板，移动抽屉中显示在项目下方。',
+      description: '特色内容插槽，桌面端显示在右侧面板，移动抽屉中显示在项目下方。',
     },
     {
       name: 'delay',

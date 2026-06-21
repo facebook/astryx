@@ -36,7 +36,7 @@ export const docsZh = {
   description: '可组合的滚动到底部按钮。可见时淡入，提供标签时展开。',
   propDescriptions: {
     isVisible: '按钮是否可见。',
-    label: '可选标签 — 展开按钮（如"新消息"）。',
+    label: '可选标签，展开按钮（如"新消息"）。',
     onClick: '点击处理器。',
   },
 };
