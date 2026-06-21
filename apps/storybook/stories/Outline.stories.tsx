@@ -25,6 +25,11 @@ const meta: Meta<typeof Outline> = {
       control: 'text',
       description: 'Controlled active item id',
     },
+    density: {
+      control: 'radio',
+      options: ['default', 'compact'],
+      description: 'Density variant',
+    },
   },
 };
 
@@ -77,7 +82,7 @@ function storySlug(value: string): string {
     value
       .trim()
       .toLowerCase()
-      .replace(/['"]/g, '')
+      .replace(/['\u201C\u201D"]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '') || 'section'
   );
@@ -93,6 +98,15 @@ export const Controlled: Story = {
   args: {
     items: outlineItems,
     activeId: 'tokens',
+  },
+};
+
+/** Compact density variant — reduced spacing for dense UIs */
+export const Compact: Story = {
+  args: {
+    items: outlineItems,
+    activeId: 'installation',
+    density: 'compact',
   },
 };
 
@@ -245,6 +259,27 @@ export const ExtractFromHTML: Story = {
         <aside style={{position: 'sticky', top: 24, alignSelf: 'start'}}>
           <Outline items={items} />
         </aside>
+      </div>
+    );
+  },
+};
+
+/** Deep nesting with multiple indent levels */
+export const DeepNesting: Story = {
+  render: () => {
+    const items: OutlineItem[] = [
+      {id: 'chapter-1', label: 'Chapter 1', level: 1},
+      {id: 'section-1-1', label: 'Section 1.1', level: 2},
+      {id: 'subsection-1-1-1', label: 'Subsection 1.1.1', level: 3},
+      {id: 'subsection-1-1-2', label: 'Subsection 1.1.2', level: 3},
+      {id: 'section-1-2', label: 'Section 1.2', level: 2},
+      {id: 'chapter-2', label: 'Chapter 2', level: 1},
+      {id: 'section-2-1', label: 'Section 2.1', level: 2},
+    ];
+
+    return (
+      <div style={{width: 240}}>
+        <Outline items={items} activeId="subsection-1-1-1" />
       </div>
     );
   },
