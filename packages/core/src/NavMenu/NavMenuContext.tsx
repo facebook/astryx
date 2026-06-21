@@ -2,6 +2,16 @@
 
 'use client';
 
+/**
+ * @file NavMenuContext.tsx
+ * @input Uses React createContext/use
+ * @output Exports NavHeadingCloseContext, NavHeadingMenuContext, and hooks
+ * @position Context providers; consumed by NavHeadingMenu and NavHeadingMenuItem
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/NavMenu/index.ts
+ */
+
 import {createContext, use} from 'react';
 
 export type NavHeadingMenuSize = 'sm' | 'md' | 'lg';

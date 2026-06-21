@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+'use client';
+
 /**
  * @file index.ts
  * @position Overlay barrel export
@@ -9,7 +11,11 @@ export {Overlay} from './Overlay';
 export type {OverlayProps} from './Overlay';
 
 export {useOverlay} from './useOverlay';
-export type {UseOverlayOptions, UseOverlayResult} from './useOverlay';
+export type {
+  UseOverlayOptions,
+  UseOverlayResult,
+  OverlayContainerProps,
+} from './useOverlay';
 
 export type {
   OverlayScrimMode,
@@ -31,6 +37,7 @@ export {
 } from '.';
 export type {
   OverlayAlign as XDSOverlayAlign,
+  OverlayContainerProps as XDSOverlayContainerProps,
   OverlayPosition as XDSOverlayPosition,
   OverlayProps as XDSOverlayProps,
   OverlayScrimMode as XDSOverlayScrimMode,

@@ -17,12 +17,12 @@
 
 import type {ReactNode, Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {mergeProps, mergeRefs} from '../utils';
 import {useOverlay} from './useOverlay';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {overlayScope, overlayContainerStyles} from './overlay.markers.stylex';
 import {xdsThemeProps} from '../utils/xdsThemeProps';
+import type {BaseProps} from '../BaseProps';
 import type {
   OverlayScrimMode,
   OverlayPosition,
@@ -30,7 +30,10 @@ import type {
   OverlayShowOn,
 } from './OverlayScrim';
 
-export interface OverlayProps {
+export interface OverlayProps extends Pick<
+  BaseProps<HTMLDivElement>,
+  'xstyle' | 'className' | 'style'
+> {
   /** Ref forwarded to the container element. */
   ref?: Ref<HTMLDivElement>;
   /** Base content (image, card, video, etc.). */
@@ -47,21 +50,6 @@ export interface OverlayProps {
   position?: OverlayPosition;
   /** @default "end" */
   align?: OverlayAlign;
-  /**
-   * StyleX styles for layout customization (margins, positioning, sizing).
-   * Must be a `stylex.create()` value — not an inline style object.
-   *
-   * @example
-   * ```
-   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
-   * <Overlay xstyle={styles.wrapper} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /** CSS class name(s) appended to the root element. */
-  className?: string;
-  /** Inline styles. */
-  style?: React.CSSProperties;
 }
 
 /**
