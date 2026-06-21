@@ -1,17 +1,55 @@
 # @xds/cli
 
-# Unreleased
+# 0.0.15
+
+#### Breaking Changes
+
+- **New `xds upgrade` codemods** — This release ships codemods for the menu/selector `children` → `endContent` move (`migrate-item-children-to-endcontent`) and the selector function-children → `renderOption` move (`migrate-selector-children-to-render-option`). An optional `migrate-theme-selectors-to-data-attrs` codemod helps theme authors move off legacy bare variant classes. (#2954, #2944)
+
+#### Upgrade
+
+```bash
+npx xds upgrade --apply
+```
+
+#### New Features
+
+- **CLI exit-code policy** — Every user-visible error now exits with code 1 in both human and `--json` modes (previously several command-layer errors printed a message but exited 0, invisible to CI scripts and AI agents). `xds bogus-cmd`, `xds theme bogus-subcommand`, the bare `theme` group with an unknown subcommand, and "command not found"/"did you mean…" paths all exit 1. Help, version, and bare-list invocations still exit 0. Introduces `lib/cli-error.mjs` as the canonical exit-code helper.
+- **Migration guide** — Added an explicit guide for moving existing Tailwind, shadcn, and Radix applications to XDS incrementally.
+- **Data-attribute selector docs** — Documented the data-attribute selector surface in CLI docs alongside the core dual-emit change.
 
 #### Fixes
 
-- **`--json` contract enforcement** — Commands that don't support `--json` now reject the flag in a `preAction` hook _before_ running any side effects. Previously `xds init --json` would create files (e.g. `.claude/CLAUDE.md`) and _then_ emit the unsupported-output error, leaving partial state behind.
-- **`--json` envelope shape documented** — Success responses are `{ type, data }`. Error responses are `{ error, suggestions? }`. The `--json` help text now describes both.
-- **`xds --version --json`** — Now emits `{ type: 'version', data: { version } }` instead of plain text.
-- **`xds --json` (no subcommand)** — Now emits `{ type: 'help', data: { commands, jsonSupported, ... } }` instead of human help text.
-- **`xds upgrade --json`** — The "already up to date" path now emits `{ type: 'upgrade.status', data: { status: 'up_to_date', ... } }`. The "no codemods in version range" path emits `{ type: 'upgrade.status', data: { status: 'no_codemods', ... } }`. The codemod runner is now silent under `--json` so prompts and progress lines no longer corrupt stdout.
-- **`xds discover --json`** — When no packages are configured, the response now includes `meta: { configured: false }` so consumers can distinguish "configured but empty" from "not configured".
-- **`xds gap-report --json`** — Without `--component`/`--category`/`--reason`, returns a structured error instead of starting an interactive prompt. The "gh CLI missing" path also emits a JSON error.
-- **`xds theme --json`** — The `theme` parent command (without a subcommand) now rejects `--json` cleanly. `theme build --json` continues to work.
+- **`--json` on Commander short-circuits** — `--json` now honored on parse errors and `--help`. A new shim wires `exitOverride()` and a JSON-aware `configureOutput` onto every command and patches `outputHelp` to emit a `{apiVersion, type:'help', data}` envelope under `--json`. Parse errors produce `{apiVersion, error}` on stdout with exit 1; unknown subcommands now error instead of silently emitting help with exit 0; `--detail` is choice-validated. Non-`--json` invocations are unchanged.
+- **`--json` contract enforcement** — Commands that don't support `--json` reject the flag in a `preAction` hook _before_ running side effects, so `xds init --json` no longer creates files and _then_ errors, leaving partial state behind.
+- **`--json` envelope documented** — Success responses are `{ type, data }`; error responses are `{ error, suggestions? }`. The `--json` help text describes both.
+- **`xds --version --json`** — Emits `{ type: 'version', data: { version } }` instead of plain text.
+- **`xds --json` (no subcommand)** — Emits `{ type: 'help', data: { commands, jsonSupported, ... } }` instead of human help text.
+- **`xds upgrade --json`** — "Already up to date" and "no codemods in version range" paths emit structured `{ type: 'upgrade.status', ... }` envelopes. The codemod runner is silent under `--json` so prompts and progress lines no longer corrupt stdout.
+- **`xds discover --json`** — Includes `meta: { configured: false }` when no packages are configured, distinguishing "configured but empty" from "not configured".
+- **`xds gap-report --json`** — Returns a structured error instead of starting an interactive prompt when required flags are missing; the "gh CLI missing" path also emits a JSON error.
+- **`xds theme --json`** — The `theme` parent command (without a subcommand) rejects `--json` cleanly; `theme build --json` continues to work.
+- **Theme CSS prose regression** — `xds theme build` now uses a single CSS generation path (`@xds/core`'s generator) and treats a failed `@xds/core/theme` import as a hard build error instead of a silent fallback, fixing the docsite Markdown typography regression after the XDS-prefix migration. (#2964)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @czarandy
+- @ejhammond
+- @ernestt
+- @imdreamrunner
+- @josephfarina
+- @kentonquatman
+- @lexs
+- @marie-lucas
+- @nynexman4464
+- @rubyycheung
+- @thedjpetersen
+- @zurfyx
+
+---
 
 # 0.0.14
 

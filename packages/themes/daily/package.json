@@ -1,6 +1,6 @@
 {
   "name": "@xds/theme-daily",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "private": false,
   "description": "Daily theme for XDS — warm, productivity-focused palette with Lucide icon set",
   "author": "Meta Open Source",
@@ -51,11 +51,11 @@
     "lucide-react": "^1.18.0"
   },
   "peerDependencies": {
-    "@xds/core": "0.0.14",
+    "@xds/core": "0.0.15",
     "react": ">=19"
   },
   "devDependencies": {
-    "@xds/cli": "0.0.14"
+    "@xds/cli": "0.0.15"
   },
   "module": "./dist/source.mjs"
 }

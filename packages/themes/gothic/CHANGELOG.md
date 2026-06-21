@@ -1,4 +1,4 @@
-# @xds/theme-daily
+# @xds/theme-gothic
 
 ## 0.0.15
 
@@ -26,14 +26,3 @@
 - Updated dependencies [d0deec3]
 - Updated dependencies [52ae8f5]
   - @xds/core@0.0.15
-
-# 0.0.13
-
-#### Changes
-
-- Fleshed out with complete token set and component overrides (#1802)
-
-#### Patch Changes
-
-- Updated dependencies
-  - @xds/core@0.0.13

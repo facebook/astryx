@@ -1,9 +1,9 @@
 {
   "name": "@xds/theme-chocolate",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "displayName": "Chocolate Theme",
   "private": false,
-  "description": "Warm chocolate theme for XDS \u2014 rich brown palette with Fraunces headings, Albert Sans body, and Lucide icons",
+  "description": "Warm chocolate theme for XDS — rich brown palette with Fraunces headings, Albert Sans body, and Lucide icons",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebookexperimental/xds#readme",
@@ -52,11 +52,11 @@
     "lucide-react": "^1.18.0"
   },
   "peerDependencies": {
-    "@xds/core": "0.0.14",
+    "@xds/core": "0.0.15",
     "react": ">=19"
   },
   "devDependencies": {
-    "@xds/cli": "0.0.14"
+    "@xds/cli": "0.0.15"
   },
   "module": "./dist/source.mjs"
 }

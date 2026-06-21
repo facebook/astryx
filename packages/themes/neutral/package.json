@@ -1,6 +1,6 @@
 {
   "name": "@xds/theme-neutral",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "displayName": "Neutral Theme",
   "private": false,
   "description": "Restrained warm grays. Minimal and quiet, so the content stays the focus.",
@@ -52,11 +52,11 @@
     "lucide-react": "^1.18.0"
   },
   "peerDependencies": {
-    "@xds/core": "0.0.14",
+    "@xds/core": "0.0.15",
     "react": ">=19"
   },
   "devDependencies": {
-    "@xds/cli": "0.0.14"
+    "@xds/cli": "0.0.15"
   },
   "module": "./dist/source.mjs"
 }

@@ -1,5 +1,69 @@
 # @xds/core
 
+# 0.0.15
+
+#### Breaking Changes
+
+- **Menu/Selector trailing content: `children` → `endContent`** — `XDSDropdownMenuItem`, `XDSContextMenuItem`, and `XDSSelectorOption` now use `endContent` for trailing badges, status icons, shortcuts, and other end-aligned content. The previous trailing-content `children` prop has been removed. (#2954)
+  **Codemod:** `npx xds upgrade --codemod migrate-item-children-to-endcontent`
+- **Selector custom rendering: function-children → `renderOption`** — `XDSSelector` and `XDSMultiSelector` now use the `renderOption` prop for custom option rendering. The previous function-as-children option renderer has been removed. (#2944)
+  **Codemod:** `npx xds upgrade --codemod migrate-selector-children-to-render-option`
+- **CheckboxList loading is now per-item** — The group-level `isLoading` prop on `XDSCheckboxList` (which dimmed every item) is removed in favor of an `isLoading` prop on `XDSCheckboxListItem`. In collection mode the toggled item shows its spinner automatically while its `changeAction` promise is pending.
+
+#### Upgrade
+
+```bash
+npx xds upgrade --apply
+```
+
+This runs the release codemods (including `migrate-item-children-to-endcontent` and `migrate-selector-children-to-render-option`) in sequence. The data-attribute selector migration (`migrate-theme-selectors-to-data-attrs`) is available as an optional codemod for theme authors who want to move off legacy bare variant classes.
+
+#### New Features
+
+- **Field `width` prop** — Field-based components accept a `width` (`SizeValue`) applied to the outer `XDSField` container, so label, control, and status size together and stay aligned. Additive and backward compatible. Affects `XDSTextInput`, `XDSTextArea`, `XDSNumberInput`, `XDSDateInput`, `XDSDateRangeInput`, `XDSDateTimeInput`, `XDSTimeInput`, `XDSFileInput`, `XDSSelector`, `XDSMultiSelector`, `XDSTypeahead`, `XDSTokenizer`, `XDSSlider`, `XDSCheckboxInput`, `XDSCheckboxList`, `XDSRadioList`, `XDSSwitch`, and `XDSField` itself. (#2755)
+- **Markdown `autolink="gfm"`** — `XDSMarkdown` gains an opt-in `autolink` prop enabling GitHub-Flavored Markdown autolink-literal rules (bare `https?://…`, `www.…`, `<scheme:url>`, `<email>`, `user@host`), with code spans, existing links, and image alt text skipped. Also exposed on `parseMarkdown`, `parseInline`, and `parseMarkdownIncremental` via a new `ParseOptions` argument; the existing positional signature is preserved. Default behavior unchanged.
+- **Markdown `display="inline"`** — Render inline markdown spans that inherit surrounding typography, for doc text and table cells that need formatting without block-level wrappers.
+- **Spinner `shade="inherit"`** — Paints the ring from the inherited `currentColor` (with a translucent track) so it always matches the parent's resolved foreground regardless of theme or variant.
+- **CheckboxList per-item loading** — A loading `XDSCheckboxListItem` renders a spinner inside its checkbox and blocks interaction on that item only.
+- **Tab `isLabelHidden`** — Icon-only tabs omit empty label nodes so selected indicators align with the visible icon.
+
+#### Fixes
+
+- **Button/Spinner loading contrast** — Fix poor loading-spinner contrast on themed variants; the spinner now inherits the true variant foreground and the label hides correctly on destructive. (#2717)
+- **Spinner centering** — Fix `XDSSpinner` rendering off-center inside the icon-only `XDSButton` loading state at fractional device pixel ratios; loading overlay and wrapper use `display: grid` + `place-items: center`.
+- **ChatComposer caret** — `XDSChatComposerInput` preserves the caret when the parent updates the controlled `value`, fixing the caret jumping to offset 0 after slash-command picks.
+- **Icon slots** — `renderIconSlot` renders semantic icon-name strings through `XDSIcon`; new `getIconRegistry()` lets tooling derive icon-name options from the same registry.
+- **CommandPalette inline scroll** — `XDSCommandPaletteItem` no longer scrolls highlighted items into view on initial mount inside an inline dialog, preventing doc-page scroll jumps.
+- **Docsite autofocus** — `XDSDialogHeader` skips title autofocus inside `XDSDialog isInline`; `XDSCommandPaletteInput` reads the shared dialog inline context.
+- **HoverCard font** — Apply the theme body font token to XDS layer roots so portaled HoverCard content inherits the configured font family.
+- **Info status icon** — The default `info` status icon now uses a solid fill (matching `success`/`error`/`warning`) for better visibility at small sizes.
+- **List/Item density** — Align `XDSItem` with list-like APIs (`compact`/`balanced`/`spacious` density, `startContent`/`endContent` slots) and pass `XDSListItem` density through directly, fixing `balanced`/`spacious` collapsing to the same padding.
+- **Markdown loose lists** — Join blank-line-separated same-style list items into a single loose list (CommonMark §5.3) and forward a non-default `start` onto the rendered `<ol>` for assistive tech and copy-paste.
+- **Theme CSS prose regression** — Fix built theme CSS that broke Markdown typography in the docsite (headings lost block margins) after the XDS-prefix migration. `xds theme build` now uses a single CSS generation path (`@xds/core`'s generator) and a failed `@xds/core/theme` import is a hard build error instead of a silent fallback. (#2964)
+- **Data-attribute selectors** — Dual-emit data attributes for visual prop/state selector reflection while preserving legacy bare variant classes.
+- **Toast barrel export** — Export `XDSToast` and its props from the `@xds/core` barrel so docsite playground previews resolve Toast examples.
+- **Typeahead id-less rows** — `XDSBaseTypeahead` uses a shared key fallback for search results without `id` values, so id-less rows no longer all render as selected.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @czarandy
+- @ejhammond
+- @ernestt
+- @imdreamrunner
+- @josephfarina
+- @kentonquatman
+- @lexs
+- @marie-lucas
+- @nynexman4464
+- @rubyycheung
+- @thedjpetersen
+- @zurfyx
+
+---
+
 # 0.0.14
 
 #### Breaking Changes

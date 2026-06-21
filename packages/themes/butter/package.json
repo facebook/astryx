@@ -1,6 +1,6 @@
 {
   "name": "@xds/theme-butter",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "displayName": "Butter Theme",
   "private": false,
   "description": "Warm, creamy yellows with a friendly blue accent. Playful enough for consumer surfaces, soft enough to stay readable.",
@@ -52,11 +52,11 @@
     "lucide-react": "^1.18.0"
   },
   "peerDependencies": {
-    "@xds/core": "0.0.14",
+    "@xds/core": "0.0.15",
     "react": ">=19"
   },
   "devDependencies": {
-    "@xds/cli": "0.0.14"
+    "@xds/cli": "0.0.15"
   },
   "module": "./dist/source.mjs"
 }

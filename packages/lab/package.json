@@ -1,6 +1,6 @@
 {
   "name": "@xds/lab",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "private": true,
   "description": "Experimental XDS components — not published, available in storybook and sandbox for testing",
   "author": "Meta Open Source",
@@ -25,7 +25,7 @@
   "sideEffects": false,
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
-    "@xds/core": "0.0.14",
+    "@xds/core": "0.0.15",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0"
   },

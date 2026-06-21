@@ -1,6 +1,6 @@
 {
   "name": "@xds/theme-y2k",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "displayName": "Y2K Theme",
   "private": false,
   "description": "Hot pinks, lime greens, and Poppins. Bubbly, playful, and unmistakably retro.",
@@ -52,11 +52,11 @@
     "lucide-react": "^1.18.0"
   },
   "peerDependencies": {
-    "@xds/core": "0.0.14",
+    "@xds/core": "0.0.15",
     "react": ">=19"
   },
   "devDependencies": {
-    "@xds/cli": "0.0.14"
+    "@xds/cli": "0.0.15"
   },
   "module": "./dist/source.mjs"
 }
