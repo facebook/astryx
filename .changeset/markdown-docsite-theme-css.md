@@ -11,5 +11,6 @@ Fixes:
 
 - The Babel extension plugin rewrites compat self-re-exports (`'.'` / `'..'`) to `./index.js` / `../index.js`, so `@xds/core/theme` imports cleanly.
 - `xds theme build` now has a single CSS generation path — `@xds/core`'s generator, the same one the `<Theme>` runtime uses. The duplicated in-CLI generator (`generateCSS` / `generateProseCSS` / local `parseStyleKey` / `expandContainerPadding`) is removed, and a failed `@xds/core/theme` import is now a hard build error (`ERR_CORE_NOT_FOUND`) instead of a silent fallback. This guarantees the CLI and runtime can never emit divergent CSS.
+- The `theme build --no-prose` flag is removed. The runtime always emits prose element defaults, so allowing the build to omit them was another way for the CLI output to diverge from runtime. Prose defaults now always ship, in `@layer reset`.
 - Prose paragraph defaults use `--font-family-body` (was `--font-family-heading`).
 - Theme component pseudo-class selectors now apply to both `astryx-*` and legacy `xds-*` classes.

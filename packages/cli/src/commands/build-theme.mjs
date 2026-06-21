@@ -607,7 +607,6 @@ export function registerTheme(program) {
     .command('build <file>')
     .description('Compile a defineTheme file to CSS + JS')
     .option('-o, --out <path>', 'Output CSS file path')
-    .option('--no-prose', 'Skip prose mappings (h1, p, code, hr, etc.)')
     .action(async (file, options) => {
       const filePath = path.resolve(process.cwd(), file);
       const json = program.opts().json || false;
@@ -703,7 +702,11 @@ export function registerTheme(program) {
 
         const {component, prose} = _generateThemeRulesSplit(resolvedTheme);
         const cssParts = [];
-        if (options.prose !== false && prose.length > 0) {
+        // Prose element defaults always ship — the `<Theme>` runtime
+        // (generateThemeCSS) always emits them, so the build must too, or the
+        // CLI output would diverge from runtime. They go in @layer reset
+        // (zero-specificity :where()) so component/Markdown StyleX always wins.
+        if (prose.length > 0) {
           const proseInner = prose.join('\n\n');
           cssParts.push(
             `@layer reset {\n@scope (${scopeSelector}) to (${scopeTo}) {\n${proseInner}\n}\n}`,

@@ -12,7 +12,7 @@
  * regressions in the opposite direction.
  */
 
-import {describe, it, expect, beforeEach, afterEach} from 'vitest';
+import {describe, it, expect, beforeAll, beforeEach, afterEach} from 'vitest';
 import {execFileSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -21,6 +21,11 @@ import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CLI_BIN = path.resolve(__dirname, '../../bin/xds.mjs');
+const REPO_ROOT = path.resolve(__dirname, '../../../..');
+const CORE_THEME_ENTRY = path.join(
+  REPO_ROOT,
+  'packages/core/dist/theme/index.js',
+);
 
 function runCli(args, cwd) {
   try {
@@ -49,6 +54,19 @@ function writeTheme(dir, name) {
   );
   return file;
 }
+
+// `xds theme build` imports the compiled @xds/core/theme entry (there is no
+// in-CLI fallback generator). Build core once if it isn't already present so
+// the suite works in any CI job, regardless of job ordering.
+beforeAll(() => {
+  if (!fs.existsSync(CORE_THEME_ENTRY)) {
+    execFileSync('pnpm', ['-F', '@xds/core', 'build'], {
+      cwd: REPO_ROOT,
+      stdio: 'pipe',
+      timeout: 180_000,
+    });
+  }
+}, 200_000);
 
 let tmpDir;
 beforeEach(() => {
