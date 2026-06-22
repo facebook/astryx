@@ -26,6 +26,9 @@ const styles = stylex.create({
     width: '100%',
     paddingInline: spacingVars['--spacing-2'],
   },
+  mobileFooterLinks: {
+    maxWidth: 360,
+  },
   logo: {
     height: 18,
     width: 'auto',
@@ -58,7 +61,6 @@ const FOOTER_LINKS: ReadonlyArray<{
   {label: 'Templates', href: '/templates'},
   {label: 'Themes', href: '/themes'},
   {label: 'Playground', href: '/playground'},
-  {label: 'GitHub Pages', href: GITHUB_PAGES, isExternal: true},
 ];
 
 const SOCIAL_LINKS: ReadonlyArray<{
@@ -164,10 +166,15 @@ export function SiteFooter() {
     // stack the three regions vertically and let the link lists wrap.
     return (
       <Section role="contentinfo" padding={4}>
-        <VStack gap={4}>
-          <VStack gap={3} hAlign="start" xstyle={styles.footerLinks}>
+        <VStack gap={6}>
+          <VStack gap={6} hAlign="center" xstyle={styles.footerLinks}>
             {astryxLogo}
-            <HStack gap={4} wrap="wrap" align="center">
+            <HStack
+              gap={4}
+              wrap="wrap"
+              hAlign="center"
+              align="center"
+              xstyle={styles.mobileFooterLinks}>
               <NavLinks />
             </HStack>
             <HStack gap={2} wrap="wrap" align="center">
@@ -176,11 +183,11 @@ export function SiteFooter() {
           </VStack>
 
           <Card variant="muted">
-            <VStack gap={3} hAlign="start">
+            <VStack gap={3} hAlign="center">
               {metaOpenSourceLink}
-              <VStack gap={2} hAlign="start">
+              <HStack gap={4} hAlign="start" xstyle={styles.mobileFooterLinks}>
                 <LegalLinks />
-              </VStack>
+              </HStack>
               <Text type="supporting" color="secondary">
                 {copyright}
               </Text>
