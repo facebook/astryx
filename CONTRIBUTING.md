@@ -3,6 +3,7 @@
 For the full contribution process — what we accept, how to propose new components, and how API decisions are made — read the **[Contributing wiki](https://github.com/facebookexperimental/xds/wiki/Contributing)**.
 
 Key pages:
+
 - **[API Conventions](https://github.com/facebookexperimental/xds/wiki/API-Conventions)** — naming, prop patterns, composition rules (read before submitting an RFC)
 - **[Specification Protocol](https://github.com/facebookexperimental/xds/wiki/Component-Specification-Protocol)** — the 9-phase process for new components
 - **[API Arbitration](https://github.com/facebookexperimental/xds/wiki/API-Arbitration)** — how we resolve API design questions
@@ -288,36 +289,64 @@ src/Button/
 
 ## Versioning & Releases
 
-We use [Changesets](https://github.com/changesets/changesets) for versioning.
+We use [Changesets](https://github.com/changesets/changesets) for versioning, with a thin XDS layer on top so changelogs stay categorized, contributor-attributed, and aligned with our pre-1.0 conventions.
 
 ### Adding a Changeset
 
 When you make a change that should be released:
 
 ```bash
-pnpm changeset
+pnpm changeset:new
 ```
 
-Follow the prompts to:
+This wrapper:
 
-1. Select changed packages
-2. Choose bump type (patch/minor/major)
-3. Write a summary
+1. **Detects which packages you changed** from your git diff and pre-selects them — no hand-enumerating the frontmatter.
+2. **Asks for a category** (`breaking`, `component`, `feat`, `fix`, `perf`, `docs`, `chore`) — this drives changelog grouping, _not_ the semver bump.
+3. **Captures the contributor(s)** — defaults to your `gh`/git identity, so credit is recorded at authoring time (not reconstructed from the release bot's commit).
+4. **Forces a `patch` bump** while we're pre-1.0 (see below).
 
-This creates a file in `.changeset/` — commit it with your PR.
+It writes a normal `.changeset/<id>.md` — commit it with your PR. The body looks like:
+
+```md
+---
+'@xds/core': patch
+---
+
+[fix] Spinner inherits the variant foreground on themed buttons (#2717)
+@yourhandle
+```
+
+You can also pass everything as flags for non-interactive use:
+
+```bash
+pnpm changeset:new --category fix --summary "…" --pr 2717 --contributor yourhandle
+```
+
+> The bare `pnpm changeset` CLI still works, but you must follow the body
+> convention by hand (`[category]` first line + `@handle` line). CI
+> (`pnpm check:changesets`) rejects changesets missing a category or
+> contributor, or declaring a `minor`/`major` bump while pre-1.0.
 
 ### Version Bumps
 
-- **patch**: Bug fixes, no API changes
-- **minor**: New features, backward compatible
-- **major**: Breaking changes
+- **Pre-1.0 (current): always `patch`.** The Changesets CLI maps `minor` → 0.0.x → 0.1.0 and `major` → 1.0.0. While we're on 0.0.x we ship every change — features, fixes, and breaking changes alike — as a `patch`. Signal a breaking change with the `[breaking]` **category**, not a `major` bump. `pnpm changeset:new` enforces this; `pnpm check:changesets` is the CI backstop.
+- All publishable packages are a `fixed` group, so a single change co-bumps them to the same version. Only genuinely-affected packages get a changelog entry — the rest get a clean version-only bump.
+
+### How a release is cut
+
+```bash
+pnpm version-packages   # changeset version + scripts/format-changelogs.mjs
+```
+
+`format-changelogs.mjs` rewrites each just-bumped package CHANGELOG into the doc-site format (h1 version, `#### <Category>` sections in canonical order, and a `#### Contributors` section aggregated from the changeset `@handle`s). It's idempotent and has a `--check` mode for CI drift detection.
 
 ## Pull Request Guidelines
 
 1. Create a feature branch from `main`
 2. Make your changes with tests
 3. Run `pnpm test` and `pnpm lint`
-4. Add a changeset if needed: `pnpm changeset`
+4. Add a changeset if needed: `pnpm changeset:new`
 5. Open a PR with a clear description
 
 ## Code Style
@@ -350,7 +379,6 @@ You can also download the binary directly from
 `corepack enable && pnpm install` from a regular terminal first, then
 open the project in your IDE — `node_modules` is on the local filesystem
 and doesn't need network to use.
-
 
 ### Storybook Issues
 

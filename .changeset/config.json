@@ -1,14 +1,26 @@
 {
   "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
-  "changelog": "@changesets/cli/changelog",
+  "changelog": "./changelog.cjs",
   "commit": false,
-  "fixed": [],
+  "fixed": [
+    [
+      "@xds/build",
+      "@xds/cli",
+      "@xds/core",
+      "@xds/theme-butter",
+      "@xds/theme-chocolate",
+      "@xds/theme-daily",
+      "@xds/theme-default",
+      "@xds/theme-gothic",
+      "@xds/theme-matcha",
+      "@xds/theme-neutral",
+      "@xds/theme-stone",
+      "@xds/theme-y2k"
+    ]
+  ],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [
-    "@xds/storybook",
-    "@xds/sandbox"
-  ]
+  "ignore": ["@xds/storybook", "@xds/sandbox"]
 }

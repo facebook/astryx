@@ -36,6 +36,10 @@ export default tseslint.config(
       "**/internal/eslint-plugin-xds/**",
       ".github/scripts/**",
       "scripts/**",
+      // Changesets tooling (custom changelog module + config) is CommonJS
+      // build/release glue, not shipped source — keep it out of the TS/ESM
+      // lint pass (consistent with scripts/** above).
+      ".changeset/**",
       // .mjs is ignored everywhere EXCEPT the CLI package, whose runtime is
       // entirely .mjs. The negations below opt packages/cli back into linting
       // (see the dedicated CLI block lower down). Scoped to packages/cli on

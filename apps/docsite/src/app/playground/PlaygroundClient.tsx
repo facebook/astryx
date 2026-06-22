@@ -150,6 +150,10 @@ const s = stylex.create({
   hidden: {
     display: 'none',
   },
+  targetingActive: {
+    backgroundColor: 'var(--color-background-blue)',
+    color: 'var(--color-icon-blue)',
+  },
   shareInput: {
     width: 300,
   },
@@ -732,7 +736,7 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
               style={{display: 'block', color: 'var(--color-brand)'}}
             />
           }
-          heading="Playground"
+          heading="Home"
           headingHref="/"
           xstyle={s.sideNavHeading}
         />
@@ -741,7 +745,7 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
       xstyle={s.desktopCollapsedSideNav}>
       <SideNavSection title="Playground views" isHeaderHidden>
         <SideNavItem
-          label="Code"
+          label="Code Editor"
           icon={Code2}
           isSelected={activeView === 'code'}
           onClick={() => {
@@ -750,7 +754,7 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
           }}
         />
         <SideNavItem
-          label="Theme"
+          label="Theme Editor"
           icon={Palette}
           isSelected={activeView === 'theme'}
           onClick={() => {
@@ -786,10 +790,7 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
           xstyle={[s.leftPanel, !showEditorPanel && s.hidden]}
           width={isMobile ? '100%' : editorPanel.size || 440}>
           {!isMobile && (
-            <HStack
-              justify="between"
-              align="center"
-              xstyle={s.leftPanelHeader}>
+            <HStack justify="between" align="center" xstyle={s.leftPanelHeader}>
               <Heading level={3}>Playground</Heading>
               <HStack gap={2} align="center">
                 <DropdownMenu
@@ -866,6 +867,10 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                   size="md"
                   isIconOnly
                   icon={<Crosshair size={20} />}
+                  pressedIcon={
+                    <Crosshair size={20} color="var(--color-icon-blue)" />
+                  }
+                  xstyle={isTargeting ? s.targetingActive : undefined}
                 />
               }
               centerContent={
