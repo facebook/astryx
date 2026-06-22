@@ -116,7 +116,9 @@ const server = createServer(async (req, res) => {
 
     send(res, 404, 'text/plain', 'not found');
   } catch (e) {
-    send(res, 500, 'text/plain', String(e && e.stack ? e.stack : e));
+    // Log details server-side; don't leak stack traces to the client.
+    console.error('[xle-playground]', e);
+    send(res, 500, 'text/plain', 'Internal error — see the server console.');
   }
 });
 

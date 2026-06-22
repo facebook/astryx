@@ -521,7 +521,9 @@ export function parseOutline(source) {
       continue;
     }
 
-    const slotMatch = text.match(/^@?([a-z][A-Za-z0-9]*):(?:\s+(.*))?$/);
+    // Single `.*` capture (no `\s+(.*)` overlap) keeps this linear — the
+    // inline value, if any, is trimmed in code rather than by the regex.
+    const slotMatch = text.match(/^@?([a-z][A-Za-z0-9]*):(.*)$/);
     if (slotMatch && !text.startsWith('http')) {
       if (!parent.node) {
         throw new XLEParseError(
@@ -530,8 +532,9 @@ export function parseOutline(source) {
       }
       const slot = {kind: 'slot', key: slotMatch[1], value: {subexpr: []}, line: lineNo, col: indent + 1};
       parent.node.slots.push(slot);
-      if (slotMatch[2]) {
-        const {head, tail} = parseOutlineChain(slotMatch[2], lineNo);
+      const inline = slotMatch[2].trim();
+      if (inline) {
+        const {head, tail} = parseOutlineChain(inline, lineNo);
         slot.value.subexpr.push(head);
         stack.push({indent, container: tail.children, node: tail});
       } else {
