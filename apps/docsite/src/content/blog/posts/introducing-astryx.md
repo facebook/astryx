@@ -20,7 +20,7 @@ Open source is how the best ideas in our industry travel. The tools we reach for
 
 We're excited to introduce Astryx by Meta, an open source design system that's AI fluent and fully customizable without dependencies. It's a complete, production-ready (and growing) toolkit with 150+ accessible components, brand-level theming, dark mode, ready-to-ship templates, and a CLI – all as one cohesive system, built on React and StyleX.
 
-Astryx isn't new. It's matured within Meta for the last eight years and powers over 13,000 apps, shaped by the designers, engineers, and product teams who depend on it every day. What's new is that it's now yours, too.
+Astryx has matured within Meta for the last eight years and powers over 13,000 apps. It's shaped by the designers, engineers, and product teams who depend on it every day and now, it's yours, too.
 
 ## Start anywhere, change anything, and ship faster
 
@@ -32,4 +32,4 @@ Astryx is built to end that trade-off. The system controls behavior, accessibili
 
 The way we build software is changing, and Astryx is designed for people and the agents building alongside them. Design systems have historically been designed for human consumption but as more code is written by agents, we have to rethink how design systems are structured and the role that they play. Astryx was built ground-up to be AI-operable, opposed to retrofitting existing design systems to play nicely with agent behaviors. It's an open source design system built for how we build in this new world.
 
-Astryx is in Beta and ready for you to build with today. Try it out at [astryxdesign.com](https://astryxdesign.com) and on [GitHub](https://github.com/facebookexperimental/xds).
+Astryx is in Beta and ready for you to build with today. Try it out at [Astryx Design](TODO_ASTRYX_DESIGN_URL) and on [GitHub](https://github.com/facebook/astryx).
