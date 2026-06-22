@@ -86,38 +86,38 @@ export const y2kTheme = defineTheme({
     // =========================================================================
 
     // Core semantic — neutral H=75 C=8 (cream)
-    '--color-accent': ['#2d241b', '#fbefe2'],
-    '--color-accent-muted': ['#2d241b14', '#fbefe220'],
-    '--color-neutral': ['#2d241b10', '#fbefe21A'],
-    '--color-background-surface': ['#FFFFFF', '#221a10'],
-    '--color-background-body': ['#CCCFFA', '#190f00'],
-    '--color-overlay': ['#2d241b80', '#2d241bCC'],
-    '--color-overlay-hover': ['#2d241b0D', '#fbefe20D'],
-    '--color-overlay-pressed': ['#2d241b1A', '#fbefe21A'],
-    '--color-background-muted': ['#ede0d4', '#2d241b'],
+    '--color-accent': ['#2d241b', '#EDEFFC'],
+    '--color-accent-muted': ['#2d241b14', '#EDEFFC20'],
+    '--color-neutral': ['#2d241b10', '#EDEFFC1A'],
+    '--color-background-surface': ['#FFFFFF', '#16182b'],
+    '--color-background-body': ['#CCCFFA', '#0e0f1a'],
+    '--color-overlay': ['#2d241b80', '#0a0b14CC'],
+    '--color-overlay-hover': ['#2d241b0D', '#EDEFFC0D'],
+    '--color-overlay-pressed': ['#2d241b1A', '#EDEFFC1A'],
+    '--color-background-muted': ['#ede0d4', '#1f2238'],
 
     // Text — neutral H=75 (cream)
-    '--color-text-primary': ['#2d241b', '#fbefe2'],
-    '--color-text-secondary': ['#675d52', '#a79c90'],
-    '--color-text-disabled': ['#d1c5b8', '#5b5146'],
-    '--color-text-accent': ['#2d241b', '#fbefe2'],
+    '--color-text-primary': ['#2d241b', '#EDEFFC'],
+    '--color-text-secondary': ['#675d52', '#a6acd6'],
+    '--color-text-disabled': ['#d1c5b8', '#4a4f6b'],
+    '--color-text-accent': ['#2d241b', '#EDEFFC'],
     '--color-on-dark': '#FFFFFF',
     '--color-on-light': '#2d241b',
-    '--color-on-accent': ['#FFFFFF', '#2d241b'],
+    '--color-on-accent': ['#FFFFFF', '#16182b'],
     '--color-on-success': ['#3a5500', '#1e3200'],
     '--color-on-error': ['#8b1d24', '#5c0008'],
     '--color-on-warning': ['#614400', '#3f2600'],
 
     // Icon — neutral H=75 (cream)
-    '--color-icon-accent': ['#2d241b', '#fbefe2'],
-    '--color-icon-primary': ['#2d241b', '#fbefe2'],
-    '--color-icon-secondary': ['#675d52', '#a79c90'],
-    '--color-icon-disabled': ['#d1c5b8', '#5b5146'],
+    '--color-icon-accent': ['#2d241b', '#EDEFFC'],
+    '--color-icon-primary': ['#2d241b', '#EDEFFC'],
+    '--color-icon-secondary': ['#675d52', '#a6acd6'],
+    '--color-icon-disabled': ['#d1c5b8', '#4a4f6b'],
 
     // Surface variants — white cards, cream body
-    '--color-background-card': ['#FFFFFF', '#221a10'],
-    '--color-background-popover': ['#FFFFFF', '#2d241b'],
-    '--color-background-inverted': ['#2d241b', '#fbefe2'],
+    '--color-background-card': ['#FFFFFF', '#16182b'],
+    '--color-background-popover': ['#FFFFFF', '#1f2238'],
+    '--color-background-inverted': ['#2d241b', '#EDEFFC'],
 
     // Status / Sentiment — same in light and dark
     '--color-success': ['#C5E17A', '#C5E17A'],
@@ -129,13 +129,13 @@ export const y2kTheme = defineTheme({
 
     // Bold charcoal borders in light mode (default + card) for the heavy-outline
     // Y2K look. Dark mode unchanged.
-    '--color-border': ['#2F292E', '#fbefe21A'],
-    '--color-border-emphasized': ['#2F292E', '#5b5146'],
+    '--color-border': ['#2F292E', '#EDEFFC1A'],
+    '--color-border-emphasized': ['#2F292E', '#3a3f5e'],
 
     // Effects
-    '--color-skeleton': ['#d1c5b8', '#5b5146'],
+    '--color-skeleton': ['#d1c5b8', '#2a2e47'],
     '--color-shadow': ['#2d241b1A', '#0000004D'],
-    '--color-tint-hover': ['#2d241b', '#fbefe2'],
+    '--color-tint-hover': ['#2d241b', '#EDEFFC'],
 
     // Typography override
     '--text-supporting-size': '12px',
