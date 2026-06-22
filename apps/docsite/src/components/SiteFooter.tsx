@@ -193,7 +193,7 @@ export function SiteFooter() {
 
   return (
     <Section role="contentinfo" padding={4}>
-      <VStack gap={4}>
+      <VStack gap={3}>
         <Grid columns={5} xstyle={styles.footerLinks} align="center">
           {astryxLogo}
           <GridSpan columns={3}>
@@ -206,7 +206,7 @@ export function SiteFooter() {
           </HStack>
         </Grid>
 
-        <Card variant="muted">
+        <Card variant="muted" padding={3}>
           <Grid columns={4} align="center">
             {metaOpenSourceLink}
             <GridSpan columns={2}>
