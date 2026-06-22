@@ -43,10 +43,7 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {useTriggerMenu} from './useTriggerMenu';
-import {
-  useChatComposerTokens,
-  isCustomToken,
-} from './useChatComposerTokens';
+import {useChatComposerTokens, isCustomToken} from './useChatComposerTokens';
 import {ensureCaretInside, insertTextAtCursor} from './chatComposerSelection';
 import {ChatPastedTextToken} from './ChatPastedTextToken';
 import {
@@ -322,6 +319,14 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
   // a later external set back to the same string is never
   // incorrectly skipped.
   const pendingEchoValueRef = useRef<string | undefined>(undefined);
+  // Set once the mount-time sync has run; gates the one-shot adoption of
+  // content already present in the field (see the sync effect below).
+  const didInitRef = useRef(false);
+  // Latest `onChange` in a ref so the mount-time adoption can call it without
+  // adding `onChange` to the sync effect's deps -- that would re-run the effect
+  // on every parent render and risk clobbering in-flight input.
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   // Stable refs for imperative handle callbacks (avoid re-creating handle on every render)
   const insertTokenRef = useRef<
@@ -351,6 +356,24 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     if (controlledValue === undefined || !editableRef.current) {
       return;
     }
+    const editable = editableRef.current;
+    // First mount sync: adopt content already in the field that the controlled
+    // value hasn't captured -- e.g. text typed into the server-rendered
+    // composer before hydration attached `onChange`, or browser autofill.
+    // Hand it to the parent via `onChange` so it becomes the controlled value,
+    // instead of the resync below wiping it. Mount-only: afterwards an empty
+    // `controlledValue` against a non-empty field is a deliberate external
+    // clear, which must still apply.
+    if (!didInitRef.current) {
+      didInitRef.current = true;
+      const existing = serialize(editable);
+      if (existing !== '' && existing !== controlledValue) {
+        pendingEchoValueRef.current = existing;
+        setIsEmpty(false);
+        onChangeRef.current?.(existing);
+        return;
+      }
+    }
     // Skip exactly one echo of our most recent `onChange` emission:
     // the DOM is already authoritative for that value, and the user
     // may have typed more characters between the emit and this
@@ -360,7 +383,6 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
       pendingEchoValueRef.current = undefined;
       return;
     }
-    const editable = editableRef.current;
     if (serialize(editable) !== controlledValue) {
       // Genuine external override — invalidate any stale pending
       // echo before we rewrite the DOM.
@@ -637,6 +659,7 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         aria-label={label}
         contentEditable={!isDisabled}
         suppressContentEditableWarning
+        suppressHydrationWarning
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
@@ -680,11 +703,7 @@ ChatComposerInput.displayName = 'ChatComposerInput';
 // Token element helper (for custom rendering in stories/consumers)
 // =============================================================================
 
-export function ChatComposerTokenElement({
-  token,
-}: {
-  token: ChatComposerToken;
-}) {
+export function ChatComposerTokenElement({token}: {token: ChatComposerToken}) {
   return (
     <span
       data-astryx-token=""
@@ -694,11 +713,7 @@ export function ChatComposerTokenElement({
       {isCustomToken(token) ? (
         token.render()
       ) : (
-        <Badge
-          label={token.label}
-          variant={token.variant}
-          icon={token.icon}
-        />
+        <Badge label={token.label} variant={token.variant} icon={token.icon} />
       )}
     </span>
   );

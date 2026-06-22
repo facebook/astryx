@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi, afterEach} from 'vitest';
+import {useLayoutEffect, useRef} from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {ChatComposerInput} from './ChatComposerInput';
 import type {
@@ -220,6 +221,36 @@ describe('ChatComposerInput', () => {
       rerender(<ChatComposerInput value="hello" onChange={onChange} />);
       expect(textbox.textContent).toBe('hello');
     });
+
+    it('adopts field content present at mount instead of wiping it', () => {
+      // The mount sync must adopt content already in the field -- e.g. text
+      // typed into the server-rendered composer before hydration attached
+      // `onChange`, or browser autofill -- by emitting it via `onChange`, not
+      // wiping it. Seed the field from a parent layout effect, which runs
+      // before the composer's passive sync effect, to mimic that pre-existing
+      // content.
+      const onChange = vi.fn();
+      function Harness() {
+        const hostRef = useRef<HTMLDivElement>(null);
+        useLayoutEffect(() => {
+          const field = hostRef.current?.querySelector('[role="textbox"]');
+          if (field) {
+            field.textContent = 'typed before hydration';
+          }
+        }, []);
+        return (
+          <div ref={hostRef}>
+            <ChatComposerInput value="" onChange={onChange} />
+          </div>
+        );
+      }
+      render(<Harness />);
+
+      expect(onChange).toHaveBeenCalledWith('typed before hydration');
+      expect(screen.getByRole('textbox').textContent).toBe(
+        'typed before hydration',
+      );
+    });
   });
 
   describe('file handling', () => {
@@ -345,7 +376,9 @@ describe('ChatComposerInput', () => {
         },
       });
 
-      expect(textbox.querySelector('[data-astryx-token]')).not.toBeInTheDocument();
+      expect(
+        textbox.querySelector('[data-astryx-token]'),
+      ).not.toBeInTheDocument();
       expect(textbox.textContent).toBe(long);
     });
   });
