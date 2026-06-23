@@ -24,7 +24,6 @@ import {Section} from '@xds/core/Section';
 import {Badge} from '@xds/core/Badge';
 import {Breadcrumbs, BreadcrumbItem} from '@xds/core/Breadcrumbs';
 import {Divider} from '@xds/core/Divider';
-import {Link} from '@xds/core/Link';
 import {ClickableCard} from '@xds/core/ClickableCard';
 import type {BlogPost} from '../../lib/blog/schema';
 import {POST_TYPE_LABELS} from '../../lib/blog/schema';
