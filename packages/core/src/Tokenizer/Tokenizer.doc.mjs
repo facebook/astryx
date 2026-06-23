@@ -177,7 +177,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-tokenizer', visualProps: ['size']},
+      {className: 'astryx-tokenizer', visualProps: ['size']},
     ],
   },
   usage: {
@@ -366,7 +366,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-tokenizer', visualProps: ['size']},
+      {className: 'astryx-tokenizer', visualProps: ['size']},
     ],
   },
   usage: {

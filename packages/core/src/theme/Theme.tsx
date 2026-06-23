@@ -147,13 +147,13 @@ function useThemeStyleInjection(theme: DefinedTheme): void {
       document.head.appendChild(proseStyle);
     }
 
-    // Component overrides go into @layer xds-theme — above StyleX layers
+    // Component overrides go into @layer astryx-theme — above StyleX layers
     // so themes can intentionally restyle components.
     if (component) {
       const compStyle = document.createElement('style');
       compStyle.setAttribute(dataAttr('theme'), theme.name);
       compStyle.setAttribute(dataAttr('id'), id);
-      compStyle.textContent = `@layer xds-theme {\n${component}\n}`;
+      compStyle.textContent = `@layer astryx-theme {\n${component}\n}`;
       document.head.appendChild(compStyle);
     }
 

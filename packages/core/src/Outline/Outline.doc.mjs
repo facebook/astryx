@@ -29,8 +29,8 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-outline', visualProps: ['density']},
-      {className: 'xds-outline-item', visualProps: ['level'], states: ['active']},
+      {className: 'astryx-outline', visualProps: ['density']},
+      {className: 'astryx-outline-item', visualProps: ['level'], states: ['active']},
     ],
   },
   components: [
@@ -162,8 +162,8 @@ export const docsZh = {
   group: 'Outline',
   theming: {
     targets: [
-      {className: 'xds-outline', visualProps: ['density']},
-      {className: 'xds-outline-item', visualProps: ['level'], states: ['active']},
+      {className: 'astryx-outline', visualProps: ['density']},
+      {className: 'astryx-outline-item', visualProps: ['level'], states: ['active']},
     ],
   },
   components: [

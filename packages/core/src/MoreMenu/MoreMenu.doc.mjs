@@ -77,7 +77,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-more-menu'},
+      {className: 'astryx-more-menu'},
     ],
   },
   usage: {
@@ -154,7 +154,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-more-menu'},
+      {className: 'astryx-more-menu'},
     ],
   },
   usage: {

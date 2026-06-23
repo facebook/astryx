@@ -147,9 +147,9 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-typeahead', visualProps: ['status']},
-      {className: 'xds-typeahead-dropdown'},
-      {className: 'xds-typeahead-item'},
+      {className: 'astryx-typeahead', visualProps: ['status']},
+      {className: 'astryx-typeahead-dropdown'},
+      {className: 'astryx-typeahead-item'},
     ],
   },
   usage: {

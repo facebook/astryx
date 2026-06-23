@@ -33,7 +33,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      { className: 'xds-date-range-input', visualProps: ['size', 'status'] },
+      { className: 'astryx-date-range-input', visualProps: ['size', 'status'] },
     ],
   },
   usage: {

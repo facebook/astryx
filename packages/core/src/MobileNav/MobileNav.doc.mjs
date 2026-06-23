@@ -75,7 +75,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-mobile-nav', visualProps: ['side']},
+      {className: 'astryx-mobile-nav', visualProps: ['side']},
     ],
   },
   usage: {
@@ -136,7 +136,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-mobile-nav', visualProps: ['side']},
+      {className: 'astryx-mobile-nav', visualProps: ['side']},
     ],
   },
   usage: {

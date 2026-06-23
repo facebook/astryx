@@ -41,7 +41,7 @@ export const docs = {
     },
   ],  theming: {
     targets: [
-      {className: 'xds-spinner', visualProps: ['size', 'shade']},
+      {className: 'astryx-spinner', visualProps: ['size', 'shade']},
     ],
   },
   usage: {
@@ -93,7 +93,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-spinner', visualProps: ['size', 'shade']},
+      {className: 'astryx-spinner', visualProps: ['size', 'shade']},
     ],
   },
   usage: {

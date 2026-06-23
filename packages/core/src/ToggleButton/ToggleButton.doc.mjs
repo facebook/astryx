@@ -16,7 +16,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-toggle-button-group'},
+      {className: 'astryx-toggle-button-group'},
     ],
   },
   description: 'A button that toggles between pressed and unpressed states. Thin wrapper over Button with controlled toggle pattern, icon swap, and font weight emphasis.',

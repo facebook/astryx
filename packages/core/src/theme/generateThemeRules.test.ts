@@ -155,7 +155,7 @@ describe('generateThemeRules', () => {
     expect(h1Rule).toContain('var(--font-weight-semibold)');
     // Prose defaults intentionally carry NO block margins: reset.css zeroes
     // raw element margins and the Markdown/Heading components own their spacing
-    // via StyleX (@layer xds-base). Emitting margins here would re-introduce
+    // via StyleX (@layer astryx-base). Emitting margins here would re-introduce
     // the regression where prose defaults fought component spacing.
     expect(h1Rule).not.toContain('margin-block-start');
     expect(h1Rule).not.toContain('margin-block-end');

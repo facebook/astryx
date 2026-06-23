@@ -24,10 +24,10 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-base-table'},
-      {className: 'xds-table-row'},
-      {className: 'xds-table-cell'},
-      {className: 'xds-table-header-cell'},
+      {className: 'astryx-base-table'},
+      {className: 'astryx-table-row'},
+      {className: 'astryx-table-cell'},
+      {className: 'astryx-table-header-cell'},
     ],
   },
   description: 'Styled, data-driven table with density, dividers, hover highlight, striped rows, and named plugin support. T must extend Record<string, unknown>.',

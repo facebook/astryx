@@ -35,7 +35,7 @@ export const docs = {
     },
   ],
   theming: {
-    targets: [{className: 'xds-kbd'}],
+    targets: [{className: 'astryx-kbd'}],
   },
   usage: {
     description: 'Renders a keyboard shortcut as styled key badges. Use Kbd in tooltips, menus, and help text to show key combinations.',
@@ -79,7 +79,7 @@ export const docsZh = {
     },
   ],
   theming: {
-    targets: [{className: 'xds-kbd'}],
+    targets: [{className: 'astryx-kbd'}],
   },
   usage: {
     description: 'Renders a keyboard shortcut as styled key badges. Use Kbd in tooltips, menus, and help text to show key combinations.',

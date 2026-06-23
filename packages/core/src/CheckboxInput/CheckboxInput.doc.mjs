@@ -105,8 +105,8 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-checkbox-input', visualProps: ['size']},
-      {className: 'xds-checkbox'},
+      {className: 'astryx-checkbox-input', visualProps: ['size']},
+      {className: 'astryx-checkbox'},
     ],
   },
   usage: {
@@ -171,12 +171,12 @@ export const docsZh = {
   theming: {
     targets: [
       {
-        className: 'xds-checkbox-input',
+        className: 'astryx-checkbox-input',
         visualProps: [
           'size',
         ],
       },
-      {className: 'xds-checkbox'},
+      {className: 'astryx-checkbox'},
     ],
   },
 };

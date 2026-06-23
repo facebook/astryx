@@ -169,19 +169,19 @@ jobs:
 
           # Copy XDS dist CSS for the landing page
           mkdir -p deploy/assets
-          cp packages/core/dist/xds.css deploy/assets/xds.css
+          cp packages/core/dist/astryx.css deploy/assets/astryx.css
           cp packages/core/src/reset.css deploy/assets/reset.css
           cp packages/themes/default/dist/theme.css deploy/assets/theme.css
 
           cat > deploy/index.html << 'LANDING_EOF'
           <!DOCTYPE html>
-          <html lang="en" data-xds-theme="default">
+          <html lang="en" data-astryx-theme="default">
           <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Astryx Design System</title>
             <link rel="stylesheet" href="assets/reset.css">
-            <link rel="stylesheet" href="assets/xds.css">
+            <link rel="stylesheet" href="assets/astryx.css">
             <link rel="stylesheet" href="assets/theme.css">
             <style>
               body {

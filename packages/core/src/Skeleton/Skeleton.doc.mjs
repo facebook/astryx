@@ -35,7 +35,7 @@ export const docs = {
     },
   ],  theming: {
     targets: [
-      {className: 'xds-skeleton'},
+      {className: 'astryx-skeleton'},
     ],
   },
   usage: {
@@ -84,7 +84,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-skeleton'},
+      {className: 'astryx-skeleton'},
     ],
   },
   usage: {

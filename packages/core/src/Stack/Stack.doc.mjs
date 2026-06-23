@@ -10,8 +10,8 @@ export const docs = {
   keywords: ["stack","hstack","vstack","flexbox","flex","spacing","gap","horizontal","vertical","row","column"],
   theming: {
     targets: [
-      {className: 'xds-stack', visualProps: ['direction', 'gap', 'wrap']},
-      {className: 'xds-stack-item', visualProps: ['size']},
+      {className: 'astryx-stack', visualProps: ['direction', 'gap', 'wrap']},
+      {className: 'astryx-stack-item', visualProps: ['size']},
     ],
   },
   components: [
@@ -198,8 +198,8 @@ export const docsZh = {
   group: 'Layout',
   theming: {
     targets: [
-      {className: 'xds-stack', visualProps: ['direction', 'gap', 'wrap']},
-      {className: 'xds-stack-item', visualProps: ['size']},
+      {className: 'astryx-stack', visualProps: ['direction', 'gap', 'wrap']},
+      {className: 'astryx-stack-item', visualProps: ['size']},
     ],
   },
   components: [

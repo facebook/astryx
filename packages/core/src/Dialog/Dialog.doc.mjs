@@ -25,7 +25,7 @@ export const docs = {
   theming: {
     container: true,
     targets: [
-      {className: 'xds-dialog', visualProps: ['variant']},
+      {className: 'astryx-dialog', visualProps: ['variant']},
     ],
     vars: [
       {name: '--_dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)', private: true},

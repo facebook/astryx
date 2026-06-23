@@ -102,7 +102,7 @@ export interface ThemeCSSOutput {
   prose: string;
   /**
    * Token overrides + component .astryx-* overrides scoped to the theme.
-   * Should be injected into @layer xds-theme — above StyleX layers so
+   * Should be injected into @layer astryx-theme — above StyleX layers so
    * theme component overrides take effect. Empty string if no rules.
    */
   component: string;
@@ -412,7 +412,7 @@ function generateComponentRules(
  * Generate prose HTML element default rules (h1-h6, p, small, code, hr).
  * Wrapped in :where() for zero specificity — these are defaults that
  * any class-based style (StyleX, .astryx-* overrides) should beat.
- * The caller places these in the reset layer (not xds-theme) so they
+ * The caller places these in the reset layer (not astryx-theme) so they
  * sit below all component styles in the cascade.
  */
 function generateProseRules(
@@ -508,7 +508,7 @@ function generateColorOverrides(
  * belong in the reset layer so any class-based style wins.
  *
  * Component rules (tokens, .astryx-* overrides) are intentional theme overrides
- * that need to beat StyleX — they stay in xds-theme (above StyleX layers).
+ * that need to beat StyleX — they stay in astryx-theme (above StyleX layers).
  */
 export function generateThemeRulesSplit(theme: DefinedTheme): ThemeRulesSplit {
   const allRules = generateThemeRules(theme);
@@ -618,7 +618,7 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
  *
  * Returns two CSS blocks for injection into different layers:
  * - `prose`: @scope'd element defaults → inject into @layer reset
- * - `component`: @scope'd token + .astryx-* overrides → inject into @layer xds-theme
+ * - `component`: @scope'd token + .astryx-* overrides → inject into @layer astryx-theme
  *
  * This separation ensures prose defaults (what bare HTML looks like in a theme)
  * sit at reset-layer priority where any class-based style wins, while component

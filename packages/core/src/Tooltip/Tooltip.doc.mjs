@@ -94,7 +94,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-tooltip'},
+      {className: 'astryx-tooltip'},
     ],
   },
   usage: {
@@ -193,7 +193,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-tooltip'},
+      {className: 'astryx-tooltip'},
     ],
   },
   usage: {

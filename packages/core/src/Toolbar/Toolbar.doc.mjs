@@ -9,7 +9,7 @@ export const docs = {
   keywords: ['toolbar', 'nav', 'bar', 'actions', 'buttonbar', 'header', 'footer', 'action-bar', 'control-bar'],
   theming: {
     targets: [
-      {className: 'xds-toolbar', states: ['density']},
+      {className: 'astryx-toolbar', states: ['density']},
     ],
   },
   components: [

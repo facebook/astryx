@@ -10,8 +10,8 @@ export const docs = {
   keywords: ["dropdown","menu","popover","select","actions","contextmenu","overflow","kebab","menubutton"],
   theming: {
     targets: [
-      {className: 'xds-dropdown-menu'},
-      {className: 'xds-dropdown-menu-item'},
+      {className: 'astryx-dropdown-menu'},
+      {className: 'astryx-dropdown-menu-item'},
     ],
     vars: [
       {name: '--_dropdown-menu-radius', description: 'Border radius of the menu popup', default: 'var(--radius-element)', private: true},

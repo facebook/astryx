@@ -19,15 +19,15 @@ In `src/app/globals.css`, import the reset, component styles, and theme:
 
 ```css
 @import '@xds/core/reset.css';
-@import '@xds/core/xds.css';
+@import '@xds/core/astryx.css';
 @import '@xds/theme-default/theme.css';
 ```
 
 The CSS import order matters:
 
 1. `reset.css`: baseline resets (`@layer reset`)
-2. `xds.css`: all component styles (`@layer xds-base`)
-3. `theme.css`: theme token overrides (`@layer xds-theme`)
+2. `astryx.css`: all component styles (`@layer astryx-base`)
+3. `theme.css`: theme token overrides (`@layer astryx-theme`)
 
 Import the CSS file in your root layout:
 

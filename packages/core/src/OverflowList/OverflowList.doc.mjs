@@ -66,7 +66,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-overflow-list'},
+      {className: 'astryx-overflow-list'},
     ],
   },
   usage: {

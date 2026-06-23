@@ -126,7 +126,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-markdown', visualProps: ['density']},
+      {className: 'astryx-markdown', visualProps: ['density']},
     ],
   },
   usage: {
@@ -289,7 +289,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-markdown', visualProps: ['density']},
+      {className: 'astryx-markdown', visualProps: ['density']},
     ],
   },
   usage: {

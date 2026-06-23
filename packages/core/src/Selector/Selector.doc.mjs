@@ -21,8 +21,8 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-selector', visualProps: ['size', 'status']},
-      {className: 'xds-selector-option'},
+      {className: 'astryx-selector', visualProps: ['size', 'status']},
+      {className: 'astryx-selector-option'},
     ],
   },
   description: 'Dropdown selector for choosing from a list of options.',

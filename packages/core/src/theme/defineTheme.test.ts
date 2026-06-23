@@ -116,7 +116,7 @@ describe('generateThemeCSS', () => {
     expect(css).toContain('font-family: var(--font-family-heading)');
   });
 
-  it('splits prose into reset layer and components into xds-theme', () => {
+  it('splits prose into reset layer and components into astryx-theme', () => {
     const theme = defineTheme({
       name: 'split-test',
       components: {

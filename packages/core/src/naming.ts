@@ -25,8 +25,7 @@
  * - CSS classes: `.astryx-button` via {@link classPrefix} / {@link stableClassName}.
  * - data attributes: `data-astryx-*` via {@link dataAttrNamespace} / {@link dataAttr}.
  * - CSS custom properties: `--astryx-*` via {@link cssVarNamespace} / {@link cssVar}.
- * - CSS layers: `xds-base` / `xds-theme` (a CSS layer cannot be aliased; the
- *   layer names are renamed as a separate, coordinated step).
+ * - CSS layers: `astryx-base` / `astryx-theme`.
  *
  * SYNC: packages/core/src/utils/xdsThemeProps.ts (consumes classPrefix)
  * SYNC: packages/core/src/utils/parseStyleKey.ts

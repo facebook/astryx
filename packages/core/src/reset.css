@@ -22,10 +22,10 @@
  *
  * 2. Combine with base styles and theme:
  *    import '@xds/core/reset.css';        // @layer reset  — clean slate
- *    import '@xds/core/xds.css';           // @layer xds-base — component styles
- *    import '@xds/theme-default/theme.css'; // @layer xds-theme — theme overrides
+ *    import '@xds/core/astryx.css';        // @layer astryx-base — component styles
+ *    import '@xds/theme-default/theme.css'; // @layer astryx-theme — theme overrides
  *
- * Layer order: reset → xds-base → xds-theme
+ * Layer order: reset → astryx-base → astryx-theme
  * Consumer styles (unlayered) always override all XDS layers.
  * The reset has the lowest priority and can be overridden by any other layer.
  *

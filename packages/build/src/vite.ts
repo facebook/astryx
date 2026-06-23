@@ -60,7 +60,7 @@ export interface XDSVitePluginOptions {
    * CSS layer names for the split output.
    */
   layers?: {
-    /** Layer name for XDS library styles @default 'xds-base' */
+    /** Layer name for XDS library styles @default 'astryx-base' */
     library?: string;
     /** Layer name for product styles @default 'product' */
     product?: string;
@@ -103,7 +103,7 @@ export interface XDSVitePluginOptions {
  *
  * Handles:
  * - StyleX compilation with correct settings
- * - CSS layer ordering (reset < xds-base < xds-theme < product)
+ * - CSS layer ordering (reset < astryx-base < astryx-theme < product)
  * - resolve.alias for @xds/core source
  * - optimizeDeps.exclude to prevent Vite pre-bundling XDS
  *
@@ -128,7 +128,7 @@ export function xdsStylex(
     stylexOverrides = {},
   } = opts;
 
-  const libraryLayer = layers.library ?? 'xds-base';
+  const libraryLayer = layers.library ?? 'astryx-base';
   const productLayer = layers.product ?? 'product';
 
   // Build StyleX options with sensible defaults
@@ -174,7 +174,7 @@ export function xdsStylex(
       return [
         {
           tag: 'style',
-          children: `@layer reset, ${libraryLayer}, xds-theme, ${productLayer};`,
+          children: `@layer reset, ${libraryLayer}, astryx-theme, ${productLayer};`,
           injectTo: 'head-prepend',
         },
       ];
@@ -310,7 +310,7 @@ function xdsStylexLegacy(options: XDSVitePluginLegacyOptions): Plugin[] {
     layers = {},
   } = options;
 
-  const libraryLayer = layers.library ?? 'xds-base';
+  const libraryLayer = layers.library ?? 'astryx-base';
   const productLayer = layers.product ?? 'product';
 
   const xdsBabelPlugin = path.resolve(__dirname, 'babel.js');
@@ -341,7 +341,7 @@ function xdsStylexLegacy(options: XDSVitePluginLegacyOptions): Plugin[] {
       return [
         {
           tag: 'style',
-          children: `@layer reset, ${libraryLayer}, xds-theme, ${productLayer};`,
+          children: `@layer reset, ${libraryLayer}, astryx-theme, ${productLayer};`,
           injectTo: 'head-prepend',
         },
       ];

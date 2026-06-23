@@ -16,7 +16,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-hovercard'},
+      {className: 'astryx-hovercard'},
     ],
     vars: [
       {name: '--_hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)', private: true},
@@ -124,7 +124,7 @@ export const docsZh = {
   displayName: 'Hover Card',
   theming: {
     targets: [
-      {className: 'xds-hovercard'},
+      {className: 'astryx-hovercard'},
     ],
     vars: [
       {name: '--_hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)', private: true},

@@ -9,7 +9,7 @@
  * XDS library source and product code in two separate passes with
  * different class name prefixes, then outputs them in separate layers:
  *
- *   reset < xds-base (library, prefix: 'xds') < xds-theme < product (prefix: 'x')
+ *   reset < astryx-base (library, prefix: 'xds') < astryx-theme < product (prefix: 'x')
  *
  * The separate prefixes ensure atomic classes don't collide between
  * layers, which would break theme overrides.
@@ -78,7 +78,7 @@ function createPlugin() {
     appDir = 'src',
     babelPlugins = [],
     layers = {
-      library: 'xds-base',
+      library: 'astryx-base',
       product: 'product',
     },
     // Class name prefix for library styles (product keeps default 'x')

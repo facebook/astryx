@@ -16,7 +16,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-collapsible'},
+      {className: 'astryx-collapsible'},
     ],
   },
   description: 'A primitive that makes any content collapsible: a trigger button toggles visibility of the content area, managing its own state or deferring to a parent CollapsibleGroup.',

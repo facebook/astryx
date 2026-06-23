@@ -106,12 +106,12 @@ function measure(names, comps) {
     tG += s.gzip;
     tR += s.raw;
   }
-  const xdsCss = existsSync(join(DIST, 'xds.css')) ? gzSize(join(DIST, 'xds.css')) : {raw: 0, gzip: 0};
+  const astryxCss = existsSync(join(DIST, 'astryx.css')) ? gzSize(join(DIST, 'astryx.css')) : {raw: 0, gzip: 0};
   return {
     count: found.length, found,
     js: {gzip: tG, raw: tR, files: allDeps.size},
-    xdsCss,
-    total: {gzip: tG + xdsCss.gzip, raw: tR + xdsCss.raw},
+    astryxCss,
+    total: {gzip: tG + astryxCss.gzip, raw: tR + astryxCss.raw},
   };
 }
 
@@ -126,7 +126,7 @@ function printSet(label, r) {
   console.log(`${label} (${r.count} components)`);
   console.log('─'.repeat(65));
   console.log(`  JS:               ${pad(fmt(r.js.gzip), 10, 'right')}  (${r.js.files} files)`);
-  console.log(`  xds.css:          ${pad(fmt(r.xdsCss.gzip), 10, 'right')}`);
+  console.log(`  astryx.css:       ${pad(fmt(r.astryxCss.gzip), 10, 'right')}`);
   console.log(`  ${'─'.repeat(16)}`);
   console.log(`  Total shipped:    ${pad(fmt(r.total.gzip), 10, 'right')}`);
 }

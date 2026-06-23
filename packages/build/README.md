@@ -3,7 +3,7 @@
 Build plugins for XDS source builds. Provides babel, PostCSS, and Vite integrations that compile XDS library and product code with separate class name prefixes, which enables independent CSS layers:
 
 ```
-reset < xds-base (library, xds prefix) < xds-theme < product (app, x prefix)
+reset < astryx-base (library, xds prefix) < astryx-theme < product (app, x prefix)
 ```
 
 ## Why?
@@ -116,7 +116,7 @@ export default nextConfig;
 `src/app/layers.css`:
 
 ```css
-@layer reset, xds-base, xds-theme, product;
+@layer reset, astryx-base, astryx-theme, product;
 ```
 
 `src/app/globals.css`:
@@ -191,7 +191,7 @@ Library patterns (configurable):
 
 Compiles StyleX from both library and product source files in two separate passes with different prefixes. Wraps the results in named `@layer` blocks:
 
-- Library rules → `@layer xds-base`
+- Library rules → `@layer astryx-base`
 - Product rules → `@layer product`
 
 ### Vite plugin (`@xds/build/vite`)
@@ -235,7 +235,7 @@ Wraps `@stylexjs/unplugin` and intercepts the dev CSS endpoint (`/virtual:stylex
   libraryPrefix: 'xds',   // Prefix for library CSS (default: 'xds')
   extraInclude: [...],     // Additional glob patterns
   layers: {                // Layer names (defaults shown)
-    library: 'xds-base',
+    library: 'astryx-base',
     product: 'product',
   },
 }

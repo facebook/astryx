@@ -278,11 +278,11 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
     // Embedded template previews need a full-height chain so page roots sized
     // with min-height:100% (e.g. centered login pages) fill the frame instead of
     // collapsing to content height. The chain is html → body → Theme wrapper
-    // ([data-xds-theme]) → template root. Rendered inline (not in the layout
+    // ([data-astryx-theme]) → template root. Rendered inline (not in the layout
     // <head>) so it applies reliably in the embed context.
     return (
       <>
-        <style>{`html,body{height:100%}body>[data-xds-theme]{height:100%}`}</style>
+        <style>{`html,body{height:100%}body>[data-astryx-theme]{height:100%}`}</style>
         {children}
       </>
     );

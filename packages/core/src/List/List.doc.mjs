@@ -10,8 +10,8 @@ export const docs = {
   keywords: ["list","listitem","listbox","menu","collection","items","ul","navlist"],
   theming: {
     targets: [
-      {className: 'xds-list', visualProps: ['density', 'listStyle']},
-      {className: 'xds-list-item'},
+      {className: 'astryx-list', visualProps: ['density', 'listStyle']},
+      {className: 'astryx-list-item'},
     ],
   },
   description: 'List container with density, dividers, and header support.',

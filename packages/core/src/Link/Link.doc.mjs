@@ -15,7 +15,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-link', visualProps: ['color']},
+      {className: 'astryx-link', visualProps: ['color']},
     ],
   },
   components: [
@@ -142,7 +142,7 @@ export const docsZh = {
   displayName: 'Link',
   theming: {
     targets: [
-      {className: 'xds-link', visualProps: ['color']},
+      {className: 'astryx-link', visualProps: ['color']},
     ],
   },
   components: [

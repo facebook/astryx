@@ -23,7 +23,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-avatar-group', visualProps: ['size']},
+      {className: 'astryx-avatar-group', visualProps: ['size']},
     ],
   },
   description: 'Stacked avatar display with overlapping layout and optional overflow indicator. Children are Avatar elements.',

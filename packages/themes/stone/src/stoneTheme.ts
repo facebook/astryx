@@ -285,7 +285,7 @@ export const stoneTheme = defineTheme({
     },
 
     // StyleX paints the banner surface from @layer priority4 (above
-    // @layer xds-theme), so a direct backgroundColor override loses the
+    // @layer astryx-theme), so a direct backgroundColor override loses the
     // cascade. Redefine the muted token instead so StyleX's var() resolves
     // to the categorical bg in our scope.
     banner: {

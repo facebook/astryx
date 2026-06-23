@@ -11,14 +11,14 @@ This example uses StyleX's `useCSSLayers.before` option to declare XDS dist laye
 ```js
 // postcss.config.js
 useCSSLayers: {
-  before: ['reset', 'xds-base', 'xds-theme'],
+  before: ['reset', 'astryx-base', 'astryx-theme'],
 }
 ```
 
 This produces a layer order of:
 
 ```
-reset < xds-base < xds-theme < stylex.base < stylex.1 < stylex.2 < ...
+reset < astryx-base < astryx-theme < stylex.base < stylex.1 < stylex.2 < ...
 ```
 
 Product-level StyleX styles always win over XDS component defaults without needing `!important` or extra specificity.
@@ -27,7 +27,7 @@ Product-level StyleX styles always win over XDS component defaults without needi
 
 |                     | This example (dist + StyleX)                | Source build                                 |
 | ------------------- | ------------------------------------------- | -------------------------------------------- |
-| XDS CSS             | Pre-built via `@import "@xds/core/xds.css"` | Compiled from source via StyleX babel plugin |
+| XDS CSS             | Pre-built via `@import "@xds/core/astryx.css"` | Compiled from source via StyleX babel plugin |
 | PostCSS `include`   | `src/**/*` only (your code)                 | `src/**/*` + `node_modules/@xds/core/**/*`   |
 | StyleX `aliases`    | Not needed                                  | Required for `createTheme` resolution        |
 | `transpilePackages` | Not needed                                  | Required in next.config                      |
@@ -91,7 +91,7 @@ module.exports = {
         /* ... */
       },
       useCSSLayers: {
-        before: ['reset', 'xds-base', 'xds-theme'],
+        before: ['reset', 'astryx-base', 'astryx-theme'],
       },
     },
   },
@@ -104,7 +104,7 @@ module.exports = {
 
 ```css
 @import '@xds/core/reset.css';
-@import '@xds/core/xds.css';
+@import '@xds/core/astryx.css';
 @import '@xds/theme-default/theme.css';
 
 @stylex;

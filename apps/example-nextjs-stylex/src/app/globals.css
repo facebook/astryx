@@ -1,10 +1,10 @@
 /* Copyright (c) Meta Platforms, Inc. and affiliates. */
 
 @import "@xds/core/reset.css";
-@import "@xds/core/xds.css";
+@import "@xds/core/astryx.css";
 @import "@xds/theme-default/theme.css";
 
 /* StyleX app styles are injected here. The postcss plugin declares
-   reset, xds-base, and xds-theme as layersBefore so the full layer order
-   is: reset < xds-base < xds-theme < stylex app layers. */
+   reset, astryx-base, and astryx-theme as layersBefore so the full layer order
+   is: reset < astryx-base < astryx-theme < stylex app layers. */
 @stylex;

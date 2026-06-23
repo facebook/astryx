@@ -11,7 +11,7 @@ export const docs = {
     'Status message component for form field validation feedback.',
   theming: {
     targets: [
-      {className: 'xds-field-status', visualProps: ['type', 'variant']},
+      {className: 'astryx-field-status', visualProps: ['type', 'variant']},
     ],
   },
   props: [

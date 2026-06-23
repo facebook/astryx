@@ -132,11 +132,11 @@ export const {themeName}Theme = defineTheme({
 Component overrides generate scoped CSS:
 
 ```css
-@scope ([data-xds-theme="{themeName}"]) to ([data-xds-theme]) {
-  .xds-button.secondary {
+@scope ([data-astryx-theme="{themeName}"]) to ([data-astryx-theme]) {
+  .astryx-button.secondary {
     background-color: ...;
   }
-  .xds-heading.level-1 {
+  .astryx-heading.level-1 {
     font-size: var(--font-size-2xl);
   }
 }

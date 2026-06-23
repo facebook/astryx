@@ -140,7 +140,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-button', visualProps: ['size', 'variant']},
+      {className: 'astryx-button', visualProps: ['size', 'variant']},
     ],
     vars: [
       {name: '--_button-radius', description: 'Border radius', default: 'var(--radius-element)', private: true},
@@ -217,7 +217,7 @@ export const docsZh = {
   theming: {
     targets: [
       {
-        className: 'xds-button',
+        className: 'astryx-button',
         visualProps: [
           'size',
           'variant',

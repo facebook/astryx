@@ -35,7 +35,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-badge', visualProps: ['variant']},
+      {className: 'astryx-badge', visualProps: ['variant']},
     ],
   },
   usage: {
@@ -98,7 +98,7 @@ export const docsZh = {
   theming: {
     targets: [
       {
-        className: 'xds-badge',
+        className: 'astryx-badge',
         visualProps: [
           'variant',
         ],

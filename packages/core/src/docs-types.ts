@@ -80,15 +80,15 @@ export interface PropDoc {
  *
  * @example
  * ```
- * {className: 'xds-button', visualProps: ['variant', 'size']}
- * {className: 'xds-avatar-status-dot', visualProps: ['variant']}
- * {className: 'xds-card'}
+ * {className: 'astryx-button', visualProps: ['variant', 'size']}
+ * {className: 'astryx-avatar-status-dot', visualProps: ['variant']}
+ * {className: 'astryx-card'}
  * ```
  */
 export interface ThemingTarget {
   /** The stable CSS class name rendered by the component.
-   *  Always starts with `xds-`.
-   *  e.g. `"xds-button"`, `"xds-avatar-status-dot"`, `"xds-card"` */
+   *  Always starts with `astryx-`.
+   *  e.g. `"astryx-button"`, `"astryx-avatar-status-dot"`, `"astryx-card"` */
   className: string;
   /** Visual prop names reflected on this element.
    *  These are the props passed to `xdsThemeProps()` as the second argument.

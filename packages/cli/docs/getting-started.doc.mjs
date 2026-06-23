@@ -62,7 +62,7 @@ export const docs = {
           lang: 'css',
           label: 'globals.css',
           code: `@import '@xds/core/reset.css';
-@import '@xds/core/xds.css';
+@import '@xds/core/astryx.css';
 @import '@xds/theme-default/theme.css';`,
         },
         {

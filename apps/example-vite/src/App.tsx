@@ -80,7 +80,7 @@ export default function App() {
                 <VStack gap={3}>
                   <VStack gap={1}>
                     <Text type="supporting" weight="bold">
-                      Default XDS buttons (xds-base layer)
+                      Default XDS buttons (astryx-base layer)
                     </Text>
                     <HStack gap={3} vAlign="center">
                       <Button label="Default" variant="primary" />
@@ -180,9 +180,9 @@ export default function App() {
               <div {...stylex.props(styles.card)}>
                 <Text type="body">
                   Open devtools → inspect the CSS layers panel. You'll see{' '}
-                  <code>@layer xds-base</code> and <code>@layer product</code>.
+                  <code>@layer astryx-base</code> and <code>@layer product</code>.
                   The layer order{' '}
-                  <code>reset &lt; xds-base &lt; xds-theme &lt; product</code>{' '}
+                  <code>reset &lt; astryx-base &lt; astryx-theme &lt; product</code>{' '}
                   ensures product styles always win.
                 </Text>
               </div>

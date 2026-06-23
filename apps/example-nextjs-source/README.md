@@ -7,7 +7,7 @@ Reference application for compiling **@xds/core** from raw TypeScript + StyleX s
 |               | Source build                                  | Dist build                   |
 | ------------- | --------------------------------------------- | ---------------------------- |
 | CSS output    | Only styles for components you import (~22KB) | All component styles (~77KB) |
-| Layer control | Full: reset < xds-base < xds-theme < product  | Basic: import order          |
+| Layer control | Full: reset < astryx-base < astryx-theme < product  | Basic: import order          |
 | Build time    | Slower (compiles XDS source through Babel)    | Fast (pre-built CSS)         |
 | Setup         | More config (babel + postcss + next.config)   | Minimal (CSS imports)        |
 
@@ -20,10 +20,10 @@ Reference application for compiling **@xds/core** from raw TypeScript + StyleX s
 
 This creates completely independent class namespaces:
 
-- `.xds78zum5 { display: flex }` in `@layer xds-base`
+- `.xds78zum5 { display: flex }` in `@layer astryx-base`
 - `.x78zum5 { display: flex }` in `@layer product`
 
-Theme sits between them in `@layer xds-theme`, so:
+Theme sits between them in `@layer astryx-theme`, so:
 
 - Theme overrides library defaults ✓
 - Product overrides theme when needed ✓
@@ -114,7 +114,7 @@ export default nextConfig;
 `src/app/layers.css` must be a separate file (webpack hoists `@import` content):
 
 ```css
-@layer reset, xds-base, xds-theme, product;
+@layer reset, astryx-base, astryx-theme, product;
 ```
 
 `src/app/globals.css`:
@@ -131,8 +131,8 @@ export default nextConfig;
 
 This example includes a visual demo showing:
 
-1. **xds-base**: default XDS component styles
-2. **xds-theme**: theme overrides (secondary button background)
+1. **astryx-base**: default XDS component styles
+2. **astryx-theme**: theme overrides (secondary button background)
 3. **product**: app overrides (pill shape, green background, full-width)
 4. **Class prefix verification**: XDS components use `xds` prefix, product uses `x`
 

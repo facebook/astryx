@@ -11,10 +11,10 @@ export const docs = {
   theming: {
     targets: [
       {
-        className: 'xds-metadata-list',
+        className: 'astryx-metadata-list',
         visualProps: ['columns', 'orientation'],
       },
-      {className: 'xds-metadata-list-item'},
+      {className: 'astryx-metadata-list-item'},
     ],
   },
   description: 'Container for metadata items with column layout, orientation, and collapse support.',

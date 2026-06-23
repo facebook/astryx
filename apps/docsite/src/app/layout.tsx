@@ -23,11 +23,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
-    // Server-render data-xds-theme so the Astryx theme's @scope'd tokens (body
+    // Server-render data-astryx-theme so the Astryx theme's @scope'd tokens (body
     // color, top spacing) apply on the first paint. Deliberately no data-theme:
     // reset.css then keeps `color-scheme: light dark`, so the light-dark()
     // tokens follow the OS preference with no script and no flash (#2713).
-    <html lang="en" data-xds-theme="astryx">
+    <html lang="en" data-astryx-theme="astryx">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link

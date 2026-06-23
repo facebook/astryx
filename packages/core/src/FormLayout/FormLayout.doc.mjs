@@ -31,7 +31,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-form-layout', visualProps: ['direction']},
+      {className: 'astryx-form-layout', visualProps: ['direction']},
     ],
   },
   usage: {
@@ -79,7 +79,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-form-layout', visualProps: ['direction']},
+      {className: 'astryx-form-layout', visualProps: ['direction']},
     ],
   },
   usage: {

@@ -27,8 +27,8 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-avatar', visualProps: ['size']},
-      {className: 'xds-avatar-status-dot', visualProps: ['variant']},
+      {className: 'astryx-avatar', visualProps: ['size']},
+      {className: 'astryx-avatar-status-dot', visualProps: ['variant']},
     ],
   },
   description: 'Displays a user avatar with image, initials fallback, and optional status indicator.',

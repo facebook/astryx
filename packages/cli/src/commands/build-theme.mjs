@@ -716,14 +716,14 @@ export function registerTheme(program) {
             ? '  :root { color-scheme: light dark; }\n\n'
             : '';
           cssParts.push(
-            `@layer xds-theme {\n${colorSchemeDecl}${componentScope}\n}`,
+            `@layer astryx-theme {\n${colorSchemeDecl}${componentScope}\n}`,
           );
         }
         // On-media rules (MediaTheme dark/light surface overrides)
         if (_generateOnMediaCSS) {
           const onMediaCss = _generateOnMediaCSS(resolvedTheme);
           if (onMediaCss) {
-            cssParts.push(`@layer xds-theme {\n${onMediaCss}\n}`);
+            cssParts.push(`@layer astryx-theme {\n${onMediaCss}\n}`);
           }
         }
         if (cssParts.length === 0) {

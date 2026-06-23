@@ -43,7 +43,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-divider', visualProps: ['orientation', 'variant']},
+      {className: 'astryx-divider', visualProps: ['orientation', 'variant']},
     ],
   },
   usage: {
@@ -93,7 +93,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-divider', visualProps: ['orientation', 'variant']},
+      {className: 'astryx-divider', visualProps: ['orientation', 'variant']},
     ],
   },
   usage: {

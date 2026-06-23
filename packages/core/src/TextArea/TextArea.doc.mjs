@@ -160,7 +160,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-textarea', visualProps: ['size', 'status']},
+      {className: 'astryx-textarea', visualProps: ['size', 'status']},
     ],
   },
   usage: {
@@ -322,7 +322,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-textarea', visualProps: ['size', 'status']},
+      {className: 'astryx-textarea', visualProps: ['size', 'status']},
     ],
   },
   usage: {

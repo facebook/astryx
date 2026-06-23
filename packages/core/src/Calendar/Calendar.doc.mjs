@@ -110,8 +110,8 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-calendar', visualProps: ['mode']},
-      {className: 'xds-calendar-day', states: ['selected', 'today', 'disabled', 'in-range']},
+      {className: 'astryx-calendar', visualProps: ['mode']},
+      {className: 'astryx-calendar-day', states: ['selected', 'today', 'disabled', 'in-range']},
     ],
   },
 };
@@ -152,13 +152,13 @@ export const docsZh = {
   theming: {
     targets: [
       {
-        className: 'xds-calendar',
+        className: 'astryx-calendar',
         visualProps: [
           'mode',
         ],
       },
       {
-        className: 'xds-calendar-day',
+        className: 'astryx-calendar-day',
         states: [
           'selected',
           'today',

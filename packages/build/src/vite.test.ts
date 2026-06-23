@@ -3,10 +3,8 @@
 /**
  * @file vite.test.ts
  * @description Verifies CSS layer-order injection in the XDS Vite plugin.
- *   The theme layer name is intentionally NOT configurable — it stays
- *   `xds-theme` for the whole compatibility window and is rebranded only at
- *   the final cutover (XDS-prefix migration P2380608025), so consumers never
- *   have to touch their `@layer` order line until then.
+ *   The library layer name is configurable (default `astryx-base`); the
+ *   theme layer name is fixed at `astryx-theme`.
  */
 
 import {describe, it, expect} from 'vitest';
@@ -25,23 +23,23 @@ function getLayerOrder(plugins: ReturnType<typeof xdsStylex>): string {
 }
 
 describe('xdsStylex layer order (modern API)', () => {
-  it('uses the xds-* layer names (theme layer is xds-theme)', () => {
+  it('uses the astryx-* layer names (theme layer is astryx-theme)', () => {
     const order = getLayerOrder(xdsStylex());
-    expect(order).toBe('@layer reset, xds-base, xds-theme, product;');
+    expect(order).toBe('@layer reset, astryx-base, astryx-theme, product;');
   });
 
   it('honors configured library and product layer names', () => {
     const order = getLayerOrder(
-      xdsStylex({layers: {library: 'astryx-base', product: 'app'}}),
+      xdsStylex({layers: {library: 'custom-base', product: 'app'}}),
     );
-    // The theme layer stays xds-theme regardless of other layer config.
-    expect(order).toBe('@layer reset, astryx-base, xds-theme, app;');
+    // The theme layer stays astryx-theme regardless of other layer config.
+    expect(order).toBe('@layer reset, custom-base, astryx-theme, app;');
   });
 });
 
 describe('xdsStylex layer order (legacy API)', () => {
-  it('uses the xds-* layer names (theme layer is xds-theme)', () => {
+  it('uses the astryx-* layer names (theme layer is astryx-theme)', () => {
     const order = getLayerOrder(xdsStylex({stylexOptions: {}}));
-    expect(order).toBe('@layer reset, xds-base, xds-theme, product;');
+    expect(order).toBe('@layer reset, astryx-base, astryx-theme, product;');
   });
 });

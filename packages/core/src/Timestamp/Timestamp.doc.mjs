@@ -75,7 +75,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-timestamp', visualProps: ['type', 'color']},
+      {className: 'astryx-timestamp', visualProps: ['type', 'color']},
     ],
   },
   usage: {

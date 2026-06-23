@@ -10,10 +10,10 @@ export const docs = {
   keywords: ["radiolist","radio","radiogroup","radiobutton","optionlist","singlechoice","choicelist"],
   theming: {
     targets: [
-      {className: 'xds-radio-list', visualProps: ['orientation', 'size']},
-      {className: 'xds-radio-list-item'},
-      {className: 'xds-radio', visualProps: ['size'], states: ['checked', 'disabled']},
-      {className: 'xds-radio-dot', visualProps: ['size']},
+      {className: 'astryx-radio-list', visualProps: ['orientation', 'size']},
+      {className: 'astryx-radio-list-item'},
+      {className: 'astryx-radio', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-radio-dot', visualProps: ['size']},
     ],
   },
   description: 'Radio group container with field integration for label, description, and status.',

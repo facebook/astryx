@@ -84,7 +84,7 @@ export const docs = {
   theming: {
     container: true,
     targets: [
-      {className: 'xds-card'},
+      {className: 'astryx-card'},
     ],
     vars: [
       {name: '--_card-radius', description: 'Border radius of the card', default: 'var(--radius-container)', private: true},
@@ -131,7 +131,7 @@ export const docsZh = {
   theming: {
     container: true,
     targets: [
-      {className: 'xds-card'},
+      {className: 'astryx-card'},
     ],
     vars: [
       {name: '--_card-radius', description: 'Border radius of the card', default: 'var(--radius-container)', private: true},

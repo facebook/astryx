@@ -20,7 +20,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-multi-selector', visualProps: ['size', 'status']},
+      {className: 'astryx-multi-selector', visualProps: ['size', 'status']},
     ],
   },
   components: [

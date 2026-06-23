@@ -86,7 +86,7 @@ const baseStyles = stylex.create({
  *
  * This indirection exists because StyleX's useCSSLayers emits priority-0
  * custom property assignments outside any @layer, making them impossible
- * to override from @layer xds-theme. By reading from a higher-level token,
+ * to override from @layer astryx-theme. By reading from a higher-level token,
  * the theme CSS sets the token value and the component picks it up via
  * CSS custom property cascade — no layer competition.
  */

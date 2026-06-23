@@ -79,12 +79,12 @@ No build plugins needed; XDS ships pre-built CSS that works alongside Tailwind.
 **`src/app/globals.css`**
 
 ```css
-@layer reset, theme, base, xds-base, xds-theme, components, utilities;
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
 
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/preflight.css' layer(base);
 @import '@xds/core/reset.css';
-@import '@xds/core/xds.css';
+@import '@xds/core/astryx.css';
 @import '@xds/theme-default/theme.css';
 @import '@xds/core/tailwind-theme.css';
 @import 'tailwindcss/utilities.css' layer(utilities);
@@ -172,7 +172,7 @@ npm install @xds/core @xds/theme-default
 
 ```css
 @import '@xds/core/reset.css';
-@import '@xds/core/xds.css';
+@import '@xds/core/astryx.css';
 @import '@xds/theme-default/theme.css';
 ```
 

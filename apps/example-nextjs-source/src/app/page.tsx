@@ -96,7 +96,7 @@ export default function Home() {
                 {/* Base layer */}
                 <VStack gap={1}>
                   <Text type="supporting" weight="bold">
-                    1. xds-base — default component styles
+                    1. astryx-base — default component styles
                   </Text>
                   <HStack gap={3} vAlign="center">
                     <Button label="Primary" variant="primary" />
@@ -108,7 +108,7 @@ export default function Home() {
                 {/* Theme layer */}
                 <VStack gap={1}>
                   <Text type="supporting" weight="bold">
-                    2. xds-theme — theme overrides base
+                    2. astryx-theme — theme overrides base
                   </Text>
                   <Text type="supporting" color="secondary">
                     The secondary button background comes from the theme layer,
@@ -226,7 +226,7 @@ export default function Home() {
                 </Text>
                 <Text type="body">
                   Open devtools → CSS layers panel to see:{' '}
-                  <code>reset &lt; xds-base &lt; xds-theme &lt; product</code>
+                  <code>reset &lt; astryx-base &lt; astryx-theme &lt; product</code>
                 </Text>
               </VStack>
             </div>

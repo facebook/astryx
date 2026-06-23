@@ -98,12 +98,12 @@ const overrides = stylex.create({
           type: 'code',
           lang: 'css',
           label: 'globals.css: import the bridge',
-          code: `@layer reset, theme, base, xds-base, xds-theme, components, utilities;
+          code: `@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
 
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/preflight.css" layer(base);
 @import "@xds/core/reset.css";
-@import "@xds/core/xds.css";
+@import "@xds/core/astryx.css";
 @import "@xds/theme-default/theme.css";
 @import "@xds/core/tailwind-theme.css";
 @import "tailwindcss/utilities.css" layer(utilities);`,

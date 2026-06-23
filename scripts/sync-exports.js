@@ -54,10 +54,6 @@ const STATIC_EXPORTS = {
     types: './src/reset.css.d.ts',
     default: './src/reset.css',
   },
-  './xds.css': {
-    types: './src/xds.css.d.ts',
-    default: './dist/xds.css',
-  },
   './astryx.css': {
     types: './src/astryx.css.d.ts',
     default: './dist/astryx.css',
