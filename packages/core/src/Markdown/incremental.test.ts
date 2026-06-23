@@ -41,6 +41,25 @@ describe('parseMarkdownIncremental', () => {
     }
   });
 
+  it('joins loose ) ordered list across streamed chunks', () => {
+    const text = '1) apple\n\n1) banana\n\n1) cherry\n';
+    const {final} = simulateStreaming(text, 5);
+    expect(final).toHaveLength(1);
+    if (final[0].type === 'list') {
+      expect(final[0].items).toHaveLength(3);
+      expect(final[0].delimiter).toBe(')');
+    }
+  });
+
+  it('does not merge ordered lists with different delimiters across chunks', () => {
+    // A change of delimiter (. -> )) starts a new list (CommonMark 5.2), so
+    // the streamed result must match the full parse and stay two lists.
+    const text = '1. First\n\n2) Second\n';
+    const {final} = simulateStreaming(text, 4);
+    expect(final).toEqual(parseMarkdown(text));
+    expect(final.filter(b => b.type === 'list')).toHaveLength(2);
+  });
+
   it('handles empty input', () => {
     const state = createIncrementalState();
     const result = parseMarkdownIncremental('', state);

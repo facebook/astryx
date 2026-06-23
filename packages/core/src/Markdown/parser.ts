@@ -31,6 +31,8 @@ export type BlockNode =
       type: 'list';
       ordered: boolean;
       start?: number;
+      /** Ordered-list marker delimiter ('.' or ')'). Undefined for bullets. */
+      delimiter?: '.' | ')';
       loose?: boolean;
       items: ListItemNode[];
     }
@@ -769,7 +771,7 @@ function isBlockStart(line: string): boolean {
   if (/^ {0,9}[-*+] /.test(line)) {
     return true;
   }
-  if (/^ {0,9}\d+\. /.test(line)) {
+  if (/^ {0,9}0*1[.)] /.test(line)) {
     return true;
   }
   if (line.includes('|')) {
@@ -867,18 +869,25 @@ function parseList(
 ): {node: BlockNode; nextIndex: number} {
   const items: ListItemNode[] = [];
   const baseIndent = getIndent(lines[startIndex]);
+  // Ordered lists may use either '.' or ')' as the marker delimiter
+  // (CommonMark 5.2). Capture which one this list starts with so its items
+  // must all share it — a change of delimiter starts a new list.
+  const orderedStart = ordered
+    ? lines[startIndex].match(/^ *(\d+)([.)]) /)
+    : null;
+  const delim = orderedStart ? orderedStart[2] : '.';
+  const escDelim = `\\${delim}`;
   const itemPattern = ordered
-    ? new RegExp(`^ {${baseIndent}}\\d+\\. `)
+    ? new RegExp(`^ {${baseIndent}}\\d+${escDelim} `)
     : new RegExp(`^ {${baseIndent}}[-*+] `);
 
-  const startMatch = ordered ? lines[startIndex].match(/^ *(\d+)\./) : null;
-  const start = startMatch ? parseInt(startMatch[1], 10) : undefined;
+  const start = orderedStart ? parseInt(orderedStart[1], 10) : undefined;
 
   let loose = false;
   let index = startIndex;
   while (index < lines.length && itemPattern.test(lines[index])) {
     const content = ordered
-      ? lines[index].replace(/^ *\d+\. /, '')
+      ? lines[index].replace(new RegExp(`^ *\\d+${escDelim} `), '')
       : lines[index].replace(/^ *[-*+] /, '');
 
     const taskMatch = content.match(/^\[([ xX])\] (.*)/);
@@ -931,7 +940,14 @@ function parseList(
     }
   }
   return {
-    node: {type: 'list', ordered, start, loose: loose || undefined, items},
+    node: {
+      type: 'list',
+      ordered,
+      start,
+      delimiter: ordered ? (delim as '.' | ')') : undefined,
+      loose: loose || undefined,
+      items,
+    },
     nextIndex: index,
   };
 }
@@ -1048,7 +1064,7 @@ function parseMarkdownImpl(input: string, opts: ResolvedOptions): BlockNode[] {
     }
 
     // --- Ordered list ---
-    if (/^ {0,9}\d+\. /.test(line)) {
+    if (/^ {0,9}\d+[.)] /.test(line)) {
       const listResult = parseList(lines, index, true, opts);
       blocks.push(listResult.node);
       index = listResult.nextIndex;
@@ -1311,7 +1327,7 @@ function trimUnsettledStructural(text: string): string {
     }
 
     // Bare list marker with no content: "- " or "1. " (just whitespace after marker)
-    if (/^ {0,9}[-*+] $/.test(last) || /^ {0,9}\d+\. $/.test(last)) {
+    if (/^ {0,9}[-*+] $/.test(last) || /^ {0,9}\d+[.)] $/.test(last)) {
       lines.pop();
       continue;
     }
@@ -1371,12 +1387,14 @@ function mergeSettledBlocks(
   if (
     prevLast.type === 'list' &&
     deltaFirst.type === 'list' &&
-    prevLast.ordered === deltaFirst.ordered
+    prevLast.ordered === deltaFirst.ordered &&
+    prevLast.delimiter === deltaFirst.delimiter
   ) {
     const merged: BlockNode = {
       type: 'list',
       ordered: prevLast.ordered,
       start: prevLast.start,
+      delimiter: prevLast.delimiter,
       loose: true,
       items: [...prevLast.items, ...deltaFirst.items],
     };
