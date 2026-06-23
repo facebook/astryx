@@ -14,7 +14,7 @@ import {radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   previewCard: {
-    borderRadius: radiusVars['--radius-container'],
+    borderRadius: radiusVars['--radius-element'],
   },
   // Negative margin offsets each card's 8px padding so the grid content stays
   // visually aligned while giving every card a padded hover/click target.
