@@ -203,7 +203,7 @@ export default function TemplatesPage() {
         {/* Header */}
         <VStack gap={6} align="stretch">
           <VStack gap={2}>
-            <Heading level={1} type="display-2" justify="center">
+            <Heading level={1} type="display-1" justify="center">
               Templates
             </Heading>
             <Text type="body" color="secondary" justify="center">
@@ -216,20 +216,13 @@ export default function TemplatesPage() {
             onChange={value => setActiveCategory(value ?? 'All')}
             xstyle={styles.categoryFilter}>
             {categories.map(category => (
-              <ToggleButton
-                key={category}
-                label={category}
-                value={category}
-              />
+              <ToggleButton key={category} label={category} value={category} />
             ))}
           </ToggleButtonGroup>
         </VStack>
 
         {/* Body */}
-        <Grid
-          columns={{minWidth: isMobile ? 280 : 420}}
-          gap={4}
-          width="100%">
+        <Grid columns={{minWidth: isMobile ? 280 : 420}} gap={4} width="100%">
           {filteredItems.map(item => {
             const templateContent = <TemplateThumbnail slug={item.slug} />;
 

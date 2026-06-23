@@ -1,0 +1,29 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+/*
+ * Hover affordances for BlogCard, driven by the card Link's :hover. Plain
+ * descendant selectors — no StyleX marker/ancestor machinery needed. Theme
+ * tokens (--color-*, --duration-*, --ease-*) are real CSS custom properties.
+ */
+
+.cover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-color: transparent;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+@media (hover: hover) {
+  /* Subtle currentColor tint over the cover, mirroring ClickableCard. */
+  .card:hover .cover::after {
+    background-color: color-mix(in srgb, currentColor 5%, transparent);
+  }
+
+  /* Promote secondary text to the primary text color on hover. */
+  .card:hover .description,
+  .card:hover .byline * {
+    color: var(--color-text-primary);
+  }
+}

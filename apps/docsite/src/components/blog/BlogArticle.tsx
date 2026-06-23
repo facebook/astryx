@@ -4,9 +4,10 @@
  * @file BlogArticle.tsx
  *
  * Article layout matching the docs page typography: a centered, readable column
- * (maxWidth 800) with a display-1 title, large regular-weight dek, byline, a
- * neutral cover placeholder, the prose body (rendered via Markdown), optional
- * curated related-doc links, and a link back to the blog index. No sidebar.
+ * (maxWidth 800) with a breadcrumb trail (Blog / post type), a display-1 title,
+ * large regular-weight dek, byline, a neutral cover placeholder, the prose body
+ * (rendered via Markdown), optional curated related-doc links, and a link back to
+ * the blog index. No sidebar.
  *
  * @input  post (BlogPost)
  * @output The full article view
@@ -17,8 +18,11 @@ import * as stylex from '@stylexjs/stylex';
 import {Markdown} from '@xds/core/Markdown';
 import {Text, Heading} from '@xds/core/Text';
 import {VStack, HStack} from '@xds/core/Layout';
+import {Grid} from '@xds/core/Grid';
+import {Icon} from '@xds/core/Icon';
 import {Section} from '@xds/core/Section';
 import {Badge} from '@xds/core/Badge';
+import {Breadcrumbs, BreadcrumbItem} from '@xds/core/Breadcrumbs';
 import {Divider} from '@xds/core/Divider';
 import {Link} from '@xds/core/Link';
 import {ClickableCard} from '@xds/core/ClickableCard';
@@ -60,12 +64,12 @@ export function BlogArticle({post}: BlogArticleProps) {
       <VStack gap={10}>
         {/* Header — matches the docs page treatment */}
         <VStack gap={4}>
-          <Link href="/blog" label="Back to blog">
-            ← Blog
-          </Link>
-          <HStack gap={1} align="center" xstyle={styles.tagRow}>
-            <Badge label={POST_TYPE_LABELS[post.type]} variant="neutral" />
-          </HStack>
+          <Breadcrumbs>
+            <BreadcrumbItem href="/blog">Blog</BreadcrumbItem>
+            <BreadcrumbItem isCurrent>
+              {POST_TYPE_LABELS[post.type]}
+            </BreadcrumbItem>
+          </Breadcrumbs>
           <Heading level={1} type="display-1">
             {post.title}
           </Heading>
@@ -104,33 +108,36 @@ export function BlogArticle({post}: BlogArticleProps) {
           </HStack>
         ) : null}
 
-        {/* Related docs — clickable cards, not styled links */}
+        {/* Related content */}
         {post.relatedDocs && post.relatedDocs.length > 0 ? (
-          <VStack gap={4}>
+          <VStack gap={6}>
             <Divider />
             <Heading level={2} type="display-3">
               Related
             </Heading>
-            <VStack gap={2}>
+            {/* minWidth caps this at 2 columns within the ~752px article
+                column; 'fit' lets a lone card stretch to fill when it wraps to
+                one column (an explicit `max` would cap track width at 50% and
+                prevent the fill). */}
+            <Grid columns={{minWidth: 280, repeat: 'fill'}} gap={2}>
               {post.relatedDocs.map(doc => (
                 <ClickableCard
                   key={doc.href}
                   href={doc.href}
                   label={doc.title}
+                  padding={3}
                   variant="muted">
-                  <Text type="body" weight="medium">
-                    {doc.title}
-                  </Text>
+                  <HStack justify="between" align="center" gap={2}>
+                    <Text type="body" weight="medium">
+                      {doc.title}
+                    </Text>
+                    <Icon icon="chevronRight" size="sm" color="secondary" />
+                  </HStack>
                 </ClickableCard>
               ))}
-            </VStack>
+            </Grid>
           </VStack>
         ) : null}
-
-        <Divider />
-        <Link href="/blog" label="Back to all posts">
-          ← Back to all posts
-        </Link>
       </VStack>
     </Section>
   );

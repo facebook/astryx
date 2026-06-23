@@ -134,7 +134,7 @@ export default function ComponentsGalleryPage() {
       <VStack gap={10}>
         <VStack gap={4} hAlign="center">
           <VStack gap={2} style={{alignItems: 'center'}}>
-            <Text type="display-2" xstyle={styles.heroTitle}>
+            <Text type="display-1" xstyle={styles.heroTitle}>
               Browse the library
             </Text>
             <Text type="body" color="secondary" xstyle={styles.heroTitle}>
@@ -172,11 +172,7 @@ export default function ComponentsGalleryPage() {
                 </VStack>
               </VStack>
             }>
-            <Button
-              variant="primary"
-              size="lg"
-              label="Install core library"
-            />
+            <Button variant="primary" size="lg" label="Install core library" />
           </Popover>
         </VStack>
 
