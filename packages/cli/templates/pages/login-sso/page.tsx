@@ -22,7 +22,7 @@ import {spacingVars} from '@xds/core/theme/tokens.stylex';
 // Styles
 // ---------------------------------------------------------------------------
 
-const BG_URL = 'https://lookaside.facebook.com/assets/xds_oss/building.jpg';
+const BG_URL = 'https://lookaside.facebook.com/assets/astryx/building.png';
 
 const styles = stylex.create({
   page: {

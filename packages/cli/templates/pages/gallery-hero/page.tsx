@@ -18,15 +18,15 @@ import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
 const IMAGES = [
   {
-    src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-home-horizontal-1.png',
+    src: 'https://lookaside.facebook.com/assets/astryx/colorful-home-horizontal-1.png',
     alt: 'Colorful home interior with vibrant decor',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-horizontal-1.png',
+    src: 'https://lookaside.facebook.com/assets/astryx/colorful-lifestyle-horizontal-1.png',
     alt: 'Colorful lifestyle portrait with natural lighting',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-horizontal-2.png',
+    src: 'https://lookaside.facebook.com/assets/astryx/colorful-lifestyle-horizontal-2.png',
     alt: 'Colorful lifestyle scene with warm tones',
   },
 ];

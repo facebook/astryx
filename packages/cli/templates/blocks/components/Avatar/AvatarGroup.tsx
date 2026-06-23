@@ -7,7 +7,7 @@ import {AvatarGroup, AvatarGroupOverflow} from '@xds/core/AvatarGroup';
 import {Stack} from '@xds/core/Layout';
 import {Text} from '@xds/core/Text';
 
-const CDN = 'https://lookaside.facebook.com/assets/xds_oss';
+const CDN = 'https://lookaside.facebook.com/assets/astryx';
 
 const USERS = [
   {

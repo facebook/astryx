@@ -10,9 +10,9 @@ import {Button} from '@xds/core/Button';
 import {Badge} from '@xds/core/Badge';
 import {Icon} from '@xds/core/Icon';
 
-// light-scene-horizontal-1 from xds_oss asset set
+// light-scene-horizontal-1 from astryx asset set
 const SHOWCASE_IMAGE_URL =
-  'https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png';
+  'https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png';
 
 export default function MediaThemeShowcase() {
   return (

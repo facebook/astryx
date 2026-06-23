@@ -24,7 +24,7 @@ const ASTRYX = 'astryx';
 // Shared XDS asset CDN. The per-theme reel cards pull the same product photos
 // the /themes showcase uses (see themeShowcaseContent.ts) so the hero and the
 // gallery stay in sync.
-const XDS_CDN = 'https://lookaside.facebook.com/assets/xds_oss';
+const XDS_CDN = 'https://lookaside.facebook.com/assets/astryx';
 
 export interface HeroThemeContent {
   /** Product card (image + title/description + price). */

@@ -63,14 +63,14 @@ const pageStyles = stylex.create({
 });
 
 // ─── Product data ───────────────────────────────────────────────────────────
-// Light product photography from the xds_oss asset set (ceramics collection)
-// Source: meta assets.file list -s xds_oss -g light-product-{1..5}
+// Light product photography from the astryx asset set (ceramics collection)
+// Source: meta assets.file list -s astryx -g light-product-{1..5}
 const PRODUCT_IMAGES = [
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-1.png',
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-2.png',
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-3.png',
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-4.png',
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-5.png',
+  'https://lookaside.facebook.com/assets/astryx/light-product-1.png',
+  'https://lookaside.facebook.com/assets/astryx/light-product-2.png',
+  'https://lookaside.facebook.com/assets/astryx/light-product-3.png',
+  'https://lookaside.facebook.com/assets/astryx/light-product-4.png',
+  'https://lookaside.facebook.com/assets/astryx/light-product-5.png',
 ];
 
 const PRODUCTS = [

@@ -24,7 +24,7 @@ export interface ThemeShowcaseContent {
   inventory: InventoryRow[];
 }
 
-const XDS_CDN = 'https://lookaside.facebook.com/assets/xds_oss';
+const XDS_CDN = 'https://lookaside.facebook.com/assets/astryx';
 
 // Matcha café — matcha-drink photos.
 const MATCHA_IMAGES: Record<string, string> = {

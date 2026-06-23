@@ -19,15 +19,15 @@ import {Link} from '@xds/core/Link';
 import {Divider} from '@xds/core/Divider';
 import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 
-// light-working-vertical-1 from xds_oss asset set
+// light-working-vertical-1 from astryx asset set
 const COVER_IMAGE_URL =
-  'https://lookaside.facebook.com/assets/xds_oss/light-working-vertical-1.png';
-// AppleLogo from xds_oss asset set
+  'https://lookaside.facebook.com/assets/astryx/light-working-vertical-1.png';
+// AppleLogo from astryx asset set
 const APPLE_LOGO_URL =
-  'https://lookaside.facebook.com/assets/xds_oss/AppleLogo.png';
-// GoogleLogo from xds_oss asset set
+  'https://lookaside.facebook.com/assets/astryx/AppleLogo.png';
+// GoogleLogo from astryx asset set
 const GOOGLE_LOGO_URL =
-  'https://lookaside.facebook.com/assets/xds_oss/GoogleLogo.png';
+  'https://lookaside.facebook.com/assets/astryx/GoogleLogo.png';
 
 // Grid emits minmax(MIN, 1fr) where MIN is a hard floor, so MIN plus the
 // grid inset and page padding must fit the narrowest phone or the column is

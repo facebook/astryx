@@ -52,37 +52,37 @@ const PRODUCTS = [
   {
     name: 'Ceremonial Matcha Latte',
     category: 'Matcha' as ProductCategory,
-    image: 'https://lookaside.facebook.com/assets/xds_oss/matcha-product-1.png',
+    image: 'https://lookaside.facebook.com/assets/astryx/matcha-product-1.png',
     price: 6,
   },
   {
     name: 'Oat Milk Cappuccino',
     category: 'Coffee' as ProductCategory,
-    image: 'https://lookaside.facebook.com/assets/xds_oss/matcha-product-2.png',
+    image: 'https://lookaside.facebook.com/assets/astryx/matcha-product-2.png',
     price: 5,
   },
   {
     name: 'Jasmine Green Tea',
     category: 'Tea' as ProductCategory,
-    image: 'https://lookaside.facebook.com/assets/xds_oss/matcha-product-3.png',
+    image: 'https://lookaside.facebook.com/assets/astryx/matcha-product-3.png',
     price: 4,
   },
   {
     name: 'Mango Matcha Smoothie',
     category: 'Smoothie' as ProductCategory,
-    image: 'https://lookaside.facebook.com/assets/xds_oss/matcha-product-4.png',
+    image: 'https://lookaside.facebook.com/assets/astryx/matcha-product-4.png',
     price: 8,
   },
   {
     name: 'Hojicha Latte',
     category: 'Specialty' as ProductCategory,
-    image: 'https://lookaside.facebook.com/assets/xds_oss/matcha-product-5.png',
+    image: 'https://lookaside.facebook.com/assets/astryx/matcha-product-5.png',
     price: 7,
   },
   {
     name: 'Iced Yuzu Matcha',
     category: 'Matcha' as ProductCategory,
-    image: 'https://lookaside.facebook.com/assets/xds_oss/matcha-product-6.png',
+    image: 'https://lookaside.facebook.com/assets/astryx/matcha-product-6.png',
     price: 7,
   },
 ];

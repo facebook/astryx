@@ -36,7 +36,7 @@ const THEME_SHOWCASE_SOURCE =
 
 // CDN host for the per-theme picker banners (same host as the showcase
 // product photos), so the artwork can be updated without a code change.
-const PICKER_CDN = 'https://lookaside.facebook.com/assets/xds_oss';
+const PICKER_CDN = 'https://lookaside.facebook.com/assets/astryx';
 
 // Gallery order — themes are listed in the same canonical visual-
 // closeness order used elsewhere (most restrained → most expressive).
