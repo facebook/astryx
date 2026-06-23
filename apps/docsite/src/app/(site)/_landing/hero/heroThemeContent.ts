@@ -24,7 +24,7 @@ const ASTRYX = 'astryx';
 // Shared XDS asset CDN. The per-theme reel cards pull the same product photos
 // the /themes showcase uses (see themeShowcaseContent.ts) so the hero and the
 // gallery stay in sync.
-const XDS_CDN = 'https://lookaside.facebook.com/assets/astryx';
+const IMAGE_CDN = 'https://lookaside.facebook.com/assets/astryx';
 
 export interface HeroThemeContent {
   /** Product card (image + title/description + price). */
@@ -158,18 +158,18 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
   },
   '@xds/theme-butter': {
     product: {
-      image: `${XDS_CDN}/Butter-Croissant.png`,
+      image: `${IMAGE_CDN}/Butter-Croissant.png`,
       title: 'Butter croissant',
       description: 'Flaky, laminated layers baked golden each morning.',
       price: '$6',
     },
     feature: {
-      image: `${XDS_CDN}/Butter-Waffle.png`,
+      image: `${IMAGE_CDN}/Butter-Waffle.png`,
       title: 'Belgian waffle',
       price: '$8',
     },
     mini: {
-      image: `${XDS_CDN}/Butter-Pancake.png`,
+      image: `${IMAGE_CDN}/Butter-Pancake.png`,
       title: 'Buttermilk pancakes',
       description: 'Stacked tall with melting butter.',
     },
@@ -179,18 +179,18 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
   },
   '@xds/theme-matcha': {
     product: {
-      image: `${XDS_CDN}/matcha-product-1.png`,
+      image: `${IMAGE_CDN}/matcha-product-1.png`,
       title: 'Iced matcha latte',
       description: 'Stone-ground ceremonial matcha over cold milk.',
       price: '$6',
     },
     feature: {
-      image: `${XDS_CDN}/matcha-product-2.png`,
+      image: `${IMAGE_CDN}/matcha-product-2.png`,
       title: 'Strawberry matcha',
       price: '$7',
     },
     mini: {
-      image: `${XDS_CDN}/matcha-product-4.png`,
+      image: `${IMAGE_CDN}/matcha-product-4.png`,
       title: 'Ube matcha',
       description: 'Ube and cream matcha.',
     },
@@ -205,18 +205,18 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
   },
   '@xds/theme-gothic': {
     product: {
-      image: `${XDS_CDN}/Gothic-1.png`,
+      image: `${IMAGE_CDN}/Gothic-1.png`,
       title: 'Dried sea holly',
       description: 'A single preserved thistle stem with a steely bloom.',
       price: '$24',
     },
     feature: {
-      image: `${XDS_CDN}/Gothic-2.png`,
+      image: `${IMAGE_CDN}/Gothic-2.png`,
       title: 'Garden rose',
       price: '$18',
     },
     mini: {
-      image: `${XDS_CDN}/Gothic-3.png`,
+      image: `${IMAGE_CDN}/Gothic-3.png`,
       title: 'Lilac ranunculus',
       description: 'Layered petals in a soft mauve.',
     },
@@ -226,18 +226,18 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
   },
   '@xds/theme-y2k': {
     product: {
-      image: `${XDS_CDN}/Y2K-Phone.png`,
+      image: `${IMAGE_CDN}/Y2K-Phone.png`,
       title: 'Holo flip phone',
       description: 'Iridescent clamshell with a rainbow screen.',
       price: '$18',
     },
     feature: {
-      image: `${XDS_CDN}/Y2K-Star.png`,
+      image: `${IMAGE_CDN}/Y2K-Star.png`,
       title: 'Glow star set',
       price: '$12',
     },
     mini: {
-      image: `${XDS_CDN}/Y2K-Butterfly.png`,
+      image: `${IMAGE_CDN}/Y2K-Butterfly.png`,
       title: 'Glitter butterfly',
       description: 'Sparkly stick-on in pastel chrome.',
     },
