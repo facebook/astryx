@@ -16,6 +16,11 @@ const styles = stylex.create({
   previewCard: {
     borderRadius: radiusVars['--radius-container'],
   },
+  // Negative margin offsets each card's 8px padding so the grid content stays
+  // visually aligned while giving every card a padded hover/click target.
+  cardGrid: {
+    margin: -8,
+  },
 });
 
 // ---------------------------------------------------------------------------
@@ -233,14 +238,17 @@ export default function DocumentationOverviewPage() {
             {COMPONENT_CATEGORIES.map(category => (
               <VStack key={category.label} gap={4}>
                 <Heading level={2}>{category.label}</Heading>
-                <Grid columns={{minWidth: 260}} gap={6}>
+                <Grid
+                  columns={{minWidth: 260}}
+                  gap={2}
+                  xstyle={styles.cardGrid}>
                   {category.items.map(item => (
                     <ClickableCard
                       key={item.key}
                       label={`Open ${item.name}`}
                       onClick={() => {}}
                       variant="transparent"
-                      padding={0}>
+                      padding={2}>
                       <VStack gap={3}>
                         <Card
                           variant="muted"
