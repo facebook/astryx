@@ -2,11 +2,11 @@
 
 ## Reporting a Vulnerability
 
-The XDS team takes security seriously. If you discover a security issue,
+The Astryx team takes security seriously. If you discover a security issue,
 please bring it to our attention right away.
 
 **Please do not file a public issue.** Public issues are visible to anyone, and
-disclosing a vulnerability before it is fixed puts XDS users at risk.
+disclosing a vulnerability before it is fixed puts Astryx users at risk.
 
 ### Meta Bug Bounty
 

@@ -1,14 +1,14 @@
 <!-- SYNC CONTRACT: Architecture changes require documentation updates. -->
 
-# XDS
+# Astryx
 
 A design system for building internal tools and products.
 
 ## Overview
 
-XDS is an open source design system born from years of building internal tools at scale in Meta's monorepo. It provides foundations, components, and patterns that work together to deliver consistent, accessible interfaces.
+Astryx is an open source design system born from years of building internal tools at scale in Meta's monorepo. It provides foundations, components, and patterns that work together to deliver consistent, accessible interfaces.
 
-**What makes XDS different:**
+**What makes Astryx different:**
 
 - **Open internals:** All primitives are exported and composable, not hidden. Build exactly what you need.
 - **Plugin architecture:** Transform and extend components through a unified plugin system

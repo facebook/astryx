@@ -1,13 +1,13 @@
-# Contributing to XDS
+# Contributing to Astryx
 
-For the full contribution process — what we accept, how to propose new components, and how API decisions are made — read the **[Contributing wiki](https://github.com/facebookexperimental/xds/wiki/Contributing)**.
+For the full contribution process — what we accept, how to propose new components, and how API decisions are made — read the **[Contributing wiki](https://github.com/facebook/astryx/wiki/Contributing)**.
 
 Key pages:
 
-- **[API Conventions](https://github.com/facebookexperimental/xds/wiki/API-Conventions)** — naming, prop patterns, composition rules (read before submitting an RFC)
-- **[Specification Protocol](https://github.com/facebookexperimental/xds/wiki/Component-Specification-Protocol)** — the 9-phase process for new components
-- **[API Arbitration](https://github.com/facebookexperimental/xds/wiki/API-Arbitration)** — how we resolve API design questions
-- **[Contributing with AI](https://github.com/facebookexperimental/xds/wiki/Contributing-with-AI-Assistants)** — safe zones, spec protocol, and working with AI tools
+- **[API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions)** — naming, prop patterns, composition rules (read before submitting an RFC)
+- **[Specification Protocol](https://github.com/facebook/astryx/wiki/Component-Specification-Protocol)** — the 9-phase process for new components
+- **[API Arbitration](https://github.com/facebook/astryx/wiki/API-Arbitration)** — how we resolve API design questions
+- **[Contributing with AI](https://github.com/facebook/astryx/wiki/Contributing-with-AI-Assistants)** — safe zones, spec protocol, and working with AI tools
 
 This file covers local development setup.
 
@@ -32,7 +32,7 @@ Download and install from https://nodejs.org
 
 ### pnpm
 
-XDS uses [pnpm](https://pnpm.io/) as its package manager (declared in
+Astryx uses [pnpm](https://pnpm.io/) as its package manager (declared in
 the `packageManager` field of `package.json`). The easiest way to install
 it is via [Corepack](https://nodejs.org/api/corepack.html), which ships
 with Node.js:
@@ -41,7 +41,7 @@ with Node.js:
 corepack enable
 ```
 
-This makes the `pnpm` command available with the exact version XDS pins.
+This makes the `pnpm` command available with the exact version Astryx pins.
 Alternatively, install pnpm directly:
 
 ```bash
@@ -69,7 +69,7 @@ pnpm --version   # 10.x.x
 
 ```bash
 # Clone the repo
-git clone https://github.com/facebookexperimental/xds.git
+git clone https://github.com/facebook/astryx.git
 cd xds
 
 # Install dependencies
@@ -289,7 +289,7 @@ src/Button/
 
 ## Versioning & Releases
 
-We use [Changesets](https://github.com/changesets/changesets) for versioning, with a thin XDS layer on top so changelogs stay categorized, contributor-attributed, and aligned with our pre-1.0 conventions.
+We use [Changesets](https://github.com/changesets/changesets) for versioning, with a thin Astryx layer on top so changelogs stay categorized, contributor-attributed, and aligned with our pre-1.0 conventions.
 
 ### Adding a Changeset
 
