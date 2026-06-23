@@ -1,6 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-export const GITHUB_REPO = 'https://github.com/facebookexperimental/xds';
+export const GITHUB_REPO = 'https://github.com/facebook/astryx';
+
+export const FACEBOOK_URL = 'https://www.facebook.com/astryxdesign';
+export const INSTAGRAM_URL = 'https://www.instagram.com/astryxdesign';
+export const THREADS_URL = 'https://www.threads.com/@astryxdesign';
+export const X_URL = 'https://x.com/Astryxdesign';
 
 /**
  * Public GitHub Pages deployment for the site (Storybook, sandbox, and the
@@ -8,7 +13,7 @@ export const GITHUB_REPO = 'https://github.com/facebookexperimental/xds';
  * See .github/workflows/deploy.yml — the site is published to gh-pages with
  * no CNAME, so it resolves to the org's github.io subpath.
  */
-export const GITHUB_PAGES = 'https://facebookexperimental.github.io/xds/';
+export const GITHUB_PAGES = 'https://facebook.github.io/astryx';
 
 /**
  * Astryx brand blue — logo/wordmark only (not wired to any semantic token).

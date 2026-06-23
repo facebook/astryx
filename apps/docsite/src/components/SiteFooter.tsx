@@ -11,12 +11,20 @@ import {Grid, GridSpan} from '@xds/core/Grid';
 import {Divider} from '@xds/core/Divider';
 import {Section} from '@xds/core/Section';
 import {useAppShellMobile} from '@xds/core/AppShell';
-import {GITHUB_REPO} from '../constants';
+import {
+  GITHUB_REPO,
+  FACEBOOK_URL,
+  INSTAGRAM_URL,
+  THREADS_URL,
+  X_URL,
+} from '../constants';
 import {
   AstryxLogo,
   GitHubLogo,
   ThreadsLogo,
   XLogo,
+  InstagramLogo,
+  FacebookLogo,
   MetaOpenSourceLogo,
 } from './logos';
 
@@ -66,8 +74,10 @@ const SOCIAL_LINKS: ReadonlyArray<{
   Icon: (props: React.SVGProps<SVGSVGElement>) => React.ReactElement;
 }> = [
   {label: 'GitHub', href: GITHUB_REPO, Icon: GitHubLogo},
-  {label: 'Threads', href: 'https://www.threads.net', Icon: ThreadsLogo},
-  {label: 'X', href: 'https://x.com', Icon: XLogo},
+  {label: 'Facebook', href: FACEBOOK_URL, Icon: FacebookLogo},
+  {label: 'Instagram', href: INSTAGRAM_URL, Icon: InstagramLogo},
+  {label: 'Threads', href: THREADS_URL, Icon: ThreadsLogo},
+  {label: 'X', href: X_URL, Icon: XLogo},
 ];
 
 const LEGAL_LINKS: ReadonlyArray<{label: string; href: string}> = [
