@@ -3,7 +3,6 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {HStack} from '@xds/core/Layout';
 import {Text} from '@xds/core/Text';
 import {Table, pixel, proportional} from '@xds/core/Table';
 import type {TokenTableProps} from './types';
@@ -16,17 +15,7 @@ const styles = stylex.create({
     overflow: 'hidden',
     whiteSpace: 'nowrap',
     textOverflow: 'ellipsis',
-    maxWidth: 200,
-  },
-  weightSwatch: {
-    flex: 1,
-    overflow: 'hidden',
-    whiteSpace: 'nowrap',
-    textOverflow: 'ellipsis',
-  },
-  valueLabel: {
-    flexShrink: 0,
-    width: 40,
+    display: 'block',
   },
 });
 
@@ -45,22 +34,23 @@ export function FontFamilyTokenTable({theme}: TokenTableProps) {
         {
           key: 'value',
           header: 'Value',
-          width: proportional(1, {minWidth: 300}),
+          width: pixel(200),
           renderCell: (item: Record<string, unknown>) => (
-            <HStack gap={3} vAlign="center">
-              <Text type="code" color="secondary">
-                {(item.value as string)?.split(',')[0]?.trim()}
-              </Text>
-              <span
-                {...stylex.props(styles.fontSample)}
-                style={{
-                  fontFamily: item.value as string,
-                  flex: 1,
-                  maxWidth: 'none',
-                }}>
-                {FONT_SAMPLE}
-              </span>
-            </HStack>
+            <Text type="code" color="secondary">
+              {(item.value as string)?.split(',')[0]?.trim()}
+            </Text>
+          ),
+        },
+        {
+          key: 'example',
+          header: 'Example',
+          width: proportional(1, {minWidth: 200}),
+          renderCell: (item: Record<string, unknown>) => (
+            <span
+              {...stylex.props(styles.fontSample)}
+              style={{fontFamily: item.value as string}}>
+              {FONT_SAMPLE}
+            </span>
           ),
         },
       ]}
@@ -86,18 +76,23 @@ export function FontWeightTokenTable({theme}: TokenTableProps) {
         {
           key: 'value',
           header: 'Value',
-          width: proportional(1, {minWidth: 300}),
+          width: pixel(200),
           renderCell: (item: Record<string, unknown>) => (
-            <HStack gap={3} vAlign="center">
-              <Text type="code" color="secondary">
-                {item.value as string}
-              </Text>
-              <span
-                {...stylex.props(styles.weightSwatch)}
-                style={{fontWeight: item.value as string}}>
-                {FONT_SAMPLE}
-              </span>
-            </HStack>
+            <Text type="code" color="secondary">
+              {item.value as string}
+            </Text>
+          ),
+        },
+        {
+          key: 'example',
+          header: 'Example',
+          width: proportional(1, {minWidth: 200}),
+          renderCell: (item: Record<string, unknown>) => (
+            <span
+              {...stylex.props(styles.fontSample)}
+              style={{fontWeight: item.value as string}}>
+              {FONT_SAMPLE}
+            </span>
           ),
         },
       ]}
@@ -123,22 +118,23 @@ export function FontSizeTokenTable({theme}: TokenTableProps) {
         {
           key: 'value',
           header: 'Value',
-          width: proportional(1, {minWidth: 300}),
+          width: pixel(200),
           renderCell: (item: Record<string, unknown>) => (
-            <HStack gap={3} vAlign="center">
-              <Text type="code" color="secondary">
-                {item.value as string}
-              </Text>
-              <span
-                {...stylex.props(styles.fontSample)}
-                style={{
-                  fontSize: item.value as string,
-                  flex: 1,
-                  maxWidth: 'none',
-                }}>
-                {FONT_SAMPLE}
-              </span>
-            </HStack>
+            <Text type="code" color="secondary">
+              {item.value as string}
+            </Text>
+          ),
+        },
+        {
+          key: 'example',
+          header: 'Example',
+          width: proportional(1, {minWidth: 200}),
+          renderCell: (item: Record<string, unknown>) => (
+            <span
+              {...stylex.props(styles.fontSample)}
+              style={{fontSize: item.value as string}}>
+              {FONT_SAMPLE}
+            </span>
           ),
         },
       ]}
