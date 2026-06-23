@@ -10,10 +10,6 @@ import type {TokenTableProps} from './types';
 import {resolveToken, getTokensByPrefix} from './helpers';
 
 const styles = stylex.create({
-  // 96px so the border-radius cap (half the smallest side = 48px) sits clearly
-  // above the largest non-pill radius (--radius-page, up to 32px in some
-  // themes). On the old 32px box every token >=16px clamped to the same
-  // fully-rounded shape, so --radius-container/page/full looked identical.
   radiusBox: {
     width: 96,
     height: 96,
