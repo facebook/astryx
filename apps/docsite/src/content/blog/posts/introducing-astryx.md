@@ -9,6 +9,8 @@ tags:
   - 'Release'
   - 'AI'
   - 'Design systems'
+coverImage: '/blog-post-01.png'
+coverAlt: 'Introducing Astryx by Meta'
 relatedDocs:
   - title: 'Getting started'
     href: '/docs/getting-started'

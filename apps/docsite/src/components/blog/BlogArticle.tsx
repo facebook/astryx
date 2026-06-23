@@ -19,6 +19,7 @@ import {Markdown} from '@xds/core/Markdown';
 import {Text, Heading} from '@xds/core/Text';
 import {VStack, HStack} from '@xds/core/Layout';
 import {Grid} from '@xds/core/Grid';
+import {AspectRatio} from '@xds/core/AspectRatio';
 import {Icon} from '@xds/core/Icon';
 import {Section} from '@xds/core/Section';
 import {Badge} from '@xds/core/Badge';
@@ -33,20 +34,22 @@ const styles = stylex.create({
   section: {
     marginInline: 'auto',
   },
-  // Neutral cover placeholder (cover generator deferred). Calm, theme-driven.
+  // Shared cover frame (calm, theme-driven). AspectRatio governs the ratio.
   cover: {
-    width: '100%',
-    aspectRatio: '16 / 7',
     borderRadius: 'var(--radius-container)',
     backgroundColor: 'var(--color-background-muted)',
     border: '1px solid var(--color-border)',
+  },
+  // Neutral placeholder shown when no cover image is provided.
+  coverPlaceholder: {
+    width: '100%',
+    aspectRatio: '16 / 9',
   },
   coverImg: {
     width: '100%',
     height: '100%',
     objectFit: 'cover',
     display: 'block',
-    borderRadius: 'var(--radius-container)',
   },
   tagRow: {
     flexWrap: 'wrap',
@@ -87,13 +90,18 @@ export function BlogArticle({post}: BlogArticleProps) {
 
         {/* Cover — custom image when provided, else a neutral placeholder */}
         {post.coverImage ? (
-          <img
-            src={post.coverImage}
-            alt={post.coverAlt ?? ''}
-            {...stylex.props(styles.cover, styles.coverImg)}
-          />
+          <AspectRatio ratio={16 / 9} xstyle={styles.cover}>
+            <img
+              src={post.coverImage}
+              alt={post.coverAlt ?? ''}
+              {...stylex.props(styles.coverImg)}
+            />
+          </AspectRatio>
         ) : (
-          <div {...stylex.props(styles.cover)} aria-hidden="true" />
+          <div
+            {...stylex.props(styles.cover, styles.coverPlaceholder)}
+            aria-hidden="true"
+          />
         )}
 
         {/* Body */}
