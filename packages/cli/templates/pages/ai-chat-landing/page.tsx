@@ -2,44 +2,31 @@
 
 'use client';
 
-import {useCallback, useRef, useState} from 'react';
+import {useRef, useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
+import {spacingVars} from '@xds/core/theme/tokens.stylex';
 
-import {
-  Layout,
-  LayoutContent,
-  VStack,
-  HStack,
-} from '@xds/core/Layout';
+import {Layout, LayoutContent, VStack, HStack} from '@xds/core/Layout';
 import {Text, Heading} from '@xds/core/Text';
 import {
   ChatComposer,
   ChatComposerDrawer,
   ChatComposerInput,
   ChatDictationButton,
-  ChatLayout,
-  ChatMessage,
-  ChatMessageBubble,
-  ChatMessageList,
-  ChatMessageMetadata,
-  ChatSystemMessage,
   useChatDictation,
   type ChatComposerInputHandle,
   type ChatComposerTrigger,
 } from '@xds/core/Chat';
-import {Markdown} from '@xds/core/Markdown';
 import {
   createStaticSource,
   TypeaheadItem,
   type SearchableItem,
 } from '@xds/core/Typeahead';
-import {Timestamp} from '@xds/core/Timestamp';
 import {ToggleButton, ToggleButtonGroup} from '@xds/core/ToggleButton';
-import {Button} from '@xds/core/Button';
 import {Token} from '@xds/core/Token';
-import {Card} from '@xds/core/Card';
+import {ClickableCard} from '@xds/core/ClickableCard';
 import {Grid} from '@xds/core/Grid';
 import {Icon} from '@xds/core/Icon';
-
 import {DropdownMenu, DropdownMenuItem} from '@xds/core/DropdownMenu';
 import {
   Cog6ToothIcon,
@@ -50,16 +37,17 @@ import {
   MagnifyingGlassIcon,
   LockClosedIcon,
   ClockIcon,
-  PaperClipIcon,
   LightBulbIcon,
 } from '@heroicons/react/24/outline';
 
-const TOKEN_MODES: Record<string, string> = {
-  sensitive: '/sensitive',
-  deep: '/deep-mode',
-};
+const styles = stylex.create({
+  // Fill the content area so the greeting and composer stay vertically centered.
+  page: {minHeight: '100%'},
+  composerInput: {minHeight: 84},
+  categories: {paddingInline: spacingVars['--spacing-3']},
+});
 
-// Suggestion prompts per category
+// Suggestion cards shown once a category is selected.
 const CATEGORY_SUGGESTIONS: Record<
   string,
   Array<{heading: string; body: string; prompt: string}>
@@ -154,7 +142,7 @@ const CATEGORY_SUGGESTIONS: Record<
   ],
 };
 
-// Shared category definitions used by both toggle group and mode menu
+// Category filters, shared by the toggle group and the composer mode menu.
 const CATEGORIES = [
   {key: 'writing', label: 'Writing', icon: PencilSquareIcon},
   {key: 'coding', label: 'Coding', icon: CodeBracketIcon},
@@ -162,7 +150,7 @@ const CATEGORIES = [
   {key: 'creative', label: 'Creative', icon: LightBulbIcon},
 ] as const;
 
-// Mode options for the dropdown (categories + special modes)
+// Composer mode menu: categories plus special modes.
 const MODE_OPTIONS = [
   {key: 'auto', label: 'Auto', icon: SparklesIcon},
   ...CATEGORIES,
@@ -170,19 +158,20 @@ const MODE_OPTIONS = [
   {key: 'deep', label: 'Deep Mode', icon: ClockIcon},
 ] as const;
 
-// ============= TRIGGER DATA =============
+// Modes that insert a composer token instead of switching the active category.
+const TOKEN_MODES: Record<string, string> = {
+  sensitive: '/sensitive',
+  deep: '/deep-mode',
+};
 
+// Composer trigger data: @ mentions and / commands.
 const MENTION_ITEMS: SearchableItem<{role: string}>[] = [
   {id: 'cindy', label: 'Cindy Zhang', auxiliaryData: {role: 'Design Systems'}},
   {id: 'alex', label: 'Alex Johnson', auxiliaryData: {role: 'Frontend'}},
   {id: 'sam', label: 'Sam Rivera', auxiliaryData: {role: 'Backend'}},
   {id: 'jordan', label: 'Jordan Lee', auxiliaryData: {role: 'Product'}},
   {id: 'taylor', label: 'Taylor Kim', auxiliaryData: {role: 'Design'}},
-  {
-    id: 'morgan',
-    label: 'Morgan Chen',
-    auxiliaryData: {role: 'Infrastructure'},
-  },
+  {id: 'morgan', label: 'Morgan Chen', auxiliaryData: {role: 'Infrastructure'}},
 ];
 
 const COMMAND_ITEMS: SearchableItem<{description: string}>[] = [
@@ -213,12 +202,9 @@ const COMMAND_ITEMS: SearchableItem<{description: string}>[] = [
   },
 ];
 
-const mentionSource = createStaticSource(MENTION_ITEMS);
-const commandSource = createStaticSource(COMMAND_ITEMS);
-
 const mentionTrigger: ChatComposerTrigger = {
   character: '@',
-  searchSource: mentionSource,
+  searchSource: createStaticSource(MENTION_ITEMS),
   renderItem: item => (
     <TypeaheadItem
       item={item}
@@ -228,13 +214,13 @@ const mentionTrigger: ChatComposerTrigger = {
   onSelect: item => ({
     value: `@${item.id}`,
     label: item.label,
-    variant: 'blue' as const,
+    variant: 'blue',
   }),
 };
 
 const commandTrigger: ChatComposerTrigger = {
   character: '/',
-  searchSource: commandSource,
+  searchSource: createStaticSource(COMMAND_ITEMS),
   renderItem: item => (
     <TypeaheadItem
       item={item}
@@ -244,34 +230,15 @@ const commandTrigger: ChatComposerTrigger = {
   onSelect: item => ({
     value: `/${item.label}`,
     label: `/${item.label}`,
-    variant: 'yellow' as const,
+    variant: 'yellow',
   }),
 };
 
 const composerTriggers = [mentionTrigger, commandTrigger];
 
-// ============= MESSAGE TYPES =============
-
-type ChatMessage =
-  | {
-      id: number;
-      role: 'user';
-      text: string;
-      attachments?: string[];
-      sentAt: Date;
-    }
-  | {id: number; role: 'assistant'; text: string; isStreaming?: boolean}
-  | {id: number; role: 'system'; text: string};
-
-const SIMULATED_RESPONSE =
-  'Thanks for your message! I’m looking into this now.\n\nHere’s what I found so far:\n\n1. **First**, I reviewed the relevant context from the attached files\n2. **Next**, I cross-referenced with the latest documentation\n3. **Finally**, I have a few recommendations\n\nLet me know if you’d like me to dive deeper into any of these areas, or if you have follow-up questions.';
-
-// ============= SIDENAV =============
-
-// ============= MAIN COMPONENT =============
+// Main component
 
 export default function AIChatTemplate() {
-  const [view, setView] = useState<'landing' | 'chat'>('landing');
   const [mode, setMode] = useState<string | null>('auto');
   const [category, setCategory] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<string[]>([
@@ -281,130 +248,50 @@ export default function AIChatTemplate() {
     'user_research.csv',
     'brand_guidelines.pdf',
   ]);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isStreaming, setIsStreaming] = useState(false);
   const [isModeMenuOpen, setIsModeMenuOpen] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const composerInputRef = useRef<ChatComposerInputHandle>(null);
   const shouldFocusComposerRef = useRef(false);
-  const streamRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const dictation = useChatDictation({inputRef: composerInputRef});
+
   const activeMode = MODE_OPTIONS.find(m => m.key === mode) ?? MODE_OPTIONS[0];
   const suggestions = category ? CATEGORY_SUGGESTIONS[category] : null;
 
-  // ---------------------------------------------------------------------------
-  // Streaming
-  // ---------------------------------------------------------------------------
+  // The composer's imperative insert methods mutate the DOM without emitting a
+  // change, so dispatch an input event to sync its value and clear the placeholder.
+  const syncComposerValue = () => {
+    document.activeElement?.dispatchEvent(new Event('input', {bubbles: true}));
+  };
 
-  const streamResponse = useCallback((responseText: string) => {
-    const msgId = Date.now();
-    setIsStreaming(true);
-    setMessages(prev => [
-      ...prev,
-      {id: msgId, role: 'assistant', text: '', isStreaming: true},
-    ]);
-
-    let i = 0;
-    streamRef.current = setInterval(() => {
-      i += 2 + Math.floor(Math.random() * 4);
-      if (i >= responseText.length) {
-        clearInterval(streamRef.current);
-        setMessages(prev =>
-          prev.map(m =>
-            m.id === msgId ? {...m, text: responseText, isStreaming: false} : m,
-          ),
-        );
-        setIsStreaming(false);
-        return;
-      }
-      setMessages(prev =>
-        prev.map(m =>
-          m.id === msgId ? {...m, text: responseText.slice(0, i)} : m,
-        ),
-      );
-    }, 30);
-  }, []);
-
-  const handleStop = useCallback(() => {
-    clearInterval(streamRef.current);
-    setIsStreaming(false);
-    setMessages(prev =>
-      prev.map(m =>
-        m.role === 'assistant' && m.isStreaming
-          ? {...m, isStreaming: false}
-          : m,
-      ),
-    );
-  }, []);
-
-  // ---------------------------------------------------------------------------
-  // Submit
-  // ---------------------------------------------------------------------------
-
-  const handleSubmit = useCallback(
-    (value: string) => {
-      if (!value.trim()) {
-        return;
-      }
-
-      const userMsg: ChatMessage = {
-        id: Date.now(),
-        role: 'user',
-        text: value,
-        attachments: attachments.length > 0 ? [...attachments] : undefined,
-        sentAt: new Date(),
-      };
-
-      if (view === 'landing') {
-        setMessages([
-          {id: userMsg.id - 1, role: 'system', text: 'Today'},
-          userMsg,
-        ]);
-        setAttachments([]);
-        setView('chat');
-        setTimeout(() => streamResponse(SIMULATED_RESPONSE), 600);
-      } else {
-        setMessages(prev => [...prev, userMsg]);
-        setTimeout(() => streamResponse(SIMULATED_RESPONSE), 600);
-      }
-    },
-    [view, attachments, streamResponse],
-  );
-
-  const replaceWithSuggestion = (prompt: string) => {
+  const applySuggestion = (prompt: string) => {
     const input = composerInputRef.current;
     if (!input) {
       return;
     }
     input.focus();
-    // Select all existing content so insertText replaces it
-    const sel = window.getSelection();
-    if (sel && document.activeElement) {
-      sel.selectAllChildren(document.activeElement);
+    if (document.activeElement) {
+      window.getSelection()?.selectAllChildren(document.activeElement);
     }
     input.insertText(prompt);
-    // Dispatch input event to trigger emitChange and clear placeholder
-    document.activeElement?.dispatchEvent(new Event('input', {bubbles: true}));
+    syncComposerValue();
   };
 
-  // ---------------------------------------------------------------------------
-  // Composer (shared between landing and chat views)
-  // ---------------------------------------------------------------------------
-
-  const insertMentionToken = (item: (typeof MENTION_ITEMS)[number]) => {
-    composerInputRef.current?.focus();
-    // Move cursor to end so token is appended
-    const sel = window.getSelection();
-    if (sel && document.activeElement) {
-      sel.selectAllChildren(document.activeElement);
-      sel.collapseToEnd();
+  const insertMention = (item: (typeof MENTION_ITEMS)[number]) => {
+    const input = composerInputRef.current;
+    if (!input) {
+      return;
     }
-    composerInputRef.current?.insertToken({
+    input.focus();
+    if (document.activeElement) {
+      const sel = window.getSelection();
+      sel?.selectAllChildren(document.activeElement);
+      sel?.collapseToEnd();
+    }
+    input.insertToken({
       value: `@${item.id}`,
       label: item.label,
       variant: 'blue',
     });
-    document.activeElement?.dispatchEvent(new Event('input', {bubbles: true}));
+    syncComposerValue();
   };
 
   const insertModeToken = (label: string) => {
@@ -414,214 +301,8 @@ export default function AIChatTemplate() {
       label,
       variant: 'orange',
     });
-    // Dispatch input event to trigger emitChange and clear placeholder
-    document.activeElement?.dispatchEvent(new Event('input', {bubbles: true}));
+    syncComposerValue();
   };
-
-  const fileInput = (
-    <input
-      ref={fileInputRef}
-      type="file"
-      multiple
-      style={{display: 'none'}}
-      onChange={e => {
-        const files = Array.from(e.target.files ?? []);
-        setAttachments(prev => [...prev, ...files.map(f => f.name)]);
-        e.target.value = '';
-      }}
-    />
-  );
-
-  const renderComposer = ({
-    inputMinHeight,
-    extraFooterActions = null,
-  }: {
-    inputMinHeight: string;
-    extraFooterActions?: React.ReactNode;
-  }) => (
-    <ChatComposer
-      onSubmit={handleSubmit}
-      onStop={handleStop}
-      isStopShown={isStreaming}
-      placeholder="Ask anything"
-      input={
-        <ChatComposerInput
-          handleRef={composerInputRef}
-          triggers={composerTriggers}
-          style={{minHeight: inputMinHeight}}
-        />
-      }
-      drawer={
-        attachments.length > 0 ? (
-          <ChatComposerDrawer count={attachments.length}>
-            {attachments.map(name => (
-              <Token
-                key={name}
-                label={name}
-                onRemove={() =>
-                  setAttachments(prev => prev.filter(n => n !== name))
-                }
-              />
-            ))}
-          </ChatComposerDrawer>
-        ) : undefined
-      }
-      headerActions={
-        <>
-          <DropdownMenu
-            button={{
-              label: 'Reference',
-              variant: 'ghost',
-              size: 'sm',
-              icon: <Icon icon={AtSymbolIcon} size="sm" />,
-              isIconOnly: true,
-            }}
-            hasChevron={false}
-            menuWidth={240}>
-            {MENTION_ITEMS.map(item => (
-              <DropdownMenuItem
-                key={item.id}
-                label={item.label}
-                description={item.auxiliaryData?.role}
-                onClick={() => insertMentionToken(item)}
-              />
-            ))}
-          </DropdownMenu>
-          <Button
-            label="Attach"
-            variant="ghost"
-            size="sm"
-            icon={<Icon icon={PaperClipIcon} size="sm" />}
-            isIconOnly
-            onClick={() => fileInputRef.current?.click()}
-          />
-        </>
-      }
-      footerActions={
-        <>
-          <DropdownMenu
-            button={{
-              label: activeMode.label,
-              variant: 'ghost',
-              size: 'md',
-              icon: <Icon icon={activeMode.icon} size="sm" />,
-              children: activeMode.label,
-            }}
-            menuWidth={200}
-            isMenuOpen={isModeMenuOpen}
-            onOpenChange={(isOpen: boolean) => {
-              setIsModeMenuOpen(isOpen);
-              if (!isOpen && shouldFocusComposerRef.current) {
-                shouldFocusComposerRef.current = false;
-                // Delay focus until after menu restores focus to its trigger button
-                setTimeout(() => {
-                  composerInputRef.current?.focus();
-                }, 50);
-              }
-            }}
-            items={MODE_OPTIONS.flatMap(opt => {
-              const item = {
-                label: opt.label,
-                icon: opt.icon,
-                onClick: () => {
-                  const tokenLabel = TOKEN_MODES[opt.key];
-                  if (tokenLabel) {
-                    insertModeToken(tokenLabel);
-                    shouldFocusComposerRef.current = true;
-                  } else {
-                    setMode(opt.key);
-                  }
-                },
-              };
-              return opt.key === 'sensitive'
-                ? [{type: 'divider' as const}, item]
-                : [item];
-            })}
-          />
-          {extraFooterActions}
-        </>
-      }
-      sendActions={<ChatDictationButton dictation={dictation} />}
-    />
-  );
-
-  // ---------------------------------------------------------------------------
-  // Chat view
-  // ---------------------------------------------------------------------------
-
-  if (view === 'chat') {
-    return (
-      <Layout
-        height="fill"
-        content={
-          <LayoutContent padding={0}>
-            <ChatLayout
-              style={{height: '100%'}}
-              composer={
-                <>
-                  {fileInput}
-                  {renderComposer({inputMinHeight: '44px'})}
-                </>
-              }>
-              <ChatMessageList>
-                {messages.map(msg => {
-                  if (msg.role === 'system') {
-                    return (
-                      <ChatSystemMessage key={msg.id} variant="divider">
-                        {msg.text}
-                      </ChatSystemMessage>
-                    );
-                  }
-                  if (msg.role === 'user') {
-                    return (
-                      <ChatMessage key={msg.id} sender="user">
-                        {msg.attachments && msg.attachments.length > 0 && (
-                          <HStack gap={1} style={{flexWrap: 'wrap'}}>
-                            {msg.attachments.map(f => (
-                              <Token key={f} label={f} />
-                            ))}
-                          </HStack>
-                        )}
-                        <ChatMessageBubble
-                          metadata={
-                            <ChatMessageMetadata
-                              timestamp={
-                                <Timestamp
-                                  value={msg.sentAt.getTime()}
-                                  format="time"
-                                />
-                              }
-                            />
-                          }>
-                          {msg.text}
-                        </ChatMessageBubble>
-                      </ChatMessage>
-                    );
-                  }
-                  return (
-                    <ChatMessage key={msg.id} sender="assistant">
-                      <Markdown density="compact">{msg.text}</Markdown>
-                      {!msg.isStreaming && msg.text && (
-                        <ChatMessageMetadata
-                          timestamp={
-                            <Timestamp value={msg.id} format="time" />
-                          }
-                        />
-                      )}
-                    </ChatMessage>
-                  );
-                })}
-              </ChatMessageList>
-            </ChatLayout>
-          </LayoutContent>
-        }
-      />
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Landing view
-  // ---------------------------------------------------------------------------
 
   return (
     <Layout
@@ -630,7 +311,7 @@ export default function AIChatTemplate() {
       padding={6}
       content={
         <LayoutContent>
-          <VStack gap={8} vAlign="center" style={{minHeight: '100%'}}>
+          <VStack gap={8} vAlign="center" xstyle={styles.page}>
             {/* Greeting */}
             <VStack gap={1}>
               <HStack gap={2} vAlign="center">
@@ -645,30 +326,116 @@ export default function AIChatTemplate() {
             </VStack>
 
             {/* Composer */}
-            {fileInput}
-            {renderComposer({
-              inputMinHeight: '84px',
-              extraFooterActions: (
+            <ChatComposer
+              onSubmit={() => {}}
+              placeholder="Ask anything"
+              input={
+                <ChatComposerInput
+                  handleRef={composerInputRef}
+                  triggers={composerTriggers}
+                  xstyle={styles.composerInput}
+                  onFiles={files =>
+                    setAttachments(prev => [...prev, ...files.map(f => f.name)])
+                  }
+                />
+              }
+              drawer={
+                attachments.length > 0 ? (
+                  <ChatComposerDrawer count={attachments.length}>
+                    {attachments.map(name => (
+                      <Token
+                        key={name}
+                        label={name}
+                        onRemove={() =>
+                          setAttachments(prev => prev.filter(n => n !== name))
+                        }
+                      />
+                    ))}
+                  </ChatComposerDrawer>
+                ) : undefined
+              }
+              headerActions={
                 <DropdownMenu
                   button={{
-                    label: 'Settings',
+                    label: 'Reference',
                     variant: 'ghost',
-                    size: 'md',
-                    icon: <Icon icon={Cog6ToothIcon} size="sm" />,
-                    children: 'Settings',
+                    size: 'sm',
+                    icon: <Icon icon={AtSymbolIcon} size="sm" />,
+                    isIconOnly: true,
                   }}
-                  menuWidth={200}
-                  items={[
-                    {label: 'Preferences', onClick: () => {}},
-                    {label: 'Keyboard shortcuts', onClick: () => {}},
-                    {label: 'About', onClick: () => {}},
-                  ]}
-                />
-              ),
-            })}
+                  hasChevron={false}
+                  menuWidth={240}>
+                  {MENTION_ITEMS.map(item => (
+                    <DropdownMenuItem
+                      key={item.id}
+                      label={item.label}
+                      description={item.auxiliaryData?.role}
+                      onClick={() => insertMention(item)}
+                    />
+                  ))}
+                </DropdownMenu>
+              }
+              footerActions={
+                <>
+                  <DropdownMenu
+                    button={{
+                      label: activeMode.label,
+                      variant: 'ghost',
+                      size: 'md',
+                      icon: <Icon icon={activeMode.icon} size="sm" />,
+                      children: activeMode.label,
+                    }}
+                    menuWidth={200}
+                    isMenuOpen={isModeMenuOpen}
+                    onOpenChange={isOpen => {
+                      setIsModeMenuOpen(isOpen);
+                      // Restore focus to the composer after inserting a mode token.
+                      if (!isOpen && shouldFocusComposerRef.current) {
+                        shouldFocusComposerRef.current = false;
+                        setTimeout(() => composerInputRef.current?.focus(), 50);
+                      }
+                    }}
+                    items={MODE_OPTIONS.flatMap(opt => {
+                      const item = {
+                        label: opt.label,
+                        icon: opt.icon,
+                        onClick: () => {
+                          const tokenLabel = TOKEN_MODES[opt.key];
+                          if (tokenLabel) {
+                            insertModeToken(tokenLabel);
+                            shouldFocusComposerRef.current = true;
+                          } else {
+                            setMode(opt.key);
+                          }
+                        },
+                      };
+                      return opt.key === 'sensitive'
+                        ? [{type: 'divider' as const}, item]
+                        : [item];
+                    })}
+                  />
+                  <DropdownMenu
+                    button={{
+                      label: 'Settings',
+                      variant: 'ghost',
+                      size: 'md',
+                      icon: <Icon icon={Cog6ToothIcon} size="sm" />,
+                      children: 'Settings',
+                    }}
+                    menuWidth={200}
+                    items={[
+                      {label: 'Preferences', onClick: () => {}},
+                      {label: 'Keyboard shortcuts', onClick: () => {}},
+                      {label: 'About', onClick: () => {}},
+                    ]}
+                  />
+                </>
+              }
+              sendActions={<ChatDictationButton dictation={dictation} />}
+            />
 
-            {/* Category toggle buttons */}
-            <VStack gap={6} style={{paddingInline: 'var(--spacing-3)'}}>
+            {/* Category filters + suggestion cards */}
+            <VStack gap={6} xstyle={styles.categories}>
               <ToggleButtonGroup
                 label="Category"
                 value={category}
@@ -684,27 +451,17 @@ export default function AIChatTemplate() {
                 ))}
               </ToggleButtonGroup>
 
-              {/* Suggestion cards */}
               {suggestions && (
                 <Grid columns={{minWidth: 280}} gap={3}>
                   {suggestions.map(suggestion => (
-                    <Card
-                      variant="muted"
+                    <ClickableCard
                       key={suggestion.heading}
+                      label={suggestion.heading}
+                      variant="muted"
                       padding={3}
-                      style={{cursor: 'pointer'}}
-                      role="button"
-                      tabIndex={0}
                       onClick={() => {
-                        replaceWithSuggestion(suggestion.prompt);
+                        applySuggestion(suggestion.prompt);
                         setMode(category);
-                      }}
-                      onKeyDown={(e: React.KeyboardEvent) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          replaceWithSuggestion(suggestion.prompt);
-                          setMode(category);
-                        }
                       }}>
                       <VStack gap={0.5}>
                         <Heading level={4}>{suggestion.heading}</Heading>
@@ -712,7 +469,7 @@ export default function AIChatTemplate() {
                           {suggestion.body}
                         </Text>
                       </VStack>
-                    </Card>
+                    </ClickableCard>
                   ))}
                 </Grid>
               )}
