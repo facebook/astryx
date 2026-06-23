@@ -147,7 +147,7 @@ describe('checkForUpdate', () => {
       path.join(tmpDir, 'package.json'),
       JSON.stringify({
         dependencies: {'@xds/core': '^0.0.7'},
-        xds: {versionFile: './LATEST_VERSION'},
+        astryx: {versionFile: './LATEST_VERSION'},
       }),
     );
 
@@ -162,7 +162,7 @@ describe('checkForUpdate', () => {
       path.join(tmpDir, 'package.json'),
       JSON.stringify({
         dependencies: {'@xds/core': '^0.0.7'},
-        xds: {versionFile: './LATEST_VERSION'},
+        astryx: {versionFile: './LATEST_VERSION'},
       }),
     );
 

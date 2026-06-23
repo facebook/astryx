@@ -67,7 +67,7 @@ describe('findProjectRoot', () => {
 });
 
 describe('discoverExternalPackages', () => {
-  it('finds packages with an "xds" field in package.json', () => {
+  it('finds packages with an "astryx" field in package.json', () => {
     const nm = path.join(tmpDir, 'node_modules');
     const extDir = path.join(nm, 'xds-charts');
     fs.mkdirSync(extDir, {recursive: true});
@@ -75,7 +75,7 @@ describe('discoverExternalPackages', () => {
       path.join(extDir, 'package.json'),
       JSON.stringify({
         name: 'xds-charts',
-        xds: {docs: './src', category: 'Data Viz'},
+        astryx: {docs: './src', category: 'Data Viz'},
       }),
     );
 
@@ -98,7 +98,7 @@ describe('discoverExternalPackages', () => {
       path.join(scopedDir, 'package.json'),
       JSON.stringify({
         name: '@acme/xds-widgets',
-        xds: {docs: './lib', category: 'Widgets'},
+        astryx: {docs: './lib', category: 'Widgets'},
       }),
     );
 
@@ -121,7 +121,7 @@ describe('discoverExternalPackages', () => {
       path.join(coreDir, 'package.json'),
       JSON.stringify({
         name: '@xds/core',
-        xds: {docs: './src'},
+        astryx: {docs: './src'},
       }),
     );
 
@@ -129,7 +129,7 @@ describe('discoverExternalPackages', () => {
     expect(result).toEqual([]);
   });
 
-  it('skips packages without "xds" field', () => {
+  it('skips packages without "astryx" field', () => {
     const nm = path.join(tmpDir, 'node_modules');
     const extDir = path.join(nm, 'some-lib');
     fs.mkdirSync(extDir, {recursive: true});
@@ -150,7 +150,7 @@ describe('discoverExternalPackages', () => {
       path.join(extDir, 'package.json'),
       JSON.stringify({
         name: 'my-components',
-        xds: {docs: './docs'},
+        astryx: {docs: './docs'},
       }),
     );
 
@@ -171,7 +171,7 @@ describe('discoverExternalPackages', () => {
       path.join(extDir, 'package.json'),
       JSON.stringify({
         name: 'xds-ext',
-        xds: {docs: './src'},
+        astryx: {docs: './src'},
       }),
     );
 

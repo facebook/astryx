@@ -70,10 +70,10 @@ export function findProjectRoot(startDir = process.cwd()) {
 }
 
 /**
- * Discover external XDS-compatible packages from node_modules.
- * Scans for packages with an "xds" field in their package.json:
+ * Discover external Astryx-compatible packages from node_modules.
+ * Scans for packages with an "astryx" field in their package.json:
  *
- *   { "xds": { "docs": "./src", "category": "Common", "blocks": "./blocks/components" } }
+ *   { "astryx": { "docs": "./src", "category": "Common", "blocks": "./blocks/components" } }
  *
  * Returns array of { name, category, docsDir, blocksDir }.
  */
@@ -118,13 +118,13 @@ export function discoverExternalPackages(startDir = process.cwd()) {
       try {
         const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
         if (pkg.name === '@xds/core') continue;
-        if (pkg.xds && pkg.xds.docs) {
+        if (pkg.astryx && pkg.astryx.docs) {
           externals.push({
             name: pkg.name,
-            category: pkg.xds.category || pkg.name,
-            docsDir: path.resolve(fullPath, pkg.xds.docs),
-            blocksDir: pkg.xds.blocks
-              ? path.resolve(fullPath, pkg.xds.blocks)
+            category: pkg.astryx.category || pkg.name,
+            docsDir: path.resolve(fullPath, pkg.astryx.docs),
+            blocksDir: pkg.astryx.blocks
+              ? path.resolve(fullPath, pkg.astryx.blocks)
               : null,
           });
         }

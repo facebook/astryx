@@ -35,7 +35,7 @@ export function getLatestVersion(cwd = process.cwd()) {
     const pkgPath = path.resolve(cwd, 'package.json');
     if (fs.existsSync(pkgPath)) {
       const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-      const versionFile = pkg.xds?.versionFile;
+      const versionFile = pkg.astryx?.versionFile;
 
       if (versionFile) {
         const filePath = path.resolve(cwd, versionFile);

@@ -46,7 +46,7 @@ export const doc = {
 
   fs.writeFileSync(path.join(extDir, 'package.json'), JSON.stringify({
     name: '@test/ext',
-    xds: {docs: './src', category: 'Common', blocks: './blocks/components'},
+    astryx: {docs: './src', category: 'Common', blocks: './blocks/components'},
   }));
   fs.writeFileSync(path.join(extSrc, 'Button', 'Button.doc.mjs'), `
 export const docs = {

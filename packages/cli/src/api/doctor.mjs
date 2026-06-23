@@ -135,7 +135,7 @@ function detectThemeWiring(cwd) {
   const nm = findNodeModules(cwd);
   const projectDir = nm ? path.dirname(nm) : cwd;
   const pkg = readPkg(path.join(projectDir, 'package.json'));
-  if (pkg?.xds?.theme) return {wired: true, source: 'package.json xds.theme'};
+  if (pkg?.astryx?.theme) return {wired: true, source: 'package.json astryx.theme'};
   return {wired: false, source: null};
 }
 

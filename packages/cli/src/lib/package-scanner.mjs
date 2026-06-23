@@ -16,9 +16,9 @@ export function scanDirectory(scanDir) {
     if (!fs.existsSync(pkgPath)) continue;
     let pkg;
     try { pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8')); } catch { continue; }
-    if (!pkg.xds || !pkg.xds.docs) continue;
+    if (!pkg.astryx || !pkg.astryx.docs) continue;
     const pkgDir = path.join(scanDir, entry.name);
-    const docsDir = path.resolve(pkgDir, pkg.xds.docs);
+    const docsDir = path.resolve(pkgDir, pkg.astryx.docs);
     const components = discoverDocComponents(docsDir);
     if (components.length === 0) continue;
     packages.push({
@@ -27,8 +27,8 @@ export function scanDirectory(scanDir) {
       description: pkg.description,
       displayName: pkg.displayName,
       dir: pkgDir,
-      xds: pkg.xds,
-      category: pkg.xds.category || pkg.name || entry.name,
+      astryx: pkg.astryx,
+      category: pkg.astryx.category || pkg.name || entry.name,
       docsDir,
       components,
     });

@@ -92,7 +92,7 @@ export function resolveTheme(cwd = process.cwd()) {
     if (fs.existsSync(pkgPath)) {
       try {
         const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-        specifier = pkg.xds?.theme || null;
+        specifier = pkg.astryx?.theme || null;
       } catch {
         // Ignore parse errors
       }

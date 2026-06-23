@@ -58,10 +58,10 @@ export function registerDiscover(program) {
             } else {
               humanLog('No external packages found.');
               humanLog('');
-              humanLog('Packages opt in by adding an "xds" field to package.json:');
+              humanLog('Packages opt in by adding an "astryx" field to package.json:');
               humanLog('');
               humanLog('  {');
-              humanLog('    "xds": {');
+              humanLog('    "astryx": {');
               humanLog('      "docs": "./src",');
               humanLog('      "category": "Common"');
               humanLog('    }');
