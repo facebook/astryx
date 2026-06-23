@@ -13,9 +13,10 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSText} from '@xds/core/Text';
-import {XDSHStack} from '@xds/core/Layout';
+import {Avatar} from '@xds/core/Avatar';
+import {Text} from '@xds/core/Text';
+import {HStack} from '@xds/core/Layout';
+import {Divider} from '@xds/core/Divider';
 import {resolveAuthor} from '../../content/blog/authors';
 
 export function formatDate(iso: string): string {
@@ -36,8 +37,8 @@ const styles = stylex.create({
   names: {
     display: 'inline',
   },
-  dot: {
-    opacity: 0.5,
+  divider: {
+    height: '0.75em',
   },
 });
 
@@ -48,6 +49,8 @@ export interface AuthorBylineProps {
   readingTimeMinutes?: number;
   /** 'compact' for cards, 'full' for article headers. */
   variant?: 'compact' | 'full';
+  /** Optional class on the root row (e.g. for parent-driven hover styling). */
+  className?: string;
 }
 
 export function AuthorByline({
@@ -56,54 +59,48 @@ export function AuthorByline({
   updatedAt,
   readingTimeMinutes,
   variant = 'compact',
+  className,
 }: AuthorBylineProps) {
   const resolved = authors.map(resolveAuthor);
-  const avatarSize = variant === 'full' ? 'small' : 'tiny';
   const names = resolved.map(a => a.name).join(', ');
 
   return (
-    <XDSHStack gap={2} align="center">
-      <XDSHStack gap={0} align="center">
+    <HStack gap={2} align="center" className={className}>
+      <HStack gap={0} align="center">
         {resolved.map(author => (
-          <XDSAvatar
+          <Avatar
             key={author.key}
             src={author.avatar}
             name={author.name}
-            size={avatarSize}
+            size="tiny"
           />
         ))}
-      </XDSHStack>
-      <XDSHStack gap={1} align="center">
-        <XDSText type="supporting" color="secondary">
+      </HStack>
+      <HStack gap={2} align="center">
+        <Text type="supporting" color="secondary">
           {names}
-        </XDSText>
-        <XDSText type="supporting" color="secondary" xstyle={styles.dot}>
-          ·
-        </XDSText>
-        <XDSText type="supporting" color="secondary">
+        </Text>
+        <Divider orientation="vertical" xstyle={styles.divider} />
+        <Text type="supporting" color="secondary">
           {formatDate(date)}
-        </XDSText>
+        </Text>
         {variant === 'full' && updatedAt ? (
           <>
-            <XDSText type="supporting" color="secondary" xstyle={styles.dot}>
-              ·
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
+            <Divider orientation="vertical" xstyle={styles.divider} />
+            <Text type="supporting" color="secondary">
               Updated {formatDate(updatedAt)}
-            </XDSText>
+            </Text>
           </>
         ) : null}
         {readingTimeMinutes ? (
           <>
-            <XDSText type="supporting" color="secondary" xstyle={styles.dot}>
-              ·
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
+            <Divider orientation="vertical" xstyle={styles.divider} />
+            <Text type="supporting" color="secondary">
               {readingTimeMinutes} min read
-            </XDSText>
+            </Text>
           </>
         ) : null}
-      </XDSHStack>
-    </XDSHStack>
+      </HStack>
+    </HStack>
   );
 }

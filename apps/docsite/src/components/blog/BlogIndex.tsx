@@ -19,26 +19,20 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSSection} from '@xds/core/Section';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSCarousel} from '@xds/core/Carousel';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {Text, Heading} from '@xds/core/Text';
+import {VStack} from '@xds/core/Layout';
+import {Section} from '@xds/core/Section';
+import {Grid} from '@xds/core/Grid';
+import {ToggleButton, ToggleButtonGroup} from '@xds/core/ToggleButton';
+import {EmptyState} from '@xds/core/EmptyState';
 import type {BlogPost, BlogPostType} from '../../lib/blog/schema';
 import {POST_TYPE_LABELS} from '../../lib/blog/schema';
 import {BlogCard} from './BlogCard';
 
 const styles = stylex.create({
-  header: {
-    maxWidth: 720,
-  },
-  filterRow: {
-    marginBottom: 4,
-  },
-  empty: {
-    paddingBlock: 48,
-    textAlign: 'center',
+  typeFilter: {
+    flexWrap: 'wrap',
+    justifyContent: 'center',
   },
 });
 
@@ -72,63 +66,59 @@ export function BlogIndex({posts, availableTypes}: BlogIndexProps) {
   const restPosts = showFeature ? filtered.slice(1) : filtered;
 
   return (
-    <XDSSection maxWidth={1100} padding={6}>
-      <XDSVStack gap={6}>
-        <XDSVStack gap={4} xstyle={styles.header}>
-          <XDSHeading level={1} type="display-1">
+    <Section maxWidth={800} padding={6} style={{marginInline: 'auto'}}>
+      <VStack gap={10}>
+        {/* Header */}
+        <VStack gap={2}>
+          <Heading level={1} type="display-1" justify="center">
             Blog
-          </XDSHeading>
-          <XDSText type="large" weight="normal" color="secondary">
-            Notes on building Astryx — releases, guides, stories, and
-            perspectives on designing a system for humans and agents.
-          </XDSText>
-        </XDSVStack>
+          </Heading>
+          <Text weight="normal" color="secondary" justify="center">
+            Releases, guides, and stories on building Astryx for humans and
+            agents.
+          </Text>
+        </VStack>
 
         {availableTypes.length > 1 ? (
-          <XDSCarousel gap={0}>
-            <XDSTabList
-              value={activeType}
-              onChange={v => setActiveType(v as 'all' | BlogPostType)}
-              size="md"
-              xstyle={styles.filterRow}>
-              <XDSTab value="all" label={`All (${counts.all})`} />
-              {availableTypes.map(t => (
-                <XDSTab
-                  key={t}
-                  value={t}
-                  label={`${POST_TYPE_LABELS[t]} (${counts[t]})`}
-                />
-              ))}
-            </XDSTabList>
-          </XDSCarousel>
+          <ToggleButtonGroup
+            label="Filter posts by type"
+            value={activeType}
+            onChange={value =>
+              setActiveType((value as 'all' | BlogPostType) ?? 'all')
+            }
+            xstyle={styles.typeFilter}>
+            <ToggleButton value="all" label={`All (${counts.all})`} />
+            {availableTypes.map(t => (
+              <ToggleButton
+                key={t}
+                value={t}
+                label={`${POST_TYPE_LABELS[t]} (${counts[t]})`}
+              />
+            ))}
+          </ToggleButtonGroup>
         ) : null}
 
         {filtered.length === 0 ? (
-          <div {...stylex.props(styles.empty)}>
-            <XDSText type="body" color="secondary">
-              No posts yet. Check back soon.
-            </XDSText>
-          </div>
+          <EmptyState
+            title="No posts yet"
+            description="Check back soon for releases, guides, and stories."
+          />
         ) : (
-          <XDSVStack gap={6}>
-            {featurePost ? (
-              <XDSGrid columns={1} gap={4}>
-                <BlogCard post={featurePost} feature />
-              </XDSGrid>
-            ) : null}
+          <VStack gap={10}>
+            {featurePost ? <BlogCard post={featurePost} feature /> : null}
             {restPosts.length > 0 ? (
-              <XDSGrid
+              <Grid
                 columns={{minWidth: 320, repeat: 'fill'}}
-                gap={4}
-                rowGap={6}>
+                gap={5}
+                rowGap={10}>
                 {restPosts.map(post => (
                   <BlogCard key={post.slug} post={post} />
                 ))}
-              </XDSGrid>
+              </Grid>
             ) : null}
-          </XDSVStack>
+          </VStack>
         )}
-      </XDSVStack>
-    </XDSSection>
+      </VStack>
+    </Section>
   );
 }

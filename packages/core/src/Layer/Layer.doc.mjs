@@ -89,7 +89,7 @@ export const docsDense = {
       name: 'LayerProvider',
       description: 'App-level provider for toast/layer systems.',
       propDescriptions: {
-        children: 'application subtree using shared layer context **(required)**',
+        children: 'application subtree using shared layer context',
         toast: 'toast viewport config: position, maxVisible, inset',
       },
     },

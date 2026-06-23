@@ -226,7 +226,7 @@ export const docsDense = {
         isAlwaysVisible: 'show pill grip at rest instead of only on hover. Use when discoverability important',
         pillPlacement: 'which side of divider pill sits on. auto = content side (derived from isReversed), flips when collapsed; start = left/top, end = right/bottom, center = centered on divider',
         label: 'accessible label for separator',
-        resizable: 'resize props from useResizable: connects handle to panel **(required)**',
+        resizable: 'resize props from useResizable: connects handle to panel',
       },
     },
   ],

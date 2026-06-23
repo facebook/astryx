@@ -80,11 +80,6 @@ const styles = stylex.create({
     maxWidth: layout.contentMaxWidth,
     width: '100%',
     marginInline: 'auto',
-    // Add the same section gap as bottom padding so the
-    // Resources → footer break feels like another section gap
-    // (96px) rather than abruptly hitting the footer with only
-    // the Section's 24px padding underneath.
-    paddingBlockEnd: 'calc(var(--spacing-12) * 2)',
   },
   // Hero group — wraps the "Build with us" hero row + the wall
   // card below it as one unit inside the section stack. Tight

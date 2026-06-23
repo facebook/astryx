@@ -21,10 +21,10 @@ import {
 } from './logos';
 
 const styles = stylex.create({
-  mobileFooterLinks: {
-    maxWidth: 320,
+  siteFooter: {
+    paddingTop: 'calc(var(--spacing-12) * 2)',
   },
-  logo: {
+  astryxLogo: {
     height: 18,
     width: 'auto',
     display: 'block',
@@ -40,6 +40,9 @@ const styles = stylex.create({
     width: 'auto',
     display: 'block',
     color: 'var(--color-icon-secondary)',
+  },
+  mobileFooterLinks: {
+    maxWidth: 320,
   },
 });
 
@@ -139,7 +142,11 @@ export function SiteFooter() {
   const copyright = `\u00A9${year} Meta Platforms, Inc.`;
 
   const astryxLogo = (
-    <AstryxLogo role="img" aria-label="Astryx" {...stylex.props(styles.logo)} />
+    <AstryxLogo
+      role="img"
+      aria-label="Astryx"
+      {...stylex.props(styles.astryxLogo)}
+    />
   );
 
   const metaOpenSourceLink = (
@@ -158,7 +165,7 @@ export function SiteFooter() {
     // On narrow viewports the horizontal rows can't fit side by side, so we
     // stack the three regions vertically and let the link lists wrap.
     return (
-      <Section role="contentinfo" padding={6}>
+      <Section role="contentinfo" padding={6} xstyle={styles.siteFooter}>
         <VStack gap={6}>
           <VStack gap={6} hAlign="center">
             {astryxLogo}
@@ -192,7 +199,7 @@ export function SiteFooter() {
   }
 
   return (
-    <Section role="contentinfo" padding={6}>
+    <Section role="contentinfo" padding={6} xstyle={styles.siteFooter}>
       <VStack gap={4}>
         <Grid columns={5} align="center">
           {astryxLogo}

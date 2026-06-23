@@ -10,7 +10,6 @@ import {VStack} from '@xds/core/Layout';
 import {Section} from '@xds/core/Section';
 import {TabList, Tab} from '@xds/core/TabList';
 import {Carousel} from '@xds/core/Carousel';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {GITHUB_REPO} from '../constants';
 import {layout} from '../layout.stylex';
 
@@ -62,7 +61,6 @@ interface ChangelogViewProps {
 const styles = stylex.create({
   section: {
     marginInline: 'auto',
-    paddingBottom: `calc(${spacingVars['--spacing-12']} * 2)`,
   },
 });
 

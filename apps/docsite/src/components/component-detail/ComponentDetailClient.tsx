@@ -28,13 +28,11 @@ import type {ComponentEntry} from '../../generated/componentRegistry';
 import type {BlockEntry} from '../../generated/blockRegistry';
 import {showcaseRegistry} from '../../generated/showcaseRegistry';
 import {exampleRegistry} from '../../generated/exampleRegistry';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {trackNavigate} from '../../lib/analytics';
 
 const styles = stylex.create({
   section: {
     marginInline: 'auto',
-    paddingBottom: `calc(${spacingVars['--spacing-12']} * 2)`,
   },
 });
 
