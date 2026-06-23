@@ -9,20 +9,16 @@
  * ## Public API for themes
  *
  * Themes set `padding` on container component overrides. The theme build
- * pipeline expands this to component-scoped CSS custom properties. As part of
- * the XDS-prefix migration (P2380608025), the pipeline now emits the rebranded
- * `--astryx-*` tokens, while the component reads them via an inverted fallback
- * chain so a legacy `--xds-*` override set by existing consumer code still wins
- * during the compat window:
+ * pipeline expands this to component-scoped CSS custom properties, emitting
+ * the `--astryx-*` tokens that the component reads:
  *
  *   --astryx-card-padding            (shorthand — all sides; emitted)
  *   --astryx-card-padding-inline     (horizontal)
  *   --astryx-card-padding-block-start
  *   --astryx-card-padding-block-end
  *
- * Read order per level: `var(--xds-…, var(--astryx-…, <next level>))` — legacy
- * `--xds-*` wins, then `--astryx-*`, terminating at `--spacing-4`. Same pattern
- * for section and dialog.
+ * Read order per level: `var(--astryx-…, <next level>)`, terminating at
+ * `--spacing-4`. Same pattern for section and dialog.
  *
  * ```ts
  * components: {
@@ -75,9 +71,8 @@ const baseStyles = stylex.create({
  * Component-scoped padding tokens.
  *
  * Each container component (card, section, dialog) has public CSS custom
- * properties that themes can set. The pipeline emits the rebranded `--astryx-*`
- * names; the component reads `var(--xds-…, var(--astryx-…, …))` so legacy
- * `--xds-*` overrides still win during the compat window (P2380608025):
+ * properties that themes can set. The pipeline emits the `--astryx-*` names,
+ * which the component reads via `var(--astryx-…, …)`:
  *
  *   --astryx-card-padding          (shorthand — all sides)
  *   --astryx-card-padding-inline
@@ -97,38 +92,35 @@ const baseStyles = stylex.create({
  */
 const SP4 = spacingVars['--spacing-4'];
 
-// Card padding chains (XDS-prefix migration P2380608025): legacy --xds-* wins,
-// then --astryx-*, then the next specificity level, terminating at --spacing-4.
-// Built as chained const strings (no function calls) so StyleX can statically
-// analyze them; see naming.ts for the prefix policy.
-const cardShorthand = `var(--xds-card-padding, var(--astryx-card-padding, ${SP4}))`;
-const cardInline = `var(--xds-card-padding-inline, var(--astryx-card-padding-inline, ${cardShorthand}))`;
-const cardInlineStart = `var(--xds-card-padding-inline-start, var(--astryx-card-padding-inline-start, ${cardInline}))`;
-const cardInlineEnd = `var(--xds-card-padding-inline-end, var(--astryx-card-padding-inline-end, ${cardInline}))`;
-const cardBlockStart = `var(--xds-card-padding-block-start, var(--astryx-card-padding-block-start, ${cardShorthand}))`;
-const cardBlockEnd = `var(--xds-card-padding-block-end, var(--astryx-card-padding-block-end, ${cardShorthand}))`;
+// Card padding chains: --astryx-* then the next specificity level, terminating
+// at --spacing-4. Built as chained const strings (no function calls) so StyleX
+// can statically analyze them; see naming.ts for the prefix policy.
+const cardShorthand = `var(--astryx-card-padding, ${SP4})`;
+const cardInline = `var(--astryx-card-padding-inline, ${cardShorthand})`;
+const cardInlineStart = `var(--astryx-card-padding-inline-start, ${cardInline})`;
+const cardInlineEnd = `var(--astryx-card-padding-inline-end, ${cardInline})`;
+const cardBlockStart = `var(--astryx-card-padding-block-start, ${cardShorthand})`;
+const cardBlockEnd = `var(--astryx-card-padding-block-end, ${cardShorthand})`;
 
-// Section padding chains (XDS-prefix migration P2380608025): legacy --xds-* wins,
-// then --astryx-*, then the next specificity level, terminating at --spacing-4.
-// Built as chained const strings (no function calls) so StyleX can statically
-// analyze them; see naming.ts for the prefix policy.
-const sectionShorthand = `var(--xds-section-padding, var(--astryx-section-padding, ${SP4}))`;
-const sectionInline = `var(--xds-section-padding-inline, var(--astryx-section-padding-inline, ${sectionShorthand}))`;
-const sectionInlineStart = `var(--xds-section-padding-inline-start, var(--astryx-section-padding-inline-start, ${sectionInline}))`;
-const sectionInlineEnd = `var(--xds-section-padding-inline-end, var(--astryx-section-padding-inline-end, ${sectionInline}))`;
-const sectionBlockStart = `var(--xds-section-padding-block-start, var(--astryx-section-padding-block-start, ${sectionShorthand}))`;
-const sectionBlockEnd = `var(--xds-section-padding-block-end, var(--astryx-section-padding-block-end, ${sectionShorthand}))`;
+// Section padding chains: --astryx-* then the next specificity level, terminating
+// at --spacing-4. Built as chained const strings (no function calls) so StyleX
+// can statically analyze them; see naming.ts for the prefix policy.
+const sectionShorthand = `var(--astryx-section-padding, ${SP4})`;
+const sectionInline = `var(--astryx-section-padding-inline, ${sectionShorthand})`;
+const sectionInlineStart = `var(--astryx-section-padding-inline-start, ${sectionInline})`;
+const sectionInlineEnd = `var(--astryx-section-padding-inline-end, ${sectionInline})`;
+const sectionBlockStart = `var(--astryx-section-padding-block-start, ${sectionShorthand})`;
+const sectionBlockEnd = `var(--astryx-section-padding-block-end, ${sectionShorthand})`;
 
-// Dialog padding chains (XDS-prefix migration P2380608025): legacy --xds-* wins,
-// then --astryx-*, then the next specificity level, terminating at --spacing-4.
-// Built as chained const strings (no function calls) so StyleX can statically
-// analyze them; see naming.ts for the prefix policy.
-const dialogShorthand = `var(--xds-dialog-padding, var(--astryx-dialog-padding, ${SP4}))`;
-const dialogInline = `var(--xds-dialog-padding-inline, var(--astryx-dialog-padding-inline, ${dialogShorthand}))`;
-const dialogInlineStart = `var(--xds-dialog-padding-inline-start, var(--astryx-dialog-padding-inline-start, ${dialogInline}))`;
-const dialogInlineEnd = `var(--xds-dialog-padding-inline-end, var(--astryx-dialog-padding-inline-end, ${dialogInline}))`;
-const dialogBlockStart = `var(--xds-dialog-padding-block-start, var(--astryx-dialog-padding-block-start, ${dialogShorthand}))`;
-const dialogBlockEnd = `var(--xds-dialog-padding-block-end, var(--astryx-dialog-padding-block-end, ${dialogShorthand}))`;
+// Dialog padding chains: --astryx-* then the next specificity level, terminating
+// at --spacing-4. Built as chained const strings (no function calls) so StyleX
+// can statically analyze them; see naming.ts for the prefix policy.
+const dialogShorthand = `var(--astryx-dialog-padding, ${SP4})`;
+const dialogInline = `var(--astryx-dialog-padding-inline, ${dialogShorthand})`;
+const dialogInlineStart = `var(--astryx-dialog-padding-inline-start, ${dialogInline})`;
+const dialogInlineEnd = `var(--astryx-dialog-padding-inline-end, ${dialogInline})`;
+const dialogBlockStart = `var(--astryx-dialog-padding-block-start, ${dialogShorthand})`;
+const dialogBlockEnd = `var(--astryx-dialog-padding-block-end, ${dialogShorthand})`;
 
 const cardDefaultPaddingStyles = stylex.create({
   containerPaddingInlineStart: {

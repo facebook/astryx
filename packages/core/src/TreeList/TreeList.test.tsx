@@ -315,6 +315,6 @@ describe('TreeList', () => {
   it('applies xds-tree-list class name', () => {
     render(<TreeList items={simpleItems} data-testid="tree" />);
     const root = screen.getByTestId('tree');
-    expect(root.className).toContain('xds-tree-list');
+    expect(root.className).toContain('astryx-tree-list');
   });
 });

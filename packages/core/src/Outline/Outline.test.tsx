@@ -108,7 +108,7 @@ describe('Outline', () => {
 
   it('applies stable root and item class names', () => {
     render(<Outline items={items} data-testid="outline" activeId="api" />);
-    expect(screen.getByTestId('outline').className).toContain('xds-outline');
+    expect(screen.getByTestId('outline').className).toContain('astryx-outline');
     expect(screen.getByRole('link', {name: 'API'}).className).toContain(
       'xds-outline-item',
     );
@@ -149,7 +149,7 @@ describe('Outline', () => {
 
   it('renders the indicator unconditionally (CSS anchor positioning handles visibility)', () => {
     const {container} = render(<Outline items={items} activeId="intro" />);
-    const indicator = container.querySelector('.xds-outline-indicator');
+    const indicator = container.querySelector('.astryx-outline-indicator');
     expect(indicator).toBeInTheDocument();
     // No inline top/height styles — positioning is CSS-driven
     expect((indicator as HTMLElement).style.top).toBe('');
@@ -159,7 +159,7 @@ describe('Outline', () => {
   it('renders the active anchor before the indicator for CSS anchor positioning', () => {
     const {container} = render(<Outline items={items} activeId="intro" />);
     const activeLink = screen.getByRole('link', {name: 'Introduction'});
-    const indicator = container.querySelector('.xds-outline-indicator');
+    const indicator = container.querySelector('.astryx-outline-indicator');
 
     expect(indicator).toBeInTheDocument();
     expect(

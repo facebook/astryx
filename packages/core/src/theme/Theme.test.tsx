@@ -24,13 +24,13 @@ describe('Theme', () => {
   beforeEach(() => {
     // Clean up documentElement state before each test
     document.documentElement.removeAttribute('data-theme');
-    document.documentElement.removeAttribute('data-xds-theme');
+    document.documentElement.removeAttribute('data-astryx-theme');
   });
 
   afterEach(() => {
     cleanup();
     document.documentElement.removeAttribute('data-theme');
-    document.documentElement.removeAttribute('data-xds-theme');
+    document.documentElement.removeAttribute('data-astryx-theme');
   });
 
   it('renders children', () => {
@@ -42,13 +42,13 @@ describe('Theme', () => {
     expect(getByText('hello')).toBeTruthy();
   });
 
-  it('sets data-xds-theme on wrapper div', () => {
+  it('sets data-astryx-theme on wrapper div', () => {
     const {container} = render(
       <Theme theme={testTheme}>
         <span>child</span>
       </Theme>,
     );
-    const wrapper = container.querySelector('[data-xds-theme="test"]');
+    const wrapper = container.querySelector('[data-astryx-theme="test"]');
     expect(wrapper).toBeTruthy();
   });
 
@@ -96,38 +96,38 @@ describe('Theme', () => {
   });
 
   // =========================================================================
-  // Root detection — data-xds-theme on <html>
+  // Root detection — data-astryx-theme on <html>
   // =========================================================================
 
-  it('syncs data-xds-theme to <html> for root provider', () => {
+  it('syncs data-astryx-theme to <html> for root provider', () => {
     render(
       <Theme theme={testTheme} mode="light">
         <span>child</span>
       </Theme>,
     );
-    expect(document.documentElement.getAttribute('data-xds-theme')).toBe(
+    expect(document.documentElement.getAttribute('data-astryx-theme')).toBe(
       'test',
     );
   });
 
-  it('removes data-xds-theme from <html> when root provider unmounts', () => {
+  it('removes data-astryx-theme from <html> when root provider unmounts', () => {
     const {unmount} = render(
       <Theme theme={testTheme} mode="light">
         <span>child</span>
       </Theme>,
     );
-    expect(document.documentElement.getAttribute('data-xds-theme')).toBe(
+    expect(document.documentElement.getAttribute('data-astryx-theme')).toBe(
       'test',
     );
     unmount();
-    expect(document.documentElement.hasAttribute('data-xds-theme')).toBe(false);
+    expect(document.documentElement.hasAttribute('data-astryx-theme')).toBe(false);
   });
 
   // =========================================================================
   // Nested themes — should NOT sync to <html>
   // =========================================================================
 
-  it('does not let nested Theme override <html> data-xds-theme', () => {
+  it('does not let nested Theme override <html> data-astryx-theme', () => {
     render(
       <Theme theme={testTheme} mode="dark">
         <Theme theme={altTheme} mode="light">
@@ -136,7 +136,7 @@ describe('Theme', () => {
       </Theme>,
     );
     // Root is "test" — nested "alt" should NOT override
-    expect(document.documentElement.getAttribute('data-xds-theme')).toBe(
+    expect(document.documentElement.getAttribute('data-astryx-theme')).toBe(
       'test',
     );
   });
@@ -162,7 +162,7 @@ describe('Theme', () => {
       </Theme>,
     );
     // The nested wrapper should have data-theme="light" on its own div
-    const nestedWrapper = container.querySelector('[data-xds-theme="alt"]');
+    const nestedWrapper = container.querySelector('[data-astryx-theme="alt"]');
     expect(nestedWrapper).toBeTruthy();
     expect(nestedWrapper?.getAttribute('data-theme')).toBe('light');
   });

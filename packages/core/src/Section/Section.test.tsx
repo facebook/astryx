@@ -24,7 +24,7 @@ describe('Section', () => {
   it('renders with variant="section" (default)', () => {
     const {container} = render(<Section>Content</Section>);
     const inner = container.firstElementChild!.firstElementChild!;
-    expect(inner.className).toContain('xds-section');
+    expect(inner.className).toContain('astryx-section');
     expect(inner.className).toContain('section');
   });
 
@@ -33,7 +33,7 @@ describe('Section', () => {
       <Section variant="transparent">Content</Section>,
     );
     const inner = container.firstElementChild!.firstElementChild!;
-    expect(inner.className).toContain('xds-section');
+    expect(inner.className).toContain('astryx-section');
     expect(inner.className).toContain('transparent');
   });
 
@@ -42,7 +42,7 @@ describe('Section', () => {
       <Section variant="muted">Content</Section>,
     );
     const inner = container.firstElementChild!.firstElementChild!;
-    expect(inner.className).toContain('xds-section');
+    expect(inner.className).toContain('astryx-section');
     expect(inner.className).toContain('muted');
   });
 
@@ -105,7 +105,7 @@ describe('Section', () => {
   it('renders xds-* class names for theme targeting', () => {
     const {container} = render(<Section>Content</Section>);
     const inner = container.firstElementChild!.firstElementChild!;
-    expect(inner.className).toContain('xds-section');
+    expect(inner.className).toContain('astryx-section');
   });
 
   it('renders variant in xds class names', () => {
@@ -113,7 +113,7 @@ describe('Section', () => {
       <Section variant="muted">Content</Section>,
     );
     const inner = container.firstElementChild!.firstElementChild!;
-    expect(inner.className).toContain('xds-section');
+    expect(inner.className).toContain('astryx-section');
     expect(inner.className).toContain('muted');
   });
 

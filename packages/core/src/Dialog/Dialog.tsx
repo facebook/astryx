@@ -341,7 +341,7 @@ export function Dialog({
   ref,
   ...props
 }: DialogProps) {
-  // When no explicit padding prop, use theme default (--xds-dialog-padding)
+  // When no explicit padding prop, use theme default (--astryx-dialog-padding)
   const useThemeDefault = padding == null;
   const effectivePadding = padding ?? 4;
   const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;

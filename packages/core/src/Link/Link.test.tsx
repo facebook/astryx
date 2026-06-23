@@ -289,7 +289,7 @@ describe('Link', () => {
       </Link>,
     );
     const link = screen.getByRole('link', {name: 'Themed Link'});
-    expect(link.className).toContain('xds-link');
+    expect(link.className).toContain('astryx-link');
     expect(link.className).toContain('secondary');
   });
 });

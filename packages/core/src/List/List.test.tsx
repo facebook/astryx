@@ -468,7 +468,7 @@ describe('List', () => {
         <ListItem label="Disabled" isDisabled />
       </List>,
     );
-    const item = container.querySelector('.xds-item');
+    const item = container.querySelector('.astryx-item');
     expect(item).toHaveAttribute('aria-disabled', 'true');
   });
 
@@ -506,7 +506,7 @@ describe('List', () => {
         <ListItem label="Selected" isSelected onClick={() => {}} />
       </List>,
     );
-    const item = container.querySelector('.xds-item');
+    const item = container.querySelector('.astryx-item');
     expect(item).toHaveAttribute('aria-selected', 'true');
   });
 

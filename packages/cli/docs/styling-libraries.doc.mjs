@@ -20,7 +20,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Use CSS variables for ordinary DOM styling because they inherit through the tree, follow `data-theme` color mode, respect nested `data-xds-theme` scopes, and update when themes switch. Use token resolver APIs only for non-CSS consumers such as SVG attribute values, canvas, chart configuration, color calculations, or static config generation.',
+          text: 'Use CSS variables for ordinary DOM styling because they inherit through the tree, follow `data-theme` color mode, respect nested `data-astryx-theme` scopes, and update when themes switch. Use token resolver APIs only for non-CSS consumers such as SVG attribute values, canvas, chart configuration, color calculations, or static config generation.',
         },
         {
           type: 'prose',
@@ -73,7 +73,7 @@ export const docs = {
           style: 'do',
           items: [
             'Map by semantic intent: text, surface, border, accent, status, radius, spacing, typography.',
-            'Let the system own color mode. The root Theme syncs `data-theme="light|dark"` and `data-xds-theme` to `<html>` for portals and first-level theme scope.',
+            'Let the system own color mode. The root Theme syncs `data-theme="light|dark"` and `data-astryx-theme` to `<html>` for portals and first-level theme scope.',
             'Prefer CSS variables for runtime theme switching and nested themes.',
           ],
         },

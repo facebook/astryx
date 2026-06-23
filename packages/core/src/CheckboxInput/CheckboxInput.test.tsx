@@ -229,7 +229,7 @@ describe('CheckboxInput', () => {
     );
 
     expect(container.textContent).toBe('Accept terms');
-    expect(container.querySelector('.xds-icon')).toBeInTheDocument();
+    expect(container.querySelector('.astryx-icon')).toBeInTheDocument();
   });
 
   it('renders status message and sets aria-invalid for error', () => {

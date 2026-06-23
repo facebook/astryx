@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {stableClassName, legacyStableClassName} from '../naming';
+import {stableClassName} from '../naming';
 
 export type ClassValue = string | number | undefined | null;
 export type ClassProps = Record<string, ClassValue>;
@@ -17,16 +17,16 @@ function classTokenForPropValue(prop: string, value: string): string {
 }
 
 /**
- * Build the legacy xds-* class name string for a component.
+ * Build the astryx-* class name string for a component.
  *
- * Every XDS component renders a base class (`xds-button`, `xds-card`, etc.)
- * plus legacy variant classes derived from visual props. XDS also reflects
+ * Every component renders a stable base class (`astryx-button`, `astryx-card`,
+ * etc.) plus variant classes derived from visual props. Components also reflect
  * those visual props as data attributes via `xdsThemeProps()` (`data-variant`,
- * `data-size`, `data-level`, etc.) so consumers can migrate CSS selectors
- * away from collision-prone bare class names while old selectors keep working.
+ * `data-size`, `data-level`, etc.) so consumers target stable data-attribute
+ * selectors rather than collision-prone bare class names.
  *
- * The `xds-`/`astryx-` prefix comes from the centralized naming module
- * (`packages/core/src/naming.ts`) so the prefix migration flips in one place.
+ * The `astryx-` prefix comes from the centralized naming module
+ * (`packages/core/src/naming.ts`) so the namespace lives in one place.
  *
  * <!-- SYNC: packages/core/src/naming.ts (namespace prefix source of truth) -->
  * <!-- SYNC: packages/core/src/utils/parseStyleKey.ts -->
@@ -36,29 +36,23 @@ function classTokenForPropValue(prop: string, value: string): string {
  * Data attributes keep the literal value (e.g. `data-level="1"`).
  *
  * @param component - Component name in lowercase (e.g. 'button', 'card')
- * @param props - Visual prop values to include as legacy variant classes
- * @returns Class name string (e.g. "astryx-button xds-button secondary sm")
+ * @param props - Visual prop values to include as variant classes
+ * @returns Class name string (e.g. "astryx-button secondary sm")
  *
  * @example
  * ```ts
- * dualClassName('button', { variant: 'secondary', size: 'sm' })
- * // → "astryx-button xds-button secondary sm"
+ * buildClassName('button', { variant: 'secondary', size: 'sm' })
+ * // → "astryx-button secondary sm"
  *
- * dualClassName('heading', { level: 1 })
- * // → "astryx-heading xds-heading level-1"
+ * buildClassName('heading', { level: 1 })
+ * // → "astryx-heading level-1"
  *
- * dualClassName('card')
- * // → "astryx-card xds-card"
+ * buildClassName('card')
+ * // → "astryx-card"
  * ```
  */
-function dualClassName(component: string, props?: ClassProps): string {
-  // Dual-emit both the new (astryx-*) and legacy (xds-*) base class so existing
-  // consumer CSS selectors keep matching during the compat window. The new
-  // prefix is listed first; legacy stays until the final cutover (P10).
-  const classes = [
-    stableClassName(component),
-    legacyStableClassName(component),
-  ];
+function buildClassName(component: string, props?: ClassProps): string {
+  const classes = [stableClassName(component)];
 
   if (props) {
     for (const [prop, value] of Object.entries(props)) {
@@ -100,12 +94,12 @@ export function xdsThemeDataAttributes(
  * Build the props object components should spread onto the same element that
  * receives the stable XDS class name.
  *
- * This dual-emits the legacy bare classes and the new data-attribute reflection
+ * This emits the stable astryx class plus the data-attribute reflection
  * surface. For example:
  *
  * ```ts
  * xdsThemeProps('button', { variant: 'primary', size: 'sm' })
- * // → { className: 'astryx-button xds-button primary sm', data-variant: 'primary', data-size: 'sm' }
+ * // → { className: 'astryx-button primary sm', data-variant: 'primary', data-size: 'sm' }
  * ```
  */
 export function xdsThemeProps(
@@ -113,7 +107,7 @@ export function xdsThemeProps(
   props?: ClassProps,
 ): ThemeProps {
   return {
-    className: dualClassName(component, props),
+    className: buildClassName(component, props),
     ...xdsThemeDataAttributes(props),
   };
 }

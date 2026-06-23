@@ -15,7 +15,7 @@ import {syntaxTokenDefaults} from '../theme';
 /**
  * Build the fallback CSS custom properties from the syntax token defaults.
  * These provide colors when no theme explicitly sets --color-syntax-* tokens.
- * Themes override these via higher-specificity [data-xds-theme] selectors.
+ * Themes override these via higher-specificity [data-astryx-theme] selectors.
  */
 const FALLBACK_TOKENS = `:root {\n${Object.entries(syntaxTokenDefaults)
   .map(([name, value]) => `  ${name}: ${value};`)
@@ -31,74 +31,47 @@ const HIGHLIGHT_STYLES = `
 ${FALLBACK_TOKENS}
 
 .astryx-codeblock code::highlight(astryx-keyword),
-.xds-codeblock code::highlight(astryx-keyword),
-.astryx-codeeditor code::highlight(astryx-keyword),
-.xds-codeeditor code::highlight(astryx-keyword) { color: var(--color-syntax-keyword); }
+.astryx-codeeditor code::highlight(astryx-keyword) { color: var(--color-syntax-keyword); }
 .astryx-codeblock code::highlight(astryx-string),
-.xds-codeblock code::highlight(astryx-string),
-.astryx-codeeditor code::highlight(astryx-string),
-.xds-codeeditor code::highlight(astryx-string) { color: var(--color-syntax-string); }
+.astryx-codeeditor code::highlight(astryx-string) { color: var(--color-syntax-string); }
 .astryx-codeblock code::highlight(astryx-comment),
-.xds-codeblock code::highlight(astryx-comment),
-.astryx-codeeditor code::highlight(astryx-comment),
-.xds-codeeditor code::highlight(astryx-comment) { color: var(--color-syntax-comment); }
+.astryx-codeeditor code::highlight(astryx-comment) { color: var(--color-syntax-comment); }
 .astryx-codeblock code::highlight(astryx-number),
-.xds-codeblock code::highlight(astryx-number),
-.astryx-codeeditor code::highlight(astryx-number),
-.xds-codeeditor code::highlight(astryx-number) { color: var(--color-syntax-number); }
+.astryx-codeeditor code::highlight(astryx-number) { color: var(--color-syntax-number); }
 .astryx-codeblock code::highlight(astryx-function),
-.xds-codeblock code::highlight(astryx-function),
-.astryx-codeeditor code::highlight(astryx-function),
-.xds-codeeditor code::highlight(astryx-function) { color: var(--color-syntax-function); }
+.astryx-codeeditor code::highlight(astryx-function) { color: var(--color-syntax-function); }
 .astryx-codeblock code::highlight(astryx-type),
-.xds-codeblock code::highlight(astryx-type),
-.astryx-codeeditor code::highlight(astryx-type),
-.xds-codeeditor code::highlight(astryx-type) { color: var(--color-syntax-type); }
+.astryx-codeeditor code::highlight(astryx-type) { color: var(--color-syntax-type); }
 .astryx-codeblock code::highlight(astryx-tag),
-.xds-codeblock code::highlight(astryx-tag),
-.astryx-codeeditor code::highlight(astryx-tag),
-.xds-codeeditor code::highlight(astryx-tag) { color: var(--color-syntax-tag); }
+.astryx-codeeditor code::highlight(astryx-tag) { color: var(--color-syntax-tag); }
 .astryx-codeblock code::highlight(astryx-attribute),
-.xds-codeblock code::highlight(astryx-attribute),
-.astryx-codeeditor code::highlight(astryx-attribute),
-.xds-codeeditor code::highlight(astryx-attribute) { color: var(--color-syntax-attribute); }
+.astryx-codeeditor code::highlight(astryx-attribute) { color: var(--color-syntax-attribute); }
 .astryx-codeblock code::highlight(astryx-property),
-.xds-codeblock code::highlight(astryx-property),
-.astryx-codeeditor code::highlight(astryx-property),
-.xds-codeeditor code::highlight(astryx-property) { color: var(--color-syntax-property); }
+.astryx-codeeditor code::highlight(astryx-property) { color: var(--color-syntax-property); }
 .astryx-codeblock code::highlight(astryx-operator),
-.xds-codeblock code::highlight(astryx-operator),
-.astryx-codeeditor code::highlight(astryx-operator),
-.xds-codeeditor code::highlight(astryx-operator) { color: var(--color-syntax-operator); }
+.astryx-codeeditor code::highlight(astryx-operator) { color: var(--color-syntax-operator); }
 .astryx-codeblock code::highlight(astryx-constant),
-.xds-codeblock code::highlight(astryx-constant),
-.astryx-codeeditor code::highlight(astryx-constant),
-.xds-codeeditor code::highlight(astryx-constant) { color: var(--color-syntax-constant); }
+.astryx-codeeditor code::highlight(astryx-constant) { color: var(--color-syntax-constant); }
 .astryx-codeblock code::highlight(astryx-punctuation),
-.xds-codeblock code::highlight(astryx-punctuation),
-.astryx-codeeditor code::highlight(astryx-punctuation),
-.xds-codeeditor code::highlight(astryx-punctuation) { color: var(--color-syntax-punctuation); }
+.astryx-codeeditor code::highlight(astryx-punctuation) { color: var(--color-syntax-punctuation); }
 .astryx-codeblock code::highlight(astryx-variable),
-.xds-codeblock code::highlight(astryx-variable),
-.astryx-codeeditor code::highlight(astryx-variable),
-.xds-codeeditor code::highlight(astryx-variable) { color: var(--color-syntax-variable); }
+.astryx-codeeditor code::highlight(astryx-variable) { color: var(--color-syntax-variable); }
 
 /* Span-based fallback classes — used when highlightMode='spans' or
-   when the CSS Custom Highlight API is not available.
-   Dual-emit: both astryx-token-* and xds-token-* match (compat window). */
-.astryx-token-keyword, .xds-token-keyword         { color: var(--color-syntax-keyword); }
-.astryx-token-string, .xds-token-string           { color: var(--color-syntax-string); }
-.astryx-token-comment, .xds-token-comment         { color: var(--color-syntax-comment); }
-.astryx-token-number, .xds-token-number           { color: var(--color-syntax-number); }
-.astryx-token-function, .xds-token-function       { color: var(--color-syntax-function); }
-.astryx-token-type, .xds-token-type               { color: var(--color-syntax-type); }
-.astryx-token-tag, .xds-token-tag                 { color: var(--color-syntax-tag); }
-.astryx-token-attribute, .xds-token-attribute     { color: var(--color-syntax-attribute); }
-.astryx-token-property, .xds-token-property       { color: var(--color-syntax-property); }
-.astryx-token-operator, .xds-token-operator       { color: var(--color-syntax-operator); }
-.astryx-token-constant, .xds-token-constant       { color: var(--color-syntax-constant); }
-.astryx-token-punctuation, .xds-token-punctuation { color: var(--color-syntax-punctuation); }
-.astryx-token-variable, .xds-token-variable       { color: var(--color-syntax-variable); }
+   when the CSS Custom Highlight API is not available. */
+.astryx-token-keyword         { color: var(--color-syntax-keyword); }
+.astryx-token-string           { color: var(--color-syntax-string); }
+.astryx-token-comment         { color: var(--color-syntax-comment); }
+.astryx-token-number           { color: var(--color-syntax-number); }
+.astryx-token-function       { color: var(--color-syntax-function); }
+.astryx-token-type               { color: var(--color-syntax-type); }
+.astryx-token-tag                 { color: var(--color-syntax-tag); }
+.astryx-token-attribute     { color: var(--color-syntax-attribute); }
+.astryx-token-property       { color: var(--color-syntax-property); }
+.astryx-token-operator       { color: var(--color-syntax-operator); }
+.astryx-token-constant       { color: var(--color-syntax-constant); }
+.astryx-token-punctuation { color: var(--color-syntax-punctuation); }
+.astryx-token-variable       { color: var(--color-syntax-variable); }
 `;
 
 let inserted = false;

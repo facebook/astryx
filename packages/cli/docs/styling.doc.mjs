@@ -232,20 +232,20 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'When external CSS needs to target an XDS component by prop or state, combine the stable component class with reflected data attributes. The component class identifies the component (`.xds-button`, `.xds-card`); data attributes identify the axis and value (`data-variant`, `data-size`, `data-level`, etc.). This is the preferred selector surface for new CSS because it is explicit and collision-resistant.',
+          text: 'When external CSS needs to target an XDS component by prop or state, combine the stable component class with reflected data attributes. The component class identifies the component (`.astryx-button`, `.astryx-card`); data attributes identify the axis and value (`data-variant`, `data-size`, `data-level`, etc.). This is the preferred selector surface for new CSS because it is explicit and collision-resistant.',
         },
         {
           type: 'code',
           lang: 'css',
-          code: `.my-app .xds-button[data-variant="primary"] {
+          code: `.my-app .astryx-button[data-variant="primary"] {
   /* primary buttons in this app context */
 }
 
-.my-app .xds-button[data-variant="primary"][data-size="sm"] {
+.my-app .astryx-button[data-variant="primary"][data-size="sm"] {
   /* small primary buttons */
 }
 
-.my-app .xds-heading[data-level="2"] {
+.my-app .astryx-heading[data-level="2"] {
   /* level 2 headings; numeric values stay literal in data attrs */
 }`,
         },
@@ -274,19 +274,19 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'XDS still emits legacy bare prop/state classes such as `.primary`, `.sm`, `.level-2`, and `.checked` for compatibility with existing apps and built themes. Do not write new CSS against these bare classes. The stable base component classes (`.xds-button`, `.xds-card`, etc.) are not deprecated; only the unprefixed prop/state classes are the legacy surface.',
+          text: 'XDS still emits legacy bare prop/state classes such as `.primary`, `.sm`, `.level-2`, and `.checked` for compatibility with existing apps and built themes. Do not write new CSS against these bare classes. The stable base component classes (`.astryx-button`, `.astryx-card`, etc.) are not deprecated; only the unprefixed prop/state classes are the legacy surface.',
         },
         {
           type: 'code',
           lang: 'css',
           code: `/* Deprecated compatibility selector — avoid in new CSS */
-.my-app .xds-button.primary {
-  /* use .xds-button[data-variant="primary"] instead */
+.my-app .astryx-button.primary {
+  /* use .astryx-button[data-variant="primary"] instead */
 }
 
 /* Deprecated compatibility selector — avoid in new CSS */
-.my-app .xds-heading.level-2 {
-  /* use .xds-heading[data-level="2"] instead */
+.my-app .astryx-heading.level-2 {
+  /* use .astryx-heading[data-level="2"] instead */
 }`,
         },
       ],

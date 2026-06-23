@@ -195,7 +195,7 @@ describe('useChatNewMessages — callback ref (issue #2282)', () => {
     // The inner content div should now be observed
     const contentObservation = activeObservations.find(o => {
       const el = o.element;
-      if (!el.querySelector?.('.xds-chat-message')) {
+      if (!el.querySelector?.('.astryx-chat-message')) {
         return false;
       }
       if (el.className?.includes('xds-chat-layout')) {

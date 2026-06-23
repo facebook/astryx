@@ -398,11 +398,11 @@
    * Token overrides (text/icon/accent) are theme-level (generateOnMediaCSS).
    * Dual-prefix (astryx + legacy xds) during the compat window.
    */
-  :where([data-astryx-media="dark"], [data-xds-media="dark"]) {
+  :where([data-astryx-media="dark"]) {
     color-scheme: dark;
   }
 
-  :where([data-astryx-media="light"], [data-xds-media="light"]) {
+  :where([data-astryx-media="light"]) {
     color-scheme: light;
   }
 }

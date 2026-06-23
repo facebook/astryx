@@ -24,7 +24,7 @@ describe('Thumbnail', () => {
     const {container} = render(
       <Thumbnail isLoading data-testid="thumb" />,
     );
-    expect(container.querySelector('.xds-skeleton')).toBeInTheDocument();
+    expect(container.querySelector('.astryx-skeleton')).toBeInTheDocument();
     expect(screen.queryByRole('img')).toBeNull();
   });
 

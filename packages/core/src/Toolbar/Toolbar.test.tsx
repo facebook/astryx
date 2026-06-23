@@ -159,14 +159,14 @@ describe('Toolbar', () => {
   it('passes variant to Section', () => {
     const {container} = render(<Toolbar label="Actions" variant="muted" />);
     // Section renders with xds-section class containing the variant
-    const sectionInner = container.querySelector('.xds-section');
+    const sectionInner = container.querySelector('.astryx-section');
     expect(sectionInner).toBeInTheDocument();
     expect(sectionInner?.className).toContain('muted');
   });
 
   it('defaults to transparent variant', () => {
     const {container} = render(<Toolbar label="Actions" />);
-    const sectionInner = container.querySelector('.xds-section');
+    const sectionInner = container.querySelector('.astryx-section');
     expect(sectionInner).toBeInTheDocument();
     expect(sectionInner?.className).toContain('transparent');
   });

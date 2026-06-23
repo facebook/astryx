@@ -196,7 +196,7 @@ describe('Heading', () => {
       </Heading>,
     );
     const element = screen.getByText('Themed Heading');
-    expect(element.className).toContain('xds-heading');
+    expect(element.className).toContain('astryx-heading');
     expect(element.className).toContain('level-2');
     expect(element.className).toContain('secondary');
     expect(element).toHaveAttribute('data-level', '2');

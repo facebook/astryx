@@ -93,7 +93,7 @@ describe('Kbd', () => {
   it('renders xds-* class names for theme targeting', () => {
     const {container} = render(<Kbd keys="k" />);
     const wrapper = container.firstChild as HTMLElement;
-    expect(wrapper.className).toContain('xds-kbd');
+    expect(wrapper.className).toContain('astryx-kbd');
   });
 
   it('renders "plus" as a literal + key', () => {

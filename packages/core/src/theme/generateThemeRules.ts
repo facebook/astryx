@@ -18,50 +18,40 @@
 import type {DefinedTheme} from './defineTheme';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {getDerivedVars} from './derivedVarRegistry';
-import {
-  cssVar,
-  classPrefix,
-  legacyClassPrefix,
-  dataAttrNamespace,
-  legacyDataAttrNamespace,
-} from '../naming';
+import {cssVar, classPrefix, dataAttrNamespace} from '../naming';
 
 /**
- * Dual-prefix theme @scope selectors (XDS-prefix migration P2380608025).
+ * Theme @scope selectors.
  *
- * Theme CSS is @scope'd to the theme-name data attribute that Theme writes.
- * During the compat window Theme dual-emits BOTH data-astryx-theme and
- * data-xds-theme, so the generated CSS must match either form. These helpers
- * build selector-lists covering both prefixes so existing (xds) and new
- * (astryx) attribute writers both resolve.
+ * Theme CSS is @scope'd to the theme-name data attribute that Theme writes
+ * (`data-astryx-theme`).
  *
  * @example themeScopeStart('mytheme')
- *   -> '[data-astryx-theme="mytheme"], [data-xds-theme="mytheme"]'
+ *   -> '[data-astryx-theme="mytheme"]'
  */
 function themeScopeStart(name: string): string {
-  return `[data-${dataAttrNamespace}-theme="${name}"], [data-${legacyDataAttrNamespace}-theme="${name}"]`;
+  return `[data-${dataAttrNamespace}-theme="${name}"]`;
 }
 
-/** Scope limit matching either prefix's theme attribute (nested-theme boundary). */
-const THEME_SCOPE_TO = `[data-${dataAttrNamespace}-theme], [data-${legacyDataAttrNamespace}-theme]`;
+/** Scope limit matching the theme attribute (nested-theme boundary). */
+const THEME_SCOPE_TO = `[data-${dataAttrNamespace}-theme]`;
 
-/** Media-surface selector matching either prefix, e.g. for [data-*-media="dark"]. */
+/** Media-surface selector, e.g. for [data-astryx-media="dark"]. */
 function mediaSelector(surface: string): string {
-  return `[data-${dataAttrNamespace}-media="${surface}"], [data-${legacyDataAttrNamespace}-media="${surface}"]`;
+  return `[data-${dataAttrNamespace}-media="${surface}"]`;
 }
 
-/** Component base-class selector matching either prefix, e.g. '.astryx-button, .xds-button'. */
+/** Component base-class selector, e.g. '.astryx-button'. */
 function componentClassSelector(component: string, suffix: string): string {
-  return `.${classPrefix}-${component}${suffix}, .${legacyClassPrefix}-${component}${suffix}`;
+  return `.${classPrefix}-${component}${suffix}`;
 }
 
 /**
  * Append a pseudo-class to every selector in a comma-separated selector list.
  *
- * The compat selector helpers emit lists such as
- * `.astryx-button.secondary, .xds-button.secondary`. CSS does not distribute a
- * trailing pseudo over selector lists, so `${list}:hover` only targets the
- * final legacy selector. Keep pseudo rules dual-prefix by rewriting each item.
+ * Selector helpers may emit comma-separated lists. CSS does not distribute a
+ * trailing pseudo over selector lists, so `${list}:hover` would only target the
+ * final selector. Rewrite each item so the pseudo applies to all of them.
  */
 function appendPseudoToSelectorList(selector: string, pseudo: string): string {
   const parts: string[] = [];
@@ -94,7 +84,7 @@ function appendPseudoToSelectorList(selector: string, pseudo: string): string {
  * so callers can place them in different CSS layers.
  */
 export interface ThemeRulesSplit {
-  /** Token overrides + component .xds-* overrides + prop-level color rules */
+  /** Token overrides + component .astryx-* overrides + prop-level color rules */
   component: string[];
   /** Prose element defaults (h1-h6, p, small, code, hr) — belongs in reset layer */
   prose: string[];
@@ -111,7 +101,7 @@ export interface ThemeCSSOutput {
    */
   prose: string;
   /**
-   * Token overrides + component .xds-* overrides scoped to the theme.
+   * Token overrides + component .astryx-* overrides scoped to the theme.
    * Should be injected into @layer xds-theme — above StyleX layers so
    * theme component overrides take effect. Empty string if no rules.
    */
@@ -217,9 +207,8 @@ function parsePadding(props: [string, string][]): ParsedPadding {
  *   --astryx-card-padding-block-end: 20px
  *
  * The component reads these with an inverted fallback chain
- * (var(--xds-*, var(--astryx-*, default))) so a legacy --xds-* override set by
- * existing consumer code still wins during the compat window (P2380608025).
- * The container.stylex.ts default styles read these via var() fallbacks,
+ * (var(--astryx-*, default)). The container.stylex.ts default styles read
+ * these via var() fallbacks,
  * so the theme CSS sets the value and the component picks it up through
  * CSS custom property cascade — no layer competition with StyleX output.
  */
@@ -300,7 +289,7 @@ export function generateThemeRules(theme: DefinedTheme): string[] {
     parts.push(`  :scope {\n${declarations}\n  }`);
   }
 
-  // 2. Component overrides (legacy .xds-* class rules; components also emit
+  // 2. Component overrides (.astryx-* class rules; components also emit
   // data-* prop reflections for external selector migrations)
   if (theme.components) {
     generateComponentRules(theme.components, parts);
@@ -318,7 +307,7 @@ export function generateThemeRules(theme: DefinedTheme): string[] {
 }
 
 /**
- * Generate component override rules using the legacy .xds-* class selector
+ * Generate component override rules using the .astryx-* class selector
  * format. Runtime components also emit matching data-* prop reflections; the
  * theme CSS generator will move to data-attribute selectors in a later step.
  * Handles derived var expansion and container padding mapping.
@@ -422,7 +411,7 @@ function generateComponentRules(
 /**
  * Generate prose HTML element default rules (h1-h6, p, small, code, hr).
  * Wrapped in :where() for zero specificity — these are defaults that
- * any class-based style (StyleX, .xds-* overrides) should beat.
+ * any class-based style (StyleX, .astryx-* overrides) should beat.
  * The caller places these in the reset layer (not xds-theme) so they
  * sit below all component styles in the cascade.
  */
@@ -518,7 +507,7 @@ function generateColorOverrides(
  * as themed defaults — conceptually the same tier as the CSS reset. They
  * belong in the reset layer so any class-based style wins.
  *
- * Component rules (tokens, .xds-* overrides) are intentional theme overrides
+ * Component rules (tokens, .astryx-* overrides) are intentional theme overrides
  * that need to beat StyleX — they stay in xds-theme (above StyleX layers).
  */
 export function generateThemeRulesSplit(theme: DefinedTheme): ThemeRulesSplit {
@@ -542,7 +531,7 @@ export function generateThemeRulesSplit(theme: DefinedTheme): ThemeRulesSplit {
  * Generate CSS for on-media token and component overrides.
  *
  * Emitted in an unbounded @scope (no `to` limit) so the rules can reach
- * [data-xds-media] elements. Parent theme component overrides flow through
+ * [data-astryx-media] elements. Parent theme component overrides flow through
  * to media contexts — only tokens change. Themes can further customize
  * via onDark.components / onLight.components.
  */
@@ -629,7 +618,7 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
  *
  * Returns two CSS blocks for injection into different layers:
  * - `prose`: @scope'd element defaults → inject into @layer reset
- * - `component`: @scope'd token + .xds-* overrides → inject into @layer xds-theme
+ * - `component`: @scope'd token + .astryx-* overrides → inject into @layer xds-theme
  *
  * This separation ensures prose defaults (what bare HTML looks like in a theme)
  * sit at reset-layer priority where any class-based style wins, while component
@@ -647,7 +636,7 @@ export function generateThemeCSS(theme: DefinedTheme): ThemeCSSOutput {
   }
 
   // Component rules: bounded scope (stops at nested themes) +
-  // on-media rules in unbounded scope (can reach [data-xds-media] elements)
+  // on-media rules in unbounded scope (can reach [data-astryx-media] elements)
   let componentCss = '';
   if (component.length > 0) {
     const componentInner = component.join('\n\n');

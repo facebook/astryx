@@ -62,7 +62,7 @@ describe('Layout contentWidth', () => {
       const headerChild = screen.getByTestId('header-child');
       const innerWrapper = headerChild.parentElement!;
       const headerDiv = innerWrapper.parentElement!;
-      expect(headerDiv.className).toContain('xds-layout-header');
+      expect(headerDiv.className).toContain('astryx-layout-header');
       expect(innerWrapper).not.toBe(headerDiv);
     });
 
@@ -102,7 +102,7 @@ describe('Layout contentWidth', () => {
       const footerChild = screen.getByTestId('footer-child');
       const innerWrapper = footerChild.parentElement!;
       const footerDiv = innerWrapper.parentElement!;
-      expect(footerDiv.className).toContain('xds-layout-footer');
+      expect(footerDiv.className).toContain('astryx-layout-footer');
       expect(innerWrapper).not.toBe(footerDiv);
     });
 

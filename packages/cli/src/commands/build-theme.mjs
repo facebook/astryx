@@ -242,14 +242,11 @@ function resolveTokenValue(value) {
   return value;
 }
 
-// Dual-prefix theme @scope selector helpers (XDS-prefix migration
-// P2380608025). Keep the `astryx` literal in sync with
+// Theme @scope selector helpers. Keep the `astryx` literal in sync with
 // packages/core/src/naming.ts (NAMESPACE) and generateThemeRules.ts.
-// XDSTheme dual-emits both data-astryx-theme and data-xds-theme during the
-// compat window, so the static build path must scope to either form too.
-const themeScopeStart = name =>
-  `[data-astryx-theme="${name}"], [data-xds-theme="${name}"]`;
-const THEME_SCOPE_TO = `[data-astryx-theme], [data-xds-theme]`;
+// Theme scopes to data-astryx-theme; the static build path must match.
+const themeScopeStart = name => `[data-astryx-theme="${name}"]`;
+const THEME_SCOPE_TO = `[data-astryx-theme]`;
 
 /**
  * Import a theme module using jiti and find the defineTheme() result.

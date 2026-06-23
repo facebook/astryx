@@ -6,7 +6,7 @@
  * Two distribution modes:
  * - Unbuilt: Theme generates CSS and injects a <style> tag at runtime
  * - Built: `npx xds theme build` pre-compiles to a CSS file; Theme just
- *   sets the data-xds-theme attribute
+ *   sets the data-astryx-theme attribute
  *
  * Token values can be:
  * - A string: used as-is for both light and dark modes
@@ -160,7 +160,7 @@ export type ComponentStyleMap = Record<
 
 /** Input to defineTheme */
 export interface DefineThemeInput {
-  /** Theme name — used for data-xds-theme attribute and identification */
+  /** Theme name — used for data-astryx-theme attribute and identification */
   name: string;
 
   /**
@@ -261,7 +261,7 @@ export interface DefineThemeInput {
   /**
    * Component style overrides — keyed by component name (lowercase).
    * Each entry maps style keys to CSS property overrides, scoped under
-   * the theme's data-xds-theme attribute via @scope.
+   * the theme's data-astryx-theme attribute via @scope.
    *
    * Use `prop:value` keys to target specific visual props. New values
    * not in the base type are automatically detected by `xds theme build`

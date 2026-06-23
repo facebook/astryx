@@ -99,9 +99,9 @@ describe('generateThemeRules', () => {
 
   // --- Component overrides ---
 
-  it('includes .xds-heading.level-* rules for all 6 levels', () => {
+  it('includes .astryx-heading.level-* rules for all 6 levels', () => {
     for (let level = 1; level <= 6; level++) {
-      const rule = rules.find(r => r.includes(`.xds-heading.level-${level}`));
+      const rule = rules.find(r => r.includes(`.astryx-heading.level-${level}`));
       expect(rule).toBeDefined();
       expect(rule).toContain('font-family');
       expect(rule).toContain(`var(--text-heading-${level}-size)`);
@@ -110,16 +110,16 @@ describe('generateThemeRules', () => {
     }
   });
 
-  it('includes .xds-text.* rules for all 5 types', () => {
+  it('includes .astryx-text.* rules for all 5 types', () => {
     for (const type of ['body', 'large', 'label', 'code', 'supporting']) {
-      const rule = rules.find(r => r.includes(`.xds-text.${type}`));
+      const rule = rules.find(r => r.includes(`.astryx-text.${type}`));
       expect(rule).toBeDefined();
       expect(rule).toContain(`var(--text-${type}-size)`);
     }
   });
 
   it('includes explicit component overrides', () => {
-    const buttonRule = rules.find(r => r.includes('.xds-button.secondary'));
+    const buttonRule = rules.find(r => r.includes('.astryx-button.secondary'));
     expect(buttonRule).toBeDefined();
     expect(buttonRule).toContain('light-dark(rgba(5, 54, 89, 0.1)');
   });
@@ -138,7 +138,7 @@ describe('generateThemeRules', () => {
     const pseudoRules = generateThemeRules(pseudoTheme);
     expect(
       pseudoRules.some(rule =>
-        rule.includes('.astryx-button:hover, .xds-button:hover'),
+        rule.includes('.astryx-button:hover'),
       ),
     ).toBe(true);
   });
@@ -182,11 +182,11 @@ describe('generateThemeRules', () => {
   // --- Prop-level color overrides ---
 
   it('includes color prop overrides for text and heading', () => {
-    expect(rules.some(r => r.includes('.xds-text.primary'))).toBe(true);
-    expect(rules.some(r => r.includes('.xds-text.secondary'))).toBe(true);
-    expect(rules.some(r => r.includes('.xds-heading.primary'))).toBe(true);
-    expect(rules.some(r => r.includes('.xds-heading.disabled'))).toBe(true);
-    expect(rules.some(r => r.includes('.xds-text.active'))).toBe(true);
+    expect(rules.some(r => r.includes('.astryx-text.primary'))).toBe(true);
+    expect(rules.some(r => r.includes('.astryx-text.secondary'))).toBe(true);
+    expect(rules.some(r => r.includes('.astryx-heading.primary'))).toBe(true);
+    expect(rules.some(r => r.includes('.astryx-heading.disabled'))).toBe(true);
+    expect(rules.some(r => r.includes('.astryx-text.active'))).toBe(true);
   });
 
   // --- Consistency ---
@@ -195,9 +195,9 @@ describe('generateThemeRules', () => {
     const {prose, component} = generateThemeCSS(theme);
     const combined = prose + component;
     expect(combined).toContain(
-      '@scope ([data-astryx-theme="default"], [data-xds-theme="default"])',
+      '@scope ([data-astryx-theme="default"])',
     );
-    expect(combined).toContain('to ([data-astryx-theme], [data-xds-theme])');
+    expect(combined).toContain('to ([data-astryx-theme])');
     // Every rule from generateThemeRules should appear in one of the blocks
     for (const rule of rules) {
       expect(combined).toContain(rule);
@@ -252,7 +252,7 @@ describe('derived var expansion', () => {
       },
     });
     const rules = generateThemeRules(theme);
-    const cardRule = rules.find(r => r.includes('.xds-card'));
+    const cardRule = rules.find(r => r.includes('.astryx-card'));
     expect(cardRule).toBeDefined();
     expect(cardRule).toContain('border-radius: 32px');
     expect(cardRule).toContain('--_card-radius: 32px');
@@ -268,7 +268,7 @@ describe('derived var expansion', () => {
       },
     });
     const rules = generateThemeRules(theme);
-    const rule = rules.find(r => r.includes('.xds-dropdown-menu'));
+    const rule = rules.find(r => r.includes('.astryx-dropdown-menu'));
     expect(rule).toBeDefined();
     expect(rule).toContain('border-radius: 16px');
     expect(rule).toContain('--_dropdown-menu-radius: 16px');
@@ -284,7 +284,7 @@ describe('derived var expansion', () => {
       },
     });
     const rules = generateThemeRules(theme);
-    const rule = rules.find(r => r.includes('.xds-dropdown-menu'));
+    const rule = rules.find(r => r.includes('.astryx-dropdown-menu'));
     expect(rule).toBeDefined();
     expect(rule).toContain('--_dropdown-menu-padding: 8px');
   });
@@ -299,7 +299,7 @@ describe('derived var expansion', () => {
       },
     });
     const rules = generateThemeRules(theme);
-    const rule = rules.find(r => r.includes('.xds-chat'));
+    const rule = rules.find(r => r.includes('.astryx-chat'));
     expect(rule).toBeDefined();
     expect(rule).toContain('--_chat-composer-radius: 24px');
     expect(rule).toContain('--_chat-composer-padding: 12px');
@@ -315,7 +315,7 @@ describe('derived var expansion', () => {
       },
     });
     const rules = generateThemeRules(theme);
-    const rule = rules.find(r => r.includes('.xds-button'));
+    const rule = rules.find(r => r.includes('.astryx-button'));
     expect(rule).toBeDefined();
     expect(rule).toContain('border-radius: 8px');
     expect(rule).toContain('--_button-radius: 8px');
@@ -331,7 +331,7 @@ describe('derived var expansion', () => {
       },
     });
     const rules = generateThemeRules(theme);
-    const rule = rules.find(r => r.includes('.xds-badge'));
+    const rule = rules.find(r => r.includes('.astryx-badge'));
     expect(rule).toBeDefined();
     expect(rule).toContain('border-radius: 99px');
     // No internal var — badge has no derived registry entry
@@ -348,7 +348,7 @@ describe('derived var expansion', () => {
       },
     });
     const rules = generateThemeRules(theme);
-    const rule = rules.find(r => r.includes('.xds-card'));
+    const rule = rules.find(r => r.includes('.astryx-card'));
     expect(rule).toBeDefined();
     // Container expansion emits --astryx-card-padding token
     expect(rule).toContain('--astryx-card-padding: 20px');
@@ -364,7 +364,7 @@ describe('derived var expansion', () => {
       },
     });
     const rules = generateThemeRules(theme);
-    const rule = rules.find(r => r.includes('.xds-card.muted'));
+    const rule = rules.find(r => r.includes('.astryx-card.muted'));
     expect(rule).toBeDefined();
     expect(rule).toContain('border-radius: 16px');
     expect(rule).toContain('--_card-radius: 16px');
@@ -383,7 +383,7 @@ describe('brutalist-style derived expansion', () => {
       },
     });
     const rules = generateThemeRules(theme);
-    const rule = rules.find(r => r.includes('.xds-button'));
+    const rule = rules.find(r => r.includes('.astryx-button'));
     expect(rule).toContain('border-radius: 9999px');
     expect(rule).toContain('--_button-radius: 9999px');
   });
@@ -398,7 +398,7 @@ describe('brutalist-style derived expansion', () => {
       },
     });
     const rules = generateThemeRules(theme);
-    const rule = rules.find(r => r.includes('.xds-card'));
+    const rule = rules.find(r => r.includes('.astryx-card'));
     expect(rule).toBeDefined();
     expect(rule).toContain('--astryx-card-padding: 24px');
   });
@@ -413,7 +413,7 @@ describe('brutalist-style derived expansion', () => {
       },
     });
     const rules = generateThemeRules(theme);
-    const rule = rules.find(r => r.includes('.xds-dropdown-menu'));
+    const rule = rules.find(r => r.includes('.astryx-dropdown-menu'));
     expect(rule).toBeDefined();
     expect(rule).toContain('border-radius: 0px');
     expect(rule).toContain('--_dropdown-menu-radius: 0px');

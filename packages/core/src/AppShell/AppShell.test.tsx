@@ -444,7 +444,7 @@ describe('AppShell', () => {
       </AppShell>,
     );
 
-    const inlinePanel = container.querySelector('.xds-layout-panel');
+    const inlinePanel = container.querySelector('.astryx-layout-panel');
     expect(inlinePanel).toBeNull();
   });
 
@@ -461,7 +461,7 @@ describe('AppShell', () => {
 
     // SideNav should NOT be rendered inline — it's in the mobile drawer
     const inlinePanel = container.querySelector(
-      '.xds-app-shell > .xds-layout .xds-layout-panel',
+      '.astryx-app-shell > .astryx-layout .astryx-layout-panel',
     );
     expect(inlinePanel).toBeNull();
   });

@@ -125,7 +125,7 @@ export function SyntaxTheme({
 
   return (
     <SyntaxThemeContext value={value}>
-      <div style={style} data-xds-syntax-theme={theme.name}>
+      <div style={style} data-astryx-syntax-theme={theme.name}>
         {children}
       </div>
     </SyntaxThemeContext>

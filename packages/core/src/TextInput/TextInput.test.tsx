@@ -508,7 +508,7 @@ describe('TextInput', () => {
       const input = screen.getByRole('textbox');
       const inputWrapper = input.parentElement!;
       // Field root is the labelled ancestor that owns the width.
-      const fieldRoot = input.closest('.xds-field') as HTMLElement;
+      const fieldRoot = input.closest('.astryx-field') as HTMLElement;
       expect(fieldRoot).toBeTruthy();
       expect(fieldRoot.getAttribute('style')).toContain('100%');
       // The inner control wrapper is not the element carrying the width.
@@ -520,7 +520,7 @@ describe('TextInput', () => {
       render(<TextInput label="Name" value="" onChange={() => {}} />);
       const fieldRoot = screen
         .getByRole('textbox')
-        .closest('.xds-field') as HTMLElement;
+        .closest('.astryx-field') as HTMLElement;
       expect(fieldRoot.getAttribute('style') ?? '').not.toContain('100%');
     });
   });
