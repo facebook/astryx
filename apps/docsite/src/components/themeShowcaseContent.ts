@@ -24,16 +24,16 @@ export interface ThemeShowcaseContent {
   inventory: InventoryRow[];
 }
 
-const XDS_CDN = 'https://lookaside.facebook.com/assets/xds_oss';
+const IMAGE_CDN = 'https://lookaside.facebook.com/assets/astryx';
 
 // Matcha café — matcha-drink photos.
 const MATCHA_IMAGES: Record<string, string> = {
-  watch: `${XDS_CDN}/matcha-product-1.png`,
-  headphones: `${XDS_CDN}/matcha-product-2.png`,
-  backpack: `${XDS_CDN}/matcha-product-3.png`,
-  wallet: `${XDS_CDN}/matcha-product-5.png`,
-  tumbler: `${XDS_CDN}/matcha-product-4.png`,
-  throw_: `${XDS_CDN}/matcha-product-6.png`,
+  watch: `${IMAGE_CDN}/matcha-product-1.png`,
+  headphones: `${IMAGE_CDN}/matcha-product-2.png`,
+  backpack: `${IMAGE_CDN}/matcha-product-3.png`,
+  wallet: `${IMAGE_CDN}/matcha-product-5.png`,
+  tumbler: `${IMAGE_CDN}/matcha-product-4.png`,
+  throw_: `${IMAGE_CDN}/matcha-product-6.png`,
 };
 
 const MATCHA_CONTENT: ThemeShowcaseContent = {
@@ -131,12 +131,12 @@ const MATCHA_CONTENT: ThemeShowcaseContent = {
 // Butter bakery — butter/breakfast photos. Only five Butter assets exist, so
 // the croissant is reused for the sixth slot.
 const BUTTER_IMAGES: Record<string, string> = {
-  watch: `${XDS_CDN}/Butter-Croissant.png`,
-  headphones: `${XDS_CDN}/Butter-Pancake.png`,
-  backpack: `${XDS_CDN}/Butter-Waffle.png`,
-  wallet: `${XDS_CDN}/Butter-Toast.png`,
-  tumbler: `${XDS_CDN}/Butter-Stick.png`,
-  throw_: `${XDS_CDN}/Butter-Croissant.png`,
+  watch: `${IMAGE_CDN}/Butter-Croissant.png`,
+  headphones: `${IMAGE_CDN}/Butter-Pancake.png`,
+  backpack: `${IMAGE_CDN}/Butter-Waffle.png`,
+  wallet: `${IMAGE_CDN}/Butter-Toast.png`,
+  tumbler: `${IMAGE_CDN}/Butter-Stick.png`,
+  throw_: `${IMAGE_CDN}/Butter-Croissant.png`,
 };
 
 const BUTTER_CONTENT: ThemeShowcaseContent = {
@@ -233,12 +233,12 @@ const BUTTER_CONTENT: ThemeShowcaseContent = {
 
 // Stone homeware — stoneware photos on stone plinths.
 const STONE_IMAGES: Record<string, string> = {
-  watch: `${XDS_CDN}/Stone-bowl.png`,
-  headphones: `${XDS_CDN}/Stone-cup.png`,
-  backpack: `${XDS_CDN}/Stone-plate.png`,
-  wallet: `${XDS_CDN}/Stone-servingbowl.png`,
-  tumbler: `${XDS_CDN}/Stone-teapot.png`,
-  throw_: `${XDS_CDN}/Stone-vase.png`,
+  watch: `${IMAGE_CDN}/Stone-bowl.png`,
+  headphones: `${IMAGE_CDN}/Stone-cup.png`,
+  backpack: `${IMAGE_CDN}/Stone-plate.png`,
+  wallet: `${IMAGE_CDN}/Stone-servingbowl.png`,
+  tumbler: `${IMAGE_CDN}/Stone-teapot.png`,
+  throw_: `${IMAGE_CDN}/Stone-vase.png`,
 };
 
 const STONE_CONTENT: ThemeShowcaseContent = {
@@ -335,12 +335,12 @@ const STONE_CONTENT: ThemeShowcaseContent = {
 
 // Y2K trinkets — iridescent/holo objects.
 const Y2K_IMAGES: Record<string, string> = {
-  watch: `${XDS_CDN}/Y2K-Phone.png`,
-  headphones: `${XDS_CDN}/Y2K-Star.png`,
-  backpack: `${XDS_CDN}/Y2K-Butterfly.png`,
-  wallet: `${XDS_CDN}/Y2K-Heart.png`,
-  tumbler: `${XDS_CDN}/Y2K-Flower.png`,
-  throw_: `${XDS_CDN}/Y2K-Couch.png`,
+  watch: `${IMAGE_CDN}/Y2K-Phone.png`,
+  headphones: `${IMAGE_CDN}/Y2K-Star.png`,
+  backpack: `${IMAGE_CDN}/Y2K-Butterfly.png`,
+  wallet: `${IMAGE_CDN}/Y2K-Heart.png`,
+  tumbler: `${IMAGE_CDN}/Y2K-Flower.png`,
+  throw_: `${IMAGE_CDN}/Y2K-Couch.png`,
 };
 
 const Y2K_CONTENT: ThemeShowcaseContent = {
@@ -437,12 +437,12 @@ const Y2K_CONTENT: ThemeShowcaseContent = {
 
 // Gothic botanicals — moody single-stem floral photos.
 const GOTHIC_IMAGES: Record<string, string> = {
-  watch: `${XDS_CDN}/Gothic-1.png`,
-  headphones: `${XDS_CDN}/Gothic-2.png`,
-  backpack: `${XDS_CDN}/Gothic-3.png`,
-  wallet: `${XDS_CDN}/Gothic-4.png`,
-  tumbler: `${XDS_CDN}/Gothic-5.png`,
-  throw_: `${XDS_CDN}/Gothic-6.png`,
+  watch: `${IMAGE_CDN}/Gothic-1.png`,
+  headphones: `${IMAGE_CDN}/Gothic-2.png`,
+  backpack: `${IMAGE_CDN}/Gothic-3.png`,
+  wallet: `${IMAGE_CDN}/Gothic-4.png`,
+  tumbler: `${IMAGE_CDN}/Gothic-5.png`,
+  throw_: `${IMAGE_CDN}/Gothic-6.png`,
 };
 
 const GOTHIC_CONTENT: ThemeShowcaseContent = {

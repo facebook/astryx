@@ -75,7 +75,7 @@ export default function TopNavMegaMenuBlock() {
               <TopNavMegaMenuFeaturedCard
                 title="What's new in v4.0"
                 description="AI-powered analytics and real-time collaboration."
-                image="https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-1.png"
+                image="https://lookaside.facebook.com/assets/astryx/light-working-horizontal-1.png"
                 imageAlt="Team collaboration"
                 linkLabel="Read the announcement"
                 linkHref="#announcement"

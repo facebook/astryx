@@ -41,7 +41,7 @@ export default function OverlayBottomStrip() {
       }>
       <AspectRatio ratio={16 / 9} xstyle={styles.frame}>
         <img
-          src="https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg"
+          src="https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-1.png"
           alt="Product highlight preview"
           {...stylex.props(styles.image)}
         />

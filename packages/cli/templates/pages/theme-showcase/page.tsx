@@ -290,9 +290,9 @@ const DEFAULT_PRODUCTS: ProductSpec[] = [
   },
 ];
 
-// Neutral product photos, served from the shared xds_oss asset CDN so the
+// Neutral product photos, served from the shared astryx asset CDN so the
 // scaffolded template renders real imagery without needing local public assets.
-const NEUTRAL_CDN = 'https://lookaside.facebook.com/assets/xds_oss';
+const NEUTRAL_CDN = 'https://lookaside.facebook.com/assets/astryx';
 const DEFAULT_IMAGES: Record<string, string> = {
   watch: `${NEUTRAL_CDN}/Neutral-Watch.png`,
   headphones: `${NEUTRAL_CDN}/Neutral-Headphones.png`,

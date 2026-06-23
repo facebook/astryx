@@ -117,9 +117,9 @@ const US_STATES = [
 // Product photos from the local template-assets set (committed to the
 // docsite; the CLI swaps these for an inline placeholder on scaffold).
 const ITEM_IMAGES: Record<string, {src: string}> = {
-  '1': {src: 'https://lookaside.facebook.com/assets/xds_oss/light-product-1.png'},
-  '2': {src: 'https://lookaside.facebook.com/assets/xds_oss/light-product-4.png'},
-  '3': {src: 'https://lookaside.facebook.com/assets/xds_oss/light-product-5.png'},
+  '1': {src: 'https://lookaside.facebook.com/assets/astryx/light-product-1.png'},
+  '2': {src: 'https://lookaside.facebook.com/assets/astryx/light-product-4.png'},
+  '3': {src: 'https://lookaside.facebook.com/assets/astryx/light-product-5.png'},
 };
 
 const ORDER_ITEMS = [

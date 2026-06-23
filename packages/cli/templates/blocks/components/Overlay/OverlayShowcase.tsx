@@ -40,7 +40,7 @@ export default function OverlayShowcase() {
       }>
       <AspectRatio ratio={16 / 9} xstyle={styles.frame}>
         <img
-          src="https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png"
+          src="https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png"
           alt="Abstract landscape"
           {...stylex.props(styles.image)}
         />

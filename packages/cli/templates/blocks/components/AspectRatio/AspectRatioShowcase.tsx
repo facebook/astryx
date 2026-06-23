@@ -27,19 +27,19 @@ const items = [
   {
     ratio: 1,
     label: '1 : 1',
-    src: 'https://lookaside.facebook.com/assets/xds_oss/light-home-square-1.png',
+    src: 'https://lookaside.facebook.com/assets/astryx/light-home-square-1.png',
     alt: '1:1 square',
   },
   {
     ratio: 4 / 3,
     label: '4 : 3',
-    src: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg',
+    src: 'https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-1.png',
     alt: '4:3 standard',
   },
   {
     ratio: 16 / 9,
     label: '16 : 9',
-    src: 'https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png',
+    src: 'https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png',
     alt: '16:9 widescreen',
   },
 ];

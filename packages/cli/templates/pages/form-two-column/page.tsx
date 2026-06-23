@@ -20,7 +20,7 @@ import {Card} from '@xds/core/Card';
 import {Selector} from '@xds/core/Selector';
 
 const ILLUSTRATION_URL =
-  'https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-1.png';
+  'https://lookaside.facebook.com/assets/astryx/illustration-horizontal-1.png';
 
 // ─────────────────────────────────────────────────────────────
 // Constants

@@ -10,7 +10,7 @@ export default function AspectRatioSquareImage() {
     <Center width={300}>
       <AspectRatio ratio={1}>
         <img
-          src="https://lookaside.facebook.com/assets/xds_oss/light-home-square-1.png"
+          src="https://lookaside.facebook.com/assets/astryx/light-home-square-1.png"
           alt="1:1 square"
           style={{
             width: '100%',

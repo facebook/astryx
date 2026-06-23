@@ -9,9 +9,8 @@ import {Section} from '@xds/core/Section';
 import {Stack} from '@xds/core/Layout';
 import {Text} from '@xds/core/Text';
 
-// light-home-square-1 from xds_oss asset set
 const BRIGHT_ROOM_IMAGE_URL =
-  'https://lookaside.facebook.com/assets/xds_oss/light-home-square-1.png';
+  'https://lookaside.facebook.com/assets/astryx/light-home-square-1.png';
 
 export default function MediaThemeLightScrim() {
   return (
