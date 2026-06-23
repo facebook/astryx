@@ -399,10 +399,7 @@ const styles = stylex.create({
   },
   link: {
     color: colorVars['--color-text-accent'],
-    textDecoration: {
-      default: 'none',
-      ':hover': {'@media (hover: hover)': 'underline'},
-    },
+    textDecoration: 'underline',
   },
 });
 
