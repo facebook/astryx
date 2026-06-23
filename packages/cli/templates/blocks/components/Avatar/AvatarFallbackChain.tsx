@@ -20,7 +20,7 @@ export default function AvatarFallbackChain() {
       <HStack gap={3} vAlign="center">
         <Avatar
           src="https://lookaside.facebook.com/assets/astryx/does-not-exist-primary.jpg"
-          fallbackSrc="https://lookaside.facebook.com/assets/astryx/illustration-horizontal-2.png"
+          fallbackSrc="https://lookaside.facebook.com/assets/astryx/DATA-Ami-Pena.png"
           name="Invalid User"
           size="medium"
         />
