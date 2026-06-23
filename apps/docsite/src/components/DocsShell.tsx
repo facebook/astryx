@@ -102,6 +102,18 @@ export function DocsShell({
   // navigation.
   const isOnComponentsRoute = pathname.startsWith('/components');
 
+  const componentSearch = (
+    <TextInput
+      label="Search components"
+      isLabelHidden
+      value={componentQuery}
+      onChange={setComponentQuery}
+      placeholder="Search components…"
+      startIcon={Search}
+      hasClear
+    />
+  );
+
   return (
     <AppShell
       variant="surface"
@@ -109,7 +121,7 @@ export function DocsShell({
       mobileNav={{defaultIsMobile}}
       topNav={<SharedTopNav />}
       sideNav={
-        <SideNav>
+        <SideNav topContent={isOnComponentsRoute ? componentSearch : undefined}>
           {!isOnComponentsRoute && (
             <>
               {/* Getting Started */}
@@ -182,16 +194,6 @@ export function DocsShell({
           {isOnComponentsRoute && (
             <>
               <SideNavSection title="Components" isHeaderHidden>
-                <TextInput
-                  label="Search components"
-                  isLabelHidden
-                  value={componentQuery}
-                  onChange={setComponentQuery}
-                  placeholder="Search components…"
-                  startIcon={Search}
-                  hasClear
-                  style={{marginBottom: 'var(--spacing-3)'}}
-                />
                 {!q && (
                   <SideNavItem
                     label="Overview"
