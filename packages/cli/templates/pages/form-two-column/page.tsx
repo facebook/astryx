@@ -20,7 +20,7 @@ import {Card} from '@astryxdesign/core/Card';
 import {Selector} from '@astryxdesign/core/Selector';
 
 const ILLUSTRATION_URL =
-  'https://lookaside.facebook.com/assets/astryx/illustration-horizontal-1.png';
+  'https://lookaside.facebook.com/assets/astryx/light-working-vertical-1.png';
 
 // ─────────────────────────────────────────────────────────────
 // Constants
@@ -55,8 +55,8 @@ const CONTACT_COLUMNS = [
 // Styles
 // ─────────────────────────────────────────────────────────────
 
-// The only custom styling is fitting the illustration inside its AspectRatio
-// box without distortion (contain, not cover — it's line art, don't crop it).
+// The only custom styling is fitting the cover photo inside its AspectRatio
+// box (cover, not contain — it's a photograph, so crop it to fill the frame).
 // No objectFit prop on AspectRatio, and there's no Image primitive (#2582).
 const styles = stylex.create({
   page: {
@@ -65,7 +65,7 @@ const styles = stylex.create({
   illustrationImg: {
     width: '100%',
     height: '100%',
-    objectFit: 'contain',
+    objectFit: 'cover',
   },
 });
 
@@ -105,11 +105,7 @@ export default function FormTwoColumnPage() {
 
   return (
     <Center xstyle={styles.page}>
-      <Section
-        maxWidth={1100}
-        width="100%"
-        padding={10}
-        variant="transparent">
+      <Section maxWidth={1100} width="100%" padding={10} variant="transparent">
         <VStack gap={10}>
           {/* ── Top: two-column, stacks to one column below ~520px ── */}
           <Grid columns={{minWidth: 320}} align="center" gap={10}>
@@ -127,7 +123,7 @@ export default function FormTwoColumnPage() {
               <AspectRatio ratio={4 / 3}>
                 <img
                   src={ILLUSTRATION_URL}
-                  alt="Person with a laptop and a lightbulb idea"
+                  alt="Two people working at a desk"
                   {...stylex.props(styles.illustrationImg)}
                 />
               </AspectRatio>
@@ -188,9 +184,7 @@ export default function FormTwoColumnPage() {
                 </Grid>
 
                 <VStack gap={2}>
-                  <Text type="label">
-                    What are you reaching out about?
-                  </Text>
+                  <Text type="label">What are you reaching out about?</Text>
                   <HStack gap={2} wrap="wrap">
                     {INQUIRY_REASONS.map(reason => (
                       <Token
