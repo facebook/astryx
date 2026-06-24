@@ -28,13 +28,11 @@ import {Avatar} from '@astryxdesign/core/Avatar';
 import {AspectRatio} from '@astryxdesign/core/AspectRatio';
 import type {HeroThemeContent} from './heroThemeContent';
 
-// The reward card's member is kept consistent across every theme slide (the
-// per-theme `member` copy is intentionally not used here) so the avatar reads
-// as one recurring person. A local public asset keeps it offline-safe for
-// screenshots; `name` is retained for the accessible alt text + initials
-// fallback if the image ever fails to load.
-const REWARD_MEMBER_NAME = 'Alex Rivera';
-const REWARD_MEMBER_AVATAR = '/avatar-astryx.png';
+// One recurring member across every theme slide (the per-theme `member` copy is
+// intentionally not used here).
+const CDN = 'https://lookaside.facebook.com/assets/astryx';
+const REWARD_MEMBER_NAME = 'Ami Pena';
+const REWARD_MEMBER_AVATAR = `${CDN}/DATA-Ami-Pena.png`;
 
 const styles = stylex.create({
   // Desktop overlap stage: fixed, viewport-centered 1200px box (shared with the
