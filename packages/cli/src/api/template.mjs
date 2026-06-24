@@ -95,6 +95,7 @@ async function discoverPages() {
       dirName: dir.name,
       name: doc?.name || dir.name,
       description: doc?.description || '',
+      category: doc?.category || '',
       isReady: doc?.isReady ?? true,
       scaffold: doc?.scaffold ?? false,
       filePath: path.join(dirPath, 'page.tsx'),
@@ -245,7 +246,7 @@ const UBIQUITOUS = new Set([
   'StackItem', 'Icon',
 ]);
 
-function extractComponents(pagePath) {
+export function extractComponents(pagePath) {
   const src = fs.readFileSync(pagePath, 'utf-8');
   // Match JSX opening tags, e.g. `<Section` or the legacy `<XDSSection`.
   // Templates author bare component names post un-prefix migration
