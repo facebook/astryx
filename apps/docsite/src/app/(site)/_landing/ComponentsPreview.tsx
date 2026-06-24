@@ -44,9 +44,10 @@ const styles = stylex.create({
     maxWidth: 360,
     marginInline: 'auto',
   },
-  // Row 1: badges + form controls, evenly spaced. The HStack handles
-  // the row gap + center cross-alignment; rowGap here only adds vertical
-  // spacing if the row wraps on a very narrow card so nothing clips.
+  // Row 1: badges + form controls, distributed evenly across the full
+  // row width (hAlign="evenly" → space-evenly). The small gap is just a
+  // min spacing for the wrap case; rowGap adds vertical spacing if the
+  // row wraps on a very narrow card so nothing clips.
   controlsRow: {
     rowGap: spacingVars['--spacing-3'],
   },
@@ -73,8 +74,8 @@ export function ComponentsPreview() {
   return (
     <VStack gap={4} align="stretch" xstyle={styles.root}>
       <HStack
-        gap={3}
-        hAlign="start"
+        gap={2}
+        hAlign="evenly"
         vAlign="center"
         wrap="wrap"
         xstyle={styles.controlsRow}>
