@@ -2,16 +2,7 @@
 
 /**
  * @file BlogArticle.tsx
- *
- * Article layout matching the docs page typography: a centered, readable column
- * with a breadcrumb trail (Blog / post type), a display-1 title, large
- * regular-weight dek, byline, a neutral cover placeholder, the prose body
- * (rendered via Markdown), optional curated related-doc links, and a link back to
- * the blog index. No sidebar.
- *
- * @input  post (BlogPost)
- * @output The full article view
- * @position Rendered by app/blog/[slug]/page.tsx
+ * Full blog post layout: breadcrumb, title, byline, cover, prose, related docs.
  */
 
 import * as stylex from '@stylexjs/stylex';
@@ -35,13 +26,11 @@ const styles = stylex.create({
   section: {
     marginInline: 'auto',
   },
-  // Shared cover frame (calm, theme-driven). AspectRatio governs the ratio.
   cover: {
     borderRadius: 'var(--radius-container)',
     backgroundColor: 'var(--color-background-muted)',
     border: '1px solid var(--color-border)',
   },
-  // Neutral placeholder shown when no cover image is provided.
   coverPlaceholder: {
     width: '100%',
     aspectRatio: '16 / 9',
@@ -68,7 +57,6 @@ export function BlogArticle({post}: BlogArticleProps) {
       padding={6}
       xstyle={styles.section}>
       <VStack gap={10}>
-        {/* Header — matches the docs page treatment */}
         <VStack gap={4}>
           <Breadcrumbs>
             <BreadcrumbItem href="/blog">Blog</BreadcrumbItem>
@@ -83,7 +71,6 @@ export function BlogArticle({post}: BlogArticleProps) {
             {post.description}
           </Text>
           <AuthorByline
-            authors={post.authors}
             date={post.date}
             updatedAt={post.updatedAt}
             readingTimeMinutes={post.readingTimeMinutes}
@@ -92,7 +79,6 @@ export function BlogArticle({post}: BlogArticleProps) {
           <Divider />
         </VStack>
 
-        {/* Cover — custom image when provided, else a neutral placeholder */}
         {post.coverImage ? (
           <AspectRatio ratio={16 / 9} xstyle={styles.cover}>
             <img
@@ -108,7 +94,6 @@ export function BlogArticle({post}: BlogArticleProps) {
           />
         )}
 
-        {/* Body */}
         <Markdown headingLevelStart={2}>{post.body}</Markdown>
 
         {post.tags.length > 0 ? (
@@ -119,7 +104,6 @@ export function BlogArticle({post}: BlogArticleProps) {
           </HStack>
         ) : null}
 
-        {/* Related content */}
         {post.relatedDocs && post.relatedDocs.length > 0 ? (
           <VStack gap={6}>
             <Divider />

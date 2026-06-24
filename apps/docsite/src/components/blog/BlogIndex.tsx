@@ -2,17 +2,7 @@
 
 /**
  * @file BlogIndex.tsx
- *
- * Client component for the /blog index. Renders a grid of
- * post cards with horizontal post-type filters and no sidebar. The latest post
- * gets a larger "feature" treatment, derived purely from sort order.
- *
- * Filters only show types that actually have published content (issue #2896:
- * "Only show filters/tags publicly when content exists for them").
- *
- * @input  posts (BlogPost[], already sorted latest-first), available types
- * @output The interactive blog index UI
- * @position Rendered by app/blog/page.tsx
+ * Blog index: post-type filters + a card grid, latest post featured.
  */
 
 'use client';
@@ -38,7 +28,6 @@ const styles = stylex.create({
 
 export interface BlogIndexProps {
   posts: BlogPost[];
-  /** Post types that have at least one published post, in canonical order. */
   availableTypes: BlogPostType[];
 }
 
@@ -60,7 +49,6 @@ export function BlogIndex({posts, availableTypes}: BlogIndexProps) {
     return map;
   }, [posts, availableTypes]);
 
-  // Feature the latest post only in the unfiltered "all" view.
   const showFeature = activeType === 'all' && filtered.length > 0;
   const featurePost = showFeature ? filtered[0] : null;
   const restPosts = showFeature ? filtered.slice(1) : filtered;
@@ -68,7 +56,6 @@ export function BlogIndex({posts, availableTypes}: BlogIndexProps) {
   return (
     <Section maxWidth={800} padding={6} style={{marginInline: 'auto'}}>
       <VStack gap={10}>
-        {/* Header */}
         <VStack gap={2}>
           <Heading level={1} type="display-1" justify="center">
             Blog

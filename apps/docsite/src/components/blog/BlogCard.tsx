@@ -2,19 +2,8 @@
 
 /**
  * @file BlogCard.tsx
- *
- * A blog index card built on Link: a neutral
- * cover placeholder on top, then title, description excerpt, byline, and a
- * chip row whose first badge is the post type followed by tag chips. The whole
- * card navigates to the post; nested elements (tags, author links) remain
- * independently interactive.
- *
- * The `feature` variant gives the latest post a larger treatment. This is
- * derived from sort order by the index page — never from per-post metadata.
- *
- * @input  post (BlogPost), feature flag
- * @output A clickable card for the blog grid
- * @position Used by the /blog index grid
+ * Blog index card: cover, title, excerpt, byline, and a type + tags chip row.
+ * The `feature` variant (latest post) renders larger.
  */
 
 import * as stylex from '@stylexjs/stylex';
@@ -42,7 +31,6 @@ const styles = stylex.create({
   inner: {
     height: '100%',
   },
-  // Neutral cover placeholder (cover generator deferred). Calm, theme-driven.
   // Hover tint lives in BlogCard.module.css (.cover::after).
   cover: {
     borderRadius: 'var(--radius-container)',
@@ -105,7 +93,6 @@ export function BlogCard({post, feature = false}: BlogCardProps) {
             </Text>
           </VStack>
           <AuthorByline
-            authors={post.authors}
             date={post.date}
             readingTimeMinutes={post.readingTimeMinutes}
             variant="compact"
