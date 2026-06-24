@@ -55,7 +55,8 @@
   "dependencies": {
     "@clack/prompts": "^1.5.1",
     "commander": "^12.1.0",
-    "jiti": "^2.7.0"
+    "jiti": "^2.7.0",
+    "jscodeshift": "^17.3.0"
   },
   "peerDependencies": {
     "@astryxdesign/core": "*",
