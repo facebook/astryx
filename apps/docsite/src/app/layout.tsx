@@ -12,12 +12,51 @@ import {Providers} from './providers';
 // loads via the shared Google Fonts <link> in <head> below, which is the
 // "Good" path from the theming wiki §Font Declarations.
 
+// Public origin for the docsite. Set NEXT_PUBLIC_SITE_URL in other
+// environments (e.g. preview deploys); defaults to the production domain so
+// metadataBase resolves relative OG/Twitter image paths to absolute URLs —
+// social scrapers (Facebook, X, LinkedIn, Slack, iMessage) require absolute
+// image URLs or the card image is dropped.
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? 'https://astryx.atmeta.com';
+
+const SITE_NAME = 'Astryx';
+const SITE_TITLE = 'Astryx Design System';
+const SITE_DESCRIPTION =
+  'An open source design system that is fully customizable and agent ready.';
+
 export const metadata: Metadata = {
-  title: 'Astryx Design System',
-  description:
-    'An open source design system that is fully customizable and agent ready.',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_TITLE,
+    // Per-page `title` values render as "<page> · Astryx".
+    template: `%s · ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
   icons: {
     icon: '/favicon.svg',
+  },
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    url: '/',
+    images: [
+      {
+        url: '/og-default.png',
+        width: 1200,
+        height: 630,
+        alt: 'Astryx — an open source design system by Meta',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: ['/og-default.png'],
   },
 };
 
