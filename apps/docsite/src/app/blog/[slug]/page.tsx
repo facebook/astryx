@@ -30,7 +30,7 @@ export async function generateMetadata({
   // fall back to the branded default card. Next.js shallow-merges metadata —
   // a route that sets `openGraph`/`twitter` replaces the root object wholesale
   // (images are not inherited), so the fallback must be explicit here.
-  const ogImage = post.coverImage ?? '/blog-post-01.png';
+  const ogImage = post.coverImage ?? '/astryx-og-banner.png';
   const ogAlt = post.coverImage ? (post.coverAlt ?? post.title) : post.title;
 
   return {

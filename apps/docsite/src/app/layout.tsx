@@ -28,7 +28,7 @@ const SITE_DESCRIPTION =
 // Default social card image: the launch banner that the announcement blog post
 // uses for its cover. Reusing the same branded banner keeps the shared-link
 // preview consistent with the launch creative across the site and the post.
-const OG_IMAGE = '/blog-post-01.png';
+const OG_IMAGE = '/astryx-og-banner.png';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
