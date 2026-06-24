@@ -4,19 +4,19 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Heading, Text} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {Card} from '@xds/core/Card';
-import {DropdownMenu} from '@xds/core/DropdownMenu';
-import {Avatar} from '@xds/core/Avatar';
-import {Badge} from '@xds/core/Badge';
-import {Token} from '@xds/core/Token';
-import {List, ListItem} from '@xds/core/List';
-import {Banner} from '@xds/core/Banner';
-import {Dialog, DialogHeader} from '@xds/core/Dialog';
-import {Divider} from '@xds/core/Divider';
-import {Tooltip} from '@xds/core/Tooltip';
-import {Table} from '@xds/core/Table';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Token} from '@astryxdesign/core/Token';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {Banner} from '@astryxdesign/core/Banner';
+import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Tooltip} from '@astryxdesign/core/Tooltip';
+import {Table} from '@astryxdesign/core/Table';
 
 const localStyles = stylex.create({
   previewCard: {

@@ -62,7 +62,7 @@ function fixMissingXDSImports(filePath: string): string[] {
   }
   const importedComponents = new Set<string>();
   const importPattern =
-    /import\s*\{([^}]+)\}\s*from\s*['"]@xds\/core[^'"]*['"]/g;
+    /import\s*\{([^}]+)\}\s*from\s*['"]@astryxdesign\/core[^'"]*['"]/g;
   while ((match = importPattern.exec(code)) !== null) {
     for (const specifier of match[1].split(',')) {
       const name = specifier
@@ -78,7 +78,7 @@ function fixMissingXDSImports(filePath: string): string[] {
   if (missing.length === 0) {
     return [];
   }
-  const importLine = `import {${missing.sort().join(', ')}} from '@xds/core';\n`;
+  const importLine = `import {${missing.sort().join(', ')}} from '@astryxdesign/core';\n`;
   fs.writeFileSync(filePath, importLine + code);
   return missing.sort();
 }
@@ -163,9 +163,9 @@ function createEntryFile(
       entryPath,
       `import React from 'react';
 import {createRoot} from 'react-dom/client';
-import '@xds/core/reset.css';${tailwindImport}
-import {XDSTheme} from '@xds/core/theme';
-import {defaultTheme} from '@xds/theme/default';
+import '@astryxdesign/core/reset.css';${tailwindImport}
+import {XDSTheme} from '@astryxdesign/core/theme';
+import {defaultTheme} from '@astryxdesign/theme/default';
 import Component from '${componentPath.replace(/\\/g, '/')}';
 
 function App() {
@@ -353,7 +353,7 @@ function createViteConfig(tmpDir: string, target: string): string {
         rootDir: '${REPO_ROOT.replace(/\\/g, '/')}',
       },
       aliases: {
-        '@xds/core/theme/tokens.stylex': '${path
+        '@astryxdesign/core/theme/tokens.stylex': '${path
           .resolve(REPO_ROOT, 'packages/core/src/theme/tokens.stylex.ts')
           .replace(/\\/g, '/')}',
       },
@@ -377,16 +377,16 @@ import {viteSingleFile} from 'vite-plugin-singlefile';`;
 
   const xdsAliases = `
     alias: {
-      '@xds/core/theme/tokens.stylex': '${path
+      '@astryxdesign/core/theme/tokens.stylex': '${path
         .resolve(REPO_ROOT, 'packages/core/src/theme/tokens.stylex.ts')
         .replace(/\\/g, '/')}',
-      '@xds/core': '${path
+      '@astryxdesign/core': '${path
         .resolve(REPO_ROOT, 'packages/core/src')
         .replace(/\\/g, '/')}',
-      '@xds/theme/default': '${path
+      '@astryxdesign/theme/default': '${path
         .resolve(REPO_ROOT, 'packages/themes/default/src/source.ts')
         .replace(/\\/g, '/')}',
-      '@xds/theme/neutral': '${path
+      '@astryxdesign/theme/neutral': '${path
         .resolve(REPO_ROOT, 'packages/themes/neutral/src/source.ts')
         .replace(/\\/g, '/')}',
     },`;

@@ -3,8 +3,8 @@
 /**
  * @file Consumer utilities for parsing XDS CLI JSON output.
  *
- * Exported via `@xds/cli/json`:
- *   import { parseResponse, isError, assertResponse } from '@xds/cli/json';
+ * Exported via `@astryxdesign/cli/json`:
+ *   import { parseResponse, isError, assertResponse } from '@astryxdesign/cli/json';
  */
 
 /**

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {NumberInput} from '@xds/core/NumberInput';
+import {NumberInput} from '@astryxdesign/core/NumberInput';
 
 export default function NumberInputShowcase() {
   return (

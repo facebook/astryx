@@ -2,10 +2,10 @@
 
 'use client';
 
-import {EmptyState} from '@xds/core/EmptyState';
-import {Button} from '@xds/core/Button';
-import {Card} from '@xds/core/Card';
-import {Icon} from '@xds/core/Icon';
+import {EmptyState} from '@astryxdesign/core/EmptyState';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {Icon} from '@astryxdesign/core/Icon';
 import {FolderPlusIcon} from '@heroicons/react/24/outline';
 
 export default function EmptyStateContainer() {

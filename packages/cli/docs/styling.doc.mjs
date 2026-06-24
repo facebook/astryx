@@ -102,10 +102,10 @@ const overrides = stylex.create({
 
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/preflight.css" layer(base);
-@import "@xds/core/reset.css";
-@import "@xds/core/astryx.css";
-@import "@xds/theme-default/theme.css";
-@import "@xds/core/tailwind-theme.css";
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+@import "@astryxdesign/theme-default/theme.css";
+@import "@astryxdesign/core/tailwind-theme.css";
 @import "tailwindcss/utilities.css" layer(utilities);`,
         },
         {
@@ -319,7 +319,7 @@ const styles = stylex.create({
           type: 'code',
           lang: 'tsx',
           label: 'Using typed token imports in stylex.create',
-          code: `import {colorVars, spacingVars, radiusVars} from '@xds/core/theme/tokens.stylex';
+          code: `import {colorVars, spacingVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   highlight: {

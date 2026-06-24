@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {ChartV2Swatch} from '@xds/lab';
+import {ChartV2Swatch} from '@astryxdesign/lab';
 
 const meta: Meta<typeof ChartV2Swatch> = {
   title: 'Lab/ChartV2Swatch',

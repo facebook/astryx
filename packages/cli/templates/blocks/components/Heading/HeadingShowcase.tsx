@@ -2,8 +2,8 @@
 
 'use client';
 
-import {VStack} from '@xds/core/Layout';
-import {Heading} from '@xds/core/Text';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Heading} from '@astryxdesign/core/Text';
 
 export default function HeadingShowcase() {
   return (

@@ -13,10 +13,10 @@
 
 import {Suspense} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Text} from '@xds/core/Text';
-import {Skeleton} from '@xds/core/Skeleton';
-import {Theme} from '@xds/core/theme';
-import {neutralTheme} from '@xds/theme-neutral/built';
+import {Text} from '@astryxdesign/core/Text';
+import {Skeleton} from '@astryxdesign/core/Skeleton';
+import {Theme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 import {useThemeMode} from '../app/providers';
 import {getTemplateComponent} from './templateComponents';
 import css from './TemplatePreviewSurface.module.css';

@@ -2,21 +2,21 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {Section} from '@xds/core/Section';
-import {VStack, HStack} from '@xds/core/Layout';
+import {Section} from '@astryxdesign/core/Section';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
 import {
   Layout,
   LayoutHeader,
   LayoutContent,
   LayoutFooter,
   LayoutPanel,
-} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
+} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
 import {
   colorVars,
   spacingVars,
   typographyVars,
-} from '@xds/core/theme/tokens.stylex';
+} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   surfaceWrapper: {

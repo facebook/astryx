@@ -1,5 +1,5 @@
 ---
-'@xds/core': patch
+'@astryxdesign/core': patch
 ---
 
 [fix] Markdown: parse ordered lists using the `)` marker delimiter, not just `.` (#2994)

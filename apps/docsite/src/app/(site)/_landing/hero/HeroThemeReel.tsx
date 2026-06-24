@@ -24,10 +24,10 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Theme} from '@xds/core/theme';
-import {Text} from '@xds/core/Text';
-import {Pagination} from '@xds/core/Pagination';
-import {useMediaQuery} from '@xds/core/hooks';
+import {Theme} from '@astryxdesign/core/theme';
+import {Text} from '@astryxdesign/core/Text';
+import {Pagination} from '@astryxdesign/core/Pagination';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {useThemeMode} from '../../../providers';
 import {HERO_THEME_SLIDES, type HeroThemeSlide} from './heroThemeContent';
 import {AstryxLogo} from '../../../../components/logos';

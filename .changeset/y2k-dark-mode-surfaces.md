@@ -1,5 +1,5 @@
 ---
-'@xds/theme-y2k': patch
+'@astryxdesign/theme-y2k': patch
 ---
 
 [feat] Rework Y2K dark-mode surfaces to a cool "night periwinkle" indigo palette

@@ -4,14 +4,14 @@
 
 import {useState, useCallback} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars} from '@xds/core/theme/tokens.stylex';
-import {useMediaQuery} from '@xds/core/hooks';
-import {Button} from '@xds/core/Button';
-import {Card} from '@xds/core/Card';
-import {Center} from '@xds/core/Center';
-import {Dialog} from '@xds/core/Dialog';
-import {Divider} from '@xds/core/Divider';
-import {EmptyState} from '@xds/core/EmptyState';
+import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {Center} from '@astryxdesign/core/Center';
+import {Dialog} from '@astryxdesign/core/Dialog';
+import {Divider} from '@astryxdesign/core/Divider';
+import {EmptyState} from '@astryxdesign/core/EmptyState';
 import {
   HStack,
   VStack,
@@ -19,22 +19,22 @@ import {
   LayoutContent,
   LayoutHeader,
   LayoutPanel,
-} from '@xds/core/Layout';
-import {Icon} from '@xds/core/Icon';
-import {List, ListItem} from '@xds/core/List';
-import {Table} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
-import {Section} from '@xds/core/Section';
+} from '@astryxdesign/core/Layout';
+import {Icon} from '@astryxdesign/core/Icon';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {Table} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
+import {Section} from '@astryxdesign/core/Section';
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from '@xds/core/SegmentedControl';
-import {Selector} from '@xds/core/Selector';
-import {TabList, Tab} from '@xds/core/TabList';
-import {Text, Heading} from '@xds/core/Text';
-import {TextArea} from '@xds/core/TextArea';
-import {TextInput} from '@xds/core/TextInput';
-import {Toolbar} from '@xds/core/Toolbar';
+} from '@astryxdesign/core/SegmentedControl';
+import {Selector} from '@astryxdesign/core/Selector';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {TextArea} from '@astryxdesign/core/TextArea';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Toolbar} from '@astryxdesign/core/Toolbar';
 import {
   Squares2X2Icon,
   DocumentTextIcon,
@@ -61,7 +61,7 @@ import {
   EllipsisHorizontalIcon,
   LockClosedIcon,
 } from '@heroicons/react/24/outline';
-import {Spinner} from '@xds/core/Spinner';
+import {Spinner} from '@astryxdesign/core/Spinner';
 
 type BlockType =
   | 'hero'

@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {Calendar, type ISODateString} from '@xds/core/Calendar';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Calendar, type ISODateString} from '@astryxdesign/core/Calendar';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const isWeekday = (date: Date) => {
   const day = date.getDay();

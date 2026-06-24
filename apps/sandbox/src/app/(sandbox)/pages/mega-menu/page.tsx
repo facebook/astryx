@@ -5,9 +5,9 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
-import {VStack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
 import {
   TopNav,
   TopNavHeading,
@@ -15,8 +15,8 @@ import {
   TopNavMegaMenu,
   TopNavMegaMenuItem,
   TopNavMegaMenuFeaturedCard,
-} from '@xds/core/TopNav';
-import {NavIcon} from '@xds/core/NavIcon';
+} from '@astryxdesign/core/TopNav';
+import {NavIcon} from '@astryxdesign/core/NavIcon';
 
 const styles = stylex.create({
   container: {

@@ -9,20 +9,20 @@ import {
   HStack,
   Layout,
   LayoutContent,
-} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Card} from '@xds/core/Card';
-import {Grid, GridSpan} from '@xds/core/Grid';
-import {Icon} from '@xds/core/Icon';
-import {Link} from '@xds/core/Link';
-import {Avatar} from '@xds/core/Avatar';
-import {List, ListItem} from '@xds/core/List';
-import {DropdownMenu} from '@xds/core/DropdownMenu';
-import {Badge} from '@xds/core/Badge';
-import {Button} from '@xds/core/Button';
-import {Table, proportional} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
-import {Divider} from '@xds/core/Divider';
+} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Card} from '@astryxdesign/core/Card';
+import {Grid, GridSpan} from '@astryxdesign/core/Grid';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Link} from '@astryxdesign/core/Link';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Button} from '@astryxdesign/core/Button';
+import {Table, proportional} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
+import {Divider} from '@astryxdesign/core/Divider';
 import {
   AreaChart,
   Area,

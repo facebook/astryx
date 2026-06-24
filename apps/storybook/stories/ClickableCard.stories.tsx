@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {ClickableCard} from '@xds/core/ClickableCard';
-import {Text} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {VStack, HStack} from '@xds/core/Layout';
+import {ClickableCard} from '@astryxdesign/core/ClickableCard';
+import {Text} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
 
 const meta: Meta<typeof ClickableCard> = {
   title: 'Core/ClickableCard',

@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Icon} from '@xds/core/Icon';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Icon} from '@astryxdesign/core/Icon';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const statuses = [
   {icon: 'success' as const, color: 'success' as const, label: 'Deployed successfully'},

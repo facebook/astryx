@@ -4,8 +4,8 @@
 
 import {createContext, useContext, useEffect, useState} from 'react';
 import Link from 'next/link';
-import {Theme} from '@xds/core/theme';
-import {LinkProvider} from '@xds/core/Link';
+import {Theme} from '@astryxdesign/core/theme';
+import {LinkProvider} from '@astryxdesign/core/Link';
 import {astryxTheme} from '../themes/astryx';
 
 type ThemeMode = 'light' | 'dark';

@@ -8,7 +8,7 @@
  * component-level style overrides, and variant targeting.
  */
 
-import {defineTheme} from '@xds/core/theme';
+import {defineTheme} from '@astryxdesign/core/theme';
 
 export const brutalistTheme = defineTheme({
   name: 'brutalist',

@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {Link} from '@xds/core/Link';
-import {Text} from '@xds/core/Text';
+import {Link} from '@astryxdesign/core/Link';
+import {Text} from '@astryxdesign/core/Text';
 
 const meta: Meta<typeof Link> = {
   title: 'Core/Link',

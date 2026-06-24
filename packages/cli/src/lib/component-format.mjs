@@ -142,7 +142,7 @@ function formatTargetsTable(docs, themeData) {
  * @param {object} docs - Component doc object
  * @param {object} [options] - Options
  * @param {object|null} [options.themeData] - Resolved theme data
- * @param {string|null} [options.importHint] - Import path hint (e.g. '@xds/core/Button')
+ * @param {string|null} [options.importHint] - Import path hint (e.g. '@astryxdesign/core/Button')
  */
 export function formatFull(docs, options = {}) {
   const sections = [];

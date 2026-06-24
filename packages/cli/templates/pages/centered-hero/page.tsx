@@ -8,12 +8,12 @@ import {
   HStack,
   Layout,
   LayoutContent,
-} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {Section} from '@xds/core/Section';
+} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {Section} from '@astryxdesign/core/Section';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
 const IMAGE_URL =

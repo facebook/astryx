@@ -4,18 +4,18 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Layout, LayoutHeader, LayoutContent} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Card} from '@xds/core/Card';
-import {ToggleButton, ToggleButtonGroup} from '@xds/core/ToggleButton';
-import {TextInput} from '@xds/core/TextInput';
-import {Divider} from '@xds/core/Divider';
-import {Section} from '@xds/core/Section';
-import {Grid} from '@xds/core/Grid';
-import {HStack, VStack, StackItem} from '@xds/core/Stack';
-import {DropdownMenu} from '@xds/core/DropdownMenu';
-import {OverflowList} from '@xds/core/OverflowList';
-import {Center} from '@xds/core/Center';
+import {Layout, LayoutHeader, LayoutContent} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Card} from '@astryxdesign/core/Card';
+import {ToggleButton, ToggleButtonGroup} from '@astryxdesign/core/ToggleButton';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Section} from '@astryxdesign/core/Section';
+import {Grid} from '@astryxdesign/core/Grid';
+import {HStack, VStack, StackItem} from '@astryxdesign/core/Stack';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
+import {OverflowList} from '@astryxdesign/core/OverflowList';
+import {Center} from '@astryxdesign/core/Center';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
 interface LibraryItem {

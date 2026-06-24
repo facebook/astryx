@@ -53,7 +53,7 @@ describe('generateCompressedIndex', () => {
     const result = generateCompressedIndex('1.0.0', {runPrefix: 'yarn'});
     expect(result).toContain('yarn astryx component <Name>');
     expect(result).toContain('yarn astryx upgrade --apply');
-    expect(result).toContain('after @xds/core bump, always run yarn astryx upgrade --apply');
+    expect(result).toContain('after @astryxdesign/core bump, always run yarn astryx upgrade --apply');
     expect(result).not.toContain('npx astryx');
   });
 
@@ -304,8 +304,8 @@ XDS index stuff
 
 describe('installAgentDocs', () => {
   function setupCorePackage(dir, version = '1.0.0') {
-    // Create a minimal @xds/core so getXdsVersion works
-    const coreDir = path.join(dir, 'node_modules', '@xds', 'core');
+    // Create a minimal @astryxdesign/core so getXdsVersion works
+    const coreDir = path.join(dir, 'node_modules', '@astryxdesign', 'core');
     fs.mkdirSync(coreDir, {recursive: true});
     fs.writeFileSync(
       path.join(coreDir, 'package.json'),

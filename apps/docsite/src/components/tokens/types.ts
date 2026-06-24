@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import type {UseThemeReturn} from '@xds/core/theme';
+import type {UseThemeReturn} from '@astryxdesign/core/theme';
 
 export interface TokenTableProps {
   theme: UseThemeReturn;

@@ -10,15 +10,15 @@ import {
   radiusVars,
   spacingVars,
   typographyVars,
-} from '@xds/core/theme/tokens.stylex';
-import {Banner} from '@xds/core/Banner';
-import {Button} from '@xds/core/Button';
-import {Card} from '@xds/core/Card';
-import {CheckboxInput} from '@xds/core/CheckboxInput';
-import {HStack, VStack} from '@xds/core/Layout';
-import {ProgressBar} from '@xds/core/ProgressBar';
-import {RadioList, RadioListItem} from '@xds/core/RadioList';
-import {Switch} from '@xds/core/Switch';
+} from '@astryxdesign/core/theme/tokens.stylex';
+import {Banner} from '@astryxdesign/core/Banner';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {ProgressBar} from '@astryxdesign/core/ProgressBar';
+import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
+import {Switch} from '@astryxdesign/core/Switch';
 import {
   Table,
   TableBody,
@@ -26,10 +26,10 @@ import {
   TableHeader,
   TableHeaderCell,
   TableRow,
-} from '@xds/core/Table';
-import {Heading, Text} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
-import {Badge} from '@xds/core/Badge';
+} from '@astryxdesign/core/Table';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Badge} from '@astryxdesign/core/Badge';
 
 // Below 800px viewport, the tile's left card + right column stack
 // vertically (instead of side-by-side). The 2-column tile layout
@@ -57,9 +57,9 @@ const TYPE_SAMPLE_GLYPH_SIZE = 36; // px — font-size for the "Aa" type samples
 const THEME_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp'] as const;
 
 // Build the candidate URL list for a given theme package name.
-// `@xds/theme-stone` → ['/theme-stone-preview.png', '/theme-stone-preview.jpg', …]
+// `@astryxdesign/theme-stone` → ['/theme-stone-preview.png', '/theme-stone-preview.jpg', …]
 function themeImageCandidates(themeName: string): ReadonlyArray<string> {
-  const slug = themeName.replace('@xds/theme-', '');
+  const slug = themeName.replace('@astryxdesign/theme-', '');
   return THEME_IMAGE_EXTENSIONS.map(ext => `/theme-${slug}-preview.${ext}`);
 }
 

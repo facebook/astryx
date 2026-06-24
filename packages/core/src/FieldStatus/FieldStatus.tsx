@@ -74,7 +74,7 @@ const colorStyles = stylex.create({
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/FieldStatus' {
+ * declare module '@astryxdesign/core/FieldStatus' {
  *   interface FieldStatusVariantMap {
  *     'inline': true;
  *   }

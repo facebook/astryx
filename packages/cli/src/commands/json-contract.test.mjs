@@ -215,7 +215,7 @@ describe('--json contract: supported commands emit valid envelopes', () => {
   });
 
   it('xds doctor --json emits a doctor envelope with checks + summary', () => {
-    // Run in a bare tmp dir → @xds/core won't resolve → a FAIL → exit 1.
+    // Run in a bare tmp dir → @astryxdesign/core won't resolve → a FAIL → exit 1.
     const {status, stdout} = runCli(['doctor', '--json'], {cwd: tmpDir});
     expect(status).toBe(1);
     const parsed = parseJson(stdout);

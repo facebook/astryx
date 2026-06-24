@@ -3,13 +3,13 @@
 'use client';
 
 import {useState} from 'react';
-import {Theme, defineTheme} from '@xds/core/theme';
-import {Card} from '@xds/core/Card';
-import {Button} from '@xds/core/Button';
-import {Section} from '@xds/core/Section';
-import {Stack} from '@xds/core/Layout';
-import {Selector} from '@xds/core/Selector';
-import {Heading, Text} from '@xds/core/Text';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
+import {Card} from '@astryxdesign/core/Card';
+import {Button} from '@astryxdesign/core/Button';
+import {Section} from '@astryxdesign/core/Section';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Selector} from '@astryxdesign/core/Selector';
+import {Heading, Text} from '@astryxdesign/core/Text';
 
 const warmTheme = defineTheme({
   name: 'warm-docs',

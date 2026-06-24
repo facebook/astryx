@@ -11,26 +11,26 @@ import {
   Layout,
   LayoutPanel,
   LayoutContent,
-} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {Dialog, DialogHeader} from '@xds/core/Dialog';
-import {List, ListItem} from '@xds/core/List';
-import {Divider} from '@xds/core/Divider';
-import {Selector} from '@xds/core/Selector';
-import {TextInput} from '@xds/core/TextInput';
-import {Card} from '@xds/core/Card';
-import {Switch} from '@xds/core/Switch';
-import {Link} from '@xds/core/Link';
-import {TabList, Tab} from '@xds/core/TabList';
-import {Badge} from '@xds/core/Badge';
-import {Icon} from '@xds/core/Icon';
-import {Center} from '@xds/core/Center';
+} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Selector} from '@astryxdesign/core/Selector';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Card} from '@astryxdesign/core/Card';
+import {Switch} from '@astryxdesign/core/Switch';
+import {Link} from '@astryxdesign/core/Link';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Center} from '@astryxdesign/core/Center';
 import {
   colorVars,
   radiusVars,
   spacingVars,
-} from '@xds/core/theme/tokens.stylex';
+} from '@astryxdesign/core/theme/tokens.stylex';
 import {
   UserIcon,
   LockClosedIcon,

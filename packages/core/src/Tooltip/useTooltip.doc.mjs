@@ -36,7 +36,7 @@ export const docs = {
   },
   relatedComponents: ['Tooltip', 'HoverCard', 'Popover'],
   relatedHooks: ['useLayer', 'useHoverCard', 'usePopover'],
-  importPath: '@xds/core/Tooltip',
+  importPath: '@astryxdesign/core/Tooltip',
   category: 'interaction',
 };
 

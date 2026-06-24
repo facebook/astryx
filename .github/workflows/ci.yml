@@ -71,10 +71,10 @@ jobs:
       # @xds/core/theme entry (dist/theme/index.js). Build core first so that
       # entry exists — otherwise generate fails with "Cannot find module".
       - name: Build core package
-        run: pnpm -F @xds/core build
+        run: pnpm -F @astryxdesign/core build
 
       - name: Generate and test docsite data
-        run: pnpm -F @xds/docsite generate && pnpm -F @xds/docsite test
+        run: pnpm -F @astryxdesign/docsite generate && pnpm -F @astryxdesign/docsite test
 
   # Lightweight check — does the PR touch any core components?
   # Gates pr-a11y to avoid unnecessary work
@@ -189,19 +189,19 @@ jobs:
 
       - name: Typecheck component docs
         if: needs.check-scope.outputs.docsite_only != 'true'
-        run: pnpm -F @xds/core typecheck:docs
+        run: pnpm -F @astryxdesign/core typecheck:docs
 
       - name: Typecheck template docs
         if: needs.check-scope.outputs.docsite_only != 'true'
-        run: pnpm -F @xds/cli typecheck:template-docs
+        run: pnpm -F @astryxdesign/cli typecheck:template-docs
 
       - name: Typecheck storybook
         if: needs.check-scope.outputs.docsite_only != 'true'
-        run: pnpm -F @xds/storybook typecheck
+        run: pnpm -F @astryxdesign/storybook typecheck
 
       - name: Typecheck core (including tests)
         if: needs.check-scope.outputs.docsite_only != 'true'
-        run: pnpm -F @xds/core typecheck
+        run: pnpm -F @astryxdesign/core typecheck
 
       - name: Cache Next.js build
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
@@ -217,7 +217,7 @@ jobs:
 
       - name: Build Storybook
         if: needs.check-scope.outputs.docsite_only != 'true'
-        run: pnpm -F @xds/storybook build
+        run: pnpm -F @astryxdesign/storybook build
 
       - name: Compute PR preview path
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
@@ -236,7 +236,7 @@ jobs:
 
       - name: Build Sandbox
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
-        run: pnpm -F @xds/sandbox build
+        run: pnpm -F @astryxdesign/sandbox build
         env:
           SANDBOX_BASE_PATH: /pr/${{ steps.urls.outputs.pr_number }}/sandbox
           NODE_OPTIONS: '--max-old-space-size=8192'

@@ -1,4 +1,4 @@
-# Contributing to @xds/cli
+# Contributing to @astryxdesign/cli
 
 Architecture, conventions, and playbook for CLI contributors.
 
@@ -20,7 +20,7 @@ Both paths run identical code. The CLI handler just adds argument parsing and ou
 
 ```
 src/
-  api/                         # Programmatic API (exported as @xds/cli/api)
+  api/                         # Programmatic API (exported as @astryxdesign/cli/api)
     index.mjs                  # barrel: component, docs, discover, template, XDSError
     component.mjs              # component(name?, opts?) → { type, data }
     docs.mjs                   # docs(topic?, section?, opts?) → { type, data }
@@ -59,7 +59,7 @@ src/
 
 ### Does it need an API function?
 
-**Yes** if the command returns data that consumers might want programmatically — component docs, template source, lists, search results. Put the logic in `src/api/`, export from `@xds/cli/api`, and make the CLI handler a thin wrapper.
+**Yes** if the command returns data that consumers might want programmatically — component docs, template source, lists, search results. Put the logic in `src/api/`, export from `@astryxdesign/cli/api`, and make the CLI handler a thin wrapper.
 
 **No** if the command is purely interactive or only makes sense in a terminal — `init` (interactive prompts), `gap-report setup` (config wizard). These can live entirely in `src/commands/`.
 
@@ -223,7 +223,7 @@ packages/cli/templates/{name}/
 
 ### Renaming or removing a response type
 
-This is a breaking change for `@xds/cli/api` consumers. Bump the version.
+This is a breaking change for `@astryxdesign/cli/api` consumers. Bump the version.
 
 ### What CI catches automatically
 

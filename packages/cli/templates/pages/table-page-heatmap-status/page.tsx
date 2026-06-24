@@ -10,17 +10,17 @@ import {
   Layout,
   LayoutContent,
   LayoutHeader,
-} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {IconButton} from '@xds/core/IconButton';
-import {Icon} from '@xds/core/Icon';
-import {Avatar} from '@xds/core/Avatar';
-import {Badge} from '@xds/core/Badge';
-import {Link} from '@xds/core/Link';
-import {Table, proportional, pixel} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
-import {Chart, ChartAxis, ChartHeatmapGL} from '@xds/lab';
+} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {IconButton} from '@astryxdesign/core/IconButton';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Link} from '@astryxdesign/core/Link';
+import {Table, proportional, pixel} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
+import {Chart, ChartAxis, ChartHeatmapGL} from '@astryxdesign/lab';
 import {
   FunnelIcon,
   ArrowDownTrayIcon,

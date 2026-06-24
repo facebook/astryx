@@ -217,7 +217,7 @@ sections.push({
       lang: 'tsx',
       label: 'Using token imports',
       code: `import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars, sizeVars, radiusVars} from '@xds/core';
+import {colorVars, spacingVars, sizeVars, radiusVars} from '@astryxdesign/core';
 
 const styles = stylex.create({
   card: {

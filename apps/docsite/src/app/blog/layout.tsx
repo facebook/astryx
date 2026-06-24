@@ -7,7 +7,7 @@
  */
 
 import {headers} from 'next/headers';
-import {AppShell} from '@xds/core/AppShell';
+import {AppShell} from '@astryxdesign/core/AppShell';
 import {SharedTopNav} from '../../components/SharedTopNav';
 import {SiteFooter} from '../../components/SiteFooter';
 

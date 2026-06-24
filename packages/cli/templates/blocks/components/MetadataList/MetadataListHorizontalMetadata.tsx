@@ -2,7 +2,7 @@
 
 'use client';
 
-import {MetadataList, MetadataListItem} from '@xds/core/MetadataList';
+import {MetadataList, MetadataListItem} from '@astryxdesign/core/MetadataList';
 
 export default function MetadataListHorizontalMetadata() {
   return (

@@ -35,7 +35,7 @@ https://facebookexperimental.github.io/xds/{commit}/sandbox/
 ```tsx
 'use client';
 
-import {VStack, Heading, Text} from '@xds/core';
+import {VStack, Heading, Text} from '@astryxdesign/core';
 
 export default function MyPage() {
   return (
@@ -61,7 +61,7 @@ Three ways to run the sandbox locally, depending on what you're iterating on:
 pnpm dev:sandbox
 ```
 
-Builds `@xds/core` once, then starts the sandbox. Edits to `packages/core/src/` require a manual rebuild (`pnpm build`). Good for working on sandbox pages themselves without touching core components.
+Builds `@astryxdesign/core` once, then starts the sandbox. Edits to `packages/core/src/` require a manual rebuild (`pnpm build`). Good for working on sandbox pages themselves without touching core components.
 
 ### Source mode (fast hot reload, no theming)
 
@@ -69,7 +69,7 @@ Builds `@xds/core` once, then starts the sandbox. Edits to `packages/core/src/` 
 pnpm dev:sandbox:source
 ```
 
-Resolves `@xds/core` from TypeScript source directly via the `"source"` exports condition. Edits to component source hot-reload instantly (~200ms). **Theming and CSS layers don't work** in this mode because the CSS `@layer` wrapping only exists in the built dist output. Use for layout and behavior iteration only.
+Resolves `@astryxdesign/core` from TypeScript source directly via the `"source"` exports condition. Edits to component source hot-reload instantly (~200ms). **Theming and CSS layers don't work** in this mode because the CSS `@layer` wrapping only exists in the built dist output. Use for layout and behavior iteration only.
 
 ### Watch mode (correct theming, near-hot-reload)
 
@@ -77,10 +77,10 @@ Run in two terminals:
 
 ```bash
 # Terminal 1: watch core for changes, rebuild dist incrementally
-pnpm -F @xds/core dev
+pnpm -F @astryxdesign/core dev
 
 # Terminal 2: start sandbox (uses dist with correct CSS layers)
-pnpm -F @xds/sandbox dev
+pnpm -F @astryxdesign/sandbox dev
 ```
 
 Edits trigger incremental dist rebuilds via Babel CLI (a few seconds), and CSS layer ordering is correct. Theming works properly.

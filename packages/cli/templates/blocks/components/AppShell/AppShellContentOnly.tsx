@@ -2,9 +2,9 @@
 
 'use client';
 
-import {AppShell} from '@xds/core/AppShell';
-import {VStack} from '@xds/core/Stack';
-import {Heading, Text} from '@xds/core/Text';
+import {AppShell} from '@astryxdesign/core/AppShell';
+import {VStack} from '@astryxdesign/core/Stack';
+import {Heading, Text} from '@astryxdesign/core/Text';
 import stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({

@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {DropdownMenu} from '@xds/core/DropdownMenu';
-import {Icon} from '@xds/core/Icon';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
+import {Icon} from '@astryxdesign/core/Icon';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 import {EllipsisHorizontalIcon} from '@heroicons/react/24/outline';
 
 export default function DropdownMenuNoChevron() {

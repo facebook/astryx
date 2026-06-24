@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {Selector} from '@xds/core/Selector';
-import {VStack} from '@xds/core/Layout';
+import {Selector} from '@astryxdesign/core/Selector';
+import {VStack} from '@astryxdesign/core/Layout';
 
 export default function SelectorWithStatus() {
   const [value1, setValue1] = useState<string | undefined>();

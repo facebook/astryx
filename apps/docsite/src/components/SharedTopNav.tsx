@@ -4,9 +4,9 @@
 
 import {useState} from 'react';
 import {usePathname} from 'next/navigation';
-import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
-import {Button} from '@xds/core/Button';
-import {HStack} from '@xds/core/Layout';
+import {TopNav, TopNavHeading, TopNavItem} from '@astryxdesign/core/TopNav';
+import {Button} from '@astryxdesign/core/Button';
+import {HStack} from '@astryxdesign/core/Layout';
 import {Search, HeartHandshake, Sun, Moon} from 'lucide-react';
 import {GITHUB_REPO} from '../constants';
 import {AstryxIcon} from './logos';

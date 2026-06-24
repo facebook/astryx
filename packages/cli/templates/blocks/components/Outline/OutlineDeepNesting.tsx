@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Outline} from '@xds/core/Outline';
-import type {OutlineItem} from '@xds/core/Outline';
+import {Outline} from '@astryxdesign/core/Outline';
+import type {OutlineItem} from '@astryxdesign/core/Outline';
 
 const items: OutlineItem[] = [
   {id: 'deep-introduction', label: 'Introduction', level: 1},

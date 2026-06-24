@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {XDSDialog} from '@xds/core/Dialog';
-import {XDSVStack} from '@xds/core/Stack';
-import {XDSText} from '@xds/core/Text';
-import {XDSHeading} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
+import {XDSDialog} from '@astryxdesign/core/Dialog';
+import {XDSVStack} from '@astryxdesign/core/Stack';
+import {XDSText} from '@astryxdesign/core/Text';
+import {XDSHeading} from '@astryxdesign/core/Text';
+import {XDSButton} from '@astryxdesign/core/Button';
+import {XDSIcon} from '@astryxdesign/core/Icon';
 import './report.css';
 
 interface CodeModalProps {

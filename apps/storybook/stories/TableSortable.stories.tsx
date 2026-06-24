@@ -8,8 +8,8 @@ import {
   useTableSortableState,
   useTableSelection,
   useTableSelectionState,
-} from '@xds/core/Table';
-import type {TableColumn, TableSortState} from '@xds/core/Table';
+} from '@astryxdesign/core/Table';
+import type {TableColumn, TableSortState} from '@astryxdesign/core/Table';
 
 // =============================================================================
 // Sample Data

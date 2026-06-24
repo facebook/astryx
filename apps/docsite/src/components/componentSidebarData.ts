@@ -17,7 +17,7 @@ export interface ComponentSidebarData {
  * this helper instead of independently filtering componentRegistry entries.
  */
 export function getComponentSidebarData(): ComponentSidebarData {
-  const grouped = groupedComponents['@xds/core'];
+  const grouped = groupedComponents['@astryxdesign/core'];
   if (!grouped) {
     return {componentItems: [], utilities: []};
   }

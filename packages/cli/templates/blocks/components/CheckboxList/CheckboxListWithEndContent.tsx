@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {CheckboxList, CheckboxListItem} from '@xds/core/CheckboxList';
-import {Badge} from '@xds/core/Badge';
+import {CheckboxList, CheckboxListItem} from '@astryxdesign/core/CheckboxList';
+import {Badge} from '@astryxdesign/core/Badge';
 
 export default function CheckboxListWithEndContent() {
   const [value, setValue] = useState<string[]>(['free']);

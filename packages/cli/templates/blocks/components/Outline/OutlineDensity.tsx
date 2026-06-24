@@ -2,10 +2,10 @@
 
 'use client';
 
-import {Outline} from '@xds/core/Outline';
-import type {OutlineItem} from '@xds/core/Outline';
-import {HStack, VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Outline} from '@astryxdesign/core/Outline';
+import type {OutlineItem} from '@astryxdesign/core/Outline';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const items: OutlineItem[] = [
   {id: 'density-getting-started', label: 'Getting started', level: 2},

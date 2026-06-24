@@ -41,7 +41,7 @@ function checkFile(filePath) {
   if (/^XDSCommon[A-Z]/.test(basename)) {
     violations.push({
       file: relPath,
-      message: 'XDSCommon* files belong in the common package, not @xds/core.',
+      message: 'XDSCommon* files belong in the common package, not @astryxdesign/core.',
     });
   }
 
@@ -56,7 +56,7 @@ function checkFile(filePath) {
       violations.push({
         file: `${relPath}:${index + 1}`,
         message:
-          'Exported XDSCommon* APIs belong in the common package, not @xds/core.',
+          'Exported XDSCommon* APIs belong in the common package, not @astryxdesign/core.',
       });
     }
   });

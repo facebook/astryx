@@ -1,17 +1,17 @@
 /* Copyright (c) Meta Platforms, Inc. and affiliates. */
 
 @import "./layers.css";
-@import "@xds/core/reset.css";
-@import "@xds/core/astryx.css";
-@import "@xds/theme-default/theme.css";
-@import "@xds/theme-neutral/theme.css";
-@import "@xds/theme-brutalist/theme.css";
-@import "@xds/theme-matcha/theme.css";
-@import "@xds/theme-daily/theme.css";
-@import "@xds/theme-stone/theme.css";
-@import "@xds/theme-gothic/theme.css";
-@import "@xds/theme-chocolate/theme.css";
-@import "@xds/theme-y2k/theme.css";
-@import "@xds/theme-butter/theme.css";
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+@import "@astryxdesign/theme-default/theme.css";
+@import "@astryxdesign/theme-neutral/theme.css";
+@import "@astryxdesign/theme-brutalist/theme.css";
+@import "@astryxdesign/theme-matcha/theme.css";
+@import "@astryxdesign/theme-daily/theme.css";
+@import "@astryxdesign/theme-stone/theme.css";
+@import "@astryxdesign/theme-gothic/theme.css";
+@import "@astryxdesign/theme-chocolate/theme.css";
+@import "@astryxdesign/theme-y2k/theme.css";
+@import "@astryxdesign/theme-butter/theme.css";
 
 @stylex;

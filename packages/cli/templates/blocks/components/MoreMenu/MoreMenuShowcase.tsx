@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {MoreMenu} from '@xds/core/MoreMenu';
+import {MoreMenu} from '@astryxdesign/core/MoreMenu';
 
 export default function MoreMenuShowcase() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

@@ -3,14 +3,14 @@
 'use client';
 
 import {useState} from 'react';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Text, Heading} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
-import {Badge} from '@xds/core/Badge';
-import {Card} from '@xds/core/Card';
-import {Divider} from '@xds/core';
-import {Avatar} from '@xds/core/Avatar';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Card} from '@astryxdesign/core/Card';
+import {Divider} from '@astryxdesign/core';
+import {Avatar} from '@astryxdesign/core/Avatar';
 
 /* ─── Shadcn-style Tailwind components ─────────────────── */
 
@@ -101,7 +101,7 @@ export default function Home() {
             <Text type="supporting" color="secondary">
               With{' '}
               <code className="rounded-sm bg-gray-100 px-1 py-0.5 text-xs">
-                @xds/core/tailwind-theme.css
+                @astryxdesign/core/tailwind-theme.css
               </code>
               , XDS tokens become native Tailwind utilities. No{' '}
               <code className="rounded-sm bg-gray-100 px-1 py-0.5 text-xs">

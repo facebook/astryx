@@ -2,10 +2,10 @@
 
 'use client';
 
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 import {
   ArrowDownTrayIcon,
   PencilSquareIcon,

@@ -2,8 +2,8 @@
 
 'use client';
 
-import {TreeList} from '@xds/core/TreeList';
-import {Badge} from '@xds/core/Badge';
+import {TreeList} from '@astryxdesign/core/TreeList';
+import {Badge} from '@astryxdesign/core/Badge';
 
 const noop = () => {};
 

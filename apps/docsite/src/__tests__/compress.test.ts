@@ -2,7 +2,7 @@
 
 /**
  * @file Compression round-trip and backward-compat tests.
- * Run: pnpm -F @xds/docsite test
+ * Run: pnpm -F @astryxdesign/docsite test
  */
 
 import {describe, it, expect} from 'vitest';
@@ -10,7 +10,7 @@ import {compressCode, decompressCode} from '../lib/compress';
 import {compressToEncodedURIComponent} from 'lz-string';
 
 describe('compress', () => {
-  const SAMPLE = `import {Button} from '@xds/core/Button';
+  const SAMPLE = `import {Button} from '@astryxdesign/core/Button';
 export default function Demo() {
   return <Button label="Hello" variant="primary" />;
 }`;

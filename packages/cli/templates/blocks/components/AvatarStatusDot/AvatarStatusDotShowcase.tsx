@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Avatar, AvatarStatusDot} from '@xds/core/Avatar';
-import {HStack} from '@xds/core/Layout';
+import {Avatar, AvatarStatusDot} from '@astryxdesign/core/Avatar';
+import {HStack} from '@astryxdesign/core/Layout';
 
 export default function AvatarStatusDotShowcase() {
   return (

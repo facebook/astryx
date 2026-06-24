@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {Thumbnail} from '@xds/core/Thumbnail';
+import {Thumbnail} from '@astryxdesign/core/Thumbnail';
 
 const meta: Meta<typeof Thumbnail> = {
   title: 'Core/Thumbnail',

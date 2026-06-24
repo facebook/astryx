@@ -1,16 +1,16 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {useState} from 'react';
-import {XDSTheme} from '@xds/core/theme';
-import {XDSVStack} from '@xds/core/Stack';
-import {XDSHStack} from '@xds/core/Stack';
-import {XDSText} from '@xds/core/Text';
-import {XDSHeading} from '@xds/core/Text';
-import {XDSTabList} from '@xds/core/TabList';
-import {XDSTab} from '@xds/core/TabList';
-import {XDSCard} from '@xds/core/Card';
-import {XDSButton} from '@xds/core/Button';
-import {defaultTheme} from '@xds/theme-default';
+import {XDSTheme} from '@astryxdesign/core/theme';
+import {XDSVStack} from '@astryxdesign/core/Stack';
+import {XDSHStack} from '@astryxdesign/core/Stack';
+import {XDSText} from '@astryxdesign/core/Text';
+import {XDSHeading} from '@astryxdesign/core/Text';
+import {XDSTabList} from '@astryxdesign/core/TabList';
+import {XDSTab} from '@astryxdesign/core/TabList';
+import {XDSCard} from '@astryxdesign/core/Card';
+import {XDSButton} from '@astryxdesign/core/Button';
+import {defaultTheme} from '@astryxdesign/theme-default';
 import type {ReportData} from './types';
 import {ALL_DIMENSIONS, DIMENSION_LABELS} from './utils';
 import {ScoreCard} from './ScoreCard';

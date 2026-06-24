@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Citation} from '@xds/core/Citation';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Citation} from '@astryxdesign/core/Citation';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function CitationShowcase() {
   return (

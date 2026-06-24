@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {Typeahead, TypeaheadItem} from '@xds/core/Typeahead';
-import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
-import {Avatar} from '@xds/core/Avatar';
-import {Center} from '@xds/core/Center';
+import {Typeahead, TypeaheadItem} from '@astryxdesign/core/Typeahead';
+import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Center} from '@astryxdesign/core/Center';
 
 interface PersonItem extends SearchableItem {
   auxiliaryData: {role: string};

@@ -8,9 +8,9 @@ import {
   ChatMessageBubble,
   ChatMessageMetadata,
   ChatSystemMessage,
-} from '@xds/core/Chat';
-import {VStack} from '@xds/core/Layout';
-import {Timestamp} from '@xds/core/Timestamp';
+} from '@astryxdesign/core/Chat';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Timestamp} from '@astryxdesign/core/Timestamp';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({

@@ -8,9 +8,9 @@ import {
   ChartLegend,
   useChartColors,
   type SequentialHue,
-} from '@xds/lab';
-import {Stack, Text} from '@xds/core';
-import {Heading} from '@xds/core/Text';
+} from '@astryxdesign/lab';
+import {Stack, Text} from '@astryxdesign/core';
+import {Heading} from '@astryxdesign/core/Text';
 
 const meta: Meta = {title: 'Lab/ChartHeatmapGL'};
 export default meta;

@@ -3,7 +3,7 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {Text} from '@xds/core/Text';
+import {Text} from '@astryxdesign/core/Text';
 import {renderInlineCode} from './renderInlineCode';
 import {layout} from '../../layout.stylex';
 

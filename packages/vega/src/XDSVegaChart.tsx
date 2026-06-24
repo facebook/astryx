@@ -4,7 +4,7 @@
  * @file XDSVegaChart.tsx
  * @input A Vega or Vega-Lite spec (distinguished by $schema), parse config/options, view options, and data
  * @output A React component that renders the spec via the Vega runtime
- * @position Primary component in @xds/vega; owns the Vega View lifecycle
+ * @position Primary component in @astryxdesign/vega; owns the Vega View lifecycle
  *
  * SYNC: When modified, update /packages/vega/README.md
  */
@@ -41,12 +41,12 @@ import type {XDSVegaChartProps, VegaSpec, VegaLiteSpec} from './types';
  * for `parseConfig`, `parseOptions`, `viewOptions`, and `data` to avoid
  * unnecessary re-renders.
  *
- * Note: this component does not accept `xstyle` because `@xds/vega` does not
+ * Note: this component does not accept `xstyle` because `@astryxdesign/vega` does not
  * depend on StyleX. Use `className` or `style` for layout overrides.
  *
  * @example
  * ```
- * import {XDSVegaChart} from '@xds/vega';
+ * import {XDSVegaChart} from '@astryxdesign/vega';
  *
  * // Vega-Lite spec -- compiled automatically
  * <XDSVegaChart

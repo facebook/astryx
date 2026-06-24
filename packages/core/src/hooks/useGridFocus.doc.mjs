@@ -88,7 +88,7 @@ export const docs = {
   },
   relatedComponents: ['Calendar'],
   relatedHooks: ['useListFocus', 'useFocusTrap'],
-  importPath: '@xds/core/hooks',
+  importPath: '@astryxdesign/core/hooks',
   category: 'focus',
 };
 

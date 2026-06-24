@@ -6,7 +6,7 @@ import {Providers} from './providers';
 
 export const metadata: Metadata = {
   title: 'XDS Example — Next.js (Source)',
-  description: 'Reference example compiling @xds/core from source with StyleX',
+  description: 'Reference example compiling @astryxdesign/core from source with StyleX',
 };
 
 export default function RootLayout({children}: {children: React.ReactNode}) {

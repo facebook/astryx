@@ -3,11 +3,11 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {Overlay} from '@xds/core/Overlay';
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {Badge} from '@xds/core/Badge';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Overlay} from '@astryxdesign/core/Overlay';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {Badge} from '@astryxdesign/core/Badge';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const styles = stylex.create({
   frame: {

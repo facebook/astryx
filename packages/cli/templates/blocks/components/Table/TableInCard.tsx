@@ -2,11 +2,11 @@
 
 'use client';
 
-import {Table, proportional} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
-import {Card} from '@xds/core/Card';
-import {VStack} from '@xds/core/Layout';
-import {Heading} from '@xds/core/Text';
+import {Table, proportional} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
+import {Card} from '@astryxdesign/core/Card';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Heading} from '@astryxdesign/core/Text';
 
 interface User extends Record<string, unknown> {
   id: string;

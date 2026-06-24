@@ -2,15 +2,15 @@
 
 'use client';
 
-import {useResizable, ResizeHandle} from '@xds/core/Resizable';
+import {useResizable, ResizeHandle} from '@astryxdesign/core/Resizable';
 import {
   Card,
   Layout,
   LayoutContent,
   LayoutPanel,
   VStack,
-} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
+} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
 
 export default function ResizableShowcase() {
   const sidebar = useResizable({

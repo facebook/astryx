@@ -2,7 +2,7 @@
 
 'use client';
 
-import {ChatToolCalls} from '@xds/core/Chat';
+import {ChatToolCalls} from '@astryxdesign/core/Chat';
 
 export default function ChatToolCallsShowcase() {
   return (

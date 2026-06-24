@@ -3,12 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {Pagination} from '@xds/core/Pagination';
-import {Card} from '@xds/core/Card';
-import {Text} from '@xds/core/Text';
-import {Stack} from '@xds/core/Layout';
-import {Avatar} from '@xds/core/Avatar';
-import {Icon} from '@xds/core/Icon';
+import {Pagination} from '@astryxdesign/core/Pagination';
+import {Card} from '@astryxdesign/core/Card';
+import {Text} from '@astryxdesign/core/Text';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Icon} from '@astryxdesign/core/Icon';
 import {StarIcon} from '@heroicons/react/24/solid';
 import * as stylex from '@stylexjs/stylex';
 

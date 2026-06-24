@@ -31,8 +31,8 @@ describe('findCoreDir', () => {
     expect(findCoreDir(nested)).toBe(coreDir);
   });
 
-  it('finds node_modules/@xds/core fallback', () => {
-    const nmCore = path.join(tmpDir, 'node_modules', '@xds', 'core');
+  it('finds node_modules/@astryxdesign/core fallback', () => {
+    const nmCore = path.join(tmpDir, 'node_modules', '@astryxdesign', 'core');
     fs.mkdirSync(nmCore, {recursive: true});
 
     expect(findCoreDir(tmpDir)).toBe(nmCore);
@@ -113,14 +113,14 @@ describe('discoverExternalPackages', () => {
     ]);
   });
 
-  it('skips @xds/core', () => {
+  it('skips @astryxdesign/core', () => {
     const nm = path.join(tmpDir, 'node_modules');
-    const coreDir = path.join(nm, '@xds', 'core');
+    const coreDir = path.join(nm, '@astryxdesign', 'core');
     fs.mkdirSync(coreDir, {recursive: true});
     fs.writeFileSync(
       path.join(coreDir, 'package.json'),
       JSON.stringify({
-        name: '@xds/core',
+        name: '@astryxdesign/core',
         astryx: {docs: './src'},
       }),
     );

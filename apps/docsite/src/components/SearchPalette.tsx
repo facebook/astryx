@@ -4,8 +4,8 @@
 
 import {useMemo, useCallback} from 'react';
 import {useRouter} from 'next/navigation';
-import {CommandPalette} from '@xds/core/CommandPalette';
-import {createStaticSource} from '@xds/core/Typeahead';
+import {CommandPalette} from '@astryxdesign/core/CommandPalette';
+import {createStaticSource} from '@astryxdesign/core/Typeahead';
 import type {ComponentEntry} from '../generated/componentRegistry';
 import type {PackageMeta} from '../generated/packageRegistry';
 import type {DocTopic} from '../generated/docsRegistry';

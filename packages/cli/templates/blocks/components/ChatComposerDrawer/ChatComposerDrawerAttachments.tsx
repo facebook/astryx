@@ -2,11 +2,11 @@
 
 'use client';
 
-import {ChatComposer, ChatComposerDrawer} from '@xds/core/Chat';
-import {Token} from '@xds/core/Token';
-import {Thumbnail} from '@xds/core/Thumbnail';
-import {Carousel} from '@xds/core/Carousel';
-import {Stack} from '@xds/core/Layout';
+import {ChatComposer, ChatComposerDrawer} from '@astryxdesign/core/Chat';
+import {Token} from '@astryxdesign/core/Token';
+import {Thumbnail} from '@astryxdesign/core/Thumbnail';
+import {Carousel} from '@astryxdesign/core/Carousel';
+import {Stack} from '@astryxdesign/core/Layout';
 
 const IMAGE_ATTACHMENTS = [
   {

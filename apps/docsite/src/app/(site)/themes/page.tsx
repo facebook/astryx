@@ -16,7 +16,7 @@
  */
 
 import {notFound} from 'next/navigation';
-import {Section} from '@xds/core/Section';
+import {Section} from '@astryxdesign/core/Section';
 import {packages} from '../../../generated/packageRegistry';
 import {themeObjects} from '../../../generated/themeRegistry';
 import {ThemePackagePage} from '../../../components/ThemePackagePage';
@@ -25,10 +25,10 @@ import {ThemePackagePage} from '../../../components/ThemePackagePage';
 // selected on first visit. Neutral is the most restrained / brand-
 // neutral theme in the gallery, so it sets a calm baseline before
 // users browse into the more expressive themes (Y2K, Butter, etc.).
-const DEFAULT_THEME_PACKAGE = '@xds/theme-neutral';
+const DEFAULT_THEME_PACKAGE = '@astryxdesign/theme-neutral';
 
 function slugToPackageName(slug: string): string {
-  return `@xds/theme-${slug}`;
+  return `@astryxdesign/theme-${slug}`;
 }
 
 export default async function ThemesPage({
@@ -65,7 +65,7 @@ export default async function ThemesPage({
       : themeObjects[DEFAULT_THEME_PACKAGE];
 
   if (!seedPkg || !seedTheme) {
-    // Defensive: only fires if the @xds/theme-neutral package is
+    // Defensive: only fires if the @astryxdesign/theme-neutral package is
     // ever removed from the workspace, which would break the entire
     // themes section anyway.
     notFound();

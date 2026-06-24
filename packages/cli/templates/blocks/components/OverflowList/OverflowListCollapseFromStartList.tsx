@@ -2,10 +2,10 @@
 
 'use client';
 
-import {OverflowList} from '@xds/core/OverflowList';
-import {Button} from '@xds/core/Button';
-import {Card} from '@xds/core/Card';
-import {Center} from '@xds/core/Center';
+import {OverflowList} from '@astryxdesign/core/OverflowList';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {Center} from '@astryxdesign/core/Center';
 
 export default function OverflowListCollapseFromStartList() {
   return (

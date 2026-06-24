@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {CheckboxInput} from '@xds/core/CheckboxInput';
-import {Stack} from '@xds/core/Layout';
-import {Divider} from '@xds/core/Divider';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Divider} from '@astryxdesign/core/Divider';
 
 export default function CheckboxInputIndeterminateState() {
   const [items, setItems] = useState({

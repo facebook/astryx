@@ -3,10 +3,10 @@
 'use client';
 
 import {useEffect, useState, type ComponentType} from 'react';
-import {Center} from '@xds/core/Center';
-import {Text} from '@xds/core/Text';
-import {Spinner} from '@xds/core/Spinner';
-import {useMediaQuery} from '@xds/core/hooks';
+import {Center} from '@astryxdesign/core/Center';
+import {Text} from '@astryxdesign/core/Text';
+import {Spinner} from '@astryxdesign/core/Spinner';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {showcaseRegistry} from '../../generated/showcaseRegistry';
 import {preventPreviewNavigation} from './previewNavigation';
 

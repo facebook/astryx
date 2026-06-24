@@ -2,8 +2,8 @@
 
 'use client';
 
-import {StatusDot} from '@xds/core/StatusDot';
-import {HStack} from '@xds/core/Layout';
+import {StatusDot} from '@astryxdesign/core/StatusDot';
+import {HStack} from '@astryxdesign/core/Layout';
 
 export default function StatusDotPulsing() {
   return (

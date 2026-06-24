@@ -2,10 +2,10 @@
 
 'use client';
 
-import {VStack} from '@xds/core/Layout';
-import {gothicTheme} from '@xds/theme-gothic/built';
+import {VStack} from '@astryxdesign/core/Layout';
+import {gothicTheme} from '@astryxdesign/theme-gothic/built';
 // `gothicPalettes` is only exported from the source entry, not /built.
-import {gothicPalettes} from '@xds/theme-gothic';
+import {gothicPalettes} from '@astryxdesign/theme-gothic';
 import {ThemePalettePreview} from '@/components/ThemePalettePreview';
 import type {TonalColor} from '@/components/ThemePalettePreview';
 

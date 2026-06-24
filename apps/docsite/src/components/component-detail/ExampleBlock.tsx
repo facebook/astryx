@@ -3,15 +3,15 @@
 'use client';
 
 import {useEffect, useState, type ComponentType} from 'react';
-import {Card} from '@xds/core/Card';
-import {Section} from '@xds/core/Section';
-import {Center} from '@xds/core/Center';
-import {Text} from '@xds/core/Text';
+import {Card} from '@astryxdesign/core/Card';
+import {Section} from '@astryxdesign/core/Section';
+import {Center} from '@astryxdesign/core/Center';
+import {Text} from '@astryxdesign/core/Text';
 import {CodeExampleBlock} from '../CodeExampleBlock';
-import {TabList, Tab} from '@xds/core/TabList';
-import {Spinner} from '@xds/core/Spinner';
-import {Button} from '@xds/core/Button';
-import {HStack} from '@xds/core/Layout';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {Spinner} from '@astryxdesign/core/Spinner';
+import {Button} from '@astryxdesign/core/Button';
+import {HStack} from '@astryxdesign/core/Layout';
 import type {ExampleEntry} from '../../generated/exampleRegistry';
 import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {buildPlaygroundHref} from '../playgroundLink';

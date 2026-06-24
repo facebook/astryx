@@ -2,9 +2,9 @@
 
 'use client';
 
-import {ChatSendButton} from '@xds/core/Chat';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {ChatSendButton} from '@astryxdesign/core/Chat';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function ChatSendButtonStates() {
   return (

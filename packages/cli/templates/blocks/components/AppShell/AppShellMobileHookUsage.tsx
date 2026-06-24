@@ -2,10 +2,10 @@
 
 'use client';
 
-import {useAppShellMobile} from '@xds/core/AppShell';
-import {Button} from '@xds/core/Button';
-import {HStack, VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {useAppShellMobile} from '@astryxdesign/core/AppShell';
+import {Button} from '@astryxdesign/core/Button';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function AppShellMobileHookUsage() {
   const {

@@ -436,7 +436,7 @@
     {
       "id": "ty-6",
       "category": "typography",
-      "prompt": "Display a code example with a label that says 'Installation' above it, the code snippet 'yarn add @xds/core', and a note below in small text",
+      "prompt": "Display a code example with a label that says 'Installation' above it, the code snippet 'yarn add @astryxdesign/core', and a note below in small text",
       "expectedComponents": [
         "XDSText"
       ],

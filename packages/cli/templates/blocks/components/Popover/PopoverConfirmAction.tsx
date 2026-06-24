@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {Popover} from '@xds/core/Popover';
-import {Button} from '@xds/core/Button';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Heading, Text} from '@xds/core/Text';
+import {Popover} from '@astryxdesign/core/Popover';
+import {Button} from '@astryxdesign/core/Button';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Heading, Text} from '@astryxdesign/core/Text';
 export default function PopoverConfirmAction() {
   const [isOpen, setIsOpen] = useState(false);
 

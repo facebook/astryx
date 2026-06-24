@@ -4,11 +4,11 @@
 
 import {useState} from 'react';
 
-import {VStack, HStack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {Divider} from '@xds/core';
-import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Divider} from '@astryxdesign/core';
+import {TopNav, TopNavHeading, TopNavItem} from '@astryxdesign/core/TopNav';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({

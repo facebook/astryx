@@ -2,7 +2,7 @@
 
 'use client';
 
-import {TabList, Tab} from '@xds/core/TabList';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
 
 export default function TabListShowcase() {
   return (

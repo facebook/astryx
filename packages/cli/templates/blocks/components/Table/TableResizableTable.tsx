@@ -8,7 +8,7 @@ import {
   useTableColumnResize,
   proportional,
   pixel,
-} from '@xds/core/Table';
+} from '@astryxdesign/core/Table';
 
 interface User extends Record<string, unknown> {
   id: string;

@@ -3,18 +3,18 @@
 'use client';
 
 import {useState, useCallback, useMemo} from 'react';
-import {TextInput} from '@xds/core/TextInput';
-import {Button} from '@xds/core/Button';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {IconButton} from '@xds/core/IconButton';
-import {Selector} from '@xds/core/Selector';
-import {Slider} from '@xds/core/Slider';
-import {NumberInput} from '@xds/core/NumberInput';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Button} from '@astryxdesign/core/Button';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {IconButton} from '@astryxdesign/core/IconButton';
+import {Selector} from '@astryxdesign/core/Selector';
+import {Slider} from '@astryxdesign/core/Slider';
+import {NumberInput} from '@astryxdesign/core/NumberInput';
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from '@xds/core/SegmentedControl';
+} from '@astryxdesign/core/SegmentedControl';
 
 import {
   hexToOklch,

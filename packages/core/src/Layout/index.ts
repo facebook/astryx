@@ -6,7 +6,7 @@
  * @file index.ts
  * @input Imports layout utilities and components
  * @output Exports XDS layout system
- * @position Entry point for @xds/core/Layout
+ * @position Entry point for @astryxdesign/core/Layout
  *
  * SYNC: When modified, update /packages/core/src/Layout/Layout.doc.mjs
  */

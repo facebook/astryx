@@ -17,10 +17,10 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {Text, Heading} from '@xds/core/Text';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Badge} from '@xds/core/Badge';
-import {ClickableCard} from '@xds/core/ClickableCard';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Badge} from '@astryxdesign/core/Badge';
+import {ClickableCard} from '@astryxdesign/core/ClickableCard';
 import type {BlogPost} from '../../lib/blog/schema';
 import {POST_TYPE_LABELS} from '../../lib/blog/schema';
 import {AuthorByline} from './AuthorByline';

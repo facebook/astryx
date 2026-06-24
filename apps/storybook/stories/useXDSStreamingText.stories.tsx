@@ -2,10 +2,10 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {useStreamingText} from '@xds/core/hooks';
-import {Text} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {VStack} from '@xds/core/Layout';
+import {useStreamingText} from '@astryxdesign/core/hooks';
+import {Text} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {VStack} from '@astryxdesign/core/Layout';
 
 interface StreamingDemoProps {
   text: string;

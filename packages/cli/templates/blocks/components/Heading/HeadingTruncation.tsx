@@ -2,7 +2,7 @@
 
 'use client';
 
-import {Heading} from '@xds/core/Text';
+import {Heading} from '@astryxdesign/core/Text';
 
 export default function HeadingTruncation() {
   return (

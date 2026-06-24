@@ -2,7 +2,7 @@
 
 'use client';
 
-import {Icon} from '@xds/core/Icon';
+import {Icon} from '@astryxdesign/core/Icon';
 
 export default function IconShowcase() {
   return <Icon icon="search" color="primary" size="md" />;

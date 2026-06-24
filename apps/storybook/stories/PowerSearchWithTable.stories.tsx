@@ -2,10 +2,10 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {PowerSearch, usePowerSearchConfig} from '@xds/core/PowerSearch';
-import type {PowerSearchFilter} from '@xds/core/PowerSearch';
-import {Table, pixel, proportional} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
+import {PowerSearch, usePowerSearchConfig} from '@astryxdesign/core/PowerSearch';
+import type {PowerSearchFilter} from '@astryxdesign/core/PowerSearch';
+import {Table, pixel, proportional} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
 
 // =============================================================================
 // Field definitions

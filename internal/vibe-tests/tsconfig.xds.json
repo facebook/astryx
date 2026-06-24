@@ -7,9 +7,9 @@
     "noEmit": true,
     "skipLibCheck": true,
     "paths": {
-      "@xds/core": ["../../packages/core/src"],
-      "@xds/core/*": ["../../packages/core/src/*"],
-      "@xds/theme/default": ["../../packages/themes/default/src/source.ts"],
+      "@astryxdesign/core": ["../../packages/core/src"],
+      "@astryxdesign/core/*": ["../../packages/core/src/*"],
+      "@astryxdesign/theme/default": ["../../packages/themes/default/src/source.ts"],
       "@stylexjs/stylex": ["../../node_modules/@stylexjs/stylex"]
     }
   },

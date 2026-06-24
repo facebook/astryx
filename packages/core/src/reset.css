@@ -18,12 +18,12 @@
  * Usage:
  *
  * 1. Import directly (global reset):
- *    import '@xds/core/reset.css';
+ *    import '@astryxdesign/core/reset.css';
  *
  * 2. Combine with base styles and theme:
- *    import '@xds/core/reset.css';        // @layer reset  — clean slate
- *    import '@xds/core/astryx.css';        // @layer astryx-base — component styles
- *    import '@xds/theme-default/theme.css'; // @layer astryx-theme — theme overrides
+ *    import '@astryxdesign/core/reset.css';        // @layer reset  — clean slate
+ *    import '@astryxdesign/core/astryx.css';        // @layer astryx-base — component styles
+ *    import '@astryxdesign/theme-default/theme.css'; // @layer astryx-theme — theme overrides
  *
  * Layer order: reset → astryx-base → astryx-theme
  * Consumer styles (unlayered) always override all XDS layers.

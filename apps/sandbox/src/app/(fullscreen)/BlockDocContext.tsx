@@ -2,11 +2,11 @@
 
 'use client';
 
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {Card} from '@xds/core/Card';
-import {Center} from '@xds/core/Center';
-import {Text} from '@xds/core/Text';
-import {VStack} from '@xds/core/Layout';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {Card} from '@astryxdesign/core/Card';
+import {Center} from '@astryxdesign/core/Center';
+import {Text} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/Layout';
 
 export interface BlockDocMeta {
   aspectRatio: number;

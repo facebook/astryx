@@ -4,13 +4,13 @@
 
 import {useEffect, useRef, type Ref, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Heading, Text} from '@xds/core/Text';
-import {Link} from '@xds/core/Link';
-import {VStack} from '@xds/core/Layout';
-import {Grid} from '@xds/core/Grid';
-import {Button} from '@xds/core/Button';
-import {Theme} from '@xds/core/theme';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Link} from '@astryxdesign/core/Link';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Button} from '@astryxdesign/core/Button';
+import {Theme} from '@astryxdesign/core/theme';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 // Built theme (__built:true) so <XDSTheme> uses the pre-built CSS and skips
 // runtime style injection. Importing the source astryxTheme.ts re-triggers it.
 import {astryxTheme} from '@/themes/astryx';

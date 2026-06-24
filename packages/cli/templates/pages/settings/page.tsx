@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {useMediaQuery} from '@xds/core/hooks';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {
   VStack,
   HStack,
@@ -12,18 +12,18 @@ import {
   LayoutContent,
   LayoutHeader,
   LayoutPanel,
-} from '@xds/core/Layout';
-import {Grid} from '@xds/core/Grid';
-import {List, ListItem} from '@xds/core/List';
-import {TabList, Tab} from '@xds/core/TabList';
-import {Text, Heading} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
-import {Button} from '@xds/core/Button';
-import {Divider} from '@xds/core/Divider';
-import {CheckboxInput} from '@xds/core/CheckboxInput';
-import {Typeahead} from '@xds/core/Typeahead';
+} from '@astryxdesign/core/Layout';
+import {Grid} from '@astryxdesign/core/Grid';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Button} from '@astryxdesign/core/Button';
+import {Divider} from '@astryxdesign/core/Divider';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {Typeahead} from '@astryxdesign/core/Typeahead';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
-import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
+import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
 
 const NAV_ITEMS = [
   'Profile',

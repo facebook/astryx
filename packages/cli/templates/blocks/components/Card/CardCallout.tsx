@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Card} from '@xds/core/Card';
-import {Stack} from '@xds/core/Layout';
-import {Heading, Text} from '@xds/core/Text';
+import {Card} from '@astryxdesign/core/Card';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Heading, Text} from '@astryxdesign/core/Text';
 
 export default function CardCallout() {
   return (

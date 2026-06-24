@@ -3,12 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Heading, Text} from '@xds/core/Text';
-import {Badge} from '@xds/core/Badge';
-import {Avatar} from '@xds/core/Avatar';
-import {Switch} from '@xds/core/Switch';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Switch} from '@astryxdesign/core/Switch';
 
 const BAR_HEIGHTS = [28, 40, 22, 48, 34, 18, 44, 30];
 

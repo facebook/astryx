@@ -7,11 +7,11 @@
  * @position Icon configuration for the neutral theme; consumed by index.ts
  *
  * Maps semantic icon names to Lucide icon components.
- * These icons are bundled with the theme, not with @xds/core.
+ * These icons are bundled with the theme, not with @astryxdesign/core.
  */
 
 import React from 'react';
-import type {IconRegistry} from '@xds/core/Icon';
+import type {IconRegistry} from '@astryxdesign/core/Icon';
 
 import {
   X,

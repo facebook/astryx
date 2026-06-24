@@ -3,12 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {Popover} from '@xds/core/Popover';
-import {Button} from '@xds/core/Button';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Heading} from '@xds/core/Text';
-import {CheckboxInput} from '@xds/core/CheckboxInput';
-import {Divider} from '@xds/core/Divider';
+import {Popover} from '@astryxdesign/core/Popover';
+import {Button} from '@astryxdesign/core/Button';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Heading} from '@astryxdesign/core/Text';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {Divider} from '@astryxdesign/core/Divider';
 export default function PopoverFilterPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [filters, setFilters] = useState({

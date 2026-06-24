@@ -3,8 +3,8 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {Text} from '@xds/core/Text';
-import {Table, pixel, proportional} from '@xds/core/Table';
+import {Text} from '@astryxdesign/core/Text';
+import {Table, pixel, proportional} from '@astryxdesign/core/Table';
 import type {TokenTableProps} from './types';
 import {resolveToken, getTokensByPrefix} from './helpers';
 

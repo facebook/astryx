@@ -3,9 +3,9 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {Overlay} from '@xds/core/Overlay';
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {Button} from '@xds/core/Button';
+import {Overlay} from '@astryxdesign/core/Overlay';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {Button} from '@astryxdesign/core/Button';
 
 const styles = stylex.create({
   frame: {

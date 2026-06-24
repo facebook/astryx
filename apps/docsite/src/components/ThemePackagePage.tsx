@@ -7,18 +7,18 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePathname, useRouter} from 'next/navigation';
 import {Sun, Moon} from 'lucide-react';
-import {HStack, VStack} from '@xds/core/Layout';
-import {Heading, Text} from '@xds/core/Text';
-import {Card} from '@xds/core/Card';
-import {Carousel} from '@xds/core/Carousel';
-import {Theme} from '@xds/core/theme';
-import type {DefinedTheme} from '@xds/core/theme';
-import {Button} from '@xds/core/Button';
-import {Link} from '@xds/core/Link';
-import {SelectableCard} from '@xds/core/SelectableCard';
-import {Selector} from '@xds/core/Selector';
-import {Divider} from '@xds/core/Divider';
-import {useMediaQuery} from '@xds/core/hooks';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Card} from '@astryxdesign/core/Card';
+import {Carousel} from '@astryxdesign/core/Carousel';
+import {Theme} from '@astryxdesign/core/theme';
+import type {DefinedTheme} from '@astryxdesign/core/theme';
+import {Button} from '@astryxdesign/core/Button';
+import {Link} from '@astryxdesign/core/Link';
+import {SelectableCard} from '@astryxdesign/core/SelectableCard';
+import {Selector} from '@astryxdesign/core/Selector';
+import {Divider} from '@astryxdesign/core/Divider';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {ThemeShowcaseStore} from '../../../../packages/cli/templates/pages/theme-showcase/page';
 import {getThemeShowcaseContent} from './themeShowcaseContent';
 import {buildPlaygroundHref} from './playgroundLink';
@@ -45,12 +45,12 @@ const PICKER_CDN = 'https://lookaside.facebook.com/assets/astryx';
 // /themes (Neutral → Stone → Gothic → Matcha → Y2K → Butter). Any
 // theme not in this list falls to the end alphabetically.
 const THEME_ORDER: ReadonlyArray<string> = [
-  '@xds/theme-neutral',
-  '@xds/theme-stone',
-  '@xds/theme-gothic',
-  '@xds/theme-matcha',
-  '@xds/theme-y2k',
-  '@xds/theme-butter',
+  '@astryxdesign/theme-neutral',
+  '@astryxdesign/theme-stone',
+  '@astryxdesign/theme-gothic',
+  '@astryxdesign/theme-matcha',
+  '@astryxdesign/theme-y2k',
+  '@astryxdesign/theme-butter',
 ];
 
 // The package whose selection corresponds to the canonical bare
@@ -60,7 +60,7 @@ const THEME_ORDER: ReadonlyArray<string> = [
 // is present — if these drift, the picker will round-trip the URL
 // (selecting the "default" theme would write a query that the
 // server then strips on reload, etc.).
-const DEFAULT_THEME_PACKAGE = '@xds/theme-neutral';
+const DEFAULT_THEME_PACKAGE = '@astryxdesign/theme-neutral';
 
 // Strip "Theme: " prefix and " Theme" suffix from the registered
 // displayName so the switcher labels read as the brand wordmark
@@ -70,13 +70,13 @@ function themeLabel(displayName: string): string {
   return displayName.replace(/^Theme:\s*/, '').replace(/\s*Theme$/, '');
 }
 
-// Strip the `@xds/theme-` prefix so the slug matches the URL form
+// Strip the `@astryxdesign/theme-` prefix so the slug matches the URL form
 // used by both the dynamic redirect route (`/themes/<slug>`) and
 // the explorer's `?theme=<slug>` query param. Mirrored from the
 // helper on the server-side page.tsx so the encode/decode stays in
 // sync at a single import boundary.
 function packageNameToSlug(packageName: string): string {
-  return packageName.replace(/^@xds\/theme-/, '');
+  return packageName.replace(/^@astryxdesign\/theme-/, '');
 }
 
 // Below this viewport width the sidebar collapses to a compact
@@ -460,21 +460,21 @@ const PICKER_OVERRIDES: Record<
   string,
   {surface: StyleXStyles; label?: StyleXStyles}
 > = {
-  '@xds/theme-butter': {
+  '@astryxdesign/theme-butter': {
     surface: styles.surfaceButter,
     label: styles.labelAccent,
   },
-  '@xds/theme-gothic': {
+  '@astryxdesign/theme-gothic': {
     surface: styles.surfaceGothic,
     label: styles.labelAccent,
   },
-  '@xds/theme-y2k': {surface: styles.surfaceY2k, label: styles.labelAccent},
-  '@xds/theme-stone': {surface: styles.surfaceStone, label: styles.labelAccent},
-  '@xds/theme-neutral': {
+  '@astryxdesign/theme-y2k': {surface: styles.surfaceY2k, label: styles.labelAccent},
+  '@astryxdesign/theme-stone': {surface: styles.surfaceStone, label: styles.labelAccent},
+  '@astryxdesign/theme-neutral': {
     surface: styles.surfaceNeutral,
     label: styles.labelAccent,
   },
-  '@xds/theme-matcha': {
+  '@astryxdesign/theme-matcha': {
     surface: styles.surfaceMatcha,
     label: styles.labelAccent,
   },
@@ -612,7 +612,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
     return packages
       .filter(
         p =>
-          p.name.startsWith('@xds/theme-') && p.name !== '@xds/theme-default',
+          p.name.startsWith('@astryxdesign/theme-') && p.name !== '@astryxdesign/theme-default',
       )
       .sort((a, b) => {
         const ai = THEME_ORDER.indexOf(a.name);
@@ -638,7 +638,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
   const selectedTheme = themeObjects[selectedPkgName] ?? theme;
 
   // Mobile dropdown options — mirror the sidebar list. Value is the
-  // full @xds/theme-<slug> package name (matches state), label is
+  // full @astryxdesign/theme-<slug> package name (matches state), label is
   // the friendly brand wordmark ("Neutral", "Butter").
   const switcherOptions = useMemo(
     () =>
@@ -954,7 +954,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                   back to the template's neutral defaults when undefined. */}
               <ThemeShowcaseStore
                 {...getThemeShowcaseContent(
-                  selectedPkgName.replace('@xds/theme-', ''),
+                  selectedPkgName.replace('@astryxdesign/theme-', ''),
                 )}
               />
             </Theme>

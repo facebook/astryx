@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Check for newer @xds/core versions via local signals.
+ * @file Check for newer @astryxdesign/core versions via local signals.
  *
  * Resolution order:
  * 1. $ASTRYX_LATEST_VERSION env var (set by previous CLI invocation)
@@ -55,7 +55,7 @@ export function getLatestVersion(cwd = process.cwd()) {
 }
 
 /**
- * Get the currently installed @xds/core version from the consumer's package.json.
+ * Get the currently installed @astryxdesign/core version from the consumer's package.json.
  *
  * @param {string} [cwd] - Project directory
  * @returns {string|null} Installed version, or null
@@ -67,7 +67,7 @@ export function getInstalledVersion(cwd = process.cwd()) {
 
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
     const deps = {...pkg.dependencies, ...pkg.devDependencies};
-    const version = deps['@xds/core'];
+    const version = deps['@astryxdesign/core'];
     if (!version) return null;
 
     // Strip semver range prefix
@@ -97,7 +97,7 @@ export function checkForUpdate(cwd = process.cwd()) {
   // Use semver-aware comparison so '0.0.20' is correctly treated as greater
   // than '0.0.5' (lexicographic compare gets that backwards).
   if (semverGt(latest, installed)) {
-    return `FYI: A newer version of @xds/core (${latest}) is available. You can upgrade with: xds upgrade --apply --to ${latest}`;
+    return `FYI: A newer version of @astryxdesign/core (${latest}) is available. You can upgrade with: xds upgrade --apply --to ${latest}`;
   }
 
   return null;

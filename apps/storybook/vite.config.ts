@@ -25,8 +25,8 @@ export default defineConfig({
       useCSSLayers: true,
       styleResolution: 'application-order',
       aliases: {
-        '@xds/core/*': [path.join(rootDir, 'packages/core/src/*')],
-        '@xds/core': [path.join(rootDir, 'packages/core/src')],
+        '@astryxdesign/core/*': [path.join(rootDir, 'packages/core/src/*')],
+        '@astryxdesign/core': [path.join(rootDir, 'packages/core/src')],
       },
       unstable_moduleResolution: {
         type: 'commonJS',
@@ -37,8 +37,8 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      // Map @xds/core to source for StyleX compilation
-      '@xds/core': coreRoot,
+      // Map @astryxdesign/core to source for StyleX compilation
+      '@astryxdesign/core': coreRoot,
     },
   },
   optimizeDeps: {

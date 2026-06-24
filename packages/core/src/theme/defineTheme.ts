@@ -173,7 +173,7 @@ export interface DefineThemeInput {
    *
    * @example
    * ```tsx
-   * import {defaultTheme} from '@xds/theme-default';
+   * import {defaultTheme} from '@astryxdesign/theme-default';
    *
    * const myTheme = defineTheme({
    *   name: 'my-brand',
@@ -291,7 +291,7 @@ export interface DefineThemeInput {
    *
    * @example
    * ```tsx
-   * import {dracula} from '@xds/core/theme/syntax';
+   * import {dracula} from '@astryxdesign/core/theme/syntax';
    * defineTheme({ name: 'my-theme', syntax: dracula, ... })
    * ```
    */

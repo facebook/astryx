@@ -15,7 +15,7 @@ import {
   type ScheduleViewSelectorOption,
   useSchedulePaginationPlugin,
   useScheduleViewSelectorPlugin,
-} from '@xds/lab';
+} from '@astryxdesign/lab';
 
 const storyNow = new Date();
 const focusDate = storyNow.getTime() as Instant;

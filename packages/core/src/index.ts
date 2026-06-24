@@ -5,7 +5,7 @@
 /**
  * @file index.ts
  * @input Imports from component directories (Button/, Card/, Layout/, Layer/, Toast/)
- * @output Exports all public components, hooks, and types for @xds/core
+ * @output Exports all public components, hooks, and types for @astryxdesign/core
  * @position Package entry point; consumed by external applications
  *
  * SYNC: When modified, update this header and /packages/core/src/README.md

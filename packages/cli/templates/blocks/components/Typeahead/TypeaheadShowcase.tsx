@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {Typeahead} from '@xds/core/Typeahead';
-import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
+import {Typeahead} from '@astryxdesign/core/Typeahead';
+import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
 
 const fruits: SearchableItem[] = [
   {id: '1', label: 'Apple'},

@@ -7,8 +7,8 @@ import {
   ChatMessage,
   ChatMessageBubble,
   ChatMessageMetadata,
-} from '@xds/core/Chat';
-import {Timestamp} from '@xds/core/Timestamp';
+} from '@astryxdesign/core/Chat';
+import {Timestamp} from '@astryxdesign/core/Timestamp';
 
 export default function ChatMessageBubbleShowcase() {
   return (

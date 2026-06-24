@@ -1,4 +1,4 @@
-# @xds/cli
+# @astryxdesign/cli
 
 The CLI is the primary interface for working with the design system, for humans and machines alike. It provides component documentation, design tokens, page templates, theming tools, and upgrade codemods, all accessible via terminal commands, a typed JSON API, or programmatic imports. AI agents and build tools use the same API that powers the CLI, enabling end-to-end frontend development loops.
 
@@ -103,7 +103,7 @@ Codes are **append-only**: once shipped, a code's meaning never changes and a
 code is never removed. New error conditions get new codes.
 
 ```typescript
-import {isError} from '@xds/cli/json';
+import {isError} from '@astryxdesign/cli/json';
 
 const result = parseResponse(raw);
 if (isError(result)) {
@@ -112,7 +112,7 @@ if (isError(result)) {
       // suggest the closest match
       break;
     case 'ERR_CORE_NOT_FOUND':
-      // prompt the user to install @xds/core
+      // prompt the user to install @astryxdesign/core
       break;
     default:
       console.error(result.error);
@@ -133,7 +133,7 @@ if (isError(result)) {
 | `ERR_INVALID_LANG` | `--lang` was given a value outside its choices (`en`, `zh`, `dense`). |
 | `ERR_INVALID_DETAIL` | `--detail` was given a value outside its choices (`full`, `compact`, `brief`). |
 | `ERR_NODE_VERSION` | The running Node.js version is below the supported minimum. |
-| `ERR_CORE_NOT_FOUND` | `@xds/core` could not be located (not installed / not in a monorepo). |
+| `ERR_CORE_NOT_FOUND` | `@astryxdesign/core` could not be located (not installed / not in a monorepo). |
 | `ERR_UNKNOWN_COMPONENT` | No component matched the requested name. |
 | `ERR_UNKNOWN_HOOK` | No hook matched the requested name. |
 | `ERR_UNKNOWN_TOPIC` | No docs topic matched the requested name. |
@@ -157,7 +157,7 @@ if (isError(result)) {
 | `ERR_THEME_LOAD` | A theme file could not be loaded / parsed into a `defineTheme` result. |
 | `ERR_TEMPLATE_CONFIG` | `template.get` is not configured in `xds.config.mjs` (fetch-by-id). |
 | `ERR_TEMPLATE_GET` | A configured `template.get` threw or returned an invalid value. |
-| `ERR_VERSION_DETECT` | The current `@xds/core` version could not be detected. |
+| `ERR_VERSION_DETECT` | The current `@astryxdesign/core` version could not be detected. |
 | `ERR_INVALID_VERSION` | A `--from`/`--to` value was not a valid semver string. |
 | `ERR_DEP_MISSING` | A required external dependency (e.g. jscodeshift) is missing. |
 | `ERR_GH_CLI` | GitHub CLI (`gh`) is not installed or not authenticated. |
@@ -225,7 +225,7 @@ For the standalone manifest envelope (`type: "manifest"`), use `xds manifest --j
 The same logic that powers `xds --json` is available as importable, type-safe functions:
 
 ```typescript
-import {component, docs, discover, template, hook, search, XDSError} from '@xds/cli/api';
+import {component, docs, discover, template, hook, search, XDSError} from '@astryxdesign/cli/api';
 
 // Same result as: xds --json component Button
 const btn = await component('Button');
@@ -254,15 +254,15 @@ try {
 }
 ```
 
-The CLI command handlers are thin wrappers around these functions: they parse args, call the API, then format the output (JSON or text). This guarantees that `@xds/cli/api` and `xds --json` always return identical data.
+The CLI command handlers are thin wrappers around these functions: they parse args, call the API, then format the output (JSON or text). This guarantees that `@astryxdesign/cli/api` and `xds --json` always return identical data.
 
 ### Consumer utilities
 
 If you're spawning the CLI as a subprocess rather than importing the API directly:
 
 ```typescript
-import {parseResponse, isError, assertResponse} from '@xds/cli/json';
-import type {ComponentDetailResponse, CLIResult} from '@xds/cli/json';
+import {parseResponse, isError, assertResponse} from '@astryxdesign/cli/json';
+import type {ComponentDetailResponse, CLIResult} from '@astryxdesign/cli/json';
 
 const result = parseResponse(stdout);
 if (isError(result)) {
@@ -335,19 +335,19 @@ xds doctor — diagnosing your setup
 
   ✓ Node.js version
       Node v22.13.0 meets the minimum (>=22.13.0).
-  ✓ @xds/core installed
-      @xds/core resolved (v0.0.14).
-  ✓ @xds/core <-> @xds/cli alignment
-      @xds/core v0.0.14 is in step with @xds/cli v0.0.14.
+  ✓ @astryxdesign/core installed
+      @astryxdesign/core resolved (v0.0.14).
+  ✓ @astryxdesign/core <-> @astryxdesign/cli alignment
+      @astryxdesign/core v0.0.14 is in step with @astryxdesign/cli v0.0.14.
   ⚠ Theme packages
-      No @xds/theme-* packages are installed.
-      → fix: Install a theme, e.g. `npm install @xds/theme-default`, then import its CSS or set xds.theme.
+      No @astryxdesign/theme-* packages are installed.
+      → fix: Install a theme, e.g. `npm install @astryxdesign/theme-default`, then import its CSS or set xds.theme.
   ℹ xds.config.mjs
       No xds.config.mjs found — using defaults.
   ℹ AI agent docs
       No agent docs (CLAUDE.md / AGENTS.md / .cursorrules) found.
       → fix: Generate agent docs with `xds init --features agents`.
-  ✓ @xds/core peer dependencies
+  ✓ @astryxdesign/core peer dependencies
       All peer dependencies satisfied (react, react-dom).
   ℹ Package manager
       Detected package manager: yarn.
@@ -362,12 +362,12 @@ No failures — but review the ⚠ warnings above when you can.
 | Check                | Status it can return | What it verifies                                            |
 | -------------------- | -------------------- | ----------------------------------------------------------- |
 | Node.js version      | pass / fail          | Running Node meets the CLI's minimum                        |
-| @xds/core installed  | pass / fail          | `@xds/core` is resolvable from the project                  |
-| Version alignment    | pass / warn / info   | Installed `@xds/core` is in step with `@xds/cli`            |
-| Theme packages       | pass / warn          | An `@xds/theme-*` package is installed and a theme is wired |
+| @astryxdesign/core installed  | pass / fail          | `@astryxdesign/core` is resolvable from the project                  |
+| Version alignment    | pass / warn / info   | Installed `@astryxdesign/core` is in step with `@astryxdesign/cli`            |
+| Theme packages       | pass / warn          | An `@astryxdesign/theme-*` package is installed and a theme is wired |
 | xds.config.mjs       | pass / fail / info   | Config (if present) loads cleanly with a valid shape        |
 | AI agent docs        | pass / warn / info   | Agent docs exist and contain the XDS section markers        |
-| Peer dependencies    | pass / warn / info   | `@xds/core`'s peer deps (react, …) are installed            |
+| Peer dependencies    | pass / warn / info   | `@astryxdesign/core`'s peer deps (react, …) are installed            |
 | Package manager      | info                 | Reports the detected package manager                        |
 
 ### CI gate

@@ -2,8 +2,8 @@
 
 'use client';
 
-import {ChatToolCalls} from '@xds/core/Chat';
-import {CodeBlock} from '@xds/core/CodeBlock';
+import {ChatToolCalls} from '@astryxdesign/core/Chat';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
 
 const editDiff = `--- a/src/utils/formatDate.ts
 +++ b/src/utils/formatDate.ts

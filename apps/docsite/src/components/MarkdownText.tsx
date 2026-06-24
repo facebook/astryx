@@ -3,9 +3,9 @@
 'use client';
 
 import type {ComponentProps} from 'react';
-import {Markdown} from '@xds/core/Markdown';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 type TextProps = ComponentProps<typeof Text>;
 

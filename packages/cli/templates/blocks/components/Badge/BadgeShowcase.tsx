@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Badge} from '@xds/core/Badge';
-import {Stack} from '@xds/core/Layout';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Stack} from '@astryxdesign/core/Layout';
 
 export default function BadgeShowcase() {
   return (

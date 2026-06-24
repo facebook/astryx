@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {Pagination} from '@xds/core/Pagination';
-import {Heading} from '@xds/core/Text';
-import {Stack} from '@xds/core/Layout';
-import {Table} from '@xds/core/Table';
+import {Pagination} from '@astryxdesign/core/Pagination';
+import {Heading} from '@astryxdesign/core/Text';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Table} from '@astryxdesign/core/Table';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({

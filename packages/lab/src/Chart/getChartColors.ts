@@ -9,7 +9,7 @@
  * the full chart colors API. The useChartColors hook wraps this.
  */
 
-import type {DefinedTheme} from '@xds/core/theme';
+import type {DefinedTheme} from '@astryxdesign/core/theme';
 
 // =============================================================================
 // Types
@@ -216,7 +216,7 @@ export function getChartColorsFromResolver(
  *
  * @example
  * ```
- * import { defaultTheme } from '@xds/theme-default';
+ * import { defaultTheme } from '@astryxdesign/theme-default';
  * const colors = getChartColors(defaultTheme, 'light');
  * colors.categorical(5)
  * ```

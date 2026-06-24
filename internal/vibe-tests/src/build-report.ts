@@ -43,10 +43,10 @@ function ensureCssDist(): void {
 
   const missing: string[] = [];
   if (!fs.existsSync(astryxCss)) {
-    missing.push('@xds/core/dist/astryx.css');
+    missing.push('@astryxdesign/core/dist/astryx.css');
   }
   if (!fs.existsSync(themeCss)) {
-    missing.push('@xds/theme-default/dist/theme.css');
+    missing.push('@astryxdesign/theme-default/dist/theme.css');
   }
 
   if (missing.length > 0) {
@@ -55,7 +55,7 @@ function ensureCssDist(): void {
 
     // Build core package (includes astryx.css via postbuild)
     if (!fs.existsSync(astryxCss)) {
-      execSync('pnpm -F @xds/core build', {
+      execSync('pnpm -F @astryxdesign/core build', {
         cwd: REPO_ROOT,
         stdio: 'inherit',
       });
@@ -63,7 +63,7 @@ function ensureCssDist(): void {
 
     // Build theme packages
     if (!fs.existsSync(themeCss)) {
-      execSync('pnpm -F @xds/theme-default build', {
+      execSync('pnpm -F @astryxdesign/theme-default build', {
         cwd: REPO_ROOT,
         stdio: 'inherit',
       });

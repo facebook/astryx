@@ -3,7 +3,7 @@
 /**
  * @file utils.ts
  * @output Server-safe re-exports of pure Markdown parser functions
- * @position Subpath entry point: `@xds/core/Markdown/utils`
+ * @position Subpath entry point: `@astryxdesign/core/Markdown/utils`
  */
 
 export {

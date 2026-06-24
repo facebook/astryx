@@ -3,9 +3,9 @@
 'use client';
 
 import type {ComponentProps} from 'react';
-import {Breadcrumbs, BreadcrumbItem} from '@xds/core/Breadcrumbs';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Breadcrumbs, BreadcrumbItem} from '@astryxdesign/core/Breadcrumbs';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 function HomeIcon(props: ComponentProps<'svg'>) {
   return (

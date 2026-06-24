@@ -7,7 +7,7 @@
  * registries while preserving typed option values from parsed controls.
  */
 
-import {allSyntaxPresets} from '@xds/core/theme/syntax';
+import {allSyntaxPresets} from '@astryxdesign/core/theme/syntax';
 import {themeObjectsFull} from '../../generated/themeRegistry';
 import {
   coerceDefault,

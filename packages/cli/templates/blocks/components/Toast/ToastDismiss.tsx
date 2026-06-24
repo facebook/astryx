@@ -4,10 +4,10 @@
 'use client';
 
 import {useRef} from 'react';
-import {Toast} from '@xds/core/Toast';
-import {useToast} from '@xds/core/Toast';
-import {Button} from '@xds/core/Button';
-import {VStack, HStack} from '@xds/core/Layout';
+import {Toast} from '@astryxdesign/core/Toast';
+import {useToast} from '@astryxdesign/core/Toast';
+import {Button} from '@astryxdesign/core/Button';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
 
 export default function ToastDismiss() {
   const toast = useToast();

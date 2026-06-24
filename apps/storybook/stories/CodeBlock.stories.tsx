@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {CodeBlock} from '@xds/core/CodeBlock';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
 
 const meta: Meta<typeof CodeBlock> = {
   title: 'Core/CodeBlock',
@@ -98,7 +98,7 @@ export const WithHighlightedLines: Story = {
 export const JSON: Story = {
   args: {
     code: `{
-  "name": "@xds/core",
+  "name": "@astryxdesign/core",
   "version": "0.0.5",
   "dependencies": {
     "@stylexjs/stylex": "^0.17.5",
@@ -229,7 +229,7 @@ echo "Deploy complete: $VERSION"`,
 
 export const SingleLine: Story = {
   args: {
-    code: 'npm install @xds/core',
+    code: 'npm install @astryxdesign/core',
     language: 'bash',
     hasCopyButton: true,
   },

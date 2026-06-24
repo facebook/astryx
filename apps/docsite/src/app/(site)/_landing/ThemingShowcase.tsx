@@ -3,17 +3,17 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {Text, Heading} from '@xds/core/Text';
-import {HStack, VStack} from '@xds/core/Stack';
-import {Card} from '@xds/core/Card';
-import {Carousel} from '@xds/core/Carousel';
-import {Button} from '@xds/core/Button';
-import {Theme} from '@xds/core/theme';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {HStack, VStack} from '@astryxdesign/core/Stack';
+import {Card} from '@astryxdesign/core/Card';
+import {Carousel} from '@astryxdesign/core/Carousel';
+import {Button} from '@astryxdesign/core/Button';
+import {Theme} from '@astryxdesign/core/theme';
 import {
   spacingDefaults,
   radiusDefaults,
   textSizeDefaults,
-} from '@xds/core/theme/tokens.stylex';
+} from '@astryxdesign/core/theme/tokens.stylex';
 import {packages} from '../../../generated/packageRegistry';
 import {themeObjects} from '../../../generated/themeRegistry';
 import {ThemeShowcaseTile} from '../../../components/ThemeShowcaseTile';
@@ -25,16 +25,16 @@ import {layout} from '../../../layout.stylex';
 // theme not in this list falls to the end (alphabetical) so a newly
 // added theme always shows up rather than silently disappearing.
 const THEME_ORDER: ReadonlyArray<string> = [
-  '@xds/theme-neutral',
-  '@xds/theme-stone',
-  '@xds/theme-gothic',
-  '@xds/theme-matcha',
-  '@xds/theme-y2k',
-  '@xds/theme-butter',
+  '@astryxdesign/theme-neutral',
+  '@astryxdesign/theme-stone',
+  '@astryxdesign/theme-gothic',
+  '@astryxdesign/theme-matcha',
+  '@astryxdesign/theme-y2k',
+  '@astryxdesign/theme-butter',
 ];
 
 const themePackages = packages
-  .filter(p => p.name.includes('theme-') && p.name !== '@xds/theme-default')
+  .filter(p => p.name.includes('theme-') && p.name !== '@astryxdesign/theme-default')
   .sort((a, b) => {
     const ai = THEME_ORDER.indexOf(a.name);
     const bi = THEME_ORDER.indexOf(b.name);
@@ -51,7 +51,7 @@ const themePackages = packages
   });
 
 // Re-set XDS's structural tokens (spacing, radii, font sizes) back to
-// the defaults exported from @xds/core. Each <Theme> wrapper sets a
+// the defaults exported from @astryxdesign/core. Each <Theme> wrapper sets a
 // full token bundle including these structural slots, which would make
 // gallery tiles visually inconsistent (different button heights, badge
 // sizes, banner padding). Resetting only the structural tokens — while

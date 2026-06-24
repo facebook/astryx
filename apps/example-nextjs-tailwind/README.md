@@ -46,7 +46,7 @@ Without this declaration, XDS layers are created *after* Tailwind's declared lay
 
 ### XDS Tailwind Bridge (recommended)
 
-Import `@xds/core/tailwind-theme.css` to register XDS tokens as Tailwind theme variables. This maps all XDS design tokens to native Tailwind utilities, with no `var()` needed:
+Import `@astryxdesign/core/tailwind-theme.css` to register XDS tokens as Tailwind theme variables. This maps all XDS design tokens to native Tailwind utilities, with no `var()` needed:
 
 ```tsx
 // Before (verbose arbitrary values):

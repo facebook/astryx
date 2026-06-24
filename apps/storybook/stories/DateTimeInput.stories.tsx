@@ -2,8 +2,8 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {DateTimeInput} from '@xds/core/DateTimeInput';
-import type {ISODateTimeString} from '@xds/core/DateTimeInput';
+import {DateTimeInput} from '@astryxdesign/core/DateTimeInput';
+import type {ISODateTimeString} from '@astryxdesign/core/DateTimeInput';
 
 const meta: Meta<typeof DateTimeInput> = {
   title: 'Core/DateTimeInput',

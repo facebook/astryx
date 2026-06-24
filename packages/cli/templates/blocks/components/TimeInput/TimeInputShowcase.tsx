@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {TimeInput, type ISOTimeString} from '@xds/core/TimeInput';
+import {TimeInput, type ISOTimeString} from '@astryxdesign/core/TimeInput';
 
 export default function TimeInputShowcase() {
   const [time, setTime] = useState<ISOTimeString | undefined>(undefined);

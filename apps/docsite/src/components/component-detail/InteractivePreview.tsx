@@ -12,12 +12,12 @@ import {
   type ReactNode,
 } from 'react';
 import {getComponent, resolveValue} from './resolveElements';
-import {Button} from '@xds/core/Button';
-import {Card} from '@xds/core/Card';
-import {Center} from '@xds/core/Center';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {Center} from '@astryxdesign/core/Center';
 import {CodeExampleBlock} from '../CodeExampleBlock';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 import {Code} from 'lucide-react';
 import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {
@@ -281,7 +281,7 @@ export function InteractivePreviewStage({
                 Interactive preview not available for {name}.
               </Text>
               <Text type="supporting" color="secondary">
-                This component is not part of @xds/core.
+                This component is not part of @astryxdesign/core.
               </Text>
             </VStack>
           </Center>

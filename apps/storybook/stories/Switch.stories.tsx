@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {Switch} from '@xds/core/Switch';
+import {Switch} from '@astryxdesign/core/Switch';
 import {
   BellIcon,
   MoonIcon,

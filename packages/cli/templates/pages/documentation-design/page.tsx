@@ -9,26 +9,26 @@ import {
   SideNavHeading,
   SideNavItem,
   SideNavSection,
-} from '@xds/core/SideNav';
-import {Heading, Text} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {IconButton} from '@xds/core/IconButton';
-import {Card} from '@xds/core/Card';
-import {Avatar} from '@xds/core/Avatar';
-import {Badge} from '@xds/core/Badge';
-import {Token} from '@xds/core/Token';
-import {Banner} from '@xds/core/Banner';
-import {CodeBlock} from '@xds/core/CodeBlock';
-import {TabList, Tab} from '@xds/core/TabList';
-import {HStack, VStack, StackItem} from '@xds/core/Stack';
-import {Layout, LayoutContent, LayoutPanel} from '@xds/core/Layout';
-import {Dialog, DialogHeader} from '@xds/core/Dialog';
-import {Divider} from '@xds/core/Divider';
-import {Tooltip} from '@xds/core/Tooltip';
-import {Table, pixel} from '@xds/core/Table';
-import {Icon} from '@xds/core/Icon';
-import {Section} from '@xds/core/Section';
-import {Center} from '@xds/core/Center';
+} from '@astryxdesign/core/SideNav';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {IconButton} from '@astryxdesign/core/IconButton';
+import {Card} from '@astryxdesign/core/Card';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Token} from '@astryxdesign/core/Token';
+import {Banner} from '@astryxdesign/core/Banner';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {HStack, VStack, StackItem} from '@astryxdesign/core/Stack';
+import {Layout, LayoutContent, LayoutPanel} from '@astryxdesign/core/Layout';
+import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Tooltip} from '@astryxdesign/core/Tooltip';
+import {Table, pixel} from '@astryxdesign/core/Table';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Section} from '@astryxdesign/core/Section';
+import {Center} from '@astryxdesign/core/Center';
 import {
   ArrowTopRightOnSquareIcon,
   ArrowsPointingOutIcon,

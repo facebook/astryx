@@ -59,7 +59,7 @@ function resolveStatusDotSize(avatarSize: number): {
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/Avatar' {
+ * declare module '@astryxdesign/core/Avatar' {
  *   interface AvatarStatusDotVariantMap {
  *     'away': true;
  *   }

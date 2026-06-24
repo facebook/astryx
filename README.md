@@ -17,29 +17,29 @@ Astryx is an open source design system born from years of building internal tool
 
 ## Getting Started
 
-For full setup instructions, see the **[@xds/core README](packages/core/README.md)**.
+For full setup instructions, see the **[@astryxdesign/core README](packages/core/README.md)**.
 
 Quick install:
 
 ```bash
 # pnpm
-pnpm add @xds/core @xds/theme-default
-pnpm add -D @xds/cli
+pnpm add @astryxdesign/core @astryxdesign/theme-default
+pnpm add -D @astryxdesign/cli
 
 # npm
-npm install @xds/core @xds/theme-default
-npm install -D @xds/cli
+npm install @astryxdesign/core @astryxdesign/theme-default
+npm install -D @astryxdesign/cli
 
 # yarn
-yarn add @xds/core @xds/theme-default
-yarn add -D @xds/cli
+yarn add @astryxdesign/core @astryxdesign/theme-default
+yarn add -D @astryxdesign/cli
 ```
 
 For reliable CLI access, add this script to your `package.json`:
 
 ```json
 "scripts": {
-  "xds": "node node_modules/@xds/cli/bin/xds.mjs"
+  "xds": "node node_modules/@astryxdesign/cli/bin/xds.mjs"
 }
 ```
 
@@ -51,13 +51,13 @@ Then follow the [setup guide](packages/core/README.md#quick-start) to import sty
 
 | Package                                         | Description                                         | README                                      |
 | ----------------------------------------------- | --------------------------------------------------- | ------------------------------------------- |
-| [`@xds/core`](packages/core)                    | Components, theme system, and utilities             | [README](packages/core/README.md)           |
-| [`@xds/cli`](packages/cli)                      | CLI tooling: component docs, scaffolding, codemods | [README](packages/cli/README.md)            |
-| [`@xds/build`](packages/build)                  | Build plugins for StyleX source builds              | [README](packages/build/README.md)          |
-| [`@xds/vega`](packages/vega)                    | Vega/Vega-Lite chart wrapper                        | [README](packages/vega/README.md)           |
-| [`@xds/theme-default`](packages/themes/default) | Clean, professional default theme                   | [README](packages/themes/default/README.md) |
-| [`@xds/theme-neutral`](packages/themes/neutral) | Muted, minimal aesthetic theme                      | [README](packages/themes/neutral/README.md) |
-| [`@xds/theme-daily`](packages/themes/daily)     | Warm, productivity-focused theme                    | [README](packages/themes/daily/README.md)   |
+| [`@astryxdesign/core`](packages/core)                    | Components, theme system, and utilities             | [README](packages/core/README.md)           |
+| [`@astryxdesign/cli`](packages/cli)                      | CLI tooling: component docs, scaffolding, codemods | [README](packages/cli/README.md)            |
+| [`@astryxdesign/build`](packages/build)                  | Build plugins for StyleX source builds              | [README](packages/build/README.md)          |
+| [`@astryxdesign/vega`](packages/vega)                    | Vega/Vega-Lite chart wrapper                        | [README](packages/vega/README.md)           |
+| [`@astryxdesign/theme-default`](packages/themes/default) | Clean, professional default theme                   | [README](packages/themes/default/README.md) |
+| [`@astryxdesign/theme-neutral`](packages/themes/neutral) | Muted, minimal aesthetic theme                      | [README](packages/themes/neutral/README.md) |
+| [`@astryxdesign/theme-daily`](packages/themes/daily)     | Warm, productivity-focused theme                    | [README](packages/themes/daily/README.md)   |
 
 ## Philosophy
 

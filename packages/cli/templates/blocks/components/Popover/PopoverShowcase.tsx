@@ -3,11 +3,11 @@
 'use client';
 
 import {useState} from 'react';
-import {Popover} from '@xds/core/Popover';
-import {Button} from '@xds/core/Button';
-import {VStack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Divider} from '@xds/core/Divider';
+import {Popover} from '@astryxdesign/core/Popover';
+import {Button} from '@astryxdesign/core/Button';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Divider} from '@astryxdesign/core/Divider';
 
 export default function PopoverShowcase() {
   const [isOpen, setIsOpen] = useState(false);

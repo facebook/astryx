@@ -3,11 +3,11 @@
 'use client';
 
 import {useState} from 'react';
-import {MobileNav, MobileNavToggle} from '@xds/core/MobileNav';
-import {AppShellMobileContext} from '@xds/core/AppShell';
-import {SideNavItem, SideNavSection} from '@xds/core/SideNav';
-import {HStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {MobileNav, MobileNavToggle} from '@astryxdesign/core/MobileNav';
+import {AppShellMobileContext} from '@astryxdesign/core/AppShell';
+import {SideNavItem, SideNavSection} from '@astryxdesign/core/SideNav';
+import {HStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function MobileNavToggleShowcase() {
   const [isOpen, setIsOpen] = useState(false);

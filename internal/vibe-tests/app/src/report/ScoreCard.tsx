@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {XDSCard} from '@xds/core/Card';
-import {XDSVStack} from '@xds/core/Stack';
-import {XDSHStack} from '@xds/core/Stack';
-import {XDSText} from '@xds/core/Text';
-import {XDSHeading} from '@xds/core/Text';
-import {XDSProgressBar} from '@xds/core/ProgressBar';
+import {XDSCard} from '@astryxdesign/core/Card';
+import {XDSVStack} from '@astryxdesign/core/Stack';
+import {XDSHStack} from '@astryxdesign/core/Stack';
+import {XDSText} from '@astryxdesign/core/Text';
+import {XDSHeading} from '@astryxdesign/core/Text';
+import {XDSProgressBar} from '@astryxdesign/core/ProgressBar';
 import {formatScore, scoreToProgressVariant} from './utils';
 import './report.css';
 

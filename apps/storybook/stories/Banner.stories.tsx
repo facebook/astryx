@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {Banner} from '@xds/core/Banner';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
+import {Banner} from '@astryxdesign/core/Banner';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
 import {ShieldCheckIcon} from '@heroicons/react/24/solid';
 
 const meta: Meta<typeof Banner> = {

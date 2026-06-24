@@ -125,8 +125,8 @@ function useThemeStyleInjection(theme: DefinedTheme): void {
       console.warn(
         `[XDS] Theme "${theme.name}" is using runtime style injection. ` +
           `For better performance, use the pre-built theme:\n\n` +
-          `  import {${theme.name}Theme} from '@xds/theme-${theme.name}/built';\n` +
-          `  import '@xds/theme-${theme.name}/theme.css';\n\n` +
+          `  import {${theme.name}Theme} from '@astryxdesign/theme-${theme.name}/built';\n` +
+          `  import '@astryxdesign/theme-${theme.name}/theme.css';\n\n` +
           `For custom themes, run \`npx xds theme build <file>\` to generate ` +
           `the built artifacts.`,
       );

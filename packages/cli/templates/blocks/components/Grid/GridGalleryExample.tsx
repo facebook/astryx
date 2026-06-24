@@ -2,10 +2,10 @@
 
 'use client';
 
-import {Grid} from '@xds/core/Grid';
-import {Card} from '@xds/core/Card';
-import {VStack} from '@xds/core/Stack';
-import {Text} from '@xds/core/Text';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Card} from '@astryxdesign/core/Card';
+import {VStack} from '@astryxdesign/core/Stack';
+import {Text} from '@astryxdesign/core/Text';
 
 const cards = [
   {title: 'Getting Started', description: 'Learn the basics of the platform.'},

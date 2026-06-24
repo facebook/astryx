@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {Switch} from '@xds/core/Switch';
-import {Card} from '@xds/core/Card';
-import {VStack} from '@xds/core/Layout';
+import {Switch} from '@astryxdesign/core/Switch';
+import {Card} from '@astryxdesign/core/Card';
+import {VStack} from '@astryxdesign/core/Layout';
 
 export default function SwitchSettingsPanel() {
   const [notifications, setNotifications] = useState(false);

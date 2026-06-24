@@ -2,16 +2,16 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {Grid, GridSpan} from '@xds/core/Grid';
-import {Section} from '@xds/core/Section';
-import {Text, Heading} from '@xds/core/Text';
-import {VStack} from '@xds/core/Stack';
-import {MediaTheme} from '@xds/core/theme';
+import {Grid, GridSpan} from '@astryxdesign/core/Grid';
+import {Section} from '@astryxdesign/core/Section';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/Stack';
+import {MediaTheme} from '@astryxdesign/core/theme';
 import {
   colorVars,
   spacingVars,
   radiusVars,
-} from '@xds/core/theme/tokens.stylex';
+} from '@astryxdesign/core/theme/tokens.stylex';
 
 const meta: Meta = {
   title: 'Core/GridMasonry',

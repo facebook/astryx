@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {useState} from 'react';
-import {Lightbox} from '@xds/core/Lightbox';
+import {Lightbox} from '@astryxdesign/core/Lightbox';
 
 export default function LightboxShowcase() {
   const [isOpen, setIsOpen] = useState(false);

@@ -6,7 +6,7 @@
  * @description Generates accessibility manifests from official sources for XDS and baseline (Radix/shadcn)
  *
  * Usage:
- *   pnpm -F @xds/vibe-tests generate-a11y-manifest
+ *   pnpm -F @astryxdesign/vibe-tests generate-a11y-manifest
  *
  * This script:
  * 1. Parses XDS component README.md files for accessibility info

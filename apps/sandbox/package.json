@@ -1,9 +1,9 @@
 {
-  "name": "@xds/sandbox",
+  "name": "@astryxdesign/sandbox",
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "build:deps": "pnpm -F @xds/theme-default build && pnpm -F @xds/theme-neutral build && pnpm -F @xds/theme-brutalist build && pnpm -F @xds/theme-matcha build && pnpm -F @xds/theme-daily build && pnpm -F @xds/theme-stone build && pnpm -F @xds/theme-gothic build && pnpm -F @xds/theme-chocolate build && pnpm -F @xds/theme-y2k build && pnpm -F @xds/theme-butter build",
+    "build:deps": "pnpm -F @astryxdesign/theme-default build && pnpm -F @astryxdesign/theme-neutral build && pnpm -F @astryxdesign/theme-brutalist build && pnpm -F @astryxdesign/theme-matcha build && pnpm -F @astryxdesign/theme-daily build && pnpm -F @astryxdesign/theme-stone build && pnpm -F @astryxdesign/theme-gothic build && pnpm -F @astryxdesign/theme-chocolate build && pnpm -F @astryxdesign/theme-y2k build && pnpm -F @astryxdesign/theme-butter build",
     "generate:changelog": "node scripts/generate-changelog.js",
     "generate:cli": "node scripts/generate-cli-registry.mjs",
     "generate": "node ../../scripts/sync-templates.js && pnpm generate:changelog && pnpm generate:cli && node scripts/generate-foundation-docs.mjs",
@@ -15,23 +15,23 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@stylexjs/stylex": "^0.18.3",
-    "@xds/cli": "*",
-    "@xds/core": "*",
-    "@xds/lab": "*",
-    "@xds/theme-default": "*",
-    "@xds/theme-neutral": "*",
-    "@xds/theme-brutalist": "*",
-    "@xds/theme-matcha": "*",
-    "@xds/theme-daily": "*",
+    "@astryxdesign/cli": "*",
+    "@astryxdesign/core": "*",
+    "@astryxdesign/lab": "*",
+    "@astryxdesign/theme-default": "*",
+    "@astryxdesign/theme-neutral": "*",
+    "@astryxdesign/theme-brutalist": "*",
+    "@astryxdesign/theme-matcha": "*",
+    "@astryxdesign/theme-daily": "*",
     "next": "^15.5.16",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "recharts": "^3.8.1",
-    "@xds/theme-stone": "*",
-    "@xds/theme-gothic": "*",
-    "@xds/theme-chocolate": "*",
-    "@xds/theme-y2k": "*",
-    "@xds/theme-butter": "*"
+    "@astryxdesign/theme-stone": "*",
+    "@astryxdesign/theme-gothic": "*",
+    "@astryxdesign/theme-chocolate": "*",
+    "@astryxdesign/theme-y2k": "*",
+    "@astryxdesign/theme-butter": "*"
   },
   "devDependencies": {
     "@babel/preset-react": "^7.29.7",
@@ -43,6 +43,6 @@
     "@types/react-dom": "^19.2.3",
     "commander": "^12.1.0",
     "typescript": "^6.0.3",
-    "@xds/build": "*"
+    "@astryxdesign/build": "*"
   }
 }

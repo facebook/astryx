@@ -1,13 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {XDSCard} from '@xds/core/Card';
-import {XDSVStack} from '@xds/core/Stack';
-import {XDSText} from '@xds/core/Text';
-import {XDSHeading} from '@xds/core/Text';
-import {XDSStatusDot} from '@xds/core/StatusDot';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSButton} from '@xds/core/Button';
-import {XDSDivider} from '@xds/core/Divider';
+import {XDSCard} from '@astryxdesign/core/Card';
+import {XDSVStack} from '@astryxdesign/core/Stack';
+import {XDSText} from '@astryxdesign/core/Text';
+import {XDSHeading} from '@astryxdesign/core/Text';
+import {XDSStatusDot} from '@astryxdesign/core/StatusDot';
+import {XDSBadge} from '@astryxdesign/core/Badge';
+import {XDSButton} from '@astryxdesign/core/Button';
+import {XDSDivider} from '@astryxdesign/core/Divider';
 import type {UniversalScore} from './types';
 import {
   ALL_DIMENSIONS,

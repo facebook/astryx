@@ -3,11 +3,11 @@
 'use client';
 
 import {useState} from 'react';
-import {ChatComposer, ChatComposerDrawer} from '@xds/core/Chat';
-import {List, ListItem} from '@xds/core/List';
-import {Text} from '@xds/core/Text';
-import {Badge} from '@xds/core/Badge';
-import {Stack} from '@xds/core/Layout';
+import {ChatComposer, ChatComposerDrawer} from '@astryxdesign/core/Chat';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {Text} from '@astryxdesign/core/Text';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Stack} from '@astryxdesign/core/Layout';
 
 const options = [
   {key: 'A', label: 'Yes'},

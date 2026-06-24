@@ -2,12 +2,12 @@
 
 'use client';
 
-import {Toolbar} from '@xds/core/Toolbar';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {Heading} from '@xds/core/Text';
-import {Stack} from '@xds/core/Layout';
-import {Card} from '@xds/core/Card';
+import {Toolbar} from '@astryxdesign/core/Toolbar';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Heading} from '@astryxdesign/core/Text';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Card} from '@astryxdesign/core/Card';
 import {FunnelIcon, PlusIcon} from '@heroicons/react/24/outline';
 import * as stylex from '@stylexjs/stylex';
 

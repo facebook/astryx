@@ -6,9 +6,9 @@ import {
   ChatMessageList,
   ChatMessage,
   ChatMessageBubble,
-} from '@xds/core/Chat';
-import {Text} from '@xds/core/Text';
-import {VStack} from '@xds/core/Layout';
+} from '@astryxdesign/core/Chat';
+import {Text} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/Layout';
 
 const DENSITIES = [
   {density: 'compact' as const, label: 'Compact'},

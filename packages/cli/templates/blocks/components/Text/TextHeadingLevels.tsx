@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Heading} from '@xds/core/Text';
-import {Stack} from '@xds/core/Stack';
+import {Heading} from '@astryxdesign/core/Text';
+import {Stack} from '@astryxdesign/core/Stack';
 
 const LEVELS = [1, 2, 3, 4, 5, 6] as const;
 

@@ -10,12 +10,12 @@ import {
   LayoutPanel,
   HStack,
   VStack,
-} from '@xds/core/Layout';
-import {Section} from '@xds/core/Section';
-import {Text, Heading} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {Badge} from '@xds/core/Badge';
-import {List, ListItem} from '@xds/core/List';
+} from '@astryxdesign/core/Layout';
+import {Section} from '@astryxdesign/core/Section';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Badge} from '@astryxdesign/core/Badge';
+import {List, ListItem} from '@astryxdesign/core/List';
 
 export default function LayoutShowcase() {
   return (

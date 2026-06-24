@@ -66,7 +66,7 @@ function getDialogDirection(
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/Dialog' {
+ * declare module '@astryxdesign/core/Dialog' {
  *   interface DialogVariantMap {
  *     'drawer': true;
  *   }

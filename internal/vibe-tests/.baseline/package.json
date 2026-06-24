@@ -1,5 +1,5 @@
 {
-  "name": "@xds/vibe-tests-baseline",
+  "name": "@astryxdesign/vibe-tests-baseline",
   "version": "0.0.1",
   "private": true,
   "description": "Real shadcn/ui components for vibe-test baseline type checking",

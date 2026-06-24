@@ -8,9 +8,9 @@ import {
   useTablePagination,
   paginateData,
   proportional,
-} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
-import {Section} from '@xds/core/Section';
+} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
+import {Section} from '@astryxdesign/core/Section';
 
 interface User extends Record<string, unknown> {
   id: string;

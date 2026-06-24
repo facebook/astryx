@@ -5,10 +5,10 @@ import {
   ChatMessageList,
   ChatMessage,
   ChatMessageBubble,
-} from '@xds/core/Chat';
-import {ChatReasoning} from '@xds/lab';
-import {Avatar} from '@xds/core/Avatar';
-import {Markdown} from '@xds/core/Markdown';
+} from '@astryxdesign/core/Chat';
+import {ChatReasoning} from '@astryxdesign/lab';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Markdown} from '@astryxdesign/core/Markdown';
 import {useState, useEffect} from 'react';
 
 const meta: Meta = {

@@ -3,11 +3,11 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {Divider} from '@xds/core/Divider';
-import {Card} from '@xds/core/Card';
-import {Section} from '@xds/core/Section';
-import {HStack, VStack, StackItem} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Card} from '@astryxdesign/core/Card';
+import {Section} from '@astryxdesign/core/Section';
+import {HStack, VStack, StackItem} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const styles = stylex.create({
   dividerFill: {

@@ -1,6 +1,6 @@
 # XDS Example: Next.js (Dist)
 
-Reference application for consuming **@xds/core** as a pre-built dist package in a Next.js project.
+Reference application for consuming **@astryxdesign/core** as a pre-built dist package in a Next.js project.
 
 No StyleX build plugin needed; XDS ships pre-compiled CSS and JS. This is the simplest way to get started.
 
@@ -9,7 +9,7 @@ No StyleX build plugin needed; XDS ships pre-compiled CSS and JS. This is the si
 ### 1. Install dependencies
 
 ```bash
-npm install @xds/core @xds/theme-default next react react-dom
+npm install @astryxdesign/core @astryxdesign/theme-default next react react-dom
 npm install --save-dev @types/react @types/react-dom typescript
 ```
 
@@ -18,9 +18,9 @@ npm install --save-dev @types/react @types/react-dom typescript
 In `src/app/globals.css`, import the reset, component styles, and theme:
 
 ```css
-@import '@xds/core/reset.css';
-@import '@xds/core/astryx.css';
-@import '@xds/theme-default/theme.css';
+@import '@astryxdesign/core/reset.css';
+@import '@astryxdesign/core/astryx.css';
+@import '@astryxdesign/theme-default/theme.css';
 ```
 
 The CSS import order matters:
@@ -41,9 +41,9 @@ import './globals.css';
 // src/app/providers.tsx
 'use client';
 import Link from 'next/link';
-import {Theme} from '@xds/core/theme';
-import {LinkProvider} from '@xds/core/Link';
-import {defaultTheme} from '@xds/theme-default/built';
+import {Theme} from '@astryxdesign/core/theme';
+import {LinkProvider} from '@astryxdesign/core/Link';
+import {defaultTheme} from '@astryxdesign/theme-default/built';
 
 export function Providers({children}) {
   return (
@@ -65,7 +65,7 @@ export function Providers({children}) {
 
 ## Testing outside the monorepo
 
-This example lives in the XDS monorepo for convenience, but it should be representative of a real app consuming `@xds/core` from npm. Monorepo workspace resolution can silently bypass issues that external consumers hit.
+This example lives in the XDS monorepo for convenience, but it should be representative of a real app consuming `@astryxdesign/core` from npm. Monorepo workspace resolution can silently bypass issues that external consumers hit.
 
 **Before merging changes to this example, test it as an external consumer.** See the [Testing Example Apps](https://github.com/facebookexperimental/xds/wiki/Testing-Example-Apps) wiki page for the full procedure.
 

@@ -2,11 +2,11 @@
 
 'use client';
 
-import {Section} from '@xds/core/Section';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
+import {Section} from '@astryxdesign/core/Section';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
 import {CheckIcon} from '@heroicons/react/24/solid';
 
 const FEATURES = [

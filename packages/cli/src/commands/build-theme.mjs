@@ -26,13 +26,13 @@ import {ERROR_CODES} from '../lib/error-codes.mjs';
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
 // path: core's generator. There is no in-CLI fallback implementation — if this
 // import fails, the build fails (see the ERR_CORE_NOT_FOUND guard in the theme
-// action). A built, resolvable `@xds/core` is a hard requirement.
+// action). A built, resolvable `@astryxdesign/core` is a hard requirement.
 let _defineTheme = null;
 let _generateThemeRulesSplit = null;
 let _generateOnMediaCSS = null;
 let _coreImportError = null;
 try {
-  const coreTheme = await import('@xds/core/theme');
+  const coreTheme = await import('@astryxdesign/core/theme');
   _defineTheme = coreTheme.defineTheme;
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
@@ -215,7 +215,7 @@ async function generateVariantDeclarationsAsync(themeDef) {
 
       const pascal = toPascalCase(component);
       const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
-      const modulePath = `@xds/core/${pascal}`;
+      const modulePath = `@astryxdesign/core/${pascal}`;
       const interfaceName = `XDS${pascal}${propPascal}Map`;
 
       sections.push(`declare module '${modulePath}' {`);
@@ -417,11 +417,11 @@ ${iconReExport}`;
  */
 function generateBuiltTypes(themeDef, iconInfo) {
   const iconType = iconInfo
-    ? `import type { XDSIconRegistry } from '@xds/core/Icon';
+    ? `import type { XDSIconRegistry } from '@astryxdesign/core/Icon';
 export declare const ${iconInfo.exportName}: XDSIconRegistry;
 `
     : '';
-  return `import type { XDSDefinedTheme } from '@xds/core/theme';
+  return `import type { XDSDefinedTheme } from '@astryxdesign/core/theme';
 ${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: XDSDefinedTheme;
 `;
 }
@@ -663,13 +663,13 @@ export function registerTheme(program) {
 
       // Generate CSS via core's shared generator — the SINGLE source of truth.
       // `xds theme build` and the `<Theme>` runtime MUST emit identical CSS, so
-      // there is exactly one generation path: @xds/core/theme. If core could not
+      // there is exactly one generation path: @astryxdesign/core/theme. If core could not
       // be imported, fail hard rather than silently producing divergent output.
       if (!_defineTheme || !_generateThemeRulesSplit) {
         cliError(
-          'Could not load @xds/core/theme — `xds theme build` requires a ' +
-            'built, resolvable @xds/core so it emits the same CSS as the ' +
-            'runtime <Theme>. Build @xds/core first (e.g. `pnpm -F @xds/core ' +
+          'Could not load @astryxdesign/core/theme — `xds theme build` requires a ' +
+            'built, resolvable @astryxdesign/core so it emits the same CSS as the ' +
+            'runtime <Theme>. Build @astryxdesign/core first (e.g. `pnpm -F @astryxdesign/core ' +
             'build`)' +
             (_coreImportError ? `.\n  Import error: ${_coreImportError.message}` : '.'),
           {code: ERROR_CODES.ERR_CORE_NOT_FOUND},

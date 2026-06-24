@@ -21,7 +21,7 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Paste this into your AI',
-          code: 'Install @xds/core, @xds/theme-default, and @xds/cli in this project. Run `npx astryx init` to set up agent docs. Read the generated files to learn the conventions.',
+          code: 'Install @astryxdesign/core, @astryxdesign/theme-default, and @astryxdesign/cli in this project. Run `npx astryx init` to set up agent docs. Read the generated files to learn the conventions.',
         },
       ],
     },
@@ -36,7 +36,7 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Terminal',
-          code: `npm install @xds/core @xds/theme-default @xds/cli`,
+          code: `npm install @astryxdesign/core @astryxdesign/theme-default @astryxdesign/cli`,
         },
         {
           type: 'prose',
@@ -61,13 +61,13 @@ export const docs = {
           type: 'code',
           lang: 'css',
           label: 'globals.css',
-          code: `@import '@xds/core/reset.css';
-@import '@xds/core/astryx.css';
-@import '@xds/theme-default/theme.css';`,
+          code: `@import '@astryxdesign/core/reset.css';
+@import '@astryxdesign/core/astryx.css';
+@import '@astryxdesign/theme-default/theme.css';`,
         },
         {
           type: 'prose',
-          text: 'Available themes: @xds/theme-default (blue accent), @xds/theme-neutral (grayscale), @xds/theme-brutalist (zero radius, monospace). See `npx astryx docs theme` for the full theming guide.',
+          text: 'Available themes: @astryxdesign/theme-default (blue accent), @astryxdesign/theme-neutral (grayscale), @astryxdesign/theme-brutalist (zero radius, monospace). See `npx astryx docs theme` for the full theming guide.',
         },
       ],
     },
@@ -82,8 +82,8 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'app/page.tsx',
-          code: `import {Button} from '@xds/core/Button';
-import {VStack} from '@xds/core/Layout';
+          code: `import {Button} from '@astryxdesign/core/Button';
+import {VStack} from '@astryxdesign/core/Layout';
 
 export default function Page() {
   return (
@@ -157,7 +157,7 @@ pnpm dev`,
           lang: 'json',
           label: 'package.json',
           code: `"scripts": {
-  "xds": "node node_modules/@xds/cli/bin/xds.mjs"
+  "xds": "node node_modules/@astryxdesign/cli/bin/xds.mjs"
 }`,
         },
         {

@@ -7,9 +7,9 @@ import {
   ChatMessage,
   ChatMessageBubble,
   ChatMessageMetadata,
-} from '@xds/core/Chat';
-import {Timestamp} from '@xds/core/Timestamp';
-import {Text} from '@xds/core/Text';
+} from '@astryxdesign/core/Chat';
+import {Timestamp} from '@astryxdesign/core/Timestamp';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function ChatMessageGhost() {
   return (

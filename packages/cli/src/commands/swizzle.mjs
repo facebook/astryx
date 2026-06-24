@@ -5,7 +5,7 @@
  *
  * Resolves component source from packages/core/src/{Component}/,
  * copies non-test files to the output directory, and rewrites
- * relative imports to use '@xds/core' package paths.
+ * relative imports to use '@astryxdesign/core' package paths.
  *
  * After swizzling, optionally prompts the user to file a gap report
  * explaining why they needed to customize the component.
@@ -31,10 +31,10 @@ import {shouldActuallyFile, formatPreview} from './gap-report.mjs';
 
 /**
  * Rewrite relative imports that point outside the component directory
- * to use @xds/core package paths.
+ * to use @astryxdesign/core package paths.
  *
- * e.g. '../theme/tokens.stylex' -> '@xds/core/theme'
- *      '../utils/mergeProps'     -> '@xds/core/utils'
+ * e.g. '../theme/tokens.stylex' -> '@astryxdesign/core/theme'
+ *      '../utils/mergeProps'     -> '@astryxdesign/core/utils'
  */
 export function rewriteImports(content) {
   // Match import/export from statements with relative paths going up
@@ -47,8 +47,8 @@ export function rewriteImports(content) {
       const parts = importPath.replace(/^\.\.\//, '').split('/');
       const topDir = parts[0];
 
-      // Map to @xds/core subpath
-      return `${prefix}@xds/core/${topDir}${suffix}`;
+      // Map to @astryxdesign/core subpath
+      return `${prefix}@astryxdesign/core/${topDir}${suffix}`;
     },
   );
 }
@@ -88,7 +88,7 @@ export function registerSwizzle(program) {
 
       if (!coreDir) {
         cliError(
-          'Could not find @xds/core package. Make sure you are inside the design system monorepo or have @xds/core installed.',
+          'Could not find @astryxdesign/core package. Make sure you are inside the design system monorepo or have @astryxdesign/core installed.',
           {code: ERROR_CODES.ERR_CORE_NOT_FOUND},
         );
         return;
@@ -259,7 +259,7 @@ export function registerSwizzle(program) {
             gapReportSuppressed: reportingSuppressed || !gapConfig.enabled,
           });
         humanLog(`\n✓ Copied ${copied} files to ${relOutput}/\n`);
-        humanLog('Relative imports have been rewritten to use @xds/core.');
+        humanLog('Relative imports have been rewritten to use @astryxdesign/core.');
         humanLog('You can now customize the component source freely.\n');
         if (gapReportUrl) {
           humanLog(`✓ Gap report filed: ${gapReportUrl}\n`);
@@ -286,7 +286,7 @@ export function registerSwizzle(program) {
       if (json) return jsonOut('swizzle.copy', {component: dirName, outputDir: relOutput, filesCopied: copied, files: copiedFiles.map(f => f)});
 
       humanLog(`\n✓ Copied ${copied} files to ${relOutput}/\n`);
-      humanLog('Relative imports have been rewritten to use @xds/core.');
+      humanLog('Relative imports have been rewritten to use @astryxdesign/core.');
       humanLog('You can now customize the component source freely.\n');
 
       if (reportingSuppressed || !gapConfig.enabled) {

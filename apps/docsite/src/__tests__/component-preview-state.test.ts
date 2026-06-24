@@ -9,8 +9,8 @@ import {
 } from '../components/component-detail/interactiveState';
 import type {PropDoc} from '../generated/componentRegistry';
 
-vi.mock('@xds/core', () => ({}));
-vi.mock('@xds/core/theme/syntax', () => ({allSyntaxPresets: []}));
+vi.mock('@astryxdesign/core', () => ({}));
+vi.mock('@astryxdesign/core/theme/syntax', () => ({allSyntaxPresets: []}));
 vi.mock('../generated/themeRegistry', () => ({themeObjectsFull: {}}));
 
 function prop(

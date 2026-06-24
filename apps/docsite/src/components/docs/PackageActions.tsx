@@ -2,12 +2,12 @@
 
 'use client';
 
-import {Text} from '@xds/core/Text';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Popover} from '@xds/core/Popover';
+import {Text} from '@astryxdesign/core/Text';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Popover} from '@astryxdesign/core/Popover';
 import {CodeExampleBlock} from '../CodeExampleBlock';
-import {Button} from '@xds/core/Button';
-import {Card} from '@xds/core/Card';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
 
 export interface InstallStep {
   label: string;

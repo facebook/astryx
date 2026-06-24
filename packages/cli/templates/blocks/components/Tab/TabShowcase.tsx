@@ -2,8 +2,8 @@
 
 'use client';
 
-import {TabList, Tab} from '@xds/core/TabList';
-import {Badge} from '@xds/core/Badge';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {Badge} from '@astryxdesign/core/Badge';
 
 export default function TabShowcase() {
   return (

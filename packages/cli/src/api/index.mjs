@@ -7,7 +7,7 @@
  * Errors throw XDSError (with optional .suggestions).
  *
  * @example
- * import { component, docs, hook, XDSError } from '@xds/cli/api';
+ * import { component, docs, hook, XDSError } from '@astryxdesign/cli/api';
  *
  * const result = await component('Button');
  * // { type: 'component.detail', data: { name: 'Button', ... } }

@@ -2,13 +2,13 @@
 
 'use client';
 
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
-import {Grid} from '@xds/core/Grid';
-import {Card} from '@xds/core/Card';
-import {Layout, LayoutContent, LayoutPanel} from '@xds/core/Layout';
-import {useResizable, ResizeHandle} from '@xds/core/Resizable';
-import {VStack} from '@xds/core/Stack';
-import {Text} from '@xds/core/Text';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Card} from '@astryxdesign/core/Card';
+import {Layout, LayoutContent, LayoutPanel} from '@astryxdesign/core/Layout';
+import {useResizable, ResizeHandle} from '@astryxdesign/core/Resizable';
+import {VStack} from '@astryxdesign/core/Stack';
+import {Text} from '@astryxdesign/core/Text';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({

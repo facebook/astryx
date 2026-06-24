@@ -2,9 +2,9 @@
 
 'use client';
 
-import {ProgressBar} from '@xds/core/ProgressBar';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {ProgressBar} from '@astryxdesign/core/ProgressBar';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function ProgressBarCustomFormat() {
   return (

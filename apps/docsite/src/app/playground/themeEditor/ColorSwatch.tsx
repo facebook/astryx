@@ -3,7 +3,7 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {TextInput} from '@xds/core/TextInput';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import {TokenRow} from './TokenRow';
 import {
   parseLightDark,

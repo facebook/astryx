@@ -1,5 +1,5 @@
 {
-  "name": "@xds/vibe-tests-app",
+  "name": "@astryxdesign/vibe-tests-app",
   "private": true,
   "type": "module",
   "scripts": {
@@ -7,8 +7,8 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@xds/core": "*",
-    "@xds/theme": "*",
+    "@astryxdesign/core": "*",
+    "@astryxdesign/theme": "*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "@stylexjs/stylex": "*"

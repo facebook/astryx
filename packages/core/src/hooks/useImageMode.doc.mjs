@@ -57,7 +57,7 @@ export const docs = {
   },
   relatedComponents: ['MediaTheme'],
   relatedHooks: ['useMediaQuery'],
-  importPath: '@xds/core/hooks',
+  importPath: '@astryxdesign/core/hooks',
   category: 'media',
 };
 

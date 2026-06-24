@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {RadioList, RadioListItem} from '@xds/core/RadioList';
+import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
 
 const meta: Meta<typeof RadioList> = {
   title: 'Core/RadioList',

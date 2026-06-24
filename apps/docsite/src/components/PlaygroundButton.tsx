@@ -2,7 +2,7 @@
 
 'use client';
 
-import {Button} from '@xds/core/Button';
+import {Button} from '@astryxdesign/core/Button';
 import {buildPlaygroundHref} from './playgroundLink';
 
 interface PlaygroundButtonProps {

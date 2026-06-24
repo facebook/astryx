@@ -4,8 +4,8 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build": "pnpm -F @xds/build build && pnpm -F @xds/core build && pnpm -F @xds/vega build && pnpm -F @xds/theme-default build && pnpm -F @xds/theme-neutral build && pnpm -F @xds/theme-brutalist build && pnpm -F @xds/theme-daily build && pnpm -F @xds/theme-matcha build && pnpm -F @xds/theme-stone build && pnpm -F @xds/theme-gothic build && pnpm -F @xds/theme-chocolate build && pnpm -F @xds/theme-y2k build && pnpm -F @xds/theme-butter build",
-    "dev": "pnpm -F @xds/storybook dev",
+    "build": "pnpm -F @astryxdesign/build build && pnpm -F @astryxdesign/core build && pnpm -F @astryxdesign/vega build && pnpm -F @astryxdesign/theme-default build && pnpm -F @astryxdesign/theme-neutral build && pnpm -F @astryxdesign/theme-brutalist build && pnpm -F @astryxdesign/theme-daily build && pnpm -F @astryxdesign/theme-matcha build && pnpm -F @astryxdesign/theme-stone build && pnpm -F @astryxdesign/theme-gothic build && pnpm -F @astryxdesign/theme-chocolate build && pnpm -F @astryxdesign/theme-y2k build && pnpm -F @astryxdesign/theme-butter build",
+    "dev": "pnpm -F @astryxdesign/storybook dev",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest --coverage",
@@ -15,12 +15,12 @@
     "check:sync": "node scripts/check-sync.js",
     "lint": "pnpm check:repo && eslint . --cache",
     "lint:strict": "pnpm check:repo && ASTRYX_STRICT_LINT=1 eslint . --cache",
-    "storybook": "pnpm -F @xds/storybook dev",
-    "storybook:build": "pnpm -F @xds/storybook build",
-    "docs": "pnpm -F @xds/docs dev",
+    "storybook": "pnpm -F @astryxdesign/storybook dev",
+    "storybook:build": "pnpm -F @astryxdesign/storybook build",
+    "docs": "pnpm -F @astryxdesign/docs dev",
     "sync:exports": "node scripts/sync-exports.js",
     "sync:exports:check": "node scripts/sync-exports.js --check",
-    "xds": "pnpm -F @xds/cli xds",
+    "xds": "pnpm -F @astryxdesign/cli xds",
     "package:source": "node scripts/package-source.js",
     "changeset": "changeset",
     "changeset:new": "node scripts/changeset-new.mjs",
@@ -29,8 +29,8 @@
     "verify-exports": "node scripts/verify-exports.mjs",
     "release": "pnpm build && changeset publish",
     "prepare": "husky install",
-    "dev:sandbox": "pnpm -F @xds/core build && pnpm -F @xds/sandbox dev",
-    "dev:sandbox:source": "ASTRYX_SOURCE=1 pnpm -F @xds/sandbox dev"
+    "dev:sandbox": "pnpm -F @astryxdesign/core build && pnpm -F @astryxdesign/sandbox dev",
+    "dev:sandbox:source": "ASTRYX_SOURCE=1 pnpm -F @astryxdesign/sandbox dev"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",

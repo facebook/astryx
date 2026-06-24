@@ -11,9 +11,9 @@ import {
   ChartBrush,
   ChartReferenceLine,
   useChartColors,
-} from '@xds/lab';
-import {Stack, Text} from '@xds/core';
-import {Heading} from '@xds/core/Text';
+} from '@astryxdesign/lab';
+import {Stack, Text} from '@astryxdesign/core';
+import {Heading} from '@astryxdesign/core/Text';
 import {useDataset} from './useDataset';
 
 const meta: Meta = {title: 'Lab/Chart Interactions/Coordinated Views'};

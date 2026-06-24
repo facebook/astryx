@@ -3,8 +3,8 @@
 'use client';
 
 import React, {useState, useMemo} from 'react';
-import {useResizable, ResizeHandle} from '@xds/core/Resizable';
-import type {ResizableProps} from '@xds/core/Resizable';
+import {useResizable, ResizeHandle} from '@astryxdesign/core/Resizable';
+import type {ResizableProps} from '@astryxdesign/core/Resizable';
 import * as stylex from '@stylexjs/stylex';
 import {
   Layout,
@@ -15,24 +15,24 @@ import {
   VStack,
   HStack,
   StackItem,
-} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
-import {Button} from '@xds/core/Button';
-import {Badge} from '@xds/core/Badge';
-import {Avatar} from '@xds/core/Avatar';
-import {Selector} from '@xds/core/Selector';
-import {PowerSearch} from '@xds/core/PowerSearch';
-import type {PowerSearchConfig, PowerSearchFilter} from '@xds/core/PowerSearch';
-import {Dialog, DialogHeader} from '@xds/core/Dialog';
-import {Popover} from '@xds/core/Popover';
-import {RadioList, RadioListItem} from '@xds/core/RadioList';
-import {DropdownMenu} from '@xds/core/DropdownMenu';
-import {Center} from '@xds/core/Center';
-import {Icon} from '@xds/core/Icon';
-import {StatusDot} from '@xds/core/StatusDot';
-import {Divider} from '@xds/core/Divider';
-import {MetadataList, MetadataListItem} from '@xds/core/MetadataList';
+} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Button} from '@astryxdesign/core/Button';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Selector} from '@astryxdesign/core/Selector';
+import {PowerSearch} from '@astryxdesign/core/PowerSearch';
+import type {PowerSearchConfig, PowerSearchFilter} from '@astryxdesign/core/PowerSearch';
+import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
+import {Popover} from '@astryxdesign/core/Popover';
+import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
+import {Center} from '@astryxdesign/core/Center';
+import {Icon} from '@astryxdesign/core/Icon';
+import {StatusDot} from '@astryxdesign/core/StatusDot';
+import {Divider} from '@astryxdesign/core/Divider';
+import {MetadataList, MetadataListItem} from '@astryxdesign/core/MetadataList';
 import {
   Table,
   TableRow,
@@ -40,8 +40,8 @@ import {
   proportional,
   pixel,
   resolveColumnWidths,
-} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
+} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
 import {
   ChevronRightIcon,
   ChevronDownIcon,

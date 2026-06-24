@@ -2,7 +2,7 @@
 
 'use client';
 
-import {CodeBlock} from '@xds/core/CodeBlock';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
 
 const code = `import {useState, useEffect} from 'react';
 

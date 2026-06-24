@@ -3,10 +3,10 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {CodeBlock as CoreCodeBlock} from '@xds/core/CodeBlock';
-import {Card} from '@xds/core/Card';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {CodeBlock as CoreCodeBlock} from '@astryxdesign/core/CodeBlock';
+import {Card} from '@astryxdesign/core/Card';
 
 const styles = stylex.create({
   root: {

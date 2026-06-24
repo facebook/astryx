@@ -3,7 +3,7 @@
 /**
  * @file Regression test for prose output of `xds theme build`.
  *
- * `xds theme build` has a single CSS-generation path — @xds/core's generator,
+ * `xds theme build` has a single CSS-generation path — @astryxdesign/core's generator,
  * the same one the <Theme> runtime uses (generateThemeCSS). It always emits
  * prose element defaults (h1–h6, p, small, code, hr) so unstyled HTML inherits
  * the theme's typography, exactly like the runtime. There is intentionally no
@@ -17,7 +17,7 @@
  *     components own block spacing — see the docsite Markdown regression);
  *   - paragraphs use the body font, not the heading font.
  *
- * Building `xds theme build` requires a compiled @xds/core (there is no in-CLI
+ * Building `xds theme build` requires a compiled @astryxdesign/core (there is no in-CLI
  * fallback generator), so this suite builds core once in beforeAll — mirroring
  * scripts/build-css.test.mjs — to stay self-sufficient regardless of CI job
  * ordering.
@@ -68,11 +68,11 @@ function writeTheme(dir, name) {
   return file;
 }
 
-// `xds theme build` imports the compiled @xds/core/theme entry. Build core
+// `xds theme build` imports the compiled @astryxdesign/core/theme entry. Build core
 // once if it isn't already present so the suite works in any CI job.
 beforeAll(() => {
   if (!fs.existsSync(CORE_THEME_ENTRY)) {
-    execFileSync('pnpm', ['-F', '@xds/core', 'build'], {
+    execFileSync('pnpm', ['-F', '@astryxdesign/core', 'build'], {
       cwd: REPO_ROOT,
       stdio: 'pipe',
       timeout: 180_000,

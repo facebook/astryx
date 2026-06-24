@@ -2,16 +2,16 @@
 
 import React from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {Popover} from '@xds/core/Popover';
-import type {PopoverTriggerRenderProps} from '@xds/core/Popover';
-import {Button} from '@xds/core/Button';
-import {Token} from '@xds/core/Token';
-import {Link} from '@xds/core/Link';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Switch} from '@xds/core/Switch';
-import {CheckboxInput} from '@xds/core/CheckboxInput';
-import {Divider} from '@xds/core/Divider';
+import {Popover} from '@astryxdesign/core/Popover';
+import type {PopoverTriggerRenderProps} from '@astryxdesign/core/Popover';
+import {Button} from '@astryxdesign/core/Button';
+import {Token} from '@astryxdesign/core/Token';
+import {Link} from '@astryxdesign/core/Link';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Switch} from '@astryxdesign/core/Switch';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {Divider} from '@astryxdesign/core/Divider';
 
 const meta: Meta<typeof Popover> = {
   title: 'Core/Popover',

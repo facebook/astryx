@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {RadioList, RadioListItem} from '@xds/core/RadioList';
+import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
 
 export default function RadioListShowcase() {
   return (

@@ -12,7 +12,7 @@ import {
   isValidElement,
   type ComponentType,
 } from 'react';
-import * as Core from '@xds/core';
+import * as Core from '@astryxdesign/core';
 import type {ElementDescriptor} from '../../generated/componentRegistry';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

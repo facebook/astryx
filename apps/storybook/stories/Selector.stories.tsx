@@ -2,7 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {Selector, SelectorOption} from '@xds/core/Selector';
+import {Selector, SelectorOption} from '@astryxdesign/core/Selector';
 import {UserIcon, CogIcon, BellIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof Selector> = {

@@ -167,7 +167,7 @@ async function printCompare(mappings, comps) {
     console.log(`\n${'='.repeat(65)}\nLibrary Comparison\n${'='.repeat(65)}\n`);
     console.log(`${pad('Package', 42)} ${pad('Min', 10, 'right')} ${pad('Gzip', 10, 'right')}`);
     console.log('-'.repeat(65));
-    console.log(`${pad(`XDS @xds/core (${an.length} groups)`, 42)} ${pad(fmt(xr.total.raw), 10, 'right')} ${pad(fmt(xr.total.gzip), 10, 'right')}`);
+    console.log(`${pad(`XDS @astryxdesign/core (${an.length} groups)`, 42)} ${pad(fmt(xr.total.raw), 10, 'right')} ${pad(fmt(xr.total.gzip), 10, 'right')}`);
     for (const r of results)
       console.log(`${pad(`${r.bp.name}@${r.bp.version}`, 42)} ${pad(fmt(r.bp.size), 10, 'right')} ${pad(fmt(r.bp.gzip), 10, 'right')}`);
   }

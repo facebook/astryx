@@ -2,14 +2,14 @@
 
 'use client';
 
-import {ChatComposer, ChatComposerDrawer} from '@xds/core/Chat';
-import {Token} from '@xds/core/Token';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {Stack} from '@xds/core/Layout';
+import {ChatComposer, ChatComposerDrawer} from '@astryxdesign/core/Chat';
+import {Token} from '@astryxdesign/core/Token';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Stack} from '@astryxdesign/core/Layout';
 import {PaperClipIcon} from '@heroicons/react/24/outline';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, borderVars, radiusVars} from '@xds/core/theme/tokens.stylex';
+import {colorVars, borderVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   drawerBorder: {

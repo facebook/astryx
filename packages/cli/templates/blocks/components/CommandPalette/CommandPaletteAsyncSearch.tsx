@@ -6,8 +6,8 @@ import {useMemo} from 'react';
 import {
   CommandPalette,
   CommandPaletteInput,
-} from '@xds/core/CommandPalette';
-import type {SearchSource} from '@xds/core/Typeahead';
+} from '@astryxdesign/core/CommandPalette';
+import type {SearchSource} from '@astryxdesign/core/Typeahead';
 
 const allFiles = [
   {id: 'readme', label: 'README.md'},

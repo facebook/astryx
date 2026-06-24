@@ -1,7 +1,7 @@
 ---
-'@xds/core': patch
-'@xds/cli': patch
-'@xds/build': patch
+'@astryxdesign/core': patch
+'@astryxdesign/cli': patch
+'@astryxdesign/build': patch
 ---
 
 [breaking] Remove the XDS-prefix compatibility layer — astryx is now the only public surface
@@ -20,9 +20,9 @@ window. Consumers must migrate (we own all consumers pre-OSS):
   custom selectors and SSR root attributes off `data-xds-*`.
 - **CSS layers:** `@layer xds-base` / `xds-theme` are renamed to `astryx-base` /
   `astryx-theme`; update your `@layer` order line and any PostCSS `layersBefore` config.
-  `@xds/build`'s default library layer is now `astryx-base`.
-- **Pre-compiled stylesheet:** the `@xds/core/xds.css` export is removed — import
-  `@xds/core/astryx.css`.
+  `@astryxdesign/build`'s default library layer is now `astryx-base`.
+- **Pre-compiled stylesheet:** the `@astryxdesign/core/xds.css` export is removed — import
+  `@astryxdesign/core/astryx.css`.
 - **CSS custom properties:** the `--xds-*` padding fallback is gone; set `--astryx-*`.
-- **CLI config key:** `@xds/cli` reads the package.json `"astryx"` field (was `"xds"`).
+- **CLI config key:** `@astryxdesign/cli` reads the package.json `"astryx"` field (was `"xds"`).
   Rename the block; a stale `"xds"` key silently drops the package from discovery.

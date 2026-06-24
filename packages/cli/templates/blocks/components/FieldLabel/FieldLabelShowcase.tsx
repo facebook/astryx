@@ -2,8 +2,8 @@
 
 'use client';
 
-import {FieldLabel} from '@xds/core/Field';
-import {VStack} from '@xds/core/Layout';
+import {FieldLabel} from '@astryxdesign/core/Field';
+import {VStack} from '@astryxdesign/core/Layout';
 
 const LockIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" {...props}>

@@ -9,7 +9,7 @@
  * @position Shared docsite wrapper for displayed/copyable code snippets
  */
 
-import {CodeBlock, type CodeBlockProps} from '@xds/core/CodeBlock';
+import {CodeBlock, type CodeBlockProps} from '@astryxdesign/core/CodeBlock';
 import {stripCodeExampleCopyrightHeader} from '../lib/codeExamples';
 
 export function CodeExampleBlock({code, ...props}: CodeBlockProps) {

@@ -4,14 +4,14 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Text, Heading} from '@xds/core/Text';
-import {Layout, LayoutHeader, LayoutContent} from '@xds/core/Layout';
-import {TextInput} from '@xds/core/TextInput';
-import {ToggleButton, ToggleButtonGroup} from '@xds/core/ToggleButton';
-import {Grid} from '@xds/core/Grid';
-import {VStack} from '@xds/core/Stack';
-import {Divider} from '@xds/core/Divider';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Layout, LayoutHeader, LayoutContent} from '@astryxdesign/core/Layout';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {ToggleButton, ToggleButtonGroup} from '@astryxdesign/core/ToggleButton';
+import {Grid} from '@astryxdesign/core/Grid';
+import {VStack} from '@astryxdesign/core/Stack';
+import {Divider} from '@astryxdesign/core/Divider';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {categories} from '../sandboxPages';
 import {ProjectCard} from '../ProjectCard';
 import {SearchIcon} from '../icons';

@@ -2,12 +2,12 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {List, ListItem} from '@xds/core/List';
-import {Avatar} from '@xds/core/Avatar';
-import {Badge} from '@xds/core/Badge';
-import {Icon} from '@xds/core/Icon';
-import {Switch} from '@xds/core/Switch';
-import {Text} from '@xds/core/Text';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Switch} from '@astryxdesign/core/Switch';
+import {Text} from '@astryxdesign/core/Text';
 import {
   Cog6ToothIcon,
   BellIcon,
@@ -162,11 +162,11 @@ export const OrderedList: Story = {
     <List listStyle="decimal" {...args}>
       <ListItem
         label="Install the package"
-        description="npm install @xds/core"
+        description="npm install @astryxdesign/core"
       />
       <ListItem
         label="Import components"
-        description="import { List } from '@xds/core'"
+        description="import { List } from '@astryxdesign/core'"
       />
       <ListItem
         label="Start building"

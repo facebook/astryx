@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {AlertDialog} from '@xds/core/AlertDialog';
+import {AlertDialog} from '@astryxdesign/core/AlertDialog';
 
 export default function AlertDialogAsyncAction() {
   const [isLoading, setIsLoading] = useState(false);

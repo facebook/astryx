@@ -4,11 +4,11 @@
 
 import {useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {Divider} from '@xds/core/Divider';
-import type {DefinedTheme} from '@xds/core/theme';
-import type {ReferenceDoc, ReferenceSection} from '@xds/core';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {Divider} from '@astryxdesign/core/Divider';
+import type {DefinedTheme} from '@astryxdesign/core/theme';
+import type {ReferenceDoc, ReferenceSection} from '@astryxdesign/core';
 import {SectionRenderer} from './SectionRenderer';
 import {
   ColorTokenTable,

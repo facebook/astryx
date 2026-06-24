@@ -4,13 +4,13 @@
 
 import {useState} from 'react';
 
-import {VStack, HStack} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Text, Heading} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
-import {CheckboxInput} from '@xds/core/CheckboxInput';
-import {Badge} from '@xds/core/Badge';
-import {Divider} from '@xds/core';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Divider} from '@astryxdesign/core';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({

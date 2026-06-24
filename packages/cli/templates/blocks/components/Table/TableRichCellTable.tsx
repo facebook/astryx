@@ -2,10 +2,10 @@
 
 'use client';
 
-import {Table, proportional, pixel} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
-import {Badge} from '@xds/core/Badge';
-import {Link} from '@xds/core/Link';
+import {Table, proportional, pixel} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Link} from '@astryxdesign/core/Link';
 
 interface User extends Record<string, unknown> {
   id: string;

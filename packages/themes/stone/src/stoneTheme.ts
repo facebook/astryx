@@ -8,7 +8,7 @@
  * Montserrat for headings, Figtree for body, JetBrains Mono for code.
  */
 
-import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
+import {defineTheme, defineSyntaxTheme} from '@astryxdesign/core/theme';
 import {stoneIconRegistry} from './icons';
 
 /**

@@ -100,7 +100,7 @@ export const docs = {
     'SideNav',
   ],
   relatedHooks: ['useMediaQuery'],
-  importPath: '@xds/core/AppShell',
+  importPath: '@astryxdesign/core/AppShell',
 };
 
 /** @type {import('../docs-types').HookTranslationDoc} */

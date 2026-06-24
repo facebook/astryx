@@ -63,12 +63,12 @@ jobs:
         run: pnpm build
 
       - name: Build Storybook
-        run: pnpm -F @xds/storybook build
+        run: pnpm -F @astryxdesign/storybook build
 
       - name: Build Sandbox
         env:
           SANDBOX_BASE_PATH: /pr/${{ github.event.inputs.pr_number }}/sandbox
-        run: pnpm -F @xds/sandbox build
+        run: pnpm -F @astryxdesign/sandbox build
 
       - name: Deploy to GitHub Pages
         env:

@@ -1,4 +1,4 @@
 {
   "installCommand": "cd ../.. && pnpm install",
-  "buildCommand": "cd ../.. && pnpm build && pnpm -F @xds/docsite build"
+  "buildCommand": "cd ../.. && pnpm build && pnpm -F @astryxdesign/docsite build"
 }

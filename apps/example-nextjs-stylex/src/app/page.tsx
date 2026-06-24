@@ -4,12 +4,12 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Text, Heading} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
-import {Badge} from '@xds/core/Badge';
-import {Divider} from '@xds/core';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Divider} from '@astryxdesign/core';
 
 const styles = stylex.create({
   main: {
@@ -43,7 +43,7 @@ export default function Home() {
             <Text type="body" color="secondary">
               This example consumes{' '}
               <Text type="body" weight="bold">
-                @xds/core
+                @astryxdesign/core
               </Text>{' '}
               
               as a pre-built dist package. StyleX is only used for

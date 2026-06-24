@@ -2,12 +2,12 @@
 
 'use client';
 
-import {ChatComposer} from '@xds/core/Chat';
-import {Button} from '@xds/core/Button';
-import {DropdownMenu} from '@xds/core/DropdownMenu';
-import {Icon} from '@xds/core/Icon';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {ChatComposer} from '@astryxdesign/core/Chat';
+import {Button} from '@astryxdesign/core/Button';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 import {
   Cog6ToothIcon,
   MicrophoneIcon,

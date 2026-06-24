@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {Switch} from '@xds/core/Switch';
-import {VStack} from '@xds/core/Layout';
-import {Center} from '@xds/core/Center';
+import {Switch} from '@astryxdesign/core/Switch';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Center} from '@astryxdesign/core/Center';
 
 export default function SwitchWithStatus() {
   const [terms, setTerms] = useState(false);

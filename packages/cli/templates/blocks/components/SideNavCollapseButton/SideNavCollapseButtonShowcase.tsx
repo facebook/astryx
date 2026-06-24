@@ -9,7 +9,7 @@ import {
   SideNavHeading,
   SideNavItem,
   SideNavSection,
-} from '@xds/core/SideNav';
+} from '@astryxdesign/core/SideNav';
 
 function HomeIcon(props: ComponentProps<'svg'>) {
   return (

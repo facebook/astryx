@@ -3,7 +3,7 @@
 'use client';
 
 import {usePathname} from 'next/navigation';
-import {AppShell} from '@xds/core/AppShell';
+import {AppShell} from '@astryxdesign/core/AppShell';
 import {SandboxNav} from './SandboxNav';
 
 const FULLSCREEN_PATHS = ['/pages/color-studio'];

@@ -1,7 +1,7 @@
 /* Copyright (c) Meta Platforms, Inc. and affiliates. */
 
 @import "./layers.css";
-@import "@xds/core/reset.css";
-@import "@xds/theme-default/theme.css";
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/theme-default/theme.css";
 
 @stylex;

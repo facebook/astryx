@@ -13,9 +13,9 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {Avatar} from '@xds/core/Avatar';
-import {Text} from '@xds/core/Text';
-import {HStack} from '@xds/core/Layout';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Text} from '@astryxdesign/core/Text';
+import {HStack} from '@astryxdesign/core/Layout';
 import {resolveAuthor} from '../../content/blog/authors';
 
 export function formatDate(iso: string): string {

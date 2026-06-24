@@ -2,7 +2,7 @@
 
 'use client';
 
-import {TextArea} from '@xds/core/TextArea';
+import {TextArea} from '@astryxdesign/core/TextArea';
 
 export default function TextAreaShowcase() {
   return (

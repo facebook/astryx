@@ -19,7 +19,7 @@
  * change.
  */
 
-import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
+import {defineTheme, defineSyntaxTheme} from '@astryxdesign/core/theme';
 import {butterIconRegistry} from './icons';
 
 /** Butter syntax palette — T25 / T80 of each color's ramp. */

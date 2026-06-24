@@ -2,12 +2,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Lightweight XDS component docs — zero dependencies, ships with @xds/core.
+ * @file Lightweight XDS component docs — zero dependencies, ships with @astryxdesign/core.
  *
  * Usage:
- *   node node_modules/@xds/core/docs.mjs Button
- *   node node_modules/@xds/core/docs.mjs --list
- *   node node_modules/@xds/core/docs.mjs --list --brief
+ *   node node_modules/@astryxdesign/core/docs.mjs Button
+ *   node node_modules/@astryxdesign/core/docs.mjs --list
+ *   node node_modules/@astryxdesign/core/docs.mjs --list --brief
  */
 
 import * as fs from 'node:fs';

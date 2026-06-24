@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Skeleton} from '@xds/core/Skeleton';
-import {Card} from '@xds/core/Card';
-import {HStack, VStack} from '@xds/core/Layout';
+import {Skeleton} from '@astryxdesign/core/Skeleton';
+import {Card} from '@astryxdesign/core/Card';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
 
 export default function SkeletonCardSkeleton() {
   return (

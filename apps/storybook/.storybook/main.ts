@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {StorybookConfig} from '@storybook/react-vite';
-import {xdsStylex} from '@xds/build/vite';
+import {xdsStylex} from '@astryxdesign/build/vite';
 import path from 'path';
 import {fileURLToPath} from 'url';
 
@@ -75,17 +75,17 @@ const config: StorybookConfig = {
             dev: false,
             styleResolution: 'application-order',
             aliases: {
-              '@xds/core/*': [path.join(rootDir, 'packages/core/src/*')],
-              '@xds/core': [path.join(rootDir, 'packages/core/src')],
-              '@xds/lab/*': [path.join(rootDir, 'packages/lab/src/*')],
-              '@xds/lab': [path.join(rootDir, 'packages/lab/src')],
-              '@xds/theme-default/*': [
+              '@astryxdesign/core/*': [path.join(rootDir, 'packages/core/src/*')],
+              '@astryxdesign/core': [path.join(rootDir, 'packages/core/src')],
+              '@astryxdesign/lab/*': [path.join(rootDir, 'packages/lab/src/*')],
+              '@astryxdesign/lab': [path.join(rootDir, 'packages/lab/src')],
+              '@astryxdesign/theme-default/*': [
                 path.join(rootDir, 'packages/themes/default/src/*'),
               ],
-              '@xds/theme-neutral/*': [
+              '@astryxdesign/theme-neutral/*': [
                 path.join(rootDir, 'packages/themes/neutral/src/*'),
               ],
-              '@xds/theme-brutalist/*': [
+              '@astryxdesign/theme-brutalist/*': [
                 path.join(rootDir, 'packages/themes/brutalist/src/*'),
               ],
             },
@@ -104,21 +104,21 @@ const config: StorybookConfig = {
         ...config.resolve,
         alias: {
           ...config.resolve?.alias,
-          '@xds/core': path.resolve(rootDir, 'packages/core/src'),
-          '@xds/lab': path.resolve(rootDir, 'packages/lab/src'),
-          '@xds/theme-default': path.resolve(
+          '@astryxdesign/core': path.resolve(rootDir, 'packages/core/src'),
+          '@astryxdesign/lab': path.resolve(rootDir, 'packages/lab/src'),
+          '@astryxdesign/theme-default': path.resolve(
             rootDir,
             'packages/themes/default/src/source.ts',
           ),
-          '@xds/theme-neutral': path.resolve(
+          '@astryxdesign/theme-neutral': path.resolve(
             rootDir,
             'packages/themes/neutral/src/source.ts',
           ),
-          '@xds/theme-brutalist': path.resolve(
+          '@astryxdesign/theme-brutalist': path.resolve(
             rootDir,
             'packages/themes/brutalist/src/source.ts',
           ),
-          '@xds/vega': path.resolve(rootDir, 'packages/vega/src'),
+          '@astryxdesign/vega': path.resolve(rootDir, 'packages/vega/src'),
         },
       },
       css: {

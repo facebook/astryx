@@ -12,11 +12,11 @@ import {
   useTableSortableState,
   useTableColumnResize,
   toSearchFilters,
-} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
-import {usePowerSearchConfig} from '@xds/core/PowerSearch';
-import {EmptyState as EmptyStateComponent} from '@xds/core/EmptyState';
-import type {PowerSearchFilter} from '@xds/core/PowerSearch';
+} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
+import {usePowerSearchConfig} from '@astryxdesign/core/PowerSearch';
+import {EmptyState as EmptyStateComponent} from '@astryxdesign/core/EmptyState';
+import type {PowerSearchFilter} from '@astryxdesign/core/PowerSearch';
 
 interface Employee extends Record<string, unknown> {
   name: string;

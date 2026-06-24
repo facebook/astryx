@@ -176,7 +176,7 @@ export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPre
 
   lines.push(`${run} swizzle <Name>            eject source (--gap to report why)`);
   lines.push(`${run} upgrade --apply            codemods after version bump`);
-  lines.push(`after @xds/core bump, always run ${run} upgrade --apply`);
+  lines.push(`after @astryxdesign/core bump, always run ${run} upgrade --apply`);
   lines.push(XDS_MARKER_END);
 
   return lines.join('\n');

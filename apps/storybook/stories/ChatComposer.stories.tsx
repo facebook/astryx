@@ -5,13 +5,13 @@ import {
   ChatComposer,
   ChatComposerDrawer,
   ChatSendButton,
-} from '@xds/core/Chat';
-import {Token} from '@xds/core/Token';
-import {Button} from '@xds/core/Button';
-import {ProgressBar} from '@xds/core/ProgressBar';
-import {List, ListItem} from '@xds/core/List';
-import {Text} from '@xds/core/Text';
-import {Badge} from '@xds/core/Badge';
+} from '@astryxdesign/core/Chat';
+import {Token} from '@astryxdesign/core/Token';
+import {Button} from '@astryxdesign/core/Button';
+import {ProgressBar} from '@astryxdesign/core/ProgressBar';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {Text} from '@astryxdesign/core/Text';
+import {Badge} from '@astryxdesign/core/Badge';
 import {useState} from 'react';
 
 // Inline icons for story demos (not in the default icon registry)

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {NavIcon} from '@xds/core/NavIcon';
+import {NavIcon} from '@astryxdesign/core/NavIcon';
 import {
   HomeIcon,
   CubeIcon,

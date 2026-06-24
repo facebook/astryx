@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Dialog, DialogHeader} from '@xds/core/Dialog';
-import {Layout, LayoutContent} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
+import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 // Remove isInline for production — dialogs should be modal.
 export default function DialogShowcase() {

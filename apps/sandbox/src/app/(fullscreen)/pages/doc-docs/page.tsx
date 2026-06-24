@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {Button} from '@xds/core/Button';
-import {Heading, Text} from '@xds/core/Text';
-import {Badge} from '@xds/core/Badge';
-import {DropdownMenu} from '@xds/core/DropdownMenu';
+import {Button} from '@astryxdesign/core/Button';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Badge} from '@astryxdesign/core/Badge';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
 
 // ---------------------------------------------------------------------------
 // Inline SVG Icons
@@ -246,7 +246,7 @@ const BUTTON_CODE_LINES: Array<{spans: Array<{text: string; color: string}>}> =
         {text: 'Button', color: '#e5c07b'},
         {text: '}', color: '#abb2bf'},
         {text: ' from ', color: '#c678dd'},
-        {text: "'@xds/core/Button'", color: '#98c379'},
+        {text: "'@astryxdesign/core/Button'", color: '#98c379'},
         {text: ';', color: '#abb2bf'},
       ],
     },

@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {Timestamp} from '@xds/core/Timestamp';
-import {Text} from '@xds/core/Text';
+import {Timestamp} from '@astryxdesign/core/Timestamp';
+import {Text} from '@astryxdesign/core/Text';
 
 const meta: Meta<typeof Timestamp> = {
   title: 'Core/Timestamp',

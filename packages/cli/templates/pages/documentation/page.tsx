@@ -8,14 +8,14 @@ import {
   SideNavHeading,
   SideNavItem,
   SideNavSection,
-} from '@xds/core/SideNav';
-import {Text} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {Card} from '@xds/core/Card';
-import {HStack, VStack, StackItem} from '@xds/core/Stack';
-import {Layout, LayoutContent, LayoutPanel} from '@xds/core/Layout';
-import {Grid} from '@xds/core/Grid';
-import {radiusVars} from '@xds/core/theme/tokens.stylex';
+} from '@astryxdesign/core/SideNav';
+import {Text} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {HStack, VStack, StackItem} from '@astryxdesign/core/Stack';
+import {Layout, LayoutContent, LayoutPanel} from '@astryxdesign/core/Layout';
+import {Grid} from '@astryxdesign/core/Grid';
+import {radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   previewCard: {

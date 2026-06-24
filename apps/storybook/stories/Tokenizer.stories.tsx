@@ -2,9 +2,9 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {Tokenizer} from '@xds/core/Tokenizer';
-import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
-import {Button} from '@xds/core/Button';
+import {Tokenizer} from '@astryxdesign/core/Tokenizer';
+import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
+import {Button} from '@astryxdesign/core/Button';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
 // Sample data

@@ -117,7 +117,7 @@ function deriveSourceExports() {
 function createPackageJson() {
   // Create a package.json for source consumption
   const sourcePackage = {
-    name: '@xds/core',
+    name: '@astryxdesign/core',
     version: PKG.version,
     description: 'XDS Design System - Raw Source Distribution',
 

@@ -39,7 +39,7 @@ export const docs = {
   },
   relatedComponents: ['Popover', 'DropdownMenu', 'HoverCard'],
   relatedHooks: ['useLayer', 'useFocusTrap', 'useHoverCard', 'useTooltip'],
-  importPath: '@xds/core/Popover',
+  importPath: '@astryxdesign/core/Popover',
   category: 'interaction',
 };
 

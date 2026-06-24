@@ -8,7 +8,7 @@
  *
  * Configures Monaco's TypeScript service with real XDS type definitions loaded
  * from a pre-built JSON bundle (generated at build time), so the editor offers
- * accurate autocomplete and diagnostics for @xds/core, React, StyleX, and icons.
+ * accurate autocomplete and diagnostics for @astryxdesign/core, React, StyleX, and icons.
  */
 
 import {loader} from '@monaco-editor/react';
@@ -119,31 +119,31 @@ export function configureMonaco(monaco: MonacoInstance) {
         );
       }
 
-      const xdsFiles = packages['@xds/core'] ?? {};
+      const xdsFiles = packages['@astryxdesign/core'] ?? {};
       const submoduleReexports: string[] = [];
 
       for (const [relPath, content] of Object.entries(xdsFiles)) {
         ts.addExtraLib(
           content,
-          `file:///node_modules/@xds/core/dist/${relPath}`,
+          `file:///node_modules/@astryxdesign/core/dist/${relPath}`,
         );
 
         if (relPath.endsWith('/index.d.ts')) {
           const moduleName = relPath.replace('/index.d.ts', '');
           ts.addExtraLib(
             content,
-            `file:///node_modules/@xds/core/${moduleName}/index.d.ts`,
+            `file:///node_modules/@astryxdesign/core/${moduleName}/index.d.ts`,
           );
           submoduleReexports.push(moduleName);
         }
       }
 
       const barrelContent = submoduleReexports
-        .map(m => `export * from '@xds/core/${m}';`)
+        .map(m => `export * from '@astryxdesign/core/${m}';`)
         .join('\n');
       ts.addExtraLib(
-        `declare module '@xds/core' {\n${barrelContent}\n}`,
-        'file:///node_modules/@xds/core/index.d.ts',
+        `declare module '@astryxdesign/core' {\n${barrelContent}\n}`,
+        'file:///node_modules/@astryxdesign/core/index.d.ts',
       );
 
       ts.setDiagnosticsOptions({

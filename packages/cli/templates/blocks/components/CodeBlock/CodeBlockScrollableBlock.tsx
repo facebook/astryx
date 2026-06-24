@@ -2,7 +2,7 @@
 
 'use client';
 
-import {CodeBlock} from '@xds/core/CodeBlock';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
 
 const code = Array.from(
   {length: 50},

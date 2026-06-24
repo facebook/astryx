@@ -3,11 +3,11 @@
 'use client';
 
 import {useState} from 'react';
-import {Outline} from '@xds/core/Outline';
-import type {OutlineItem} from '@xds/core/Outline';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Text} from '@xds/core/Text';
+import {Outline} from '@astryxdesign/core/Outline';
+import type {OutlineItem} from '@astryxdesign/core/Outline';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Text} from '@astryxdesign/core/Text';
 
 const items: OutlineItem[] = [
   {id: 'ctrl-summary', label: 'Summary', level: 2},

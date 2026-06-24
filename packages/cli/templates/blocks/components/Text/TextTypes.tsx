@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Text} from '@xds/core/Text';
-import {Stack} from '@xds/core/Stack';
+import {Text} from '@astryxdesign/core/Text';
+import {Stack} from '@astryxdesign/core/Stack';
 
 const TYPES = [
   {type: 'body' as const, label: 'Body text', sample: 'Body text for paragraphs and general content'},

@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {headers} from 'next/headers';
-import {AppShell} from '@xds/core/AppShell';
-import {Center} from '@xds/core/Center';
-import {VStack} from '@xds/core/Layout';
-import {Heading, Text} from '@xds/core/Text';
+import {AppShell} from '@astryxdesign/core/AppShell';
+import {Center} from '@astryxdesign/core/Center';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Heading, Text} from '@astryxdesign/core/Text';
 import {SharedTopNav} from '../components/SharedTopNav';
 import {SiteFooter} from '../components/SiteFooter';
 import styles from './not-found.module.css';

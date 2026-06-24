@@ -5,9 +5,9 @@
 import {useState, useMemo} from 'react';
 import {usePathname} from 'next/navigation';
 import {Search} from 'lucide-react';
-import {AppShell} from '@xds/core/AppShell';
-import {SideNav, SideNavItem, SideNavSection} from '@xds/core/SideNav';
-import {TextInput} from '@xds/core/TextInput';
+import {AppShell} from '@astryxdesign/core/AppShell';
+import {SideNav, SideNavItem, SideNavSection} from '@astryxdesign/core/SideNav';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import {SharedTopNav} from './SharedTopNav';
 import type {ComponentEntry} from '../generated/componentRegistry';
 import type {PackageMeta} from '../generated/packageRegistry';
@@ -179,9 +179,9 @@ export function DocsShell({
                     <SideNavItem
                       key={p.name}
                       label={p.name}
-                      href={`/docs/${p.name.replace('@xds/', '')}`}
+                      href={`/docs/${p.name.replace('@astryxdesign/', '')}`}
                       isSelected={
-                        pathname === `/docs/${p.name.replace('@xds/', '')}`
+                        pathname === `/docs/${p.name.replace('@astryxdesign/', '')}`
                       }
                     />
                   ))}

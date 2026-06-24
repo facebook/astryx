@@ -2,9 +2,9 @@
 
 'use client';
 
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {Skeleton} from '@xds/core/Skeleton';
-import {Center} from '@xds/core/Center';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {Skeleton} from '@astryxdesign/core/Skeleton';
+import {Center} from '@astryxdesign/core/Center';
 
 export default function AspectRatioWithSkeleton() {
   return (

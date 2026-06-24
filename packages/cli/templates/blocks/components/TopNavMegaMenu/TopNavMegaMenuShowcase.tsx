@@ -9,7 +9,7 @@ import {
   TopNavMegaMenu,
   TopNavMegaMenuItem,
   TopNavMegaMenuFeaturedCard,
-} from '@xds/core/TopNav';
+} from '@astryxdesign/core/TopNav';
 import {
   RocketLaunchIcon,
   BookOpenIcon,

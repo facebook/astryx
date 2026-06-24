@@ -6,16 +6,16 @@ import {
   Dialog,
   DialogHeader,
   useImperativeDialog,
-} from '@xds/core/Dialog';
+} from '@astryxdesign/core/Dialog';
 import {
   Layout,
   LayoutContent,
   LayoutFooter,
   HStack,
   VStack,
-} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Text} from '@xds/core/Text';
+} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Text} from '@astryxdesign/core/Text';
 
 const TERMS = [
   'You agree to use the service only for lawful purposes and in compliance with all applicable laws and regulations in your jurisdiction.',

@@ -12,8 +12,8 @@
  *
  * NOTE: Popover, HoverCard, and Tooltip have been moved to their own
  * top-level directories. They are re-exported here for backward compatibility.
- * New code should import from @xds/core/Popover, @xds/core/HoverCard,
- * or @xds/core/Tooltip directly.
+ * New code should import from @astryxdesign/core/Popover, @astryxdesign/core/HoverCard,
+ * or @astryxdesign/core/Tooltip directly.
  */
 
 // Core layer hook (remains in Layer)

@@ -10,7 +10,7 @@
  * Resolution strategy for the value:
  * - Starts with `.` or `/` → file path relative to cwd
  * - Starts with `@` → npm package (require/import)
- * - Otherwise → try `@xds/theme-{name}`, then try as bare package name
+ * - Otherwise → try `@astryxdesign/theme-{name}`, then try as bare package name
  *
  * Returns the theme object's `variants` and `fonts` if available,
  * or null if no theme is configured or found.
@@ -121,13 +121,13 @@ export function resolveTheme(cwd = process.cwd()) {
       return null;
     }
   } else {
-    // Convention: try @xds/theme-{name} first, then bare package
-    mod = tryLoadModule(`@xds/theme-${specifier}`, cwd);
+    // Convention: try @astryxdesign/theme-{name} first, then bare package
+    mod = tryLoadModule(`@astryxdesign/theme-${specifier}`, cwd);
     if (!mod) {
       mod = tryLoadModule(specifier, cwd);
     }
     if (!mod) {
-      console.warn(`⚠ theme: could not resolve "${specifier}" (tried @xds/theme-${specifier} and ${specifier})`);
+      console.warn(`⚠ theme: could not resolve "${specifier}" (tried @astryxdesign/theme-${specifier} and ${specifier})`);
       return null;
     }
   }

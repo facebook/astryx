@@ -7,14 +7,14 @@ import {
   ChatComposer,
   ChatComposerDrawer,
   ChatComposerInput,
-} from '@xds/core/Chat';
-import {Token} from '@xds/core/Token';
-import {Button} from '@xds/core/Button';
-import {DropdownMenu} from '@xds/core/DropdownMenu';
-import {Icon} from '@xds/core/Icon';
-import {ProgressBar} from '@xds/core/ProgressBar';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+} from '@astryxdesign/core/Chat';
+import {Token} from '@astryxdesign/core/Token';
+import {Button} from '@astryxdesign/core/Button';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
+import {Icon} from '@astryxdesign/core/Icon';
+import {ProgressBar} from '@astryxdesign/core/ProgressBar';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 import {
   AtSymbolIcon,
   Cog6ToothIcon,

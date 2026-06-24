@@ -2,22 +2,22 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {AppShell} from '@xds/core/AppShell';
-import {Banner} from '@xds/core/Banner';
-import {Badge} from '@xds/core/Badge';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {Text} from '@xds/core/Text';
-import {MobileNav} from '@xds/core/MobileNav';
-import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
-import {NavIcon} from '@xds/core/NavIcon';
+import {AppShell} from '@astryxdesign/core/AppShell';
+import {Banner} from '@astryxdesign/core/Banner';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Text} from '@astryxdesign/core/Text';
+import {MobileNav} from '@astryxdesign/core/MobileNav';
+import {TopNav, TopNavHeading, TopNavItem} from '@astryxdesign/core/TopNav';
+import {NavIcon} from '@astryxdesign/core/NavIcon';
 import {
   SideNav,
   SideNavHeading,
   SideNavItem,
   SideNavSection,
-} from '@xds/core/SideNav';
-import {useMediaQuery} from '@xds/core/hooks';
+} from '@astryxdesign/core/SideNav';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import * as stylex from '@stylexjs/stylex';
 import {
   HomeIcon,

@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {Thumbnail} from '@xds/core/Thumbnail';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Thumbnail} from '@astryxdesign/core/Thumbnail';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const ATTACHMENTS = [
   {id: 1, src: 'https://lookaside.facebook.com/assets/astryx/illustrative-vertical-1.png', alt: 'River through a valley', label: 'valley.jpg'},

@@ -2,8 +2,8 @@
 
 'use client';
 
-import {IconButton} from '@xds/core/IconButton';
-import {Icon} from '@xds/core/Icon';
+import {IconButton} from '@astryxdesign/core/IconButton';
+import {Icon} from '@astryxdesign/core/Icon';
 
 export default function IconButtonShowcase() {
   return (

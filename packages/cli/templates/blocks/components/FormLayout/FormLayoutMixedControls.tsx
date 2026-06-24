@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {FormLayout} from '@xds/core/FormLayout';
-import {TextInput} from '@xds/core/TextInput';
-import {Selector} from '@xds/core/Selector';
-import {CheckboxList, CheckboxListItem} from '@xds/core/CheckboxList';
+import {FormLayout} from '@astryxdesign/core/FormLayout';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Selector} from '@astryxdesign/core/Selector';
+import {CheckboxList, CheckboxListItem} from '@astryxdesign/core/CheckboxList';
 
 export default function FormLayoutMixedControls() {
   const [name, setName] = useState('Maya Torres');

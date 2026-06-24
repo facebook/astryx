@@ -8,12 +8,12 @@ import {
   useTableColumnSettingsState,
   useTableSelection,
   useTableSelectionState,
-} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
-import {MultiSelector} from '@xds/core/MultiSelector';
-import {Button} from '@xds/core/Button';
-import {Toolbar} from '@xds/core/Toolbar';
-import {Text} from '@xds/core/Text';
+} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
+import {MultiSelector} from '@astryxdesign/core/MultiSelector';
+import {Button} from '@astryxdesign/core/Button';
+import {Toolbar} from '@astryxdesign/core/Toolbar';
+import {Text} from '@astryxdesign/core/Text';
 
 // =============================================================================
 // Sample Data

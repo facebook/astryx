@@ -2,12 +2,12 @@
 
 'use client';
 
-import {AppShell} from '@xds/core/AppShell';
-import {VStack} from '@xds/core/Stack';
-import {Heading, Text} from '@xds/core/Text';
-import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
-import {NavIcon} from '@xds/core/NavIcon';
-import {SideNav, SideNavItem, SideNavSection} from '@xds/core/SideNav';
+import {AppShell} from '@astryxdesign/core/AppShell';
+import {VStack} from '@astryxdesign/core/Stack';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {TopNav, TopNavHeading, TopNavItem} from '@astryxdesign/core/TopNav';
+import {NavIcon} from '@astryxdesign/core/NavIcon';
+import {SideNav, SideNavItem, SideNavSection} from '@astryxdesign/core/SideNav';
 import {
   ChartBarIcon,
   FolderIcon,

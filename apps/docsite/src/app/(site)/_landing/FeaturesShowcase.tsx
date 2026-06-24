@@ -3,18 +3,18 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {Card} from '@xds/core/Card';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Heading, Text} from '@xds/core/Text';
-import {Link} from '@xds/core/Link';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import {Card} from '@astryxdesign/core/Card';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Link} from '@astryxdesign/core/Link';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {components} from '../../../generated/componentRegistry';
 import {layout} from '../../../layout.stylex';
 
-// Count of public @xds/core components (excluding hooks and hidden entries).
+// Count of public @astryxdesign/core components (excluding hooks and hidden entries).
 // Sourced from the generated registry so the number stays accurate as the
 // library grows.
-const CORE_COMPONENT_COUNT = (components['@xds/core'] ?? []).filter(
+const CORE_COMPONENT_COUNT = (components['@astryxdesign/core'] ?? []).filter(
   c => !c.hidden && !c.name.startsWith('use'),
 ).length;
 // Round down to the nearest 10 for marketing copy ("Over X components"
@@ -474,7 +474,7 @@ function FeatureCard({
                     ? styles.imageWrapCentered
                     : styles.imageWrap
             }>
-            {/* Decorative image — kept as a raw <img> because @xds/core
+            {/* Decorative image — kept as a raw <img> because @astryxdesign/core
                 does not export a dedicated Image primitive (Thumbnail
                 is a chat/attachment chrome, not a fit-to-container
                 marketing image). Sizing + display:block come from the

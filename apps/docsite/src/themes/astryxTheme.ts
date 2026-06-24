@@ -24,7 +24,7 @@
  * thin brand layer of primary + accent + body on top of the design system.
  */
 
-import {defineTheme, type TokenValue} from '@xds/core/theme';
+import {defineTheme, type TokenValue} from '@astryxdesign/core/theme';
 
 // Relative import (not the `@/` alias) because this theme file is also loaded
 // in isolation by the `xds theme build` CLI via jiti, which does not resolve

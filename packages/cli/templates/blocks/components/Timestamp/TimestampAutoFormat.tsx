@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Timestamp} from '@xds/core/Timestamp';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Timestamp} from '@astryxdesign/core/Timestamp';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function TimestampAutoFormat() {
   const now = Date.now() / 1000;

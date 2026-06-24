@@ -92,7 +92,7 @@ jobs:
         run: pnpm build
 
       - name: Build Storybook
-        run: pnpm -F @xds/storybook build
+        run: pnpm -F @astryxdesign/storybook build
 
       - name: Cache Next.js build
         uses: actions/cache@v5
@@ -114,7 +114,7 @@ jobs:
           key: nextjs-sandbox-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('packages/core/dist/**') }}
 
       - name: Build Sandbox
-        run: pnpm -F @xds/sandbox build
+        run: pnpm -F @astryxdesign/sandbox build
         env:
           SANDBOX_BASE_PATH: /sandbox
           NODE_OPTIONS: '--max-old-space-size=4096'
@@ -276,7 +276,12 @@ jobs:
   publish:
     name: Publish to Metaccio
     needs: test
-    if: always() && !cancelled() && needs.test.result == 'success'
+    # TEMPORARILY DISABLED during the @xds -> @astryxdesign scope rename.
+    # Packages are now @astryxdesign/* but the .npmrc mapping below still
+    # scopes @xds, so publishing would push to the wrong/default registry.
+    # Re-enable in the registry-cutover PR (public npm + OSPO granular token).
+    # Restore: if: always() && !cancelled() && needs.test.result == 'success'
+    if: false
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -313,7 +318,10 @@ jobs:
   canary:
     name: Publish canary to Metaccio
     needs: test
-    if: always() && !cancelled() && needs.test.result == 'success'
+    # TEMPORARILY DISABLED during the @xds -> @astryxdesign scope rename.
+    # See the publish job above; re-enable in the registry-cutover PR.
+    # Restore: if: always() && !cancelled() && needs.test.result == 'success'
+    if: false
     runs-on: ubuntu-latest
     permissions:
       contents: read

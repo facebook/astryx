@@ -44,7 +44,7 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'Applying elevation',
-          code: `import {shadowVars} from '@xds/core';
+          code: `import {shadowVars} from '@astryxdesign/core';
 
 const styles = stylex.create({
   dropdown: {

@@ -3,13 +3,13 @@
 /**
  * @file upgrade command — Full version-to-version upgrade pipeline
  *
- * `xds upgrade` detects the consumer's @xds/core version, bumps all
- * @xds/* dependencies, installs them, and runs codemods to migrate
+ * `xds upgrade` detects the consumer's @astryxdesign/core version, bumps all
+ * @astryxdesign/* dependencies, installs them, and runs codemods to migrate
  * breaking API changes.
  *
  * Pipeline (--apply):
  *   1. Detect current version from package.json (or --from)
- *   2. Bump all @xds/* deps in package.json to --to version
+ *   2. Bump all @astryxdesign/* deps in package.json to --to version
  *   3. Run package manager install (yarn/npm/pnpm/bun)
  *   4. Run codemods for the version range
  *   5. Refresh agent docs (AGENTS.md / CLAUDE.md) if present
@@ -42,7 +42,7 @@ import {jsonOut, jsonError} from '../lib/json.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 /**
- * Detect the installed @xds/core version from the consumer's package.json.
+ * Detect the installed @astryxdesign/core version from the consumer's package.json.
  * @returns {string|null}
  */
 function detectCurrentVersion() {
@@ -54,7 +54,7 @@ function detectCurrentVersion() {
       ...pkg.dependencies,
       ...pkg.devDependencies,
     };
-    const version = deps['@xds/core'];
+    const version = deps['@astryxdesign/core'];
     if (!version) return null;
     // Strip semver range chars (^, ~, >=, etc.)
     return version.replace(/^[^\d]*/, '');
@@ -64,7 +64,7 @@ function detectCurrentVersion() {
 }
 
 /**
- * Bump all @xds/* dependencies in the consumer's package.json to the target version.
+ * Bump all @astryxdesign/* dependencies in the consumer's package.json to the target version.
  * Preserves the existing semver range prefix (^, ~, etc.).
  *
  * @param {string} targetVersion - Version to bump to (e.g. '0.0.5')
@@ -83,7 +83,7 @@ function bumpXdsDeps(targetVersion) {
     if (!deps) continue;
 
     for (const name of Object.keys(deps)) {
-      if (!name.startsWith('@xds/')) continue;
+      if (!name.startsWith('@astryxdesign/')) continue;
 
       const current = deps[name];
       // Preserve range prefix (^, ~, >=, etc.)
@@ -196,7 +196,7 @@ export function registerUpgrade(program) {
       // Detect current version (--from overrides package.json)
       const currentVersion = options.from ?? detectCurrentVersion();
       if (!currentVersion && !skipVersionCheck) {
-        const msg = 'Could not detect @xds/core version. Make sure package.json is in the current directory, or use --from <version>.';
+        const msg = 'Could not detect @astryxdesign/core version. Make sure package.json is in the current directory, or use --from <version>.';
         if (json) return jsonError(msg, undefined, ERROR_CODES.ERR_VERSION_DETECT);
         p.log.error(msg);
         p.outro('Aborted');
@@ -281,7 +281,7 @@ export function registerUpgrade(program) {
 
       const receipt = {from: currentVersion, to: targetVersion, codemods: totalTransforms, depsUpdated: [], agentDocsRefreshed: false};
 
-      // Bump @xds/* deps and install before running codemods
+      // Bump @astryxdesign/* deps and install before running codemods
       if (options.apply && !skipBump) {
         const result = bumpXdsDeps(targetVersion);
         if (result && result.bumped.length > 0) {

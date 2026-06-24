@@ -7,8 +7,8 @@ import {
   TopNavHeading,
   TopNavItem,
   TopNavMenu,
-} from '@xds/core/TopNav';
-import {Button} from '@xds/core/Button';
+} from '@astryxdesign/core/TopNav';
+import {Button} from '@astryxdesign/core/Button';
 import {
   ChartBarIcon,
   Cog6ToothIcon,

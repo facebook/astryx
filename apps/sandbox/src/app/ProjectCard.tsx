@@ -4,10 +4,10 @@
 
 import Link from 'next/link';
 import * as stylex from '@stylexjs/stylex';
-import {Heading, Text} from '@xds/core/Text';
-import {Card} from '@xds/core/Card';
-import {VStack} from '@xds/core/Stack';
-import {shadowVars} from '@xds/core/theme/tokens.stylex';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Card} from '@astryxdesign/core/Card';
+import {VStack} from '@astryxdesign/core/Stack';
+import {shadowVars} from '@astryxdesign/core/theme/tokens.stylex';
 import type {SandboxPage} from './sandboxPages';
 
 const styles = stylex.create({

@@ -2,14 +2,14 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Theme} from '@xds/core/theme';
-import {defaultTheme} from '@xds/theme-default/built';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Text, Heading} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
-import {Badge} from '@xds/core/Badge';
-import {Divider} from '@xds/core/Divider';
+import {Theme} from '@astryxdesign/core/theme';
+import {defaultTheme} from '@astryxdesign/theme-default/built';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Divider} from '@astryxdesign/core/Divider';
 
 const styles = stylex.create({
   main: {
@@ -59,7 +59,7 @@ export default function App() {
               <Text type="body" color="secondary">
                 This example compiles{' '}
                 <Text type="body" weight="bold">
-                  @xds/core
+                  @astryxdesign/core
                 </Text>{' '}
                 from source with split CSS layers via a Vite middleware that
                 intercepts StyleX output.

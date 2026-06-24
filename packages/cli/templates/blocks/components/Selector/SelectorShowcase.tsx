@@ -2,7 +2,7 @@
 
 'use client';
 
-import {Selector} from '@xds/core/Selector';
+import {Selector} from '@astryxdesign/core/Selector';
 
 export default function SelectorShowcase() {
   return (

@@ -7,17 +7,17 @@ import {
   SideNavHeading,
   SideNavItem,
   SideNavSection,
-} from '@xds/core/SideNav';
-import {Heading, Text} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {Card} from '@xds/core/Card';
-import {DropdownMenu} from '@xds/core/DropdownMenu';
-import {List, ListItem} from '@xds/core/List';
-import {CodeBlock} from '@xds/core/CodeBlock';
-import {HStack, VStack, StackItem} from '@xds/core/Stack';
-import {Layout, LayoutContent, LayoutPanel} from '@xds/core/Layout';
-import {Divider} from '@xds/core/Divider';
-import {Icon} from '@xds/core/Icon';
+} from '@astryxdesign/core/SideNav';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+import {HStack, VStack, StackItem} from '@astryxdesign/core/Stack';
+import {Layout, LayoutContent, LayoutPanel} from '@astryxdesign/core/Layout';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Icon} from '@astryxdesign/core/Icon';
 import {
   SparklesIcon,
   ClipboardDocumentIcon,
@@ -81,7 +81,7 @@ export default function TechnicalDocumentationPage() {
                     icon={<Icon icon={ClipboardDocumentIcon} />}
                     onClick={() => {
                       void navigator.clipboard.writeText(
-                        'Help me get set up with Product Name. Based on my project, do the following: 1. Install @xds/core and the StyleX compiler. 2. Wrap my app in ThemeProvider. 3. Replace one existing component with an XDS equivalent. After setup, suggest relevant next steps based on my project.',
+                        'Help me get set up with Product Name. Based on my project, do the following: 1. Install @astryxdesign/core and the StyleX compiler. 2. Wrap my app in ThemeProvider. 3. Replace one existing component with an XDS equivalent. After setup, suggest relevant next steps based on my project.',
                       );
                     }}
                   />
@@ -103,7 +103,7 @@ export default function TechnicalDocumentationPage() {
                 </HStack>
                 <Text type="body" color="secondary">
                   Help me get set up with Product Name. Based on my project, do
-                  the following: 1. Install @xds/core and the StyleX compiler.
+                  the following: 1. Install @astryxdesign/core and the StyleX compiler.
                   2. Wrap my app in ThemeProvider. 3. Replace one existing
                   component with an XDS equivalent.
                 </Text>
@@ -132,7 +132,7 @@ export default function TechnicalDocumentationPage() {
                   Step 1: Install the core package
                 </Text>
                 <Card padding={0}>
-                  <CodeBlock code="npm install @xds/core" language="bash" />
+                  <CodeBlock code="npm install @astryxdesign/core" language="bash" />
                 </Card>
               </VStack>
               <VStack gap={2}>
@@ -156,7 +156,7 @@ export default function TechnicalDocumentationPage() {
                 </Text>
                 <Card padding={0}>
                   <CodeBlock
-                    code={`import { Button } from '@xds/core/Button';
+                    code={`import { Button } from '@astryxdesign/core/Button';
 
 export default function App() {
   return <Button label="Hello XDS" variant="primary" />;
@@ -178,7 +178,7 @@ export default function App() {
               </Text>
               <Card padding={0}>
                 <CodeBlock
-                  code={`import { ThemeProvider } from '@xds/core/Theme';
+                  code={`import { ThemeProvider } from '@astryxdesign/core/Theme';
 
 export default function App({ children }) {
   return (

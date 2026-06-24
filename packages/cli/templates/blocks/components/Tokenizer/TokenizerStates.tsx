@@ -4,9 +4,9 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Tokenizer} from '@xds/core/Tokenizer';
-import {Stack} from '@xds/core/Layout';
-import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
+import {Tokenizer} from '@astryxdesign/core/Tokenizer';
+import {Stack} from '@astryxdesign/core/Layout';
+import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
 
 const styles = stylex.create({
   fixed: {width: 400},

@@ -2,9 +2,9 @@
 
 'use client';
 
-import {TopNav, TopNavHeading} from '@xds/core/TopNav';
-import {VStack} from '@xds/core/Layout';
-import {NavIcon} from '@xds/core/NavIcon';
+import {TopNav, TopNavHeading} from '@astryxdesign/core/TopNav';
+import {VStack} from '@astryxdesign/core/Layout';
+import {NavIcon} from '@astryxdesign/core/NavIcon';
 
 function AppIcon() {
   return (

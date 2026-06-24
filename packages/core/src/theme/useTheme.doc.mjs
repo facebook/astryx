@@ -84,7 +84,7 @@ export const docs = {
   },
   relatedComponents: ['Theme'],
   relatedHooks: ['useMediaQuery'],
-  importPath: '@xds/core/theme',
+  importPath: '@astryxdesign/core/theme',
 };
 
 /** @type {import('../docs-types').HookTranslationDoc} */

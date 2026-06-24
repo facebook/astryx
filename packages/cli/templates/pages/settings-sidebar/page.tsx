@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {useMediaQuery} from '@xds/core/hooks';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import * as stylex from '@stylexjs/stylex';
 import {
   VStack,
@@ -12,26 +12,26 @@ import {
   Layout,
   LayoutContent,
   LayoutPanel,
-} from '@xds/core/Layout';
-import {List, ListItem} from '@xds/core/List';
-import {Toolbar} from '@xds/core/Toolbar';
-import {Text, Heading} from '@xds/core/Text';
-import {Link} from '@xds/core/Link';
-import {Button} from '@xds/core/Button';
-import {Selector} from '@xds/core/Selector';
-import {TextInput} from '@xds/core/TextInput';
-import {Card} from '@xds/core/Card';
-import {Switch} from '@xds/core/Switch';
-import {Divider} from '@xds/core/Divider';
-import {TabList, Tab} from '@xds/core/TabList';
-import {Badge} from '@xds/core/Badge';
-import {Icon} from '@xds/core/Icon';
-import {Center} from '@xds/core/Center';
+} from '@astryxdesign/core/Layout';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {Toolbar} from '@astryxdesign/core/Toolbar';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Link} from '@astryxdesign/core/Link';
+import {Button} from '@astryxdesign/core/Button';
+import {Selector} from '@astryxdesign/core/Selector';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Card} from '@astryxdesign/core/Card';
+import {Switch} from '@astryxdesign/core/Switch';
+import {Divider} from '@astryxdesign/core/Divider';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Center} from '@astryxdesign/core/Center';
 import {
   colorVars,
   radiusVars,
   spacingVars,
-} from '@xds/core/theme/tokens.stylex';
+} from '@astryxdesign/core/theme/tokens.stylex';
 import {
   UserIcon,
   LockClosedIcon,

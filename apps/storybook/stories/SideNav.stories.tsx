@@ -6,14 +6,14 @@ import {
   SideNavHeading,
   SideNavItem,
   SideNavSection,
-} from '@xds/core/SideNav';
-import {Badge} from '@xds/core/Badge';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {ListItem} from '@xds/core/List';
-import {MoreMenu} from '@xds/core/MoreMenu';
-import {NavIcon} from '@xds/core/NavIcon';
-import {Text} from '@xds/core/Text';
+} from '@astryxdesign/core/SideNav';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {ListItem} from '@astryxdesign/core/List';
+import {MoreMenu} from '@astryxdesign/core/MoreMenu';
+import {NavIcon} from '@astryxdesign/core/NavIcon';
+import {Text} from '@astryxdesign/core/Text';
 import {
   HomeIcon,
   FolderIcon,

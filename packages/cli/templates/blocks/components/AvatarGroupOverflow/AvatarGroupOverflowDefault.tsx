@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 'use client';
 
-import {Avatar} from '@xds/core/Avatar';
-import {AvatarGroup, AvatarGroupOverflow} from '@xds/core/AvatarGroup';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {AvatarGroup, AvatarGroupOverflow} from '@astryxdesign/core/AvatarGroup';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const REVIEWERS = [
   {

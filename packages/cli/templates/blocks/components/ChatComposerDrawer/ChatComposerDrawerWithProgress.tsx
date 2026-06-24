@@ -2,12 +2,12 @@
 
 'use client';
 
-import {ChatComposer, ChatComposerDrawer} from '@xds/core/Chat';
-import {Token} from '@xds/core/Token';
-import {ProgressBar} from '@xds/core/ProgressBar';
-import {Stack} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
+import {ChatComposer, ChatComposerDrawer} from '@astryxdesign/core/Chat';
+import {Token} from '@astryxdesign/core/Token';
+import {ProgressBar} from '@astryxdesign/core/ProgressBar';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
 import {PaperClipIcon, AtSymbolIcon} from '@heroicons/react/24/outline';
 
 export default function ChatComposerDrawerWithProgress() {

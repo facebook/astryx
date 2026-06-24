@@ -32,7 +32,7 @@ from the monorepo and writes typed TypeScript registries to `src/generated/`.
 | `templateRegistry.ts`  | CLI `templates/pages/`            | Page-level templates (e.g. dashboard, settings)               |
 | `docsRegistry.ts`      | CLI `docs/`                       | Long-form guide and foundation topics                         |
 | `blogRegistry.ts`      | `src/content/blog/posts/`         | Human-authored blog posts (frontmatter validated)             |
-| `themeRegistry.ts`     | Installed `@xds/theme-*` packages | Built theme objects, keyed by package name                    |
+| `themeRegistry.ts`     | Installed `@astryxdesign/theme-*` packages | Built theme objects, keyed by package name                    |
 | `showcaseRegistry.ts`  | Blocks with `isShowcase`          | Copied showcase source files                                  |
 | `exampleRegistry.ts`   | Blocks with `exampleFor`          | Copied example blocks per component                           |
 
@@ -47,15 +47,15 @@ add it to `generate-data.mjs` and consume it from a registry.
 
 This means:
 
-- No `import {fooTheme} from '@xds/theme-foo/built'` in page files; use `themeObjects` from the generated `themeRegistry`
+- No `import {fooTheme} from '@astryxdesign/theme-foo/built'` in page files; use `themeObjects` from the generated `themeRegistry`
 - No hand-maintained arrays of component names; use `componentRegistry`
-- No `if (pkg === '@xds/core')` switches; let the pipeline classify packages
+- No `if (pkg === '@astryxdesign/core')` switches; let the pipeline classify packages
 
 ## Adding a New Theme
 
 1. Create the theme package under `packages/themes/<name>/`
-2. Add `"@xds/theme-<name>": "*"` to `apps/docsite/package.json` dependencies
-3. Add `@import "@xds/theme-<name>/theme.css"` to `src/app/globals.css`
+2. Add `"@astryxdesign/theme-<name>": "*"` to `apps/docsite/package.json` dependencies
+3. Add `@import "@astryxdesign/theme-<name>/theme.css"` to `src/app/globals.css`
 4. Load the theme's fonts (see below)
 5. Run `pnpm generate`; the theme appears in `themeRegistry.ts`, `packageRegistry.ts`, the sidebar, craft page, and package detail page automatically
 
@@ -76,7 +76,7 @@ them. Check the theme's `## Fonts` section for the specific Google Fonts URL.
 ## Adding a New Package
 
 1. Create the package under `packages/<name>/`
-2. Add `"@xds/<name>": "*"` to `apps/docsite/package.json` dependencies
+2. Add `"@astryxdesign/<name>": "*"` to `apps/docsite/package.json` dependencies
 3. Run `pnpm generate`
 
 The package appears in the sidebar, the libraries section, and gets its own

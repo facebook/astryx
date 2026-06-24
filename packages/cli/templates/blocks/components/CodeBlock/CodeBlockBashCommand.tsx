@@ -2,14 +2,14 @@
 
 'use client';
 
-import {CodeBlock} from '@xds/core/CodeBlock';
-import {VStack} from '@xds/core/Stack';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+import {VStack} from '@astryxdesign/core/Stack';
 
 export default function CodeBlockBashCommand() {
   return (
     <VStack gap={4} style={{width: '100%', maxWidth: 400}}>
       <CodeBlock
-        code="npm install @xds/core"
+        code="npm install @astryxdesign/core"
         language="bash"
         hasCopyButton
         style={{width: '100%'}}

@@ -182,7 +182,7 @@ describe('swizzle --gap respects safety gates', () => {
   // traversal are rejected (see swizzle.path-safety.test.mjs). These gap
   // tests only care about the gh-call / status gates, so they write into a
   // *relative* output dir created under the repo root (a valid, in-root
-  // target) and clean it up afterward. The CLI still resolves @xds/core via
+  // target) and clean it up afterward. The CLI still resolves @astryxdesign/core via
   // findCoreDir walking up from the cwd.
   let swizzleOutDir;
   beforeEach(() => {

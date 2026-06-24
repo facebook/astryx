@@ -2,12 +2,12 @@
 
 import type {Preview, Decorator} from '@storybook/react';
 import * as React from 'react';
-import {Theme, LayerProvider} from '@xds/core';
-import {defaultTheme} from '@xds/theme-default';
-import {neutralTheme} from '@xds/theme-neutral';
-import {brutalistTheme} from '@xds/theme-brutalist';
+import {Theme, LayerProvider} from '@astryxdesign/core';
+import {defaultTheme} from '@astryxdesign/theme-default';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
+import {brutalistTheme} from '@astryxdesign/theme-brutalist';
 // Import the base reset stylesheet
-import '@xds/core/reset.css';
+import '@astryxdesign/core/reset.css';
 
 /**
  * Map of available themes

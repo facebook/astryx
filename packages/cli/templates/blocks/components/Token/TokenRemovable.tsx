@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Token} from '@xds/core/Token';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Token} from '@astryxdesign/core/Token';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function TokenRemovable() {
   return (

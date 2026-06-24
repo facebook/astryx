@@ -27,7 +27,7 @@ export const docs = {
   },
   relatedComponents: ['Toast', 'Banner', 'AlertDialog'],
   relatedHooks: [],
-  importPath: '@xds/core/Toast',
+  importPath: '@astryxdesign/core/Toast',
   category: 'interaction',
 };
 

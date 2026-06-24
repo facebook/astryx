@@ -99,7 +99,7 @@ export interface StackItemOptions {
  *
  * @example
  * ```
- * import { stackItem } from '@xds/core/Layout';
+ * import { stackItem } from '@astryxdesign/core/Layout';
  *
  * <div {...stylex.props(...stackItem({ size: 'fill' }))}>
  *   Content that fills remaining space

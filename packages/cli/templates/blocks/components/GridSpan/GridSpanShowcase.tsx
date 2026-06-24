@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Grid, GridSpan} from '@xds/core/Grid';
-import {Card} from '@xds/core/Card';
-import {Text} from '@xds/core/Text';
+import {Grid, GridSpan} from '@astryxdesign/core/Grid';
+import {Card} from '@astryxdesign/core/Card';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function GridSpanShowcase() {
   return (

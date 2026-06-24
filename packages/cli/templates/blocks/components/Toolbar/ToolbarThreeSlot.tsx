@@ -2,12 +2,12 @@
 
 'use client';
 
-import {Toolbar} from '@xds/core/Toolbar';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {Heading} from '@xds/core/Text';
-import {Card} from '@xds/core/Card';
-import {Section} from '@xds/core/Section';
+import {Toolbar} from '@astryxdesign/core/Toolbar';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Heading} from '@astryxdesign/core/Text';
+import {Card} from '@astryxdesign/core/Card';
+import {Section} from '@astryxdesign/core/Section';
 import {ArrowLeftIcon} from '@heroicons/react/24/outline';
 import * as stylex from '@stylexjs/stylex';
 

@@ -6,10 +6,10 @@
 // Y2K Theme Palette Preview
 // =============================================================================
 
-import {VStack} from '@xds/core/Layout';
-import {y2kTheme} from '@xds/theme-y2k/built';
+import {VStack} from '@astryxdesign/core/Layout';
+import {y2kTheme} from '@astryxdesign/theme-y2k/built';
 // `y2kPalettes` is only exported from the source entry, not /built.
-import {y2kPalettes} from '@xds/theme-y2k';
+import {y2kPalettes} from '@astryxdesign/theme-y2k';
 import {ThemePalettePreview} from '@/components/ThemePalettePreview';
 import type {TonalColor} from '@/components/ThemePalettePreview';
 

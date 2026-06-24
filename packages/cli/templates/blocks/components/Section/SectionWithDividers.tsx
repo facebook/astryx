@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Section} from '@xds/core/Section';
-import {Stack} from '@xds/core/Layout';
-import {Heading, Text} from '@xds/core/Text';
+import {Section} from '@astryxdesign/core/Section';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Heading, Text} from '@astryxdesign/core/Text';
 
 export default function SectionWithDividers() {
   return (

@@ -7,7 +7,7 @@
  * MCP server route handler. Uses the same generated registries as the
  * actual server.
  *
- * Run: pnpm -F @xds/docsite test
+ * Run: pnpm -F @astryxdesign/docsite test
  */
 
 import {describe, it, expect} from 'vitest';

@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {ToggleButton} from '@xds/core/ToggleButton';
-import {Stack} from '@xds/core/Layout';
-import {Icon} from '@xds/core/Icon';
+import {ToggleButton} from '@astryxdesign/core/ToggleButton';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Icon} from '@astryxdesign/core/Icon';
 import {StarIcon as StarOutline, BookmarkIcon as BookmarkOutline, BellIcon, BellSlashIcon} from '@heroicons/react/24/outline';
 import {StarIcon as StarSolid, BookmarkIcon as BookmarkSolid} from '@heroicons/react/24/solid';
 

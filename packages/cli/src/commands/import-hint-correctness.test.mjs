@@ -69,19 +69,19 @@ describe('import hint correctness', () => {
     }
   }
 
-  describe('every component resolves to a tree-shakeable subpath (not bare @xds/core)', () => {
+  describe('every component resolves to a tree-shakeable subpath (not bare @astryxdesign/core)', () => {
     for (const name of individualComponents) {
-      it(`${name} resolves to @xds/core/<subpath>, not bare @xds/core`, () => {
+      it(`${name} resolves to @astryxdesign/core/<subpath>, not bare @astryxdesign/core`, () => {
         const importPath = resolveImportPath(coreDir, name);
 
         // Must never be empty
         expect(importPath).toBeTruthy();
 
-        // Must resolve to a specific subpath — bare @xds/core is not tree-shakeable
-        expect(importPath).not.toBe('@xds/core');
+        // Must resolve to a specific subpath — bare @astryxdesign/core is not tree-shakeable
+        expect(importPath).not.toBe('@astryxdesign/core');
 
         // The subpath must exist in package.json exports
-        const subpath = importPath.replace('@xds/core/', '');
+        const subpath = importPath.replace('@astryxdesign/core/', '');
         expect(validExports.has(subpath)).toBe(true);
       });
     }
@@ -91,9 +91,9 @@ describe('import hint correctness', () => {
     for (const name of individualComponents) {
       it(`${name} import path has correct casing`, () => {
         const importPath = resolveImportPath(coreDir, name);
-        if (importPath === '@xds/core') return; // skip bare fallback
+        if (importPath === '@astryxdesign/core') return; // skip bare fallback
 
-        const subpath = importPath.replace('@xds/core/', '');
+        const subpath = importPath.replace('@astryxdesign/core/', '');
 
         // Must be an exact (case-sensitive) match to an export key
         const exportKeys = Object.keys(pkg.exports || {}).map(k =>
@@ -107,16 +107,16 @@ describe('import hint correctness', () => {
   describe('CLI --detail brief shows correct import path', () => {
     // Test a representative set across different patterns
     const representative = [
-      {name: 'Button', expected: '@xds/core/Button'},
-      {name: 'Theme', expected: '@xds/core/theme'},
-      {name: 'CheckboxInput', expected: '@xds/core/CheckboxInput'},
-      {name: 'Table', expected: '@xds/core/Table'},
-      {name: 'TextInput', expected: '@xds/core/TextInput'},
-      {name: 'Layout', expected: '@xds/core/Layout'},
-      {name: 'AppShell', expected: '@xds/core/AppShell'},
-      {name: 'Card', expected: '@xds/core/Card'},
-      {name: 'Dialog', expected: '@xds/core/Dialog'},
-      {name: 'TabList', expected: '@xds/core/TabList'},
+      {name: 'Button', expected: '@astryxdesign/core/Button'},
+      {name: 'Theme', expected: '@astryxdesign/core/theme'},
+      {name: 'CheckboxInput', expected: '@astryxdesign/core/CheckboxInput'},
+      {name: 'Table', expected: '@astryxdesign/core/Table'},
+      {name: 'TextInput', expected: '@astryxdesign/core/TextInput'},
+      {name: 'Layout', expected: '@astryxdesign/core/Layout'},
+      {name: 'AppShell', expected: '@astryxdesign/core/AppShell'},
+      {name: 'Card', expected: '@astryxdesign/core/Card'},
+      {name: 'Dialog', expected: '@astryxdesign/core/Dialog'},
+      {name: 'TabList', expected: '@astryxdesign/core/TabList'},
     ];
 
     for (const {name, expected} of representative) {
@@ -137,7 +137,7 @@ describe('import hint correctness', () => {
         expect(result.code).toBe(0);
         // The PR adds: **Import:** `import {XDS...} from '...';`
         expect(result.stdout).toMatch(/import\s*\{/);
-        expect(result.stdout).toContain('@xds/core');
+        expect(result.stdout).toContain('@astryxdesign/core');
       });
     }
   });
@@ -147,12 +147,12 @@ describe('import hint correctness', () => {
 
     for (const group of groups) {
       it(`group "${group}" does not produce a subpath import`, () => {
-        // Groups should either fail to find a source file (returning bare @xds/core)
+        // Groups should either fail to find a source file (returning bare @astryxdesign/core)
         // or correctly return the group-level export if one exists
         const importPath = resolveImportPath(coreDir, group);
-        if (importPath !== '@xds/core') {
+        if (importPath !== '@astryxdesign/core') {
           // If it does resolve, it must be a valid export
-          const subpath = importPath.replace('@xds/core/', '');
+          const subpath = importPath.replace('@astryxdesign/core/', '');
           expect(validExports.has(subpath)).toBe(true);
         }
       });
@@ -166,9 +166,9 @@ describe('import hint correctness', () => {
         if (!source) return; // some sub-components don't have direct source
 
         const importPath = resolveImportPath(coreDir, name);
-        if (importPath === '@xds/core') return;
+        if (importPath === '@astryxdesign/core') return;
 
-        const subpath = importPath.replace('@xds/core/', '');
+        const subpath = importPath.replace('@astryxdesign/core/', '');
         const srcDir = path.join(coreDir, 'src');
         const relToSrc = path.relative(srcDir, source);
         const topDir = relToSrc.split(path.sep)[0];

@@ -11,10 +11,10 @@ import {
   TableBody,
   proportional,
   pixel,
-} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
-import {Card} from '@xds/core/Card';
-import {Section} from '@xds/core/Section';
+} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
+import {Card} from '@astryxdesign/core/Card';
+import {Section} from '@astryxdesign/core/Section';
 import {
   Layout,
   LayoutHeader,
@@ -22,20 +22,20 @@ import {
   LayoutFooter,
   VStack,
   HStack,
-} from '@xds/core/Layout';
-import {Heading, Text} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
+} from '@astryxdesign/core/Layout';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
 import {
   colorDefaults,
   spacingDefaults,
   radiusDefaults,
   textSizeDefaults,
-} from '@xds/core/theme';
+} from '@astryxdesign/core/theme';
 import {
   colorVars,
   spacingVars,
   typographyVars,
-} from '@xds/core/theme/tokens.stylex';
+} from '@astryxdesign/core/theme/tokens.stylex';
 
 // =============================================================================
 // Sample Data

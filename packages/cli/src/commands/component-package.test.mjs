@@ -7,7 +7,7 @@ import * as os from 'node:os';
 import {component} from '../api/component.mjs';
 
 // These tests create a minimal monorepo fixture with:
-// - packages/core (symlinked to real @xds/core for loadDocs compatibility)
+// - packages/core (symlinked to real @astryxdesign/core for loadDocs compatibility)
 // - node_modules/@test/ext with a Button + ProfileCard component (external package)
 //
 // This tests the --package option for disambiguating overlapping component names.

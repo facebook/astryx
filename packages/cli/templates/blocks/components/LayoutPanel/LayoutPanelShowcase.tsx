@@ -9,9 +9,9 @@ import {
   LayoutHeader,
   LayoutFooter,
   Card,
-} from '@xds/core/Layout';
-import {Center} from '@xds/core/Center';
-import {List, ListItem} from '@xds/core/List';
+} from '@astryxdesign/core/Layout';
+import {Center} from '@astryxdesign/core/Center';
+import {List, ListItem} from '@astryxdesign/core/List';
 
 export default function LayoutPanelShowcase() {
   return (

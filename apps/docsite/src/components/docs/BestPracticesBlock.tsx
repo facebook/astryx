@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Badge} from '@xds/core/Badge';
-import {Card} from '@xds/core/Card';
-import {Table, pixel} from '@xds/core/Table';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Card} from '@astryxdesign/core/Card';
+import {Table, pixel} from '@astryxdesign/core/Table';
 import {MarkdownText} from '../MarkdownText';
 
 interface BestPracticesItem {

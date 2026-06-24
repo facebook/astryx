@@ -17,9 +17,9 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@xds/core/*": ["../../../packages/core/src/*"],
-      "@xds/core": ["../../../packages/core/src"],
-      "@xds/theme/*": ["../../../packages/theme/src/*"]
+      "@astryxdesign/core/*": ["../../../packages/core/src/*"],
+      "@astryxdesign/core": ["../../../packages/core/src"],
+      "@astryxdesign/theme/*": ["../../../packages/theme/src/*"]
     }
   },
   "include": ["src"]

@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Kbd} from '@xds/core/Kbd';
-import {VStack} from '@xds/core/Stack';
-import {Text} from '@xds/core/Text';
+import {Kbd} from '@astryxdesign/core/Kbd';
+import {VStack} from '@astryxdesign/core/Stack';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function KbdInlineInstructions() {
   return (

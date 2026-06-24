@@ -2,7 +2,7 @@
 
 /**
  * Generates apps/sandbox/src/generated/cliRegistry.ts by introspecting
- * the @xds/cli Commander.js program after all commands register.
+ * the @astryxdesign/cli Commander.js program after all commands register.
  *
  * This avoids manually maintaining CLI docs — the source of truth is
  * the actual CLI command registration code.

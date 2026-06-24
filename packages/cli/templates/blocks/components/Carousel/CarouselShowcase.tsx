@@ -2,10 +2,10 @@
 
 'use client';
 
-import {Carousel} from '@xds/core/Carousel';
-import {Card} from '@xds/core/Card';
-import {Stack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
+import {Carousel} from '@astryxdesign/core/Carousel';
+import {Card} from '@astryxdesign/core/Card';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({

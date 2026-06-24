@@ -3,12 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {Popover} from '@xds/core/Popover';
-import {Button} from '@xds/core/Button';
-import {VStack} from '@xds/core/Layout';
-import {Heading} from '@xds/core/Text';
-import {Switch} from '@xds/core/Switch';
-import {Divider} from '@xds/core/Divider';
+import {Popover} from '@astryxdesign/core/Popover';
+import {Button} from '@astryxdesign/core/Button';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Heading} from '@astryxdesign/core/Text';
+import {Switch} from '@astryxdesign/core/Switch';
+import {Divider} from '@astryxdesign/core/Divider';
 export default function PopoverSettingsPanel() {
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);

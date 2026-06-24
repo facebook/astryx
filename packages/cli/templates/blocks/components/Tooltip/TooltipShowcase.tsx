@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Tooltip} from '@xds/core/Tooltip';
-import {Button} from '@xds/core/Button';
+import {Tooltip} from '@astryxdesign/core/Tooltip';
+import {Button} from '@astryxdesign/core/Button';
 
 export default function TooltipShowcase() {
   return (

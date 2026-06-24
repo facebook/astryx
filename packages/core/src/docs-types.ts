@@ -402,7 +402,7 @@ export interface PlaygroundConfig {
    *  ```
    */
   wrapper?: {
-    /** Parent component name as exported from `@xds/core`, e.g. `'TabList'`. */
+    /** Parent component name as exported from `@astryxdesign/core`, e.g. `'TabList'`. */
     component: string;
     /** Props for the wrapper. The previewed sub-component becomes its `children`. */
     props?: Record<string, unknown>;
@@ -783,7 +783,7 @@ export interface ReferenceTranslationDoc {
  * Every template directory under `packages/cli/templates/` has a
  * `template.doc.mjs` that exports a single `doc` constant:
  *
- *   /** @type {import('@xds/core').TemplateDoc} *\/
+ *   /** @type {import('@astryxdesign/core').TemplateDoc} *\/
  *   export const doc = { ... };
  *
  * The CLI and sandbox import these for discovery and display.
@@ -1054,7 +1054,7 @@ export interface HookDoc {
   relatedComponents?: string[];
   /** Other hook names this hook is commonly used with. */
   relatedHooks?: string[];
-  /** Import path, e.g. '@xds/core/hooks' or '@xds/core/Toast'. */
+  /** Import path, e.g. '@astryxdesign/core/hooks' or '@astryxdesign/core/Toast'. */
   importPath?: string;
   /** Category for grouping in listings. */
   category?: string;

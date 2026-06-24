@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import React, {Suspense, lazy} from 'react';
-import {XDSTheme} from '@xds/core/theme';
-import {defaultTheme} from '@xds/theme/default';
-import '@xds/core/reset.css';
+import {XDSTheme} from '@astryxdesign/core/theme';
+import {defaultTheme} from '@astryxdesign/theme/default';
+import '@astryxdesign/core/reset.css';
 import '../tailwind.css';
 
 const params = new URLSearchParams(window.location.search);

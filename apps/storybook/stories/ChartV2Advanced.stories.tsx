@@ -14,11 +14,11 @@ import {
   heatmapGL,
   streamGL,
   type StreamGLHandle,
-} from '@xds/lab';
+} from '@astryxdesign/lab';
 import {
   ChartV2Grid as ChartGrid,
   ChartV2Axis as ChartAxis,
-} from '@xds/lab';
+} from '@astryxdesign/lab';
 
 const meta: Meta<typeof Chart> = {
   title: 'Lab/ChartV2Advanced',

@@ -2,8 +2,8 @@
 
 'use client';
 
-import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
-import {Icon} from '@xds/core/Icon';
+import {TopNav, TopNavHeading, TopNavItem} from '@astryxdesign/core/TopNav';
+import {Icon} from '@astryxdesign/core/Icon';
 
 function HomeIcon() {
   return (

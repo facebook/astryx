@@ -2,20 +2,20 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {Toolbar} from '@xds/core/Toolbar';
-import {TabList, Tab} from '@xds/core/TabList';
-import {Button} from '@xds/core/Button';
-import {Card} from '@xds/core/Card';
-import {Section} from '@xds/core/Section';
-import {Text} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
-import {Badge} from '@xds/core/Badge';
-import {Table} from '@xds/core/Table';
-import {Layout} from '@xds/core/Layout';
-import {LayoutHeader} from '@xds/core/Layout';
-import {LayoutContent} from '@xds/core/Layout';
-import {MoreMenu} from '@xds/core/MoreMenu';
-import {Heading} from '@xds/core/Text';
+import {Toolbar} from '@astryxdesign/core/Toolbar';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {Section} from '@astryxdesign/core/Section';
+import {Text} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Table} from '@astryxdesign/core/Table';
+import {Layout} from '@astryxdesign/core/Layout';
+import {LayoutHeader} from '@astryxdesign/core/Layout';
+import {LayoutContent} from '@astryxdesign/core/Layout';
+import {MoreMenu} from '@astryxdesign/core/MoreMenu';
+import {Heading} from '@astryxdesign/core/Text';
 import {
   Cog6ToothIcon,
   FunnelIcon,

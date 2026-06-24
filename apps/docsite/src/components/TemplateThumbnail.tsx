@@ -10,9 +10,9 @@ import {
   useCallback,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Skeleton} from '@xds/core/Skeleton';
-import {Theme} from '@xds/core/theme';
-import {neutralTheme} from '@xds/theme-neutral/built';
+import {Skeleton} from '@astryxdesign/core/Skeleton';
+import {Theme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 import {useThemeMode} from '../app/providers';
 import {TEMPLATE_COMPONENTS} from './templateComponents';
 

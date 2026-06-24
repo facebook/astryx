@@ -19,12 +19,12 @@ Components use:
 Each component is imported from its own subpath:
 
 ```tsx
-import {XDSButton} from '@xds/core/Button';
-import {XDSIconButton} from '@xds/core/IconButton';
-import {XDSCard} from '@xds/core/Card';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
-import {XDSTheme} from '@xds/core/theme';
+import {XDSButton} from '@astryxdesign/core/Button';
+import {XDSIconButton} from '@astryxdesign/core/IconButton';
+import {XDSCard} from '@astryxdesign/core/Card';
+import {XDSText, XDSHeading} from '@astryxdesign/core/Text';
+import {XDSToggleButton, XDSToggleButtonGroup} from '@astryxdesign/core/ToggleButton';
+import {XDSTheme} from '@astryxdesign/core/theme';
 ```
 
 ## Event Handlers

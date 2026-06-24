@@ -3,7 +3,7 @@
 'use client';
 
 import {Fragment} from 'react';
-import {Code} from '@xds/core/CodeBlock';
+import {Code} from '@astryxdesign/core/CodeBlock';
 
 const INLINE_CODE = /`([^`]+)`/g;
 

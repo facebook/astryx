@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {ChartV2 as Chart, bar} from '@xds/lab';
+import {ChartV2 as Chart, bar} from '@astryxdesign/lab';
 import {
   ChartV2Grid as ChartGrid,
   ChartV2Axis as ChartAxis,
-} from '@xds/lab';
+} from '@astryxdesign/lab';
 
 interface AxesAndGridsArgs {
   /** Show horizontal grid lines */

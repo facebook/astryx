@@ -48,7 +48,7 @@ import {xdsThemeProps} from '../utils/xdsThemeProps';
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/Pagination' {
+ * declare module '@astryxdesign/core/Pagination' {
  *   interface PaginationVariantMap {
  *     'progress': true;
  *   }

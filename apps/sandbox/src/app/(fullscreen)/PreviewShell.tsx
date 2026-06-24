@@ -4,18 +4,18 @@
 
 import {useState, useCallback, useEffect, useMemo, useRef} from 'react';
 import {usePathname, useRouter} from 'next/navigation';
-import {Text} from '@xds/core/Text';
-import {DropdownMenu} from '@xds/core/DropdownMenu';
-import {Button} from '@xds/core/Button';
-import {CodeBlock} from '@xds/core/CodeBlock';
-import {CommandPalette} from '@xds/core/CommandPalette';
-import {createStaticSource} from '@xds/core/Typeahead';
+import {Text} from '@astryxdesign/core/Text';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
+import {Button} from '@astryxdesign/core/Button';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+import {CommandPalette} from '@astryxdesign/core/CommandPalette';
+import {createStaticSource} from '@astryxdesign/core/Typeahead';
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from '@xds/core/SegmentedControl';
-import {TreeList} from '@xds/core/TreeList';
-import type {TreeListItemData} from '@xds/core/TreeList';
+} from '@astryxdesign/core/SegmentedControl';
+import {TreeList} from '@astryxdesign/core/TreeList';
+import type {TreeListItemData} from '@astryxdesign/core/TreeList';
 import {categories} from '../sandboxPages';
 import {useThemeControls, SANDBOX_THEMES} from '../providers';
 import {sourceRegistry} from '../../generated/sourceRegistry';

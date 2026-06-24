@@ -116,7 +116,7 @@ export type BuiltinTextType =
  *
  * To add type-safe custom types, use module augmentation:
  * ```ts
- * declare module '@xds/core/theme' {
+ * declare module '@astryxdesign/core/theme' {
  *   interface CustomTextTypes {
  *     hero: true;
  *     caption: true;
