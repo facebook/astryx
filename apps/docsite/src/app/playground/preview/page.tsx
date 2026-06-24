@@ -19,9 +19,12 @@ import {
   createTargetingController,
   refreshTargetLabels,
   setActiveSiteMode,
-  setCleanSource,
+  previewSelectionTarget,
+  clearSelectionFromParent,
 } from '../propertyEditor/targetingOverlay';
+import type {StyleApplyTarget} from '../styleOverride/StyleScopeEditor';
 import {runCode, setTypeScript} from './runner';
+import {ALL_TOKEN_DEFAULTS} from '../themeSource';
 import type * as TS from 'typescript';
 
 const FALLBACK_THEME =
@@ -47,7 +50,9 @@ type PreviewMessage =
       customComponents?: unknown;
     }
   | {type: 'targeting-enable'}
-  | {type: 'targeting-disable'};
+  | {type: 'targeting-disable'}
+  | {type: 'selection-clear'}
+  | {type: 'style-preview-target'; target: StyleApplyTarget | null};
 
 const styles = stylex.create({
   // The preview stage either fills the frame (full-page templates) or centers a
@@ -173,10 +178,16 @@ export default function PreviewPage() {
         setThemeMode(msg.mode);
       }
       if (msg.customTokens) {
+        // The preview iframe inherits the docsite's Astryx theme as its base
+        // (root layout sets data-xds-theme="astryx" + a root <Theme>). Re-declare
+        // the full XDS default token set first so the previewed theme is measured
+        // against the SAME baseline the Theme editor seeds its controls from —
+        // otherwise unset tokens would silently inherit Astryx (near-black accent,
+        // +4 radius, Figtree) and not match the editor. User overrides win.
         setCustomTheme(
           defineTheme({
             name: 'custom',
-            tokens: msg.customTokens,
+            tokens: {...ALL_TOKEN_DEFAULTS, ...msg.customTokens},
             components: msg.customComponents as DefinedTheme['components'],
           }),
         );
@@ -206,9 +217,7 @@ export default function PreviewPage() {
           postToParent({type: 'preview-ready'});
           break;
         case 'preview-code':
-          // Keep the clean source current for the badge popover, then refresh
-          // any live badges so an open popover re-parses against it.
-          setCleanSource(event.data.source ?? event.data.code);
+          // Re-render the selection badge + outlines against the new DOM.
           refreshTargetLabels();
           handleCode(event.data.code);
           break;
@@ -223,6 +232,12 @@ export default function PreviewPage() {
           break;
         case 'targeting-disable':
           targetingRef.current?.disable();
+          break;
+        case 'selection-clear':
+          clearSelectionFromParent();
+          break;
+        case 'style-preview-target':
+          previewSelectionTarget(event.data.target);
           break;
       }
     }

@@ -13,13 +13,16 @@
   cursor: crosshair !important;
 }
 
+/*
+ * The hover/selection boxes are now invisible — they only position the floating
+ * label. The actual highlight is a real CSS outline on the targeted element(s)
+ * (see [data-pg-hl-*] below), so it hugs each element's true border-radius
+ * instead of a fixed-radius box.
+ */
 .pg-target-overlay {
   position: fixed;
   pointer-events: none;
   z-index: 999999;
-  border: 2px solid var(--color-border-focus, #1877f2);
-  border-radius: var(--radius-element, 6px);
-  background: rgba(24, 119, 242, 0.06);
   transition:
     top 80ms ease-out,
     left 80ms ease-out,
@@ -55,9 +58,6 @@
   position: fixed;
   pointer-events: none;
   z-index: 999998;
-  border: 2px solid var(--color-border-focus, #1877f2);
-  border-radius: var(--radius-element, 6px);
-  background: rgba(24, 119, 242, 0.06);
   display: none;
 }
 .pg-target-selection[data-visible='true'] {
@@ -75,4 +75,16 @@
   bottom: auto;
   margin-top: 4px;
   margin-bottom: 0;
+}
+
+/*
+ * Targeting highlight — a real CSS outline on the targeted element(s) so it
+ * follows each element's actual border-radius (the positioned box only anchors
+ * the label). A solid ring marks hovered/selected elements; hovering "Apply
+ * Globally" rings every instance of the type (also solid) to preview scope.
+ */
+[data-pg-hl-hover],
+[data-pg-hl-sel] {
+  outline: 2px solid var(--color-border-focus, #1877f2) !important;
+  outline-offset: 2px !important;
 }

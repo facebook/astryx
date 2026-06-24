@@ -62,6 +62,7 @@ import {
   ExternalLink,
   Moon,
   Palette,
+  PenTool,
   Sun,
   Monitor,
   Smartphone,
@@ -72,11 +73,7 @@ import {
 import githubLight from './codeEditorThemes/github-light.json';
 import githubDark from './codeEditorThemes/github-dark.json';
 import {useThemeMode} from '../providers';
-import {
-  DEFAULT_PLAYGROUND_THEME,
-  PLAYGROUND_THEME_OPTIONS,
-  themeByValue,
-} from './previewThemes';
+import {PLAYGROUND_PRESETS, themeByValue} from './previewThemes';
 import {templates} from '../../generated/templateRegistry';
 import {PreviewStage, type Viewport} from './PreviewStage';
 import {ConfirmDialog} from './ConfirmDialog';
@@ -85,13 +82,22 @@ import {annotateInstanceIds} from './propertyEditor/componentInstances';
 import {trackCopy} from '../../lib/analytics';
 import {ThemeEditor} from './themeEditor/ThemeEditor';
 import {generateThemeCode} from './themeEditor/helpers';
+import {
+  readThemeModel,
+  writeThemeModel,
+  stripThemeWrapper,
+  ensureThemeScaffold,
+  coerceTokenMap,
+  ALL_TOKEN_DEFAULTS,
+} from './themeSource';
 import {DEFAULT_CODE} from './defaultCode';
 import {stripCodeExampleCopyrightHeader} from '../../lib/codeExamples';
 import {configureMonaco, type MonacoInstance} from './monacoSetup';
+import {DesignEditor, type DesignSelection} from './designEditor/DesignEditor';
+import type {StyleApplyTarget} from './styleOverride/StyleScopeEditor';
 
 import type * as MonacoTypes from 'monaco-editor';
 import type {DefinedTheme} from '@astryxdesign/core/theme';
-import {xdsTokenDefaults} from '@astryxdesign/core/theme';
 
 // Hidden from the generated registry (isHiddenFromOverview), so it's added
 // explicitly as the first entry in the Templates dropdown.
@@ -132,8 +138,8 @@ function updateURL(code: string) {
   window.history.replaceState(null, '', `#code=${compressed}`);
 }
 
-type LeftView = 'code' | 'theme';
-type MobileTopTab = 'preview' | 'code' | 'theme';
+type LeftView = 'code' | 'design' | 'theme';
+type MobileTopTab = 'preview' | 'code' | 'design' | 'theme';
 type BuildStatus = 'idle' | 'building' | 'finished' | 'error';
 const MOBILE_BREAKPOINT_QUERY = '(max-width: 768px)';
 
@@ -242,14 +248,20 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
   const rawThemeParam = searchParams.get('theme');
   const themeParam =
     rawThemeParam && rawThemeParam in themeByValue ? rawThemeParam : null;
-  const theme = themeParam ?? DEFAULT_PLAYGROUND_THEME;
-  // The theme that seeds the Theme editor: the ?theme= theme on first load, then
-  // whichever theme the user picks from "Themes". Changing it remounts the
-  // editor (via key) so it re-populates.
-  const [selectedTheme, setSelectedTheme] = useState(theme);
-  const editorInitialTheme =
-    themeByValue[selectedTheme] ?? themeByValue[DEFAULT_PLAYGROUND_THEME];
   const [activeView, setActiveView] = useState<LeftView>('code');
+  // Bumped to remount the Theme editor so it re-seeds from the code (the single
+  // source of truth) — on entering Theme view, applying a theme, or loading a
+  // template. While editing inside the Theme view the key is stable, so the
+  // editor keeps its own state and writes flow one way (editor → code).
+  const [themeEditorKey, setThemeEditorKey] = useState(0);
+  // Last preset applied from the Presets tab — drives the active card. Cleared
+  // conceptually once the user customizes, but kept as a "starting point" hint.
+  const [selectedPreset, setSelectedPreset] = useState(themeParam ?? '');
+  // Active Theme-editor tab. Owned here (not inside ThemeEditor) so it persists
+  // across the editor's remounts (preset apply, template load, view switches).
+  const [themePanelTab, setThemePanelTab] = useState<
+    'presets' | 'theme' | 'tokens'
+  >('theme');
   const [mobileTab, setMobileTab] = useState<MobileTopTab>('code');
   const [viewport, setViewport] = useState<Viewport>('desktop');
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -259,12 +271,13 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
   const [copied, setCopied] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
   const [themeName, setThemeName] = useState('');
-  // Snapshot of the theme to export, captured when the Export popover opens, so
-  // the download link can be built declaratively from reactive state (the live
-  // theme lives in customThemeRef and changes without re-rendering).
-  const [exportTheme, setExportTheme] = useState<DefinedTheme | null>(null);
   const [previewReady, setPreviewReady] = useState(false);
   const [isTargeting, setIsTargeting] = useState(false);
+  // The element selected in the preview (via targeting), edited in the Design
+  // Editor view. selectionNonce bumps on each new selection to reseed the Style
+  // draft even when re-selecting the same element.
+  const [selection, setSelection] = useState<DesignSelection | null>(null);
+  const [selectionNonce, setSelectionNonce] = useState(0);
   // Pending confirmations: applying an example theme / loading a template both
   // discard the user's current work, so the choice is held until they confirm.
   // The matching dialog is open whenever the value is non-null.
@@ -288,9 +301,6 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
   // Mirror activeView in a ref so the stable onMount callback can read it.
   const activeViewRef = useRef(activeView);
   activeViewRef.current = activeView;
-  // Latest theme authored in the Theme view, retained so a mode toggle can
-  // re-post it (the iframe clears the custom theme on any string-only push).
-  const customThemeRef = useRef<DefinedTheme | null>(null);
 
   const editorPanel = useResizable({
     defaultSize: 440,
@@ -334,11 +344,6 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
   // populated theme editor is visible (and drives the preview) on arrival.
   // Done in an effect (not the initial activeView state) to avoid an
   // SSR/client hydration mismatch on the panel that renders.
-  useEffect(() => {
-    if (themeParam) {
-      setActiveView('theme');
-    }
-  }, [themeParam]);
 
   // Single channel to the preview iframe; no-ops until the iframe exists.
   const postToPreview = useCallback((message: unknown) => {
@@ -362,24 +367,105 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
   // plus the clean source so the in-preview Properties popover can parse + edit
   // against un-annotated offsets.
   const postCode = useCallback(
-    (c: string) => send(annotateInstanceIds(c), c),
+    // Execute the user's UI without the in-code <Theme> wrapper — the preview
+    // runtime neutralizes user-authored theming (see generate-scope.mjs), so we
+    // strip it and apply the parsed theme via postThemeFromCode instead. The
+    // FULL source is sent alongside so the in-preview popovers can parse + edit
+    // the defineTheme literal and the component instances.
+    (c: string) => send(annotateInstanceIds(stripThemeWrapper(c)), c),
     [send],
   );
 
-  // Push a theme authored in the Theme view to the preview. Sent as raw tokens
-  // + components (see the preview-theme protocol) so it survives postMessage.
-  const postCustomTheme = useCallback(
-    (customTheme: DefinedTheme) => {
-      customThemeRef.current = customTheme;
+  // Apply the theme declared in the code (parsed from its defineTheme literal)
+  // to the preview. The code is the single source of truth for the theme.
+  const postThemeFromCode = useCallback(
+    (c: string) => {
+      const parsed = readThemeModel(c);
       postToPreview({
         type: 'preview-theme',
-        customTokens: customTheme.tokens,
-        customComponents: customTheme.components,
+        customTokens: parsed?.model.tokens ?? {},
+        customComponents: parsed?.model.components ?? {},
         mode,
       });
     },
     [mode, postToPreview],
   );
+
+  // Theme editor (Base Styles / Advanced) → write tokens into the code's
+  // defineTheme literal. Components are preserved (they're edited via targeting).
+  const handleThemeEditorChange = useCallback((nextTheme: DefinedTheme) => {
+    setCode(prev => {
+      const base = readThemeModel(prev) ? prev : ensureThemeScaffold(prev);
+      const parsed = readThemeModel(base);
+      if (!parsed) {
+        return prev;
+      }
+      const next = writeThemeModel(base, {
+        ...parsed.model,
+        tokens: coerceTokenMap(nextTheme.tokens as Record<string, unknown>),
+      });
+      return next === prev ? prev : next;
+    });
+  }, []);
+
+  // "Themes" dropdown / ?theme= → write the chosen theme's tokens + components
+  // into the code's defineTheme literal, then re-seed the editor.
+  const applyExampleTheme = useCallback((value: string) => {
+    const t = themeByValue[value];
+    if (!t) {
+      return;
+    }
+    setCode(prev => {
+      const base = readThemeModel(prev) ? prev : ensureThemeScaffold(prev);
+      const parsed = readThemeModel(base);
+      if (!parsed) {
+        return prev;
+      }
+      return writeThemeModel(base, {
+        name: value,
+        tokens: coerceTokenMap((t.tokens ?? {}) as Record<string, unknown>),
+        components: (t.components as Record<string, unknown>) ?? {},
+      });
+    });
+    setSelectedPreset(value);
+    setThemeEditorKey(k => k + 1);
+  }, []);
+
+  // When a ?theme= param seeds the playground, write that theme into the code
+  // and open the Theme view so the populated editor is visible on arrival.
+  useEffect(() => {
+    if (themeParam) {
+      applyExampleTheme(themeParam);
+      setActiveView('theme');
+    }
+  }, [themeParam, applyExampleTheme]);
+
+  // Default the playground to the Neutral theme — the same theme the docsite's
+  // other component previews use (see ComponentPreviewTheme) — so a fresh
+  // session matches the rest of the site. Seed it whenever the landing code
+  // carries no theme of its own (a pristine load OR a shared link whose
+  // appTheme has no overrides). Skipped when a ?theme= param or a real shared
+  // theme is present, so we never clobber an intentional theme.
+  const didSeedDefaultRef = useRef(false);
+  useEffect(() => {
+    if (didSeedDefaultRef.current) {
+      return;
+    }
+    didSeedDefaultRef.current = true;
+    if (themeParam) {
+      return;
+    }
+    const model = readThemeModel(code)?.model;
+    const hasTheme =
+      model != null &&
+      (Object.keys(model.tokens).length > 0 ||
+        Object.keys(model.components).length > 0);
+    if (hasTheme) {
+      return;
+    }
+    // Runs once on mount (guarded by the ref); reads the initial code only.
+    applyExampleTheme('neutral');
+  }, [themeParam, applyExampleTheme]);
 
   const toggleTargeting = useCallback(
     (pressed?: boolean) => {
@@ -388,6 +474,21 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
         postToPreview({type: next ? 'targeting-enable' : 'targeting-disable'});
         return next;
       });
+    },
+    [postToPreview],
+  );
+
+  // Clear the Design Editor's selection and the preview's selection overlay.
+  const handleDeselect = useCallback(() => {
+    setSelection(null);
+    postToPreview({type: 'selection-clear'});
+  }, [postToPreview]);
+
+  // Preview which elements a Style apply target would affect (hover the apply
+  // buttons in the Design Editor) by outlining them in the preview iframe.
+  const handlePreviewTarget = useCallback(
+    (target: StyleApplyTarget | null) => {
+      postToPreview({type: 'style-preview-target', target});
     },
     [postToPreview],
   );
@@ -408,21 +509,24 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
       if (e.data?.type === 'preview-rendered') {
         setBuildStatus('finished');
       }
-      // A prop knob edited in the in-preview Properties popover sends back the
-      // new clean code; adopt it as the source of truth (drives Monaco, the
-      // URL hash, and the debounced re-render of the preview).
-      if (e.data?.type === 'preview-edit-code') {
-        setCode(e.data.code);
-      }
       if (e.data?.type === 'preview-error') {
         setBuildStatus('error');
       }
       if (e.data?.type === 'targeting-select') {
-        // The preview draws the selection badge itself; just exit targeting
-        // mode. Properties are edited via the badge's popover now, so the left
-        // panel stays on whatever view is currently open.
+        // Selecting an element opens the Design Editor on it. The preview draws
+        // the selection badge/outline; editing happens in the left panel.
+        setSelection({
+          component: e.data.component,
+          index: e.data.index ?? 0,
+        });
+        setSelectionNonce(n => n + 1);
+        setActiveView('design');
+        setMobileTab('design');
         setIsTargeting(false);
         postToPreview({type: 'targeting-disable'});
+      }
+      if (e.data?.type === 'targeting-deselect') {
+        setSelection(null);
       }
       if (e.data?.type === 'targeting-exit') {
         setIsTargeting(false);
@@ -466,17 +570,11 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
     };
   }, [code, postCode]);
 
-  // Theme + mode → preview. Re-sent on previewReady so a non-default initial
-  // theme still applies if this first ran before the iframe was listening. A
-  // theme authored in the Theme editor takes precedence and stays the source of
-  // truth across all views.
+  // Code (parsed theme) + mode → preview. Re-sent on previewReady so the theme
+  // still applies if this first ran before the iframe was listening.
   useEffect(() => {
-    if (customThemeRef.current) {
-      postCustomTheme(customThemeRef.current);
-    } else {
-      postToPreview({type: 'preview-theme', theme, mode});
-    }
-  }, [mode, previewReady, activeView, theme, postCustomTheme, postToPreview]);
+    postThemeFromCode(code);
+  }, [code, mode, previewReady, postThemeFromCode]);
 
   // While the resize handle is dragged, the cursor can pass over the preview
   // iframe — a separate document that swallows pointer events and stalls the
@@ -545,26 +643,48 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
     if (!name) {
       return null;
     }
-    const activeTheme = exportTheme ?? editorInitialTheme;
+    const model = readThemeModel(code)?.model;
+    const tokens = {...ALL_TOKEN_DEFAULTS, ...(model?.tokens ?? {})};
     const source = generateThemeCode(
       name,
-      activeTheme.tokens,
-      xdsTokenDefaults,
+      tokens,
+      ALL_TOKEN_DEFAULTS,
       14,
       1.2,
       [],
-      activeTheme.components ?? {},
+      model?.components ?? {},
     );
     return {
       filename: `${name}-theme.ts`,
       href: `data:text/typescript;charset=utf-8,${encodeURIComponent(source)}`,
     };
-  }, [themeName, exportTheme, editorInitialTheme]);
+  }, [themeName, code]);
 
   const handleMonacoBeforeMount = useCallback((monaco: MonacoInstance) => {
     monaco.editor.defineTheme('github-light', githubLight);
     monaco.editor.defineTheme('github-dark', githubDark);
   }, []);
+
+  // Collapse the `defineTheme({ … })` literal in the editor so the (often long)
+  // theme tokens/components don't bury the component code. Folding the whole
+  // call in one trigger is deterministic — folding nested blocks separately is
+  // order/timing-sensitive. Deferred so Monaco's folding model has computed.
+  const foldThemeLiteral = useCallback(
+    (editor: MonacoTypes.editor.IStandaloneCodeEditor) => {
+      const model = editor.getModel();
+      if (!model) {
+        return;
+      }
+      const lines = model.getLinesContent();
+      const idx = lines.findIndex(l => /defineTheme\(\{/.test(l));
+      if (idx >= 0) {
+        editor.trigger('xds-playground', 'editor.fold', {
+          selectionLines: [idx + 1],
+        });
+      }
+    },
+    [],
+  );
 
   const handleMonacoMount = useCallback(
     (
@@ -577,8 +697,10 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
       if (activeViewRef.current === 'code') {
         editor.focus();
       }
+      // Defer so the folding model + any initial theme seed have settled.
+      window.setTimeout(() => foldThemeLiteral(editor), 600);
     },
-    [],
+    [foldThemeLiteral],
   );
 
   // Focus the editor (blinking cursor) whenever the Code view becomes active.
@@ -590,16 +712,29 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
     return () => cancelAnimationFrame(id);
   }, [activeView]);
 
+  // Re-collapse the theme blocks whenever a preset is applied (incl. the default
+  // neutral seed), since selecting one replaces the defineTheme literal in place
+  // without remounting the editor.
+  useEffect(() => {
+    if (!selectedPreset) {
+      return;
+    }
+    const id = window.setTimeout(() => {
+      if (editorRef.current) {
+        foldThemeLiteral(editorRef.current);
+      }
+    }, 500);
+    return () => window.clearTimeout(id);
+  }, [selectedPreset, foldThemeLiteral]);
+
   // "Themes" dropdown — every registered playground theme. Selecting one prompts
   // for confirmation before re-seeding the Theme editor (and preview).
-  const themeMenuItems = useMemo(
-    () =>
-      PLAYGROUND_THEME_OPTIONS.map(option => ({
-        label: option.label,
-        onClick: () => setPendingExampleTheme(option.value),
-      })),
-    [],
-  );
+  // Switch to the Theme editor and re-seed it from the current code.
+  const openThemeView = useCallback(() => {
+    setActiveView('theme');
+    setMobileTab('theme');
+    setThemeEditorKey(k => k + 1);
+  }, []);
 
   // "Templates" dropdown — the published, ready templates from the generated
   // registry. Selecting one prompts for confirmation before loading its source.
@@ -657,8 +792,12 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
 
   const handleMobileTabChange = useCallback((tab: MobileTopTab) => {
     setMobileTab(tab);
-    if (tab === 'code' || tab === 'theme') {
+    if (tab === 'code' || tab === 'design' || tab === 'theme') {
       setActiveView(tab);
+    }
+    // Re-seed the Theme editor from the code whenever it's reopened.
+    if (tab === 'theme') {
+      setThemeEditorKey(k => k + 1);
     }
   }, []);
 
@@ -702,6 +841,12 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
             value="code"
             label="Code"
             icon={<Code2 size={14} />}
+            isLabelHidden
+          />
+          <Tab
+            value="design"
+            label="Design"
+            icon={<PenTool size={14} />}
             isLabelHidden
           />
           <Tab
@@ -754,13 +899,19 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
           }}
         />
         <SideNavItem
+          label="Design Editor"
+          icon={PenTool}
+          isSelected={activeView === 'design'}
+          onClick={() => {
+            setActiveView('design');
+            setMobileTab('design');
+          }}
+        />
+        <SideNavItem
           label="Theme Editor"
           icon={Palette}
           isSelected={activeView === 'theme'}
-          onClick={() => {
-            setActiveView('theme');
-            setMobileTab('theme');
-          }}
+          onClick={openThemeView}
         />
       </SideNavSection>
     </SideNav>
@@ -791,27 +942,9 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
           width={isMobile ? '100%' : editorPanel.size || 440}>
           {!isMobile && (
             <HStack justify="between" align="center" xstyle={s.leftPanelHeader}>
-              <Heading level={3}>Playground</Heading>
-              <HStack gap={2} align="center">
-                <DropdownMenu
-                  button={{
-                    label: 'Themes',
-                    variant: 'secondary',
-                    size: 'md',
-                  }}
-                  hasChevron
-                  items={themeMenuItems}
-                />
-                <DropdownMenu
-                  button={{
-                    label: 'Templates',
-                    variant: 'secondary',
-                    size: 'md',
-                  }}
-                  hasChevron
-                  items={templateMenuItems}
-                />
-              </HStack>
+              <Heading level={3}>
+                {activeView === 'theme' ? 'Theme' : 'Playground'}
+              </Heading>
             </HStack>
           )}
           {/* Both panes stay mounted (hidden when inactive) so Monaco's
@@ -829,12 +962,31 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                 options={editorOptions}
               />
             </VStack>
+            <VStack xstyle={[s.pane, activeView !== 'design' && s.hidden]}>
+              <DesignEditor
+                code={code}
+                onCodeChange={setCode}
+                selection={selection}
+                seedKey={selectionNonce}
+                isTargeting={isTargeting}
+                onStartTargeting={() => toggleTargeting(true)}
+                onDeselect={handleDeselect}
+                onPreviewTarget={handlePreviewTarget}
+              />
+            </VStack>
             <VStack xstyle={[s.pane, activeView !== 'theme' && s.hidden]}>
               <ThemeEditor
-                key={selectedTheme}
+                key={themeEditorKey}
                 mode={mode}
-                initialTheme={editorInitialTheme}
-                onThemeChange={postCustomTheme}
+                initialTheme={{
+                  tokens: readThemeModel(code)?.model.tokens ?? {},
+                }}
+                onThemeChange={handleThemeEditorChange}
+                presets={PLAYGROUND_PRESETS}
+                selectedPreset={selectedPreset}
+                onSelectPreset={setPendingExampleTheme}
+                panelTab={themePanelTab}
+                onPanelTabChange={setThemePanelTab}
               />
             </VStack>
           </VStack>
@@ -844,7 +996,7 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
           <ResizeHandle
             label="Resize editor panel"
             resizable={editorPanel.props}
-            pillPlacement="center"
+            pillPlacement="start"
             hasDivider
           />
         )}
@@ -855,26 +1007,35 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
             <Toolbar
               label="Preview controls"
               startContent={
-                <ToggleButton
-                  label="Target element"
-                  tooltip={
-                    isTargeting
-                      ? 'Exit targeting (Esc)'
-                      : 'Click to select an element'
-                  }
-                  isPressed={isTargeting}
-                  onPressedChange={toggleTargeting}
-                  size="md"
-                  isIconOnly
-                  icon={<Crosshair size={20} />}
-                  pressedIcon={
-                    <Crosshair size={20} color="var(--color-icon-blue)" />
-                  }
-                  xstyle={isTargeting ? s.targetingActive : undefined}
+                <DropdownMenu
+                  button={{
+                    label: 'Preview',
+                    variant: 'secondary',
+                    size: 'md',
+                  }}
+                  hasChevron
+                  items={templateMenuItems}
                 />
               }
               centerContent={
                 <HStack gap={2} vAlign="center">
+                  <ToggleButton
+                    label="Target element"
+                    tooltip={
+                      isTargeting
+                        ? 'Exit targeting (Esc)'
+                        : 'Click to select an element'
+                    }
+                    isPressed={isTargeting}
+                    onPressedChange={toggleTargeting}
+                    size="md"
+                    isIconOnly
+                    icon={<Crosshair size={20} />}
+                    pressedIcon={
+                      <Crosshair size={20} color="var(--color-icon-blue)" />
+                    }
+                    xstyle={isTargeting ? s.targetingActive : undefined}
+                  />
                   <Button
                     label={
                       mode === 'light' ? 'Switch to dark' : 'Switch to light'
@@ -887,6 +1048,15 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                       mode === 'light' ? <Moon size={20} /> : <Sun size={20} />
                     }
                     onClick={togglePreviewMode}
+                  />
+                  <Button
+                    label="Expand"
+                    tooltip="Fullscreen preview"
+                    variant="ghost"
+                    size="md"
+                    isIconOnly
+                    icon={<Maximize2 size={20} />}
+                    onClick={expandPreview}
                   />
                   <SegmentedControl
                     label="Viewport size"
@@ -906,15 +1076,6 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                       icon={<Smartphone size={20} />}
                     />
                   </SegmentedControl>
-                  <Button
-                    label="Expand"
-                    tooltip="Fullscreen preview"
-                    variant="ghost"
-                    size="md"
-                    isIconOnly
-                    icon={<Maximize2 size={20} />}
-                    onClick={expandPreview}
-                  />
                 </HStack>
               }
               endContent={
@@ -956,9 +1117,6 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                     onOpenChange={open => {
                       if (open) {
                         setShareUrl(window.location.href);
-                        setExportTheme(
-                          customThemeRef.current ?? editorInitialTheme,
-                        );
                       }
                     }}
                     content={
@@ -1065,7 +1223,7 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
         onCancel={() => setPendingExampleTheme(null)}
         onConfirm={() => {
           if (pendingExampleTheme != null) {
-            setSelectedTheme(pendingExampleTheme);
+            applyExampleTheme(pendingExampleTheme);
           }
           setPendingExampleTheme(null);
         }}
@@ -1077,7 +1235,14 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
         onCancel={() => setPendingTemplateSource(null)}
         onConfirm={() => {
           if (pendingTemplateSource != null) {
-            setCode(stripCodeExampleCopyrightHeader(pendingTemplateSource));
+            // Templates author their own UI; ensure they carry the theme
+            // scaffold so the Theme editor and targeting have a literal to bind.
+            setCode(
+              ensureThemeScaffold(
+                stripCodeExampleCopyrightHeader(pendingTemplateSource),
+              ),
+            );
+            setThemeEditorKey(k => k + 1);
             requestAnimationFrame(() => editorRef.current?.focus());
           }
           setPendingTemplateSource(null);

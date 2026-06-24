@@ -6,9 +6,12 @@
  * @output the theme editor's left-panel content (tab strip + scrollable body)
  * @position Playground — the Theme tab's editor, rendered in the left panel.
  *
- * A self-contained theme editor: it owns the token + scale state, renders the
- * Theme/Components/Tokens tab strip and body, and reports the composed theme upward
- * via onThemeChange so the playground can push it to the live preview iframe.
+ * A self-contained editor for the GLOBAL theme: it owns the token + scale state,
+ * renders the Base Styles / Advanced tab strip and body, and reports the composed
+ * theme (tokens only) upward via onThemeChange so the playground can write it into
+ * the code's `defineTheme` literal. Per-component-type overrides are NOT edited
+ * here — they're applied by targeting a component in the preview (Theme mode),
+ * which keeps "global theme" and "component overrides" visibly distinct.
  */
 
 'use client';
@@ -36,19 +39,11 @@ import {
 } from '@astryxdesign/core/theme';
 import type {DefinedTheme} from '@astryxdesign/core/theme';
 import {BaseStylesPanel} from './BaseStylesPanel';
-import {ComponentTokensPanel} from './ComponentTokensPanel';
-import type {CustomOverride} from './ComponentTokensPanel';
 import {RawTokensPanel} from './RawTokensPanel';
-import {
-  UNIFIED_PRESETS,
-  COMPONENT_VAR_NAMES,
-  GOOGLE_FONTS_URL,
-} from './constants';
-import {
-  buildComponentOverrides,
-  buildSpacingScale,
-  mergeComponentStyleMaps,
-} from './helpers';
+import {UNIFIED_PRESETS, GOOGLE_FONTS_URL} from './constants';
+import {buildSpacingScale} from './helpers';
+import {ThemePicker} from '../../../components/ThemePicker';
+import type {PlaygroundPreset} from '../previewThemes';
 
 const s = stylex.create({
   root: {
@@ -80,28 +75,44 @@ const ALL_DEFAULTS: Record<string, string> = {
 interface ThemeEditorProps {
   /** Light/dark mode, owned by the playground so editor + preview stay in sync. */
   mode: 'light' | 'dark';
-  /** Optional theme to seed the editor's token + component state from. */
-  initialTheme?: DefinedTheme;
+  /** Optional token overrides to seed the editor from (parsed from the code). */
+  initialTheme?: {tokens?: Record<string, string>};
   /** Called whenever the composed theme changes so the parent can apply it. */
   onThemeChange: (theme: DefinedTheme) => void;
+  /** Selectable preset themes for the Presets tab. */
+  presets: PlaygroundPreset[];
+  /** Currently applied preset slug (last one chosen), for the active card. */
+  selectedPreset: string;
+  /** Apply a preset by slug (parent shows a confirm, then writes the code). */
+  onSelectPreset: (value: string) => void;
+  /** Active tab — owned by the playground so it persists across remounts. */
+  panelTab: 'presets' | 'theme' | 'tokens';
+  onPanelTabChange: (tab: 'presets' | 'theme' | 'tokens') => void;
 }
 
 export function ThemeEditor({
   mode,
   initialTheme,
   onThemeChange,
+  presets,
+  selectedPreset,
+  onSelectPreset,
+  panelTab,
+  onPanelTabChange,
 }: ThemeEditorProps) {
   const [tokens, setTokens] = useState<Record<string, string>>(() => ({
     ...ALL_DEFAULTS,
     ...initialTheme?.tokens,
   }));
-  // Component-level overrides from the seeded theme. Kept separate from token
-  // state so they form the base layer that token + custom overrides compose on.
-  const [baseComponents] = useState<Record<string, unknown>>(
-    () => initialTheme?.components ?? {},
-  );
-  const [panelTab, setPanelTab] = useState<'theme' | 'components' | 'tokens'>(
-    'theme',
+  const presetItems = useMemo(
+    () =>
+      presets.map(p => ({
+        id: p.value,
+        label: p.label,
+        theme: p.theme,
+        packageName: p.packageName,
+      })),
+    [presets],
   );
   const [typeScaleBase, setTypeScaleBase] = useState(14);
   const [typeScaleRatio, setTypeScaleRatio] = useState(1.2);
@@ -112,35 +123,16 @@ export function ThemeEditor({
   // A unified preset is only "active" once the user explicitly applies one.
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [autoPickColors, setAutoPickColors] = useState(false);
-  const [customOverrides, setCustomOverrides] = useState<CustomOverride[]>([]);
 
-  const currentTheme = useMemo(() => {
-    const coreTokens: Record<string, string> = {};
-    const componentTokens: Record<string, string> = {};
-    for (const [key, value] of Object.entries(tokens)) {
-      if (COMPONENT_VAR_NAMES.has(key)) {
-        componentTokens[key] = value;
-      } else {
-        coreTokens[key] = value;
-      }
-    }
-    const customMap: Record<string, {base: Record<string, string>}> = {};
-    for (const override of customOverrides) {
-      customMap[override.component] ??= {base: {}};
-      customMap[override.component].base[override.property] = override.value;
-    }
-    // Layer order: seeded component overrides (base) → token-derived overrides
-    // → freeform custom overrides. Later layers win at the leaf level.
-    const components = mergeComponentStyleMaps(
-      baseComponents,
-      buildComponentOverrides(componentTokens),
-      customMap,
-    ) as DefinedTheme['components'];
-    return defineTheme({name: 'custom', tokens: coreTokens, components});
-  }, [tokens, customOverrides, baseComponents]);
+  // The global theme is tokens-only here; component overrides live in the code
+  // and are edited by targeting (Theme mode), not in this panel.
+  const currentTheme = useMemo(
+    () => defineTheme({name: 'custom', tokens}),
+    [tokens],
+  );
 
-  // Report the composed theme upward so the playground can push it to the
-  // preview iframe whenever tokens or overrides change.
+  // Report the composed theme upward so the playground can write it into the
+  // code's defineTheme literal whenever tokens change.
   useEffect(() => {
     onThemeChange(currentTheme);
   }, [currentTheme, onThemeChange]);
@@ -253,13 +245,20 @@ export function ThemeEditor({
       <TabList
         hasDivider
         value={panelTab}
-        onChange={v => setPanelTab(v as 'theme' | 'components' | 'tokens')}>
-        <Tab value="theme" label="Base Styles" />
-        <Tab value="components" label="Components" />
+        onChange={v => onPanelTabChange(v as 'presets' | 'theme' | 'tokens')}>
+        <Tab value="presets" label="Presets" />
+        <Tab value="theme" label="Custom" />
         <Tab value="tokens" label="Advanced" />
       </TabList>
 
       <StackItem size="fill" xstyle={s.body}>
+        {panelTab === 'presets' && (
+          <ThemePicker
+            items={presetItems}
+            selectedId={selectedPreset}
+            onSelect={onSelectPreset}
+          />
+        )}
         {panelTab === 'theme' && (
           <BaseStylesPanel
             tokens={tokens}
@@ -281,15 +280,6 @@ export function ThemeEditor({
             onApplyUnifiedPreset={applyUnifiedPreset}
             onSetAutoPickColors={setAutoPickColors}
             onExpandColorScale={handleExpandColorScale}
-          />
-        )}
-        {panelTab === 'components' && (
-          <ComponentTokensPanel
-            tokens={tokens}
-            onTokenChange={handleTokenChange}
-            customOverrides={customOverrides}
-            onCustomOverridesChange={setCustomOverrides}
-            baseComponents={baseComponents}
           />
         )}
         {panelTab === 'tokens' && (
