@@ -63,7 +63,10 @@ export interface BlogArticleProps {
 
 export function BlogArticle({post}: BlogArticleProps) {
   return (
-    <Section maxWidth={layout.proseMaxWidth} padding={6} xstyle={styles.section}>
+    <Section
+      maxWidth={layout.proseMaxWidth}
+      padding={6}
+      xstyle={styles.section}>
       <VStack gap={10}>
         {/* Header — matches the docs page treatment */}
         <VStack gap={4}>
