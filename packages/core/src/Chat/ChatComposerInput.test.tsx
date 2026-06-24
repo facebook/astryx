@@ -562,8 +562,8 @@ describe('ChatComposerInput', () => {
     });
   });
 
-  describe('xds class names', () => {
-    it('has xds-chat-composer-input class', () => {
+  describe('astryx class names', () => {
+    it('has astryx-chat-composer-input class', () => {
       const {container} = render(<ChatComposerInput />);
       expect(
         container.querySelector('.astryx-chat-composer-input'),

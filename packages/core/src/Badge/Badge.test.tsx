@@ -48,7 +48,7 @@ describe('Badge', () => {
     }
   });
 
-  it('applies xds class name with non-semantic variant', () => {
+  it('applies astryx class name with non-semantic variant', () => {
     const {container} = render(<Badge variant="purple" label="Tag" />);
     const root = container.firstElementChild!;
     expect(root.className).toContain('astryx-badge');
@@ -74,7 +74,7 @@ describe('Badge', () => {
     expect(screen.getByTestId('custom-badge')).toBeInTheDocument();
   });
 
-  it('renders xds-* class names for theme targeting', () => {
+  it('renders astryx-* class names for theme targeting', () => {
     const {container} = render(<Badge variant="success" label="Active" />);
     const root = container.firstElementChild!;
     expect(root.className).toContain('astryx-badge');

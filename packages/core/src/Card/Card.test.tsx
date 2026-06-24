@@ -10,7 +10,7 @@ describe('Card', () => {
     expect(getByText('Hello')).toBeInTheDocument();
   });
 
-  it('renders xds-* class names for theme targeting', () => {
+  it('renders astryx-* class names for theme targeting', () => {
     const {container} = render(<Card>Content</Card>);
     const root = container.firstElementChild!;
     expect(root.className).toContain('astryx-card');

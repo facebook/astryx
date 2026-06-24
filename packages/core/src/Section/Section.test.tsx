@@ -102,13 +102,13 @@ describe('Section', () => {
     expect(ref.current).toBeInstanceOf(HTMLDivElement);
   });
 
-  it('renders xds-* class names for theme targeting', () => {
+  it('renders astryx-* class names for theme targeting', () => {
     const {container} = render(<Section>Content</Section>);
     const inner = container.firstElementChild!.firstElementChild!;
     expect(inner.className).toContain('astryx-section');
   });
 
-  it('renders variant in xds class names', () => {
+  it('renders variant in astryx class names', () => {
     const {container} = render(
       <Section variant="muted">Content</Section>,
     );
@@ -157,7 +157,7 @@ describe('Section', () => {
     expect(screen.getByTestId('custom-section')).toBeInTheDocument();
   });
 
-  it('propagates explicit padding to nested sections via --xds-section-padding', () => {
+  it('propagates explicit padding to nested sections via --astryx-section-padding', () => {
     const {container} = render(
       <Section padding={6}>
         <Section data-testid="inner">Inner</Section>

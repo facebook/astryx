@@ -47,7 +47,7 @@ describe('Carousel', () => {
     expect(screen.getByTestId('my-carousel')).toBeInTheDocument();
   });
 
-  it('has correct xds class name', () => {
+  it('has correct astryx class name', () => {
     render(
       <Carousel data-testid="cls-test">
         <div>Item</div>

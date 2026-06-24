@@ -11,7 +11,7 @@ describe('Markdown', () => {
     expect(screen.getByRole('document')).toBeInTheDocument();
   });
 
-  it('renders xds-markdown class name', () => {
+  it('renders astryx-markdown class name', () => {
     const {container} = render(<Markdown>Hello</Markdown>);
     expect(container.firstElementChild!.className).toContain('astryx-markdown');
   });
