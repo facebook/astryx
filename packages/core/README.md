@@ -57,7 +57,7 @@ npx xds gap-report                   # report a missing capability
 
 ## Resources
 
-- [Component Storybook](https://facebookexperimental.github.io/xds/)
+- [Component Storybook](https://facebook.github.io/astryx/)
 - [GitHub Repository](https://github.com/facebookexperimental/xds)
 
 ---

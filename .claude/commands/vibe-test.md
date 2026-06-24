@@ -131,7 +131,7 @@ pnpm aggregate --iteration <xds-id>
 pnpm report:deploy --iteration <xds-id> --baseline <baseline-id> --html <html-id>
 ```
 
-Report URL: `https://facebookexperimental.github.io/xds/reports/<xds-id>/`
+Report URL: `https://facebook.github.io/astryx/reports/<xds-id>/`
 
 ### Step 7: Post results
 

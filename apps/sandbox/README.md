@@ -25,7 +25,7 @@ npx xds init --features agents
 The sandbox is a Next.js app configured for static export (`output: 'export'`). On PRs, the CI workflow builds it and deploys to GitHub Pages at a versioned URL:
 
 ```
-https://facebookexperimental.github.io/xds/{commit}/sandbox/
+https://facebook.github.io/astryx/{commit}/sandbox/
 ```
 
 ## Adding a new page
