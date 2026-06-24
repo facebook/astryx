@@ -8,8 +8,8 @@
  * Results are stored in the same format as the automated harness.
  *
  * Usage:
- *   pnpm -F @xds/vibe-tests interactive
- *   pnpm -F @xds/vibe-tests interactive --sample 5
+ *   pnpm -F @astryxdesign/vibe-tests interactive
+ *   pnpm -F @astryxdesign/vibe-tests interactive --sample 5
  */
 
 import * as fs from 'node:fs';
@@ -991,7 +991,7 @@ function generateSubagentPrompt(
   const personaFraming: Record<string, Record<string, string>> = {
     xds: {
       naive: '', // No special framing - just the natural request
-      experienced: `Use XDS components from @xds/core. `,
+      experienced: `Use XDS components from @astryxdesign/core. `,
       adversarial: `I'm used to Tailwind/baseline patterns but need to use your design system. `,
     },
     baseline: {
@@ -1006,7 +1006,7 @@ function generateSubagentPrompt(
     },
     astryx: {
       naive: '', // No special framing - same library, bare names
-      experienced: `Use Astryx components from @xds/core. `,
+      experienced: `Use Astryx components from @astryxdesign/core. `,
       adversarial: `I'm used to Tailwind/baseline patterns but need to use your design system. `,
     },
   };
@@ -1077,7 +1077,7 @@ For each test, the subagent should:
    (Use individual files to avoid parallel write conflicts)
 
 ### After All Tests Complete
-Run: pnpm -F @xds/vibe-tests aggregate --iteration ${iterationId}
+Run: pnpm -F @astryxdesign/vibe-tests aggregate --iteration ${iterationId}
 
 This will:
 - Read all results from results/ directory

@@ -3,23 +3,23 @@
 'use client';
 
 import {useState} from 'react';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Center} from '@xds/core/Center';
-import {Section} from '@xds/core/Section';
-import {Grid} from '@xds/core/Grid';
-import {Card} from '@xds/core/Card';
-import {Button} from '@xds/core/Button';
-import {Text} from '@xds/core/Text';
-import {Icon} from '@xds/core/Icon';
-import {TextInput} from '@xds/core/TextInput';
-import {Selector} from '@xds/core/Selector';
-import {CheckboxInput} from '@xds/core/CheckboxInput';
-import {Link} from '@xds/core/Link';
-import {Token} from '@xds/core/Token';
-import {RadioList, RadioListItem} from '@xds/core/RadioList';
-import {TextArea} from '@xds/core/TextArea';
-import {Divider} from '@xds/core/Divider';
-import {Banner} from '@xds/core/Banner';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Center} from '@astryxdesign/core/Center';
+import {Section} from '@astryxdesign/core/Section';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Card} from '@astryxdesign/core/Card';
+import {Button} from '@astryxdesign/core/Button';
+import {Text} from '@astryxdesign/core/Text';
+import {Icon} from '@astryxdesign/core/Icon';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Selector} from '@astryxdesign/core/Selector';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {Link} from '@astryxdesign/core/Link';
+import {Token} from '@astryxdesign/core/Token';
+import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
+import {TextArea} from '@astryxdesign/core/TextArea';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Banner} from '@astryxdesign/core/Banner';
 import {
   RocketLaunchIcon,
   AdjustmentsHorizontalIcon,

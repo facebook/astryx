@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {TextArea} from '@xds/core/TextArea';
-import {Stack} from '@xds/core/Layout';
+import {TextArea} from '@astryxdesign/core/TextArea';
+import {Stack} from '@astryxdesign/core/Layout';
 
 export default function TextAreaValidation() {
   const [errorValue, setErrorValue] = useState('Fix the');

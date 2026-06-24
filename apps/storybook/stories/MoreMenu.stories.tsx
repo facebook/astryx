@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {MoreMenu} from '@xds/core/MoreMenu';
-import {Button} from '@xds/core/Button';
+import {MoreMenu} from '@astryxdesign/core/MoreMenu';
+import {Button} from '@astryxdesign/core/Button';
 import {
   PencilIcon,
   TrashIcon,

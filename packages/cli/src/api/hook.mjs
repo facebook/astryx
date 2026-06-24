@@ -46,7 +46,7 @@ export async function hook(name, options = {}) {
 
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
-    throw new XDSError('Could not find @xds/core package', undefined, ERROR_CODES.ERR_CORE_NOT_FOUND);
+    throw new XDSError('Could not find @astryxdesign/core package', undefined, ERROR_CODES.ERR_CORE_NOT_FOUND);
   }
 
   // ── List mode ──────────────────────────────────────────────────
@@ -76,13 +76,13 @@ export async function hook(name, options = {}) {
               entries.push({
                 name: hookName,
                 description: docs.usage?.description || '',
-                import: docs.importPath || '@xds/core/hooks',
+                import: docs.importPath || '@astryxdesign/core/hooks',
               });
             } catch {
-              entries.push({name: hookName, description: '', import: '@xds/core/hooks'});
+              entries.push({name: hookName, description: '', import: '@astryxdesign/core/hooks'});
             }
           } else {
-            entries.push({name: hookName, description: '', import: '@xds/core/hooks'});
+            entries.push({name: hookName, description: '', import: '@astryxdesign/core/hooks'});
           }
         }
         return {type: 'hook.brief', data: {[match[0]]: entries}};
@@ -123,13 +123,13 @@ export async function hook(name, options = {}) {
               result[cat].push({
                 name: hookName,
                 description: docs.usage?.description || '',
-                import: docs.importPath || '@xds/core/hooks',
+                import: docs.importPath || '@astryxdesign/core/hooks',
               });
             } catch {
-              result[cat].push({name: hookName, description: '', import: '@xds/core/hooks'});
+              result[cat].push({name: hookName, description: '', import: '@astryxdesign/core/hooks'});
             }
           } else {
-            result[cat].push({name: hookName, description: '', import: '@xds/core/hooks'});
+            result[cat].push({name: hookName, description: '', import: '@astryxdesign/core/hooks'});
           }
         }
       }

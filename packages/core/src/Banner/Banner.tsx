@@ -54,7 +54,7 @@ import {xdsThemeProps} from '../utils/xdsThemeProps';
  * Theme packages can add custom statuses via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/Banner' {
+ * declare module '@astryxdesign/core/Banner' {
  *   interface BannerStatusMap {
  *     'neutral': true;
  *   }
@@ -80,7 +80,7 @@ export type BannerStatus = keyof BannerStatusMap;
  * Theme packages can add custom container types via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/Banner' {
+ * declare module '@astryxdesign/core/Banner' {
  *   interface BannerContainerMap {
  *     'floating': true;
  *   }

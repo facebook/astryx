@@ -2,11 +2,11 @@
 
 'use client';
 
-import {Card} from '@xds/core/Card';
-import {Stack} from '@xds/core/Layout';
-import {Heading} from '@xds/core/Text';
-import {Icon} from '@xds/core/Icon';
-import {IconButton} from '@xds/core/IconButton';
+import {Card} from '@astryxdesign/core/Card';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Heading} from '@astryxdesign/core/Text';
+import {Icon} from '@astryxdesign/core/Icon';
+import {IconButton} from '@astryxdesign/core/IconButton';
 import {
   BoldIcon,
   ItalicIcon,

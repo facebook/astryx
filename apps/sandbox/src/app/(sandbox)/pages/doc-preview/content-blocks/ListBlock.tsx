@@ -2,10 +2,10 @@
 
 'use client';
 
-import {VStack, HStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {Badge} from '@xds/core/Badge';
-import {Table} from '@xds/core/Table';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Table} from '@astryxdesign/core/Table';
 
 /**
  * Renders list content blocks: ordered, unordered, do, dont,

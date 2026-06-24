@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Timestamp} from '@xds/core/Timestamp';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Timestamp} from '@astryxdesign/core/Timestamp';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const DATE = '2026-02-19T17:00:00Z';
 

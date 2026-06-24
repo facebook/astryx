@@ -2,7 +2,7 @@
 
 'use client';
 
-import {Link} from '@xds/core/Link';
+import {Link} from '@astryxdesign/core/Link';
 
 export default function LinkShowcase() {
   return (

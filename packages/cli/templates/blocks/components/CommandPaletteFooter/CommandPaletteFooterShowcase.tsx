@@ -6,9 +6,9 @@ import {useMemo} from 'react';
 import {
   CommandPalette,
   CommandPaletteFooter,
-} from '@xds/core/CommandPalette';
-import {Text} from '@xds/core/Text';
-import {createStaticSource} from '@xds/core/Typeahead';
+} from '@astryxdesign/core/CommandPalette';
+import {Text} from '@astryxdesign/core/Text';
+import {createStaticSource} from '@astryxdesign/core/Typeahead';
 
 export default function CommandPaletteFooterShowcase() {
   const source = useMemo(

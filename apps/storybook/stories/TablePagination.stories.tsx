@@ -8,8 +8,8 @@ import {
   paginateData,
   useTableSelection,
   useTableSelectionState,
-} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
+} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
 
 // =============================================================================
 // Sample Data

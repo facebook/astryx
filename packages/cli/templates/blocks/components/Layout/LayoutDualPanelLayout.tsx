@@ -8,10 +8,10 @@ import {
   LayoutContent,
   LayoutPanel,
   VStack,
-} from '@xds/core/Layout';
-import {Card} from '@xds/core/Card';
-import {Heading, Text} from '@xds/core/Text';
-import {List, ListItem} from '@xds/core/List';
+} from '@astryxdesign/core/Layout';
+import {Card} from '@astryxdesign/core/Card';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {List, ListItem} from '@astryxdesign/core/List';
 
 export default function LayoutDualPanelLayout() {
   return (

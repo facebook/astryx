@@ -3,10 +3,10 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {HoverCard} from '@xds/core/HoverCard';
-import {Icon} from '@xds/core/Icon';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {HoverCard} from '@astryxdesign/core/HoverCard';
+import {Icon} from '@astryxdesign/core/Icon';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 import {LinkIcon} from '@heroicons/react/24/outline';
 
 const styles = stylex.create({

@@ -105,7 +105,7 @@ export type AppShellBreakpoint = 'sm' | 'md' | 'lg' | 'none';
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/AppShell' {
+ * declare module '@astryxdesign/core/AppShell' {
  *   interface AppShellVariantMap {
  *     'glass': true;
  *   }

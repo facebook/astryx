@@ -12,12 +12,12 @@ import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/** Root of the @xds/cli package */
+/** Root of the @astryxdesign/cli package */
 export const CLI_ROOT = path.resolve(__dirname, '..', '..');
 
 /**
  * Find packages/core directory by walking up from startDir.
- * Also checks node_modules/@xds/core for installed usage.
+ * Also checks node_modules/@astryxdesign/core for installed usage.
  */
 export function findCoreDir(startDir = process.cwd()) {
   let dir = startDir;
@@ -28,7 +28,7 @@ export function findCoreDir(startDir = process.cwd()) {
       return candidate;
     }
 
-    const nodeModules = path.join(dir, 'node_modules', '@xds', 'core');
+    const nodeModules = path.join(dir, 'node_modules', '@astryxdesign', 'core');
     if (fs.existsSync(nodeModules)) {
       return nodeModules;
     }
@@ -117,7 +117,7 @@ export function discoverExternalPackages(startDir = process.cwd()) {
 
       try {
         const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
-        if (pkg.name === '@xds/core') continue;
+        if (pkg.name === '@astryxdesign/core') continue;
         if (pkg.astryx && pkg.astryx.docs) {
           externals.push({
             name: pkg.name,

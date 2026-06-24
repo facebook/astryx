@@ -2,12 +2,12 @@
 
 'use client';
 
-import {Theme, defineTheme} from '@xds/core/theme';
-import {Card} from '@xds/core/Card';
-import {Button} from '@xds/core/Button';
-import {Section} from '@xds/core/Section';
-import {Stack} from '@xds/core/Layout';
-import {Heading, Text} from '@xds/core/Text';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
+import {Card} from '@astryxdesign/core/Card';
+import {Button} from '@astryxdesign/core/Button';
+import {Section} from '@astryxdesign/core/Section';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Heading, Text} from '@astryxdesign/core/Text';
 
 const forestTheme = defineTheme({
   name: 'forest-docs',

@@ -35,9 +35,9 @@ describe('parseOutlineFromMarkdown', () => {
   it('uses rendered inline text and ignores fenced code headings', () => {
     expect(
       parseOutlineFromMarkdown(
-        '## **Install** `@xds/core`\n\n```\n# Not a heading\n```',
+        '## **Install** `@astryxdesign/core`\n\n```\n# Not a heading\n```',
       ),
-    ).toEqual([{id: 'install-xds-core', label: 'Install @xds/core', level: 2}]);
+    ).toEqual([{id: 'install-xds-core', label: 'Install @astryxdesign/core', level: 2}]);
   });
 
   it('deduplicates generated ids', () => {

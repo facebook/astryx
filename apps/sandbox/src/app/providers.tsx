@@ -3,18 +3,18 @@
 'use client';
 
 import {useState, createContext, useContext, useEffect} from 'react';
-import {Theme} from '@xds/core/theme';
-import {LayerProvider} from '@xds/core/Layer';
-import {defaultTheme} from '@xds/theme-default/built';
-import {neutralTheme} from '@xds/theme-neutral/built';
-import {brutalistTheme} from '@xds/theme-brutalist/built';
-import {matchaTheme} from '@xds/theme-matcha/built';
-import {dailyTheme} from '@xds/theme-daily/built';
-import {stoneTheme} from '@xds/theme-stone/built';
-import {gothicTheme} from '@xds/theme-gothic/built';
-import {chocolateTheme} from '@xds/theme-chocolate/built';
-import {y2kTheme} from '@xds/theme-y2k/built';
-import type {DefinedTheme, ThemeMode} from '@xds/core/theme';
+import {Theme} from '@astryxdesign/core/theme';
+import {LayerProvider} from '@astryxdesign/core/Layer';
+import {defaultTheme} from '@astryxdesign/theme-default/built';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
+import {brutalistTheme} from '@astryxdesign/theme-brutalist/built';
+import {matchaTheme} from '@astryxdesign/theme-matcha/built';
+import {dailyTheme} from '@astryxdesign/theme-daily/built';
+import {stoneTheme} from '@astryxdesign/theme-stone/built';
+import {gothicTheme} from '@astryxdesign/theme-gothic/built';
+import {chocolateTheme} from '@astryxdesign/theme-chocolate/built';
+import {y2kTheme} from '@astryxdesign/theme-y2k/built';
+import type {DefinedTheme, ThemeMode} from '@astryxdesign/core/theme';
 
 /**
  * Ordered list of available themes — single source of truth.

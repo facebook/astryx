@@ -41,7 +41,7 @@ export default defineConfig({
         rootDir: repoRoot,
       },
       aliases: {
-        '@xds/core/theme/tokens.stylex': path.resolve(
+        '@astryxdesign/core/theme/tokens.stylex': path.resolve(
           repoRoot,
           'packages/core/src/theme/tokens.stylex.ts',
         ),
@@ -55,24 +55,24 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@xds/core/theme/tokens.stylex': path.resolve(
+      '@astryxdesign/core/theme/tokens.stylex': path.resolve(
         repoRoot,
         'packages/core/src/theme/tokens.stylex.ts',
       ),
-      '@xds/core': path.resolve(repoRoot, 'packages/core/src'),
-      '@xds/theme-default': path.resolve(
+      '@astryxdesign/core': path.resolve(repoRoot, 'packages/core/src'),
+      '@astryxdesign/theme-default': path.resolve(
         repoRoot,
         'packages/themes/default/src/source.ts',
       ),
-      '@xds/theme/default': path.resolve(
+      '@astryxdesign/theme/default': path.resolve(
         repoRoot,
         'packages/themes/default/src/source.ts',
       ),
-      '@xds/theme-neutral': path.resolve(
+      '@astryxdesign/theme-neutral': path.resolve(
         repoRoot,
         'packages/themes/neutral/src',
       ),
-      '@xds/theme/neutral': path.resolve(
+      '@astryxdesign/theme/neutral': path.resolve(
         repoRoot,
         'packages/themes/neutral/src',
       ),

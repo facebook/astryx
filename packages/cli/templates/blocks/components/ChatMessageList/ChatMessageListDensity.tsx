@@ -6,11 +6,11 @@ import {
   ChatMessageList,
   ChatMessage,
   ChatMessageBubble,
-} from '@xds/core/Chat';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {Avatar} from '@xds/core/Avatar';
-import {Divider} from '@xds/core/Divider';
+} from '@astryxdesign/core/Chat';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Divider} from '@astryxdesign/core/Divider';
 import {Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
 

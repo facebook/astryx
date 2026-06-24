@@ -41,11 +41,11 @@ afterEach(() => {
   delete process.env.ASTRYX_THEME;
 });
 
-/** Make a minimal node_modules/@xds/core in tmpDir with the given version. */
+/** Make a minimal node_modules/@astryxdesign/core in tmpDir with the given version. */
 function installCore(version = '0.0.14', peerDependencies) {
-  const coreDir = path.join(tmpDir, 'node_modules', '@xds', 'core');
+  const coreDir = path.join(tmpDir, 'node_modules', '@astryxdesign', 'core');
   fs.mkdirSync(coreDir, {recursive: true});
-  const pkg = {name: '@xds/core', version};
+  const pkg = {name: '@astryxdesign/core', version};
   if (peerDependencies) pkg.peerDependencies = peerDependencies;
   fs.writeFileSync(path.join(coreDir, 'package.json'), JSON.stringify(pkg));
   return coreDir;
@@ -77,7 +77,7 @@ describe('doctor — individual checks', () => {
     expect(bad.fix).toContain(MIN_NODE_VERSION);
   });
 
-  it('core-installed: FAIL when @xds/core is missing, PASS when present', () => {
+  it('core-installed: FAIL when @astryxdesign/core is missing, PASS when present', () => {
     const missing = checkCoreInstalled({cwd: tmpDir, coreDir: null});
     expect(missing.status).toBe('fail');
     expect(missing.fix).toBeTruthy();
@@ -106,14 +106,14 @@ describe('doctor — individual checks', () => {
   });
 
   it('themes: WARN when theme installed but not wired', () => {
-    installPkg('@xds/theme-default', '0.0.14');
+    installPkg('@astryxdesign/theme-default', '0.0.14');
     const res = checkThemes({cwd: tmpDir, configTheme: null});
     expect(res.status).toBe('warn');
-    expect(res.message).toContain('@xds/theme-default');
+    expect(res.message).toContain('@astryxdesign/theme-default');
   });
 
   it('themes: PASS when theme installed and wired via config', () => {
-    installPkg('@xds/theme-default', '0.0.14');
+    installPkg('@astryxdesign/theme-default', '0.0.14');
     const res = checkThemes({cwd: tmpDir, configTheme: 'default'});
     expect(res.status).toBe('pass');
   });
@@ -265,7 +265,7 @@ describe('doctor — command', () => {
   });
 
   it('exit code stays 0 when there are no failures', async () => {
-    // Run against the monorepo (where @xds/core resolves) → no FAIL.
+    // Run against the monorepo (where @astryxdesign/core resolves) → no FAIL.
     const prevExit = process.exitCode;
     process.exitCode = undefined;
     const program = createProgram();
@@ -275,7 +275,7 @@ describe('doctor — command', () => {
     process.exitCode = prevExit;
   });
 
-  it('sets exit code 1 when a check FAILs (bare dir, no @xds/core)', async () => {
+  it('sets exit code 1 when a check FAILs (bare dir, no @astryxdesign/core)', async () => {
     const prevCwd = process.cwd();
     const prevExit = process.exitCode;
     process.exitCode = undefined;

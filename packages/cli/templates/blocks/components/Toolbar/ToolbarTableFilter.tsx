@@ -2,13 +2,13 @@
 
 'use client';
 
-import {Toolbar} from '@xds/core/Toolbar';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {TextInput} from '@xds/core/TextInput';
-import {MoreMenu} from '@xds/core/MoreMenu';
-import {Stack} from '@xds/core/Layout';
-import {Table} from '@xds/core/Table';
+import {Toolbar} from '@astryxdesign/core/Toolbar';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {MoreMenu} from '@astryxdesign/core/MoreMenu';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Table} from '@astryxdesign/core/Table';
 import * as stylex from '@stylexjs/stylex';
 import {
   MagnifyingGlassIcon,

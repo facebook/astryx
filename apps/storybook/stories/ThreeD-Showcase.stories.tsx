@@ -6,8 +6,8 @@ import {
   ThreeDChart,
   ThreeDScatter,
   ThreeDScatterGL,
-} from '@xds/lab';
-import {MediaTheme} from '@xds/core/theme';
+} from '@astryxdesign/lab';
+import {MediaTheme} from '@astryxdesign/core/theme';
 
 const meta: Meta = {title: 'Lab/3DChart/PopArt'};
 export default meta;

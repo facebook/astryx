@@ -2,8 +2,8 @@
 
 'use client';
 
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {Center} from '@xds/core/Center';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {Center} from '@astryxdesign/core/Center';
 
 export default function AspectRatioWidescreen() {
   return (

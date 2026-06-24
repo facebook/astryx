@@ -2,18 +2,18 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as React from 'react';
-import {MediaTheme, defineTheme} from '@xds/core/theme';
-import {Button} from '@xds/core/Button';
-import {Link} from '@xds/core/Link';
-import {Text} from '@xds/core/Text';
-import {Badge} from '@xds/core/Badge';
-import {Icon} from '@xds/core/Icon';
-import {Stack} from '@xds/core/Stack';
-import {Theme} from '@xds/core/theme';
-import {defaultTheme} from '@xds/theme-default';
-import {neutralTheme} from '@xds/theme-neutral';
-import {brutalistTheme} from '@xds/theme-brutalist';
-import {Card} from '@xds/core/Card';
+import {MediaTheme, defineTheme} from '@astryxdesign/core/theme';
+import {Button} from '@astryxdesign/core/Button';
+import {Link} from '@astryxdesign/core/Link';
+import {Text} from '@astryxdesign/core/Text';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Stack} from '@astryxdesign/core/Stack';
+import {Theme} from '@astryxdesign/core/theme';
+import {defaultTheme} from '@astryxdesign/theme-default';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
+import {brutalistTheme} from '@astryxdesign/theme-brutalist';
+import {Card} from '@astryxdesign/core/Card';
 
 // =============================================================================
 // Meta
@@ -428,7 +428,7 @@ export const CustomOverrides: StoryObj = {
 // Auto-detected surface from image
 // =============================================================================
 
-import {useImageMode} from '@xds/core/hooks';
+import {useImageMode} from '@astryxdesign/core/hooks';
 
 const DEMO_IMAGES = [
   {

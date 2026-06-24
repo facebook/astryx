@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {CheckboxInput} from '@xds/core/CheckboxInput';
-import {Stack} from '@xds/core/Layout';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {Stack} from '@astryxdesign/core/Layout';
 
 export default function CheckboxInputStatusVariations() {
   const [error, setError] = useState<boolean | 'indeterminate'>(false);

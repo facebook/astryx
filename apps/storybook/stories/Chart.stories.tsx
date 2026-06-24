@@ -15,8 +15,8 @@ import {
   ChartDotGL,
   ChartHeatmapGL,
   useChartColors,
-} from '@xds/lab';
-import {Stack, Text} from '@xds/core';
+} from '@astryxdesign/lab';
+import {Stack, Text} from '@astryxdesign/core';
 import {useDataset} from './useDataset';
 
 /**

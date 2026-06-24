@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {TabList, Tab} from '@xds/core/TabList';
-import {Button} from '@xds/core/Button';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {Button} from '@astryxdesign/core/Button';
 
 const FilterIcon = (
   <svg

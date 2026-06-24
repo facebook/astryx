@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {TreeList} from '@xds/core/TreeList';
-import type {TreeListItemData} from '@xds/core/TreeList';
-import {Icon} from '@xds/core/Icon';
-import {Badge} from '@xds/core/Badge';
+import {TreeList} from '@astryxdesign/core/TreeList';
+import type {TreeListItemData} from '@astryxdesign/core/TreeList';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Badge} from '@astryxdesign/core/Badge';
 import {
   FolderIcon,
   DocumentIcon,

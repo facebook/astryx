@@ -21,7 +21,7 @@
  *
  * Commands call jsonOut(type, data) for success and jsonError(msg) for
  * errors. Consumer-facing utilities (parseResponse, isError, assertResponse)
- * live in parse.mjs and are exported via @xds/cli/json.
+ * live in parse.mjs and are exported via @astryxdesign/cli/json.
  */
 
 /**

@@ -72,7 +72,7 @@ let globalRegistry: Partial<IconRegistry> = {};
  *
  * @example
  * ```
- * import { registerIcons } from '@xds/core';
+ * import { registerIcons } from '@astryxdesign/core';
  * import { brandIcons } from './brand-icons';
  * registerIcons(brandIcons);
  * ```

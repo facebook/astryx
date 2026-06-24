@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Card} from '@xds/core/Card';
-import {Stack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
+import {Card} from '@astryxdesign/core/Card';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
 
 export default function CardShowcase() {
   return (

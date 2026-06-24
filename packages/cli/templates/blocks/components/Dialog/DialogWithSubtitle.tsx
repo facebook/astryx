@@ -6,15 +6,15 @@ import {
   Dialog,
   DialogHeader,
   useImperativeDialog,
-} from '@xds/core/Dialog';
+} from '@astryxdesign/core/Dialog';
 import {
   Layout,
   LayoutContent,
   LayoutFooter,
   HStack,
-} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Text} from '@xds/core/Text';
+} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Text} from '@astryxdesign/core/Text';
 
 function Content({onClose}: {onClose: () => void}) {
   return (

@@ -20,12 +20,12 @@ import {createRoot, type Root} from 'react-dom/client';
 import * as stylex from '@stylexjs/stylex';
 import './targetingOverlay.css';
 import {Settings, X} from 'lucide-react';
-import {HStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {Popover} from '@xds/core/Popover';
-import {Theme, MediaTheme} from '@xds/core/theme';
-import type {ThemeMode} from '@xds/core/theme';
+import {HStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Popover} from '@astryxdesign/core/Popover';
+import {Theme, MediaTheme} from '@astryxdesign/core/theme';
+import type {ThemeMode} from '@astryxdesign/core/theme';
 import {astryxTheme} from '../../../themes/astryx';
 import {PropertyEditor} from './PropertyEditor';
 

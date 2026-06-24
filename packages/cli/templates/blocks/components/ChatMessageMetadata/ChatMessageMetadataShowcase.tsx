@@ -8,12 +8,12 @@ import {
   ChatMessage,
   ChatMessageBubble,
   ChatMessageMetadata,
-} from '@xds/core/Chat';
-import {Timestamp} from '@xds/core/Timestamp';
-import {Text} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {HStack, VStack} from '@xds/core/Layout';
+} from '@astryxdesign/core/Chat';
+import {Timestamp} from '@astryxdesign/core/Timestamp';
+import {Text} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
 import {
   ClipboardDocumentIcon,
   ArrowPathIcon,

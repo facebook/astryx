@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSVegaChart} from '@xds/vega';
-import type {AnySpec} from '@xds/vega';
+import {XDSVegaChart} from '@astryxdesign/vega';
+import type {AnySpec} from '@astryxdesign/vega';
 
 /**
  * Radial plot from the official Vega example gallery.

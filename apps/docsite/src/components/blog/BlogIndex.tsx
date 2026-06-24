@@ -19,12 +19,12 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Text, Heading} from '@xds/core/Text';
-import {VStack} from '@xds/core/Layout';
-import {Section} from '@xds/core/Section';
-import {Grid} from '@xds/core/Grid';
-import {Carousel} from '@xds/core/Carousel';
-import {TabList, Tab} from '@xds/core/TabList';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Section} from '@astryxdesign/core/Section';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Carousel} from '@astryxdesign/core/Carousel';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
 import type {BlogPost, BlogPostType} from '../../lib/blog/schema';
 import {POST_TYPE_LABELS} from '../../lib/blog/schema';
 import {BlogCard} from './BlogCard';

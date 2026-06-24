@@ -12,8 +12,8 @@
  */
 
 import {type ReactNode} from 'react';
-import {Theme} from '@xds/core/theme';
-import {neutralTheme} from '@xds/theme-neutral/built';
+import {Theme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 import {useThemeMode} from '../../app/providers';
 
 export function ComponentPreviewTheme({children}: {children: ReactNode}) {

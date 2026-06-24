@@ -2,9 +2,9 @@
 
 'use client';
 
-import {VStack, Layout, LayoutContent} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {AspectRatio} from '@xds/core/AspectRatio';
+import {VStack, Layout, LayoutContent} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
 import * as stylex from '@stylexjs/stylex';
 
 // ─── Styles ────────────────────────────────────────────────────────────────

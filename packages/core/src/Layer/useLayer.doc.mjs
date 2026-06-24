@@ -104,7 +104,7 @@ export const docs = {
   },
   relatedComponents: ['LayerProvider', 'Popover', 'HoverCard', 'Tooltip'],
   relatedHooks: ['usePopover', 'useHoverCard', 'useTooltip'],
-  importPath: '@xds/core/Layer',
+  importPath: '@astryxdesign/core/Layer',
   category: 'interaction',
 };
 

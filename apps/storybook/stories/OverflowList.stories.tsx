@@ -2,11 +2,11 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {OverflowList} from '@xds/core/OverflowList';
-import {Button} from '@xds/core/Button';
-import {Badge} from '@xds/core/Badge';
-import {DropdownMenu} from '@xds/core/DropdownMenu';
-import {TextInput} from '@xds/core/TextInput';
+import {OverflowList} from '@astryxdesign/core/OverflowList';
+import {Button} from '@astryxdesign/core/Button';
+import {Badge} from '@astryxdesign/core/Badge';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
+import {TextInput} from '@astryxdesign/core/TextInput';
 
 const meta: Meta<typeof OverflowList> = {
   title: 'Core/OverflowList',

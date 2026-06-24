@@ -3,11 +3,11 @@
 'use client';
 
 import {useMemo} from 'react';
-import {CommandPalette} from '@xds/core/CommandPalette';
-import {Text} from '@xds/core/Text';
-import {Kbd} from '@xds/core/Kbd';
-import {createStaticSource} from '@xds/core/Typeahead';
-import type {SearchableItem} from '@xds/core/Typeahead';
+import {CommandPalette} from '@astryxdesign/core/CommandPalette';
+import {Text} from '@astryxdesign/core/Text';
+import {Kbd} from '@astryxdesign/core/Kbd';
+import {createStaticSource} from '@astryxdesign/core/Typeahead';
+import type {SearchableItem} from '@astryxdesign/core/Typeahead';
 
 type RichCommand = SearchableItem<{
   group?: string;

@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {InputGroup, InputGroupText} from '@xds/core/InputGroup';
-import {TextInput} from '@xds/core/TextInput';
-import {Stack} from '@xds/core/Layout';
+import {InputGroup, InputGroupText} from '@astryxdesign/core/InputGroup';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Stack} from '@astryxdesign/core/Layout';
 
 export default function InputGroupShowcase() {
   const [price, setPrice] = useState('');

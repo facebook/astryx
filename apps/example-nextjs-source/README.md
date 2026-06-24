@@ -1,6 +1,6 @@
 # XDS Example: Next.js (Source Build)
 
-Reference application for compiling **@xds/core** from raw TypeScript + StyleX source alongside product code. Uses `@xds/build` for independent CSS layer separation.
+Reference application for compiling **@astryxdesign/core** from raw TypeScript + StyleX source alongside product code. Uses `@astryxdesign/build` for independent CSS layer separation.
 
 ## Why source build?
 
@@ -13,10 +13,10 @@ Reference application for compiling **@xds/core** from raw TypeScript + StyleX s
 
 ## How it works
 
-`@xds/build` provides two plugins that work together:
+`@astryxdesign/build` provides two plugins that work together:
 
-1. **`@xds/build/babel`**: wraps the StyleX babel plugin, routing XDS library files to `xds` class prefix and product files to default `x` prefix
-2. **`@xds/build/postcss`**: compiles StyleX CSS in two passes with different prefixes, wrapping each in its own `@layer`
+1. **`@astryxdesign/build/babel`**: wraps the StyleX babel plugin, routing XDS library files to `xds` class prefix and product files to default `x` prefix
+2. **`@astryxdesign/build/postcss`**: compiles StyleX CSS in two passes with different prefixes, wrapping each in its own `@layer`
 
 This creates completely independent class namespaces:
 
@@ -34,8 +34,8 @@ Theme sits between them in `@layer astryx-theme`, so:
 ### 1. Install
 
 ```bash
-npm install @stylexjs/stylex @xds/core @xds/theme-default next react react-dom
-npm install -D @xds/build @stylexjs/babel-plugin @babel/core autoprefixer typescript
+npm install @stylexjs/stylex @astryxdesign/core @astryxdesign/theme-default next react react-dom
+npm install -D @astryxdesign/build @stylexjs/babel-plugin @babel/core autoprefixer typescript
 ```
 
 ### 2. babel.config.js
@@ -47,15 +47,15 @@ module.exports = {
   presets: ['next/babel'],
   plugins: [
     [
-      '@xds/build/babel',
+      '@astryxdesign/build/babel',
       {
         dev: process.env.NODE_ENV !== 'production',
         runtimeInjection: false,
         enableInlinedConditionalMerge: true,
         treeshakeCompensation: true,
         aliases: {
-          '@xds/core/*': [path.join(__dirname, 'node_modules/@xds/core/*')],
-          '@xds/core': [path.join(__dirname, 'node_modules/@xds/core')],
+          '@astryxdesign/core/*': [path.join(__dirname, 'node_modules/@astryxdesign/core/*')],
+          '@astryxdesign/core': [path.join(__dirname, 'node_modules/@astryxdesign/core')],
         },
         unstable_moduleResolution: {type: 'commonJS'},
       },
@@ -71,7 +71,7 @@ const path = require('path');
 
 module.exports = {
   plugins: {
-    '@xds/build/postcss': {
+    '@astryxdesign/build/postcss': {
       appDir: 'src',
       babelPlugins: [
         [
@@ -82,8 +82,8 @@ module.exports = {
             enableInlinedConditionalMerge: true,
             treeshakeCompensation: true,
             aliases: {
-              '@xds/core/*': [path.join(__dirname, 'node_modules/@xds/core/*')],
-              '@xds/core': [path.join(__dirname, 'node_modules/@xds/core')],
+              '@astryxdesign/core/*': [path.join(__dirname, 'node_modules/@astryxdesign/core/*')],
+              '@astryxdesign/core': [path.join(__dirname, 'node_modules/@astryxdesign/core')],
             },
             unstable_moduleResolution: {type: 'commonJS'},
           },
@@ -99,7 +99,7 @@ module.exports = {
 
 ```js
 const nextConfig = {
-  transpilePackages: ['@xds/core', '@xds/theme-default'],
+  transpilePackages: ['@astryxdesign/core', '@astryxdesign/theme-default'],
   webpack: config => {
     config.resolve.conditionNames = ['source', 'import', 'require', 'default'];
     return config;
@@ -121,8 +121,8 @@ export default nextConfig;
 
 ```css
 @import './layers.css';
-@import '@xds/core/reset.css';
-@import '@xds/theme-default/theme.css';
+@import '@astryxdesign/core/reset.css';
+@import '@astryxdesign/theme-default/theme.css';
 
 @stylex;
 ```
@@ -143,7 +143,7 @@ Open devtools → CSS layers panel to see the separation.
 | Issue                    | Symptom                                | Fix                                                                |
 | ------------------------ | -------------------------------------- | ------------------------------------------------------------------ |
 | Missing `conditionNames` | XDS resolves to dist (no `xds` prefix) | Add `['source', 'import', 'require', 'default']` to webpack config |
-| Missing `aliases`        | `defineVars` resolution fails          | Add aliases for `@xds/core` and `@xds/core/*`                      |
+| Missing `aliases`        | `defineVars` resolution fails          | Add aliases for `@astryxdesign/core` and `@astryxdesign/core/*`                      |
 | `layers.css` inline      | Layer order ignored                    | Keep as separate file (webpack hoists `@import`)                   |
 | Missing `browserslist`   | `light-dark()` gets lowered            | Add `["last 1 Chrome version"]`                                    |
 
@@ -152,4 +152,4 @@ Open devtools → CSS layers panel to see the separation.
 - [Plain dist example](../example-nextjs/): simplest setup
 - [Dist + Tailwind](../example-nextjs-tailwind/): Tailwind for layout
 - [Dist + StyleX](../example-nextjs-stylex/): StyleX for product only
-- [`@xds/build`](../../packages/build/): the build plugin source
+- [`@astryxdesign/build`](../../packages/build/): the build plugin source

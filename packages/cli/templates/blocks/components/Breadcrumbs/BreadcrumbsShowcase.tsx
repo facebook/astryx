@@ -2,7 +2,7 @@
 
 'use client';
 
-import {Breadcrumbs, BreadcrumbItem} from '@xds/core/Breadcrumbs';
+import {Breadcrumbs, BreadcrumbItem} from '@astryxdesign/core/Breadcrumbs';
 
 export default function BreadcrumbsShowcase() {
   return (

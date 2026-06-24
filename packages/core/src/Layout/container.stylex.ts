@@ -455,7 +455,7 @@ export interface ContainerOptions {
  *
  * @example
  * ```
- * import { container } from '@xds/core/Layout';
+ * import { container } from '@astryxdesign/core/Layout';
  * import * as stylex from '@stylexjs/stylex';
  *
  * // Card container with default padding (theme-overridable via padding shorthand)

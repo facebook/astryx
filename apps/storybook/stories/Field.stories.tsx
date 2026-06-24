@@ -3,15 +3,15 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {Field} from '@xds/core/Field';
-import {TextInput} from '@xds/core/TextInput';
+import {Field} from '@astryxdesign/core/Field';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import {EnvelopeIcon} from '@heroicons/react/24/outline';
 import {
   colorVars,
   spacingVars,
   radiusVars,
   typographyVars,
-} from '@xds/core/theme/tokens.stylex';
+} from '@astryxdesign/core/theme/tokens.stylex';
 
 // A minimal native input styled to match XDS aesthetics —
 // demonstrating that Field wraps any custom or native input.

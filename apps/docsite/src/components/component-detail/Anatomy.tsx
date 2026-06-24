@@ -2,11 +2,11 @@
 
 'use client';
 
-import {Heading} from '@xds/core/Text';
-import {VStack} from '@xds/core/Layout';
-import {Section} from '@xds/core/Section';
-import {Table, pixel} from '@xds/core/Table';
-import {Badge} from '@xds/core/Badge';
+import {Heading} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Section} from '@astryxdesign/core/Section';
+import {Table, pixel} from '@astryxdesign/core/Table';
+import {Badge} from '@astryxdesign/core/Badge';
 import type {AnatomyElement} from '../../generated/componentRegistry';
 import {MarkdownText} from '../MarkdownText';
 

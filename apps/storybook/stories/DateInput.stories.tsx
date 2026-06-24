@@ -2,9 +2,9 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {DateInput} from '@xds/core/DateInput';
-import type {ISODateString} from '@xds/core/Calendar';
-import {Layout, LayoutContent} from '@xds/core/Layout';
+import {DateInput} from '@astryxdesign/core/DateInput';
+import type {ISODateString} from '@astryxdesign/core/Calendar';
+import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
 
 const meta: Meta<typeof DateInput> = {
   title: 'Core/DateInput',

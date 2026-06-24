@@ -7,17 +7,17 @@ import {
   Dialog,
   DialogHeader,
   useImperativeDialog,
-} from '@xds/core/Dialog';
+} from '@astryxdesign/core/Dialog';
 import {
   Layout,
   LayoutContent,
   LayoutFooter,
   HStack,
   VStack,
-} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {TextInput} from '@xds/core/TextInput';
-import {TextArea} from '@xds/core/TextArea';
+} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {TextArea} from '@astryxdesign/core/TextArea';
 
 function Content({onClose}: {onClose: () => void}) {
   const [name, setName] = useState('Ruby Cheung');

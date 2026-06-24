@@ -2,7 +2,7 @@
 
 'use client';
 
-import {FileInput} from '@xds/core/FileInput';
+import {FileInput} from '@astryxdesign/core/FileInput';
 
 export default function FileInputShowcase() {
   return (

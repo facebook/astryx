@@ -6,9 +6,9 @@ import {
   ChatComposer,
   useChatDictation,
   ChatComposerInput,
-} from '@xds/core/Chat';
-import type {ChatComposerInputHandle} from '@xds/core/Chat';
-import type {UseSpeechRecognitionReturn} from '@xds/core/Chat';
+} from '@astryxdesign/core/Chat';
+import type {ChatComposerInputHandle} from '@astryxdesign/core/Chat';
+import type {UseSpeechRecognitionReturn} from '@astryxdesign/core/Chat';
 import {useRef} from 'react';
 
 // =============================================================================

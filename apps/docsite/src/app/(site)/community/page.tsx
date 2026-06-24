@@ -20,7 +20,7 @@
  * paths for visual weight.
  *
  * Note: "XDS" still appears in component names (Card, Text,
- * etc.) and package paths (@xds/core, @xds/lab) — those are
+ * etc.) and package paths (@astryxdesign/core, @astryxdesign/lab) — those are
  * identifiers, not the product name. The product brand in copy
  * is Astryx.
  */
@@ -28,15 +28,15 @@
 import {FileText, Scale} from 'lucide-react';
 import {NavSurfaceMode} from './NavSurfaceMode';
 import * as stylex from '@stylexjs/stylex';
-import {Card} from '@xds/core/Card';
-import {ClickableCard} from '@xds/core/ClickableCard';
-import {HStack, VStack} from '@xds/core/Layout';
-import {Link} from '@xds/core/Link';
-import {List, ListItem} from '@xds/core/List';
-import {Section} from '@xds/core/Section';
-import {Heading, Text} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {getKey} from '@xds/core/utils';
+import {Card} from '@astryxdesign/core/Card';
+import {ClickableCard} from '@astryxdesign/core/ClickableCard';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Link} from '@astryxdesign/core/Link';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {Section} from '@astryxdesign/core/Section';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {getKey} from '@astryxdesign/core/utils';
 import {AstryxLogo} from '../../../components/logos';
 import {GITHUB_REPO} from '../../../constants';
 import {layout} from '../../../layout.stylex';
@@ -794,13 +794,13 @@ const RFC_STEPS: ReadonlyArray<StepperStep> = [
     number: '03',
     title: 'Ship it experimentally',
     description:
-      'New components ship in @xds/lab first, where the team and real users put them through their paces.',
+      'New components ship in @astryxdesign/lab first, where the team and real users put them through their paces.',
   },
   {
     number: '04',
     title: 'Make it official',
     description:
-      'Once battle-tested and refined, the work graduates from @xds/lab into @xds/core for everyone to use.',
+      'Once battle-tested and refined, the work graduates from @astryxdesign/lab into @astryxdesign/core for everyone to use.',
   },
 ];
 

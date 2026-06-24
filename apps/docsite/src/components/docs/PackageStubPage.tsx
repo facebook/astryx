@@ -2,10 +2,10 @@
 
 'use client';
 
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {Markdown} from '@xds/core/Markdown';
-import {Divider} from '@xds/core/Divider';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {Divider} from '@astryxdesign/core/Divider';
 import {DocPageLayout} from './DocPageLayout';
 import {PackageActions, type InstallStep} from './PackageActions';
 

@@ -27,9 +27,9 @@ import {
   typeScaleVars,
   durationVars,
   easeVars,
-} from '@xds/core/theme/tokens.stylex';
-import {mergeProps} from '@xds/core/utils';
-import type {BaseProps} from '@xds/core';
+} from '@astryxdesign/core/theme/tokens.stylex';
+import {mergeProps} from '@astryxdesign/core/utils';
+import type {BaseProps} from '@astryxdesign/core';
 import {useStepperContext} from './StepperContext';
 import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
 import type {StepStatus} from './StepStatus';

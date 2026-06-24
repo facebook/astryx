@@ -2,17 +2,17 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, radiusVars} from '@xds/core/theme/tokens.stylex';
-import {ResizeHandle, useResizable} from '@xds/core/Resizable';
-import {Text, Heading} from '@xds/core/Text';
+import {colorVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {ResizeHandle, useResizable} from '@astryxdesign/core/Resizable';
+import {Text, Heading} from '@astryxdesign/core/Text';
 import {
   Layout,
   LayoutContent,
   LayoutPanel,
   Stack,
-} from '@xds/core/Layout';
-import {SideNav, SideNavItem} from '@xds/core/SideNav';
-import {Divider} from '@xds/core/Divider';
+} from '@astryxdesign/core/Layout';
+import {SideNav, SideNavItem} from '@astryxdesign/core/SideNav';
+import {Divider} from '@astryxdesign/core/Divider';
 
 const ps = stylex.create({
   shell: {

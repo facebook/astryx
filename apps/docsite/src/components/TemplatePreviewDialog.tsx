@@ -26,20 +26,20 @@ import {
   useTransition,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Icon} from '@xds/core/Icon';
-import {Text, Heading} from '@xds/core/Text';
-import {Code} from '@xds/core/Code';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Code} from '@astryxdesign/core/Code';
 import {
   VStack,
   HStack,
   Layout,
   LayoutHeader,
   LayoutContent,
-} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Skeleton} from '@xds/core/Skeleton';
-import {Dialog} from '@xds/core/Dialog';
-import {Tooltip} from '@xds/core/Tooltip';
+} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Skeleton} from '@astryxdesign/core/Skeleton';
+import {Dialog} from '@astryxdesign/core/Dialog';
+import {Tooltip} from '@astryxdesign/core/Tooltip';
 import {TemplatePreviewSurface} from './TemplatePreviewSurface';
 import {buildPlaygroundHref} from './playgroundLink';
 import {trackCopy, trackOpenPlayground, trackNavigate} from '../lib/analytics';

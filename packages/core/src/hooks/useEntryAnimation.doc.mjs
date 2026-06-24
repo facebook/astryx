@@ -32,7 +32,7 @@ export const docs = {
   },
   relatedComponents: ['FieldStatus'],
   relatedHooks: [],
-  importPath: '@xds/core/hooks',
+  importPath: '@astryxdesign/core/hooks',
   category: 'animation',
 };
 

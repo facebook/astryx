@@ -2,10 +2,10 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {useLinkify} from '@xds/core/Link';
-import {Text} from '@xds/core/Text';
-import {Stack} from '@xds/core/Stack';
-import {TextInput} from '@xds/core/TextInput';
+import {useLinkify} from '@astryxdesign/core/Link';
+import {Text} from '@astryxdesign/core/Text';
+import {Stack} from '@astryxdesign/core/Stack';
+import {TextInput} from '@astryxdesign/core/TextInput';
 
 // ---------------------------------------------------------------------------
 // Wrapper — hooks need a component

@@ -2,7 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {ToggleButton, ToggleButtonGroup} from '@xds/core/ToggleButton';
+import {ToggleButton, ToggleButtonGroup} from '@astryxdesign/core/ToggleButton';
 import {
   BoldIcon,
   ItalicIcon,
@@ -25,7 +25,7 @@ import {
   ItalicIcon as ItalicIconSolid,
   UnderlineIcon as UnderlineIconSolid,
 } from '@heroicons/react/24/solid';
-import {Icon} from '@xds/core/Icon';
+import {Icon} from '@astryxdesign/core/Icon';
 
 const iconSize = {width: 16, height: 16} as const;
 

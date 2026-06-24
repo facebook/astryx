@@ -2,11 +2,11 @@
 
 'use client';
 
-import {Divider} from '@xds/core/Divider';
-import {Card} from '@xds/core/Card';
-import {Section} from '@xds/core/Section';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Card} from '@astryxdesign/core/Card';
+import {Section} from '@astryxdesign/core/Section';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function DividerFullBleed() {
   return (

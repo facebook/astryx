@@ -15,7 +15,7 @@
 
 import {useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars} from '@xds/core/theme/tokens.stylex';
+import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {useChart} from '../Chart/ChartContext';
 import {isBandScale} from '../Chart/utils';
 import type {ScaleLinear, ScaleTime} from 'd3-scale';

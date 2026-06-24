@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {TabList, Tab} from '@xds/core/TabList';
-import {StatusDot} from '@xds/core/StatusDot';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {StatusDot} from '@astryxdesign/core/StatusDot';
 
 export default function TabListTabsWithStatusDot() {
   const [value, setValue] = useState('production');

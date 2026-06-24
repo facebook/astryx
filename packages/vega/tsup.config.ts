@@ -4,7 +4,7 @@
  * @file tsup.config.ts
  * @input Uses tsup
  * @output Bundle configuration for CJS/ESM outputs with TypeScript declarations
- * @position Build config; defines entry points and output formats for @xds/vega
+ * @position Build config; defines entry points and output formats for @astryxdesign/vega
  *
  * SYNC: When modified, update this header and /packages/vega/README.md
  */

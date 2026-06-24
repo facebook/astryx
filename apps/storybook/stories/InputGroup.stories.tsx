@@ -2,11 +2,11 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {InputGroup} from '@xds/core/InputGroup';
-import {InputGroupText} from '@xds/core/InputGroup';
-import {TextInput} from '@xds/core/TextInput';
-import {NumberInput} from '@xds/core/NumberInput';
-import {Icon} from '@xds/core/Icon';
+import {InputGroup} from '@astryxdesign/core/InputGroup';
+import {InputGroupText} from '@astryxdesign/core/InputGroup';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {NumberInput} from '@astryxdesign/core/NumberInput';
+import {Icon} from '@astryxdesign/core/Icon';
 
 const meta: Meta<typeof InputGroup> = {
   title: 'Core/InputGroup',

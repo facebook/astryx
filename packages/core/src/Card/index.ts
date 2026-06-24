@@ -6,7 +6,7 @@
  * @file index.ts
  * @input Imports Card component
  * @output Exports Card component and types
- * @position Entry point for @xds/core/Card module
+ * @position Entry point for @astryxdesign/core/Card module
  *
  * SYNC: When modified, update /packages/core/src/Card/Card.doc.mjs
  */

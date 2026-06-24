@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {useMediaQuery} from '@xds/core/hooks';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {
   Layout,
   LayoutHeader,
@@ -14,21 +14,21 @@ import {
   StackItem,
   Card,
   Section,
-} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Badge} from '@xds/core/Badge';
-import {Avatar} from '@xds/core/Avatar';
-import {Button} from '@xds/core/Button';
-import {TabList, Tab, TabMenu} from '@xds/core/TabList';
-import {Divider} from '@xds/core/Divider';
-import {Link} from '@xds/core/Link';
-import {List, ListItem} from '@xds/core/List';
-import {MetadataList, MetadataListItem} from '@xds/core/MetadataList';
-import {ProgressBar} from '@xds/core/ProgressBar';
-import {Collapsible} from '@xds/core/Collapsible';
-import {Icon} from '@xds/core/Icon';
-import {Thumbnail} from '@xds/core/Thumbnail';
-import {Dialog, DialogHeader} from '@xds/core/Dialog';
+} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Button} from '@astryxdesign/core/Button';
+import {TabList, Tab, TabMenu} from '@astryxdesign/core/TabList';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Link} from '@astryxdesign/core/Link';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {MetadataList, MetadataListItem} from '@astryxdesign/core/MetadataList';
+import {ProgressBar} from '@astryxdesign/core/ProgressBar';
+import {Collapsible} from '@astryxdesign/core/Collapsible';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Thumbnail} from '@astryxdesign/core/Thumbnail';
+import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
 import {
   CalendarIcon,
   FlagIcon,

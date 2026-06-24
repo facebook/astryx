@@ -87,7 +87,7 @@ import { HeartIcon } from 'lucide-react';
           type: 'code',
           lang: 'tsx',
           label: 'Registering theme icons',
-          code: `import { registerIcons } from '@xds/core/Icon';
+          code: `import { registerIcons } from '@astryxdesign/core/Icon';
 import { XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 
 registerIcons({

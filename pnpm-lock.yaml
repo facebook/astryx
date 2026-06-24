@@ -95,6 +95,33 @@ importers:
 
   apps/docsite:
     dependencies:
+      '@astryxdesign/cli':
+        specifier: '*'
+        version: link:../../packages/cli
+      '@astryxdesign/core':
+        specifier: '*'
+        version: link:../../packages/core
+      '@astryxdesign/theme-butter':
+        specifier: '*'
+        version: link:../../packages/themes/butter
+      '@astryxdesign/theme-default':
+        specifier: '*'
+        version: link:../../packages/themes/default
+      '@astryxdesign/theme-gothic':
+        specifier: '*'
+        version: link:../../packages/themes/gothic
+      '@astryxdesign/theme-matcha':
+        specifier: '*'
+        version: link:../../packages/themes/matcha
+      '@astryxdesign/theme-neutral':
+        specifier: '*'
+        version: link:../../packages/themes/neutral
+      '@astryxdesign/theme-stone':
+        specifier: '*'
+        version: link:../../packages/themes/stone
+      '@astryxdesign/theme-y2k':
+        specifier: '*'
+        version: link:../../packages/themes/y2k
       '@heroicons/react':
         specifier: ^2.2.0
         version: 2.2.0(react@19.2.7)
@@ -110,33 +137,6 @@ importers:
       '@vercel/analytics':
         specifier: ^2.0.1
         version: 2.0.1(next@15.5.18(@babel/core@7.29.7)(@playwright/test@1.61.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
-      '@xds/cli':
-        specifier: '*'
-        version: link:../../packages/cli
-      '@xds/core':
-        specifier: '*'
-        version: link:../../packages/core
-      '@xds/theme-butter':
-        specifier: '*'
-        version: link:../../packages/themes/butter
-      '@xds/theme-default':
-        specifier: '*'
-        version: link:../../packages/themes/default
-      '@xds/theme-gothic':
-        specifier: '*'
-        version: link:../../packages/themes/gothic
-      '@xds/theme-matcha':
-        specifier: '*'
-        version: link:../../packages/themes/matcha
-      '@xds/theme-neutral':
-        specifier: '*'
-        version: link:../../packages/themes/neutral
-      '@xds/theme-stone':
-        specifier: '*'
-        version: link:../../packages/themes/stone
-      '@xds/theme-y2k':
-        specifier: '*'
-        version: link:../../packages/themes/y2k
       fflate:
         specifier: ^0.8.2
         version: 0.8.3
@@ -198,10 +198,10 @@ importers:
 
   apps/example-nextjs:
     dependencies:
-      '@xds/core':
+      '@astryxdesign/core':
         specifier: '*'
         version: link:../../packages/core
-      '@xds/theme-default':
+      '@astryxdesign/theme-default':
         specifier: '*'
         version: link:../../packages/themes/default
       next:
@@ -226,15 +226,15 @@ importers:
 
   apps/example-nextjs-source:
     dependencies:
+      '@astryxdesign/core':
+        specifier: '*'
+        version: link:../../packages/core
+      '@astryxdesign/theme-default':
+        specifier: '*'
+        version: link:../../packages/themes/default
       '@stylexjs/stylex':
         specifier: ^0.18.3
         version: 0.18.3
-      '@xds/core':
-        specifier: '*'
-        version: link:../../packages/core
-      '@xds/theme-default':
-        specifier: '*'
-        version: link:../../packages/themes/default
       next:
         specifier: ^15.5.16
         version: 15.5.18(@babel/core@7.29.7)(@playwright/test@1.61.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -245,6 +245,9 @@ importers:
         specifier: ^19.2.7
         version: 19.2.7(react@19.2.7)
     devDependencies:
+      '@astryxdesign/build':
+        specifier: '*'
+        version: link:../../packages/build
       '@babel/preset-react':
         specifier: ^7.29.7
         version: 7.29.7(@babel/core@7.29.7)
@@ -263,9 +266,6 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.17)
-      '@xds/build':
-        specifier: '*'
-        version: link:../../packages/build
       autoprefixer:
         specifier: ^10.4.0
         version: 10.5.0(postcss@8.5.15)
@@ -275,15 +275,15 @@ importers:
 
   apps/example-nextjs-stylex:
     dependencies:
+      '@astryxdesign/core':
+        specifier: '*'
+        version: link:../../packages/core
+      '@astryxdesign/theme-default':
+        specifier: '*'
+        version: link:../../packages/themes/default
       '@stylexjs/stylex':
         specifier: ^0.18.3
         version: 0.18.3
-      '@xds/core':
-        specifier: '*'
-        version: link:../../packages/core
-      '@xds/theme-default':
-        specifier: '*'
-        version: link:../../packages/themes/default
       next:
         specifier: ^15.5.16
         version: 15.5.18(@babel/core@7.29.7)(@playwright/test@1.61.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -321,10 +321,10 @@ importers:
 
   apps/example-nextjs-tailwind:
     dependencies:
-      '@xds/core':
+      '@astryxdesign/core':
         specifier: '*'
         version: link:../../packages/core
-      '@xds/theme-default':
+      '@astryxdesign/theme-default':
         specifier: '*'
         version: link:../../packages/themes/default
       next:
@@ -355,15 +355,15 @@ importers:
 
   apps/example-vite:
     dependencies:
+      '@astryxdesign/core':
+        specifier: '*'
+        version: link:../../packages/core
+      '@astryxdesign/theme-default':
+        specifier: '*'
+        version: link:../../packages/themes/default
       '@stylexjs/stylex':
         specifier: ^0.18.3
         version: 0.18.3
-      '@xds/core':
-        specifier: '*'
-        version: link:../../packages/core
-      '@xds/theme-default':
-        specifier: '*'
-        version: link:../../packages/themes/default
       react:
         specifier: ^19.2.7
         version: 19.2.7
@@ -374,6 +374,9 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0
     devDependencies:
+      '@astryxdesign/build':
+        specifier: '*'
+        version: link:../../packages/build
       '@stylexjs/unplugin':
         specifier: ^0.19.0
         version: 0.19.0(unplugin@3.0.0)
@@ -386,9 +389,6 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^4.3.0
         version: 4.7.0(vite@6.4.2(@types/node@25.9.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4))
-      '@xds/build':
-        specifier: '*'
-        version: link:../../packages/build
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -398,10 +398,10 @@ importers:
 
   apps/example-vite-tailwind:
     dependencies:
-      '@xds/core':
+      '@astryxdesign/core':
         specifier: '*'
         version: link:../../packages/core
-      '@xds/theme-default':
+      '@astryxdesign/theme-default':
         specifier: '*'
         version: link:../../packages/themes/default
       react:
@@ -435,51 +435,51 @@ importers:
 
   apps/sandbox:
     dependencies:
+      '@astryxdesign/cli':
+        specifier: '*'
+        version: link:../../packages/cli
+      '@astryxdesign/core':
+        specifier: '*'
+        version: link:../../packages/core
+      '@astryxdesign/lab':
+        specifier: '*'
+        version: link:../../packages/lab
+      '@astryxdesign/theme-brutalist':
+        specifier: '*'
+        version: link:../../packages/themes/brutalist
+      '@astryxdesign/theme-butter':
+        specifier: '*'
+        version: link:../../packages/themes/butter
+      '@astryxdesign/theme-chocolate':
+        specifier: '*'
+        version: link:../../packages/themes/chocolate
+      '@astryxdesign/theme-daily':
+        specifier: '*'
+        version: link:../../packages/themes/daily
+      '@astryxdesign/theme-default':
+        specifier: '*'
+        version: link:../../packages/themes/default
+      '@astryxdesign/theme-gothic':
+        specifier: '*'
+        version: link:../../packages/themes/gothic
+      '@astryxdesign/theme-matcha':
+        specifier: '*'
+        version: link:../../packages/themes/matcha
+      '@astryxdesign/theme-neutral':
+        specifier: '*'
+        version: link:../../packages/themes/neutral
+      '@astryxdesign/theme-stone':
+        specifier: '*'
+        version: link:../../packages/themes/stone
+      '@astryxdesign/theme-y2k':
+        specifier: '*'
+        version: link:../../packages/themes/y2k
       '@heroicons/react':
         specifier: ^2.2.0
         version: 2.2.0(react@19.2.7)
       '@stylexjs/stylex':
         specifier: ^0.18.3
         version: 0.18.3
-      '@xds/cli':
-        specifier: '*'
-        version: link:../../packages/cli
-      '@xds/core':
-        specifier: '*'
-        version: link:../../packages/core
-      '@xds/lab':
-        specifier: '*'
-        version: link:../../packages/lab
-      '@xds/theme-brutalist':
-        specifier: '*'
-        version: link:../../packages/themes/brutalist
-      '@xds/theme-butter':
-        specifier: '*'
-        version: link:../../packages/themes/butter
-      '@xds/theme-chocolate':
-        specifier: '*'
-        version: link:../../packages/themes/chocolate
-      '@xds/theme-daily':
-        specifier: '*'
-        version: link:../../packages/themes/daily
-      '@xds/theme-default':
-        specifier: '*'
-        version: link:../../packages/themes/default
-      '@xds/theme-gothic':
-        specifier: '*'
-        version: link:../../packages/themes/gothic
-      '@xds/theme-matcha':
-        specifier: '*'
-        version: link:../../packages/themes/matcha
-      '@xds/theme-neutral':
-        specifier: '*'
-        version: link:../../packages/themes/neutral
-      '@xds/theme-stone':
-        specifier: '*'
-        version: link:../../packages/themes/stone
-      '@xds/theme-y2k':
-        specifier: '*'
-        version: link:../../packages/themes/y2k
       next:
         specifier: ^15.5.16
         version: 15.5.18(@babel/core@7.29.7)(@playwright/test@1.61.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -493,6 +493,9 @@ importers:
         specifier: ^3.8.1
         version: 3.8.1(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@18.3.1)(react@19.2.7)(redux@5.0.1)
     devDependencies:
+      '@astryxdesign/build':
+        specifier: '*'
+        version: link:../../packages/build
       '@babel/preset-react':
         specifier: ^7.29.7
         version: 7.29.7(@babel/core@7.29.7)
@@ -514,9 +517,6 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.17)
-      '@xds/build':
-        specifier: '*'
-        version: link:../../packages/build
       commander:
         specifier: ^12.1.0
         version: 12.1.0
@@ -526,22 +526,22 @@ importers:
 
   apps/storybook:
     dependencies:
-      '@xds/core':
+      '@astryxdesign/core':
         specifier: '*'
         version: link:../../packages/core
-      '@xds/lab':
+      '@astryxdesign/lab':
         specifier: '*'
         version: link:../../packages/lab
-      '@xds/theme-brutalist':
+      '@astryxdesign/theme-brutalist':
         specifier: '*'
         version: link:../../packages/themes/brutalist
-      '@xds/theme-default':
+      '@astryxdesign/theme-default':
         specifier: '*'
         version: link:../../packages/themes/default
-      '@xds/theme-neutral':
+      '@astryxdesign/theme-neutral':
         specifier: '*'
         version: link:../../packages/themes/neutral
-      '@xds/vega':
+      '@astryxdesign/vega':
         specifier: '*'
         version: link:../../packages/vega
       react:
@@ -563,6 +563,9 @@ importers:
         specifier: ^6.4.3
         version: 6.4.3(vega@6.2.0)
     devDependencies:
+      '@astryxdesign/build':
+        specifier: '*'
+        version: link:../../packages/build
       '@storybook/addon-docs':
         specifier: ^10.4.6
         version: 10.4.6(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(esbuild@0.28.1)(rollup@4.60.4)(storybook@10.4.6(@testing-library/dom@10.4.1)(@types/react@19.2.17)(prettier@3.8.4)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(vite@6.4.2(@types/node@25.9.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4))
@@ -578,9 +581,6 @@ importers:
       '@stylexjs/unplugin':
         specifier: ^0.19.0
         version: 0.19.0(unplugin@3.0.0)
-      '@xds/build':
-        specifier: '*'
-        version: link:../../packages/build
       storybook:
         specifier: ^10.4.6
         version: 10.4.6(@testing-library/dom@10.4.1)(@types/react@19.2.17)(prettier@3.8.4)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -605,7 +605,7 @@ importers:
 
   internal/vibe-tests:
     dependencies:
-      '@xds/cli':
+      '@astryxdesign/cli':
         specifier: '*'
         version: link:../../packages/cli
       commander:
@@ -728,16 +728,16 @@ importers:
         specifier: ^2.7.0
         version: 2.7.0
     devDependencies:
-      '@xds/core':
+      '@astryxdesign/core':
         specifier: '*'
         version: link:../core
-      '@xds/lab':
+      '@astryxdesign/lab':
         specifier: '*'
         version: link:../lab
-      '@xds/theme-default':
+      '@astryxdesign/theme-default':
         specifier: '*'
         version: link:../themes/default
-      '@xds/theme-neutral':
+      '@astryxdesign/theme-neutral':
         specifier: '*'
         version: link:../themes/neutral
 
@@ -780,12 +780,12 @@ importers:
 
   packages/lab:
     dependencies:
+      '@astryxdesign/core':
+        specifier: 0.0.15
+        version: link:../core
       '@stylexjs/stylex':
         specifier: '>=0.10.0'
         version: 0.18.3
-      '@xds/core':
-        specifier: 0.0.15
-        version: link:../core
       d3-array:
         specifier: ^3.2.4
         version: 3.2.4
@@ -814,17 +814,17 @@ importers:
 
   packages/themes/brutalist:
     dependencies:
-      '@xds/core':
+      '@astryxdesign/core':
         specifier: 0.0.15
         version: link:../../core
     devDependencies:
-      '@xds/cli':
+      '@astryxdesign/cli':
         specifier: 0.0.15
         version: link:../../cli
 
   packages/themes/butter:
     dependencies:
-      '@xds/core':
+      '@astryxdesign/core':
         specifier: 0.0.15
         version: link:../../core
       lucide-react:
@@ -834,13 +834,13 @@ importers:
         specifier: '>=19'
         version: 19.2.7
     devDependencies:
-      '@xds/cli':
+      '@astryxdesign/cli':
         specifier: 0.0.15
         version: link:../../cli
 
   packages/themes/chocolate:
     dependencies:
-      '@xds/core':
+      '@astryxdesign/core':
         specifier: 0.0.15
         version: link:../../core
       lucide-react:
@@ -850,13 +850,13 @@ importers:
         specifier: '>=19'
         version: 19.2.7
     devDependencies:
-      '@xds/cli':
+      '@astryxdesign/cli':
         specifier: 0.0.15
         version: link:../../cli
 
   packages/themes/daily:
     dependencies:
-      '@xds/core':
+      '@astryxdesign/core':
         specifier: 0.0.15
         version: link:../../core
       lucide-react:
@@ -866,29 +866,29 @@ importers:
         specifier: '>=19'
         version: 19.2.7
     devDependencies:
-      '@xds/cli':
+      '@astryxdesign/cli':
         specifier: 0.0.15
         version: link:../../cli
 
   packages/themes/default:
     dependencies:
+      '@astryxdesign/core':
+        specifier: 0.0.15
+        version: link:../../core
       '@heroicons/react':
         specifier: ^2.2.0
         version: 2.2.0(react@19.2.7)
-      '@xds/core':
-        specifier: 0.0.15
-        version: link:../../core
       react:
         specifier: '>=19'
         version: 19.2.7
     devDependencies:
-      '@xds/cli':
+      '@astryxdesign/cli':
         specifier: 0.0.15
         version: link:../../cli
 
   packages/themes/gothic:
     dependencies:
-      '@xds/core':
+      '@astryxdesign/core':
         specifier: 0.0.15
         version: link:../../core
       lucide-react:
@@ -898,13 +898,13 @@ importers:
         specifier: '>=19'
         version: 19.2.7
     devDependencies:
-      '@xds/cli':
+      '@astryxdesign/cli':
         specifier: 0.0.15
         version: link:../../cli
 
   packages/themes/matcha:
     dependencies:
-      '@xds/core':
+      '@astryxdesign/core':
         specifier: 0.0.15
         version: link:../../core
       lucide-react:
@@ -914,13 +914,13 @@ importers:
         specifier: '>=19'
         version: 19.2.7
     devDependencies:
-      '@xds/cli':
+      '@astryxdesign/cli':
         specifier: 0.0.15
         version: link:../../cli
 
   packages/themes/neutral:
     dependencies:
-      '@xds/core':
+      '@astryxdesign/core':
         specifier: 0.0.15
         version: link:../../core
       lucide-react:
@@ -930,13 +930,13 @@ importers:
         specifier: '>=19'
         version: 19.2.7
     devDependencies:
-      '@xds/cli':
+      '@astryxdesign/cli':
         specifier: 0.0.15
         version: link:../../cli
 
   packages/themes/stone:
     dependencies:
-      '@xds/core':
+      '@astryxdesign/core':
         specifier: 0.0.15
         version: link:../../core
       lucide-react:
@@ -946,13 +946,13 @@ importers:
         specifier: '>=19'
         version: 19.2.7
     devDependencies:
-      '@xds/cli':
+      '@astryxdesign/cli':
         specifier: 0.0.15
         version: link:../../cli
 
   packages/themes/y2k:
     dependencies:
-      '@xds/core':
+      '@astryxdesign/core':
         specifier: 0.0.15
         version: link:../../core
       lucide-react:
@@ -962,7 +962,7 @@ importers:
         specifier: '>=19'
         version: 19.2.7
     devDependencies:
-      '@xds/cli':
+      '@astryxdesign/cli':
         specifier: 0.0.15
         version: link:../../cli
 

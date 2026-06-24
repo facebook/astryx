@@ -4,12 +4,12 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Heading, Text} from '@xds/core/Text';
-import {Layout, LayoutHeader, LayoutContent} from '@xds/core/Layout';
-import {TextInput} from '@xds/core/TextInput';
-import {Grid} from '@xds/core/Grid';
-import {VStack} from '@xds/core/Stack';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Layout, LayoutHeader, LayoutContent} from '@astryxdesign/core/Layout';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Grid} from '@astryxdesign/core/Grid';
+import {VStack} from '@astryxdesign/core/Stack';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {categories} from '../../sandboxPages';
 import {ProjectCard} from '../../ProjectCard';
 import {SearchIcon} from '../../icons';

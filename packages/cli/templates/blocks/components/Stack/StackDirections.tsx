@@ -2,8 +2,8 @@
 
 'use client';
 
-import {HStack, VStack} from '@xds/core/Layout';
-import {Token} from '@xds/core/Token';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Token} from '@astryxdesign/core/Token';
 
 export default function StackDirections() {
   return (

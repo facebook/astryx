@@ -129,10 +129,10 @@ if [ -n "$ITER_ID" ]; then
   mkdir -p "results/$ITER_ID/results"
 
   cat > "results/$ITER_ID/results/$PROMPT_ID.tsx" << 'FIXTURE'
-import {XDSCard} from '@xds/core';
-import {XDSText} from '@xds/core';
-import {XDSHeading} from '@xds/core';
-import {XDSVStack} from '@xds/core';
+import {XDSCard} from '@astryxdesign/core';
+import {XDSText} from '@astryxdesign/core';
+import {XDSHeading} from '@astryxdesign/core';
+import {XDSVStack} from '@astryxdesign/core';
 
 export default function MetricsCard() {
   return (

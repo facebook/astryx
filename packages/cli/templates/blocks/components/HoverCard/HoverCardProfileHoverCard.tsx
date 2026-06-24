@@ -3,12 +3,12 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {HoverCard} from '@xds/core/HoverCard';
-import {Avatar} from '@xds/core/Avatar';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
+import {HoverCard} from '@astryxdesign/core/HoverCard';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
 import {CalendarIcon} from '@heroicons/react/24/outline';
 
 const styles = stylex.create({

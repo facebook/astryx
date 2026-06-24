@@ -2,12 +2,12 @@
 
 'use client';
 
-import {useLayer} from '@xds/core/Layer';
-import {Button} from '@xds/core/Button';
-import {Card} from '@xds/core/Card';
-import {Center} from '@xds/core/Center';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {useLayer} from '@astryxdesign/core/Layer';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {Center} from '@astryxdesign/core/Center';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function LayerHookUsage() {
   const layer = useLayer({mode: 'context', lightDismiss: true});

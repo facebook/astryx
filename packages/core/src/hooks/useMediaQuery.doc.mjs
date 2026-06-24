@@ -30,7 +30,7 @@ export const docs = {
   },
   relatedComponents: [],
   relatedHooks: ['useImageMode'],
-  importPath: '@xds/core/hooks',
+  importPath: '@astryxdesign/core/hooks',
   category: 'media',
 };
 

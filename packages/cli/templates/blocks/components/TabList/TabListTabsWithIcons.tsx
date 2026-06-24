@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {TabList, Tab} from '@xds/core/TabList';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
 
 const HomeIcon = (
   <svg viewBox="0 0 16 16" fill="currentColor" width="100%" height="100%">

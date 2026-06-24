@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
-import {NavIcon} from '@xds/core/NavIcon';
-import {Button} from '@xds/core/Button';
+import {TopNav, TopNavHeading, TopNavItem} from '@astryxdesign/core/TopNav';
+import {NavIcon} from '@astryxdesign/core/NavIcon';
+import {Button} from '@astryxdesign/core/Button';
 import {
   HomeIcon,
   Cog6ToothIcon,

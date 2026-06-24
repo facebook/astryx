@@ -180,7 +180,7 @@ async function gatherHooks(coreDir) {
     const docPath = findHookDoc(coreDir, hookName);
     let keywords = [];
     let description = '';
-    let importPath = '@xds/core/hooks';
+    let importPath = '@astryxdesign/core/hooks';
     if (docPath) {
       const doc = await loadModuleDoc(docPath);
       if (doc) {
@@ -328,7 +328,7 @@ export async function search(query, options = {}) {
 
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
-    throw new XDSError('Could not find @xds/core package');
+    throw new XDSError('Could not find @astryxdesign/core package');
   }
 
   // Gather candidates from each requested domain in parallel.

@@ -23,7 +23,7 @@ packages/themes/{themeName}/
 
 ```json
 {
-  "name": "@xds/theme-{themeName}",
+  "name": "@astryxdesign/theme-{themeName}",
   "version": "0.0.1",
   "private": false,
   "description": "{Description} theme for XDS",
@@ -40,10 +40,10 @@ packages/themes/{themeName}/
     "build:theme": "xds build-theme src/index.ts -o dist/theme.css"
   },
   "peerDependencies": {
-    "@xds/core": "*"
+    "@astryxdesign/core": "*"
   },
   "devDependencies": {
-    "@xds/cli": "*"
+    "@astryxdesign/cli": "*"
   }
 }
 ```
@@ -51,7 +51,7 @@ packages/themes/{themeName}/
 ### Theme File (src/index.ts)
 
 ```tsx
-import {defineTheme} from '@xds/core/theme';
+import {defineTheme} from '@astryxdesign/core/theme';
 
 export const {themeName}Theme = defineTheme({
   name: '{themeName}',
@@ -152,8 +152,8 @@ Component overrides generate scoped CSS:
 Use `extends` to derive from another theme — inherits tokens, components, icons, fonts. Only specify overrides.
 
 ```tsx
-import {defineTheme} from '@xds/core/theme';
-import {defaultTheme} from '@xds/theme-default';
+import {defineTheme} from '@astryxdesign/core/theme';
+import {defaultTheme} from '@astryxdesign/theme-default';
 
 export const brandTheme = defineTheme({
   name: 'brand',

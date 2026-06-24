@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {FileInput} from '@xds/core/FileInput';
+import {FileInput} from '@astryxdesign/core/FileInput';
 
 const meta: Meta<typeof FileInput> = {
   title: 'Core/FileInput',

@@ -2,16 +2,16 @@
 
 'use client';
 
-import {VStack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
 import {
   TopNav,
   TopNavHeading,
   TopNavItem,
   TopNavMenu,
-} from '@xds/core/TopNav';
-import {NavIcon} from '@xds/core/NavIcon';
+} from '@astryxdesign/core/TopNav';
+import {NavIcon} from '@astryxdesign/core/NavIcon';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({

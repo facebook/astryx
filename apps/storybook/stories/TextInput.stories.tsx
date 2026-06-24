@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {TextInput} from '@xds/core/TextInput';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import {
   MagnifyingGlassIcon,
   EnvelopeIcon,

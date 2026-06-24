@@ -6,9 +6,9 @@ import {useState} from 'react';
 import {
   ToggleButton,
   ToggleButtonGroup,
-} from '@xds/core/ToggleButton';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+} from '@astryxdesign/core/ToggleButton';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function ToggleButtonGroupShowcase() {
   const [view, setView] = useState<string | null>('grid');

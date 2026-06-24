@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {Calendar, type ISODateString} from '@xds/core/Calendar';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Calendar, type ISODateString} from '@astryxdesign/core/Calendar';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function CalendarSingle() {
   const [value, setValue] = useState<ISODateString>('2026-01-15');

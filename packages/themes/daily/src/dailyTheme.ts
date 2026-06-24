@@ -8,7 +8,7 @@
  * Uses PT Serif italic for display text and Figtree for headings/body.
  */
 
-import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
+import {defineTheme, defineSyntaxTheme} from '@astryxdesign/core/theme';
 import {dailyIconRegistry} from './icons';
 
 /** Astryx syntax palette — warm, muted tones to match the earthy aesthetic. */

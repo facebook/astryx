@@ -1,6 +1,6 @@
-# @xds/lab
+# @astryxdesign/lab
 
-Experimental XDS components. This package is **not published**; it exists as a staging area for components being developed before graduating to `@xds/core`.
+Experimental XDS components. This package is **not published**; it exists as a staging area for components being developed before graduating to `@astryxdesign/core`.
 
 ## Purpose
 
@@ -8,8 +8,8 @@ Components in lab:
 
 - Are importable in storybook and sandbox for testing
 - Can be iterated on freely without worrying about breaking consumers
-- Compose with `@xds/core` components (use the theme, follow naming conventions)
-- Graduate to `@xds/core` after thorough engineering review
+- Compose with `@astryxdesign/core` components (use the theme, follow naming conventions)
+- Graduate to `@astryxdesign/core` after thorough engineering review
 
 ## What's here vs what's in core
 
@@ -20,7 +20,7 @@ Components in lab:
 ## Usage
 
 ```tsx
-import {XDSCodeEditor} from '@xds/lab';
+import {XDSCodeEditor} from '@astryxdesign/lab';
 ```
 
 Since this is a workspace package (not published), imports resolve via pnpm workspaces in storybook and sandbox.

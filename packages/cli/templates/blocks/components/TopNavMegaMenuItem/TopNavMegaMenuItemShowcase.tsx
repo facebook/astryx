@@ -2,8 +2,8 @@
 
 'use client';
 
-import {TopNavMegaMenuItem} from '@xds/core/TopNav';
-import {Grid} from '@xds/core/Grid';
+import {TopNavMegaMenuItem} from '@astryxdesign/core/TopNav';
+import {Grid} from '@astryxdesign/core/Grid';
 
 function BoltIcon() {
   return (

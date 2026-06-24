@@ -2,9 +2,9 @@
 
 'use client';
 
-import {MetadataList, MetadataListItem} from '@xds/core/MetadataList';
-import {Badge} from '@xds/core/Badge';
-import {Link} from '@xds/core/Link';
+import {MetadataList, MetadataListItem} from '@astryxdesign/core/MetadataList';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Link} from '@astryxdesign/core/Link';
 
 export default function MetadataListItemShowcase() {
   return (

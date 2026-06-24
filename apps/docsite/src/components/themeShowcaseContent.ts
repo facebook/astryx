@@ -10,7 +10,7 @@
  * instead of gadgets. This registry supplies those overrides; the template
  * falls back to its own neutral defaults for any theme not listed here.
  *
- * Keyed by theme slug (the `<slug>` in `@xds/theme-<slug>` / /themes?theme=<slug>).
+ * Keyed by theme slug (the `<slug>` in `@astryxdesign/theme-<slug>` / /themes?theme=<slug>).
  */
 
 import type {

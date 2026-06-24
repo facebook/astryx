@@ -14,34 +14,34 @@ import {
   LayoutHeader,
   LayoutContent,
   LayoutFooter,
-} from '@xds/core/Layout';
-import {Card} from '@xds/core/Card';
-import {Button} from '@xds/core/Button';
-import {Text, Heading} from '@xds/core/Text';
-import {Divider} from '@xds/core/Divider';
-import {Switch} from '@xds/core/Switch';
-import {CheckboxInput} from '@xds/core/CheckboxInput';
-import {TextInput} from '@xds/core/TextInput';
-import {Slider} from '@xds/core/Slider';
-import {Selector} from '@xds/core/Selector';
-import {DropdownMenu} from '@xds/core/DropdownMenu';
-import {Popover} from '@xds/core/Popover';
-import {HoverCard} from '@xds/core/HoverCard';
-import {Tooltip} from '@xds/core/Tooltip';
-import {Dialog} from '@xds/core/Dialog';
-import {TabList, Tab} from '@xds/core/TabList';
-import {List, ListItem} from '@xds/core/List';
-import {Spinner} from '@xds/core/Spinner';
-import {Skeleton} from '@xds/core/Skeleton';
-import {ProgressBar} from '@xds/core/ProgressBar';
-import {StatusDot} from '@xds/core/StatusDot';
+} from '@astryxdesign/core/Layout';
+import {Card} from '@astryxdesign/core/Card';
+import {Button} from '@astryxdesign/core/Button';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Switch} from '@astryxdesign/core/Switch';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Slider} from '@astryxdesign/core/Slider';
+import {Selector} from '@astryxdesign/core/Selector';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
+import {Popover} from '@astryxdesign/core/Popover';
+import {HoverCard} from '@astryxdesign/core/HoverCard';
+import {Tooltip} from '@astryxdesign/core/Tooltip';
+import {Dialog} from '@astryxdesign/core/Dialog';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {Spinner} from '@astryxdesign/core/Spinner';
+import {Skeleton} from '@astryxdesign/core/Skeleton';
+import {ProgressBar} from '@astryxdesign/core/ProgressBar';
+import {StatusDot} from '@astryxdesign/core/StatusDot';
 import {
   colorVars,
   spacingVars,
   radiusVars,
   durationVars,
   easeVars,
-} from '@xds/core/theme/tokens.stylex';
+} from '@astryxdesign/core/theme/tokens.stylex';
 
 // =============================================================================
 // Styles — width constraints + reduced motion demo primitive

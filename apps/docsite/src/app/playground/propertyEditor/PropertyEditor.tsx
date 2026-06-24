@@ -20,16 +20,16 @@
 
 import {useEffect, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Layout, LayoutContent, LayoutFooter} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {Selector} from '@xds/core/Selector';
-import {Switch} from '@xds/core/Switch';
-import {TextInput} from '@xds/core/TextInput';
-import {NumberInput} from '@xds/core/NumberInput';
-import {EmptyState} from '@xds/core/EmptyState';
-import {List, ListItem} from '@xds/core/List';
-import {Center} from '@xds/core/Center';
-import {Button} from '@xds/core/Button';
+import {Layout, LayoutContent, LayoutFooter} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {Selector} from '@astryxdesign/core/Selector';
+import {Switch} from '@astryxdesign/core/Switch';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {NumberInput} from '@astryxdesign/core/NumberInput';
+import {EmptyState} from '@astryxdesign/core/EmptyState';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {Center} from '@astryxdesign/core/Center';
+import {Button} from '@astryxdesign/core/Button';
 import {
   coerceDefault,
   coerceEnumOption,
@@ -310,7 +310,7 @@ export function PropertyEditor({
   if (!entry) {
     body = (
       <Text type="supporting" color="secondary">
-        {selected} is not part of @xds/core — no editable props.
+        {selected} is not part of @astryxdesign/core — no editable props.
       </Text>
     );
   } else if (editableProps.length === 0) {

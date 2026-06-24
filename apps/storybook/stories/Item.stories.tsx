@@ -3,12 +3,12 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
-import {Item} from '@xds/core/Item';
-import {Avatar} from '@xds/core/Avatar';
-import {Badge} from '@xds/core/Badge';
-import {Icon} from '@xds/core/Icon';
-import {Text} from '@xds/core/Text';
-import {Stack} from '@xds/core/Layout';
+import {Item} from '@astryxdesign/core/Item';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Text} from '@astryxdesign/core/Text';
+import {Stack} from '@astryxdesign/core/Layout';
 
 const storyStyles = stylex.create({
   iconCircle: {

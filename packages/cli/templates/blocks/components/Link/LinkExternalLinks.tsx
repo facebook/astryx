@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Link} from '@xds/core/Link';
-import {VStack} from '@xds/core/Layout';
+import {Link} from '@astryxdesign/core/Link';
+import {VStack} from '@astryxdesign/core/Layout';
 
 export default function LinkExternalLinks() {
   return (

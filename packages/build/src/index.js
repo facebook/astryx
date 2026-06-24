@@ -3,7 +3,7 @@
 "use strict";
 
 /**
- * @xds/postcss-plugin
+ * @astryxdesign/postcss-plugin
  *
  * PostCSS plugin for XDS source builds. Compiles StyleX from both
  * XDS library source and product code in two separate passes with
@@ -24,10 +24,10 @@ const {globSync} = require('fast-glob');
 const isGlob = require('is-glob');
 const globParent = require('glob-parent');
 
-const PLUGIN_NAME = '@xds/postcss-plugin';
+const PLUGIN_NAME = '@astryxdesign/postcss-plugin';
 
-const XDS_LIBRARY_GLOB = 'node_modules/@xds/**/*.{ts,tsx}';
-const XDS_LIBRARY_PATTERNS = ['node_modules/@xds/', 'packages/core/', 'packages/themes/'];
+const XDS_LIBRARY_GLOB = 'node_modules/@astryxdesign/**/*.{ts,tsx}';
+const XDS_LIBRARY_PATTERNS = ['node_modules/@astryxdesign/', 'packages/core/', 'packages/themes/'];
 const STYLEX_IMPORT_SOURCE = '@stylexjs/stylex';
 
 function parseDependency(fileOrGlob, cwd) {

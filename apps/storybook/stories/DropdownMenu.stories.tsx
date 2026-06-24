@@ -2,8 +2,8 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {DropdownMenu, DropdownMenuItem} from '@xds/core/DropdownMenu';
-import {Divider} from '@xds/core/Divider';
+import {DropdownMenu, DropdownMenuItem} from '@astryxdesign/core/DropdownMenu';
+import {Divider} from '@astryxdesign/core/Divider';
 import {
   PencilIcon,
   TrashIcon,

@@ -4,7 +4,7 @@
  * @file index.ts
  * @input VStack component source
  * @output Exports VStack and its props type
- * @position Entry point for @xds/core/VStack subpath export
+ * @position Entry point for @astryxdesign/core/VStack subpath export
  */
 
 export {VStack, type VStackProps} from './VStack';

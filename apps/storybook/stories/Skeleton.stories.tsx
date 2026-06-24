@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {Skeleton} from '@xds/core/Skeleton';
-import {Card} from '@xds/core/Card';
-import {HStack, VStack} from '@xds/core/Layout';
+import {Skeleton} from '@astryxdesign/core/Skeleton';
+import {Card} from '@astryxdesign/core/Card';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
 
 const meta: Meta<typeof Skeleton> = {
   title: 'Core/Skeleton',

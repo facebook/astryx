@@ -8,12 +8,12 @@ import {
   useTableColumnSettings,
   useTableColumnSettingsState,
   proportional,
-} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
-import {MultiSelector} from '@xds/core/MultiSelector';
-import {VStack} from '@xds/core/Layout';
-import {Toolbar} from '@xds/core/Toolbar';
-import {Text} from '@xds/core/Text';
+} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
+import {MultiSelector} from '@astryxdesign/core/MultiSelector';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Toolbar} from '@astryxdesign/core/Toolbar';
+import {Text} from '@astryxdesign/core/Text';
 
 interface User extends Record<string, unknown> {
   id: string;

@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {Blockquote} from '@xds/core/Blockquote';
-import {Card} from '@xds/core/Card';
-import {Section} from '@xds/core/Section';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Blockquote} from '@astryxdesign/core/Blockquote';
+import {Card} from '@astryxdesign/core/Card';
+import {Section} from '@astryxdesign/core/Section';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const meta: Meta<typeof Blockquote> = {
   title: 'Core/Blockquote',

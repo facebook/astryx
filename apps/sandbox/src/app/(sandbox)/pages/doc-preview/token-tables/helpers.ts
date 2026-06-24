@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import type {DefinedTheme} from '@xds/core/theme';
-import {xdsTokenDefaults} from '@xds/core/theme';
+import type {DefinedTheme} from '@astryxdesign/core/theme';
+import {xdsTokenDefaults} from '@astryxdesign/core/theme';
 
 /**
  * Parse a light-dark() CSS value into [light, dark] components.

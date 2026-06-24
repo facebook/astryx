@@ -5,8 +5,8 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from '@xds/core/SegmentedControl';
-import {Icon} from '@xds/core/Icon';
+} from '@astryxdesign/core/SegmentedControl';
+import {Icon} from '@astryxdesign/core/Icon';
 import {
   Squares2X2Icon,
   ListBulletIcon,

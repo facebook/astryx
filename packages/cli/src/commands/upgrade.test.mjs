@@ -86,7 +86,7 @@ describe('upgrade gate (semver comparison)', () => {
   it('does NOT block an upgrade from 0.0.9 to 0.0.10 (regression)', async () => {
     // The original bug: string compare said '0.0.9' >= '0.0.10', so the
     // gate told users "Already up to date" without --force.
-    writePkg({'@xds/core': '^0.0.9'});
+    writePkg({'@astryxdesign/core': '^0.0.9'});
 
     const result = await runJson(['--json', 'upgrade', '--to', '0.0.10', '--codemod-only']);
     // Either a real run or "no codemods available" — but never the
@@ -98,7 +98,7 @@ describe('upgrade gate (semver comparison)', () => {
   });
 
   it('blocks when current >= target by semver (e.g. 0.0.10 → 0.0.9)', async () => {
-    writePkg({'@xds/core': '^0.0.10'});
+    writePkg({'@astryxdesign/core': '^0.0.10'});
     const program = createProgram();
     await program.parseAsync(['node', 'xds', 'upgrade', '--to', '0.0.9']);
     const output = stdoutCalls.join('') + logCalls.join('\n');
@@ -108,7 +108,7 @@ describe('upgrade gate (semver comparison)', () => {
 
 describe('upgrade --to validation', () => {
   it('rejects bogus --to values with a structured error', async () => {
-    writePkg({'@xds/core': '^0.0.5'});
+    writePkg({'@astryxdesign/core': '^0.0.5'});
     const result = await runJson(['--json', 'upgrade', '--to', 'bogus']);
     expect(result).not.toBeNull();
     expect(result.error).toMatch(/Invalid --to/);
@@ -116,7 +116,7 @@ describe('upgrade --to validation', () => {
   });
 
   it('rejects bogus --from values', async () => {
-    writePkg({'@xds/core': '^0.0.5'});
+    writePkg({'@astryxdesign/core': '^0.0.5'});
     const result = await runJson(['--json', 'upgrade', '--from', 'not-a-version', '--to', '0.0.5']);
     expect(result).not.toBeNull();
     expect(result.error).toMatch(/Invalid --from/);
@@ -124,7 +124,7 @@ describe('upgrade --to validation', () => {
   });
 
   it('accepts a valid semver --to', async () => {
-    writePkg({'@xds/core': '^0.0.5'});
+    writePkg({'@astryxdesign/core': '^0.0.5'});
     // Don't actually run codemods — codemod-only + a target with no
     // matching transforms is enough to confirm validation passed.
     const result = await runJson(['--json', 'upgrade', '--to', latestVersion, '--codemod-only']);

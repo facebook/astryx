@@ -3,14 +3,14 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {Text} from '@xds/core/Text';
-import {Link} from '@xds/core/Link';
-import {Button} from '@xds/core/Button';
-import {HStack, VStack} from '@xds/core/Layout';
-import {Grid, GridSpan} from '@xds/core/Grid';
-import {Divider} from '@xds/core/Divider';
-import {Section} from '@xds/core/Section';
-import {useAppShellMobile} from '@xds/core/AppShell';
+import {Text} from '@astryxdesign/core/Text';
+import {Link} from '@astryxdesign/core/Link';
+import {Button} from '@astryxdesign/core/Button';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Grid, GridSpan} from '@astryxdesign/core/Grid';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Section} from '@astryxdesign/core/Section';
+import {useAppShellMobile} from '@astryxdesign/core/AppShell';
 import {
   GITHUB_REPO,
   FACEBOOK_URL,

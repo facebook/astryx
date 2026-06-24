@@ -18,7 +18,7 @@ import {search, scoreCandidate, SEARCH_DOMAINS} from '../api/search.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CLI_BIN = path.resolve(__dirname, '../../bin/xds.mjs');
-// Run against the monorepo root so @xds/core is discoverable.
+// Run against the monorepo root so @astryxdesign/core is discoverable.
 const REPO_ROOT = path.resolve(__dirname, '../../../..');
 const OPTS = {cwd: REPO_ROOT};
 

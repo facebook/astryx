@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Spinner} from '@xds/core/Spinner';
-import {Text} from '@xds/core/Text';
-import {HStack, VStack} from '@xds/core/Layout';
+import {Spinner} from '@astryxdesign/core/Spinner';
+import {Text} from '@astryxdesign/core/Text';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
 
 export default function SpinnerWithLabel() {
   return (

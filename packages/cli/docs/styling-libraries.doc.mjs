@@ -53,7 +53,7 @@ export const docs = {
             [
               'Tailwind bridge',
               'You want utility classes backed by active system tokens',
-              '`@xds/core/tailwind-theme.css`',
+              '`@astryxdesign/core/tailwind-theme.css`',
             ],
             [
               'Token resolver APIs',
@@ -120,14 +120,14 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'For StyleX styles, prefer the typed token exports from `@xds/core/theme/tokens.stylex`. They provide autocomplete and catch token-name typos while still resolving through the same system CSS variables at runtime.',
+          text: 'For StyleX styles, prefer the typed token exports from `@astryxdesign/core/theme/tokens.stylex`. They provide autocomplete and catch token-name typos while still resolving through the same system CSS variables at runtime.',
         },
         {
           type: 'code',
           lang: 'tsx',
           label: 'Typed token imports',
           code: `import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars, radiusVars} from '@xds/core/theme/tokens.stylex';
+import {colorVars, spacingVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   panel: {
@@ -150,7 +150,7 @@ const styles = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'The Tailwind v4 bridge at `@xds/core/tailwind-theme.css` maps Tailwind theme variables to system CSS variables with `@theme inline`, so utility classes like `text-primary`, `bg-surface`, `border-border`, `rounded-lg`, and `shadow-md` stay in sync with the active theme.',
+          text: 'The Tailwind v4 bridge at `@astryxdesign/core/tailwind-theme.css` maps Tailwind theme variables to system CSS variables with `@theme inline`, so utility classes like `text-primary`, `bg-surface`, `border-border`, `rounded-lg`, and `shadow-md` stay in sync with the active theme.',
         },
         {
           type: 'code',
@@ -160,10 +160,10 @@ const styles = stylex.create({
 
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/preflight.css" layer(base);
-@import "@xds/core/reset.css";
-@import "@xds/core/astryx.css";
-@import "@xds/theme-default/theme.css";
-@import "@xds/core/tailwind-theme.css";
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+@import "@astryxdesign/theme-default/theme.css";
+@import "@astryxdesign/core/tailwind-theme.css";
 @import "tailwindcss/utilities.css" layer(utilities);`,
         },
         {
@@ -373,8 +373,8 @@ tokens: {
           type: 'code',
           lang: 'ts',
           label: 'Resolve tokens without React context',
-          code: `import {resolveXDSThemeTokens} from '@xds/core/theme/tokens';
-import {defaultTheme} from '@xds/theme-default';
+          code: `import {resolveXDSThemeTokens} from '@astryxdesign/core/theme/tokens';
+import {defaultTheme} from '@astryxdesign/theme-default';
 
 const tokens = resolveXDSThemeTokens(defaultTheme, {mode: 'light'});
 
@@ -396,7 +396,7 @@ const chartOptions = {
           code: `'use client';
 
 import {useMemo} from 'react';
-import {useTheme} from '@xds/core/theme';
+import {useTheme} from '@astryxdesign/core/theme';
 
 function RevenueChart({data}: {data: Array<{x: string; y: number}>}) {
   const {mode, tokens} = useTheme();

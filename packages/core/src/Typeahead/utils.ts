@@ -3,7 +3,7 @@
 /**
  * @file utils.ts
  * @output Server-safe re-exports of pure Typeahead utility functions
- * @position Subpath entry point: `@xds/core/Typeahead/utils`
+ * @position Subpath entry point: `@astryxdesign/core/Typeahead/utils`
  */
 
 export {createStaticSource} from './createStaticSource';

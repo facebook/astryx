@@ -2,7 +2,7 @@
 
 'use client';
 
-import {Text} from '@xds/core/Text';
+import {Text} from '@astryxdesign/core/Text';
 
 const LONG_TEXT =
   'The design system provides a consistent set of typography tokens, spacing scales, and color palettes that ensure every surface in the product feels cohesive regardless of which team built it.';

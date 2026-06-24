@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Link} from '@xds/core/Link';
-import {HStack} from '@xds/core/Layout';
+import {Link} from '@astryxdesign/core/Link';
+import {HStack} from '@astryxdesign/core/Layout';
 
 export default function LinksWithTooltips() {
   return (

@@ -1,5 +1,5 @@
 {
-  "name": "@xds/theme-brutalist",
+  "name": "@astryxdesign/theme-brutalist",
   "version": "0.0.15",
   "private": true,
   "description": "Brutalist theme for XDS — zero radius, monospace, heavy borders",
@@ -49,9 +49,9 @@
     "build": "xds theme build src/brutalistTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
   },
   "peerDependencies": {
-    "@xds/core": "0.0.15"
+    "@astryxdesign/core": "0.0.15"
   },
   "devDependencies": {
-    "@xds/cli": "0.0.15"
+    "@astryxdesign/cli": "0.0.15"
   }
 }

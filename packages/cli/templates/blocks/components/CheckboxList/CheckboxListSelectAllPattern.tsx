@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {CheckboxList, CheckboxListItem} from '@xds/core/CheckboxList';
-import {Divider} from '@xds/core/Divider';
+import {CheckboxList, CheckboxListItem} from '@astryxdesign/core/CheckboxList';
+import {Divider} from '@astryxdesign/core/Divider';
 
 const DOCUMENTS = [
   {id: 'transactions', label: 'Transaction history'},

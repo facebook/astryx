@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Button} from '@xds/core/Button';
-import {Stack} from '@xds/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Stack} from '@astryxdesign/core/Layout';
 
 export default function ButtonShowcase() {
   return (

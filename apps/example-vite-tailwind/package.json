@@ -1,5 +1,5 @@
 {
-  "name": "@xds/example-vite-tailwind",
+  "name": "@astryxdesign/example-vite-tailwind",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -9,8 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@xds/core": "*",
-    "@xds/theme-default": "*",
+    "@astryxdesign/core": "*",
+    "@astryxdesign/theme-default": "*",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },

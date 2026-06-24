@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 import type {Meta, StoryObj} from '@storybook/react';
-import {ContextMenu, ContextMenuItem} from '@xds/core/ContextMenu';
-import {Divider} from '@xds/core/Divider';
+import {ContextMenu, ContextMenuItem} from '@astryxdesign/core/ContextMenu';
+import {Divider} from '@astryxdesign/core/Divider';
 import {
   PencilIcon,
   TrashIcon,

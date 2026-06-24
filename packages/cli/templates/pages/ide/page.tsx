@@ -4,26 +4,26 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {SideNav, SideNavItem, SideNavSection} from '@xds/core/SideNav';
+import {SideNav, SideNavItem, SideNavSection} from '@astryxdesign/core/SideNav';
 
-import {Layout, LayoutContent, LayoutPanel} from '@xds/core/Layout';
-import {ResizeHandle, useResizable} from '@xds/core/Resizable';
-import {Text, Heading} from '@xds/core/Text';
-import {CodeBlock} from '@xds/core/CodeBlock';
-import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
-import {Stack} from '@xds/core/Layout';
-import {TabList, Tab} from '@xds/core/TabList';
+import {Layout, LayoutContent, LayoutPanel} from '@astryxdesign/core/Layout';
+import {ResizeHandle, useResizable} from '@astryxdesign/core/Resizable';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+import {colorVars, spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {Stack} from '@astryxdesign/core/Layout';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from '@xds/core/SegmentedControl';
-import {Button} from '@xds/core/Button';
-import {MetadataList, MetadataListItem} from '@xds/core/MetadataList';
-import {List, ListItem} from '@xds/core/List';
-import {Icon} from '@xds/core/Icon';
-import {TextInput} from '@xds/core/TextInput';
-import {TreeList} from '@xds/core/TreeList';
-import type {TreeListItemData} from '@xds/core/TreeList';
+} from '@astryxdesign/core/SegmentedControl';
+import {Button} from '@astryxdesign/core/Button';
+import {MetadataList, MetadataListItem} from '@astryxdesign/core/MetadataList';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {Icon} from '@astryxdesign/core/Icon';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {TreeList} from '@astryxdesign/core/TreeList';
+import type {TreeListItemData} from '@astryxdesign/core/TreeList';
 import {
   FolderIcon,
   DocumentTextIcon,
@@ -95,8 +95,8 @@ const styles = stylex.create({
 
 const EDITOR_CODE = `import {useState, useCallback} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Button} from '@xds/core/Button';
-import {Text} from '@xds/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Text} from '@astryxdesign/core/Text';
 
 const styles = stylex.create({
   container: {

@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Card} from '@xds/core/Card';
-import {Grid} from '@xds/core/Grid';
+import {Card} from '@astryxdesign/core/Card';
+import {Grid} from '@astryxdesign/core/Grid';
 
 export default function GridShowcase() {
   return (

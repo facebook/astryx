@@ -2,17 +2,17 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {MobileNav} from '@xds/core/MobileNav';
+import {MobileNav} from '@astryxdesign/core/MobileNav';
 import {
   SideNav,
   SideNavHeading,
   SideNavItem,
   SideNavSection,
-} from '@xds/core/SideNav';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {NavIcon} from '@xds/core/NavIcon';
-import {useMediaQuery} from '@xds/core/hooks';
+} from '@astryxdesign/core/SideNav';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {NavIcon} from '@astryxdesign/core/NavIcon';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {
   HomeIcon,
   FolderIcon,

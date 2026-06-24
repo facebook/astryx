@@ -8,11 +8,11 @@
  */
 
 import type {ReactNode} from 'react';
-import type {PlainDate} from '@xds/core/utils';
+import type {PlainDate} from '@astryxdesign/core/utils';
 import type {CalendarEvent} from './CalendarEvent';
 import type {ZonedDateTime, ZonedDateTimeRange} from './zonedDateTime';
 
-export type {PlainDate} from '@xds/core/utils';
+export type {PlainDate} from '@astryxdesign/core/utils';
 export type {
   CalendarDayEvent,
   CalendarEvent,

@@ -3,29 +3,29 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSTheme} from '@xds/core';
-import {defaultTheme} from '@xds/theme/default';
-import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
+import {XDSTheme} from '@astryxdesign/core';
+import {defaultTheme} from '@astryxdesign/theme/default';
+import {XDSAppShell} from '@astryxdesign/core/AppShell';
+import {XDSTopNav, XDSTopNavHeading} from '@astryxdesign/core/TopNav';
 import {
   XDSSideNav,
   XDSSideNavCollapseButton,
   XDSSideNavItem,
   XDSSideNavSection,
-} from '@xds/core/SideNav';
-import {XDSLayout, XDSLayoutContent, XDSLayoutPanel} from '@xds/core/Layout';
-import {XDSHeading} from '@xds/core/Text';
-import {XDSText} from '@xds/core/Text';
-import {XDSCard} from '@xds/core/Card';
-import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Stack';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSButton} from '@xds/core/Button';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
-import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSGrid} from '@xds/core/Grid';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSSection} from '@xds/core/Section';
+} from '@astryxdesign/core/SideNav';
+import {XDSLayout, XDSLayoutContent, XDSLayoutPanel} from '@astryxdesign/core/Layout';
+import {XDSHeading} from '@astryxdesign/core/Text';
+import {XDSText} from '@astryxdesign/core/Text';
+import {XDSCard} from '@astryxdesign/core/Card';
+import {XDSVStack, XDSHStack, XDSStackItem} from '@astryxdesign/core/Stack';
+import {XDSBadge} from '@astryxdesign/core/Badge';
+import {XDSButton} from '@astryxdesign/core/Button';
+import {XDSDivider} from '@astryxdesign/core/Divider';
+import {XDSMetadataList, XDSMetadataListItem} from '@astryxdesign/core/MetadataList';
+import {XDSAvatar} from '@astryxdesign/core/Avatar';
+import {XDSGrid} from '@astryxdesign/core/Grid';
+import {XDSIcon} from '@astryxdesign/core/Icon';
+import {XDSSection} from '@astryxdesign/core/Section';
 import {
   HomeIcon,
   UsersIcon,

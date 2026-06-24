@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Badge} from '@xds/core/Badge';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function BadgeCategoryTags() {
   return (

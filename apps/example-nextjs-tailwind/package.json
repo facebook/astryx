@@ -1,5 +1,5 @@
 {
-  "name": "@xds/example-nextjs-tailwind",
+  "name": "@astryxdesign/example-nextjs-tailwind",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -8,8 +8,8 @@
     "start": "next start"
   },
   "dependencies": {
-    "@xds/core": "*",
-    "@xds/theme-default": "*",
+    "@astryxdesign/core": "*",
+    "@astryxdesign/theme-default": "*",
     "next": "^15.5.16",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"

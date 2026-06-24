@@ -10,9 +10,9 @@ import {
   LayoutPanel,
   Card,
   VStack,
-} from '@xds/core/Layout';
-import {Center} from '@xds/core/Center';
-import {Text, Heading} from '@xds/core/Text';
+} from '@astryxdesign/core/Layout';
+import {Center} from '@astryxdesign/core/Center';
+import {Text, Heading} from '@astryxdesign/core/Text';
 
 export default function LayoutContentShowcase() {
   return (

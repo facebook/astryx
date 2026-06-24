@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {IconButton} from '@xds/core/IconButton';
-import {Icon} from '@xds/core/Icon';
-import {HStack} from '@xds/core/Stack';
+import {IconButton} from '@astryxdesign/core/IconButton';
+import {Icon} from '@astryxdesign/core/Icon';
+import {HStack} from '@astryxdesign/core/Stack';
 
 export default function IconButtonLoadingToggle() {
   const [loadingId, setLoadingId] = useState<string | null>(null);

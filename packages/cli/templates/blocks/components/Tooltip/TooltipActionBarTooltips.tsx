@@ -2,10 +2,10 @@
 
 'use client';
 
-import {Tooltip} from '@xds/core/Tooltip';
-import {Button} from '@xds/core/Button';
-import {HStack} from '@xds/core/Layout';
-import {Center} from '@xds/core/Center';
+import {Tooltip} from '@astryxdesign/core/Tooltip';
+import {Button} from '@astryxdesign/core/Button';
+import {HStack} from '@astryxdesign/core/Layout';
+import {Center} from '@astryxdesign/core/Center';
 
 export default function TooltipActionBarTooltips() {
   return (

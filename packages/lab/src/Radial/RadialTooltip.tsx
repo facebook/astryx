@@ -14,7 +14,7 @@
 
 import {useState, useCallback, useRef, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
-import {useLayer} from '@xds/core/Layer';
+import {useLayer} from '@astryxdesign/core/Layer';
 import {useRadial} from './RadialContext';
 
 export interface RadialTooltipDatum {

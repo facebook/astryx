@@ -6,11 +6,11 @@ import {
   ChatComposer,
   ChatComposerInput,
   type ChatComposerTrigger,
-} from '@xds/core/Chat';
-import {createStaticSource} from '@xds/core/Typeahead';
-import {TypeaheadItem} from '@xds/core/Typeahead';
-import type {SearchableItem} from '@xds/core/Typeahead';
-import {Stack} from '@xds/core/Layout';
+} from '@astryxdesign/core/Chat';
+import {createStaticSource} from '@astryxdesign/core/Typeahead';
+import {TypeaheadItem} from '@astryxdesign/core/Typeahead';
+import type {SearchableItem} from '@astryxdesign/core/Typeahead';
+import {Stack} from '@astryxdesign/core/Layout';
 
 const COMMANDS: SearchableItem<{description: string}>[] = [
   {id: 'summarize', label: 'summarize', auxiliaryData: {description: 'Summarize the conversation'}},

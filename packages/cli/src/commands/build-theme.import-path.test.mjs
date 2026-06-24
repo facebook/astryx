@@ -55,12 +55,12 @@ function writeTheme(dir, name) {
   return file;
 }
 
-// `xds theme build` imports the compiled @xds/core/theme entry (there is no
+// `xds theme build` imports the compiled @astryxdesign/core/theme entry (there is no
 // in-CLI fallback generator). Build core once if it isn't already present so
 // the suite works in any CI job, regardless of job ordering.
 beforeAll(() => {
   if (!fs.existsSync(CORE_THEME_ENTRY)) {
-    execFileSync('pnpm', ['-F', '@xds/core', 'build'], {
+    execFileSync('pnpm', ['-F', '@astryxdesign/core', 'build'], {
       cwd: REPO_ROOT,
       stdio: 'pipe',
       timeout: 180_000,

@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {MobileNav} from '@xds/core/MobileNav';
-import {SideNavSection, SideNavItem} from '@xds/core/SideNav';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
+import {MobileNav} from '@astryxdesign/core/MobileNav';
+import {SideNavSection, SideNavItem} from '@astryxdesign/core/SideNav';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
 import {HomeIcon, FolderIcon} from '@heroicons/react/24/outline';
 
 export default function MobileNavWithoutTitleMobileNav() {

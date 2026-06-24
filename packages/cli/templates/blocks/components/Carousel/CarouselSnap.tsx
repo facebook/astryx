@@ -2,12 +2,12 @@
 
 'use client';
 
-import {Carousel} from '@xds/core/Carousel';
-import {Avatar} from '@xds/core/Avatar';
-import {Badge} from '@xds/core/Badge';
-import {Card} from '@xds/core/Card';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Carousel} from '@astryxdesign/core/Carousel';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Card} from '@astryxdesign/core/Card';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const TEAM = [
   {name: 'Alice Chen', role: 'Engineering Lead', color: 'blue' as const},

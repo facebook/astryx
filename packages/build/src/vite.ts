@@ -8,7 +8,7 @@ import {fileURLToPath} from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const XDS_LIBRARY_PATTERN = 'node_modules/@xds/';
+const XDS_LIBRARY_PATTERN = 'node_modules/@astryxdesign/';
 const STYLEX_CSS_PATH = '/virtual:stylex.css';
 
 /**
@@ -52,7 +52,7 @@ export interface XDSVitePluginOptions {
 
   /**
    * Pattern to identify XDS library files vs product files.
-   * @default 'node_modules/@xds/'
+   * @default 'node_modules/@astryxdesign/'
    */
   libraryPattern?: string;
 
@@ -104,7 +104,7 @@ export interface XDSVitePluginOptions {
  * Handles:
  * - StyleX compilation with correct settings
  * - CSS layer ordering (reset < astryx-base < astryx-theme < product)
- * - resolve.alias for @xds/core source
+ * - resolve.alias for @astryxdesign/core source
  * - optimizeDeps.exclude to prevent Vite pre-bundling XDS
  *
  * @param options — optional overrides
@@ -185,31 +185,31 @@ export function xdsStylex(
   const configPlugin: Plugin = {
     name: 'xds-config',
     config(): UserConfig {
-      // Discover all @xds/* packages to exclude from pre-bundling.
+      // Discover all @astryxdesign/* packages to exclude from pre-bundling.
       // XDS ships as source that must be compiled by StyleX — pre-bundling
       // strips stylex.create/defineVars calls and causes runtime errors.
-      let xdsPackages: string[] = ['@xds/core'];
+      let xdsPackages: string[] = ['@astryxdesign/core'];
       try {
         const fs = require('fs');
-        const xdsDir = path.resolve(rootDir, 'node_modules/@xds');
+        const xdsDir = path.resolve(rootDir, 'node_modules/@astryxdesign');
         if (fs.existsSync(xdsDir)) {
           xdsPackages = fs
             .readdirSync(xdsDir)
             .filter((name: string) => !name.startsWith('.'))
-            .map((name: string) => `@xds/${name}`);
+            .map((name: string) => `@astryxdesign/${name}`);
         }
       } catch {
-        // Fallback to just @xds/core if discovery fails
+        // Fallback to just @astryxdesign/core if discovery fails
       }
 
       return {
         resolve: {
           alias: {
-            '@xds/core/theme/tokens.stylex': path.resolve(
+            '@astryxdesign/core/theme/tokens.stylex': path.resolve(
               rootDir,
-              'node_modules/@xds/core/src/theme/tokens.stylex.ts',
+              'node_modules/@astryxdesign/core/src/theme/tokens.stylex.ts',
             ),
-            '@xds/core': path.resolve(rootDir, 'node_modules/@xds/core/src'),
+            '@astryxdesign/core': path.resolve(rootDir, 'node_modules/@astryxdesign/core/src'),
           },
         },
         optimizeDeps: {

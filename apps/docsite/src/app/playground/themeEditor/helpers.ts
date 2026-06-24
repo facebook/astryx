@@ -207,7 +207,7 @@ export function generateThemeCode(
   );
 
   const lines: string[] = [
-    "import {defineTheme} from '@xds/core/theme';",
+    "import {defineTheme} from '@astryxdesign/core/theme';",
     '',
     `export const ${themeName}Theme = defineTheme({`,
     `  name: '${themeName}',`,

@@ -3,11 +3,11 @@
 'use client';
 
 import {useState} from 'react';
-import {PowerSearch, usePowerSearchConfig} from '@xds/core/PowerSearch';
-import type {PowerSearchFilter} from '@xds/core/PowerSearch';
-import {Table, pixel, proportional} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
-import {VStack} from '@xds/core/Layout';
+import {PowerSearch, usePowerSearchConfig} from '@astryxdesign/core/PowerSearch';
+import type {PowerSearchFilter} from '@astryxdesign/core/PowerSearch';
+import {Table, pixel, proportional} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
+import {VStack} from '@astryxdesign/core/Layout';
 
 const genreValues = [
   {value: 'sci-fi', label: 'Science Fiction'},

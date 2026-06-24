@@ -3,14 +3,14 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {Collapsible, CollapsibleGroup} from '@xds/core/Collapsible';
-import {Card} from '@xds/core/Card';
-import {VStack} from '@xds/core/Layout';
+import {Collapsible, CollapsibleGroup} from '@astryxdesign/core/Collapsible';
+import {Card} from '@astryxdesign/core/Card';
+import {VStack} from '@astryxdesign/core/Layout';
 import {
   colorVars,
   spacingVars,
   typographyVars,
-} from '@xds/core/theme/tokens.stylex';
+} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   pageWrapper: {
@@ -94,7 +94,7 @@ export const MultipleMode: Story = {
         <Card>
           <Collapsible trigger="How do I install it?" value="faq2">
             <p {...stylex.props(styles.text)}>
-              Run <code>npm install @xds/core</code> to get started.
+              Run <code>npm install @astryxdesign/core</code> to get started.
             </p>
           </Collapsible>
         </Card>

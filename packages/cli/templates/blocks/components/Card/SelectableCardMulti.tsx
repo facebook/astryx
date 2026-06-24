@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {SelectableCard} from '@xds/core/SelectableCard';
-import {Grid} from '@xds/core/Grid';
-import {Text} from '@xds/core/Text';
+import {SelectableCard} from '@astryxdesign/core/SelectableCard';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Text} from '@astryxdesign/core/Text';
 
 const tags = [
   {id: 'react', name: 'React', variant: 'blue' as const},

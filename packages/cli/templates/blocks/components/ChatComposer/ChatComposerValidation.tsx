@@ -2,9 +2,9 @@
 
 'use client';
 
-import {ChatComposer} from '@xds/core/Chat';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {ChatComposer} from '@astryxdesign/core/Chat';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function ChatComposerValidation() {
   return (

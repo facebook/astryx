@@ -4,7 +4,7 @@
 /**
  * Compiles src/vite.ts → dist/vite.mjs for npm distribution.
  *
- * The vite plugin is the only TypeScript source in @xds/build.
+ * The vite plugin is the only TypeScript source in @astryxdesign/build.
  * Node does not support type-stripping for files inside node_modules,
  * so we must ship compiled JS.
  */

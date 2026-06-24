@@ -3,7 +3,7 @@
 /**
  * @file types.ts
  * @input Vega and Vega-Lite spec types, and the XDS Vega wrapper API surface
- * @output Shared TypeScript types for @xds/vega
+ * @output Shared TypeScript types for @astryxdesign/vega
  * @position Type definitions; imported by all components in this package
  *
  * SYNC: When modified, update /packages/vega/README.md
@@ -93,7 +93,7 @@ export type ViewData = Record<string, unknown[]>;
  * keyboard, clipboard, `data-testid`, etc.
  *
  * Note: unlike other XDS components, this component does not accept `xstyle`
- * because `@xds/vega` does not depend on StyleX. Use `className` or `style`
+ * because `@astryxdesign/vega` does not depend on StyleX. Use `className` or `style`
  * for layout overrides instead.
  */
 export interface XDSVegaChartProps extends Omit<

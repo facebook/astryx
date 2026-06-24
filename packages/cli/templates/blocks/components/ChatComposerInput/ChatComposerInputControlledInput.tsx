@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {ChatComposer, ChatComposerInput} from '@xds/core/Chat';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {ChatComposer, ChatComposerInput} from '@astryxdesign/core/Chat';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function ChatComposerInputControlledInput() {
   const [value, setValue] = useState('');

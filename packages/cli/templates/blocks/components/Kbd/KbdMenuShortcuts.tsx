@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Kbd} from '@xds/core/Kbd';
-import {Card} from '@xds/core/Card';
-import {List, ListItem} from '@xds/core/List';
+import {Kbd} from '@astryxdesign/core/Kbd';
+import {Card} from '@astryxdesign/core/Card';
+import {List, ListItem} from '@astryxdesign/core/List';
 
 const menuItems = [
   {label: 'Cut', keys: 'mod+x'},

@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Item} from '@xds/core/Item';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Item} from '@astryxdesign/core/Item';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function ItemBasicItem() {
   return (

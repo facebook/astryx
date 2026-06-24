@@ -3,10 +3,10 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {HStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {Table, pixel} from '@xds/core/Table';
-import {useMediaQuery} from '@xds/core/hooks';
+import {HStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {Table, pixel} from '@astryxdesign/core/Table';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import type {TokenTableProps} from './types';
 import {
   useResolveTokenForMode,

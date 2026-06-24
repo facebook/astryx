@@ -4,20 +4,20 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {VStack, HStack, StackItem} from '@xds/core/Layout';
-import {Grid} from '@xds/core/Grid';
-import {Center} from '@xds/core/Center';
-import {Card} from '@xds/core/Card';
-import {Section} from '@xds/core/Section';
-import {Text} from '@xds/core/Text';
-import {Icon} from '@xds/core/Icon';
-import {EmptyState} from '@xds/core/EmptyState';
+import {VStack, HStack, StackItem} from '@astryxdesign/core/Layout';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Center} from '@astryxdesign/core/Center';
+import {Card} from '@astryxdesign/core/Card';
+import {Section} from '@astryxdesign/core/Section';
+import {Text} from '@astryxdesign/core/Text';
+import {Icon} from '@astryxdesign/core/Icon';
+import {EmptyState} from '@astryxdesign/core/EmptyState';
 import {SquaresPlusIcon, CheckCircleIcon} from '@heroicons/react/24/outline';
-import {TextInput} from '@xds/core/TextInput';
-import {Button} from '@xds/core/Button';
-import {Link} from '@xds/core/Link';
-import {Divider} from '@xds/core/Divider';
-import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Button} from '@astryxdesign/core/Button';
+import {Link} from '@astryxdesign/core/Link';
+import {Divider} from '@astryxdesign/core/Divider';
+import {colorVars, spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const COVER_IMAGE_URL =
   'https://lookaside.facebook.com/assets/astryx/light-working-vertical-1.png';

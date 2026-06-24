@@ -1,4 +1,4 @@
-# @xds/vega
+# @astryxdesign/vega
 
 XDS Vega wrapper: chart and data visualization components.
 
@@ -21,7 +21,7 @@ Renders [Vega](https://vega.github.io/vega/) and [Vega-Lite](https://vega.github
 ## Installation
 
 ```bash
-pnpm add @xds/vega vega vega-lite
+pnpm add @astryxdesign/vega vega vega-lite
 ```
 
 ## Usage
@@ -29,7 +29,7 @@ pnpm add @xds/vega vega vega-lite
 ### Vega-Lite spec (compiled automatically)
 
 ```tsx
-import {XDSVegaChart} from '@xds/vega';
+import {XDSVegaChart} from '@astryxdesign/vega';
 
 <XDSVegaChart
   spec={{
@@ -157,5 +157,5 @@ Parses and validates a Vega `$schema` URL. Returns:
 ## Build
 
 ```bash
-pnpm -F @xds/vega build
+pnpm -F @astryxdesign/vega build
 ```

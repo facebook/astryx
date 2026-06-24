@@ -1,5 +1,5 @@
 {
-  "name": "@xds/theme-default",
+  "name": "@astryxdesign/theme-default",
   "version": "0.0.15",
   "displayName": "Default Theme",
   "private": false,
@@ -52,11 +52,11 @@
     "@heroicons/react": "^2.2.0"
   },
   "peerDependencies": {
-    "@xds/core": "0.0.15",
+    "@astryxdesign/core": "0.0.15",
     "react": ">=19"
   },
   "devDependencies": {
-    "@xds/cli": "0.0.15"
+    "@astryxdesign/cli": "0.0.15"
   },
   "module": "./dist/source.mjs"
 }

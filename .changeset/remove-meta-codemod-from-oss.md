@@ -1,5 +1,5 @@
 ---
-'@xds/cli': patch
+'@astryxdesign/cli': patch
 ---
 
 [chore] Remove the internal `drop-xds-meta-prefix` codemod from the OSS repo (#2970)

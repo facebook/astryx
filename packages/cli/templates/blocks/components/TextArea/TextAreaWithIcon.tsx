@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {TextArea} from '@xds/core/TextArea';
+import {TextArea} from '@astryxdesign/core/TextArea';
 import {PencilSquareIcon} from '@heroicons/react/24/outline';
 
 export default function TextAreaWithIcon() {

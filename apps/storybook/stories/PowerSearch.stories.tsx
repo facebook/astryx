@@ -2,10 +2,10 @@
 
 import React, {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {PowerSearch} from '@xds/core/PowerSearch';
-import type {PowerSearchConfig, PowerSearchFilter} from '@xds/core/PowerSearch';
-import type {SearchSource, SearchableItem} from '@xds/core/Typeahead';
-import {Button} from '@xds/core/Button';
+import {PowerSearch} from '@astryxdesign/core/PowerSearch';
+import type {PowerSearchConfig, PowerSearchFilter} from '@astryxdesign/core/PowerSearch';
+import type {SearchSource, SearchableItem} from '@astryxdesign/core/Typeahead';
+import {Button} from '@astryxdesign/core/Button';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
 // =============================================================================
@@ -1207,9 +1207,9 @@ import type {
   PowerSearchComponents,
   PowerSearchTokenProps,
   PowerSearchEditorProps,
-} from '@xds/core/PowerSearch';
-import {Token} from '@xds/core/Token';
-import {HStack} from '@xds/core/Stack';
+} from '@astryxdesign/core/PowerSearch';
+import {Token} from '@astryxdesign/core/Token';
+import {HStack} from '@astryxdesign/core/Stack';
 
 function StatusToken({
   filter,

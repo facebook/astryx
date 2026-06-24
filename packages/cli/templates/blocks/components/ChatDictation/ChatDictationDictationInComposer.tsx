@@ -5,10 +5,10 @@
 import {
   ChatDictationButton,
   ChatComposer,
-} from '@xds/core/Chat';
-import type {UseSpeechRecognitionReturn} from '@xds/core/Chat';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+} from '@astryxdesign/core/Chat';
+import type {UseSpeechRecognitionReturn} from '@astryxdesign/core/Chat';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const noop = () => {};
 

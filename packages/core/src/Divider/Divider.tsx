@@ -34,7 +34,7 @@ import {xdsThemeProps} from '../utils/xdsThemeProps';
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/Divider' {
+ * declare module '@astryxdesign/core/Divider' {
  *   interface DividerVariantMap {
  *     'accent': true;
  *   }

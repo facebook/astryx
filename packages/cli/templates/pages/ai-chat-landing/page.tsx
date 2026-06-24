@@ -4,10 +4,10 @@
 
 import {useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 
-import {Layout, LayoutContent, VStack, HStack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
+import {Layout, LayoutContent, VStack, HStack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
 import {
   ChatComposer,
   ChatComposerDrawer,
@@ -16,18 +16,18 @@ import {
   useChatDictation,
   type ChatComposerInputHandle,
   type ChatComposerTrigger,
-} from '@xds/core/Chat';
+} from '@astryxdesign/core/Chat';
 import {
   createStaticSource,
   TypeaheadItem,
   type SearchableItem,
-} from '@xds/core/Typeahead';
-import {ToggleButton, ToggleButtonGroup} from '@xds/core/ToggleButton';
-import {Token} from '@xds/core/Token';
-import {ClickableCard} from '@xds/core/ClickableCard';
-import {Grid} from '@xds/core/Grid';
-import {Icon} from '@xds/core/Icon';
-import {DropdownMenu, DropdownMenuItem} from '@xds/core/DropdownMenu';
+} from '@astryxdesign/core/Typeahead';
+import {ToggleButton, ToggleButtonGroup} from '@astryxdesign/core/ToggleButton';
+import {Token} from '@astryxdesign/core/Token';
+import {ClickableCard} from '@astryxdesign/core/ClickableCard';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Icon} from '@astryxdesign/core/Icon';
+import {DropdownMenu, DropdownMenuItem} from '@astryxdesign/core/DropdownMenu';
 import {
   Cog6ToothIcon,
   AtSymbolIcon,

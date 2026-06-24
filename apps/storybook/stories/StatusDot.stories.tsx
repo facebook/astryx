@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {StatusDot} from '@xds/core/StatusDot';
+import {StatusDot} from '@astryxdesign/core/StatusDot';
 
 const meta: Meta<typeof StatusDot> = {
   title: 'Core/StatusDot',

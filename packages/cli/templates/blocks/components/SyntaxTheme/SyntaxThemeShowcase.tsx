@@ -2,11 +2,11 @@
 
 'use client';
 
-import {SyntaxTheme} from '@xds/core/theme';
-import {oneDarkPro} from '@xds/core/theme/syntax';
-import {CodeBlock} from '@xds/core/CodeBlock';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {SyntaxTheme} from '@astryxdesign/core/theme';
+import {oneDarkPro} from '@astryxdesign/core/theme/syntax';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const sampleCode = `async function save() {
   await api.update(values);

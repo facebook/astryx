@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {DateInput} from '@xds/core/DateInput';
-import {Stack} from '@xds/core/Layout';
+import {DateInput} from '@astryxdesign/core/DateInput';
+import {Stack} from '@astryxdesign/core/Layout';
 
 type DateString =
   `${number}${number}${number}${number}-${number}${number}-${number}${number}`;

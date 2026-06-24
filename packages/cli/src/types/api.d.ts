@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Programmatic API types for @xds/cli/api.
+ * Programmatic API types for @astryxdesign/cli/api.
  *
  * Every function returns the same { type, data } envelope as `xds --json`.
  * Errors throw XDSError.

@@ -8,7 +8,7 @@
  * @output The decorative themed UI cards that flank the hero wordmark
  * @position Home hero — themed "mini storefront" surfaces that re-skin per theme.
  *
- * Cards are real @xds/core components, so wrapping the set in <Theme> re-skins
+ * Cards are real @astryxdesign/core components, so wrapping the set in <Theme> re-skins
  * them per theme. The whole layer is decorative: aria-hidden + inert + no pointer
  * events. layout="overlap" is the desktop art composition; layout="stack" is the
  * narrow-screen grid collage.
@@ -16,16 +16,16 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {Plus, Sparkles} from 'lucide-react';
-import {Card} from '@xds/core/Card';
-import {Badge} from '@xds/core/Badge';
-import {Button} from '@xds/core/Button';
-import {Text, Heading} from '@xds/core/Text';
-import {VStack, HStack} from '@xds/core/Layout';
-import {ChatComposer, ChatSendButton} from '@xds/core/Chat';
-import {ProgressBar} from '@xds/core/ProgressBar';
-import {RadioList, RadioListItem} from '@xds/core/RadioList';
-import {Avatar} from '@xds/core/Avatar';
-import {AspectRatio} from '@xds/core/AspectRatio';
+import {Card} from '@astryxdesign/core/Card';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Button} from '@astryxdesign/core/Button';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {ChatComposer, ChatSendButton} from '@astryxdesign/core/Chat';
+import {ProgressBar} from '@astryxdesign/core/ProgressBar';
+import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
 import type {HeroThemeContent} from './heroThemeContent';
 
 const styles = stylex.create({

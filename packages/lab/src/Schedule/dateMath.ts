@@ -14,7 +14,7 @@ import {
   plainDateIsAfter,
   plainDateIsBefore,
   plainDateToInstant,
-} from '@xds/core/utils';
+} from '@astryxdesign/core/utils';
 import type {CalendarDayEvent, CalendarEvent} from './CalendarEvent';
 import type {Instant, ScheduleRange} from './types';
 

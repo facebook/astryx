@@ -1,11 +1,11 @@
-# @xds/theme-y2k
+# @astryxdesign/theme-y2k
 
 Playful Y2K pop theme for XDS: a soft periwinkle body, charcoal accent, holographic categorical colors derived from HCT tonal palettes, Poppins for body/headings, and a Crimson Text serif for display sizes.
 
 ## Install
 
 ```bash
-npm install @xds/theme-y2k
+npm install @astryxdesign/theme-y2k
 ```
 
 ## Usage
@@ -13,8 +13,8 @@ npm install @xds/theme-y2k
 Wrap your app with `XDSTheme` and pass the theme:
 
 ```tsx
-import {XDSTheme} from '@xds/core/theme';
-import {y2kTheme} from '@xds/theme-y2k/built';
+import {XDSTheme} from '@astryxdesign/core/theme';
+import {y2kTheme} from '@astryxdesign/theme-y2k/built';
 
 function App() {
   return <XDSTheme theme={y2kTheme}>{/* your app */}</XDSTheme>;
@@ -25,18 +25,18 @@ function App() {
 
 | Path                       | Use case                                               |
 | -------------------------- | ------------------------------------------------------ |
-| `@xds/theme-y2k`           | Source build (StyleX compilation via `@xds/build`)     |
-| `@xds/theme-y2k/built`     | Pre-built dist (Tailwind, plain CSS, or no build step) |
-| `@xds/theme-y2k/theme.css` | Pre-built CSS file (import in your stylesheet)         |
+| `@astryxdesign/theme-y2k`           | Source build (StyleX compilation via `@astryxdesign/build`)     |
+| `@astryxdesign/theme-y2k/built`     | Pre-built dist (Tailwind, plain CSS, or no build step) |
+| `@astryxdesign/theme-y2k/theme.css` | Pre-built CSS file (import in your stylesheet)         |
 
-If you're using `@xds/build` for StyleX source compilation, import from the bare path. Otherwise, use `/built`.
+If you're using `@astryxdesign/build` for StyleX source compilation, import from the bare path. Otherwise, use `/built`.
 
 ### CSS import
 
 Add the theme CSS to your stylesheet:
 
 ```css
-@import '@xds/theme-y2k/theme.css';
+@import '@astryxdesign/theme-y2k/theme.css';
 ```
 
 ## Fonts

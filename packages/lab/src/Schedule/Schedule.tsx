@@ -16,8 +16,8 @@
 
 import {Suspense, useCallback, useMemo, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {BaseProps} from '@xds/core';
-import {mergeProps, plainDateFromInstant} from '@xds/core/utils';
+import type {BaseProps} from '@astryxdesign/core';
+import {mergeProps, plainDateFromInstant} from '@astryxdesign/core/utils';
 import {eventOverlapsRange, getBrowserTimezoneID, sortEvents} from './dateMath';
 import {ScheduleContext} from './context';
 import {defaultSchedulePlugins} from './plugins';

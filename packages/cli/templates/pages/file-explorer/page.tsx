@@ -4,20 +4,20 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Layout, LayoutContent} from '@xds/core/Layout';
-import {Toolbar} from '@xds/core/Toolbar';
-import {List, ListItem} from '@xds/core/List';
-import {HStack, VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {Icon} from '@xds/core/Icon';
-import {IconButton} from '@xds/core/IconButton';
-import {Section} from '@xds/core/Section';
-import {Avatar} from '@xds/core/Avatar';
-import {MetadataList, MetadataListItem} from '@xds/core/MetadataList';
+import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
+import {Toolbar} from '@astryxdesign/core/Toolbar';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {Icon} from '@astryxdesign/core/Icon';
+import {IconButton} from '@astryxdesign/core/IconButton';
+import {Section} from '@astryxdesign/core/Section';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {MetadataList, MetadataListItem} from '@astryxdesign/core/MetadataList';
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from '@xds/core/SegmentedControl';
+} from '@astryxdesign/core/SegmentedControl';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,

@@ -2,7 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {CodeEditor} from '@xds/lab';
+import {CodeEditor} from '@astryxdesign/lab';
 
 const meta: Meta<typeof CodeEditor> = {
   title: 'Lab/CodeEditor',

@@ -4,7 +4,7 @@
  * @file index.ts
  * @input Heading component source
  * @output Exports Heading and its props/types
- * @position Entry point for @xds/core/Heading subpath export
+ * @position Entry point for @astryxdesign/core/Heading subpath export
  */
 
 export {

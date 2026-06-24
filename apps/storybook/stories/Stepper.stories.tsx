@@ -2,11 +2,11 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {Stepper, Step} from '@xds/lab/Stepper';
-import {TextInput} from '@xds/core/TextInput';
-import {Button} from '@xds/core/Button';
-import {Text} from '@xds/core/Text';
-import {Icon} from '@xds/core/Icon';
+import {Stepper, Step} from '@astryxdesign/lab/Stepper';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Button} from '@astryxdesign/core/Button';
+import {Text} from '@astryxdesign/core/Text';
+import {Icon} from '@astryxdesign/core/Icon';
 
 const meta: Meta<typeof Stepper> = {
   title: 'Lab/Stepper',

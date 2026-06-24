@@ -29,8 +29,8 @@ export default defineConfig({
               genConditionalClasses: true,
               treeshakeCompensation: true,
               aliases: {
-                '@xds/core/*': [path.join(rootDir, 'packages/core/src/*')],
-                '@xds/core': [path.join(rootDir, 'packages/core/src')],
+                '@astryxdesign/core/*': [path.join(rootDir, 'packages/core/src/*')],
+                '@astryxdesign/core': [path.join(rootDir, 'packages/core/src')],
               },
               unstable_moduleResolution: {
                 type: 'commonJS',
@@ -44,10 +44,10 @@ export default defineConfig({
   ],
   resolve: {
     alias: [
-      // Map @xds/core subpath imports to source for lab package tests.
-      // Must use regex to match subpaths like @xds/core/Dialog, @xds/core/theme/tokens.stylex
+      // Map @astryxdesign/core subpath imports to source for lab package tests.
+      // Must use regex to match subpaths like @astryxdesign/core/Dialog, @astryxdesign/core/theme/tokens.stylex
       // while not breaking core's own relative imports.
-      {find: /^@xds\/core\/(.*)$/, replacement: path.join(coreSrc, '$1')},
+      {find: /^@astryxdesign\/core\/(.*)$/, replacement: path.join(coreSrc, '$1')},
     ],
   },
   test: {

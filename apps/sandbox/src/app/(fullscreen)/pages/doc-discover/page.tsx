@@ -3,18 +3,18 @@
 'use client';
 
 import {useState} from 'react';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Heading, Text} from '@xds/core/Text';
-import {Badge} from '@xds/core/Badge';
-import {TextInput} from '@xds/core/TextInput';
-import {Avatar} from '@xds/core/Avatar';
-import {Card} from '@xds/core/Card';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Badge} from '@astryxdesign/core/Badge';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Card} from '@astryxdesign/core/Card';
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from '@xds/core/SegmentedControl';
-import {Divider} from '@xds/core/Divider';
-import {EmptyState} from '@xds/core/EmptyState';
+} from '@astryxdesign/core/SegmentedControl';
+import {Divider} from '@astryxdesign/core/Divider';
+import {EmptyState} from '@astryxdesign/core/EmptyState';
 import DocTopNav from '../doc-nav/DocTopNav';
 
 type Category = 'All' | 'Components' | 'Patterns' | 'Templates' | 'Tools';

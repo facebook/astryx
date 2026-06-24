@@ -62,17 +62,17 @@ export function createAgentProject(target, iterDir, promptId) {
   }
 
   if (target === 'xds' || target === 'xds-tailwind') {
-    // Symlink node_modules/@xds/core → packages/core
-    const coreLink = path.join(projectDir, 'node_modules', '@xds', 'core');
+    // Symlink node_modules/@astryxdesign/core → packages/core
+    const coreLink = path.join(projectDir, 'node_modules', '@astryxdesign', 'core');
     ensureDir(path.dirname(coreLink));
     fs.symlinkSync(path.join(REPO_ROOT, 'packages', 'core'), coreLink, 'dir');
 
-    // Symlink node_modules/@xds/cli → packages/cli
-    const cliLink = path.join(projectDir, 'node_modules', '@xds', 'cli');
+    // Symlink node_modules/@astryxdesign/cli → packages/cli
+    const cliLink = path.join(projectDir, 'node_modules', '@astryxdesign', 'cli');
     fs.symlinkSync(path.join(REPO_ROOT, 'packages', 'cli'), cliLink, 'dir');
 
-    // Symlink node_modules/@xds/theme-default → packages/themes/default
-    const themeDefaultLink = path.join(projectDir, 'node_modules', '@xds', 'theme-default');
+    // Symlink node_modules/@astryxdesign/theme-default → packages/themes/default
+    const themeDefaultLink = path.join(projectDir, 'node_modules', '@astryxdesign', 'theme-default');
     fs.symlinkSync(path.join(REPO_ROOT, 'packages', 'themes', 'default'), themeDefaultLink, 'dir');
 
     // Symlink node_modules/.bin/xds → cli bin so npx xds works

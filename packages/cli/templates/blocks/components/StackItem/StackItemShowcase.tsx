@@ -2,9 +2,9 @@
 
 'use client';
 
-import {HStack, StackItem} from '@xds/core/Layout';
-import {Card} from '@xds/core/Card';
-import {Text} from '@xds/core/Text';
+import {HStack, StackItem} from '@astryxdesign/core/Layout';
+import {Card} from '@astryxdesign/core/Card';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function StackItemShowcase() {
   return (

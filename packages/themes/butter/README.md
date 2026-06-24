@@ -1,19 +1,19 @@
-# @xds/theme-butter
+# @astryxdesign/theme-butter
 
 Golden buttery theme for XDS with blue accents. Sarina for display type, Outfit for headings and body.
 
 ## Install
 
 ```bash
-npm install @xds/theme-butter
+npm install @astryxdesign/theme-butter
 ```
 
 ## Usage
 
 ```tsx
-import {butterTheme} from '@xds/theme-butter/built';
-import {XDSTheme} from '@xds/core/theme';
-import '@xds/theme-butter/theme.css';
+import {butterTheme} from '@astryxdesign/theme-butter/built';
+import {XDSTheme} from '@astryxdesign/core/theme';
+import '@astryxdesign/theme-butter/theme.css';
 
 function App() {
   return <XDSTheme theme={butterTheme}>{/* Your app content */}</XDSTheme>;

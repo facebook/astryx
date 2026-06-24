@@ -1,5 +1,5 @@
 {
-  "name": "@xds/storybook",
+  "name": "@astryxdesign/storybook",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -8,12 +8,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@xds/core": "*",
-    "@xds/lab": "*",
-    "@xds/theme-brutalist": "*",
-    "@xds/theme-default": "*",
-    "@xds/theme-neutral": "*",
-    "@xds/vega": "*",
+    "@astryxdesign/core": "*",
+    "@astryxdesign/lab": "*",
+    "@astryxdesign/theme-brutalist": "*",
+    "@astryxdesign/theme-default": "*",
+    "@astryxdesign/theme-neutral": "*",
+    "@astryxdesign/vega": "*",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "unplugin": "^3.0.0",
@@ -27,7 +27,7 @@
     "@storybook/react": "^10.4.6",
     "@storybook/react-vite": "^10.4.6",
     "@stylexjs/unplugin": "^0.19.0",
-    "@xds/build": "*",
+    "@astryxdesign/build": "*",
     "storybook": "^10.4.6"
   }
 }

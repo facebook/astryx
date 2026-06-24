@@ -11,7 +11,7 @@
 
 import {useRef, useEffect, useImperativeHandle, useCallback} from 'react';
 import type {Ref} from 'react';
-import {mergeRefs} from '@xds/core/utils';
+import {mergeRefs} from '@astryxdesign/core/utils';
 import {useChart} from './ChartContext';
 import {
   hexToGL,

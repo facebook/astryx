@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {DateTimeInput} from '@xds/core/DateTimeInput';
-import type {ISODateTimeString} from '@xds/core/DateTimeInput';
-import {Stack} from '@xds/core/Layout';
+import {DateTimeInput} from '@astryxdesign/core/DateTimeInput';
+import type {ISODateTimeString} from '@astryxdesign/core/DateTimeInput';
+import {Stack} from '@astryxdesign/core/Layout';
 
 export default function DateTimeInputShowcase() {
   const [dateTime, setDateTime] = useState<ISODateTimeString | undefined>(

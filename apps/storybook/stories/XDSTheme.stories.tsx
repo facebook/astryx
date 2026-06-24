@@ -2,12 +2,12 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as React from 'react';
-import {Theme, defineTheme, useTheme} from '@xds/core/theme';
-import {Card} from '@xds/core/Card';
-import {Stack} from '@xds/core/Stack';
-import {Heading} from '@xds/core/Text';
-import {Badge} from '@xds/core/Badge';
-import {defaultTheme} from '@xds/theme-default';
+import {Theme, defineTheme, useTheme} from '@astryxdesign/core/theme';
+import {Card} from '@astryxdesign/core/Card';
+import {Stack} from '@astryxdesign/core/Stack';
+import {Heading} from '@astryxdesign/core/Text';
+import {Badge} from '@astryxdesign/core/Badge';
+import {defaultTheme} from '@astryxdesign/theme-default';
 
 // =============================================================================
 // Sample data for the chart

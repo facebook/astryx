@@ -45,7 +45,7 @@ export const docs = {
           lang: 'tsx',
           label: 'Applying color tokens',
           code: `import * as stylex from '@stylexjs/stylex';
-import {colorVars} from '@xds/core/theme/tokens.stylex';
+import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   container: {

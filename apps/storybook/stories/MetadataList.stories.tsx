@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {MetadataList, MetadataListItem} from '@xds/core/MetadataList';
-import {Icon} from '@xds/core/Icon';
-import {Token} from '@xds/core/Token';
+import {MetadataList, MetadataListItem} from '@astryxdesign/core/MetadataList';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Token} from '@astryxdesign/core/Token';
 import {
   InformationCircleIcon,
   CalendarIcon,

@@ -13,7 +13,7 @@
  * 3. Outputs a combined astryx.css with all rules in @layer astryx-base
  *
  * Dist consumers import the full stylesheet:
- *   import '@xds/core/astryx.css';
+ *   import '@astryxdesign/core/astryx.css';
  */
 
 import {transformAsync} from '@babel/core';

@@ -4,14 +4,14 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Text, Heading} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
-import {Badge} from '@xds/core/Badge';
-import {Divider} from '@xds/core';
-import {Card} from '@xds/core/Card';
-import {Switch} from '@xds/core/Switch';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Divider} from '@astryxdesign/core';
+import {Card} from '@astryxdesign/core/Card';
+import {Switch} from '@astryxdesign/core/Switch';
 
 const styles = stylex.create({
   main: {
@@ -69,11 +69,11 @@ export default function Home() {
             <Text type="body" color="secondary">
               This example compiles{' '}
               <Text type="body" weight="bold">
-                @xds/core
+                @astryxdesign/core
               </Text>{' '}
               from raw TypeScript + StyleX source. The{' '}
               <Text type="body" weight="bold">
-                @xds/build
+                @astryxdesign/build
               </Text>{' '}
               package provides a babel plugin and PostCSS plugin that compile
               library and product code with separate class name prefixes,
@@ -215,12 +215,12 @@ export default function Home() {
             <div {...stylex.props(styles.card)}>
               <VStack gap={2}>
                 <Text type="body">
-                  <code>@xds/build/babel</code> wraps the StyleX babel plugin
+                  <code>@astryxdesign/build/babel</code> wraps the StyleX babel plugin
                   and routes files to two internal instances with different{' '}
                   <code>classNamePrefix</code> values based on file path.
                 </Text>
                 <Text type="body">
-                  <code>@xds/build/postcss</code> does the same for CSS
+                  <code>@astryxdesign/build/postcss</code> does the same for CSS
                   extraction, placing each group in its own <code>@layer</code>{' '}
                   block.
                 </Text>

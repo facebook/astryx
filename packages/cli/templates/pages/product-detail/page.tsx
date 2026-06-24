@@ -8,22 +8,22 @@ import {
   HStack,
   Layout,
   LayoutContent,
-} from '@xds/core/Layout';
-import {Center} from '@xds/core/Center';
-import {Grid} from '@xds/core/Grid';
-import {Text, Heading} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {NumberInput} from '@xds/core/NumberInput';
-import {Icon} from '@xds/core/Icon';
+} from '@astryxdesign/core/Layout';
+import {Center} from '@astryxdesign/core/Center';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {NumberInput} from '@astryxdesign/core/NumberInput';
+import {Icon} from '@astryxdesign/core/Icon';
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from '@xds/core/SegmentedControl';
-import {Badge} from '@xds/core/Badge';
-import {Divider} from '@xds/core/Divider';
-import {Collapsible, CollapsibleGroup} from '@xds/core/Collapsible';
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {SelectableCard} from '@xds/core/SelectableCard';
+} from '@astryxdesign/core/SegmentedControl';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Collapsible, CollapsibleGroup} from '@astryxdesign/core/Collapsible';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {SelectableCard} from '@astryxdesign/core/SelectableCard';
 import * as stylex from '@stylexjs/stylex';
 
 // Custom CSS here is limited to what XDS components can't express today:

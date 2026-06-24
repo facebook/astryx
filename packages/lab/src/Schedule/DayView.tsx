@@ -13,7 +13,7 @@ import {
   DATE_FORMAT_WITH_WEEKDAY,
   plainDateAddDays,
   plainDateFormat,
-} from '@xds/core/utils';
+} from '@astryxdesign/core/utils';
 import {enumerateDates, getScheduleRangeFromDates} from './dateMath';
 import {useScheduleContext} from './context';
 import {ScheduleMonthTitle, ScheduleFrame} from './shared';

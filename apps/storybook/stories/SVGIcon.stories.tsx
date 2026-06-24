@@ -16,9 +16,9 @@ import {
   searchIcon,
   mailIcon,
   lockIcon,
-} from '@xds/lab';
-import {Stack, Text, Divider} from '@xds/core';
-import {Heading} from '@xds/core/Text';
+} from '@astryxdesign/lab';
+import {Stack, Text, Divider} from '@astryxdesign/core';
+import {Heading} from '@astryxdesign/core/Text';
 
 const meta: Meta<typeof SVGIcon> = {
   title: 'Lab/SVGIcon',

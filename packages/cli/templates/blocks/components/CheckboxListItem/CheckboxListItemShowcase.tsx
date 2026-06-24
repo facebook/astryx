@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {CheckboxList, CheckboxListItem} from '@xds/core/CheckboxList';
+import {CheckboxList, CheckboxListItem} from '@astryxdesign/core/CheckboxList';
 
 export default function CheckboxListItemShowcase() {
   const [value, setValue] = useState<string[]>(['updates', 'security']);

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {NavHeadingMenu, NavHeadingMenuItem} from '@xds/core/NavMenu';
+import {NavHeadingMenu, NavHeadingMenuItem} from '@astryxdesign/core/NavMenu';
 import {
   Cog6ToothIcon,
   UserIcon,

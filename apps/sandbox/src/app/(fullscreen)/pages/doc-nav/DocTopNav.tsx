@@ -4,7 +4,7 @@
 
 import {usePathname} from 'next/navigation';
 import Link from 'next/link';
-import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
+import {TopNav, TopNavHeading, TopNavItem} from '@astryxdesign/core/TopNav';
 
 const NAV_ITEMS = [
   {label: 'Home', href: '/pages/doc-home/'},

@@ -3,7 +3,7 @@
 /**
  * @file utils.ts
  * @output Server-safe re-exports of pure PowerSearch utility functions
- * @position Subpath entry point: `@xds/core/PowerSearch/utils`
+ * @position Subpath entry point: `@astryxdesign/core/PowerSearch/utils`
  */
 
 export {formatFilterValue} from './formatFilterValue';

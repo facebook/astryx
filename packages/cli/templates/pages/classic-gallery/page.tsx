@@ -3,12 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {VStack, Layout, LayoutContent} from '@xds/core/Layout';
-import {Center} from '@xds/core/Center';
-import {Text, Heading} from '@xds/core/Text';
-import {Grid} from '@xds/core/Grid';
-import {Section} from '@xds/core/Section';
-import {TabList, Tab} from '@xds/core/TabList';
+import {VStack, Layout, LayoutContent} from '@astryxdesign/core/Layout';
+import {Center} from '@astryxdesign/core/Center';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Section} from '@astryxdesign/core/Section';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
 import * as stylex from '@stylexjs/stylex';
 
 // ─── Styles ─────────────────────────────────────────────────────────────────

@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {MobileNav} from '@xds/core/MobileNav';
-import {SideNavSection, SideNavItem} from '@xds/core/SideNav';
-import {Button} from '@xds/core/Button';
+import {MobileNav} from '@astryxdesign/core/MobileNav';
+import {SideNavSection, SideNavItem} from '@astryxdesign/core/SideNav';
+import {Button} from '@astryxdesign/core/Button';
 import {Cog6ToothIcon, UsersIcon} from '@heroicons/react/24/outline';
 
 export default function MobileNavEndSideMobileNav() {

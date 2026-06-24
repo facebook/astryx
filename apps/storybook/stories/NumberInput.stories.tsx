@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {NumberInput} from '@xds/core/NumberInput';
+import {NumberInput} from '@astryxdesign/core/NumberInput';
 import {HashtagIcon, CurrencyDollarIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof NumberInput> = {

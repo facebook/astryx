@@ -7,8 +7,8 @@ import {
   ChatMessage,
   ChatMessageBubble,
   ChatMessageMetadata,
-} from '@xds/core/Chat';
-import {Timestamp} from '@xds/core/Timestamp';
+} from '@astryxdesign/core/Chat';
+import {Timestamp} from '@astryxdesign/core/Timestamp';
 
 const STATUSES = [
   {status: 'sending' as const, text: 'Deploying the update now…'},

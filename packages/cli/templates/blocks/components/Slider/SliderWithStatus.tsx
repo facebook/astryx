@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {Slider} from '@xds/core/Slider';
-import {VStack} from '@xds/core/Layout';
+import {Slider} from '@astryxdesign/core/Slider';
+import {VStack} from '@astryxdesign/core/Layout';
 
 export default function SliderWithStatus() {
   const [value1, setValue1] = useState(95);

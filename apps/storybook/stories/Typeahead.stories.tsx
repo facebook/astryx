@@ -2,8 +2,8 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {Typeahead} from '@xds/core/Typeahead';
-import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
+import {Typeahead} from '@astryxdesign/core/Typeahead';
+import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
 // Sample data

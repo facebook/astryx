@@ -2,7 +2,7 @@
 
 'use client';
 
-import {TabList, Tab, TabMenu} from '@xds/core/TabList';
+import {TabList, Tab, TabMenu} from '@astryxdesign/core/TabList';
 
 export default function TabMenuShowcase() {
   return (

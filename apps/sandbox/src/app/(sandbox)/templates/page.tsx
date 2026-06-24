@@ -5,8 +5,8 @@
 import {useState, useCallback, useMemo, Suspense} from 'react';
 import NextLink from 'next/link';
 import {useSearchParams, useRouter} from 'next/navigation';
-import {Heading} from '@xds/core/Text';
-import {Layout, LayoutHeader, LayoutContent} from '@xds/core/Layout';
+import {Heading} from '@astryxdesign/core/Text';
+import {Layout, LayoutHeader, LayoutContent} from '@astryxdesign/core/Layout';
 import {
   Table,
   useTableSortableState,
@@ -15,14 +15,14 @@ import {
   useTableFiltering,
   toSearchFilters,
   pixel,
-} from '@xds/core/Table';
-import type {TableColumn, TableSortState} from '@xds/core/Table';
-import type {TableFilterState, TableFilterValue} from '@xds/core/Table';
-import {usePowerSearchConfig} from '@xds/core/PowerSearch';
-import type {PowerSearchFilter} from '@xds/core/PowerSearch';
-import {Link} from '@xds/core/Link';
-import {Badge} from '@xds/core/Badge';
-import {Button} from '@xds/core/Button';
+} from '@astryxdesign/core/Table';
+import type {TableColumn, TableSortState} from '@astryxdesign/core/Table';
+import type {TableFilterState, TableFilterValue} from '@astryxdesign/core/Table';
+import {usePowerSearchConfig} from '@astryxdesign/core/PowerSearch';
+import type {PowerSearchFilter} from '@astryxdesign/core/PowerSearch';
+import {Link} from '@astryxdesign/core/Link';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Button} from '@astryxdesign/core/Button';
 import {CopyIcon} from '../../icons';
 import {templates} from '../../../generated/templateRegistry';
 import {blocks} from '../../../generated/blockRegistry';

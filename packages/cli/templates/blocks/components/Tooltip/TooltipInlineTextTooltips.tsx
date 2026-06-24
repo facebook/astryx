@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Tooltip} from '@xds/core/Tooltip';
-import {Text} from '@xds/core/Text';
+import {Tooltip} from '@astryxdesign/core/Tooltip';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function TooltipInlineTextTooltips() {
   return (

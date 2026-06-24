@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Avatar} from '@xds/core/Avatar';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const NAMES = [
   {name: 'John Doe', note: 'First + last'},

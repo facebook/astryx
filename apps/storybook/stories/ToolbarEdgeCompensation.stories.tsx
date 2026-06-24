@@ -2,16 +2,16 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {Toolbar} from '@xds/core/Toolbar';
-import {Button} from '@xds/core/Button';
-import {Card} from '@xds/core/Card';
-import {Section} from '@xds/core/Section';
-import {Text, Heading} from '@xds/core/Text';
-import {TabList, Tab} from '@xds/core/TabList';
-import {Layout} from '@xds/core/Layout';
-import {LayoutHeader} from '@xds/core/Layout';
-import {LayoutContent} from '@xds/core/Layout';
-import {VStack} from '@xds/core/Layout';
+import {Toolbar} from '@astryxdesign/core/Toolbar';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {Section} from '@astryxdesign/core/Section';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {Layout} from '@astryxdesign/core/Layout';
+import {LayoutHeader} from '@astryxdesign/core/Layout';
+import {LayoutContent} from '@astryxdesign/core/Layout';
+import {VStack} from '@astryxdesign/core/Layout';
 import {
   Cog6ToothIcon,
   FunnelIcon,

@@ -2,9 +2,9 @@
 
 'use client';
 
-import {useTooltip} from '@xds/core/Tooltip';
-import {Button} from '@xds/core/Button';
-import {Center} from '@xds/core/Center';
+import {useTooltip} from '@astryxdesign/core/Tooltip';
+import {Button} from '@astryxdesign/core/Button';
+import {Center} from '@astryxdesign/core/Center';
 
 export default function TooltipHookUsage() {
   const tooltip = useTooltip({

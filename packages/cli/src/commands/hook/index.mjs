@@ -105,7 +105,7 @@ export function registerHook(program) {
           for (const [cat, items] of Object.entries(result.data)) {
             humanLog(`## ${cat}\n`);
             for (const item of items) {
-              const importPath = item.importPath || '@xds/core/hooks';
+              const importPath = item.importPath || '@astryxdesign/core/hooks';
               humanLog(formatHookCompact(item, importPath));
             }
           }
@@ -116,7 +116,7 @@ export function registerHook(program) {
           if (detail === 'brief') {
             humanLog(formatHookBrief(result.data));
           } else if (detail === 'compact') {
-            const importPath = result.data.importPath || '@xds/core/hooks';
+            const importPath = result.data.importPath || '@astryxdesign/core/hooks';
             humanLog(formatHookCompact(result.data, importPath));
           } else {
             humanLog(formatHookFull(result.data));

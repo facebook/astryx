@@ -4,20 +4,20 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Center} from '@xds/core/Center';
-import {Section} from '@xds/core/Section';
-import {Grid} from '@xds/core/Grid';
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {Button} from '@xds/core/Button';
-import {Text} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
-import {Token} from '@xds/core/Token';
-import {TextArea} from '@xds/core/TextArea';
-import {Link} from '@xds/core/Link';
-import {Divider} from '@xds/core/Divider';
-import {Card} from '@xds/core/Card';
-import {Selector} from '@xds/core/Selector';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Center} from '@astryxdesign/core/Center';
+import {Section} from '@astryxdesign/core/Section';
+import {Grid} from '@astryxdesign/core/Grid';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {Button} from '@astryxdesign/core/Button';
+import {Text} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Token} from '@astryxdesign/core/Token';
+import {TextArea} from '@astryxdesign/core/TextArea';
+import {Link} from '@astryxdesign/core/Link';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Card} from '@astryxdesign/core/Card';
+import {Selector} from '@astryxdesign/core/Selector';
 
 const ILLUSTRATION_URL =
   'https://lookaside.facebook.com/assets/astryx/illustration-horizontal-1.png';

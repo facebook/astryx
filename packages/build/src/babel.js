@@ -3,7 +3,7 @@
 "use strict";
 
 /**
- * @xds/build/babel
+ * @astryxdesign/build/babel
  *
  * Babel plugin that delegates to @stylexjs/babel-plugin with a
  * different classNamePrefix for XDS library files vs product files.
@@ -15,7 +15,7 @@ const XDS_LIBRARY_PATTERNS = [
   'packages/core/',
   'packages/themes/',
   'packages/lab/',
-  'node_modules/@xds/',
+  'node_modules/@astryxdesign/',
 ];
 
 module.exports = function xdsBabelPlugin(api, options) {

@@ -117,7 +117,7 @@ export type ChatComposerTrigger = {
    *
    * @example
    * ```
-   * import {createStaticSource} from '@xds/core/Typeahead';
+   * import {createStaticSource} from '@astryxdesign/core/Typeahead';
    * const mentionTrigger = {
    *   character: '@',
    *   searchSource: createStaticSource(users),

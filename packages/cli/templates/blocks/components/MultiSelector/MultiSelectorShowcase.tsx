@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {MultiSelector} from '@xds/core/MultiSelector';
+import {MultiSelector} from '@astryxdesign/core/MultiSelector';
 
 export default function MultiSelectorShowcase() {
   return (

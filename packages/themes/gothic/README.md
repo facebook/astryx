@@ -1,4 +1,4 @@
-# @xds/theme-gothic
+# @astryxdesign/theme-gothic
 
 **Dark-only** atmospheric gothic theme for XDS — deep blue-gray surfaces, distressed display heading, and pastel categorical accents that glow against the dark page like illuminated panels. Uses Manufacturing Consent for headings, Fustat for body text, and [Lucide](https://lucide.dev) icons.
 
@@ -7,7 +7,7 @@
 ## Install
 
 ```bash
-npm install @xds/theme-gothic
+npm install @astryxdesign/theme-gothic
 ```
 
 ## Usage
@@ -15,8 +15,8 @@ npm install @xds/theme-gothic
 Wrap your app with `XDSTheme` and pass the theme:
 
 ```tsx
-import {XDSTheme} from '@xds/core/theme';
-import {gothicTheme} from '@xds/theme-gothic/built';
+import {XDSTheme} from '@astryxdesign/core/theme';
+import {gothicTheme} from '@astryxdesign/theme-gothic/built';
 
 function App() {
   return (
@@ -31,18 +31,18 @@ function App() {
 
 | Path                          | Use case                                               |
 | ----------------------------- | ------------------------------------------------------ |
-| `@xds/theme-gothic`           | Source build (StyleX compilation via `@xds/build`)     |
-| `@xds/theme-gothic/built`     | Pre-built dist (Tailwind, plain CSS, or no build step) |
-| `@xds/theme-gothic/theme.css` | Pre-built CSS file (import in your stylesheet)         |
+| `@astryxdesign/theme-gothic`           | Source build (StyleX compilation via `@astryxdesign/build`)     |
+| `@astryxdesign/theme-gothic/built`     | Pre-built dist (Tailwind, plain CSS, or no build step) |
+| `@astryxdesign/theme-gothic/theme.css` | Pre-built CSS file (import in your stylesheet)         |
 
-If you're using `@xds/build` for StyleX source compilation, import from the bare path. Otherwise, use `/built`.
+If you're using `@astryxdesign/build` for StyleX source compilation, import from the bare path. Otherwise, use `/built`.
 
 ### CSS import
 
 Add the theme CSS to your stylesheet:
 
 ```css
-@import '@xds/theme-gothic/theme.css';
+@import '@astryxdesign/theme-gothic/theme.css';
 ```
 
 ## Aesthetic
@@ -91,7 +91,7 @@ The theme exports raw tonal palettes for custom components or data
 visualization. Each palette has 21 tone steps (0–100 in 5s):
 
 ```tsx
-import {gothicPalettes} from '@xds/theme-gothic';
+import {gothicPalettes} from '@astryxdesign/theme-gothic';
 
 // e.g. cathedral plum at tone 50
 const plum = gothicPalettes.purple[50]; // '#a363bd'

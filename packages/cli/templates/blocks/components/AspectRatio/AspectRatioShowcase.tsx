@@ -3,10 +3,10 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {HStack, VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {radiusVars} from '@xds/core/theme/tokens.stylex';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const s = stylex.create({
   // Fixed height with auto width lets the aspect ratio drive the width,

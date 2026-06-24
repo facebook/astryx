@@ -10,7 +10,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import {CommandPalette} from './CommandPalette';
-import {createStaticSource} from '@xds/core/Typeahead';
+import {createStaticSource} from '@astryxdesign/core/Typeahead';
 
 const simpleSource = createStaticSource([
   {id: 'home', label: 'Home'},

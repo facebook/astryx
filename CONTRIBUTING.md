@@ -76,7 +76,7 @@ cd xds
 pnpm install
 
 # Build core package first (required for Storybook)
-pnpm -F @xds/core build
+pnpm -F @astryxdesign/core build
 
 # Start Storybook for component development
 cd apps/storybook
@@ -94,7 +94,7 @@ Storybook loads pre-built packages from `dist/` folders, so you need to build pa
 pnpm build
 
 # Or build just core
-pnpm -F @xds/core build
+pnpm -F @astryxdesign/core build
 ```
 
 **Start Storybook:**
@@ -110,11 +110,11 @@ Storybook will open at http://localhost:6006 with:
 - **Mode switcher** - Toggle between Light and Dark modes
 - **Component stories** - Interactive component examples
 
-**If you make changes to `@xds/core`:**
+**If you make changes to `@astryxdesign/core`:**
 
 ```bash
 # Rebuild core package
-pnpm -F @xds/core build
+pnpm -F @astryxdesign/core build
 
 # Restart Storybook to see changes
 cd apps/storybook
@@ -268,7 +268,7 @@ pnpm test
 pnpm test:watch
 
 # Specific package
-pnpm -F @xds/core test
+pnpm -F @astryxdesign/core test
 
 # With coverage
 pnpm test:coverage
@@ -310,7 +310,7 @@ It writes a normal `.changeset/<id>.md` — commit it with your PR. The body loo
 
 ```md
 ---
-'@xds/core': patch
+'@astryxdesign/core': patch
 ---
 
 [fix] Spinner inherits the variant foreground on themed buttons (#2717)
@@ -385,7 +385,7 @@ and doesn't need network to use.
 **"Failed to fetch dynamically imported module"**
 
 - Cause: Core package not built or out of date
-- Fix: `pnpm -F @xds/core build` then restart Storybook
+- Fix: `pnpm -F @astryxdesign/core build` then restart Storybook
 
 **"React is not defined"**
 
@@ -399,7 +399,7 @@ and doesn't need network to use.
 
 **Changes not appearing in Storybook**
 
-- Rebuild the package: `pnpm -F @xds/core build`
+- Rebuild the package: `pnpm -F @astryxdesign/core build`
 - Hard refresh browser: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows)
 - Clear Storybook cache: Remove `apps/storybook/node_modules/.cache`
 

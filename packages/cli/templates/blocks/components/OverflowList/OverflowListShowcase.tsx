@@ -2,8 +2,8 @@
 
 'use client';
 
-import {OverflowList} from '@xds/core/OverflowList';
-import {Button} from '@xds/core/Button';
+import {OverflowList} from '@astryxdesign/core/OverflowList';
+import {Button} from '@astryxdesign/core/Button';
 
 export default function OverflowListShowcase() {
   return (

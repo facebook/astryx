@@ -4,7 +4,7 @@
  * @file Data extraction tests for the docsite.
  *
  * Validates that the generated registries contain expected data.
- * Run: pnpm -F @xds/docsite test
+ * Run: pnpm -F @astryxdesign/docsite test
  */
 
 import * as fs from 'node:fs';
@@ -94,17 +94,17 @@ function getComponentDocCompletenessIssues(
 describe('packageRegistry', () => {
   it('discovers installed packages (private and uninstalled excluded)', () => {
     const names = packages.map(p => p.name);
-    expect(names).toContain('@xds/core');
-    expect(names).toContain('@xds/cli');
-    expect(names).toContain('@xds/theme-default');
-    expect(names).toContain('@xds/theme-neutral');
-    expect(names).toContain('@xds/theme-gothic');
-    expect(names).toContain('@xds/theme-stone');
-    expect(names).not.toContain('@xds/theme-brutalist');
-    expect(names).not.toContain('@xds/theme-chocolate');
-    expect(names).not.toContain('@xds/theme-daily');
-    expect(names).not.toContain('@xds/lab');
-    expect(names).not.toContain('@xds/build');
+    expect(names).toContain('@astryxdesign/core');
+    expect(names).toContain('@astryxdesign/cli');
+    expect(names).toContain('@astryxdesign/theme-default');
+    expect(names).toContain('@astryxdesign/theme-neutral');
+    expect(names).toContain('@astryxdesign/theme-gothic');
+    expect(names).toContain('@astryxdesign/theme-stone');
+    expect(names).not.toContain('@astryxdesign/theme-brutalist');
+    expect(names).not.toContain('@astryxdesign/theme-chocolate');
+    expect(names).not.toContain('@astryxdesign/theme-daily');
+    expect(names).not.toContain('@astryxdesign/lab');
+    expect(names).not.toContain('@astryxdesign/build');
     expect(packages.length).toBeGreaterThanOrEqual(5);
   });
 
@@ -162,7 +162,7 @@ describe('packageRegistry', () => {
   });
 
   it('CLI package has a substantial README', () => {
-    const cli = packages.find(p => p.name === '@xds/cli');
+    const cli = packages.find(p => p.name === '@astryxdesign/cli');
     expect(cli?.readme).toBeTruthy();
     expect(cli!.readme!.length).toBeGreaterThan(1000);
   });
@@ -171,9 +171,9 @@ describe('packageRegistry', () => {
 // ── Component Registry ─────────────────────────────────────────────────
 
 describe('componentRegistry', () => {
-  it('discovers components in @xds/core', () => {
-    expect(components['@xds/core']).toBeDefined();
-    expect(components['@xds/core'].length).toBeGreaterThan(100);
+  it('discovers components in @astryxdesign/core', () => {
+    expect(components['@astryxdesign/core']).toBeDefined();
+    expect(components['@astryxdesign/core'].length).toBeGreaterThan(100);
   });
 
   it('component count matches sum of all packages', () => {
@@ -186,7 +186,7 @@ describe('componentRegistry', () => {
 
   it('components have all required fields', () => {
     for (const [pkgName, comps] of Object.entries(components)) {
-      expect(pkgName).toMatch(/^@xds\//);
+      expect(pkgName).toMatch(/^@astryxdesign\//);
       for (const comp of comps) {
         expect(comp.name).toBeTruthy();
         expect(comp.moduleName).toBeTruthy();
@@ -205,7 +205,7 @@ describe('componentRegistry', () => {
   // ── Sub-component expansion ────────────────────────────────────────
 
   it('expands compound components into sub-component entries', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     // Table has sub-components: Table, BaseTable, TableRow, TableCell, TableHeaderCell, etc.
     const tableComponents = core.filter(c => c.parentDoc === 'Table');
     expect(tableComponents.length).toBeGreaterThanOrEqual(5);
@@ -217,7 +217,7 @@ describe('componentRegistry', () => {
   });
 
   it('sub-components share the parent group and directory', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     const dialogSubs = core.filter(c => c.parentDoc === 'Dialog');
     expect(dialogSubs.length).toBeGreaterThanOrEqual(2);
     for (const sub of dialogSubs) {
@@ -227,7 +227,7 @@ describe('componentRegistry', () => {
   });
 
   it('sub-components have their own descriptions', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     const dialogHeader = core.find(c => c.name === 'DialogHeader');
     expect(dialogHeader).toBeDefined();
     expect(dialogHeader!.description.length).toBeGreaterThan(10);
@@ -236,7 +236,7 @@ describe('componentRegistry', () => {
   });
 
   it('extracted sub-components do not inherit parent usage prose', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     const chatComposer = core.find(c => c.name === 'ChatComposer');
     expect(chatComposer).toBeDefined();
     expect(chatComposer!.parentDoc).toBe('Chat');
@@ -252,7 +252,7 @@ describe('componentRegistry', () => {
   });
 
   it('sub-components can override inherited playground defaults', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     const avatarGroupOverflow = core.find(
       c => c.name === 'AvatarGroupOverflow',
     );
@@ -264,7 +264,7 @@ describe('componentRegistry', () => {
   });
 
   it('Chat has many sub-components (standalone docs take priority over compound entries)', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     // Chat compound doc has 14 sub-components, but ChatToolCalls and
     // ChatDictationButton have their own standalone docs so they appear
     // with parentDoc: null instead of parentDoc: 'Chat'
@@ -283,7 +283,7 @@ describe('componentRegistry', () => {
   });
 
   it('simple components have null parentDoc', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     const button = core.find(c => c.name === 'Button');
     expect(button).toBeDefined();
     expect(button!.parentDoc).toBeNull();
@@ -291,7 +291,7 @@ describe('componentRegistry', () => {
 
   it('keeps core component docs complete for generated component pages', () => {
     const componentsWithPublicProps = getCoreComponentsWithPublicProps();
-    const incompleteDocs = components['@xds/core'].flatMap(comp => {
+    const incompleteDocs = components['@astryxdesign/core'].flatMap(comp => {
       const issues = getComponentDocCompletenessIssues(
         comp,
         componentsWithPublicProps,
@@ -303,7 +303,7 @@ describe('componentRegistry', () => {
   });
 
   it('moduleName has XDS prefix for components, not for hooks', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     const button = core.find(c => c.name === 'Button');
     expect(button?.moduleName).toBe('Button');
 
@@ -320,7 +320,7 @@ describe('componentRegistry', () => {
   // ── Discovery coverage ─────────────────────────────────────────────
 
   it('discovers hooks (not skipped)', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     const hooks = core.filter(c => c.directory === 'hooks');
     expect(hooks.length).toBeGreaterThan(8);
     for (const hook of hooks) {
@@ -329,7 +329,7 @@ describe('componentRegistry', () => {
   });
 
   it('renders hook pages as hook docs with examples', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     // Public hooks (useTheme, useToast, useTableSortable, …) ship example
     // blocks; internal utility hooks (useFocusTrap, useScrollLock, …) do not.
     // Post un-prefix migration (P2380608025) the doc `name` is bare for both,
@@ -352,7 +352,7 @@ describe('componentRegistry', () => {
   });
 
   it('discovers theme utilities (not skipped)', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     const themeUtils = core.filter(c => c.directory === 'theme');
     expect(themeUtils.length).toBeGreaterThanOrEqual(2);
     const names = themeUtils.map(c => c.name);
@@ -360,7 +360,7 @@ describe('componentRegistry', () => {
   });
 
   it('hidden components are included with hidden flag', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     const names = core.map(c => c.name);
     expect(names).toContain('ChatDictationButton');
     expect(names).toContain('NavHeadingMenu');
@@ -377,7 +377,7 @@ describe('componentRegistry', () => {
   });
 
   it('known compound docs are expanded, not emitted as single entries', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     const names = core.map(c => c.name);
     // These are parent doc names that should NOT appear as component names
     // because they were expanded into sub-components
@@ -391,7 +391,7 @@ describe('componentRegistry', () => {
   // ── Full doc extraction ──────────────────────────────────────────
 
   it('extracts props for standalone components', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     const button = core.find(c => c.name === 'Button');
     expect(button).toBeDefined();
     expect(button!.props.length).toBeGreaterThan(5);
@@ -402,7 +402,7 @@ describe('componentRegistry', () => {
   });
 
   it('extracts props for sub-components in compound docs', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     const dialog = core.find(c => c.name === 'Dialog');
     expect(dialog).toBeDefined();
     expect(dialog!.props.length).toBeGreaterThan(3);
@@ -412,7 +412,7 @@ describe('componentRegistry', () => {
   });
 
   it('extracts usage with bestPractices and anatomy', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     const button = core.find(c => c.name === 'Button');
     expect(button!.usage).toBeDefined();
     expect(button!.usage!.description.length).toBeGreaterThan(20);
@@ -423,7 +423,7 @@ describe('componentRegistry', () => {
   });
 
   it('extracts theming data', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     const button = core.find(c => c.name === 'Button');
     expect(button!.theming).toBeDefined();
     expect(button!.theming!.targets.length).toBeGreaterThanOrEqual(1);
@@ -433,7 +433,7 @@ describe('componentRegistry', () => {
   });
 
   it('extracts hook params and returns', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     const hook = core.find(c => c.name === 'useMediaQuery');
     expect(hook).toBeDefined();
     expect(hook!.params).toBeDefined();
@@ -444,14 +444,14 @@ describe('componentRegistry', () => {
   });
 
   it('components without props have empty props array', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     for (const comp of core) {
       expect(Array.isArray(comp.props)).toBe(true);
     }
   });
 
   it('most standalone components have usage data', () => {
-    const core = components['@xds/core'];
+    const core = components['@astryxdesign/core'];
     const standalone = core.filter(c => c.parentDoc === null);
     const withUsage = standalone.filter(c => c.usage != null);
     // At least 80% should have usage docs
@@ -655,18 +655,18 @@ describe('themeRegistry', () => {
 
   it('has an import and entry for every theme package', () => {
     const themePackages = packages.filter(p =>
-      p.name.startsWith('@xds/theme-'),
+      p.name.startsWith('@astryxdesign/theme-'),
     );
     expect(themePackages.length).toBeGreaterThan(0);
     for (const pkg of themePackages) {
-      const slug = pkg.name.replace('@xds/theme-', '');
+      const slug = pkg.name.replace('@astryxdesign/theme-', '');
       expect(registrySource).toContain(`from '${pkg.name}/built'`);
       expect(registrySource).toContain(`'${pkg.name}': ${slug}Theme`);
     }
   });
 
   it('has no entries for non-theme packages', () => {
-    const nonTheme = packages.filter(p => !p.name.startsWith('@xds/theme-'));
+    const nonTheme = packages.filter(p => !p.name.startsWith('@astryxdesign/theme-'));
     for (const pkg of nonTheme) {
       expect(registrySource).not.toContain(`'${pkg.name}':`);
     }

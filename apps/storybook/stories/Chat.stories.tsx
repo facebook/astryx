@@ -7,14 +7,14 @@ import {
   ChatMessageBubble,
   ChatMessageMetadata,
   ChatSystemMessage,
-} from '@xds/core/Chat';
-import {Avatar} from '@xds/core/Avatar';
-import {Markdown} from '@xds/core/Markdown';
-import {Token} from '@xds/core/Token';
-import {HStack} from '@xds/core/Stack';
-import {CodeBlock} from '@xds/core/CodeBlock';
-import {Button} from '@xds/core/Button';
-import {Timestamp} from '@xds/core/Timestamp';
+} from '@astryxdesign/core/Chat';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {Token} from '@astryxdesign/core/Token';
+import {HStack} from '@astryxdesign/core/Stack';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+import {Button} from '@astryxdesign/core/Button';
+import {Timestamp} from '@astryxdesign/core/Timestamp';
 import {HandThumbUpIcon, HandThumbDownIcon} from '@heroicons/react/24/outline';
 import {ClipboardDocumentIcon} from '@heroicons/react/24/outline';
 

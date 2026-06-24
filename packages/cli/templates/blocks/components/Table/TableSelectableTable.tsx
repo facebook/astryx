@@ -8,8 +8,8 @@ import {
   useTableSelection,
   useTableSelectionState,
   proportional,
-} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
+} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
 
 interface User extends Record<string, unknown> {
   id: string;

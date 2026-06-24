@@ -9,23 +9,23 @@ import {
   Layout,
   LayoutContent,
   LayoutHeader,
-} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {IconButton} from '@xds/core/IconButton';
-import {Icon} from '@xds/core/Icon';
-import {Badge} from '@xds/core/Badge';
-import {Link} from '@xds/core/Link';
-import {Thumbnail} from '@xds/core/Thumbnail';
-import {Table, proportional, pixel} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
+} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {IconButton} from '@astryxdesign/core/IconButton';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Link} from '@astryxdesign/core/Link';
+import {Thumbnail} from '@astryxdesign/core/Thumbnail';
+import {Table, proportional, pixel} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
 import {
   ChartV2 as Chart,
   ChartGrid,
   ChartAxis,
   area,
   line,
-} from '@xds/lab';
+} from '@astryxdesign/lab';
 import {
   FunnelIcon,
   ArrowDownTrayIcon,

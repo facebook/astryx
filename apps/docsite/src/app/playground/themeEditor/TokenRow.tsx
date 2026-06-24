@@ -4,8 +4,8 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Text} from '@xds/core/Text';
-import {HStack, StackItem} from '@xds/core/Stack';
+import {Text} from '@astryxdesign/core/Text';
+import {HStack, StackItem} from '@astryxdesign/core/Stack';
 import {getTokenLabel} from './helpers';
 
 const s = stylex.create({

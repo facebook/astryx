@@ -4,16 +4,16 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {VStack} from '@xds/core/Layout';
-import {Center} from '@xds/core/Center';
-import {Text, Heading} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
-import {Button} from '@xds/core/Button';
-import {Card} from '@xds/core/Card';
-import {Icon} from '@xds/core/Icon';
-import {Banner} from '@xds/core/Banner';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Center} from '@astryxdesign/core/Center';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Banner} from '@astryxdesign/core/Banner';
 import {CubeIcon} from '@heroicons/react/24/outline';
-import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
+import {colorVars, spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 // Standalone auth page paints its own body background (no host shell).
 const styles = stylex.create({

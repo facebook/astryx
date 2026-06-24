@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import type {SearchableItem} from '@xds/core/Typeahead';
+import type {SearchableItem} from '@astryxdesign/core/Typeahead';
 import type {ComponentEntry} from '../generated/componentRegistry';
 import type {PackageMeta} from '../generated/packageRegistry';
 import type {DocTopic} from '../generated/docsRegistry';
@@ -73,7 +73,7 @@ export function buildSearchPaletteItems({
     // Neutral as the default seed; users browse to the specific
     // theme they want via the sidebar picker.
     items.push({
-      id: isTheme ? '/themes' : `/docs/${pkg.name.replace('@xds/', '')}`,
+      id: isTheme ? '/themes' : `/docs/${pkg.name.replace('@astryxdesign/', '')}`,
       label: pkg.displayName,
       auxiliaryData: {
         group: 'Package',

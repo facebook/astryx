@@ -19,12 +19,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CLI_BIN = path.resolve(__dirname, '../../bin/xds.mjs');
 
 // Build a minimal fake monorepo: <root>/project/ contains a
-// node_modules/@xds/core/src/Button so findCoreDir succeeds, and
+// node_modules/@astryxdesign/core/src/Button so findCoreDir succeeds, and
 // <root>/outside/ is the would-be traversal target.
 function buildFakeRepo(tmpDir) {
   const project = path.join(tmpDir, 'project');
   const outside = path.join(tmpDir, 'outside');
-  const core = path.join(project, 'node_modules', '@xds', 'core');
+  const core = path.join(project, 'node_modules', '@astryxdesign', 'core');
   const buttonDir = path.join(core, 'src', 'Button');
   fs.mkdirSync(buttonDir, {recursive: true});
   fs.mkdirSync(outside, {recursive: true});
@@ -34,7 +34,7 @@ function buildFakeRepo(tmpDir) {
   );
   // Make findCoreDir's heuristic (or its node_modules branch) succeed by
   // also creating packages/core symlink-style structure if needed:
-  fs.writeFileSync(path.join(core, 'package.json'), '{"name":"@xds/core"}');
+  fs.writeFileSync(path.join(core, 'package.json'), '{"name":"@astryxdesign/core"}');
   return {project, outside};
 }
 

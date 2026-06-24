@@ -105,7 +105,7 @@ export const ERROR_CODES = Object.freeze({
   // ── Environment / runtime ────────────────────────────────────────
   /** The running Node.js version is below the supported minimum. */
   ERR_NODE_VERSION: 'ERR_NODE_VERSION',
-  /** `@xds/core` could not be located (not installed / not in a monorepo). */
+  /** `@astryxdesign/core` could not be located (not installed / not in a monorepo). */
   ERR_CORE_NOT_FOUND: 'ERR_CORE_NOT_FOUND',
 
   // ── "Unknown <subject>" lookups ──────────────────────────────────
@@ -165,7 +165,7 @@ export const ERROR_CODES = Object.freeze({
   ERR_TEMPLATE_GET: 'ERR_TEMPLATE_GET',
 
   // ── Upgrade ──────────────────────────────────────────────────────
-  /** The current `@xds/core` version could not be detected. */
+  /** The current `@astryxdesign/core` version could not be detected. */
   ERR_VERSION_DETECT: 'ERR_VERSION_DETECT',
   /** A `--from`/`--to` value was not a valid semver string. */
   ERR_INVALID_VERSION: 'ERR_INVALID_VERSION',

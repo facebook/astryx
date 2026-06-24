@@ -31,8 +31,8 @@ When an LLM generates UI from a prompt, its output breaks down into distinct job
 **Import statements for XDS components**
 
 ```tsx
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSButton} from '@xds/core/Button';
+import {XDSTextInput} from '@astryxdesign/core/TextInput';
+import {XDSButton} from '@astryxdesign/core/Button';
 ```
 
 - Requires: Understanding component catalog, matching intent to components

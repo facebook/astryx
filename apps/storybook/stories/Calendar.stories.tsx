@@ -6,7 +6,7 @@ import {
   Calendar,
   type ISODateString,
   type DateRange,
-} from '@xds/core/Calendar';
+} from '@astryxdesign/core/Calendar';
 
 const meta: Meta<typeof Calendar> = {
   title: 'Core/Calendar',

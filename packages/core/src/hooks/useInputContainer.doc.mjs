@@ -55,7 +55,7 @@ export const docs = {
   },
   relatedComponents: ['TextInput', 'NumberInput', 'TimeInput', 'TextArea'],
   relatedHooks: ['useClickableContainer'],
-  importPath: '@xds/core/hooks',
+  importPath: '@astryxdesign/core/hooks',
   category: 'interaction',
 };
 

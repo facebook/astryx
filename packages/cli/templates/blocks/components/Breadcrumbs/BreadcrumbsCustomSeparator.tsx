@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Breadcrumbs, BreadcrumbItem} from '@xds/core/Breadcrumbs';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Breadcrumbs, BreadcrumbItem} from '@astryxdesign/core/Breadcrumbs';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const SEPARATORS = [
   {char: '›', label: 'Chevron'},

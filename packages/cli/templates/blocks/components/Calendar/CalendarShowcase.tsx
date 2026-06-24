@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {Calendar} from '@xds/core/Calendar';
-import type {ISODateString} from '@xds/core/Calendar';
+import {Calendar} from '@astryxdesign/core/Calendar';
+import type {ISODateString} from '@astryxdesign/core/Calendar';
 
 export default function CalendarShowcase() {
   const [value, setValue] = useState<ISODateString | undefined>('2026-04-15');

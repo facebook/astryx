@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {TextInput} from '@xds/core/TextInput';
-import {VStack} from '@xds/core/Layout';
-import {Center} from '@xds/core/Center';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Center} from '@astryxdesign/core/Center';
 
 export default function FieldRequired() {
   const [username, setUsername] = useState('');

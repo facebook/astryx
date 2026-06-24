@@ -7,5 +7,5 @@ export default defineConfig({
   format: ['cjs', 'esm'],
   dts: false,
   clean: false, // Don't clean — xds theme build already put theme files in dist/
-  external: ['@xds/core', 'react'],
+  external: ['@astryxdesign/core', 'react'],
 });

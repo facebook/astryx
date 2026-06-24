@@ -58,7 +58,7 @@ This is an example of what the PR enrichment workflow will post as a comment on 
 
 | Package   | Size (ESM) | Gzipped |
 | --------- | ---------- | ------- |
-| @xds/core | 45.2KB     | 12.4KB  |
+| @astryxdesign/core | 45.2KB     | 12.4KB  |
 
 **Bundle size increased:** +850 bytes
 

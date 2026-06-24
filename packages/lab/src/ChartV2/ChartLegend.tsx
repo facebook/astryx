@@ -13,8 +13,8 @@
  * <ChartLegend items={[{label: 'Revenue', color: '#3b82f6'}]} />
  */
 
-import {Text} from '@xds/core';
-import {VStack, HStack} from '@xds/core';
+import {Text} from '@astryxdesign/core';
+import {VStack, HStack} from '@astryxdesign/core';
 import {ChartSwatch, swatchVariantForType} from './ChartSwatch';
 import type {LegendItem} from './legend';
 

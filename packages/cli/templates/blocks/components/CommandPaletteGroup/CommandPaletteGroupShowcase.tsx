@@ -8,10 +8,10 @@ import {
   CommandPaletteList,
   CommandPaletteGroup,
   CommandPaletteItem,
-} from '@xds/core/CommandPalette';
-import {createStaticSource} from '@xds/core/Typeahead';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+} from '@astryxdesign/core/CommandPalette';
+import {createStaticSource} from '@astryxdesign/core/Typeahead';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function CommandPaletteGroupShowcase() {
   const source = useMemo(

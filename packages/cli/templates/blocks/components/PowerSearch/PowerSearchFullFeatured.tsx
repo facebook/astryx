@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {PowerSearch} from '@xds/core/PowerSearch';
-import type {PowerSearchConfig, PowerSearchFilter} from '@xds/core/PowerSearch';
-import type {SearchSource, SearchableItem} from '@xds/core/Typeahead';
+import {PowerSearch} from '@astryxdesign/core/PowerSearch';
+import type {PowerSearchConfig, PowerSearchFilter} from '@astryxdesign/core/PowerSearch';
+import type {SearchSource, SearchableItem} from '@astryxdesign/core/Typeahead';
 
 const statusValues = [
   {value: 'open', label: 'Open'},

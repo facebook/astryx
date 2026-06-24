@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Center} from '@xds/core/Center';
-import {Stack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
+import {Center} from '@astryxdesign/core/Center';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
 
 export default function CenterShowcase() {
   return (

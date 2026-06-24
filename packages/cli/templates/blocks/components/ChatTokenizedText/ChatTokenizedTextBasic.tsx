@@ -7,7 +7,7 @@ import {
   ChatMessage,
   ChatMessageBubble,
   ChatMessageList,
-} from '@xds/core/Chat';
+} from '@astryxdesign/core/Chat';
 
 const tokens = [
   {value: '@cindy', label: '@Cindy', variant: 'blue' as const},

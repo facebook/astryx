@@ -4,23 +4,23 @@
   "commit": false,
   "fixed": [
     [
-      "@xds/build",
-      "@xds/cli",
-      "@xds/core",
-      "@xds/theme-butter",
-      "@xds/theme-chocolate",
-      "@xds/theme-daily",
-      "@xds/theme-default",
-      "@xds/theme-gothic",
-      "@xds/theme-matcha",
-      "@xds/theme-neutral",
-      "@xds/theme-stone",
-      "@xds/theme-y2k"
+      "@astryxdesign/build",
+      "@astryxdesign/cli",
+      "@astryxdesign/core",
+      "@astryxdesign/theme-butter",
+      "@astryxdesign/theme-chocolate",
+      "@astryxdesign/theme-daily",
+      "@astryxdesign/theme-default",
+      "@astryxdesign/theme-gothic",
+      "@astryxdesign/theme-matcha",
+      "@astryxdesign/theme-neutral",
+      "@astryxdesign/theme-stone",
+      "@astryxdesign/theme-y2k"
     ]
   ],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@xds/storybook", "@xds/sandbox"]
+  "ignore": ["@astryxdesign/storybook", "@astryxdesign/sandbox"]
 }

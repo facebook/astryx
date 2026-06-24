@@ -2,10 +2,10 @@
 
 'use client';
 
-import {Avatar} from '@xds/core/Avatar';
-import {Badge} from '@xds/core/Badge';
-import {Icon} from '@xds/core/Icon';
-import {List, ListItem} from '@xds/core/List';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Icon} from '@astryxdesign/core/Icon';
+import {List, ListItem} from '@astryxdesign/core/List';
 
 export default function ListItemWithMedia() {
   return (

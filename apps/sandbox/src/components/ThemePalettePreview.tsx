@@ -4,22 +4,22 @@
 
 import {useMemo, useReducer} from 'react';
 
-import {Banner} from '@xds/core/Banner';
-import {Spinner} from '@xds/core/Spinner';
-import {ProgressBar} from '@xds/core/ProgressBar';
-import {CheckboxInput} from '@xds/core/CheckboxInput';
-import {RadioList, RadioListItem} from '@xds/core/RadioList';
-import {Switch} from '@xds/core/Switch';
-import {Card} from '@xds/core/Card';
-import {TextInput} from '@xds/core/TextInput';
-import {Badge} from '@xds/core/Badge';
-import {Button} from '@xds/core/Button';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Theme} from '@xds/core/theme';
-import type {DefinedTheme} from '@xds/core/theme';
-import {LayerProvider} from '@xds/core/Layer';
-import {defaultTheme} from '@xds/theme-default/built';
+import {Banner} from '@astryxdesign/core/Banner';
+import {Spinner} from '@astryxdesign/core/Spinner';
+import {ProgressBar} from '@astryxdesign/core/ProgressBar';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
+import {Switch} from '@astryxdesign/core/Switch';
+import {Card} from '@astryxdesign/core/Card';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Button} from '@astryxdesign/core/Button';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Theme} from '@astryxdesign/core/theme';
+import type {DefinedTheme} from '@astryxdesign/core/theme';
+import {LayerProvider} from '@astryxdesign/core/Layer';
+import {defaultTheme} from '@astryxdesign/theme-default/built';
 
 import {ThemeAuditDrawer, useThemeAudit} from './themePreview/ThemeAuditDrawer';
 import {

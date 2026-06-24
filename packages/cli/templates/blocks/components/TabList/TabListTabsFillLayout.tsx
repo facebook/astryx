@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {TabList, Tab} from '@xds/core/TabList';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
 
 export default function TabListTabsFillLayout() {
   const [value, setValue] = useState('home');

@@ -6,7 +6,7 @@
  * @file index.ts
  * @input FieldStatus component source
  * @output Exports FieldStatus and related types
- * @position Entry point for @xds/core/FieldStatus subpath export
+ * @position Entry point for @astryxdesign/core/FieldStatus subpath export
  */
 
 export {FieldStatus} from './FieldStatus';

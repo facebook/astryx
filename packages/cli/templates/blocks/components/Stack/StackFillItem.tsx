@@ -2,10 +2,10 @@
 
 'use client';
 
-import {Stack, StackItem} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {Avatar} from '@xds/core/Avatar';
+import {Stack, StackItem} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Avatar} from '@astryxdesign/core/Avatar';
 
 const USERS = [
   {name: 'Olivia Chen', role: 'Engineering Lead'},

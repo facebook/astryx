@@ -8,7 +8,7 @@
  *   CSS custom properties, and CSS layer names.
  * @position Single source of truth consumed by the runtime (components,
  *   theme generation) AND by build/CLI tooling (build-theme.mjs, discovery)
- *   via the `@xds/core/naming` subpath export.
+ *   via the `@astryxdesign/core/naming` subpath export.
  *
  * ## Why this module exists
  *
@@ -29,7 +29,7 @@
  *
  * SYNC: packages/core/src/utils/xdsThemeProps.ts (consumes classPrefix)
  * SYNC: packages/core/src/utils/parseStyleKey.ts
- * SYNC: packages/cli/src/commands/build-theme.mjs (imports @xds/core/naming)
+ * SYNC: packages/cli/src/commands/build-theme.mjs (imports @astryxdesign/core/naming)
  */
 
 /**

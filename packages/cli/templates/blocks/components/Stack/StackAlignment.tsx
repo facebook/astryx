@@ -2,10 +2,10 @@
 
 'use client';
 
-import {Stack} from '@xds/core/Layout';
-import {Card} from '@xds/core/Card';
-import {Button} from '@xds/core/Button';
-import {Text} from '@xds/core/Text';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Card} from '@astryxdesign/core/Card';
+import {Button} from '@astryxdesign/core/Button';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function StackAlignment() {
   return (

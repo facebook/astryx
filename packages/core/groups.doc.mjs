@@ -12,8 +12,8 @@
  * Groups whose name matches a component (Avatar, Button, Dialog, etc.)
  * don't need an entry here — the component is the canonical representative.
  *
- * Import: `import {GROUP_DOCS} from '@xds/core/groups.doc.mjs'`
- * Or dynamically: `const {GROUP_DOCS} = await import('@xds/core/groups.doc.mjs')`
+ * Import: `import {GROUP_DOCS} from '@astryxdesign/core/groups.doc.mjs'`
+ * Or dynamically: `const {GROUP_DOCS} = await import('@astryxdesign/core/groups.doc.mjs')`
  */
 
 /** @type {Record<string, import('./src/docs-types').GroupDoc>} */

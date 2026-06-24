@@ -4,16 +4,16 @@ import {describe, it, expect} from 'vitest';
 import {rewriteImports} from './swizzle.mjs';
 
 describe('rewriteImports', () => {
-  it('rewrites ../theme/tokens to @xds/core/theme', () => {
+  it('rewrites ../theme/tokens to @astryxdesign/core/theme', () => {
     const input = `import { tokens } from '../theme/tokens.stylex';`;
     const result = rewriteImports(input);
-    expect(result).toBe(`import { tokens } from '@xds/core/theme';`);
+    expect(result).toBe(`import { tokens } from '@astryxdesign/core/theme';`);
   });
 
-  it('rewrites ../utils/mergeProps to @xds/core/utils', () => {
+  it('rewrites ../utils/mergeProps to @astryxdesign/core/utils', () => {
     const input = `import { mergeProps } from '../utils/mergeProps';`;
     const result = rewriteImports(input);
-    expect(result).toBe(`import { mergeProps } from '@xds/core/utils';`);
+    expect(result).toBe(`import { mergeProps } from '@astryxdesign/core/utils';`);
   });
 
   it('leaves same-level relative imports untouched', () => {
@@ -25,13 +25,13 @@ describe('rewriteImports', () => {
   it('rewrites export from statements', () => {
     const input = `export { foo } from '../hooks/useLayout';`;
     const result = rewriteImports(input);
-    expect(result).toBe(`export { foo } from '@xds/core/hooks';`);
+    expect(result).toBe(`export { foo } from '@astryxdesign/core/hooks';`);
   });
 
   it('handles double quotes', () => {
     const input = `import { tokens } from "../theme/tokens.stylex";`;
     const result = rewriteImports(input);
-    expect(result).toBe(`import { tokens } from "@xds/core/theme";`);
+    expect(result).toBe(`import { tokens } from "@astryxdesign/core/theme";`);
   });
 
   it('handles multiple imports in one file', () => {
@@ -44,8 +44,8 @@ describe('rewriteImports', () => {
     const result = rewriteImports(input);
     expect(result).toBe(
       [
-        `import { tokens } from '@xds/core/theme';`,
-        `import { mergeProps } from '@xds/core/utils';`,
+        `import { tokens } from '@astryxdesign/core/theme';`,
+        `import { mergeProps } from '@astryxdesign/core/utils';`,
         `import { helper } from './helper';`,
       ].join('\n'),
     );

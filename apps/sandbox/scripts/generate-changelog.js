@@ -17,21 +17,21 @@ const OUT_FILE = path.join(OUT_DIR, 'changelogRegistry.ts');
 const GITHUB_REPO = 'facebookexperimental/xds';
 
 const CHANGELOG_SOURCES = [
-  {pkg: '@xds/core', file: 'packages/core/CHANGELOG.md'},
-  {pkg: '@xds/cli', file: 'packages/cli/CHANGELOG.md'},
-  {pkg: '@xds/theme-default', file: 'packages/themes/default/CHANGELOG.md'},
-  {pkg: '@xds/theme-neutral', file: 'packages/themes/neutral/CHANGELOG.md'},
-  {pkg: '@xds/theme-brutalist', file: 'packages/themes/brutalist/CHANGELOG.md'},
-  {pkg: '@xds/theme-matcha', file: 'packages/themes/matcha/CHANGELOG.md'},
-  {pkg: '@xds/theme-daily', file: 'packages/themes/daily/CHANGELOG.md'},
+  {pkg: '@astryxdesign/core', file: 'packages/core/CHANGELOG.md'},
+  {pkg: '@astryxdesign/cli', file: 'packages/cli/CHANGELOG.md'},
+  {pkg: '@astryxdesign/theme-default', file: 'packages/themes/default/CHANGELOG.md'},
+  {pkg: '@astryxdesign/theme-neutral', file: 'packages/themes/neutral/CHANGELOG.md'},
+  {pkg: '@astryxdesign/theme-brutalist', file: 'packages/themes/brutalist/CHANGELOG.md'},
+  {pkg: '@astryxdesign/theme-matcha', file: 'packages/themes/matcha/CHANGELOG.md'},
+  {pkg: '@astryxdesign/theme-daily', file: 'packages/themes/daily/CHANGELOG.md'},
 ];
 
 const DEPRECATED_SCAN_DIRS = [
-  {pkg: '@xds/core', dir: 'packages/core/src'},
+  {pkg: '@astryxdesign/core', dir: 'packages/core/src'},
 ];
 
 const PEER_DEP_SOURCES = [
-  {pkg: '@xds/core', file: 'packages/core/package.json'},
+  {pkg: '@astryxdesign/core', file: 'packages/core/package.json'},
 ];
 
 // ── Section heading → field mapping ────────────────────────────────────
@@ -159,7 +159,7 @@ function parseChangelog(markdown, pkg) {
 
       // Skip "Updated dependencies" lines from theme changelogs
       if (text.startsWith('Updated dependencies')) continue;
-      if (text.match(/^\s*-?\s*@xds\/\w/)) continue;
+      if (text.match(/^\s*-?\s*@astryxdesign\/\w/)) continue;
 
       const item = parseItem(text, pkg, currentSection === 'codemods');
       const field = currentVersion[currentSection];

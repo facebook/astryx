@@ -4,7 +4,7 @@
  * @file index.ts
  * @input HStack component source
  * @output Exports HStack and its props type
- * @position Entry point for @xds/core/HStack subpath export
+ * @position Entry point for @astryxdesign/core/HStack subpath export
  */
 
 export {HStack, type HStackProps} from './HStack';

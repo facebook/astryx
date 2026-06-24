@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {MultiSelector} from '@xds/core/MultiSelector';
-import {VStack} from '@xds/core/Layout';
+import {MultiSelector} from '@astryxdesign/core/MultiSelector';
+import {VStack} from '@astryxdesign/core/Layout';
 
 export default function MultiSelectorForm() {
   const [columns, setColumns] = useState<string[]>(['name', 'email']);

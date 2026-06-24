@@ -15,8 +15,8 @@
 
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {TabList, Tab} from '@xds/core/TabList';
-import {VStack, StackItem} from '@xds/core/Stack';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {VStack, StackItem} from '@astryxdesign/core/Stack';
 import {
   defineTheme,
   expandTypeScale,
@@ -33,8 +33,8 @@ import {
   shadowDefaults,
   durationDefaults,
   easeDefaults,
-} from '@xds/core/theme';
-import type {DefinedTheme} from '@xds/core/theme';
+} from '@astryxdesign/core/theme';
+import type {DefinedTheme} from '@astryxdesign/core/theme';
 import {BaseStylesPanel} from './BaseStylesPanel';
 import {ComponentTokensPanel} from './ComponentTokensPanel';
 import type {CustomOverride} from './ComponentTokensPanel';

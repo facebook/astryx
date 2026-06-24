@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Code} from '@xds/core/CodeBlock';
-import {Text} from '@xds/core/Text';
+import {Code} from '@astryxdesign/core/CodeBlock';
+import {Text} from '@astryxdesign/core/Text';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({

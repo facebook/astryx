@@ -9,10 +9,10 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Text, Heading} from '@xds/core/Text';
-import {VStack} from '@xds/core/Layout';
-import {Section} from '@xds/core/Section';
-import {Divider} from '@xds/core/Divider';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Section} from '@astryxdesign/core/Section';
+import {Divider} from '@astryxdesign/core/Divider';
 import {layout} from '../../layout.stylex';
 
 const styles = stylex.create({

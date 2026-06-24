@@ -8,10 +8,10 @@ import {
   SideNavHeading,
   SideNavItem,
   SideNavSection,
-} from '@xds/core/SideNav';
-import {Badge} from '@xds/core/Badge';
-import {Text} from '@xds/core/Text';
-import {MoreMenu} from '@xds/core/MoreMenu';
+} from '@astryxdesign/core/SideNav';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Text} from '@astryxdesign/core/Text';
+import {MoreMenu} from '@astryxdesign/core/MoreMenu';
 
 function HomeIcon(props: ComponentProps<'svg'>) {
   return (

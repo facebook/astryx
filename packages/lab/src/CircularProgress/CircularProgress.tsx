@@ -26,9 +26,9 @@ import {
   fontWeightVars,
   spacingVars,
   typeScaleVars,
-} from '@xds/core/theme/tokens.stylex';
-import {mergeProps} from '@xds/core/utils';
-import type {BaseProps} from '@xds/core';
+} from '@astryxdesign/core/theme/tokens.stylex';
+import {mergeProps} from '@astryxdesign/core/utils';
+import type {BaseProps} from '@astryxdesign/core';
 import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
 
 /**
@@ -37,7 +37,7 @@ import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/CircularProgress' {
+ * declare module '@astryxdesign/core/CircularProgress' {
  *   interface CircularProgressVariantMap {
  *     'brand': true;
  *   }

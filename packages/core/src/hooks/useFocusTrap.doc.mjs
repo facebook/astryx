@@ -48,7 +48,7 @@ export const docs = {
   },
   relatedComponents: ['Dialog', 'DatePicker'],
   relatedHooks: ['useListFocus', 'useScrollLock'],
-  importPath: '@xds/core/hooks',
+  importPath: '@astryxdesign/core/hooks',
   category: 'focus',
 };
 

@@ -2,8 +2,8 @@
 
 'use client';
 
-import {ChatMessageList, ChatSystemMessage} from '@xds/core/Chat';
-import {Icon} from '@xds/core/Icon';
+import {ChatMessageList, ChatSystemMessage} from '@astryxdesign/core/Chat';
+import {Icon} from '@astryxdesign/core/Icon';
 import {
   CheckCircleIcon,
   UserMinusIcon,

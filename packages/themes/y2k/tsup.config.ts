@@ -7,5 +7,5 @@ export default defineConfig({
   format: ['cjs', 'esm'],
   dts: false,
   clean: false,
-  external: ['@xds/core', 'react', 'lucide-react'],
+  external: ['@astryxdesign/core', 'react', 'lucide-react'],
 });

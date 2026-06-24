@@ -47,9 +47,9 @@ const styles = stylex.create({
 Each component is imported from its own subpath:
 
 ```tsx
-import {Button} from '@xds/core/Button';
-import {IconButton} from '@xds/core/IconButton';
-import {Card} from '@xds/core/Card';
-import {Text, Heading} from '@xds/core/Text';
-import {useTheme} from '@xds/core/theme';
+import {Button} from '@astryxdesign/core/Button';
+import {IconButton} from '@astryxdesign/core/IconButton';
+import {Card} from '@astryxdesign/core/Card';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {useTheme} from '@astryxdesign/core/theme';
 ```

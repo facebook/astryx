@@ -7,13 +7,13 @@ import {
   ChatMessage,
   ChatMessageBubble,
   ChatMessageMetadata,
-} from '@xds/core/Chat';
-import {Avatar} from '@xds/core/Avatar';
-import {Timestamp} from '@xds/core/Timestamp';
-import {Text} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {HStack} from '@xds/core/Layout';
+} from '@astryxdesign/core/Chat';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Timestamp} from '@astryxdesign/core/Timestamp';
+import {Text} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {HStack} from '@astryxdesign/core/Layout';
 
 export default function ChatMessageBubbleMetadata() {
   return (

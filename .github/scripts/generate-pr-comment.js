@@ -117,7 +117,7 @@ const a11ySection = buildA11ySection(a11yReport);
 let bundleSection = '### Bundle Size Summary\n\n';
 bundleSection += `| Package | Size (ESM) | Size (CJS) | Gzipped |\n`;
 bundleSection += `|---------|------------|------------|----------|\n`;
-bundleSection += `| @xds/core | ${analysis.totalBundle?.esmSize || 'N/A'} | ${analysis.totalBundle?.cjsSize || 'N/A'} | ${analysis.totalBundle?.gzipSize || 'N/A'} |\n\n`;
+bundleSection += `| @astryxdesign/core | ${analysis.totalBundle?.esmSize || 'N/A'} | ${analysis.totalBundle?.cjsSize || 'N/A'} | ${analysis.totalBundle?.gzipSize || 'N/A'} |\n\n`;
 
 if (analysis.bundleDelta) {
   const delta = analysis.bundleDelta;

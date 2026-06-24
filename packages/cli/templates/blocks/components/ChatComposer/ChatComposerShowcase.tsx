@@ -2,8 +2,8 @@
 
 'use client';
 
-import {ChatComposer} from '@xds/core/Chat';
-import {Stack} from '@xds/core/Layout';
+import {ChatComposer} from '@astryxdesign/core/Chat';
+import {Stack} from '@astryxdesign/core/Layout';
 
 export default function ChatComposerShowcase() {
   return (

@@ -1,5 +1,5 @@
 {
-  "name": "@xds/cli",
+  "name": "@astryxdesign/cli",
   "version": "0.0.15",
   "displayName": "CLI",
   "description": "Scaffold projects, browse templates, generate themes, and get agent-ready docs from the command line.",
@@ -27,7 +27,8 @@
   "type": "module",
   "bin": {
     "xds": "./bin/xds.mjs",
-    "astryx": "./bin/xds.mjs"
+    "astryx": "./bin/xds.mjs",
+    "cli": "./bin/xds.mjs"
   },
   "exports": {
     ".": "./bin/xds.mjs",
@@ -58,29 +59,29 @@
     "jiti": "^2.7.0"
   },
   "peerDependencies": {
-    "@xds/core": "*",
-    "@xds/lab": "*",
-    "@xds/theme-default": "*",
-    "@xds/theme-neutral": "*"
+    "@astryxdesign/core": "*",
+    "@astryxdesign/lab": "*",
+    "@astryxdesign/theme-default": "*",
+    "@astryxdesign/theme-neutral": "*"
   },
   "peerDependenciesMeta": {
-    "@xds/core": {
+    "@astryxdesign/core": {
       "optional": true
     },
-    "@xds/lab": {
+    "@astryxdesign/lab": {
       "optional": true
     },
-    "@xds/theme-default": {
+    "@astryxdesign/theme-default": {
       "optional": true
     },
-    "@xds/theme-neutral": {
+    "@astryxdesign/theme-neutral": {
       "optional": true
     }
   },
   "devDependencies": {
-    "@xds/core": "*",
-    "@xds/lab": "*",
-    "@xds/theme-default": "*",
-    "@xds/theme-neutral": "*"
+    "@astryxdesign/core": "*",
+    "@astryxdesign/lab": "*",
+    "@astryxdesign/theme-default": "*",
+    "@astryxdesign/theme-neutral": "*"
   }
 }

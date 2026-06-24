@@ -2,9 +2,9 @@
 
 'use client';
 
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {Center} from '@xds/core/Center';
-import {Grid} from '@xds/core/Grid';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {Center} from '@astryxdesign/core/Center';
+import {Grid} from '@astryxdesign/core/Grid';
 
 const images = [
   {id: 1, alt: 'Mountain landscape'},

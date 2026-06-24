@@ -2,10 +2,10 @@
 
 'use client';
 
-import {Button} from '@xds/core/Button';
-import {Badge} from '@xds/core/Badge';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function ButtonWithEndSlot() {
   return (

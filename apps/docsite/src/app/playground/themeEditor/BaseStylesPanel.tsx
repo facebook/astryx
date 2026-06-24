@@ -4,18 +4,18 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Text} from '@xds/core/Text';
-import {VStack, HStack} from '@xds/core/Stack';
-import {Grid} from '@xds/core/Grid';
-import {Selector} from '@xds/core/Selector';
-import {NumberInput} from '@xds/core/NumberInput';
-import {Switch} from '@xds/core/Switch';
-import {ToggleButton, ToggleButtonGroup} from '@xds/core/ToggleButton';
-import {Tooltip} from '@xds/core/Tooltip';
-import {Icon} from '@xds/core/Icon';
-import {expandRadiusScale, expandTypeScale} from '@xds/core/theme';
+import {Text} from '@astryxdesign/core/Text';
+import {VStack, HStack} from '@astryxdesign/core/Stack';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Selector} from '@astryxdesign/core/Selector';
+import {NumberInput} from '@astryxdesign/core/NumberInput';
+import {Switch} from '@astryxdesign/core/Switch';
+import {ToggleButton, ToggleButtonGroup} from '@astryxdesign/core/ToggleButton';
+import {Tooltip} from '@astryxdesign/core/Tooltip';
+import {Icon} from '@astryxdesign/core/Icon';
+import {expandRadiusScale, expandTypeScale} from '@astryxdesign/core/theme';
 import {ColorSwatch} from './ColorSwatch';
-import {SelectableCard} from '@xds/core/SelectableCard';
+import {SelectableCard} from '@astryxdesign/core/SelectableCard';
 import {FONT_OPTIONS, RATIO_OPTIONS, UNIFIED_PRESETS} from './constants';
 
 const styles = stylex.create({

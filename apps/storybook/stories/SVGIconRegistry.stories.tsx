@@ -14,8 +14,8 @@ import {
   type SVGIconDef,
   type IconShape,
   type IconShapeRole,
-} from '@xds/lab';
-import {Stack, Text} from '@xds/core';
+} from '@astryxdesign/lab';
+import {Stack, Text} from '@astryxdesign/core';
 import {defaultIcons} from '../../../packages/core/src/Icon/defaultIcons';
 
 // =============================================================================

@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Badge} from '@xds/core/Badge';
-import {Table} from '@xds/core/Table';
-import {List, ListItem} from '@xds/core/List';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Table} from '@astryxdesign/core/Table';
+import {List, ListItem} from '@astryxdesign/core/List';
 import {renderInlineCode} from './renderInlineCode';
 
 export function ListBlock({

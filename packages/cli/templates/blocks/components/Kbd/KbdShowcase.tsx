@@ -2,7 +2,7 @@
 
 'use client';
 
-import {Kbd} from '@xds/core/Kbd';
+import {Kbd} from '@astryxdesign/core/Kbd';
 
 export default function KbdShowcase() {
   return <Kbd keys="mod+k" />;

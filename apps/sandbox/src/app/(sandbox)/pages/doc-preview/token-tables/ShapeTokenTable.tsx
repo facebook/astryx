@@ -3,9 +3,9 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {VStack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Table} from '@xds/core/Table';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Table} from '@astryxdesign/core/Table';
 import type {TokenTableProps} from './types';
 import {resolveToken, getTokensByPrefix} from './helpers';
 

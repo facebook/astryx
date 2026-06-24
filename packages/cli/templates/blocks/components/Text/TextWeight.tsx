@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Text} from '@xds/core/Text';
-import {Stack} from '@xds/core/Stack';
+import {Text} from '@astryxdesign/core/Text';
+import {Stack} from '@astryxdesign/core/Stack';
 
 const WEIGHTS = [
   {weight: 'normal' as const, label: 'Normal'},

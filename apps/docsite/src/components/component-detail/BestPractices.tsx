@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {Heading} from '@xds/core/Text';
-import {VStack} from '@xds/core/Layout';
-import {Section} from '@xds/core/Section';
+import {Heading} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Section} from '@astryxdesign/core/Section';
 import {BestPracticesBlock} from '../docs/BestPracticesBlock';
 import type {BestPractice} from '../../generated/componentRegistry';
 

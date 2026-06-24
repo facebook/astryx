@@ -2,9 +2,9 @@
 
 'use client';
 
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {dailyTheme} from '@xds/theme-daily/built';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {dailyTheme} from '@astryxdesign/theme-daily/built';
 import {ThemePalettePreview} from '@/components/ThemePalettePreview';
 import type {TonalColor} from '@/components/ThemePalettePreview';
 

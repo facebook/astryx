@@ -23,12 +23,12 @@ import {
   ChatToolCalls,
   ChatComposer,
   type ChatToolCallItem,
-} from '@xds/core/Chat';
-import {Markdown} from '@xds/core/Markdown';
-import {Button} from '@xds/core/Button';
-import {Text} from '@xds/core/Text';
-import {CodeBlock} from '@xds/core/CodeBlock';
-import {Badge} from '@xds/core/Badge';
+} from '@astryxdesign/core/Chat';
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {Button} from '@astryxdesign/core/Button';
+import {Text} from '@astryxdesign/core/Text';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+import {Badge} from '@astryxdesign/core/Badge';
 import {useState, useCallback, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 

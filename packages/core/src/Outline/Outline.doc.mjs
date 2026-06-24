@@ -82,7 +82,7 @@ export const docs = {
         {
           label: 'Basic',
           code: `
-import {Outline} from '@xds/core/Outline';
+import {Outline} from '@astryxdesign/core/Outline';
 
 const items = [
   {id: 'overview', label: 'Overview', level: 2},
@@ -99,7 +99,7 @@ const items = [
         {
           label: 'Compact (density="compact")',
           code: `
-import {Outline} from '@xds/core/Outline';
+import {Outline} from '@astryxdesign/core/Outline';
 
 // Dense sidebars use the compact variant; the sliding indicator
 // automatically matches the shorter item height.
@@ -110,7 +110,7 @@ import {Outline} from '@xds/core/Outline';
           label: 'Controlled active section',
           code: `
 import {useState} from 'react';
-import {Outline} from '@xds/core/Outline';
+import {Outline} from '@astryxdesign/core/Outline';
 
 function ControlledOutline() {
   const [activeId, setActiveId] = useState('overview');
@@ -129,7 +129,7 @@ function ControlledOutline() {
         {
           label: 'Generate items from markdown',
           code: `
-import {Outline, useOutlineFromMarkdown} from '@xds/core/Outline';
+import {Outline, useOutlineFromMarkdown} from '@astryxdesign/core/Outline';
 
 function MarkdownOutline({markdown}) {
   // Derives {id, label, level} items from headings in the source.

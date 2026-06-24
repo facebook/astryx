@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {Breadcrumbs, BreadcrumbItem} from '@xds/core/Breadcrumbs';
+import {Breadcrumbs, BreadcrumbItem} from '@astryxdesign/core/Breadcrumbs';
 import {HomeIcon, Cog6ToothIcon, FolderIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof Breadcrumbs> = {

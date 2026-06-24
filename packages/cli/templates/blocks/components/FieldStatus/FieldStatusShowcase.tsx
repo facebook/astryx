@@ -2,8 +2,8 @@
 
 'use client';
 
-import {FieldStatus} from '@xds/core/FieldStatus';
-import {VStack} from '@xds/core/Layout';
+import {FieldStatus} from '@astryxdesign/core/FieldStatus';
+import {VStack} from '@astryxdesign/core/Layout';
 
 export default function FieldStatusShowcase() {
   return (

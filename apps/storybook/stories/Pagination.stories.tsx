@@ -2,7 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {Pagination} from '@xds/core/Pagination';
+import {Pagination} from '@astryxdesign/core/Pagination';
 
 const meta: Meta<typeof Pagination> = {
   title: 'Core/Pagination',

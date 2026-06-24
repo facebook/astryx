@@ -34,7 +34,7 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Paste this into your AI',
-          code: 'Install @xds/cli and run `npx astryx agent-docs` to set up your XDS context. Read the generated file.',
+          code: 'Install @astryxdesign/cli and run `npx astryx agent-docs` to set up your XDS context. Read the generated file.',
         },
         {
           type: 'prose',
@@ -118,14 +118,14 @@ If you don't know all three, run \`npx astryx init --features agents\` to genera
       content: [
         {
           type: 'prose',
-          text: 'AI agents frequently invoke the CLI with incorrect paths (e.g. node_modules/@xds/cli/bin/docs.mjs instead of xds.mjs), leading to silent failures. Adding an npm script alias with the correct path eliminates this entirely.',
+          text: 'AI agents frequently invoke the CLI with incorrect paths (e.g. node_modules/@astryxdesign/cli/bin/docs.mjs instead of xds.mjs), leading to silent failures. Adding an npm script alias with the correct path eliminates this entirely.',
         },
         {
           type: 'code',
           lang: 'json',
           label: 'package.json',
           code: `"scripts": {
-  "xds": "node node_modules/@xds/cli/bin/xds.mjs"
+  "xds": "node node_modules/@astryxdesign/cli/bin/xds.mjs"
 }`,
         },
         {

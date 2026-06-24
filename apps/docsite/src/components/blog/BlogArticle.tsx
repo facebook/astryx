@@ -15,17 +15,17 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {Markdown} from '@xds/core/Markdown';
-import {Text, Heading} from '@xds/core/Text';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Grid} from '@xds/core/Grid';
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {Icon} from '@xds/core/Icon';
-import {Section} from '@xds/core/Section';
-import {Badge} from '@xds/core/Badge';
-import {Breadcrumbs, BreadcrumbItem} from '@xds/core/Breadcrumbs';
-import {Divider} from '@xds/core/Divider';
-import {ClickableCard} from '@xds/core/ClickableCard';
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Grid} from '@astryxdesign/core/Grid';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Section} from '@astryxdesign/core/Section';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Breadcrumbs, BreadcrumbItem} from '@astryxdesign/core/Breadcrumbs';
+import {Divider} from '@astryxdesign/core/Divider';
+import {ClickableCard} from '@astryxdesign/core/ClickableCard';
 import type {BlogPost} from '../../lib/blog/schema';
 import {POST_TYPE_LABELS} from '../../lib/blog/schema';
 import {AuthorByline} from './AuthorByline';

@@ -3,8 +3,8 @@
 'use client';
 
 import type {ComponentProps} from 'react';
-import {SideNav, SideNavItem} from '@xds/core/SideNav';
-import {Badge} from '@xds/core/Badge';
+import {SideNav, SideNavItem} from '@astryxdesign/core/SideNav';
+import {Badge} from '@astryxdesign/core/Badge';
 
 function InboxIcon(props: ComponentProps<'svg'>) {
   return (

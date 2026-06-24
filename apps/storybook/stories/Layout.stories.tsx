@@ -2,8 +2,8 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {Card} from '@xds/core/Card';
-import {Section} from '@xds/core/Section';
+import {Card} from '@astryxdesign/core/Card';
+import {Section} from '@astryxdesign/core/Section';
 import {
   Layout,
   LayoutHeader,
@@ -13,19 +13,19 @@ import {
   container,
   HStack,
   VStack,
-} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
+} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
 import {
   colorVars,
   spacingVars,
   typographyVars,
   radiusVars,
   shadowVars,
-} from '@xds/core/theme/tokens.stylex';
-import {AppShell} from '@xds/core/AppShell';
-import {Theme} from '@xds/core';
-import {defaultTheme} from '@xds/theme-default';
-import {neutralTheme} from '@xds/theme-neutral';
+} from '@astryxdesign/core/theme/tokens.stylex';
+import {AppShell} from '@astryxdesign/core/AppShell';
+import {Theme} from '@astryxdesign/core';
+import {defaultTheme} from '@astryxdesign/theme-default';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 
 const styles = stylex.create({
   // Story wrapper styles

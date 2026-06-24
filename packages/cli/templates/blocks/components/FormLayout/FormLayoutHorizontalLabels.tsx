@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {FormLayout} from '@xds/core/FormLayout';
-import {TextInput} from '@xds/core/TextInput';
-import {Selector} from '@xds/core/Selector';
-import {TextArea} from '@xds/core/TextArea';
+import {FormLayout} from '@astryxdesign/core/FormLayout';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Selector} from '@astryxdesign/core/Selector';
+import {TextArea} from '@astryxdesign/core/TextArea';
 
 export default function FormLayoutHorizontalLabels() {
   const [displayName, setDisplayName] = useState('Jane Doe');

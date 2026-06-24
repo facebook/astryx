@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {Switch} from '@xds/core/Switch';
+import {Switch} from '@astryxdesign/core/Switch';
 
 export default function SwitchDisabled() {
   const [value, setValue] = useState(false);

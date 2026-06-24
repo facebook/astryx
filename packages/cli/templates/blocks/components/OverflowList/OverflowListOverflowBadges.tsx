@@ -3,9 +3,9 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {OverflowList} from '@xds/core/OverflowList';
-import {Badge} from '@xds/core/Badge';
-import {Card} from '@xds/core/Card';
+import {OverflowList} from '@astryxdesign/core/OverflowList';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Card} from '@astryxdesign/core/Card';
 
 const styles = stylex.create({
   resizable: {

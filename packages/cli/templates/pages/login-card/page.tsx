@@ -5,16 +5,16 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {CubeIcon} from '@heroicons/react/24/outline';
-import {VStack} from '@xds/core/Layout';
-import {Center} from '@xds/core/Center';
-import {Text, Heading} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
-import {Button} from '@xds/core/Button';
-import {Card} from '@xds/core/Card';
-import {Link} from '@xds/core/Link';
-import {Divider} from '@xds/core/Divider';
-import {Icon} from '@xds/core/Icon';
-import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Center} from '@astryxdesign/core/Center';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {Link} from '@astryxdesign/core/Link';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Icon} from '@astryxdesign/core/Icon';
+import {colorVars, spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 // Brand sign-in marks — no heroicons or template-assets equivalent.
 const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (

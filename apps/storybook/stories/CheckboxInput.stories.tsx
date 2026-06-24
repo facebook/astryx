@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {CheckboxInput} from '@xds/core/CheckboxInput';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
 import {
   BellIcon,
   EnvelopeIcon,

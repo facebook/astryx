@@ -2,9 +2,9 @@
 
 'use client';
 
-import {StatusDot} from '@xds/core/StatusDot';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {StatusDot} from '@astryxdesign/core/StatusDot';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const statuses = [
   {variant: 'success', label: 'Online'},

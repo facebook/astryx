@@ -332,21 +332,21 @@ export function resolveImportPath(coreDir, componentName) {
   // Priority 1: exact subpath export matching the component name (e.g. ./Heading)
   // This allows convenience re-export directories to win over the source directory.
   if (pkg?.exports?.[`./${componentName}`]) {
-    return `@xds/core/${componentName}`;
+    return `@astryxdesign/core/${componentName}`;
   }
 
   const sourcePath = findComponentSource(coreDir, componentName);
-  if (!sourcePath) return '@xds/core';
+  if (!sourcePath) return '@astryxdesign/core';
 
   // Priority 2: subpath export matching the top-level source directory
   const relToSrc = path.relative(srcDir, sourcePath);
   const topDir = relToSrc.split(path.sep)[0];
 
   if (pkg?.exports?.[`./${topDir}`]) {
-    return `@xds/core/${topDir}`;
+    return `@astryxdesign/core/${topDir}`;
   }
 
-  return '@xds/core';
+  return '@astryxdesign/core';
 }
 
 // ── External package discovery ───────────────────────────────────────

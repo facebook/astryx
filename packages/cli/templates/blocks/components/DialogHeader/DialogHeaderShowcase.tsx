@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Dialog, DialogHeader} from '@xds/core/Dialog';
-import {Layout, LayoutContent, Card} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
+import {Layout, LayoutContent, Card} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function DialogHeaderShowcase() {
   return (

@@ -2,7 +2,7 @@
 
 'use client';
 
-import type {ContentBlock} from '@xds/core';
+import type {ContentBlock} from '@astryxdesign/core';
 import {ProseBlock} from './ProseBlock';
 import {CodeBlock} from './CodeBlock';
 import {TableBlock} from './TableBlock';

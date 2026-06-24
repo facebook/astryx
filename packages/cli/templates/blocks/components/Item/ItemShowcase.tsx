@@ -2,12 +2,12 @@
 
 'use client';
 
-import {Item} from '@xds/core/Item';
-import {Avatar} from '@xds/core/Avatar';
-import {Badge} from '@xds/core/Badge';
-import {Icon} from '@xds/core/Icon';
-import {Text} from '@xds/core/Text';
-import {Stack} from '@xds/core/Layout';
+import {Item} from '@astryxdesign/core/Item';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Text} from '@astryxdesign/core/Text';
+import {Stack} from '@astryxdesign/core/Layout';
 import {UserIcon, DocumentIcon, BellIcon} from '@heroicons/react/24/outline';
 
 export default function ItemShowcase() {

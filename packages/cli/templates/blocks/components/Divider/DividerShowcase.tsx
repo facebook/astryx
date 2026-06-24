@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Divider} from '@xds/core/Divider';
-import {Stack} from '@xds/core/Layout';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Stack} from '@astryxdesign/core/Layout';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({

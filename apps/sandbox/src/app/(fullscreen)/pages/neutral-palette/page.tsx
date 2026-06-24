@@ -6,7 +6,7 @@
 // Neutral Theme Palette Preview
 // =============================================================================
 
-import {neutralTheme} from '@xds/theme-neutral/built';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 import {ThemePalettePreview} from '@/components/ThemePalettePreview';
 import type {TonalColor} from '@/components/ThemePalettePreview';
 

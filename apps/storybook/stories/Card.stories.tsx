@@ -2,8 +2,8 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {Card} from '@xds/core/Card';
-import {Section} from '@xds/core/Section';
+import {Card} from '@astryxdesign/core/Card';
+import {Section} from '@astryxdesign/core/Section';
 import {
   VStack,
   HStack,
@@ -11,14 +11,14 @@ import {
   LayoutHeader,
   LayoutContent,
   LayoutFooter,
-} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Heading} from '@xds/core/Text';
+} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Heading} from '@astryxdesign/core/Text';
 import {
   colorVars,
   spacingVars,
   typographyVars,
-} from '@xds/core/theme/tokens.stylex';
+} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   pageWrapper: {

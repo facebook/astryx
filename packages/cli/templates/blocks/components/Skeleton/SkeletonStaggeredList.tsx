@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Skeleton} from '@xds/core/Skeleton';
-import {VStack} from '@xds/core/Layout';
+import {Skeleton} from '@astryxdesign/core/Skeleton';
+import {VStack} from '@astryxdesign/core/Layout';
 
 export default function SkeletonStaggeredList() {
   return (

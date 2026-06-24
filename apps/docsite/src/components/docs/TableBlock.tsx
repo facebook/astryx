@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Text} from '@xds/core/Text';
-import {Table} from '@xds/core/Table';
-import {Card} from '@xds/core/Card';
+import {Text} from '@astryxdesign/core/Text';
+import {Table} from '@astryxdesign/core/Table';
+import {Card} from '@astryxdesign/core/Card';
 import {renderInlineCode} from './renderInlineCode';
 
 export function TableBlock({

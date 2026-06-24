@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Token} from '@xds/core/Token';
-import {Icon} from '@xds/core/Icon';
-import {Stack} from '@xds/core/Layout';
+import {Token} from '@astryxdesign/core/Token';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Stack} from '@astryxdesign/core/Layout';
 import {TagIcon} from '@heroicons/react/24/outline';
 
 export default function TokenShowcase() {

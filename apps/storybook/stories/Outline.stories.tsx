@@ -6,11 +6,11 @@ import {
   Outline,
   useOutlineFromDOM,
   useOutlineFromMarkdown,
-} from '@xds/core/Outline';
-import type {OutlineItem} from '@xds/core/Outline';
-import {Badge} from '@xds/core/Badge';
-import {Markdown} from '@xds/core/Markdown';
-import {Heading, Text} from '@xds/core/Text';
+} from '@astryxdesign/core/Outline';
+import type {OutlineItem} from '@astryxdesign/core/Outline';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {Heading, Text} from '@astryxdesign/core/Text';
 
 const meta: Meta<typeof Outline> = {
   title: 'Core/Outline',

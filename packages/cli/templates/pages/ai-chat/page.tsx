@@ -4,7 +4,7 @@
 
 import {useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 import {
   HStack,
@@ -12,8 +12,8 @@ import {
   StackItem,
   Layout,
   LayoutContent,
-} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
+} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
 import {
   ChatComposer,
   ChatComposerInput,
@@ -25,22 +25,22 @@ import {
   ChatSystemMessage,
   ChatTokenizedText,
   ChatToolCalls,
-} from '@xds/core/Chat';
-import {Avatar} from '@xds/core/Avatar';
-import {Card} from '@xds/core/Card';
-import {ClickableCard} from '@xds/core/ClickableCard';
-import {Section} from '@xds/core/Section';
-import {Markdown} from '@xds/core/Markdown';
-import {CodeBlock} from '@xds/core/CodeBlock';
-import {Timestamp} from '@xds/core/Timestamp';
-import {Token} from '@xds/core/Token';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {Dialog, DialogHeader} from '@xds/core/Dialog';
-import {DropdownMenu} from '@xds/core/DropdownMenu';
-import {MoreMenu} from '@xds/core/MoreMenu';
-import {Toolbar} from '@xds/core/Toolbar';
-import {useResizable, ResizeHandle} from '@xds/core/Resizable';
+} from '@astryxdesign/core/Chat';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Card} from '@astryxdesign/core/Card';
+import {ClickableCard} from '@astryxdesign/core/ClickableCard';
+import {Section} from '@astryxdesign/core/Section';
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+import {Timestamp} from '@astryxdesign/core/Timestamp';
+import {Token} from '@astryxdesign/core/Token';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
+import {MoreMenu} from '@astryxdesign/core/MoreMenu';
+import {Toolbar} from '@astryxdesign/core/Toolbar';
+import {useResizable, ResizeHandle} from '@astryxdesign/core/Resizable';
 
 import {
   DocumentTextIcon,

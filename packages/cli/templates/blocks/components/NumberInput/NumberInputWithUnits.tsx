@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {NumberInput} from '@xds/core/NumberInput';
+import {NumberInput} from '@astryxdesign/core/NumberInput';
 
 export default function NumberInputWithUnits() {
   const [value, setValue] = useState<number | null>(50);

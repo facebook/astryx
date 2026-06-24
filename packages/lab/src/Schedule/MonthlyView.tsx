@@ -22,8 +22,8 @@ import {
   plainDateSetStartOfWeek,
   plainDateToISO,
   type PlainDate,
-} from '@xds/core/utils';
-import {Heading, Text} from '@xds/core/Text';
+} from '@astryxdesign/core/utils';
+import {Heading, Text} from '@astryxdesign/core/Text';
 import {
   enumerateDates,
   getScheduleRangeFromDates,

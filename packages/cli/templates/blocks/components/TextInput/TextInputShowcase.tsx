@@ -2,7 +2,7 @@
 
 'use client';
 
-import {TextInput} from '@xds/core/TextInput';
+import {TextInput} from '@astryxdesign/core/TextInput';
 
 export default function TextInputShowcase() {
   return (

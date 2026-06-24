@@ -4,22 +4,22 @@
 
 import {useState, useMemo} from 'react';
 
-import {VStack, HStack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
-import {Card} from '@xds/core/Card';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Card} from '@astryxdesign/core/Card';
 import {
   Table,
   useTableSelection,
   proportional,
   pixel,
-} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
-import {Avatar} from '@xds/core/Avatar';
-import {Badge} from '@xds/core/Badge';
-import type {BadgeVariant} from '@xds/core/Badge';
-import {StatusDot} from '@xds/core/StatusDot';
-import {Collapsible} from '@xds/core/Collapsible';
+} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Badge} from '@astryxdesign/core/Badge';
+import type {BadgeVariant} from '@astryxdesign/core/Badge';
+import {StatusDot} from '@astryxdesign/core/StatusDot';
+import {Collapsible} from '@astryxdesign/core/Collapsible';
 import * as stylex from '@stylexjs/stylex';
 
 // =============================================================================

@@ -2,11 +2,11 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {FormLayout} from '@xds/core/FormLayout';
-import {TextInput} from '@xds/core/TextInput';
-import {Selector} from '@xds/core/Selector';
-import {Field} from '@xds/core/Field';
-import {Text} from '@xds/core/Text';
+import {FormLayout} from '@astryxdesign/core/FormLayout';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Selector} from '@astryxdesign/core/Selector';
+import {Field} from '@astryxdesign/core/Field';
+import {Text} from '@astryxdesign/core/Text';
 import * as stylex from '@stylexjs/stylex';
 
 const meta: Meta<typeof FormLayout> = {

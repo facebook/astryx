@@ -1,5 +1,5 @@
 {
-  "name": "@xds/vibe-tests",
+  "name": "@astryxdesign/vibe-tests",
   "version": "0.0.1",
   "private": true,
   "description": "Vibeability test harness for measuring LLM component system usage",
@@ -31,7 +31,7 @@
     "preview:tsc-only": "tsx src/build-previews.ts --tsc-only"
   },
   "dependencies": {
-    "@xds/cli": "*",
+    "@astryxdesign/cli": "*",
     "commander": "^12.1.0"
   },
   "devDependencies": {

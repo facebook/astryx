@@ -2,11 +2,11 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {CodeEditor} from '@xds/lab';
+import {CodeEditor} from '@astryxdesign/lab';
 import {
   SyntaxTheme as SyntaxThemeProvider,
   defineSyntaxTheme,
-} from '@xds/core/theme/syntax';
+} from '@astryxdesign/core/theme/syntax';
 import {
   oneDarkPro,
   dracula,
@@ -21,7 +21,7 @@ import {
   catppuccinLatte,
   tokyoNightLight,
   allSyntaxPresets,
-} from '@xds/core/theme/syntax';
+} from '@astryxdesign/core/theme/syntax';
 
 const sampleCode = [
   "import {useState, useEffect} from 'react';",

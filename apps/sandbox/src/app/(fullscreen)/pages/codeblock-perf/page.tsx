@@ -4,19 +4,19 @@
 
 import * as React from 'react';
 import {useState, useCallback, useRef, useLayoutEffect} from 'react';
-import {CodeBlock} from '@xds/core/CodeBlock';
-import {Text, Heading} from '@xds/core/Text';
-import {HStack, VStack} from '@xds/core/Stack';
-import {Button} from '@xds/core/Button';
-import {Badge} from '@xds/core/Badge';
-import {Card} from '@xds/core/Card';
-import {AppShell} from '@xds/core/AppShell';
-import {Section} from '@xds/core/Section';
-import {Grid} from '@xds/core/Grid';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {HStack, VStack} from '@astryxdesign/core/Stack';
+import {Button} from '@astryxdesign/core/Button';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Card} from '@astryxdesign/core/Card';
+import {AppShell} from '@astryxdesign/core/AppShell';
+import {Section} from '@astryxdesign/core/Section';
+import {Grid} from '@astryxdesign/core/Grid';
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from '@xds/core/SegmentedControl';
+} from '@astryxdesign/core/SegmentedControl';
 
 // ---------------------------------------------------------------------------
 // Code generation

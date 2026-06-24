@@ -2,9 +2,9 @@
 
 'use client';
 
-import {MetadataList, MetadataListItem} from '@xds/core/MetadataList';
-import {Token} from '@xds/core/Token';
-import {HStack} from '@xds/core/Layout';
+import {MetadataList, MetadataListItem} from '@astryxdesign/core/MetadataList';
+import {Token} from '@astryxdesign/core/Token';
+import {HStack} from '@astryxdesign/core/Layout';
 
 export default function MetadataListMultiColumnMetadata() {
   return (

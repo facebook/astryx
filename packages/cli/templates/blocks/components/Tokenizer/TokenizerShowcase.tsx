@@ -3,8 +3,8 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {Tokenizer} from '@xds/core/Tokenizer';
-import type {SearchSource} from '@xds/core/Typeahead';
+import {Tokenizer} from '@astryxdesign/core/Tokenizer';
+import type {SearchSource} from '@astryxdesign/core/Typeahead';
 
 const styles = stylex.create({
   fixed: {width: 400},

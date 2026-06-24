@@ -3,20 +3,20 @@
 'use client';
 
 import {useState, useCallback, useRef} from 'react';
-import {VStack, HStack} from '@xds/core/Stack';
-import {Text, Heading} from '@xds/core/Text';
-import {Card} from '@xds/core/Card';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {Divider} from '@xds/core/Divider';
-import {Badge} from '@xds/core/Badge';
+import {VStack, HStack} from '@astryxdesign/core/Stack';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Card} from '@astryxdesign/core/Card';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Badge} from '@astryxdesign/core/Badge';
 import {
   ChatComposer,
   ChatDictationButton,
   useChatDictation,
   ChatComposerInput,
-} from '@xds/core/Chat';
-import type {ChatComposerInputHandle} from '@xds/core/Chat';
+} from '@astryxdesign/core/Chat';
+import type {ChatComposerInputHandle} from '@astryxdesign/core/Chat';
 
 // =============================================================================
 // Shared AudioContext — Safari fix

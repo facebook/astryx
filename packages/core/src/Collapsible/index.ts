@@ -6,7 +6,7 @@
  * @file index.ts
  * @input Imports Collapsible, CollapsibleGroup, and useCollapsible
  * @output Exports components, hook, and types
- * @position Entry point for @xds/core/Collapsible module
+ * @position Entry point for @astryxdesign/core/Collapsible module
  *
  * SYNC: When modified, update /packages/core/src/Collapsible/Collapsible.doc.mjs
  */

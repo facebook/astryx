@@ -2,9 +2,9 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {Avatar} from '@xds/core/Avatar';
-import {AvatarStatusDot} from '@xds/core/Avatar';
-import {spacingVars, typographyVars} from '@xds/core/theme/tokens.stylex';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {AvatarStatusDot} from '@astryxdesign/core/Avatar';
+import {spacingVars, typographyVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {CheckIcon} from '@heroicons/react/24/solid';
 
 const styles = stylex.create({

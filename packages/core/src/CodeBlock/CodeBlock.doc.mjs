@@ -128,7 +128,7 @@ export const docs = {
   ],
   playground: {
     defaults: {
-      code: "import {Button} from '@xds/core/Button';\n\nexport function App() {\n  return <Button label=\"Hello\" variant=\"primary\" />;\n}",
+      code: "import {Button} from '@astryxdesign/core/Button';\n\nexport function App() {\n  return <Button label=\"Hello\" variant=\"primary\" />;\n}",
       language: 'tsx',
       hasCopyButton: true,
     },

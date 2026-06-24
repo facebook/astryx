@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Breadcrumbs, BreadcrumbItem} from '@xds/core/Breadcrumbs';
-import {Icon} from '@xds/core/Icon';
+import {Breadcrumbs, BreadcrumbItem} from '@astryxdesign/core/Breadcrumbs';
+import {Icon} from '@astryxdesign/core/Icon';
 import {HomeIcon} from '@heroicons/react/24/outline';
 
 export default function BreadcrumbsDeepHierarchy() {

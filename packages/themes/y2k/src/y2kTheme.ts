@@ -9,7 +9,7 @@
  * Core neutral: H=75 C=8 (warm cream neutral derived from #FFF6ED)
  */
 
-import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
+import {defineTheme, defineSyntaxTheme} from '@astryxdesign/core/theme';
 import {y2kIconRegistry} from './icons';
 
 const y2kSyntax = defineSyntaxTheme({

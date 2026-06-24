@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {CircularProgress} from '@xds/lab/CircularProgress';
-import {Text} from '@xds/core/Text';
+import {CircularProgress} from '@astryxdesign/lab/CircularProgress';
+import {Text} from '@astryxdesign/core/Text';
 
 const meta: Meta<typeof CircularProgress> = {
   title: 'Lab/CircularProgress',

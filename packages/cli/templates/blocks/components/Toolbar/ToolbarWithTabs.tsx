@@ -3,12 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {Toolbar} from '@xds/core/Toolbar';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {TabList, Tab} from '@xds/core/TabList';
-import {Card} from '@xds/core/Card';
-import {Section} from '@xds/core/Section';
+import {Toolbar} from '@astryxdesign/core/Toolbar';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {Card} from '@astryxdesign/core/Card';
+import {Section} from '@astryxdesign/core/Section';
 import {PlusIcon} from '@heroicons/react/24/outline';
 import * as stylex from '@stylexjs/stylex';
 

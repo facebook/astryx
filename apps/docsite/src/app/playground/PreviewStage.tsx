@@ -15,9 +15,9 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {Card} from '@xds/core/Card';
-import {Center} from '@xds/core/Center';
-import {Button} from '@xds/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {Center} from '@astryxdesign/core/Center';
+import {Button} from '@astryxdesign/core/Button';
 import {Minimize2} from 'lucide-react';
 
 export type Viewport = 'desktop' | 'phone';

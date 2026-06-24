@@ -2,7 +2,7 @@
 
 'use client';
 
-import {DropdownMenu, DropdownMenuItem} from '@xds/core/DropdownMenu';
+import {DropdownMenu, DropdownMenuItem} from '@astryxdesign/core/DropdownMenu';
 
 const PencilIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg

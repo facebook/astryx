@@ -4,10 +4,10 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {VStack} from '@xds/core/Layout';
-import {Heading, Text} from '@xds/core/Text';
-import {Link} from '@xds/core/Link';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Link} from '@astryxdesign/core/Link';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {layout} from '../../../layout.stylex';
 
 // Editorial-style "about" section: a left-anchored heading block sits

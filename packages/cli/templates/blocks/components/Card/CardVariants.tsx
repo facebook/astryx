@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Card} from '@xds/core/Card';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Card} from '@astryxdesign/core/Card';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const VARIANTS = [
   {variant: 'default' as const, label: 'General', note: '4 tasks due today'},

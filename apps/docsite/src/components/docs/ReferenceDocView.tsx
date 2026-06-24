@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Heading} from '@xds/core/Text';
-import {VStack} from '@xds/core/Layout';
+import {Heading} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/Layout';
 import {ContentBlockRenderer} from './ContentBlockRenderer';
 import {BestPracticesBlock} from './BestPracticesBlock';
 import {DocPageLayout} from './DocPageLayout';

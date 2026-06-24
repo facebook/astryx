@@ -18,8 +18,8 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'Basic theme setup (runtime injection)',
-          code: `import {Theme} from '@xds/core';
-import {defaultTheme} from '@xds/theme-default';
+          code: `import {Theme} from '@astryxdesign/core';
+import {defaultTheme} from '@astryxdesign/theme-default';
 
 function App() {
   return (
@@ -33,9 +33,9 @@ function App() {
           type: 'code',
           lang: 'tsx',
           label: 'Optimized setup (pre-built CSS)',
-          code: `import {Theme} from '@xds/core';
-import {defaultTheme} from '@xds/theme-default/built';
-import '@xds/theme-default/theme.css';
+          code: `import {Theme} from '@astryxdesign/core';
+import {defaultTheme} from '@astryxdesign/theme-default/built';
+import '@astryxdesign/theme-default/theme.css';
 
 function App() {
   return (
@@ -61,24 +61,24 @@ function App() {
           rows: [
             [
               'Default',
-              "import {defaultTheme} from '@xds/theme-default'",
+              "import {defaultTheme} from '@astryxdesign/theme-default'",
               'Blue accent, system fonts, light/dark',
             ],
             [
               'Neutral',
-              "import {neutralTheme} from '@xds/theme-neutral'",
+              "import {neutralTheme} from '@astryxdesign/theme-neutral'",
               'Grayscale, shadcn-inspired',
             ],
             [
               'Brutalist',
-              "import {brutalistTheme} from '@xds/theme-brutalist'",
+              "import {brutalistTheme} from '@astryxdesign/theme-brutalist'",
               'Zero radius, monospace, heavy borders',
             ],
           ],
         },
         {
           type: 'prose',
-          text: 'All theme packages export from two subpaths:\n- `@xds/theme-{name}`: source theme (runtime injection)\n- `@xds/theme-{name}/built`: pre-built theme (pair with `theme.css`)',
+          text: 'All theme packages export from two subpaths:\n- `@astryxdesign/theme-{name}`: source theme (runtime injection)\n- `@astryxdesign/theme-{name}/built`: pre-built theme (pair with `theme.css`)',
         },
       ],
     },
@@ -130,7 +130,7 @@ function App() {
           type: 'code',
           lang: 'tsx',
           label: 'defineTheme with scale configs',
-          code: `import {defineTheme} from '@xds/core/theme';
+          code: `import {defineTheme} from '@astryxdesign/core/theme';
 
 const myTheme = defineTheme({
   name: 'my-theme',
@@ -195,8 +195,8 @@ const myTheme = defineTheme({
           type: 'code',
           lang: 'tsx',
           label: 'Extending the default theme',
-          code: `import {defineTheme} from '@xds/core/theme';
-import {defaultTheme} from '@xds/theme-default';
+          code: `import {defineTheme} from '@astryxdesign/core/theme';
+import {defaultTheme} from '@astryxdesign/theme-default';
 import {myIcons} from './icons';
 
 const brandTheme = defineTheme({
@@ -392,8 +392,8 @@ import './themes/ocean.css';
           rows: [
             [
               'Import (published theme)',
-              "@xds/theme-{name}",
-              "@xds/theme-{name}/built + theme.css",
+              "@astryxdesign/theme-{name}",
+              "@astryxdesign/theme-{name}/built + theme.css",
             ],
             [
               'Import (custom theme)',
@@ -508,7 +508,7 @@ import './themes/ocean.css';
           type: 'code',
           lang: 'ts',
           label: 'CSS var references for styling-library configs',
-          code: `import {xdsTokenVar, xdsTokenVars} from '@xds/core/theme/tokens';
+          code: `import {xdsTokenVar, xdsTokenVars} from '@astryxdesign/core/theme/tokens';
 
 const pandaOrEmotionTheme = {
   colors: {
@@ -524,8 +524,8 @@ const pandaOrEmotionTheme = {
           type: 'code',
           lang: 'ts',
           label: 'Resolve token values without a hook',
-          code: `import {resolveXDSThemeTokens} from '@xds/core/theme/tokens';
-import {defaultTheme} from '@xds/theme-default';
+          code: `import {resolveXDSThemeTokens} from '@astryxdesign/core/theme/tokens';
+import {defaultTheme} from '@astryxdesign/theme-default';
 
 const lightTokens = resolveXDSThemeTokens(defaultTheme, {mode: 'light'});
 const chartTheme = {
@@ -535,7 +535,7 @@ const chartTheme = {
         },
         {
           type: 'prose',
-          text: 'The `@xds/core/theme/tokens` subpath is server-safe and does not require React. The main `@xds/core/theme` barrel also re-exports these helpers for client code that already imports theme APIs.',
+          text: 'The `@astryxdesign/core/theme/tokens` subpath is server-safe and does not require React. The main `@astryxdesign/core/theme` barrel also re-exports these helpers for client code that already imports theme APIs.',
         },
       ],
     },
@@ -552,7 +552,7 @@ const chartTheme = {
           lang: 'tsx',
           label: 'Access resolved token values in React',
           code: `import {useMemo} from 'react';
-import {useTheme} from '@xds/core/theme';
+import {useTheme} from '@astryxdesign/core/theme';
 
 function ChartConfig() {
   const {mode, tokens} = useTheme();

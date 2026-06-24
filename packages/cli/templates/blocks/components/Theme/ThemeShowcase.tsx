@@ -2,14 +2,14 @@
 
 'use client';
 
-import {Theme, defineTheme} from '@xds/core/theme';
-import {Card} from '@xds/core/Card';
-import {Grid} from '@xds/core/Grid';
-import {Section} from '@xds/core/Section';
-import {Stack} from '@xds/core/Layout';
-import {Heading, Text} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {Badge} from '@xds/core/Badge';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
+import {Card} from '@astryxdesign/core/Card';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Section} from '@astryxdesign/core/Section';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Badge} from '@astryxdesign/core/Badge';
 
 const warmTheme = defineTheme({
   name: 'warm-docs',

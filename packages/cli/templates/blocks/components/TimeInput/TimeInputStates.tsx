@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {TimeInput} from '@xds/core/TimeInput';
-import {Stack} from '@xds/core/Layout';
+import {TimeInput} from '@astryxdesign/core/TimeInput';
+import {Stack} from '@astryxdesign/core/Layout';
 
 export default function TimeInputStates() {
   const [disabledVal, setDisabledVal] = useState('10:00');

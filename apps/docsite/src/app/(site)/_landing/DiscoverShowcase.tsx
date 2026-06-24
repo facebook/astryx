@@ -4,22 +4,22 @@
 
 import {useEffect, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {VStack} from '@xds/core/Layout';
-import {Grid} from '@xds/core/Grid';
-import {Card} from '@xds/core/Card';
-import {Heading, Text} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Card} from '@astryxdesign/core/Card';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {AstryxLogo} from '../../../components/logos';
 import {components} from '../../../generated/componentRegistry';
 import {layout} from '../../../layout.stylex';
 
-// Count of public @xds/core components (excluding hooks and hidden entries),
+// Count of public @astryxdesign/core components (excluding hooks and hidden entries),
 // rounded down to the nearest 10 for marketing copy. Sourced from the
 // generated registry so the number stays accurate as the library grows.
 const CORE_COMPONENT_COUNT_ROUNDED =
   Math.floor(
-    (components['@xds/core'] ?? []).filter(
+    (components['@astryxdesign/core'] ?? []).filter(
       c => !c.hidden && !c.name.startsWith('use'),
     ).length / 10,
   ) * 10;
@@ -216,7 +216,7 @@ export function DiscoverShowcase() {
           them. */}
       <div ref={stageRef} {...stylex.props(styles.stage)}>
         {/* Floating decorative preview images. Kept as raw <img>s
-            because @xds/core does not export a general-purpose
+            because @astryxdesign/core does not export a general-purpose
             image component (Thumbnail is chat-attachment chrome
             with built-in remove buttons; Icon is a glyph
             registry). aria-hidden + empty alt keep them out of the

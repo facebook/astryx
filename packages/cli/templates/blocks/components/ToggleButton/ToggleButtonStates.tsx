@@ -2,10 +2,10 @@
 
 'use client';
 
-import {ToggleButton} from '@xds/core/ToggleButton';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {Icon} from '@xds/core/Icon';
+import {ToggleButton} from '@astryxdesign/core/ToggleButton';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {Icon} from '@astryxdesign/core/Icon';
 import {StarIcon as StarOutline} from '@heroicons/react/24/outline';
 import {StarIcon as StarSolid} from '@heroicons/react/24/solid';
 

@@ -15,7 +15,7 @@
  * Only non-typography component overrides need to be specified manually.
  */
 
-import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
+import {defineTheme, defineSyntaxTheme} from '@astryxdesign/core/theme';
 import {defaultIconRegistry} from './icons';
 
 /**

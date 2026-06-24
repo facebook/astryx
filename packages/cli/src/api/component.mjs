@@ -76,7 +76,7 @@ export async function component(name, options = {}) {
 
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
-    throw new XDSError('Could not find @xds/core package', undefined, ERROR_CODES.ERR_CORE_NOT_FOUND);
+    throw new XDSError('Could not find @astryxdesign/core package', undefined, ERROR_CODES.ERR_CORE_NOT_FOUND);
   }
 
   // ── List mode ──────────────────────────────────────────────────

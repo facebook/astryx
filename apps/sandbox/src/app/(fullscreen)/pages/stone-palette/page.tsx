@@ -2,10 +2,10 @@
 
 'use client';
 
-import {VStack} from '@xds/core/Layout';
-import {stoneTheme} from '@xds/theme-stone/built';
+import {VStack} from '@astryxdesign/core/Layout';
+import {stoneTheme} from '@astryxdesign/theme-stone/built';
 // `stonePalettes` is only exported from the source entry, not /built.
-import {stonePalettes} from '@xds/theme-stone';
+import {stonePalettes} from '@astryxdesign/theme-stone';
 import {ThemePalettePreview} from '@/components/ThemePalettePreview';
 import type {TonalColor} from '@/components/ThemePalettePreview';
 

@@ -2,8 +2,8 @@
 
 'use client';
 
-import {SideNav, SideNavHeading} from '@xds/core/SideNav';
-import {HStack} from '@xds/core/Layout';
+import {SideNav, SideNavHeading} from '@astryxdesign/core/SideNav';
+import {HStack} from '@astryxdesign/core/Layout';
 
 function AppIcon() {
   return (

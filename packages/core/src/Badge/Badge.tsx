@@ -121,7 +121,7 @@ const variants = stylex.create({
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/Badge' {
+ * declare module '@astryxdesign/core/Badge' {
  *   interface BadgeVariantMap {
  *     'premium': true;
  *   }

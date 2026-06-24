@@ -4,12 +4,12 @@
 
 import {useCallback, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Text, Heading} from '@xds/core/Text';
-import {VStack, HStack, StackItem} from '@xds/core/Stack';
-import {Selector} from '@xds/core/Selector';
-import {TextInput} from '@xds/core/TextInput';
-import {Button} from '@xds/core/Button';
-import {Divider} from '@xds/core/Divider';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {VStack, HStack, StackItem} from '@astryxdesign/core/Stack';
+import {Selector} from '@astryxdesign/core/Selector';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Button} from '@astryxdesign/core/Button';
+import {Divider} from '@astryxdesign/core/Divider';
 import {
   COMPONENT_VARS,
   ALL_COMPONENT_NAMES,

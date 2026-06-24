@@ -2,12 +2,12 @@
 
 'use client';
 
-import {VStack, HStack} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Text, Heading} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
-import {Badge} from '@xds/core/Badge';
-import {Divider} from '@xds/core';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Divider} from '@astryxdesign/core';
 
 export default function Home() {
   return (
@@ -26,7 +26,7 @@ export default function Home() {
             <Text type="body" color="secondary">
               This example consumes{' '}
               <Text type="body" weight="bold">
-                @xds/core
+                @astryxdesign/core
               </Text>{' '}
               
               as a pre-built dist package: no StyleX build plugin needed. Plain

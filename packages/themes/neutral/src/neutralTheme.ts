@@ -29,7 +29,7 @@
  * Only overrides tokens that differ from the defaults.
  */
 
-import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
+import {defineTheme, defineSyntaxTheme} from '@astryxdesign/core/theme';
 import {neutralIconRegistry} from './icons';
 
 /**

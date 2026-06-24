@@ -17,18 +17,18 @@ import {
   type ChatComposerToken,
   type ChatComposerTrigger,
   type ChatToolCallItem,
-} from '@xds/core/Chat';
-import {Markdown} from '@xds/core/Markdown';
-import {Token} from '@xds/core/Token';
-import {Button} from '@xds/core/Button';
-import {Timestamp} from '@xds/core/Timestamp';
+} from '@astryxdesign/core/Chat';
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {Token} from '@astryxdesign/core/Token';
+import {Button} from '@astryxdesign/core/Button';
+import {Timestamp} from '@astryxdesign/core/Timestamp';
 import {HandThumbUpIcon, HandThumbDownIcon} from '@heroicons/react/24/outline';
 import {ClipboardDocumentIcon} from '@heroicons/react/24/outline';
-import {CodeBlock} from '@xds/core/CodeBlock';
-import {ProgressBar} from '@xds/core/ProgressBar';
-import {useTooltip} from '@xds/core/Tooltip';
-import {createStaticSource} from '@xds/core/Typeahead';
-import {EmptyState} from '@xds/core/EmptyState';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+import {ProgressBar} from '@astryxdesign/core/ProgressBar';
+import {useTooltip} from '@astryxdesign/core/Tooltip';
+import {createStaticSource} from '@astryxdesign/core/Typeahead';
+import {EmptyState} from '@astryxdesign/core/EmptyState';
 import {useState, useCallback, useRef} from 'react';
 
 const meta: Meta<typeof ChatLayout> = {

@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Banner} from '@xds/core/Banner';
-import {Stack} from '@xds/core/Layout';
+import {Banner} from '@astryxdesign/core/Banner';
+import {Stack} from '@astryxdesign/core/Layout';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({

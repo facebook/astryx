@@ -1,13 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {useContext, useMemo} from 'react';
-import type {UseThemeReturn} from '@xds/core/theme';
+import type {UseThemeReturn} from '@astryxdesign/core/theme';
 import {
   borderDefaults,
   ThemeContext,
   xdsTokenDefaults,
-} from '@xds/core/theme';
-import type {TokenValue} from '@xds/core/theme';
+} from '@astryxdesign/core/theme';
+import type {TokenValue} from '@astryxdesign/core/theme';
 
 const extraDefaults: Record<string, string> = {
   ...borderDefaults,

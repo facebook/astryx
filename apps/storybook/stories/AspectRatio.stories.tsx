@@ -2,15 +2,15 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {Grid} from '@xds/core/Grid';
-import {Text} from '@xds/core/Text';
-import {Skeleton} from '@xds/core/Skeleton';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Text} from '@astryxdesign/core/Text';
+import {Skeleton} from '@astryxdesign/core/Skeleton';
 import {
   colorVars,
   spacingVars,
   radiusVars,
-} from '@xds/core/theme/tokens.stylex';
+} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   container: {

@@ -2,7 +2,7 @@
 
 'use client';
 
-import {TreeList} from '@xds/core/TreeList';
+import {TreeList} from '@astryxdesign/core/TreeList';
 
 const noop = () => {};
 

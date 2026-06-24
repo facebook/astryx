@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSVegaChart, buildVegaLiteConfig} from '@xds/vega';
-import type {AnySpec} from '@xds/vega';
-import {useTheme} from '@xds/core';
+import {XDSVegaChart, buildVegaLiteConfig} from '@astryxdesign/vega';
+import type {AnySpec} from '@astryxdesign/vega';
+import {useTheme} from '@astryxdesign/core';
 
 // ---------------------------------------------------------------------------
 // Stocks dataset URL from vega-datasets

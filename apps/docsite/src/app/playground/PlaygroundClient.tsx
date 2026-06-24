@@ -26,34 +26,34 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useSearchParams} from 'next/navigation';
 import dynamic from 'next/dynamic';
 import * as stylex from '@stylexjs/stylex';
-import {AppShell} from '@xds/core/AppShell';
+import {AppShell} from '@astryxdesign/core/AppShell';
 import {compressCode, decompressCode} from '../../lib/compress';
-import {Button} from '@xds/core/Button';
-import {Link} from '@xds/core/Link';
-import {HStack, VStack} from '@xds/core/Layout';
-import {Center} from '@xds/core/Center';
-import {Spinner} from '@xds/core/Spinner';
-import {Popover} from '@xds/core/Popover';
-import {TextInput} from '@xds/core/TextInput';
+import {Button} from '@astryxdesign/core/Button';
+import {Link} from '@astryxdesign/core/Link';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Center} from '@astryxdesign/core/Center';
+import {Spinner} from '@astryxdesign/core/Spinner';
+import {Popover} from '@astryxdesign/core/Popover';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import {
   SideNav,
   SideNavHeading,
   SideNavItem,
   SideNavSection,
-} from '@xds/core/SideNav';
-import {Text, Heading} from '@xds/core/Text';
-import {StatusDot} from '@xds/core/StatusDot';
-import {Toolbar} from '@xds/core/Toolbar';
+} from '@astryxdesign/core/SideNav';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {StatusDot} from '@astryxdesign/core/StatusDot';
+import {Toolbar} from '@astryxdesign/core/Toolbar';
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from '@xds/core/SegmentedControl';
-import {Tab, TabList} from '@xds/core/TabList';
-import {TopNav, TopNavHeading} from '@xds/core/TopNav';
-import {DropdownMenu} from '@xds/core/DropdownMenu';
-import {useMediaQuery} from '@xds/core/hooks';
-import {useResizable, ResizeHandle} from '@xds/core/Resizable';
-import {ToggleButton} from '@xds/core/ToggleButton';
+} from '@astryxdesign/core/SegmentedControl';
+import {Tab, TabList} from '@astryxdesign/core/TabList';
+import {TopNav, TopNavHeading} from '@astryxdesign/core/TopNav';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
+import {useResizable, ResizeHandle} from '@astryxdesign/core/Resizable';
+import {ToggleButton} from '@astryxdesign/core/ToggleButton';
 import {
   Check,
   Code2,
@@ -90,8 +90,8 @@ import {stripCodeExampleCopyrightHeader} from '../../lib/codeExamples';
 import {configureMonaco, type MonacoInstance} from './monacoSetup';
 
 import type * as MonacoTypes from 'monaco-editor';
-import type {DefinedTheme} from '@xds/core/theme';
-import {xdsTokenDefaults} from '@xds/core/theme';
+import type {DefinedTheme} from '@astryxdesign/core/theme';
+import {xdsTokenDefaults} from '@astryxdesign/core/theme';
 
 // Hidden from the generated registry (isHiddenFromOverview), so it's added
 // explicitly as the first entry in the Templates dropdown.

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Compile-time guard that the runtime @xds/cli/api implementation matches the
+ * Compile-time guard that the runtime @astryxdesign/cli/api implementation matches the
  * declared programmatic API surface in api.d.ts.
  *
  * WHY THIS FILE EXISTS

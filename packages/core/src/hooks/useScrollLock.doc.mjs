@@ -25,7 +25,7 @@ export const docs = {
   },
   relatedComponents: ['Dialog'],
   relatedHooks: ['useFocusTrap'],
-  importPath: '@xds/core/hooks',
+  importPath: '@astryxdesign/core/hooks',
   category: 'layout',
 };
 

@@ -13,7 +13,7 @@
  * Uses Manufacturing Consent for headings and Fustat for body text.
  */
 
-import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
+import {defineTheme, defineSyntaxTheme} from '@astryxdesign/core/theme';
 import {gothicIconRegistry} from './icons';
 
 /**

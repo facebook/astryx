@@ -12,15 +12,15 @@
  */
 
 import type {ReactNode} from 'react';
-import {Button} from '@xds/core/Button';
+import {Button} from '@astryxdesign/core/Button';
 import {
   HStack,
   Layout,
   LayoutContent,
   LayoutFooter,
-} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {Dialog, DialogHeader} from '@xds/core/Dialog';
+} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
 
 interface ConfirmDialogProps {
   /** Whether the dialog is open. */

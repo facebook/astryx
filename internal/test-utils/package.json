@@ -1,5 +1,5 @@
 {
-  "name": "@xds/test-utils",
+  "name": "@astryxdesign/test-utils",
   "version": "0.0.1",
   "private": true,
   "description": "Shared testing utilities for XDS",

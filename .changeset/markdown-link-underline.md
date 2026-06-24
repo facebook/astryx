@@ -1,5 +1,5 @@
 ---
-'@xds/core': patch
+'@astryxdesign/core': patch
 ---
 
 [feat] Underline links by default in the Markdown component

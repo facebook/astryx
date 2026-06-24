@@ -2,7 +2,7 @@
 
 'use client';
 
-import {Thumbnail} from '@xds/core/Thumbnail';
+import {Thumbnail} from '@astryxdesign/core/Thumbnail';
 
 export default function ThumbnailShowcase() {
   return (

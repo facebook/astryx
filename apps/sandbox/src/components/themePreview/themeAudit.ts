@@ -17,8 +17,8 @@
  *        section renders) and bucket the ΔE as exact / snapped / near / off.
  */
 
-import type {DefinedTheme} from '@xds/core/theme';
-import {xdsTokenDefaults} from '@xds/core/theme';
+import type {DefinedTheme} from '@astryxdesign/core/theme';
+import {xdsTokenDefaults} from '@astryxdesign/core/theme';
 import {
   findClosestRampStep,
   type Mode,

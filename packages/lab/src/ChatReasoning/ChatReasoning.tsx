@@ -16,7 +16,7 @@
  */
 
 import {useState, useCallback, type ReactNode} from 'react';
-import type {BaseProps} from '@xds/core';
+import type {BaseProps} from '@astryxdesign/core';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -26,8 +26,8 @@ import {
   fontWeightVars,
   durationVars,
   easeVars,
-} from '@xds/core/theme/tokens.stylex';
-import {mergeProps} from '@xds/core/utils';
+} from '@astryxdesign/core/theme/tokens.stylex';
+import {mergeProps} from '@astryxdesign/core/utils';
 import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
 
 // =============================================================================

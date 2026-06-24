@@ -31,7 +31,7 @@ function transformLibraryFile(libraryPrefix) {
   const result = babel.transformSync(SOURCE, {
     // A path matching one of the library patterns so the wrapper routes it
     // through the library plugin instance.
-    filename: 'node_modules/@xds/core/src/Box/XDSBox.tsx',
+    filename: 'node_modules/@astryxdesign/core/src/Box/XDSBox.tsx',
     babelrc: false,
     configFile: false,
     plugins: [

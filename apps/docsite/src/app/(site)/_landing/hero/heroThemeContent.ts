@@ -10,7 +10,7 @@
  * curated theme list/order (REEL_THEMES) and per-theme aurora/wordmark/mode.
  */
 
-import type {DefinedTheme} from '@xds/core/theme';
+import type {DefinedTheme} from '@astryxdesign/core/theme';
 import {packages} from '@/generated/packageRegistry';
 import {themeObjects} from '@/generated/themeRegistry';
 // Built theme (__built:true) so the hero reel's <Theme> slide uses pre-built
@@ -18,7 +18,7 @@ import {themeObjects} from '@/generated/themeRegistry';
 import {astryxTheme} from '@/themes/astryx';
 import {BRAND_BLUE} from '@/constants';
 
-// Sentinel for the docsite's local brand theme (not an @xds/theme-* package).
+// Sentinel for the docsite's local brand theme (not an @astryxdesign/theme-* package).
 const ASTRYX = 'astryx';
 
 // Shared XDS asset CDN. The per-theme reel cards pull the same product photos
@@ -70,7 +70,7 @@ export interface HeroAuroraPalette {
 }
 
 export interface HeroThemeSlide {
-  /** Theme package name, e.g. '@xds/theme-matcha'. */
+  /** Theme package name, e.g. '@astryxdesign/theme-matcha'. */
   name: string;
   /** Human-readable label, e.g. 'Matcha'. */
   label: string;
@@ -94,10 +94,10 @@ export interface HeroThemeSlide {
 // The curated reel — these themes, in this order. Edit here to add/remove.
 const REEL_THEMES: ReadonlyArray<string> = [
   ASTRYX,
-  '@xds/theme-matcha',
-  '@xds/theme-butter',
-  '@xds/theme-gothic',
-  '@xds/theme-y2k',
+  '@astryxdesign/theme-matcha',
+  '@astryxdesign/theme-butter',
+  '@astryxdesign/theme-gothic',
+  '@astryxdesign/theme-y2k',
 ];
 
 // Per-theme card content, keyed by theme name (or the ASTRYX sentinel).
@@ -130,7 +130,7 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
       member: 'Astryx team',
     },
   },
-  '@xds/theme-neutral': {
+  '@astryxdesign/theme-neutral': {
     product: {
       image: '/neutral/preview-watch.png',
       title: 'Minimalist watch',
@@ -156,7 +156,7 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
       member: 'Alex Rivera',
     },
   },
-  '@xds/theme-butter': {
+  '@astryxdesign/theme-butter': {
     product: {
       image: `${IMAGE_CDN}/Butter-Croissant.png`,
       title: 'Butter croissant',
@@ -177,7 +177,7 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
     chatPrompt: 'How can I help?',
     reward: {label: 'Loyalty perks', value: 5, total: 9, member: 'Noa Bright'},
   },
-  '@xds/theme-matcha': {
+  '@astryxdesign/theme-matcha': {
     product: {
       image: `${IMAGE_CDN}/matcha-product-1.png`,
       title: 'Iced matcha latte',
@@ -203,7 +203,7 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
       member: 'Lottie Wang',
     },
   },
-  '@xds/theme-gothic': {
+  '@astryxdesign/theme-gothic': {
     product: {
       image: `${IMAGE_CDN}/Gothic-1.png`,
       title: 'Dried sea holly',
@@ -224,7 +224,7 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
     chatPrompt: 'How can I help?',
     reward: {label: 'Member rewards', value: 7, total: 8, member: 'Mara Vale'},
   },
-  '@xds/theme-y2k': {
+  '@astryxdesign/theme-y2k': {
     product: {
       image: `${IMAGE_CDN}/Y2K-Phone.png`,
       title: 'Holo flip phone',
@@ -249,7 +249,7 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
 
 // Fallback content for any theme without a bespoke entry (uses its preview img).
 function fallbackContent(name: string): HeroThemeContent {
-  const slug = name.replace('@xds/theme-', '');
+  const slug = name.replace('@astryxdesign/theme-', '');
   const image = `/theme-${slug}-preview.png`;
   return {
     product: {
@@ -269,11 +269,11 @@ function fallbackContent(name: string): HeroThemeContent {
 // Properly-cased dot labels (package displayNames are sometimes lowercased).
 const LABEL_BY_THEME: Record<string, string> = {
   [ASTRYX]: 'Astryx',
-  '@xds/theme-neutral': 'Neutral',
-  '@xds/theme-butter': 'Butter',
-  '@xds/theme-matcha': 'Matcha',
-  '@xds/theme-gothic': 'Gothic',
-  '@xds/theme-y2k': 'Y2K',
+  '@astryxdesign/theme-neutral': 'Neutral',
+  '@astryxdesign/theme-butter': 'Butter',
+  '@astryxdesign/theme-matcha': 'Matcha',
+  '@astryxdesign/theme-gothic': 'Gothic',
+  '@astryxdesign/theme-y2k': 'Y2K',
 };
 
 function labelFor(name: string): string {
@@ -281,7 +281,7 @@ function labelFor(name: string): string {
     return LABEL_BY_THEME[name];
   }
   const pkg = packages.find(p => p.name === name);
-  const raw = pkg?.displayName ?? name.replace('@xds/theme-', '');
+  const raw = pkg?.displayName ?? name.replace('@astryxdesign/theme-', '');
   return raw.replace(/^Theme:\s*/, '').replace(/\s*Theme$/, '');
 }
 
@@ -313,7 +313,7 @@ function wordmarkColorFor(name: string): string {
 }
 
 // Dark-first themes (rendered in dark mode; hero text/nav go light).
-const DARK_THEMES: ReadonlySet<string> = new Set<string>(['@xds/theme-gothic']);
+const DARK_THEMES: ReadonlySet<string> = new Set<string>(['@astryxdesign/theme-gothic']);
 
 // Per-theme aurora blob palettes (categorical background tokens, on-brand hues).
 const AURORA_BY_THEME: Record<string, HeroAuroraPalette> = {
@@ -322,29 +322,29 @@ const AURORA_BY_THEME: Record<string, HeroAuroraPalette> = {
     center: 'var(--color-background-yellow)',
     right: 'var(--color-background-pink)',
   },
-  '@xds/theme-neutral': {
+  '@astryxdesign/theme-neutral': {
     left: 'var(--color-background-blue)',
     center: 'var(--color-background-gray)',
     right: 'var(--color-background-cyan)',
   },
-  '@xds/theme-butter': {
+  '@astryxdesign/theme-butter': {
     left: 'var(--color-background-yellow)',
     center: 'var(--color-background-yellow)',
     right: 'var(--color-background-orange)',
   },
-  '@xds/theme-matcha': {
+  '@astryxdesign/theme-matcha': {
     left: 'var(--color-background-green)',
     center: 'var(--color-background-cyan)',
     right: 'var(--color-background-yellow)',
   },
   // Gothic (dark mode): use saturated --color-border-* tokens so the blobs glow
   // instead of washing out white (the 20%-alpha background tints would).
-  '@xds/theme-gothic': {
+  '@astryxdesign/theme-gothic': {
     left: 'var(--color-border-purple)',
     center: 'var(--color-border-blue)',
     right: 'var(--color-border-teal)',
   },
-  '@xds/theme-y2k': {
+  '@astryxdesign/theme-y2k': {
     left: 'var(--color-background-pink)',
     center: 'var(--color-background-purple)',
     right: 'var(--color-background-blue)',
