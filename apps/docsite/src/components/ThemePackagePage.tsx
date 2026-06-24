@@ -973,16 +973,6 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
           })}
         </Carousel>
 
-        {/* Install block — inline "Use this theme" affordance with the
-            two-step install + import snippet. Sits above the showcase
-            so the answer to "how do I use this in my app?" is visible
-            on the same surface as the preview, without forcing the
-            visitor to navigate to /docs/theme. */}
-        <ThemeInstallBlock
-          packageName={selectedPkgName}
-          themeLabel={selectedLabel}
-        />
-
         {/* Themed preview — the theme-showcase template rendered with
             the selected theme, wrapped in a bordered, rounded card so
             it reads as a contained app surface against the docsite
@@ -1005,6 +995,16 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
             </Theme>
           </Card>
         </div>
+
+        {/* Install block — inline "Use this theme" affordance with the
+            two-step install + import snippet. Sits BELOW the showcase
+            so the themed preview leads (it's the reason the visitor came
+            here); the install snippet acts as the natural next step
+            after they've decided they like what they see. */}
+        <ThemeInstallBlock
+          packageName={selectedPkgName}
+          themeLabel={selectedLabel}
+        />
       </div>
     </div>
   );
