@@ -275,14 +275,7 @@ const styles = stylex.create({
     maxWidth: '100%',
     overflow: 'hidden',
   },
-  // Wrapper for the live components preview (the "Over N components"
-  // card). Mirrors imageWrapInset's inset/framed treatment so the
-  // sampler sits where the old PNG did: marginTop:auto pushes it to
-  // the bottom of the card's content stack, paddingTop keeps the same
-  // 40px gap below the "Explore" link, and alignSelf:stretch lets the
-  // centered HStack span the inner width so its content centers
-  // horizontally. No negative inline margins (unlike the full-bleed
-  // wrappers) — the preview stays inside the card's inset padding.
+  // Inset wrapper for a live preview node, pinned to the card's bottom.
   previewWrap: {
     marginTop: 'auto',
     paddingTop: spacingVars['--spacing-10'],
@@ -333,14 +326,7 @@ type Feature = {
     src: string;
     alt: string;
   };
-  /**
-   * Optional live preview node rendered below the description in place
-   * of an image. Used by the "components" card to render real XDS
-   * components (instead of a baked PNG) so the sampler is theme-aware
-   * and adapts to dark mode. When set, it is framed with the same
-   * inset treatment as an `insetImage` card. Takes precedence over
-   * `image` when both happen to be present.
-   */
+  /** Live, theme-aware preview node rendered in place of an image. */
   preview?: ReactNode;
 };
 
@@ -441,11 +427,6 @@ function FeatureCard({
 }) {
   const hasImage = feature.image != null;
   const hasPreview = feature.preview != null;
-  // A card has "media" if it renders either a baked image or a live
-  // preview node below the text. Both get the same card/padding
-  // treatment (an inset/framed media block), so the layout matches
-  // whether the components card uses the old PNG or the new live
-  // sampler.
   const hasMedia = hasImage || hasPreview;
   // Style precedence:
   //   1. isTall   → cardTall (right-column dominant card)
@@ -492,10 +473,7 @@ function FeatureCard({
           Explore →
         </Link>
         {hasPreview ? (
-          // Live preview (real XDS components) framed with the same
-          // inset wrapper an insetImage card uses, so the sampler sits
-          // in the card exactly where the old PNG did — but theme-aware.
-          // vAlign="center" + hAlign="center" centers the sampler in
+          // vAlign="center" + hAlign="center" centers the preview in
           // the card's leftover vertical+horizontal space.
           <HStack hAlign="center" vAlign="center" xstyle={styles.previewWrap}>
             {feature.preview}
