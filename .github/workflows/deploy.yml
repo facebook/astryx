@@ -1,6 +1,6 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-# Deploy Storybook + Sandbox to GitHub Pages, publish packages to Metaccio,
+# Deploy Storybook + Sandbox to GitHub Pages, publish packages to public npm,
 # and publish @canary dist-tag from latest main.
 # Only runs on push to main — simple and sequential: sync → test → deploy + publish + canary
 #
@@ -268,23 +268,19 @@ jobs:
           force_orphan: true
           destination_dir: .
 
-  # Publish @xds/* packages to Metaccio (Meta's internal npm registry).
+  # Publish @astryxdesign/* packages to the public npm registry.
   # Runs in parallel with deploy — both gate on test passing.
   # changeset publish checks each package: if the version in package.json
   # is not yet on the registry, it publishes. Already-published versions
   # are skipped (npm 409 Conflict → no-op).
   publish:
-    name: Publish to Metaccio
+    name: Publish to npm
     needs: test
-    # TEMPORARILY DISABLED during the @xds -> @astryxdesign scope rename.
-    # Packages are now @astryxdesign/* but the .npmrc mapping below still
-    # scopes @xds, so publishing would push to the wrong/default registry.
-    # Re-enable in the registry-cutover PR (public npm + OSPO granular token).
-    # Restore: if: always() && !cancelled() && needs.test.result == 'success'
-    if: false
+    if: always() && !cancelled() && needs.test.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write # required for npm provenance
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -297,34 +293,31 @@ jobs:
         with:
           node-version: 22
           cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build all packages
         run: pnpm build
-
-      - name: Configure Metaccio registry
-        run: |
-          echo "@xds:registry=https://registry.facebook.net" >> .npmrc
-          echo "//registry.facebook.net/:_authToken=${{ secrets.METACCIO_PUBLISH_TOKEN }}" >> .npmrc
 
       - name: Publish changed packages
         run: pnpm changeset publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
 
-  # Publish canary versions to Metaccio on every push to main.
+  # Publish canary versions to the public npm registry on every push to main.
   # The @canary dist-tag always points to the latest main commit:
-  #   npm install @xds/core@canary --registry https://registry.facebook.net
+  #   npm install @astryxdesign/core@canary
   canary:
-    name: Publish canary to Metaccio
+    name: Publish canary to npm
     needs: test
-    # TEMPORARILY DISABLED during the @xds -> @astryxdesign scope rename.
-    # See the publish job above; re-enable in the registry-cutover PR.
-    # Restore: if: always() && !cancelled() && needs.test.result == 'success'
-    if: false
+    if: always() && !cancelled() && needs.test.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write # required for npm provenance
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -337,6 +330,7 @@ jobs:
         with:
           node-version: 22
           cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -344,12 +338,10 @@ jobs:
       - name: Build all packages
         run: pnpm build
 
-      - name: Configure Metaccio registry
-        run: |
-          echo "@xds:registry=https://registry.facebook.net" >> .npmrc
-          echo "//registry.facebook.net/:_authToken=${{ secrets.METACCIO_PUBLISH_TOKEN }}" >> .npmrc
-
       - name: Publish canary versions
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
         run: |
           SHORT_SHA="${GITHUB_SHA:0:7}"
           BASE_VERSION=$(node -p "require('./packages/core/package.json').version")
@@ -362,12 +354,12 @@ jobs:
             node -e "
               const fs = require('fs');
               const p = JSON.parse(fs.readFileSync('$pkg','utf8'));
-              if (p.private || !p.name?.startsWith('@xds/')) process.exit(0);
+              if (p.private || !p.name?.startsWith('@astryxdesign/')) process.exit(0);
               p.version = '${CANARY_VERSION}';
               for (const dt of ['dependencies','peerDependencies','devDependencies']) {
                 if (!p[dt]) continue;
                 for (const [k,v] of Object.entries(p[dt])) {
-                  if (k.startsWith('@xds/')) p[dt][k] = '${CANARY_VERSION}';
+                  if (k.startsWith('@astryxdesign/')) p[dt][k] = '${CANARY_VERSION}';
                 }
               }
               fs.writeFileSync('$pkg', JSON.stringify(p, null, 2) + '\n');
@@ -378,12 +370,12 @@ jobs:
           # Publish each package with --tag canary
           for pkg_dir in packages/* packages/themes/*; do
             [ -f "$pkg_dir/package.json" ] || continue
-            IS_PUBLISHABLE=$(node -p "const p=require('./$pkg_dir/package.json'); !p.private && p.name?.startsWith('@xds/') ? 'yes' : 'no'")
+            IS_PUBLISHABLE=$(node -p "const p=require('./$pkg_dir/package.json'); !p.private && p.name?.startsWith('@astryxdesign/') ? 'yes' : 'no'")
             if [ "$IS_PUBLISHABLE" = "yes" ]; then
               NAME=$(node -p "require('./$pkg_dir/package.json').name")
               echo "Publishing ${NAME}@${CANARY_VERSION}"
-              npm publish "./$pkg_dir" --tag canary --registry https://registry.facebook.net || true
+              npm publish "./$pkg_dir" --tag canary --access public || true
             fi
           done
 
-          echo "Canary published: npm install @xds/core@${CANARY_VERSION} --registry https://registry.facebook.net"
+          echo "Canary published: npm install @astryxdesign/core@${CANARY_VERSION}"
