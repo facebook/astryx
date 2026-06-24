@@ -2,7 +2,7 @@
 
 'use client';
 
-import {useEffect, useRef, useState} from 'react';
+import {useCallback, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {Button} from '@astryxdesign/core/Button';
@@ -48,120 +48,20 @@ const styles = stylex.create({
   },
 });
 
-function getScrollRoot(element: HTMLElement | null): HTMLElement | Window {
-  let current = element?.parentElement ?? null;
-
-  while (current != null) {
-    const style = window.getComputedStyle(current);
-    const isScrollable =
-      /(auto|scroll|overlay)/.test(style.overflowY) &&
-      current.scrollHeight > current.clientHeight;
-
-    if (isScrollable) {
-      return current;
-    }
-
-    current = current.parentElement;
-  }
-
-  return window;
-}
-
-function getScrollTop(root: HTMLElement | Window): number {
-  return root instanceof Window ? window.scrollY : root.scrollTop;
-}
-
-function getViewportHeight(root: HTMLElement | Window): number {
-  return root instanceof Window ? window.innerHeight : root.clientHeight;
-}
-
-function getScrollHeight(root: HTMLElement | Window): number {
-  return root instanceof Window
-    ? document.documentElement.scrollHeight
-    : root.scrollHeight;
-}
-
-function getRootTop(root: HTMLElement | Window): number {
-  return root instanceof Window ? 0 : root.getBoundingClientRect().top;
-}
-
-function scrollRootTo(root: HTMLElement | Window, top: number) {
-  root.scrollTo({top, behavior: 'smooth'});
-}
-
-function usePageOutline(items: OutlineItem[]) {
-  const contentRef = useRef<HTMLDivElement | null>(null);
-  const [activeId, setActiveId] = useState(items[0]?.id);
-
-  const scrollToId = (id: string) => {
-    const target = document.getElementById(id);
-    const root = getScrollRoot(contentRef.current);
-    if (target == null) {
-      setActiveId(id);
-      return;
-    }
-
-    const nextTop =
-      getScrollTop(root) +
-      target.getBoundingClientRect().top -
-      getRootTop(root);
-
-    scrollRootTo(root, nextTop);
-    setActiveId(id);
-    window.history.pushState(null, '', `#${id}`);
-  };
-
-  useEffect(() => {
-    const updateActiveId = () => {
-      const root = getScrollRoot(contentRef.current);
-      let nextId = items[0]?.id;
-      let closestTop = Number.NEGATIVE_INFINITY;
-      const rootTop = getRootTop(root);
-
-      for (const item of items) {
-        const target = document.getElementById(item.id);
-        if (target == null) {
-          continue;
-        }
-
-        const top = target.getBoundingClientRect().top - rootTop;
-        if (top <= 96 && top > closestTop) {
-          closestTop = top;
-          nextId = item.id;
-        }
-      }
-
-      if (
-        getScrollTop(root) + getViewportHeight(root) >=
-        getScrollHeight(root) - 2
-      ) {
-        nextId = items[items.length - 1]?.id;
-      }
-
-      setActiveId(nextId);
-    };
-
-    updateActiveId();
-    // Capture scroll events from the page, the docsite preview frame, or any
-    // nested scroll container that hosts the template.
-    document.addEventListener('scroll', updateActiveId, {
-      capture: true,
-      passive: true,
-    });
-    window.addEventListener('resize', updateActiveId);
-
-    return () => {
-      document.removeEventListener('scroll', updateActiveId, true);
-      window.removeEventListener('resize', updateActiveId);
-    };
-  }, [items]);
-
-  return {activeId, contentRef, scrollToId};
-}
-
 export default function TechnicalDocumentationPage() {
-  const {activeId, contentRef, scrollToId} = usePageOutline(OUTLINE_ITEMS);
+  const [activeId, setActiveId] = useState<string | undefined>(
+    OUTLINE_ITEMS[0]?.id,
+  );
   const isMobile = useMediaQuery('(max-width: 768px)');
+
+  const scrollToId = useCallback((id: string) => {
+    setActiveId(id);
+    const target = document.getElementById(id);
+    if (target != null) {
+      target.scrollIntoView({behavior: 'smooth', block: 'start'});
+      window.history.pushState(null, '', `#${id}`);
+    }
+  }, []);
 
   return (
     <Layout
@@ -174,16 +74,12 @@ export default function TechnicalDocumentationPage() {
             label="On this page"
             role="complementary"
             xstyle={styles.outlinePanel}>
-            <Outline
-              items={OUTLINE_ITEMS}
-              activeId={activeId}
-              onActiveIdChange={scrollToId}
-            />
+            <Outline items={OUTLINE_ITEMS} onActiveIdChange={setActiveId} />
           </LayoutPanel>
         )
       }
       content={
-        <LayoutContent ref={contentRef} isScrollable={false} padding={8}>
+        <LayoutContent isScrollable={false} padding={8}>
           <VStack gap={8}>
             <VStack gap={2}>
               <Text type="display-1">Getting started with Product Name</Text>
@@ -242,9 +138,9 @@ export default function TechnicalDocumentationPage() {
                 </HStack>
                 <Text type="body" color="secondary">
                   Help me get set up with Product Name. Based on my project, do
-                  the following: 1. Install @astryxdesign/core and the StyleX compiler.
-                  2. Wrap my app in ThemeProvider. 3. Replace one existing
-                  component with an XDS equivalent.
+                  the following: 1. Install @astryxdesign/core and the StyleX
+                  compiler. 2. Wrap my app in ThemeProvider. 3. Replace one
+                  existing component with an XDS equivalent.
                 </Text>
               </VStack>
             </Card>
