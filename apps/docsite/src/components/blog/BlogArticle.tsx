@@ -94,7 +94,9 @@ export function BlogArticle({post}: BlogArticleProps) {
           />
         )}
 
-        <Markdown headingLevelStart={2}>{post.body}</Markdown>
+        <Markdown headingLevelStart={2} contentWidth="100%">
+          {post.body}
+        </Markdown>
 
         {post.tags.length > 0 ? (
           <HStack gap={1} xstyle={styles.tagRow}>
@@ -110,10 +112,6 @@ export function BlogArticle({post}: BlogArticleProps) {
             <Heading level={2} type="display-3">
               Related
             </Heading>
-            {/* minWidth caps this at 2 columns within the ~752px article
-                column; 'fit' lets a lone card stretch to fill when it wraps to
-                one column (an explicit `max` would cap track width at 50% and
-                prevent the fill). */}
             <Grid columns={{minWidth: 280, repeat: 'fill'}} gap={2}>
               {post.relatedDocs.map(doc => (
                 <ClickableCard
