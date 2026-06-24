@@ -3,9 +3,9 @@
 /**
  * @file AuthorByline.tsx
  *
- * Renders one or more resolved authors with avatars, plus optional publish/
- * updated dates and reading time. Used on blog cards (compact) and at the top of
- * article pages (full).
+ * Renders author avatars (no names), plus optional publish/updated dates and
+ * reading time. Used on blog cards (compact) and at the top of article pages
+ * (full).
  *
  * @input  author keys, date, optional updatedAt, optional readingTimeMinutes
  * @output A horizontal byline row
@@ -34,9 +34,6 @@ export function formatDate(iso: string): string {
 }
 
 const styles = stylex.create({
-  names: {
-    display: 'inline',
-  },
   divider: {
     height: '0.75em',
   },
@@ -62,7 +59,6 @@ export function AuthorByline({
   className,
 }: AuthorBylineProps) {
   const resolved = authors.map(resolveAuthor);
-  const names = resolved.map(a => a.name).join(', ');
 
   return (
     <HStack gap={2} align="center" className={className}>
@@ -77,10 +73,6 @@ export function AuthorByline({
         ))}
       </HStack>
       <HStack gap={2} align="center">
-        <Text type="supporting" color="secondary">
-          {names}
-        </Text>
-        <Divider orientation="vertical" xstyle={styles.divider} />
         <Text type="supporting" color="secondary">
           {formatDate(date)}
         </Text>
