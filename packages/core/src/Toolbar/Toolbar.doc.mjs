@@ -9,7 +9,7 @@ export const docs = {
   keywords: ['toolbar', 'nav', 'bar', 'actions', 'buttonbar', 'header', 'footer', 'action-bar', 'control-bar'],
   theming: {
     targets: [
-      {className: 'astryx-toolbar', states: ['density']},
+      {className: 'astryx-toolbar', states: ['size']},
     ],
   },
   components: [
@@ -48,10 +48,11 @@ export const docs = {
           ],
         },
         {
-          name: 'density',
-          type: "'compact' | 'default'",
-          description: 'Toolbar density. Controls minimum height.',
-          default: "'default'",
+          name: 'size',
+          type: "'sm' | 'md' | 'lg'",
+          description:
+            'Size of the toolbar. Controls minimum height and coordinates with Button, TextInput, TabList, and Selector — children inherit this size as their default via SizeContext.',
+          default: "'md'",
         },
         {
           name: 'gap',
@@ -107,7 +108,7 @@ export const docsZh = {
         startContent: '起始内容（LTR 中靠左对齐）。',
         centerContent: '居中内容。切换为 CSS grid（1fr auto 1fr）。',
         endContent: '结束内容（LTR 中靠右对齐）。',
-        density: '工具栏密度。控制最小高度。',
+        size: '工具栏尺寸。控制最小高度，子组件通过 SizeContext 继承此尺寸作为默认值。',
         gap: '插槽内项目间距。',
         orientation: '键盘导航方向。控制方向键方向。',
         variant: '传递给 Section 的视觉变体。',
@@ -156,7 +157,7 @@ export const docsDense = {
         startContent: 'Start-aligned content.',
         centerContent: 'Centered content; switches to 3-col grid.',
         endContent: 'End-aligned content.',
-        density: 'Toolbar density; controls min-height.',
+        size: 'Toolbar size; controls min-height + cascades to children via SizeContext.',
         gap: 'Gap between slot items.',
         orientation: 'Keyboard nav direction.',
         variant: 'Visual variant for Section.',
