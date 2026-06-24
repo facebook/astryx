@@ -4,6 +4,16 @@ import type {Metadata} from 'next';
 import {Analytics} from '@vercel/analytics/react';
 import './globals.css';
 import {Providers} from './providers';
+// Public origin and identity live in lib/siteConfig so the sitemap and
+// metadata stay in sync. metadataBase resolves relative OG/Twitter image
+// paths to absolute URLs — social scrapers (Facebook, X, LinkedIn, Slack,
+// iMessage) require absolute image URLs or the card image is dropped.
+import {
+  SITE_URL,
+  SITE_NAME,
+  SITE_TITLE,
+  SITE_DESCRIPTION,
+} from '../lib/siteConfig';
 
 // Note: the Astryx theme (src/themes/astryxTheme.ts) is Figtree-first.
 // We can't use next/font/google here (it requires SWC, but this app pins
@@ -11,19 +21,6 @@ import {Providers} from './providers';
 // https://nextjs.org/docs/messages/babel-font-loader-conflict). Figtree
 // loads via the shared Google Fonts <link> in <head> below, which is the
 // "Good" path from the theming wiki §Font Declarations.
-
-// Public origin for the docsite. Set NEXT_PUBLIC_SITE_URL in other
-// environments (e.g. preview deploys); defaults to the production domain so
-// metadataBase resolves relative OG/Twitter image paths to absolute URLs —
-// social scrapers (Facebook, X, LinkedIn, Slack, iMessage) require absolute
-// image URLs or the card image is dropped.
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? 'https://astryx.atmeta.com';
-
-const SITE_NAME = 'Astryx';
-const SITE_TITLE = 'Astryx Design System';
-const SITE_DESCRIPTION =
-  'An open source design system that is fully customizable and agent ready.';
 
 // Default social card image: the launch banner that the announcement blog post
 // uses for its cover. Reusing the same branded banner keeps the shared-link
