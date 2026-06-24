@@ -3,7 +3,7 @@
 'use client';
 
 /**
- * XDS Theme System
+ * Astryx Theme System
  *
  * Exports:
  * - Theme: Provider component that applies theme
@@ -135,14 +135,14 @@ export type {
 export {useTheme, ThemeContext} from './useTheme';
 export type {UseThemeReturn, ThemeContextValue} from './useTheme';
 export {
-  resolveXDSThemeToken,
-  resolveXDSThemeTokens,
-  xdsTokenVar,
-  xdsTokenVars,
+  resolveThemeToken,
+  resolveThemeTokens,
+  tokenVar,
+  tokenVars,
 } from './tokens';
 export type {
-  ResolveXDSThemeTokenOptions,
-  ResolveXDSThemeTokensOptions,
+  ResolveThemeTokenOptions,
+  ResolveThemeTokensOptions,
   ResolvedThemeMode,
 } from './tokens';
 

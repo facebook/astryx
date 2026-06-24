@@ -5,7 +5,7 @@
 /**
  * @astryxdesign/build/next
  *
- * Next.js configuration helper for XDS source builds.
+ * Next.js configuration helper for Astryx source builds.
  *
  * Usage in next.config.mjs:
  *   import {withXDS} from '@astryxdesign/build/next';
@@ -15,7 +15,7 @@
  */
 
 /**
- * Wraps a Next.js config to enable XDS source builds.
+ * Wraps a Next.js config to enable Astryx source builds.
  * - Adds transpilePackages for @astryxdesign/* packages
  * - Sets conditionNames to resolve source exports
  */

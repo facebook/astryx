@@ -23,9 +23,9 @@ global navigation.
 Requires `@astryxdesign/cli` (`npm install -D @astryxdesign/cli`):
 
 ```bash
-npx xds template --list              # browse all page and block templates
-npx xds template dashboard           # emit full page source
-npx xds template settings --skeleton # layout skeleton with spatial annotations
+npx astryx template --list              # browse all page and block templates
+npx astryx template dashboard           # emit full page source
+npx astryx template settings --skeleton # layout skeleton with spatial annotations
 ```
 
 ## XDS CLI
@@ -33,32 +33,32 @@ npx xds template settings --skeleton # layout skeleton with spatial annotations
 The CLI (`@astryxdesign/cli`) provides additional tooling:
 
 ```bash
-npx xds --help                       # full listing of all commands
-npx xds component Button             # full docs + related block templates
-npx xds docs                         # reference docs (principles, tokens, theming, styling)
-npx xds docs theme                   # theming guide (XDSTheme, defineTheme, light/dark)
-npx xds docs tokens                  # spacing, color, radius, typography token reference
-npx xds init                         # initialize XDS in your project
-npx xds theme build                  # build theme CSS for production
-npx xds swizzle Button               # eject component source for customization
-npx xds upgrade --apply              # run codemods to migrate between versions
-npx xds discover                     # discover external XDS packages
-npx xds gap-report                   # report a missing capability
+npx astryx --help                       # full listing of all commands
+npx astryx component Button             # full docs + related block templates
+npx astryx docs                         # reference docs (principles, tokens, theming, styling)
+npx astryx docs theme                   # theming guide (Theme, defineTheme, light/dark)
+npx astryx docs tokens                  # spacing, color, radius, typography token reference
+npx astryx init                         # initialize XDS in your project
+npx astryx theme build                  # build theme CSS for production
+npx astryx swizzle Button               # eject component source for customization
+npx astryx upgrade --apply              # run codemods to migrate between versions
+npx astryx discover                     # discover external XDS packages
+npx astryx gap-report                   # report a missing capability
 ```
 
 ## Related Packages
 
 | Package                                                                                               | Description                                                   |
 | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| [`@astryxdesign/cli`](https://github.com/facebookexperimental/xds/tree/main/packages/cli)                      | CLI tooling: component docs, templates, scaffolding, codemods |
-| [`@astryxdesign/theme-default`](https://github.com/facebookexperimental/xds/tree/main/packages/themes/default) | Default theme (Heroicons)                                     |
-| [`@astryxdesign/theme-neutral`](https://github.com/facebookexperimental/xds/tree/main/packages/themes/neutral) | Muted, minimal theme (Lucide icons)                           |
-| [`@astryxdesign/theme-daily`](https://github.com/facebookexperimental/xds/tree/main/packages/themes/daily)     | Warm, productivity-focused theme (Lucide icons)               |
+| [`@astryxdesign/cli`](https://github.com/facebook/astryx/tree/main/packages/cli)                      | CLI tooling: component docs, templates, scaffolding, codemods |
+| [`@astryxdesign/theme-default`](https://github.com/facebook/astryx/tree/main/packages/themes/default) | Default theme (Heroicons)                                     |
+| [`@astryxdesign/theme-neutral`](https://github.com/facebook/astryx/tree/main/packages/themes/neutral) | Muted, minimal theme (Lucide icons)                           |
+| [`@astryxdesign/theme-daily`](https://github.com/facebook/astryx/tree/main/packages/themes/daily)     | Warm, productivity-focused theme (Lucide icons)               |
 
 ## Resources
 
-- [Component Storybook](https://facebookexperimental.github.io/xds/)
-- [GitHub Repository](https://github.com/facebookexperimental/xds)
+- [Component Storybook](https://facebook.github.io/astryx/)
+- [GitHub Repository](https://github.com/facebook/astryx)
 
 ---
 
@@ -120,15 +120,15 @@ Spacing references `var(--spacing-1)` as the base unit, so `p-4` = 16px, matchin
 'use client';
 
 import Link from 'next/link';
-import {XDSTheme} from '@astryxdesign/core/theme';
-import {XDSLinkProvider} from '@astryxdesign/core/Link';
+import {Theme} from '@astryxdesign/core/theme';
+import {LinkProvider} from '@astryxdesign/core/Link';
 import {defaultTheme} from '@astryxdesign/theme-default/built';
 
 export function Providers({children}: {children: React.ReactNode}) {
   return (
-    <XDSTheme theme={defaultTheme}>
-      <XDSLinkProvider component={Link}>{children}</XDSLinkProvider>
-    </XDSTheme>
+    <Theme theme={defaultTheme}>
+      <LinkProvider component={Link}>{children}</LinkProvider>
+    </Theme>
   );
 }
 ```
@@ -153,10 +153,10 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
 That's it. Start using components:
 
 ```tsx
-import {XDSButton} from '@astryxdesign/core/Button';
+import {Button} from '@astryxdesign/core/Button';
 
 export default function Page() {
-  return <XDSButton label="Hello XDS" variant="primary" />;
+  return <Button label="Hello XDS" variant="primary" />;
 }
 ```
 

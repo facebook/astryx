@@ -78,7 +78,7 @@ export default [
   {
     // XDS-prefix migration (P2380608025). Optional + not tied to a version
     // bump: consumers run it explicitly during their migration, e.g.
-    //   xds upgrade --codemod drop-xds-prefix-imports --codemod-only --apply
+    //   astryx upgrade --codemod drop-xds-prefix-imports --codemod-only --apply
     name: 'drop-xds-prefix-imports',
     transform: dropXdsPrefixImports,
     meta: dropXdsPrefixImportsMeta,

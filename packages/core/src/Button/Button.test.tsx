@@ -207,7 +207,7 @@ describe('Button', () => {
     expect(button).toHaveAttribute('aria-busy', 'true');
   });
 
-  it('renders xds-* classes and data attributes for theme targeting', () => {
+  it('renders astryx-* classes and data attributes for theme targeting', () => {
     render(<Button label="Test" variant="secondary" size="sm" />);
     const button = screen.getByRole('button');
     expect(button.className).toContain('astryx-button');

@@ -26,12 +26,12 @@ import {AspectRatio} from '@astryxdesign/core/AspectRatio';
 import {SelectableCard} from '@astryxdesign/core/SelectableCard';
 import * as stylex from '@stylexjs/stylex';
 
-// Custom CSS here is limited to what XDS components can't express today:
+// Custom CSS here is limited to what Astryx components can't express today:
 // - image fill + corner radius (no Image primitive — #2582)
-// - the sticky info column (no sticky prop on XDS layout primitives — #2613)
+// - the sticky info column (no sticky prop on Astryx layout primitives — #2613)
 const pageStyles = stylex.create({
   // Keeps the info column in view while the gallery scrolls. No sticky prop on
-  // XDS layout primitives.
+  // Astryx layout primitives.
   stickyInfo: {
     position: 'sticky',
     top: 'var(--spacing-8)',

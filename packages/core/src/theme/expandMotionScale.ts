@@ -29,7 +29,7 @@
  *
  * @example
  * ```
- * // Default XDS motion scale
+ * // Default Astryx motion scale
  * { fast: 175, medium: 410, slow: 975, ratio: 0.75 }
  *
  * // Snappy theme (reduced motion budget)

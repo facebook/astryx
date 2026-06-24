@@ -313,7 +313,9 @@ function wordmarkColorFor(name: string): string {
 }
 
 // Dark-first themes (rendered in dark mode; hero text/nav go light).
-const DARK_THEMES: ReadonlySet<string> = new Set<string>(['@astryxdesign/theme-gothic']);
+const DARK_THEMES: ReadonlySet<string> = new Set<string>([
+  '@astryxdesign/theme-gothic',
+]);
 
 // Per-theme aurora blob palettes (categorical background tokens, on-brand hues).
 const AURORA_BY_THEME: Record<string, HeroAuroraPalette> = {
@@ -358,6 +360,45 @@ const DEFAULT_AURORA: HeroAuroraPalette = {
   right: 'var(--color-background-pink)',
 };
 
+// The custom (web) font families each reel theme paints with — body, heading,
+// and the marketing-scale display family. Listed here so the hero can warm them
+// before the first auto-advance (the @font-face rules ship in the docsite's
+// Google Fonts <link>, but the browser only fetches a family's woff2 once a
+// glyph using it first paints — i.e. when the reel swaps to that slide, which
+// is the visible FOUT first-time visitors hit). System/fallback stacks
+// (-apple-system, Georgia, …) are intentionally omitted: they need no fetch.
+//
+// Keep in sync with the typography.{body,heading} families + display overrides
+// in each theme package (packages/themes/<name>/src/<name>Theme.ts).
+const REEL_FONT_FAMILIES: ReadonlyArray<string> = [
+  // Astryx (docsite brand)
+  'Figtree',
+  // Matcha (DM Sans body + Playwrite US Trad heading)
+  'DM Sans',
+  'Playwrite US Trad',
+  // Butter (Outfit body/heading + Sarina display)
+  'Outfit',
+  'Sarina',
+  // Gothic (Fustat body/heading + Manufacturing Consent display)
+  'Fustat',
+  'Manufacturing Consent',
+  // Y2K (Poppins body/heading + Crimson Text display)
+  'Poppins',
+  'Crimson Text',
+];
+
+/**
+ * `document.fonts.load()` specifiers for the reel's custom families. A short
+ * representative string is enough to pull the right woff2 — the API loads the
+ * whole face that would render those glyphs. We warm a normal and a bold-ish
+ * weight since the cards mix body and heading weights.
+ */
+export const REEL_FONT_SPECIFIERS: ReadonlyArray<string> =
+  REEL_FONT_FAMILIES.flatMap(family => [
+    `400 1rem "${family}"`,
+    `600 1rem "${family}"`,
+  ]);
+
 // Ordered slides from REEL_THEMES; unresolved (uninstalled) themes are skipped.
 export const HERO_THEME_SLIDES: ReadonlyArray<HeroThemeSlide> = REEL_THEMES.map(
   name => {
@@ -376,3 +417,21 @@ export const HERO_THEME_SLIDES: ReadonlyArray<HeroThemeSlide> = REEL_THEMES.map(
       : null;
   },
 ).filter((s): s is HeroThemeSlide => s !== null);
+
+/**
+ * Every product photo the reel cards reference, deduped and in slide order. The
+ * cards use plain <img> (no next/image priority), so on a fresh visit a slide's
+ * remote CDN photos aren't fetched until that slide renders — they pop in as
+ * the reel advances. The hero warms this list on mount so the images are in the
+ * browser cache before the first auto-advance. Scoped to just the reel's photos
+ * (3 per slide) so it doesn't bloat the rest of the landing page's initial load.
+ */
+export const REEL_IMAGE_SRCS: ReadonlyArray<string> = Array.from(
+  new Set(
+    HERO_THEME_SLIDES.flatMap(slide => [
+      slide.content.product.image,
+      slide.content.feature.image,
+      slide.content.mini.image,
+    ]),
+  ),
+);

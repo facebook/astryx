@@ -2,17 +2,17 @@
   "name": "@astryxdesign/theme-brutalist",
   "version": "0.0.15",
   "private": true,
-  "description": "Brutalist theme for XDS — zero radius, monospace, heavy borders",
+  "description": "Brutalist theme for Astryx — zero radius, monospace, heavy borders",
   "author": "Meta Open Source",
   "license": "MIT",
-  "homepage": "https://github.com/facebookexperimental/xds#readme",
+  "homepage": "https://github.com/facebook/astryx#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/facebookexperimental/xds.git",
+    "url": "git+https://github.com/facebook/astryx.git",
     "directory": "packages/themes/brutalist"
   },
   "bugs": {
-    "url": "https://github.com/facebookexperimental/xds/issues"
+    "url": "https://github.com/facebook/astryx/issues"
   },
   "keywords": [
     "xds",
@@ -46,7 +46,7 @@
     "src"
   ],
   "scripts": {
-    "build": "xds theme build src/brutalistTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
+    "build": "astryx theme build src/brutalistTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
   },
   "peerDependencies": {
     "@astryxdesign/core": "0.0.15"

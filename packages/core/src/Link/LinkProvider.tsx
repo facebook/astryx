@@ -8,7 +8,7 @@
  * @output Exports LinkProvider component and LinkProviderProps
  * @position Provider component for polymorphic link support
  *
- * Sets the default link component for all XDS components in the subtree.
+ * Sets the default link component for all Astryx components in the subtree.
  * Individual components can still override via the `as` prop.
  *
  * @example
@@ -45,7 +45,7 @@ export interface LinkProviderProps {
 }
 
 /**
- * Provides a custom link component to all XDS components in the subtree.
+ * Provides a custom link component to all Astryx components in the subtree.
  *
  * Wrap your app (or a section of it) in LinkProvider to replace
  * native `<a>` elements with your framework's link component

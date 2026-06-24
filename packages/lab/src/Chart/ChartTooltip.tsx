@@ -6,7 +6,7 @@
  * @position Child of Chart; reads scales from context
  *
  * Combines tooltip content and crosshair display into one component.
- * Uses the XDS Layer system (Popover API) so the tooltip renders above
+ * Uses the Astryx Layer system (Popover API) so the tooltip renders above
  * all other content — portaled to the chart container div (outside SVG).
  */
 

@@ -19,7 +19,7 @@ import path from 'path';
 
 const VIBE_TESTS_DIR = path.join(import.meta.dirname, '..');
 const MANIFESTS_DIR = path.join(VIBE_TESTS_DIR, 'a11y-manifests');
-const XDS_CORE_DIR = path.join(
+const CORE_DIR = path.join(
   VIBE_TESTS_DIR,
   '..',
   '..',
@@ -198,7 +198,7 @@ function generateXDSManifest(): A11yManifest {
     return readmes;
   };
 
-  const readmePaths = findReadmes(XDS_CORE_DIR);
+  const readmePaths = findReadmes(CORE_DIR);
   console.log(`Found ${readmePaths.length} XDS component README files`);
 
   for (const readmePath of readmePaths) {

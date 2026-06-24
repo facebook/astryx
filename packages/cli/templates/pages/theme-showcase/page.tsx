@@ -55,7 +55,7 @@ import {
   ChatSystemMessage,
 } from '@astryxdesign/core/Chat';
 
-// Styles passed to XDS components via their `xstyle` prop. These are
+// Styles passed to Astryx components via their `xstyle` prop. These are
 // applied by the components themselves, so they work in compiled builds
 // and in the live playground preview alike.
 const styles = stylex.create({

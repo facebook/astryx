@@ -58,7 +58,7 @@ export const docs = {
             [
               'Token resolver APIs',
               'JavaScript needs token values for charts, canvas, SVG, or config objects',
-              "`resolveXDSThemeToken(theme, '--color-data-categorical-blue', {mode})`",
+              "`resolveThemeToken(theme, '--color-data-categorical-blue', {mode})`",
             ],
           ],
         },
@@ -367,16 +367,16 @@ tokens: {
       content: [
         {
           type: 'prose',
-          text: 'Use `resolveXDSThemeTokens()` or `resolveXDSThemeToken()` when code outside React needs token values for a known theme and mode. Use `useTheme()` inside client components when the values should come from the nearest Theme and active mode.',
+          text: 'Use `resolveThemeTokens()` or `resolveThemeToken()` when code outside React needs token values for a known theme and mode. Use `useTheme()` inside client components when the values should come from the nearest Theme and active mode.',
         },
         {
           type: 'code',
           lang: 'ts',
           label: 'Resolve tokens without React context',
-          code: `import {resolveXDSThemeTokens} from '@astryxdesign/core/theme/tokens';
+          code: `import {resolveThemeTokens} from '@astryxdesign/core/theme/tokens';
 import {defaultTheme} from '@astryxdesign/theme-default';
 
-const tokens = resolveXDSThemeTokens(defaultTheme, {mode: 'light'});
+const tokens = resolveThemeTokens(defaultTheme, {mode: 'light'});
 
 const chartOptions = {
   textColor: tokens['--color-text-primary'],

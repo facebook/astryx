@@ -13,7 +13,7 @@
 export type SizeValue = number | string;
 
 /**
- * Numeric spacing step from the XDS spacing scale.
+ * Numeric spacing step from the Astryx spacing scale.
  *
  * Maps to CSS spacing tokens:
  * - 0 = 0px (--spacing-0)

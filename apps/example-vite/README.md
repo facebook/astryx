@@ -178,10 +178,10 @@ npm run preview
 
 This example lives in the XDS monorepo for convenience, but it should be representative of a real app consuming `@astryxdesign/core` from npm. Monorepo workspace symlinks can silently bypass issues that external consumers hit (Vite dep pre-bundling, missing dependencies, wrong resolve paths).
 
-**Before merging changes to this example, test it as an external consumer.** See the [Testing Example Apps](https://github.com/facebookexperimental/xds/wiki/Testing-Example-Apps) wiki page for the full procedure.
+**Before merging changes to this example, test it as an external consumer.** See the [Testing Example Apps](https://github.com/facebook/astryx/wiki/Testing-Example-Apps) wiki page for the full procedure.
 
 ## Related
 
-- [Issue #145: Example apps for source distribution consumers](https://github.com/facebookexperimental/xds/issues/145)
+- [Issue #145: Example apps for source distribution consumers](https://github.com/facebook/astryx/issues/145)
 - [StyleX Vite React example](https://github.com/facebook/stylex/tree/main/examples/example-vite-react)
 - [XDS Example: Next.js](../example-nextjs/)

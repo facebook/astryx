@@ -12,6 +12,12 @@
    reset, astryx-base, astryx-theme so product styles always win. */
 @stylex;
 
+/* Disable overscroll bounce so the home hero's position:fixed layers can't
+   show through past the top/bottom of the page. */
+html {
+  overscroll-behavior-y: none;
+}
+
 /* Marketing-only custom properties for the docsite home page. These are
    NOT XDS theming tokens — they're docsite-specific values that back the
    landing page's bento feature cards + section rhythm — so they live here

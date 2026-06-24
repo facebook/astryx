@@ -22,7 +22,7 @@ if [ $# -lt 1 ]; then
   echo "Usage: $0 <xds-iteration> [baseline-iteration]"
   echo ""
   echo "Builds and deploys a vibe test report to GitHub Pages."
-  echo "Report URL: https://facebookexperimental.github.io/xds/reports/<xds-iteration>/"
+  echo "Report URL: https://facebook.github.io/astryx/reports/<xds-iteration>/"
   exit 1
 fi
 

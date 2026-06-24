@@ -3,15 +3,15 @@
 The CLI is the primary interface for working with the design system, for humans and machines alike. It provides component documentation, design tokens, page templates, theming tools, and upgrade codemods, all accessible via terminal commands, a typed JSON API, or programmatic imports. AI agents and build tools use the same API that powers the CLI, enabling end-to-end frontend development loops.
 
 ```bash
-npx xds --help
-npx xds search button
-npx xds component Button
-npx xds docs tokens
-npx xds docs migration
-npx xds template --list
+npx astryx --help
+npx astryx search button
+npx astryx component Button
+npx astryx docs tokens
+npx astryx docs migration
+npx astryx template --list
 ```
 
-### Finding things: `xds search`
+### Finding things: `astryx search`
 
 When you don't know whether what you need is a component, a hook, a docs topic,
 or a template, search across all of them at once. Results are ranked by
@@ -20,25 +20,25 @@ fuzzy matching for typos) and tagged with their domain plus the follow-up
 command to run:
 
 ```bash
-$ npx xds search button
+$ npx astryx search button
 
 Results for "button" (20):
 
   [component]  Button
                Button triggers an action when clicked. Use it for form submissions…
-               → npx xds component Button
+               → npx astryx component Button
 
   [component]  IconButton
                A button that shows only an icon with no visible text…
-               → npx xds component IconButton
+               → npx astryx component IconButton
 
   [hook]       useClickableContainer
                Makes a container element clickable while preserving nested…
-               → npx xds hook useClickableContainer
+               → npx astryx hook useClickableContainer
 
   [template]   Banner — Collapsible
                Combine an action button, dismiss control, and expandable detail area…
-               → npx xds template BannerCollapsibleContent
+               → npx astryx template BannerCollapsibleContent
 ```
 
 Options:
@@ -97,7 +97,7 @@ The `code` field is a **stable, machine-readable identifier**. Branch on it,
 never on the human-readable `error` string, which changes freely as we improve
 wording. Every error envelope carries a `code` (falling back to `ERR_UNKNOWN`
 when no more specific code applies). The same `code` is exposed on thrown
-`XDSError` instances from the programmatic API, so both surfaces agree.
+`AstryxError` instances from the programmatic API, so both surfaces agree.
 
 Codes are **append-only**: once shipped, a code's meaning never changes and a
 code is never removed. New error conditions get new codes.
@@ -125,11 +125,11 @@ if (isError(result)) {
 | Code | Meaning |
 | --- | --- |
 | `ERR_UNKNOWN` | Generic fallback for any error without a more specific code. |
-| `ERR_UNKNOWN_COMMAND` | A top-level command name was not recognized (e.g. `xds bogus`). |
-| `ERR_UNKNOWN_SUBCOMMAND` | A subcommand under a group was not recognized (e.g. `xds theme bogus`). |
+| `ERR_UNKNOWN_COMMAND` | A top-level command name was not recognized (e.g. `astryx bogus`). |
+| `ERR_UNKNOWN_SUBCOMMAND` | A subcommand under a group was not recognized (e.g. `astryx theme bogus`). |
 | `ERR_INVALID_OPTION` | An unknown flag was passed, or `--json` was used on a command that doesn't support it. |
 | `ERR_INVALID_ARGUMENT` | An option/argument value was rejected, or required flags were missing. |
-| `ERR_MISSING_ARGUMENT` | A required positional argument was omitted (e.g. `xds theme build` with no file). |
+| `ERR_MISSING_ARGUMENT` | A required positional argument was omitted (e.g. `astryx theme build` with no file). |
 | `ERR_INVALID_LANG` | `--lang` was given a value outside its choices (`en`, `zh`, `dense`). |
 | `ERR_INVALID_DETAIL` | `--detail` was given a value outside its choices (`full`, `compact`, `brief`). |
 | `ERR_NODE_VERSION` | The running Node.js version is below the supported minimum. |
@@ -155,7 +155,7 @@ if (isError(result)) {
 | `ERR_WRITE_FAILED` | Writing output files failed (and was rolled back). |
 | `ERR_THEME_INVALID` | A theme definition was missing a required property (e.g. `name`). |
 | `ERR_THEME_LOAD` | A theme file could not be loaded / parsed into a `defineTheme` result. |
-| `ERR_TEMPLATE_CONFIG` | `template.get` is not configured in `xds.config.mjs` (fetch-by-id). |
+| `ERR_TEMPLATE_CONFIG` | `template.get` is not configured in `astryx.config.mjs` (fetch-by-id). |
 | `ERR_TEMPLATE_GET` | A configured `template.get` threw or returned an invalid value. |
 | `ERR_VERSION_DETECT` | The current `@astryxdesign/core` version could not be detected. |
 | `ERR_INVALID_VERSION` | A `--from`/`--to` value was not a valid semver string. |
@@ -171,7 +171,7 @@ choices, and defaults), whether it supports `--json`, and the response `type`
 discriminators each command can emit. Think of it as an OpenAPI spec for the CLI.
 
 ```bash
-xds manifest --json        # dedicated surface — type: "manifest"
+astryx manifest --json        # dedicated surface — type: "manifest"
 xds --json                 # bare invocation — embeds the same payload under data.manifest
 ```
 
@@ -198,7 +198,7 @@ Shape:
         "options": [{"flag": "--props", "type": "boolean", "description": "Print only the props table"}],
         "json": true,
         "responseTypes": ["component.list", "component.detail", "component.detail.props", "…"],
-        "examples": ["xds component XDSButton --props --json"]
+        "examples": ["astryx component Button --props --json"]
       }
       // …one entry per command; subcommands (e.g. `theme build`) nest under `subcommands`
     ],
@@ -218,14 +218,14 @@ command without describing it fails CI.
 **Backwards-compat:** the bare `xds --json` envelope keeps `type: "help"` and its
 original shallow fields (`name`, `version`, `commands` as a `string[]` of names,
 `jsonSupported`); the full structured manifest is additive under `data.manifest`.
-For the standalone manifest envelope (`type: "manifest"`), use `xds manifest --json`.
+For the standalone manifest envelope (`type: "manifest"`), use `astryx manifest --json`.
 
 ## Programmatic API
 
 The same logic that powers `xds --json` is available as importable, type-safe functions:
 
 ```typescript
-import {component, docs, discover, template, hook, search, XDSError} from '@astryxdesign/cli/api';
+import {component, docs, discover, template, hook, search, AstryxError} from '@astryxdesign/cli/api';
 
 // Same result as: xds --json component Button
 const btn = await component('Button');
@@ -244,7 +244,7 @@ principles.data.title; // 'XDS Principles'
 const useMediaQuery = await hook('useMediaQuery');
 useMediaQuery.data.params; // typed as HookParamDoc[]
 
-// Errors throw XDSError with a stable .code and optional .suggestions
+// Errors throw AstryxError with a stable .code and optional .suggestions
 try {
   await component('Buttn');
 } catch (e) {
@@ -324,14 +324,14 @@ Every response has a `type` string that uniquely identifies it:
 
 ## Doctor
 
-`xds doctor` runs a series of health checks against your project and
+`astryx doctor` runs a series of health checks against your project and
 environment and reports `PASS` / `WARN` / `FAIL` for each, with an actionable
 fix for anything that isn't passing. It's read-only; it never installs or
 mutates anything, so it's safe to run anywhere, including CI.
 
 ```
-$ xds doctor
-xds doctor — diagnosing your setup
+$ astryx doctor
+astryx doctor — diagnosing your setup
 
   ✓ Node.js version
       Node v22.13.0 meets the minimum (>=22.13.0).
@@ -342,11 +342,11 @@ xds doctor — diagnosing your setup
   ⚠ Theme packages
       No @astryxdesign/theme-* packages are installed.
       → fix: Install a theme, e.g. `npm install @astryxdesign/theme-default`, then import its CSS or set xds.theme.
-  ℹ xds.config.mjs
-      No xds.config.mjs found — using defaults.
+  ℹ astryx.config.mjs
+      No astryx.config.mjs found — using defaults.
   ℹ AI agent docs
       No agent docs (CLAUDE.md / AGENTS.md / .cursorrules) found.
-      → fix: Generate agent docs with `xds init --features agents`.
+      → fix: Generate agent docs with `astryx init --features agents`.
   ✓ @astryxdesign/core peer dependencies
       All peer dependencies satisfied (react, react-dom).
   ℹ Package manager
@@ -365,19 +365,19 @@ No failures — but review the ⚠ warnings above when you can.
 | @astryxdesign/core installed  | pass / fail          | `@astryxdesign/core` is resolvable from the project                  |
 | Version alignment    | pass / warn / info   | Installed `@astryxdesign/core` is in step with `@astryxdesign/cli`            |
 | Theme packages       | pass / warn          | An `@astryxdesign/theme-*` package is installed and a theme is wired |
-| xds.config.mjs       | pass / fail / info   | Config (if present) loads cleanly with a valid shape        |
+| astryx.config.mjs       | pass / fail / info   | Config (if present) loads cleanly with a valid shape        |
 | AI agent docs        | pass / warn / info   | Agent docs exist and contain the XDS section markers        |
 | Peer dependencies    | pass / warn / info   | `@astryxdesign/core`'s peer deps (react, …) are installed            |
 | Package manager      | info                 | Reports the detected package manager                        |
 
 ### CI gate
 
-The exit code is the contract: `xds doctor` exits `0` when there are no
+The exit code is the contract: `astryx doctor` exits `0` when there are no
 failures (warnings are fine) and `1` when any check fails. That makes it
 usable directly as a CI step:
 
 ```yaml
-- run: npx xds doctor
+- run: npx astryx doctor
 ```
 
 Use `--json` for a structured envelope (`{ apiVersion, type: "doctor",
@@ -385,7 +385,7 @@ data: { checks, summary } }`) that AI agents and scripts can parse.
 
 ## Configuration
 
-The CLI reads from an optional `xds.config.mjs` in your project root:
+The CLI reads from an optional `astryx.config.mjs` in your project root:
 
 ```javascript
 export default {

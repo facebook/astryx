@@ -165,7 +165,7 @@ function TemplatePreviewHeader({
 
   const copyButton = (
     <HStack gap={2} vAlign="center">
-      <Code>{`npx xds template ${item.slug}`}</Code>
+      <Code>{`npx astryx template ${item.slug}`}</Code>
       <Button
         variant="ghost"
         isIconOnly
@@ -291,7 +291,7 @@ export function TemplatePreviewDialog({
     return null;
   }
 
-  const useCommand = `npx xds template ${current.slug} ./src/app/${current.slug}`;
+  const useCommand = `npx astryx template ${current.slug} ./src/app/${current.slug}`;
   const handleCopyCmd = useCallback(() => {
     navigator.clipboard.writeText(useCommand).then(() => {
       setCmdCopied(true);

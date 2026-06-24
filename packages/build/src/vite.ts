@@ -8,7 +8,7 @@ import {fileURLToPath} from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const XDS_LIBRARY_PATTERN = 'node_modules/@astryxdesign/';
+const LIBRARY_PATTERN = 'node_modules/@astryxdesign/';
 const STYLEX_CSS_PATH = '/virtual:stylex.css';
 
 /**
@@ -29,7 +29,7 @@ export const LIGHTNINGCSS_TARGETS = {
 export interface XDSVitePluginLegacyOptions {
   stylexOptions: Parameters<typeof stylex.vite>[0];
   libraryPattern?: string;
-  /** StyleX atomic class-name prefix for XDS library styles. @default 'astryx' */
+  /** StyleX atomic class-name prefix for Astryx library styles. @default 'astryx' */
   stylexPrefix?: string;
   layers?: {
     library?: string;
@@ -51,7 +51,7 @@ export interface XDSVitePluginOptions {
   rootDir?: string;
 
   /**
-   * Pattern to identify XDS library files vs product files.
+   * Pattern to identify Astryx library files vs product files.
    * @default 'node_modules/@astryxdesign/'
    */
   libraryPattern?: string;
@@ -60,7 +60,7 @@ export interface XDSVitePluginOptions {
    * CSS layer names for the split output.
    */
   layers?: {
-    /** Layer name for XDS library styles @default 'astryx-base' */
+    /** Layer name for Astryx library styles @default 'astryx-base' */
     library?: string;
     /** Layer name for product styles @default 'product' */
     product?: string;
@@ -75,11 +75,11 @@ export interface XDSVitePluginOptions {
   lightningcssTargets?: Record<string, number>;
 
   /**
-   * StyleX atomic class-name prefix for XDS *library* styles. The product
+   * StyleX atomic class-name prefix for Astryx *library* styles. The product
    * build uses a distinct prefix so library and product atoms never collide
    * across layers.
    *
-   * Configurable to support the XDS-prefix migration (P2380608025): a consumer
+   * Configurable to support the Astryx-prefix migration (P2380608025): a consumer
    * can rebrand the library atom prefix to `astryx` before the final cutover.
    * Defaults to `xds` so existing consumers are unaffected.
    *
@@ -94,9 +94,9 @@ export interface XDSVitePluginOptions {
 }
 
 /**
- * XDS Vite plugin for source builds.
+ * Astryx Vite plugin for source builds.
  *
- * Provides sensible defaults for StyleX compilation with XDS.
+ * Provides sensible defaults for StyleX compilation with Astryx.
  * Just spread into your plugins array:
  *
  *   plugins: [...xdsStylex(), react()]
@@ -105,7 +105,7 @@ export interface XDSVitePluginOptions {
  * - StyleX compilation with correct settings
  * - CSS layer ordering (reset < astryx-base < astryx-theme < product)
  * - resolve.alias for @astryxdesign/core source
- * - optimizeDeps.exclude to prevent Vite pre-bundling XDS
+ * - optimizeDeps.exclude to prevent Vite pre-bundling Astryx
  *
  * @param options — optional overrides
  */
@@ -121,7 +121,7 @@ export function xdsStylex(
   const {
     dev = process.env.NODE_ENV !== 'production',
     rootDir = process.cwd(),
-    libraryPattern = XDS_LIBRARY_PATTERN,
+    libraryPattern = LIBRARY_PATTERN,
     layers = {},
     lightningcssTargets,
     stylexPrefix = 'astryx',
@@ -186,7 +186,7 @@ export function xdsStylex(
     name: 'xds-config',
     config(): UserConfig {
       // Discover all @astryxdesign/* packages to exclude from pre-bundling.
-      // XDS ships as source that must be compiled by StyleX — pre-bundling
+      // Astryx ships as source that must be compiled by StyleX — pre-bundling
       // strips stylex.create/defineVars calls and causes runtime errors.
       let xdsPackages: string[] = ['@astryxdesign/core'];
       try {
@@ -305,7 +305,7 @@ export function xdsStylex(
 function xdsStylexLegacy(options: XDSVitePluginLegacyOptions): Plugin[] {
   const {
     stylexOptions,
-    libraryPattern = XDS_LIBRARY_PATTERN,
+    libraryPattern = LIBRARY_PATTERN,
     stylexPrefix = 'astryx',
     layers = {},
   } = options;

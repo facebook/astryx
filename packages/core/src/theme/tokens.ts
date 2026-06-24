@@ -6,7 +6,7 @@
  * @output Server-safe token helpers for resolving theme values and building CSS var references
  * @position Public theme utility; backs useTheme and external styling-library adapters
  *
- * Use these helpers when code outside React hooks needs XDS token values:
+ * Use these helpers when code outside React hooks needs Astryx token values:
  * build-time theme adapters, chart configuration, canvas/SVG rendering, tests,
  * or plain JS theme objects for other styling libraries.
  *
@@ -26,41 +26,41 @@ import {
 export type ResolvedThemeMode = 'light' | 'dark';
 
 /** Options for resolving all tokens from a theme object. */
-export interface ResolveXDSThemeTokensOptions {
+export interface ResolveThemeTokensOptions {
   /** Effective mode to resolve. Pass an explicit value; this helper does not read media queries. */
   mode: ResolvedThemeMode;
 }
 
 /** Options for resolving one token from a theme object. */
-export interface ResolveXDSThemeTokenOptions extends ResolveXDSThemeTokensOptions {
+export interface ResolveThemeTokenOptions extends ResolveThemeTokensOptions {
   /** Value to return when the token name is unknown. Defaults to an empty string. */
   fallback?: string;
 }
 
 /**
- * Return a CSS custom property reference for an XDS token name.
+ * Return a CSS custom property reference for an Astryx token name.
  *
  * Useful for non-StyleX styling-library configs (Panda, Chakra, MUI,
  * Emotion, styled-components, UnoCSS, CSS Modules) where the value should
- * stay connected to the active XDS theme through the CSS cascade.
+ * stay connected to the active Astryx theme through the CSS cascade.
  *
  * @example
  * ```ts
  * const theme = {
  *   colors: {
- *     text: xdsTokenVar('--color-text-primary'),
- *     surface: xdsTokenVar('--color-background-surface'),
+ *     text: tokenVar('--color-text-primary'),
+ *     surface: tokenVar('--color-background-surface'),
  *   },
  * };
  * ```
  */
-export function xdsTokenVar(name: TokenName | (string & {})): string {
+export function tokenVar(name: TokenName | (string & {})): string {
   return `var(${name})`;
 }
 
-/** Flat map of every known XDS token name to its `var(--token-name)` reference. */
-export const xdsTokenVars: Record<TokenName, string> = Object.fromEntries(
-  Object.keys(xdsTokenDefaults).map(name => [name, xdsTokenVar(name)]),
+/** Flat map of every known Astryx token name to its `var(--token-name)` reference. */
+export const tokenVars: Record<TokenName, string> = Object.fromEntries(
+  Object.keys(xdsTokenDefaults).map(name => [name, tokenVar(name)]),
 ) as Record<TokenName, string>;
 
 /**
@@ -145,7 +145,7 @@ function resolveXDSTokenValue(
 }
 
 /**
- * Resolve all XDS token values for a theme and effective color mode.
+ * Resolve all Astryx token values for a theme and effective color mode.
  *
  * The result starts with `xdsTokenDefaults`, applies `theme.tokens`, then
  * reapplies `theme.__inputTokens` when available so explicit tuple overrides
@@ -155,9 +155,9 @@ function resolveXDSTokenValue(
  *
  * Pass `theme` as null/undefined to resolve defaults only.
  */
-export function resolveXDSThemeTokens(
+export function resolveThemeTokens(
   theme: DefinedTheme | null | undefined,
-  options: ResolveXDSThemeTokensOptions,
+  options: ResolveThemeTokensOptions,
 ): Record<string, string> {
   const {mode} = options;
   const resolved: Record<string, string> = {};
@@ -185,12 +185,12 @@ export function resolveXDSThemeTokens(
   return resolved;
 }
 
-/** Resolve one XDS token value for a theme and effective color mode. */
-export function resolveXDSThemeToken(
+/** Resolve one Astryx token value for a theme and effective color mode. */
+export function resolveThemeToken(
   theme: DefinedTheme | null | undefined,
   name: TokenName | (string & {}),
-  options: ResolveXDSThemeTokenOptions,
+  options: ResolveThemeTokenOptions,
 ): string {
-  const tokens = resolveXDSThemeTokens(theme, options);
+  const tokens = resolveThemeTokens(theme, options);
   return tokens[name] ?? options.fallback ?? '';
 }

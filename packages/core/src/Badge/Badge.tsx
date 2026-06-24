@@ -173,7 +173,7 @@ export interface BadgeProps extends BaseProps<HTMLSpanElement> {
 /**
  * A badge component for displaying status indicators, counts, or labels.
  *
- * Styles use XDS theme tokens via StyleX.
+ * Styles use Astryx theme tokens via StyleX.
  * Wrap your app in <Theme> to apply a theme.
  *
  * @example

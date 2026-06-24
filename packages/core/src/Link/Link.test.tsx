@@ -282,7 +282,7 @@ describe('Link', () => {
     expect(link).not.toHaveAttribute('data-another-link');
   });
 
-  it('renders xds-* class names for theme targeting', () => {
+  it('renders astryx-* class names for theme targeting', () => {
     render(
       <Link href="/test" color="secondary">
         Themed Link

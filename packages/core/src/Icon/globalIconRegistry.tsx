@@ -18,7 +18,7 @@ import {defaultIcons} from './defaultIcons';
 // =============================================================================
 
 /**
- * Semantic icon names used internally by XDS components.
+ * Semantic icon names used internally by Astryx components.
  *
  * These represent the functional purpose of each icon, not a specific
  * visual representation. Themes provide the actual icon components.

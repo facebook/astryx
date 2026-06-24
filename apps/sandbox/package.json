@@ -10,7 +10,7 @@
     "dev": "pnpm generate && (node ../../scripts/sync-templates.js --watch & next dev)",
     "build": "pnpm generate && next build",
     "start": "next start",
-    "postinstall": "xds init --features agents"
+    "postinstall": "astryx init --features agents"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

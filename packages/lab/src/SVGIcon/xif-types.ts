@@ -2,7 +2,7 @@
 
 /**
  * @file xif-types.ts
- * @description XDS Icon Format (XIF) type definitions — v0.1.0 draft
+ * @description Astryx Icon Format (XIF) type definitions — v0.1.0 draft
  *
  * Icons are pure structure — zero visual values. The theme resolves
  * all visual properties (color, weight, rounding, timing).
@@ -148,7 +148,7 @@ export interface XIFPath {
 // =============================================================================
 
 /**
- * Root type for an XDS Icon Format definition.
+ * Root type for an Astryx Icon Format definition.
  * Pure structure — no visual values.
  */
 export interface XIFIcon {

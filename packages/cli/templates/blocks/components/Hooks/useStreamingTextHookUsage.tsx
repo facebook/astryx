@@ -8,7 +8,7 @@ import {VStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 
 const response =
-  'XDS hooks keep behavior reusable while components keep visuals consistent.';
+  'Astryx hooks keep behavior reusable while components keep visuals consistent.';
 
 export default function UseStreamingTextHookUsage() {
   const displayedText = useStreamingText(response, false, {

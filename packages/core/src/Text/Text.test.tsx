@@ -191,7 +191,7 @@ describe('Text', () => {
     });
   });
 
-  it('renders xds-* class names for theme targeting', () => {
+  it('renders astryx-* class names for theme targeting', () => {
     render(<Text type="body">Themed Text</Text>);
     const element = screen.getByText('Themed Text');
     expect(element.className).toContain('astryx-text');

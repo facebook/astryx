@@ -75,10 +75,10 @@ export function createAgentProject(target, iterDir, promptId) {
     const themeDefaultLink = path.join(projectDir, 'node_modules', '@astryxdesign', 'theme-default');
     fs.symlinkSync(path.join(REPO_ROOT, 'packages', 'themes', 'default'), themeDefaultLink, 'dir');
 
-    // Symlink node_modules/.bin/xds → cli bin so npx xds works
+    // Symlink node_modules/.bin/astryx → cli bin so npx astryx works
     const binDir = path.join(projectDir, 'node_modules', '.bin');
     ensureDir(binDir);
-    fs.symlinkSync(path.join(REPO_ROOT, 'packages', 'cli', 'bin', 'xds.mjs'), path.join(binDir, 'xds'), 'file');
+    fs.symlinkSync(path.join(REPO_ROOT, 'packages', 'cli', 'bin', 'astryx.mjs'), path.join(binDir, 'astryx'), 'file');
   }
 
   if (target === 'baseline') {

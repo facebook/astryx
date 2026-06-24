@@ -6,7 +6,7 @@
  * @file Markdown.tsx
  * @input Markdown string, parser AST types
  * @output Exports Markdown component and MarkdownProps
- * @position Core implementation; renders markdown as XDS components
+ * @position Core implementation; renders markdown as Astryx components
  */
 
 import {useMemo, useRef} from 'react';
@@ -1518,7 +1518,7 @@ function renderBlock(
 // ---------------------------------------------------------------------------
 
 /**
- * Renders a markdown string as XDS components. Supports streaming with
+ * Renders a markdown string as Astryx components. Supports streaming with
  * smooth fade-in animation via isStreaming.
  *
  * @example

@@ -12,7 +12,6 @@ import {Card} from '@astryxdesign/core/Card';
 import {Divider} from '@astryxdesign/core';
 import {CodeExampleBlock} from '../CodeExampleBlock';
 import {TabList, Tab} from '@astryxdesign/core/TabList';
-import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {ShowcasePreview} from './ShowcasePreview';
 import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {BestPractices} from './BestPractices';
@@ -33,6 +32,19 @@ import {trackNavigate} from '../../lib/analytics';
 const styles = stylex.create({
   section: {
     marginInline: 'auto',
+  },
+  previewStage: {
+    position: 'sticky',
+    top: 44,
+    zIndex: 10,
+    backgroundColor: 'var(--color-background-page)',
+    backdropFilter: 'blur(16px)',
+    maxHeight: {default: 400, '@media (max-width: 768px)': 250},
+    overflow: 'auto',
+    borderWidth: 'var(--border-width, 1px)',
+    borderStyle: 'solid',
+    borderColor: 'var(--color-border-emphasized)',
+    borderRadius: 'var(--radius-container)',
   },
 });
 
@@ -91,7 +103,6 @@ function OverviewContent({
 
       {(exampleRegistry[comp.name] || []).length > 0 && (
         <>
-          <Divider />
           <VStack gap={4}>
             <Heading level={2} type="display-3">
               Examples
@@ -124,7 +135,6 @@ function ComponentDetailInner({
   const isHook = comp.params != null;
   const hasShowcase = comp.name in showcaseRegistry;
   const hasPlayground = !isHook;
-  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const tab = searchParams.get('tab') ?? 'overview';
   const setTab = (value: string) => {
@@ -184,16 +194,7 @@ function ComponentDetailInner({
 
             {tab === 'properties' && (
               <VStack gap={4}>
-                <div
-                  style={{
-                    position: 'sticky',
-                    top: 44,
-                    zIndex: 10,
-                    backgroundColor: 'var(--color-background-page)',
-                    backdropFilter: 'blur(16px)',
-                    maxHeight: isMobile ? 250 : 400,
-                    overflow: 'auto',
-                  }}>
+                <div {...stylex.props(styles.previewStage)}>
                   <InteractivePreviewStage
                     name={comp.name}
                     state={state}
@@ -201,6 +202,7 @@ function ComponentDetailInner({
                     playground={comp.playground}
                     missingRequiredProps={missingRequiredProps}
                     onPropChange={setProp}
+                    embedded
                     canControlOpenState={
                       comp.props.some(prop => prop.name === 'isOpen') &&
                       comp.props.some(prop => prop.name === 'onOpenChange')

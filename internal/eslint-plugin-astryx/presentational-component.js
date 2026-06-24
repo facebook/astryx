@@ -96,7 +96,7 @@ const presentationalComponentRule = {
     docs: {
       description:
         'Prevent presentational components from remembering, watching, or coordinating',
-      category: 'XDS Architecture',
+      category: 'Astryx Architecture',
       recommended: true,
       url: 'https://github.com/facebookexperimental/xds/issues/493',
     },
@@ -106,7 +106,7 @@ const presentationalComponentRule = {
         'Move state to the consumer or a wrapper component.',
       watches:
         "'{{name}}' makes {{component}} observe the environment. Presentational components must not watch things. " +
-        'Move observation to a wrapper component (e.g. XDS{{shortName}}Wrapper).',
+        'Move observation to a wrapper component (e.g. Astryx{{shortName}}Wrapper).',
       coordinates:
         "'{{name}}' makes {{component}} coordinate its children. Presentational components must not boss children around. ' +" +
         'Move coordination to a dedicated compound component.',
@@ -121,7 +121,7 @@ const presentationalComponentRule = {
     }
 
     const componentName = getFileStem(filename);
-    const shortName = componentName.replace(/^XDS/, '');
+    const shortName = componentName.replace(/^Astryx/, '');
 
     function report(node, name, category) {
       context.report({

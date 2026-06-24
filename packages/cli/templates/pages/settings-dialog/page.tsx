@@ -52,7 +52,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-background-surface'],
     flexShrink: 0,
   },
-  // Sticky dialog header bar — no XDS prop for sticky/background/z-index.
+  // Sticky dialog header bar — no Astryx prop for sticky/background/z-index.
   // Inline + block padding comes from the parent LayoutContent `padding`.
   headerSticky: {
     position: 'sticky',

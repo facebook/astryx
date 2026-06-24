@@ -145,7 +145,7 @@ export interface PaginationProps extends Omit<
    */
   label?: string;
 
-  // --- Standard XDS ---
+  // --- Standard Astryx ---
   /** Test ID for automated testing. */
   'data-testid'?: string;
 }

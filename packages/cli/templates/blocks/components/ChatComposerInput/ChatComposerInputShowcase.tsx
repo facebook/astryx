@@ -11,7 +11,7 @@ export default function ChatComposerInputShowcase() {
       <ChatComposer
         onSubmit={() => {}}
         input={
-          <ChatComposerInput placeholder="Ask me anything about XDS..." />
+          <ChatComposerInput placeholder="Ask me anything about Astryx..." />
         }
       />
     </Stack>

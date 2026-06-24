@@ -4,7 +4,7 @@
  * @file schema.ts
  * @input A spec object (Vega or Vega-Lite)
  * @output The resolved schema kind: 'vega', 'vega-lite', or an error
- * @position Utility; consumed by XDSVegaChart to decide whether to compile
+ * @position Utility; consumed by VegaChart to decide whether to compile
  *
  * SYNC: When modified, update /packages/vega/README.md
  */

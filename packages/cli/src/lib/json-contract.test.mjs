@@ -27,7 +27,7 @@ import {
 } from './json.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI = path.resolve(__dirname, '..', '..', 'bin', 'xds.mjs');
+const CLI = path.resolve(__dirname, '..', '..', 'bin', 'astryx.mjs');
 
 function runCli(args) {
   return spawnSync(process.execPath, [CLI, ...args], {
@@ -137,14 +137,14 @@ describe('stdout discipline (humanLog / humanWarn)', () => {
 });
 
 describe('contract: every --json emission is valid JSON with apiVersion', () => {
-  it('xds --version --json', () => {
+  it('astryx --version --json', () => {
     const r = runCli(['--version', '--json']);
     const env = JSON.parse(r.stdout);
     expect(env.apiVersion).toBe(API_VERSION);
     expect(env.type).toBe('version');
   });
 
-  it('xds --json (bare) help envelope', () => {
+  it('astryx --json (bare) help envelope', () => {
     const r = runCli(['--json']);
     const env = JSON.parse(r.stdout);
     expect(env.apiVersion).toBe(API_VERSION);

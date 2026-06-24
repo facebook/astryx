@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Shared types for the XDS CLI JSON API.
+ * Shared types for the Astryx CLI JSON API.
  *
  * CLIError and CLIUnsupportedError are the two error shapes.
  * CLIAnyResponse is the union of all success response types.

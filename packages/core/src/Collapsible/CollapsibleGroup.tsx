@@ -105,8 +105,8 @@ function normalizeToArray(value: string | string[] | undefined): string[] {
  * <CollapsibleGroup type="single" defaultValue="faq1">
  *   <VStack gap={2}>
  *     <Card>
- *       <Collapsible trigger="What is XDS?" value="faq1">
- *         XDS is a design system for building internal tools.
+ *       <Collapsible trigger="What is Astryx?" value="faq1">
+ *         Astryx is a design system for building internal tools.
  *       </Collapsible>
  *     </Card>
  *     <Card>

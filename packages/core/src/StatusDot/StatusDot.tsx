@@ -132,7 +132,7 @@ export interface StatusDotProps extends BaseProps<HTMLSpanElement> {
  * A small colored dot indicator for status display (online/offline, severity, etc).
  *
  * Fixed 8px size. Renders as a non-focusable `<span>` with `role="img"` and
- * `aria-label` for accessibility. Styles use XDS theme tokens via StyleX.
+ * `aria-label` for accessibility. Styles use Astryx theme tokens via StyleX.
  * Wrap your app in `<Theme>` to apply a theme.
  *
  * @example

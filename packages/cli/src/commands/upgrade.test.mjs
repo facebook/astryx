@@ -64,7 +64,7 @@ function writePkg(deps) {
 async function runJson(args) {
   const program = createProgram();
   try {
-    await program.parseAsync(['node', 'xds', ...args]);
+    await program.parseAsync(['node', 'astryx', ...args]);
   } catch (err) {
     if (!String(err?.message || '').startsWith('__exit')) throw err;
   }
@@ -100,7 +100,7 @@ describe('upgrade gate (semver comparison)', () => {
   it('blocks when current >= target by semver (e.g. 0.0.10 → 0.0.9)', async () => {
     writePkg({'@astryxdesign/core': '^0.0.10'});
     const program = createProgram();
-    await program.parseAsync(['node', 'xds', 'upgrade', '--to', '0.0.9']);
+    await program.parseAsync(['node', 'astryx', 'upgrade', '--to', '0.0.9']);
     const output = stdoutCalls.join('') + logCalls.join('\n');
     expect(output).toMatch(/up to date|Already/i);
   });

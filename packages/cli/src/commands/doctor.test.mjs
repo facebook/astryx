@@ -118,19 +118,19 @@ describe('doctor — individual checks', () => {
     expect(res.status).toBe('pass');
   });
 
-  it('config: INFO when no xds.config.mjs', async () => {
+  it('config: INFO when no astryx.config.mjs', async () => {
     const res = await checkConfig({cwd: tmpDir, configPath: null});
     expect(res.status).toBe('info');
   });
 
-  it('config: PASS when a valid xds.config.mjs loads', async () => {
+  it('config: PASS when a valid astryx.config.mjs loads', async () => {
     // Vitest intercepts dynamic import() through Vite's resolver, which can't
     // serve a file written to an arbitrary tmp path at runtime. Write the
     // fixture inside the package tree so Vite can resolve it, then clean up.
     const fixtureDir = fs.mkdtempSync(
       path.join(path.dirname(new URL(import.meta.url).pathname), '__doctor_cfg_'),
     );
-    const configPath = path.join(fixtureDir, 'xds.config.mjs');
+    const configPath = path.join(fixtureDir, 'astryx.config.mjs');
     try {
       fs.writeFileSync(configPath, 'export default { theme: "default" };');
       const res = await checkConfig({cwd: fixtureDir, configPath});
@@ -143,11 +143,11 @@ describe('doctor — individual checks', () => {
     }
   });
 
-  it('config: FAIL when xds.config.mjs throws on import', async () => {
+  it('config: FAIL when astryx.config.mjs throws on import', async () => {
     const fixtureDir = fs.mkdtempSync(
       path.join(path.dirname(new URL(import.meta.url).pathname), '__doctor_cfg_'),
     );
-    const configPath = path.join(fixtureDir, 'xds.config.mjs');
+    const configPath = path.join(fixtureDir, 'astryx.config.mjs');
     try {
       fs.writeFileSync(configPath, 'throw new Error("boom");\nexport default {};');
       const res = await checkConfig({cwd: fixtureDir, configPath});
@@ -162,7 +162,7 @@ describe('doctor — individual checks', () => {
     const fixtureDir = fs.mkdtempSync(
       path.join(path.dirname(new URL(import.meta.url).pathname), '__doctor_cfg_'),
     );
-    const configPath = path.join(fixtureDir, 'xds.config.mjs');
+    const configPath = path.join(fixtureDir, 'astryx.config.mjs');
     try {
       fs.writeFileSync(configPath, 'export default { packages: [123] };');
       const res = await checkConfig({cwd: fixtureDir, configPath});
@@ -175,7 +175,7 @@ describe('doctor — individual checks', () => {
   it('agent-docs: INFO when no docs present', () => {
     const res = checkAgentDocs({cwd: tmpDir});
     expect(res.status).toBe('info');
-    expect(res.fix).toContain('xds init');
+    expect(res.fix).toContain('astryx init');
   });
 
   it('agent-docs: WARN when docs exist without XDS markers', () => {
@@ -255,7 +255,7 @@ function createProgram() {
 describe('doctor — command', () => {
   it('--json emits a doctor envelope', async () => {
     const program = createProgram();
-    await program.parseAsync(['node', 'xds', '--json', 'doctor']);
+    await program.parseAsync(['node', 'astryx', '--json', 'doctor']);
     const out = logCalls.join('\n');
     const parsed = JSON.parse(out);
     expect(parsed.apiVersion).toBe(1);
@@ -269,7 +269,7 @@ describe('doctor — command', () => {
     const prevExit = process.exitCode;
     process.exitCode = undefined;
     const program = createProgram();
-    await program.parseAsync(['node', 'xds', 'doctor']);
+    await program.parseAsync(['node', 'astryx', 'doctor']);
     // In the repo, core resolves, so no failures → exitCode untouched.
     expect(process.exitCode).toBeUndefined();
     process.exitCode = prevExit;
@@ -282,7 +282,7 @@ describe('doctor — command', () => {
     process.chdir(tmpDir);
     try {
       const program = createProgram();
-      await program.parseAsync(['node', 'xds', 'doctor']);
+      await program.parseAsync(['node', 'astryx', 'doctor']);
       expect(process.exitCode).toBe(1);
     } finally {
       process.chdir(prevCwd);

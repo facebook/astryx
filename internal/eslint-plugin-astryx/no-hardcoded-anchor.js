@@ -2,7 +2,7 @@
 
 /**
  * @file no-hardcoded-anchor.js
- * @description Disallow hardcoded `<a>` elements in XDS core components.
+ * @description Disallow hardcoded `<a>` elements in Astryx core components.
  *
  * Components that render links should use `useXDSLinkComponent()` to resolve
  * the link element, allowing consumers to swap in their framework's router

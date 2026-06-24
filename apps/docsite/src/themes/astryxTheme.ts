@@ -27,7 +27,7 @@
 import {defineTheme, type TokenValue} from '@astryxdesign/core/theme';
 
 // Relative import (not the `@/` alias) because this theme file is also loaded
-// in isolation by the `xds theme build` CLI via jiti, which does not resolve
+// in isolation by the `astryx theme build` CLI via jiti, which does not resolve
 // the `@/*` tsconfig path alias.
 import {BRAND_BLUE} from '../constants';
 

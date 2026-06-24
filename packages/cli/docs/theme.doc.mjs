@@ -502,21 +502,21 @@ import './themes/ocean.css';
       content: [
         {
           type: 'prose',
-          text: 'Use `xdsTokenVar()` when a non-StyleX styling library wants a CSS variable reference, and `resolveXDSThemeTokens()` when JavaScript needs token values for a specific theme and mode without React context.',
+          text: 'Use `tokenVar()` when a non-StyleX styling library wants a CSS variable reference, and `resolveThemeTokens()` when JavaScript needs token values for a specific theme and mode without React context.',
         },
         {
           type: 'code',
           lang: 'ts',
           label: 'CSS var references for styling-library configs',
-          code: `import {xdsTokenVar, xdsTokenVars} from '@astryxdesign/core/theme/tokens';
+          code: `import {tokenVar, tokenVars} from '@astryxdesign/core/theme/tokens';
 
 const pandaOrEmotionTheme = {
   colors: {
-    text: xdsTokenVar('--color-text-primary'),
-    surface: xdsTokenVars['--color-background-surface'],
+    text: tokenVar('--color-text-primary'),
+    surface: tokenVars['--color-background-surface'],
   },
   spacing: {
-    4: xdsTokenVars['--spacing-4'],
+    4: tokenVars['--spacing-4'],
   },
 };`,
         },
@@ -524,10 +524,10 @@ const pandaOrEmotionTheme = {
           type: 'code',
           lang: 'ts',
           label: 'Resolve token values without a hook',
-          code: `import {resolveXDSThemeTokens} from '@astryxdesign/core/theme/tokens';
+          code: `import {resolveThemeTokens} from '@astryxdesign/core/theme/tokens';
 import {defaultTheme} from '@astryxdesign/theme-default';
 
-const lightTokens = resolveXDSThemeTokens(defaultTheme, {mode: 'light'});
+const lightTokens = resolveThemeTokens(defaultTheme, {mode: 'light'});
 const chartTheme = {
   textColor: lightTokens['--color-text-primary'],
   seriesColor: lightTokens['--color-data-categorical-blue'],
@@ -545,7 +545,7 @@ const chartTheme = {
       content: [
         {
           type: 'prose',
-          text: '`useTheme()` uses the same token resolution as `resolveXDSThemeTokens()`, but reads the nearest Theme and effective color mode from React context and media query state. Use it inside client components for SVG, canvas, charts, maps, and third-party configuration objects that need token values in JavaScript instead of `var(...)` references.',
+          text: '`useTheme()` uses the same token resolution as `resolveThemeTokens()`, but reads the nearest Theme and effective color mode from React context and media query state. Use it inside client components for SVG, canvas, charts, maps, and third-party configuration objects that need token values in JavaScript instead of `var(...)` references.',
         },
         {
           type: 'code',

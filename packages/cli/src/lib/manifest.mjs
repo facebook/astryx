@@ -3,7 +3,7 @@
 /**
  * @file Capability manifest — self-describing CLI surface for agents.
  *
- * `xds --json` (and `xds manifest --json`) emit a structured manifest that
+ * `astryx --json` (and `astryx manifest --json`) emit a structured manifest that
  * lets an AI agent drive the entire CLI WITHOUT scraping `--help` text. It is
  * to the CLI what an OpenAPI spec is to an HTTP API.
  *
@@ -22,7 +22,7 @@
  *
  * @input  a configured Commander `program` + the JSON_SUPPORTED allowlist
  * @output a `{ name, version, globalOptions, commands, responseTypes }` object
- * @position consumed by the bare `xds --json` action and the `manifest` command
+ * @position consumed by the bare `astryx --json` action and the `manifest` command
  */
 
 import {API_VERSION} from './json.mjs';
@@ -71,18 +71,18 @@ export const RESPONSE_TYPES = {
  * @type {Record<string, string[]>}
  */
 const EXAMPLES = {
-  component: ['xds component', 'xds component XDSButton', 'xds component XDSButton --props --json'],
-  docs: ['xds docs', 'xds docs spacing --json'],
-  discover: ['xds discover --json'],
-  search: ['xds search modal --json', 'xds search button --type component --json'],
-  swizzle: ['xds swizzle XDSButton'],
-  template: ['xds template --json', 'xds template dashboard ./src/app'],
-  hook: ['xds hook', 'xds hook useToggle --json'],
-  'theme build': ['xds theme build ./src/themes/ocean.ts --out ./dist/ocean.css'],
-  upgrade: ['xds upgrade --json'],
-  manifest: ['xds manifest --json', 'xds --json'],
-  doctor: ['xds doctor', 'xds doctor --json'],
-  init: ['xds init'],
+  component: ['astryx component', 'astryx component XDSButton', 'astryx component XDSButton --props --json'],
+  docs: ['astryx docs', 'astryx docs spacing --json'],
+  discover: ['astryx discover --json'],
+  search: ['astryx search modal --json', 'astryx search button --type component --json'],
+  swizzle: ['astryx swizzle XDSButton'],
+  template: ['astryx template --json', 'astryx template dashboard ./src/app'],
+  hook: ['astryx hook', 'astryx hook useToggle --json'],
+  'theme build': ['astryx theme build ./src/themes/ocean.ts --out ./dist/ocean.css'],
+  upgrade: ['astryx upgrade --json'],
+  manifest: ['astryx manifest --json', 'astryx --json'],
+  doctor: ['astryx doctor', 'astryx doctor --json'],
+  init: ['astryx init'],
 };
 
 /**
@@ -232,7 +232,7 @@ export function buildManifest(program, opts = {}) {
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return {
-    name: 'xds',
+    name: 'astryx',
     version,
     apiVersion: API_VERSION,
     description: program.description() || '',

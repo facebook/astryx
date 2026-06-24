@@ -26,7 +26,7 @@ import {
 import {findCoreDir} from '../utils/paths.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/xds.mjs');
+const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
 const REPO_ROOT = path.resolve(__dirname, '../../../..');
 
 function runCli(args) {
@@ -120,7 +120,7 @@ describe('import hint correctness', () => {
     ];
 
     for (const {name, expected} of representative) {
-      it(`npx xds component ${name} --detail brief shows ${expected}`, () => {
+      it(`npx astryx component ${name} --detail brief shows ${expected}`, () => {
         const result = runCli(['component', name, '--detail', 'brief']);
         expect(result.code).toBe(0);
         expect(result.stdout).toContain(expected);
@@ -132,7 +132,7 @@ describe('import hint correctness', () => {
     const representative = ['Button', 'Theme', 'Table', 'CheckboxInput'];
 
     for (const name of representative) {
-      it(`npx xds component ${name} (full) includes import statement`, () => {
+      it(`npx astryx component ${name} (full) includes import statement`, () => {
         const result = runCli(['component', name]);
         expect(result.code).toBe(0);
         // The PR adds: **Import:** `import {XDS...} from '...';`

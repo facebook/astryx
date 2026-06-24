@@ -59,8 +59,8 @@ const ThemeContext = createContext<ThemeContextValue>({
 
 export const useThemeControls = () => useContext(ThemeContext);
 
-const THEME_STORAGE_KEY = 'xds-sandbox-theme';
-const MODE_STORAGE_KEY = 'xds-sandbox-mode';
+const THEME_STORAGE_KEY = 'astryx-sandbox-theme';
+const MODE_STORAGE_KEY = 'astryx-sandbox-mode';
 
 /**
  * Reads theme/mode from URL search params when rendered inside an embed iframe.
@@ -155,7 +155,7 @@ export function Providers({children}: {children: React.ReactNode}) {
       return;
     }
     const handler = (event: MessageEvent) => {
-      if (event.data?.type === 'xds-theme-sync') {
+      if (event.data?.type === 'astryx-theme-sync') {
         const {theme: newTheme, mode: newMode} = event.data;
         if (newTheme && newTheme in themes) {
           setThemeName(newTheme);

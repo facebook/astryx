@@ -7,21 +7,21 @@ This release makes **bare component names canonical**: `Button`, `Stack`, `useTh
 #### Breaking Changes
 
 - **Un-prefix migration — bare names are canonical** — Every `XDS*` component, hook, and type now has a bare alias (`XDSButton` → `Button`, `useXDSTheme` → `useTheme`, ~634 identifiers across 100 barrels). The prefixed names still work as aliases during the compat window, so this is non-breaking if you do nothing — but bare names are the new default for docs, discovery, and new code. (#2941)
-  **Codemod:** `npx xds upgrade --codemod drop-xds-prefix-imports`
+  **Codemod:** `npx astryx upgrade --codemod drop-xds-prefix-imports`
 - **`@xds/core` un-prefix** — `XDSMetaAppShell` → `MetaAppShell` and related meta-app exports drop the `XDS` prefix. (#2957)
-  **Codemod:** `npx xds upgrade --codemod drop-xds-meta-prefix`
+  **Codemod:** `npx astryx upgrade --codemod drop-xds-meta-prefix`
 - **DatePicker components renamed to Input** — `XDSDateTimePicker` → `XDSDateTimeInput` and `XDSDateRangePicker` → `XDSDateRangeInput` (plus their props, size, and hour-format types), for consistency with `DateInput`/`TextInput`/`NumberInput`. (#2276)
-  **Codemod:** `npx xds upgrade --codemod rename-date-picker-to-input`
+  **Codemod:** `npx astryx upgrade --codemod rename-date-picker-to-input`
 - **Stack `element` → `as`** — `XDSStack`, `XDSHStack`, `XDSVStack`, and `XDSStackItem` use `as` instead of `element`, matching other polymorphic components. (#2441)
-  **Codemod:** `npx xds upgrade --codemod rename-stack-element-to-as`
+  **Codemod:** `npx astryx upgrade --codemod rename-stack-element-to-as`
 - **Chat `isStreaming` → `isStopShown`** — On `XDSChatComposer` and `XDSChatSendButton`, the prop that controls the stop-button affordance is renamed to describe what it does rather than implying a streaming state. (Unchanged on `XDSMarkdown`/`XDSChatReasoning`.) (#2333)
-  **Codemod:** `npx xds upgrade --codemod rename-isStreaming-to-isStopShown`
+  **Codemod:** `npx astryx upgrade --codemod rename-isStreaming-to-isStopShown`
 - **Imperative handles move to `handleRef`** — `XDS*` components reserve `ref` for the root DOM element. Components exposing an imperative handle (`XDSCalendar`, `XDSChatComposerInput`, `XDSPowerSearch`, `XDSTokenizer`, `XDSChartStreamGL`) now expose it via `handleRef`; `XDSSideNavCollapseButton`'s `sideNavRef` is also renamed to `handleRef`. (#2363)
-  **Codemod:** `npx xds upgrade --codemod rename-imperative-ref-to-handleRef`
+  **Codemod:** `npx astryx upgrade --codemod rename-imperative-ref-to-handleRef`
 - **Menu/Selector trailing content: `children` → `endContent`** — `XDSDropdownMenuItem`, `XDSContextMenuItem`, and `XDSSelectorOption` use `endContent` for trailing badges, status icons, shortcuts, and other end-aligned content; the previous trailing-content `children` prop is removed. (#2802)
-  **Codemod:** `npx xds upgrade --codemod migrate-item-children-to-endcontent`
+  **Codemod:** `npx astryx upgrade --codemod migrate-item-children-to-endcontent`
 - **Selector custom rendering: function-children → `renderOption`** — `XDSSelector` and `XDSMultiSelector` use the `renderOption` prop for custom option rendering; the previous function-as-children renderer is removed. (#2821)
-  **Codemod:** `npx xds upgrade --codemod migrate-selector-children-to-render-option`
+  **Codemod:** `npx astryx upgrade --codemod migrate-selector-children-to-render-option`
 - **CheckboxList loading is now per-item** — The group-level `isLoading` on `XDSCheckboxList` is removed in favor of `isLoading` on `XDSCheckboxListItem`. In collection mode the toggled item shows its spinner automatically while its `changeAction` is pending. (#2903)
 - **Chat `messageGap` → `gap`** — `XDSChat` renames `messageGap` to `gap`. (#2325)
 - **FileInput `onChangeAction` → `changeAction`** — Aligns `XDSFileInput` with the React 19 action-prop convention used across the system. (#2288)
@@ -32,13 +32,13 @@ This release makes **bare component names canonical**: `Button`, `Stack`, `useTh
 #### Upgrade
 
 ```bash
-npx xds upgrade --apply
+npx astryx upgrade --apply
 ```
 
 This runs the release codemods in sequence. The bare-name migration (`drop-xds-prefix-imports`, `drop-xds-meta-prefix`) and the theme data-attribute migration (`migrate-theme-selectors-to-data-attrs`) are optional — run them explicitly when you're ready, e.g.:
 
 ```bash
-npx xds upgrade --codemod drop-xds-prefix-imports --codemod-only --apply
+npx astryx upgrade --codemod drop-xds-prefix-imports --codemod-only --apply
 ```
 
 #### New Components
@@ -77,7 +77,7 @@ npx xds upgrade --codemod drop-xds-prefix-imports --codemod-only --apply
 - **List/Item density** — `XDSListItem` passes density (`compact`/`balanced`/`spacious`) through to the shared `XDSItem`, fixing `balanced`/`spacious` collapsing to the same padding.
 - **Markdown loose lists** — Join blank-line-separated same-style list items into a single loose list (CommonMark §5.3) and forward a non-default `start` onto the rendered `<ol>` for assistive tech and copy-paste.
 - **AppShell mobile nav** — Fix mobile nav with a heading-only `XDSTopNav`; remove `useXDSSlotPresence`. (#2243)
-- **Theme CSS prose regression** — Fix built theme CSS that broke Markdown typography in the docsite (headings lost block margins) after the un-prefix migration. `xds theme build` now uses a single CSS generation path (`@xds/core`'s generator) and a failed `@xds/core/theme` import is a hard build error instead of a silent fallback. (#2964)
+- **Theme CSS prose regression** — Fix built theme CSS that broke Markdown typography in the docsite (headings lost block margins) after the un-prefix migration. `astryx theme build` now uses a single CSS generation path (`@xds/core`'s generator) and a failed `@xds/core/theme` import is a hard build error instead of a silent fallback. (#2964)
 - **Escape-hatch & base-prop hygiene** — Many components had redundant `xstyle`/`className`/`style` re-declarations removed and now consistently extend `XDSBaseProps`, forward escape hatches, and expose `displayName` (require-base-props / require-ref-prop lint rules). (#2300, #2310, #2835, #2858)
 - **Toast barrel export** — Export `XDSToast` and its props from the `@xds/core` barrel so docsite playground previews resolve Toast examples.
 - **Typeahead id-less rows** — `XDSBaseTypeahead` uses a shared key fallback for search results without `id` values, so id-less rows no longer all render as selected.
@@ -105,11 +105,11 @@ Thanks to everyone who contributed to this release:
 #### Breaking Changes
 
 - **`on*Action` → `*Action` (React 19 convention)** — `onChangeAction` → `changeAction`, `onClickAction` → `clickAction`, `onPressedChangeAction` → `pressedChangeAction`, `onScrollToTopAction` → `scrollToTopAction`. Aligns with React 19 action prop naming. (#1942)
-  **Codemod:** `npx xds upgrade --codemod rename-action-props`
+  **Codemod:** `npx astryx upgrade --codemod rename-action-props`
 - **Status naming: `positive`/`negative` → `success`/`error`** — Converge status variant naming across all components. (#2175)
-  **Codemod:** `npx xds upgrade --codemod rename-status-variants`
+  **Codemod:** `npx astryx upgrade --codemod rename-status-variants`
 - **Section `wash` → `muted`** — Rename variant for consistency with XDSCard. (#2063)
-  **Codemod:** `npx xds upgrade --codemod rename-section-wash-to-muted`
+  **Codemod:** `npx astryx upgrade --codemod rename-section-wash-to-muted`
 - **Stack `direction` defaults to `vertical`** — `XDSStack` no longer requires an explicit `direction` prop; omitting it gives vertical layout. (#1945)
 - **Table `textOverflow` default changed to `truncate`** — Was `wrap`, now truncates by default with tooltip on hover. (#2096)
 - **Remove deprecated `*Raw` token aliases** — Migrate any `*Raw` usage to standard tokens. (#2095)
@@ -118,7 +118,7 @@ Thanks to everyone who contributed to this release:
 #### Upgrade
 
 ```bash
-npx xds upgrade --apply
+npx astryx upgrade --apply
 ```
 
 This runs all three codemods (`rename-action-props`, `rename-status-variants`, `rename-section-wash-to-muted`) in sequence.
@@ -300,12 +300,12 @@ Thanks to everyone who contributed to this release:
 Codemods are available for all breaking changes in this release:
 
 ```sh
-npx xds upgrade --apply --to 0.0.13
+npx astryx upgrade --apply --to 0.0.13
 ```
 
-Preview changes first (dry run): `npx xds upgrade --to 0.0.13`
-Run a specific codemod: `npx xds upgrade --apply --codemod toolbar-density-to-size`
-List all available codemods: `npx xds upgrade --list`
+Preview changes first (dry run): `npx astryx upgrade --to 0.0.13`
+Run a specific codemod: `npx astryx upgrade --apply --codemod toolbar-density-to-size`
+List all available codemods: `npx astryx upgrade --list`
 
 ---
 
@@ -352,12 +352,12 @@ List all available codemods: `npx xds upgrade --list`
 Codemods are available for all breaking changes in this release:
 
 ```sh
-npx xds upgrade --apply --to 0.0.12
+npx astryx upgrade --apply --to 0.0.12
 ```
 
-Preview changes first (dry run): `npx xds upgrade --to 0.0.12`
-Run a specific codemod: `npx xds upgrade --apply --codemod add-is-icon-only`
-List all available codemods: `npx xds upgrade --list`
+Preview changes first (dry run): `npx astryx upgrade --to 0.0.12`
+Run a specific codemod: `npx astryx upgrade --apply --codemod add-is-icon-only`
+List all available codemods: `npx astryx upgrade --list`
 
 ---
 
@@ -399,12 +399,12 @@ List all available codemods: `npx xds upgrade --list`
 Codemods are available for all breaking changes in this release:
 
 ```sh
-npx xds upgrade --apply --to 0.0.10
+npx astryx upgrade --apply --to 0.0.10
 ```
 
-Preview changes first (dry run): `npx xds upgrade --to 0.0.10`
-Run a specific codemod: `npx xds upgrade --apply --codemod remove-size-props`
-List all available codemods: `npx xds upgrade --list`
+Preview changes first (dry run): `npx astryx upgrade --to 0.0.10`
+Run a specific codemod: `npx astryx upgrade --apply --codemod remove-size-props`
+List all available codemods: `npx astryx upgrade --list`
 
 ---
 
@@ -440,12 +440,12 @@ List all available codemods: `npx xds upgrade --list`
 Codemods are available for all breaking changes in this release:
 
 ```sh
-npx xds upgrade --apply --to 0.0.8
+npx astryx upgrade --apply --to 0.0.8
 ```
 
-Preview changes first (dry run): `npx xds upgrade --to 0.0.8`
-Run a specific codemod: `npx xds upgrade --apply --codemod rename-endslot-to-endcontent`
-List all available codemods: `npx xds upgrade --list`
+Preview changes first (dry run): `npx astryx upgrade --to 0.0.8`
+Run a specific codemod: `npx astryx upgrade --apply --codemod rename-endslot-to-endcontent`
+List all available codemods: `npx astryx upgrade --list`
 
 ---
 
@@ -460,12 +460,12 @@ List all available codemods: `npx xds upgrade --list`
 Codemods are available for all breaking changes in this release:
 
 ```sh
-npx xds upgrade --apply --to 0.0.7
+npx astryx upgrade --apply --to 0.0.7
 ```
 
-Preview changes first (dry run): `npx xds upgrade --to 0.0.7`
-Run a specific codemod: `npx xds upgrade --apply --codemod rename-banner-variant-to-container`
-List all available codemods: `npx xds upgrade --list`
+Preview changes first (dry run): `npx astryx upgrade --to 0.0.7`
+Run a specific codemod: `npx astryx upgrade --apply --codemod rename-banner-variant-to-container`
+List all available codemods: `npx astryx upgrade --list`
 
 ---
 
@@ -511,11 +511,11 @@ List all available codemods: `npx xds upgrade --list`
 Codemods are available for all breaking changes in this release:
 
 ```sh
-npx xds upgrade --apply --to 0.0.6
+npx astryx upgrade --apply --to 0.0.6
 ```
 
-Preview changes first (dry run): `npx xds upgrade --to 0.0.6`
-List all available codemods: `npx xds upgrade --list`
+Preview changes first (dry run): `npx astryx upgrade --to 0.0.6`
+List all available codemods: `npx astryx upgrade --list`
 
 ---
 
@@ -585,11 +585,11 @@ See 0.0.6 above for breaking changes and upgrade instructions.
 Codemods are available for all breaking changes in this release:
 
 ```sh
-npx xds upgrade --apply --to 0.0.2
+npx astryx upgrade --apply --to 0.0.2
 ```
 
-Preview changes first (dry run): `npx xds upgrade --to 0.0.2`
-List all available codemods: `npx xds upgrade --list`
+Preview changes first (dry run): `npx astryx upgrade --to 0.0.2`
+List all available codemods: `npx astryx upgrade --list`
 
 12 codemods included:
 

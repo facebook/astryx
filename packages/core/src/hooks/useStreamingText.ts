@@ -13,7 +13,7 @@
  * Advances on word/syntax boundaries to avoid slicing mid-markdown or
  * mid-word, preventing visual glitches when used with markdown renderers.
  *
- * Animation timing derives from XDS motion tokens (via useTheme) when
+ * Animation timing derives from Astryx motion tokens (via useTheme) when
  * an Theme provider is present. Falls back to sensible defaults when
  * used outside a theme provider.
  *
@@ -96,7 +96,7 @@ export function useStreamingText(
   const speed = options?.speed ?? 'natural';
   const charsPerTick = CHARS_PER_TICK[speed];
 
-  // Derive tick timing from XDS motion tokens when available.
+  // Derive tick timing from Astryx motion tokens when available.
   // natural → --duration-fast-min (frame-level cadence from the theme)
   // fast → half that, floored at 4ms (roughly 2x speed)
   const {token} = useTheme();

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @astryxdesign/lab — Experimental XDS components
+ * @astryxdesign/lab — Experimental Astryx components
  *
  * Components here are functional but not yet hardened for production.
  * They're available in storybook and sandbox for testing and iteration.

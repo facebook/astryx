@@ -15,7 +15,7 @@
  *     and calls `_exit(0)`.
  *
  * Neither path emits the JSON envelope, and neither throws (so the
- * try/catch in `bin/xds.mjs` never sees them). The result: a --json
+ * try/catch in `bin/astryx.mjs` never sees them). The result: a --json
  * consumer receives empty stdout + raw stderr, breaking the contract.
  *
  * The shim closes the gap by:
@@ -27,7 +27,7 @@
  *      structured JSON help envelope (instead of raw text) when
  *      --json is set.
  *   4. Routing unknown-subcommand attempts through the same error
- *      envelope path (so `xds bogus-cmd --json` gets exit 1 + envelope
+ *      envelope path (so `astryx bogus-cmd --json` gets exit 1 + envelope
  *      instead of exit 0 + help envelope).
  *
  * Non-JSON behavior is preserved exactly: every code path that printed
@@ -57,13 +57,13 @@ function jsonActive() {
 /**
  * Build a structured JSON help envelope for a given Commander command.
  * Mirrors the existing root help envelope shape, but works for any
- * subcommand (e.g. `xds component --help --json`).
+ * subcommand (e.g. `astryx component --help --json`).
  *
  * @param {import('commander').Command} cmd
  * @returns {{apiVersion: number, type: 'help', data: object}}
  */
 export function buildHelpEnvelope(cmd) {
-  // Reconstruct the fully-qualified command name (e.g. "xds theme build").
+  // Reconstruct the fully-qualified command name (e.g. "astryx theme build").
   const nameParts = [];
   let c = cmd;
   while (c) {
@@ -113,7 +113,7 @@ function emitJsonError(message, suggestions, code) {
 }
 
 /**
- * Map a Commander parse-error code (and its message) to a stable XDS error
+ * Map a Commander parse-error code (and its message) to a stable Astryx error
  * code. Commander's own codes are stable enough, but they aren't part of our
  * documented contract — so we translate them into the `ERR_*` taxonomy.
  *
@@ -276,9 +276,9 @@ function patchPrototype(CommandCtor) {
  *   commander.helpDisplayed       — `--help` was used (exit 0)
  *   commander.help                — same family (exit 0)
  *   commander.version             — `--version` was used (exit 0)
- *   commander.unknownCommand      — `xds bogus-cmd`
+ *   commander.unknownCommand      — `astryx bogus-cmd`
  *   commander.unknownOption       — `--bogus-flag`
- *   commander.missingArgument     — `xds theme build` (no <file>)
+ *   commander.missingArgument     — `astryx theme build` (no <file>)
  *   commander.invalidArgument     — bad value for argParser
  *   commander.invalidOptionArgument
  *   commander.excessArguments

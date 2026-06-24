@@ -74,7 +74,7 @@ export interface StepProps extends BaseProps<HTMLLIElement> {
   icon?: ReactNode;
   /**
    * Semantic color for the step. Controls **color only** and maps to the
-   * global XDS semantic tokens (`accent`, `success`, `warning`, `error`).
+   * global Astryx semantic tokens (`accent`, `success`, `warning`, `error`).
    * Leave unset to use the progress-derived default coloring.
    */
   status?: StepStatus;

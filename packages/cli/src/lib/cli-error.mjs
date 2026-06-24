@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file XDS CLI — central error handling helper.
+ * @file Astryx CLI — central error handling helper.
  *
  * ## Exit-code policy
  *
- * The XDS CLI follows one rule above all: **exit code is the contract**. CI
+ * The Astryx CLI follows one rule above all: **exit code is the contract**. CI
  * scripts and AI agents read it before they read any text. Every error path
  * across every command must agree on the exit code so that callers can
  * detect failure without parsing stdout/stderr.
@@ -24,7 +24,7 @@
  *      and `xds --version` all exit 0. The user got what they asked for.
  *
  *   4. **Empty / no-args invocations:** if the command has a sensible
- *      default (e.g. `xds component` lists all components, `xds docs` lists
+ *      default (e.g. `astryx component` lists all components, `astryx docs` lists
  *      all topics), exit 0. If the command requires arguments (e.g. `xds
  *      theme build`), Commander rejects it with exit 1.
  *

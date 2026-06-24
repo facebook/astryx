@@ -41,10 +41,10 @@ ruleTester.run('no-raw-console-cli', rule, {
       code: `console.log('banner');`,
       filename: '/repo/packages/cli/src/index.mjs',
     },
-    // Exempt: bin/xds.mjs (entrypoint / error boundary)
+    // Exempt: bin/astryx.mjs (entrypoint / error boundary)
     {
       code: `console.log('raw');`,
-      filename: '/repo/packages/cli/bin/xds.mjs',
+      filename: '/repo/packages/cli/bin/astryx.mjs',
     },
     // Exemption is path-suffix based and tolerant of Windows separators
     {

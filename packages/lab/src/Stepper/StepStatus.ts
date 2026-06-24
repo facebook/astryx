@@ -9,7 +9,7 @@
 
 /**
  * Semantic color status for a step. Controls **color only** — it maps directly
- * onto the XDS global semantic color tokens and does not change layout,
+ * onto the Astryx global semantic color tokens and does not change layout,
  * iconography, or behavior.
  *
  * Plain string values aligned with the global token semantics:

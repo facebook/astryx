@@ -63,7 +63,7 @@ export function isNodeVersionSupported(version, minimum = MIN_NODE_VERSION) {
 export function unsupportedNodeMessage(version, minimum = MIN_NODE_VERSION) {
   const clean = String(version).trim().replace(/^v/, '');
   return (
-    `xds requires Node.js >=${minimum} (you have v${clean}). ` +
+    `astryx requires Node.js >=${minimum} (you have v${clean}). ` +
     `Please upgrade Node and try again.`
   );
 }

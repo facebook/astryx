@@ -125,7 +125,7 @@ const styles = stylex.create({
 
 // =============================================================================
 // Marker styles — custom-rendered markers instead of native list-style-type.
-// Uses CSS counters for numbers (same pattern as WWW XDS).
+// Uses CSS counters for numbers (same pattern as WWW Astryx).
 // =============================================================================
 
 const MARKER_DOT_SIZE = 6;

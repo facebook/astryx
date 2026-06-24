@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Path resolution utilities for XDS CLI
+ * @file Path resolution utilities for Astryx CLI
  *
  * Finds packages/core, project root, and CLI package root.
  */
@@ -140,7 +140,7 @@ export function discoverExternalPackages(startDir = process.cwd()) {
 
 /**
  * List available component directories in packages/core/src.
- * Returns directory names that contain XDS*.tsx files.
+ * Returns directory names that contain Astryx*.tsx files.
  */
 export function listComponents(coreDir) {
   const srcDir = path.join(coreDir, 'src');

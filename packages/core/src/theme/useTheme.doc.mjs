@@ -43,7 +43,7 @@ export const docs = {
       name: 'tokens',
       type: 'Record<string, string>',
       description:
-        'All tokens resolved for the current mode, including defaults and theme overrides. Stable until the active theme or mode changes; uses the same resolution logic as resolveXDSThemeTokens(theme, {mode}).',
+        'All tokens resolved for the current mode, including defaults and theme overrides. Stable until the active theme or mode changes; uses the same resolution logic as resolveThemeTokens(theme, {mode}).',
     },
   ],
   usage: {
@@ -58,7 +58,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use resolveXDSThemeTokens(theme, {mode}) for the same token resolution outside React hooks.',
+          'Use resolveThemeTokens(theme, {mode}) for the same token resolution outside React hooks.',
       },
       {
         guidance: true,
@@ -96,7 +96,7 @@ export const docsDense = {
     mode: 'resolved light/dark mode.',
     token: 'resolve one design token for effective mode.',
     tokens:
-      'all tokens resolved for current mode; stable until theme/mode changes; same resolver as resolveXDSThemeTokens.',
+      'all tokens resolved for current mode; stable until theme/mode changes; same resolver as resolveThemeTokens.',
   },
   usage: {
     description:
@@ -109,7 +109,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Use resolveXDSThemeTokens(theme, {mode}) outside React hooks.',
+          'Use resolveThemeTokens(theme, {mode}) outside React hooks.',
       },
       {
         guidance: true,

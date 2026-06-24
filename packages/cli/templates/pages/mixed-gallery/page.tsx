@@ -11,8 +11,8 @@ import * as stylex from '@stylexjs/stylex';
 // The masonry needs a responsive column count AND a hero that spans 2 columns
 // on desktop but goes full-width on mobile. Grid forces grid-template-columns
 // inline, so a responsive span can't be expressed through its props — this is a
-// @container grid (the sanctioned XDS pattern for container-responsive layout).
-// Image fill + radius are also custom because XDS has no image primitive (#2582).
+// @container grid (the sanctioned Astryx pattern for container-responsive layout).
+// Image fill + radius are also custom because Astryx has no image primitive (#2582).
 
 const styles = stylex.create({
   // Named inline-size container on the page column so the grid responds to the

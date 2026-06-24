@@ -33,7 +33,7 @@
  *
  * @example
  * ```
- * // Default XDS radius scale
+ * // Default Astryx radius scale
  * { base: 4, multiplier: 1 }
  *
  * // Sharp/brutalist — all radii become 0

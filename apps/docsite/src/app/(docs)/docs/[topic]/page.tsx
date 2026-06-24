@@ -40,7 +40,7 @@ function getInstallSteps(pkgName: string): InstallStep[] {
   if (pkgName.endsWith('/cli')) {
     return [
       {label: 'Install the CLI', code: `npm install -D ${pkgName}`},
-      {label: 'Run a command', code: `npx xds component --list`},
+      {label: 'Run a command', code: `npx astryx component --list`},
     ];
   }
   return [

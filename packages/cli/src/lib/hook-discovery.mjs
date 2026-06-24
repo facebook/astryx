@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Hook discovery — find, list, and resolve XDS hooks
+ * @file Hook discovery — find, list, and resolve Astryx hooks
  */
 
 import * as fs from 'node:fs';

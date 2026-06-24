@@ -613,7 +613,7 @@ export default function DetailPage2Template() {
         end={!isNarrow && showSidePanel ? <RightPanel /> : undefined}
       />
       {/* Mobile: the side panel content opens as a full-screen dialog. (A
-          side drawer/sheet would be more idiomatic, but XDS has no Drawer
+          side drawer/sheet would be more idiomatic, but Astryx has no Drawer
           component yet — #2575 — so we use the fullscreen Dialog variant.) */}
       <Dialog
         variant="fullscreen"

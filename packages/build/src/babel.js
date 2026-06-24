@@ -6,12 +6,12 @@
  * @astryxdesign/build/babel
  *
  * Babel plugin that delegates to @stylexjs/babel-plugin with a
- * different classNamePrefix for XDS library files vs product files.
+ * different classNamePrefix for Astryx library files vs product files.
  *
  * Library files get 'astryx' prefix (.astryx78zum5), product files get 'x' (.x78zum5).
  */
 
-const XDS_LIBRARY_PATTERNS = [
+const LIBRARY_PATTERNS = [
   'packages/core/',
   'packages/themes/',
   'packages/lab/',
@@ -22,7 +22,7 @@ module.exports = function xdsBabelPlugin(api, options) {
   const stylexPlugin = require('@stylexjs/babel-plugin');
 
   const {
-    libraryPatterns = XDS_LIBRARY_PATTERNS,
+    libraryPatterns = LIBRARY_PATTERNS,
     libraryPrefix = 'astryx',
     classNamePrefix = 'x',
     ...stylexOptions

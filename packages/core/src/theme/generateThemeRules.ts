@@ -5,7 +5,7 @@
  *
  * Shared logic for generating CSS rules from a resolved theme definition.
  * Used by both the runtime path (Theme injects <style>) and the build
- * path (`xds theme build` pre-compiles to CSS files).
+ * path (`astryx theme build` pre-compiles to CSS files).
  *
  * Extracted from defineTheme.ts to reduce cyclomatic complexity and provide
  * a clear single-responsibility module for CSS generation.
@@ -270,7 +270,7 @@ function expandContainerPadding(
  * Generate the intermediary CSS rules for a theme.
  *
  * Returns an array of CSS rule strings — the shared format used by both
- * the runtime path (useInsertionEffect) and the build path (xds theme build).
+ * the runtime path (useInsertionEffect) and the build path (astryx theme build).
  */
 export function generateThemeRules(theme: DefinedTheme): string[] {
   const parts: string[] = [];

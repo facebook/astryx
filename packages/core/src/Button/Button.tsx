@@ -464,7 +464,7 @@ const groupStyles = stylex.create({
 /**
  * A versatile button component with multiple variants.
  *
- * Styles use XDS theme tokens via StyleX.
+ * Styles use Astryx theme tokens via StyleX.
  * Wrap your app in <Theme> to apply a theme.
  * Themes can provide component-level variant overrides via theme.components.button.variants
  *

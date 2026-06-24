@@ -8,7 +8,7 @@ import {Markdown} from '@astryxdesign/core/Markdown';
 const content = [
   '# Markdown Demo',
   '',
-  'Renders **markdown** with *XDS* styling.',
+  'Renders **markdown** with *Astryx* styling.',
   '',
   '## Features',
   '',

@@ -129,7 +129,7 @@ interface DropdownMenuBaseProps extends BaseProps {
   hasChevron?: boolean;
   /**
    * Position placement relative to the trigger.
-   * Uses the same placement values as other XDS layer-based components.
+   * Uses the same placement values as other Astryx layer-based components.
    * @default 'below'
    */
   placement?: LayerPlacement;

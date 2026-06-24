@@ -2,10 +2,10 @@
 
 /**
  * @file require-base-props.js
- * @description ESLint rule enforcing that publicly exported XDS component props
+ * @description ESLint rule enforcing that publicly exported Astryx component props
  * interfaces extend XDSBaseProps (directly or via Omit/Pick).
  *
- * XDSBaseProps provides the standard surface area every XDS component should
+ * XDSBaseProps provides the standard surface area every Astryx component should
  * support: xstyle overrides, data-* attributes, aria-* attributes, event
  * handlers, and a curated subset of HTML attributes with footguns removed.
  *
@@ -38,7 +38,7 @@ function hasXDSBasePropsInHeritage(node) {
           const innerName = firstParam.typeName?.name;
           if (
             innerName === 'XDSBaseProps' ||
-            (innerName?.startsWith('XDS') && innerName?.endsWith('Props'))
+            (innerName?.startsWith('Astryx') && innerName?.endsWith('Props'))
           ) {
             return true;
           }
@@ -48,7 +48,7 @@ function hasXDSBasePropsInHeritage(node) {
 
     if (
       expr.type === 'Identifier' &&
-      expr.name.startsWith('XDS') &&
+      expr.name.startsWith('Astryx') &&
       expr.name.endsWith('Props')
     ) {
       return true;
@@ -63,7 +63,7 @@ const rule = {
     type: 'problem',
     docs: {
       description:
-        'Require publicly exported XDS*Props interfaces to extend XDSBaseProps',
+        'Require publicly exported Astryx*Props interfaces to extend XDSBaseProps',
       category: 'Best Practices',
       recommended: true,
     },
@@ -98,7 +98,7 @@ const rule = {
         const name = node.id?.name;
         if (!name) return;
 
-        if (!name.startsWith('XDS') || !name.endsWith('Props')) return;
+        if (!name.startsWith('Astryx') || !name.endsWith('Props')) return;
 
         const parent = node.parent;
         const isExported =

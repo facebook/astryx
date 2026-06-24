@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "build:theme": "xds theme build src/themes/astryxTheme.ts --out src/themes/astryx.css",
+    "build:theme": "astryx theme build src/themes/astryxTheme.ts --out src/themes/astryx.css",
     "generate": "pnpm build:theme && node scripts/generate-data.mjs && node scripts/generate-scope.mjs && node scripts/generate-playground-types.mjs && node scripts/copy-vendor.mjs",
     "dev": "pnpm generate && next dev",
     "build": "pnpm generate && next build",

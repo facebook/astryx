@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * XDS Default Theme
+ * Astryx Default Theme
  *
- * The reference theme — provides the standard XDS visual language.
+ * The reference theme — provides the standard Astryx visual language.
  * Uses defineTheme for CSS-based theming (no StyleX build required for consumers).
  *
  * Typography sizing is driven by typography.scale, which auto-generates both

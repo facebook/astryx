@@ -97,7 +97,7 @@ export function checkForUpdate(cwd = process.cwd()) {
   // Use semver-aware comparison so '0.0.20' is correctly treated as greater
   // than '0.0.5' (lexicographic compare gets that backwards).
   if (semverGt(latest, installed)) {
-    return `FYI: A newer version of @astryxdesign/core (${latest}) is available. You can upgrade with: xds upgrade --apply --to ${latest}`;
+    return `FYI: A newer version of @astryxdesign/core (${latest}) is available. You can upgrade with: astryx upgrade --apply --to ${latest}`;
   }
 
   return null;

@@ -79,7 +79,7 @@ function getComponentDocs(code: string, target: string): string {
   for (const comp of components) {
     try {
       const output = execSync(
-        `npx xds component ${comp.replace('XDS', '')} --compact 2>/dev/null`,
+        `npx astryx component ${comp.replace('XDS', '')} --compact 2>/dev/null`,
         {cwd: REPO_ROOT, encoding: 'utf-8', timeout: 5000},
       );
       if (output.trim()) {

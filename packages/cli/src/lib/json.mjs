@@ -107,7 +107,7 @@ export function jsonOut(type, data, meta) {
  * shape.
  *
  * The `code` is resolved in priority order: an explicit `code` argument,
- * then a `code` property carried on a thrown Error/XDSError, then the
+ * then a `code` property carried on a thrown Error/AstryxError, then the
  * generic `ERR_UNKNOWN` fallback. It always appears on the envelope so
  * consumers can branch on it unconditionally.
  *

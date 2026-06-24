@@ -4,7 +4,7 @@
 
 /**
  * @file Outline.tsx
- * @input Uses React, StyleX, XDS link provider integration, Outline hooks/types
+ * @input Uses React, StyleX, Astryx link provider integration, Outline hooks/types
  * @output Exports Outline component and OutlineProps type
  * @position Core implementation; consumed by index.ts
  *

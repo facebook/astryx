@@ -77,7 +77,7 @@ function extractTheme(mod) {
 }
 
 /**
- * Resolve the active XDS theme from config and environment.
+ * Resolve the active Astryx theme from config and environment.
  *
  * @param {string} [cwd] - Working directory (defaults to process.cwd())
  * @returns {{ variants?: Record<string, string[]>, fonts?: Record<string, string>, name?: string } | null}

@@ -29,7 +29,12 @@ import {Text} from '@astryxdesign/core/Text';
 import {Pagination} from '@astryxdesign/core/Pagination';
 import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {useThemeMode} from '../../../providers';
-import {HERO_THEME_SLIDES, type HeroThemeSlide} from './heroThemeContent';
+import {
+  HERO_THEME_SLIDES,
+  REEL_FONT_SPECIFIERS,
+  REEL_IMAGE_SRCS,
+  type HeroThemeSlide,
+} from './heroThemeContent';
 import {AstryxLogo} from '../../../../components/logos';
 import {HeroFloatingCards} from './HeroFloatingCards';
 
@@ -245,6 +250,47 @@ export function HeroReelProvider({children}: {children: ReactNode}) {
     const onVisibility = () => setPaused(document.hidden);
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
+  // Warm the reel's per-theme assets once, after first paint, so first-time
+  // visitors don't see fonts flash (FOUT) and product photos pop in as the reel
+  // auto-advances. The @font-face rules ship in the docsite's Google Fonts
+  // <link>, but a family's woff2 is only fetched when a glyph using it first
+  // paints — and the remote card photos aren't fetched until their slide
+  // renders; both happen mid-swap on a cold cache. Kicking the fetches off here
+  // (off the critical path, scoped to just the reel's ~9 fonts and photos) gets
+  // them into cache before the first 4.5s advance without touching initial LCP.
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    // Defer to idle time so warming never competes with first paint / LCP.
+    const schedule =
+      window.requestIdleCallback?.bind(window) ??
+      ((cb: () => void) => window.setTimeout(cb, 200));
+    const cancel =
+      window.cancelIdleCallback?.bind(window) ?? window.clearTimeout;
+
+    const handle = schedule(() => {
+      // Fonts: ask the CSS Font Loading API to load each reel family. This pulls
+      // the woff2 the @font-face rule points at without us hardcoding gstatic's
+      // hashed URLs (which rotate). Failures (e.g. a family not in the sheet)
+      // are non-fatal — the slide just paints its fallback as it does today.
+      if (typeof document !== 'undefined' && document.fonts?.load) {
+        for (const spec of REEL_FONT_SPECIFIERS) {
+          document.fonts.load(spec).catch(() => {});
+        }
+      }
+      // Images: prime the browser cache with the reel's product photos so they
+      // are decoded by the time their slide swaps in.
+      for (const src of REEL_IMAGE_SRCS) {
+        const img = new Image();
+        img.decoding = 'async';
+        img.src = src;
+      }
+    });
+
+    return () => cancel(handle as never);
   }, []);
 
   const value = useMemo<HeroReelState>(

@@ -26,6 +26,7 @@
     "changeset:new": "node scripts/changeset-new.mjs",
     "version-packages": "changeset version && node scripts/format-changelogs.mjs",
     "format-changelogs": "node scripts/format-changelogs.mjs",
+    "setup-trusted-publishing": "node scripts/npm/setup-trusted-publishing.mjs",
     "verify-exports": "node scripts/verify-exports.mjs",
     "release": "pnpm build && changeset publish",
     "prepare": "husky install",
@@ -58,7 +59,7 @@
     "vite-plugin-singlefile": "^2.3.3",
     "vitest": "^2.1.0"
   },
-  "packageManager": "pnpm@10.33.4",
+  "packageManager": "pnpm@10.34.1",
   "workspaces": [
     "apps/*",
     "packages/*",

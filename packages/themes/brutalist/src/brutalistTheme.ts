@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Brutalist theme for XDS
+ * Brutalist theme for Astryx
  *
  * Zero radius, monospace everything, hot pink accent, heavy borders.
  * Demonstrates the full power of defineTheme: typography roles,

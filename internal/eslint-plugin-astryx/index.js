@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file ESLint plugin for XDS design system
- * @description Enforces usage of design tokens and XDS conventions
+ * @file ESLint plugin for Astryx design system
+ * @description Enforces usage of design tokens and Astryx conventions
  *
  * Rules:
  * - no-hardcoded-styles: Enforces usage of design tokens instead of hardcoded values in StyleX
@@ -30,7 +30,7 @@ import requireRefPropRule from './require-ref-prop.js';
 
 // =============================================================================
 // Rule: no-hardcoded-styles
-// Detects hardcoded CSS values that should use XDS tokens
+// Detects hardcoded CSS values that should use Astryx tokens
 // =============================================================================
 
 const STYLE_PROPERTIES = {
@@ -143,7 +143,7 @@ const noHardcodedStylesRule = {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce usage of XDS design tokens instead of hardcoded values in StyleX',
+      description: 'Enforce usage of Astryx design tokens instead of hardcoded values in StyleX',
       category: 'Best Practices',
       recommended: true,
     },

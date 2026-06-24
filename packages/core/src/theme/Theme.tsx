@@ -8,7 +8,7 @@
  * Applies theme tokens and sets color-scheme for light-dark() to work.
  * Themes are created with `defineTheme()` and applied via CSS:
  * - Token overrides set as CSS custom properties on [data-astryx-theme]
- * - Component overrides scoped via @scope'd CSS selectors on the stable XDS
+ * - Component overrides scoped via @scope'd CSS selectors on the stable Astryx
  *   selector surface (`.xds-*` classes today; components also emit `data-*`
  *   prop reflections for the data-attribute selector migration)
  *
@@ -102,7 +102,7 @@ const warnedThemes = new Set<string>();
 
 /**
  * Hook to inject theme CSS into the document.
- * Built themes (from `xds theme build`) skip injection — their CSS
+ * Built themes (from `astryx theme build`) skip injection — their CSS
  * is in a separate file imported by the consumer.
  */
 function useThemeStyleInjection(theme: DefinedTheme): void {
@@ -127,7 +127,7 @@ function useThemeStyleInjection(theme: DefinedTheme): void {
           `For better performance, use the pre-built theme:\n\n` +
           `  import {${theme.name}Theme} from '@astryxdesign/theme-${theme.name}/built';\n` +
           `  import '@astryxdesign/theme-${theme.name}/theme.css';\n\n` +
-          `For custom themes, run \`npx xds theme build <file>\` to generate ` +
+          `For custom themes, run \`npx astryx theme build <file>\` to generate ` +
           `the built artifacts.`,
       );
     }

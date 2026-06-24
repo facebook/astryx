@@ -67,7 +67,7 @@ function buildClassName(component: string, props?: ClassProps): string {
 }
 
 /**
- * Reflect XDS visual props as `data-*` attributes.
+ * Reflect Astryx visual props as `data-*` attributes.
  *
  * Keys are kebab-cased (`listStyle` → `data-list-style`) and values are the
  * literal prop values, including numeric values (`level: 1` → `data-level="1"`).
@@ -92,7 +92,7 @@ export function xdsThemeDataAttributes(
 
 /**
  * Build the props object components should spread onto the same element that
- * receives the stable XDS class name.
+ * receives the stable Astryx class name.
  *
  * This emits the stable astryx class plus the data-attribute reflection
  * surface. For example:

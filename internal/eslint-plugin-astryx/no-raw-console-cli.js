@@ -23,13 +23,13 @@
  * and the banner — and are exempt:
  *   - packages/cli/src/lib/json.mjs   (defines humanLog / jsonOut)
  *   - packages/cli/src/index.mjs      (wiring / banner)
- *   - packages/cli/bin/xds.mjs        (entrypoint / error boundary)
+ *   - packages/cli/bin/astryx.mjs        (entrypoint / error boundary)
  */
 
 const EXEMPT_SUFFIXES = [
   'packages/cli/src/lib/json.mjs',
   'packages/cli/src/index.mjs',
-  'packages/cli/bin/xds.mjs',
+  'packages/cli/bin/astryx.mjs',
 ];
 
 function isExempt(filename) {
@@ -44,7 +44,7 @@ const rule = {
     docs: {
       description:
         'Ban bare console.log in CLI runtime files; use humanLog so --json stdout stays clean',
-      category: 'XDS Conventions',
+      category: 'Astryx Conventions',
       recommended: true,
     },
     fixable: 'code',

@@ -21,7 +21,7 @@ import {fileURLToPath} from 'node:url';
 import {ERROR_CODES, isErrorCode, allErrorCodes} from './error-codes.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/xds.mjs');
+const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
 
 function runCli(args, {cwd} = {}) {
   const res = spawnSync('node', [CLI_BIN, ...args], {

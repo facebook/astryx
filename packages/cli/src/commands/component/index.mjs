@@ -108,7 +108,7 @@ export function registerComponent(program) {
             }
             humanLog('');
             humanLog(`Import from the path shown (e.g. import {Button} from '@astryxdesign/core/Button')`);
-            humanLog(`Usage: ${run} xds component <name>`);
+            humanLog(`Usage: ${run} astryx component <name>`);
             humanLog('');
           }
           break;
@@ -131,7 +131,7 @@ export function registerComponent(program) {
             humanLog('');
           }
           humanLog(`Import from the path shown (e.g. import {Button} from '@astryxdesign/core/Button')`);
-          humanLog(`Usage: ${run} xds component <name>`);
+          humanLog(`Usage: ${run} astryx component <name>`);
           humanLog('');
           break;
         }

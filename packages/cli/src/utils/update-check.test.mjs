@@ -117,7 +117,7 @@ describe('checkForUpdate', () => {
 
     const hint = checkForUpdate(tmpDir);
     expect(hint).toContain('0.0.8');
-    expect(hint).toContain('xds upgrade --apply --to 0.0.8');
+    expect(hint).toContain('astryx upgrade --apply --to 0.0.8');
     expect(hint).toContain('FYI');
   });
 

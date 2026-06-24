@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file XDS CLI — stable machine-readable error codes.
+ * @file Astryx CLI — stable machine-readable error codes.
  *
  * ## Why codes exist
  *
@@ -12,7 +12,7 @@
  * named X" is brittle and silently breaks the moment we reword it.
  *
  * The `code` field is the stable contract. Every error — whether raised by a
- * command, the API layer (`XDSError`), or Commander's own parse machinery —
+ * command, the API layer (`AstryxError`), or Commander's own parse machinery —
  * carries one of the identifiers below. Codes are append-only: once shipped,
  * a code's meaning never changes and the code is never removed. The message
  * may change freely; the code never does.
@@ -26,7 +26,7 @@
  *
  *   import {ERROR_CODES} from './error-codes.mjs';
  *   cliError('No component named "Buton"', {code: ERROR_CODES.ERR_UNKNOWN_COMPONENT});
- *   throw new XDSError('No component named "Buton"', suggestions, ERROR_CODES.ERR_UNKNOWN_COMPONENT);
+ *   throw new AstryxError('No component named "Buton"', suggestions, ERROR_CODES.ERR_UNKNOWN_COMPONENT);
  *
  * Consumers read `envelope.code` and compare against the published list in
  * packages/cli/README.md.
@@ -78,7 +78,7 @@
  */
 
 /**
- * The complete, frozen set of XDS CLI error codes. Append-only.
+ * The complete, frozen set of Astryx CLI error codes. Append-only.
  * @type {Readonly<Record<ErrorCode, ErrorCode>>}
  */
 export const ERROR_CODES = Object.freeze({
@@ -87,9 +87,9 @@ export const ERROR_CODES = Object.freeze({
   ERR_UNKNOWN: 'ERR_UNKNOWN',
 
   // ── CLI parsing / dispatch (Commander + bare invocation) ─────────
-  /** A top-level command name was not recognized (e.g. `xds bogus`). */
+  /** A top-level command name was not recognized (e.g. `astryx bogus`). */
   ERR_UNKNOWN_COMMAND: 'ERR_UNKNOWN_COMMAND',
-  /** A subcommand under a command group was not recognized (e.g. `xds theme bogus`). */
+  /** A subcommand under a command group was not recognized (e.g. `astryx theme bogus`). */
   ERR_UNKNOWN_SUBCOMMAND: 'ERR_UNKNOWN_SUBCOMMAND',
   /** An unknown flag/option was passed (Commander `unknownOption`). */
   ERR_INVALID_OPTION: 'ERR_INVALID_OPTION',
@@ -159,7 +159,7 @@ export const ERROR_CODES = Object.freeze({
   ERR_THEME_LOAD: 'ERR_THEME_LOAD',
 
   // ── Template config ──────────────────────────────────────────────
-  /** `template.get` is not configured in xds.config.mjs (fetch-by-id). */
+  /** `template.get` is not configured in astryx.config.mjs (fetch-by-id). */
   ERR_TEMPLATE_CONFIG: 'ERR_TEMPLATE_CONFIG',
   /** A configured `template.get` threw or returned an invalid value. */
   ERR_TEMPLATE_GET: 'ERR_TEMPLATE_GET',

@@ -1,6 +1,6 @@
 # @astryxdesign/theme-butter
 
-Golden buttery theme for XDS with blue accents. Sarina for display type, Outfit for headings and body.
+Golden buttery theme for Astryx with blue accents. Sarina for display type, Outfit for headings and body.
 
 ## Install
 

@@ -189,7 +189,7 @@ describe('Heading', () => {
     });
   });
 
-  it('renders xds-* classes and data attributes for theme targeting', () => {
+  it('renders astryx-* classes and data attributes for theme targeting', () => {
     render(
       <Heading level={2} color="secondary">
         Themed Heading

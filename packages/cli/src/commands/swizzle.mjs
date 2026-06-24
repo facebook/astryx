@@ -65,7 +65,7 @@ export function registerSwizzle(program) {
   program
     .command('swizzle [component]')
     .description('Copy component source for customization')
-    .option('--output <dir>', 'Output directory', './components/xds')
+    .option('--output <dir>', 'Output directory', './components/astryx')
     .option('--list', 'List available components')
     .option('--gap <reason>', 'File a gap report explaining why you swizzled')
     .option('--gap-category <category>', 'Gap category (for --gap mode)')
@@ -102,9 +102,9 @@ export function registerSwizzle(program) {
         for (const name of components) {
           humanLog(`  ${name}`);
         }
-        humanLog(`\nUsage: xds swizzle <component>\n`);
-        humanLog('Example: xds swizzle Button');
-        humanLog('         xds swizzle XDSButton  (XDS prefix also works)\n');
+        humanLog(`\nUsage: astryx swizzle <component>\n`);
+        humanLog('Example: astryx swizzle Button');
+        humanLog('         astryx swizzle XDSButton  (XDS prefix also works)\n');
         return;
       }
 

@@ -25,7 +25,7 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/xds.mjs');
+const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
 
 function runCli(args) {
   const res = spawnSync('node', [CLI_BIN, ...args], {
@@ -44,7 +44,7 @@ function parseJson(stdout) {
 }
 
 describe('--json shim: --help renders JSON envelope', () => {
-  it('xds --help --json emits a help envelope (not raw text), exit 0', () => {
+  it('astryx --help --json emits a help envelope (not raw text), exit 0', () => {
     const {status, stdout, stderr} = runCli(['--help', '--json']);
     expect(status).toBe(0);
     expect(stderr).toBe('');
@@ -52,38 +52,38 @@ describe('--json shim: --help renders JSON envelope', () => {
     expect(parsed.apiVersion).toBe(1);
     expect(parsed.type).toBe('help');
     expect(parsed.data).toBeDefined();
-    expect(parsed.data.command).toBe('xds');
+    expect(parsed.data.command).toBe('astryx');
     // Should list known subcommands
     const subNames = parsed.data.subcommands.map((s) => s.name);
     expect(subNames).toContain('component');
     expect(subNames).toContain('theme');
   });
 
-  it('xds component --help --json emits a subcommand help envelope', () => {
+  it('astryx component --help --json emits a subcommand help envelope', () => {
     const {status, stdout} = runCli(['component', '--help', '--json']);
     expect(status).toBe(0);
     const parsed = parseJson(stdout);
     expect(parsed.apiVersion).toBe(1);
     expect(parsed.type).toBe('help');
-    expect(parsed.data.command).toBe('xds component');
+    expect(parsed.data.command).toBe('astryx component');
     // Should expose its options
     const flags = parsed.data.options.map((o) => o.flags);
     expect(flags).toContain('--list');
   });
 
-  it('xds theme build --help --json emits a nested subcommand help envelope', () => {
+  it('astryx theme build --help --json emits a nested subcommand help envelope', () => {
     const {status, stdout} = runCli(['theme', 'build', '--help', '--json']);
     expect(status).toBe(0);
     const parsed = parseJson(stdout);
     expect(parsed.apiVersion).toBe(1);
     expect(parsed.type).toBe('help');
-    expect(parsed.data.command).toBe('xds theme build');
+    expect(parsed.data.command).toBe('astryx theme build');
     expect(parsed.data.usage).toMatch(/<file>/);
   });
 });
 
 describe('--json shim: parse errors emit JSON error envelope', () => {
-  it('xds theme build --json (missing required arg) emits error envelope, exit 1', () => {
+  it('astryx theme build --json (missing required arg) emits error envelope, exit 1', () => {
     const {status, stdout} = runCli(['theme', 'build', '--json']);
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
@@ -92,7 +92,7 @@ describe('--json shim: parse errors emit JSON error envelope', () => {
     expect(parsed.error).toMatch(/file/i);
   });
 
-  it('xds --bogus-flag --json (unknown option) emits error envelope, exit 1', () => {
+  it('astryx --bogus-flag --json (unknown option) emits error envelope, exit 1', () => {
     const {status, stdout} = runCli(['--bogus-flag', '--json']);
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
@@ -101,7 +101,7 @@ describe('--json shim: parse errors emit JSON error envelope', () => {
     expect(parsed.error).toMatch(/--bogus-flag/);
   });
 
-  it('xds component --json --bogus-flag (unknown option on subcmd) emits error envelope, exit 1', () => {
+  it('astryx component --json --bogus-flag (unknown option on subcmd) emits error envelope, exit 1', () => {
     const {status, stdout} = runCli(['component', '--json', '--bogus-flag']);
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
@@ -111,7 +111,7 @@ describe('--json shim: parse errors emit JSON error envelope', () => {
 });
 
 describe('--json shim: unknown subcommand emits error envelope', () => {
-  it('xds bogus-cmd --json emits error envelope, exit 1 (not exit 0 + help)', () => {
+  it('astryx bogus-cmd --json emits error envelope, exit 1 (not exit 0 + help)', () => {
     const {status, stdout} = runCli(['bogus-cmd', '--json']);
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
@@ -126,7 +126,7 @@ describe('--json shim: unknown subcommand emits error envelope', () => {
 });
 
 describe('--json shim: invalid --detail choice', () => {
-  it('xds --detail bogus --json emits a single error envelope, exit 1', () => {
+  it('astryx --detail bogus --json emits a single error envelope, exit 1', () => {
     const {status, stdout} = runCli(['--detail', 'bogus', '--json']);
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
@@ -142,7 +142,7 @@ describe('--json shim: invalid --detail choice', () => {
 });
 
 describe('--json shim: invalid --lang choice', () => {
-  it('xds docs color --lang fr --json emits a single error envelope, exit 1', () => {
+  it('astryx docs color --lang fr --json emits a single error envelope, exit 1', () => {
     const {status, stdout} = runCli(['docs', 'color', '--lang', 'fr', '--json']);
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
@@ -154,57 +154,57 @@ describe('--json shim: invalid --lang choice', () => {
     expect(topLevelBraces).toBe(1);
   });
 
-  it('xds docs color --lang fr (no --json) writes to stderr and exits 1', () => {
+  it('astryx docs color --lang fr (no --json) writes to stderr and exits 1', () => {
     const {status, stdout, stderr} = runCli(['docs', 'color', '--lang', 'fr']);
     expect(status).toBe(1);
     expect(stdout).toBe('');
     expect(stderr).toMatch(/--lang/);
   });
 
-  it('xds docs color --lang zh is accepted (exit 0)', () => {
+  it('astryx docs color --lang zh is accepted (exit 0)', () => {
     const {status} = runCli(['docs', 'color', '--lang', 'zh']);
     expect(status).toBe(0);
   });
 
-  it('xds docs color --lang en is accepted (exit 0)', () => {
+  it('astryx docs color --lang en is accepted (exit 0)', () => {
     const {status} = runCli(['docs', 'color', '--lang', 'en']);
     expect(status).toBe(0);
   });
 });
 
 describe('--json shim: non-JSON behavior is preserved', () => {
-  it('xds theme build (no --json, missing arg) writes to stderr and exits 1', () => {
+  it('astryx theme build (no --json, missing arg) writes to stderr and exits 1', () => {
     const {status, stdout, stderr} = runCli(['theme', 'build']);
     expect(status).toBe(1);
     expect(stdout).toBe('');
     expect(stderr).toMatch(/missing required argument/i);
   });
 
-  it('xds --bogus-flag (no --json) writes to stderr and exits 1', () => {
+  it('astryx --bogus-flag (no --json) writes to stderr and exits 1', () => {
     const {status, stdout, stderr} = runCli(['--bogus-flag']);
     expect(status).toBe(1);
     expect(stdout).toBe('');
     expect(stderr).toMatch(/unknown option/i);
   });
 
-  it('xds bogus-cmd (no --json) writes to stderr and exits 1', () => {
+  it('astryx bogus-cmd (no --json) writes to stderr and exits 1', () => {
     const {status, stdout, stderr} = runCli(['bogus-cmd']);
     expect(status).toBe(1);
     expect(stdout).toBe('');
     expect(stderr).toMatch(/unknown command/i);
   });
 
-  it('xds --detail bogus (no --json) writes to stderr and exits 1', () => {
+  it('astryx --detail bogus (no --json) writes to stderr and exits 1', () => {
     const {status, stdout, stderr} = runCli(['--detail', 'bogus']);
     expect(status).toBe(1);
     expect(stdout).toBe('');
     expect(stderr).toMatch(/--detail/);
   });
 
-  it('xds --help (no --json) writes raw help text to stdout, exit 0', () => {
+  it('astryx --help (no --json) writes raw help text to stdout, exit 0', () => {
     const {status, stdout, stderr} = runCli(['--help']);
     expect(status).toBe(0);
-    expect(stdout).toMatch(/^Usage: xds/);
+    expect(stdout).toMatch(/^Usage: astryx/);
     expect(stderr).toBe('');
   });
 });

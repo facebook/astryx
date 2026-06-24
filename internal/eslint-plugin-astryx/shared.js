@@ -2,7 +2,7 @@
 
 /**
  * @file shared.js
- * @description Shared utilities for XDS ESLint rules that target component
+ * @description Shared utilities for Astryx ESLint rules that target component
  * props interfaces (require-base-props, require-ref-prop).
  */
 

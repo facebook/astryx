@@ -38,7 +38,7 @@ const noReactNamespaceHooksRule = {
     docs: {
       description:
         'Require direct imports of React hooks instead of React.useX() namespace access',
-      category: 'XDS Conventions',
+      category: 'Astryx Conventions',
       recommended: true,
     },
     fixable: 'code',

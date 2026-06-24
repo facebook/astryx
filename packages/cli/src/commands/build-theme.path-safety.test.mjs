@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Path-safety regression tests for `xds theme build`.
+ * @file Path-safety regression tests for `astryx theme build`.
  *
  * Covers:
  *   - Theme name with `..` segments cannot escape the output directory.
@@ -19,7 +19,7 @@ import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/xds.mjs');
+const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
 
 function runCli(args, cwd) {
   try {

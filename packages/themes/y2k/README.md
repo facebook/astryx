@@ -1,6 +1,6 @@
 # @astryxdesign/theme-y2k
 
-Playful Y2K pop theme for XDS: a soft periwinkle body, charcoal accent, holographic categorical colors derived from HCT tonal palettes, Poppins for body/headings, and a Crimson Text serif for display sizes.
+Playful Y2K pop theme for Astryx: a soft periwinkle body, charcoal accent, holographic categorical colors derived from HCT tonal palettes, Poppins for body/headings, and a Crimson Text serif for display sizes.
 
 ## Install
 

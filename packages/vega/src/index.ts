@@ -3,7 +3,7 @@
 /**
  * @file index.ts
  * @input All public exports for @astryxdesign/vega
- * @output Public API surface for the XDS Vega wrapper package
+ * @output Public API surface for the Astryx Vega wrapper package
  * @position Barrel export; entry point for consumers of @astryxdesign/vega
  *
  * SYNC: When modified, update /packages/vega/README.md
@@ -12,13 +12,13 @@
 /**
  * @file index.ts
  * @input All public exports for @astryxdesign/vega
- * @output Public API surface for the XDS Vega wrapper package
+ * @output Public API surface for the Astryx Vega wrapper package
  * @position Barrel export; entry point for consumers of @astryxdesign/vega
  *
  * SYNC: When modified, update /packages/vega/README.md
  */
 
-export {XDSVegaChart} from './XDSVegaChart';
+export {VegaChart} from './VegaChart';
 export {parseSchema} from './schema';
 export {
   buildVegaLiteConfig,
@@ -29,7 +29,7 @@ export {
   TITLE_OFFSET,
 } from './vegaLiteConfig';
 export type {
-  XDSVegaChartProps,
+  VegaChartProps,
   AnySpec,
   ViewData,
   VegaSpec,

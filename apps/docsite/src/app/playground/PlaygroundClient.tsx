@@ -296,7 +296,7 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
     defaultSize: 440,
     minSizePx: 340,
     maxSizePx: 760,
-    autoSaveId: 'xds-playground-left-width',
+    autoSaveId: 'astryx-playground-left-width',
   });
 
   // Seed the preview mode once from the docsite's mode; afterward the toolbar

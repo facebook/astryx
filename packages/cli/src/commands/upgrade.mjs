@@ -3,7 +3,7 @@
 /**
  * @file upgrade command — Full version-to-version upgrade pipeline
  *
- * `xds upgrade` detects the consumer's @astryxdesign/core version, bumps all
+ * `astryx upgrade` detects the consumer's @astryxdesign/core version, bumps all
  * @astryxdesign/* dependencies, installs them, and runs codemods to migrate
  * breaking API changes.
  *
@@ -326,15 +326,15 @@ export function registerUpgrade(program) {
       const existingDocs = discoverAgentDocs(process.cwd());
       if (existingDocs.length > 0) {
         try {
-          // onlyReplace: only update files that already have XDS markers.
-          // Don't inject into files that never had XDS content.
+          // onlyReplace: only update files that already have Astryx markers.
+          // Don't inject into files that never had Astryx content.
           const written = installAgentDocs(process.cwd(), {onlyReplace: true});
           receipt.agentDocsRefreshed = written.length > 0;
           if (!json && written.length > 0) p.log.success(`Agent docs updated: ${written.join(', ')}`);
         } catch {
           if (!json) {
             p.log.warn(
-              `Could not update agent docs. Run \`${getRunPrefix()} xds agent-docs\` to update manually.`,
+              `Could not update agent docs. Run \`${getRunPrefix()} astryx agent-docs\` to update manually.`,
             );
           }
         }

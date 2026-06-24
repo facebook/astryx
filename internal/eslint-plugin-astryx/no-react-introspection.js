@@ -37,7 +37,7 @@ const noReactIntrospectionRule = {
     docs: {
       description:
         'Ban React child introspection (Children.map, cloneElement, child.props, child.type)',
-      category: 'XDS Architecture',
+      category: 'Astryx Architecture',
       recommended: true,
       url: 'https://github.com/facebookexperimental/xds/wiki/API-Conventions',
     },

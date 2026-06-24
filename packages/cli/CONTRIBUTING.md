@@ -21,12 +21,12 @@ Both paths run identical code. The CLI handler just adds argument parsing and ou
 ```
 src/
   api/                         # Programmatic API (exported as @astryxdesign/cli/api)
-    index.mjs                  # barrel: component, docs, discover, template, XDSError
+    index.mjs                  # barrel: component, docs, discover, template, AstryxError
     component.mjs              # component(name?, opts?) → { type, data }
     docs.mjs                   # docs(topic?, section?, opts?) → { type, data }
     discover.mjs               # discover(query?, opts?) → { type, data }
     template.mjs               # template(name?, opts?) → { type, data }
-    error.mjs                  # XDSError class (carries .suggestions)
+    error.mjs                  # AstryxError class (carries .suggestions)
   commands/                    # CLI wrappers (thin: parse args → call API → format output)
     component/index.mjs        # calls api/component.mjs
     docs.mjs                   # calls api/docs.mjs
@@ -42,7 +42,7 @@ src/
     json.mjs                   # jsonOut(type, data), jsonError(msg) — internal
     parse.mjs                  # parseResponse, isError, assertResponse — consumer
   types/
-    api.d.ts                   # API function signatures + XDSError
+    api.d.ts                   # API function signatures + AstryxError
     base.d.ts                  # CLIError, CLIResult<T>, CLIAnyResponse, CLIResponseType
     component.d.ts             # ComponentListResponse, ComponentDetailResponse, ...
     discover.d.ts              # DiscoverListResponse, ...
@@ -67,11 +67,11 @@ src/
 
 ### 1. Write the API function
 
-Add a file in `src/api/` with all the logic. It returns `{ type, data }` on success and throws `XDSError` on failure. The CLI handler should have zero logic — just arg parsing and text formatting:
+Add a file in `src/api/` with all the logic. It returns `{ type, data }` on success and throws `AstryxError` on failure. The CLI handler should have zero logic — just arg parsing and text formatting:
 
 ```javascript
 // src/api/my-command.mjs
-import {XDSError} from './error.mjs';
+import {AstryxError} from './error.mjs';
 
 export async function myCommand(name, options = {}) {
   if (!name) {
@@ -80,7 +80,7 @@ export async function myCommand(name, options = {}) {
 
   const item = findItem(name);
   if (!item) {
-    throw new XDSError(`Item "${name}" not found`, suggestions);
+    throw new AstryxError(`Item "${name}" not found`, suggestions);
   }
 
   return {type: 'my-command.detail', data: item};
@@ -180,12 +180,12 @@ Nothing to do in the CLI. Props come from `.doc.mjs` files in `packages/core/src
 2. Add a `{Name}.doc.mjs` in the same directory (or add to the parent's `.doc.mjs` if it's a sub-component)
 3. Done — the CLI auto-discovers it, the API auto-discovers it, the parity test auto-discovers it
 
-If the component has no `.doc.mjs`, `xds component {Name}` returns a clean error and CI's smoke test skips it.
+If the component has no `.doc.mjs`, `astryx component {Name}` returns a clean error and CI's smoke test skips it.
 
 ### Adding a new doc topic
 
 1. Add `{topic}.doc.mjs` in `packages/cli/docs/`
-2. Done — auto-discovered by `xds docs` and the `docs()` API function
+2. Done — auto-discovered by `astryx docs` and the `docs()` API function
 
 ### Adding a new template
 
@@ -199,7 +199,7 @@ packages/cli/templates/{name}/
 
 1. Create `packages/cli/templates/{name}/page.tsx` with a default-exported React component
 2. Create `packages/cli/templates/{name}/template.doc.mjs` with a `doc` export (`TemplateDoc`)
-3. Done — auto-discovered by `xds template --list` and the `template()` API function
+3. Done — auto-discovered by `astryx template --list` and the `template()` API function
 
 **Rules:**
 - No extra files — no CSS, no images, no other assets. Everything lives in `page.tsx`.

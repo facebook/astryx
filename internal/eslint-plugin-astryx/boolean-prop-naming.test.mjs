@@ -2,7 +2,7 @@
 
 /**
  * @file boolean-prop-naming.test.mjs
- * @description Tests for the XDS boolean prop naming ESLint rule.
+ * @description Tests for the Astryx boolean prop naming ESLint rule.
  */
 
 import {describe, it} from 'vitest';

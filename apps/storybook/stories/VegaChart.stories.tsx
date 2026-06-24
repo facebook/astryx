@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSVegaChart} from '@astryxdesign/vega';
+import {VegaChart} from '@astryxdesign/vega';
 import type {AnySpec} from '@astryxdesign/vega';
 
 /**
@@ -73,9 +73,9 @@ const radialPlotSpec: AnySpec = {
   ],
 };
 
-const meta: Meta<typeof XDSVegaChart> = {
+const meta: Meta<typeof VegaChart> = {
   title: 'Vega/VegaChart',
-  component: XDSVegaChart,
+  component: VegaChart,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
@@ -84,7 +84,7 @@ const meta: Meta<typeof XDSVegaChart> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSVegaChart>;
+type Story = StoryObj<typeof VegaChart>;
 
 export const RadialPlot: Story = {
   name: 'Radial Plot',

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Component discovery — find, list, and resolve XDS components
+ * @file Component discovery — find, list, and resolve Astryx components
  */
 
 import * as fs from 'node:fs';
@@ -95,7 +95,7 @@ function readDocMeta(docPath) {
 }
 
 /**
- * Auto-discover components by scanning for XDS*.tsx files in core/src/.
+ * Auto-discover components by scanning for Astryx*.tsx files in core/src/.
  *
  * Returns an ordered Record where:
  * - Grouped components use the group name as key: `'Buttons': ['Button', 'IconButton']`
@@ -131,7 +131,7 @@ export function discoverComponents(coreDir) {
     const xdsFiles = collectXDSFiles(dirPath);
 
     // Read the group from the directory's .doc.mjs file (if it exists)
-    // Check both {Name}.doc.mjs and XDS{Name}.doc.mjs naming conventions
+    // Check both {Name}.doc.mjs and Astryx{Name}.doc.mjs naming conventions
     let docFile = path.join(dirPath, `${entry.name}.doc.mjs`);
     if (!fs.existsSync(docFile)) {
       docFile = path.join(dirPath, `XDS${entry.name}.doc.mjs`);
@@ -220,13 +220,13 @@ export function findComponentReadme(coreDir, name) {
   const exactDoc = `${name}.doc.mjs`;
   const xdsDoc = `XDS${name}.doc.mjs`;
 
-  // Direct match: src/{name}/{Name}.doc.mjs or src/{name}/XDS{Name}.doc.mjs
+  // Direct match: src/{name}/{Name}.doc.mjs or src/{name}/Astryx{Name}.doc.mjs
   const direct = path.join(srcDir, name, exactDoc);
   if (fs.existsSync(direct)) return direct;
   const directXds = path.join(srcDir, name, xdsDoc);
   if (fs.existsSync(directXds)) return directXds;
 
-  // Nested match: src/*/{name}/{Name}.doc.mjs or src/*/{name}/XDS{Name}.doc.mjs
+  // Nested match: src/*/{name}/{Name}.doc.mjs or src/*/{name}/Astryx{Name}.doc.mjs
   const entries = fs.readdirSync(srcDir, {withFileTypes: true});
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
@@ -236,7 +236,7 @@ export function findComponentReadme(coreDir, name) {
     if (fs.existsSync(nestedXds)) return nestedXds;
   }
 
-  // Per-component doc in a parent directory: src/*/{Name}.doc.mjs or src/*/XDS{Name}.doc.mjs
+  // Per-component doc in a parent directory: src/*/{Name}.doc.mjs or src/*/Astryx{Name}.doc.mjs
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const perComp = path.join(srcDir, entry.name, exactDoc);
@@ -263,7 +263,7 @@ export function findComponentReadme(coreDir, name) {
 }
 
 /**
- * Find the main source file for a component (XDS*.tsx, excluding tests).
+ * Find the main source file for a component (Astryx*.tsx, excluding tests).
  * For "Button" finds src/Button/XDSButton.tsx
  * For "Layout" finds src/Layout/XDSLayout/XDSLayout.tsx
  * For "Card" finds src/Layout/Container/XDSCard.tsx (deep search fallback)
@@ -271,7 +271,7 @@ export function findComponentReadme(coreDir, name) {
 export function findComponentSource(coreDir, name) {
   const srcDir = path.join(coreDir, 'src');
   // Try the prefixed form (`XDSButton.tsx`) first since that is the current
-  // on-disk convention, then the bare form (`Button.tsx`) that the XDS-prefix
+  // on-disk convention, then the bare form (`Button.tsx`) that the Astryx-prefix
   // migration (P4) renames to. Listing the prefixed name first keeps behavior
   // identical until files are actually renamed.
   const candidateFiles = [`XDS${name}.tsx`, `${name}.tsx`];

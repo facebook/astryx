@@ -47,7 +47,7 @@ const GAP_PROPS = ['gap', 'rowGap', 'columnGap'];
  * Only XDS layout components accept the numeric gap scale. We must not
  * rewrite gap props on user-defined components or HTML elements that happen
  * to share the prop name — doing so would silently corrupt their code when
- * `xds upgrade` runs.
+ * `astryx upgrade` runs.
  */
 const XDS_LAYOUT_ELEMENTS = new Set([
   'XDSStack',

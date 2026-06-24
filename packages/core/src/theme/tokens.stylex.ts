@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * XDS Design Tokens
+ * Astryx Design Tokens
  *
  * Defines all design tokens using StyleX defineVars.
  * - *Defaults: Plain objects with default values (used by defineVars and themes)

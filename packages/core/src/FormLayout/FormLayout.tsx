@@ -68,7 +68,7 @@ export interface FormLayoutProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /**
-   * Form fields to arrange. Accepts XDS inputs (TextInput, Selector, etc.)
+   * Form fields to arrange. Accepts Astryx inputs (TextInput, Selector, etc.)
    * and Field-wrapped custom controls.
    */
   children?: ReactNode;

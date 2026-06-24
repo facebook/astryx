@@ -4,37 +4,37 @@
 
 #### Breaking Changes
 
-- **New `xds upgrade` codemods** — This release ships codemods for the DatePicker→Input rename (`rename-date-picker-to-input`), Stack `element`→`as` (`rename-stack-element-to-as`), Chat `isStreaming`→`isStopShown` (`rename-isStreaming-to-isStopShown`), imperative `ref`→`handleRef` (`rename-imperative-ref-to-handleRef`), the menu/selector `children`→`endContent` move (`migrate-item-children-to-endcontent`), and the selector function-children→`renderOption` move (`migrate-selector-children-to-render-option`). The bare-name migration (`drop-xds-prefix-imports`, `drop-xds-meta-prefix`) and the theme `migrate-theme-selectors-to-data-attrs` codemod ship as optional, run them explicitly. (#2879, #2957)
+- **New `astryx upgrade` codemods** — This release ships codemods for the DatePicker→Input rename (`rename-date-picker-to-input`), Stack `element`→`as` (`rename-stack-element-to-as`), Chat `isStreaming`→`isStopShown` (`rename-isStreaming-to-isStopShown`), imperative `ref`→`handleRef` (`rename-imperative-ref-to-handleRef`), the menu/selector `children`→`endContent` move (`migrate-item-children-to-endcontent`), and the selector function-children→`renderOption` move (`migrate-selector-children-to-render-option`). The bare-name migration (`drop-xds-prefix-imports`, `drop-xds-meta-prefix`) and the theme `migrate-theme-selectors-to-data-attrs` codemod ship as optional, run them explicitly. (#2879, #2957)
 
 #### Upgrade
 
 ```bash
-npx xds upgrade --apply
+npx astryx upgrade --apply
 ```
 
 #### New Features
 
 - **`astryx` binary** — The CLI is now also available as `astryx` (same launcher as `xds`), part of the un-prefix migration. Component discovery, the doc gate, and CI checks are prefix-agnostic — both `XDS{Name}.tsx` and bare `{Name}.tsx` source files are recognized. (#2867, #2878)
-- **`xds doctor`** — New health-check command for diagnosing project/setup issues. (#2565)
-- **Unified search** — `xds search` searches across components, hooks, docs, and templates in one query. (#2564)
+- **`astryx doctor`** — New health-check command for diagnosing project/setup issues. (#2565)
+- **Unified search** — `astryx search` searches across components, hooks, docs, and templates in one query. (#2564)
 - **Capability manifest** — Full machine-readable capability manifest for agent discovery, plus stable machine-readable error codes on every error. (#2562, #2563)
 - **`@xds/cli/api` hook export** — The `hook` is exposed via `@xds/cli/api` with types and parity coverage. (#2558)
-- **CLI exit-code policy** — Every user-visible error now exits with code 1 in both human and `--json` modes (previously several command-layer errors printed a message but exited 0, invisible to CI scripts and AI agents). `xds bogus-cmd`, `xds theme bogus-subcommand`, the bare `theme` group with an unknown subcommand, and "command not found"/"did you mean…" paths all exit 1. Help, version, and bare-list invocations still exit 0. Introduces `lib/cli-error.mjs` as the canonical exit-code helper.
+- **CLI exit-code policy** — Every user-visible error now exits with code 1 in both human and `--json` modes (previously several command-layer errors printed a message but exited 0, invisible to CI scripts and AI agents). `xds bogus-cmd`, `astryx theme bogus-subcommand`, the bare `theme` group with an unknown subcommand, and "command not found"/"did you mean…" paths all exit 1. Help, version, and bare-list invocations still exit 0. Introduces `lib/cli-error.mjs` as the canonical exit-code helper.
 - **Migration guide** — Added an explicit guide for moving existing Tailwind, shadcn, and Radix applications to XDS incrementally.
 - **Data-attribute selector docs** — Documented the data-attribute selector surface in CLI docs alongside the core dual-emit change.
 
 #### Fixes
 
 - **`--json` on Commander short-circuits** — `--json` now honored on parse errors and `--help`. A new shim wires `exitOverride()` and a JSON-aware `configureOutput` onto every command and patches `outputHelp` to emit a `{apiVersion, type:'help', data}` envelope under `--json`. Parse errors produce `{apiVersion, error}` on stdout with exit 1; unknown subcommands now error instead of silently emitting help with exit 0; `--detail` is choice-validated. Non-`--json` invocations are unchanged.
-- **`--json` contract enforcement** — Commands that don't support `--json` reject the flag in a `preAction` hook _before_ running side effects, so `xds init --json` no longer creates files and _then_ errors, leaving partial state behind.
+- **`--json` contract enforcement** — Commands that don't support `--json` reject the flag in a `preAction` hook _before_ running side effects, so `astryx init --json` no longer creates files and _then_ errors, leaving partial state behind.
 - **`--json` envelope documented** — Success responses are `{ type, data }`; error responses are `{ error, suggestions? }`. The `--json` help text describes both.
 - **`xds --version --json`** — Emits `{ type: 'version', data: { version } }` instead of plain text.
 - **`xds --json` (no subcommand)** — Emits `{ type: 'help', data: { commands, jsonSupported, ... } }` instead of human help text.
-- **`xds upgrade --json`** — "Already up to date" and "no codemods in version range" paths emit structured `{ type: 'upgrade.status', ... }` envelopes. The codemod runner is silent under `--json` so prompts and progress lines no longer corrupt stdout.
-- **`xds discover --json`** — Includes `meta: { configured: false }` when no packages are configured, distinguishing "configured but empty" from "not configured".
+- **`astryx upgrade --json`** — "Already up to date" and "no codemods in version range" paths emit structured `{ type: 'upgrade.status', ... }` envelopes. The codemod runner is silent under `--json` so prompts and progress lines no longer corrupt stdout.
+- **`astryx discover --json`** — Includes `meta: { configured: false }` when no packages are configured, distinguishing "configured but empty" from "not configured".
 - **`xds gap-report --json`** — Returns a structured error instead of starting an interactive prompt when required flags are missing; the "gh CLI missing" path also emits a JSON error.
-- **`xds theme --json`** — The `theme` parent command (without a subcommand) rejects `--json` cleanly; `theme build --json` continues to work.
-- **Theme CSS prose regression** — `xds theme build` now uses a single CSS generation path (`@xds/core`'s generator) and treats a failed `@xds/core/theme` import as a hard build error instead of a silent fallback, fixing the docsite Markdown typography regression after the XDS-prefix migration. (#2964)
+- **`astryx theme --json`** — The `theme` parent command (without a subcommand) rejects `--json` cleanly; `theme build --json` continues to work.
+- **Theme CSS prose regression** — `astryx theme build` now uses a single CSS generation path (`@xds/core`'s generator) and treats a failed `@xds/core/theme` import as a hard build error instead of a silent fallback, fixing the docsite Markdown typography regression after the XDS-prefix migration. (#2964)
 
 #### Contributors
 
@@ -89,10 +89,10 @@ Thanks to everyone who contributed to this release:
 
 #### New Features
 
-- `--skip-install` and `--force-install` flags for `xds upgrade` (#1547)
-- `npx xds docs icons` reference + updated icon prop descriptions (#1500)
+- `--skip-install` and `--force-install` flags for `astryx upgrade` (#1547)
+- `npx astryx docs icons` reference + updated icon prop descriptions (#1500)
 - Theme nudge in generated agent docs (#1456)
-- Theme `expandColorScale` — derive color tokens from accent hex in `xds theme build` (#1452)
+- Theme `expandColorScale` — derive color tokens from accent hex in `astryx theme build` (#1452)
 - Component groups read from doc files instead of hardcoded map (#1650)
 - Page and block template system (#1393)
 
@@ -108,7 +108,7 @@ Thanks to everyone who contributed to this release:
 #### Upgrade
 
 ```sh
-npx xds upgrade --apply --to 0.0.13
+npx astryx upgrade --apply --to 0.0.13
 ```
 
 ---
@@ -122,7 +122,7 @@ npx xds upgrade --apply --to 0.0.13
 #### Upgrade
 
 ```sh
-npx xds upgrade --apply --to 0.0.12
+npx astryx upgrade --apply --to 0.0.12
 ```
 
 ---
@@ -136,7 +136,7 @@ npx xds upgrade --apply --to 0.0.12
 #### Upgrade
 
 ```sh
-npx xds upgrade --apply --to 0.0.10
+npx astryx upgrade --apply --to 0.0.10
 ```
 
 ---
@@ -156,7 +156,7 @@ npx xds upgrade --apply --to 0.0.10
 #### Upgrade
 
 ```sh
-npx xds upgrade --apply --to 0.0.8
+npx astryx upgrade --apply --to 0.0.8
 ```
 
 ---
@@ -170,7 +170,7 @@ npx xds upgrade --apply --to 0.0.8
 #### Upgrade
 
 ```sh
-npx xds upgrade --apply --to 0.0.7
+npx astryx upgrade --apply --to 0.0.7
 ```
 
 ---
@@ -189,7 +189,7 @@ npx xds upgrade --apply --to 0.0.7
 #### Upgrade
 
 ```sh
-npx xds upgrade --apply --to 0.0.6
+npx astryx upgrade --apply --to 0.0.6
 ```
 
 ---
@@ -210,7 +210,7 @@ npx xds upgrade --apply --to 0.0.6
 
 #### Features
 
-- **`xds theme build`** — Renamed from `build-theme` to `theme build` (#570)
+- **`astryx theme build`** — Renamed from `build-theme` to `theme build` (#570)
 - **`--lang` flag** — TranslationDoc support for i18n/compressed docs (#611)
 - **`--zh` flag** — Chinese Simplified doc output (#567)
 
@@ -233,8 +233,8 @@ npx xds upgrade --apply --to 0.0.6
 
 #### New Features
 
-- `xds upgrade` command with codemod support
-- `xds theme build` (formerly `build-theme`)
+- `astryx upgrade` command with codemod support
+- `astryx theme build` (formerly `build-theme`)
 
 #### Codemods
 
@@ -256,7 +256,7 @@ npx xds upgrade --apply --to 0.0.6
 #### Upgrade
 
 ```sh
-npx xds upgrade --apply --to 0.0.2
+npx astryx upgrade --apply --to 0.0.2
 ```
 
 ---

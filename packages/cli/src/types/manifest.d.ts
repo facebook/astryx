@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Types for the CLI capability manifest emitted by `xds manifest --json`
+ * Types for the CLI capability manifest emitted by `astryx manifest --json`
  * (and embedded under `data.manifest` of the bare `xds --json` help envelope).
  *
  * The manifest is a self-describing view of the entire CLI surface so an agent
@@ -54,7 +54,7 @@ export interface ManifestCommand {
 
 /** The full manifest payload (the `data` of the `manifest` envelope). */
 export interface CLIManifest {
-  name: 'xds';
+  name: 'astryx';
   version: string;
   apiVersion: number;
   description: string;
@@ -66,7 +66,7 @@ export interface CLIManifest {
   responseTypes: Record<string, string[]>;
 }
 
-/** The `xds manifest --json` envelope. */
+/** The `astryx manifest --json` envelope. */
 export interface ManifestResponse {
   type: 'manifest';
   data: CLIManifest;

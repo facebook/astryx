@@ -497,7 +497,7 @@ function getComponentDocs(key: string) {
       {
         title: `Basic ${name}`,
         description: `A simple example of the ${name} component with default settings.`,
-        code: `<XDS${name} />`,
+        code: `<${name} />`,
       },
     ],
   };

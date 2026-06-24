@@ -23,19 +23,34 @@ export async function generateMetadata({
   const {slug} = await params;
   const post = blogPosts.find(p => p.slug === slug);
   if (!post) {
-    return {title: 'Blog — Astryx'};
+    return {title: 'Blog'};
   }
 
-  const images = post.coverImage ? [{url: post.coverImage}] : undefined;
+  // Use the post's cover image for the social card when present; otherwise
+  // fall back to the branded default card. Next.js shallow-merges metadata —
+  // a route that sets `openGraph`/`twitter` replaces the root object wholesale
+  // (images are not inherited), so the fallback must be explicit here.
+  const ogImage = post.coverImage ?? '/blog-post-01.png';
+  const ogAlt = post.coverImage ? (post.coverAlt ?? post.title) : post.title;
+
   return {
-    title: `${post.title} — Astryx Blog`,
+    // Renders as "<post title> · Astryx" via the root layout title template.
+    title: post.title,
     description: post.description,
     openGraph: {
+      type: 'article',
       title: post.title,
       description: post.description,
-      type: 'article',
+      url: `/blog/${post.slug}`,
       publishedTime: post.date,
-      ...(images ? {images} : {}),
+      ...(post.updatedAt ? {modifiedTime: post.updatedAt} : {}),
+      images: [{url: ogImage, alt: ogAlt}],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.description,
+      images: [ogImage],
     },
   };
 }

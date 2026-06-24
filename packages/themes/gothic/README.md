@@ -1,6 +1,6 @@
 # @astryxdesign/theme-gothic
 
-**Dark-only** atmospheric gothic theme for XDS — deep blue-gray surfaces, distressed display heading, and pastel categorical accents that glow against the dark page like illuminated panels. Uses Manufacturing Consent for headings, Fustat for body text, and [Lucide](https://lucide.dev) icons.
+**Dark-only** atmospheric gothic theme for Astryx — deep blue-gray surfaces, distressed display heading, and pastel categorical accents that glow against the dark page like illuminated panels. Uses Manufacturing Consent for headings, Fustat for body text, and [Lucide](https://lucide.dev) icons.
 
 > Gothic is a single-mode theme: it always renders dark, regardless of the user's system color preference. For best browser-chrome integration (scrollbars, native form controls), pass `mode="dark"` to your `XDSTheme` provider.
 

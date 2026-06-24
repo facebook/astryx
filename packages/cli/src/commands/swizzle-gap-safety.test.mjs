@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * End-to-end safety tests for `xds swizzle --gap` and `xds gap-report`.
+ * End-to-end safety tests for `astryx swizzle --gap` and `xds gap-report`.
  *
  * Critical: these tests must NEVER actually invoke `gh issue create`. We
  * defend in depth:
@@ -28,7 +28,7 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const cliBin = path.resolve(__dirname, '../../bin/xds.mjs');
+const cliBin = path.resolve(__dirname, '../../bin/astryx.mjs');
 const repoRoot = path.resolve(__dirname, '../../../..');
 
 let shimDir;

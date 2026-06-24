@@ -3,7 +3,7 @@
 /**
  * Merge xds-* props, stylex.props result, and optional consumer className/style.
  *
- * stylex.props() returns { className, style }. This merges the XDS stable
+ * stylex.props() returns { className, style }. This merges the Astryx stable
  * class name plus any data-attribute reflection from `xdsThemeProps()` with the
  * StyleX class name so both StyleX styles and the theme-targeting surface are
  * applied.

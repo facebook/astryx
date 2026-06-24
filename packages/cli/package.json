@@ -5,14 +5,14 @@
   "description": "Scaffold projects, browse templates, generate themes, and get agent-ready docs from the command line.",
   "author": "Meta Open Source",
   "license": "MIT",
-  "homepage": "https://github.com/facebookexperimental/xds#readme",
+  "homepage": "https://github.com/facebook/astryx#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/facebookexperimental/xds.git",
+    "url": "git+https://github.com/facebook/astryx.git",
     "directory": "packages/cli"
   },
   "bugs": {
-    "url": "https://github.com/facebookexperimental/xds/issues"
+    "url": "https://github.com/facebook/astryx/issues"
   },
   "keywords": [
     "xds",
@@ -26,12 +26,11 @@
   ],
   "type": "module",
   "bin": {
-    "xds": "./bin/xds.mjs",
-    "astryx": "./bin/xds.mjs",
-    "cli": "./bin/xds.mjs"
+    "astryx": "./bin/astryx.mjs",
+    "cli": "./bin/astryx.mjs"
   },
   "exports": {
-    ".": "./bin/xds.mjs",
+    ".": "./bin/astryx.mjs",
     "./json": {
       "types": "./src/types/index.d.ts",
       "import": "./src/lib/parse.mjs"
@@ -49,7 +48,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "xds": "node bin/xds.mjs",
+    "astryx": "node bin/astryx.mjs",
     "typecheck:template-docs": "tsc --project tsconfig.template-docs.json",
     "typecheck:json-api": "tsc --project tsconfig.json-api.json && tsc --project tsconfig.api-contract.json"
   },

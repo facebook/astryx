@@ -100,7 +100,7 @@ describe('Divider', () => {
     expect(screen.getByText('Vertical')).toBeInTheDocument();
   });
 
-  it('renders xds-* class names for theme targeting', () => {
+  it('renders astryx-* class names for theme targeting', () => {
     render(
       <Divider
         variant="strong"

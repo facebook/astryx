@@ -17,7 +17,7 @@ import {fileURLToPath} from 'node:url';
 import {search, scoreCandidate, SEARCH_DOMAINS} from '../api/search.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/xds.mjs');
+const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
 // Run against the monorepo root so @astryxdesign/core is discoverable.
 const REPO_ROOT = path.resolve(__dirname, '../../../..');
 const OPTS = {cwd: REPO_ROOT};
@@ -39,7 +39,7 @@ describe('search() API — ranking', () => {
     expect(top.domain).toBe('component');
     expect(top.name).toBe('Button');
     expect(top.score).toBe(100);
-    expect(top.command).toBe('xds component Button');
+    expect(top.command).toBe('astryx component Button');
   });
 
   it('returns components/hooks tagged with a matching keyword', async () => {
@@ -61,9 +61,9 @@ describe('search() API — cross-domain', () => {
     // "color" is a doc topic AND appears across components.
     expect(domains.has('doc')).toBe(true);
     expect(domains.size).toBeGreaterThan(1);
-    // The doc topic should carry a follow-up `xds docs` command.
+    // The doc topic should carry a follow-up `astryx docs` command.
     const docHit = data.results.find(r => r.domain === 'doc');
-    expect(docHit.command.startsWith('xds docs ')).toBe(true);
+    expect(docHit.command.startsWith('astryx docs ')).toBe(true);
   });
 
   it('every result is tagged with a known domain and a command', async () => {
@@ -196,7 +196,7 @@ describe('search CLI — exit codes + JSON contract', () => {
 
   it('shows the follow-up command hint in human output', () => {
     const r = runCli(['search', 'button']);
-    expect(r.stdout).toContain('xds component Button');
+    expect(r.stdout).toContain('astryx component Button');
     expect(r.stdout).toContain('[component]');
   });
 });

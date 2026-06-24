@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Regression test for `xds theme build` install-instructions import paths.
+ * @file Regression test for `astryx theme build` install-instructions import paths.
  *
  * Covers the relDir-empty case: when the output directory equals the current
  * working directory, the relative dir is an empty string. Previously this
@@ -20,7 +20,7 @@ import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/xds.mjs');
+const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
 const REPO_ROOT = path.resolve(__dirname, '../../../..');
 const CORE_THEME_ENTRY = path.join(
   REPO_ROOT,
@@ -55,7 +55,7 @@ function writeTheme(dir, name) {
   return file;
 }
 
-// `xds theme build` imports the compiled @astryxdesign/core/theme entry (there is no
+// `astryx theme build` imports the compiled @astryxdesign/core/theme entry (there is no
 // in-CLI fallback generator). Build core once if it isn't already present so
 // the suite works in any CI job, regardless of job ordering.
 beforeAll(() => {

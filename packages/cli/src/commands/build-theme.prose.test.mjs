@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Regression test for prose output of `xds theme build`.
+ * @file Regression test for prose output of `astryx theme build`.
  *
- * `xds theme build` has a single CSS-generation path — @astryxdesign/core's generator,
+ * `astryx theme build` has a single CSS-generation path — @astryxdesign/core's generator,
  * the same one the <Theme> runtime uses (generateThemeCSS). It always emits
  * prose element defaults (h1–h6, p, small, code, hr) so unstyled HTML inherits
  * the theme's typography, exactly like the runtime. There is intentionally no
@@ -17,7 +17,7 @@
  *     components own block spacing — see the docsite Markdown regression);
  *   - paragraphs use the body font, not the heading font.
  *
- * Building `xds theme build` requires a compiled @astryxdesign/core (there is no in-CLI
+ * Building `astryx theme build` requires a compiled @astryxdesign/core (there is no in-CLI
  * fallback generator), so this suite builds core once in beforeAll — mirroring
  * scripts/build-css.test.mjs — to stay self-sufficient regardless of CI job
  * ordering.
@@ -31,7 +31,7 @@ import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/xds.mjs');
+const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
 const REPO_ROOT = path.resolve(__dirname, '../../../..');
 const CORE_THEME_ENTRY = path.join(
   REPO_ROOT,
@@ -68,7 +68,7 @@ function writeTheme(dir, name) {
   return file;
 }
 
-// `xds theme build` imports the compiled @astryxdesign/core/theme entry. Build core
+// `astryx theme build` imports the compiled @astryxdesign/core/theme entry. Build core
 // once if it isn't already present so the suite works in any CI job.
 beforeAll(() => {
   if (!fs.existsSync(CORE_THEME_ENTRY)) {

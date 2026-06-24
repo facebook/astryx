@@ -65,7 +65,7 @@ export type TableSortState<TSortKey extends string = string> =
 /**
  * Configuration for useTableSortable.
  *
- * Follows XDS headless plugin conventions: the consumer owns all state
+ * Follows Astryx headless plugin conventions: the consumer owns all state
  * and provides callbacks. The plugin never holds internal sort state.
  *
  * @template TSortKey - Union of valid sort key strings

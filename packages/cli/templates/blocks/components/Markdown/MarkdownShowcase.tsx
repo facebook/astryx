@@ -12,7 +12,7 @@ const content = [
   '',
   '## Features',
   '',
-  '- Headings mapped to the XDS type scale',
+  '- Headings mapped to the Astryx type scale',
   '- **Bold**, *italic*, and ~~strikethrough~~ text',
   '- [Links](https://example.com) with external detection',
   '',

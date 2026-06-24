@@ -255,7 +255,7 @@ const HOOK_CATEGORY_MAP = {
   useScrollOverflow: 'Layout',
   useScrollLock: 'Layout',
   useEntryAnimation: 'Animation',
-  useXDSStreamingText: 'Streaming',
+  useStreamingText: 'Streaming',
   useImageMode: 'Media',
   useClickableContainer: 'Interaction',
   useInputContainer: 'Interaction',

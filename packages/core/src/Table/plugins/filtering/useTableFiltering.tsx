@@ -4,7 +4,7 @@
 
 /**
  * @file useTableFiltering.tsx
- * @input React, types, XDS components, theme tokens
+ * @input React, types, Astryx components, theme tokens
  * @output Exports useTableFiltering hook and filter type definitions
  * @position Filtering plugin; consumed by Table via plugins prop
  *

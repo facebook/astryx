@@ -67,7 +67,7 @@ PROMPT_LABELS = {
 
 
 # GitHub Pages base URL for the XDS repo
-GH_PAGES_BASE = "https://studious-broccoli-o7e61n3.pages.github.io"
+GH_PAGES_BASE = "https://facebook.github.io/astryx"
 
 
 def img_url(iteration_id, filename):

@@ -171,7 +171,7 @@ const fullBleedStyles = stylex.create({
  * Divider component for visual separation of content.
  *
  * Provides horizontal and vertical dividers with optional labels.
- * Uses XDS design tokens for colors and spacing.
+ * Uses Astryx design tokens for colors and spacing.
  *
  * @example
  * ```

@@ -5,7 +5,7 @@
 /**
  * @astryxdesign/build
  *
- * Unified build configuration for XDS source builds.
+ * Unified build configuration for Astryx source builds.
  * 
  * Usage:
  *   // babel.config.js
@@ -20,7 +20,7 @@
 const path = require('node:path');
 
 /**
- * Resolve XDS package aliases from a root directory.
+ * Resolve Astryx package aliases from a root directory.
  * Handles both npm installs (node_modules/@astryxdesign/core) and
  * monorepo layouts (packages/core).
  */
@@ -50,7 +50,7 @@ function stylexOptions(rootDir, overrides = {}) {
 }
 
 /**
- * Generate a complete babel.config.js for XDS source builds.
+ * Generate a complete babel.config.js for Astryx source builds.
  * 
  * @param {string} rootDir — __dirname of the project root
  * @param {object} [overrides] — extra StyleX options to merge
@@ -66,7 +66,7 @@ function babel(rootDir, overrides = {}) {
 }
 
 /**
- * Generate a complete postcss.config.js for XDS source builds.
+ * Generate a complete postcss.config.js for Astryx source builds.
  * 
  * @param {string} rootDir — __dirname of the project root
  * @param {object} [overrides] — extra options (appDir, extraInclude, etc.)

@@ -58,7 +58,7 @@ const styles = stylex.create({
  * Blockquote component for displaying quoted content.
  *
  * Renders a semantic `<blockquote>` with an accent-colored left border
- * and secondary text color, matching the XDS visual language.
+ * and secondary text color, matching the Astryx visual language.
  *
  * @example
  * ```

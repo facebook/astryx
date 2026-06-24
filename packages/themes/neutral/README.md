@@ -47,6 +47,6 @@ This theme uses system fonts; no external font loading is required.
 
 | Package                                                                              | Description                            |
 | ------------------------------------------------------------------------------------ | -------------------------------------- |
-| [`@astryxdesign/core`](https://github.com/facebookexperimental/xds/tree/main/packages/core)   | Core components and theme system       |
-| [`@astryxdesign/build`](https://github.com/facebookexperimental/xds/tree/main/packages/build) | Build plugins for StyleX source builds |
-| [`@astryxdesign/cli`](https://github.com/facebookexperimental/xds/tree/main/packages/cli)     | CLI tooling including `xds docs theme` |
+| [`@astryxdesign/core`](https://github.com/facebook/astryx/tree/main/packages/core)   | Core components and theme system       |
+| [`@astryxdesign/build`](https://github.com/facebook/astryx/tree/main/packages/build) | Build plugins for StyleX source builds |
+| [`@astryxdesign/cli`](https://github.com/facebook/astryx/tree/main/packages/cli)     | CLI tooling including `astryx docs theme` |

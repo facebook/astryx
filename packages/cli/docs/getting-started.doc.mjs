@@ -157,7 +157,7 @@ pnpm dev`,
           lang: 'json',
           label: 'package.json',
           code: `"scripts": {
-  "xds": "node node_modules/@astryxdesign/cli/bin/xds.mjs"
+  "xds": "node node_modules/@astryxdesign/cli/bin/astryx.mjs"
 }`,
         },
         {

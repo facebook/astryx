@@ -241,7 +241,7 @@ function defaultFormatValueLabel(value: number, max: number): string {
  * icons, and descriptions alongside the bar using layout components rather
  * than adding props to ProgressBar itself.
  *
- * Styles use XDS theme tokens via StyleX.
+ * Styles use Astryx theme tokens via StyleX.
  * Wrap your app in <Theme> to apply a theme.
  *
  * @example

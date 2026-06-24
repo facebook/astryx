@@ -22,7 +22,7 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/xds.mjs');
+const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
 // Repo root holds packages/core, which findCoreDir() walks up to locate.
 const REPO_ROOT = path.resolve(__dirname, '../../../..');
 

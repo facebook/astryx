@@ -65,10 +65,10 @@ function parseChangelog(markdown, pkg) {
       if (inCodeBlock) {
         if (currentVersion && currentSection === 'upgrade') {
           const applyMatch = codeBlockContent.match(
-            /npx xds upgrade --apply --to [\d.]+/,
+            /npx astryx upgrade --apply --to [\d.]+/,
           );
           const dryMatch = codeBlockContent.match(
-            /npx xds upgrade --to [\d.]+/,
+            /npx astryx upgrade --to [\d.]+/,
           );
           if (applyMatch) currentVersion.upgradeCommand = applyMatch[0];
           if (dryMatch) currentVersion.dryRunCommand = dryMatch[0];
@@ -140,10 +140,10 @@ function parseChangelog(markdown, pkg) {
 
     // Upgrade section: extract dry-run and apply commands from prose
     if (currentSection === 'upgrade') {
-      const dryMatch = line.match(/`(npx xds upgrade --to [\d.]+)`/);
+      const dryMatch = line.match(/`(npx astryx upgrade --to [\d.]+)`/);
       if (dryMatch) currentVersion.dryRunCommand = dryMatch[1];
       const applyMatch = line.match(
-        /`(npx xds upgrade --apply --to [\d.]+)`/,
+        /`(npx astryx upgrade --apply --to [\d.]+)`/,
       );
       if (applyMatch) currentVersion.upgradeCommand = applyMatch[1];
       continue;

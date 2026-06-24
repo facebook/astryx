@@ -73,7 +73,7 @@ export type ParseOptions = {
    *
    * Two intentional deviations from the strict GFM spec for v1:
    * trailing `&entity;` is not peeled off the URL, and an invalid TLD
-   * suffix is not rejected (XDS accepts any plausible TLD shape).
+   * suffix is not rejected (Astryx accepts any plausible TLD shape).
    */
   autolink?: 'gfm';
 };

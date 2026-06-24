@@ -55,7 +55,7 @@ function formatSubComponent(comp) {
   if (table) {
     out.push(table + '\n');
   } else {
-    out.push(`See \`xds component ${comp.name}\` for props and usage.\n`);
+    out.push(`See \`astryx component ${comp.name}\` for props and usage.\n`);
   }
   return out;
 }
@@ -305,7 +305,7 @@ export function formatFull(docs, options = {}) {
  */
 export function formatCompact(docs, componentName, importHint) {
   // Bare name (un-prefix migration P5a): the CLI now presents component names
-  // without the XDS prefix. componentName is already bare post-P4.
+  // without the Astryx prefix. componentName is already bare post-P4.
   const displayName = componentName.startsWith('XDS')
     ? componentName.slice(3)
     : componentName;

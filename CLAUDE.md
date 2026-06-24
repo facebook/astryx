@@ -119,7 +119,7 @@ Documentation lives in two places:
 <!-- XDS-CLI:START -->
 
 XDS CLI|Run from repo root. Load agent docs before any component work.
-XDS="node packages/cli/bin/xds.mjs"
+XDS="node packages/cli/bin/astryx.mjs"
 BOOTSTRAP (run every branch, <500ms):
 $XDS help # discover all commands and options
 $XDS docs # list available doc topics

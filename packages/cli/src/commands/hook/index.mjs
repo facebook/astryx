@@ -76,7 +76,7 @@ export function registerHook(program) {
               for (const h of hookNames) humanLog(`  ${h}`);
             }
             humanLog('');
-            humanLog(`Usage: ${run} xds hook <name>`);
+            humanLog(`Usage: ${run} astryx hook <name>`);
             humanLog('');
           }
           break;
@@ -93,7 +93,7 @@ export function registerHook(program) {
             }
             humanLog('');
           }
-          humanLog(`Usage: ${run} xds hook <name>`);
+          humanLog(`Usage: ${run} astryx hook <name>`);
           humanLog('');
           break;
         }

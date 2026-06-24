@@ -12,12 +12,12 @@ Before writing any code, install dependencies:
 npm install
 ```
 
-This automatically generates `AGENTS.md` with the XDS component index via `xds init --features agents`. **Read `AGENTS.md` for all XDS component documentation**: it contains CLI commands to browse components, tokens, themes, and design rules.
+This automatically generates `AGENTS.md` with the XDS component index via `astryx init --features agents`. **Read `AGENTS.md` for all XDS component documentation**: it contains CLI commands to browse components, tokens, themes, and design rules.
 
 If `AGENTS.md` is missing, regenerate it:
 
 ```bash
-npx xds init --features agents
+npx astryx init --features agents
 ```
 
 ## How it works
@@ -25,7 +25,7 @@ npx xds init --features agents
 The sandbox is a Next.js app configured for static export (`output: 'export'`). On PRs, the CI workflow builds it and deploys to GitHub Pages at a versioned URL:
 
 ```
-https://facebookexperimental.github.io/xds/{commit}/sandbox/
+https://facebook.github.io/astryx/{commit}/sandbox/
 ```
 
 ## Adding a new page

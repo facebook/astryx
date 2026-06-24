@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file XDSVegaChart.tsx
+ * @file VegaChart.tsx
  * @input A Vega or Vega-Lite spec (distinguished by $schema), parse config/options, view options, and data
  * @output A React component that renders the spec via the Vega runtime
  * @position Primary component in @astryxdesign/vega; owns the Vega View lifecycle
@@ -13,10 +13,10 @@ import React, {useEffect, useRef} from 'react';
 import {parse, View} from 'vega';
 import {compile} from 'vega-lite';
 import {parseSchema} from './schema';
-import type {XDSVegaChartProps, VegaSpec, VegaLiteSpec} from './types';
+import type {VegaChartProps, VegaSpec, VegaLiteSpec} from './types';
 
 /**
- * `XDSVegaChart` renders a Vega or Vega-Lite specification using the Vega runtime.
+ * `VegaChart` renders a Vega or Vega-Lite specification using the Vega runtime.
  *
  * The component inspects `spec.$schema` to determine how to handle the spec:
  * - `vega-lite` schema -> compiled to Vega via `vega-lite`'s `compile()`, then rendered
@@ -46,10 +46,10 @@ import type {XDSVegaChartProps, VegaSpec, VegaLiteSpec} from './types';
  *
  * @example
  * ```
- * import {XDSVegaChart} from '@astryxdesign/vega';
+ * import {VegaChart} from '@astryxdesign/vega';
  *
  * // Vega-Lite spec -- compiled automatically
- * <XDSVegaChart
+ * <VegaChart
  *   spec={{
  *     $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
  *     mark: 'bar',
@@ -63,14 +63,14 @@ import type {XDSVegaChartProps, VegaSpec, VegaLiteSpec} from './types';
  * />
  *
  * // Vega spec -- rendered directly
- * <XDSVegaChart
+ * <VegaChart
  *   spec={{$schema: 'https://vega.github.io/schema/vega/v5.json', marks: []}}
  *   parseConfig={{background: '#1a1a1a'}}
  *   viewOptions={{logLevel: 1, tooltip: myTooltipHandler}}
  * />
  * ```
  */
-export function XDSVegaChart({
+export function VegaChart({
   spec,
   data,
   compileOptions,
@@ -83,7 +83,7 @@ export function XDSVegaChart({
   onReady,
   onError,
   ...props
-}: XDSVegaChartProps) {
+}: VegaChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Keep callbacks in refs so they don't need to be in the dep array.
@@ -180,4 +180,4 @@ export function XDSVegaChart({
   );
 }
 
-XDSVegaChart.displayName = 'XDSVegaChart';
+VegaChart.displayName = 'VegaChart';

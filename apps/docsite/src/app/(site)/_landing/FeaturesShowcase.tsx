@@ -2,6 +2,7 @@
 
 'use client';
 
+import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Card} from '@astryxdesign/core/Card';
 import {VStack, HStack} from '@astryxdesign/core/Layout';
@@ -10,6 +11,8 @@ import {Link} from '@astryxdesign/core/Link';
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {components} from '../../../generated/componentRegistry';
 import {layout} from '../../../layout.stylex';
+import {ComponentsPreview} from './ComponentsPreview';
+import {CliPreview} from './CliPreview';
 
 // Count of public @astryxdesign/core components (excluding hooks and hidden entries).
 // Sourced from the generated registry so the number stays accurate as the
@@ -272,6 +275,15 @@ const styles = stylex.create({
     maxWidth: '100%',
     overflow: 'hidden',
   },
+  // Inset wrapper for a live preview node, pinned to the card's bottom.
+  previewWrap: {
+    marginTop: 'auto',
+    paddingTop: spacingVars['--spacing-10'],
+    alignSelf: 'stretch',
+    width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
+  },
   // Default image: full-bleed to the card width (no max-width cap) so
   // it spans edge-to-edge. height:auto preserves natural aspect ratio.
   // display:block kills the inline baseline gap so there's no mystery
@@ -314,6 +326,8 @@ type Feature = {
     src: string;
     alt: string;
   };
+  /** Live, theme-aware preview node rendered in place of an image. */
+  preview?: ReactNode;
 };
 
 // Looked up by slot key in the JSX below so each card's position in
@@ -327,10 +341,10 @@ const features: Record<string, Feature> = {
     description:
       'Accessible and themeable React components with built-in spacing, dark mode, and flexible styling.',
     href: '/components',
-    image: {
-      src: '/feature-components.png',
-      alt: 'Sample XDS components — Badges, radio, checkbox, switch, Secondary and Primary buttons, and a search input',
-    },
+    // Live, theme-aware sampler of real XDS components instead of a
+    // baked PNG — the old /feature-components.png stayed light on the
+    // dark surface; ComponentsPreview re-themes for dark mode.
+    preview: <ComponentsPreview />,
   },
   themes: {
     title: 'Themes that fit your brand',
@@ -339,7 +353,7 @@ const features: Record<string, Feature> = {
     href: '/themes',
     image: {
       src: '/feature-brand.png',
-      alt: 'A product landing page styled with the Butter theme, shown alongside the theme\'s color swatches and type sample',
+      alt: "A product landing page styled with the Butter theme, shown alongside the theme's color swatches and type sample",
     },
   },
   templates: {
@@ -357,10 +371,10 @@ const features: Record<string, Feature> = {
     description:
       'Scaffold projects, browse templates, generate themes, and get agent-ready docs from the command line or MCP.',
     href: '/docs/cli',
-    image: {
-      src: '/feature-cli.png',
-      alt: 'AI prompt input asking "Can you create me a table page" with a send button',
-    },
+    // Live, theme-aware chat composer instead of a baked PNG — the old
+    // /feature-cli.png stayed light on the dark surface; CliPreview
+    // re-themes for dark mode.
+    preview: <CliPreview />,
   },
 };
 
@@ -412,17 +426,19 @@ function FeatureCard({
   smallImage?: boolean;
 }) {
   const hasImage = feature.image != null;
+  const hasPreview = feature.preview != null;
+  const hasMedia = hasImage || hasPreview;
   // Style precedence:
   //   1. isTall   → cardTall (right-column dominant card)
-  //   2. isFlex   → cardFlex (grow-to-fill image card)
-  //   3. hasImage → card     (natural-height image card)
+  //   2. isFlex   → cardFlex (grow-to-fill media card)
+  //   3. hasMedia → card     (natural-height media card)
   //   4. else     → cardTextOnly (shrink-to-content text-only card)
   // Only one of these applies at a time.
   const cardStyle = isTall
     ? styles.cardTall
     : isFlex
       ? styles.cardFlex
-      : hasImage
+      : hasMedia
         ? styles.card
         : styles.cardTextOnly;
 
@@ -436,8 +452,8 @@ function FeatureCard({
         align="start"
         height="100%"
         xstyle={
-          hasImage
-            ? insetImage
+          hasMedia
+            ? insetImage || hasPreview
               ? styles.innerPaddingImageInset
               : styles.innerPaddingImage
             : styles.innerPaddingText
@@ -456,42 +472,51 @@ function FeatureCard({
           xstyle={styles.exploreLink}>
           Explore →
         </Link>
-        {hasImage && feature.image && (
-          // HStack handles the flex+direction+alignment chrome;
-          // marginTop/padding/overflow/sizing live in the xstyle.
-          // No width prop: the wrapper's width is set in the xstyle to
-          // calc(100% + 2×40px) so it can exceed the inset parent and
-          // bleed the image to the card edges (a width="100%" prop here
-          // would win over the xstyle and clamp it back to the inset).
-          <HStack
-            hAlign={isTall || smallImage ? 'center' : 'start'}
-            xstyle={
-              isTall
-                ? styles.imageWrapTall
-                : insetImage
-                  ? styles.imageWrapInset
-                  : centerImage
-                    ? styles.imageWrapCentered
-                    : styles.imageWrap
-            }>
-            {/* Decorative image — kept as a raw <img> because @astryxdesign/core
+        {hasPreview ? (
+          // vAlign="center" + hAlign="center" centers the preview in
+          // the card's leftover vertical+horizontal space.
+          <HStack hAlign="center" vAlign="center" xstyle={styles.previewWrap}>
+            {feature.preview}
+          </HStack>
+        ) : (
+          hasImage &&
+          feature.image && (
+            // HStack handles the flex+direction+alignment chrome;
+            // marginTop/padding/overflow/sizing live in the xstyle.
+            // No width prop: the wrapper's width is set in the xstyle to
+            // calc(100% + 2×40px) so it can exceed the inset parent and
+            // bleed the image to the card edges (a width="100%" prop here
+            // would win over the xstyle and clamp it back to the inset).
+            <HStack
+              hAlign={isTall || smallImage ? 'center' : 'start'}
+              xstyle={
+                isTall
+                  ? styles.imageWrapTall
+                  : insetImage
+                    ? styles.imageWrapInset
+                    : centerImage
+                      ? styles.imageWrapCentered
+                      : styles.imageWrap
+              }>
+              {/* Decorative image — kept as a raw <img> because @astryxdesign/core
                 does not export a dedicated Image primitive (Thumbnail
                 is a chat/attachment chrome, not a fit-to-container
                 marketing image). Sizing + display:block come from the
                 featureImage / featureImageTall / featureImageSmall
                 xstyles below. */}
-            <img
-              src={feature.image.src}
-              alt={feature.image.alt}
-              {...stylex.props(
-                isTall
-                  ? styles.featureImageTall
-                  : smallImage
-                    ? styles.featureImageSmall
-                    : styles.featureImage,
-              )}
-            />
-          </HStack>
+              <img
+                src={feature.image.src}
+                alt={feature.image.alt}
+                {...stylex.props(
+                  isTall
+                    ? styles.featureImageTall
+                    : smallImage
+                      ? styles.featureImageSmall
+                      : styles.featureImage,
+                )}
+              />
+            </HStack>
+          )
         )}
       </VStack>
     </Card>
@@ -562,13 +587,8 @@ export function FeaturesShowcase() {
           <FeatureCard feature={features.themes} isFlex centerImage />
         </VStack>
         <VStack gap={8} width="100%" height="100%" xstyle={styles.column}>
-          <FeatureCard
-            feature={features.components}
-            isFlex
-            insetImage
-            smallImage
-          />
-          <FeatureCard feature={features.cli} smallImage />
+          <FeatureCard feature={features.components} isFlex insetImage />
+          <FeatureCard feature={features.cli} />
         </VStack>
         <VStack gap={8} width="100%" height="100%" xstyle={styles.column}>
           <FeatureCard feature={features.templates} isTall />

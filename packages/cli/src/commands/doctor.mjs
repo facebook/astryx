@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `xds doctor` command — diagnose a project + environment and report
+ * @file `astryx doctor` command — diagnose a project + environment and report
  * PASS / WARN / FAIL for each check with an actionable fix.
  *
  * Designed to be usable both by humans (clean monochrome checklist) and by
  * AI agents / CI (`--json`). Exit code is the contract: 0 when there are no
- * FAILs (warnings are fine), 1 when any check FAILs — so `xds doctor` works
+ * FAILs (warnings are fine), 1 when any check FAILs — so `astryx doctor` works
  * as a CI gate.
  */
 
@@ -26,7 +26,7 @@ const GLYPH = {
  * @param {import('../api/doctor.mjs').DoctorReport} report
  */
 function printHuman(report) {
-  humanLog('xds doctor — diagnosing your setup\n');
+  humanLog('astryx doctor — diagnosing your setup\n');
   for (const check of report.checks) {
     const glyph = GLYPH[check.status] ?? '\u00b7';
     humanLog(`  ${glyph} ${check.label}`);
@@ -53,7 +53,7 @@ function printHuman(report) {
 }
 
 /**
- * Register the `xds doctor` command.
+ * Register the `astryx doctor` command.
  * @param {import('commander').Command} program
  */
 export function registerDoctor(program) {

@@ -121,7 +121,7 @@ export interface EmptyStateProps extends BaseProps<HTMLDivElement> {
  * Displays an icon or illustration, title, optional description, and action buttons.
  *
  * Uses `role="status"` to announce content to screen readers.
- * Styles use XDS theme tokens via StyleX. Wrap your app in <Theme> to apply a theme.
+ * Styles use Astryx theme tokens via StyleX. Wrap your app in <Theme> to apply a theme.
  *
  * @example
  * ```

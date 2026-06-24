@@ -10,7 +10,7 @@ export default function LinkInlineLink() {
     <Text type="body">Read the{' '}
       <Link href="#">
         documentation
-      </Link>{' '}for more information about using XDS components.
+      </Link>{' '}for more information about using Astryx components.
           </Text>
   );
 }

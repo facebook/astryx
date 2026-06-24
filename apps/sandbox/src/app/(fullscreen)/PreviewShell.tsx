@@ -310,7 +310,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
       return;
     }
     iframe.contentWindow.postMessage(
-      {type: 'xds-theme-sync', theme: themeName, mode},
+      {type: 'astryx-theme-sync', theme: themeName, mode},
       '*',
     );
   }, [themeName, mode]);

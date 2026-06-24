@@ -303,7 +303,7 @@ function defaultProps(type: BlockType): Record<string, unknown> {
 // Styles
 // ---------------------------------------------------------------------------
 // The layout (sidebar + scrollable canvas, full height) is all Layout +
-// LayoutPanel now. The few remaining styles are things XDS has no prop for:
+// LayoutPanel now. The few remaining styles are things Astryx has no prop for:
 // the responsive canvas max-width, a selection ring on the active block card,
 // and the circular icon chip's surface.
 

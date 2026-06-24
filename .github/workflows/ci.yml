@@ -62,13 +62,13 @@ jobs:
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           cache: 'pnpm'
 
       - run: pnpm install --frozen-lockfile
 
-      # docsite `generate` runs `xds theme build`, which imports the compiled
-      # @xds/core/theme entry (dist/theme/index.js). Build core first so that
+      # docsite `generate` runs `astryx theme build`, which imports the compiled
+      # @astryxdesign/core/theme entry (dist/theme/index.js). Build core first so that
       # entry exists — otherwise generate fails with "Cannot find module".
       - name: Build core package
         run: pnpm -F @astryxdesign/core build
@@ -118,7 +118,7 @@ jobs:
       - uses: actions/setup-node@v6
         if: needs.check-scope.outputs.docsite_only != 'true'
         with:
-          node-version: 22
+          node-version: 24
           cache: 'pnpm'
 
       - run: pnpm install --frozen-lockfile
@@ -172,7 +172,7 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true'
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -209,7 +209,7 @@ jobs:
         with:
           path: apps/sandbox/.next/cache
           # No restore-keys fallback — see deploy.yml for the full rationale.
-          # The Next.js module cache bakes in @xds/core's resolved export graph,
+          # The Next.js module cache bakes in @astryxdesign/core's resolved export graph,
           # so a loose fallback can restore a cache built against a different
           # export shape and silently produce wrong builds (broke #2941's
           # post-merge deploy). A changed key yields a cold (safe) rebuild.
@@ -358,7 +358,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Download analysis artifact
         uses: actions/download-artifact@v8
@@ -435,7 +435,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           cache: 'pnpm'
 
       - name: Download analysis artifact
@@ -482,7 +482,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Download analysis artifact
         uses: actions/download-artifact@v8

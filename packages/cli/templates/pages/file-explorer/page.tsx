@@ -187,19 +187,19 @@ const FILESYSTEM: FileSystemItem[] = [
     ],
   },
   {
-    id: 'xds',
-    name: 'xds',
+    id: 'astryx',
+    name: 'astryx',
     type: 'folder',
     children: [
-      {id: 'xds-readme', name: 'README.md', type: 'file'},
-      {id: 'xds-pkg', name: 'package.json', type: 'file'},
+      {id: 'astryx-readme', name: 'README.md', type: 'file'},
+      {id: 'astryx-pkg', name: 'package.json', type: 'file'},
       {
-        id: 'xds-packages',
+        id: 'astryx-packages',
         name: 'packages',
         type: 'folder',
         children: [
           {
-            id: 'xds-core',
+            id: 'astryx-core',
             name: 'core',
             type: 'folder',
             children: [
@@ -216,7 +216,7 @@ const FILESYSTEM: FileSystemItem[] = [
             ],
           },
           {
-            id: 'xds-cli',
+            id: 'astryx-cli',
             name: 'cli',
             type: 'folder',
             children: [{id: 'cli-index', name: 'index.ts', type: 'file'}],
@@ -224,7 +224,7 @@ const FILESYSTEM: FileSystemItem[] = [
         ],
       },
       {
-        id: 'xds-apps',
+        id: 'astryx-apps',
         name: 'apps',
         type: 'folder',
         children: [

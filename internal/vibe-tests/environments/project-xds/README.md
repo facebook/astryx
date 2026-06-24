@@ -3,9 +3,9 @@
 This project uses XDS components. Use the CLI to look up component props and usage before writing code:
 
 ```bash
-npx xds component --list              # list all available components
-npx xds component Button              # look up props, variants, and usage
-npx xds component IconButton          # each component has its own entry
+npx astryx component --list              # list all available components
+npx astryx component Button              # look up props, variants, and usage
+npx astryx component IconButton          # each component has its own entry
 ```
 
 If the CLI is not available, install dependencies first:
