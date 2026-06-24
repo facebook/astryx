@@ -5,7 +5,7 @@
 import {Badge} from '@astryxdesign/core/Badge';
 import {Table} from '@astryxdesign/core/Table';
 import {List, ListItem} from '@astryxdesign/core/List';
-import {renderInlineCode} from './renderInlineCode';
+import {renderInlineMarkdown} from './inlineMarkdown';
 
 export function ListBlock({
   items,
@@ -43,7 +43,7 @@ export function ListBlock({
             key: 'text',
             header: 'Practice',
             renderCell: (item: Record<string, unknown>) =>
-              renderInlineCode(item.text as string),
+              renderInlineMarkdown(item.text as string),
           },
         ]}
         density="spacious"
@@ -62,7 +62,7 @@ export function ListBlock({
   return (
     <List density="compact" listStyle={xdsListStyle}>
       {items.map((item, i) => (
-        <ListItem key={i} label={renderInlineCode(item)} />
+        <ListItem key={i} label={renderInlineMarkdown(item)} />
       ))}
     </List>
   );
