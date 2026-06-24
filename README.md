@@ -2,18 +2,22 @@
 
 # Astryx
 
-A design system for building internal tools and products.
+An open source design system that's fully customizable and agent ready.
+
+> **Currently in Beta** · Built on [React](https://react.dev) and [StyleX](https://stylexjs.com)
 
 ## Overview
 
-Astryx is an open source design system born from years of building internal tools at scale in Meta's monorepo. It provides foundations, components, and patterns that work together to deliver consistent, accessible interfaces.
+Astryx is an open source design system born from years of building internal tools at scale in Meta's monorepo. It has grown inside Meta over the last eight years and powers over 13,000 apps, shaped by the engineers, designers, and product teams who depend on it every day.
+
+It provides the foundations, components, templates, and themes that work together to deliver consistent, accessible interfaces — and it's designed so both humans and AI agents can build with the same tooling.
 
 **What makes Astryx different:**
 
-- **Open internals:** All primitives are exported and composable, not hidden. Build exactly what you need.
-- **Plugin architecture:** Transform and extend components through a unified plugin system
-- **Automatic spacing:** Context-aware spacing compensation eliminates "double padding" issues
-- **AI-ready:** JSDoc annotations with composition hints for LLM-assisted development
+- **Open internals:** All primitives are exported and composable, not hidden. Compose at any level and build exactly what you need.
+- **Automatic spacing:** Context-aware spacing compensation eliminates "double padding" issues so layouts stay clean without manual fixups.
+- **Themeable:** First-class theming with a CSS variable cascade. Ten ready-made themes, all fully customizable.
+- **Agent ready:** JSDoc annotations with composition hints, plus a CLI and MCP server so agents can scaffold, browse, and document using the same API you do.
 
 ## Getting Started
 
@@ -49,21 +53,28 @@ Then follow the [setup guide](packages/core/README.md#quick-start) to import sty
 
 ## Packages
 
-| Package                                         | Description                                         | README                                      |
-| ----------------------------------------------- | --------------------------------------------------- | ------------------------------------------- |
-| [`@astryxdesign/core`](packages/core)                    | Components, theme system, and utilities             | [README](packages/core/README.md)           |
-| [`@astryxdesign/cli`](packages/cli)                      | CLI tooling: component docs, scaffolding, codemods | [README](packages/cli/README.md)            |
-| [`@astryxdesign/build`](packages/build)                  | Build plugins for StyleX source builds              | [README](packages/build/README.md)          |
-| [`@astryxdesign/vega`](packages/vega)                    | Vega/Vega-Lite chart wrapper                        | [README](packages/vega/README.md)           |
-| [`@astryxdesign/theme-default`](packages/themes/default) | Clean, professional default theme                   | [README](packages/themes/default/README.md) |
-| [`@astryxdesign/theme-neutral`](packages/themes/neutral) | Muted, minimal aesthetic theme                      | [README](packages/themes/neutral/README.md) |
-| [`@astryxdesign/theme-daily`](packages/themes/daily)     | Warm, productivity-focused theme                    | [README](packages/themes/daily/README.md)   |
+| Package                           | Description                                                                                                                   | README                             |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| [`@astryxdesign/core`](packages/core)      | Components, theme system, and utilities                                                                                       | [README](packages/core/README.md)  |
+| [`@astryxdesign/cli`](packages/cli)        | CLI tooling: component docs, templates, scaffolding, themes, and codemods                                                     | [README](packages/cli/README.md)   |
+| [`@astryxdesign/build`](packages/build)    | Build plugins for StyleX source builds                                                                                        | [README](packages/build/README.md) |
+| [`@astryxdesign/vega`](packages/vega)      | Vega/Vega-Lite chart wrapper                                                                                                  | [README](packages/vega/README.md)  |
+| [`@astryxdesign/theme-*`](packages/themes) | Ten ready-made, fully customizable themes (default, neutral, daily, butter, chocolate, matcha, stone, gothic, brutalist, y2k) | [README](packages/themes)          |
+
+> `@astryxdesign/lab` hosts experimental components for testing in Storybook and the sandbox; it is not published.
+
+## Features
+
+- **Over 90 components** — accessible, themeable React components with built-in spacing, dark mode, and flexible styling.
+- **Themes that fit your brand** — fully customizable themes ready for use. Make it yours without starting from scratch.
+- **Ready to ship templates** — production-ready templates for common pages; just plug in your content.
+- **A design system your agent can use** — scaffold projects, browse templates, generate themes, and get agent-ready docs from the command line or MCP.
 
 ## Philosophy
 
-- **AI-First:** Built to produce better trajectories in AI-assisted development, with auto-documentation and patterns for LLM consumption
-- **Open Internals:** Unlike closed systems, all subcomponents are exported and recommended for use. Compose at any level.
-- **Themeable:** First-class theming with CSS variable cascade
+- **Design for speed:** Foundations you can trust, speed you can feel. Teams stop reinventing the basics and start shipping the ideas that matter.
+- **Built by the people who use it:** The system gets sharper when we put it to work in the real world. Using it in context strengthens the whole system for everyone.
+- **Ready for what's next:** Opinionated foundations paired with flexible patterns so your system keeps pace, no matter how the craft evolves.
 
 ## Architecture
 
@@ -83,8 +94,8 @@ Battle-tested design solutions for common interactions and workflows: table page
 
 | Directory   | Purpose                                                     |
 | ----------- | ----------------------------------------------------------- |
-| `apps/`     | Example apps and Storybook                                  |
-| `packages/` | Published packages: core, cli, themes                       |
+| `apps/`     | Example apps, the docsite, and Storybook                    |
+| `packages/` | Published packages: core, cli, build, vega, themes          |
 | `internal/` | Internal tooling: test utilities, eslint plugin, vibe tests |
 
 ## Contributing
