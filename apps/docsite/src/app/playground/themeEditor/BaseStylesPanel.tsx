@@ -270,14 +270,36 @@ export function BaseStylesPanel({
     return sm === md - 4 && lg === md + 4 ? md : null;
   })();
 
+  // Auto-highlight the density preset whose scale matches the current tokens, so
+  // the active density reflects the theme even before the user clicks a card.
+  // An explicitly-applied preset (activePreset) always wins.
+  const derivedPreset = (() => {
+    if (
+      typeSizeMatch == null ||
+      radiusMatch == null ||
+      spacingMatch == null ||
+      sizeMatch == null ||
+      matchedRatio == null
+    ) {
+      return null;
+    }
+    const entry = Object.entries(UNIFIED_PRESETS).find(
+      ([, p]) =>
+        p.typeBase === typeSizeMatch &&
+        p.typeRatio === matchedRatio.value &&
+        p.spacing === spacingMatch &&
+        p.radius === radiusMatch &&
+        p.sizeMd === sizeMatch,
+    );
+    return entry?.[0] ?? null;
+  })();
+  const effectivePreset = activePreset ?? derivedPreset;
+
   return (
     <VStack gap={5}>
       {/* Color */}
       <VStack gap={3}>
-        <HStack
-          vAlign="center"
-          justify="between"
-          xstyle={styles.headerSpace}>
+        <HStack vAlign="center" justify="between" xstyle={styles.headerSpace}>
           <Text type="label" color="secondary">
             Create from accent
           </Text>
@@ -339,11 +361,11 @@ export function BaseStylesPanel({
       {/* Presets */}
       <VStack gap={3}>
         <Text type="label" color="secondary">
-          Preset
+          Density
         </Text>
         <Grid columns={4} gap={2}>
           {Object.keys(UNIFIED_PRESETS).map(key => {
-            const isSelected = activePreset === key;
+            const isSelected = effectivePreset === key;
             const gap =
               key === 'compact'
                 ? 1

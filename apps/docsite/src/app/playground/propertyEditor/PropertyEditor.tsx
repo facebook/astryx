@@ -50,10 +50,10 @@ import {getComponentByModule} from './componentLookup';
 const NUMERIC_RE = /^-?\d+(\.\d+)?$/;
 
 const s = stylex.create({
-  // Cap the scrollable content area. The popover itself is unbounded, so the
-  // footer always sits directly below the content, outside the scroll region.
+  // Fill the panel's available height; the content scrolls and the footer
+  // (Apply) stays pinned at the bottom (the Layout is height="fill").
   contentScroll: {
-    maxHeight: 360,
+    overflowY: 'auto',
   },
   applyBtn: {
     width: '100%',
@@ -339,7 +339,7 @@ export function PropertyEditor({
 
   return (
     <Layout
-      height="auto"
+      height="fill"
       content={
         <LayoutContent padding={3} xstyle={s.contentScroll}>
           {body}

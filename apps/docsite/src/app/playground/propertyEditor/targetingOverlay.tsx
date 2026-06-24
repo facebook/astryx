@@ -4,132 +4,176 @@
 
 /**
  * @file targetingOverlay.tsx
- * @input Pointer events inside the preview iframe + the current clean source
- * @output Hover/selection overlays, the selection badge, and the Properties popover
- * @position Playground preview iframe — the element-targeting half of property editing.
+ * @input Pointer events inside the preview iframe + messages from the parent
+ * @output Hover/selection overlays + a minimal selection badge (name + deselect)
+ * @position Playground preview iframe — the element-targeting half of editing.
  *
  * Runs inside the preview iframe. The hover/selection overlays and their labels
  * are vanilla DOM (created imperatively and positioned every animation frame for
- * performance); each label hosts a React root rendering the selection badge,
- * whose popover embeds the PropertyEditor. The preview page drives this via
- * createTargetingController() and the setActiveSiteMode/setCleanSource setters.
+ * performance); each label hosts a React root rendering the selection badge. The
+ * actual editing UI lives in the parent's left-panel "Design Editor" — selection
+ * flows there via postMessage (targeting-select). The parent drives the
+ * apply-target highlight preview back here via previewSelectionTarget.
  */
 
-import {useState} from 'react';
 import {createRoot, type Root} from 'react-dom/client';
 import * as stylex from '@stylexjs/stylex';
 import './targetingOverlay.css';
-import {Settings, X} from 'lucide-react';
+import {Crosshair, X} from 'lucide-react';
 import {HStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 import {Button} from '@astryxdesign/core/Button';
-import {Popover} from '@astryxdesign/core/Popover';
 import {Theme, MediaTheme} from '@astryxdesign/core/theme';
 import type {ThemeMode} from '@astryxdesign/core/theme';
 import {astryxTheme} from '../../../themes/astryx';
-import {PropertyEditor} from './PropertyEditor';
+import type {StyleApplyTarget} from '../styleOverride/StyleScopeEditor';
+import {componentDisplayName} from '../themeEditor/componentThemeTargets';
 
 const styles = stylex.create({
   badge: {minHeight: 32},
   badgeActions: {marginRight: -10},
-  popover: {paddingBlock: 0, paddingInline: 0},
 });
 
-// Blue label for a selected instance with a popover for its properties.
+// Minimal blue label for a selected instance: the component name + a deselect
+// button. Editing happens in the parent's Design Editor panel, not here.
 function TargetLabel({
   name,
   isInteractive,
-  id,
-  code,
-  onCodeChange,
 }: {
   name: string;
   isInteractive: boolean;
-  id: string;
-  code: string;
-  onCodeChange: (code: string) => void;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const badge = (
+  return (
     <MediaTheme mode="dark">
       <HStack gap={2} vAlign="center" xstyle={styles.badge}>
-        <Text>{name}</Text>
+        <Crosshair size={12} />
+        <Text>{componentDisplayName(name)}</Text>
         {isInteractive && (
           <HStack xstyle={styles.badgeActions}>
-            <Button
-              label="Properties"
-              variant="ghost"
-              size="sm"
-              isIconOnly
-              icon={<Settings size={12} />}
-            />
             <Button
               label="Deselect"
               variant="ghost"
               size="sm"
               isIconOnly
               icon={<X size={12} />}
-              onClick={() => clearSelectionOverlay()}
+              onClick={() => deselectFromBadge()}
             />
           </HStack>
         )}
       </HStack>
     </MediaTheme>
   );
-
-  if (!isInteractive) {
-    return badge;
-  }
-
-  const sep = id.lastIndexOf('#');
-  const component = sep >= 0 ? id.slice(0, sep) : id;
-  const instanceIndex = sep >= 0 ? Number(id.slice(sep + 1)) : 0;
-
-  return (
-    <Popover
-      label="Component properties"
-      placement="below"
-      alignment="start"
-      width={400}
-      isOpen={isOpen}
-      onOpenChange={setIsOpen}
-      xstyle={styles.popover}
-      content={
-        <PropertyEditor
-          code={code}
-          onCodeChange={onCodeChange}
-          externalSelection={{component, instanceIndex}}
-          onApplied={() => setIsOpen(false)}
-        />
-      }>
-      {badge}
-    </Popover>
-  );
 }
 
 const labelRoots = new WeakMap<HTMLElement, Root>();
 const activeLabels = new Set<HTMLDivElement>();
 
-// The selection tool (badges, popover, ring) is Playground chrome, not preview
-// content — it always renders on the site theme (Astryx) so it stays visually
-// distinct from whatever theme the preview is showing. We only track the site
-// color mode so the chrome matches light/dark.
+// The selection tool (badge, rings) is Playground chrome, not preview content —
+// it always renders on the site theme (Astryx) so it stays visually distinct
+// from whatever theme the preview is showing. We only track the site color mode
+// so the chrome matches light/dark.
 let activeSiteMode: ThemeMode = 'light';
 
-let cleanSource = '';
+// Set by createTargetingController so the badge's deselect can notify the parent.
+let postToParentFn: ((msg: Record<string, unknown>) => void) | null = null;
+
+function deselectFromBadge() {
+  clearSelectionOverlay();
+  postToParentFn?.({type: 'targeting-deselect'});
+}
+
+// Hover/selection highlight state, tracked by the targeted instance id
+// (`Component#index`). We outline the DOM nodes directly (via data attributes +
+// CSS) rather than a positioned box, so the outline hugs each element's real
+// shape — following its border-radius — and tracks layout/scroll for free.
+//
+// Selection draws TWO rings so the Design Editor's Style scopes read at a
+// glance: the selected element's rendered copies get a SOLID ring (what
+// Properties / This-instance affect), and the type's other instances get a
+// FAINT ring (what All-instances additionally affects). Hover keeps one ring.
+const highlight = {
+  hoverId: null as string | null,
+  selId: null as string | null,
+};
+
+function clearAttr(attr: string) {
+  for (const el of document.querySelectorAll(`[${attr}]`)) {
+    el.removeAttribute(attr);
+  }
+}
+
+function typePrefix(id: string): string {
+  const sep = id.lastIndexOf('#');
+  return sep >= 0 ? id.slice(0, sep) : id;
+}
+
+function applyToExact(id: string, attr: string) {
+  for (const el of document.querySelectorAll(`[data-pg-id="${id}"]`)) {
+    el.setAttribute(attr, '');
+  }
+}
+
+function applyToType(id: string, attr: string) {
+  for (const el of document.querySelectorAll(
+    `[data-pg-id^="${typePrefix(id)}#"]`,
+  )) {
+    el.setAttribute(attr, '');
+  }
+}
+
+function setHoverHighlight(id: string | null) {
+  clearAttr('data-pg-hl-hover');
+  if (!id) {
+    return;
+  }
+  applyToExact(id, 'data-pg-hl-hover');
+}
+
+function setSelectionHighlight(id: string | null) {
+  clearAttr('data-pg-hl-sel');
+  if (!id) {
+    return;
+  }
+  applyToExact(id, 'data-pg-hl-sel');
+}
+
+/** Re-apply the element outlines (after a re-render, selection, or view change). */
+export function reapplyHighlights() {
+  setHoverHighlight(highlight.hoverId);
+  setSelectionHighlight(highlight.selId);
+}
+
+/**
+ * Preview which elements a Style apply target would affect (driven by the parent
+ * Design Editor hovering the apply buttons): `instance` rings just the selected
+ * element, `all` rings every instance of the type, `null` restores the default
+ * selection highlight (just the selected element, solid).
+ */
+export function previewSelectionTarget(target: StyleApplyTarget | null) {
+  const id = highlight.selId;
+  if (!id) {
+    return;
+  }
+  if (target === null) {
+    setSelectionHighlight(id);
+    return;
+  }
+  clearAttr('data-pg-hl-sel');
+  if (target === 'instance') {
+    applyToExact(id, 'data-pg-hl-sel');
+  } else {
+    applyToType(id, 'data-pg-hl-sel');
+  }
+}
+
+/** Clear the current selection overlay (e.g. when the parent deselects). */
+export function clearSelectionFromParent() {
+  clearSelectionOverlay();
+}
 
 /** The site color mode the badges render in (set by the preview page). */
 export function setActiveSiteMode(mode: ThemeMode) {
   activeSiteMode = mode;
-}
-
-/** The un-annotated source the popover's PropertyEditor edits against. */
-export function setCleanSource(source: string) {
-  cleanSource = source;
-}
-
-function postEditToParent(code: string) {
-  window.parent.postMessage({type: 'preview-edit-code', code}, '*');
 }
 
 function renderTargetLabel(label: HTMLDivElement) {
@@ -139,16 +183,9 @@ function renderTargetLabel(label: HTMLDivElement) {
   }
   const name = label.dataset.labelText ?? '';
   const isInteractive = label.dataset.interactive === 'true';
-  const id = label.dataset.labelId ?? '';
   root.render(
     <Theme theme={astryxTheme} mode={activeSiteMode}>
-      <TargetLabel
-        name={name}
-        isInteractive={isInteractive}
-        id={id}
-        code={cleanSource}
-        onCodeChange={postEditToParent}
-      />
+      <TargetLabel name={name} isInteractive={isInteractive} />
     </Theme>,
   );
 }
@@ -177,6 +214,8 @@ export function refreshTargetLabels() {
   for (const label of activeLabels) {
     renderTargetLabel(label);
   }
+  // The preview may have re-rendered with fresh DOM nodes; re-apply outlines.
+  reapplyHighlights();
 }
 
 /**
@@ -242,6 +281,14 @@ function updateSelectionPosition() {
 function selectElement(id: string) {
   ensureSelectionOverlay();
   selectionState.id = id;
+  // Pre-seed the label text/id so updateSelectionPosition's render guard doesn't
+  // re-render and discard it.
+  if (selectionState.label) {
+    const sep = id.lastIndexOf('#');
+    selectionState.label.dataset.labelText = sep >= 0 ? id.slice(0, sep) : id;
+    selectionState.label.dataset.labelId = id;
+    renderTargetLabel(selectionState.label);
+  }
   const el = document.querySelector<HTMLElement>(`[data-pg-id="${id}"]`);
   if (el) {
     el.scrollIntoView({block: 'nearest', behavior: 'smooth'});
@@ -265,6 +312,8 @@ function clearSelectionOverlay() {
   if (selectionState.overlay) {
     selectionState.overlay.dataset.visible = 'false';
   }
+  highlight.selId = null;
+  setSelectionHighlight(null);
 }
 
 /**
@@ -275,6 +324,8 @@ function clearSelectionOverlay() {
 export function createTargetingController(
   postToParent: (msg: Record<string, unknown>) => void,
 ) {
+  // Expose for the badge's deselect button (rendered in its own React root).
+  postToParentFn = postToParent;
   let enabled = false;
   let overlayEl: HTMLDivElement | null = null;
   let labelEl: HTMLDivElement | null = null;
@@ -342,6 +393,10 @@ export function createTargetingController(
       overlayEl.dataset.visible = 'false';
     }
     lastHoveredId = null;
+    if (highlight.hoverId) {
+      highlight.hoverId = null;
+      setHoverHighlight(null);
+    }
   }
 
   function clearSelection() {
@@ -372,6 +427,10 @@ export function createTargetingController(
         lastHoveredId = id;
         positionOverlay(target);
         const parsed = parsePgId(id);
+        // Outline the hovered element directly (its real border-radius); the
+        // positioned box only anchors the label now.
+        highlight.hoverId = id;
+        setHoverHighlight(id);
         postToParent({
           type: 'targeting-hover',
           id,
@@ -408,6 +467,11 @@ export function createTargetingController(
 
     clearSelection();
     selectElement(id);
+
+    // Persistently outline the selection: solid ring on this element's copies,
+    // faint ring on the type's other instances (so the popover's scopes read).
+    highlight.selId = id;
+    setSelectionHighlight(id);
 
     postToParent({
       type: 'targeting-select',

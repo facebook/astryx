@@ -4,7 +4,6 @@
 
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePathname, useRouter} from 'next/navigation';
 import {Sun, Moon} from 'lucide-react';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
@@ -15,10 +14,14 @@ import {Theme} from '@astryxdesign/core/theme';
 import type {DefinedTheme} from '@astryxdesign/core/theme';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
-import {SelectableCard} from '@astryxdesign/core/SelectableCard';
 import {Selector} from '@astryxdesign/core/Selector';
 import {Divider} from '@astryxdesign/core/Divider';
 import {useMediaQuery} from '@astryxdesign/core/hooks';
+import {
+  ThemePicker,
+  ThemePickerCard,
+  type ThemePickerItem,
+} from './ThemePicker';
 import {ThemeShowcaseStore} from '../../../../packages/cli/templates/pages/theme-showcase/page';
 import {getThemeShowcaseContent} from './themeShowcaseContent';
 import {buildPlaygroundHref} from './playgroundLink';
@@ -34,10 +37,6 @@ import {useThemeMode} from '../app/providers';
 // code editor when the user clicks "Open in Playground" from a theme.
 const THEME_SHOWCASE_SOURCE =
   templates.find(t => t.slug === 'theme-showcase')?.source ?? '';
-
-// CDN host for the per-theme picker banners (same host as the showcase
-// product photos), so the artwork can be updated without a code change.
-const PICKER_CDN = 'https://lookaside.facebook.com/assets/astryx';
 
 // Gallery order — themes are listed in the same canonical visual-
 // closeness order used elsewhere (most restrained → most expressive).
@@ -160,15 +159,6 @@ const styles = stylex.create({
     flexDirection: 'column' as const,
     gap: 'var(--spacing-8)',
   },
-  // Theme list — vertical stack of themed cards, one per theme.
-  // gap separates each card so the inset accent border of the
-  // selected card has breathing room around it (rather than
-  // bumping into neighboring cards).
-  themeList: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: 'var(--spacing-2)',
-  },
   // Make every action button (hero CTAs, mode toggle, Open in Playground)
   // stretch to the sidebar width and left-align its label
   // (Button's default is centered, which looks off in a vertical
@@ -184,171 +174,6 @@ const styles = stylex.create({
   heroPrimaryButton: {
     flex: 1,
     minWidth: 0,
-  },
-  // Themed theme-row card. The SelectableCard wrapper itself
-  // stays variant="transparent" + padding=0 so it doesn't paint a
-  // surface from the OUTER docsite theme; the inner themedSurface
-  // div (rendered inside its own <Theme>) does the painting using
-  // the theme being represented. That way each card reads as a
-  // miniature brand preview rather than a docsite-Astryx card with
-  // theme-colored text on top.
-  themeCard: {
-    width: '100%',
-  },
-  // Inner card surface — lives inside the per-card <Theme>
-  // wrapper so the theme's heading typography (used by the
-  // wordmark) + brand color tokens (used by the gradient) all
-  // resolve to the represented theme's values. Each card becomes
-  // a mood tile: soft multi-radial gradient backdrop made from
-  // the theme's accent + categorical hues, with the wordmark
-  // centered on top in the theme's heading font.
-  //
-  // Fixed height so every card lines up identically regardless of
-  // the theme's heading font (cursive themes render glyphs taller
-  // than sans-serif themes). 120px reads as a hero tile rather
-  // than a list row.
-  //
-  // Gradient is a stack of 5 radial gradients placed at the
-  // corners + center, using semi-transparent theme colors so they
-  // blend into each other (rather than stacking as discrete
-  // blobs). Mixed with surface as the base so light + dark themes
-  // both get a soft, painterly look.
-  themedSurface: {
-    height: 120,
-    padding: 'var(--spacing-4)',
-    // Hardcoded radius rather than var(--radius-container) so each
-    // card matches the others regardless of the represented theme's
-    // own container radius. (Matcha uses a smaller container
-    // radius than Neutral, which would otherwise visibly differ
-    // when its card lives in the picker beside the others.) The
-    // outer SelectableCard's selected-state inset shadow uses
-    // the same radius implicitly via its own borderRadius, so this
-    // value should stay in sync with the docsite's container
-    // radius (12px in Astryx).
-    borderRadius: 12,
-    display: 'flex',
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative' as const,
-    overflow: 'hidden',
-    backgroundColor: 'var(--color-background-surface)',
-    backgroundImage: [
-      // Top-left: accent
-      'radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--color-accent) 65%, transparent), transparent 60%)',
-      // Top-right: orange categorical
-      'radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--color-background-orange) 70%, transparent), transparent 60%)',
-      // Bottom-left: green categorical
-      'radial-gradient(circle at 0% 100%, color-mix(in srgb, var(--color-background-green) 70%, transparent), transparent 60%)',
-      // Bottom-right: blue categorical
-      'radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--color-background-blue) 70%, transparent), transparent 60%)',
-      // Center: accent-muted bloom that softens everything else
-      'radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--color-accent-muted) 50%, transparent), transparent 70%)',
-    ].join(', '),
-  },
-  // Per-theme bespoke picker artwork — one rule per theme that
-  // has a custom photo (vs. the multi-radial-gradient default).
-  // Each rule sets the picker card's background to a dedicated
-  // theme-<slug>-picker.png banner hosted on the XDS asset CDN
-  // (see PICKER_CDN). These are SEPARATE files from the
-  // theme-<slug>-preview.png images used on the /themes overview +
-  // detail page hero — these picker assets are sized and
-  // art-directed for the small 120px-tall picker card.
-  // background-size:cover so each image always fills the card
-  // regardless of the source's intrinsic dimensions.
-  surfaceButter: {
-    backgroundColor: 'transparent',
-    backgroundImage: `url(${PICKER_CDN}/theme-butter-picker.png)`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-  },
-  surfaceGothic: {
-    backgroundColor: 'transparent',
-    backgroundImage: `url(${PICKER_CDN}/theme-gothic-picker.png)`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-  },
-  surfaceY2k: {
-    backgroundColor: 'transparent',
-    backgroundImage: `url(${PICKER_CDN}/theme-y2k-picker.png)`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-  },
-  surfaceStone: {
-    backgroundColor: 'transparent',
-    backgroundImage: `url(${PICKER_CDN}/theme-stone-picker.png)`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-  },
-  surfaceNeutral: {
-    backgroundColor: 'transparent',
-    backgroundImage: `url(${PICKER_CDN}/theme-neutral-picker.png)`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-  },
-  surfaceMatcha: {
-    backgroundColor: 'transparent',
-    backgroundImage: `url(${PICKER_CDN}/theme-matcha-picker.png)`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-  },
-  // Per-theme wordmark color override. Most image-backed cards use
-  // --color-accent for the wordmark so the brand signature reads
-  // as the dominant text element on top of the photo backdrop
-  // (the default --color-text-primary often disappears into a
-  // busy image, whereas the theme's accent provides natural
-  // contrast against the rest of the brand-colored artwork).
-  // The token resolves inside each card's own <Theme> wrapper,
-  // so each card picks up its theme's accent — Butter's brand
-  // blue, Gothic's accent, etc.
-  labelAccent: {
-    color: 'var(--color-accent)',
-  },
-  // Theme name on top of the gradient — rendered in the theme's
-  // heading font so the wordmark previews the brand at a glance.
-  // Color uses --color-text-primary so it reads against the soft
-  // gradient backdrop in both light and dark themes.
-  //
-  // Fixed fontSize (24px desktop / 20px narrow) overrides each theme's own
-  // heading type-scale so the picker reads at a uniform size across all 6 cards.
-  // Without this, themes with larger heading defaults (e.g. Gothic's
-  // Manufacturing Consent display family) render noticeably bigger
-  // than themes with smaller defaults. Wide-glyph cursive fonts
-  // (e.g. Matcha's script) still render visually wider than sans-
-  // serif fonts at the same nominal size — that's a function of
-  // the font's character widths, not the size — so we add ellipsis
-  // truncation as a defensive measure for the longest wordmarks.
-  //
-  // position:relative + zIndex:1 keeps the wordmark sitting cleanly
-  // on top of the multi-gradient stack underneath.
-  themeCardLabel: {
-    // Don't pin fontFamily — let each theme's type:display-3
-    // component override drive the typography. That way Butter
-    // renders in Sarina (cursive), Gothic in Manufacturing Consent
-    // (distressed display), and themes without a display family
-    // override fall back to their heading font (Outfit, system,
-    // etc.). The Text below uses type="display-3" so the
-    // .astryx-text.display-3 selector in each theme's @scope'd CSS (legacy class
-    // selector; text also emits data-type="display-3")
-    // applies the right family per card.
-    fontSize: 24,
-    lineHeight: 1.2,
-    color: 'var(--color-text-primary)',
-    maxWidth: '100%',
-    whiteSpace: 'nowrap' as const,
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    position: 'relative' as const,
-    zIndex: 1,
-  },
-  mobileThemeCardLabel: {
-    fontSize: 20,
   },
   // Mobile-only floating toolbar that replaces the sidebar at
   // narrow viewports. position:fixed so it stays pinned to the
@@ -446,39 +271,6 @@ const styles = stylex.create({
     },
   },
 });
-
-// Per-theme override registry for the picker cards. Themes without
-// an entry here render with the default radial-gradient backdrop
-// + default --color-text-primary wordmark. Themes WITH an entry
-// can swap the card's `surface` (background image) and the `label`
-// color (most use labelAccent so the wordmark reads as a brand
-// signature on top of the photo). Adding artwork for a new theme
-// is a two-step addition: upload a theme-<slug>-picker.png banner to
-// the asset CDN (PICKER_CDN) + add a `surface<Name>` rule into the
-// styles block above, then reference both here.
-const PICKER_OVERRIDES: Record<
-  string,
-  {surface: StyleXStyles; label?: StyleXStyles}
-> = {
-  '@astryxdesign/theme-butter': {
-    surface: styles.surfaceButter,
-    label: styles.labelAccent,
-  },
-  '@astryxdesign/theme-gothic': {
-    surface: styles.surfaceGothic,
-    label: styles.labelAccent,
-  },
-  '@astryxdesign/theme-y2k': {surface: styles.surfaceY2k, label: styles.labelAccent},
-  '@astryxdesign/theme-stone': {surface: styles.surfaceStone, label: styles.labelAccent},
-  '@astryxdesign/theme-neutral': {
-    surface: styles.surfaceNeutral,
-    label: styles.labelAccent,
-  },
-  '@astryxdesign/theme-matcha': {
-    surface: styles.surfaceMatcha,
-    label: styles.labelAccent,
-  },
-};
 
 function ThemeHeading({
   align = 'start',
@@ -612,7 +404,8 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
     return packages
       .filter(
         p =>
-          p.name.startsWith('@astryxdesign/theme-') && p.name !== '@astryxdesign/theme-default',
+          p.name.startsWith('@astryxdesign/theme-') &&
+          p.name !== '@astryxdesign/theme-default',
       )
       .sort((a, b) => {
         const ai = THEME_ORDER.indexOf(a.name);
@@ -629,6 +422,19 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
         return ai - bi;
       });
   }, []);
+
+  // Picker items for the shared ThemePicker — id is the package name (matches
+  // selection state), with the theme object + package name for artwork.
+  const themePickerItems: ThemePickerItem[] = useMemo(
+    () =>
+      themePackages.map(pkg => ({
+        id: pkg.name,
+        label: themeLabel(pkg.displayName) || pkg.displayName,
+        theme: themeObjects[pkg.name],
+        packageName: pkg.name,
+      })),
+    [themePackages],
+  );
 
   // Resolve the currently-selected theme object. Falls back to the
   // SSR-seeded prop if the lookup ever misses (shouldn't happen —
@@ -733,74 +539,13 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
 
             <Divider />
 
-            {/* Theme list — one SelectableCard per theme. Each
-                card's inner content is wrapped in <Theme> so the
-                background color + heading typography reflect the
-                theme it represents, giving users a miniature brand
-                preview right in the picker. SelectableCard
-                handles selection state (inset accent border),
-                aria-selected, and focus chrome. */}
-            <div {...stylex.props(styles.themeList)}>
-              {themePackages.map(pkg => {
-                const cardTheme = themeObjects[pkg.name];
-                const isActive = pkg.name === selectedPkgName;
-                const label = themeLabel(pkg.displayName) || pkg.displayName;
-                // Per-theme bespoke artwork lookup. Themes without an
-                // entry render with the default radial-gradient
-                // backdrop + default wordmark color; themes WITH an
-                // entry get a custom photo background + brand-accent
-                // wordmark.
-                const override = PICKER_OVERRIDES[pkg.name];
-                return (
-                  <SelectableCard
-                    key={pkg.name}
-                    label={`Preview ${label} theme`}
-                    isSelected={isActive}
-                    onChange={() => handleSelectPkg(pkg.name)}
-                    padding={0}
-                    variant="transparent"
-                    xstyle={styles.themeCard}>
-                    {cardTheme ? (
-                      // Always render mini cards in light mode so the
-                      // picker reads as a stable swatch palette,
-                      // even when the user has flipped the preview
-                      // mode toggle to dark. (The dark-mode brand
-                      // colors for some themes are much darker,
-                      // which would make the picker look gloomy.)
-                      <Theme theme={cardTheme} mode="light">
-                        <div
-                          {...stylex.props(
-                            styles.themedSurface,
-                            // StyleX's props() walks rest args strictly;
-                            // pass `false` (not `undefined`) when there's
-                            // no override so the call doesn't choke.
-                            override?.surface ?? false,
-                          )}>
-                          <Text
-                            type="display-3"
-                            weight="bold"
-                            xstyle={[
-                              styles.themeCardLabel,
-                              override?.label ?? false,
-                            ]}>
-                            {label}
-                          </Text>
-                        </div>
-                      </Theme>
-                    ) : (
-                      <div {...stylex.props(styles.themedSurface)}>
-                        <Text
-                          type="display-3"
-                          weight="bold"
-                          xstyle={styles.themeCardLabel}>
-                          {label}
-                        </Text>
-                      </div>
-                    )}
-                  </SelectableCard>
-                );
-              })}
-            </div>
+            {/* Theme list — one preview tile per theme. Shared with the
+                playground's Presets tab via ThemePicker. */}
+            <ThemePicker
+              items={themePickerItems}
+              selectedId={selectedPkgName}
+              onSelect={handleSelectPkg}
+            />
           </VStack>
         </Card>
       </aside>
@@ -891,55 +636,16 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
           hasSnap
           aria-label="Themes"
           xstyle={styles.mobileCarousel}>
-          {themePackages.map(pkg => {
-            const cardTheme = themeObjects[pkg.name];
-            const isActive = pkg.name === selectedPkgName;
-            const label = themeLabel(pkg.displayName) || pkg.displayName;
-            const override = PICKER_OVERRIDES[pkg.name];
-            return (
-              <div key={pkg.name} {...stylex.props(styles.mobileCarouselCard)}>
-                <SelectableCard
-                  label={`Preview ${label} theme`}
-                  isSelected={isActive}
-                  onChange={() => handleSelectPkg(pkg.name)}
-                  padding={0}
-                  variant="transparent">
-                  {cardTheme ? (
-                    <Theme theme={cardTheme} mode="light">
-                      <div
-                        {...stylex.props(
-                          styles.themedSurface,
-                          override?.surface ?? false,
-                        )}>
-                        <Text
-                          type="display-3"
-                          weight="bold"
-                          xstyle={[
-                            styles.themeCardLabel,
-                            styles.mobileThemeCardLabel,
-                            override?.label ?? false,
-                          ]}>
-                          {label}
-                        </Text>
-                      </div>
-                    </Theme>
-                  ) : (
-                    <div {...stylex.props(styles.themedSurface)}>
-                      <Text
-                        type="display-3"
-                        weight="bold"
-                        xstyle={[
-                          styles.themeCardLabel,
-                          styles.mobileThemeCardLabel,
-                        ]}>
-                        {label}
-                      </Text>
-                    </div>
-                  )}
-                </SelectableCard>
-              </div>
-            );
-          })}
+          {themePickerItems.map(item => (
+            <div key={item.id} {...stylex.props(styles.mobileCarouselCard)}>
+              <ThemePickerCard
+                item={item}
+                isSelected={item.id === selectedPkgName}
+                onSelect={handleSelectPkg}
+                isCompact
+              />
+            </div>
+          ))}
         </Carousel>
 
         {/* Themed preview — the theme-showcase template rendered with
