@@ -585,7 +585,7 @@ importers:
         specifier: ^10.4.6
         version: 10.4.6(@testing-library/dom@10.4.1)(@types/react@19.2.17)(prettier@3.8.4)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
 
-  internal/eslint-plugin-xds:
+  internal/eslint-plugin-astryx:
     dependencies:
       eslint:
         specifier: '>=9.0.0'

@@ -4,7 +4,7 @@ import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import eslintReact from "@eslint-react/eslint-plugin";
 import reactCompiler from "eslint-plugin-react-compiler";
-import xdsPlugin from "./internal/eslint-plugin-xds/index.js";
+import xdsPlugin from "./internal/eslint-plugin-astryx/index.js";
 
 /* global process */
 
@@ -33,7 +33,7 @@ export default tseslint.config(
       "**/dist/**",
       "**/node_modules/**",
       ".claude/**",
-      "**/internal/eslint-plugin-xds/**",
+      "**/internal/eslint-plugin-astryx/**",
       ".github/scripts/**",
       "scripts/**",
       // Changesets tooling (custom changelog module + config) is CommonJS

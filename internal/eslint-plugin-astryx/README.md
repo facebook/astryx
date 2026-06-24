@@ -109,7 +109,7 @@ Expected output in strict mode:
 The plugin is configured in `eslint.config.js`:
 
 ```js
-import xdsPlugin from "./internal/eslint-plugin-xds/index.js";
+import xdsPlugin from "./internal/eslint-plugin-astryx/index.js";
 
 const isStrictMode = process.env.XDS_STRICT_LINT === '1' || process.env.CI === 'true';
 const xdsConfig = isStrictMode ? xdsPlugin.configs.strict : xdsPlugin.configs.recommended;
