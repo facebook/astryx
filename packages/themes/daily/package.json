@@ -5,14 +5,14 @@
   "description": "Daily theme for Astryx — warm, productivity-focused palette with Lucide icon set",
   "author": "Meta Open Source",
   "license": "MIT",
-  "homepage": "https://github.com/facebookexperimental/xds#readme",
+  "homepage": "https://github.com/facebook/astryx#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/facebookexperimental/xds.git",
+    "url": "git+https://github.com/facebook/astryx.git",
     "directory": "packages/themes/daily"
   },
   "bugs": {
-    "url": "https://github.com/facebookexperimental/xds/issues"
+    "url": "https://github.com/facebook/astryx/issues"
   },
   "keywords": [
     "xds",

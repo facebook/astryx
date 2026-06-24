@@ -6,14 +6,14 @@
   "description": "Warm stone and slate, earthy and understated, with just enough character to feel handcrafted.",
   "author": "Meta Open Source",
   "license": "MIT",
-  "homepage": "https://github.com/facebookexperimental/xds#readme",
+  "homepage": "https://github.com/facebook/astryx#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/facebookexperimental/xds.git",
+    "url": "git+https://github.com/facebook/astryx.git",
     "directory": "packages/themes/stone"
   },
   "bugs": {
-    "url": "https://github.com/facebookexperimental/xds/issues"
+    "url": "https://github.com/facebook/astryx/issues"
   },
   "keywords": [
     "xds",

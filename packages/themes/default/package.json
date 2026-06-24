@@ -6,14 +6,14 @@
   "description": "Clean neutrals with a blue accent. The safe, professional starting point for any product.",
   "author": "Meta Open Source",
   "license": "MIT",
-  "homepage": "https://github.com/facebookexperimental/xds#readme",
+  "homepage": "https://github.com/facebook/astryx#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/facebookexperimental/xds.git",
+    "url": "git+https://github.com/facebook/astryx.git",
     "directory": "packages/themes/default"
   },
   "bugs": {
-    "url": "https://github.com/facebookexperimental/xds/issues"
+    "url": "https://github.com/facebook/astryx/issues"
   },
   "keywords": [
     "xds",
