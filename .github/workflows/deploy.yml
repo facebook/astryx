@@ -1,8 +1,9 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-# Deploy Storybook + Sandbox to GitHub Pages, publish packages to public npm,
-# and publish @canary dist-tag from latest main.
-# Only runs on push to main — simple and sequential: sync → test → deploy + publish + canary
+# Deploy Storybook + Sandbox to GitHub Pages, and publish @canary prereleases
+# from latest main. Stable npm releases live in release.yml (manually dispatched)
+# so they don't share this workflow's pages-deploy concurrency.
+# Only runs on push to main — simple and sequential: sync → test → deploy + canary
 #
 # Deployment layout on gh-pages:
 #   /storybook/    — stable Storybook (always latest main)
@@ -267,48 +268,6 @@ jobs:
           keep_files: false
           force_orphan: true
           destination_dir: .
-
-  # Publish @astryxdesign/* packages to the public npm registry.
-  # Runs in parallel with deploy — both gate on test passing.
-  # Auth is npm OIDC trusted publishing (no NPM_TOKEN): the id-token: write
-  # permission lets pnpm fetch a short-lived OIDC token, and each package
-  # trusts this workflow (deploy.yml) on npmjs.com.
-  # pnpm -r publish publishes every non-private workspace package whose
-  # version is not yet on the registry; already-published versions are
-  # skipped (npm 409 Conflict → no-op) and workspace: deps are rewritten.
-  publish:
-    name: Publish to npm
-    needs: test
-    if: always() && !cancelled() && needs.test.result == 'success'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write # required for npm OIDC trusted publishing + provenance
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: 'pnpm'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build all packages
-        run: pnpm build
-
-      - name: Publish changed packages
-        # Pure OIDC trusted publishing — no NPM_TOKEN. pnpm -r publish skips
-        # already-published versions, filters private packages, and rewrites
-        # workspace: deps to real versions before upload.
-        run: pnpm -r publish --tag latest --provenance --access public --no-git-checks
 
   # Publish canary versions to the public npm registry on every push to main.
   # The @canary dist-tag always points to the latest main commit:
