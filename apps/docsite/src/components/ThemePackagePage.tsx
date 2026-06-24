@@ -24,6 +24,7 @@ import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {ThemeShowcaseStore} from '../../../../packages/cli/templates/pages/theme-showcase/page';
 import {getThemeShowcaseContent} from './themeShowcaseContent';
 import {buildPlaygroundHref} from './playgroundLink';
+import {ThemeInstallBlock} from './ThemeInstallBlock';
 import {packages} from '../generated/packageRegistry';
 import {layout} from '../layout.stylex';
 import {themeObjects} from '../generated/themeRegistry';
@@ -659,6 +660,14 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
   // registry drifts).
   const selectedTheme = themeObjects[selectedPkgName] ?? theme;
 
+  // Friendly wordmark for the selected theme — used by the install
+  // block heading ("Use the Y2K theme") so users see the brand name
+  // they just clicked, not the package slug.
+  const selectedLabel = useMemo(() => {
+    const pkg = themePackages.find(p => p.name === selectedPkgName);
+    return pkg ? themeLabel(pkg.displayName) || pkg.displayName : '';
+  }, [themePackages, selectedPkgName]);
+
   // Mobile dropdown options — mirror the sidebar list. Value is the
   // full @astryxdesign/theme-<slug> package name (matches state), label is
   // the friendly brand wordmark ("Neutral", "Butter").
@@ -963,6 +972,16 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
             );
           })}
         </Carousel>
+
+        {/* Install block — inline "Use this theme" affordance with the
+            two-step install + import snippet. Sits above the showcase
+            so the answer to "how do I use this in my app?" is visible
+            on the same surface as the preview, without forcing the
+            visitor to navigate to /docs/theme. */}
+        <ThemeInstallBlock
+          packageName={selectedPkgName}
+          themeLabel={selectedLabel}
+        />
 
         {/* Themed preview — the theme-showcase template rendered with
             the selected theme, wrapped in a bordered, rounded card so
