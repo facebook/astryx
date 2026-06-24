@@ -21,7 +21,7 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Paste this into your AI',
-          code: 'Install @astryxdesign/core, @astryxdesign/theme-default, and @astryxdesign/cli in this project. Run `npx astryx init` to set up agent docs. Read the generated files to learn the conventions.',
+          code: 'Install @astryxdesign/core, @astryxdesign/theme-neutral, and @astryxdesign/cli in this project. Run `npx astryx init` to set up agent docs. Read the generated files to learn the conventions.',
         },
       ],
     },
@@ -36,7 +36,7 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Terminal',
-          code: `npm install @astryxdesign/core @astryxdesign/theme-default @astryxdesign/cli`,
+          code: `npm install @astryxdesign/core @astryxdesign/theme-neutral @astryxdesign/cli`,
         },
         {
           type: 'prose',
@@ -63,11 +63,11 @@ export const docs = {
           label: 'globals.css',
           code: `@import '@astryxdesign/core/reset.css';
 @import '@astryxdesign/core/astryx.css';
-@import '@astryxdesign/theme-default/theme.css';`,
+@import '@astryxdesign/theme-neutral/theme.css';`,
         },
         {
           type: 'prose',
-          text: 'Available themes: @astryxdesign/theme-default (blue accent), @astryxdesign/theme-neutral (grayscale), @astryxdesign/theme-brutalist (zero radius, monospace). See `npx astryx docs theme` for the full theming guide.',
+          text: 'Available themes: @astryxdesign/theme-neutral (muted minimal, a good starting point), @astryxdesign/theme-butter, @astryxdesign/theme-chocolate, @astryxdesign/theme-gothic (dark-only), @astryxdesign/theme-matcha, @astryxdesign/theme-stone, and @astryxdesign/theme-y2k. See `npx astryx docs theme` for the full theming guide.',
         },
       ],
     },

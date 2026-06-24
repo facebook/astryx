@@ -162,7 +162,7 @@ const styles = stylex.create({
 @import "tailwindcss/preflight.css" layer(base);
 @import "@astryxdesign/core/reset.css";
 @import "@astryxdesign/core/astryx.css";
-@import "@astryxdesign/theme-default/theme.css";
+@import "@astryxdesign/theme-neutral/theme.css";
 @import "@astryxdesign/core/tailwind-theme.css";
 @import "tailwindcss/utilities.css" layer(utilities);`,
         },
@@ -374,9 +374,9 @@ tokens: {
           lang: 'ts',
           label: 'Resolve tokens without React context',
           code: `import {resolveThemeTokens} from '@astryxdesign/core/theme/tokens';
-import {defaultTheme} from '@astryxdesign/theme-default';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 
-const tokens = resolveThemeTokens(defaultTheme, {mode: 'light'});
+const tokens = resolveThemeTokens(neutralTheme, {mode: 'light'});
 
 const chartOptions = {
   textColor: tokens['--color-text-primary'],

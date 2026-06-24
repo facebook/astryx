@@ -19,11 +19,11 @@ export const docs = {
           lang: 'tsx',
           label: 'Basic theme setup (runtime injection)',
           code: `import {Theme} from '@astryxdesign/core';
-import {defaultTheme} from '@astryxdesign/theme-default';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 
 function App() {
   return (
-    <Theme theme={defaultTheme}>
+    <Theme theme={neutralTheme}>
       <YourApp />
     </Theme>
   );
@@ -34,12 +34,12 @@ function App() {
           lang: 'tsx',
           label: 'Optimized setup (pre-built CSS)',
           code: `import {Theme} from '@astryxdesign/core';
-import {defaultTheme} from '@astryxdesign/theme-default/built';
-import '@astryxdesign/theme-default/theme.css';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
+import '@astryxdesign/theme-neutral/theme.css';
 
 function App() {
   return (
-    <Theme theme={defaultTheme}>
+    <Theme theme={neutralTheme}>
       <YourApp />
     </Theme>
   );
@@ -60,19 +60,39 @@ function App() {
           headers: ['Theme', 'Import', 'Description'],
           rows: [
             [
-              'Default',
-              "import {defaultTheme} from '@astryxdesign/theme-default'",
-              'Blue accent, system fonts, light/dark',
-            ],
-            [
               'Neutral',
               "import {neutralTheme} from '@astryxdesign/theme-neutral'",
-              'Grayscale, shadcn-inspired',
+              'Muted, minimal aesthetic with system fonts. A good starting point.',
             ],
             [
-              'Brutalist',
-              "import {brutalistTheme} from '@astryxdesign/theme-brutalist'",
-              'Zero radius, monospace, heavy borders',
+              'Butter',
+              "import {butterTheme} from '@astryxdesign/theme-butter'",
+              'Golden, buttery surfaces with blue accents; Sarina + Outfit type.',
+            ],
+            [
+              'Chocolate',
+              "import {chocolateTheme} from '@astryxdesign/theme-chocolate'",
+              'Warm brown tones and cozy beige; Fraunces + Albert Sans type.',
+            ],
+            [
+              'Gothic',
+              "import {gothicTheme} from '@astryxdesign/theme-gothic'",
+              'Dark-only atmospheric theme; deep blue-gray surfaces, distressed display type.',
+            ],
+            [
+              'Matcha',
+              "import {matchaTheme} from '@astryxdesign/theme-matcha'",
+              'Earthy green theme with Figtree typography.',
+            ],
+            [
+              'Stone',
+              "import {stoneTheme} from '@astryxdesign/theme-stone'",
+              'Warm stone and slate tones; Montserrat + Figtree type.',
+            ],
+            [
+              'Y2K',
+              "import {y2kTheme} from '@astryxdesign/theme-y2k'",
+              'Playful Y2K pop; periwinkle body, holographic accents, Poppins + Crimson Text.',
             ],
           ],
         },
@@ -194,14 +214,14 @@ const myTheme = defineTheme({
         {
           type: 'code',
           lang: 'tsx',
-          label: 'Extending the default theme',
+          label: 'Extending the neutral theme',
           code: `import {defineTheme} from '@astryxdesign/core/theme';
-import {defaultTheme} from '@astryxdesign/theme-default';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 import {myIcons} from './icons';
 
 const brandTheme = defineTheme({
   name: 'brand',
-  extends: defaultTheme,
+  extends: neutralTheme,
   icons: myIcons,
   tokens: {
     '--color-accent': ['#7B61FF', '#9B85FF'],
@@ -525,9 +545,9 @@ const pandaOrEmotionTheme = {
           lang: 'ts',
           label: 'Resolve token values without a hook',
           code: `import {resolveThemeTokens} from '@astryxdesign/core/theme/tokens';
-import {defaultTheme} from '@astryxdesign/theme-default';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 
-const lightTokens = resolveThemeTokens(defaultTheme, {mode: 'light'});
+const lightTokens = resolveThemeTokens(neutralTheme, {mode: 'light'});
 const chartTheme = {
   textColor: lightTokens['--color-text-primary'],
   seriesColor: lightTokens['--color-data-categorical-blue'],

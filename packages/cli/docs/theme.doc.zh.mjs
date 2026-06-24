@@ -6,7 +6,7 @@ export const docsZh = {
   description: 'Theme 提供者、自定义主题、亮/暗模式和组件样式覆盖。',
   sections: [
     { title: '快速开始', content: [null, null, { type: 'prose', text: '默认导入使用运行时样式注入。/built 导入使用预编译 CSS（需配合 theme.css）。' }] },
-    { title: '可用主题', content: [null, { type: 'prose', text: '@astryxdesign/theme-{name} = 源码版（运行时注入）。@astryxdesign/theme-{name}/built = 优化版（配合 theme.css）。' }] },
+    { title: '可用主题', content: [null, { type: 'prose', text: '已发布主题：neutral（推荐起点）、butter、chocolate、gothic（仅暗色）、matcha、stone、y2k。@astryxdesign/theme-{name} = 源码版（运行时注入）。@astryxdesign/theme-{name}/built = 优化版（配合 theme.css）。' }] },
     { title: 'Theme 属性', content: [null] },
     { title: '创建自定义主题', content: [{ type: 'prose', text: '使用 CLI 向导（推荐）或手动 defineTheme。只覆盖与默认值不同的令牌。' }, null] },
     { title: 'defineTheme', content: [{ type: 'prose', text: '支持比例配置（typography、radius、motion）+ 显式令牌覆盖 + 组件覆盖。' }, null, null] },
