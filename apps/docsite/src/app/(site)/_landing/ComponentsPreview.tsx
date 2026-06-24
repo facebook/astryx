@@ -44,17 +44,11 @@ const styles = stylex.create({
     maxWidth: 360,
     marginInline: 'auto',
   },
-  // Row 1: badges + form controls. The HStack handles the row gap +
-  // center cross-alignment; rowGap here only adds vertical spacing if
-  // the row wraps on a very narrow card so nothing clips.
+  // Row 1: badges + form controls, evenly spaced. The HStack handles
+  // the row gap + center cross-alignment; rowGap here only adds vertical
+  // spacing if the row wraps on a very narrow card so nothing clips.
   controlsRow: {
     rowGap: spacingVars['--spacing-3'],
-  },
-  // Pushes the form-control trio to the right edge so the badges sit
-  // left and the controls sit right, matching the reference's spread.
-  controlsSpacer: {
-    flex: 1,
-    minWidth: spacingVars['--spacing-2'],
   },
 });
 
@@ -86,7 +80,6 @@ export function ComponentsPreview() {
         xstyle={styles.controlsRow}>
         <Badge variant="orange" label="Badge" />
         <Badge variant="blue" label="Badge" />
-        <span {...stylex.props(styles.controlsSpacer)} />
         <RadioList
           label="Sample option"
           isLabelHidden
