@@ -26,6 +26,7 @@ import {
   InstagramLogo,
   FacebookLogo,
   MetaOpenSourceLogo,
+  DiscordLogo,
 } from './logos';
 
 const styles = stylex.create({
@@ -58,14 +59,14 @@ const FOOTER_LINKS: ReadonlyArray<{
   label: string;
   href: string;
 }> = [
-  {label: 'Docs', href: '/docs'},
-  {label: 'Changelog', href: '/changelog'},
-  {label: 'Community', href: '/community'},
-  {label: 'Blog', href: '/blog'},
+  {label: 'Docs', href: '/docs/getting-started'},
   {label: 'Components', href: '/components'},
   {label: 'Templates', href: '/templates'},
   {label: 'Themes', href: '/themes'},
   {label: 'Playground', href: '/playground'},
+  {label: 'Blog', href: '/blog'},
+  {label: 'Community', href: '/community'},
+  {label: 'Changelog', href: '/changelog'},
 ];
 
 const SOCIAL_LINKS: ReadonlyArray<{
@@ -74,6 +75,7 @@ const SOCIAL_LINKS: ReadonlyArray<{
   Icon: (props: React.SVGProps<SVGSVGElement>) => React.ReactElement;
 }> = [
   {label: 'GitHub', href: GITHUB_REPO, Icon: GitHubLogo},
+  {label: 'Discord', href: FACEBOOK_URL, Icon: DiscordLogo},
   {label: 'Facebook', href: FACEBOOK_URL, Icon: FacebookLogo},
   {label: 'Instagram', href: INSTAGRAM_URL, Icon: InstagramLogo},
   {label: 'Threads', href: THREADS_URL, Icon: ThreadsLogo},

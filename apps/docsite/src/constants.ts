@@ -2,6 +2,7 @@
 
 export const GITHUB_REPO = 'https://github.com/facebook/astryx';
 
+export const DISCORD_URL = 'https://discord.com/invite/XnsUcFykEP';
 export const FACEBOOK_URL = 'https://www.facebook.com/astryxdesign';
 export const INSTAGRAM_URL = 'https://www.instagram.com/astryxdesign';
 export const THREADS_URL = 'https://www.threads.com/@astryxdesign';
