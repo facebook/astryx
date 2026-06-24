@@ -50,15 +50,15 @@ npx xds gap-report                   # report a missing capability
 
 | Package                                                                                               | Description                                                   |
 | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| [`@astryxdesign/cli`](https://github.com/facebookexperimental/xds/tree/main/packages/cli)                      | CLI tooling: component docs, templates, scaffolding, codemods |
-| [`@astryxdesign/theme-default`](https://github.com/facebookexperimental/xds/tree/main/packages/themes/default) | Default theme (Heroicons)                                     |
-| [`@astryxdesign/theme-neutral`](https://github.com/facebookexperimental/xds/tree/main/packages/themes/neutral) | Muted, minimal theme (Lucide icons)                           |
-| [`@astryxdesign/theme-daily`](https://github.com/facebookexperimental/xds/tree/main/packages/themes/daily)     | Warm, productivity-focused theme (Lucide icons)               |
+| [`@astryxdesign/cli`](https://github.com/facebook/astryx/tree/main/packages/cli)                      | CLI tooling: component docs, templates, scaffolding, codemods |
+| [`@astryxdesign/theme-default`](https://github.com/facebook/astryx/tree/main/packages/themes/default) | Default theme (Heroicons)                                     |
+| [`@astryxdesign/theme-neutral`](https://github.com/facebook/astryx/tree/main/packages/themes/neutral) | Muted, minimal theme (Lucide icons)                           |
+| [`@astryxdesign/theme-daily`](https://github.com/facebook/astryx/tree/main/packages/themes/daily)     | Warm, productivity-focused theme (Lucide icons)               |
 
 ## Resources
 
 - [Component Storybook](https://facebook.github.io/astryx/)
-- [GitHub Repository](https://github.com/facebookexperimental/xds)
+- [GitHub Repository](https://github.com/facebook/astryx)
 
 ---
 

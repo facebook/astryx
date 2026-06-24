@@ -182,4 +182,4 @@ export function XDSBadge({label}) {
 - Make state controlled via props (consumer owns the state)
 - If the component legitimately needs client behavior, remove it from the presentational list
 
-See: https://github.com/facebookexperimental/xds/issues/493
+See: https://github.com/facebook/astryx/issues/493
