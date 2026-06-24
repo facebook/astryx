@@ -12,16 +12,16 @@ import xdsPlugin from "./internal/eslint-plugin-astryx/index.js";
  * XDS ESLint Configuration
  *
  * Two-tier linting philosophy:
- * - CI/Agents: Strict mode (errors) - Set XDS_STRICT_LINT=1 or CI=true
+ * - CI/Agents: Strict mode (errors) - Set ASTRYX_STRICT_LINT=1 or CI=true
  * - Humans: Recommended mode (warnings) - Default for local development
  *
  * Usage:
  *   pnpm lint                    # Human mode (warnings)
- *   XDS_STRICT_LINT=1 pnpm lint  # Strict mode (errors)
+ *   ASTRYX_STRICT_LINT=1 pnpm lint  # Strict mode (errors)
  *   CI=true pnpm lint            # Also triggers strict mode
  */
 
-const isStrictMode = process.env.XDS_STRICT_LINT === '1' || process.env.CI === 'true';
+const isStrictMode = process.env.ASTRYX_STRICT_LINT === '1' || process.env.CI === 'true';
 const xdsConfig = isStrictMode ? xdsPlugin.configs.strict : xdsPlugin.configs.recommended;
 const reactSeverity = isStrictMode ? 'error' : 'warn';
 

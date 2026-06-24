@@ -4,12 +4,12 @@
  * @file Check for newer @xds/core versions via local signals.
  *
  * Resolution order:
- * 1. $XDS_LATEST_VERSION env var (set by previous CLI invocation)
+ * 1. $ASTRYX_LATEST_VERSION env var (set by previous CLI invocation)
  * 2. xds.versionFile in consumer's package.json (e.g. ../../libs/xds-common/LATEST_VERSION)
  * 3. If neither: no hint (no network calls from this module)
  *
  * When a newer version is detected, returns a hint string for CLI output.
- * Also sets $XDS_LATEST_VERSION for subsequent commands in the same shell.
+ * Also sets $ASTRYX_LATEST_VERSION for subsequent commands in the same shell.
  */
 
 import * as fs from 'node:fs';
@@ -25,7 +25,7 @@ import {semverGt} from './semver.mjs';
  */
 export function getLatestVersion(cwd = process.cwd()) {
   // 1. Check env var (fastest — set by previous CLI run)
-  const envVersion = process.env.XDS_LATEST_VERSION;
+  const envVersion = process.env.ASTRYX_LATEST_VERSION;
   if (envVersion && /^\d+\.\d+\.\d+/.test(envVersion)) {
     return envVersion;
   }
@@ -79,7 +79,7 @@ export function getInstalledVersion(cwd = process.cwd()) {
 
 /**
  * Check for available updates and return a hint string if one exists.
- * Also sets $XDS_LATEST_VERSION env var for subsequent commands.
+ * Also sets $ASTRYX_LATEST_VERSION env var for subsequent commands.
  *
  * @param {string} [cwd] - Project directory
  * @returns {string|null} FYI hint string, or null if up to date / unknown
@@ -89,7 +89,7 @@ export function checkForUpdate(cwd = process.cwd()) {
   if (!latest) return null;
 
   // Persist for subsequent commands in this shell session
-  process.env.XDS_LATEST_VERSION = latest;
+  process.env.ASTRYX_LATEST_VERSION = latest;
 
   const installed = getInstalledVersion(cwd);
   if (!installed) return null;

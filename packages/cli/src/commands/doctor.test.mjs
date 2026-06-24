@@ -38,7 +38,7 @@ beforeEach(() => {
 afterEach(() => {
   fs.rmSync(tmpDir, {recursive: true, force: true});
   vi.restoreAllMocks();
-  delete process.env.XDS_THEME;
+  delete process.env.ASTRYX_THEME;
 });
 
 /** Make a minimal node_modules/@xds/core in tmpDir with the given version. */

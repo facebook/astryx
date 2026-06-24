@@ -236,7 +236,7 @@ export function registerGapReport(program) {
     .addHelpText(
       'after',
       '\nSafety:\n' +
-        '  Set XDS_GAP_REPORT=off to disable gap reporting entirely.\n' +
+        '  Set ASTRYX_GAP_REPORT=off to disable gap reporting entirely.\n' +
         '  In non-interactive mode (CI, piped stdout, --json), gap-report is\n' +
         '  dry-run by default. Pass --commit to actually file an issue.\n' +
         '  In interactive mode, you will always be shown a confirmation prompt.\n',
@@ -256,7 +256,7 @@ export function registerGapReport(program) {
       if (!config.enabled) {
         if (json) return jsonError('Gap reporting is disabled', undefined, ERROR_CODES.ERR_GAP_REPORT_FAILED);
         humanLog(
-          `Gap reporting is disabled (XDS_GAP_REPORT=off or xds.config.mjs).\n` +
+          `Gap reporting is disabled (ASTRYX_GAP_REPORT=off or xds.config.mjs).\n` +
             `Run \`${getRunPrefix()} xds gap-report setup\` to configure.`,
         );
         return;

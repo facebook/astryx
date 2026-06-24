@@ -9,7 +9,7 @@ This plugin implements a two-tier linting strategy:
 | Mode            | Audience  | Behavior            | Trigger                          |
 | --------------- | --------- | ------------------- | -------------------------------- |
 | **Recommended** | Humans    | Warnings only       | Default (local dev)              |
-| **Strict**      | Agents/CI | Errors (fail build) | `CI=true` or `XDS_STRICT_LINT=1` |
+| **Strict**      | Agents/CI | Errors (fail build) | `CI=true` or `ASTRYX_STRICT_LINT=1` |
 
 ### Why Two Tiers?
 
@@ -75,7 +75,7 @@ pnpm lint
 ```bash
 pnpm lint:strict
 # or
-XDS_STRICT_LINT=1 pnpm lint
+ASTRYX_STRICT_LINT=1 pnpm lint
 # or (automatic in GitHub Actions)
 CI=true pnpm lint
 
@@ -111,7 +111,7 @@ The plugin is configured in `eslint.config.js`:
 ```js
 import xdsPlugin from "./internal/eslint-plugin-astryx/index.js";
 
-const isStrictMode = process.env.XDS_STRICT_LINT === '1' || process.env.CI === 'true';
+const isStrictMode = process.env.ASTRYX_STRICT_LINT === '1' || process.env.CI === 'true';
 const xdsConfig = isStrictMode ? xdsPlugin.configs.strict : xdsPlugin.configs.recommended;
 
 // Applied to core package files

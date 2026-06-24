@@ -11,8 +11,8 @@
  *   gapReport: { command: './scripts/report-gap.sh' } — run custom script (receives JSON on stdin)
  *
  * Or via environment variable:
- *   XDS_GAP_REPORT=off                              — disable entirely
- *   XDS_GAP_REPORT=./scripts/report-gap.sh          — run custom script
+ *   ASTRYX_GAP_REPORT=off                              — disable entirely
+ *   ASTRYX_GAP_REPORT=./scripts/report-gap.sh          — run custom script
  */
 
 import {execFileSync} from 'node:child_process';
@@ -46,7 +46,7 @@ export const GAP_CATEGORIES = [
  */
 export function loadGapReportConfig() {
   // 1. Check environment variable
-  const envVar = process.env.XDS_GAP_REPORT;
+  const envVar = process.env.ASTRYX_GAP_REPORT;
   if (envVar) {
     if (envVar === 'off' || envVar === 'false' || envVar === '0') {
       return {enabled: false};

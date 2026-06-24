@@ -4,7 +4,7 @@
  * @file Theme resolution — resolve a theme from config or environment
  *
  * Resolution sources (in priority order):
- * 1. XDS_THEME environment variable
+ * 1. ASTRYX_THEME environment variable
  * 2. xds.theme field in package.json
  *
  * Resolution strategy for the value:
@@ -84,7 +84,7 @@ function extractTheme(mod) {
  */
 export function resolveTheme(cwd = process.cwd()) {
   // 1. Determine theme specifier
-  let specifier = process.env.XDS_THEME || null;
+  let specifier = process.env.ASTRYX_THEME || null;
 
   if (!specifier) {
     // Read from package.json

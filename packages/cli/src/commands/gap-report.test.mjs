@@ -3,7 +3,7 @@
 /**
  * Tests for gap-report safety gates: dry-run-by-default in non-interactive
  * mode, --commit required to actually file, --no-report suppression in swizzle,
- * and XDS_GAP_REPORT=off honored everywhere.
+ * and ASTRYX_GAP_REPORT=off honored everywhere.
  *
  * Regression cases for issues #2370 and #2371: real gap-report issues filed
  * unintentionally in CI/non-TTY runs.
@@ -77,19 +77,19 @@ describe('formatPreview', () => {
   });
 });
 
-describe('XDS_GAP_REPORT=off env var', () => {
+describe('ASTRYX_GAP_REPORT=off env var', () => {
   let originalEnv;
   beforeEach(() => {
-    originalEnv = process.env.XDS_GAP_REPORT;
+    originalEnv = process.env.ASTRYX_GAP_REPORT;
   });
   afterEach(() => {
-    if (originalEnv === undefined) delete process.env.XDS_GAP_REPORT;
-    else process.env.XDS_GAP_REPORT = originalEnv;
+    if (originalEnv === undefined) delete process.env.ASTRYX_GAP_REPORT;
+    else process.env.ASTRYX_GAP_REPORT = originalEnv;
     vi.resetModules();
   });
 
   it('disables gap reporting when set to "off"', async () => {
-    process.env.XDS_GAP_REPORT = 'off';
+    process.env.ASTRYX_GAP_REPORT = 'off';
     vi.resetModules();
     const {loadGapReportConfig, createGapReport} = await import(
       '../utils/github.mjs'
@@ -106,12 +106,12 @@ describe('XDS_GAP_REPORT=off env var', () => {
   });
 
   it('also accepts "false" and "0" as disable values', async () => {
-    process.env.XDS_GAP_REPORT = 'false';
+    process.env.ASTRYX_GAP_REPORT = 'false';
     vi.resetModules();
     let mod = await import('../utils/github.mjs');
     expect(mod.loadGapReportConfig().enabled).toBe(false);
 
-    process.env.XDS_GAP_REPORT = '0';
+    process.env.ASTRYX_GAP_REPORT = '0';
     vi.resetModules();
     mod = await import('../utils/github.mjs');
     expect(mod.loadGapReportConfig().enabled).toBe(false);
@@ -121,13 +121,13 @@ describe('XDS_GAP_REPORT=off env var', () => {
 describe('buildGapReportPreview', () => {
   let originalEnv;
   beforeEach(() => {
-    originalEnv = process.env.XDS_GAP_REPORT;
+    originalEnv = process.env.ASTRYX_GAP_REPORT;
     // Force github mode (default) for these tests.
-    delete process.env.XDS_GAP_REPORT;
+    delete process.env.ASTRYX_GAP_REPORT;
   });
   afterEach(() => {
-    if (originalEnv === undefined) delete process.env.XDS_GAP_REPORT;
-    else process.env.XDS_GAP_REPORT = originalEnv;
+    if (originalEnv === undefined) delete process.env.ASTRYX_GAP_REPORT;
+    else process.env.ASTRYX_GAP_REPORT = originalEnv;
   });
 
   it('renders title and body without invoking gh', async () => {
@@ -149,7 +149,7 @@ describe('buildGapReportPreview', () => {
   });
 
   it('reports disabled mode when env var is off', async () => {
-    process.env.XDS_GAP_REPORT = 'off';
+    process.env.ASTRYX_GAP_REPORT = 'off';
     vi.resetModules();
     const {buildGapReportPreview} = await import('../utils/github.mjs');
     const preview = buildGapReportPreview({

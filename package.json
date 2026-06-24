@@ -14,7 +14,7 @@
     "check:changesets": "node scripts/check-changesets.mjs",
     "check:sync": "node scripts/check-sync.js",
     "lint": "pnpm check:repo && eslint . --cache",
-    "lint:strict": "pnpm check:repo && XDS_STRICT_LINT=1 eslint . --cache",
+    "lint:strict": "pnpm check:repo && ASTRYX_STRICT_LINT=1 eslint . --cache",
     "storybook": "pnpm -F @xds/storybook dev",
     "storybook:build": "pnpm -F @xds/storybook build",
     "docs": "pnpm -F @xds/docs dev",
@@ -30,7 +30,7 @@
     "release": "pnpm build && changeset publish",
     "prepare": "husky install",
     "dev:sandbox": "pnpm -F @xds/core build && pnpm -F @xds/sandbox dev",
-    "dev:sandbox:source": "XDS_SOURCE=1 pnpm -F @xds/sandbox dev"
+    "dev:sandbox:source": "ASTRYX_SOURCE=1 pnpm -F @xds/sandbox dev"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",

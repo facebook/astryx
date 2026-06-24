@@ -124,14 +124,14 @@ function findThemePackages(cwd) {
 }
 
 /**
- * Detect whether a theme appears to be wired up via the XDS_THEME env var or
+ * Detect whether a theme appears to be wired up via the ASTRYX_THEME env var or
  * an `xds.theme` field in the nearest package.json. Config-based wiring is
  * handled by the caller (ctx.configTheme). This only inspects static signals.
  * @param {string} cwd
  * @returns {{wired: boolean, source: string|null}}
  */
 function detectThemeWiring(cwd) {
-  if (process.env.XDS_THEME) return {wired: true, source: 'XDS_THEME env var'};
+  if (process.env.ASTRYX_THEME) return {wired: true, source: 'ASTRYX_THEME env var'};
   const nm = findNodeModules(cwd);
   const projectDir = nm ? path.dirname(nm) : cwd;
   const pkg = readPkg(path.join(projectDir, 'package.json'));
@@ -251,7 +251,7 @@ export function checkThemes(ctx) {
       label: 'Theme packages',
       status: 'warn',
       message: `Theme package(s) installed (${names}) but no theme appears wired.`,
-      fix: 'Wire a theme via the `xds.theme` field in package.json, the XDS_THEME env var, or your xds.config.mjs.',
+      fix: 'Wire a theme via the `astryx.theme` field in package.json, the ASTRYX_THEME env var, or your xds.config.mjs.',
     };
   }
 
