@@ -28,6 +28,14 @@ import {Avatar} from '@astryxdesign/core/Avatar';
 import {AspectRatio} from '@astryxdesign/core/AspectRatio';
 import type {HeroThemeContent} from './heroThemeContent';
 
+// The reward card's member is kept consistent across every theme slide (the
+// per-theme `member` copy is intentionally not used here) so the avatar reads
+// as one recurring person. A local public asset keeps it offline-safe for
+// screenshots; `name` is retained for the accessible alt text + initials
+// fallback if the image ever fails to load.
+const REWARD_MEMBER_NAME = 'Alex Rivera';
+const REWARD_MEMBER_AVATAR = '/avatar-astryx.png';
+
 const styles = stylex.create({
   // Desktop overlap stage: fixed, viewport-centered 1200px box (shared with the
   // aurora blobs) so cards track the blobs on resize. Capped to 100vw to avoid
@@ -449,9 +457,13 @@ export function HeroFloatingCards({
             variant="accent"
           />
           <HStack gap={2} vAlign="center" xstyle={styles.profileRow}>
-            <Avatar name={content.reward.member} size="xsmall" />
+            <Avatar
+              src={REWARD_MEMBER_AVATAR}
+              name={REWARD_MEMBER_NAME}
+              size="xsmall"
+            />
             <Text type="supporting" color="secondary">
-              {content.reward.member}
+              {REWARD_MEMBER_NAME}
             </Text>
           </HStack>
         </VStack>
