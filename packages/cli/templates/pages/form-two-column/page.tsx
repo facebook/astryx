@@ -23,10 +23,6 @@ import {radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 const ILLUSTRATION_URL =
   'https://lookaside.facebook.com/assets/astryx/light-working-vertical-2.png';
 
-// ─────────────────────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────────────────────
-
 const INQUIRY_REASONS = [
   'New business',
   'General inquiry',
@@ -52,16 +48,9 @@ const CONTACT_COLUMNS = [
   {label: 'Press & partnerships', email: 'press@company.com'},
 ];
 
-// ─────────────────────────────────────────────────────────────
-// Styles
-// ─────────────────────────────────────────────────────────────
-
-// The only custom styling is fitting the cover photo inside its AspectRatio
-// box (cover, not contain — it's a photograph, so crop it to fill the frame)
-// and rounding its corners. borderRadius needs overflow:clip so the cover crop
-// is masked to the rounded edge. Tracks --radius-container so it matches the
-// form Card in the same row. No objectFit/radius prop on AspectRatio, and
-// there's no Image primitive (#2582).
+// AspectRatio has no objectFit/radius prop and there's no Image primitive
+// (#2582), so the cover photo is styled directly. overflow:hidden masks the
+// cover crop to the rounded corners.
 const styles = stylex.create({
   page: {
     minHeight: '100%',
@@ -74,10 +63,6 @@ const styles = stylex.create({
     overflow: 'hidden',
   },
 });
-
-// ─────────────────────────────────────────────────────────────
-// Page
-// ─────────────────────────────────────────────────────────────
 
 /**
  * Form (Two-column) — marketing contact form template.
@@ -113,9 +98,8 @@ export default function FormTwoColumnPage() {
     <Center xstyle={styles.page}>
       <Section maxWidth={1100} width="100%" padding={10} variant="transparent">
         <VStack gap={10}>
-          {/* ── Top: two-column, stacks to one column below ~520px ── */}
+          {/* Two-column; stacks to one column below ~520px. */}
           <Grid columns={{minWidth: 320}} align="center" gap={10}>
-            {/* Left: headline + description + illustration */}
             <VStack gap={6}>
               <VStack gap={3}>
                 <Text type="display-1" as="h1">
@@ -135,7 +119,6 @@ export default function FormTwoColumnPage() {
               </AspectRatio>
             </VStack>
 
-            {/* Right: form on a card */}
             <Card padding={8}>
               <VStack gap={4}>
                 <Text type="label">Your details</Text>
@@ -238,7 +221,7 @@ export default function FormTwoColumnPage() {
             </Card>
           </Grid>
 
-          {/* ── Bottom: contact strip (stacks below ~440px) ── */}
+          {/* Contact strip; stacks below ~440px. */}
           <VStack gap={6}>
             <Divider />
             <Grid columns={{minWidth: 200}} gap={6}>
