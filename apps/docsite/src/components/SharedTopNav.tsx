@@ -86,7 +86,7 @@ export function SharedTopNav() {
           <>
             <TopNavItem
               label="Docs"
-              href="/docs"
+              href="/docs/getting-started"
               isSelected={getActiveItem() === 'docs'}
             />
             <TopNavItem
