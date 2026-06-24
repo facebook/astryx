@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Config loader — reads xds.config.mjs from project root
+ * @file Config loader — reads astryx.config.mjs from project root
  *
- * Walks up from cwd looking for xds.config.mjs.
+ * Walks up from cwd looking for astryx.config.mjs.
  * Returns the config object or defaults if not found.
  */
 
@@ -16,13 +16,13 @@ const DEFAULTS = {
 };
 
 /**
- * Find xds.config.mjs by walking up from startDir.
+ * Find astryx.config.mjs by walking up from startDir.
  * Returns the absolute path or null.
  */
 export function findConfigPath(startDir = process.cwd()) {
   let dir = startDir;
   for (let i = 0; i < 10; i++) {
-    const candidate = path.join(dir, 'xds.config.mjs');
+    const candidate = path.join(dir, 'astryx.config.mjs');
     if (fs.existsSync(candidate)) return candidate;
     const parent = path.dirname(dir);
     if (parent === dir) break;
@@ -32,7 +32,7 @@ export function findConfigPath(startDir = process.cwd()) {
 }
 
 /**
- * Load and return the config from xds.config.mjs.
+ * Load and return the config from astryx.config.mjs.
  * Returns defaults if no config file is found.
  */
 export async function loadConfig(startDir = process.cwd()) {

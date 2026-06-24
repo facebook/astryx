@@ -50,7 +50,7 @@ export function registerDiscover(program) {
             if (config.packages.length === 0) {
               humanLog('No package directories configured.');
               humanLog('');
-              humanLog('Add a packages field to xds.config.mjs:');
+              humanLog('Add a packages field to astryx.config.mjs:');
               humanLog('');
               humanLog('  export default {');
               humanLog("    packages: ['/path/to/your/libs'],");

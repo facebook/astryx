@@ -81,11 +81,11 @@ function isCancel(value) {
 }
 
 /**
- * Update or insert the gapReport key in xds.config.mjs.
+ * Update or insert the gapReport key in astryx.config.mjs.
  * Preserves existing keys (e.g. theme).
  */
 function writeGapReportConfig(targetDir, gapReportValue) {
-  const configPath = path.join(targetDir, 'xds.config.mjs');
+  const configPath = path.join(targetDir, 'astryx.config.mjs');
 
   if (fs.existsSync(configPath)) {
     let content = fs.readFileSync(configPath, 'utf-8');
@@ -193,7 +193,7 @@ export function registerGapReport(program) {
         );
       } else {
         // GitHub mode — remove gapReport key or set to default
-        const configPath = path.join(targetDir, 'xds.config.mjs');
+        const configPath = path.join(targetDir, 'astryx.config.mjs');
         if (fs.existsSync(configPath)) {
           let content = fs.readFileSync(configPath, 'utf-8');
           // Remove the gapReport line entirely to use default
@@ -216,7 +216,7 @@ export function registerGapReport(program) {
         }
       }
 
-      p.outro('Configuration saved to xds.config.mjs');
+      p.outro('Configuration saved to astryx.config.mjs');
     });
 
   // --- main gap-report command ---
@@ -256,7 +256,7 @@ export function registerGapReport(program) {
       if (!config.enabled) {
         if (json) return jsonError('Gap reporting is disabled', undefined, ERROR_CODES.ERR_GAP_REPORT_FAILED);
         humanLog(
-          `Gap reporting is disabled (ASTRYX_GAP_REPORT=off or xds.config.mjs).\n` +
+          `Gap reporting is disabled (ASTRYX_GAP_REPORT=off or astryx.config.mjs).\n` +
             `Run \`${getRunPrefix()} xds gap-report setup\` to configure.`,
         );
         return;

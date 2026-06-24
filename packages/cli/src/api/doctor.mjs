@@ -50,7 +50,7 @@ const _require = createRequire(import.meta.url);
  * @property {string} cwd - Directory to diagnose.
  * @property {string} nodeVersion - Running Node version.
  * @property {string|null} coreDir - Resolved @astryxdesign/core directory, or null.
- * @property {string|null} configPath - Resolved xds.config.mjs path, or null.
+ * @property {string|null} configPath - Resolved astryx.config.mjs path, or null.
  * @property {string|null} configTheme - theme value read from config, or null.
  */
 
@@ -251,11 +251,11 @@ export function checkThemes(ctx) {
       label: 'Theme packages',
       status: 'warn',
       message: `Theme package(s) installed (${names}) but no theme appears wired.`,
-      fix: 'Wire a theme via the `astryx.theme` field in package.json, the ASTRYX_THEME env var, or your xds.config.mjs.',
+      fix: 'Wire a theme via the `astryx.theme` field in package.json, the ASTRYX_THEME env var, or your astryx.config.mjs.',
     };
   }
 
-  const source = hasConfigTheme ? 'xds.config.mjs theme' : wiring.source;
+  const source = hasConfigTheme ? 'astryx.config.mjs theme' : wiring.source;
   return {
     id: 'themes',
     label: 'Theme packages',
@@ -265,7 +265,7 @@ export function checkThemes(ctx) {
 }
 
 /**
- * Check 5 — xds.config.mjs (if present) loads and has a valid shape.
+ * Check 5 — astryx.config.mjs (if present) loads and has a valid shape.
  * @param {DoctorContext} ctx
  * @returns {Promise<DoctorCheck>}
  */
@@ -273,9 +273,9 @@ export async function checkConfig(ctx) {
   if (!ctx.configPath) {
     return {
       id: 'config',
-      label: 'xds.config.mjs',
+      label: 'astryx.config.mjs',
       status: 'info',
-      message: 'No xds.config.mjs found — using defaults.',
+      message: 'No astryx.config.mjs found — using defaults.',
     };
   }
 
@@ -288,10 +288,10 @@ export async function checkConfig(ctx) {
     if (config !== undefined && (typeof config !== 'object' || config === null)) {
       return {
         id: 'config',
-        label: 'xds.config.mjs',
+        label: 'astryx.config.mjs',
         status: 'fail',
-        message: `xds.config.mjs default export is not an object (got ${typeof config}).`,
-        fix: 'Export a default object from xds.config.mjs, e.g. `export default { theme: "default" };`.',
+        message: `astryx.config.mjs default export is not an object (got ${typeof config}).`,
+        fix: 'Export a default object from astryx.config.mjs, e.g. `export default { theme: "default" };`.',
       };
     }
     // Validate that `packages`, if present, is a string or array of strings.
@@ -303,26 +303,26 @@ export async function checkConfig(ctx) {
       if (bad) {
         return {
           id: 'config',
-          label: 'xds.config.mjs',
+          label: 'astryx.config.mjs',
           status: 'fail',
-          message: 'xds.config.mjs `packages` must be a string or array of strings.',
+          message: 'astryx.config.mjs `packages` must be a string or array of strings.',
           fix: 'Set `packages` to a path string or array of path strings.',
         };
       }
     }
     return {
       id: 'config',
-      label: 'xds.config.mjs',
+      label: 'astryx.config.mjs',
       status: 'pass',
-      message: `xds.config.mjs loaded cleanly (${path.relative(ctx.cwd, ctx.configPath) || ctx.configPath}).`,
+      message: `astryx.config.mjs loaded cleanly (${path.relative(ctx.cwd, ctx.configPath) || ctx.configPath}).`,
     };
   } catch (err) {
     return {
       id: 'config',
-      label: 'xds.config.mjs',
+      label: 'astryx.config.mjs',
       status: 'fail',
-      message: `xds.config.mjs failed to load: ${err.message}`,
-      fix: 'Fix the syntax/runtime error in xds.config.mjs so it imports cleanly.',
+      message: `astryx.config.mjs failed to load: ${err.message}`,
+      fix: 'Fix the syntax/runtime error in astryx.config.mjs so it imports cleanly.',
     };
   }
 }

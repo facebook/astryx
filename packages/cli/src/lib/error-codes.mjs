@@ -159,7 +159,7 @@ export const ERROR_CODES = Object.freeze({
   ERR_THEME_LOAD: 'ERR_THEME_LOAD',
 
   // ── Template config ──────────────────────────────────────────────
-  /** `template.get` is not configured in xds.config.mjs (fetch-by-id). */
+  /** `template.get` is not configured in astryx.config.mjs (fetch-by-id). */
   ERR_TEMPLATE_CONFIG: 'ERR_TEMPLATE_CONFIG',
   /** A configured `template.get` threw or returned an invalid value. */
   ERR_TEMPLATE_GET: 'ERR_TEMPLATE_GET',

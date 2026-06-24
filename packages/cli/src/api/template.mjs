@@ -377,7 +377,7 @@ function extractSkeleton(source) {
 }
 
 /**
- * Fetch a template by ID using the `template.get` hook in xds.config.mjs.
+ * Fetch a template by ID using the `template.get` hook in astryx.config.mjs.
  * @param {string} id
  * @param {object} [options]
  * @param {string} [options.cwd]
@@ -391,7 +391,7 @@ export async function getTemplateById(id, options = {}) {
   if (typeof getter !== 'function') {
     throw new XDSError(
       'Template fetching by ID is not configured.\n' +
-        'Add a template.get function to xds.config.mjs:\n\n' +
+        'Add a template.get function to astryx.config.mjs:\n\n' +
         '  export default {\n' +
         '    template: {\n' +
         "      get: async (id) => { /* return template source string */ },\n" +

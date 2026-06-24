@@ -134,7 +134,7 @@ export function registerTemplate(program) {
 
   templateCmd
     .command('get')
-    .description('Fetch a template by ID via the xds.config.mjs hook')
+    .description('Fetch a template by ID via the astryx.config.mjs hook')
     .requiredOption('--id <id>', 'Template identifier to fetch')
     .action(async (options) => {
       const json = program.opts().json || false;

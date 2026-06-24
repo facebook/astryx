@@ -96,8 +96,8 @@ describe('--json contract: rejects before side effects', () => {
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
     expect(parsed.error).toMatch(/gap-report setup/);
-    // No xds.config.mjs written.
-    expect(fs.existsSync(path.join(tmpDir, 'xds.config.mjs'))).toBe(false);
+    // No astryx.config.mjs written.
+    expect(fs.existsSync(path.join(tmpDir, 'astryx.config.mjs'))).toBe(false);
   });
 
   it('xds theme --json (parent, no subcommand) rejects without printing help', () => {
@@ -157,7 +157,7 @@ describe('--json contract: supported commands emit valid envelopes', () => {
     // Configure gap-report so it doesn't error on "disabled" — we want to
     // hit the "interactive prompt would start" branch.
     fs.writeFileSync(
-      path.join(tmpDir, 'xds.config.mjs'),
+      path.join(tmpDir, 'astryx.config.mjs'),
       'export default { gapReport: { command: "true" } };\n',
     );
     const {status, stdout} = runCli(['gap-report', '--json'], {cwd: tmpDir});

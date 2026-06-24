@@ -155,7 +155,7 @@ if (isError(result)) {
 | `ERR_WRITE_FAILED` | Writing output files failed (and was rolled back). |
 | `ERR_THEME_INVALID` | A theme definition was missing a required property (e.g. `name`). |
 | `ERR_THEME_LOAD` | A theme file could not be loaded / parsed into a `defineTheme` result. |
-| `ERR_TEMPLATE_CONFIG` | `template.get` is not configured in `xds.config.mjs` (fetch-by-id). |
+| `ERR_TEMPLATE_CONFIG` | `template.get` is not configured in `astryx.config.mjs` (fetch-by-id). |
 | `ERR_TEMPLATE_GET` | A configured `template.get` threw or returned an invalid value. |
 | `ERR_VERSION_DETECT` | The current `@astryxdesign/core` version could not be detected. |
 | `ERR_INVALID_VERSION` | A `--from`/`--to` value was not a valid semver string. |
@@ -342,8 +342,8 @@ xds doctor — diagnosing your setup
   ⚠ Theme packages
       No @astryxdesign/theme-* packages are installed.
       → fix: Install a theme, e.g. `npm install @astryxdesign/theme-default`, then import its CSS or set xds.theme.
-  ℹ xds.config.mjs
-      No xds.config.mjs found — using defaults.
+  ℹ astryx.config.mjs
+      No astryx.config.mjs found — using defaults.
   ℹ AI agent docs
       No agent docs (CLAUDE.md / AGENTS.md / .cursorrules) found.
       → fix: Generate agent docs with `xds init --features agents`.
@@ -365,7 +365,7 @@ No failures — but review the ⚠ warnings above when you can.
 | @astryxdesign/core installed  | pass / fail          | `@astryxdesign/core` is resolvable from the project                  |
 | Version alignment    | pass / warn / info   | Installed `@astryxdesign/core` is in step with `@astryxdesign/cli`            |
 | Theme packages       | pass / warn          | An `@astryxdesign/theme-*` package is installed and a theme is wired |
-| xds.config.mjs       | pass / fail / info   | Config (if present) loads cleanly with a valid shape        |
+| astryx.config.mjs       | pass / fail / info   | Config (if present) loads cleanly with a valid shape        |
 | AI agent docs        | pass / warn / info   | Agent docs exist and contain the XDS section markers        |
 | Peer dependencies    | pass / warn / info   | `@astryxdesign/core`'s peer deps (react, …) are installed            |
 | Package manager      | info                 | Reports the detected package manager                        |
@@ -385,7 +385,7 @@ data: { checks, summary } }`) that AI agents and scripts can parse.
 
 ## Configuration
 
-The CLI reads from an optional `xds.config.mjs` in your project root:
+The CLI reads from an optional `astryx.config.mjs` in your project root:
 
 ```javascript
 export default {
