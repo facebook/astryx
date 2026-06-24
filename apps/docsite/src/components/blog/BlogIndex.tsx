@@ -2,17 +2,7 @@
 
 /**
  * @file BlogIndex.tsx
- *
- * Client component for the /blog index. Renders a grid of
- * post cards with horizontal post-type filters and no sidebar. The latest post
- * gets a larger "feature" treatment, derived purely from sort order.
- *
- * Filters only show types that actually have published content (issue #2896:
- * "Only show filters/tags publicly when content exists for them").
- *
- * @input  posts (BlogPost[], already sorted latest-first), available types
- * @output The interactive blog index UI
- * @position Rendered by app/blog/page.tsx
+ * Blog index: post-type filters + a card grid, latest post featured.
  */
 
 'use client';
@@ -23,28 +13,21 @@ import {Text, Heading} from '@astryxdesign/core/Text';
 import {VStack} from '@astryxdesign/core/Layout';
 import {Section} from '@astryxdesign/core/Section';
 import {Grid} from '@astryxdesign/core/Grid';
-import {Carousel} from '@astryxdesign/core/Carousel';
-import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {ToggleButton, ToggleButtonGroup} from '@astryxdesign/core/ToggleButton';
+import {EmptyState} from '@astryxdesign/core/EmptyState';
 import type {BlogPost, BlogPostType} from '../../lib/blog/schema';
 import {POST_TYPE_LABELS} from '../../lib/blog/schema';
 import {BlogCard} from './BlogCard';
 
 const styles = stylex.create({
-  header: {
-    maxWidth: 720,
-  },
-  filterRow: {
-    marginBottom: 4,
-  },
-  empty: {
-    paddingBlock: 48,
-    textAlign: 'center',
+  typeFilter: {
+    flexWrap: 'wrap',
+    justifyContent: 'center',
   },
 });
 
 export interface BlogIndexProps {
   posts: BlogPost[];
-  /** Post types that have at least one published post, in canonical order. */
   availableTypes: BlogPostType[];
 }
 
@@ -66,61 +49,55 @@ export function BlogIndex({posts, availableTypes}: BlogIndexProps) {
     return map;
   }, [posts, availableTypes]);
 
-  // Feature the latest post only in the unfiltered "all" view.
   const showFeature = activeType === 'all' && filtered.length > 0;
   const featurePost = showFeature ? filtered[0] : null;
   const restPosts = showFeature ? filtered.slice(1) : filtered;
 
   return (
-    <Section maxWidth={1100} padding={6}>
-      <VStack gap={6}>
-        <VStack gap={4} xstyle={styles.header}>
-          <Heading level={1} type="display-1">
+    <Section maxWidth={800} padding={6} style={{marginInline: 'auto'}}>
+      <VStack gap={10}>
+        <VStack gap={2}>
+          <Heading level={1} type="display-1" justify="center">
             Blog
           </Heading>
-          <Text type="large" weight="normal" color="secondary">
-            Notes on building Astryx — releases, guides, stories, and
-            perspectives on designing a system for humans and agents.
+          <Text weight="normal" color="secondary" justify="center">
+            Releases, guides, and stories on building Astryx for humans and
+            agents.
           </Text>
         </VStack>
 
         {availableTypes.length > 1 ? (
-          <Carousel gap={0}>
-            <TabList
-              value={activeType}
-              onChange={v => setActiveType(v as 'all' | BlogPostType)}
-              size="md"
-              xstyle={styles.filterRow}>
-              <Tab value="all" label={`All (${counts.all})`} />
-              {availableTypes.map(t => (
-                <Tab
-                  key={t}
-                  value={t}
-                  label={`${POST_TYPE_LABELS[t]} (${counts[t]})`}
-                />
-              ))}
-            </TabList>
-          </Carousel>
+          <ToggleButtonGroup
+            label="Filter posts by type"
+            value={activeType}
+            onChange={value =>
+              setActiveType((value as 'all' | BlogPostType) ?? 'all')
+            }
+            xstyle={styles.typeFilter}>
+            <ToggleButton value="all" label={`All (${counts.all})`} />
+            {availableTypes.map(t => (
+              <ToggleButton
+                key={t}
+                value={t}
+                label={`${POST_TYPE_LABELS[t]} (${counts[t]})`}
+              />
+            ))}
+          </ToggleButtonGroup>
         ) : null}
 
         {filtered.length === 0 ? (
-          <div {...stylex.props(styles.empty)}>
-            <Text type="body" color="secondary">
-              No posts yet. Check back soon.
-            </Text>
-          </div>
+          <EmptyState
+            title="No posts yet"
+            description="Check back soon for releases, guides, and stories."
+          />
         ) : (
-          <VStack gap={6}>
-            {featurePost ? (
-              <Grid columns={1} gap={4}>
-                <BlogCard post={featurePost} feature />
-              </Grid>
-            ) : null}
+          <VStack gap={10}>
+            {featurePost ? <BlogCard post={featurePost} feature /> : null}
             {restPosts.length > 0 ? (
               <Grid
                 columns={{minWidth: 320, repeat: 'fill'}}
-                gap={4}
-                rowGap={6}>
+                gap={5}
+                rowGap={10}>
                 {restPosts.map(post => (
                   <BlogCard key={post.slug} post={post} />
                 ))}
