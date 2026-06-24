@@ -18,9 +18,10 @@ import {Link} from '@astryxdesign/core/Link';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Card} from '@astryxdesign/core/Card';
 import {Selector} from '@astryxdesign/core/Selector';
+import {radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const ILLUSTRATION_URL =
-  'https://lookaside.facebook.com/assets/astryx/light-working-vertical-1.png';
+  'https://lookaside.facebook.com/assets/astryx/light-working-vertical-2.png';
 
 // ─────────────────────────────────────────────────────────────
 // Constants
@@ -56,8 +57,11 @@ const CONTACT_COLUMNS = [
 // ─────────────────────────────────────────────────────────────
 
 // The only custom styling is fitting the cover photo inside its AspectRatio
-// box (cover, not contain — it's a photograph, so crop it to fill the frame).
-// No objectFit prop on AspectRatio, and there's no Image primitive (#2582).
+// box (cover, not contain — it's a photograph, so crop it to fill the frame)
+// and rounding its corners. borderRadius needs overflow:clip so the cover crop
+// is masked to the rounded edge. Tracks --radius-container so it matches the
+// form Card in the same row. No objectFit/radius prop on AspectRatio, and
+// there's no Image primitive (#2582).
 const styles = stylex.create({
   page: {
     minHeight: '100%',
@@ -66,6 +70,8 @@ const styles = stylex.create({
     width: '100%',
     height: '100%',
     objectFit: 'cover',
+    borderRadius: radiusVars['--radius-container'],
+    overflow: 'hidden',
   },
 });
 
