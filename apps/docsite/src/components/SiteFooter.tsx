@@ -13,6 +13,7 @@ import {Section} from '@astryxdesign/core/Section';
 import {useAppShellMobile} from '@astryxdesign/core/AppShell';
 import {
   GITHUB_REPO,
+  DISCORD_URL,
   FACEBOOK_URL,
   INSTAGRAM_URL,
   THREADS_URL,
@@ -75,7 +76,7 @@ const SOCIAL_LINKS: ReadonlyArray<{
   Icon: (props: React.SVGProps<SVGSVGElement>) => React.ReactElement;
 }> = [
   {label: 'GitHub', href: GITHUB_REPO, Icon: GitHubLogo},
-  {label: 'Discord', href: FACEBOOK_URL, Icon: DiscordLogo},
+  {label: 'Discord', href: DISCORD_URL, Icon: DiscordLogo},
   {label: 'Facebook', href: FACEBOOK_URL, Icon: FacebookLogo},
   {label: 'Instagram', href: INSTAGRAM_URL, Icon: InstagramLogo},
   {label: 'Threads', href: THREADS_URL, Icon: ThreadsLogo},
