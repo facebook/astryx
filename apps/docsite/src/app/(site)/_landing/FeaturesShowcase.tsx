@@ -113,7 +113,7 @@ const styles = stylex.create({
   // All cards use Card padding={0} and apply their own padding
   // via the innerPadding* styles below. This is intentional: Card's
   // `padding={N}` prop wires its `padding-bottom` through a
-  // (0,5,0)-specificity selector (`.xds-card-XXX:not(#\#):not(#\#)
+  // (0,5,0)-specificity selector (`.astryx-card-XXX:not(#\#):not(#\#)
   // :not(#\#):not(#\#)`) which beats any xstyle override at (0,1,0).
   // The CSS variable indirection ALSO doesn't work because the card
   // sets `padding-bottom: var(--spacing-N)` directly (not via the
@@ -123,7 +123,7 @@ const styles = stylex.create({
 
   // All four card variants share the same pastel backdrop, pulled
   // from a marketing-only theme token (defined in astryxTheme.ts as
-  // `--xds-marketing-feature-card-bg`). Sourcing the color from the
+  // `--astryx-marketing-feature-card-bg`). Sourcing the color from the
   // theme keeps the bento palette tunable in one place and avoids
   // baking literal hex values into the component. We do NOT use
   // Card's `variant="blue"` here because that token (--color-
@@ -136,7 +136,7 @@ const styles = stylex.create({
   // is stretched by the grid to match the tallest sibling column.
   cardTall: {
     flex: 1,
-    backgroundColor: 'var(--xds-marketing-feature-card-bg)',
+    backgroundColor: 'var(--astryx-marketing-feature-card-bg)',
     overflow: 'hidden',
   },
   // Regular image card — natural (content) height. Used for an image
@@ -150,7 +150,7 @@ const styles = stylex.create({
   card: {
     height: 'auto',
     overflow: 'hidden',
-    backgroundColor: 'var(--xds-marketing-feature-card-bg)',
+    backgroundColor: 'var(--astryx-marketing-feature-card-bg)',
   },
   // Flex variant of `card` — image card that grows to fill its
   // column's leftover height so a column with a short text-only
@@ -159,14 +159,14 @@ const styles = stylex.create({
   cardFlex: {
     flex: 1,
     overflow: 'hidden',
-    backgroundColor: 'var(--xds-marketing-feature-card-bg)',
+    backgroundColor: 'var(--astryx-marketing-feature-card-bg)',
   },
   // Text-only feature card variant — no image, so overflow hidden
   // keeps the card contour tidy at the rounded corners.
   cardTextOnly: {
     height: 'auto',
     overflow: 'hidden',
-    backgroundColor: 'var(--xds-marketing-feature-card-bg)',
+    backgroundColor: 'var(--astryx-marketing-feature-card-bg)',
   },
   // Padding for image cards: --spacing-10 (40px) on top + sides +
   // 0 on bottom so the image wrapper inside sits flush at the

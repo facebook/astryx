@@ -116,10 +116,10 @@ const styles = stylex.create({
     borderTopLeftRadius: 'var(--radius-page)',
     borderTopRightRadius: 'var(--radius-page)',
     backgroundColor: 'var(--color-background-surface)',
-    paddingBlockStart: 'var(--xds-marketing-section-gap)',
+    paddingBlockStart: 'var(--astryx-marketing-section-gap)',
     paddingBlockEnd: spacingVars['--spacing-12'],
     paddingInline: spacingVars['--spacing-6'],
-    gap: 'var(--xds-marketing-section-gap)',
+    gap: 'var(--astryx-marketing-section-gap)',
   },
 });
 

@@ -30,12 +30,12 @@
 
   /* Feature card backdrop. Soft pastel blue in light mode, deep navy in
      dark mode. Consumed by FeaturesShowcase's bento cards via
-     `backgroundColor: var(--xds-marketing-feature-card-bg)`. Picked
+     `backgroundColor: var(--astryx-marketing-feature-card-bg)`. Picked
      specifically because the stock --color-background-blue is a
      20%-alpha saturated wash that prints too vivid against the showcase's
      white surface; this gives the cards a soft pastel band the eye reads
      as a single related group. */
-  --xds-marketing-feature-card-bg: light-dark(#e6f0ff, #1a2333);
+  --astryx-marketing-feature-card-bg: light-dark(#e6f0ff, #1a2333);
 
   /* Marketing-section vertical rhythm. The XDS spacing scale tops out at
      --spacing-12 = 48px, which is fine for in-app density but too tight
@@ -43,7 +43,7 @@
      home-page sections (hero ↔ features ↔ about ↔ discover) and the
      page's first paddingBlockStart so the rhythm reads as deliberate
      marketing pacing rather than a maxed-out spacing step. */
-  --xds-marketing-section-gap: 100px;
+  --astryx-marketing-section-gap: 100px;
 }
 
 /* AppShell sets a sticky top nav but its main content area sits at the same
@@ -56,7 +56,7 @@
    The --appshell-header-height variable is seeded at :root (above) and then
    re-set by the AppShell once it measures the rendered header. The literal
    fallbacks below only apply if the :root seed is ever missing. */
-body:not(:has([data-playground-page])) #xds-app-shell-main {
+body:not(:has([data-playground-page])) #astryx-app-shell-main {
   scroll-padding-top: var(--appshell-header-height, 64px);
   padding-top: var(--appshell-header-height, 64px);
 }
@@ -66,30 +66,30 @@ body:not(:has([data-playground-page])) #xds-app-shell-main {
    `top: var(--appshell-header-height, 0px)` rule, and the extra padding
    here would introduce a visible cream-colored gap between the nav and
    the hero. scroll-padding-top is kept for anchor-link scrolling. */
-body:has([data-home-page]) #xds-app-shell-main {
+body:has([data-home-page]) #astryx-app-shell-main {
   padding-top: 0;
 }
 
 /* Translucent top nav — frosted glass effect.
 
-   The :where(:not(.xds-app-shell .xds-app-shell *)) guard scopes every frost
+   The :where(:not(.astryx-app-shell .astryx-app-shell *)) guard scopes every frost
    rule to the OUTERMOST AppShell only: any nav inside a *nested* AppShell
-   (component examples, templates) matches `.xds-app-shell .xds-app-shell *`
+   (component examples, templates) matches `.astryx-app-shell .astryx-app-shell *`
    — it has two AppShell ancestors — and is therefore excluded, so it keeps
    its own solid navAreaStyle background and stays seamless with its sidenav.
 
    The guard lives inside :where() so it adds ZERO specificity. The frost
-   subject stays at (0,1,0) — identical to a bare `.xds-top-nav` — so the
+   subject stays at (0,1,0) — identical to a bare `.astryx-top-nav` — so the
    home-page, nav-mode, and theme-preview overrides below keep winning exactly
    as they did before. (Putting the :not() on the outer shell instead, as in
-   `.xds-app-shell:not(...) > .xds-layout .xds-top-nav`, does NOT work: the
+   `.astryx-app-shell:not(...) > .astryx-layout .astryx-top-nav`, does NOT work: the
    nested nav is still an unrestricted descendant of the outer layout.) */
-.xds-layout-header:where(:not(.xds-app-shell .xds-app-shell *)),
-:has(> .xds-layout-header):where(:not(.xds-app-shell .xds-app-shell *)) {
+.astryx-layout-header:where(:not(.astryx-app-shell .astryx-app-shell *)),
+:has(> .astryx-layout-header):where(:not(.astryx-app-shell .astryx-app-shell *)) {
   background: transparent !important;
 }
 
-.xds-top-nav:where(:not(.xds-app-shell .xds-app-shell *)) {
+.astryx-top-nav:where(:not(.astryx-app-shell .astryx-app-shell *)) {
   background: color-mix(in srgb, var(--color-background-surface) 80%, transparent);
   backdrop-filter: blur(12px);
   transition: background 300ms ease;
@@ -99,15 +99,15 @@ body:has([data-home-page]) #xds-app-shell-main {
    navBackdrop band rendered behind it (inside the hero reel's themed scope)
    shows through and retints the nav strip with the ACTIVE theme's body color.
    Without this the nav would paint Astryx's default body color and never
-   follow the reel. The backdrop-filter blur from the .xds-top-nav rule above
+   follow the reel. The backdrop-filter blur from the .astryx-top-nav rule above
    is preserved. */
-body:has([data-home-page]) .xds-top-nav:where(:not(.xds-app-shell .xds-app-shell *)) {
+body:has([data-home-page]) .astryx-top-nav:where(:not(.astryx-app-shell .astryx-app-shell *)) {
   background: transparent;
 }
 
 /* When the home page IntersectionObserver detects the theming showcase has
    reached the top, switch the nav back to a surface-tinted frosted bar. */
-body[data-nav-mode='surface'] .xds-top-nav:where(:not(.xds-app-shell .xds-app-shell *)) {
+body[data-nav-mode='surface'] .astryx-top-nav:where(:not(.astryx-app-shell .astryx-app-shell *)) {
   background: color-mix(in srgb, var(--color-background-surface) 80%, transparent);
 }
 
@@ -120,13 +120,13 @@ body[data-hero-dark] {
 /* Dark hero slide: switch the transparent nav's text to that light ink. Skipped
    in surface mode (scrolled past the hero onto the white showcase). */
 body[data-hero-dark]:not([data-nav-mode='surface'])
-  .xds-top-nav:where(:not(.xds-app-shell .xds-app-shell *)) {
+  .astryx-top-nav:where(:not(.astryx-app-shell .astryx-app-shell *)) {
   color: var(--hero-on-dark);
 }
 body[data-hero-dark]:not([data-nav-mode='surface'])
-  .xds-top-nav:where(:not(.xds-app-shell .xds-app-shell *)) a,
+  .astryx-top-nav:where(:not(.astryx-app-shell .astryx-app-shell *)) a,
 body[data-hero-dark]:not([data-nav-mode='surface'])
-  .xds-top-nav:where(:not(.xds-app-shell .xds-app-shell *)) button {
+  .astryx-top-nav:where(:not(.astryx-app-shell .astryx-app-shell *)) button {
   color: var(--hero-on-dark);
 }
 
@@ -135,7 +135,7 @@ body[data-hero-dark]:not([data-nav-mode='surface'])
    static light nav ink — otherwise it's light-on-light and vanishes in dark
    mode. Higher specificity than the blanket a/button rule above. */
 body[data-hero-dark]:not([data-nav-mode='surface'])
-  .xds-top-nav:where(:not(.xds-app-shell .xds-app-shell *)) [data-variant='primary'] {
+  .astryx-top-nav:where(:not(.astryx-app-shell .astryx-app-shell *)) [data-variant='primary'] {
   color: var(--color-on-accent);
 }
 
@@ -144,28 +144,28 @@ body[data-hero-dark]:not([data-nav-mode='surface'])
    variant="dots" ships with chevrons by default; the hero wants a minimal
    indicator-only treatment. Scoped to [data-home-page] so other
    XDSPagination instances across the site stay untouched. */
-[data-home-page] .xds-pagination button[aria-label='Go to previous page'],
-[data-home-page] .xds-pagination button[aria-label='Go to next page'] {
+[data-home-page] .astryx-pagination button[aria-label='Go to previous page'],
+[data-home-page] .astryx-pagination button[aria-label='Go to next page'] {
   display: none;
 }
 
 /* On dark hero slides the dots render in Astryx, whose --color-accent is a
    near-black ink — invisible on the dark backdrop, so the active dot and the
    keyboard focus ring disappear. Repaint both with the light hero ink. */
-body[data-hero-dark] [data-home-page] .xds-pagination-dot.active {
+body[data-hero-dark] [data-home-page] .astryx-pagination-dot.active {
   background-color: var(--hero-on-dark);
 }
-body[data-hero-dark] [data-home-page] .xds-pagination-dot:focus-visible {
+body[data-hero-dark] [data-home-page] .astryx-pagination-dot:focus-visible {
   outline-color: var(--hero-on-dark);
 }
 
 /* The /themes/<name> dedicated page renders a faux app top nav INSIDE
-   its preview surface. The global `.xds-top-nav` rule above gives it a
+   its preview surface. The global `.astryx-top-nav` rule above gives it a
    surface-tinted frosted background, which leaks through and makes the
    preview's nav look distinct from its themed body. Scope it back to
    the theme's body color so the preview reads as one continuous app
    surface. */
-[data-theme-preview='true'] .xds-top-nav {
+[data-theme-preview='true'] .astryx-top-nav {
   background: var(--color-background-body);
   backdrop-filter: none;
 }
