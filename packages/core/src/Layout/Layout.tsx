@@ -157,6 +157,15 @@ export interface LayoutProps extends Omit<BaseProps, 'content'> {
    * Inline styles to apply to the root element.
    */
   style?: React.CSSProperties;
+
+  /**
+   * Layout is slot-driven: pass UI through `content` (and `header`/`start`/
+   * `end`/`footer`), never as JSX children. Typed `never` so
+   * `<Layout>…</Layout>` is a compile error instead of a silently-dropped,
+   * blank-rendering shell. At runtime any stray children are still routed into
+   * the `content` slot (with a dev warning) as a last-resort safety net.
+   */
+  children?: never;
 }
 
 /**
@@ -221,22 +230,42 @@ function AreaProvider({
  * />
  * ```
  */
-export function Layout({
-  content,
-  contentWidth,
-  defaultHasDividers,
-  end,
-  footer,
-  header,
-  height = 'fill',
-  padding,
-  ref,
-  start,
-  xstyle,
-  className,
-  style,
-}: LayoutProps) {
+export function Layout(props: LayoutProps) {
+  const {
+    content,
+    contentWidth,
+    defaultHasDividers,
+    end,
+    footer,
+    header,
+    height = 'fill',
+    padding,
+    ref,
+    start,
+    xstyle,
+    className,
+    style,
+  } = props;
   const isFill = height === 'fill';
+
+  // Layout is slot-driven (content/header/start/end/footer). `children` is typed
+  // `never`, so `<Layout><LayoutContent/></Layout>` is a compile error — but an
+  // un-typechecked build still passes children through at runtime, and silently
+  // dropping them renders an empty shell (green build, blank page). Route stray
+  // children into the content slot and warn, so misuse degrades to a visible,
+  // explained result instead of a blank screen.
+  const strayChildren = (props as unknown as {children?: ReactNode}).children;
+  if (strayChildren != null) {
+    console.warn(
+      'Layout: received `children`. Layout uses named slots — pass UI via the ' +
+        '`content` prop (and `header`/`start`/`end`/`footer`), e.g. ' +
+        '`<Layout content={<LayoutContent>…</LayoutContent>} />`. ' +
+        (content != null
+          ? 'Ignoring `children` because `content` is also set.'
+          : 'Rendering `children` as `content` for now.'),
+    );
+  }
+  const resolvedContent = content ?? strayChildren;
 
   const dividerCtxValue = useMemo(
     () => (defaultHasDividers != null ? {defaultHasDividers} : null),
@@ -287,7 +316,7 @@ export function Layout({
             )}>
             <AreaProvider area="start">{start}</AreaProvider>
             <div {...stylex.props(...stackItem({size: 'fill'}))}>
-              <AreaProvider area="content">{content}</AreaProvider>
+              <AreaProvider area="content">{resolvedContent}</AreaProvider>
             </div>
             <AreaProvider area="end">{end}</AreaProvider>
           </div>
