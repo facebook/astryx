@@ -27,6 +27,7 @@ export {useTablePagination, paginateData} from './plugins/pagination';
 export {useTableColumnSettings} from './plugins/columnSettings';
 export {useTableColumnSettingsState} from './plugins/columnSettings';
 export {useTableColumnResize} from './plugins/columnResize';
+export {useTableStickyColumns} from './plugins/stickyColumns';
 export {
   useTableFiltering,
   useTableFilterState,
@@ -53,6 +54,7 @@ export type {
   HeaderCellRenderProps,
   BodyRowRenderProps,
   BodyCellRenderProps,
+  LayoutRenderProps,
   BaseTableProps,
 } from './types';
 export type {
@@ -93,6 +95,7 @@ export type {
   UseTableColumnSettingsStateReturn,
 } from './plugins/columnSettings';
 export type {UseTableColumnResizeConfig} from './plugins/columnResize';
+export type {UseTableStickyColumnsConfig} from './plugins/stickyColumns';
 export type {
   UseTableFilteringConfig,
   TableFilterState,

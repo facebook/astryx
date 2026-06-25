@@ -26,6 +26,7 @@ import type {
   HeaderCellRenderProps,
   BodyRowRenderProps,
   BodyCellRenderProps,
+  LayoutRenderProps,
   TableRowComponentProps,
   TableCellComponentProps,
   TableHeaderCellComponentProps,
@@ -152,7 +153,7 @@ function TableRowInner<T extends Record<string, unknown>>({
   CellComponent,
 }: TableRowProps<T>): ReactElement {
   // Build cells first
-  const cells = columns.map(col => {
+  const cells = columns.map((col, columnIndex) => {
     // Apply column alignment to body cells
     const initialCellHtmlProps: Record<string, unknown> = {};
     if (col.align) {
@@ -165,9 +166,13 @@ function TableRowInner<T extends Record<string, unknown>>({
       {
         htmlProps: initialCellHtmlProps,
         styles: [],
+        columnIndex,
+        columns,
       } satisfies BodyCellRenderProps,
       col,
       item,
+      columnIndex,
+      columns,
     );
 
     const isDefaultRenderer = !col.renderCell;
@@ -354,7 +359,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
   } satisfies TableRenderProps);
 
   // --- Plugin pipeline: header cells ---
-  const headerCells = resolvedColumns.map(col => {
+  const headerCells = resolvedColumns.map((col, columnIndex) => {
     const headerContent = col.header ?? col.key;
 
     // Build initial htmlProps with column alignment if specified
@@ -372,8 +377,12 @@ function BaseTableInner<T extends Record<string, unknown>>({
         htmlProps: initialHeaderHtmlProps,
         styles: [],
         content: headerContent,
+        columnIndex,
+        columns: resolvedColumns,
       } satisfies HeaderCellRenderProps,
       col,
+      columnIndex,
+      resolvedColumns,
     );
 
     // Apply pre-computed column width styles on the <th>.
@@ -513,8 +522,25 @@ function BaseTableInner<T extends Record<string, unknown>>({
   // when columns exceed the container width. This wrapper sits between
   // the <table> and transformTableContext, so plugin chrome (pagination,
   // toolbars) renders outside the scroll area.
+  //
+  // Before rendering the wrapper, run the plugin `transformLayout` pipeline so
+  // plugins can attach a ref to the scroll container (scroll-aware sticky
+  // shadows, virtualization) and inject before/after chrome.
   if (ScrollWrapper) {
-    tableElement = <ScrollWrapper>{tableElement}</ScrollWrapper>;
+    const layoutRenderProps = applyPlugins(plugins, p => p.transformLayout, {
+      htmlProps: {},
+      styles: [],
+    } satisfies LayoutRenderProps);
+
+    tableElement = (
+      <ScrollWrapper
+        htmlProps={layoutRenderProps.htmlProps}
+        styles={layoutRenderProps.styles}
+        beforeTable={layoutRenderProps.beforeTable}
+        afterTable={layoutRenderProps.afterTable}>
+        {tableElement}
+      </ScrollWrapper>
+    );
   }
 
   // Apply transformTableContext from each plugin.
