@@ -57,7 +57,8 @@ export const docs = {
     {
       name: 'show',
       type: '() => void',
-      description: 'Imperatively show the layer.',
+      description:
+        'Imperatively show the layer. If the popover element has not mounted yet, the open request is replayed when it attaches.',
     },
     {
       name: 'hide',
@@ -72,7 +73,8 @@ export const docs = {
     {
       name: 'id',
       type: 'string',
-      description: 'Unique ID for aria-describedby or other ARIA relationships.',
+      description:
+        'Unique ID for aria-describedby or other ARIA relationships.',
     },
     {
       name: 'render',
@@ -83,7 +85,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Core positioning hook for rendering overlay content using CSS Anchor Positioning and the Popover API. Use it as the foundation for custom popovers, hover cards, tooltips, and fixed-position layers when higher-level components are not enough.',
+      'Core positioning hook for rendering overlay content using CSS Anchor Positioning and the Popover API. Use it as the foundation for custom popovers, hover cards, tooltips, and fixed-position layers when higher-level components are not enough. Open state is tracked even when the popover DOM element mounts later.',
     bestPractices: [
       {
         guidance: true,
@@ -111,7 +113,7 @@ export const docs = {
 /** @type {import('../docs-types').HookTranslationDoc} */
 export const docsDense = {
   description:
-    'Core positioning hook for overlay content via CSS Anchor Positioning + Popover API. Foundation for custom popovers, hover cards, tooltips, fixed-position layers.',
+    'Core positioning hook for overlay content via CSS Anchor Positioning + Popover API. Foundation for custom popovers, hover cards, tooltips, fixed-position layers. Open requests can be made before DOM attach.',
   paramDescriptions: {
     mode: 'positioning strategy: context = CSS anchor relative to trigger; fixed = explicit x/y coords',
     onShow: 'fires when layer becomes visible.',
@@ -121,7 +123,7 @@ export const docsDense = {
   returnDescriptions: {
     ref: 'trigger ref for context mode; undefined in fixed mode.',
     anchorId: 'CSS anchor name.',
-    show: 'show layer.',
+    show: 'show layer; replays if popover DOM attaches later.',
     hide: 'hide layer.',
     isOpen: 'whether layer is open.',
     id: 'unique ARIA id.',
@@ -129,15 +131,17 @@ export const docsDense = {
   },
   usage: {
     description:
-      'Core positioning hook for overlay content via CSS Anchor Positioning + Popover API. Foundation for custom popovers, hover cards, tooltips, fixed-position layers.',
+      'Core positioning hook for overlay content via CSS Anchor Positioning + Popover API. Foundation for custom popovers, hover cards, tooltips, fixed-position layers. Open state can be requested before the DOM node attaches.',
     bestPractices: [
       {
         guidance: true,
-        description: 'Use context mode for trigger-anchored overlays; fixed mode for explicit coordinates.',
+        description:
+          'Use context mode for trigger-anchored overlays; fixed mode for explicit coordinates.',
       },
       {
         guidance: true,
-        description: 'Build on Popover/HoverCard/Tooltip for common overlay patterns.',
+        description:
+          'Build on Popover/HoverCard/Tooltip for common overlay patterns.',
       },
       {
         guidance: false,

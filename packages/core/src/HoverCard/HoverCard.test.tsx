@@ -2,7 +2,7 @@
 
 /**
  * @file HoverCard.test.tsx
- * @input Uses vitest, @testing-library/react, HoverCard component
+ * @input Uses vitest, @testing-library/react, React SSR/hydration APIs, HoverCard component
  * @output Unit tests for HoverCard component behavior
  * @position Testing; validates HoverCard.tsx implementation
  *
@@ -11,6 +11,9 @@
 
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {act} from 'react';
+import {hydrateRoot} from 'react-dom/client';
+import {renderToString} from 'react-dom/server';
 import {HoverCard} from './HoverCard';
 
 // Store original matches to restore later
@@ -71,6 +74,51 @@ describe('HoverCard', () => {
 
     expect(trigger.parentElement?.tagName).toBe('SPAN');
     expect(paragraph?.querySelector('div')).toBeNull();
+  });
+
+  it('hydrates without rendering the portaled layer on the first client render', async () => {
+    const ui = (
+      <HoverCard
+        content={<div>Hover content</div>}
+        placement="above"
+        alignment="center">
+        <a href="https://example.com">Example</a>
+      </HoverCard>
+    );
+    const html = renderToString(ui);
+    const container = document.createElement('div');
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    let root: ReturnType<typeof hydrateRoot> | null = null;
+
+    expect(html).toContain('Example');
+    expect(html).not.toContain('Hover content');
+    expect(html).not.toContain('popover=');
+
+    container.innerHTML = html;
+    document.body.appendChild(container);
+
+    try {
+      await act(async () => {
+        root = hydrateRoot(container, ui);
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('Hover content').closest('[popover]'),
+        ).not.toBeNull();
+      });
+
+      const hydrationErrors = errorSpy.mock.calls.filter(call =>
+        call.some(arg => /hydration|hydrated|did not match/i.test(String(arg))),
+      );
+      expect(hydrationErrors).toHaveLength(0);
+    } finally {
+      errorSpy.mockRestore();
+      await act(async () => {
+        root?.unmount();
+      });
+      container.remove();
+    }
   });
 
   it('does not show content initially', () => {
@@ -186,6 +234,39 @@ describe('HoverCard', () => {
       await waitFor(() => {
         expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
       });
+    });
+
+    it('shows hover card after SSR hydration when isDefaultOpen is true', async () => {
+      vi.mocked(HTMLElement.prototype.showPopover).mockClear();
+
+      const ui = (
+        <HoverCard
+          content={<span>Hydrated default open card</span>}
+          isDefaultOpen>
+          <button type="button">Trigger</button>
+        </HoverCard>
+      );
+      const html = renderToString(ui);
+      const container = document.createElement('div');
+      let root: ReturnType<typeof hydrateRoot> | null = null;
+
+      container.innerHTML = html;
+      document.body.appendChild(container);
+
+      try {
+        await act(async () => {
+          root = hydrateRoot(container, ui);
+        });
+
+        await waitFor(() => {
+          expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+        });
+      } finally {
+        await act(async () => {
+          root?.unmount();
+        });
+        container.remove();
+      }
     });
 
     it('calls onOpenChange(true) on mount when isDefaultOpen is true', async () => {

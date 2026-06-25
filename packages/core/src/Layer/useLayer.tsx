@@ -5,7 +5,7 @@
 /**
  * @file useLayer.tsx
  * @input Uses React hooks, Popover API, CSS anchor positioning, typography tokens
- * @output Exports useLayer hook for layer positioning and visibility
+ * @output Exports useLayer hook for layer positioning, visibility, and deferred DOM-open sync
  * @position Core layer utility; used by useHoverCard, useTooltip, etc.
  *
  * SYNC: When modified, update:
@@ -290,8 +290,8 @@ export function useLayer(
   const isOpenRef = useRef(false);
 
   const show = useCallback(() => {
-    if (popoverRef.current && !isOpenRef.current) {
-      popoverRef.current.showPopover();
+    if (!isOpenRef.current) {
+      popoverRef.current?.showPopover();
       isOpenRef.current = true;
       setIsOpen(true);
       onShow?.();
@@ -352,9 +352,16 @@ export function useLayer(
   // Ref callback for popover element — sets up toggle listener
   const popoverRefCallback = useCallback(
     (el: HTMLElement | null) => {
+      if (popoverRef.current) {
+        popoverRef.current.removeEventListener('toggle', handleToggle);
+      }
+
       popoverRef.current = el;
       if (el) {
         el.addEventListener('toggle', handleToggle);
+        if (isOpenRef.current && !el.matches(':popover-open')) {
+          el.showPopover();
+        }
       }
     },
     [handleToggle],

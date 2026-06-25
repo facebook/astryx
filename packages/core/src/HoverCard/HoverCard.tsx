@@ -4,7 +4,7 @@
 
 /**
  * @file HoverCard.tsx
- * @input Uses React, ReactDOM createPortal, useHoverCard hook
+ * @input Uses React, useSyncExternalStore, ReactDOM createPortal, useHoverCard hook
  * @output Exports HoverCard component for hover/focus triggered layers
  * @position Layer component; uses inline-safe trigger wrapper and portals floating layer
  *
@@ -18,6 +18,7 @@
 import React, {
   useCallback,
   useRef,
+  useSyncExternalStore,
   type ReactElement,
   type ReactNode,
 } from 'react';
@@ -45,6 +46,22 @@ const styles = stylex.create({
     textUnderlineOffset: spacingVars['--spacing-0-5'],
   },
 });
+
+const subscribeToHydration = () => () => {};
+const getHydratedSnapshot = () => true;
+const getServerSnapshot = () => false;
+
+/**
+ * Returns false during SSR and the first hydration render, then true for
+ * browser-only renders after hydration completes.
+ */
+function useHasHydrated(): boolean {
+  return useSyncExternalStore(
+    subscribeToHydration,
+    getHydratedSnapshot,
+    getServerSnapshot,
+  );
+}
 
 export interface HoverCardProps extends Pick<
   BaseProps,
@@ -182,6 +199,7 @@ export function HoverCard({
 }: HoverCardProps): ReactElement {
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const textOnly = isTextOnly(children);
+  const hasHydrated = useHasHydrated();
 
   // Determine if hover indication should be shown
   const showHoverIndication =
@@ -246,7 +264,7 @@ export function HoverCard({
   }, [textOnly, hoverCard.ref, hoverCard.describedBy]);
 
   const renderedHoverCard =
-    typeof document !== 'undefined'
+    hasHydrated && typeof document !== 'undefined'
       ? createPortal(
           hoverCard.renderHoverCard(content, {xstyle, className, style}),
           document.body,
