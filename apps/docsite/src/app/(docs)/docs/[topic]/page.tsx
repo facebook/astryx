@@ -10,6 +10,7 @@
  * Theme packages are NOT served here — they live at /themes/<name>.
  */
 
+import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 import {docTopics} from '../../../../generated/docsRegistry';
 import {packages} from '../../../../generated/packageRegistry';
@@ -17,6 +18,7 @@ import {ReferenceDocView} from '../../../../components/docs/ReferenceDocView';
 import {TokensDocView} from '../../../../components/docs/TokensDocView';
 import {PackageStubPage} from '../../../../components/docs/PackageStubPage';
 import {type InstallStep} from '../../../../components/docs/PackageActions';
+import {pageMetadata} from '../../../../lib/pageMetadata';
 
 const TOKEN_TOPICS = new Set([
   'tokens',
@@ -63,6 +65,42 @@ export function generateStaticParams() {
       .filter(p => !isThemePackage(p.name))
       .map(p => ({topic: p.name.replace('@astryxdesign/', '')})),
   ];
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{topic: string}>;
+}): Promise<Metadata> {
+  const {topic: slug} = await params;
+
+  // Mirror the page's own slug resolution: long-form doc topic first, then a
+  // non-theme package reference page.
+  const topic = docTopics.find(d => d.topic === slug);
+  if (topic) {
+    return pageMetadata({
+      title: topic.title,
+      description:
+        topic.description || `${topic.title} — Astryx design system docs.`,
+      path: `/docs/${slug}`,
+      type: 'article',
+    });
+  }
+
+  const pkg = packages.find(
+    p => p.name === slugToPackageName(slug) && !isThemePackage(p.name),
+  );
+  if (pkg) {
+    return pageMetadata({
+      title: pkg.displayName,
+      description:
+        pkg.description || `${pkg.name} — Astryx design system package.`,
+      path: `/docs/${slug}`,
+      type: 'article',
+    });
+  }
+
+  return {};
 }
 
 export default async function DocPage({

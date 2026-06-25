@@ -1,8 +1,17 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import type {Metadata} from 'next';
 import {ChangelogView} from '../../../components/ChangelogView';
 import {components} from '../../../generated/componentRegistry';
 import {packages} from '../../../generated/packageRegistry';
+import {pageMetadata} from '../../../lib/pageMetadata';
+
+export const metadata: Metadata = pageMetadata({
+  title: 'Changelog',
+  description:
+    'Release notes and version history for Astryx packages and components.',
+  path: '/changelog',
+});
 
 export default function ChangelogPage() {
   const changelogs = packages
