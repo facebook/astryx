@@ -31,15 +31,13 @@ import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import * as p from '@clack/prompts';
 import {ensureJscodeshift} from '../codemods/ensure-jscodeshift.mjs';
-import {
-  getTransformsBetween,
-  latestVersion,
-} from '../codemods/registry.mjs';
+import {getTransformsBetween, latestVersion} from '../codemods/registry.mjs';
 import {runCodemods} from '../codemods/runner.mjs';
 import {installAgentDocs, discoverAgentDocs} from './agent-docs.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {isValidSemver, semverGte, semverGt} from '../utils/semver.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
+import {loadConfig} from '../lib/config.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -65,7 +63,6 @@ function detectInstalledTargetVersion() {
   }
   return null;
 }
-
 
 function isPathSpec(spec) {
   return (
@@ -147,7 +144,9 @@ function normalizeIntegrationTransforms(integration, from, to) {
         `Integration ${integration.name ?? integration.__spec} has a codemod without a name.`,
       );
     if (!entry.transform)
-      throw new Error(`Integration codemod ${entry.name} is missing transform.`);
+      throw new Error(
+        `Integration codemod ${entry.name} is missing transform.`,
+      );
     const directTransform =
       typeof entry.transform === 'function' ? entry.transform : null;
     if (!directTransform)
@@ -157,7 +156,9 @@ function normalizeIntegrationTransforms(integration, from, to) {
     transforms.push({
       name: entry.name,
       meta: {
-        title: entry.title ?? `${integration.name ?? integration.__spec}: ${entry.name}`,
+        title:
+          entry.title ??
+          `${integration.name ?? integration.__spec}: ${entry.name}`,
         description: entry.description ?? '',
         pr: entry.pr,
         fileExtensions: entry.fileExtensions,
@@ -179,9 +180,7 @@ async function runPostCodemodHooks(integrations, context, silent) {
   );
   if (hooks.length === 0) return;
 
-  const log = silent
-    ? {info() {}, warn() {}, success() {}, error() {}}
-    : p.log;
+  const log = silent ? {info() {}, warn() {}, success() {}, error() {}} : p.log;
 
   const run = async (command, args, options = {}) => {
     await execFileAsync(command, args, {
@@ -209,7 +208,9 @@ async function runPostCodemodHooks(integrations, context, silent) {
           });
         }
       } else {
-        log.warn(`Integration hook ${label} has no run() or command() function; skipping.`);
+        log.warn(
+          `Integration hook ${label} has no run() or command() function; skipping.`,
+        );
         continue;
       }
       log.success(`Post-codemod hook ${label} completed.`);
@@ -226,9 +227,16 @@ export function registerUpgrade(program) {
   program
     .command('upgrade')
     .description('Run codemods to migrate between versions')
-    .option('--from <version>', 'Previous version before the dependency upgrade')
+    .option(
+      '--from <version>',
+      'Previous version before the dependency upgrade',
+    )
     .option('--apply', 'Write changes to disk (default: dry-run)', false)
-    .option('--force', 'Run codemods even if --from is newer than the installed version', false)
+    .option(
+      '--force',
+      'Run codemods even if --from is newer than the installed version',
+      false,
+    )
     .option('--codemod <name>', 'Run a specific transform only')
     .option(
       '--integration <package-or-file>',
@@ -237,15 +245,21 @@ export function registerUpgrade(program) {
       [],
     )
     .option('--path <dir>', 'Source directory to scan', './src')
-    .option('--install-deps', 'Auto-install jscodeshift without prompting', false)
+    .option(
+      '--install-deps',
+      'Auto-install jscodeshift without prompting',
+      false,
+    )
     .option('--list', 'List available codemods', false)
-    .action(async (options) => {
+    .action(async options => {
       const json = program.opts().json || false;
       if (!json) p.intro('Upgrade');
 
       if (!options.list && !options.from) {
-        const msg = 'Missing required --from. Install the target version first, then run `astryx upgrade --from <old-version>`.';
-        if (json) return jsonError(msg, undefined, ERROR_CODES.ERR_INVALID_ARGUMENT);
+        const msg =
+          'Missing required --from. Install the target version first, then run `astryx upgrade --from <old-version>`.';
+        if (json)
+          return jsonError(msg, undefined, ERROR_CODES.ERR_INVALID_ARGUMENT);
         p.log.error(msg);
         p.outro('Aborted');
         process.exitCode = 1;
@@ -255,7 +269,8 @@ export function registerUpgrade(program) {
       // Validate --from upfront so callers don't silently accept typos.
       if (!options.list && !isValidSemver(options.from)) {
         const msg = `Invalid --from value: "${options.from}". Expected a semver string like 0.0.5.`;
-        if (json) return jsonError(msg, undefined, ERROR_CODES.ERR_INVALID_VERSION);
+        if (json)
+          return jsonError(msg, undefined, ERROR_CODES.ERR_INVALID_VERSION);
         p.log.error(msg);
         p.outro('Aborted');
         process.exitCode = 1;
@@ -270,13 +285,30 @@ export function registerUpgrade(program) {
         const manifests = await getTransformsBetween('0.0.0', latestVersion);
         for (const {version, transforms} of manifests) {
           for (const {name, meta, optional} of transforms) {
-            codemods.push({name, title: meta.title, version, pr: meta.pr, optional: !!optional});
+            codemods.push({
+              name,
+              title: meta.title,
+              version,
+              pr: meta.pr,
+              optional: !!optional,
+            });
           }
         }
-        if (json) return jsonOut('upgrade.list', codemods.map(({name, title, version, optional}) => ({name, title, version, optional})));
+        if (json)
+          return jsonOut(
+            'upgrade.list',
+            codemods.map(({name, title, version, optional}) => ({
+              name,
+              title,
+              version,
+              optional,
+            })),
+          );
         p.log.step('Available codemods:');
         for (const {name, title, pr, optional} of codemods) {
-          p.log.info(`  ${name} — ${title}${optional ? ' (optional)' : ''} (${pr})`);
+          p.log.info(
+            `  ${name} — ${title}${optional ? ' (optional)' : ''} (${pr})`,
+          );
         }
         p.outro('Done');
         return;
@@ -285,8 +317,10 @@ export function registerUpgrade(program) {
       const currentVersion = options.from;
       const installed = detectInstalledTargetVersion();
       if (!installed) {
-        const msg = 'Could not find installed @astryxdesign/core (or legacy @xds/core). Install the target version first, then rerun `astryx upgrade --from <old-version>`.';
-        if (json) return jsonError(msg, undefined, ERROR_CODES.ERR_VERSION_DETECT);
+        const msg =
+          'Could not find installed @astryxdesign/core (or legacy @xds/core). Install the target version first, then rerun `astryx upgrade --from <old-version>`.';
+        if (json)
+          return jsonError(msg, undefined, ERROR_CODES.ERR_VERSION_DETECT);
         p.log.error(msg);
         p.outro('Aborted');
         process.exitCode = 1;
@@ -296,14 +330,26 @@ export function registerUpgrade(program) {
 
       if (!json) {
         p.log.info(`From version: ${currentVersion}`);
-        p.log.info(`Installed target: ${targetVersion} (${installed.packageName})`);
+        p.log.info(
+          `Installed target: ${targetVersion} (${installed.packageName})`,
+        );
       }
 
       let integrations;
       try {
-        integrations = await loadIntegrations(options.integration ?? []);
+        const config = await loadConfig(process.cwd());
+        const integrationSpecs = uniqueFiles([
+          ...(config.integrations ?? []),
+          ...(options.integration ?? []),
+        ]);
+        integrations = await loadIntegrations(integrationSpecs);
       } catch (err) {
-        if (json) return jsonError(err.message, undefined, ERROR_CODES.ERR_INVALID_ARGUMENT);
+        if (json)
+          return jsonError(
+            err.message,
+            undefined,
+            ERROR_CODES.ERR_INVALID_ARGUMENT,
+          );
         p.log.error(err.message);
         p.outro('Aborted');
         process.exitCode = 1;
@@ -333,7 +379,11 @@ export function registerUpgrade(program) {
       const versionManifests = [
         ...(await getTransformsBetween(currentVersion, targetVersion)),
         ...integrations.flatMap(integration =>
-          normalizeIntegrationTransforms(integration, currentVersion, targetVersion),
+          normalizeIntegrationTransforms(
+            integration,
+            currentVersion,
+            targetVersion,
+          ),
         ),
       ];
 
@@ -366,7 +416,8 @@ export function registerUpgrade(program) {
 
       if (totalTransforms === 0 && totalOptional === 0) {
         const msg = `Codemod "${options.codemod}" not found. Use --list to see available codemods.`;
-        if (json) return jsonError(msg, undefined, ERROR_CODES.ERR_UNKNOWN_CODEMOD);
+        if (json)
+          return jsonError(msg, undefined, ERROR_CODES.ERR_UNKNOWN_CODEMOD);
         p.log.error(msg);
         p.outro('Aborted');
         process.exitCode = 1;
@@ -383,12 +434,26 @@ export function registerUpgrade(program) {
         }
       }
 
-      const receipt = {from: currentVersion, to: targetVersion, codemods: totalTransforms, integrations: integrations.map(i => i.name ?? i.__spec), agentDocsRefreshed: false};
+      const receipt = {
+        from: currentVersion,
+        to: targetVersion,
+        codemods: totalTransforms,
+        integrations: integrations.map(i => i.name ?? i.__spec),
+        agentDocsRefreshed: false,
+      };
 
       // Ensure jscodeshift is available
-      const ready = await ensureJscodeshift({installDeps: options.installDeps, silent: json});
+      const ready = await ensureJscodeshift({
+        installDeps: options.installDeps,
+        silent: json,
+      });
       if (!ready) {
-        if (json) return jsonError('jscodeshift is required but could not be installed.', undefined, ERROR_CODES.ERR_DEP_MISSING);
+        if (json)
+          return jsonError(
+            'jscodeshift is required but could not be installed.',
+            undefined,
+            ERROR_CODES.ERR_DEP_MISSING,
+          );
         p.outro('Aborted');
         process.exitCode = 1;
         return;
@@ -404,7 +469,9 @@ export function registerUpgrade(program) {
 
       if (options.apply && integrations.length > 0) {
         const codemodDir = path.resolve(options.path);
-        const absoluteChangedFiles = uniqueFiles(codemodResult?.writtenFiles ?? []);
+        const absoluteChangedFiles = uniqueFiles(
+          codemodResult?.writtenFiles ?? [],
+        );
         const changedFiles = absoluteChangedFiles.map(file =>
           path.relative(process.cwd(), file),
         );
@@ -435,7 +502,8 @@ export function registerUpgrade(program) {
           // Don't inject into files that never had Astryx content.
           const written = installAgentDocs(process.cwd(), {onlyReplace: true});
           receipt.agentDocsRefreshed = written.length > 0;
-          if (!json && written.length > 0) p.log.success(`Agent docs updated: ${written.join(', ')}`);
+          if (!json && written.length > 0)
+            p.log.success(`Agent docs updated: ${written.join(', ')}`);
         } catch {
           if (!json) {
             p.log.warn(
@@ -445,12 +513,23 @@ export function registerUpgrade(program) {
         }
       }
 
-      if (json) {
-        if (codemodResult && typeof codemodResult === 'object') {
-          receipt.filesChanged = codemodResult.totalFilesChanged ?? 0;
-          receipt.transformsApplied = codemodResult.totalTransformsApplied ?? 0;
-          receipt.errors = codemodResult.errors ?? [];
+      if (codemodResult && typeof codemodResult === 'object') {
+        receipt.filesChanged = codemodResult.totalFilesChanged ?? 0;
+        receipt.transformsApplied = codemodResult.totalTransformsApplied ?? 0;
+        receipt.errors = codemodResult.errors ?? [];
+      }
+
+      if (receipt.errors?.length > 0) {
+        const msg = `Upgrade completed with ${receipt.errors.length} codemod error${receipt.errors.length === 1 ? '' : 's'}.`;
+        if (json) {
+          return jsonError(msg, {receipt}, ERROR_CODES.ERR_CODEMOD_FAILED);
         }
+        p.outro('Upgrade failed');
+        process.exitCode = 1;
+        return;
+      }
+
+      if (json) {
         return jsonOut('upgrade.run', receipt);
       }
       p.outro(options.apply ? 'Upgrade complete' : 'Dry run complete');

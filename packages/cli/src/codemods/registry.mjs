@@ -17,6 +17,7 @@ const registry = new Map([
   ['0.0.13', () => import('./transforms/v0.0.13/index.mjs')],
   ['0.0.14', () => import('./transforms/v0.0.14/index.mjs')],
   ['0.0.15', () => import('./transforms/v0.0.15/index.mjs')],
+  ['0.1.0', () => import('./transforms/v0.1.0/index.mjs')],
 ]);
 
 // Re-export from the shared utility so registry callers and other consumers

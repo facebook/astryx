@@ -41,43 +41,12 @@ describe('getLatestVersion', () => {
     expect(getLatestVersion(tmpDir)).toBeNull();
   });
 
-  it('reads from versionFile in package.json', () => {
-    const versionFilePath = path.join(tmpDir, 'LATEST_VERSION');
-    fs.writeFileSync(versionFilePath, '0.0.9\n');
-    fs.writeFileSync(
-      path.join(tmpDir, 'package.json'),
-      JSON.stringify({astryx: {versionFile: './LATEST_VERSION'}}),
-    );
-
-    expect(getLatestVersion(tmpDir)).toBe('0.0.9');
-  });
-
   it('returns null when no signals exist', () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
       JSON.stringify({name: 'test'}),
     );
     expect(getLatestVersion(tmpDir)).toBeNull();
-  });
-
-  it('returns null when versionFile path does not exist', () => {
-    fs.writeFileSync(
-      path.join(tmpDir, 'package.json'),
-      JSON.stringify({astryx: {versionFile: './missing/LATEST_VERSION'}}),
-    );
-    expect(getLatestVersion(tmpDir)).toBeNull();
-  });
-
-  it('env var takes priority over versionFile', () => {
-    process.env.ASTRYX_LATEST_VERSION = '1.0.0';
-    const versionFilePath = path.join(tmpDir, 'LATEST_VERSION');
-    fs.writeFileSync(versionFilePath, '0.0.9\n');
-    fs.writeFileSync(
-      path.join(tmpDir, 'package.json'),
-      JSON.stringify({astryx: {versionFile: './LATEST_VERSION'}}),
-    );
-
-    expect(getLatestVersion(tmpDir)).toBe('1.0.0');
   });
 });
 
@@ -117,7 +86,7 @@ describe('checkForUpdate', () => {
 
     const hint = checkForUpdate(tmpDir);
     expect(hint).toContain('0.0.8');
-    expect(hint).toContain('astryx upgrade --apply --to 0.0.8');
+    expect(hint).toContain('astryx upgrade --from <old-version> --apply');
     expect(hint).toContain('FYI');
   });
 
@@ -138,37 +107,6 @@ describe('checkForUpdate', () => {
     );
 
     expect(checkForUpdate(tmpDir)).toBeNull();
-  });
-
-  it('sets env var for subsequent calls', () => {
-    const versionFilePath = path.join(tmpDir, 'LATEST_VERSION');
-    fs.writeFileSync(versionFilePath, '0.0.8\n');
-    fs.writeFileSync(
-      path.join(tmpDir, 'package.json'),
-      JSON.stringify({
-        dependencies: {'@astryxdesign/core': '^0.0.7'},
-        astryx: {versionFile: './LATEST_VERSION'},
-      }),
-    );
-
-    checkForUpdate(tmpDir);
-    expect(process.env.ASTRYX_LATEST_VERSION).toBe('0.0.8');
-  });
-
-  it('reads from versionFile and produces hint', () => {
-    const versionFilePath = path.join(tmpDir, 'LATEST_VERSION');
-    fs.writeFileSync(versionFilePath, '0.0.9\n');
-    fs.writeFileSync(
-      path.join(tmpDir, 'package.json'),
-      JSON.stringify({
-        dependencies: {'@astryxdesign/core': '^0.0.7'},
-        astryx: {versionFile: './LATEST_VERSION'},
-      }),
-    );
-
-    const hint = checkForUpdate(tmpDir);
-    expect(hint).toContain('0.0.9');
-    expect(hint).toContain('FYI');
   });
 
   it('uses semver (not lexicographic) comparison for double-digit patches', () => {

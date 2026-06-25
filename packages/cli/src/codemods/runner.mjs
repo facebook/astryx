@@ -11,7 +11,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as p from '@clack/prompts';
-import {getRunPrefix} from '../utils/package-manager.mjs';
 import {humanLog} from '../lib/json.mjs';
 
 // Known corruption patterns that indicate a broken transform.
@@ -88,39 +87,6 @@ function findSourceFiles(dir) {
 }
 
 /**
- * Detect the project's formatter and run it on changed files.
- * Tries prettier, then biome. Silently skips if none found.
- *
- * @param {string[]} files - Absolute paths to files that were modified
- * @param {boolean} [silent] - Suppress human-facing output
- */
-async function formatChangedFiles(files, silent = false) {
-  if (files.length === 0) return;
-
-  const {execSync} = await import('node:child_process');
-  const fileArgs = files.map(f => `"${f}"`).join(' ');
-  const prefix = getRunPrefix();
-
-  const formatters = [
-    {name: 'prettier', cmd: `${prefix} prettier --write ${fileArgs}`},
-    {name: 'biome', cmd: `${prefix} biome format --write ${fileArgs}`},
-  ];
-
-  for (const {name, cmd} of formatters) {
-    try {
-      execSync(cmd, {stdio: 'pipe', timeout: 30000});
-      if (!silent)
-        p.log.info(
-          `Formatted ${files.length} file${files.length === 1 ? '' : 's'} with ${name}`,
-        );
-      return;
-    } catch {
-      // Formatter not available or failed — try next
-    }
-  }
-}
-
-/**
  * Validate transform output before writing to disk.
  *
  * Checks:
@@ -162,6 +128,86 @@ export function validateOutput(result, source, j, {parse = true} = {}) {
   return {valid: true};
 }
 
+function isConfigCodemod(transformEntry) {
+  return transformEntry.meta?.codemodType === 'config';
+}
+
+const CONFIG_CODEMOD_PATHS = new Set([
+  'package.json',
+  'astryx.config.mjs',
+  'xds.config.mjs',
+]);
+
+function resolveConfigPath(relativePath) {
+  if (!CONFIG_CODEMOD_PATHS.has(relativePath)) {
+    throw new Error(`unsupported config codemod path: ${relativePath}`);
+  }
+  return path.resolve(process.cwd(), relativePath);
+}
+
+function readOptionalConfigFile(relativePath) {
+  const fullPath = resolveConfigPath(relativePath);
+  if (!fs.existsSync(fullPath)) return null;
+  return {path: relativePath, source: fs.readFileSync(fullPath, 'utf-8')};
+}
+
+function getConfigCodemodContext() {
+  return {
+    packageJson: readOptionalConfigFile('package.json'),
+    astryxConfig: readOptionalConfigFile('astryx.config.mjs'),
+    xdsConfig: readOptionalConfigFile('xds.config.mjs'),
+  };
+}
+
+async function runConfigCodemod(transformEntry, {apply, log}) {
+  const {transform} = transformEntry;
+  const api = {config: getConfigCodemodContext()};
+  const result = await transform({path: process.cwd(), source: ''}, api);
+  const errors = result?.errors ?? [];
+  if (errors.length > 0) {
+    for (const error of errors) {
+      log.error(`    ✗ ${error.file ?? 'config'} — ${error.error}`);
+    }
+    return {filesChanged: 0, errors};
+  }
+
+  const changes = result?.changes ?? [];
+  if (changes.length === 0) return {filesChanged: 0, errors: []};
+
+  for (const change of changes) {
+    const fullPath = resolveConfigPath(change.path);
+    if (change.delete) {
+      if (apply) fs.rmSync(fullPath, {force: true});
+      log[apply ? 'success' : 'warn'](
+        `    ${apply ? '✓' : '~'} ${change.path} (delete${apply ? '' : ', dry run'})`,
+      );
+      continue;
+    }
+
+    if (apply) {
+      fs.writeFileSync(fullPath, change.source, 'utf-8');
+    }
+    log[apply ? 'success' : 'warn'](
+      `    ${apply ? '✓' : '~'} ${change.path}${apply ? '' : ' (would change)'}`,
+    );
+  }
+
+  if (changes.length > 0) {
+    const verb = apply ? 'Updated' : 'Would update';
+    log.info(
+      `  ${verb} ${changes.length} config file${changes.length === 1 ? '' : 's'}`,
+    );
+  }
+
+  return {
+    filesChanged: changes.length,
+    writtenFiles: changes
+      .filter(change => !change.delete && path.extname(change.path) !== '.json')
+      .map(change => resolveConfigPath(change.path)),
+    errors: [],
+  };
+}
+
 /**
  * Run codemods against source files.
  *
@@ -197,17 +243,11 @@ export async function runCodemods(
 
   if (files.length === 0) {
     log.warn('No source files found.');
-    return {
-      ok: true,
-      totalFilesChanged: 0,
-      totalTransformsApplied: 0,
-      errors: [],
-      writtenFiles: [],
-      skippedOptional: [],
-    };
+  } else {
+    log.info(
+      `Found ${files.length} source file${files.length === 1 ? '' : 's'}`,
+    );
   }
-
-  log.info(`Found ${files.length} source file${files.length === 1 ? '' : 's'}`);
 
   // Dynamically import jscodeshift
   const jscodeshift = (await import('jscodeshift')).default;
@@ -238,6 +278,24 @@ export async function runCodemods(
       }
 
       log.info(`  ${meta.title}`);
+
+      if (isConfigCodemod(transformEntry)) {
+        const result = await runConfigCodemod(transformEntry, {apply, log});
+        if (result.errors.length > 0) {
+          for (const error of result.errors) {
+            errors.push({
+              file: error.file ?? 'config',
+              codemod: name,
+              error: error.error,
+            });
+          }
+        } else if (result.filesChanged > 0) {
+          totalFilesChanged += result.filesChanged;
+          totalTransformsApplied += result.filesChanged;
+          writtenFiles.push(...(result.writtenFiles ?? []));
+        }
+        continue;
+      }
 
       let filesChanged = 0;
 
@@ -323,12 +381,6 @@ export async function runCodemods(
     }
   }
 
-  // Post-codemod formatting: run the project's formatter on changed files
-  // so codemods don't introduce style drift (jscodeshift may change quotes, etc.)
-  if (apply && writtenFiles.length > 0) {
-    await formatChangedFiles(writtenFiles, silent);
-  }
-
   if (totalValidationBlocked > 0) {
     log.warn(
       `${totalValidationBlocked} file${totalValidationBlocked === 1 ? ' was' : 's were'} blocked by validation — no changes written to ${totalValidationBlocked === 1 ? 'that file' : 'those files'}.`,
@@ -366,7 +418,9 @@ export async function runCodemods(
       if (meta.description) {
         log.info(`    ${meta.description}`);
       }
-      log.info(`    Run: astryx upgrade --codemod ${name} --path <dir> --apply`);
+      log.info(
+        `    Run: astryx upgrade --codemod ${name} --path <dir> --apply`,
+      );
     }
   }
 
