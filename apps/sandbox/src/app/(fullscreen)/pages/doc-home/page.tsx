@@ -55,7 +55,7 @@ export default function DocHomePage() {
             <Heading level={1}>Endless templates for your ideas</Heading>
             <Text type="large" color="secondary">
               Explore production-ready templates, patterns, and components built
-              with XDS.
+              with Astryx.
             </Text>
           </div>
 

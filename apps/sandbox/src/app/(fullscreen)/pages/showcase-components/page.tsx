@@ -48,7 +48,7 @@ export default function ShowcaseComponentsPage() {
             justifyContent: 'space-between',
           }}>
           <VStack gap={4}>
-            <Heading level={2}>Build with XDS</Heading>
+            <Heading level={2}>Build with Astryx</Heading>
             <Text type="body" color="secondary">
               Open source components for the web and beyond
             </Text>
@@ -167,7 +167,7 @@ export default function ShowcaseComponentsPage() {
               <Avatar name="+3" />
             </HStack>
             <Text type="supporting" color="secondary">
-              XDS Core Team
+              Astryx Core Team
             </Text>
           </VStack>
         </div>

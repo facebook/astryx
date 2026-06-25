@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {withXDS} from '@astryxdesign/build/next';
+import {withAstryx} from '@astryxdesign/build/next';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -34,4 +34,4 @@ const nextConfig = {
   },
 };
 
-export default withXDS(nextConfig);
+export default withAstryx(nextConfig);

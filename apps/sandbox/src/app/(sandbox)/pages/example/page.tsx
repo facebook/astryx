@@ -38,7 +38,7 @@ export default function ExamplePage() {
         <VStack gap={2}>
           <Heading level={1}>Example Page</Heading>
           <Text type="body" color="secondary">
-            A scaffold showing common XDS components. Copy this file to create
+            A scaffold showing common Astryx components. Copy this file to create
             new pages.
           </Text>
         </VStack>

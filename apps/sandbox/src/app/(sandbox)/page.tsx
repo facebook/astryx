@@ -83,7 +83,7 @@ export default function Home() {
     <Layout
       header={
         <LayoutHeader hasDivider padding={6}>
-          <Heading level={1}>XDS Sandbox</Heading>
+          <Heading level={1}>Astryx Sandbox</Heading>
         </LayoutHeader>
       }
       content={

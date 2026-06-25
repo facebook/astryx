@@ -47,7 +47,7 @@ interface ReviewRow extends Record<string, unknown> {
 const waitingForAWhile: ReviewRow[] = [
   {
     id: '1',
-    title: '[xds][FilterTokenList]: Promote out of beta',
+    title: '[astryx][FilterTokenList]: Promote out of beta',
     prId: 'PR-1042',
     lines: 3,
     reviewTime: '<20sec review',
@@ -63,7 +63,7 @@ const waitingForAWhile: ReviewRow[] = [
   },
   {
     id: '2',
-    title: '[xds][Table] Fix column resize regression on Safari',
+    title: '[astryx][Table] Fix column resize regression on Safari',
     prId: 'PR-1038',
     lines: 47,
     reviewTime: '~3min review',
@@ -79,7 +79,7 @@ const waitingForAWhile: ReviewRow[] = [
 const needsCodeReview: ReviewRow[] = [
   {
     id: '3',
-    title: '[xds][Avatar] Add AvatarStatusDot size scaling',
+    title: '[astryx][Avatar] Add AvatarStatusDot size scaling',
     prId: 'PR-1055',
     lines: 128,
     reviewTime: '~8min review',
@@ -96,7 +96,7 @@ const needsCodeReview: ReviewRow[] = [
   },
   {
     id: '4',
-    title: '[xds][Badge] Introduce error variant with icon slot',
+    title: '[astryx][Badge] Introduce error variant with icon slot',
     prId: 'PR-1061',
     lines: 52,
     reviewTime: '~2min review',
@@ -109,7 +109,7 @@ const needsCodeReview: ReviewRow[] = [
   },
   {
     id: '5',
-    title: '[xds][Collapsible] Animate height transitions with CSS',
+    title: '[astryx][Collapsible] Animate height transitions with CSS',
     prId: 'PR-1063',
     lines: 210,
     reviewTime: '~12min review',
@@ -125,7 +125,7 @@ const needsCodeReview: ReviewRow[] = [
   },
   {
     id: '6',
-    title: '[xds][TextInput] Add clearable prop with trailing icon',
+    title: '[astryx][TextInput] Add clearable prop with trailing icon',
     prId: 'PR-1067',
     lines: 34,
     reviewTime: '<1min review',
@@ -138,7 +138,7 @@ const needsCodeReview: ReviewRow[] = [
   },
   {
     id: '7',
-    title: '[xds][Layout] Support sticky header in LayoutHeader',
+    title: '[astryx][Layout] Support sticky header in LayoutHeader',
     prId: 'PR-1070',
     lines: 89,
     reviewTime: '~5min review',
@@ -157,7 +157,7 @@ const needsCodeReview: ReviewRow[] = [
 const acceptedAndReady: ReviewRow[] = [
   {
     id: '8',
-    title: '[xds][StatusDot] Add isPulsing animation support',
+    title: '[astryx][StatusDot] Add isPulsing animation support',
     prId: 'PR-1048',
     lines: 22,
     reviewTime: '<30sec review',
@@ -173,7 +173,7 @@ const acceptedAndReady: ReviewRow[] = [
   },
   {
     id: '9',
-    title: '[xds][Card] Add isFullBleed prop for edge-to-edge content',
+    title: '[astryx][Card] Add isFullBleed prop for edge-to-edge content',
     prId: 'PR-1051',
     lines: 15,
     reviewTime: '<20sec review',

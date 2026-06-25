@@ -54,7 +54,7 @@ export const categories: SandboxCategory[] = [
       {
         name: 'Card Examples',
         href: '/pages/example-cards/',
-        description: 'XDS components showcased in realistic card compositions',
+        description: 'Astryx components showcased in realistic card compositions',
       },
       {
         name: 'Table Overview',
@@ -103,7 +103,7 @@ export const categories: SandboxCategory[] = [
     label: 'Templates',
     slug: 'templates',
     description:
-      'Full-page application templates — dashboards, forms, and data views built with XDS.',
+      'Full-page application templates — dashboards, forms, and data views built with Astryx.',
     pages: [
       ...autoDiscoveredTemplates.map(t => ({
         name: t.name,
@@ -158,7 +158,7 @@ export const categories: SandboxCategory[] = [
   {
     label: 'Tools',
     slug: 'tools',
-    description: 'Interactive tools for building and exploring XDS components.',
+    description: 'Interactive tools for building and exploring Astryx components.',
     pages: [
       {
         name: 'CodeBlock Perf',

@@ -6,7 +6,7 @@
  * Two questions this module answers, both painful to eyeball from raw
  * theme source files:
  *
- *   1. "Which tokens did this theme actually change vs the XDS defaults?"
+ *   1. "Which tokens did this theme actually change vs the Astryx defaults?"
  *      — diff `theme.tokens` against `xdsTokenDefaults` and bucket each
  *        entry as unchanged / overridden / new.
  *

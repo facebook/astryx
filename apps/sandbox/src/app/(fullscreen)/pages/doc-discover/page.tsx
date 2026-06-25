@@ -41,7 +41,7 @@ const ITEMS: DiscoverItem[] = [
     description:
       'Full-featured data table with sorting, filtering, pagination, and row selection.',
     category: 'Components',
-    author: 'XDS Core',
+    author: 'Astryx Core',
     downloads: '12.4k',
     tags: ['table', 'data', 'filtering'],
   },
@@ -50,7 +50,7 @@ const ITEMS: DiscoverItem[] = [
     description:
       'Declarative form composition with built-in validation and error handling.',
     category: 'Patterns',
-    author: 'XDS Core',
+    author: 'Astryx Core',
     downloads: '8.2k',
     tags: ['form', 'validation', 'input'],
   },
@@ -59,16 +59,16 @@ const ITEMS: DiscoverItem[] = [
     description:
       'Pre-built dashboard template with sidebar nav, stats cards, and chart areas.',
     category: 'Templates',
-    author: 'XDS Team',
+    author: 'Astryx Team',
     downloads: '6.7k',
     tags: ['dashboard', 'layout', 'analytics'],
   },
   {
     name: 'Theme Editor',
     description:
-      'Visual editor for customizing and previewing XDS design tokens in real-time.',
+      'Visual editor for customizing and previewing Astryx design tokens in real-time.',
     category: 'Tools',
-    author: 'XDS Team',
+    author: 'Astryx Team',
     downloads: '3.1k',
     tags: ['theme', 'tokens', 'preview'],
   },
@@ -77,7 +77,7 @@ const ITEMS: DiscoverItem[] = [
     description:
       'App shell with sidebar, top nav, breadcrumbs, and responsive collapse.',
     category: 'Components',
-    author: 'XDS Core',
+    author: 'Astryx Core',
     downloads: '9.8k',
     tags: ['navigation', 'shell', 'layout'],
   },
@@ -86,7 +86,7 @@ const ITEMS: DiscoverItem[] = [
     description:
       'Keyboard-driven command palette for quick actions and search.',
     category: 'Components',
-    author: 'XDS Labs',
+    author: 'Astryx Labs',
     downloads: '4.5k',
     tags: ['search', 'keyboard', 'shortcuts'],
   },
@@ -95,7 +95,7 @@ const ITEMS: DiscoverItem[] = [
     description:
       'Complete authentication flow with login, registration, and password reset pages.',
     category: 'Templates',
-    author: 'XDS Team',
+    author: 'Astryx Team',
     downloads: '5.3k',
     tags: ['auth', 'login', 'security'],
   },
@@ -104,7 +104,7 @@ const ITEMS: DiscoverItem[] = [
     description:
       'Create-Read-Update-Delete pattern with modals, toasts, and confirmation dialogs.',
     category: 'Patterns',
-    author: 'XDS Core',
+    author: 'Astryx Core',
     downloads: '7.1k',
     tags: ['crud', 'modal', 'data'],
   },
@@ -113,7 +113,7 @@ const ITEMS: DiscoverItem[] = [
     description:
       'AI-powered tool for testing component usage and validating design system adherence.',
     category: 'Tools',
-    author: 'XDS Labs',
+    author: 'Astryx Labs',
     downloads: '2.8k',
     tags: ['ai', 'testing', 'quality'],
   },
@@ -122,7 +122,7 @@ const ITEMS: DiscoverItem[] = [
     description:
       'Full-width dropdown navigation menu with sections, icons, and featured content.',
     category: 'Components',
-    author: 'XDS Core',
+    author: 'Astryx Core',
     downloads: '5.9k',
     tags: ['navigation', 'menu', 'dropdown'],
   },
@@ -131,7 +131,7 @@ const ITEMS: DiscoverItem[] = [
     description:
       'Settings template with tabbed sections, form fields, and save/cancel actions.',
     category: 'Templates',
-    author: 'XDS Team',
+    author: 'Astryx Team',
     downloads: '4.0k',
     tags: ['settings', 'form', 'tabs'],
   },
@@ -140,7 +140,7 @@ const ITEMS: DiscoverItem[] = [
     description:
       'Reusable empty state patterns with illustrations, CTAs, and guidance text.',
     category: 'Patterns',
-    author: 'XDS Core',
+    author: 'Astryx Core',
     downloads: '3.6k',
     tags: ['empty', 'placeholder', 'onboarding'],
   },

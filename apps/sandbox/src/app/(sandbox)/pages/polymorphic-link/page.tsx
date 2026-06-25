@@ -118,7 +118,7 @@ export default function PolymorphicLinkPage() {
         <VStack gap={2}>
           <Heading level={1}>Polymorphic Link</Heading>
           <Text type="body" color="secondary">
-            XDS components that render links can use a custom link component
+            Astryx components that render links can use a custom link component
             instead of native {'<a>'}. Set it globally via LinkProvider or
             per-component via the{' '}
             <Text type="body" weight="bold">

@@ -27,7 +27,7 @@ const CLI_PKG = JSON.parse(
 
 const program = new Command();
 program
-  .name('xds')
+  .name('astryx')
   .description(CLI_PKG.description)
   .version(CLI_PKG.version)
   .option('--zh', 'Output docs in Chinese Simplified')
