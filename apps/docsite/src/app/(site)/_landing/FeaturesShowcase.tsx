@@ -58,7 +58,13 @@ const styles = stylex.create({
     width: '100%',
     maxWidth: layout.contentMaxWidth,
     display: 'grid',
-    gap: spacingVars['--spacing-8'],
+    // Tighter stacking gap on mobile (the single-column stack felt gappy,
+    // especially heading→first card); the roomier --spacing-8 returns at the
+    // ≥1024px 3-column bento where columns need more breathing room.
+    gap: {
+      default: spacingVars['--spacing-5'],
+      '@media (min-width: 1024px)': spacingVars['--spacing-8'],
+    },
     // minmax(0, 1fr) (not 1fr) so a card with wide content — e.g. the Themes
     // preview's left-bleed — can't blow out its column; all three stay equal.
     gridTemplateColumns: {

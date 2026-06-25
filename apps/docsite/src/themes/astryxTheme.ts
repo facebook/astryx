@@ -141,5 +141,62 @@ export const astryxTheme = defineTheme({
         },
       },
     },
+    // Pagination dots (carousel indicators): inactive dots are hollow outlined
+    // rings; the active dot stretches into a filled pill. The core `dots`
+    // variant paints solid filled circles for every state, so the base override
+    // clears that fill and draws a ring, and the active override fills it back
+    // in and widens it. Both use --color-accent (which resolves to PRIMARY, and
+    // flips to the light ink on dark media via the [data-astryx-media] block),
+    // so the dots stay legible on light and dark hero slides without per-mode
+    // CSS. The width transition makes the active pill animate as the carousel
+    // advances.
+    'pagination-dot': {
+      base: {
+        // Enlarge the dot beyond the core's --spacing-2 (8px) footprint. Both
+        // width AND height are set here because the core sizes the dot from
+        // --spacing-2 on both axes; overriding only width would leave a squat
+        // dot. 10px is a one-off visual size (no spacing-scale token sits
+        // between 8px and 12px) — a touch bigger than default without the 12px
+        // version reading oversized.
+        width: '10px',
+        height: '10px',
+        backgroundColor: 'transparent',
+        borderWidth: '2px',
+        borderStyle: 'solid',
+        // Lighter than the active pill so the rings recede and the selected dot
+        // reads as primary. Derived from --color-accent via color-mix (rather
+        // than a static gray like --color-border) so it tracks the theme ink in
+        // both modes: a translucent near-black on light slides, a translucent
+        // light ink on dark slides. The active block below re-asserts the full
+        // --color-accent border so the pill stays at full strength.
+        borderColor: 'color-mix(in srgb, var(--color-accent) 60%, transparent)',
+        boxSizing: 'border-box',
+        transitionProperty: 'width, background-color, border-color',
+        transitionDuration: 'var(--duration-fast)',
+        transitionTimingFunction: 'var(--ease-standard)',
+        // Hover applies to every dot, but the active block below re-asserts the
+        // solid accent fill on its own :hover so the active pill never drops to
+        // this muted preview tint. Inactive rings fill with the subtle accent
+        // wash to preview that they're clickable. --color-accent-muted flips
+        // with the theme (PRIMARY tint in light, light tint on dark slides), so
+        // the hover stays legible in both modes without per-mode rules.
+        ':hover': {
+          backgroundColor: 'var(--color-accent-muted)',
+        },
+      },
+      active: {
+        // Pill width scales with the 10px dot height (--spacing-7 = 28px keeps
+        // the same ~2.8:1 pill ratio).
+        width: 'var(--spacing-7)',
+        backgroundColor: 'var(--color-accent)',
+        borderColor: 'var(--color-accent)',
+        borderRadius: 'var(--radius-full)',
+        // Keep the active pill solid on hover (don't inherit the base ring's
+        // muted hover fill).
+        ':hover': {
+          backgroundColor: 'var(--color-accent)',
+        },
+      },
+    },
   },
 });

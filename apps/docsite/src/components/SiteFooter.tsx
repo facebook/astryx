@@ -32,7 +32,14 @@ import {
 
 const styles = stylex.create({
   siteFooter: {
-    paddingTop: 'calc(var(--spacing-12) * 2)',
+    // Top breathing room above the footer uses the same marketing-rhythm token
+    // as the home-page section gaps (--astryx-marketing-section-gap), so the
+    // footer's spacing stays consistent with the sections above it and scales
+    // responsively from the one source of truth (100px desktop → 48px mobile),
+    // instead of a one-off literal. Falls back to the section-gap default
+    // elsewhere on the site where the token isn't overridden.
+    paddingTop:
+      'var(--astryx-marketing-section-gap, calc(var(--spacing-12) * 2))',
   },
   astryxLogo: {
     height: 18,

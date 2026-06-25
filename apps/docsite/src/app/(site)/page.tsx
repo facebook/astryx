@@ -27,11 +27,10 @@ import {FeaturesShowcase} from './_landing/FeaturesShowcase';
 import {AboutShowcase} from './_landing/AboutShowcase';
 import {DiscoverShowcase} from './_landing/DiscoverShowcase';
 
-// Hero band height (reserved by heroSpacer). Desktop is fixed; narrow screens
-// fall back to these per-tier values until the measured height is applied.
+// Desktop hero band height — reserved by heroSpacer for the fixed (pinned)
+// hero. Narrow screens render the hero in normal flow, so they don't use a
+// fixed band height.
 const HERO_BAND_HEIGHT = 760;
-const HERO_BAND_HEIGHT_NARROW = 940; // 768–1024px: 3-column collage
-const HERO_BAND_HEIGHT_2COL = 1200; // <768px: 2-column collage
 
 const styles = stylex.create({
   // Wraps hero + showcase so the pin-and-cover stays bounded to this container
@@ -42,12 +41,30 @@ const styles = stylex.create({
     // Shared by the nav→wordmark gap and the text→cards gap so they match.
     '--hero-gap': 'calc(var(--spacing-12) * 2)',
   },
-  // Hero content column. position:fixed (like the aurora glow) so it stays put
+  // Hero content column.
+  //
+  // Desktop (≥1024px): position:fixed (like the aurora glow) so it stays put
   // while the showcase scrolls up and covers it (pin-and-cover). Pulled out of
-  // flow; heroSpacer reserves its height. Capped at 800 (reading measure).
+  // flow; heroSpacer reserves its height.
+  //
+  // Narrow (<1024px): position:relative (in normal flow). The mobile hero
+  // (text + full-height collage) is taller than one viewport, and pinning it
+  // left the lower half of the collage stranded below the fold (covered by the
+  // showcase instead of scrollable into view). In flow, the hero scrolls
+  // normally so the whole collage is visible, then the showcase follows below
+  // it. heroSpacer collapses to 0 on narrow so it doesn't double the space.
   heroContent: {
-    position: 'fixed',
-    top: 'var(--appshell-header-height, 0px)',
+    position: {
+      default: 'relative',
+      '@media (min-width: 1024px)': 'fixed',
+    },
+    // Only offset by the nav height when fixed (desktop). On narrow the hero is
+    // in flow under the (transparent) nav, so a top offset would just push it
+    // down and leave a gap.
+    top: {
+      default: 0,
+      '@media (min-width: 1024px)': 'var(--appshell-header-height, 0px)',
+    },
     left: 0,
     right: 0,
     // Desktop: fixed band, centered (cards are a separate overlap layer).
@@ -63,10 +80,16 @@ const styles = stylex.create({
       default: 'flex-start',
       '@media (min-width: 1024px)': 'center',
     },
-    // Narrow: --hero-gap below the nav (matches the text→cards gap). Desktop
-    // centers, so no top padding.
+    // Narrow: the hero is in flow under the transparent fixed nav (top:0), so
+    // pad by the nav height (so the wordmark clears the transparent fixed nav)
+    // PLUS a modest gap. The full --hero-gap (96px) on top of the nav height
+    // read too tall on phones, so use --spacing-8 (32px) there and the larger
+    // --hero-gap from ≥768px where there's more room. Desktop is fixed at
+    // top:navHeight and centers, so no top padding.
     paddingBlockStart: {
-      default: 'var(--hero-gap)',
+      default: 'calc(var(--appshell-header-height, 0px) + var(--spacing-8))',
+      '@media (min-width: 768px)':
+        'calc(var(--appshell-header-height, 0px) + var(--hero-gap))',
       '@media (min-width: 1024px)': 0,
     },
     paddingBlockEnd: spacingVars['--spacing-12'],
@@ -79,14 +102,13 @@ const styles = stylex.create({
     // content (the buttons/links re-enable pointer events on themselves).
     zIndex: 0,
   },
-  // Reserves the hero's height in flow (heroContent is fixed/out of flow).
-  // Narrow: the measured --hero-content-height (per-tier constants are the
-  // fallback), capped at 100lvh so the pinned band never reserves more than one
-  // viewport of scroll on phones/tablets. Desktop (≥1024px): the fixed band.
+  // Reserves the hero's height in flow when the hero is fixed (desktop only).
+  // Narrow: the hero is in normal flow now, so it reserves its own space and
+  // this spacer collapses to 0 (otherwise it would double the hero's height).
+  // Desktop (≥1024px): the fixed band height.
   heroSpacer: {
     height: {
-      default: `min(var(--hero-content-height, ${HERO_BAND_HEIGHT_2COL}px), 100lvh)`,
-      '@media (min-width: 768px)': `min(var(--hero-content-height, ${HERO_BAND_HEIGHT_NARROW}px), 100lvh)`,
+      default: 0,
       '@media (min-width: 1024px)': HERO_BAND_HEIGHT,
     },
   },
@@ -109,7 +131,11 @@ const styles = stylex.create({
       '@media (min-width: 1024px)': 'var(--text-display-1-size)',
     },
   },
-  // The surface that scrolls up over the pinned hero (pin-and-cover).
+  // The surface that scrolls up over the pinned hero (pin-and-cover). The top
+  // padding, bottom padding, and inter-section gap all use the single
+  // --astryx-marketing-section-gap token (which is itself responsive — see
+  // globals.css), so the marketing rhythm stays consistent and there are no
+  // ad-hoc per-spot spacing values to keep in sync.
   showcaseOverlay: {
     position: 'relative',
     overflow: 'hidden',
@@ -117,9 +143,62 @@ const styles = stylex.create({
     borderTopRightRadius: 'var(--radius-page)',
     backgroundColor: 'var(--color-background-surface)',
     paddingBlockStart: 'var(--astryx-marketing-section-gap)',
+    // Bottom padding stays a standard --spacing-12 (smaller than the section
+    // gap): the footer supplies its own top breathing room below this, so the
+    // surface doesn't need the full marketing gap here.
     paddingBlockEnd: spacingVars['--spacing-12'],
     paddingInline: spacingVars['--spacing-6'],
     gap: 'var(--astryx-marketing-section-gap)',
+  },
+  // The theme-switcher dots, anchored low in the hero — below the CTAs, sitting
+  // 32px (--spacing-8) above the features seam (the hero band's bottom). The
+  // hero is
+  // position:fixed and the features surface scrolls up over it (pin-and-cover),
+  // so the dots naturally get covered as you scroll — no sticky/JS needed.
+  //
+  // Desktop (≥1024px): the band is a fixed height that vertically CENTERS its
+  // content. To put the dots at the bottom WITHOUT disturbing that centering
+  // (which sets the wordmark's top padding — must match prod), they're taken out
+  // of flow via position:absolute pinned to the band's bottom edge. A plain
+  // margin-top:auto would instead absorb the band's free space and shove the
+  // centered block (wordmark/headline/CTAs) upward, shrinking the top padding.
+  //
+  // Narrow (<1024px): the band is auto-height and top-anchored, so absolute
+  // positioning would overlap the collage. There the dots stay in normal flow
+  // right after the collage. The heroContent VStack already supplies a
+  // gap:spacing-6 between flex children, so NO extra paddingBlockStart on narrow
+  // (that doubled the gap into an awkwardly large space below the collage); the
+  // padding only applies on desktop, where it pads inside the absolute box.
+  heroDots: {
+    paddingBlockStart: {
+      default: 0,
+      '@media (min-width: 1024px)': spacingVars['--spacing-6'],
+    },
+    position: {
+      default: 'static',
+      '@media (min-width: 1024px)': 'absolute',
+    },
+    insetBlockEnd: {
+      default: 'auto',
+      // The fixed hero band's bottom edge sits navHeight px ABOVE where the
+      // features surface actually begins (the spacer reserves the full band
+      // height from the top of the page, but the overlay starts a nav-height
+      // lower). Subtract navHeight so the dots land 32px above the *real* seam,
+      // not 32px above the band bottom. Robust to nav-height changes.
+      '@media (min-width: 1024px)':
+        'calc(var(--spacing-8) - var(--appshell-header-height, 0px))',
+    },
+    insetInlineStart: {
+      default: 'auto',
+      '@media (min-width: 1024px)': 0,
+    },
+    insetInlineEnd: {
+      default: 'auto',
+      '@media (min-width: 1024px)': 0,
+    },
+    // Center the dots horizontally within the absolute box on desktop.
+    display: 'flex',
+    justifyContent: 'center',
   },
 });
 
@@ -204,16 +283,23 @@ function HeroContent({contentRef}: {contentRef: Ref<HTMLElement>}) {
             StyleX
           </Link>
         </Text>
-        {/* Theme switcher dots — jump straight to any theme in the reel. */}
-        <DarkScope isDark={isDark}>
-          <HeroReelDots />
-        </DarkScope>
       </VStack>
       {/* Narrow-screen collage — rendered inside the (fixed) hero content so it's
           pinned with the text and sits a consistent --hero-gap below it. The
           desktop overlap layer (HeroReelCards) hides below 1024px; this
           self-hides at ≥1024px. */}
       <HeroReelStack />
+      {/* Theme switcher dots — sit at the bottom of the hero on all sizes (below
+          the CTAs on desktop, below the collage on narrow). On desktop
+          styles.heroDots pins them absolutely 32px above the features seam; on
+          narrow they sit in flow right after the collage with a normal gap.
+          DarkScope flips the dot ink to match the active slide's light/dark
+          mode. */}
+      <DarkScope isDark={isDark}>
+        <div data-home-page="true" {...stylex.props(styles.heroDots)}>
+          <HeroReelDots />
+        </div>
+      </DarkScope>
     </VStack>
   );
 }
