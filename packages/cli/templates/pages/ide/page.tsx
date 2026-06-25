@@ -4,14 +4,14 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {SideNav, SideNavItem, SideNavSection} from '@astryxdesign/core/SideNav';
 
 import {Layout, LayoutContent, LayoutPanel} from '@astryxdesign/core/Layout';
 import {ResizeHandle, useResizable} from '@astryxdesign/core/Resizable';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {CodeBlock} from '@astryxdesign/core/CodeBlock';
 import {colorVars, spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
-import {Stack} from '@astryxdesign/core/Layout';
+import {Stack, StackItem} from '@astryxdesign/core/Layout';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {TabList, Tab} from '@astryxdesign/core/TabList';
 import {
   SegmentedControl,
@@ -27,29 +27,14 @@ import type {TreeListItemData} from '@astryxdesign/core/TreeList';
 import {
   FolderIcon,
   DocumentTextIcon,
-  CodeBracketIcon,
   MagnifyingGlassIcon,
-  CommandLineIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-  BugAntIcon,
-  HomeIcon,
-  FolderOpenIcon,
-  PuzzlePieceIcon,
 } from '@heroicons/react/24/outline';
-import {
-  HomeIcon as HomeIconSolid,
-  FolderOpenIcon as FolderOpenSolid,
-  MagnifyingGlassIcon as MagnifyingGlassSolid,
-  PuzzlePieceIcon as PuzzlePieceSolid,
-} from '@heroicons/react/24/solid';
 
 const styles = stylex.create({
   contentFill: {
     height: '100%',
   },
   terminalWrapper: {
-    flex: 1,
     minHeight: 0,
     overflow: 'hidden',
     display: 'grid',
@@ -69,27 +54,26 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   editorArea: {
-    flex: 1,
     overflow: 'auto',
+    minHeight: 0,
   },
   fileExplorer: {
     padding: 16,
+    minWidth: 0,
+  },
+  propertiesPanel: {
+    height: '100%',
+  },
+  propertiesContent: {
+    flex: 1,
+    minHeight: 0,
+  },
+  propertyActions: {
+    marginTop: 'auto',
   },
   terminalArea: {
     height: '100%',
     overflow: 'hidden',
-  },
-  hideOnMobile: {
-    display: {
-      default: 'contents',
-      '@media (max-width: 768px)': 'none',
-    },
-  },
-  hideSideNav: {
-    display: {
-      default: 'flex',
-      '@media (max-width: 768px)': 'none',
-    },
   },
 });
 
@@ -151,22 +135,23 @@ $ `;
 function buildFileTree(
   onFileClick: (name: string) => void,
 ): TreeListItemData[] {
+  const label = (text: string) => <Text maxLines={1}>{text}</Text>;
   const file = (id: string): TreeListItemData => ({
     id,
-    label: id,
+    label: label(id),
     startContent: <Icon icon={DocumentTextIcon} size="xsm" />,
     onClick: () => onFileClick(id),
   });
   return [
     {
       id: 'src',
-      label: 'src',
+      label: label('src'),
       startContent: <Icon icon={FolderIcon} size="xsm" />,
       isExpanded: true,
       children: [
         {
           id: 'components',
-          label: 'components',
+          label: label('components'),
           startContent: <Icon icon={FolderIcon} size="xsm" />,
           isExpanded: true,
           children: [
@@ -177,14 +162,14 @@ function buildFileTree(
         },
         {
           id: 'pages',
-          label: 'pages',
+          label: label('pages'),
           startContent: <Icon icon={FolderIcon} size="xsm" />,
           isExpanded: true,
           children: [file('index.tsx'), file('about.tsx')],
         },
         {
           id: 'styles',
-          label: 'styles',
+          label: label('styles'),
           startContent: <Icon icon={FolderIcon} size="xsm" />,
           isExpanded: true,
           children: [file('tokens.stylex.ts'), file('theme.ts')],
@@ -216,7 +201,6 @@ const HISTORY_ITEMS = [
 
 export default function ResizableWorkspacePage() {
   const [activeFile, setActiveFile] = useState('Counter.tsx');
-  const [activeNavItem, setActiveNavItem] = useState('Explorer');
   const [activeTermTab, setActiveTermTab] = useState('terminal');
   const [activePropertiesTab, setActivePropertiesTab] = useState('properties');
   const fileTree = useMemo(() => buildFileTree(setActiveFile), []);
@@ -245,89 +229,48 @@ export default function ResizableWorkspacePage() {
     collapsedSize: 40,
   });
 
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
   return (
     <Layout
       height="fill"
-      start={
-        <LayoutPanel hasDivider={false} padding={0}>
-          <SideNav
-            collapsible={{defaultIsCollapsed: true}}
-            resizable
-            xstyle={styles.hideSideNav}>
-            <SideNavSection title="Navigation" isHeaderHidden>
-              <SideNavItem
-                label="Home"
-                icon={HomeIcon}
-                selectedIcon={HomeIconSolid}
-                isSelected={activeNavItem === 'Home'}
-                onClick={() => setActiveNavItem('Home')}
-              />
-              <SideNavItem
-                label="Explorer"
-                icon={FolderOpenIcon}
-                selectedIcon={FolderOpenSolid}
-                isSelected={activeNavItem === 'Explorer'}
-                onClick={() => setActiveNavItem('Explorer')}
-              />
-              <SideNavItem
-                label="Search"
-                icon={MagnifyingGlassIcon}
-                selectedIcon={MagnifyingGlassSolid}
-                isSelected={activeNavItem === 'Search'}
-                onClick={() => setActiveNavItem('Search')}
-              />
-              <SideNavItem
-                label="Source Control"
-                icon={CodeBracketIcon}
-                isSelected={activeNavItem === 'Source Control'}
-                onClick={() => setActiveNavItem('Source Control')}
-              />
-              <SideNavItem
-                label="Extensions"
-                icon={PuzzlePieceIcon}
-                selectedIcon={PuzzlePieceSolid}
-                isSelected={activeNavItem === 'Extensions'}
-                onClick={() => setActiveNavItem('Extensions')}
-              />
-            </SideNavSection>
-          </SideNav>
-        </LayoutPanel>
-      }
       content={
         <LayoutContent padding={0}>
           <Layout
             height="fill"
             start={
-              <div {...stylex.props(styles.hideOnMobile)}>
-                {!startPanel.isCollapsed && (
-                  <LayoutPanel
-                    width={startPanel.size}
-                    hasDivider={false}
-                    padding={0}>
-                    <Stack
-                      direction="vertical"
-                      xstyle={styles.fileExplorer}
-                      gap={2}>
-                      <TextInput
-                        label="Search files"
-                        isLabelHidden
-                        value=""
-                        placeholder="Search"
-                        size="md"
-                        startIcon={MagnifyingGlassIcon}
-                      />
-                      <TreeList items={fileTree} density="compact" />
-                    </Stack>
-                  </LayoutPanel>
-                )}
-                <ResizeHandle
-                  direction="horizontal"
-                  hasDivider
-                  isAlwaysVisible={false}
-                  resizable={startPanel.props}
-                  label="Resize file explorer"
-                />
-              </div>
+              isMobile ? undefined : (
+                <>
+                  {!startPanel.isCollapsed && (
+                    <LayoutPanel
+                      width={startPanel.size}
+                      hasDivider={false}
+                      padding={0}>
+                      <Stack
+                        direction="vertical"
+                        xstyle={styles.fileExplorer}
+                        gap={2}>
+                        <TextInput
+                          label="Search files"
+                          isLabelHidden
+                          value=""
+                          placeholder="Search"
+                          size="md"
+                          startIcon={MagnifyingGlassIcon}
+                        />
+                        <TreeList items={fileTree} density="compact" />
+                      </Stack>
+                    </LayoutPanel>
+                  )}
+                  <ResizeHandle
+                    direction="horizontal"
+                    hasDivider
+                    isAlwaysVisible={false}
+                    resizable={startPanel.props}
+                    label="Resize file explorer"
+                  />
+                </>
+              )
             }
             content={
               <LayoutContent padding={0}>
@@ -335,13 +278,13 @@ export default function ResizableWorkspacePage() {
                   height="fill"
                   content={
                     <LayoutContent padding={0}>
-                      <Stack
-                        direction="vertical"
-                        xstyle={styles.contentFill}>
-                        <div {...stylex.props(styles.editorArea)}>
+                      <Stack direction="vertical" xstyle={styles.contentFill}>
+                        <StackItem size="fill" xstyle={styles.editorArea}>
                           <CodeBlock
                             code={EDITOR_CODE}
                             language="typescript"
+                            container="section"
+                            hasLanguageLabel={false}
                             hasLineNumbers
                             highlightLines={[21]}
                             hasCopyButton={false}
@@ -353,7 +296,7 @@ export default function ResizableWorkspacePage() {
                               borderRadius: 0,
                             }}
                           />
-                        </div>
+                        </StackItem>
                         <ResizeHandle
                           direction="vertical"
                           hasDivider
@@ -378,43 +321,19 @@ export default function ResizableWorkspacePage() {
                                 size="sm"
                                 hasDivider={false}
                                 xstyle={styles.tabListPadding}>
-                                <Tab
-                                  label="Terminal"
-                                  value="terminal"
-                                  icon={
-                                    <Icon icon={CommandLineIcon} size="sm" />
-                                  }
-                                />
-                                <Tab
-                                  label="Problems"
-                                  value="problems"
-                                  icon={
-                                    <Icon
-                                      icon={ExclamationTriangleIcon}
-                                      size="sm"
-                                    />
-                                  }
-                                />
-                                <Tab
-                                  label="Output"
-                                  value="output"
-                                  icon={
-                                    <Icon
-                                      icon={InformationCircleIcon}
-                                      size="sm"
-                                    />
-                                  }
-                                />
-                                <Tab
-                                  label="Debug"
-                                  value="debug"
-                                  icon={<Icon icon={BugAntIcon} size="sm" />}
-                                />
+                                <Tab label="Terminal" value="terminal" />
+                                <Tab label="Problems" value="problems" />
+                                <Tab label="Output" value="output" />
+                                <Tab label="Debug" value="debug" />
                               </TabList>
-                              <div {...stylex.props(styles.terminalWrapper)}>
+                              <StackItem
+                                size="fill"
+                                xstyle={styles.terminalWrapper}>
                                 <CodeBlock
                                   code={TERMINAL_OUTPUT}
                                   language="bash"
+                                  container="section"
+                                  hasLanguageLabel={false}
                                   hasCopyButton={false}
                                   size="sm"
                                   style={{
@@ -424,7 +343,7 @@ export default function ResizableWorkspacePage() {
                                     borderRadius: 0,
                                   }}
                                 />
-                              </div>
+                              </StackItem>
                             </Stack>
                           </div>
                         )}
@@ -432,106 +351,118 @@ export default function ResizableWorkspacePage() {
                     </LayoutContent>
                   }
                   end={
-                    <div {...stylex.props(styles.hideOnMobile)}>
-                      <ResizeHandle
-                        direction="horizontal"
-                        hasDivider
-                        isReversed
-                        isAlwaysVisible={false}
-                        resizable={endPanel.props}
-                        label="Resize properties panel"
-                      />
-                      {!endPanel.isCollapsed && (
-                        <LayoutPanel
-                          width={endPanel.size}
-                          hasDivider={false}
-                          padding={4}>
-                          <Stack direction="vertical" gap={3}>
-                            <SegmentedControl
-                              label="Properties panel sections"
-                              value={activePropertiesTab}
-                              onChange={setActivePropertiesTab}
-                              size="sm"
-                              layout="fill">
-                              <SegmentedControlItem
-                                label="Properties"
-                                value="properties"
-                              />
-                              <SegmentedControlItem
-                                label="History"
-                                value="history"
-                              />
-                            </SegmentedControl>
-                            {activePropertiesTab === 'properties' ? (
-                              <>
-                                <Stack direction="vertical" gap={1}>
-                                  <Heading level={3}>
-                                    {activeFile}
-                                  </Heading>
-                                  <Text color="secondary" type="supporting">
-                                    src/components/{activeFile}
-                                  </Text>
-                                </Stack>
-                                <MetadataList
-                                  xstyle={styles.metadataCompact}>
-                                  {PROPERTIES.map(prop => (
-                                    <MetadataListItem
-                                      key={prop.label}
-                                      label={prop.label}>
-                                      {prop.value}
-                                    </MetadataListItem>
-                                  ))}
-                                </MetadataList>
-                                <Stack direction="vertical" gap={2}>
-                                  <Stack direction="vertical" gap={2}>
+                    isMobile ? undefined : (
+                      <>
+                        <ResizeHandle
+                          direction="horizontal"
+                          hasDivider
+                          isReversed
+                          isAlwaysVisible={false}
+                          resizable={endPanel.props}
+                          label="Resize properties panel"
+                        />
+                        {!endPanel.isCollapsed && (
+                          <LayoutPanel
+                            width={endPanel.size}
+                            hasDivider={false}
+                            padding={4}>
+                            <Stack
+                              direction="vertical"
+                              gap={3}
+                              xstyle={styles.propertiesPanel}>
+                              <SegmentedControl
+                                label="Properties panel sections"
+                                value={activePropertiesTab}
+                                onChange={setActivePropertiesTab}
+                                size="sm"
+                                layout="fill">
+                                <SegmentedControlItem
+                                  label="Properties"
+                                  value="properties"
+                                />
+                                <SegmentedControlItem
+                                  label="History"
+                                  value="history"
+                                />
+                              </SegmentedControl>
+                              {activePropertiesTab === 'properties' ? (
+                                <Stack
+                                  direction="vertical"
+                                  gap={3}
+                                  xstyle={styles.propertiesContent}>
+                                  <Stack direction="vertical" gap={1}>
+                                    <Heading level={3} maxLines={1}>
+                                      {activeFile}
+                                    </Heading>
+                                    <Text
+                                      color="secondary"
+                                      type="supporting"
+                                      maxLines={1}>
+                                      src/components/{activeFile}
+                                    </Text>
+                                  </Stack>
+                                  <MetadataList xstyle={styles.metadataCompact}>
+                                    {PROPERTIES.map(prop => (
+                                      <MetadataListItem
+                                        key={prop.label}
+                                        label={prop.label}>
+                                        {prop.value}
+                                      </MetadataListItem>
+                                    ))}
+                                  </MetadataList>
+                                  <Stack
+                                    direction="vertical"
+                                    gap={2}
+                                    xstyle={styles.propertyActions}>
                                     <Button
                                       label="Format Document"
-                                      size="md"
+                                      size="sm"
                                       variant="secondary"
                                     />
                                     <Button
                                       label="Go to Definition"
-                                      size="md"
+                                      size="sm"
                                       variant="secondary"
                                     />
                                     <Button
                                       label="Find References"
-                                      size="md"
+                                      size="sm"
                                       variant="secondary"
                                     />
                                   </Stack>
                                 </Stack>
-                              </>
-                            ) : (
-                              <Stack direction="vertical" gap={1}>
-                                <List>
-                                  {HISTORY_ITEMS.map(item => (
-                                    <ListItem
-                                      key={item.label}
-                                      label={item.label}
-                                      endContent={
-                                        <Text
-                                          type="supporting"
-                                          color="secondary">
-                                          {item.time}
-                                        </Text>
-                                      }
-                                      startContent={
-                                        <span
-                                          {...stylex.props(
-                                            styles.historyTimelineDot,
-                                          )}
-                                        />
-                                      }
-                                    />
-                                  ))}
-                                </List>
-                              </Stack>
-                            )}
-                          </Stack>
-                        </LayoutPanel>
-                      )}
-                    </div>
+                              ) : (
+                                <Stack direction="vertical" gap={1}>
+                                  <List>
+                                    {HISTORY_ITEMS.map(item => (
+                                      <ListItem
+                                        key={item.label}
+                                        label={item.label}
+                                        endContent={
+                                          <Text
+                                            type="supporting"
+                                            color="secondary"
+                                            maxLines={1}>
+                                            {item.time}
+                                          </Text>
+                                        }
+                                        startContent={
+                                          <span
+                                            {...stylex.props(
+                                              styles.historyTimelineDot,
+                                            )}
+                                          />
+                                        }
+                                      />
+                                    ))}
+                                  </List>
+                                </Stack>
+                              )}
+                            </Stack>
+                          </LayoutPanel>
+                        )}
+                      </>
+                    )
                   }
                 />
               </LayoutContent>

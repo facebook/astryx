@@ -3,24 +3,23 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {
-  SideNav,
-  SideNavHeading,
-  SideNavItem,
-  SideNavSection,
-} from '@astryxdesign/core/SideNav';
-import {Text} from '@astryxdesign/core/Text';
+import {Heading, Text} from '@astryxdesign/core/Text';
 import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
+import {ClickableCard} from '@astryxdesign/core/ClickableCard';
 import {HStack, VStack, StackItem} from '@astryxdesign/core/Stack';
-import {Layout, LayoutContent, LayoutPanel} from '@astryxdesign/core/Layout';
+import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
 import {Grid} from '@astryxdesign/core/Grid';
 import {radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   previewCard: {
-    borderRadius: radiusVars['--radius-container'],
-    cursor: 'pointer',
+    borderRadius: radiusVars['--radius-element'],
+  },
+  // Negative margin offsets each card's 8px padding so the grid content stays
+  // visually aligned while giving every card a padded hover/click target.
+  cardGrid: {
+    margin: -8,
   },
 });
 
@@ -213,30 +212,12 @@ const COMPONENT_CATEGORIES = [
 export default function DocumentationOverviewPage() {
   return (
     <Layout
-      height="fill"
+      height="auto"
       contentWidth={1200}
-      start={
-        <LayoutPanel hasDivider padding={0}>
-          <SideNav header={<SideNavHeading heading="Product Name" />}>
-            <SideNavSection title="Navigation" isHeaderHidden>
-              <SideNavItem label="Home" isSelected />
-              <SideNavItem label="Getting started" />
-            </SideNavSection>
-
-            {COMPONENT_CATEGORIES.map(category => (
-              <SideNavSection key={category.label} title={category.label}>
-                {category.items.map(item => (
-                  <SideNavItem key={item.key} label={item.name} />
-                ))}
-              </SideNavSection>
-            ))}
-          </SideNav>
-        </LayoutPanel>
-      }
       content={
         <LayoutContent padding={8}>
           <VStack gap={10}>
-            <Card variant="cyan" padding={10}>
+            <Card variant="gray" padding={10}>
               <HStack gap={8} vAlign="center">
                 <StackItem size="fill">
                   <VStack gap={4}>
@@ -246,11 +227,7 @@ export default function DocumentationOverviewPage() {
                       beautiful, accessible products.
                     </Text>
                     <HStack>
-                      <Button
-                        label="Get started"
-                        variant="primary"
-                        size="lg"
-                      />
+                      <Button label="Get started" variant="primary" size="lg" />
                     </HStack>
                   </VStack>
                 </StackItem>
@@ -260,25 +237,35 @@ export default function DocumentationOverviewPage() {
 
             {COMPONENT_CATEGORIES.map(category => (
               <VStack key={category.label} gap={4}>
-                <Text type="display-2">{category.label}</Text>
-                <Grid columns={{minWidth: 260}} gap={8}>
+                <Heading level={2}>{category.label}</Heading>
+                <Grid
+                  columns={{minWidth: 260}}
+                  gap={2}
+                  xstyle={styles.cardGrid}>
                   {category.items.map(item => (
-                    <VStack key={item.key} gap={3}>
-                      <Card
-                        variant="muted"
-                        padding={0}
-                        minHeight={160}
-                        xstyle={styles.previewCard}
-                      />
-                      <VStack gap={0.5}>
-                        <Text type="body" weight="bold">
-                          {item.name}
-                        </Text>
-                        <Text type="body" color="secondary">
-                          {item.desc}
-                        </Text>
+                    <ClickableCard
+                      key={item.key}
+                      label={`Open ${item.name}`}
+                      onClick={() => {}}
+                      variant="transparent"
+                      padding={2}>
+                      <VStack gap={3}>
+                        <Card
+                          variant="muted"
+                          padding={0}
+                          minHeight={160}
+                          xstyle={styles.previewCard}
+                        />
+                        <VStack gap={0.5}>
+                          <Text type="body" weight="bold">
+                            {item.name}
+                          </Text>
+                          <Text type="body" color="secondary" maxLines={3}>
+                            {item.desc}
+                          </Text>
+                        </VStack>
                       </VStack>
-                    </VStack>
+                    </ClickableCard>
                   ))}
                 </Grid>
               </VStack>

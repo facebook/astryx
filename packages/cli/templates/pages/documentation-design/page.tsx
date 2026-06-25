@@ -2,14 +2,8 @@
 
 'use client';
 
-import {useState, useMemo} from 'react';
+import {useCallback, useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  SideNav,
-  SideNavHeading,
-  SideNavItem,
-  SideNavSection,
-} from '@astryxdesign/core/SideNav';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {Button} from '@astryxdesign/core/Button';
 import {IconButton} from '@astryxdesign/core/IconButton';
@@ -20,8 +14,10 @@ import {Token} from '@astryxdesign/core/Token';
 import {Banner} from '@astryxdesign/core/Banner';
 import {CodeBlock} from '@astryxdesign/core/CodeBlock';
 import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {Selector} from '@astryxdesign/core/Selector';
 import {HStack, VStack, StackItem} from '@astryxdesign/core/Stack';
 import {Layout, LayoutContent, LayoutPanel} from '@astryxdesign/core/Layout';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Tooltip} from '@astryxdesign/core/Tooltip';
@@ -29,6 +25,7 @@ import {Table, pixel} from '@astryxdesign/core/Table';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Section} from '@astryxdesign/core/Section';
 import {Center} from '@astryxdesign/core/Center';
+import {Outline, type OutlineItem} from '@astryxdesign/core/Outline';
 import {
   ArrowTopRightOnSquareIcon,
   ArrowsPointingOutIcon,
@@ -37,7 +34,24 @@ import {
 
 const styles = stylex.create({
   tabListFlush: {marginInlineStart: '-12px'},
+  outlinePanel: {
+    position: 'sticky',
+    top: 24,
+    alignSelf: 'start',
+    paddingBlockStart: 120,
+  },
 });
+
+const COMPONENT_OUTLINE_ITEMS: OutlineItem[] = [
+  {id: 'usage', label: 'Usage', level: 2},
+  {id: 'best-practices', label: 'Best practices', level: 3},
+  {id: 'examples', label: 'Examples', level: 2},
+];
+
+const COMPONENT_OUTLINE_OPTIONS = COMPONENT_OUTLINE_ITEMS.map(item => ({
+  value: item.id,
+  label: item.label,
+}));
 
 // ---------------------------------------------------------------------------
 // DialogPreview — stateful dialog preview for component previews
@@ -493,14 +507,21 @@ function getComponentDocs(key: string) {
 // ComponentDetailView
 // ---------------------------------------------------------------------------
 
-function ComponentDetailView({
-  activeNav,
-  nav,
-}: {
-  activeNav: string;
-  nav: React.ReactNode;
-}) {
+function ComponentDetailView({activeNav}: {activeNav: string}) {
   const [exampleTabs, setExampleTabs] = useState<Record<string, string>>({});
+  const [activeId, setActiveId] = useState<string | undefined>(
+    COMPONENT_OUTLINE_ITEMS[0]?.id,
+  );
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
+  const scrollToId = useCallback((id: string) => {
+    setActiveId(id);
+    const target = document.getElementById(id);
+    if (target != null) {
+      target.scrollIntoView({behavior: 'smooth', block: 'start'});
+      window.history.pushState(null, '', `#${id}`);
+    }
+  }, []);
 
   const EXAMPLE_PREVIEWS: Record<string, React.ReactNode[]> = {
     button: [
@@ -556,24 +577,41 @@ function ComponentDetailView({
 
   return (
     <Layout
-      height="fill"
+      height="auto"
       contentWidth={960}
-      start={
-        <LayoutPanel hasDivider padding={0}>
-          {nav}
-        </LayoutPanel>
+      end={
+        isMobile ? undefined : (
+          <LayoutPanel
+            isScrollable={false}
+            label="On this page"
+            role="complementary"
+            xstyle={styles.outlinePanel}>
+            <Outline
+              items={COMPONENT_OUTLINE_ITEMS}
+              onActiveIdChange={setActiveId}
+            />
+          </LayoutPanel>
+        )
       }
       content={
-        <LayoutContent padding={8}>
+        <LayoutContent isScrollable={false} padding={8}>
           <VStack gap={8}>
             <VStack gap={2}>
               <Text type="display-1">{getComponentName(activeNav)}</Text>
               <Text type="supporting" color="secondary">
                 March 30, 2026 · Updated 5:40 p.m. PST
               </Text>
+              {isMobile && (
+                <Selector
+                  label="On this page"
+                  isLabelHidden
+                  options={COMPONENT_OUTLINE_OPTIONS}
+                  value={activeId}
+                  onChange={scrollToId}
+                  width="100%"
+                />
+              )}
             </VStack>
-
-            <Divider />
 
             <Card variant="muted" padding={0}>
               <Center height={360}>
@@ -586,13 +624,18 @@ function ComponentDetailView({
             </Card>
 
             <VStack gap={4}>
-              <Heading level={2}>Usage</Heading>
+              <Heading id="usage" level={2}>
+                Usage
+              </Heading>
               <Text type="large" weight="normal">
                 {docs.usage}
               </Text>
-              <Heading level={3}>Best practices</Heading>
+              <Heading id="best-practices" level={3}>
+                Best practices
+              </Heading>
               <Table
                 data={docs.bestPractices as Record<string, unknown>[]}
+                dividers="none"
                 columns={[
                   {
                     key: 'type',
@@ -616,14 +659,15 @@ function ComponentDetailView({
                   },
                 ]}
                 density="spacious"
-                dividers="rows"
               />
             </VStack>
 
             <Divider />
 
             <VStack gap={4}>
-              <Heading level={2}>Examples</Heading>
+              <Heading id="examples" level={2}>
+                Examples
+              </Heading>
               <Text type="large" weight="normal">
                 Explore common configurations, variations, and states for this
                 component.
@@ -675,7 +719,10 @@ function ComponentDetailView({
                         <TabList
                           value={activeTab}
                           onChange={value =>
-                            setExampleTabs(prev => ({...prev, [tabKey]: value}))
+                            setExampleTabs(prev => ({
+                              ...prev,
+                              [tabKey]: value,
+                            }))
                           }
                           size="sm"
                           xstyle={styles.tabListFlush}>
@@ -685,7 +732,11 @@ function ComponentDetailView({
                         {activeTab === 'description' ? (
                           <Text type="body">{example.description}</Text>
                         ) : (
-                          <CodeBlock code={example.code} language="tsx" />
+                          <CodeBlock
+                            code={example.code}
+                            language="tsx"
+                            width="100%"
+                          />
                         )}
                       </VStack>
                     </Section>
@@ -705,31 +756,5 @@ function ComponentDetailView({
 // ---------------------------------------------------------------------------
 
 export default function DesignDocumentationPage() {
-  const [activePage, setActivePage] = useState<string>('button');
-
-  return (
-    <ComponentDetailView
-      activeNav={activePage}
-      nav={
-        <SideNav header={<SideNavHeading heading="Product Name" />}>
-          {COMPONENT_CATEGORIES.map(category => (
-            <SideNavSection key={category.label} title={category.label}>
-              {category.items.map(item => (
-                <SideNavItem
-                  key={item.key}
-                  label={item.name}
-                  isSelected={activePage === item.key}
-                  onClick={
-                    item.key === 'button'
-                      ? () => setActivePage(item.key)
-                      : undefined
-                  }
-                />
-              ))}
-            </SideNavSection>
-          ))}
-        </SideNav>
-      }
-    />
-  );
+  return <ComponentDetailView activeNav="button" />;
 }

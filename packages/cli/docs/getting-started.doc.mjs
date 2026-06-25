@@ -88,7 +88,7 @@ import {VStack} from '@astryxdesign/core/Layout';
 export default function Page() {
   return (
     <VStack gap={2}>
-      <Button label="Hello XDS" onClick={() => alert('Hi!')} />
+      <Button label="Hello Astryx" onClick={() => alert('Hi!')} />
     </VStack>
   );
 }`,
@@ -96,11 +96,11 @@ export default function Page() {
       ],
     },
     {
-      title: 'Customize with xstyle',
+      title: 'Customize with StyleX',
       content: [
         {
           type: 'prose',
-          text: 'Every component accepts an `xstyle` prop for StyleX style overrides created via `stylex.create()`.',
+          text: 'Astryx components support various styling solutions, from plain CSS and `className` to Tailwind and CSS-in-JS. See the [styling docs](/docs/styling) for the full guide. Astryx also has a deep integration with [StyleX](https://stylexjs.com/), an atomic CSS-in-JS library: create styles with `stylex.create()` and pass them to components with the `xstyle` prop.',
         },
         {
           type: 'code',
@@ -127,19 +127,19 @@ const overrides = stylex.create({
           type: 'table',
           headers: ['Example', 'Stack', 'Path'],
           rows: [
-            ['Next.js', 'Next.js + theme CSS', 'apps/example-nextjs'],
-            ['Next.js + StyleX', 'Next.js + StyleX for custom styles', 'apps/example-nextjs-stylex'],
-            ['Next.js + Tailwind', 'Next.js + Tailwind bridge', 'apps/example-nextjs-tailwind'],
-            ['Next.js Source', 'Next.js importing from source', 'apps/example-nextjs-source'],
-            ['Vite', 'Vite', 'apps/example-vite'],
+            ['Next.js', 'Next.js + theme CSS', '[apps/example-nextjs](https://github.com/facebook/astryx/tree/main/apps/example-nextjs)'],
+            ['Next.js + StyleX', 'Next.js + StyleX for custom styles', '[apps/example-nextjs-stylex](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-stylex)'],
+            ['Next.js + Tailwind', 'Next.js + Tailwind bridge', '[apps/example-nextjs-tailwind](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-tailwind)'],
+            ['Next.js Source', 'Next.js importing from source', '[apps/example-nextjs-source](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-source)'],
+            ['Vite', 'Vite', '[apps/example-vite](https://github.com/facebook/astryx/tree/main/apps/example-vite)'],
           ],
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Clone and run an example',
-          code: `git clone https://github.com/facebookexperimental/xds.git
-cd xds/apps/example-nextjs
+          code: `git clone https://github.com/facebook/astryx.git
+cd astryx/apps/example-nextjs
 pnpm install
 pnpm dev`,
         },
@@ -157,7 +157,7 @@ pnpm dev`,
           lang: 'json',
           label: 'package.json',
           code: `"scripts": {
-  "xds": "node node_modules/@astryxdesign/cli/bin/astryx.mjs"
+  "astryx": "node node_modules/@astryxdesign/cli/bin/astryx.mjs"
 }`,
         },
         {

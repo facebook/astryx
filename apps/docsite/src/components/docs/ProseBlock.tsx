@@ -4,7 +4,7 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {Text} from '@astryxdesign/core/Text';
-import {renderInlineCode} from './renderInlineCode';
+import {renderInlineMarkdown} from './inlineMarkdown';
 import {layout} from '../../layout.stylex';
 
 const styles = stylex.create({
@@ -16,7 +16,7 @@ const styles = stylex.create({
 export function ProseBlock({text}: {text: string}) {
   return (
     <Text as="p" display="block" xstyle={styles.prose}>
-      {renderInlineCode(text)}
+      {renderInlineMarkdown(text)}
     </Text>
   );
 }
