@@ -6,6 +6,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import {
   generateCompressedIndex,
+  detectStylingSystem,
   getXdsVersion,
   installAgentDocs,
   injectAgentsMd,
@@ -39,7 +40,26 @@ describe('generateCompressedIndex', () => {
   it('includes theme nudge rule', () => {
     const result = generateCompressedIndex('1.0.0');
     expect(result).toMatch(/astryx theme/);
-    expect(result).toMatch(/never override --astryx-color/);
+    expect(result).toMatch(/never override --color-/);
+  });
+
+  it('defaults to the CSS-variable styling path (no compiler)', () => {
+    const result = generateCompressedIndex('1.0.0');
+    expect(result).toMatch(/style\/className prop with design tokens/);
+    expect(result).toMatch(/var\(--color-\*\)/);
+    // Must NOT push xstyle when no StyleX compiler is present.
+    expect(result).not.toMatch(/use the xstyle prop/);
+  });
+
+  it('recommends xstyle when StyleX is configured', () => {
+    const result = generateCompressedIndex('1.0.0', {stylingSystem: 'stylex'});
+    expect(result).toMatch(/xstyle prop or StyleX token imports/);
+  });
+
+  it('recommends Tailwind utilities when Tailwind is configured', () => {
+    const result = generateCompressedIndex('1.0.0', {stylingSystem: 'tailwind'});
+    expect(result).toMatch(/Tailwind utility classes backed by tokens/);
+    expect(result).toMatch(/tailwind-theme\.css/);
   });
 
   it('includes upgrade command and migration rule', () => {
@@ -61,6 +81,45 @@ describe('generateCompressedIndex', () => {
     const result = generateCompressedIndex('1.0.0', {runPrefix: 'pnpm exec'});
     expect(result).toContain('pnpm exec astryx component <Name>');
     expect(result).not.toContain('npx astryx');
+  });
+});
+
+describe('detectStylingSystem', () => {
+  function writePkg(deps) {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: 'x', devDependencies: deps}),
+    );
+  }
+
+  it('defaults to css when no package.json', () => {
+    expect(detectStylingSystem(tmpDir)).toBe('css');
+  });
+
+  it('returns css for a plain project', () => {
+    writePkg({react: '19.0.0', vite: '6.0.0'});
+    expect(detectStylingSystem(tmpDir)).toBe('css');
+  });
+
+  it('detects stylex when the compiler plugin is present', () => {
+    writePkg({'@stylexjs/babel-plugin': '0.0.1'});
+    expect(detectStylingSystem(tmpDir)).toBe('stylex');
+  });
+
+  it('detects tailwind when tailwindcss is present', () => {
+    writePkg({tailwindcss: '4.0.0'});
+    expect(detectStylingSystem(tmpDir)).toBe('tailwind');
+  });
+
+  it('does NOT treat the StyleX runtime alone as a compiler', () => {
+    // Only the runtime, no compiler plugin → must stay on the safe css path.
+    writePkg({'@stylexjs/stylex': '0.0.1'});
+    expect(detectStylingSystem(tmpDir)).toBe('css');
+  });
+
+  it('prefers stylex over tailwind when both are configured', () => {
+    writePkg({'@stylexjs/babel-plugin': '0.0.1', tailwindcss: '4.0.0'});
+    expect(detectStylingSystem(tmpDir)).toBe('stylex');
   });
 });
 

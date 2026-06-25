@@ -94,13 +94,54 @@ export function resolveAgentPaths(targetDir, agent) {
 }
 
 /**
+ * Detect which styling system the consumer project has wired up, so the agent
+ * docs recommend a path that actually compiles in THIS project.
+ *
+ * `xstyle`/StyleX needs the StyleX compiler (the `@stylexjs/stylex` runtime
+ * alone throws at runtime → blank page); Tailwind utilities need Tailwind.
+ * Recommending either when it isn't configured yields unstyled or blank output.
+ * Plain CSS variables (via `style`/`className`) always work, so they're the
+ * safe default. Precedence: stylex (compiler wired) → tailwind → css.
+ *
+ * @param {string} targetDir
+ * @returns {'stylex' | 'tailwind' | 'css'}
+ */
+export function detectStylingSystem(targetDir) {
+  try {
+    const pkgPath = path.join(targetDir, 'package.json');
+    if (!fs.existsSync(pkgPath)) return 'css';
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+    const deps = {...pkg.dependencies, ...pkg.devDependencies};
+    // Key off a StyleX *compiler* plugin — the runtime alone won't render.
+    const stylexCompilers = [
+      '@stylexjs/babel-plugin',
+      'vite-plugin-stylex',
+      'unplugin-stylex',
+      '@stylexswc/unplugin',
+      '@stylexswc/nextjs-plugin',
+      'stylex-webpack',
+    ];
+    if (stylexCompilers.some(d => d in deps)) return 'stylex';
+    if ('tailwindcss' in deps) return 'tailwind';
+    return 'css';
+  } catch {
+    // Best-effort: default to the universally-safe CSS-variable path.
+    return 'css';
+  }
+}
+
+/**
  * Generate the agent cheat sheet from live CLI metadata.
  *
  * Structured as: workflow (behavioral) → rules (error prevention) → CLI reference.
  * Templates are positioned first in the workflow to teach agents the
  * "look at reference code" reflex before writing any UI.
+ *
+ * `stylingSystem` tailors the custom-styling guidance to what the project has
+ * configured (see {@link detectStylingSystem}) so the agent never reaches for a
+ * styling path that isn't compiled here.
  */
-export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPrefix()} = {}) {
+export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPrefix(), stylingSystem = 'css'} = {}) {
   const run = `${runPrefix} astryx`;
   const lines = [MARKER_START];
 
@@ -149,10 +190,20 @@ export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPre
   // Rules — inline, compact, prevents the top error categories
   lines.push('No <div> anywhere — not for layout, not for wrappers, not for spacing. Use components.');
   lines.push('Full-page shells → AppShell (not Layout). Sidebar nav → SideNav (not List).');
-  lines.push('No style={{}} — use the xstyle prop on components for custom styling.');
-  lines.push('If a component prop does what you need, use it — never replicate with CSS/stylex.');
-  lines.push(`No magic values — run \`${run} docs tokens\` for spacing/color/radius.`);
-  lines.push(`To change accent/brand colors: \`${run} theme\` — never override --astryx-color-* in :root.`);
+  // Styling guidance tailored to the project's configured system. Never
+  // recommend a path that isn't compiled here: xstyle/StyleX needs the StyleX
+  // compiler and Tailwind utilities need Tailwind — recommending either when
+  // absent yields unstyled/blank output. Tokens are always the source of truth.
+  if (stylingSystem === 'stylex') {
+    lines.push('Custom styling: component props first; otherwise the xstyle prop or StyleX token imports (@astryxdesign/core/theme/tokens.stylex). This project has the StyleX compiler.');
+  } else if (stylingSystem === 'tailwind') {
+    lines.push('Custom styling: component props first; otherwise Tailwind utility classes backed by tokens (bg-surface, text-primary, border-border, rounded-lg) via @astryxdesign/core/tailwind-theme.css.');
+  } else {
+    lines.push('Custom styling: component props first; otherwise the style/className prop with design tokens — var(--color-*), var(--spacing-*), var(--radius-*). (No StyleX/Tailwind compiler detected here, so xstyle and utility classes would NOT apply — do not use them.)');
+  }
+  lines.push('If a component prop does what you need, use it — never replicate it with hardcoded CSS.');
+  lines.push(`No magic values — run \`${run} docs tokens\` for spacing/color/radius; never hardcode raw hex/px.`);
+  lines.push(`To change accent/brand colors: \`${run} theme\` — never override --color-* in :root.`);
   lines.push('');
 
   // CLI quick reference
@@ -275,7 +326,10 @@ export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = fal
  */
 export function injectAgentsMd(targetDir, version) {
   const agentsPath = path.join(targetDir, AGENTS_MD);
-  const compressedIndex = generateCompressedIndex(version, {coreDir: findCoreDir(targetDir)});
+  const compressedIndex = generateCompressedIndex(version, {
+    coreDir: findCoreDir(targetDir),
+    stylingSystem: detectStylingSystem(targetDir),
+  });
   injectXdsBlock(agentsPath, compressedIndex, {
     createIfMissing: true,
     header: `# AGENTS.md\n\nProject-specific guidance for AI coding agents.`,
@@ -290,7 +344,10 @@ export function injectAgentsMd(targetDir, version) {
  */
 export function injectClaudeMd(targetDir, version) {
   const claudePath = path.join(targetDir, CLAUDE_MD);
-  const compressedIndex = generateCompressedIndex(version, {coreDir: findCoreDir(targetDir)});
+  const compressedIndex = generateCompressedIndex(version, {
+    coreDir: findCoreDir(targetDir),
+    stylingSystem: detectStylingSystem(targetDir),
+  });
   return injectXdsBlock(claudePath, compressedIndex);
 }
 
@@ -373,7 +430,8 @@ export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onl
   const coreDir = findCoreDir(targetDir);
   const version = getXdsVersion(coreDir);
   const runPrefix = getRunPrefix(targetDir);
-  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, runPrefix});
+  const stylingSystem = detectStylingSystem(targetDir);
+  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, runPrefix, stylingSystem});
   const written = [];
 
   // Explicit paths override everything
