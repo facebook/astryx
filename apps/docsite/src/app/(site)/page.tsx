@@ -24,6 +24,7 @@ import {
 } from './_landing/hero/HeroThemeReel';
 import {FeaturesShowcase} from './_landing/FeaturesShowcase';
 import {AboutShowcase} from './_landing/AboutShowcase';
+import {StoriesShowcase} from './_landing/StoriesShowcase';
 import {DiscoverShowcase} from './_landing/DiscoverShowcase';
 
 // Hero band height (reserved by heroSpacer). Desktop is fixed; narrow screens
@@ -306,6 +307,7 @@ export default function HomePage() {
       <VStack ref={showcaseRef} xstyle={styles.showcaseOverlay}>
         <FeaturesShowcase />
         <AboutShowcase />
+        <StoriesShowcase />
         <DiscoverShowcase />
       </VStack>
     </div>
