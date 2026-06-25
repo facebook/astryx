@@ -254,56 +254,62 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
   const {startKeys, endKeys} = config;
   const start = startKeys ?? EMPTY;
   const end = endKeys ?? EMPTY;
-  // Depend on key *contents*, not array identity, so the memo survives
-  // consumers passing fresh array literals each render.
+  // Stable content hash of the configured keys. Consumers typically pass fresh
+  // array literals each render (e.g. startKeys={['name']}), so we depend on the
+  // hash — not array identity — to recompute the plugin only when keys change.
   const depKey = JSON.stringify([start, end]);
 
   const hasStart = start.length > 0;
   const hasEnd = end.length > 0;
 
-  // Scroll-aware shadows: toggle data attributes on the scroll container so
-  // each edge's shadow only paints when there is hidden, horizontally-scrolled
+  // Live snapshot of the resolved config, read inside the (memoized) transforms
+  // and the scroll-shadow callback. Keeping these in a ref lets the plugin memo
+  // depend only on the stable `depKey` content hash (not the fresh array
+  // literals consumers pass each render) while never reading stale values.
+  const stateRef = useRef({start, end, hasStart, hasEnd});
+  stateRef.current = {start, end, hasStart, hasEnd};
+
+  // Scroll-aware shadows: toggle CSS variables on the scroll container so each
+  // edge's shadow only paints when there is hidden, horizontally-scrolled
   // content behind that edge. Implemented with a callback ref + scroll/resize
   // listeners (synchronizing with the DOM) rather than React state, so
   // scrolling never triggers re-renders.
   const detachRef = useRef<(() => void) | null>(null);
-  const attachScrollShadow = useCallback(
-    (el: HTMLDivElement | null) => {
-      detachRef.current?.();
-      detachRef.current = null;
-      if (!el) {
-        return;
+  const attachScrollShadow = useCallback((el: HTMLDivElement | null) => {
+    detachRef.current?.();
+    detachRef.current = null;
+    if (!el) {
+      return;
+    }
+    const update = () => {
+      const {hasStart: hs, hasEnd: he} = stateRef.current;
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      const hasOverflow = maxScroll > 1;
+      if (hs) {
+        el.style.setProperty(
+          SHADOW_VAR_START,
+          hasOverflow && el.scrollLeft > 1 ? '1' : '0',
+        );
       }
-      const update = () => {
-        const maxScroll = el.scrollWidth - el.clientWidth;
-        const hasOverflow = maxScroll > 1;
-        if (hasStart) {
-          el.style.setProperty(
-            SHADOW_VAR_START,
-            hasOverflow && el.scrollLeft > 1 ? '1' : '0',
-          );
-        }
-        if (hasEnd) {
-          el.style.setProperty(
-            SHADOW_VAR_END,
-            hasOverflow && el.scrollLeft < maxScroll - 1 ? '1' : '0',
-          );
-        }
-      };
-      el.addEventListener('scroll', update, {passive: true});
-      const resizeObserver =
-        typeof ResizeObserver !== 'undefined'
-          ? new ResizeObserver(update)
-          : null;
-      resizeObserver?.observe(el);
-      update();
-      detachRef.current = () => {
-        el.removeEventListener('scroll', update);
-        resizeObserver?.disconnect();
-      };
-    },
-    [hasStart, hasEnd],
-  );
+      if (he) {
+        el.style.setProperty(
+          SHADOW_VAR_END,
+          hasOverflow && el.scrollLeft < maxScroll - 1 ? '1' : '0',
+        );
+      }
+    };
+    el.addEventListener('scroll', update, {passive: true});
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(update)
+        : null;
+    resizeObserver?.observe(el);
+    update();
+    detachRef.current = () => {
+      el.removeEventListener('scroll', update);
+      resizeObserver?.disconnect();
+    };
+  }, []);
 
   return useMemo(
     (): TablePlugin<T> => ({
@@ -311,7 +317,8 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
         props: HeaderCellRenderProps,
         column: TableColumn<T>,
       ): HeaderCellRenderProps {
-        const side = resolveStickySide(props.columns, column.key, start, end);
+        const {start: s, end: e} = stateRef.current;
+        const side = resolveStickySide(props.columns, column.key, s, e);
         if (!side) {
           return props;
         }
@@ -341,7 +348,8 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
         props: BodyCellRenderProps,
         column: TableColumn<T>,
       ): BodyCellRenderProps {
-        const side = resolveStickySide(props.columns, column.key, start, end);
+        const {start: s, end: e} = stateRef.current;
+        const side = resolveStickySide(props.columns, column.key, s, e);
         if (!side) {
           return props;
         }
@@ -366,7 +374,7 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
 
       transformLayout(props: LayoutRenderProps): LayoutRenderProps {
         // No pinned edges → nothing to gate; leave the layout untouched.
-        if (!hasStart && !hasEnd) {
+        if (!stateRef.current.hasStart && !stateRef.current.hasEnd) {
           return props;
         }
         // Compose with any ref a prior plugin (e.g. virtualization) set on the
@@ -376,7 +384,8 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
           attachScrollShadow(node);
           if (typeof existingRef === 'function') {
             existingRef(node);
-          } else if (existingRef && 'current' in existingRef) {
+          } else if (existingRef != null) {
+            // RefObject — assign through a mutable view of `.current`.
             (existingRef as MutableRefObject<HTMLDivElement | null>).current =
               node;
           }
@@ -387,11 +396,9 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
         };
       },
     }),
-    // start/end are captured in the closure; depKey is their stable content
-    // hash so the memo recomputes exactly when the keys change. They are not
-    // listed as deps because they are derived from possibly-fresh array
-    // literals each render and would bust the memo.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // The transforms read live config from stateRef, so the memo only needs to
+    // recompute when the configured keys change. `depKey` is the stable content
+    // hash of start/end; `attachScrollShadow` is stable (empty deps).
     [depKey, attachScrollShadow],
   );
 }

@@ -8,7 +8,7 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {render, screen, within} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import {Table} from '../../Table';
 import {useTableStickyColumns} from './useTableStickyColumns';
 import {pixel} from '../../columnUtils';
