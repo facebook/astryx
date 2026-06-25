@@ -95,7 +95,7 @@ export const stoneTheme = defineTheme({
     // Stone 900 T=16 C=1.4, Stone 500 T=55 C=4, Stone 300 T=86 C=1.6, Stone 100 T=96 C=1
     '--color-accent': ['#25252a', '#f3f3f5'], // light: Stone Neutral T15
     '--color-accent-muted': ['#25252a14', '#f3f3f5'], // light: Stone Neutral T15 · 8%
-    '--color-neutral': ['#25252a0f', '#f3f3f5'], // light: Stone Neutral T15 · 6%
+    '--color-neutral': ['#25252a0f', '#f3f3f51a'], // light: Stone Neutral T15 · 6% / dark: T96 · 10%
     '--color-background-surface': ['#ffffff', '#1b1b1f'], // dark: Stone Neutral T10
     '--color-background-body': ['#f3f3f5', '#111015'], // dark: Stone Neutral T5
     '--color-overlay': ['#25252a80', '#28282a'], // light: Stone Neutral T15 · 50%
