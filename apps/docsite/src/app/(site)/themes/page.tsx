@@ -29,7 +29,7 @@ import {pageMetadata} from '../../../lib/pageMetadata';
 export const metadata: Metadata = pageMetadata({
   title: 'Themes',
   description:
-    'Browse and preview every Astryx theme — see how design tokens, type, and components restyle across the gallery.',
+    'Browse and preview every Astryx theme and see how design tokens, type, and components restyle across the gallery.',
   path: '/themes',
 });
 

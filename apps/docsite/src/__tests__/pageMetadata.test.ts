@@ -6,7 +6,7 @@
  * Verifies that pageMetadata() produces a plain title (the root layout template
  * appends "· Astryx"), a self-referencing canonical, and branded social cards,
  * and that the generated registries carry the fields the dynamic routes feed
- * into it — so component and doc pages get unique, non-empty metadata instead
+ * into it, so component and doc pages get unique, non-empty metadata instead
  * of the inherited site default.
  *
  * Run: pnpm -F @astryxdesign/docsite test

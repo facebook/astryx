@@ -12,7 +12,7 @@ import {pageMetadata} from '../../../lib/pageMetadata';
 export const metadata: Metadata = pageMetadata({
   title: 'Templates',
   description:
-    'Ready-to-use page templates to kickstart your project — dashboards, settings, forms, AI chat, and more.',
+    'Ready-to-use page templates to kickstart your project: dashboards, settings, forms, AI chat, and more.',
   path: '/templates',
 });
 

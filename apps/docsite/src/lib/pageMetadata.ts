@@ -19,7 +19,7 @@
 import type {Metadata} from 'next';
 import {SITE_NAME} from './siteConfig';
 
-/** Branded launch banner — matches the root layout + blog fallback card. */
+/** Branded launch banner that matches the root layout + blog fallback card. */
 const DEFAULT_OG_IMAGE = '/astryx-og-banner.png';
 
 export interface PageMetadataInput {
@@ -30,7 +30,7 @@ export interface PageMetadataInput {
   /** Absolute path from the site root, e.g. "/components/Button". */
   path: string;
   /**
-   * OpenGraph type — 'article' for content/reference pages (components, docs,
+   * OpenGraph type: 'article' for content/reference pages (components, docs,
    * blog posts), 'website' for galleries and landing surfaces.
    */
   type?: 'website' | 'article';

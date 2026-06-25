@@ -81,7 +81,8 @@ export async function generateMetadata({
     return pageMetadata({
       title: topic.title,
       description:
-        topic.description || `${topic.title} — Astryx design system docs.`,
+        topic.description ||
+        `${topic.title} documentation for the Astryx design system.`,
       path: `/docs/${slug}`,
       type: 'article',
     });
@@ -94,7 +95,8 @@ export async function generateMetadata({
     return pageMetadata({
       title: pkg.displayName,
       description:
-        pkg.description || `${pkg.name} — Astryx design system package.`,
+        pkg.description ||
+        `The ${pkg.name} package for the Astryx design system.`,
       path: `/docs/${slug}`,
       type: 'article',
     });

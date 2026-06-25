@@ -728,7 +728,7 @@ async function fetchContributors(): Promise<Contributor[]> {
 export const metadata: Metadata = pageMetadata({
   title: 'Community',
   description:
-    'Join the Astryx community — contribute on GitHub, follow updates, and meet the people building the design system.',
+    'Join the Astryx community: contribute on GitHub, follow updates, and meet the people building the design system.',
   path: '/community',
 });
 
