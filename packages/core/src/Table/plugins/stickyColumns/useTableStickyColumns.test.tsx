@@ -5,6 +5,12 @@
  * @input useTableStickyColumns, Table, React testing utilities
  * @output Functional tests for the sticky-columns plugin
  * @position Test file; validates pinning, cumulative offsets, edges, no-op
+ *
+ * Note: `position: sticky` and the z-index/background are applied via StyleX
+ * (compiled to classNames), which jsdom does not resolve to `element.style`.
+ * The plugin sets the per-column *offset* (`insetInlineStart`/`insetInlineEnd`)
+ * as an inline style, so these tests assert on those inline offsets — the
+ * jsdom-visible, plugin-owned signal that a column is pinned and at what offset.
  */
 
 import {describe, it, expect} from 'vitest';
@@ -47,7 +53,7 @@ function getHeader(name: string): HTMLElement {
 // =============================================================================
 
 describe('useTableStickyColumns', () => {
-  it('pins a start column with position: sticky and inset-inline-start: 0', () => {
+  it('pins a start column at inset-inline-start: 0', () => {
     function Harness() {
       const sticky = useTableStickyColumns<Row>({startKeys: ['name']});
       return (
@@ -60,9 +66,7 @@ describe('useTableStickyColumns', () => {
       );
     }
     render(<Harness />);
-    const nameHeader = getHeader('Name');
-    expect(nameHeader.style.position).toBe('sticky');
-    expect(nameHeader.style.insetInlineStart).toBe('0px');
+    expect(getHeader('Name').style.insetInlineStart).toBe('0px');
   });
 
   it('computes cumulative start offsets for contiguous pinned columns', () => {
@@ -85,7 +89,7 @@ describe('useTableStickyColumns', () => {
     expect(getHeader('Email').style.insetInlineStart).toBe('180px');
   });
 
-  it('pins an end column with inset-inline-end: 0', () => {
+  it('pins an end column at inset-inline-end: 0', () => {
     function Harness() {
       const sticky = useTableStickyColumns<Row>({endKeys: ['status']});
       return (
@@ -98,9 +102,7 @@ describe('useTableStickyColumns', () => {
       );
     }
     render(<Harness />);
-    const statusHeader = getHeader('Status');
-    expect(statusHeader.style.position).toBe('sticky');
-    expect(statusHeader.style.insetInlineEnd).toBe('0px');
+    expect(getHeader('Status').style.insetInlineEnd).toBe('0px');
   });
 
   it('pins body cells, not just headers', () => {
@@ -118,11 +120,10 @@ describe('useTableStickyColumns', () => {
     render(<Harness />);
     const firstBodyCell = screen.getByText('Alice').closest('td');
     expect(firstBodyCell).not.toBeNull();
-    expect(firstBodyCell!.style.position).toBe('sticky');
     expect(firstBodyCell!.style.insetInlineStart).toBe('0px');
   });
 
-  it('is a no-op with an empty config — no cell is pinned', () => {
+  it('is a no-op with an empty config — no cell gets an offset', () => {
     function Harness() {
       const sticky = useTableStickyColumns<Row>({});
       return (
@@ -136,11 +137,13 @@ describe('useTableStickyColumns', () => {
     }
     render(<Harness />);
     for (const header of ['Name', 'Email', 'Team', 'Status']) {
-      expect(getHeader(header).style.position).not.toBe('sticky');
+      const th = getHeader(header);
+      expect(th.style.insetInlineStart).toBe('');
+      expect(th.style.insetInlineEnd).toBe('');
     }
   });
 
-  it('only pins configured columns, leaving others non-sticky', () => {
+  it('only pins configured columns, leaving others unset', () => {
     function Harness() {
       const sticky = useTableStickyColumns<Row>({startKeys: ['name']});
       return (
@@ -153,7 +156,8 @@ describe('useTableStickyColumns', () => {
       );
     }
     render(<Harness />);
-    expect(getHeader('Name').style.position).toBe('sticky');
-    expect(getHeader('Team').style.position).not.toBe('sticky');
+    expect(getHeader('Name').style.insetInlineStart).toBe('0px');
+    expect(getHeader('Team').style.insetInlineStart).toBe('');
+    expect(getHeader('Team').style.insetInlineEnd).toBe('');
   });
 });
