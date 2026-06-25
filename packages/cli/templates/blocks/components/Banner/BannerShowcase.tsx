@@ -4,17 +4,10 @@
 
 import {Banner} from '@astryxdesign/core/Banner';
 import {Stack} from '@astryxdesign/core/Layout';
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  root: {
-    maxWidth: 800,
-  },
-});
 
 export default function BannerShowcase() {
   return (
-    <Stack direction="vertical" gap={3} xstyle={styles.root}>
+    <Stack direction="vertical" gap={3} style={{maxWidth: 800}}>
       <Banner status="info" title="A new software update is available." />
       <Banner status="success" title="Your changes have been saved." />
       <Banner

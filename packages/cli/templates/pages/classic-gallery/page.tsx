@@ -2,41 +2,38 @@
 
 'use client';
 
-import {useState} from 'react';
+import {useState, type CSSProperties} from 'react';
 import {VStack, Layout, LayoutContent} from '@astryxdesign/core/Layout';
 import {Center} from '@astryxdesign/core/Center';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {Grid} from '@astryxdesign/core/Grid';
 import {Section} from '@astryxdesign/core/Section';
 import {TabList, Tab} from '@astryxdesign/core/TabList';
-import * as stylex from '@stylexjs/stylex';
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
-const styles = stylex.create({
-  outer: {
-    maxWidth: 1200,
-    width: '100%',
-    paddingInline: 'var(--spacing-6)',
-    paddingBlock: 'var(--spacing-8)',
-  },
-  imageWrapper: {
-    position: 'relative',
-    aspectRatio: '3/2',
-    borderRadius: 'var(--radius-container)',
-    overflow: 'clip',
-  },
-  textCenter: {
-    textAlign: 'center',
-  },
-  imgFill: {
-    position: 'absolute',
-    inset: 0,
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-});
+const outer: CSSProperties = {
+  maxWidth: 1200,
+  width: '100%',
+  paddingInline: 'var(--spacing-6)',
+  paddingBlock: 'var(--spacing-8)',
+};
+const imageWrapper: CSSProperties = {
+  position: 'relative',
+  aspectRatio: '3/2',
+  borderRadius: 'var(--radius-container)',
+  overflow: 'clip',
+};
+const textCenter: CSSProperties = {
+  textAlign: 'center',
+};
+const imgFill: CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+};
 
 // ─── Gallery Data ───────────────────────────────────────────────────────────
 
@@ -117,11 +114,11 @@ export default function ClassicGalleryTemplate() {
       content={
         <LayoutContent padding={0}>
           <Center axis="horizontal">
-            <VStack gap={8} xstyle={styles.outer}>
+            <VStack gap={8} style={outer}>
               {/* Header */}
               <Center axis="horizontal">
                 <Section variant="transparent" maxWidth={680} padding={0}>
-                  <VStack gap={4} hAlign="center" xstyle={styles.textCenter}>
+                  <VStack gap={4} hAlign="center" style={textCenter}>
                     <VStack gap={2} hAlign="center">
                       <Heading level={1}>
                         Make every day a little more delightful, one detail at a
@@ -150,12 +147,8 @@ export default function ClassicGalleryTemplate() {
               {/* Gallery Grid */}
               <Grid columns={{minWidth: 260, repeat: 'fit'}} gap={4}>
                 {filteredImages.map((image, i) => (
-                  <div key={i} {...stylex.props(styles.imageWrapper)}>
-                    <img
-                      src={image.src}
-                      alt={image.alt}
-                      {...stylex.props(styles.imgFill)}
-                    />
+                  <div key={i} style={imageWrapper}>
+                    <img src={image.src} alt={image.alt} style={imgFill} />
                   </div>
                 ))}
               </Grid>

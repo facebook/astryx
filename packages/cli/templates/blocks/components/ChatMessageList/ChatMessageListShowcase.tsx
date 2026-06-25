@@ -11,18 +11,10 @@ import {
 } from '@astryxdesign/core/Chat';
 import {VStack} from '@astryxdesign/core/Layout';
 import {Timestamp} from '@astryxdesign/core/Timestamp';
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  container: {
-    maxWidth: 600,
-    height: '100%',
-  },
-});
 
 export default function ChatMessageListShowcase() {
   return (
-    <VStack xstyle={styles.container}>
+    <VStack style={{maxWidth: 600, height: '100%'}}>
       <ChatMessageList density="balanced">
         <ChatSystemMessage variant="divider">
           March 15, 2026

@@ -2,7 +2,7 @@
 
 'use client';
 
-import * as stylex from '@stylexjs/stylex';
+import type {CSSProperties} from 'react';
 import {
   SideNav,
   SideNavHeading,
@@ -15,14 +15,11 @@ import {Card} from '@astryxdesign/core/Card';
 import {HStack, VStack, StackItem} from '@astryxdesign/core/Stack';
 import {Layout, LayoutContent, LayoutPanel} from '@astryxdesign/core/Layout';
 import {Grid} from '@astryxdesign/core/Grid';
-import {radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 
-const styles = stylex.create({
-  previewCard: {
-    borderRadius: radiusVars['--radius-container'],
-    cursor: 'pointer',
-  },
-});
+const previewCard: CSSProperties = {
+  borderRadius: 'var(--radius-container)',
+  cursor: 'pointer',
+};
 
 // ---------------------------------------------------------------------------
 // Data
@@ -268,7 +265,7 @@ export default function DocumentationOverviewPage() {
                         variant="muted"
                         padding={0}
                         minHeight={160}
-                        xstyle={styles.previewCard}
+                        style={previewCard}
                       />
                       <VStack gap={0.5}>
                         <Text type="body" weight="bold">

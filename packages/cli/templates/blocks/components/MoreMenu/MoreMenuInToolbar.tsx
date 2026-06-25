@@ -15,20 +15,10 @@ import {
   ShareIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  card: {
-    marginTop: 100,
-  },
-  moreMenuWrapper: {
-    marginInlineEnd: 8,
-  },
-});
 
 export default function MoreMenuInToolbar() {
   return (
-    <Card width="100%" height="100%" xstyle={styles.card}>
+    <Card width="100%" height="100%" style={{marginTop: 100}}>
       <Toolbar
         label="Project actions"
         size="sm"
@@ -44,7 +34,7 @@ export default function MoreMenuInToolbar() {
         centerContent={<Heading level={5}>Title</Heading>}
         endContent={
           <>
-            <div {...stylex.props(styles.moreMenuWrapper)}>
+            <div style={{marginInlineEnd: 8}}>
               <MoreMenu
                 label="More actions"
                 size="sm"

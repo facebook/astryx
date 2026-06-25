@@ -2,8 +2,7 @@
 
 'use client';
 
-import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
+import {useState, type CSSProperties} from 'react';
 import {CubeIcon} from '@heroicons/react/24/outline';
 import {VStack} from '@astryxdesign/core/Layout';
 import {Center} from '@astryxdesign/core/Center';
@@ -14,7 +13,6 @@ import {Card} from '@astryxdesign/core/Card';
 import {Link} from '@astryxdesign/core/Link';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Icon} from '@astryxdesign/core/Icon';
-import {colorVars, spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 // Brand sign-in marks — no heroicons or template-assets equivalent.
 const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -57,19 +55,17 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 // Standalone auth page paints its own body background (no host shell).
-const styles = stylex.create({
-  page: {
-    minHeight: '100%',
-    backgroundColor: colorVars['--color-background-body'],
-    padding: spacingVars['--spacing-6'],
-  },
-  // Cap the column at 400px but let it shrink to fit narrow screens (Stack
-  // has no maxWidth prop, so it's set here).
-  content: {
-    width: '100%',
-    maxWidth: 400,
-  },
-});
+const pageStyle: CSSProperties = {
+  minHeight: '100%',
+  backgroundColor: 'var(--color-background-body)',
+  padding: 'var(--spacing-6)',
+};
+// Cap the column at 400px but let it shrink to fit narrow screens (Stack
+// has no maxWidth prop, so it's set here).
+const contentStyle: CSSProperties = {
+  width: '100%',
+  maxWidth: 400,
+};
 
 export default function LoginSimple() {
   const [email, setEmail] = useState('');
@@ -91,8 +87,8 @@ export default function LoginSimple() {
   };
 
   return (
-    <Center axis="both" xstyle={styles.page}>
-      <VStack gap={4} hAlign="center" xstyle={styles.content}>
+    <Center axis="both" style={pageStyle}>
+      <VStack gap={4} hAlign="center" style={contentStyle}>
         {/* Logo */}
         <VStack gap={2} hAlign="center">
           <Icon icon={CubeIcon} size="lg" />

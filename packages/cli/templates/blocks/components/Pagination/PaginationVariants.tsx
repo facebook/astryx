@@ -5,13 +5,6 @@
 import {useState} from 'react';
 import {Pagination} from '@astryxdesign/core/Pagination';
 import {Stack} from '@astryxdesign/core/Layout';
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  root: {
-    width: '100%',
-  },
-});
 
 export default function PaginationVariants() {
   const [pagesPage, setPagesPage] = useState(3);
@@ -20,7 +13,7 @@ export default function PaginationVariants() {
   const [dotsPage, setDotsPage] = useState(3);
 
   return (
-    <Stack direction="vertical" gap={5} hAlign="center" xstyle={styles.root}>
+    <Stack direction="vertical" gap={5} hAlign="center" style={{width: '100%'}}>
       <Pagination
         page={dotsPage}
         onChange={setDotsPage}

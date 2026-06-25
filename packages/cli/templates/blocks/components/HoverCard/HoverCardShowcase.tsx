@@ -7,20 +7,13 @@ import {Button} from '@astryxdesign/core/Button';
 import {Stack} from '@astryxdesign/core/Layout';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {Avatar} from '@astryxdesign/core/Avatar';
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  card: {
-    width: 240,
-  },
-});
 
 export default function HoverCardShowcase() {
   return (
     <HoverCard
       placement="above"
       content={
-        <Stack direction="vertical" gap={2} xstyle={styles.card}>
+        <Stack direction="vertical" gap={2} style={{width: 240}}>
           <Stack direction="horizontal" gap={2} vAlign="center">
             <Avatar name="Jane Doe" size="medium" />
             <Stack direction="vertical" gap={0}>

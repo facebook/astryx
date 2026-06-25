@@ -12,14 +12,6 @@ import {Text} from '@astryxdesign/core/Text';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Fragment} from 'react';
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  section: {
-    flex: 1,
-    minHeight: 0,
-  },
-});
 
 const DENSITIES = ['compact', 'balanced', 'spacious'] as const;
 
@@ -39,7 +31,7 @@ export default function ChatMessageListDensity() {
             <Text type="supporting" color="secondary">
               {density.charAt(0).toUpperCase() + density.slice(1)}
             </Text>
-            <VStack xstyle={styles.section}>
+            <VStack style={{flex: 1, minHeight: 0}}>
               <ChatMessageList density={density}>
                 <ChatMessage sender="user">
                   <ChatMessageBubble>

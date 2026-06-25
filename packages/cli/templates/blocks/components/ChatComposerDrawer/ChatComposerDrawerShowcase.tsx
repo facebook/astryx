@@ -8,15 +8,12 @@ import {Button} from '@astryxdesign/core/Button';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Stack} from '@astryxdesign/core/Layout';
 import {PaperClipIcon} from '@heroicons/react/24/outline';
-import * as stylex from '@stylexjs/stylex';
-import {colorVars, borderVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
+import type {CSSProperties} from 'react';
 
-const styles = stylex.create({
-  drawerBorder: {
-    border: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
-    borderRadius: radiusVars['--radius-chat'],
-  },
-});
+const drawerBorder: CSSProperties = {
+  border: 'var(--border-width) solid var(--color-border)',
+  borderRadius: 'var(--radius-chat)',
+};
 
 export default function ChatComposerDrawerShowcase() {
   return (
@@ -27,7 +24,7 @@ export default function ChatComposerDrawerShowcase() {
           <ChatComposerDrawer
             count={4}
             label="Attachments"
-            xstyle={styles.drawerBorder}>
+            style={drawerBorder}>
             <Token label="design-spec.pdf" onRemove={() => {}} />
             <Token label="api-schema.json" onRemove={() => {}} />
             <Token label="screenshot.png" onRemove={() => {}} />

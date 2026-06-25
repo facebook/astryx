@@ -2,8 +2,7 @@
 
 'use client';
 
-import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
+import {useState, type CSSProperties} from 'react';
 import {VStack, HStack} from '@astryxdesign/core/Layout';
 import {Center} from '@astryxdesign/core/Center';
 import {Section} from '@astryxdesign/core/Section';
@@ -58,16 +57,14 @@ const CONTACT_COLUMNS = [
 // The only custom styling is fitting the illustration inside its AspectRatio
 // box without distortion (contain, not cover — it's line art, don't crop it).
 // No objectFit prop on AspectRatio, and there's no Image primitive (#2582).
-const styles = stylex.create({
-  page: {
-    minHeight: '100%',
-  },
-  illustrationImg: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'contain',
-  },
-});
+const pageStyle: CSSProperties = {
+  minHeight: '100%',
+};
+const illustrationImg: CSSProperties = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'contain',
+};
 
 // ─────────────────────────────────────────────────────────────
 // Page
@@ -104,7 +101,7 @@ export default function FormTwoColumnPage() {
   const handleSubmit = () => setSubmitted(true);
 
   return (
-    <Center xstyle={styles.page}>
+    <Center style={pageStyle}>
       <Section
         maxWidth={1100}
         width="100%"
@@ -128,7 +125,7 @@ export default function FormTwoColumnPage() {
                 <img
                   src={ILLUSTRATION_URL}
                   alt="Person with a laptop and a lightbulb idea"
-                  {...stylex.props(styles.illustrationImg)}
+                  style={illustrationImg}
                 />
               </AspectRatio>
             </VStack>

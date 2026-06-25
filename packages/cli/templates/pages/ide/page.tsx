@@ -2,15 +2,13 @@
 
 'use client';
 
-import {useState, useMemo} from 'react';
-import * as stylex from '@stylexjs/stylex';
+import {useState, useMemo, type CSSProperties} from 'react';
 import {SideNav, SideNavItem, SideNavSection} from '@astryxdesign/core/SideNav';
 
 import {Layout, LayoutContent, LayoutPanel} from '@astryxdesign/core/Layout';
 import {ResizeHandle, useResizable} from '@astryxdesign/core/Resizable';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {CodeBlock} from '@astryxdesign/core/CodeBlock';
-import {colorVars, spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {Stack} from '@astryxdesign/core/Layout';
 import {TabList, Tab} from '@astryxdesign/core/TabList';
 import {
@@ -44,7 +42,7 @@ import {
   PuzzlePieceIcon as PuzzlePieceSolid,
 } from '@heroicons/react/24/solid';
 
-const styles = stylex.create({
+const styles: Record<string, CSSProperties> = {
   contentFill: {
     height: '100%',
   },
@@ -55,16 +53,16 @@ const styles = stylex.create({
     display: 'grid',
   },
   tabListPadding: {
-    paddingTop: spacingVars['--spacing-2'],
+    paddingTop: 'var(--spacing-2)',
   },
   metadataCompact: {
-    gap: `${spacingVars['--spacing-1']} ${spacingVars['--spacing-3']}`,
+    gap: 'var(--spacing-1) var(--spacing-3)',
   },
   historyTimelineDot: {
     width: 8,
     height: 8,
     borderRadius: '50%',
-    backgroundColor: colorVars['--color-border-emphasized'],
+    backgroundColor: 'var(--color-border-emphasized)',
     marginTop: 6,
     flexShrink: 0,
   },
@@ -79,38 +77,43 @@ const styles = stylex.create({
     height: '100%',
     overflow: 'hidden',
   },
-  hideOnMobile: {
-    display: {
-      default: 'contents',
-      '@media (max-width: 768px)': 'none',
-    },
-  },
-  hideSideNav: {
-    display: {
-      default: 'flex',
-      '@media (max-width: 768px)': 'none',
-    },
-  },
-});
+};
+
+// The two responsive "hide below 768px" rules live in a plain <style> tag so
+// they need NO CSS compiler. `display:contents` keeps the wrapper transparent
+// to layout on desktop; `display:none` hides it on mobile.
+const IDE_CSS = `
+.ide-hide-on-mobile {
+  display: contents;
+}
+.ide-hide-sidenav {
+  display: flex;
+}
+@media (max-width: 768px) {
+  .ide-hide-on-mobile {
+    display: none;
+  }
+  .ide-hide-sidenav {
+    display: none;
+  }
+}
+`;
 
 const EDITOR_CODE = `import {useState, useCallback} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {Button} from '@astryxdesign/core/Button';
 import {Text} from '@astryxdesign/core/Text';
 
-const styles = stylex.create({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
-    padding: 16,
-  },
-  counter: {
-    fontSize: 48,
-    fontWeight: 700,
-    fontVariantNumeric: 'tabular-nums',
-  },
-});
+const containerStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 8,
+  padding: 16,
+};
+const counterStyle = {
+  fontSize: 48,
+  fontWeight: 700,
+  fontVariantNumeric: 'tabular-nums',
+};
 
 export default function Counter() {
   const [count, setCount] = useState(0);
@@ -124,9 +127,9 @@ export default function Counter() {
   }, []);
 
   return (
-    <div {...stylex.props(styles.container)}>
+    <div style={containerStyle}>
       <Text type="label">Counter</Text>
-      <span {...stylex.props(styles.counter)}>
+      <span style={counterStyle}>
         {count}
       </span>
       <Button label="Increment" onClick={increment} />
@@ -187,7 +190,7 @@ function buildFileTree(
           label: 'styles',
           startContent: <Icon icon={FolderIcon} size="xsm" />,
           isExpanded: true,
-          children: [file('tokens.stylex.ts'), file('theme.ts')],
+          children: [file('tokens.ts'), file('theme.ts')],
         },
       ],
     },
@@ -211,7 +214,7 @@ const PROPERTIES = [
 const HISTORY_ITEMS = [
   {label: 'Opened Counter.tsx', time: '2 min ago'},
   {label: 'Opened Layout.tsx', time: '6 min ago'},
-  {label: 'Viewed tokens.stylex.ts', time: '11 min ago'},
+  {label: 'Viewed tokens.ts', time: '11 min ago'},
 ];
 
 export default function ResizableWorkspacePage() {
@@ -246,14 +249,16 @@ export default function ResizableWorkspacePage() {
   });
 
   return (
-    <Layout
-      height="fill"
-      start={
-        <LayoutPanel hasDivider={false} padding={0}>
-          <SideNav
-            collapsible={{defaultIsCollapsed: true}}
-            resizable
-            xstyle={styles.hideSideNav}>
+    <>
+      <style>{IDE_CSS}</style>
+      <Layout
+        height="fill"
+        start={
+          <LayoutPanel hasDivider={false} padding={0}>
+            <SideNav
+              collapsible={{defaultIsCollapsed: true}}
+              resizable
+              className="ide-hide-sidenav">
             <SideNavSection title="Navigation" isHeaderHidden>
               <SideNavItem
                 label="Home"
@@ -298,7 +303,7 @@ export default function ResizableWorkspacePage() {
           <Layout
             height="fill"
             start={
-              <div {...stylex.props(styles.hideOnMobile)}>
+              <div className="ide-hide-on-mobile">
                 {!startPanel.isCollapsed && (
                   <LayoutPanel
                     width={startPanel.size}
@@ -306,7 +311,7 @@ export default function ResizableWorkspacePage() {
                     padding={0}>
                     <Stack
                       direction="vertical"
-                      xstyle={styles.fileExplorer}
+                      style={styles.fileExplorer}
                       gap={2}>
                       <TextInput
                         label="Search files"
@@ -337,8 +342,8 @@ export default function ResizableWorkspacePage() {
                     <LayoutContent padding={0}>
                       <Stack
                         direction="vertical"
-                        xstyle={styles.contentFill}>
-                        <div {...stylex.props(styles.editorArea)}>
+                        style={styles.contentFill}>
+                        <div style={styles.editorArea}>
                           <CodeBlock
                             code={EDITOR_CODE}
                             language="typescript"
@@ -371,13 +376,13 @@ export default function ResizableWorkspacePage() {
                             }}>
                             <Stack
                               direction="vertical"
-                              xstyle={styles.contentFill}>
+                              style={styles.contentFill}>
                               <TabList
                                 value={activeTermTab}
                                 onChange={val => setActiveTermTab(val)}
                                 size="sm"
                                 hasDivider={false}
-                                xstyle={styles.tabListPadding}>
+                                style={styles.tabListPadding}>
                                 <Tab
                                   label="Terminal"
                                   value="terminal"
@@ -411,7 +416,7 @@ export default function ResizableWorkspacePage() {
                                   icon={<Icon icon={BugAntIcon} size="sm" />}
                                 />
                               </TabList>
-                              <div {...stylex.props(styles.terminalWrapper)}>
+                              <div style={styles.terminalWrapper}>
                                 <CodeBlock
                                   code={TERMINAL_OUTPUT}
                                   language="bash"
@@ -432,7 +437,7 @@ export default function ResizableWorkspacePage() {
                     </LayoutContent>
                   }
                   end={
-                    <div {...stylex.props(styles.hideOnMobile)}>
+                    <div className="ide-hide-on-mobile">
                       <ResizeHandle
                         direction="horizontal"
                         hasDivider
@@ -473,7 +478,7 @@ export default function ResizableWorkspacePage() {
                                   </Text>
                                 </Stack>
                                 <MetadataList
-                                  xstyle={styles.metadataCompact}>
+                                  style={styles.metadataCompact}>
                                   {PROPERTIES.map(prop => (
                                     <MetadataListItem
                                       key={prop.label}
@@ -517,11 +522,7 @@ export default function ResizableWorkspacePage() {
                                         </Text>
                                       }
                                       startContent={
-                                        <span
-                                          {...stylex.props(
-                                            styles.historyTimelineDot,
-                                          )}
-                                        />
+                                        <span style={styles.historyTimelineDot} />
                                       }
                                     />
                                   ))}
@@ -539,6 +540,7 @@ export default function ResizableWorkspacePage() {
           />
         </LayoutContent>
       }
-    />
+      />
+    </>
   );
 }

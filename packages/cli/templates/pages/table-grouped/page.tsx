@@ -5,7 +5,6 @@
 import React, {useState, useMemo} from 'react';
 import {useResizable, ResizeHandle} from '@astryxdesign/core/Resizable';
 import type {ResizableProps} from '@astryxdesign/core/Resizable';
-import * as stylex from '@stylexjs/stylex';
 import {
   Layout,
   LayoutContent,
@@ -56,15 +55,15 @@ import {
 import {XMarkIcon} from '@heroicons/react/24/outline';
 import {ChartBarIcon} from '@heroicons/react/24/solid';
 
-const pageStyles = stylex.create({
-  groupHeaderRow: {
-    cursor: 'pointer',
-    backgroundColor: 'var(--color-background-muted)',
-  },
-  groupHeaderCell: {
-    padding: 'var(--spacing-3) var(--spacing-4)',
-  },
-});
+// Plain inline styles using Astryx design-token CSS variables (declared at
+// :root by `@astryxdesign/core/astryx.css`). No StyleX compiler required.
+// The group-header background + cursor live on the colSpan TableCell (which
+// reliably forwards `style`) so they fill the full row width.
+const groupHeaderCell: React.CSSProperties = {
+  cursor: 'pointer',
+  backgroundColor: 'var(--color-background-muted)',
+  padding: 'var(--spacing-3) var(--spacing-4)',
+};
 
 // Types
 type TaskStatus = 'in_progress' | 'todo' | 'backlog' | 'done';
@@ -988,11 +987,8 @@ export default function DataTableTemplate() {
                             e.preventDefault();
                             toggleGroup(key);
                           }
-                        }}
-                        xstyle={[pageStyles.groupHeaderRow]}>
-                        <TableCell
-                          colSpan={COL_COUNT}
-                          xstyle={pageStyles.groupHeaderCell}>
+                        }}>
+                        <TableCell colSpan={COL_COUNT} style={groupHeaderCell}>
                           <HStack gap={2} vAlign="center">
                             <Icon
                               icon={

@@ -9,13 +9,6 @@ import {Heading} from '@astryxdesign/core/Text';
 import {Stack} from '@astryxdesign/core/Layout';
 import {Card} from '@astryxdesign/core/Card';
 import {FunnelIcon, PlusIcon} from '@heroicons/react/24/outline';
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  container: {
-    width: 500,
-  },
-});
 
 const SIZES = [
   {size: 'sm' as const, label: 'Small'},
@@ -25,7 +18,7 @@ const SIZES = [
 
 export default function ToolbarSizes() {
   return (
-    <Stack direction="vertical" gap={4} xstyle={styles.container}>
+    <Stack direction="vertical" gap={4} style={{width: 500}}>
       {SIZES.map(({size, label}) => (
         <Card key={size}>
           <Toolbar

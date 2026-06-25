@@ -2,8 +2,7 @@
 
 'use client';
 
-import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
+import {useState, type CSSProperties} from 'react';
 import {
   VStack,
   HStack,
@@ -36,12 +35,6 @@ import {ShieldCheckIcon} from '@heroicons/react/24/outline';
 import {LockClosedIcon} from '@heroicons/react/24/outline';
 import {CheckCircleIcon} from '@heroicons/react/24/outline';
 import {TruckIcon} from '@heroicons/react/24/outline';
-import {
-  colorVars,
-  spacingVars,
-  radiusVars,
-  borderVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -156,51 +149,48 @@ const TAX = 18.4;
 const fmt = (n: number) => `$${n.toFixed(2)}`;
 
 // ── Styles ────────────────────────────────────────────────────────────────────
+// Plain inline styles using Astryx design-token CSS variables (declared at
+// :root by `@astryxdesign/core/astryx.css`). No StyleX compiler required.
 
-const styles = stylex.create({
-  fullWidth: {width: '100%'},
-  // LayoutContent clips overflow by default, which traps position:sticky
-  // children (the sticky order summary). With height="auto" the page scrolls
-  // at the window, so let overflow be visible here so sticky can pin.
-  visibleOverflow: {overflow: 'visible'},
-  // Form column flex-basis so the two checkout columns share width evenly.
-  formColBasis: {flexBasis: 0},
-  // Space the Order Summary content below its collapsible trigger title.
-  summaryContent: {paddingBlockStart: spacingVars['--spacing-2']},
-  // Order-summary column: sticky beside the form on desktop.
-  summarySticky: {
-    flexBasis: 0,
-    position: 'sticky',
-    top: spacingVars['--spacing-4'],
-    alignSelf: 'flex-start',
-  },
-  // On mobile the summary moves above the form.
-  summaryMobileOrder: {order: -1},
-  // Express-checkout brand buttons (fixed brand colors).
-  paypalButton: {backgroundColor: '#FFC439', borderColor: '#FFC439'},
-  // Official Google Pay dark button: black background with the unaltered
-  // dark-variant mark (white "Google Pay" text + full-color G), per the
-  // Google Pay brand guidelines.
-  gpayButton: {backgroundColor: '#000', borderColor: '#000'},
-  // Brand logos inside the express-checkout buttons.
-  paypalLogo: {height: spacingVars['--spacing-5'], width: 'auto'},
-  // Unaltered Google Pay mark (no filter/recolor — brand requirement),
-  // sized so it keeps comfortable clear space inside the lg button.
-  gpayLogo: {
-    height: spacingVars['--spacing-5'],
-    width: 'auto',
-  },
-  // Accepted card-network marks (Visa/Mastercard/Amex), shared style.
-  cardLogo: {
-    height: spacingVars['--spacing-7'],
-    width: 'auto',
-    borderRadius: radiusVars['--radius-element'],
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderColor: colorVars['--color-border'],
-    backgroundColor: colorVars['--color-background-surface'],
-  },
-});
+const fullWidth: CSSProperties = {width: '100%'};
+// LayoutContent clips overflow by default, which traps position:sticky
+// children (the sticky order summary). With height="auto" the page scrolls
+// at the window, so let overflow be visible here so sticky can pin.
+const visibleOverflow: CSSProperties = {overflow: 'visible'};
+// Form column flex-basis so the two checkout columns share width evenly.
+const formColBasis: CSSProperties = {flexBasis: 0};
+// Space the Order Summary content below its collapsible trigger title.
+const summaryContent: CSSProperties = {paddingBlockStart: 'var(--spacing-2)'};
+// Order-summary column: sticky beside the form on desktop.
+const summarySticky: CSSProperties = {
+  flexBasis: 0,
+  position: 'sticky',
+  top: 'var(--spacing-4)',
+  alignSelf: 'flex-start',
+};
+// On mobile the summary moves above the form.
+const summaryMobileOrder: CSSProperties = {order: -1};
+// Express-checkout brand buttons (fixed brand colors).
+const paypalButton: CSSProperties = {
+  backgroundColor: '#FFC439',
+  borderColor: '#FFC439',
+};
+// Official Google Pay dark button: black background with the unaltered
+// dark-variant mark (white "Google Pay" text + full-color G), per the
+// Google Pay brand guidelines.
+const gpayButton: CSSProperties = {backgroundColor: '#000', borderColor: '#000'};
+// Brand logos inside the express-checkout buttons.
+const brandLogo: CSSProperties = {height: 'var(--spacing-5)', width: 'auto'};
+// Accepted card-network marks (Visa/Mastercard/Amex), shared style.
+const cardLogo: CSSProperties = {
+  height: 'var(--spacing-7)',
+  width: 'auto',
+  borderRadius: 'var(--radius-element)',
+  borderWidth: 'var(--border-width)',
+  borderStyle: 'solid',
+  borderColor: 'var(--color-border)',
+  backgroundColor: 'var(--color-background-surface)',
+};
 
 export default function PaymentFormPage() {
   const isMobile = useMediaQuery('(max-width: 767px)');
@@ -278,7 +268,7 @@ export default function PaymentFormPage() {
     <Layout
       height="auto"
       content={
-        <LayoutContent padding={0} xstyle={styles.visibleOverflow}>
+        <LayoutContent padding={0} style={visibleOverflow}>
           <Center axis="horizontal">
             <Section
               variant="transparent"
@@ -306,7 +296,7 @@ export default function PaymentFormPage() {
                   vAlign="start">
                   <StackItem
                     size="fill"
-                    xstyle={isMobile ? undefined : styles.formColBasis}>
+                    style={isMobile ? undefined : formColBasis}>
                     <VStack gap={8}>
                       {/* Sign in */}
                       <VStack gap={1}>
@@ -509,11 +499,11 @@ export default function PaymentFormPage() {
                               variant="primary"
                               size="lg"
                               onClick={() => {}}
-                              xstyle={styles.paypalButton}>
+                              style={paypalButton}>
                               <img
                                 src="https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-100px.png"
                                 alt="PayPal"
-                                {...stylex.props(styles.paypalLogo)}
+                                style={brandLogo}
                               />
                             </Button>
                             {/* Google Pay */}
@@ -522,11 +512,11 @@ export default function PaymentFormPage() {
                               variant="primary"
                               size="lg"
                               onClick={() => {}}
-                              xstyle={styles.gpayButton}>
+                              style={gpayButton}>
                               <img
                                 src="https://pay.google.com/about/static_kcs/images/logos/google-pay-logo.svg"
                                 alt="Google Pay"
-                                {...stylex.props(styles.gpayLogo)}
+                                style={brandLogo}
                               />
                             </Button>
                           </Grid>
@@ -552,17 +542,17 @@ export default function PaymentFormPage() {
                             <img
                               src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/visa.svg"
                               alt="Visa"
-                              {...stylex.props(styles.cardLogo)}
+                              style={cardLogo}
                             />
                             <img
                               src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/mastercard.svg"
                               alt="Mastercard"
-                              {...stylex.props(styles.cardLogo)}
+                              style={cardLogo}
                             />
                             <img
                               src="https://raw.githubusercontent.com/aaronfagan/svg-credit-card-payment-icons/main/flat/amex.svg"
                               alt="Amex"
-                              {...stylex.props(styles.cardLogo)}
+                              style={cardLogo}
                             />
                           </HStack>
                           <TextInput
@@ -719,7 +709,7 @@ export default function PaymentFormPage() {
                               placeholder="Enter promo code"
                               value={promo}
                               onChange={setPromo}
-                              xstyle={styles.fullWidth}
+                              style={fullWidth}
                             />
                           </StackItem>
                           <Button
@@ -811,14 +801,14 @@ export default function PaymentFormPage() {
                             label="Place Order"
                             variant="primary"
                             size="lg"
-                            xstyle={styles.fullWidth}
+                            style={fullWidth}
                             onClick={() => setSubmitted(true)}
                           />
                           <Button
                             label="Continue Shopping"
                             variant="secondary"
                             size="lg"
-                            xstyle={styles.fullWidth}
+                            style={fullWidth}
                             onClick={() => {}}
                           />
                         </VStack>
@@ -843,18 +833,14 @@ export default function PaymentFormPage() {
 
                   <StackItem
                     size="fill"
-                    xstyle={
-                      isMobile
-                        ? styles.summaryMobileOrder
-                        : styles.summarySticky
-                    }>
+                    style={isMobile ? summaryMobileOrder : summarySticky}>
                     <Card padding={5}>
                       <VStack gap={4}>
                         {/* Accordion header — clickable on mobile only */}
                         <Collapsible
                           trigger="Order Summary"
                           defaultIsOpen={true}>
-                          <VStack gap={4} xstyle={styles.summaryContent}>
+                          <VStack gap={4} style={summaryContent}>
                             {/* Line items */}
                             {ORDER_ITEMS.map(item => (
                               <VStack key={item.id} gap={3}>

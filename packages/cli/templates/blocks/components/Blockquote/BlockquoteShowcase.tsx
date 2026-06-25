@@ -4,17 +4,10 @@
 
 import {Blockquote} from '@astryxdesign/core/Blockquote';
 import {Stack} from '@astryxdesign/core/Layout';
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  root: {
-    width: 500,
-  },
-});
 
 export default function BlockquoteShowcase() {
   return (
-    <Stack direction="vertical" gap={4} xstyle={styles.root}>
+    <Stack direction="vertical" gap={4} style={{width: 500}}>
       <Blockquote>
         Design is not just what it looks like and feels like. Design is how it
         works.

@@ -15,7 +15,7 @@ export default function CodeBlockBashCommand() {
         style={{width: '100%'}}
       />
       <CodeBlock
-        code="yarn add @stylexjs/stylex"
+        code="yarn add @astryxdesign/theme-neutral"
         language="bash"
         hasCopyButton
         style={{width: '100%'}}

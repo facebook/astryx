@@ -2,8 +2,7 @@
 
 'use client';
 
-import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
+import {useState, type CSSProperties} from 'react';
 import {VStack, HStack, StackItem} from '@astryxdesign/core/Layout';
 import {Grid} from '@astryxdesign/core/Grid';
 import {Center} from '@astryxdesign/core/Center';
@@ -17,7 +16,6 @@ import {TextInput} from '@astryxdesign/core/TextInput';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {Divider} from '@astryxdesign/core/Divider';
-import {colorVars, spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const COVER_IMAGE_URL =
   'https://lookaside.facebook.com/assets/astryx/light-working-vertical-1.png';
@@ -34,47 +32,50 @@ const COLUMN_MIN_WIDTH = 240;
 // below 2×MIN + 32(gap) = 512px. The container query reorders the image and
 // tightens the inset at that same point, keyed to the card width (not the
 // window) so it never desyncs.
-const STACK_QUERY = '@container login-split (max-width: 511px)';
+// minHeight:100% fills the host so the centered card never leaves an unpainted
+// band; padding keeps it off the surface edges.
+const pageStyle: CSSProperties = {
+  minHeight: '100%',
+  backgroundColor: 'var(--color-background-body)',
+  padding: 'var(--spacing-6)',
+};
+const cardWrap: CSSProperties = {
+  width: '100%',
+  maxWidth: 1000,
+  marginInline: 'auto',
+};
+const coverImage: CSSProperties = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+};
 
-const styles = stylex.create({
-  // minHeight:100% fills the host so the centered card never leaves an unpainted
-  // band; padding keeps it off the surface edges.
-  page: {
-    minHeight: '100%',
-    backgroundColor: colorVars['--color-background-body'],
-    padding: spacingVars['--spacing-6'],
-  },
-  cardWrap: {
-    width: '100%',
-    maxWidth: 1000,
-    marginInline: 'auto',
-  },
-  // Pad the grid, not the Card: the form's Section escapes Card's
-  // --container-padding-* vars, which would cancel the inset on the form side.
-  // containerType makes this the query container for STACK_QUERY.
-  splitGrid: {
-    containerType: 'inline-size',
-    containerName: 'login-split',
-    padding: {
-      default: spacingVars['--spacing-8'],
-      [STACK_QUERY]: spacingVars['--spacing-4'],
-    },
-  },
-  imageCell: {
-    // Fill the track: the image's Card is content-width by default.
-    width: '100%',
-    // order:-1 moves the image above the form when stacked.
-    order: {
-      default: 0,
-      [STACK_QUERY]: -1,
-    },
-  },
-  coverImage: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover' as const,
-  },
-});
+// The container query lives in a plain <style> tag so it needs NO CSS compiler.
+// - Pad the grid, not the Card: the form's Section escapes Card's
+//   --container-padding-* vars, which would cancel the inset on the form side.
+//   container-type makes the grid the query container for the stack point.
+// - repeat:'fit' (auto-fit) collapses the two columns to one below 511px; the
+//   query reorders the image (order:-1) and tightens the inset at that point,
+//   keyed to the card width (not the window) so it never desyncs.
+const LOGIN_SPLIT_CSS = `
+.login-split-grid {
+  container-type: inline-size;
+  container-name: login-split;
+  padding: var(--spacing-8);
+}
+.login-split-image {
+  width: 100%;
+  order: 0;
+}
+@container login-split (max-width: 511px) {
+  .login-split-grid {
+    padding: var(--spacing-4);
+  }
+  .login-split-image {
+    order: -1;
+  }
+}
+`;
 
 export default function LoginTwoColumn() {
   const [email, setEmail] = useState('');
@@ -97,15 +98,16 @@ export default function LoginTwoColumn() {
   };
 
   return (
-    <Center axis="both" xstyle={styles.page}>
+    <Center axis="both" style={pageStyle}>
+      <style>{LOGIN_SPLIT_CSS}</style>
       <VStack gap={4} width="100%">
-        <div {...stylex.props(styles.cardWrap)}>
+        <div style={cardWrap}>
           <Card padding={0} width="100%">
             <Grid
               columns={{minWidth: COLUMN_MIN_WIDTH, repeat: 'fit'}}
               gap={8}
               align="stretch"
-              xstyle={styles.splitGrid}>
+              className="login-split-grid">
               {/* Form */}
               <Section variant="transparent" padding={0} height="100%">
                 <VStack gap={4} height="100%">
@@ -237,14 +239,14 @@ export default function LoginTwoColumn() {
 
               {/* Cover image — the transparent Card clips it to rounded
                   corners (overflow:clip + radius), so the image needs no radius. */}
-              <div {...stylex.props(styles.imageCell)}>
+              <div className="login-split-image">
                 <Card
                   variant="transparent"
                   padding={0}
                   width="100%"
                   height="100%">
                   <img
-                    {...stylex.props(styles.coverImage)}
+                    style={coverImage}
                     src={COVER_IMAGE_URL}
                     alt="Two people working at a desk"
                   />

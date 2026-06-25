@@ -2,26 +2,11 @@
 
 'use client';
 
-import * as stylex from '@stylexjs/stylex';
 import {Overlay} from '@astryxdesign/core/Overlay';
 import {AspectRatio} from '@astryxdesign/core/AspectRatio';
 import {Badge} from '@astryxdesign/core/Badge';
 import {VStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
-
-const styles = stylex.create({
-  frame: {
-    width: 420,
-    maxWidth: '100%',
-    borderRadius: 12,
-    overflow: 'clip',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-});
 
 export default function OverlayBottomStrip() {
   return (
@@ -39,11 +24,13 @@ export default function OverlayBottomStrip() {
           </Text>
         </VStack>
       }>
-      <AspectRatio ratio={16 / 9} xstyle={styles.frame}>
+      <AspectRatio
+        ratio={16 / 9}
+        style={{width: 420, maxWidth: '100%', borderRadius: 12, overflow: 'clip'}}>
         <img
           src="https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-1.png"
           alt="Product highlight preview"
-          {...stylex.props(styles.image)}
+          style={{width: '100%', height: '100%', objectFit: 'cover'}}
         />
       </AspectRatio>
     </Overlay>

@@ -2,23 +2,21 @@
 
 'use client';
 
-import {useState} from 'react';
+import {useState, type CSSProperties} from 'react';
 import {Pagination} from '@astryxdesign/core/Pagination';
 import {Heading} from '@astryxdesign/core/Text';
 import {Stack} from '@astryxdesign/core/Layout';
 import {Table} from '@astryxdesign/core/Table';
-import * as stylex from '@stylexjs/stylex';
 
-const styles = stylex.create({
-  root: {
-    width: '100%',
-    maxWidth: 500,
-  },
-  pagination: {
-    paddingTop: 8,
-    flexDirection: 'row-reverse',
-  },
-});
+const root: CSSProperties = {
+  width: '100%',
+  maxWidth: 500,
+};
+
+const pagination: CSSProperties = {
+  paddingTop: 8,
+  flexDirection: 'row-reverse',
+};
 
 const DATA = [
   {
@@ -42,7 +40,7 @@ export default function PaginationPageSize() {
   const [pageSize, setPageSize] = useState(10);
 
   return (
-    <Stack direction="vertical" xstyle={styles.root}>
+    <Stack direction="vertical" style={root}>
       <Heading level={4}>Transactions</Heading>
       <Table
         idKey="id"
@@ -61,7 +59,7 @@ export default function PaginationPageSize() {
         onPageSizeChange={setPageSize}
         pageSizeOptions={[10, 25, 50, 100]}
         variant="count"
-        xstyle={styles.pagination}
+        style={pagination}
       />
     </Stack>
   );

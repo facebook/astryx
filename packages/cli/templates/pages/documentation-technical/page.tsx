@@ -137,16 +137,18 @@ export default function TechnicalDocumentationPage() {
               </VStack>
               <VStack gap={2}>
                 <Text type="body" weight="bold">
-                  Step 2: Add the StyleX compiler
+                  Step 2: Import the precompiled styles
                 </Text>
                 <Text type="body" color="secondary">
-                  Astryx uses StyleX for styling. Add the compiler plugin to your
-                  build configuration.
+                  Astryx ships precompiled CSS, so there is no build plugin to
+                  configure. Import the reset and component stylesheets once at
+                  your app entry point.
                 </Text>
                 <Card padding={0}>
                   <CodeBlock
-                    code="npm install @stylexjs/babel-plugin"
-                    language="bash"
+                    code={`import '@astryxdesign/core/reset.css';
+import '@astryxdesign/core/astryx.css';`}
+                    language="tsx"
                   />
                 </Card>
               </VStack>

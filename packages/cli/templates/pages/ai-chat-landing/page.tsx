@@ -2,9 +2,7 @@
 
 'use client';
 
-import {useRef, useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {useRef, useState, type CSSProperties} from 'react';
 
 import {Layout, LayoutContent, VStack, HStack} from '@astryxdesign/core/Layout';
 import {Text, Heading} from '@astryxdesign/core/Text';
@@ -40,12 +38,10 @@ import {
   LightBulbIcon,
 } from '@heroicons/react/24/outline';
 
-const styles = stylex.create({
-  // Fill the content area so the greeting and composer stay vertically centered.
-  page: {minHeight: '100%'},
-  composerInput: {minHeight: 84},
-  categories: {paddingInline: spacingVars['--spacing-3']},
-});
+// Fill the content area so the greeting and composer stay vertically centered.
+const pageStyle: CSSProperties = {minHeight: '100%'};
+const composerInput: CSSProperties = {minHeight: 84};
+const categories: CSSProperties = {paddingInline: 'var(--spacing-3)'};
 
 // Suggestion cards shown once a category is selected.
 const CATEGORY_SUGGESTIONS: Record<
@@ -311,7 +307,7 @@ export default function AIChatTemplate() {
       padding={6}
       content={
         <LayoutContent>
-          <VStack gap={8} vAlign="center" xstyle={styles.page}>
+          <VStack gap={8} vAlign="center" style={pageStyle}>
             {/* Greeting */}
             <VStack gap={1}>
               <HStack gap={2} vAlign="center">
@@ -333,7 +329,7 @@ export default function AIChatTemplate() {
                 <ChatComposerInput
                   handleRef={composerInputRef}
                   triggers={composerTriggers}
-                  xstyle={styles.composerInput}
+                  style={composerInput}
                   onFiles={files =>
                     setAttachments(prev => [...prev, ...files.map(f => f.name)])
                   }
@@ -435,7 +431,7 @@ export default function AIChatTemplate() {
             />
 
             {/* Category filters + suggestion cards */}
-            <VStack gap={6} xstyle={styles.categories}>
+            <VStack gap={6} style={categories}>
               <ToggleButtonGroup
                 label="Category"
                 value={category}

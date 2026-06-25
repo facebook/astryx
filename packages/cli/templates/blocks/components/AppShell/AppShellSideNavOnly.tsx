@@ -20,20 +20,12 @@ import {
 } from '@heroicons/react/24/outline';
 import {HomeIcon} from '@heroicons/react/24/solid';
 import {CubeIcon} from '@heroicons/react/24/outline';
-import stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  fit: {
-    height: '100%',
-    minHeight: 0,
-  },
-});
 
 export default function AppShellSideNavOnly() {
   return (
     <AppShell
       contentPadding={6}
-      xstyle={styles.fit}
+      style={{height: '100%', minHeight: 0}}
       sideNav={
         <SideNav
           header={

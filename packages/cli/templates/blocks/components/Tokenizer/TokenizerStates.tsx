@@ -3,14 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {Tokenizer} from '@astryxdesign/core/Tokenizer';
 import {Stack} from '@astryxdesign/core/Layout';
 import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
-
-const styles = stylex.create({
-  fixed: {width: 400},
-});
 
 const users: SearchableItem[] = [
   {id: '1', label: 'Alice Johnson'},
@@ -44,7 +39,7 @@ export default function TokenizerStates() {
         value={[users[0], users[2]]}
         onChange={() => {}}
         isDisabled
-        xstyle={styles.fixed}
+        style={{width: 400}}
       />
       <Tokenizer
         label="Error message"
@@ -54,7 +49,7 @@ export default function TokenizerStates() {
         onChange={items => setErrorValue(items)}
         isRequired
         status={{type: 'error', message: 'At least one reviewer is required'}}
-        xstyle={styles.fixed}
+        style={{width: 400}}
       />
       <Tokenizer
         label="Warning message"
@@ -66,7 +61,7 @@ export default function TokenizerStates() {
           type: 'warning',
           message: 'Consider adding at least 2 approvers',
         }}
-        xstyle={styles.fixed}
+        style={{width: 400}}
       />
       <Tokenizer
         label="Success message"
@@ -75,7 +70,7 @@ export default function TokenizerStates() {
         value={successValue}
         onChange={items => setSuccessValue(items)}
         status={{type: 'success', message: 'All required reviewers added'}}
-        xstyle={styles.fixed}
+        style={{width: 400}}
       />
     </Stack>
   );

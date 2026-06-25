@@ -2,54 +2,59 @@
 
 'use client';
 
+import type {CSSProperties} from 'react';
 import {VStack, Layout, LayoutContent} from '@astryxdesign/core/Layout';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {AspectRatio} from '@astryxdesign/core/AspectRatio';
-import * as stylex from '@stylexjs/stylex';
 
 // ─── Styles ────────────────────────────────────────────────────────────────
 // The masonry needs a responsive column count AND a hero that spans 2 columns
 // on desktop but goes full-width on mobile. Grid forces grid-template-columns
 // inline, so a responsive span can't be expressed through its props — this is a
 // @container grid (the sanctioned Astryx pattern for container-responsive layout).
-// Image fill + radius are also custom because Astryx has no image primitive (#2582).
+// The container query lives in a plain <style> tag below so it needs NO CSS
+// compiler. Image fill + radius are custom because Astryx has no image
+// primitive (#2582).
 
-const styles = stylex.create({
-  // Named inline-size container on the page column so the grid responds to the
-  // available content width (works inside the sandbox's resizable preview).
-  container: {
-    containerType: 'inline-size',
-    containerName: 'gallery',
-  },
-  // 3 columns on desktop, dropping straight to 1 column below 720px (no 2-col
-  // middle state). minmax(0, 1fr) (not 1fr) so tracks split evenly and ignore
-  // the images' intrinsic min-width.
-  grid: {
-    display: 'grid',
-    gap: 'var(--spacing-3)',
-    gridTemplateColumns: {
-      default: 'repeat(3, minmax(0, 1fr))',
-      '@container gallery (max-width: 720px)': 'minmax(0, 1fr)',
-    },
-  },
-  // Hero spans 2 columns on desktop, then fills the row once it's single-column.
-  hero: {
-    gridColumn: {
-      default: 'span 2',
-      '@container gallery (max-width: 720px)': '1 / -1',
-    },
-  },
-  // Fills the AspectRatio box. No objectFit prop on AspectRatio (#2582).
-  img: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-  // Rounds the image corners. No radius prop on AspectRatio (#2582).
-  clip: {
-    borderRadius: 'var(--radius-element)',
-  },
-});
+// Named inline-size container on the page column so the grid responds to the
+// available content width (works inside the sandbox's resizable preview).
+const containerStyle: CSSProperties = {
+  containerType: 'inline-size',
+  containerName: 'gallery',
+};
+// Fills the AspectRatio box. No objectFit prop on AspectRatio (#2582).
+const imgStyle: CSSProperties = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+};
+// Rounds the image corners. No radius prop on AspectRatio (#2582).
+const clipStyle: CSSProperties = {
+  borderRadius: 'var(--radius-element)',
+};
+
+// 3 columns on desktop, dropping straight to 1 column below 720px (no 2-col
+// middle state). minmax(0, 1fr) (not 1fr) so tracks split evenly and ignore the
+// images' intrinsic min-width. The hero spans 2 columns on desktop, then fills
+// the row once it's single-column.
+const GALLERY_CSS = `
+.mixed-gallery-grid {
+  display: grid;
+  gap: var(--spacing-3);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.mixed-gallery-hero {
+  grid-column: span 2;
+}
+@container gallery (max-width: 720px) {
+  .mixed-gallery-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .mixed-gallery-hero {
+    grid-column: 1 / -1;
+  }
+}
+`;
 
 // ─── Gallery Data ───────────────────────────────────────────────────────────
 
@@ -89,15 +94,15 @@ const IMAGES: GalleryImage[] = [
 function GalleryCard({
   image,
   ratio,
-  xstyle,
+  className,
 }: {
   image: GalleryImage;
   ratio: number;
-  xstyle?: stylex.StyleXStyles;
+  className?: string;
 }) {
   return (
-    <AspectRatio ratio={ratio} xstyle={[styles.clip, xstyle]}>
-      <img src={image.src} alt={image.title} {...stylex.props(styles.img)} />
+    <AspectRatio ratio={ratio} className={className} style={clipStyle}>
+      <img src={image.src} alt={image.title} style={imgStyle} />
     </AspectRatio>
   );
 }
@@ -111,7 +116,8 @@ export default function MixedGalleryTemplate() {
       contentWidth={1400}
       content={
         <LayoutContent padding={6}>
-          <VStack gap={6} xstyle={styles.container}>
+          <style>{GALLERY_CSS}</style>
+          <VStack gap={6} style={containerStyle}>
             {/* Header */}
             <VStack gap={2} hAlign="center">
               <Heading level={1} justify="center">
@@ -129,12 +135,12 @@ export default function MixedGalleryTemplate() {
                 (being 2 columns wide) it matches the row height exactly. All
                 rows are therefore the same height. Responsive via @container:
                 3 columns → 1 column at ≤720px. */}
-            <div {...stylex.props(styles.grid)}>
+            <div className="mixed-gallery-grid">
               {/* Hero — spans 2 columns; 3:1 keeps it level with the sidebar */}
               <GalleryCard
                 image={IMAGES[0]}
                 ratio={3 / 1}
-                xstyle={styles.hero}
+                className="mixed-gallery-hero"
               />
 
               {/* Sidebar — same height as the hero */}

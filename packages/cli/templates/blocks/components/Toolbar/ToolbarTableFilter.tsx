@@ -9,21 +9,14 @@ import {TextInput} from '@astryxdesign/core/TextInput';
 import {MoreMenu} from '@astryxdesign/core/MoreMenu';
 import {Stack} from '@astryxdesign/core/Layout';
 import {Table} from '@astryxdesign/core/Table';
-import * as stylex from '@stylexjs/stylex';
 import {
   MagnifyingGlassIcon,
   ChevronDownIcon,
 } from '@heroicons/react/24/outline';
 
-const styles = stylex.create({
-  container: {
-    width: '100%',
-  },
-});
-
 export default function ToolbarTableFilter() {
   return (
-    <Stack direction="vertical" xstyle={styles.container}>
+    <Stack direction="vertical" style={{width: '100%'}}>
       <Toolbar
         label="Table filters"
         size="sm"

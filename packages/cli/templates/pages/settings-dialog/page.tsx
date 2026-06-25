@@ -2,8 +2,7 @@
 
 'use client';
 
-import React, {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
+import React, {useState, type CSSProperties} from 'react';
 import {
   VStack,
   HStack,
@@ -27,11 +26,6 @@ import {Badge} from '@astryxdesign/core/Badge';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Center} from '@astryxdesign/core/Center';
 import {
-  colorVars,
-  radiusVars,
-  spacingVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
-import {
   UserIcon,
   LockClosedIcon,
   GlobeAltIcon,
@@ -46,33 +40,31 @@ import {
   ShareIcon,
 } from '@heroicons/react/24/outline';
 
-const styles = stylex.create({
-  iconBox: {
-    borderRadius: radiusVars['--radius-container'],
-    backgroundColor: colorVars['--color-background-surface'],
-    flexShrink: 0,
-  },
-  // Sticky dialog header bar — no Astryx prop for sticky/background/z-index.
-  // Inline + block padding comes from the parent LayoutContent `padding`.
-  headerSticky: {
-    position: 'sticky',
-    top: 0,
-    backgroundColor: colorVars['--color-background-surface'],
-    zIndex: 1,
-  },
-  // No `maxWidth` prop on VStack — width only. Inline padding comes from
-  // the parent LayoutContent `padding`.
-  contentMaxWidth: {
-    maxWidth: 680,
-  },
-  // Aligns the sidebar heading with list-item label text. No heading margin prop.
-  sideNavHeading: {
-    marginInline: spacingVars['--spacing-4'],
-  },
-  dialogHeight: {
-    height: '85vh',
-  },
-});
+const iconBox: CSSProperties = {
+  borderRadius: 'var(--radius-container)',
+  backgroundColor: 'var(--color-background-surface)',
+  flexShrink: 0,
+};
+// Sticky dialog header bar — no Astryx prop for sticky/background/z-index.
+// Inline + block padding comes from the parent LayoutContent `padding`.
+const headerSticky: CSSProperties = {
+  position: 'sticky',
+  top: 0,
+  backgroundColor: 'var(--color-background-surface)',
+  zIndex: 1,
+};
+// No `maxWidth` prop on VStack — width only. Inline padding comes from
+// the parent LayoutContent `padding`.
+const contentMaxWidth: CSSProperties = {
+  maxWidth: 680,
+};
+// Aligns the sidebar heading with list-item label text. No heading margin prop.
+const sideNavHeading: CSSProperties = {
+  marginInline: 'var(--spacing-4)',
+};
+const dialogHeight: CSSProperties = {
+  height: '85vh',
+};
 
 const NAV_ITEMS = [
   {label: 'Personal information', icon: UserIcon},
@@ -274,7 +266,7 @@ export default function SettingsDialogTemplate() {
         maxHeight="85vh"
         padding={0}
         purpose="form"
-        xstyle={styles.dialogHeight}>
+        style={dialogHeight}>
         <Layout
           height="fill"
           start={
@@ -284,7 +276,7 @@ export default function SettingsDialogTemplate() {
               role="navigation"
               padding={3}>
               <VStack gap={4}>
-                <Heading level={2} xstyle={styles.sideNavHeading}>
+                <Heading level={2} style={sideNavHeading}>
                   Account settings
                 </Heading>
                 <List density="spacious">
@@ -315,7 +307,7 @@ export default function SettingsDialogTemplate() {
           content={
             <LayoutContent isScrollable padding={6}>
               <VStack gap={6}>
-                <VStack xstyle={styles.headerSticky}>
+                <VStack style={headerSticky}>
                   <DialogHeader
                     title={
                       activeNav === 'Personal information'
@@ -326,7 +318,7 @@ export default function SettingsDialogTemplate() {
                     hasDivider={false}
                   />
                 </VStack>
-                <VStack gap={0} xstyle={styles.contentMaxWidth}>
+                <VStack gap={0} style={contentMaxWidth}>
                   {activeNav === 'Personal information' && (
                     <VStack gap={6}>
                       <VStack gap={4}>
@@ -441,7 +433,7 @@ export default function SettingsDialogTemplate() {
                             <Center
                               width={48}
                               height={48}
-                              xstyle={styles.iconBox}>
+                              style={iconBox}>
                               <Icon icon={LockClosedIcon} />
                             </Center>
                             <VStack gap={0}>
@@ -465,7 +457,7 @@ export default function SettingsDialogTemplate() {
                             <Center
                               width={48}
                               height={48}
-                              xstyle={styles.iconBox}>
+                              style={iconBox}>
                               <Icon icon={PencilSquareIcon} />
                             </Center>
                             <VStack gap={0}>
@@ -491,7 +483,7 @@ export default function SettingsDialogTemplate() {
                             <Center
                               width={48}
                               height={48}
-                              xstyle={styles.iconBox}>
+                              style={iconBox}>
                               <Icon icon={ShareIcon} />
                             </Center>
                             <VStack gap={0}>
@@ -620,7 +612,7 @@ export default function SettingsDialogTemplate() {
                               <Center
                                 width={48}
                                 height={48}
-                                xstyle={styles.iconBox}>
+                                style={iconBox}>
                                 <Icon icon={LockClosedIcon} />
                               </Center>
                               <VStack gap={1}>
@@ -813,7 +805,7 @@ export default function SettingsDialogTemplate() {
                               <Center
                                 width={48}
                                 height={48}
-                                xstyle={styles.iconBox}>
+                                style={iconBox}>
                                 <Icon icon={ShieldCheckIcon} />
                               </Center>
                               <VStack gap={1}>

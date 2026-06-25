@@ -2,7 +2,7 @@
 
 'use client';
 
-import * as stylex from '@stylexjs/stylex';
+import type {CSSProperties} from 'react';
 import {
   VStack,
   HStack,
@@ -35,18 +35,16 @@ const IMAGES = [
 // because Astryx has no image primitive — AspectRatio exposes no objectFit or
 // radius props and there's no Image. Tracked in issue #2582; replace these
 // with component props once it lands.
-const styles = stylex.create({
-  // Fills the AspectRatio box. No objectFit prop on AspectRatio (#2582).
-  galleryImage: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-  // Rounds the image corners. No radius prop on AspectRatio (#2582).
-  galleryImageClip: {
-    borderRadius: 'var(--radius-container)',
-  },
-});
+// Fills the AspectRatio box. No objectFit prop on AspectRatio (#2582).
+const galleryImage: CSSProperties = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+};
+// Rounds the image corners. No radius prop on AspectRatio (#2582).
+const galleryImageClip: CSSProperties = {
+  borderRadius: 'var(--radius-container)',
+};
 
 export default function GalleryHero() {
   return (
@@ -88,9 +86,9 @@ export default function GalleryHero() {
                 <AspectRatio
                   key={image.src}
                   ratio={4 / 5}
-                  xstyle={styles.galleryImageClip}>
+                  style={galleryImageClip}>
                   <img
-                    {...stylex.props(styles.galleryImage)}
+                    style={galleryImage}
                     src={image.src}
                     alt={image.alt}
                   />

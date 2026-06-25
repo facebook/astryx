@@ -6,18 +6,6 @@ import {useState} from 'react';
 import {Pagination} from '@astryxdesign/core/Pagination';
 import {Table} from '@astryxdesign/core/Table';
 import {Stack} from '@astryxdesign/core/Layout';
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  root: {
-    width: '100%',
-    maxWidth: 500,
-  },
-  pagination: {
-    justifyContent: 'center',
-    paddingTop: 8,
-  },
-});
 
 const ALL_DATA = [
   {id: '1', name: 'Olivia Chen', role: 'Engineer', status: 'Active'},
@@ -42,7 +30,7 @@ export default function PaginationWithTable() {
   const pageData = ALL_DATA.slice(start, start + PAGE_SIZE);
 
   return (
-    <Stack direction="vertical" xstyle={styles.root}>
+    <Stack direction="vertical" style={{width: '100%', maxWidth: 500}}>
       <Table
         idKey="id"
         columns={[
@@ -59,7 +47,7 @@ export default function PaginationWithTable() {
         pageSize={PAGE_SIZE}
         variant="count"
         size="sm"
-        xstyle={styles.pagination}
+        style={{justifyContent: 'center', paddingTop: 8}}
       />
     </Stack>
   );

@@ -2,8 +2,7 @@
 
 'use client';
 
-import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
+import {useState, type CSSProperties} from 'react';
 import {ShieldCheckIcon} from '@heroicons/react/24/outline';
 import {VStack, HStack} from '@astryxdesign/core/Layout';
 import {Center} from '@astryxdesign/core/Center';
@@ -16,7 +15,6 @@ import {Link} from '@astryxdesign/core/Link';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Avatar} from '@astryxdesign/core/Avatar';
-import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -24,15 +22,13 @@ import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const BG_URL = 'https://lookaside.facebook.com/assets/astryx/building.png';
 
-const styles = stylex.create({
-  page: {
-    minHeight: '100%',
-    backgroundImage: `url(${BG_URL})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    padding: spacingVars['--spacing-6'],
-  },
-});
+const pageStyle: CSSProperties = {
+  minHeight: '100%',
+  backgroundImage: `url(${BG_URL})`,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  padding: 'var(--spacing-6)',
+};
 
 type SSOProvider = {
   name: string;
@@ -102,7 +98,7 @@ export default function LoginSSO() {
   };
 
   return (
-    <Center axis="both" xstyle={styles.page}>
+    <Center axis="both" style={pageStyle}>
       <Card padding={8} width="100%" maxWidth={400}>
         <VStack gap={4} hAlign="stretch">
           {/* ── Step 1: Email entry ── */}

@@ -10,7 +10,6 @@ import {Stack} from '@astryxdesign/core/Layout';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {Icon} from '@astryxdesign/core/Icon';
 import {StarIcon} from '@heroicons/react/24/solid';
-import * as stylex from '@stylexjs/stylex';
 
 const REVIEWS = [
   {
@@ -43,17 +42,6 @@ const REVIEWS = [
   },
 ];
 
-const styles = stylex.create({
-  root: {
-    maxWidth: 480,
-    width: '100%',
-  },
-  pagination: {
-    justifyContent: 'center',
-    paddingTop: 4,
-  },
-});
-
 function Stars({count}: {count: number}) {
   return (
     <Stack direction="horizontal" gap={0}>
@@ -69,7 +57,7 @@ export default function PaginationDotsCarousel() {
   const review = REVIEWS[page - 1];
 
   return (
-    <Stack direction="vertical" gap={3} xstyle={styles.root}>
+    <Stack direction="vertical" gap={3} style={{maxWidth: 480, width: '100%'}}>
       <Card padding={5}>
         <Stack direction="vertical" gap={3}>
           <Stars count={review.stars} />
@@ -96,7 +84,7 @@ export default function PaginationDotsCarousel() {
         onChange={setPage}
         totalPages={REVIEWS.length}
         variant="dots"
-        xstyle={styles.pagination}
+        style={{justifyContent: 'center', paddingTop: 4}}
       />
     </Stack>
   );

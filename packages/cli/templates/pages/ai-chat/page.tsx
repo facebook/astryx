@@ -2,9 +2,7 @@
 
 'use client';
 
-import {useRef, useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {useRef, useState, type CSSProperties} from 'react';
 
 import {
   HStack,
@@ -55,56 +53,66 @@ import {
 // Below this width the split-pane collapses to a single chat column. Shared by
 // the CSS container query and the JS check in openArtifact so they can't drift.
 const MOBILE_MAX_WIDTH = 767;
-const MOBILE = `@container artifact (max-width: ${MOBILE_MAX_WIDTH}px)`;
 
-const styles = stylex.create({
-  root: {
-    height: '100dvh',
-    width: '100%',
-    containerType: 'inline-size',
-    containerName: 'artifact',
-  },
-  chatColumn: {
-    flex: 1,
-    width: '100%',
-    minWidth: 0,
-    height: '100%',
-  },
-  chatLayout: {
-    flex: 1,
-    minHeight: 0,
-  },
-  artifactPanel: {
-    overflow: 'hidden',
-    flexDirection: 'column',
-    display: {default: 'flex', [MOBILE]: 'none'},
-  },
-  resizeHandle: {
-    display: {default: 'flex', [MOBILE]: 'none'},
-  },
-  artifactCard: {
-    marginBlockStart: spacingVars['--spacing-2'],
-  },
-  artifactScroll: {
-    flex: 1,
-    overflowY: 'auto',
-  },
-  articleBody: {
-    maxWidth: 720,
-    marginInline: 'auto',
-  },
-});
+const root: CSSProperties = {
+  height: '100dvh',
+  width: '100%',
+  containerType: 'inline-size',
+  containerName: 'artifact',
+};
+const chatColumn: CSSProperties = {
+  flex: 1,
+  width: '100%',
+  minWidth: 0,
+  height: '100%',
+};
+const chatLayout: CSSProperties = {
+  flex: 1,
+  minHeight: 0,
+};
+const artifactCard: CSSProperties = {
+  marginBlockStart: 'var(--spacing-2)',
+};
+const artifactScroll: CSSProperties = {
+  flex: 1,
+  overflowY: 'auto',
+};
+const articleBody: CSSProperties = {
+  maxWidth: 720,
+  marginInline: 'auto',
+};
 
-// Runtime width for the artifact panel; the MOBILE override forces full width.
-const dynamicStyles = stylex.create({
-  artifactPanelWidth: (size: number | string) => ({
-    width: {
-      default: typeof size === 'number' ? `${size}px` : size,
-      [MOBILE]: '100%',
-    },
-    flexShrink: {default: 0, [MOBILE]: 1},
-  }),
-});
+// Runtime width for the artifact panel, passed in via the --artifact-panel-width
+// custom property so the MOBILE container query can still override it to 100%
+// (an inline `width` would beat the class rule). The container query lives in a
+// plain <style> tag below so it needs NO CSS compiler.
+const artifactPanelWidthVar = (size: number | string): CSSProperties =>
+  ({
+    '--artifact-panel-width': typeof size === 'number' ? `${size}px` : size,
+  }) as CSSProperties;
+
+const AI_CHAT_CSS = `
+.ai-chat-resize-handle {
+  display: flex;
+}
+.ai-chat-artifact-panel {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  width: var(--artifact-panel-width);
+  flex-shrink: 0;
+}
+@container artifact (max-width: ${MOBILE_MAX_WIDTH}px) {
+  .ai-chat-resize-handle {
+    display: none;
+  }
+  .ai-chat-artifact-panel {
+    display: none;
+    width: 100%;
+    flex-shrink: 1;
+  }
+}
+`;
 
 // Artifact content
 
@@ -225,8 +233,8 @@ function MobileArtifactActions() {
 // Scrollable artifact body — the formatted document.
 function ArtifactBody() {
   return (
-    <Section variant="transparent" xstyle={styles.artifactScroll}>
-      <VStack gap={2} xstyle={styles.articleBody}>
+    <Section variant="transparent" style={artifactScroll}>
+      <VStack gap={2} style={articleBody}>
         <Heading level={1}>{ARTIFACT_TITLE}</Heading>
         <Markdown>{ARTIFACT_CONTENT}</Markdown>
       </VStack>
@@ -243,7 +251,7 @@ function ArtifactCard({onOpen}: {onOpen: () => void}) {
       variant="muted"
       padding={3}
       maxWidth={360}
-      xstyle={styles.artifactCard}>
+      style={artifactCard}>
       <HStack gap={3} vAlign="center" width="100%">
         <Icon icon={DocumentTextIcon} size="md" color="secondary" />
         <StackItem size="fill">
@@ -288,17 +296,18 @@ export default function AIChatConversationTemplate() {
   };
 
   return (
-    <VStack ref={rootRef} xstyle={styles.root}>
+    <VStack ref={rootRef} style={root}>
+      <style>{AI_CHAT_CSS}</style>
       <Layout
         height="fill"
         content={
           <LayoutContent padding={0}>
             <HStack height="100%">
               {/* Chat column — flexes to fill the space the artifact leaves */}
-              <VStack xstyle={styles.chatColumn}>
+              <VStack style={chatColumn}>
                 <ChatLayout
                   density="spacious"
-                  xstyle={styles.chatLayout}
+                  style={chatLayout}
                   composer={
                     <ChatComposer
                       onSubmit={() => {}}
@@ -677,17 +686,15 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
                     pillPlacement="start"
                     hasDivider
                     label="Resize artifact panel"
-                    xstyle={styles.resizeHandle}
+                    className="ai-chat-resize-handle"
                   />
 
                   {/* Toolbar as the card header, body below */}
                   <Card
                     variant="transparent"
                     height="100%"
-                    xstyle={[
-                      styles.artifactPanel,
-                      dynamicStyles.artifactPanelWidth(artifactResize.size),
-                    ]}>
+                    className="ai-chat-artifact-panel"
+                    style={artifactPanelWidthVar(artifactResize.size)}>
                     <Toolbar
                       label="Artifact actions"
                       dividers={['bottom']}

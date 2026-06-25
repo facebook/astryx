@@ -3,7 +3,6 @@
 'use client';
 
 import {useState, useMemo} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {
   SideNav,
   SideNavHeading,
@@ -35,9 +34,7 @@ import {
   PlusIcon,
 } from '@heroicons/react/24/outline';
 
-const styles = stylex.create({
-  tabListFlush: {marginInlineStart: '-12px'},
-});
+const tabListFlush = {marginInlineStart: '-12px'};
 
 // ---------------------------------------------------------------------------
 // DialogPreview — stateful dialog preview for component previews
@@ -678,7 +675,7 @@ function ComponentDetailView({
                             setExampleTabs(prev => ({...prev, [tabKey]: value}))
                           }
                           size="sm"
-                          xstyle={styles.tabListFlush}>
+                          style={tabListFlush}>
                           <Tab value="description" label="Description" />
                           <Tab value="code" label="Code" />
                         </TabList>

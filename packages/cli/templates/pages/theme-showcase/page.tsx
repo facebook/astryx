@@ -3,7 +3,6 @@
 'use client';
 
 import {type CSSProperties, type ReactNode} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {
   Plus,
   Search,
@@ -55,10 +54,10 @@ import {
   ChatSystemMessage,
 } from '@astryxdesign/core/Chat';
 
-// Styles passed to Astryx components via their `xstyle` prop. These are
-// applied by the components themselves, so they work in compiled builds
-// and in the live playground preview alike.
-const styles = stylex.create({
+// Styles passed to Astryx components via their `style` prop. Astryx components
+// forward the DOM `style` prop, so these work with no CSS compiler — in
+// compiled builds and in the live playground preview alike.
+const styles: Record<string, CSSProperties> = {
   card: {
     backgroundColor: 'var(--color-background-body)',
     color: 'var(--color-text-primary)',
@@ -169,14 +168,11 @@ const styles = stylex.create({
   cartButton: {
     flex: 1,
   },
-});
+};
 
 // Styles applied directly to plain DOM elements via the `style` prop.
-// Kept as inline styles (rather than stylex.create) so they render in the
-// playground preview, which can't compile StyleX — `stylex.props()` is a
-// no-op there, so raw `{...stylex.props(...)}` on a <div>/<img> would lose
-// these declarations. All are static (no media/pseudo variants), so inline
-// styles reproduce them exactly.
+// Plain inline styles so they render with no CSS compiler. All are static
+// (no media/pseudo variants), so inline styles reproduce them exactly.
 const inlineStyles: Record<string, CSSProperties> = {
   inventoryBannerWrap: {
     paddingInline: 'var(--spacing-6)',
@@ -439,10 +435,10 @@ function StorePreview({
         />
 
         <Section padding={6} variant="transparent">
-          <VStack gap={10} xstyle={[styles.content, styles.contentFluid]}>
+          <VStack gap={10} style={{...styles.content, ...styles.contentFluid}}>
             <Center>
-              <VStack gap={4} hAlign="center" xstyle={styles.heroText}>
-                <Text type="display-2" xstyle={styles.heroHeadline}>
+              <VStack gap={4} hAlign="center" style={styles.heroText}>
+                <Text type="display-2" style={styles.heroHeadline}>
                   Little joys,
                   <br />
                   everywhere you go
@@ -457,7 +453,7 @@ function StorePreview({
             <Grid columns={isMobile ? 1 : {minWidth: 200, max: 3}} gap={4}>
               {products.map((p, i) => (
                 <Card key={p.name} padding={0} height="100%">
-                  <VStack gap={0} xstyle={styles.cardStack}>
+                  <VStack gap={0} style={styles.cardStack}>
                     <AspectRatio ratio={1}>
                       <img
                         src={images[PRODUCT_IMAGE_KEYS[i]]}
@@ -469,17 +465,17 @@ function StorePreview({
                       <VStack
                         gap={2}
                         hAlign="center"
-                        xstyle={styles.cardStack}>
+                        style={styles.cardStack}>
                         <HStack>
                           <Badge label={p.badge} variant={p.badgeVariant} />
                         </HStack>
-                        <Heading level={2} xstyle={styles.centerText}>
+                        <Heading level={2} style={styles.centerText}>
                           {p.name}
                         </Heading>
                         <Text
                           type="supporting"
                           color="secondary"
-                          xstyle={[styles.cardDescription, styles.centerText]}>
+                          style={{...styles.cardDescription, ...styles.centerText}}>
                           {p.description}
                         </Text>
                         <HStack gap={2} vAlign="center" hAlign="center">
@@ -491,14 +487,14 @@ function StorePreview({
                             min={1}
                             max={99}
                             size="sm"
-                            xstyle={styles.quantityInput}
+                            style={styles.quantityInput}
                           />
                           <Button
                             label="Add to cart"
                             variant="secondary"
                             size="sm"
                             href="#"
-                            xstyle={styles.cartButton}
+                            style={styles.cartButton}
                           />
                         </HStack>
                       </VStack>
@@ -516,11 +512,11 @@ function StorePreview({
 
 function CheckoutCard({isMobile}: {isMobile: boolean}) {
   return (
-    <Card padding={5} xstyle={styles.card}>
-      <VStack gap={4} xstyle={styles.checkoutStack}>
+    <Card padding={5} style={styles.card}>
+      <VStack gap={4} style={styles.checkoutStack}>
         <Heading level={2}>Checkout</Heading>
 
-        <VStack gap={3} xstyle={styles.checkoutStack}>
+        <VStack gap={3} style={styles.checkoutStack}>
           <TextInput
             label="Email"
             placeholder="you@studio.com"
@@ -566,7 +562,7 @@ function CheckoutCard({isMobile}: {isMobile: boolean}) {
             />
           </RadioList>
 
-          <VStack gap={2} xstyle={styles.checkoutStack}>
+          <VStack gap={2} style={styles.checkoutStack}>
             <Text type="supporting" weight="bold">
               Payment method
             </Text>
@@ -579,7 +575,7 @@ function CheckoutCard({isMobile}: {isMobile: boolean}) {
                 <VStack
                   gap={1}
                   hAlign="center"
-                  xstyle={styles.paymentCardContent}>
+                  style={styles.paymentCardContent}>
                   <CreditCard size={20} />
                   <Text type="supporting" weight="bold">
                     Card
@@ -594,7 +590,7 @@ function CheckoutCard({isMobile}: {isMobile: boolean}) {
                 <VStack
                   gap={1}
                   hAlign="center"
-                  xstyle={styles.paymentCardContent}>
+                  style={styles.paymentCardContent}>
                   <Smartphone size={20} />
                   <Text type="supporting" weight="bold">
                     Apple Pay
@@ -609,7 +605,7 @@ function CheckoutCard({isMobile}: {isMobile: boolean}) {
                 <VStack
                   gap={1}
                   hAlign="center"
-                  xstyle={styles.paymentCardContent}>
+                  style={styles.paymentCardContent}>
                   <Wallet size={20} />
                   <Text type="supporting" weight="bold">
                     Google Pay
@@ -687,12 +683,12 @@ const SUGGESTED_QUESTIONS = [
 
 function ChatCard() {
   return (
-    <Card padding={0} xstyle={styles.chatCard}>
+    <Card padding={0} style={styles.chatCard}>
       <HStack
         hAlign="between"
         vAlign="center"
         gap={3}
-        xstyle={styles.chatHeader}>
+        style={styles.chatHeader}>
         <Heading level={2}>Studio AI</Heading>
 
         <HStack gap={1} vAlign="center">
@@ -894,8 +890,8 @@ function formatAmount(amount: number): string {
 
 function LatestActivityCard({isMobile}: {isMobile: boolean}) {
   return (
-    <Card padding={5} xstyle={styles.activityCard}>
-      <VStack gap={4} xstyle={styles.activityCardStack}>
+    <Card padding={5} style={styles.activityCard}>
+      <VStack gap={4} style={styles.activityCardStack}>
         <Heading level={2}>Revenue</Heading>
 
         <Grid columns={isMobile ? 1 : 2} gap={3}>
@@ -920,7 +916,7 @@ function LatestActivityCard({isMobile}: {isMobile: boolean}) {
           <Link href="#">See all</Link>
         </HStack>
 
-        <VStack gap={1} xstyle={styles.activityListFade}>
+        <VStack gap={1} style={styles.activityListFade}>
           {ACTIVITY.map(item => (
             <Item
               key={item.id}
@@ -1110,11 +1106,11 @@ function InventoryCard({
     row => row.available < LOW_STOCK_THRESHOLD,
   ).length;
   return (
-    <Card padding={0} xstyle={styles.inventoryCard}>
+    <Card padding={0} style={styles.inventoryCard}>
       <HStack
         hAlign="between"
         vAlign="center"
-        xstyle={styles.inventoryHeader}>
+        style={styles.inventoryHeader}>
         <Heading level={2}>Inventory</Heading>
         <Button
           label="Add item"
@@ -1130,7 +1126,7 @@ function InventoryCard({
         gap={3}
         vAlign="center"
         hAlign="between"
-        xstyle={styles.inventoryFilterRow}>
+        style={styles.inventoryFilterRow}>
         <HStack gap={2} vAlign="center" style={{flex: 1, minWidth: 0}}>
           <TextInput
             label="Search inventory"
@@ -1139,7 +1135,7 @@ function InventoryCard({
             value=""
             onChange={() => {}}
             startIcon={<Search size={16} />}
-            xstyle={styles.searchInput}
+            style={styles.searchInput}
           />
           <OverflowList
             gap={2}
@@ -1226,7 +1222,7 @@ function InventoryCard({
         </div>
       )}
 
-      <div {...stylex.props(styles.inventoryTableWrap)}>
+      <div style={styles.inventoryTableWrap}>
         <Table<InventoryRow>
           data={inventory}
           columns={[

@@ -2,16 +2,11 @@
 
 'use client';
 
-import * as stylex from '@stylexjs/stylex';
 import {HoverCard} from '@astryxdesign/core/HoverCard';
 import {Icon} from '@astryxdesign/core/Icon';
 import {VStack, HStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 import {LinkIcon} from '@heroicons/react/24/outline';
-
-const styles = stylex.create({
-  content: {maxWidth: 280},
-});
 
 export default function HoverCardInteractiveContent() {
   return (
@@ -19,7 +14,7 @@ export default function HoverCardInteractiveContent() {
       <HoverCard
         placement="below"
         content={
-          <VStack gap={2} xstyle={styles.content}>
+          <VStack gap={2} style={{maxWidth: 280}}>
             <HStack gap={2} vAlign="start">
               <Icon icon={LinkIcon} size="sm" color="secondary" />
               <VStack gap={1}>

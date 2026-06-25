@@ -10,19 +10,17 @@ import {AspectRatio} from '@astryxdesign/core/AspectRatio';
 import {Card} from '@astryxdesign/core/Card';
 import {Icon} from '@astryxdesign/core/Icon';
 import {ArrowRightIcon} from '@heroicons/react/24/outline';
-import * as stylex from '@stylexjs/stylex';
+import type {CSSProperties} from 'react';
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 // The only custom CSS is the image fill — there is no Image primitive to
 // fill the AspectRatio box with `object-fit` (#2582).
 
-const styles = stylex.create({
-  image: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-});
+const image: CSSProperties = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+};
 
 // ─── Product Data ───────────────────────────────────────────────────────────
 
@@ -100,11 +98,7 @@ function ProductCard({product}: {product: Product}) {
     <VStack gap={3}>
       <Card padding={0}>
         <AspectRatio ratio={1}>
-          <img
-            src={product.image}
-            alt={product.name}
-            {...stylex.props(styles.image)}
-          />
+          <img src={product.image} alt={product.name} style={image} />
         </AspectRatio>
       </Card>
       <VStack gap={1}>

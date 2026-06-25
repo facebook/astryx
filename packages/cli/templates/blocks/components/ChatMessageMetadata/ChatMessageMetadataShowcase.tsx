@@ -2,7 +2,6 @@
 
 'use client';
 
-import * as stylex from '@stylexjs/stylex';
 import {
   ChatMessageList,
   ChatMessage,
@@ -21,15 +20,9 @@ import {
   HandThumbDownIcon,
 } from '@heroicons/react/24/outline';
 
-const styles = stylex.create({
-  container: {
-    maxWidth: 600,
-  },
-});
-
 export default function ChatMessageMetadataShowcase() {
   return (
-    <VStack xstyle={styles.container}>
+    <VStack style={{maxWidth: 600}}>
       <ChatMessageList>
         <ChatMessage sender="assistant">
           <ChatMessageBubble
