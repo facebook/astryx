@@ -13,13 +13,7 @@
  * - /packages/core/src/Table/index.ts (exports)
  */
 
-import {
-  useCallback,
-  useMemo,
-  useRef,
-  type CSSProperties,
-  type MutableRefObject,
-} from 'react';
+import {useCallback, useMemo, useRef, type CSSProperties} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../../../theme/tokens.stylex';
 import type {
@@ -254,18 +248,15 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
   const {startKeys, endKeys} = config;
   const start = startKeys ?? EMPTY;
   const end = endKeys ?? EMPTY;
-  // Stable content hash of the configured keys. Consumers typically pass fresh
-  // array literals each render (e.g. startKeys={['name']}), so we depend on the
-  // hash — not array identity — to recompute the plugin only when keys change.
-  const depKey = JSON.stringify([start, end]);
 
   const hasStart = start.length > 0;
   const hasEnd = end.length > 0;
 
   // Live snapshot of the resolved config, read inside the (memoized) transforms
   // and the scroll-shadow callback. Keeping these in a ref lets the plugin memo
-  // depend only on the stable `depKey` content hash (not the fresh array
-  // literals consumers pass each render) while never reading stale values.
+  // be computed once (deps: only the stable scroll-shadow callback) while never
+  // reading stale config — consumers typically pass fresh array literals each
+  // render, so we never want array identity in the deps.
   const stateRef = useRef({start, end, hasStart, hasEnd});
   stateRef.current = {start, end, hasStart, hasEnd};
 
@@ -385,9 +376,8 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
           if (typeof existingRef === 'function') {
             existingRef(node);
           } else if (existingRef != null) {
-            // RefObject — assign through a mutable view of `.current`.
-            (existingRef as MutableRefObject<HTMLDivElement | null>).current =
-              node;
+            // RefObject — assign through its writable `.current`.
+            existingRef.current = node;
           }
         };
         return {
@@ -396,9 +386,9 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
         };
       },
     }),
-    // The transforms read live config from stateRef, so the memo only needs to
-    // recompute when the configured keys change. `depKey` is the stable content
-    // hash of start/end; `attachScrollShadow` is stable (empty deps).
-    [depKey, attachScrollShadow],
+    // The returned plugin's transforms read live config from `stateRef` and
+    // `attachScrollShadow` is stable (empty deps), so the plugin object can be
+    // computed once and reused across renders.
+    [attachScrollShadow],
   );
 }
