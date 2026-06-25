@@ -57,7 +57,8 @@ export const docs = {
     {
       name: 'show',
       type: '() => void',
-      description: 'Imperatively show the layer.',
+      description:
+        'Imperatively show the layer. Open intent is recorded even if the popover element has not mounted yet, and the open is replayed when it attaches.',
     },
     {
       name: 'hide',
@@ -83,7 +84,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Core positioning hook for rendering overlay content using CSS Anchor Positioning and the Popover API. Use it as the foundation for custom popovers, hover cards, tooltips, and fixed-position layers when higher-level components are not enough.',
+      'Core positioning hook for rendering overlay content using CSS Anchor Positioning and the Popover API. Use it as the foundation for custom popovers, hover cards, tooltips, and fixed-position layers when higher-level components are not enough. Open state is tracked even when the popover element mounts later, so layers that defer their DOM until after hydration stay in sync.',
     bestPractices: [
       {
         guidance: true,
@@ -121,7 +122,7 @@ export const docsDense = {
   returnDescriptions: {
     ref: 'trigger ref for context mode; undefined in fixed mode.',
     anchorId: 'CSS anchor name.',
-    show: 'show layer.',
+    show: 'show layer; open intent is replayed if the popover DOM attaches later.',
     hide: 'hide layer.',
     isOpen: 'whether layer is open.',
     id: 'unique ARIA id.',

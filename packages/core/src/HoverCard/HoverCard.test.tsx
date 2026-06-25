@@ -2,7 +2,7 @@
 
 /**
  * @file HoverCard.test.tsx
- * @input Uses vitest, @testing-library/react, HoverCard component
+ * @input Uses vitest, @testing-library/react, React SSR/hydration APIs, HoverCard component
  * @output Unit tests for HoverCard component behavior
  * @position Testing; validates HoverCard.tsx implementation
  *
@@ -11,6 +11,9 @@
 
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {act} from 'react';
+import {hydrateRoot} from 'react-dom/client';
+import {renderToString} from 'react-dom/server';
 import {HoverCard} from './HoverCard';
 
 // Store original matches to restore later
@@ -172,6 +175,112 @@ describe('HoverCard', () => {
     const wrapper = screen.getByText('Just text, no element');
     expect(wrapper.tagName).toBe('SPAN');
     expect(wrapper).toHaveAttribute('aria-describedby');
+  });
+
+  describe('SSR / hydration', () => {
+    it('does not emit the portaled popover in server-rendered markup', () => {
+      const html = renderToString(
+        <HoverCard
+          content={<div>Hover content</div>}
+          placement="above"
+          alignment="center">
+          <a href="https://example.com">Example</a>
+        </HoverCard>,
+      );
+
+      // The trigger renders on the server...
+      expect(html).toContain('Example');
+      // ...but the portaled popover layer must not, since the server cannot
+      // create a portal and emitting it would mismatch the first client render.
+      expect(html).not.toContain('Hover content');
+      expect(html).not.toContain('popover=');
+    });
+
+    it('hydrates without a mismatch and mounts the popover after hydration', async () => {
+      const ui = (
+        <HoverCard
+          content={<div>Hover content</div>}
+          placement="above"
+          alignment="center">
+          <a href="https://example.com">Example</a>
+        </HoverCard>
+      );
+
+      const html = renderToString(ui);
+      const container = document.createElement('div');
+      container.innerHTML = html;
+      document.body.appendChild(container);
+
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      let root: ReturnType<typeof hydrateRoot> | null = null;
+
+      try {
+        await act(async () => {
+          root = hydrateRoot(container, ui);
+        });
+
+        // After hydration commits, the deferred portal attaches the layer.
+        await waitFor(() => {
+          expect(
+            screen.getByText('Hover content').closest('[popover]'),
+          ).not.toBeNull();
+        });
+
+        // No hydration mismatch should have been reported.
+        const hydrationErrors = errorSpy.mock.calls.filter(call =>
+          call.some(arg =>
+            /hydrat|did not match|server (?:rendered|html)/i.test(String(arg)),
+          ),
+        );
+        expect(hydrationErrors).toEqual([]);
+      } finally {
+        errorSpy.mockRestore();
+        await act(async () => {
+          root?.unmount();
+        });
+        container.remove();
+      }
+    });
+
+    it('opens the popover after hydration when isDefaultOpen is true', async () => {
+      vi.mocked(HTMLElement.prototype.showPopover).mockClear();
+
+      const ui = (
+        <HoverCard
+          content={<span>Hydrated default open card</span>}
+          isDefaultOpen>
+          <button type="button">Trigger</button>
+        </HoverCard>
+      );
+
+      const html = renderToString(ui);
+      const container = document.createElement('div');
+      container.innerHTML = html;
+      document.body.appendChild(container);
+
+      // The default-open layer is still deferred on the server render.
+      expect(html).not.toContain('Hydrated default open card');
+      expect(html).not.toContain('popover=');
+
+      let root: ReturnType<typeof hydrateRoot> | null = null;
+
+      try {
+        await act(async () => {
+          root = hydrateRoot(container, ui);
+        });
+
+        // useLayer should replay the pending open onto the freshly-attached
+        // popover element once it mounts after hydration.
+        await waitFor(() => {
+          expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+        });
+      } finally {
+        await act(async () => {
+          root?.unmount();
+        });
+        container.remove();
+      }
+    });
   });
 
   describe('isDefaultOpen', () => {

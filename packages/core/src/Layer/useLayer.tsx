@@ -5,7 +5,7 @@
 /**
  * @file useLayer.tsx
  * @input Uses React hooks, Popover API, CSS anchor positioning, typography tokens
- * @output Exports useLayer hook for layer positioning and visibility
+ * @output Exports useLayer hook for layer positioning, visibility, and deferred DOM-open sync
  * @position Core layer utility; used by useHoverCard, useTooltip, etc.
  *
  * SYNC: When modified, update:
@@ -290,8 +290,12 @@ export function useLayer(
   const isOpenRef = useRef(false);
 
   const show = useCallback(() => {
-    if (popoverRef.current && !isOpenRef.current) {
-      popoverRef.current.showPopover();
+    if (!isOpenRef.current) {
+      // The popover element may not be attached yet — e.g. when the layer is
+      // portaled only after hydration, an isDefaultOpen request can fire before
+      // the DOM node mounts. Record the open intent regardless; the ref
+      // callback replays showPopover() once the element attaches.
+      popoverRef.current?.showPopover();
       isOpenRef.current = true;
       setIsOpen(true);
       onShow?.();
@@ -352,9 +356,21 @@ export function useLayer(
   // Ref callback for popover element — sets up toggle listener
   const popoverRefCallback = useCallback(
     (el: HTMLElement | null) => {
+      // Detach from the previous element so we don't leak a toggle listener
+      // when the popover node is swapped (e.g. deferred portal mount).
+      if (popoverRef.current) {
+        popoverRef.current.removeEventListener('toggle', handleToggle);
+      }
+
       popoverRef.current = el;
       if (el) {
         el.addEventListener('toggle', handleToggle);
+        // Replay a pending open: show() may have run before the popover DOM
+        // node attached (deferred/portaled layers, isDefaultOpen). If the
+        // layer is logically open but the element isn't, open it now.
+        if (isOpenRef.current && !el.matches(':popover-open')) {
+          el.showPopover();
+        }
       }
     },
     [handleToggle],

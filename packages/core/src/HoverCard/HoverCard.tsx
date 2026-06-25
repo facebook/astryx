@@ -4,7 +4,7 @@
 
 /**
  * @file HoverCard.tsx
- * @input Uses React, ReactDOM createPortal, useHoverCard hook
+ * @input Uses React, useSyncExternalStore, ReactDOM createPortal, useHoverCard hook
  * @output Exports HoverCard component for hover/focus triggered layers
  * @position Layer component; uses inline-safe trigger wrapper and portals floating layer
  *
@@ -18,6 +18,7 @@
 import React, {
   useCallback,
   useRef,
+  useSyncExternalStore,
   type ReactElement,
   type ReactNode,
 } from 'react';
@@ -45,6 +46,33 @@ const styles = stylex.create({
     textUnderlineOffset: spacingVars['--spacing-0-5'],
   },
 });
+
+// useSyncExternalStore primitives for hydration detection. The store never
+// changes, so the subscribe callback is a no-op. The server snapshot is
+// `false` and the client snapshot is `true`, which makes React render the
+// `false` value during SSR and the initial hydration pass, then switch to
+// `true` only after hydration commits.
+const subscribeToHydration = () => () => {};
+const getHydratedSnapshot = () => true;
+const getServerSnapshot = () => false;
+
+/**
+ * Returns `false` during SSR and the first (hydrating) client render, then
+ * `true` on the subsequent browser-only render once hydration has committed.
+ *
+ * The portaled popover layer must not be emitted until after hydration: the
+ * server cannot render a portal, so emitting it on the first client render
+ * produces markup the server never sent and React reports a hydration
+ * mismatch. Gating the portal on this flag keeps the SSR output and the first
+ * client render identical.
+ */
+function useHasHydrated(): boolean {
+  return useSyncExternalStore(
+    subscribeToHydration,
+    getHydratedSnapshot,
+    getServerSnapshot,
+  );
+}
 
 export interface HoverCardProps extends Pick<
   BaseProps,
@@ -182,6 +210,7 @@ export function HoverCard({
 }: HoverCardProps): ReactElement {
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const textOnly = isTextOnly(children);
+  const hasHydrated = useHasHydrated();
 
   // Determine if hover indication should be shown
   const showHoverIndication =
@@ -245,8 +274,13 @@ export function HoverCard({
     };
   }, [textOnly, hoverCard.ref, hoverCard.describedBy]);
 
+  // Defer the portaled popover until after hydration. The portal can only be
+  // created in the browser, so rendering it on the first client pass would add
+  // DOM the server never produced and trip React's hydration check. After
+  // hydration the popover mounts and useLayer replays any pending open state
+  // (e.g. isDefaultOpen) onto the freshly-attached element.
   const renderedHoverCard =
-    typeof document !== 'undefined'
+    hasHydrated && typeof document !== 'undefined'
       ? createPortal(
           hoverCard.renderHoverCard(content, {xstyle, className, style}),
           document.body,
