@@ -1,24 +1,44 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-# Publish the stable @astryxdesign/* packages to the public npm registry
-# (`latest` dist-tag), via npm OIDC trusted publishing — no NPM_TOKEN.
+# Single source of truth for ALL npm publishing of @astryxdesign/* packages to
+# the public npm registry, via npm OIDC trusted publishing — no NPM_TOKEN.
 #
-# Manually dispatched (Actions → Release → Run workflow). The release flow is:
-#   1. Land the changesets "Version Packages" PR on main (`pnpm version-packages`
-#      → PR → merge). This bumps versions; it never touches the registry.
-#   2. Run this workflow to publish the bumped versions.
+# IMPORTANT: npm trusted publishing matches the OIDC token's workflow FILENAME
+# against the trusted-publisher config. npm allows only ONE trusted publisher per
+# package, so BOTH stable and canary publishing MUST live in this one file
+# (release.yml) and the npm trust config MUST point at release.yml. If publishing
+# were split across two workflow files, only one of them could be trusted and the
+# other's publish would be rejected by npm at the OIDC check.
+#   Re-point trust with:
+#     node scripts/npm/setup-trusted-publishing.mjs --setup-trust --replace --workflow release.yml
 #
-# Why a separate workflow (not a job in deploy.yml):
-#   - deploy.yml uses the `pages-deploy` concurrency group, which cancels queued
-#     runs on a busy main — that repeatedly starved the npm publish. This
-#     workflow has its own non-cancelling concurrency, so a release never gets
-#     dropped.
-#   - It checks out the exact ref being released and publishes per package, so
-#     the published tarball matches the released commit and carries provenance.
+# Two jobs, selected by trigger:
+#   - publish (stable): workflow_dispatch only. Publishes the `latest` dist-tag.
+#     The release flow is:
+#       1. Land the changesets "Version Packages" PR on main (`pnpm
+#          version-packages` → PR → merge). This bumps versions; it never touches
+#          the registry.
+#       2. Run this workflow to publish the bumped versions.
+#     Version-gated and idempotent: any version already on the registry is
+#     skipped, so re-running (or a `dry-run` first) is safe.
+#   - canary: push to main only. Publishes 0.x.y-canary.<short-sha> to the
+#     `canary` dist-tag on every push to main:
+#       npm install @astryxdesign/core@canary
 #
-# Publishing is version-gated and idempotent: any package whose version is
-# already on the registry is skipped, so re-running (or a `dry-run` first) is
-# safe. Provenance requires a PUBLIC repo (facebook/astryx is public).
+# Why both jobs live here instead of in deploy.yml:
+#   - Single workflow file ⇒ single npm trusted-publisher config covers both.
+#   - deploy.yml uses the `pages-deploy` concurrency group, which serializes/
+#     cancels on a busy main — that repeatedly starved npm publishing. This
+#     workflow keeps publishing off that group entirely.
+#   - Each job checks out the exact ref and publishes per package, so the
+#     published tarball matches the released commit and carries provenance.
+#
+# Concurrency is per-JOB (deliberately NOT a single workflow-level group): a
+# busy main firing many canary pushes must NEVER cancel or starve a pending
+# stable dispatch. Stable and canary therefore use independent concurrency
+# groups (see each job below).
+#
+# Provenance requires a PUBLIC repo (facebook/astryx is public).
 name: Release
 run-name: Release (${{ github.sha }})
 
@@ -29,16 +49,21 @@ on:
         description: 'Build and resolve what would publish, but do not publish'
         type: boolean
         default: false
+  push:
+    branches: [main]
 
 permissions: {}
 
-concurrency:
-  group: npm-release
-  cancel-in-progress: false
-
 jobs:
+  # Stable publish — manual dispatch only. Publishes the `latest` dist-tag.
   publish:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    # Dedicated, non-cancelling group. Independent of the canary group so a
+    # canary push can never cancel or queue ahead of a stable release.
+    concurrency:
+      group: npm-release-stable
+      cancel-in-progress: false
     permissions:
       contents: read
       id-token: write # npm OIDC trusted publishing + provenance
@@ -87,3 +112,82 @@ jobs:
             published=$((published + 1))
           done
           echo "Published $published package(s)."
+
+  # Canary publish — runs on every push to main. The @canary dist-tag always
+  # points to the latest main commit:
+  #   npm install @astryxdesign/core@canary
+  canary:
+    name: Publish canary to npm
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    # Dedicated group, cancel-in-progress so a newer main push supersedes an
+    # in-flight canary. Independent of the stable group, so this can never
+    # cancel or starve a stable dispatch.
+    concurrency:
+      group: npm-release-canary
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      id-token: write # required for npm OIDC trusted publishing + provenance
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24 # bundles npm >= 11.5.1, required for OIDC publishing
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all packages
+        run: pnpm build
+
+      - name: Publish canary versions
+        # Pure OIDC trusted publishing — no NPM_TOKEN.
+        run: |
+          set -eu
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          BASE_VERSION=$(node -p "require('./packages/core/package.json').version")
+          CANARY_VERSION="${BASE_VERSION}-canary.${SHORT_SHA}"
+
+          echo "Publishing canary ${CANARY_VERSION}"
+
+          # Stamp canary version into all publishable packages
+          for pkg in packages/*/package.json packages/themes/*/package.json; do
+            node -e "
+              const fs = require('fs');
+              const p = JSON.parse(fs.readFileSync('$pkg','utf8'));
+              if (p.private || !p.name?.startsWith('@astryxdesign/')) process.exit(0);
+              p.version = '${CANARY_VERSION}';
+              for (const dt of ['dependencies','peerDependencies','devDependencies']) {
+                if (!p[dt]) continue;
+                for (const [k,v] of Object.entries(p[dt])) {
+                  if (k.startsWith('@astryxdesign/')) p[dt][k] = '${CANARY_VERSION}';
+                }
+              }
+              fs.writeFileSync('$pkg', JSON.stringify(p, null, 2) + '\n');
+              console.log('  ' + p.name + ' → ${CANARY_VERSION}');
+            "
+          done
+
+          # Publish each package with --tag canary. No `|| true`: canary is its
+          # own job here, so a failed publish surfaces (fails the job) instead of
+          # being silently swallowed.
+          for pkg_dir in packages/* packages/themes/*; do
+            [ -f "$pkg_dir/package.json" ] || continue
+            IS_PUBLISHABLE=$(node -p "const p=require('./$pkg_dir/package.json'); !p.private && p.name?.startsWith('@astryxdesign/') ? 'yes' : 'no'")
+            if [ "$IS_PUBLISHABLE" = "yes" ]; then
+              NAME=$(node -p "require('./$pkg_dir/package.json').name")
+              echo "Publishing ${NAME}@${CANARY_VERSION}"
+              pnpm publish "./$pkg_dir" --tag canary --provenance --access public --no-git-checks
+            fi
+          done
+
+          echo "Canary published: npm install @astryxdesign/core@${CANARY_VERSION}"

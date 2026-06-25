@@ -1,9 +1,10 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-# Deploy Storybook + Sandbox to GitHub Pages, and publish @canary prereleases
-# from latest main. Stable npm releases live in release.yml (manually dispatched)
-# so they don't share this workflow's pages-deploy concurrency.
-# Only runs on push to main — simple and sequential: sync → test → deploy + canary
+# Deploy Storybook + Sandbox to GitHub Pages.
+# This workflow is WEBSITE-ONLY — it does not publish to npm. ALL npm publishing
+# (both stable `latest` and `canary` prereleases) lives in release.yml, so a
+# single npm trusted-publisher config (release.yml) covers everything.
+# Only runs on push to main — simple and sequential: sync → test → deploy
 #
 # Deployment layout on gh-pages:
 #   /storybook/    — stable Storybook (always latest main)
@@ -268,74 +269,3 @@ jobs:
           keep_files: false
           force_orphan: true
           destination_dir: .
-
-  # Publish canary versions to the public npm registry on every push to main.
-  # The @canary dist-tag always points to the latest main commit:
-  #   npm install @astryxdesign/core@canary
-  canary:
-    name: Publish canary to npm
-    needs: test
-    if: always() && !cancelled() && needs.test.result == 'success'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write # required for npm OIDC trusted publishing + provenance
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: 'pnpm'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build all packages
-        run: pnpm build
-
-      - name: Publish canary versions
-        # Pure OIDC trusted publishing — no NPM_TOKEN.
-        run: |
-          SHORT_SHA="${GITHUB_SHA:0:7}"
-          BASE_VERSION=$(node -p "require('./packages/core/package.json').version")
-          CANARY_VERSION="${BASE_VERSION}-canary.${SHORT_SHA}"
-
-          echo "Publishing canary ${CANARY_VERSION}"
-
-          # Stamp canary version into all publishable packages
-          for pkg in packages/*/package.json packages/themes/*/package.json; do
-            node -e "
-              const fs = require('fs');
-              const p = JSON.parse(fs.readFileSync('$pkg','utf8'));
-              if (p.private || !p.name?.startsWith('@astryxdesign/')) process.exit(0);
-              p.version = '${CANARY_VERSION}';
-              for (const dt of ['dependencies','peerDependencies','devDependencies']) {
-                if (!p[dt]) continue;
-                for (const [k,v] of Object.entries(p[dt])) {
-                  if (k.startsWith('@astryxdesign/')) p[dt][k] = '${CANARY_VERSION}';
-                }
-              }
-              fs.writeFileSync('$pkg', JSON.stringify(p, null, 2) + '\n');
-              console.log('  ' + p.name + ' → ${CANARY_VERSION}');
-            "
-          done
-
-          # Publish each package with --tag canary
-          for pkg_dir in packages/* packages/themes/*; do
-            [ -f "$pkg_dir/package.json" ] || continue
-            IS_PUBLISHABLE=$(node -p "const p=require('./$pkg_dir/package.json'); !p.private && p.name?.startsWith('@astryxdesign/') ? 'yes' : 'no'")
-            if [ "$IS_PUBLISHABLE" = "yes" ]; then
-              NAME=$(node -p "require('./$pkg_dir/package.json').name")
-              echo "Publishing ${NAME}@${CANARY_VERSION}"
-              pnpm publish "./$pkg_dir" --tag canary --provenance --access public --no-git-checks || true
-            fi
-          done
-
-          echo "Canary published: npm install @astryxdesign/core@${CANARY_VERSION}"
