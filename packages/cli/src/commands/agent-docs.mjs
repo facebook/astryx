@@ -158,96 +158,57 @@ export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPre
     }
   }
 
-  // Header
-  lines.push(`Astryx v${version} — ${componentCount} components`);
+  // Header — state the CLI prefix once; commands below are shown as `astryx <cmd>`.
+  lines.push(`Astryx v${version} · ${componentCount} components`);
+  lines.push(`CLI: run every command as \`${run} <cmd>\` (shown below as \`astryx ...\`).`);
   lines.push('');
 
-  // One-time project setup — components ship precompiled CSS that MUST be
-  // imported, or everything renders unstyled. Stated as text (the CLI does not
-  // edit your files). The Theme provider is OPTIONAL (a default theme ships in
-  // astryx.css); only the CSS imports are required.
-  lines.push('SETUP (required, once) — in your app entry (e.g. main.tsx):');
+  // Required setup — components ship precompiled CSS; without these imports
+  // everything renders unstyled. Theme is optional (a default ships in astryx.css).
+  lines.push('SETUP (once, in your app entry e.g. main.tsx) — without these, components render unstyled:');
   lines.push('  import "@astryxdesign/core/reset.css";');
   lines.push('  import "@astryxdesign/core/astryx.css";');
-  lines.push('Without these CSS imports, components render completely unstyled.');
-  lines.push(`Optional: apply a specific theme with <Theme> — see \`${run} docs theme\`.`);
   lines.push('');
 
-  // Behavioral workflow — `build` is the front door for making pages: it returns
-  // a composition kit, and `build` with no args prints the full how-to playbook.
-  lines.push('Before writing any UI code:');
-  lines.push(
-    `1. \`${run} build "<what you're building>"\` — START HERE. Returns a composition kit: the closest [page] recipe (scaffold it, or use as a layout reference), the [block]s that cover parts, and the [component]s to fill gaps. (Run \`${run} build\` with no args for the full how-to-build playbook.)`,
-  );
-  lines.push(`2. \`${run} template <name> --skeleton\` — scaffold a matched [page], or study its layout (gap, padding, nesting)`);
-  lines.push(`3. \`${run} template <BlockName>\` — drop in each [block] the kit surfaced (ready-made multi-component patterns) instead of hand-building`);
-  lines.push(`4. \`${run} component <Name>\` — read props + examples for EVERY component you use`);
-  lines.push('');
-  lines.push('Templates and blocks are reference code — read them for composition patterns, not just scaffolding.');
-  lines.push(`(\`${run} search <query>\` is a neutral find across components/hooks/docs/templates when you just need to look something up.)`);
+  // Workflow — `build` is the front door; discover before writing UI.
+  lines.push("WORKFLOW — discover, don't guess. Before writing UI:");
+  lines.push('1. `astryx build "<idea>"` — START HERE: returns a kit (closest [page] + [block]s + [component]s). No args = full playbook.');
+  lines.push('2. `astryx template <name> [--skeleton]` — scaffold the [page]/[block]s it named, or study their layout. Templates are reference code.');
+  lines.push('3. `astryx component <Name>` — props + examples for every component you use.');
   lines.push('');
 
-  // Rules — inline, compact, prevents the top error categories
-  lines.push('No <div> anywhere — not for layout, not for wrappers, not for spacing. Use components.');
-  lines.push('Full-page shells → AppShell (not Layout). Sidebar nav → SideNav (not List).');
-  // Styling guidance tailored to the project's configured system. Never
-  // recommend a path that isn't compiled here: xstyle/StyleX needs the StyleX
-  // compiler and Tailwind utilities need Tailwind — recommending either when
-  // absent yields unstyled/blank output. Tokens are always the source of truth.
+  // Rules — the top error-preventers.
+  lines.push('RULES:');
+  lines.push('- No <div> — components do all layout/spacing. Full page → AppShell; sidebar nav → SideNav.');
+  // Styling guidance tailored to the project's configured system — never
+  // recommend a path that isn't compiled here (xstyle needs the StyleX compiler;
+  // utilities need Tailwind). Tokens are always the source of truth.
   if (stylingSystem === 'stylex') {
-    lines.push('Custom styling: component props first; otherwise the xstyle prop or StyleX token imports (@astryxdesign/core/theme/tokens.stylex). This project has the StyleX compiler.');
+    lines.push('- Custom styling: component props first; else the xstyle prop / StyleX tokens (@astryxdesign/core/theme/tokens.stylex). No raw hex/px.');
   } else if (stylingSystem === 'tailwind') {
-    lines.push('Custom styling: component props first; otherwise Tailwind utility classes backed by tokens (bg-surface, text-primary, border-border, rounded-lg) via @astryxdesign/core/tailwind-theme.css.');
+    lines.push('- Custom styling: component props first; else Tailwind utilities backed by tokens (bg-surface, text-primary, rounded-lg) via tailwind-theme.css. No raw hex/px.');
   } else {
-    lines.push('Custom styling: component props first; otherwise the style/className prop with design tokens — var(--color-*), var(--spacing-*), var(--radius-*). (No StyleX/Tailwind compiler detected here, so xstyle and utility classes would NOT apply — do not use them.)');
+    lines.push("- Custom styling: component props first; else style/className with tokens — var(--color-*|--spacing-*|--radius-*). No raw hex/px. (No StyleX/Tailwind compiler here — don't use xstyle/utility classes.)");
   }
-  lines.push('If a component prop does what you need, use it — never replicate it with hardcoded CSS.');
-  lines.push(`No magic values — run \`${run} docs tokens\` for spacing/color/radius; never hardcode raw hex/px.`);
-  lines.push(`To change accent/brand colors: \`${run} theme\` — never override --color-* in :root.`);
+  lines.push('- Tokens for every value (`astryx docs tokens`). Brand/accent via `astryx theme` — never override --color-* in :root.');
   lines.push('');
 
-  // CLI quick reference
-  lines.push(`${run} build "<idea>"            START HERE for pages — kit: closest page + blocks + components (\`build\` = how-to playbook)`);
-  lines.push(`${run} search "<query>"          find anything: components, hooks, docs, templates, blocks`);
-  lines.push(`${run} component --list         ${componentCount} components by category`);
-  lines.push(`${run} component <Name>         props, types, examples`);
-
-  // Doc topics from live discovery
+  // Command reference — build/template/component are covered in WORKFLOW above.
+  lines.push('MORE CLI:');
+  lines.push('  search "<query>"   find any component / hook / doc / template / block');
+  lines.push(`  component --list   ${componentCount} components by category`);
+  lines.push('  template --list    page + block recipes');
   const docsDir = path.join(CLI_ROOT, 'docs');
   if (fs.existsSync(docsDir)) {
-    for (const file of fs.readdirSync(docsDir).sort()) {
-      const match = file.match(/^(\w+)\.doc\.mjs$/);
-      if (!match) continue;
-      const topic = match[1];
-      let desc = topic;
-      try {
-        const fileContent = fs.readFileSync(path.join(docsDir, file), 'utf-8');
-        const descMatch = fileContent.match(/description:\s*['"](.+?)['"]/);
-        if (descMatch) desc = descMatch[1];
-      } catch {
-        // Best-effort: fall back to the topic name if the file is unreadable.
-      }
-      if (desc.length > 50) desc = desc.slice(0, 47) + '...';
-      lines.push(`${run} docs ${topic.padEnd(20)} ${desc}`);
-    }
-  }
-
-  // Templates
-  const templatesDir = path.join(CLI_ROOT, 'templates');
-  if (fs.existsSync(templatesDir)) {
-    const templates = fs.readdirSync(templatesDir, {withFileTypes: true})
-      .filter(e => e.isDirectory())
-      .map(e => e.name)
+    const topics = fs.readdirSync(docsDir)
+      .map(f => f.match(/^(\w+)\.doc\.mjs$/))
+      .filter(Boolean)
+      .map(m => m[1])
       .sort();
-    if (templates.length > 0) {
-      lines.push(`${run} template --list           page recipes with component lists`);
-      lines.push(`${run} template <name> [path]     scaffold from template`);
-    }
+    if (topics.length > 0) lines.push(`  docs <topic>       ${topics.join(', ')}`);
   }
-
-  lines.push(`${run} swizzle <Name>            eject source (--gap to report why)`);
-  lines.push(`${run} upgrade --apply            codemods after version bump`);
-  lines.push(`after @astryxdesign/core bump, always run ${run} upgrade --apply`);
+  lines.push('  swizzle <Name>     eject component source (--gap reports why)');
+  lines.push('  upgrade --apply    run after any @astryxdesign/core bump');
   lines.push(MARKER_END);
 
   return lines.join('\n');

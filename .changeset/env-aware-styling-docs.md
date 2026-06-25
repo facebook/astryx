@@ -2,7 +2,12 @@
 '@astryxdesign/cli': patch
 ---
 
-[feat] Tailor agent-docs styling guidance to the project's configured system
+[feat] Densify agent docs + tailor styling guidance to the project's configured system
+
+Tightened the generated `CLAUDE.md`/`AGENTS.md` block from ~48 lines to ~26
+(the per-topic `docs` dump collapsed to one line, `build`/`search`/`component`
+no longer duplicated between workflow and reference, run-prefix stated once,
+filler prose removed) — same information, far denser.
 
 `init`/`agent-docs` now detect whether the consumer project has the StyleX
 compiler, Tailwind, or neither, and write the matching custom-styling guidance

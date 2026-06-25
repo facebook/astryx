@@ -45,41 +45,38 @@ describe('generateCompressedIndex', () => {
 
   it('defaults to the CSS-variable styling path (no compiler)', () => {
     const result = generateCompressedIndex('1.0.0');
-    expect(result).toMatch(/style\/className prop with design tokens/);
-    expect(result).toMatch(/var\(--color-\*\)/);
+    expect(result).toMatch(/style\/className with tokens/);
+    expect(result).toMatch(/var\(--color-\*/);
     // Must NOT push xstyle when no StyleX compiler is present.
-    expect(result).not.toMatch(/use the xstyle prop/);
+    expect(result).not.toMatch(/xstyle prop/);
   });
 
   it('recommends xstyle when StyleX is configured', () => {
     const result = generateCompressedIndex('1.0.0', {stylingSystem: 'stylex'});
-    expect(result).toMatch(/xstyle prop or StyleX token imports/);
+    expect(result).toMatch(/xstyle prop \/ StyleX tokens/);
   });
 
   it('recommends Tailwind utilities when Tailwind is configured', () => {
     const result = generateCompressedIndex('1.0.0', {stylingSystem: 'tailwind'});
-    expect(result).toMatch(/Tailwind utility classes backed by tokens/);
+    expect(result).toMatch(/Tailwind utilities backed by tokens/);
     expect(result).toMatch(/tailwind-theme\.css/);
   });
 
   it('includes upgrade command and migration rule', () => {
     const result = generateCompressedIndex('1.0.0');
-    expect(result).toContain('astryx upgrade');
-    expect(result).toContain('astryx upgrade --apply');
-    expect(result).toMatch(/always run .+ astryx upgrade --apply/);
+    expect(result).toContain('upgrade --apply');
+    expect(result).toMatch(/after any @astryxdesign\/core bump/);
   });
 
-  it('uses custom runPrefix when provided', () => {
+  it('states the runPrefix once in the CLI header', () => {
     const result = generateCompressedIndex('1.0.0', {runPrefix: 'yarn'});
-    expect(result).toContain('yarn astryx component <Name>');
-    expect(result).toContain('yarn astryx upgrade --apply');
-    expect(result).toContain('after @astryxdesign/core bump, always run yarn astryx upgrade --apply');
+    expect(result).toContain('yarn astryx <cmd>');
     expect(result).not.toContain('npx astryx');
   });
 
   it('uses pnpm exec prefix', () => {
     const result = generateCompressedIndex('1.0.0', {runPrefix: 'pnpm exec'});
-    expect(result).toContain('pnpm exec astryx component <Name>');
+    expect(result).toContain('pnpm exec astryx <cmd>');
     expect(result).not.toContain('npx astryx');
   });
 });
