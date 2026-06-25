@@ -6,17 +6,39 @@
  * which handles tabs (Overview / Playground) on the client.
  */
 
+import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 import {components} from '../../../../generated/componentRegistry';
 import {blocks} from '../../../../generated/blockRegistry';
 import {packages} from '../../../../generated/packageRegistry';
 import {ComponentDetailClient} from '../../../../components/component-detail/ComponentDetailClient';
 import {flattenComponentSidebarEntries} from '../../../../components/componentSidebarData';
+import {pageMetadata} from '../../../../lib/pageMetadata';
 
 const allComponents = Object.values(components).flat();
 
 export function generateStaticParams() {
   return flattenComponentSidebarEntries().map(c => ({name: c.name}));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{name: string}>;
+}): Promise<Metadata> {
+  const {name} = await params;
+  const comp = allComponents.find(c => c.name === name);
+  if (!comp) {
+    return {};
+  }
+  return pageMetadata({
+    title: comp.displayName,
+    description:
+      comp.description ||
+      `Props, usage, and live examples for the ${comp.displayName} component.`,
+    path: `/components/${comp.name}`,
+    type: 'article',
+  });
 }
 
 export default async function ComponentPage({
