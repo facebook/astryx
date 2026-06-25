@@ -13,7 +13,13 @@
  * - /packages/core/src/Table/index.ts (exports)
  */
 
-import {useCallback, useMemo, useRef, type CSSProperties} from 'react';
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  type CSSProperties,
+  type MutableRefObject,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../../../theme/tokens.stylex';
 import type {
@@ -371,7 +377,7 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
           if (typeof existingRef === 'function') {
             existingRef(node);
           } else if (existingRef && 'current' in existingRef) {
-            (existingRef as React.MutableRefObject<HTMLDivElement | null>).current =
+            (existingRef as MutableRefObject<HTMLDivElement | null>).current =
               node;
           }
         };

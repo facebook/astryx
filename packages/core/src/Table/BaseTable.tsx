@@ -160,15 +160,16 @@ function TableRowInner<T extends Record<string, unknown>>({
       initialCellHtmlProps.style = {textAlign: col.align};
     }
 
+    const initialBodyCellRenderProps: BodyCellRenderProps = {
+      htmlProps: initialCellHtmlProps,
+      styles: [],
+      columnIndex,
+      columns: columns as ReadonlyArray<TableColumn<Record<string, unknown>>>,
+    };
     const cellRenderProps = applyPlugins(
       plugins,
       p => p.transformBodyCell,
-      {
-        htmlProps: initialCellHtmlProps,
-        styles: [],
-        columnIndex,
-        columns,
-      } satisfies BodyCellRenderProps,
+      initialBodyCellRenderProps,
       col,
       item,
       columnIndex,
@@ -370,16 +371,19 @@ function BaseTableInner<T extends Record<string, unknown>>({
       initialHeaderHtmlProps.style = {textAlign: col.align};
     }
 
+    const initialHeaderRenderProps: HeaderCellRenderProps = {
+      htmlProps: initialHeaderHtmlProps,
+      styles: [],
+      content: headerContent,
+      columnIndex,
+      columns: resolvedColumns as ReadonlyArray<
+        TableColumn<Record<string, unknown>>
+      >,
+    };
     const cellRenderProps = applyPlugins(
       plugins,
       p => p.transformHeaderCell,
-      {
-        htmlProps: initialHeaderHtmlProps,
-        styles: [],
-        content: headerContent,
-        columnIndex,
-        columns: resolvedColumns,
-      } satisfies HeaderCellRenderProps,
+      initialHeaderRenderProps,
       col,
       columnIndex,
       resolvedColumns,
