@@ -1,8 +1,8 @@
 ---
-'@astryxdesign/cli': minor
+'@astryxdesign/cli': patch
 ---
 
-Add `astryx build` command for page composition, with natural-language search ranking.
+[feat] Add `astryx build` command for page composition, with natural-language search ranking.
 
 `build "<idea>"` returns a composition kit — the closest page template, the
 blocks that cover parts, and components to fill gaps, plus a Compose suggestion.
